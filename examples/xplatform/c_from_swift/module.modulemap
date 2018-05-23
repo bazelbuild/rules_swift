@@ -1,0 +1,3 @@
+module CCounter {
+    header "c_counter.h"
+}

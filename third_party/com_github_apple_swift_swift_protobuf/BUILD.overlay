@@ -1,0 +1,32 @@
+load(
+    "@build_bazel_rules_swift//swift:swift.bzl",
+    "swift_binary",
+    "swift_library",
+)
+
+swift_library(
+    name = "SwiftProtobuf",
+    srcs = glob([
+        "Sources/SwiftProtobuf/*.swift",
+    ]),
+    module_name = "SwiftProtobuf",
+    visibility = ["//visibility:public"],
+)
+
+swift_library(
+    name = "SwiftProtobufPluginLibrary",
+    srcs = glob([
+        "Sources/SwiftProtobufPluginLibrary/*.swift",
+    ]),
+    module_name = "SwiftProtobufPluginLibrary",
+    deps = [":SwiftProtobuf"],
+)
+
+swift_binary(
+    name = "ProtoCompilerPlugin",
+    srcs = glob([
+        "Sources/protoc-gen-swift/*.swift",
+    ]),
+    deps = [":SwiftProtobufPluginLibrary"],
+    visibility = ["//visibility:public"],
+)
