@@ -151,9 +151,11 @@ def run_with_optional_wrapper(
     env: A dictionary of environment variables for the process.
     execution_requirements: Information for scheduling the action.
     mnemonic: A one-word description of the action.
+    toolchain_root: The root directory of the Swift toolchain (where the `bin`
+        and `lib` directories are located). This path is only used when
+        `wrapper_executable` is not specified.
     wrapper_executable: An executable that should be used to wrap the process
-        being spawned. If `None`, the process will be invoked via the shell
-        instead.
+        being spawned. If `None`, the process will be invoked directly instead.
   """
   if wrapper_executable:
     command_args = actions.args()

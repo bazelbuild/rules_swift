@@ -16,8 +16,7 @@
 
 load(":deps.bzl", "swift_deps_libraries")
 load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
-load(":utils.bzl", "collect_transitive", "run_with_optional_wrapper")
-load("@bazel_skylib//:lib.bzl", "paths")
+load(":utils.bzl", "collect_transitive")
 
 def register_link_action(
     actions,
