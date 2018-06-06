@@ -52,6 +52,10 @@ def _swift_binary_test_impl(ctx):
   additional_output_groups = {}
   compilation_providers = []
 
+  link_args = ctx.actions.args()
+  link_args.add("-o")
+  link_args.add(out_bin)
+
   if not srcs:
     additional_inputs_to_linker = depset(direct=additional_inputs)
   else:
@@ -76,6 +80,7 @@ def _swift_binary_test_impl(ctx):
         deps=ctx.attr.deps,
         objc_fragment=objc_fragment,
     )
+    link_args.add(compile_results.linker_flags)
     objects_to_link.extend(compile_results.output_objects)
     additional_inputs_to_linker = (
         compile_results.compile_inputs + compile_results.linker_inputs)
@@ -83,11 +88,6 @@ def _swift_binary_test_impl(ctx):
     dicts.add(additional_output_groups, compile_results.output_groups)
     compilation_providers.append(
         SwiftBinaryInfo(compile_options=compile_results.compile_options))
-
-  link_args = ctx.actions.args()
-  link_args.add("-o")
-  link_args.add(out_bin)
-  link_args.add(compile_results.linker_flags)
 
   # TODO(b/70228246): Also support mostly-static and fully-dynamic modes.
   if toolchain.cc_toolchain_info:
