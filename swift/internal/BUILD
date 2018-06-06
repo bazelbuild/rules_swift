@@ -1,3 +1,3 @@
-package(default_visibility = ["@build_bazel_rules_swift//..."])
+package(default_visibility = ["//:__subpackages__"])
 
 licenses(["notice"])
