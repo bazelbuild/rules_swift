@@ -52,7 +52,10 @@ git_repository(
     tag = "0.1.0",
 )
 
-load("@build_bazel_rules_swift//swift:swift.bzl", "swift_rules_dependencies")
+load(
+    "@build_bazel_rules_swift//swift:repositories.bzl",
+    "swift_rules_dependencies",
+)
 
 swift_rules_dependencies()
 ```

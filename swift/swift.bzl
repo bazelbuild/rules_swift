@@ -31,10 +31,6 @@ load(
     _SwiftToolchainInfo="SwiftToolchainInfo",
 )
 load(
-    "@build_bazel_rules_swift//swift/internal:repositories.bzl",
-    _swift_rules_dependencies="swift_rules_dependencies",
-)
-load(
     "@build_bazel_rules_swift//swift/internal:swift_binary_test.bzl",
     _swift_binary="swift_binary",
     _swift_test="swift_test",
@@ -78,6 +74,3 @@ swift_library = _swift_library
 swift_test = _swift_test
 swift_module_alias = _swift_module_alias
 swift_proto_library = _swift_proto_library
-
-# Re-export the workspace macro to fetch dependencies.
-swift_rules_dependencies = _swift_rules_dependencies
