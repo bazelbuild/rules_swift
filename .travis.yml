@@ -1,0 +1,39 @@
+language: generic
+
+# Build out the matrix ourselves so we can set multiple variables.
+#
+# - `BAZEL`: Used in `before_install` to pick the version of bazel to use,
+#   "RELEASE" extracts from https://github.com/bazelbuild/bazel/releases/latest;
+#   "HEAD" uses Bazel built from HEAD; otherwise, it is the tag to fetch.
+# - `TARGETS`: Are used in the `script` phase to indicate the targets that
+#   should be built and tested. Since environment variables cannot be arrays, if
+#   there are multiple test patterns you want to build, use double-quotes and
+#   separate the targets with spaces. The target list is preceded by `--` when
+#   Bazel is invoked, which also lets you specify exclusions by prefixing the
+#   target pattern with `-`.
+matrix:
+  include:
+    - os: linux
+      dist: trusty
+      sudo: required
+      env:
+        - BAZEL=0.13.0 SWIFT_VERSION=4.1.2 TARGETS="//examples/... -//examples/apple/..."
+    - os: osx
+      osx_image: xcode9.3
+      env:
+        - BAZEL=0.13.0 TARGETS=//examples/...
+
+before_install:
+  - .travis/install.sh
+
+script:
+  - .travis/build.sh
+
+notifications:
+  email: false
+
+# Don't build the google branch since that is used by the export process and a
+# PR will be made after the fact.
+branches:
+  except:
+    - google

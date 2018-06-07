@@ -1,0 +1,2 @@
+# This file will be used as the bazelrc file on Linux. Add settings to it if
+# you need to tweak Bazel's behavior or resource usage on that platform.
