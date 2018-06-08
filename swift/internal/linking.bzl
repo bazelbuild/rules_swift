@@ -69,12 +69,8 @@ def register_link_action(
 
   wrapper_args = actions.args()
 
-  # TODO(allevato): The second condition is a huge hack. Bazel uses the `CC`
-  # environment variable to determine which C compiler the C toolchain should
-  # use, and we rely on that. Swift must link with clang, so in order to save
-  # them the trouble of setting that variable, we just replace it (and assume
-  # it's on the path). Figure out a cleaner way to do this (likely by specifying
-  # it in the toolchain explicitly).
+  # TODO(bazelbuild/rules_swift#10): Have the repository rule provide the
+  # absolute file system path for clang.
   if not clang_executable or clang_executable.endswith("/gcc"):
     clang_executable = "clang"
 
@@ -162,6 +158,10 @@ def register_link_action(
       ),
       mnemonic=mnemonic,
       outputs=outputs,
+      # TODO(bazelbuild/rules_swift#10): Use the shell's environment if a
+      # custom one hasn't been provided to ensure "clang" is found until this
+      # issue is resolved.
+      use_default_shell_env=(not action_environment),
   )
 
 def _link_library_map_fn(libs):
