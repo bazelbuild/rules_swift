@@ -1,5 +1,7 @@
 # Swift Rules for [Bazel](https://bazel.build)
 
+[![Build Status](https://travis-ci.org/bazelbuild/rules_swift.svg?branch=master)](https://travis-ci.org/bazelbuild/rules_swift)
+
 > ⚠️ The rules in this repository are in the beta stage of development. There are
 > many features that still need to be implemented and there may be bugs. If you
 > run into any problems, please
@@ -49,7 +51,7 @@ rules you wish to depend on:
 git_repository(
     name = "build_bazel_rules_swift",
     remote = "https://github.com/bazelbuild/rules_swift.git",
-    tag = "0.1.0",
+    tag = "0.1.1",
 )
 
 load(
