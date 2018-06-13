@@ -9,6 +9,7 @@ filegroup(
     name = "for_bazel_tests",
     testonly = 1,
     srcs = [
+        "WORKSPACE",
         "@build_bazel_rules_swift//swift:for_bazel_tests",
         "@build_bazel_rules_swift//tools:for_bazel_tests",
     ],
