@@ -23,7 +23,7 @@ repository.
 
 ## Compatibility
 
-These rules have been verified to work with **Bazel 0.13.0.**
+These rules have been verified to work with **Bazel 0.14.1.**
 
 ## Quick Setup
 
