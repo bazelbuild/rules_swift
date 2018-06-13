@@ -17,11 +17,11 @@ matrix:
       dist: trusty
       sudo: required
       env:
-        - BAZEL=0.13.0 SWIFT_VERSION=4.1.2 TARGETS="//examples/... -//examples/apple/..."
+        - BAZEL=0.14.1 SWIFT_VERSION=4.1.2 TARGETS="//examples/... -//examples/apple/..."
     - os: osx
       osx_image: xcode9.3
       env:
-        - BAZEL=0.13.0 TARGETS=//examples/...
+        - BAZEL=0.14.1 TARGETS=//examples/...
 
 before_install:
   - .travis/install.sh

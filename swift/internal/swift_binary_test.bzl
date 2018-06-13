@@ -92,7 +92,8 @@ def _swift_binary_test_impl(ctx):
   # TODO(b/70228246): Also support mostly-static and fully-dynamic modes.
   if toolchain.cc_toolchain_info:
     cpp_toolchain = find_cpp_toolchain(ctx)
-    if hasattr(cpp_toolchain, "link_options_do_not_use"):
+    if (hasattr(cpp_toolchain, "link_options_do_not_use") and
+        hasattr(cc_common, "mostly_static_link_options")):
       # We only do this for non-Xcode toolchains at this time.
       features = ctx.features
       link_args.add(find_cpp_toolchain(ctx).link_options_do_not_use)
