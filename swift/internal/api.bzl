@@ -224,7 +224,7 @@ def _compile_as_objects(
 
   compile_args = actions.args()
   compile_args.add("-emit-object")
-  compile_args.add(compile_reqs.args)
+  compile_args.add_all(compile_reqs.args)
   compile_args.add("-emit-module-path")
   compile_args.add(out_module)
 
@@ -617,7 +617,7 @@ def _invoke_swiftc(
       execution_requirements or {}, toolchain.execution_requirements)
 
   toolchain_args = actions.args()
-  toolchain_args.add(toolchain.swiftc_copts)
+  toolchain_args.add_all(toolchain.swiftc_copts)
 
   run_with_optional_wrapper(
       actions=actions,
