@@ -223,18 +223,18 @@ def collect_transitive_compile_inputs(args, deps, direct_defines=[]):
   # transitive dependencies.
   transitive_swiftmodules = collect_transitive(
       deps, SwiftInfo, "transitive_swiftmodules")
-  args.add(transitive_swiftmodules, before_each="-I", map_fn=_dirname_map_fn)
+  args.add_all(transitive_swiftmodules, before_each="-I", map_each=_dirname_map_fn)
   input_depsets.append(transitive_swiftmodules)
 
   transitive_defines = collect_transitive(
       deps, SwiftInfo, "transitive_defines", direct=direct_defines)
-  args.add(transitive_defines, format="-D%s")
+  args.add_all(transitive_defines, format_each="-D%s")
 
   transitive_modulemaps = collect_transitive(
       deps, SwiftClangModuleInfo, "transitive_modulemaps")
   input_depsets.append(transitive_modulemaps)
-  args.add(transitive_modulemaps,
-           before_each="-Xcc", format="-fmodule-map-file=%s")
+  args.add_all(transitive_modulemaps,
+           before_each="-Xcc", format_each="-fmodule-map-file=%s")
 
   transitive_cc_headers = collect_transitive(
       deps, SwiftClangModuleInfo, "transitive_headers")
@@ -245,11 +245,11 @@ def collect_transitive_compile_inputs(args, deps, direct_defines=[]):
   # Handle possible spaces in these arguments correctly (for example,
   # `-isystem foo`) by prepending `-Xcc` to each one.
   for arg in transitive_cc_compile_flags.to_list():
-    args.add(arg.split(" "), before_each="-Xcc")
+    args.add_all(arg.split(" "), before_each="-Xcc")
 
   transitive_cc_defines = collect_transitive(
       deps, SwiftClangModuleInfo, "transitive_defines")
-  args.add(transitive_cc_defines, before_each="-Xcc", format="-D%s")
+  args.add_all(transitive_cc_defines, before_each="-Xcc", format_each="-D%s")
 
   return input_depsets
 
@@ -613,19 +613,19 @@ def _clang_copts(objc_fragment):
       objc_fragment.copts + objc_fragment.copts_for_current_compilation_mode)
   return [copt for copt in clang_copts if copt != "-g"]
 
-def _dirname_map_fn(files):
-  """Returns the list of dirnames for the given files.
+def _dirname_map_fn(f):
+  """Returns the dir name of a file.
 
   This function is intended to be used as a mapping function for file passed
   into `Args.add`.
 
   Args:
-    files: The list of files.
+    f: The file
 
   Returns:
-    The list of strings containing the dirnames of the files.
+    The dirname of the file
   """
-  return [file.dirname for file in files]
+  return f.dirname
 
 def _emits_single_object(copts):
   """Returns `True` if the compiler emits a single object for the given flags.
