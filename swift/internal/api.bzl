@@ -753,10 +753,10 @@ def _swiftc_command_line_and_inputs(
   args.add("-module-name")
   args.add(module_name)
 
-  args.add(_compilation_mode_copts(
+  args.add_all(_compilation_mode_copts(
       allow_testing=allow_testing, compilation_mode=compilation_mode))
-  args.add(_coverage_copts(configuration=configuration))
-  args.add(_sanitizer_copts(features=features))
+  args.add_all(_coverage_copts(configuration=configuration))
+  args.add_all(_sanitizer_copts(features=features))
 
   input_depsets = list(additional_input_depsets)
   transitive_inputs = collect_transitive_compile_inputs(
@@ -776,8 +776,8 @@ def _swiftc_command_line_and_inputs(
         deps=all_deps,
         objc_fragment=objc_fragment))
 
-  args.add(explicit_copts)
-  args.add(srcs)
+  args.add_all(explicit_copts)
+  args.add_all(srcs)
 
   return depset(transitive=input_depsets)
 
