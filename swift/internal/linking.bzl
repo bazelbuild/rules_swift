@@ -110,8 +110,8 @@ def register_link_action(
     )
     link_input_args.add(runtime_object_path)
 
-  link_input_args.add(objects)
-  link_input_args.add(libraries, map_fn=_link_library_map_fn)
+  link_input_args.add_all(objects)
+  link_input_args.add_all(libraries, map_each=_link_library_map_fn)
 
   # TODO(b/70228246): Also support fully-dynamic mode.
   if toolchain.cc_toolchain_info:
@@ -120,7 +120,7 @@ def register_link_action(
     link_input_args.add("-ldl")
 
   toolchain_args = actions.args()
-  toolchain_args.add(toolchain.linker_opts)
+  toolchain_args.add_all(toolchain.linker_opts)
 
   all_linkopts = depset(
       direct=expanded_linkopts,
@@ -138,7 +138,7 @@ def register_link_action(
     all_linkopts.remove(enable_text_relocation_linkopt)
 
   user_args = actions.args()
-  user_args.add(all_linkopts)
+  user_args.add_all(all_linkopts)
 
   actions.run(
       arguments=[
@@ -164,20 +164,20 @@ def register_link_action(
       use_default_shell_env=(not action_environment),
   )
 
-def _link_library_map_fn(libs):
-  """Maps a list of libraries to the appropriate flags to link them.
+def _link_library_map_fn(lib):
+  """Maps a library to the appropriate flags to link them.
 
   This function handles `alwayslink` (.lo) libraries correctly by surrounding
   them with `--(no-)whole-archive`.
 
   Args:
-    libs: A list of `File`s, passed in when the calling `Args` object is ready
-        to map them to arguments.
+    lib: A `File`, passed in when the calling `Args` object is ready
+        to map it to an argument.
 
   Returns:
     A list of command-line arguments (strings) that link the library correctly.
   """
-  return [
-      "-Wl,--whole-archive,{lib},--no-whole-archive".format(lib=lib.path)
-      if lib.basename.endswith(".lo") else lib.path for lib in libs
-  ]
+  if lib.basename.endswith(".lo"):
+    return "-Wl,--whole-archive,{lib},--no-whole-archive".format(lib=lib.path)
+  else:
+    return lib.path
