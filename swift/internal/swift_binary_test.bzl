@@ -80,7 +80,7 @@ def _swift_binary_test_impl(ctx):
         deps=ctx.attr.deps,
         objc_fragment=objc_fragment,
     )
-    link_args.add(compile_results.linker_flags)
+    link_args.add_all(compile_results.linker_flags)
     objects_to_link.extend(compile_results.output_objects)
     additional_inputs_to_linker = (
         compile_results.compile_inputs + compile_results.linker_inputs)
@@ -96,8 +96,8 @@ def _swift_binary_test_impl(ctx):
         hasattr(cc_common, "mostly_static_link_options")):
       # We only do this for non-Xcode toolchains at this time.
       features = ctx.features
-      link_args.add(find_cpp_toolchain(ctx).link_options_do_not_use)
-      link_args.add(cc_common.mostly_static_link_options(
+      link_args.add_all(find_cpp_toolchain(ctx).link_options_do_not_use)
+      link_args.add_all(cc_common.mostly_static_link_options(
           ctx.fragments.cpp,
           toolchain.cc_toolchain_info.provider,
           features,
