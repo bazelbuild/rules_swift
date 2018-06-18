@@ -37,6 +37,18 @@ _WELL_KNOWN_TYPE_PATHS = [
     "google/protobuf/wrappers.proto",
 ]
 
+def _workspace_relative_path(f):
+  """Returns the path of a file relative to its workspace.
+
+  Args:
+    f: The File object.
+
+  Returns:
+    The path of the file relative to its workspace.
+  """
+  wpath = paths.join(f.root.path, f.owner.workspace_root)
+  return paths.relativize(f.path, wpath)
+
 def _filter_out_well_known_types(srcs):
   """Returns the given list of files, excluding any well-known type protos.
 
@@ -47,7 +59,8 @@ def _filter_out_well_known_types(srcs):
     The given list of files with any well-known type protos (those living under
     the `google.protobuf` package) removed.
   """
-  return [f for f in srcs if f.short_path not in _WELL_KNOWN_TYPE_PATHS]
+  return [f for f in srcs
+          if _workspace_relative_path(f) not in _WELL_KNOWN_TYPE_PATHS]
 
 def _pbswift_file_path(target, proto_file=None):
   """Returns the `.pb.swift` short path corresponding to a `.proto` file.
@@ -173,7 +186,7 @@ def _register_pbswift_generate_action(
                     format="--swift_opt=ProtoPathModuleMappings=%s")
   protoc_args.add("--descriptor_set_in")
   protoc_args.add(transitive_descriptor_sets, join_with=":")
-  protoc_args.add(direct_srcs)
+  protoc_args.add([_workspace_relative_path(f) for f in direct_srcs])
 
   additional_command_inputs = [
       mkdir_and_run, protoc_executable, protoc_gen_swift_executable,
