@@ -65,26 +65,29 @@ def _filter_out_well_known_types(srcs):
 def _pbswift_file_path(target, proto_file=None):
   """Returns the `.pb.swift` short path corresponding to a `.proto` file.
 
-  The returned short path should be used to declare output files so that they
-  are generated relative to the target's package in the output directory tree.
+  The returned workspace-relative path should be used to declare output files so
+  that they are generated relative to the target's package in the output
+  directory tree.
 
   If `proto_file` is `None` (or unspecified), then this function returns the
-  short path to the `%{target_name}.protoc_gen_swift` directory where the
-  `.pb.swift` files would be generated.
+  workspace-relative path to the `%{target_name}.protoc_gen_swift` directory
+  where the `.pb.swift` files would be generated.
 
   Args:
     target: The target currently being analyzed.
     proto_file: The `.proto` file whose `.pb.swift` path should be computed.
 
   Returns:
-    The `.pb.swift` short path of the `.proto` file being generated, or the
-    short path to the `.protoc_gen_swift` that contains the declared `.pb.swift`
-    files if `proto_file` is `None`.
+    The workspace-relative path of the `.pb.swift` file that will be generated
+    for the given `.proto` file, or the workspace-relative path to the
+    `.protoc_gen_swift` that contains the declared `.pb.swift` files if
+    `proto_file` is `None`.
   """
   dir_path = target.label.name + ".protoc_gen_swift"
   if proto_file:
-    pbswift_path = paths.replace_extension(proto_file.short_path, ".pb.swift")
-    return dir_path + "/" + pbswift_path
+    pbswift_path = paths.replace_extension(
+        _workspace_relative_path(proto_file), ".pb.swift")
+    return paths.join(dir_path, pbswift_path)
   return dir_path
 
 def _declare_pbswift_files(target, actions, proto_srcs):
@@ -250,9 +253,16 @@ def _build_module_mapping_from_srcs(target, proto_srcs):
     A string containing the module mapping for the target in protobuf text
     format.
   """
+  # TODO(allevato): The previous use of f.short_path here caused problems with
+  # cross-repo references; protoc-gen-swift only processes the file correctly if
+  # the workspace-relative path is used (which is the same as the short_path for
+  # same-repo references, so this issue had never been caught). However, this
+  # implies that if two repos have protos with the same workspace-relative
+  # paths, there will be a clash. Figure out what to do here; it may require an
+  # update to protoc-gen-swift?
   return struct(
       module_name=swift_common.derive_module_name(target.label),
-      proto_file_paths=[f.short_path for f in proto_srcs],
+      proto_file_paths=[_workspace_relative_path(f) for f in proto_srcs],
   )
 
 def _gather_transitive_module_mappings(targets):
