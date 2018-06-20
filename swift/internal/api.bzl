@@ -82,11 +82,19 @@ def _compilation_mode_copts(allow_testing, compilation_mode):
   elif compilation_mode in ("dbg", "fastbuild"):
     if allow_testing:
       flags.append("-enable-testing")
-    flags += ["-Onone", "-DDEBUG"]
+
+    # The Swift compiler only serializes debugging options in narrow
+    # circumstances (for example, for application binaries). Since we almost
+    # exclusively just compile to object files directly, we need to manually
+    # pass the following frontend option to ensure that LLDB has the necessary
+    # import search paths to find definitions during debugging.
+    flags += ["-Onone", "-DDEBUG", "-Xfrontend", "-serialize-debugging-options"]
+
     if compilation_mode == "dbg":
       flags.append("-g")
     elif compilation_mode == "fastbuild":
       flags.append("-gline-tables-only")
+
   return flags
 
 def _coverage_copts(configuration):
