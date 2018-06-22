@@ -119,9 +119,6 @@ def register_link_action(
     link_input_args.add("-lrt")
     link_input_args.add("-ldl")
 
-  toolchain_args = actions.args()
-  toolchain_args.add_all(toolchain.linker_opts)
-
   all_linkopts = depset(
       direct=expanded_linkopts,
       transitive=[
@@ -146,7 +143,6 @@ def register_link_action(
           common_args,
           link_input_args,
           rule_specific_args,
-          toolchain_args,
           user_args,
       ],
       env=action_environment,

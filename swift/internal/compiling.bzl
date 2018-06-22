@@ -411,10 +411,12 @@ def new_objc_provider(
       "include": depset(direct=[include_path]),
       "library": depset(direct=[static_archive]),
       "link_inputs": depset(direct=[swiftmodule] + link_inputs),
-      "linkopt": depset(direct=linkopts),
       "providers": objc_providers,
       "uses_swift": True,
   }
+
+  if linkopts:
+    objc_provider_args["linkopt"] = depset(direct=linkopts)
 
   # In addition to the generated header's module map, we must re-propagate the
   # direct deps' Objective-C module maps to dependents, because those Swift
