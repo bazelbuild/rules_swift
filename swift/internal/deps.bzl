@@ -36,6 +36,12 @@ def swift_deps_libraries(deps):
   for dep in deps:
     if SwiftInfo in dep:
       depsets.append(dep[SwiftInfo].transitive_libraries)
+    elif apple_common.Objc in dep:
+      # This is an `elif` because `swift_library` targets propagate both; so we
+      # only want to pick up the libraries from the `Objc` provider if we didn't
+      # already get them from a Swift provider.
+      depsets.append(dep[apple_common.Objc].library)
+
     if SwiftCcLibsInfo in dep:
       depsets.append(dep[SwiftCcLibsInfo].libraries)
 

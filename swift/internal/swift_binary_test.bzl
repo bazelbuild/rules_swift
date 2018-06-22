@@ -20,14 +20,15 @@ load(":derived_files.bzl", "derived_files")
 load(":linking.bzl", "register_link_action")
 load(":providers.bzl", "SwiftBinaryInfo", "SwiftToolchainInfo")
 load(":utils.bzl", "expand_locations", "get_optionally")
-load("@bazel_skylib//:lib.bzl", "dicts")
+load("@bazel_skylib//:lib.bzl", "dicts", "partial")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
 
-def _swift_binary_test_impl(ctx):
+def _swift_linking_rule_impl(ctx, is_test):
   """The shared implementation function for `swift_{binary,test}`.
 
   Args:
     ctx: The rule context.
+    is_test: A `Boolean` value indicating whether the binary is a test target.
 
   Returns:
     A list of providers to be propagated by the target being built.
@@ -89,7 +90,19 @@ def _swift_binary_test_impl(ctx):
     compilation_providers.append(
         SwiftBinaryInfo(compile_options=compile_results.compile_options))
 
-  # TODO(b/70228246): Also support mostly-static and fully-dynamic modes.
+  # We need to pass some Objective-C-related linker flags to ensure that the
+  # runtime is handled correctly for mixed code.
+  if toolchain.supports_objc_interop:
+    link_args.add("-ObjC")
+    link_args.add("-fobjc-link-runtime")
+    link_args.add("-Wl,-objc_abi_version,2")
+    link_args.add("-Wl,-no_deduplicate")
+
+  # TODO(b/70228246): Also support mostly-static and fully-dynamic modes, here
+  # and for the C++ toolchain args below.
+  link_args.add_all(partial.call(
+      toolchain.linker_opts_producer, is_static=True, is_test=is_test))
+
   if toolchain.cc_toolchain_info:
     cpp_toolchain = find_cpp_toolchain(ctx)
     if (hasattr(cpp_toolchain, "link_options_do_not_use") and
@@ -134,13 +147,13 @@ def _swift_binary_test_impl(ctx):
   ] + compilation_providers
 
 def _swift_binary_impl(ctx):
-  return _swift_binary_test_impl(ctx)
+  return _swift_linking_rule_impl(ctx, is_test=False)
 
 def _swift_test_impl(ctx):
   toolchain_target = ctx.attr._toolchain
   toolchain = toolchain_target[SwiftToolchainInfo]
 
-  return _swift_binary_test_impl(ctx) + [
+  return _swift_linking_rule_impl(ctx, is_test=True) + [
       testing.ExecutionInfo(toolchain.execution_requirements),
   ]
 
