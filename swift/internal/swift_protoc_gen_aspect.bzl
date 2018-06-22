@@ -188,8 +188,8 @@ def _register_pbswift_generate_action(
     protoc_args.add(module_mapping_file,
                     format="--swift_opt=ProtoPathModuleMappings=%s")
   protoc_args.add("--descriptor_set_in")
-  protoc_args.add(transitive_descriptor_sets, join_with=":")
-  protoc_args.add([_workspace_relative_path(f) for f in direct_srcs])
+  protoc_args.add_joined(transitive_descriptor_sets, join_with=":")
+  protoc_args.add_all([_workspace_relative_path(f) for f in direct_srcs])
 
   additional_command_inputs = [
       mkdir_and_run, protoc_executable, protoc_gen_swift_executable,

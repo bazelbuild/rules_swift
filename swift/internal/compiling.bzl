@@ -472,12 +472,12 @@ def objc_compile_requirements(args, deps, objc_fragment):
 
   # Add the objc dependencies' header search paths so that imported modules can
   # find their headers.
-  args.add(depset(transitive=includes), format="-I%s")
+  args.add_all(depset(transitive=includes), format_each="-I%s")
 
   # Add framework search paths for any Objective-C frameworks propagated through
   # static/dynamic framework provider keys.
-  args.add(depset(transitive=all_frameworks),
-           format="-F%s", map_fn=_parent_dirs)
+  args.add_all(depset(transitive=all_frameworks),
+               format_each="-F%s", map_each=paths.dirname)
 
   # Disable the `LC_LINKER_OPTION` load commands for static framework automatic
   # linking. This is needed to correctly deduplicate static frameworks from also
@@ -485,7 +485,7 @@ def objc_compile_requirements(args, deps, objc_fragment):
   # TODO(allevato): Update this to not expand the depset once `Args.add`
   # supports returning multiple elements from a `map_fn`.
   for framework in depset(transitive=static_frameworks).to_list():
-    args.add(collections.before_each(
+    args.add_all(collections.before_each(
         "-Xfrontend", [
             "-disable-autolink-framework",
             _objc_provider_framework_name(framework),
@@ -495,21 +495,22 @@ def objc_compile_requirements(args, deps, objc_fragment):
   # Swift's ClangImporter does not include the current directory by default in
   # its search paths, so we must add it to find workspace-relative imports in
   # headers imported by module maps.
-  args.add(collections.before_each("-Xcc", ["-iquote", "."]))
+  args.add_all(collections.before_each("-Xcc", ["-iquote", "."]))
 
   # Ensure that headers imported by Swift modules have the correct defines
   # propagated from dependencies.
-  args.add(depset(transitive=defines), before_each="-Xcc", format="-D%s")
+  args.add_all(depset(transitive=defines),
+               before_each="-Xcc", format_each="-D%s")
 
   # Load module maps explicitly instead of letting Clang discover them in the
   # search paths. This is needed to avoid a case where Clang may load the same
   # header in modular and non-modular contexts, leading to duplicate definitions
   # in the same file. <https://llvm.org/bugs/show_bug.cgi?id=19501>
-  args.add(depset(transitive=module_maps),
-           before_each="-Xcc", format="-fmodule-map-file=%s")
+  args.add_all(depset(transitive=module_maps),
+               before_each="-Xcc", format_each="-fmodule-map-file=%s")
 
   # Add any copts required by the `objc` configuration fragment.
-  args.add(_clang_copts(objc_fragment), before_each="-Xcc")
+  args.add_all(_clang_copts(objc_fragment), before_each="-Xcc")
 
   return depset(transitive=inputs)
 
@@ -536,7 +537,7 @@ def register_autolink_extract_action(
   toolchain = toolchain_target[SwiftToolchainInfo]
 
   tool_args = actions.args()
-  tool_args.add(objects)
+  tool_args.add_all(objects)
   tool_args.add("-o")
   tool_args.add(output)
 
@@ -622,10 +623,10 @@ def _dirname_map_fn(f):
   into `Args.add`.
 
   Args:
-    f: The file
+    f: The file.
 
   Returns:
-    The dirname of the file
+    The dirname of the file.
   """
   return f.dirname
 
@@ -669,14 +670,3 @@ def _objc_provider_framework_name(path):
     `Foo.framework`).
   """
   return path.rpartition("/")[2].partition(".")[0]
-
-def _parent_dirs(path_list):
-  """Returns the parent directory of the given paths.
-
-  Args:
-    path_list: A list of strings representing file paths.
-
-  Returns:
-    A list of strings containing the parent directories of the given paths.
-  """
-  return [paths.dirname(path) for path in path_list]
