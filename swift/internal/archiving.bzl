@@ -175,8 +175,8 @@ def _register_libtool_action(
   filelist = actions.args()
   filelist.set_param_file_format("multiline")
   filelist.use_param_file("%s", use_always=True)
-  filelist.add(objects)
-  filelist.add(libraries)
+  filelist.add_all(objects)
+  filelist.add_all(libraries)
 
   actions.run(
       arguments=[wrapper_args, args, filelist],
