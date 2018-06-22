@@ -181,9 +181,17 @@ such that running on Darwin is required.
 `List` of `Target`s. Library targets that should be added as implicit
 dependencies of any `swift_library`, `swift_binary`, or `swift_test` target.
 """,
-        "linker_opts": """
-`List` of `string`s. Additional flags that should be passed to Clang when
-linking a binary or test target using this toolchain.
+        "linker_opts_producer": """
+Skylib `partial`. A partial function that returns the flags that should be
+passed to Clang to link a binary or test target with the Swift runtime
+libraries.
+
+The partial should be called with two arguments:
+
+* `is_static`: A `Boolean` value indicating whether to link against the static
+  or dynamic runtime libraries.
+* `is_test`: A `Boolean` value indicating whether the target being linked is a
+  test target.
 """,
         "linker_search_paths": """
 `List` of `string`s. Additional library search paths that should be passed to

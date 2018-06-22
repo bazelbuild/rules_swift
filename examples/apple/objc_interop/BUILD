@@ -4,7 +4,11 @@
 
 licenses(["notice"])
 
-load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
+load(
+    "@build_bazel_rules_swift//swift:swift.bzl",
+    "swift_binary",
+    "swift_library",
+)
 
 objc_library(
     name = "PrintStream",
@@ -24,8 +28,7 @@ objc_library(
     deps = [":Printer"],
 )
 
-apple_binary(
+swift_binary(
     name = "objc_interop",
-    platform_type = "macos",
     deps = [":main"],
 )

@@ -29,27 +29,58 @@ load(
     "@bazel_skylib//:lib.bzl",
     "collections",
     "dicts",
+    "partial",
     "paths",
     "selects",
 )
 
-def _swift_toolchain_impl(ctx):
-  toolchain_root = ctx.attr.root
-  cc_toolchain = ctx.attr._cc_toolchain[cc_common.CcToolchainInfo]
+def _default_linker_opts(
+    cpp_fragment,
+    os,
+    toolchain_root,
+    is_static,
+    is_test):
+  """Returns options that should be passed by default to `clang` when linking.
 
+  This function is wrapped in a `partial` that will be propagated as part of the
+  toolchain provider. The first three arguments are pre-bound; the `is_static`
+  and `is_test` arguments are expected to be passed by the caller.
+
+  Args:
+    cpp_fragment: The `cpp` configuration fragment from which the `ld`
+        executable is determined.
+    os: The operating system name, which is used as part of the library path.
+    toolchain_root: The toolchain's root directory.
+    is_static: `True` to link against the static version of the Swift runtime,
+        or `False` to link against dynamic/shared libraries.
+    is_test: `True` if the target being linked is a test target.
+
+  Returns:
+    The command line options to pass to `clang` to link against the desired
+    variant of the Swift runtime libraries.
+  """
+  # TODO(#8): Support statically linking the Swift runtime. Until then, the
+  # partial's arguments are ignored to avoid Skylark lint errors.
+  _ignore = (is_static, is_test)
   platform_lib_dir = "{toolchain_root}/lib/swift/{os}".format(
-      os=ctx.attr.os,
+      os=os,
       toolchain_root=toolchain_root,
   )
 
-  # TODO(allevato): Support statically linking the Swift runtime.
-  linker_opts = [
-      "-fuse-ld={}".format(ctx.fragments.cpp.ld_executable),
+  return [
+      "-fuse-ld={}".format(cpp_fragment.ld_executable),
       "-L{}".format(platform_lib_dir),
       "-Wl,-rpath,{}".format(platform_lib_dir),
       "-lm",
       "-lstdc++",
   ]
+
+def _swift_toolchain_impl(ctx):
+  toolchain_root = ctx.attr.root
+  cc_toolchain = ctx.attr._cc_toolchain[cc_common.CcToolchainInfo]
+
+  linker_opts_producer = partial.make(
+      _default_linker_opts, ctx.fragments.cpp, ctx.attr.os, toolchain_root)
 
   # TODO(allevato): Move some of the remaining hardcoded values, like object
   # format, autolink-extract, and Obj-C interop support, to attributes so that
@@ -64,7 +95,7 @@ def _swift_toolchain_impl(ctx):
           cpu=ctx.attr.arch,
           execution_requirements={},
           implicit_deps=[],
-          linker_opts=linker_opts,
+          linker_opts_producer=linker_opts_producer,
           object_format="elf",
           requires_autolink_extract=True,
           root_dir=toolchain_root,

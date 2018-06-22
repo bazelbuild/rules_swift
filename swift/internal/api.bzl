@@ -46,7 +46,7 @@ load(
     "merge_swift_clang_module_infos",
 )
 load(":utils.bzl", "get_optionally", "run_with_optional_wrapper")
-load("@bazel_skylib//:lib.bzl", "dicts")
+load("@bazel_skylib//:lib.bzl", "dicts", "partial")
 
 # The compilation modes supported by Bazel.
 _VALID_COMPILATION_MODES = ["dbg", "fastbuild", "opt"]
@@ -524,7 +524,7 @@ def _compile_as_library(
         deps=all_deps,
         include_path=bin_dir.path,
         link_inputs=compile_results.linker_inputs,
-        linkopts=toolchain.linker_opts + compile_results.linker_flags,
+        linkopts=compile_results.linker_flags,
         module_map=output_module_map,
         objc_header=objc_header,
         static_archive=out_archive,
@@ -685,6 +685,29 @@ def _merge_swift_info_providers(targets):
       transitive_swiftmodules=depset(transitive=transitive_swiftmodules),
   )
 
+def _swift_runtime_linkopts(is_static, toolchain_target, is_test=False):
+  """Returns the flags that should be passed to `clang` when linking a binary.
+
+  This function provides the appropriate linker arguments to callers who need to
+  link a binary using something other than `swift_binary` (for example, an
+  application bundle containing a universal `apple_binary`).
+
+  Args:
+    is_static: A `Boolean` value indicating whether the binary should be linked
+        against the static (rather than the dynamic) Swift runtime libraries.
+    toolchain_target: The target representing the Swift toolchain (which
+        propagates a `SwiftToolchainInfo` provider).
+    is_test: A `Boolean` value indicating whether the target being linked is a
+        test target.
+
+  Returns:
+    A `list` of command-line flags that should be passed to `clang` to link
+    against the Swift runtime libraries.
+  """
+  toolchain = toolchain_target[SwiftToolchainInfo]
+  return partial.call(
+      toolchain.linker_opts_producer, is_static=is_static, is_test=is_test)
+
 def _swiftc_command_line_and_inputs(
     args,
     compilation_mode,
@@ -800,5 +823,6 @@ swift_common = struct(
     derive_module_name=_derive_module_name,
     invoke_swiftc=_invoke_swiftc,
     merge_swift_info_providers=_merge_swift_info_providers,
+    swift_runtime_linkopts=_swift_runtime_linkopts,
     swiftc_command_line_and_inputs=_swiftc_command_line_and_inputs,
 )

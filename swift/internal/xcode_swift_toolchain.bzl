@@ -20,40 +20,50 @@ toolchain, see `swift.bzl`.
 """
 
 load(":providers.bzl", "SwiftToolchainInfo")
-load("@bazel_skylib//:lib.bzl", "dicts")
+load("@bazel_skylib//:lib.bzl", "dicts", "partial")
 
-def _default_linker_opts(apple_fragment, apple_toolchain, platform, target):
+def _default_linker_opts(
+    apple_fragment,
+    apple_toolchain,
+    platform,
+    target,
+    is_static,
+    is_test):
   """Returns options that should be passed by default to `clang` when linking.
+
+  This function is wrapped in a `partial` that will be propagated as part of the
+  toolchain provider. The first four arguments are pre-bound; the `is_static`
+  and `is_test` arguments are expected to be passed by the caller.
 
   Args:
     apple_fragment: The `apple` configuration fragment.
     apple_toolchain: The `apple_common.apple_toolchain()` object.
     platform: The `apple_platform` value describing the target platform.
     target: The target triple.
+    is_static: `True` to link against the static version of the Swift runtime,
+        or `False` to link against dynamic/shared libraries.
+    is_test: `True` if the target being linked is a test target.
 
   Returns:
-    A list of options that will be passed to any compile action created by this
-    toolchain.
+    The command line options to pass to `clang` to link against the desired
+    variant of the Swift runtime libraries.
   """
   platform_framework_dir = apple_toolchain.platform_developer_framework_dir(
       apple_fragment)
 
-  if _is_macos(platform):
+  linkopts = []
+
+  if is_static:
     swift_subdir = "swift_static"
-    static_linkopts = [
+    linkopts.extend([
         "-Xlinker",
         "-force_load_swift_libs",
         "-framework",
         "Foundation",
         "-lstdc++",
-        # XCTest.framework only lives in the Xcode bundle, so test binaries need
-        # to have that directory explicitly added to their rpaths.
-        # TODO(allevato): Factor this out into test-specific linkopts?
-        "-Wl,-rpath,{}".format(platform_framework_dir),
-    ]
+    ])
   else:
     swift_subdir = "swift"
-    static_linkopts = []
 
   swift_lib_dir = (
       "{developer_dir}/Toolchains/{toolchain}.xctoolchain" +
@@ -65,12 +75,20 @@ def _default_linker_opts(apple_fragment, apple_toolchain, platform, target):
       toolchain="XcodeDefault",
   )
 
-  return static_linkopts + [
+  linkopts.extend([
       "-target", target,
       "--sysroot", apple_toolchain.sdk_dir(),
       "-F", platform_framework_dir,
       "-L", swift_lib_dir,
-  ]
+  ])
+
+  # XCTest.framework only lives in the Xcode bundle (its platform framework
+  # directory), so test binaries need to have that directory explicitly added to
+  # their rpaths.
+  if is_test:
+    linkopts.append("-Wl,-rpath,{}".format(platform_framework_dir))
+
+  return linkopts
 
 def _default_swiftc_copts(apple_fragment, apple_toolchain, target):
   """Returns options that should be passed by default to `swiftc`.
@@ -164,8 +182,8 @@ def _xcode_swift_toolchain_impl(ctx):
       platform.platform_type)
   target = _swift_apple_target_triple(cpu, platform, target_os_version)
 
-  linker_opts = _default_linker_opts(
-      apple_fragment, apple_toolchain, platform, target)
+  linker_opts_producer = partial.make(
+      _default_linker_opts, apple_fragment, apple_toolchain, platform, target)
   swiftc_copts = _default_swiftc_copts(apple_fragment, apple_toolchain, target)
 
   return [
@@ -175,7 +193,7 @@ def _xcode_swift_toolchain_impl(ctx):
           cpu=cpu,
           execution_requirements={"requires-darwin": ""},
           implicit_deps=[],
-          linker_opts=linker_opts,
+          linker_opts_producer=linker_opts_producer,
           object_format="macho",
           requires_autolink_extract=False,
           requires_workspace_relative_module_maps=False,
