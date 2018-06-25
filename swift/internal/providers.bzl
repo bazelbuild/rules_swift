@@ -235,6 +235,19 @@ compiling libraries or binaries with this toolchain.
     },
 )
 
+SwiftUsageInfo = provider(
+    doc="""
+A provider that indicates that Swift was used by a target or any target that
+it depends on, and specifically which toolchain was used.
+""",
+    fields={
+        "toolchain": """
+The Swift toolchain that was used to build the targets propagating this
+provider.
+""",
+    },
+)
+
 def merge_swift_clang_module_infos(targets):
   """Merges transitive `SwiftClangModuleInfo` providers.
 
