@@ -490,6 +490,7 @@ def _compile_as_library(
 
   register_static_archive_action(
       actions=actions,
+      action_environment=toolchain.action_environment,
       ar_executable=get_optionally(
           toolchain, "cc_toolchain_info.provider.ar_executable"),
       execution_requirements=toolchain.execution_requirements,
