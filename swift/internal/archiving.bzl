@@ -18,6 +18,7 @@ load(":derived_files.bzl", "derived_files")
 
 def register_static_archive_action(
     actions,
+    action_environment,
     ar_executable,
     execution_requirements,
     output,
@@ -30,6 +31,8 @@ def register_static_archive_action(
 
   Args:
     actions: The object used to register actions.
+    action_environment: A `dict` containing the environment for the registered
+        actions.
     ar_executable: The path to the `ar` executable to use when creating the
         archive, if it should be used.
     execution_requirements: A `dict` of execution requirements for the
@@ -49,6 +52,7 @@ def register_static_archive_action(
   if ar_executable:
     _register_ar_action(
         actions=actions,
+        action_environment=action_environment,
         ar_executable=ar_executable,
         toolchain_files=toolchain_files,
         execution_requirements=execution_requirements,
@@ -60,6 +64,7 @@ def register_static_archive_action(
   else:
     _register_libtool_action(
         actions=actions,
+        action_environment=action_environment,
         execution_requirements=execution_requirements,
         libraries=libraries,
         mnemonic=mnemonic,
@@ -70,6 +75,7 @@ def register_static_archive_action(
 
 def _register_ar_action(
     actions,
+    action_environment,
     ar_executable,
     execution_requirements,
     libraries,
@@ -84,6 +90,8 @@ def _register_ar_action(
 
   Args:
     actions: The object used to register actions.
+    action_environment: A `dict` containing the environment for the registered
+        actions.
     ar_executable: The path to the `ar` executable to use when creating the
         archive, if it should be used.
     execution_requirements: A `dict` of execution requirements for the
@@ -129,6 +137,7 @@ def _register_ar_action(
   actions.run_shell(
       arguments=[args],
       command=command,
+      env=action_environment,
       execution_requirements=execution_requirements,
       inputs=toolchain_files + [mri_script] + libraries + objects,
       mnemonic=mnemonic,
@@ -137,6 +146,7 @@ def _register_ar_action(
 
 def _register_libtool_action(
     actions,
+    action_environment,
     execution_requirements,
     libraries,
     mnemonic,
@@ -150,6 +160,8 @@ def _register_libtool_action(
 
   Args:
     actions: The object used to register actions.
+    action_environment: A `dict` containing the environment for the registered
+        actions.
     execution_requirements: A `dict` of execution requirements for the
         registered actions.
     libraries: A list of `File`s representing static libraries whose contents
@@ -180,6 +192,7 @@ def _register_libtool_action(
 
   actions.run(
       arguments=[wrapper_args, args, filelist],
+      env=action_environment,
       executable=spawn_wrapper,
       execution_requirements=execution_requirements,
       inputs=libraries + objects,
