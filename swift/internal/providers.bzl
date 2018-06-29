@@ -159,13 +159,21 @@ that use the toolchain.
 `Dict`. Environment variables that should be set during any actions spawned to
 compile or link Swift code.
 """,
+        "action_registrars": """
+`Struct` containing two Skylib `partial`s: `run`, which registers an action
+using `actions.run`; and `run_shell`, which registers an action using
+`actions.run_shell`. These partials allow the toolchain to set the environment
+and execution requirements, as well as use a wrapper script if necessary.
+""",
         "cc_toolchain_info": """
-`Struct`, defined as that returned by `swift_cc_toolchain_info`. Contains
-information about the Bazel C++ toolchain that this Swift toolchain depends on,
-if any.
+The `cc_common.CcToolchainInfo` provider from the Bazel C++ toolchain that this
+Swift toolchain depends on, if any.
 
 This key may be `None` if the toolchain does not depend on a Bazel C++
 toolchain (for example, an Xcode-based Swift toolchain).
+""",
+        "clang_executable": """
+`String`. The path to the `clang` executable, which is used to link binaries.
 """,
         "cpu": """
 `String`. The CPU architecture that the toolchain is targeting.
@@ -218,10 +226,6 @@ location of the module map file.
 `Target`. A `cc`-providing target that should be linked into any binaries that
 are built with stamping enabled.
 """,
-        "spawn_wrapper": """
-`File`. An executable that is used to wrap invoked command lines for spawned
-actions in the toolchain.
-""",
         "supports_objc_interop": """
 `Boolean`. Indicates whether or not the toolchain supports Objective-C interop.
 """,
@@ -268,23 +272,4 @@ def merge_swift_clang_module_infos(targets):
           targets, SwiftClangModuleInfo, "transitive_headers"),
       transitive_modulemaps=collect_transitive(
           targets, SwiftClangModuleInfo, "transitive_modulemaps"),
-  )
-
-
-def swift_cc_toolchain_info(all_files, provider):
-  """Creates a value suitable for the `cc_toolchain_info` of a Swift toolchain.
-
-  Args:
-    all_files: The full set of toolchain files that includes, for example, the
-        tools referenced by the provider's `ar_executable` and
-        `compiler_executable` keys.
-    provider: The `cc_common.CcToolchainInfo` provider propagated by the Bazel
-        C++ toolchain associated with this Swift toolchain.
-
-  Returns:
-    A `struct` containing the arguments of this function as its fields.
-  """
-  return struct(
-      all_files=all_files,
-      provider=provider,
   )

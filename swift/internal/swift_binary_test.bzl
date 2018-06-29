@@ -37,8 +37,7 @@ def _swift_linking_rule_impl(ctx, is_test):
   # declared, even dynamically with `hasattr`/`getattr`. Thus, we have to use
   # other information to determine whether we can access the `objc`
   # configuration.
-  toolchain_target = ctx.attr._toolchain
-  toolchain = toolchain_target[SwiftToolchainInfo]
+  toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
   objc_fragment = (ctx.fragments.objc if toolchain.supports_objc_interop
                    else None)
 
@@ -75,7 +74,7 @@ def _swift_linking_rule_impl(ctx, is_test):
         srcs=srcs,
         swift_fragment=ctx.fragments.swift,
         target_name=ctx.label.name,
-        toolchain_target=toolchain_target,
+        toolchain=toolchain,
         additional_input_depsets=[depset(direct=additional_inputs)],
         configuration=ctx.configuration,
         deps=ctx.attr.deps,
@@ -112,17 +111,15 @@ def _swift_linking_rule_impl(ctx, is_test):
       link_args.add_all(find_cpp_toolchain(ctx).link_options_do_not_use)
       link_args.add_all(cc_common.mostly_static_link_options(
           ctx.fragments.cpp,
-          toolchain.cc_toolchain_info.provider,
+          toolchain.cc_toolchain_info,
           features,
           False))
 
   register_link_action(
       actions=ctx.actions,
       action_environment=toolchain.action_environment,
-      clang_executable=get_optionally(
-          toolchain, "cc_toolchain_info.provider.compiler_executable"),
+      clang_executable=toolchain.clang_executable,
       deps=ctx.attr.deps + toolchain.implicit_deps,
-      execution_requirements=toolchain.execution_requirements,
       expanded_linkopts=linkopts,
       features=ctx.features,
       inputs=additional_inputs_to_linker,
@@ -130,8 +127,7 @@ def _swift_linking_rule_impl(ctx, is_test):
       objects=objects_to_link,
       outputs=[out_bin],
       rule_specific_args=link_args,
-      spawn_wrapper=toolchain.spawn_wrapper,
-      toolchain_target=toolchain_target,
+      toolchain=toolchain,
   )
 
   return [
@@ -150,8 +146,7 @@ def _swift_binary_impl(ctx):
   return _swift_linking_rule_impl(ctx, is_test=False)
 
 def _swift_test_impl(ctx):
-  toolchain_target = ctx.attr._toolchain
-  toolchain = toolchain_target[SwiftToolchainInfo]
+  toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
 
   return _swift_linking_rule_impl(ctx, is_test=True) + [
       testing.ExecutionInfo(toolchain.execution_requirements),

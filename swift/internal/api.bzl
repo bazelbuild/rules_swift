@@ -23,6 +23,11 @@ Do not load this file directly; instead, load the top-level `swift.bzl` file,
 which exports the `swift_common` module.
 """
 
+load(
+    ":actions.bzl",
+    _run_toolchain_action="run_toolchain_action",
+    _run_toolchain_shell_action="run_toolchain_shell_action",
+)
 load(":archiving.bzl", "register_static_archive_action")
 load(
     ":compiling.bzl",
@@ -45,7 +50,7 @@ load(
     "SwiftToolchainInfo",
     "merge_swift_clang_module_infos",
 )
-load(":utils.bzl", "get_optionally", "run_with_optional_wrapper")
+load(":utils.bzl", "get_optionally")
 load("@bazel_skylib//:lib.bzl", "dicts", "partial")
 
 # The compilation modes supported by Bazel.
@@ -138,7 +143,7 @@ def _compile_as_objects(
     srcs,
     swift_fragment,
     target_name,
-    toolchain_target,
+    toolchain,
     additional_input_depsets=[],
     additional_outputs=[],
     allow_testing=True,
@@ -163,8 +168,7 @@ def _compile_as_objects(
     swift_fragment: The `swift` configuration fragment from Bazel.
     target_name: The name of the target for which the code is being compiled,
         which is used to determine unique file paths for the outputs.
-    toolchain_target: The target representing the Swift toolchain (which
-        propagates a `SwiftToolchainInfo` provider).
+    toolchain: The `SwiftToolchainInfo` provider of the toolchain.
     additional_input_depsets: A list of `depset`s of `File`s representing
         additional input files that need to be passed to the Swift compile
         action because they are referenced by compiler flags.
@@ -212,8 +216,6 @@ def _compile_as_objects(
     * `output_objects`: The object (`.o`) files that were produced by the
       compiler.
   """
-  toolchain = toolchain_target[SwiftToolchainInfo]
-
   # Add any `--swiftcopt` flags passed to Bazel. The entire list will be passed
   # as the final arguments to `swiftc`, giving us the priority that we want
   # among them.
@@ -242,7 +244,7 @@ def _compile_as_objects(
       module_name=module_name,
       srcs=srcs,
       swift_fragment=swift_fragment,
-      toolchain_target=toolchain_target,
+      toolchain=toolchain,
       additional_input_depsets=additional_input_depsets,
       allow_testing=allow_testing,
       configuration=configuration,
@@ -277,7 +279,7 @@ def _compile_as_objects(
         actions=actions,
         swiftmodule=out_module,
         target_name=target_name,
-        toolchain_target=toolchain_target,
+        toolchain=toolchain,
     )
     linker_flags.extend(module_embed_results.linker_flags)
     linker_inputs.extend(module_embed_results.linker_inputs)
@@ -291,7 +293,7 @@ def _compile_as_objects(
         actions=actions,
         objects=output_objects,
         output=autolink_file,
-        toolchain_target=toolchain_target,
+        toolchain=toolchain,
     )
     linker_flags.append("@{}".format(autolink_file.path))
     linker_inputs.append(autolink_file)
@@ -315,7 +317,7 @@ def _compile_as_library(
     module_name,
     srcs,
     swift_fragment,
-    toolchain_target,
+    toolchain,
     additional_inputs=[],
     allow_testing=True,
     cc_libs=[],
@@ -349,8 +351,7 @@ def _compile_as_library(
         default from the target's label if needed.
     srcs: The Swift source files to compile.
     swift_fragment: The `swift` configuration fragment from Bazel.
-    toolchain_target: The target representing the Swift toolchain (which
-        propagates a `SwiftToolchainInfo` provider).
+    toolchain: The `SwiftToolchainInfo` provider of the toolchain.
     additional_inputs: A list of `File`s representing additional inputs that
         need to be passed to the Swift compile action because they are
         referenced in compiler flags.
@@ -406,7 +407,6 @@ def _compile_as_library(
          "'swift_common.derive_module_name' if necessary to derive one from " +
          " the target label.")
 
-  toolchain = toolchain_target[SwiftToolchainInfo]
   all_deps = deps + toolchain.implicit_deps
 
   if not library_name:
@@ -473,7 +473,7 @@ def _compile_as_library(
       srcs=srcs,
       swift_fragment=swift_fragment,
       target_name=label.name,
-      toolchain_target=toolchain_target,
+      toolchain=toolchain,
       additional_input_depsets=compile_input_depsets,
       additional_outputs=additional_outputs,
       allow_testing=allow_testing,
@@ -490,16 +490,13 @@ def _compile_as_library(
 
   register_static_archive_action(
       actions=actions,
-      action_environment=toolchain.action_environment,
       ar_executable=get_optionally(
-          toolchain, "cc_toolchain_info.provider.ar_executable"),
-      execution_requirements=toolchain.execution_requirements,
+          toolchain, "cc_toolchain_info.ar_executable"),
       libraries=cc_lib_files,
       mnemonic="SwiftArchive",
       objects=compile_results.output_objects,
       output=out_archive,
-      spawn_wrapper=toolchain.spawn_wrapper,
-      toolchain_files=get_optionally(toolchain, "cc_toolchain_info.all_files"),
+      toolchain=toolchain,
   )
 
   providers = [
@@ -622,24 +619,19 @@ def _invoke_swiftc(
     execution_requirements: Additional execution requirements for the action.
         The toolchain's `execution_requirements` are also added to this.
   """
-  all_env = dicts.add(env or {}, toolchain.action_environment)
-  all_exec_reqs = dicts.add(
-      execution_requirements or {}, toolchain.execution_requirements)
-
   toolchain_args = actions.args()
   toolchain_args.add_all(toolchain.swiftc_copts)
 
-  run_with_optional_wrapper(
+  _run_toolchain_action(
       actions=actions,
+      toolchain=toolchain,
       arguments=[toolchain_args] + arguments,
-      env=all_env,
-      executable_name="swiftc",
-      execution_requirements=all_exec_reqs,
+      env=env,
+      executable="swiftc",
+      execution_requirements=execution_requirements,
       inputs=inputs,
       mnemonic=mnemonic,
-      outputs=outputs,
-      toolchain_root=toolchain.root_dir,
-      wrapper_executable=toolchain.spawn_wrapper)
+      outputs=outputs)
 
 def _merge_swift_info_providers(targets):
   """Merges the transitive `SwiftInfo` of the given targets into a new provider.
@@ -714,7 +706,7 @@ def _swiftc_command_line_and_inputs(
     module_name,
     srcs,
     swift_fragment,
-    toolchain_target,
+    toolchain,
     additional_input_depsets=[],
     allow_testing=True,
     configuration=None,
@@ -743,8 +735,7 @@ def _swiftc_command_line_and_inputs(
         default from the target's label if needed.
     srcs: The Swift source files to compile.
     swift_fragment: The `swift` configuration fragment from Bazel.
-    toolchain_target: The target representing the Swift toolchain (which
-        propagates a `SwiftToolchainInfo` provider).
+    toolchain: The `SwiftToolchainInfo` provider of the toolchain.
     additional_input_depsets: A list of `depset`s of `File`s representing
         additional input files that need to be passed to the Swift compile
         action because they are referenced by compiler flags.
@@ -773,7 +764,6 @@ def _swiftc_command_line_and_inputs(
     of the Bazel action that spawns a tool with the computed command line (i.e.,
     any source files, referenced module maps and headers, and so forth.)
   """
-  toolchain = toolchain_target[SwiftToolchainInfo]
   all_deps = deps + toolchain.implicit_deps
 
   # Add any `--swiftcopt` flags passed to Bazel. The entire list will be passed
@@ -797,7 +787,6 @@ def _swiftc_command_line_and_inputs(
       direct_defines=defines,
   )
   input_depsets.extend(transitive_inputs)
-  input_depsets.append(toolchain_target.files)
   input_depsets.append(depset(direct=srcs))
 
   if toolchain.supports_objc_interop and objc_fragment:
@@ -821,8 +810,9 @@ swift_common = struct(
     compile_as_objects=_compile_as_objects,
     compile_as_library=_compile_as_library,
     derive_module_name=_derive_module_name,
-    invoke_swiftc=_invoke_swiftc,
     merge_swift_info_providers=_merge_swift_info_providers,
+    run_toolchain_action=_run_toolchain_action,
+    run_toolchain_shell_action=_run_toolchain_shell_action,
     swift_runtime_linkopts=_swift_runtime_linkopts,
     swiftc_command_line_and_inputs=_swiftc_command_line_and_inputs,
 )

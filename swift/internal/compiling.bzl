@@ -14,6 +14,7 @@
 
 """Implementation of compilation logic for Swift."""
 
+load(":actions.bzl", "run_toolchain_action")
 load(":attrs.bzl", "SWIFT_COMMON_RULE_ATTRS")
 load(":deps.bzl", "swift_deps_libraries")
 load(":derived_files.bzl", "derived_files")
@@ -24,7 +25,7 @@ load(
     "SwiftToolchainInfo",
 )
 load(":swift_cc_libs_aspect.bzl", "swift_cc_libs_excluding_directs_aspect")
-load(":utils.bzl", "collect_transitive", "run_with_optional_wrapper")
+load(":utils.bzl", "collect_transitive")
 load("@bazel_skylib//:lib.bzl", "collections", "dicts", "paths")
 
 # Swift compiler options that cause the code to be compiled using whole-module
@@ -518,7 +519,7 @@ def register_autolink_extract_action(
     actions,
     objects,
     output,
-    toolchain_target):
+    toolchain):
   """Extracts autolink information from Swift `.o` files.
 
   For some platforms (such as Linux), autolinking of imported frameworks is
@@ -531,31 +532,21 @@ def register_autolink_extract_action(
     objects: The list of object files whose autolink information will be
         extracted.
     output: A `File` into which the autolink information will be written.
-    toolchain_target: The `swift_toolchain` target representing the toolchain
-        that should be used.
+    toolchain: The `SwiftToolchainInfo` provider of the toolchain.
   """
-  toolchain = toolchain_target[SwiftToolchainInfo]
-
   tool_args = actions.args()
   tool_args.add_all(objects)
   tool_args.add("-o")
   tool_args.add(output)
 
-  run_with_optional_wrapper(
+  run_toolchain_action(
       actions=actions,
+      toolchain=toolchain,
       arguments=[tool_args],
-      env=toolchain.action_environment,
-      executable_name="swift-autolink-extract",
-      execution_requirements=toolchain.execution_requirements,
-      inputs = depset(
-          direct=objects,
-          transitive=[toolchain_target.files],
-      ),
+      executable="swift-autolink-extract",
+      inputs=objects,
       mnemonic="SwiftAutolinkExtract",
-      outputs=[output],
-      toolchain_root=toolchain.root_dir,
-      wrapper_executable=toolchain.spawn_wrapper,
-  )
+      outputs=[output])
 
 def swift_library_output_map(name, module_link_name):
   """Returns the dictionary of implicit outputs for a `swift_library`.
