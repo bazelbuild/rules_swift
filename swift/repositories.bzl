@@ -21,6 +21,7 @@ def _create_linux_toolchain(repository_ctx):
     repository_ctx: The repository rule context.
   """
   path_to_swiftc = repository_ctx.which("swiftc")
+  path_to_clang = repository_ctx.which("clang")
   root = path_to_swiftc.dirname.dirname
 
   repository_ctx.file(
@@ -36,10 +37,14 @@ package(default_visibility = ["//visibility:public"])
 swift_toolchain(
     name = "toolchain",
     arch = "x86_64",
+    clang_executable = "{path_to_clang}",
     os = "linux",
     root = "{root}",
 )
-""".format(root=root),
+""".format(
+          path_to_clang=path_to_clang,
+          root=root,
+      ),
   )
 
 def _create_xcode_toolchain(repository_ctx):

@@ -346,7 +346,8 @@ def _register_module_mapping_write_action(target, actions, module_mappings):
   return mapping_file
 
 def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
-  toolchain_target = aspect_ctx.attr._toolchain
+  toolchain = aspect_ctx.attr._toolchain[SwiftToolchainInfo]
+
   direct_srcs = _filter_out_well_known_types(target.proto.direct_sources)
 
   # Direct sources are passed as arguments to protoc to generate *only* the
@@ -389,7 +390,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
         module_name=swift_common.derive_module_name(target.label),
         srcs=pbswift_files,
         swift_fragment=aspect_ctx.fragments.swift,
-        toolchain_target=toolchain_target,
+        toolchain=toolchain,
         allow_testing=False,
         configuration=aspect_ctx.configuration,
         deps=compile_deps,
@@ -411,7 +412,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
     pbswift_files = []
     providers = [swift_common.merge_swift_info_providers(deps)]
 
-    if toolchain_target[SwiftToolchainInfo].supports_objc_interop:
+    if toolchain.supports_objc_interop:
       objc_providers = [dep[apple_common.Objc] for dep in deps
                         if apple_common.Objc in dep]
       objc_provider = apple_common.new_objc_provider(providers=objc_providers)

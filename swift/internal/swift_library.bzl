@@ -36,8 +36,7 @@ def _swift_library_impl(ctx):
   # declared, even dynamically with `hasattr`/`getattr`. Thus, we have to use
   # other information to determine whether we can access the `objc`
   # configuration.
-  toolchain_target = ctx.attr._toolchain
-  toolchain = toolchain_target[SwiftToolchainInfo]
+  toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
   objc_fragment = (ctx.fragments.objc if toolchain.supports_objc_interop
                    else None)
 
@@ -49,7 +48,7 @@ def _swift_library_impl(ctx):
       module_name=module_name,
       srcs=ctx.files.srcs,
       swift_fragment=ctx.fragments.swift,
-      toolchain_target=toolchain_target,
+      toolchain=toolchain,
       additional_inputs=ctx.files.swiftc_inputs,
       cc_libs=ctx.attr.cc_libs,
       copts=copts,

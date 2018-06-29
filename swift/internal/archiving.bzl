@@ -14,16 +14,14 @@
 
 """Implementation of static library archiving logic for Swift."""
 
+load(":actions.bzl", "run_toolchain_action", "run_toolchain_shell_action")
 load(":derived_files.bzl", "derived_files")
 
 def register_static_archive_action(
     actions,
-    action_environment,
     ar_executable,
-    execution_requirements,
     output,
-    spawn_wrapper,
-    toolchain_files,
+    toolchain,
     libraries=[],
     mnemonic="Archive",
     objects=[]):
@@ -31,18 +29,10 @@ def register_static_archive_action(
 
   Args:
     actions: The object used to register actions.
-    action_environment: A `dict` containing the environment for the registered
-        actions.
     ar_executable: The path to the `ar` executable to use when creating the
         archive, if it should be used.
-    execution_requirements: A `dict` of execution requirements for the
-        registered actions.
     output: A `File` to which the output archive will be written.
-    spawn_wrapper: An executable that will be used to wrap the invoked the
-        archiving tool on the command line.
-    toolchain_files: The files that make up the toolchain, which must include
-        the `ar_executable` if it is not in a known system location (like
-        `/usr`).
+    toolchain: The `SwiftToolchainInfo` provider of the toolchain.
     libraries: A list of `File`s representing static libraries whose contents
         will be merged into the output archive.
     mnemonic: The mnemonic to display when the action is executed.
@@ -52,37 +42,29 @@ def register_static_archive_action(
   if ar_executable:
     _register_ar_action(
         actions=actions,
-        action_environment=action_environment,
         ar_executable=ar_executable,
-        toolchain_files=toolchain_files,
-        execution_requirements=execution_requirements,
         libraries=libraries,
         mnemonic=mnemonic,
         objects=objects,
         output=output,
-    )
+        toolchain=toolchain)
   else:
     _register_libtool_action(
         actions=actions,
-        action_environment=action_environment,
-        execution_requirements=execution_requirements,
         libraries=libraries,
         mnemonic=mnemonic,
         objects=objects,
         output=output,
-        spawn_wrapper=spawn_wrapper,
-    )
+        toolchain=toolchain)
 
 def _register_ar_action(
     actions,
-    action_environment,
     ar_executable,
-    execution_requirements,
     libraries,
     mnemonic,
     objects,
     output,
-    toolchain_files):
+    toolchain):
   """Registers an action that creates a static archive using `ar`.
 
   This function is used to create static archives when the Swift toolchain
@@ -90,21 +72,15 @@ def _register_ar_action(
 
   Args:
     actions: The object used to register actions.
-    action_environment: A `dict` containing the environment for the registered
-        actions.
     ar_executable: The path to the `ar` executable to use when creating the
         archive, if it should be used.
-    execution_requirements: A `dict` of execution requirements for the
-        registered actions.
     libraries: A list of `File`s representing static libraries whose contents
         will be merged into the output archive.
     mnemonic: The mnemonic to display when the action is executed.
     objects: A list of `File`s denoting object (.o) files that will be merged
         into the archive.
     output: A `File` to which the output archive will be written.
-    toolchain_files: The files that make up the toolchain, which must include
-        the `ar_executable` if it is not in a known system location (like
-        `/usr`).
+    toolchain: The `SwiftToolchainInfo` provider of the toolchain.
   """
   mri_commands = [
       "create /tmp/%s" % output.basename,
@@ -134,25 +110,23 @@ def _register_ar_action(
   args.add(mri_script)
   args.add(output)
 
-  actions.run_shell(
+  run_toolchain_shell_action(
+      actions=actions,
+      toolchain=toolchain,
       arguments=[args],
       command=command,
-      env=action_environment,
-      execution_requirements=execution_requirements,
-      inputs=toolchain_files + [mri_script] + libraries + objects,
+      inputs=[mri_script] + libraries + objects,
       mnemonic=mnemonic,
       outputs=[output],
   )
 
 def _register_libtool_action(
     actions,
-    action_environment,
-    execution_requirements,
     libraries,
     mnemonic,
     objects,
     output,
-    spawn_wrapper):
+    toolchain):
   """Registers an action that creates a static archive using `libtool`.
 
   This function is used to create static archives when the Swift toolchain
@@ -160,22 +134,14 @@ def _register_libtool_action(
 
   Args:
     actions: The object used to register actions.
-    action_environment: A `dict` containing the environment for the registered
-        actions.
-    execution_requirements: A `dict` of execution requirements for the
-        registered actions.
     libraries: A list of `File`s representing static libraries whose contents
         will be merged into the output archive.
     mnemonic: The mnemonic to display when the action is executed.
     objects: A list of `File`s denoting object (.o) files that will be merged
         into the archive.
     output: A `File` to which the output archive will be written.
-    spawn_wrapper: An executable that will be used to wrap the invoked the
-        archiving tool on the command line.
+    toolchain: The `SwiftToolchainInfo` provider of the toolchain.
   """
-  wrapper_args = actions.args()
-  wrapper_args.add("libtool")
-
   args = actions.args()
   args.add("-static")
   args.add("-o")
@@ -190,11 +156,11 @@ def _register_libtool_action(
   filelist.add_all(objects)
   filelist.add_all(libraries)
 
-  actions.run(
-      arguments=[wrapper_args, args, filelist],
-      env=action_environment,
-      executable=spawn_wrapper,
-      execution_requirements=execution_requirements,
+  run_toolchain_action(
+      actions=actions,
+      toolchain=toolchain,
+      arguments=[args, filelist],
+      executable="/usr/bin/libtool",
       inputs=libraries + objects,
       mnemonic=mnemonic,
       outputs=[output],

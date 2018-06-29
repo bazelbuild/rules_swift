@@ -14,6 +14,7 @@
 
 """Implementation of linking logic for Swift."""
 
+load(":actions.bzl", "run_toolchain_action")
 load(":deps.bzl", "swift_deps_libraries")
 load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
 load(":utils.bzl", "collect_transitive")
@@ -23,7 +24,6 @@ def register_link_action(
     action_environment,
     clang_executable,
     deps,
-    execution_requirements,
     expanded_linkopts,
     features,
     inputs,
@@ -31,8 +31,7 @@ def register_link_action(
     objects,
     outputs,
     rule_specific_args,
-    spawn_wrapper,
-    toolchain_target):
+    toolchain):
   """Registers an action that invokes `clang` to link object files.
 
   Args:
@@ -40,13 +39,12 @@ def register_link_action(
     action_environment: A `dict` of environment variables that should be set for
         the compile action.
     clang_executable: The path to the `clang` executable that will be invoked to
-        link, which is assumed to be present among the files belonging to
-        `toolchain_target`. If this is `None`, then simply `clang` will be used
-        with the assumption that the spawn wrapper will ensure it is found.
+        link, which is assumed to be present among the tools that the toolchain
+        passes to its action registrars. If this is `None`, then simply `clang`
+        will be used with the assumption that the registrar knows where and how
+        to find it.
     deps: A list of `deps` representing additional libraries that will be passed
         to the linker.
-    execution_requirements: A `dict` of execution requirements for the
-        registered actions.
     expanded_linkopts: A list of strings representing options passed to the
         linker. Any `$(location ...)` placeholders are assumed to have already
         been expanded.
@@ -60,25 +58,10 @@ def register_link_action(
         link action.
     rule_specific_args: Additional arguments that are rule-specific that will be
         passed to `clang`.
-    spawn_wrapper: An executable that will be used to wrap the invoked `clang`
-        command line.
-    toolchain_target: The `swift_toolchain` target representing the toolchain
-        that should be used to compile this target.
+    toolchain: The `SwiftToolchainInfo` provider of the toolchain.
   """
-  toolchain = toolchain_target[SwiftToolchainInfo]
-
-  wrapper_args = actions.args()
-
-  # TODO(bazelbuild/rules_swift#10): Have the repository rule provide the
-  # absolute file system path for clang.
-  if not clang_executable or clang_executable.endswith("/gcc"):
+  if not clang_executable:
     clang_executable = "clang"
-
-  if spawn_wrapper:
-    executable = spawn_wrapper
-    wrapper_args.add(clang_executable)
-  else:
-    executable = clang_executable
 
   common_args = actions.args()
   if "llvm_lld" in features:
@@ -137,27 +120,22 @@ def register_link_action(
   user_args = actions.args()
   user_args.add_all(all_linkopts)
 
-  actions.run(
+  run_toolchain_action(
+      actions=actions,
+      toolchain=toolchain,
       arguments=[
-          wrapper_args,
           common_args,
           link_input_args,
           rule_specific_args,
           user_args,
       ],
-      env=action_environment,
-      executable=executable,
-      execution_requirements=execution_requirements,
+      executable=clang_executable,
       inputs=depset(
           direct=objects,
-          transitive=link_input_depsets + [toolchain_target.files],
+          transitive=link_input_depsets,
       ),
       mnemonic=mnemonic,
       outputs=outputs,
-      # TODO(bazelbuild/rules_swift#10): Use the shell's environment if a
-      # custom one hasn't been provided to ensure "clang" is found until this
-      # issue is resolved.
-      use_default_shell_env=(not action_environment),
   )
 
 def _link_library_map_fn(lib):

@@ -19,12 +19,7 @@ toolchain package. If you are looking for rules to build Swift code using this
 toolchain, see `swift.bzl`.
 """
 
-load(
-    ":providers.bzl",
-    "SwiftInfo",
-    "SwiftToolchainInfo",
-    "swift_cc_toolchain_info",
-)
+load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
 load(
     "@bazel_skylib//:lib.bzl",
     "collections",
@@ -75,6 +70,66 @@ def _default_linker_opts(
       "-lstdc++",
   ]
 
+def _modified_action_args(action_args, toolchain_tools):
+  """Updates an argument dictionary with values from a toolchain.
+
+  Args:
+    action_args: The `kwargs` dictionary from a call to `actions.run` or
+        `actions.run_shell`.
+    toolchain_tools: A `depset` containing toolchain files that must be
+        available to the action when it executes (executables and libraries).
+
+  Returns:
+    A dictionary that can be passed as the `**kwargs` to a call to one of the
+    action running functions that has been modified to include the toolchain
+    values.
+  """
+  modified_args = dict(action_args)
+
+  # Add the toolchain's tools to the `tools` argument of the action.
+  user_tools = modified_args.pop("tools", None)
+  if type(user_tools) == type([]):
+    tools = depset(direct=user_tools, transitive=[toolchain_tools])
+  elif type(user_tools) == type(depset()):
+    tools = depset(transitive=[user_tools, toolchain_tools])
+  elif user_tools:
+    fail("'tools' argument must be a sequence or depset.")
+  else:
+    tools = toolchain_tools
+  modified_args["tools"] = tools
+
+  return modified_args
+
+def _run_action(toolchain_tools, actions, **kwargs):
+  """Runs an action with the toolchain requirements.
+
+  This is the implementation of the `action_registrars.run` partial, where the
+  first argument is pre-bound to a toolchain-specific value.
+
+  Args:
+    toolchain_tools: A `depset` containing toolchain files that must be
+        available to the action when it executes (executables and libraries).
+    actions: The `Actions` object with which to register actions.
+    **kwargs: Additional arguments that are passed to `actions.run`.
+  """
+  modified_args = _modified_action_args(kwargs, toolchain_tools)
+  actions.run(**modified_args)
+
+def _run_shell_action(toolchain_tools, actions, **kwargs):
+  """Runs a shell action with the toolchain requirements.
+
+  This is the implementation of the `action_registrars.run_shell` partial, where
+  the first argument is pre-bound to a toolchain-specific value.
+
+  Args:
+    toolchain_tools: A `depset` containing toolchain files that must be
+        available to the action when it executes (executables and libraries).
+    actions: The `Actions` object with which to register actions.
+    **kwargs: Additional arguments that are passed to `actions.run_shell`.
+  """
+  modified_args = _modified_action_args(kwargs, toolchain_tools)
+  actions.run_shell(**modified_args)
+
 def _swift_toolchain_impl(ctx):
   toolchain_root = ctx.attr.root
   cc_toolchain = ctx.attr._cc_toolchain[cc_common.CcToolchainInfo]
@@ -82,16 +137,20 @@ def _swift_toolchain_impl(ctx):
   linker_opts_producer = partial.make(
       _default_linker_opts, ctx.fragments.cpp, ctx.attr.os, toolchain_root)
 
+  tools = depset(transitive=[ctx.attr._cc_toolchain.files])
+  action_registrars = struct(
+      run=partial.make(_run_action, tools),
+      run_shell=partial.make(_run_shell_action, tools))
+
   # TODO(allevato): Move some of the remaining hardcoded values, like object
   # format, autolink-extract, and Obj-C interop support, to attributes so that
   # we can remove the assumptions that are only valid on Linux.
   return [
       SwiftToolchainInfo(
           action_environment={},
-          cc_toolchain_info=swift_cc_toolchain_info(
-              all_files=ctx.files._cc_toolchain,
-              provider=cc_toolchain,
-          ),
+          action_registrars=action_registrars,
+          cc_toolchain_info=cc_toolchain,
+          clang_executable=ctx.attr.clang_executable,
           cpu=ctx.attr.arch,
           execution_requirements={},
           implicit_deps=[],
@@ -99,7 +158,6 @@ def _swift_toolchain_impl(ctx):
           object_format="elf",
           requires_autolink_extract=True,
           root_dir=toolchain_root,
-          spawn_wrapper=None,
           stamp=ctx.attr.stamp,
           supports_objc_interop=False,
           swiftc_copts=[],
@@ -115,6 +173,12 @@ The name of the architecture that this toolchain targets.
 
 This name should match the name used in the toolchain's directory layout for
 architecture-specific content, such as "x86_64" in "lib/swift/linux/x86_64".
+""",
+            mandatory=True,
+        ),
+        "clang_executable": attr.string(
+            doc="""
+The path to the `clang` executable, which is used for linking.
 """,
             mandatory=True,
         ),
