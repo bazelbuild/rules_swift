@@ -14,15 +14,15 @@
 
 """Functions relating to debugging support during compilation and linking."""
 
+load(":actions.bzl", "run_toolchain_action")
 load(":derived_files.bzl", "derived_files")
 load(":providers.bzl", "SwiftToolchainInfo")
-load(":utils.bzl", "run_with_optional_wrapper")
 
 def ensure_swiftmodule_is_embedded(
     actions,
     swiftmodule,
     target_name,
-    toolchain_target):
+    toolchain):
   """Ensures that a `.swiftmodule` file is embedded in a library or binary.
 
   This function handles the distinctions between how different object file
@@ -33,8 +33,7 @@ def ensure_swiftmodule_is_embedded(
     actions: The object used to register actions.
     swiftmodule: The `.swiftmodule` file to be wrapped.
     target_name: The name of the target being built.
-    toolchain_target: The `swift_toolchain` target representing the toolchain
-        that should be used to compile this target.
+    toolchain: The `SwiftToolchainInfo` provider of the toolchain.
 
   Returns:
     A `struct` containing three fields:
@@ -47,8 +46,6 @@ def ensure_swiftmodule_is_embedded(
     * `objects_to_link`: A list of `.o` files that should be included in the
       static archive or binary that represents the module.
   """
-  toolchain = toolchain_target[SwiftToolchainInfo]
-
   linker_flags = []
   linker_inputs = []
   objects_to_link = []
@@ -65,8 +62,7 @@ def ensure_swiftmodule_is_embedded(
         actions=actions,
         object=modulewrap_obj,
         swiftmodule=swiftmodule,
-        toolchain_target=toolchain_target,
-    )
+        toolchain=toolchain)
   elif toolchain.object_format == "macho":
     linker_flags.append("-Wl,-add_ast_path,{}".format(swiftmodule.path))
     linker_inputs.append(swiftmodule)
@@ -95,7 +91,7 @@ def _register_modulewrap_action(
     actions,
     object,
     swiftmodule,
-    toolchain_target):
+    toolchain):
   """Wraps a Swift module in a `.o` file that can be linked into a binary.
 
   This step (invoking `swift -modulewrap`) is required for the `.swiftmodule` of
@@ -106,29 +102,20 @@ def _register_modulewrap_action(
     actions: The object used to register actions.
     object: The object file that will be produced by the modulewrap task.
     swiftmodule: The `.swiftmodule` file to be wrapped.
-    toolchain_target: The `swift_toolchain` target representing the toolchain
-        that should be used to compile this target.
+    toolchain: The `SwiftToolchainInfo` provider of the toolchain.
   """
-  toolchain = toolchain_target[SwiftToolchainInfo]
-
   tool_args = actions.args()
   tool_args.add("-modulewrap")
   tool_args.add(swiftmodule)
   tool_args.add("-o")
   tool_args.add(object)
 
-  run_with_optional_wrapper(
+  run_toolchain_action(
       actions=actions,
+      toolchain=toolchain,
       arguments=[tool_args],
-      env=toolchain.action_environment,
-      executable_name="swift",
-      execution_requirements=toolchain.execution_requirements,
-      inputs = depset(
-          direct=[swiftmodule],
-          transitive=[toolchain_target.files],
-      ),
+      executable="swift",
+      inputs=[swiftmodule],
       mnemonic="SwiftModuleWrap",
       outputs=[object],
-      toolchain_root=toolchain.root_dir,
-      wrapper_executable=toolchain.spawn_wrapper,
   )

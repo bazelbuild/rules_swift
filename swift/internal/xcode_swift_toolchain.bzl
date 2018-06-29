@@ -131,6 +131,143 @@ def _is_macos(platform):
   """
   return platform.platform_type == apple_common.platform_type.macos
 
+def _modified_action_args(
+    action_args,
+    toolchain_env,
+    toolchain_execution_requirements):
+  """Updates an argument dictionary with values from a toolchain.
+
+  Args:
+    action_args: The `kwargs` dictionary from a call to `actions.run` or
+        `actions.run_shell`.
+    toolchain_env: The required environment from the toolchain.
+    toolchain_execution_requirements: The required execution requirements from
+        the toolchain.
+
+  Returns:
+    A dictionary that can be passed as the `**kwargs` to a call to one of the
+    action running functions that has been modified to include the toolchain
+    values.
+  """
+  modified_args = dict(action_args)
+
+  # Note that we add the toolchain values second; we do not want the caller to
+  # ever be able to override those values. Note also that passing the default to
+  # `get` does not always work because `None` could be explicitly a value in the
+  # dictionary.
+  modified_args["env"] = dicts.add(
+      modified_args.get("env") or {}, toolchain_env)
+  modified_args["execution_requirements"] = dicts.add(
+      modified_args.get("execution_requirements") or {},
+      toolchain_execution_requirements)
+
+  return modified_args
+
+def _run_action(
+    toolchain_env,
+    toolchain_execution_requirements,
+    wrapper,
+    actions,
+    **kwargs):
+  """Runs an action with the toolchain requirements.
+
+  This is the implementation of the `action_registrars.run` partial, where the
+  first three arguments are pre-bound to toolchain-specific values.
+
+  Args:
+    toolchain_env: The required environment from the toolchain.
+    toolchain_execution_requirements: The required execution requirements from
+        the toolchain.
+    wrapper: A `File` representing the wrapper executable for the action.
+    actions: The `Actions` object with which to register actions.
+    **kwargs: Additional arguments that are passed to `actions.run`.
+  """
+  remaining_args = _modified_action_args(
+      kwargs, toolchain_env, toolchain_execution_requirements)
+
+  # Get the user's arguments. If the caller gave us a list of strings instead of
+  # a list of Args objects, convert it to a list of Args because we're going to
+  # create our own Args that we prepend to it.
+  user_args = remaining_args.pop("arguments", [])
+  if user_args and type(user_args[0]) == type(""):
+    user_args_strings = user_args
+    user_args_object = actions.args()
+    user_args_object.add_all(user_args_strings)
+    user_args = [user_args_object]
+
+  # Since we're executing the wrapper, make the user's desired executable the
+  # first argument to it.
+  user_executable = remaining_args.pop("executable")
+  wrapper_args = actions.args()
+  wrapper_args.add(user_executable)
+
+  # We also need to include the user executable in the "tools" argument of the
+  # action, since it won't be referenced by "executable" anymore.
+  user_tools = remaining_args.pop("tools", None)
+  if type(user_tools) == type([]):
+    tools = [user_executable] + user_tools
+  elif type(user_tools) == type(depset()):
+    tools = depset(direct=[user_executable], transitive=[user_tools])
+  elif user_tools:
+    fail("'tools' argument must be a sequence or depset.")
+  else:
+    tools = []
+
+  actions.run(
+      arguments=[wrapper_args] + user_args,
+      executable=wrapper,
+      tools=tools,
+      **remaining_args)
+
+def _run_shell_action(
+    toolchain_env,
+    toolchain_execution_requirements,
+    wrapper,
+    actions,
+    **kwargs):
+  """Runs a shell action with the toolchain requirements.
+
+  This is the implementation of the `action_registrars.run_shell` partial, where
+  the first three arguments are pre-bound to toolchain-specific values.
+
+  Args:
+    toolchain_env: The required environment from the toolchain.
+    toolchain_execution_requirements: The required execution requirements from
+        the toolchain.
+    wrapper: A `File` representing the wrapper executable for the action.
+    actions: The `Actions` object with which to register actions.
+    **kwargs: Additional arguments that are passed to `actions.run_shell`.
+  """
+  remaining_args = _modified_action_args(
+      kwargs, toolchain_env, toolchain_execution_requirements)
+
+  # We need to add the wrapper to the tools of the action so that we can
+  # reference its path in the new command line.
+  user_tools = remaining_args.pop("tools", None)
+  if type(user_tools) == type([]):
+    tools = [wrapper] + user_tools
+  elif type(user_tools) == type(depset()):
+    tools = depset(direct=[wrapper], transitive=[user_tools])
+  elif user_tools:
+    fail("'tools' argument must be a sequence or depset.")
+  else:
+    tools = []
+
+  # Prepend the wrapper executable to the command being executed.
+  user_command = remaining_args.pop("command", "")
+  if type(user_command) == type([]):
+    fail("Toolchain shell actions do not support the deprecated list form of" +
+         "the 'command' argument.")
+
+  command = "{wrapper_path} {user_command}".format(
+      user_command=user_command,
+      wrapper_path=wrapper.path)
+
+  actions.run_shell(
+      command=command,
+      tools=tools,
+      **remaining_args)
+
 def _swift_apple_target_triple(cpu, platform, version):
   """Returns a target triple string for an Apple platform.
 
@@ -186,19 +323,30 @@ def _xcode_swift_toolchain_impl(ctx):
       _default_linker_opts, apple_fragment, apple_toolchain, platform, target)
   swiftc_copts = _default_swiftc_copts(apple_fragment, apple_toolchain, target)
 
+  # Configure the action registrars that automatically prepend xcrunwrapper to
+  # registered actions.
+  env = _xcode_env(xcode_config, platform)
+  execution_requirements = {"requires-darwin": ""}
+  wrapper = ctx.executable._xcrunwrapper
+  action_registrars = struct(
+      run=partial.make(_run_action, env, execution_requirements, wrapper),
+      run_shell=partial.make(
+          _run_shell_action, env, execution_requirements, wrapper))
+
   return [
       SwiftToolchainInfo(
-          action_environment=_xcode_env(xcode_config, platform),
+          action_environment=env,
+          action_registrars=action_registrars,
           cc_toolchain_info=None,
+          clang_executable=None,
           cpu=cpu,
-          execution_requirements={"requires-darwin": ""},
+          execution_requirements=execution_requirements,
           implicit_deps=[],
           linker_opts_producer=linker_opts_producer,
           object_format="macho",
           requires_autolink_extract=False,
           requires_workspace_relative_module_maps=False,
           root_dir=None,
-          spawn_wrapper=ctx.executable._xcrunwrapper,
           stamp=ctx.attr.stamp if _is_macos(platform) else None,
           supports_objc_interop=True,
           swiftc_copts=swiftc_copts,

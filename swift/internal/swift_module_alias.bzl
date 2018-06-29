@@ -17,7 +17,7 @@
 load(":api.bzl", "swift_common")
 load(":compiling.bzl", "SWIFT_TOOLCHAIN_ATTRS")
 load(":derived_files.bzl", "derived_files")
-load(":providers.bzl", "SwiftInfo")
+load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
 load("@bazel_skylib//:lib.bzl", "dicts")
 
 def _swift_module_alias_impl(ctx):
@@ -62,7 +62,7 @@ following dependencies instead:\n\n""".format(
     module_name=module_name,
     srcs=[reexport_src],
     swift_fragment=ctx.fragments.swift,
-    toolchain_target=ctx.attr._toolchain,
+    toolchain=ctx.attr._toolchain[SwiftToolchainInfo],
     configuration=ctx.configuration,
     deps=ctx.attr.deps,
     features=ctx.attr.features,
