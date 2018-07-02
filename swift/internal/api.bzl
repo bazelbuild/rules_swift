@@ -29,6 +29,7 @@ load(
     _run_toolchain_shell_action="run_toolchain_shell_action",
 )
 load(":archiving.bzl", "register_static_archive_action")
+load(":attrs.bzl", "SWIFT_COMMON_RULE_ATTRS")
 load(
     ":compiling.bzl",
     "build_swift_info_provider",
@@ -39,7 +40,6 @@ load(
     "objc_compile_requirements",
     "register_autolink_extract_action",
     "write_objc_header_module_map",
-    _SWIFT_TOOLCHAIN_ATTRS = "SWIFT_TOOLCHAIN_ATTRS",
 )
 load(":debugging.bzl", "ensure_swiftmodule_is_embedded", "is_debugging")
 load(":derived_files.bzl", "derived_files")
@@ -50,6 +50,7 @@ load(
     "SwiftToolchainInfo",
     "merge_swift_clang_module_infos",
 )
+load(":swift_cc_libs_aspect.bzl", "swift_cc_libs_excluding_directs_aspect")
 load(":utils.bzl", "get_optionally")
 load("@bazel_skylib//:lib.bzl", "dicts", "partial")
 
@@ -61,6 +62,99 @@ _SANITIZER_FEATURE_FLAG_MAP = {
     "asan": ["-sanitize=address"],
     "tsan": ["-sanitize=thread"],
 }
+
+def _compilation_attrs():
+  """Returns an attribute dictionary for rules that compile Swift into objects.
+
+  The returned dictionary contains the subset of attributes that are shared by
+  the `swift_binary`, `swift_library`, and `swift_test` rules that deal with
+  inputs and options for compilation. Users who are authoring custom rules that
+  compile Swift code but not as a library can add this dictionary to their own
+  rule's attributes to give it a familiar API.
+
+  Do note, however, that it is the responsibility of the rule implementation to
+  retrieve the values of those attributes and pass them correctly to the other
+  `swift_common` APIs.
+
+  There is a hierarchy to the attribute sets offered by the `swift_common` API:
+
+  1. If you only need access to the toolchain for its tools and libraries but
+     are not doing any compilation, use `toolchain_attrs`.
+  2. If you need to invoke compilation actions but are not making the resulting
+     object files into a static or shared library, use `compilation_attrs`.
+  3. If you want to provide a rule interface that is suitable as a drop-in
+     replacement for `swift_library`, use `library_rule_attrs`.
+
+  Each of the attribute functions in the list above also contains the attributes
+  from the earlier items in the list.
+
+  Returns:
+    A new attribute dictionary that can be added to the attributes of a custom
+    build rule to provide a similar interface to `swift_binary`,
+    `swift_library`, and `swift_test`.
+  """
+  return dicts.add(
+      SWIFT_COMMON_RULE_ATTRS,
+      _toolchain_attrs(),
+      {
+          "cc_libs": attr.label_list(
+              aspects=[swift_cc_libs_excluding_directs_aspect],
+              doc="""
+A list of `cc_library` targets that should be *merged* with the static library
+or binary produced by this target.
+
+Most normal Swift use cases do not need to make use of this attribute. It is
+intended to support cases where C and Swift code *must* exist in the same
+archive; for example, a Swift function annotated with `@_cdecl` which is then
+referenced from C code in the same library.
+""",
+              providers=[["cc"]],
+          ),
+          "copts": attr.string_list(
+              doc="""
+Additional compiler options that should be passed to `swiftc`. These strings are
+subject to `$(location ...)` expansion.
+""",
+          ),
+          "defines": attr.string_list(
+              doc="""
+A list of defines to add to the compilation command line.
+
+Note that unlike C-family languages, Swift defines do not have values; they are
+simply identifiers that are either defined or undefined. So strings in this list
+should be simple identifiers, **not** `name=value` pairs.
+
+Each string is prepended with `-D` and added to the command line. Unlike
+`copts`, these flags are added for the target and every target that depends on
+it, so use this attribute with caution. It is preferred that you add defines
+directly to `copts`, only using this feature in the rare case that a library
+needs to propagate a symbol up to those that depend on it.
+""",
+          ),
+          "module_name": attr.string(
+              doc="""
+The name of the Swift module being built.
+
+If left unspecified, the module name will be computed based on the target's
+build label, by stripping the leading `//` and replacing `/`, `:`, and other
+non-identifier characters with underscores.
+""",
+          ),
+          "srcs": attr.label_list(
+              allow_files=["swift"],
+              doc="""
+A list of `.swift` source files that will be compiled into the library.
+""",
+          ),
+          "swiftc_inputs": attr.label_list(
+              allow_files=True,
+              doc="""
+Additional files that are referenced using `$(location ...)` in attributes that
+support location expansion.
+""",
+          ),
+      },
+  )
 
 def _compilation_mode_copts(allow_testing, compilation_mode):
   """Returns `swiftc` compilation flags that match the given compilation mode.
@@ -633,6 +727,85 @@ def _invoke_swiftc(
       mnemonic=mnemonic,
       outputs=outputs)
 
+def _library_rule_attrs():
+  """Returns an attribute dictionary for `swift_library`-like rules.
+
+  The returned dictionary contains the same attributes that are defined by the
+  `swift_library` rule (including the private `_toolchain` attribute that
+  specifies the toolchain dependency). Users who are authoring custom rules can
+  use this dictionary verbatim or add other custom attributes to it in order to
+  make their rule a drop-in replacement for `swift_library` (for example, if
+  writing a custom rule that does some preprocessing or generation of sources
+  and then compiles them).
+
+  Do note, however, that it is the responsibility of the rule implementation to
+  retrieve the values of those attributes and pass them correctly to the other
+  `swift_common` APIs.
+
+  There is a hierarchy to the attribute sets offered by the `swift_common` API:
+
+  1. If you only need access to the toolchain for its tools and libraries but
+     are not doing any compilation, use `toolchain_attrs`.
+  2. If you need to invoke compilation actions but are not making the resulting
+     object files into a static or shared library, use `compilation_attrs`.
+  3. If you want to provide a rule interface that is suitable as a drop-in
+     replacement for `swift_library`, use `library_rule_attrs`.
+
+  Each of the attribute functions in the list above also contains the attributes
+  from the earlier items in the list.
+
+  Returns:
+    A new attribute dictionary that can be added to the attributes of a custom
+    build rule to provide the same interface as `swift_library`.
+  """
+  return dicts.add(
+      _compilation_attrs(),
+      {
+          "linkopts": attr.string_list(
+              doc="""
+Additional linker options that should be passed to the linker for the binary
+that depends on this target. These strings are subject to `$(location ...)`
+expansion.
+""",
+          ),
+          "module_link_name": attr.string(
+              doc = """
+The name of the library that should be linked to targets that depend on this
+library. Supports auto-linking.
+""",
+              mandatory = False,
+          ),
+          # TODO(b/77853138): Remove once the Apple rules support bundling from
+          # `data`.
+          "resources": attr.label_list(
+              allow_empty = True,
+              allow_files = True,
+              doc = """
+Resources that should be processed by Xcode tools (such as interface builder
+documents, Core Data models, asset catalogs, and so forth) and included in the
+bundle that depends on this library.
+
+This attribute is ignored when building Linux targets.
+""",
+              mandatory = False,
+          ),
+          # TODO(b/77853138): Remove once the Apple rules support bundling from
+          # `data`.
+          "structured_resources": attr.label_list(
+              allow_empty = True,
+              allow_files = True,
+              doc = """
+Files that should be included in the bundle that depends on this library without
+any additional processing. The paths of these files relative to this library
+target are preserved inside the bundle.
+
+This attribute is ignored when building Linux targets.
+""",
+              mandatory = False,
+          ),
+      },
+  )
+
 def _merge_swift_info_providers(targets):
   """Merges the transitive `SwiftInfo` of the given targets into a new provider.
 
@@ -802,17 +975,53 @@ def _swiftc_command_line_and_inputs(
 
   return depset(transitive=input_depsets)
 
+def _toolchain_attrs():
+  """Returns an attribute dictionary for toolchain users.
+
+  The returned dictionary contains a `_toolchain` key whose value is a BUILD API
+  `attr.label` that references the default Swift toolchain. Users who are
+  authoring custom rules can add this dictionary to the attributes of their own
+  rule in order to depend on the toolchain and access its `SwiftToolchainInfo`
+  provider to pass it to other `swift_common` functions.
+
+  There is a hierarchy to the attribute sets offered by the `swift_common` API:
+
+  1. If you only need access to the toolchain for its tools and libraries but
+     are not doing any compilation, use `toolchain_attrs`.
+  2. If you need to invoke compilation actions but are not making the resulting
+     object files into a static or shared library, use `compilation_attrs`.
+  3. If you want to provide a rule interface that is suitable as a drop-in
+     replacement for `swift_library`, use `library_rule_attrs`.
+
+  Each of the attribute functions in the list above also contains the attributes
+  from the earlier items in the list.
+
+  Returns:
+    A new attribute dictionary that can be added to the attributes of a custom
+    build rule to provide access to the Swift toolchain.
+  """
+  return {
+      "_toolchain": attr.label(
+          default=Label(
+              "@build_bazel_rules_swift_local_config//:toolchain",
+          ),
+          providers=[[SwiftToolchainInfo]],
+      ),
+  }
+
 # The exported `swift_common` module, which defines the public API for directly
 # invoking actions that compile Swift code from other rules.
 swift_common = struct(
-    SWIFT_TOOLCHAIN_ATTRS=_SWIFT_TOOLCHAIN_ATTRS,
+    compilation_attrs=_compilation_attrs,
     compilation_mode_copts=_compilation_mode_copts,
     compile_as_objects=_compile_as_objects,
     compile_as_library=_compile_as_library,
     derive_module_name=_derive_module_name,
+    library_rule_attrs=_library_rule_attrs,
     merge_swift_info_providers=_merge_swift_info_providers,
     run_toolchain_action=_run_toolchain_action,
     run_toolchain_shell_action=_run_toolchain_shell_action,
     swift_runtime_linkopts=_swift_runtime_linkopts,
     swiftc_command_line_and_inputs=_swiftc_command_line_and_inputs,
+    toolchain_attrs=_toolchain_attrs,
 )

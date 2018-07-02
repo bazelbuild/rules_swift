@@ -14,7 +14,8 @@
 
 """Implementation of the `swift_import` rule."""
 
-load(":compiling.bzl", "SWIFT_COMMON_RULE_ATTRS", "build_swift_info_provider")
+load(":attrs.bzl", "SWIFT_COMMON_RULE_ATTRS")
+load(":compiling.bzl", "build_swift_info_provider")
 load(":providers.bzl", "SwiftClangModuleInfo", "merge_swift_clang_module_infos")
 load("@bazel_skylib//:lib.bzl", "dicts")
 

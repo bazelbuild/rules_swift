@@ -15,7 +15,6 @@
 """Implementation of the `swift_module_alias` rule."""
 
 load(":api.bzl", "swift_common")
-load(":compiling.bzl", "SWIFT_TOOLCHAIN_ATTRS")
 load(":derived_files.bzl", "derived_files")
 load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
 load("@bazel_skylib//:lib.bzl", "dicts")
@@ -81,7 +80,7 @@ following dependencies instead:\n\n""".format(
 
 swift_module_alias = rule(
     attrs = dicts.add(
-        SWIFT_TOOLCHAIN_ATTRS,
+        swift_common.toolchain_attrs(),
         {
             "deps": attr.label_list(
                 doc="""

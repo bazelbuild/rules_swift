@@ -15,7 +15,6 @@
 """An aspect attached to `proto_library` targets to generate Swift artifacts."""
 
 load(":api.bzl", "swift_common")
-load(":compiling.bzl", "SWIFT_TOOLCHAIN_ATTRS")
 load(":providers.bzl", "SwiftProtoInfo", "SwiftToolchainInfo")
 load("@bazel_skylib//:lib.bzl", "dicts", "paths")
 
@@ -426,7 +425,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
 swift_protoc_gen_aspect = aspect(
     attr_aspects = ["deps"],
     attrs = dicts.add(
-        SWIFT_TOOLCHAIN_ATTRS,
+        swift_common.toolchain_attrs(),
         {
             "_mkdir_and_run": attr.label(
                 cfg = "host",
