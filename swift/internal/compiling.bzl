@@ -15,7 +15,6 @@
 """Implementation of compilation logic for Swift."""
 
 load(":actions.bzl", "run_toolchain_action")
-load(":attrs.bzl", "SWIFT_COMMON_RULE_ATTRS")
 load(":deps.bzl", "swift_deps_libraries")
 load(":derived_files.bzl", "derived_files")
 load(
@@ -24,7 +23,6 @@ load(
     "SwiftInfo",
     "SwiftToolchainInfo",
 )
-load(":swift_cc_libs_aspect.bzl", "swift_cc_libs_excluding_directs_aspect")
 load(":utils.bzl", "collect_transitive")
 load("@bazel_skylib//:lib.bzl", "collections", "dicts", "paths")
 
@@ -34,87 +32,6 @@ _WMO_COPTS = (
     "-force-single-frontend-invocation",
     "-whole-module-optimization",
     "-wmo",
-)
-
-SWIFT_TOOLCHAIN_ATTRS = {
-    "_toolchain": attr.label(
-        default=Label(
-            "@build_bazel_rules_swift_local_config//:toolchain",
-        ),
-        providers=[[SwiftToolchainInfo]],
-    ),
-}
-
-# Attributes shared by all rules that perform Swift compilation (swift_library,
-# swift_core_library, swift_binary).
-SWIFT_COMPILE_RULE_ATTRS = dicts.add(
-    SWIFT_COMMON_RULE_ATTRS,
-    SWIFT_TOOLCHAIN_ATTRS,
-    {
-        "cc_libs": attr.label_list(
-            aspects=[swift_cc_libs_excluding_directs_aspect],
-            doc="""
-A list of `cc_library` targets that should be *merged* with the static library
-or binary produced by this target.
-
-Most normal Swift use cases do not need to make use of this attribute. It is
-intended to support cases where C and Swift code *must* exist in the same
-archive; for example, a Swift function annotated with `@_cdecl` which is then
-referenced from C code in the same library.
-""",
-            providers=[["cc"]],
-        ),
-        "copts": attr.string_list(
-            doc="""
-Additional compiler options that should be passed to `swiftc`. These strings are
-subject to `$(location ...)` expansion.
-""",
-        ),
-        "defines": attr.string_list(
-            doc="""
-A list of defines to add to the compilation command line.
-
-Note that unlike C-family languages, Swift defines do not have values; they are
-simply identifiers that are either defined or undefined. So strings in this list
-should be simple identifiers, **not** `name=value` pairs.
-
-Each string is prepended with `-D` and added to the command line. Unlike
-`copts`, these flags are added for the target and every target that depends on
-it, so use this attribute with caution. It is preferred that you add defines
-directly to `copts`, only using this feature in the rare case that a library
-needs to propagate a symbol up to those that depend on it.
-""",
-        ),
-        "linkopts": attr.string_list(
-            doc="""
-Additional linker options that should be passed to the linker for the binary
-that depends on this target. These strings are subject to `$(location ...)`
-expansion.
-""",
-        ),
-        "module_name": attr.string(
-            doc="""
-The name of the Swift module being built.
-
-If left unspecified, the module name will be computed based on the target's
-build label, by stripping the leading `//` and replacing `/`, `:`, and other
-non-identifier characters with underscores.
-""",
-        ),
-        "srcs": attr.label_list(
-            allow_files=["swift"],
-            doc="""
-A list of `.swift` source files that will be compiled into the library.
-""",
-        ),
-        "swiftc_inputs": attr.label_list(
-            allow_files=True,
-            doc="""
-Additional files that are referenced using `$(location ...)` in attributes that
-support location expansion.
-""",
-        ),
-    }
 )
 
 def build_swift_info_provider(
