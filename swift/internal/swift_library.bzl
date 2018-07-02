@@ -15,7 +15,7 @@
 """Implementation of the `swift_library` rule."""
 
 load(":api.bzl", "swift_common")
-load(":compiling.bzl", "SWIFT_COMPILE_RULE_ATTRS", "swift_library_output_map")
+load(":compiling.bzl", "swift_library_output_map")
 load(":providers.bzl", "SwiftToolchainInfo")
 load(":utils.bzl", "expand_locations")
 load("@bazel_skylib//:lib.bzl", "dicts")
@@ -78,44 +78,7 @@ def _swift_library_impl(ctx):
   ]
 
 swift_library = rule(
-    attrs = dicts.add(
-        SWIFT_COMPILE_RULE_ATTRS,
-        {
-            "module_link_name": attr.string(
-                doc = """
-The name of the library that should be linked to targets that depend on this
-library. Supports auto-linking.
-""",
-                mandatory = False,
-            ),
-            # TODO(b/77853138): Remove once we support bundling from `data`.
-            "resources": attr.label_list(
-                allow_empty = True,
-                allow_files = True,
-                doc = """
-Resources that should be processed by Xcode tools (such as interface builder
-documents, Core Data models, asset catalogs, and so forth) and included in the
-bundle that depends on this library.
-
-This attribute is ignored when building Linux targets.
-""",
-                mandatory = False,
-            ),
-            # TODO(b/77853138): Remove once we support bundling from `data`.
-            "structured_resources": attr.label_list(
-                allow_empty = True,
-                allow_files = True,
-                doc = """
-Files that should be included in the bundle that depends on this library without
-any additional processing. The paths of these files relative to this library
-target are preserved inside the bundle.
-
-This attribute is ignored when building Linux targets.
-""",
-                mandatory = False,
-            ),
-        },
-    ),
+    attrs = swift_common.library_rule_attrs(),
     doc = """
 Compiles and links Swift code into a static library and Swift module.
 """,

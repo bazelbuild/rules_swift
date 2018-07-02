@@ -15,7 +15,6 @@
 """Implementation of the `swift_binary` and `swift_test` rules."""
 
 load(":api.bzl", "swift_common")
-load(":compiling.bzl", "SWIFT_COMPILE_RULE_ATTRS")
 load(":derived_files.bzl", "derived_files")
 load(":linking.bzl", "register_link_action")
 load(":providers.bzl", "SwiftBinaryInfo", "SwiftToolchainInfo")
@@ -154,7 +153,7 @@ def _swift_test_impl(ctx):
 
 swift_binary = rule(
     attrs = dicts.add(
-        SWIFT_COMPILE_RULE_ATTRS,
+        swift_common.compilation_attrs(),
         {
             "linkopts": attr.string_list(
                 doc = """
@@ -181,7 +180,7 @@ subject to `$(location ...)` expansion.
 
 swift_test = rule(
     attrs = dicts.add(
-        SWIFT_COMPILE_RULE_ATTRS,
+        swift_common.compilation_attrs(),
         {
             "linkopts": attr.string_list(
                 doc = """
