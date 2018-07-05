@@ -17,8 +17,8 @@
 load(":utils.bzl", "collect_transitive")
 
 SwiftBinaryInfo = provider(
-    doc="Contains information about the compilation of a Swift binary target.",
-    fields={
+    doc = "Contains information about the compilation of a Swift binary target.",
+    fields = {
         "compile_options": """
 `List` of `Args` objects. The command-line options that were passed to the
 compiler to compile this target. This is intended to be flattened into a params
@@ -28,7 +28,7 @@ file by aspects to allow IDE integration with Bazel.
 )
 
 SwiftCcLibsInfo = provider(
-    doc="""
+    doc = """
 Contains information about C libraries that are dependencies of Swift libraries,
 excluding any that are embedded directly within the archive of a `swift_library`
 (via the `cc_libs` attribute) to prevent double-linkage.
@@ -36,7 +36,7 @@ excluding any that are embedded directly within the archive of a `swift_library`
 This provider is an internal implementation detail of the Swift BUILD rules; it
 should not be used directly.
 """,
-    fields={
+    fields = {
         "libraries": """
 `Depset` of `File`s. The static libraries (`.a`) that should be linked into the
 binary that depends on the target propagating this provider.
@@ -45,11 +45,11 @@ binary that depends on the target propagating this provider.
 )
 
 SwiftClangModuleInfo = provider(
-    doc="""
+    doc = """
 Contains information about a Clang module with relative paths that needs to be
 propagated up to other Swift compilation/link actions.
 """,
-    fields={
+    fields = {
         "transitive_compile_flags": """
 `Depset` of `string`s. The C compiler flags that should be passed to Clang when
 depending on this target (for example, header search paths).
@@ -70,10 +70,10 @@ Clang using the `-fmodule-map-file` option.
 )
 
 SwiftInfo = provider(
-    doc="""
+    doc = """
 Contains information about the compiled artifacts of a Swift static library.
 """,
-    fields={
+    fields = {
         "compile_options": """
 `List` of `Args` objects. The command-line options that were passed to the
 compiler to compile this target. This is intended to be flattened into a params
@@ -134,9 +134,9 @@ the library that propagated this provider and all of its dependencies.
 )
 
 SwiftProtoInfo = provider(
-    doc="Propagates Swift-specific information about a `proto_library`.",
-    fields={
-        "module_mappings" : """
+    doc = "Propagates Swift-specific information about a `proto_library`.",
+    fields = {
+        "module_mappings": """
 `Sequence` of `struct`s. Each struct contains `module_name` and
 `proto_file_paths` fields that denote the transitive mappings from `.proto`
 files to Swift modules. This allows messages that reference messages in other
@@ -146,15 +146,15 @@ libraries to import those modules in generated code.
 `Depset` of `File`s. The transitive Swift source files (`.pb.swift`) generated
 from the `.proto` files.
 """,
-    }
+    },
 )
 
 SwiftToolchainInfo = provider(
-    doc="""
+    doc = """
 Propagates information about a Swift toolchain to compilation and linking rules
 that use the toolchain.
 """,
-    fields={
+    fields = {
         "action_environment": """
 `Dict`. Environment variables that should be set during any actions spawned to
 compile or link Swift code.
@@ -240,11 +240,11 @@ compiling libraries or binaries with this toolchain.
 )
 
 SwiftUsageInfo = provider(
-    doc="""
+    doc = """
 A provider that indicates that Swift was used by a target or any target that
 it depends on, and specifically which toolchain was used.
 """,
-    fields={
+    fields = {
         "toolchain": """
 The Swift toolchain that was used to build the targets propagating this
 provider.
@@ -253,23 +253,35 @@ provider.
 )
 
 def merge_swift_clang_module_infos(targets):
-  """Merges transitive `SwiftClangModuleInfo` providers.
+    """Merges transitive `SwiftClangModuleInfo` providers.
 
-  Args:
-    targets: The targets whose `SwiftClangModuleInfo` providers should be
-        merged.
+    Args:
+      targets: The targets whose `SwiftClangModuleInfo` providers should be
+          merged.
 
-  Returns:
-    A new `SwiftClangModuleInfo` that contains the transitive closure of all the
-    `SwiftClangModuleInfo` providers of the given targets.
-  """
-  return SwiftClangModuleInfo(
-      transitive_compile_flags=collect_transitive(
-          targets, SwiftClangModuleInfo, "transitive_compile_flags"),
-      transitive_defines=collect_transitive(
-          targets, SwiftClangModuleInfo, "transitive_defines"),
-      transitive_headers=collect_transitive(
-          targets, SwiftClangModuleInfo, "transitive_headers"),
-      transitive_modulemaps=collect_transitive(
-          targets, SwiftClangModuleInfo, "transitive_modulemaps"),
-  )
+    Returns:
+      A new `SwiftClangModuleInfo` that contains the transitive closure of all the
+      `SwiftClangModuleInfo` providers of the given targets.
+    """
+    return SwiftClangModuleInfo(
+        transitive_compile_flags = collect_transitive(
+            targets,
+            SwiftClangModuleInfo,
+            "transitive_compile_flags",
+        ),
+        transitive_defines = collect_transitive(
+            targets,
+            SwiftClangModuleInfo,
+            "transitive_defines",
+        ),
+        transitive_headers = collect_transitive(
+            targets,
+            SwiftClangModuleInfo,
+            "transitive_headers",
+        ),
+        transitive_modulemaps = collect_transitive(
+            targets,
+            SwiftClangModuleInfo,
+            "transitive_modulemaps",
+        ),
+    )
