@@ -23,133 +23,139 @@ load("@bazel_skylib//:lib.bzl", "dicts", "partial")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
 
 def _swift_linking_rule_impl(ctx, is_test):
-  """The shared implementation function for `swift_{binary,test}`.
+    """The shared implementation function for `swift_{binary,test}`.
 
-  Args:
-    ctx: The rule context.
-    is_test: A `Boolean` value indicating whether the binary is a test target.
+    Args:
+      ctx: The rule context.
+      is_test: A `Boolean` value indicating whether the binary is a test target.
 
-  Returns:
-    A list of providers to be propagated by the target being built.
-  """
-  # Bazel fails the build if you try to query a fragment that hasn't been
-  # declared, even dynamically with `hasattr`/`getattr`. Thus, we have to use
-  # other information to determine whether we can access the `objc`
-  # configuration.
-  toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
-  objc_fragment = (ctx.fragments.objc if toolchain.supports_objc_interop
-                   else None)
+    Returns:
+      A list of providers to be propagated by the target being built.
+    """
 
-  copts = expand_locations(ctx, ctx.attr.copts, ctx.attr.swiftc_inputs)
-  linkopts = expand_locations(ctx, ctx.attr.linkopts, ctx.attr.swiftc_inputs)
+    # Bazel fails the build if you try to query a fragment that hasn't been
+    # declared, even dynamically with `hasattr`/`getattr`. Thus, we have to use
+    # other information to determine whether we can access the `objc`
+    # configuration.
+    toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
+    objc_fragment = (ctx.fragments.objc if toolchain.supports_objc_interop else None)
 
-  additional_inputs = ctx.files.swiftc_inputs
-  srcs = ctx.files.srcs
+    copts = expand_locations(ctx, ctx.attr.copts, ctx.attr.swiftc_inputs)
+    linkopts = expand_locations(ctx, ctx.attr.linkopts, ctx.attr.swiftc_inputs)
 
-  out_bin = derived_files.executable(ctx.actions, target_name=ctx.label.name)
-  objects_to_link = []
-  additional_output_groups = {}
-  compilation_providers = []
+    additional_inputs = ctx.files.swiftc_inputs
+    srcs = ctx.files.srcs
 
-  link_args = ctx.actions.args()
-  link_args.add("-o")
-  link_args.add(out_bin)
+    out_bin = derived_files.executable(ctx.actions, target_name = ctx.label.name)
+    objects_to_link = []
+    additional_output_groups = {}
+    compilation_providers = []
 
-  if not srcs:
-    additional_inputs_to_linker = depset(direct=additional_inputs)
-  else:
-    module_name = ctx.attr.module_name
-    if not module_name:
-      module_name = swift_common.derive_module_name(ctx.label)
+    link_args = ctx.actions.args()
+    link_args.add("-o")
+    link_args.add(out_bin)
 
-    compile_results = swift_common.compile_as_objects(
-        actions=ctx.actions,
-        arguments=[],
-        compilation_mode=ctx.var["COMPILATION_MODE"],
-        copts=copts,
-        defines=ctx.attr.defines,
-        features=ctx.features,
-        module_name=module_name,
-        srcs=srcs,
-        swift_fragment=ctx.fragments.swift,
-        target_name=ctx.label.name,
-        toolchain=toolchain,
-        additional_input_depsets=[depset(direct=additional_inputs)],
-        configuration=ctx.configuration,
-        deps=ctx.attr.deps,
-        objc_fragment=objc_fragment,
+    if not srcs:
+        additional_inputs_to_linker = depset(direct = additional_inputs)
+    else:
+        module_name = ctx.attr.module_name
+        if not module_name:
+            module_name = swift_common.derive_module_name(ctx.label)
+
+        compile_results = swift_common.compile_as_objects(
+            actions = ctx.actions,
+            arguments = [],
+            compilation_mode = ctx.var["COMPILATION_MODE"],
+            copts = copts,
+            defines = ctx.attr.defines,
+            features = ctx.features,
+            module_name = module_name,
+            srcs = srcs,
+            swift_fragment = ctx.fragments.swift,
+            target_name = ctx.label.name,
+            toolchain = toolchain,
+            additional_input_depsets = [depset(direct = additional_inputs)],
+            configuration = ctx.configuration,
+            deps = ctx.attr.deps,
+            objc_fragment = objc_fragment,
+        )
+        link_args.add_all(compile_results.linker_flags)
+        objects_to_link.extend(compile_results.output_objects)
+        additional_inputs_to_linker = (
+            compile_results.compile_inputs + compile_results.linker_inputs
+        )
+
+        dicts.add(additional_output_groups, compile_results.output_groups)
+        compilation_providers.append(
+            SwiftBinaryInfo(compile_options = compile_results.compile_options),
+        )
+
+    # We need to pass some Objective-C-related linker flags to ensure that the
+    # runtime is handled correctly for mixed code.
+    if toolchain.supports_objc_interop:
+        link_args.add("-ObjC")
+        link_args.add("-fobjc-link-runtime")
+        link_args.add("-Wl,-objc_abi_version,2")
+        link_args.add("-Wl,-no_deduplicate")
+
+    # TODO(b/70228246): Also support mostly-static and fully-dynamic modes, here
+    # and for the C++ toolchain args below.
+    link_args.add_all(partial.call(
+        toolchain.linker_opts_producer,
+        is_static = True,
+        is_test = is_test,
+    ))
+
+    if toolchain.cc_toolchain_info:
+        cpp_toolchain = find_cpp_toolchain(ctx)
+        if (hasattr(cpp_toolchain, "link_options_do_not_use") and
+            hasattr(cc_common, "mostly_static_link_options")):
+            # We only do this for non-Xcode toolchains at this time.
+            features = ctx.features
+            link_args.add_all(find_cpp_toolchain(ctx).link_options_do_not_use)
+            link_args.add_all(cc_common.mostly_static_link_options(
+                ctx.fragments.cpp,
+                toolchain.cc_toolchain_info,
+                features,
+                False,
+            ))
+
+    register_link_action(
+        actions = ctx.actions,
+        action_environment = toolchain.action_environment,
+        clang_executable = toolchain.clang_executable,
+        deps = ctx.attr.deps + toolchain.implicit_deps,
+        expanded_linkopts = linkopts,
+        features = ctx.features,
+        inputs = additional_inputs_to_linker,
+        mnemonic = "SwiftLinkExecutable",
+        objects = objects_to_link,
+        outputs = [out_bin],
+        rule_specific_args = link_args,
+        toolchain = toolchain,
     )
-    link_args.add_all(compile_results.linker_flags)
-    objects_to_link.extend(compile_results.output_objects)
-    additional_inputs_to_linker = (
-        compile_results.compile_inputs + compile_results.linker_inputs)
 
-    dicts.add(additional_output_groups, compile_results.output_groups)
-    compilation_providers.append(
-        SwiftBinaryInfo(compile_options=compile_results.compile_options))
-
-  # We need to pass some Objective-C-related linker flags to ensure that the
-  # runtime is handled correctly for mixed code.
-  if toolchain.supports_objc_interop:
-    link_args.add("-ObjC")
-    link_args.add("-fobjc-link-runtime")
-    link_args.add("-Wl,-objc_abi_version,2")
-    link_args.add("-Wl,-no_deduplicate")
-
-  # TODO(b/70228246): Also support mostly-static and fully-dynamic modes, here
-  # and for the C++ toolchain args below.
-  link_args.add_all(partial.call(
-      toolchain.linker_opts_producer, is_static=True, is_test=is_test))
-
-  if toolchain.cc_toolchain_info:
-    cpp_toolchain = find_cpp_toolchain(ctx)
-    if (hasattr(cpp_toolchain, "link_options_do_not_use") and
-        hasattr(cc_common, "mostly_static_link_options")):
-      # We only do this for non-Xcode toolchains at this time.
-      features = ctx.features
-      link_args.add_all(find_cpp_toolchain(ctx).link_options_do_not_use)
-      link_args.add_all(cc_common.mostly_static_link_options(
-          ctx.fragments.cpp,
-          toolchain.cc_toolchain_info,
-          features,
-          False))
-
-  register_link_action(
-      actions=ctx.actions,
-      action_environment=toolchain.action_environment,
-      clang_executable=toolchain.clang_executable,
-      deps=ctx.attr.deps + toolchain.implicit_deps,
-      expanded_linkopts=linkopts,
-      features=ctx.features,
-      inputs=additional_inputs_to_linker,
-      mnemonic="SwiftLinkExecutable",
-      objects=objects_to_link,
-      outputs=[out_bin],
-      rule_specific_args=link_args,
-      toolchain=toolchain,
-  )
-
-  return [
-      DefaultInfo(
-          executable=out_bin,
-          runfiles=ctx.runfiles(
-              collect_data=True,
-              collect_default=True,
-              files=ctx.files.data,
-          ),
-      ),
-      OutputGroupInfo(**additional_output_groups),
-  ] + compilation_providers
+    return [
+        DefaultInfo(
+            executable = out_bin,
+            runfiles = ctx.runfiles(
+                collect_data = True,
+                collect_default = True,
+                files = ctx.files.data,
+            ),
+        ),
+        OutputGroupInfo(**additional_output_groups),
+    ] + compilation_providers
 
 def _swift_binary_impl(ctx):
-  return _swift_linking_rule_impl(ctx, is_test=False)
+    return _swift_linking_rule_impl(ctx, is_test = False)
 
 def _swift_test_impl(ctx):
-  toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
+    toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
 
-  return _swift_linking_rule_impl(ctx, is_test=True) + [
-      testing.ExecutionInfo(toolchain.execution_requirements),
-  ]
+    return _swift_linking_rule_impl(ctx, is_test = True) + [
+        testing.ExecutionInfo(toolchain.execution_requirements),
+    ]
 
 swift_binary = rule(
     attrs = dicts.add(
@@ -165,7 +171,8 @@ subject to `$(location ...)` expansion.
             # Do not add references; temporary attribute for C++ toolchain
             # Skylark migration.
             "_cc_toolchain": attr.label(
-                default=Label("@bazel_tools//tools/cpp:current_cc_toolchain")),
+                default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
+            ),
         },
     ),
     doc = "Compiles and links Swift code into an executable binary.",
@@ -192,7 +199,8 @@ subject to `$(location ...)` expansion.
             # Do not add references; temporary attribute for C++ toolchain
             # Skylark migration.
             "_cc_toolchain": attr.label(
-                default=Label("@bazel_tools//tools/cpp:current_cc_toolchain")),
+                default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
+            ),
         },
     ),
     doc = "Compiles and links Swift code into an executable test target.",

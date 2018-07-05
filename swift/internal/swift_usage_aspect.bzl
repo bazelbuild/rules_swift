@@ -17,41 +17,41 @@
 load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo", "SwiftUsageInfo")
 
 def _get_swift_toolchain(target, aspect_ctx):
-  """Gets the `SwiftToolchainInfo` used to build the given target, if any.
+    """Gets the `SwiftToolchainInfo` used to build the given target, if any.
 
-  Args:
-    target: The target being built.
-    aspect_ctx: The aspect context.
+    Args:
+      target: The target being built.
+      aspect_ctx: The aspect context.
 
-  Returns:
-    The `SwiftToolchainInfo` provider, or `None` if the target was not a Swift
-    target.
-  """
-  if SwiftInfo in target:
-    toolchain_target = getattr(aspect_ctx.rule.attr, "_toolchain")
-    if toolchain_target and SwiftToolchainInfo in toolchain_target:
-      return toolchain_target[SwiftToolchainInfo]
-  return None
+    Returns:
+      The `SwiftToolchainInfo` provider, or `None` if the target was not a Swift
+      target.
+    """
+    if SwiftInfo in target:
+        toolchain_target = getattr(aspect_ctx.rule.attr, "_toolchain")
+        if toolchain_target and SwiftToolchainInfo in toolchain_target:
+            return toolchain_target[SwiftToolchainInfo]
+    return None
 
 def _swift_usage_aspect_impl(target, aspect_ctx):
-  # If the target itself propagates `SwiftInfo`, get the toolchain from it.
-  found_toolchain = _get_swift_toolchain(target, aspect_ctx)
+    # If the target itself propagates `SwiftInfo`, get the toolchain from it.
+    found_toolchain = _get_swift_toolchain(target, aspect_ctx)
 
-  if found_toolchain:
-    return [SwiftUsageInfo(toolchain=found_toolchain)]
+    if found_toolchain:
+        return [SwiftUsageInfo(toolchain = found_toolchain)]
 
-  # If one of the deps propagates `SwiftUsageInfo` provider, we can repropagate
-  # that information.
-  # TODO(allevato): We currently make the assumption that all Swift
-  # dependencies are built with the same toolchain (as in Bazel toolchain, not
-  # Swift toolchain).
-  for dep in getattr(aspect_ctx.rule.attr, "deps", []):
-    if SwiftUsageInfo in dep:
-      return [dep[SwiftUsageInfo]]
+    # If one of the deps propagates `SwiftUsageInfo` provider, we can repropagate
+    # that information.
+    # TODO(allevato): We currently make the assumption that all Swift
+    # dependencies are built with the same toolchain (as in Bazel toolchain, not
+    # Swift toolchain).
+    for dep in getattr(aspect_ctx.rule.attr, "deps", []):
+        if SwiftUsageInfo in dep:
+            return [dep[SwiftUsageInfo]]
 
-  # Don't propagate the provider at all if the target nor its dependencies use
-  # Swift.
-  return []
+    # Don't propagate the provider at all if the target nor its dependencies use
+    # Swift.
+    return []
 
 swift_usage_aspect = aspect(
     attr_aspects = ["deps"],

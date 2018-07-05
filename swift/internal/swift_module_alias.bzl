@@ -20,78 +20,78 @@ load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
 load("@bazel_skylib//:lib.bzl", "dicts")
 
 def _swift_module_alias_impl(ctx):
-  module_mapping = {dep[SwiftInfo].module_name: dep.label for dep in ctx.attr.deps}
+    module_mapping = {dep[SwiftInfo].module_name: dep.label for dep in ctx.attr.deps}
 
-  module_name = ctx.attr.module_name
-  if not module_name:
-    module_name = swift_common.derive_module_name(ctx.label)
+    module_name = ctx.attr.module_name
+    if not module_name:
+        module_name = swift_common.derive_module_name(ctx.label)
 
-  # Print a warning message directing users to the new modules that they need to
-  # import. This "nag" is intended to prevent users from misusing this rule to
-  # simply forward imported modules.
-  warning = """\n
+    # Print a warning message directing users to the new modules that they need to
+    # import. This "nag" is intended to prevent users from misusing this rule to
+    # simply forward imported modules.
+    warning = """\n
 WARNING: The Swift target \"{target}\" (defining module {module_name}) is \
 deprecated. Please update your BUILD targets and Swift code to import the \
 following dependencies instead:\n\n""".format(
-      target=str(ctx.label),
-      module_name=module_name,
-  )
-  for dep_module_name, dep_target in module_mapping.items():
-    warning += '  - "{target}" (import {module_name})\n'.format(
-        target=str(dep_target),
-        module_name=dep_module_name,
+        target = str(ctx.label),
+        module_name = module_name,
     )
-  print(warning + "\n")
+    for dep_module_name, dep_target in module_mapping.items():
+        warning += '  - "{target}" (import {module_name})\n'.format(
+            target = str(dep_target),
+            module_name = dep_module_name,
+        )
+    print(warning + "\n")
 
-  # Generate a source file that imports each of the deps using `@_exported`.
-  reexport_src = derived_files.reexport_modules_src(ctx.actions, ctx.label.name)
-  ctx.actions.write(
-      content="\n".join([
-          "@_exported import {}".format(module)
-          for module in module_mapping.keys()
-      ]),
-      output=reexport_src,
-  )
+    # Generate a source file that imports each of the deps using `@_exported`.
+    reexport_src = derived_files.reexport_modules_src(ctx.actions, ctx.label.name)
+    ctx.actions.write(
+        content = "\n".join([
+            "@_exported import {}".format(module)
+            for module in module_mapping.keys()
+        ]),
+        output = reexport_src,
+    )
 
-  compile_results = swift_common.compile_as_library(
-    actions=ctx.actions,
-    bin_dir=ctx.bin_dir,
-    compilation_mode=ctx.var["COMPILATION_MODE"],
-    label=ctx.label,
-    module_name=module_name,
-    srcs=[reexport_src],
-    swift_fragment=ctx.fragments.swift,
-    toolchain=ctx.attr._toolchain[SwiftToolchainInfo],
-    configuration=ctx.configuration,
-    deps=ctx.attr.deps,
-    features=ctx.attr.features,
-  )
+    compile_results = swift_common.compile_as_library(
+        actions = ctx.actions,
+        bin_dir = ctx.bin_dir,
+        compilation_mode = ctx.var["COMPILATION_MODE"],
+        label = ctx.label,
+        module_name = module_name,
+        srcs = [reexport_src],
+        swift_fragment = ctx.fragments.swift,
+        toolchain = ctx.attr._toolchain[SwiftToolchainInfo],
+        configuration = ctx.configuration,
+        deps = ctx.attr.deps,
+        features = ctx.attr.features,
+    )
 
-  return compile_results.providers + [
-      DefaultInfo(
-          files=depset(direct=[
-              compile_results.output_archive,
-              compile_results.output_doc,
-              compile_results.output_module,
-          ]),
-      ),
-      OutputGroupInfo(**compile_results.output_groups),
-  ]
+    return compile_results.providers + [
+        DefaultInfo(
+            files = depset(direct = [
+                compile_results.output_archive,
+                compile_results.output_doc,
+                compile_results.output_module,
+            ]),
+        ),
+        OutputGroupInfo(**compile_results.output_groups),
+    ]
 
 swift_module_alias = rule(
     attrs = dicts.add(
         swift_common.toolchain_attrs(),
         {
             "deps": attr.label_list(
-                doc="""
+                doc = """
 A list of targets that are dependencies of the target being built, which will be
 linked into that target. Allowed kinds are `swift_import` and `swift_library`
 (or anything else propagating `SwiftInfo`).
 """,
-                providers=[[SwiftInfo]],
+                providers = [[SwiftInfo]],
             ),
             "module_name": attr.string(
-                doc="""
+                doc = """
 The name of the Swift module being built.
 
 If left unspecified, the module name will be computed based on the target's

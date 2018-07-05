@@ -20,45 +20,45 @@ rules. Do not import definitions from the `internal` subdirectory directly.
 
 load(
     "@build_bazel_rules_swift//swift/internal:api.bzl",
-    _swift_common="swift_common",
+    _swift_common = "swift_common",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:providers.bzl",
-    _SwiftBinaryInfo="SwiftBinaryInfo",
-    _SwiftClangModuleInfo="SwiftClangModuleInfo",
-    _SwiftInfo="SwiftInfo",
-    _SwiftProtoInfo="SwiftProtoInfo",
-    _SwiftToolchainInfo="SwiftToolchainInfo",
-    _SwiftUsageInfo="SwiftUsageInfo",
+    _SwiftBinaryInfo = "SwiftBinaryInfo",
+    _SwiftClangModuleInfo = "SwiftClangModuleInfo",
+    _SwiftInfo = "SwiftInfo",
+    _SwiftProtoInfo = "SwiftProtoInfo",
+    _SwiftToolchainInfo = "SwiftToolchainInfo",
+    _SwiftUsageInfo = "SwiftUsageInfo",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:swift_binary_test.bzl",
-    _swift_binary="swift_binary",
-    _swift_test="swift_test",
+    _swift_binary = "swift_binary",
+    _swift_test = "swift_test",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:swift_c_module.bzl",
-    _swift_c_module="swift_c_module",
+    _swift_c_module = "swift_c_module",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:swift_import.bzl",
-    _swift_import="swift_import",
+    _swift_import = "swift_import",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:swift_library.bzl",
-    _swift_library="swift_library",
+    _swift_library = "swift_library",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:swift_module_alias.bzl",
-    _swift_module_alias="swift_module_alias",
+    _swift_module_alias = "swift_module_alias",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:swift_proto_library.bzl",
-    _swift_proto_library="swift_proto_library",
+    _swift_proto_library = "swift_proto_library",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:swift_usage_aspect.bzl",
-    _swift_usage_aspect="swift_usage_aspect",
+    _swift_usage_aspect = "swift_usage_aspect",
 )
 
 # Re-export providers.
