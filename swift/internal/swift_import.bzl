@@ -20,61 +20,61 @@ load(":providers.bzl", "SwiftClangModuleInfo", "merge_swift_clang_module_infos")
 load("@bazel_skylib//:lib.bzl", "dicts")
 
 def _swift_import_impl(ctx):
-  archives = ctx.files.archives
-  deps = ctx.attr.deps
-  swiftmodules = ctx.files.swiftmodules
+    archives = ctx.files.archives
+    deps = ctx.attr.deps
+    swiftmodules = ctx.files.swiftmodules
 
-  providers = [
-      DefaultInfo(
-          files=depset(direct=archives + swiftmodules),
-          runfiles=ctx.runfiles(
-              collect_data=True,
-              collect_default=True,
-              files=ctx.files.data,
-          ),
-      ),
-      build_swift_info_provider(
-          additional_cc_libs=[],
-          compile_options=None,
-          deps=deps,
-          direct_additional_inputs=[],
-          direct_defines=[],
-          direct_libraries=archives,
-          direct_linkopts=[],
-          direct_swiftmodules=swiftmodules,
-      ),
-  ]
+    providers = [
+        DefaultInfo(
+            files = depset(direct = archives + swiftmodules),
+            runfiles = ctx.runfiles(
+                collect_data = True,
+                collect_default = True,
+                files = ctx.files.data,
+            ),
+        ),
+        build_swift_info_provider(
+            additional_cc_libs = [],
+            compile_options = None,
+            deps = deps,
+            direct_additional_inputs = [],
+            direct_defines = [],
+            direct_libraries = archives,
+            direct_linkopts = [],
+            direct_swiftmodules = swiftmodules,
+        ),
+    ]
 
-  # Only propagate `SwiftClangModuleInfo` if any of our deps does.
-  if any([SwiftClangModuleInfo in dep for dep in deps]):
-    clang_module = merge_swift_clang_module_infos(deps)
-    providers.append(clang_module)
+    # Only propagate `SwiftClangModuleInfo` if any of our deps does.
+    if any([SwiftClangModuleInfo in dep for dep in deps]):
+        clang_module = merge_swift_clang_module_infos(deps)
+        providers.append(clang_module)
 
-  return providers
+    return providers
 
 swift_import = rule(
-    attrs=dicts.add(SWIFT_COMMON_RULE_ATTRS, {
+    attrs = dicts.add(SWIFT_COMMON_RULE_ATTRS, {
         "archives": attr.label_list(
-            allow_empty=False,
-            allow_files=["a"],
-            doc="""
+            allow_empty = False,
+            allow_files = ["a"],
+            doc = """
 The list of `.a` files provided to Swift targets that depend on this target.
 """,
-            mandatory=True,
+            mandatory = True,
         ),
         "swiftmodules": attr.label_list(
-            allow_empty=False,
-            allow_files=["swiftmodule"],
-            doc="""
+            allow_empty = False,
+            allow_files = ["swiftmodule"],
+            doc = """
 The list of `.swiftmodule` files provided to Swift targets that depend on this
 target.
 """,
-            mandatory=True,
+            mandatory = True,
         ),
     }),
-    doc="""
+    doc = """
 Allows for the use of precompiled Swift modules as dependencies in other
 `swift_library` and `swift_binary` targets.
 """,
-    implementation=_swift_import_impl,
+    implementation = _swift_import_impl,
 )

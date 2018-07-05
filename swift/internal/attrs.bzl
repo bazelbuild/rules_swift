@@ -19,9 +19,9 @@ load(":swift_cc_libs_aspect.bzl", "swift_cc_libs_aspect")
 
 SWIFT_COMMON_RULE_ATTRS = {
     "data": attr.label_list(
-        allow_files=True,
-        cfg="data",
-        doc="""
+        allow_files = True,
+        cfg = "data",
+        doc = """
 The list of files needed by this target at runtime.
 
 Files and targets named in the `data` attribute will appear in the `*.runfiles`
@@ -30,8 +30,8 @@ binary or library, or other programs needed by it.
 """,
     ),
     "deps": attr.label_list(
-        aspects=[swift_cc_libs_aspect],
-        doc="""
+        aspects = [swift_cc_libs_aspect],
+        doc = """
 A list of targets that are dependencies of the target being built, which will be
 linked into that target. Allowed kinds of dependencies are:
 
@@ -44,7 +44,7 @@ targets (or anything propagating the `apple_common.Objc` provider) are allowed
 as dependencies. On platforms that do not support Objective-C interop (such as
 Linux), those dependencies will be **ignored.**
 """,
-        providers=[
+        providers = [
             [SwiftClangModuleInfo],
             [SwiftInfo],
             [apple_common.Objc],

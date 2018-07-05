@@ -19,103 +19,107 @@ load(":derived_files.bzl", "derived_files")
 load(":providers.bzl", "SwiftToolchainInfo")
 
 def ensure_swiftmodule_is_embedded(
-    actions,
-    swiftmodule,
-    target_name,
-    toolchain):
-  """Ensures that a `.swiftmodule` file is embedded in a library or binary.
+        actions,
+        swiftmodule,
+        target_name,
+        toolchain):
+    """Ensures that a `.swiftmodule` file is embedded in a library or binary.
 
-  This function handles the distinctions between how different object file
-  formats (i.e., Mach-O vs. ELF) have to embed the module AST for debugging
-  purposes.
+    This function handles the distinctions between how different object file
+    formats (i.e., Mach-O vs. ELF) have to embed the module AST for debugging
+    purposes.
 
-  Args:
-    actions: The object used to register actions.
-    swiftmodule: The `.swiftmodule` file to be wrapped.
-    target_name: The name of the target being built.
-    toolchain: The `SwiftToolchainInfo` provider of the toolchain.
+    Args:
+      actions: The object used to register actions.
+      swiftmodule: The `.swiftmodule` file to be wrapped.
+      target_name: The name of the target being built.
+      toolchain: The `SwiftToolchainInfo` provider of the toolchain.
 
-  Returns:
-    A `struct` containing three fields:
+    Returns:
+      A `struct` containing three fields:
 
-    * `linker_flags`: A list of additional flags that should be propagated to
-      the linker.
-    * `linker_inputs`: A list of additional inputs that are not necessarily
-      object files, but which are referenced in `linker_flags` and should
-      therefore be passed to the linker.
-    * `objects_to_link`: A list of `.o` files that should be included in the
-      static archive or binary that represents the module.
-  """
-  linker_flags = []
-  linker_inputs = []
-  objects_to_link = []
+      * `linker_flags`: A list of additional flags that should be propagated to
+        the linker.
+      * `linker_inputs`: A list of additional inputs that are not necessarily
+        object files, but which are referenced in `linker_flags` and should
+        therefore be passed to the linker.
+      * `objects_to_link`: A list of `.o` files that should be included in the
+        static archive or binary that represents the module.
+    """
+    linker_flags = []
+    linker_inputs = []
+    objects_to_link = []
 
-  if toolchain.object_format == "elf":
-    # For ELF-format binaries, we need to invoke a Swift modulewrap action to
-    # wrap the .swiftmodule file in a .o file that gets propagated to the
-    # linker.
-    modulewrap_obj = derived_files.modulewrap_object(
-        actions, target_name=target_name)
-    objects_to_link.append(modulewrap_obj)
+    if toolchain.object_format == "elf":
+        # For ELF-format binaries, we need to invoke a Swift modulewrap action to
+        # wrap the .swiftmodule file in a .o file that gets propagated to the
+        # linker.
+        modulewrap_obj = derived_files.modulewrap_object(
+            actions,
+            target_name = target_name,
+        )
+        objects_to_link.append(modulewrap_obj)
 
-    _register_modulewrap_action(
-        actions=actions,
-        object=modulewrap_obj,
-        swiftmodule=swiftmodule,
-        toolchain=toolchain)
-  elif toolchain.object_format == "macho":
-    linker_flags.append("-Wl,-add_ast_path,{}".format(swiftmodule.path))
-    linker_inputs.append(swiftmodule)
-  else:
-    fail("Internal error: Unexpected object format '{}'.".format(
-        toolchain.object_format))
+        _register_modulewrap_action(
+            actions = actions,
+            object = modulewrap_obj,
+            swiftmodule = swiftmodule,
+            toolchain = toolchain,
+        )
+    elif toolchain.object_format == "macho":
+        linker_flags.append("-Wl,-add_ast_path,{}".format(swiftmodule.path))
+        linker_inputs.append(swiftmodule)
+    else:
+        fail("Internal error: Unexpected object format '{}'.".format(
+            toolchain.object_format,
+        ))
 
-  return struct(
-      linker_flags=linker_flags,
-      linker_inputs=linker_inputs,
-      objects_to_link=objects_to_link,
-  )
+    return struct(
+        linker_flags = linker_flags,
+        linker_inputs = linker_inputs,
+        objects_to_link = objects_to_link,
+    )
 
 def is_debugging(compilation_mode):
-  """Returns `True` if the given compilation mode produces debug info.
+    """Returns `True` if the given compilation mode produces debug info.
 
-  Args:
-    compilation_mode: The compilation mode being used by Bazel.
+    Args:
+      compilation_mode: The compilation mode being used by Bazel.
 
-  Returns:
-    `True` if the given compilation mode produces debug info.
-  """
-  return compilation_mode in ("dbg", "fastbuild")
+    Returns:
+      `True` if the given compilation mode produces debug info.
+    """
+    return compilation_mode in ("dbg", "fastbuild")
 
 def _register_modulewrap_action(
-    actions,
-    object,
-    swiftmodule,
-    toolchain):
-  """Wraps a Swift module in a `.o` file that can be linked into a binary.
+        actions,
+        object,
+        swiftmodule,
+        toolchain):
+    """Wraps a Swift module in a `.o` file that can be linked into a binary.
 
-  This step (invoking `swift -modulewrap`) is required for the `.swiftmodule` of
-  the main module of an executable on platforms with ELF-format object files;
-  otherwise, debuggers will not be able to see those symbols.
+    This step (invoking `swift -modulewrap`) is required for the `.swiftmodule` of
+    the main module of an executable on platforms with ELF-format object files;
+    otherwise, debuggers will not be able to see those symbols.
 
-  Args:
-    actions: The object used to register actions.
-    object: The object file that will be produced by the modulewrap task.
-    swiftmodule: The `.swiftmodule` file to be wrapped.
-    toolchain: The `SwiftToolchainInfo` provider of the toolchain.
-  """
-  tool_args = actions.args()
-  tool_args.add("-modulewrap")
-  tool_args.add(swiftmodule)
-  tool_args.add("-o")
-  tool_args.add(object)
+    Args:
+      actions: The object used to register actions.
+      object: The object file that will be produced by the modulewrap task.
+      swiftmodule: The `.swiftmodule` file to be wrapped.
+      toolchain: The `SwiftToolchainInfo` provider of the toolchain.
+    """
+    tool_args = actions.args()
+    tool_args.add("-modulewrap")
+    tool_args.add(swiftmodule)
+    tool_args.add("-o")
+    tool_args.add(object)
 
-  run_toolchain_action(
-      actions=actions,
-      toolchain=toolchain,
-      arguments=[tool_args],
-      executable="swift",
-      inputs=[swiftmodule],
-      mnemonic="SwiftModuleWrap",
-      outputs=[object],
-  )
+    run_toolchain_action(
+        actions = actions,
+        toolchain = toolchain,
+        arguments = [tool_args],
+        executable = "swift",
+        inputs = [swiftmodule],
+        mnemonic = "SwiftModuleWrap",
+        outputs = [object],
+    )
