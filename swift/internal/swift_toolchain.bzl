@@ -28,9 +28,10 @@ load(
     "paths",
     "selects",
 )
+load("//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
 
 def _default_linker_opts(
-    cpp_fragment,
+    cc_toolchain,
     os,
     toolchain_root,
     is_static,
@@ -42,7 +43,7 @@ def _default_linker_opts(
   and `is_test` arguments are expected to be passed by the caller.
 
   Args:
-    cpp_fragment: The `cpp` configuration fragment from which the `ld`
+    cc_toolchain: The cpp toolchain from which the `ld`
         executable is determined.
     os: The operating system name, which is used as part of the library path.
     toolchain_root: The toolchain's root directory.
@@ -63,7 +64,7 @@ def _default_linker_opts(
   )
 
   return [
-      "-fuse-ld={}".format(cpp_fragment.ld_executable),
+      "-fuse-ld={}".format(cc_toolchain.ld_executable),
       "-L{}".format(platform_lib_dir),
       "-Wl,-rpath,{}".format(platform_lib_dir),
       "-lm",
@@ -132,10 +133,10 @@ def _run_shell_action(toolchain_tools, actions, **kwargs):
 
 def _swift_toolchain_impl(ctx):
   toolchain_root = ctx.attr.root
-  cc_toolchain = ctx.attr._cc_toolchain[cc_common.CcToolchainInfo]
+  cc_toolchain = find_cpp_toolchain(ctx)
 
   linker_opts_producer = partial.make(
-      _default_linker_opts, ctx.fragments.cpp, ctx.attr.os, toolchain_root)
+      _default_linker_opts, cc_toolchain, ctx.attr.os, toolchain_root)
 
   tools = depset(transitive=[ctx.attr._cc_toolchain.files])
   action_registrars = struct(
@@ -211,6 +212,5 @@ The C++ toolchain from which other tools needed by the Swift toolchain (such as
         ),
     },
     doc="Represents a Swift compiler toolchain.",
-    fragments=["cpp"],
     implementation=_swift_toolchain_impl,
 )
