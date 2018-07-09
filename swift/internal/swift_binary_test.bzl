@@ -26,17 +26,16 @@ def _swift_linking_rule_impl(ctx, is_test):
     """The shared implementation function for `swift_{binary,test}`.
 
     Args:
-      ctx: The rule context.
-      is_test: A `Boolean` value indicating whether the binary is a test target.
+        ctx: The rule context.
+        is_test: A `Boolean` value indicating whether the binary is a test target.
 
     Returns:
-      A list of providers to be propagated by the target being built.
+        A list of providers to be propagated by the target being built.
     """
 
-    # Bazel fails the build if you try to query a fragment that hasn't been
-    # declared, even dynamically with `hasattr`/`getattr`. Thus, we have to use
-    # other information to determine whether we can access the `objc`
-    # configuration.
+    # Bazel fails the build if you try to query a fragment that hasn't been declared, even
+    # dynamically with `hasattr`/`getattr`. Thus, we have to use other information to determine
+    # whether we can access the `objc` configuration.
     toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
     objc_fragment = (ctx.fragments.objc if toolchain.supports_objc_interop else None)
 
@@ -81,25 +80,23 @@ def _swift_linking_rule_impl(ctx, is_test):
         )
         link_args.add_all(compile_results.linker_flags)
         objects_to_link.extend(compile_results.output_objects)
-        additional_inputs_to_linker = (
-            compile_results.compile_inputs + compile_results.linker_inputs
-        )
+        additional_inputs_to_linker = compile_results.compile_inputs + compile_results.linker_inputs
 
         dicts.add(additional_output_groups, compile_results.output_groups)
         compilation_providers.append(
             SwiftBinaryInfo(compile_options = compile_results.compile_options),
         )
 
-    # We need to pass some Objective-C-related linker flags to ensure that the
-    # runtime is handled correctly for mixed code.
+    # We need to pass some Objective-C-related linker flags to ensure that the runtime is handled
+    # correctly for mixed code.
     if toolchain.supports_objc_interop:
         link_args.add("-ObjC")
         link_args.add("-fobjc-link-runtime")
         link_args.add("-Wl,-objc_abi_version,2")
         link_args.add("-Wl,-no_deduplicate")
 
-    # TODO(b/70228246): Also support mostly-static and fully-dynamic modes, here
-    # and for the C++ toolchain args below.
+    # TODO(b/70228246): Also support mostly-static and fully-dynamic modes, here and for the C++
+    # toolchain args below.
     link_args.add_all(partial.call(
         toolchain.linker_opts_producer,
         is_static = True,
@@ -152,10 +149,19 @@ def _swift_binary_impl(ctx):
 
 def _swift_test_impl(ctx):
     toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
+    providers = _swift_linking_rule_impl(ctx, is_test = True)
 
-    return _swift_linking_rule_impl(ctx, is_test = True) + [
-        testing.ExecutionInfo(toolchain.execution_requirements),
-    ]
+    # TODO(b/79527231): Replace `instrumented_files` with a declared provider when it is available.
+    return struct(
+        instrumented_files = struct(
+            dependency_attributes = ["deps"],
+            extensions = ["swift"],
+            source_attributes = ["srcs"],
+        ),
+        providers = providers + [
+            testing.ExecutionInfo(toolchain.execution_requirements),
+        ],
+    )
 
 swift_binary = rule(
     attrs = dicts.add(
@@ -163,25 +169,18 @@ swift_binary = rule(
         {
             "linkopts": attr.string_list(
                 doc = """
-Additional linker options that should be passed to `clang`. These strings are
-subject to `$(location ...)` expansion.
+Additional linker options that should be passed to `clang`. These strings are subject to
+`$(location ...)` expansion.
 """,
                 mandatory = False,
             ),
-            # Do not add references; temporary attribute for C++ toolchain
-            # Skylark migration.
-            "_cc_toolchain": attr.label(
-                default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
-            ),
+            # Do not add references; temporary attribute for C++ toolchain Skylark migration.
+            "_cc_toolchain": attr.label(default = Label("@bazel_tools//tools/cpp:current_cc_toolchain")),
         },
     ),
     doc = "Compiles and links Swift code into an executable binary.",
     executable = True,
-    fragments = [
-        "cpp",
-        "objc",
-        "swift",
-    ],
+    fragments = ["cpp", "objc", "swift"],
     implementation = _swift_binary_impl,
 )
 
@@ -191,25 +190,19 @@ swift_test = rule(
         {
             "linkopts": attr.string_list(
                 doc = """
-Additional linker options that should be passed to `clang`. These strings are
-subject to `$(location ...)` expansion.
+Additional linker options that should be passed to `clang`. These strings are subject to
+`$(location ...)` expansion.
 """,
                 mandatory = False,
             ),
             # Do not add references; temporary attribute for C++ toolchain
             # Skylark migration.
-            "_cc_toolchain": attr.label(
-                default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
-            ),
+            "_cc_toolchain": attr.label(default = Label("@bazel_tools//tools/cpp:current_cc_toolchain")),
         },
     ),
     doc = "Compiles and links Swift code into an executable test target.",
     executable = True,
-    fragments = [
-        "cpp",
-        "objc",
-        "swift",
-    ],
+    fragments = ["cpp", "objc", "swift"],
     implementation = _swift_test_impl,
     test = True,
 )
