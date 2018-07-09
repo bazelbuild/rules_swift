@@ -31,34 +31,34 @@ def register_link_action(
         objects,
         outputs,
         rule_specific_args,
-        toolchain):
+        toolchain,
+        configuration = None):
     """Registers an action that invokes `clang` to link object files.
 
     Args:
-      actions: The object used to register actions.
-      action_environment: A `dict` of environment variables that should be set for
-          the compile action.
-      clang_executable: The path to the `clang` executable that will be invoked to
-          link, which is assumed to be present among the tools that the toolchain
-          passes to its action registrars. If this is `None`, then simply `clang`
-          will be used with the assumption that the registrar knows where and how
-          to find it.
-      deps: A list of `deps` representing additional libraries that will be passed
-          to the linker.
-      expanded_linkopts: A list of strings representing options passed to the
-          linker. Any `$(location ...)` placeholders are assumed to have already
-          been expanded.
-      features: The list of features that are set on the target being linked.
-      inputs: A `depset` containing additional inputs to the link action, such
-          as those used in `$(location ...)` substitution, or libraries that need
-          to be linked.
-      mnemonic: The mnemonic printed by Bazel when the action executes.
-      objects: A list of object (.o) files that will be passed to the linker.
-      outputs: A list of `File`s that should be passed as the outputs of the
-          link action.
-      rule_specific_args: Additional arguments that are rule-specific that will be
-          passed to `clang`.
-      toolchain: The `SwiftToolchainInfo` provider of the toolchain.
+        actions: The object used to register actions.
+        action_environment: A `dict` of environment variables that should be set for the compile
+            action.
+        clang_executable: The path to the `clang` executable that will be invoked to link, which is
+            assumed to be present among the tools that the toolchain passes to its action
+            registrars. If this is `None`, then simply `clang` will be used with the assumption that
+            the registrar knows where and how to find it.
+        deps: A list of `deps` representing additional libraries that will be passed to the linker.
+        expanded_linkopts: A list of strings representing options passed to the linker. Any
+            `$(location ...)` placeholders are assumed to have already been expanded.
+        features: The list of features that are set on the target being linked.
+        inputs: A `depset` containing additional inputs to the link action, such as those used in
+            `$(location ...)` substitution, or libraries that need to be linked.
+        mnemonic: The mnemonic printed by Bazel when the action executes.
+        objects: A list of object (.o) files that will be passed to the linker.
+        outputs: A list of `File`s that should be passed as the outputs of the link action.
+        rule_specific_args: Additional arguments that are rule-specific that will be passed to
+            `clang`.
+        toolchain: The `SwiftToolchainInfo` provider of the toolchain.
+        configuration: The default configuration from which certain compilation options are
+            determined, such as whether coverage is enabled. This object should be one obtained from
+            a rule's `ctx.configuraton` field. If omitted, no default-configuration-specific options
+            will be used.
     """
     if not clang_executable:
         clang_executable = "clang"
@@ -66,6 +66,8 @@ def register_link_action(
     common_args = actions.args()
     if "llvm_lld" in features:
         common_args.add("-fuse-ld=lld")
+
+    common_args.add_all(_coverage_linkopts(configuration))
 
     if toolchain.stamp:
         stamp_lib_depsets = [toolchain.stamp.cc.libs]
@@ -143,18 +145,37 @@ def register_link_action(
         outputs = outputs,
     )
 
+def _coverage_linkopts(configuration):
+    """Returns `clang` linking flags for code converage if enabled.
+
+    This function takes advantage of the fact that even if we don't use `clang` to do any C/C++
+    compilation, we can pass the equivalent coverage options to it and the driver will still pass
+    the required instrumentation libraries to the underlying linker for us.
+
+    Args:
+        configuration: The default configuration from which certain linking options are determined,
+            such as whether coverage is enabled. This object should be one obtained from a rule's
+            `ctx.configuraton` field. If omitted, no default-configuration-specific options will be
+            used.
+
+    Returns:
+        A list of linking flags that enable code coverage if requested.
+    """
+    if configuration and configuration.coverage_enabled:
+        return ["-fprofile-instr-generate", "-fcoverage-mapping"]
+    return []
+
 def _link_library_map_fn(lib):
     """Maps a library to the appropriate flags to link them.
 
-    This function handles `alwayslink` (.lo) libraries correctly by surrounding
-    them with `--(no-)whole-archive`.
+    This function handles `alwayslink` (.lo) libraries correctly by surrounding them with
+    `--(no-)whole-archive`.
 
     Args:
-      lib: A `File`, passed in when the calling `Args` object is ready
-          to map it to an argument.
+        lib: A `File`, passed in when the calling `Args` object is ready to map it to an argument.
 
     Returns:
-      A list of command-line arguments (strings) that link the library correctly.
+        A list of command-line arguments (strings) that link the library correctly.
     """
     if lib.basename.endswith(".lo"):
         return "-Wl,--whole-archive,{lib},--no-whole-archive".format(lib = lib.path)
