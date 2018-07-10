@@ -15,7 +15,7 @@
 """Implementation of linking logic for Swift."""
 
 load(":actions.bzl", "run_toolchain_action")
-load(":deps.bzl", "swift_deps_libraries")
+load(":deps.bzl", "collect_link_libraries")
 load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
 load(":utils.bzl", "collect_transitive")
 
@@ -74,10 +74,11 @@ def register_link_action(
     else:
         stamp_lib_depsets = []
 
-    libraries = depset(
-        transitive = swift_deps_libraries(deps) + stamp_lib_depsets,
-        order = "topological",
-    )
+    deps_libraries = []
+    for dep in deps:
+      deps_libraries.extend(collect_link_libraries(dep))
+
+    libraries = depset(transitive = deps_libraries + stamp_lib_depsets, order = "topological")
     link_input_depsets = [
         libraries,
         inputs,
@@ -137,10 +138,7 @@ def register_link_action(
             user_args,
         ],
         executable = clang_executable,
-        inputs = depset(
-            direct = objects,
-            transitive = link_input_depsets,
-        ),
+        inputs = depset(direct = objects, transitive = link_input_depsets),
         mnemonic = mnemonic,
         outputs = outputs,
     )

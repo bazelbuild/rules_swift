@@ -364,7 +364,10 @@ with stamping enabled.
             providers = [["cc"]],
         ),
         "_xcode_config": attr.label(
-            default = configuration_field(fragment = "apple", name = "xcode_config_label"),
+            default = configuration_field(
+                name = "xcode_config_label",
+                fragment = "apple",
+            ),
         ),
         "_xcrunwrapper": attr.label(
             cfg = "host",
@@ -373,6 +376,9 @@ with stamping enabled.
         ),
     },
     doc = "Represents a Swift compiler toolchain provided by Xcode.",
-    fragments = ["apple", "cpp"],
+    fragments = [
+        "apple",
+        "cpp",
+    ],
     implementation = _xcode_swift_toolchain_impl,
 )

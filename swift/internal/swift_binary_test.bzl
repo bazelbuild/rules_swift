@@ -180,7 +180,11 @@ Additional linker options that should be passed to `clang`. These strings are su
     ),
     doc = "Compiles and links Swift code into an executable binary.",
     executable = True,
-    fragments = ["cpp", "objc", "swift"],
+    fragments = [
+        "cpp",
+        "objc",
+        "swift",
+    ],
     implementation = _swift_binary_impl,
 )
 
@@ -202,7 +206,11 @@ Additional linker options that should be passed to `clang`. These strings are su
     ),
     doc = "Compiles and links Swift code into an executable test target.",
     executable = True,
-    fragments = ["cpp", "objc", "swift"],
-    implementation = _swift_test_impl,
+    fragments = [
+        "cpp",
+        "objc",
+        "swift",
+    ],
     test = True,
+    implementation = _swift_test_impl,
 )
