@@ -167,45 +167,45 @@ def _swift_toolchain_impl(ctx):
   ]
 
 swift_toolchain = rule(
-    attrs={
+    attrs = {
         "arch": attr.string(
-            doc="""
+            doc = """
 The name of the architecture that this toolchain targets.
 
 This name should match the name used in the toolchain's directory layout for
 architecture-specific content, such as "x86_64" in "lib/swift/linux/x86_64".
 """,
-            mandatory=True,
+            mandatory = True,
         ),
         "clang_executable": attr.string(
-            doc="""
+            doc = """
 The path to the `clang` executable, which is used for linking.
 """,
-            mandatory=True,
+            mandatory = True,
         ),
         "os": attr.string(
-            doc="""
+            doc = """
 The name of the operating system that this toolchain targets.
 
 This name should match the name used in the toolchain's directory layout for
 platform-specific content, such as "linux" in "lib/swift/linux".
 """,
-            mandatory=True,
+            mandatory = True,
         ),
         "root": attr.string(
-            mandatory=True,
+            mandatory = True,
         ),
         "stamp": attr.label(
-            doc="""
+            doc = """
 A `cc`-providing target that should be linked into any binaries that are built
 with stamping enabled.
 """,
-            providers=[["cc"]],
+            providers = [["cc"]],
         ),
         "_cc_toolchain": attr.label(
-            cfg="host",
-            default=Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
-            doc="""
+            cfg = "host",
+            default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
+            doc = """
 The C++ toolchain from which other tools needed by the Swift toolchain (such as
 `clang` and `ar`) will be retrieved.
 """,

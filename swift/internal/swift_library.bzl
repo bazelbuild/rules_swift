@@ -88,7 +88,10 @@ swift_library = rule(
     doc = """
 Compiles and links Swift code into a static library and Swift module.
 """,
-    fragments = ["objc", "swift"],
+    fragments = [
+        "objc",
+        "swift",
+    ],
     outputs = swift_library_output_map,
     implementation = _swift_library_impl,
 )

@@ -22,11 +22,12 @@ load("@bazel_skylib//:lib.bzl", "dicts")
 def _swift_import_impl(ctx):
     archives = ctx.files.archives
     deps = ctx.attr.deps
+    swiftdocs = ctx.files.swiftdocs
     swiftmodules = ctx.files.swiftmodules
 
     providers = [
         DefaultInfo(
-            files = depset(direct = archives + swiftmodules),
+            files = depset(direct = archives + swiftdocs + swiftmodules),
             runfiles = ctx.runfiles(
                 collect_data = True,
                 collect_default = True,
@@ -34,13 +35,9 @@ def _swift_import_impl(ctx):
             ),
         ),
         build_swift_info_provider(
-            additional_cc_libs = [],
-            compile_options = None,
             deps = deps,
-            direct_additional_inputs = [],
-            direct_defines = [],
             direct_libraries = archives,
-            direct_linkopts = [],
+            direct_swiftdocs = swiftdocs,
             direct_swiftmodules = swiftmodules,
         ),
     ]
@@ -53,28 +50,39 @@ def _swift_import_impl(ctx):
     return providers
 
 swift_import = rule(
-    attrs = dicts.add(SWIFT_COMMON_RULE_ATTRS, {
-        "archives": attr.label_list(
-            allow_empty = False,
-            allow_files = ["a"],
-            doc = """
+    attrs = dicts.add(
+        SWIFT_COMMON_RULE_ATTRS,
+        {
+            "archives": attr.label_list(
+                allow_empty = False,
+                allow_files = ["a"],
+                doc = """
 The list of `.a` files provided to Swift targets that depend on this target.
 """,
-            mandatory = True,
-        ),
-        "swiftmodules": attr.label_list(
-            allow_empty = False,
-            allow_files = ["swiftmodule"],
-            doc = """
-The list of `.swiftmodule` files provided to Swift targets that depend on this
-target.
+                mandatory = True,
+            ),
+            "swiftdocs": attr.label_list(
+                allow_empty = True,
+                allow_files = ["swiftdoc"],
+                doc = """
+The list of `.swiftdoc` files provided to Swift targets that depend on this target.
 """,
-            mandatory = True,
-        ),
-    }),
+                default = [],
+                mandatory = False,
+            ),
+            "swiftmodules": attr.label_list(
+                allow_empty = False,
+                allow_files = ["swiftmodule"],
+                doc = """
+The list of `.swiftmodule` files provided to Swift targets that depend on this target.
+""",
+                mandatory = True,
+            ),
+        },
+    ),
     doc = """
-Allows for the use of precompiled Swift modules as dependencies in other
-`swift_library` and `swift_binary` targets.
+Allows for the use of precompiled Swift modules as dependencies in other `swift_library` and
+`swift_binary` targets.
 """,
     implementation = _swift_import_impl,
 )
