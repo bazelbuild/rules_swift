@@ -55,7 +55,11 @@ load(":utils.bzl", "get_optionally")
 load("@bazel_skylib//:lib.bzl", "dicts", "partial")
 
 # The compilation modes supported by Bazel.
-_VALID_COMPILATION_MODES = ["dbg", "fastbuild", "opt"]
+_VALID_COMPILATION_MODES = [
+    "dbg",
+    "fastbuild",
+    "opt",
+]
 
 # The Swift copts to pass for various sanitizer features.
 _SANITIZER_FEATURE_FLAG_MAP = {
@@ -614,6 +618,7 @@ def _compile_as_library(
             direct_defines = defines,
             direct_libraries = [out_archive],
             direct_linkopts = linkopts + compile_results.linker_flags,
+            direct_swiftdocs = [compile_results.output_doc],
             direct_swiftmodules = [compile_results.output_module],
             module_name = module_name,
             swift_version = find_swift_version_copt_value(copts),
@@ -835,6 +840,7 @@ def _merge_swift_info_providers(targets):
     transitive_defines = []
     transitive_libraries = []
     transitive_linkopts = []
+    transitive_swiftdocs = []
     transitive_swiftmodules = []
 
     for target in targets:
@@ -844,22 +850,23 @@ def _merge_swift_info_providers(targets):
             transitive_defines.append(p.transitive_defines)
             transitive_libraries.append(p.transitive_libraries)
             transitive_linkopts.append(p.transitive_linkopts)
+            transitive_swiftdocs.append(p.transitive_swiftdocs)
             transitive_swiftmodules.append(p.transitive_swiftmodules)
 
     return SwiftInfo(
-        compile_options = None,
-        direct_defines = None,
-        direct_libraries = None,
-        direct_linkopts = None,
-        direct_swiftmodules = None,
+        compile_options = [],
+        direct_defines = [],
+        direct_libraries = [],
+        direct_linkopts = [],
+        direct_swiftdocs = [],
+        direct_swiftmodules = [],
         module_name = None,
         swift_version = None,
-        transitive_additional_inputs = depset(
-            transitive = transitive_additional_inputs,
-        ),
+        transitive_additional_inputs = depset(transitive = transitive_additional_inputs),
         transitive_defines = depset(transitive = transitive_defines),
         transitive_libraries = depset(transitive = transitive_libraries),
         transitive_linkopts = depset(transitive = transitive_linkopts),
+        transitive_swiftdocs = depset(transitive = transitive_swiftdocs),
         transitive_swiftmodules = depset(transitive = transitive_swiftmodules),
     )
 
@@ -1032,8 +1039,8 @@ def _toolchain_attrs():
 swift_common = struct(
     compilation_attrs = _compilation_attrs,
     compilation_mode_copts = _compilation_mode_copts,
-    compile_as_objects = _compile_as_objects,
     compile_as_library = _compile_as_library,
+    compile_as_objects = _compile_as_objects,
     derive_module_name = _derive_module_name,
     library_rule_attrs = _library_rule_attrs,
     merge_swift_info_providers = _merge_swift_info_providers,
