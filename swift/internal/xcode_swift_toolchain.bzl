@@ -348,7 +348,13 @@ def _xcode_swift_toolchain_impl(ctx):
             requires_workspace_relative_module_maps = False,
             root_dir = None,
             stamp = ctx.attr.stamp if _is_macos(platform) else None,
+            # TODO(#35): Set to True based on Xcode version once
+            # https://github.com/apple/swift/pull/17665 makes it into a release.
+            supports_debug_prefix_map = False,
             supports_objc_interop = True,
+            # TODO(#34): Set to True based on Xcode version once
+            # https://github.com/apple/swift/pull/16362 makes it into a release.
+            supports_response_files = False,
             swiftc_copts = swiftc_copts,
             system_name = "darwin",
         ),

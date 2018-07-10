@@ -25,6 +25,7 @@ which exports the `swift_common` module.
 
 load(
     ":actions.bzl",
+    "make_driver_args",
     _run_toolchain_action = "run_toolchain_action",
     _run_toolchain_shell_action = "run_toolchain_shell_action",
 )
@@ -333,7 +334,7 @@ def _compile_as_objects(
     out_module = derived_files.swiftmodule(actions, module_name = module_name)
     out_doc = derived_files.swiftdoc(actions, module_name = module_name)
 
-    compile_args = actions.args()
+    compile_args = make_driver_args(actions, toolchain)
     compile_args.add("-emit-object")
     compile_args.add_all(compile_reqs.args)
     compile_args.add("-emit-module-path")
