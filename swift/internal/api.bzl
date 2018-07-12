@@ -33,7 +33,7 @@ load(":archiving.bzl", "register_static_archive_action")
 load(":attrs.bzl", "SWIFT_COMMON_RULE_ATTRS")
 load(
     ":compiling.bzl",
-    "build_swift_info_provider",
+    "collect_link_libraries",
     "collect_transitive_compile_inputs",
     "declare_compile_outputs",
     "find_swift_version_copt_value",
@@ -67,6 +67,105 @@ _SANITIZER_FEATURE_FLAG_MAP = {
     "asan": ["-sanitize=address"],
     "tsan": ["-sanitize=thread"],
 }
+
+def _build_swift_info(
+        additional_cc_libs = [],
+        compile_options = [],
+        deps = [],
+        direct_additional_inputs = [],
+        direct_defines = [],
+        direct_libraries = [],
+        direct_linkopts = [],
+        direct_swiftdocs = [],
+        direct_swiftmodules = [],
+        module_name = None,
+        swift_version = None):
+    """Builds a `SwiftInfo` provider from direct outputs and dependencies.
+
+    This function is recommended instead of directly creating a `SwiftInfo` provider because it
+    encodes reasonable defaults for fields that some rules may not be interested in, and because it
+    also automatically collects transitive values from dependencies.
+
+    Args:
+        additional_cc_libs: A list of additional `cc_library` dependencies whose libraries and
+            linkopts need to be propagated by `SwiftInfo`.
+        compile_options: A list of `Args` objects that contain the compilation options passed to
+            `swiftc` to compile this target.
+        deps: A list of dependencies of the target being built, which provide `SwiftInfo` providers.
+        direct_additional_inputs: A list of additional input files passed into a library or binary
+            target via the `swiftc_inputs` attribute.
+        direct_defines: A list of defines that will be provided as `copts` of the target being
+            built.
+        direct_libraries: A list of `.a` files that are the direct outputs of the target being
+            built.
+        direct_linkopts: A list of linker flags that will be passed to the linker when the target
+            being built is linked into a binary.
+        direct_swiftdocs: A list of `.swiftdoc` files that are the direct outputs of the target
+            being built.
+        direct_swiftmodules: A list of `.swiftmodule` files that are the direct outputs of the
+            target being built.
+        module_name: A string containing the name of the Swift module, or `None` if the provider
+            does not represent a compiled module (this happens, for example, with `proto_library`
+            targets that act as "collectors" of other modules but have no sources of their own).
+        swift_version: A string containing the value of the `-swift-version` flag used when
+            compiling this target, or `None` if it was not set or is not relevant.
+
+    Returns:
+        A new `SwiftInfo` provider that propagates the direct and transitive libraries and modules
+        for the target being built.
+    """
+    transitive_additional_inputs = []
+    transitive_defines = []
+    transitive_libraries = []
+    transitive_linkopts = []
+    transitive_swiftdocs = []
+    transitive_swiftmodules = []
+
+    # Note that we also collect the transitive libraries and linker flags from `cc_library`
+    # dependencies and propagate them through the `SwiftInfo` provider; this is necessary because we
+    # cannot construct our own `CcSkylarkApiProviders` from within Skylark, but only consume them.
+    for dep in deps:
+        transitive_libraries.extend(collect_link_libraries(dep))
+        if SwiftInfo in dep:
+            swift_info = dep[SwiftInfo]
+            transitive_additional_inputs.append(swift_info.transitive_additional_inputs)
+            transitive_defines.append(swift_info.transitive_defines)
+            transitive_linkopts.append(swift_info.transitive_linkopts)
+            transitive_swiftdocs.append(swift_info.transitive_swiftdocs)
+            transitive_swiftmodules.append(swift_info.transitive_swiftmodules)
+        if hasattr(dep, "cc"):
+            transitive_linkopts.append(depset(direct = dep.cc.link_flags))
+
+    for lib in additional_cc_libs:
+        transitive_libraries.extend(collect_link_libraries(lib))
+        transitive_linkopts.append(depset(direct = lib.cc.link_flags))
+
+    return SwiftInfo(
+        compile_options = compile_options,
+        direct_defines = direct_defines,
+        direct_libraries = direct_libraries,
+        direct_linkopts = direct_linkopts,
+        direct_swiftdocs = direct_swiftdocs,
+        direct_swiftmodules = direct_swiftmodules,
+        module_name = module_name,
+        swift_version = swift_version,
+        transitive_additional_inputs = depset(
+            direct = direct_additional_inputs,
+            transitive = transitive_additional_inputs,
+        ),
+        transitive_defines = depset(direct = direct_defines, transitive = transitive_defines),
+        transitive_libraries = depset(
+            direct = direct_libraries,
+            transitive = transitive_libraries,
+            order = "topological",
+        ),
+        transitive_linkopts = depset(direct = direct_linkopts, transitive = transitive_linkopts),
+        transitive_swiftdocs = depset(direct = direct_swiftdocs, transitive = transitive_swiftdocs),
+        transitive_swiftmodules = depset(
+            direct = direct_swiftmodules,
+            transitive = transitive_swiftmodules,
+        ),
+    )
 
 def _compilation_attrs():
     """Returns an attribute dictionary for rules that compile Swift into objects.
@@ -609,7 +708,7 @@ def _compile_as_library(
     )
 
     providers = [
-        build_swift_info_provider(
+        _build_swift_info(
             additional_cc_libs = cc_libs,
             compile_options = compile_results.compile_options,
             deps = all_deps,
@@ -1038,6 +1137,7 @@ def _toolchain_attrs():
 # The exported `swift_common` module, which defines the public API for directly
 # invoking actions that compile Swift code from other rules.
 swift_common = struct(
+    build_swift_info = _build_swift_info,
     compilation_attrs = _compilation_attrs,
     compilation_mode_copts = _compilation_mode_copts,
     compile_as_library = _compile_as_library,

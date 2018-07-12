@@ -70,7 +70,14 @@ depending on this target.
 )
 
 SwiftInfo = provider(
-    doc = "Contains information about the compiled artifacts of a Swift static library.",
+    doc = """
+Contains information about the compiled artifacts of a Swift static library.
+
+This provider contains a large number of fields and many custom rules may not need to set all of
+them. Instead of constructing a `SwiftInfo` provider directly, consider using the
+`swift_common.build_swift_info` function, which has reasonable defaults for all of the fields and
+also automatically collects transitive values from a list of dependencies.
+""",
     fields = {
         "compile_options": """
 `List` of `Args` objects. The command-line options that were passed to the compiler to compile this
