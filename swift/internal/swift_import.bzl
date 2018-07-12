@@ -16,8 +16,12 @@
 
 load(":api.bzl", "swift_common")
 load(":attrs.bzl", "swift_common_rule_attrs")
-load(":providers.bzl", "SwiftClangModuleInfo", "merge_swift_clang_module_infos")
+load(":compiling.bzl", "new_objc_provider")
+load(":providers.bzl", "SwiftClangModuleInfo", "merge_swift_clang_module_infos", "SwiftToolchainInfo")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
+
+def _link_name(library):
+  return library[3:-2]
 
 def _swift_import_impl(ctx):
     archives = ctx.files.archives
@@ -42,6 +46,25 @@ def _swift_import_impl(ctx):
         ),
     ]
 
+    toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
+    objc_fragment = (ctx.fragments.objc if toolchain.supports_objc_interop else None)
+    if toolchain.supports_objc_interop and objc_fragment:
+      for index, archive in enumerate(archives):
+        library_path = "-L{}".format(archive.dirname)
+        library_link_command = "-l{}".format(_link_name(archive.basename))
+        linkopts = [library_path, library_link_command] + swift_common.swift_runtime_linkopts(False, toolchain)
+
+        providers.append(new_objc_provider(
+            deps = deps + toolchain.implicit_deps,
+            include_path = archive.dirname,
+            link_inputs = [archive],
+            linkopts = linkopts,
+            module_map = None,
+            objc_header = None,
+            static_archive = archive,
+            swiftmodule = swiftmodules[index],
+        ))
+
     # Only propagate `SwiftClangModuleInfo` if any of our deps does.
     if any([SwiftClangModuleInfo in dep for dep in deps]):
         clang_module = merge_swift_clang_module_infos(deps)
@@ -52,6 +75,7 @@ def _swift_import_impl(ctx):
 swift_import = rule(
     attrs = dicts.add(
         swift_common_rule_attrs(),
+        swift_common.toolchain_attrs(),
         {
             "archives": attr.label_list(
                 allow_empty = False,
@@ -84,5 +108,6 @@ The list of `.swiftmodule` files provided to Swift targets that depend on this t
 Allows for the use of precompiled Swift modules as dependencies in other `swift_library` and
 `swift_binary` targets.
 """,
+    fragments = ["objc"],
     implementation = _swift_import_impl,
 )
