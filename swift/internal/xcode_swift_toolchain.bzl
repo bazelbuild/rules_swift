@@ -207,6 +207,9 @@ def _run_action(
         tools = depset(direct = [user_executable], transitive = [user_tools])
     elif user_tools:
         fail("'tools' argument must be a sequence or depset.")
+    elif type(user_executable) != type(""):
+        # Only add the user_executable to the "tools" list if it's a File, not a string.
+        tools = [user_executable]
     else:
         tools = []
 
@@ -239,15 +242,13 @@ def _run_shell_action(
 
     # We need to add the wrapper to the tools of the action so that we can reference its path in the
     # new command line.
-    user_tools = remaining_args.pop("tools", None)
+    user_tools = remaining_args.pop("tools", [])
     if type(user_tools) == type([]):
         tools = [wrapper] + user_tools
     elif type(user_tools) == type(depset()):
         tools = depset(direct = [wrapper], transitive = [user_tools])
     elif user_tools:
         fail("'tools' argument must be a sequence or depset.")
-    else:
-        tools = []
 
     # Prepend the wrapper executable to the command being executed.
     user_command = remaining_args.pop("command", "")
