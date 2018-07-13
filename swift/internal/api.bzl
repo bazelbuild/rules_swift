@@ -462,9 +462,10 @@ def _compile_as_objects(
     compile_outputs = ([out_module, out_doc] + output_objects +
                        compile_reqs.other_outputs) + additional_outputs
 
-    _invoke_swiftc(
+    _run_toolchain_action(
         actions = actions,
         arguments = [compile_args] + arguments,
+        executable = "swiftc",
         inputs = all_inputs,
         mnemonic = "SwiftCompile",
         outputs = compile_outputs,
@@ -793,56 +794,6 @@ def _derive_module_name(*args):
         return package_part + "_" + name_part
     return name_part
 
-def _invoke_swiftc(
-        actions,
-        arguments,
-        inputs,
-        mnemonic,
-        outputs,
-        toolchain,
-        env = None,
-        execution_requirements = None):
-    """Registers an action that invokes the Swift compiler.
-
-    This is a very low-level function that does minimal processing of the
-    arguments beyond ensuring that a wrapper script is applied to the invocation
-    if the toolchain requires it and that any toolchain-mandatory copts are
-    present. In particular, it does *not* automatically apply flags from Bazel's
-    Swift configuration fragment (i.e., `--swiftcopt` flags), nor any flags that
-    might be applied based on the Bazel `--compilation_mode`.
-
-    Most clients should prefer the higher-level `swift_common.compile_as_object`
-    or `swift_common.compile_as_library` instead.
-
-    Args:
-      actions: The context's `actions` object.
-      arguments: A list of `Args` objects that should be passed to the command.
-      inputs: A list of `File`s that should be treated as inputs to the action.
-      mnemonic: The string mnemonic printed when the action is executed.
-      outputs: A list of `File`s that are the expected outputs of the action.
-      toolchain: A `SwiftToolchainInfo` provider that contains information about
-          the toolchain being invoked.
-      env: A dictionary of environment variables that should be set for the
-          spawned process. The toolchain's `action_environment` is also added to
-          this.
-      execution_requirements: Additional execution requirements for the action.
-          The toolchain's `execution_requirements` are also added to this.
-    """
-    toolchain_args = actions.args()
-    toolchain_args.add_all(toolchain.swiftc_copts)
-
-    _run_toolchain_action(
-        actions = actions,
-        toolchain = toolchain,
-        arguments = [toolchain_args] + arguments,
-        env = env,
-        executable = "swiftc",
-        execution_requirements = execution_requirements,
-        inputs = inputs,
-        mnemonic = mnemonic,
-        outputs = outputs,
-    )
-
 def _library_rule_attrs():
     """Returns an attribute dictionary for `swift_library`-like rules.
 
@@ -1061,11 +1012,6 @@ def _swiftc_command_line_and_inputs(
     """
     all_deps = deps + toolchain.implicit_deps
 
-    # Add any `--swiftcopt` flags passed to Bazel. The entire list will be passed
-    # as the final arguments to `swiftc`, giving us the priority that we want
-    # among them.
-    explicit_copts = copts + swift_fragment.copts()
-
     args.add("-emit-object")
     args.add("-module-name")
     args.add(module_name)
@@ -1095,7 +1041,13 @@ def _swiftc_command_line_and_inputs(
             objc_fragment = objc_fragment,
         ))
 
-    args.add_all(explicit_copts)
+    # Add toolchain copts, target copts, and command-line `--swiftcopt` flags,
+    # in that order, so that more targeted usages can override more general
+    # uses if needed.
+    args.add_all(toolchain.swiftc_copts)
+    args.add_all(copts)
+    args.add_all(swift_fragment.copts())
+
     args.add_all(srcs)
 
     return depset(transitive = input_depsets)
