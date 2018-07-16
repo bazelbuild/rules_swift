@@ -21,6 +21,7 @@ load(":providers.bzl", "SwiftBinaryInfo", "SwiftToolchainInfo")
 load(":utils.bzl", "expand_locations", "get_optionally")
 load("@bazel_skylib//:lib.bzl", "dicts", "partial")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
+load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "CPP_LINK_EXECUTABLE_ACTION_NAME")
 
 def _swift_linking_rule_impl(ctx, is_test):
     """The shared implementation function for `swift_{binary,test}`.
@@ -116,6 +117,22 @@ def _swift_linking_rule_impl(ctx, is_test):
                 features,
                 False,
             ))
+        elif hasattr(cc_common, "get_command_line"):
+            feature_configuration = cc_common.configure_features(
+                cc_toolchain = cpp_toolchain,
+                requested_features = ctx.features + ["static_linking_mode"],
+                unsupported_features = ctx.disabled_features,
+            )
+            variables = cc_common.create_link_build_variables(
+                feature_configuration = feature_configuration,
+                cc_toolchain = cpp_toolchain,
+            )
+            link_cpp_toolchain_flags = cc_common.get_command_line(
+                feature_configuration = feature_configuration,
+                action_name = CPP_LINK_EXECUTABLE_ACTION_NAME,
+                variables = variables,
+            )
+            link_args.add_all(link_cpp_toolchain_flags)
 
     register_link_action(
         actions = ctx.actions,
