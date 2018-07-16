@@ -610,6 +610,7 @@ def _compile_as_library(
         toolchain,
         additional_inputs = [],
         allow_testing = True,
+        alwayslink = False,
         cc_libs = [],
         configuration = None,
         copts = [],
@@ -648,6 +649,8 @@ def _compile_as_library(
           referenced in compiler flags.
       allow_testing: Indicates whether the module should be compiled with testing
           enabled (only when the compilation mode is `fastbuild` or `dbg`).
+      alwayslink: Indicates whether the module should be always be linked into
+          any binaries that link it
       cc_libs: Additional `cc_library` targets whose static libraries should be
           merged into the resulting archive.
       configuration: The default configuration from which certain compilation
@@ -714,7 +717,8 @@ def _compile_as_library(
 
     if not library_name:
         library_name = label.name
-    out_archive = derived_files.static_archive(actions, link_name = library_name)
+    out_archive = derived_files.static_archive(actions, alwayslink,
+                                               link_name = library_name)
 
     # Register the compilation actions to get an object file (.o) for the Swift
     # code, along with its swiftmodule and swiftdoc.
@@ -1035,6 +1039,14 @@ The name of the library that should be linked to targets that depend on this
 library. Supports auto-linking.
 """,
                 mandatory = False,
+            ),
+            "alwayslink": attr.bool(
+                default = False,
+                doc = """
+If true, any direct or indirect binary that depends on this rule will link in
+all the object files archived in the static library, even if some contain no
+symbols referenced by the binary.
+"""
             ),
             # TODO(b/77853138): Remove once the Apple rules support bundling from
             # `data`.
