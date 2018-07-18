@@ -20,7 +20,6 @@ load(":swift_cc_libs_aspect.bzl", "swift_cc_libs_aspect")
 SWIFT_COMMON_RULE_ATTRS = {
     "data": attr.label_list(
         allow_files = True,
-        cfg = "data",
         doc = """
 The list of files needed by this target at runtime.
 
