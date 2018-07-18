@@ -107,16 +107,11 @@ def _swift_linking_rule_impl(ctx, is_test):
     if toolchain.cc_toolchain_info:
         cpp_toolchain = find_cpp_toolchain(ctx)
         if (hasattr(cpp_toolchain, "link_options_do_not_use") and
-            hasattr(cc_common, "mostly_static_link_options")):
+            hasattr(cpp_toolchain, "mostly_static_link_options")):
             # We only do this for non-Xcode toolchains at this time.
             features = ctx.features
-            link_args.add_all(find_cpp_toolchain(ctx).link_options_do_not_use)
-            link_args.add_all(cc_common.mostly_static_link_options(
-                ctx.fragments.cpp,
-                toolchain.cc_toolchain_info,
-                features,
-                False,
-            ))
+            link_args.add_all(cpp_toolchain.link_options_do_not_use)
+            link_args.add_all(cpp_toolchain.mostly_static_link_options(False))
         elif hasattr(cc_common, "get_command_line"):
             feature_configuration = cc_common.configure_features(
                 cc_toolchain = cpp_toolchain,
