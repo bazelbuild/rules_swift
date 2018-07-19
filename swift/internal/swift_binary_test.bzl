@@ -112,17 +112,17 @@ def _swift_linking_rule_impl(ctx, is_test):
             features = ctx.features
             link_args.add_all(cpp_toolchain.link_options_do_not_use)
             link_args.add_all(cpp_toolchain.mostly_static_link_options(False))
-        elif hasattr(cc_common, "get_command_line"):
+        elif hasattr(cc_common, "get_memory_inefficient_command_line"):
             feature_configuration = cc_common.configure_features(
                 cc_toolchain = cpp_toolchain,
                 requested_features = ctx.features + ["static_linking_mode"],
                 unsupported_features = ctx.disabled_features,
             )
-            variables = cc_common.create_link_build_variables(
+            variables = cc_common.create_link_variables(
                 feature_configuration = feature_configuration,
                 cc_toolchain = cpp_toolchain,
             )
-            link_cpp_toolchain_flags = cc_common.get_command_line(
+            link_cpp_toolchain_flags = cc_common.get_memory_inefficient_command_line(
                 feature_configuration = feature_configuration,
                 action_name = CPP_LINK_EXECUTABLE_ACTION_NAME,
                 variables = variables,
