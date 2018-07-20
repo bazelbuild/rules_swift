@@ -253,13 +253,12 @@ def _run_shell_action(
     # Prepend the wrapper executable to the command being executed.
     user_command = remaining_args.pop("command", "")
     if type(user_command) == type([]):
-        fail("Toolchain shell actions do not support the deprecated list form of the 'command' " +
-             "argument.")
-
-    command = "{wrapper_path} {user_command}".format(
-        user_command = user_command,
-        wrapper_path = wrapper.path,
-    )
+        command = [wrapper.path] + user_command
+    else:
+        command = "{wrapper_path} {user_command}".format(
+            user_command = user_command,
+            wrapper_path = wrapper.path,
+        )
 
     actions.run_shell(
         command = command,
