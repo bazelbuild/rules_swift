@@ -54,6 +54,7 @@ def _swift_library_impl(ctx):
         defines = ctx.attr.defines,
         deps = ctx.attr.deps,
         features = ctx.attr.features,
+        genfiles_dir = ctx.genfiles_dir,
         library_name = library_name,
         linkopts = linkopts,
         objc_fragment = objc_fragment,
