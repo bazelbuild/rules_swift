@@ -64,6 +64,7 @@ following dependencies instead:\n\n""".format(
         toolchain = ctx.attr._toolchain[SwiftToolchainInfo],
         configuration = ctx.configuration,
         deps = ctx.attr.deps,
+        genfiles_dir = ctx.genfiles_dir,
         features = ctx.attr.features,
     )
 
