@@ -418,6 +418,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             allow_testing = False,
             configuration = aspect_ctx.configuration,
             deps = compile_deps,
+            genfiles_dir = aspect_ctx.genfiles_dir,
             # Prevent conflicts with C++ protos in the same output directory, which
             # use the `lib{name}.a` pattern. This will produce `lib{name}.swift.a`
             # instead.

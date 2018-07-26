@@ -351,6 +351,7 @@ def _compile_as_objects(
         defines = [],
         deps = [],
         features = [],
+        genfiles_dir = None,
         objc_fragment = None):
     """Compiles Swift source files into object files (and optionally a module).
 
@@ -389,6 +390,10 @@ def _compile_as_objects(
           propagate one of the following providers: `SwiftClangModuleInfo`,
           `SwiftInfo`, `"cc"`, or `apple_common.Objc`.
       features: Features that are enabled on the target being compiled.
+      genfiles_dir: The Bazel `*-genfiles` directory root. If provided, its path
+          is added to ClangImporter's header search paths for compatibility with
+          Bazel's C++ and Objective-C rules which support inclusions of generated
+          headers from that location.
       objc_fragment: The `objc` configuration fragment from Bazel. This must be
           provided if the toolchain supports Objective-C interop; if it does not,
           then this argument may be omitted.
@@ -453,6 +458,7 @@ def _compile_as_objects(
         defines = defines,
         deps = deps,
         features = features,
+        genfiles_dir = genfiles_dir,
         objc_fragment = objc_fragment,
     )
 
@@ -531,6 +537,7 @@ def _compile_as_library(
         defines = [],
         deps = [],
         features = [],
+        genfiles_dir = None,
         library_name = None,
         linkopts = [],
         objc_fragment = None):
@@ -574,6 +581,10 @@ def _compile_as_library(
           propagate one of the following providers: `SwiftClangModuleInfo`,
           `SwiftInfo`, `"cc"`, or `apple_common.Objc`.
       features: Features that are enabled on the target being compiled.
+      genfiles_dir: The Bazel `*-genfiles` directory root. If provided, its path
+          is added to ClangImporter's header search paths for compatibility with
+          Bazel's C++ and Objective-C rules which support inclusions of generated
+          headers from that location.
       library_name: The name that should be substituted for the string `{name}` in
           `lib{name}.a`, which will be the output of this compilation. If this is
           not specified or is falsy, then the default behavior is to simply use
@@ -686,6 +697,7 @@ def _compile_as_library(
         allow_testing = allow_testing,
         configuration = configuration,
         deps = deps,
+        genfiles_dir = genfiles_dir,
         objc_fragment = objc_fragment,
     )
 
@@ -960,6 +972,7 @@ def _swiftc_command_line_and_inputs(
         defines = [],
         deps = [],
         features = [],
+        genfiles_dir = None,
         objc_fragment = None):
     """Computes command line arguments and inputs needed to invoke `swiftc`.
 
@@ -1001,6 +1014,10 @@ def _swiftc_command_line_and_inputs(
           propagate one of the following providers: `SwiftClangModuleInfo`,
           `SwiftInfo`, `"cc"`, or `apple_common.Objc`.
       features: Features that are enabled on the target being compiled.
+      genfiles_dir: The Bazel `*-genfiles` directory root. If provided, its path
+          is added to ClangImporter's header search paths for compatibility with
+          Bazel's C++ and Objective-C rules which support inclusions of generated
+          headers from that location.
       objc_fragment: The `objc` configuration fragment from Bazel. This must be
           provided if the toolchain supports Objective-C interop; if it does not,
           then this argument may be omitted.
@@ -1022,6 +1039,11 @@ def _swiftc_command_line_and_inputs(
     ))
     args.add_all(_coverage_copts(configuration = configuration))
     args.add_all(_sanitizer_copts(features = features))
+
+    # Add the genfiles directory to ClangImporter's header search paths for
+    # compatibility with rules that generate headers there.
+    if genfiles_dir:
+        args.add_all(["-iquote", genfiles_dir.path], before_each = "-Xcc")
 
     input_depsets = list(additional_input_depsets)
     transitive_inputs = collect_transitive_compile_inputs(
