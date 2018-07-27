@@ -294,15 +294,19 @@ def objc_compile_requirements(args, deps, objc_fragment):
         inputs.append(objc.static_framework_file)
         inputs.append(objc.dynamic_framework_file)
 
-        inputs.append(objc.module_map)
-        module_maps.append(objc.module_map)
-
         defines.append(objc.define)
         includes.append(objc.include)
 
         static_frameworks.append(objc.framework_dir)
         all_frameworks.append(objc.framework_dir)
         all_frameworks.append(objc.dynamic_framework_dir)
+
+    # Collect module maps for dependencies. These must be pulled from a combined transitive
+    # provider to get the correct strict propagation behavior that we use to workaround command-line
+    # length issues until Swift 4.2 is available.
+    transitive_objc_provider = apple_common.new_objc_provider(providers = objc_providers)
+    module_maps = transitive_objc_provider.module_map
+    inputs.append(module_maps)
 
     # Add the objc dependencies' header search paths so that imported modules can find their
     # headers.
@@ -341,11 +345,7 @@ def objc_compile_requirements(args, deps, objc_fragment):
     # is needed to avoid a case where Clang may load the same header in modular and non-modular
     # contexts, leading to duplicate definitions in the same file.
     # <https://llvm.org/bugs/show_bug.cgi?id=19501>
-    args.add_all(
-        depset(transitive = module_maps),
-        before_each = "-Xcc",
-        format_each = "-fmodule-map-file=%s",
-    )
+    args.add_all(module_maps, before_each = "-Xcc", format_each = "-fmodule-map-file=%s")
 
     # Add any copts required by the `objc` configuration fragment.
     args.add_all(_clang_copts(objc_fragment), before_each = "-Xcc")
