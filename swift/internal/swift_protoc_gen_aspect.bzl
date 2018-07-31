@@ -462,7 +462,7 @@ swift_protoc_gen_aspect = aspect(
             "_mkdir_and_run": attr.label(
                 cfg = "host",
                 default = Label(
-                    "@build_bazel_rules_swift@bazel_tools//tools/mkdir_and_run",
+                    "@build_bazel_rules_swift//tools/mkdir_and_run",
                 ),
                 executable = True,
             ),

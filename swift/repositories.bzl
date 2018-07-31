@@ -20,6 +20,11 @@ def _create_linux_toolchain(repository_ctx):
   Args:
     repository_ctx: The repository rule context.
   """
+  if repository_ctx.os.environ.get("CC") != "clang":
+    fail("ERROR: rules_swift uses Bazel's CROSSTOOL to link, but Swift " +
+         "requires that the driver used is clang. Please set `CC=clang` in " +
+         "your environment before invoking Bazel.")
+
   path_to_swiftc = repository_ctx.which("swiftc")
   path_to_clang = repository_ctx.which("clang")
   root = path_to_swiftc.dirname.dirname
@@ -80,7 +85,7 @@ def _swift_autoconfiguration_impl(repository_ctx):
     _create_linux_toolchain(repository_ctx)
 
 _swift_autoconfiguration = repository_rule(
-    environ = ["PATH"],
+    environ = ["CC", "PATH"],
     implementation=_swift_autoconfiguration_impl,
 )
 
