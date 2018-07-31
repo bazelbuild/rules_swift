@@ -23,7 +23,7 @@ repository.
 
 ## Compatibility
 
-These rules have been verified to work with **Bazel 0.14.1.**
+These rules have been verified to work with **Bazel 0.16.0.**
 
 ## Quick Setup
 
@@ -51,7 +51,7 @@ rules you wish to depend on:
 git_repository(
     name = "build_bazel_rules_swift",
     remote = "https://github.com/bazelbuild/rules_swift.git",
-    tag = "0.1.1",
+    tag = "0.3.0",
 )
 
 load(
@@ -65,6 +65,17 @@ swift_rules_dependencies()
 The `swift_rules_dependencies` macro creates a toolchain appropriate for your
 platform (either by locating an installation of Xcode on macOS, or looking for
 `swiftc` on the system path on Linux).
+
+### 3. Additional configuration (Linux only)
+
+The `swift_binary` and `swift_test` rules expect to use `clang` as the driver
+for linking, and they query the Bazel C++ API and CROSSTOOL to determine which
+arguments should be passed to the linker. By default, the C++ toolchain used by
+Bazel is `gcc`, so Swift users on Linux need to override this by setting the
+environment variable `CC=clang` when invoking Bazel.
+
+This step is not necessary for macOS users because the Xcode toolchain always
+uses `clang`.
 
 ## Future Work
 
