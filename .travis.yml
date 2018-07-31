@@ -17,11 +17,20 @@ matrix:
       dist: trusty
       sudo: required
       env:
-        - BAZEL=0.14.1 SWIFT_VERSION=4.1.2 TARGETS="//examples/... -//examples/apple/..."
+        - BAZEL=0.16.0 SWIFT_VERSION=4.1.2 CC=clang TARGETS="//examples/... -//examples/apple/..."
+    - os: linux
+      dist: trusty
+      sudo: required
+      env:
+        - BAZEL=HEAD SWIFT_VERSION=4.1.2 CC=clang TARGETS="//examples/... -//examples/apple/..."
     - os: osx
       osx_image: xcode9.3
       env:
-        - BAZEL=0.14.1 TARGETS=//examples/...
+        - BAZEL=0.16.0 TARGETS=//examples/...
+    - os: osx
+      osx_image: xcode9.3
+      env:
+        - BAZEL=HEAD TARGETS=//examples/...
 
 before_install:
   - .travis/install.sh
