@@ -55,21 +55,28 @@ def _default_linker_opts(
         runtime libraries.
     """
 
-    # TODO(#8): Support statically linking the Swift runtime. Until then, the
-    # partial's arguments are ignored to avoid Skylark lint errors.
-    _ignore = (is_static, is_test)
+    _ignore = is_test
+
+    # TODO(#8): Support statically linking the Swift runtime.
     platform_lib_dir = "{toolchain_root}/lib/swift/{os}".format(
         os = os,
         toolchain_root = toolchain_root,
     )
 
-    return [
+    linkopts = [
         "-fuse-ld={}".format(cc_toolchain.ld_executable),
         "-L{}".format(platform_lib_dir),
         "-Wl,-rpath,{}".format(platform_lib_dir),
         "-lm",
         "-lstdc++",
+        "-lrt",
+        "-ldl",
     ]
+
+    if is_static:
+        linkopts.append("-static-libgcc")
+
+    return linkopts
 
 def _modified_action_args(action_args, toolchain_tools):
     """Updates an argument dictionary with values from a toolchain.

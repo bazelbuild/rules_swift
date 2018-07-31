@@ -21,6 +21,7 @@ toolchain, see `swift.bzl`.
 
 load(":providers.bzl", "SwiftToolchainInfo")
 load("@bazel_skylib//:lib.bzl", "dicts", "partial")
+load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
 
 def _default_linker_opts(
         apple_fragment,
@@ -54,8 +55,7 @@ def _default_linker_opts(
     if is_static:
         swift_subdir = "swift_static"
         linkopts.extend([
-            "-Xlinker",
-            "-force_load_swift_libs",
+            "-Wl,-force_load_swift_libs",
             "-framework",
             "Foundation",
             "-lstdc++",
@@ -73,14 +73,14 @@ def _default_linker_opts(
     )
 
     linkopts.extend([
-        "-target",
-        target,
-        "--sysroot",
-        apple_toolchain.sdk_dir(),
-        "-F",
-        platform_framework_dir,
-        "-L",
-        swift_lib_dir,
+        "-F{}".format(platform_framework_dir),
+        "-L{}".format(swift_lib_dir),
+        # TODO(b/112000244): These should get added by the C++ Skylark API, but we're using the
+        # "c++-link-executable" action right now instead of "objc-executable" because the latter
+        # requires additional variables not provided by cc_common. Figure out how to handle this
+        # correctly.
+        "-ObjC",
+        "-Wl,-objc_abi_version,2",
     ])
 
     # XCTest.framework only lives in the Xcode bundle (its platform framework
@@ -333,11 +333,13 @@ def _xcode_swift_toolchain_impl(ctx):
         run_shell = partial.make(_run_shell_action, env, execution_requirements, wrapper),
     )
 
+    cc_toolchain = find_cpp_toolchain(ctx)
+
     return [
         SwiftToolchainInfo(
             action_environment = env,
             action_registrars = action_registrars,
-            cc_toolchain_info = None,
+            cc_toolchain_info = cc_toolchain,
             clang_executable = None,
             cpu = cpu,
             execution_requirements = execution_requirements,
@@ -368,6 +370,13 @@ A `cc`-providing target that should be linked into any binaries that are built
 with stamping enabled.
 """,
             providers = [["cc"]],
+        ),
+        "_cc_toolchain": attr.label(
+            default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
+            doc = """
+The C++ toolchain from which linking flags and other tools needed by the Swift toolchain (such as
+`clang`) will be retrieved.
+""",
         ),
         "_xcode_config": attr.label(
             default = configuration_field(

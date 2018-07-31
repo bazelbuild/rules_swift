@@ -88,14 +88,6 @@ def _swift_linking_rule_impl(ctx, is_test):
             SwiftBinaryInfo(compile_options = compile_results.compile_options),
         )
 
-    # We need to pass some Objective-C-related linker flags to ensure that the runtime is handled
-    # correctly for mixed code.
-    if toolchain.supports_objc_interop:
-        link_args.add("-ObjC")
-        link_args.add("-fobjc-link-runtime")
-        link_args.add("-Wl,-objc_abi_version,2")
-        link_args.add("-Wl,-no_deduplicate")
-
     # TODO(b/70228246): Also support mostly-static and fully-dynamic modes, here and for the C++
     # toolchain args below.
     link_args.add_all(partial.call(
@@ -104,30 +96,24 @@ def _swift_linking_rule_impl(ctx, is_test):
         is_test = is_test,
     ))
 
-    if toolchain.cc_toolchain_info:
+    if toolchain.cc_toolchain_info and hasattr(cc_common, "get_memory_inefficient_command_line"):
         cpp_toolchain = find_cpp_toolchain(ctx)
-        if (hasattr(cpp_toolchain, "link_options_do_not_use") and
-            hasattr(cpp_toolchain, "mostly_static_link_options")):
-            # We only do this for non-Xcode toolchains at this time.
-            features = ctx.features
-            link_args.add_all(cpp_toolchain.link_options_do_not_use)
-            link_args.add_all(cpp_toolchain.mostly_static_link_options(False))
-        elif hasattr(cc_common, "get_memory_inefficient_command_line"):
-            feature_configuration = cc_common.configure_features(
-                cc_toolchain = cpp_toolchain,
-                requested_features = ctx.features + ["static_linking_mode"],
-                unsupported_features = ctx.disabled_features,
-            )
-            variables = cc_common.create_link_variables(
-                feature_configuration = feature_configuration,
-                cc_toolchain = cpp_toolchain,
-            )
-            link_cpp_toolchain_flags = cc_common.get_memory_inefficient_command_line(
-                feature_configuration = feature_configuration,
-                action_name = CPP_LINK_EXECUTABLE_ACTION_NAME,
-                variables = variables,
-            )
-            link_args.add_all(link_cpp_toolchain_flags)
+        feature_configuration = cc_common.configure_features(
+            cc_toolchain = cpp_toolchain,
+            requested_features = ctx.features + ["static_linking_mode"],
+            unsupported_features = ctx.disabled_features,
+        )
+        variables = cc_common.create_link_variables(
+            feature_configuration = feature_configuration,
+            cc_toolchain = cpp_toolchain,
+            is_static_linking_mode = True,
+        )
+        link_cpp_toolchain_flags = cc_common.get_memory_inefficient_command_line(
+            feature_configuration = feature_configuration,
+            action_name = CPP_LINK_EXECUTABLE_ACTION_NAME,
+            variables = variables,
+        )
+        link_args.add_all(link_cpp_toolchain_flags)
 
     register_link_action(
         actions = ctx.actions,
