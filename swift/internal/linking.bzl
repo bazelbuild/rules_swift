@@ -76,7 +76,7 @@ def register_link_action(
 
     deps_libraries = []
     for dep in deps:
-      deps_libraries.extend(collect_link_libraries(dep))
+        deps_libraries.extend(collect_link_libraries(dep))
 
     libraries = depset(transitive = deps_libraries + stamp_lib_depsets, order = "topological")
     link_input_depsets = [
@@ -99,12 +99,6 @@ def register_link_action(
 
     link_input_args.add_all(objects)
     link_input_args.add_all(libraries, map_each = _link_library_map_fn)
-
-    # TODO(b/70228246): Also support fully-dynamic mode.
-    if toolchain.cc_toolchain_info:
-        link_input_args.add("-static-libgcc")
-        link_input_args.add("-lrt")
-        link_input_args.add("-ldl")
 
     all_linkopts = depset(
         direct = expanded_linkopts,

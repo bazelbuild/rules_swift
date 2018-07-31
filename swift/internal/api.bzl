@@ -52,7 +52,6 @@ load(
     "merge_swift_clang_module_infos",
 )
 load(":swift_cc_libs_aspect.bzl", "swift_cc_libs_excluding_directs_aspect")
-load(":utils.bzl", "get_optionally")
 load("@bazel_skylib//:lib.bzl", "dicts", "partial")
 
 # The compilation modes supported by Bazel.
@@ -707,12 +706,14 @@ def _compile_as_library(
     for target in cc_libs:
         cc_lib_files.extend([f for f in target.files if f.basename.endswith(".a")])
 
+    if toolchain.system_name == "darwin" or not toolchain.cc_toolchain_info:
+        ar_executable = None
+    else:
+        ar_executable = toolchain.cc_toolchain_info.ar_executable
+
     register_static_archive_action(
         actions = actions,
-        ar_executable = get_optionally(
-            toolchain,
-            "cc_toolchain_info.ar_executable",
-        ),
+        ar_executable = ar_executable,
         libraries = cc_lib_files,
         mnemonic = "SwiftArchive",
         objects = compile_results.output_objects,
