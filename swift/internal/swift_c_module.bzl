@@ -17,44 +17,44 @@
 load(":providers.bzl", "SwiftClangModuleInfo")
 
 def _swift_c_module_impl(ctx):
-  if len(ctx.attr.deps) > 1:
-    fail("swift_c_module may have no more than one dependency.", attr="deps")
+    if len(ctx.attr.deps) > 1:
+        fail("swift_c_module may have no more than one dependency.", attr = "deps")
 
-  module_map = ctx.file.module_map
+    module_map = ctx.file.module_map
 
-  if len(ctx.attr.deps) == 1:
-    dep = ctx.attr.deps[0]
-    return struct(
-        # Repropagate the dependency's "cc" provider so that Swift targets only
-        # have to depend on the module target, not also on the original library
-        # target. We must also repropagate the dependency, otherwise things we
-        # will lose runtime dependencies that the library expects to be there
-        # during a test (or a regular `bazel run`).
-        cc=dep.cc,
-        providers=[
-            DefaultInfo(
-                data_runfiles=dep[DefaultInfo].data_runfiles,
-                default_runfiles=dep[DefaultInfo].default_runfiles,
-                files=depset(direct=[module_map]),
-            ),
+    if len(ctx.attr.deps) == 1:
+        dep = ctx.attr.deps[0]
+        return struct(
+            # Repropagate the dependency's "cc" provider so that Swift targets only
+            # have to depend on the module target, not also on the original library
+            # target. We must also repropagate the dependency, otherwise things we
+            # will lose runtime dependencies that the library expects to be there
+            # during a test (or a regular `bazel run`).
+            cc = dep.cc,
+            providers = [
+                DefaultInfo(
+                    data_runfiles = dep[DefaultInfo].data_runfiles,
+                    default_runfiles = dep[DefaultInfo].default_runfiles,
+                    files = depset(direct = [module_map]),
+                ),
+                SwiftClangModuleInfo(
+                    transitive_compile_flags = depset(direct = dep.cc.compile_flags),
+                    transitive_defines = depset(direct = dep.cc.defines),
+                    transitive_headers = dep.cc.transitive_headers,
+                    transitive_modulemaps = depset(direct = [module_map]),
+                ),
+            ],
+        )
+    else:
+        return [
+            DefaultInfo(files = depset(direct = [module_map])),
             SwiftClangModuleInfo(
-                transitive_compile_flags=depset(direct=dep.cc.compile_flags),
-                transitive_defines=depset(direct=dep.cc.defines),
-                transitive_headers=dep.cc.transitive_headers,
-                transitive_modulemaps=depset(direct=[module_map]),
+                transitive_compile_flags = depset(),
+                transitive_defines = depset(),
+                transitive_headers = depset(),
+                transitive_modulemaps = depset(direct = [module_map]),
             ),
-        ],
-    )
-  else:
-    return [
-        DefaultInfo(files=depset(direct=[module_map])),
-        SwiftClangModuleInfo(
-            transitive_compile_flags=depset(),
-            transitive_defines=depset(),
-            transitive_headers=depset(),
-            transitive_modulemaps=depset(direct=[module_map]),
-        ),
-    ]
+        ]
 
 swift_c_module = rule(
     attrs = {
