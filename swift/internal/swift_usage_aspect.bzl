@@ -28,7 +28,7 @@ def _get_swift_toolchain(target, aspect_ctx):
       target.
     """
     if SwiftInfo in target:
-        toolchain_target = getattr(aspect_ctx.rule.attr, "_toolchain")
+        toolchain_target = getattr(aspect_ctx.rule.attr, "_toolchain", None)
         if toolchain_target and SwiftToolchainInfo in toolchain_target:
             return toolchain_target[SwiftToolchainInfo]
     return None
