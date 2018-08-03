@@ -259,7 +259,7 @@ support location expansion.
         },
     )
 
-def _compilation_mode_copts(allow_testing, compilation_mode):
+def _compilation_mode_copts(allow_testing, compilation_mode, wants_dsyms = False):
     """Returns `swiftc` compilation flags that match the given compilation mode.
 
     Args:
@@ -268,6 +268,9 @@ def _compilation_mode_copts(allow_testing, compilation_mode):
       compilation_mode: The compilation mode string ("fastbuild", "dbg", or
           "opt"). The build will fail if this is `None` or some other unrecognized
           mode.
+      wants_dsyms: If `True`, the caller is requesting that the debug information
+          be extracted into dSYM binaries. This affects the debug mode used during
+          compilation.
 
     Returns:
       A list of strings containing copts that should be passed to Swift.
@@ -293,10 +296,13 @@ def _compilation_mode_copts(allow_testing, compilation_mode):
         # import search paths to find definitions during debugging.
         flags += ["-Onone", "-DDEBUG", "-Xfrontend", "-serialize-debugging-options"]
 
-        if compilation_mode == "dbg":
-            flags.append("-g")
-        elif compilation_mode == "fastbuild":
-            flags.append("-gline-tables-only")
+    # The combination of dsymutil and -gline-tables-only appears to cause
+    # spurious warnings about symbols in the debug map, so if the caller is
+    # requesting dSYMs, then force `-g` regardless of compilation mode.
+    if compilation_mode == "dbg" or wants_dsyms:
+        flags.append("-g")
+    elif compilation_mode == "fastbuild":
+        flags.append("-gline-tables-only")
 
     return flags
 
@@ -1037,6 +1043,7 @@ def _swiftc_command_line_and_inputs(
     args.add_all(_compilation_mode_copts(
         allow_testing = allow_testing,
         compilation_mode = compilation_mode,
+        wants_dsyms = objc_fragment.generate_dsym if objc_fragment else False,
     ))
     args.add_all(_coverage_copts(configuration = configuration))
     args.add_all(_sanitizer_copts(features = features))
