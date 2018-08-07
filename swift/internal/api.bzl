@@ -426,14 +426,18 @@ def _compile_as_objects(
         compiler.
     """
 
-    # Add any `--swiftcopt` flags passed to Bazel. The entire list will be passed
-    # as the final arguments to `swiftc`, giving us the priority that we want
-    # among them.
-    explicit_copts = copts + swift_fragment.copts()
+    # Force threaded mode for WMO builds, using the same number of cores that is
+    # on a Mac Pro for historical reasons.
+    # TODO(b/32571265): Generalize this based on platform and core count when an
+    # API to obtain this is available.
+    if "-wmo" in copts or "-whole-module-optimization" in copts:
+        # We intentionally don't use `+=` or `extend` here to ensure that a
+        # copy is made instead of extending the original.
+        copts = copts + ["-num-threads", "12"]
 
     compile_reqs = declare_compile_outputs(
         actions = actions,
-        copts = explicit_copts,
+        copts = copts + swift_fragment.copts(),
         features = features,
         srcs = srcs,
         target_name = target_name,
