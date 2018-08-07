@@ -128,7 +128,9 @@ def declare_compile_outputs(
         *   `output_objects`: A list of object (.o) files that will be the result of the compile
             action and which should be archived afterward.
     """
-    if _emits_single_object(copts):
+    output_nature = _emitted_output_nature(copts)
+
+    if not output_nature.emits_multiple_objects:
         # If we're emitting a single object, we don't use an object map; we just declare the output
         # file that the compiler will generate and there are no other partial outputs.
         out_obj = derived_files.whole_module_object_file(actions, target_name = target_name)
@@ -155,21 +157,25 @@ def declare_compile_outputs(
     other_outputs = []
 
     for src in srcs:
-        # Declare the object file and partial .swiftmodule corresponding to the source file.
+        src_output_map = {}
+
+        # Declare the object file (there is one per source file).
         obj = derived_files.intermediate_object_file(actions, target_name = target_name, src = src)
         output_objs.append(obj)
+        src_output_map["object"] = obj.path
 
-        partial_module = derived_files.partial_swiftmodule(
-            actions,
-            target_name = target_name,
-            src = src,
-        )
-        other_outputs.append(partial_module)
+        # Multi-threaded WMO compiles still produce a single .swiftmodule file, despite producing
+        # multiple object files, so we have to check explicitly for that case.
+        if output_nature.emits_partial_modules:
+            partial_module = derived_files.partial_swiftmodule(
+                actions,
+                target_name = target_name,
+                src = src,
+            )
+            other_outputs.append(partial_module)
+            src_output_map["swiftmodule"] = partial_module.path
 
-        output_map[src.path] = struct(
-            object = obj.path,
-            swiftmodule = partial_module.path,
-        )
+        output_map[src.path] = struct(**src_output_map)
 
     actions.write(
         content = struct(**output_map).to_json(),
@@ -455,17 +461,25 @@ def _dirname_map_fn(f):
     """
     return f.dirname
 
-def _emits_single_object(copts):
-    """Returns `True` if the compiler emits a single object for the given flags.
+def _emitted_output_nature(copts):
+    """Returns a `struct` with information about the nature of emitted outputs for the given flags.
 
     The compiler emits a single object if it is invoked with whole-module optimization enabled and
-    is single-threaded (`-num-threads` is not present or is equal to 1).
+    is single-threaded (`-num-threads` is not present or is equal to 1); otherwise, it emits one
+    object file per source file. It also emits a single `.swiftmodule` file for WMO builds,
+    _regardless of thread count,_ so we have to treat that case separately.
 
     Args:
         copts: The options passed into the compile action.
 
     Returns:
-        `True` if the given copts cause the compiler to emit a single object file.
+        A struct containing the following fields:
+
+        *   `emits_multiple_objects`: `True` if the Swift frontend emits an object file per source
+            file, instead of a single object file for the whole module, in a compilation action with
+            the given flags.
+        *   `emits_partial_modules`: `True` if the Swift frontend emits partial `.swiftmodule` files
+            for the individual source files in a compilation action with the given flags.
     """
     is_wmo = False
     saw_space_separated_num_threads = False
@@ -481,7 +495,10 @@ def _emits_single_object(copts):
         elif copt.startswith("-num-threads="):
             num_threads = copt.split("=")[1]
 
-    return is_wmo and num_threads == 1
+    return struct(
+        emits_multiple_objects = not (is_wmo and num_threads == 1),
+        emits_partial_modules = not is_wmo,
+    )
 
 def _objc_provider_framework_name(path):
     """Returns the name of the framework from an `objc` provider path.
