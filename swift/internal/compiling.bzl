@@ -229,9 +229,9 @@ def new_objc_provider(
         link_inputs,
         linkopts,
         module_map,
-        objc_header,
         static_archive,
-        swiftmodule):
+        swiftmodule,
+        objc_header = None):
     """Creates an `apple_common.Objc` provider for a Swift target.
 
     Args:
@@ -241,16 +241,17 @@ def new_objc_provider(
         link_inputs: Additional linker input files that should be propagated to dependents.
         linkopts: Linker options that should be propagated to dependents.
         module_map: The module map generated for the Swift target's Objective-C header, if any.
-        objc_header: The generated Objective-C header for the Swift target.
         static_archive: The static archive (`.a` file) containing the target's compiled code.
         swiftmodule: The `.swiftmodule` file for the compiled target.
+        objc_header: The generated Objective-C header for the Swift target. If `None`, no headers
+            will be propagated. This header is only needed for Swift code that defines classes that
+            should be exposed to Objective-C.
 
     Returns:
         An `apple_common.Objc` provider that should be returned by the calling rule.
     """
     objc_providers = [dep[apple_common.Objc] for dep in deps if apple_common.Objc in dep]
     objc_provider_args = {
-        "header": depset(direct = [objc_header]),
         "include": depset(direct = [include_path]),
         "library": depset(direct = [static_archive]),
         "link_inputs": depset(direct = [swiftmodule] + link_inputs),
@@ -258,6 +259,8 @@ def new_objc_provider(
         "uses_swift": True,
     }
 
+    if objc_header:
+        objc_provider_args["header"] = depset(direct = [objc_header])
     if linkopts:
         objc_provider_args["linkopt"] = depset(direct = linkopts)
 
