@@ -661,7 +661,8 @@ def _compile_as_library(
     additional_outputs = []
     compile_input_depsets = [depset(direct = additional_inputs)]
 
-    if toolchain.supports_objc_interop and objc_fragment:
+    generates_header = not "swift.no_generated_header" in features
+    if generates_header and toolchain.supports_objc_interop and objc_fragment:
         # Generate a Swift bridging header for this library so that it can be
         # included by Objective-C code that may depend on it.
         objc_header = derived_files.objc_header(actions, target_name = label.name)
@@ -758,9 +759,9 @@ def _compile_as_library(
             link_inputs = compile_results.linker_inputs,
             linkopts = compile_results.linker_flags,
             module_map = output_module_map,
-            objc_header = objc_header,
             static_archive = out_archive,
             swiftmodule = compile_results.output_module,
+            objc_header = objc_header,
         ))
 
     # Only propagate `SwiftClangModuleInfo` if any of our deps does.
