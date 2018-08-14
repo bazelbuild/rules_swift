@@ -1052,6 +1052,7 @@ def _swiftc_command_line_and_inputs(
     ))
     args.add_all(_coverage_copts(configuration = configuration))
     args.add_all(_sanitizer_copts(features = features))
+    args.add_all(["-Xfrontend", "-color-diagnostics"])
 
     # Add the genfiles directory to ClangImporter's header search paths for
     # compatibility with rules that generate headers there.
