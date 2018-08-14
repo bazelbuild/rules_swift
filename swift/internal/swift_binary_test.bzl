@@ -52,8 +52,7 @@ def _swift_linking_rule_impl(ctx, is_test):
     compilation_providers = []
 
     link_args = ctx.actions.args()
-    link_args.add("-o")
-    link_args.add(out_bin)
+    link_args.add("-o", out_bin)
 
     if not srcs:
         additional_inputs_to_linker = depset(direct = additional_inputs)

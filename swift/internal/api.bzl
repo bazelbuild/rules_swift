@@ -1057,7 +1057,7 @@ def _swiftc_command_line_and_inputs(
     # Add the genfiles directory to ClangImporter's header search paths for
     # compatibility with rules that generate headers there.
     if genfiles_dir:
-        args.add_all(["-iquote", genfiles_dir.path], before_each = "-Xcc")
+        args.add_all(["-Xcc", "-iquote{}".format(genfiles_dir.path)])
 
     input_depsets = list(additional_input_depsets)
     transitive_inputs = collect_transitive_compile_inputs(

@@ -50,7 +50,7 @@ def collect_transitive_compile_inputs(args, deps, direct_defines = []):
         SwiftInfo,
         "transitive_swiftmodules",
     )
-    args.add_all(transitive_swiftmodules, before_each = "-I", map_each = _dirname_map_fn)
+    args.add_all(transitive_swiftmodules, format_each = "-I%s", map_each = _dirname_map_fn)
     input_depsets.append(transitive_swiftmodules)
 
     transitive_defines = collect_transitive(
@@ -344,7 +344,7 @@ def objc_compile_requirements(args, deps, objc_fragment):
 
     # Swift's ClangImporter does not include the current directory by default in its search paths,
     # so we must add it to find workspace-relative imports in headers imported by module maps.
-    args.add_all(collections.before_each("-Xcc", ["-iquote", "."]))
+    args.add_all(["-Xcc", "-iquote."])
 
     # Ensure that headers imported by Swift modules have the correct defines propagated from
     # dependencies.
@@ -381,8 +381,7 @@ def register_autolink_extract_action(
     """
     tool_args = actions.args()
     tool_args.add_all(objects)
-    tool_args.add("-o")
-    tool_args.add(output)
+    tool_args.add("-o", output)
 
     run_toolchain_action(
         actions = actions,
