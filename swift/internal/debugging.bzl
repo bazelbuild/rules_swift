@@ -111,8 +111,7 @@ def _register_modulewrap_action(
     tool_args = actions.args()
     tool_args.add("-modulewrap")
     tool_args.add(swiftmodule)
-    tool_args.add("-o")
-    tool_args.add(object)
+    tool_args.add("-o", object)
 
     run_toolchain_action(
         actions = actions,

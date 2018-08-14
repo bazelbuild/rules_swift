@@ -148,8 +148,7 @@ def _register_libtool_action(
     """
     args = actions.args()
     args.add("-static")
-    args.add("-o")
-    args.add(output)
+    args.add("-o", output)
 
     # This must be the last argument in this set, because the filelist args object
     # immediately follows it in the invocation below.
