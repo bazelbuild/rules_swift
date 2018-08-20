@@ -491,16 +491,37 @@ def _emitted_output_nature(copts):
         if copt in _WMO_COPTS:
             is_wmo = True
         elif saw_space_separated_num_threads:
-            num_threads = int(copt)
+            saw_space_separated_num_threads = False
+            num_threads = _safe_int(copt)
         elif copt == "-num-threads":
             saw_space_separated_num_threads = True
         elif copt.startswith("-num-threads="):
-            num_threads = copt.split("=")[1]
+            num_threads = _safe_int(copt.split("=")[1])
+
+    if not num_threads:
+        fail("The value of '-num-threads' must be a positive integer.")
 
     return struct(
         emits_multiple_objects = not (is_wmo and num_threads == 1),
         emits_partial_modules = not is_wmo,
     )
+
+def _safe_int(s):
+    """Returns the integer value of `s` when interpreted as base 10, or `None` if it is invalid.
+
+    This function is needed because `int()` fails the build when passed a string that isn't a valid
+    integer, with no way to recover (https://github.com/bazelbuild/bazel/issues/5940).
+
+    Args:
+        s: The string to be converted to an integer.
+
+    Returns:
+        The integer value of `s`, or `None` if was not a valid base 10 integer.
+    """
+    for i in range(len(s)):
+        if s[i] < "0" or s[i] > "9":
+            return None
+    return int(s)
 
 def _objc_provider_framework_name(path):
     """Returns the name of the framework from an `objc` provider path.
