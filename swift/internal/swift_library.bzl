@@ -18,7 +18,6 @@ load(":api.bzl", "swift_common")
 load(":compiling.bzl", "swift_library_output_map")
 load(":providers.bzl", "SwiftToolchainInfo")
 load(":utils.bzl", "expand_locations")
-load("@bazel_skylib//:lib.bzl", "dicts")
 
 def _swift_library_impl(ctx):
     copts = expand_locations(ctx, ctx.attr.copts, ctx.attr.swiftc_inputs)
