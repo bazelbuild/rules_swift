@@ -15,7 +15,7 @@
 """Factory functions for declaring derived files and directories."""
 
 load(":utils.bzl", "owner_relative_path")
-load("@bazel_skylib//:lib.bzl", "paths")
+load("@bazel_skylib//lib:paths.bzl", "paths")
 
 def _ar_mri_script(actions, for_archive):
     """Declares a file for the MRI script that will be used to create an archive.
