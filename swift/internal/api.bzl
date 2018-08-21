@@ -44,6 +44,7 @@ load(
 )
 load(":debugging.bzl", "ensure_swiftmodule_is_embedded", "is_debugging")
 load(":derived_files.bzl", "derived_files")
+load(":features.bzl", "is_feature_enabled")
 load(
     ":providers.bzl",
     "SwiftClangModuleInfo",
@@ -52,7 +53,9 @@ load(
     "merge_swift_clang_module_infos",
 )
 load(":swift_cc_libs_aspect.bzl", "swift_cc_libs_excluding_directs_aspect")
-load("@bazel_skylib//:lib.bzl", "dicts", "partial")
+load("@bazel_skylib//lib:dicts.bzl", "dicts")
+load("@bazel_skylib//lib:new_sets.bzl", "sets")
+load("@bazel_skylib//lib:partial.bzl", "partial")
 
 # The compilation modes supported by Bazel.
 _VALID_COMPILATION_MODES = [
@@ -322,12 +325,11 @@ def _coverage_copts(configuration):
         return ["-profile-generate", "-profile-coverage-mapping"]
     return []
 
-def _sanitizer_copts(features):
+def _sanitizer_copts(feature_configuration):
     """Returns `swiftc` compilation flags for any requested sanitizer features.
 
     Args:
-      features: The list of Bazel features that are enabled for the target being
-          compiled.
+      feature_configuration: The feature configuration.
 
     Returns:
       A list of compiler flags that enable the requested sanitizers for a Swift
@@ -335,7 +337,7 @@ def _sanitizer_copts(features):
     """
     copts = []
     for (feature, flags) in _SANITIZER_FEATURE_FLAG_MAP.items():
-        if feature in features:
+        if is_feature_enabled(feature, feature_configuration):
             copts.extend(flags)
     return copts
 
@@ -355,7 +357,7 @@ def _compile_as_objects(
         copts = [],
         defines = [],
         deps = [],
-        features = [],
+        feature_configuration = None,
         genfiles_dir = None,
         objc_fragment = None):
     """Compiles Swift source files into object files (and optionally a module).
@@ -394,7 +396,10 @@ def _compile_as_objects(
       deps: Dependencies of the target being compiled. These targets must
           propagate one of the following providers: `SwiftClangModuleInfo`,
           `SwiftInfo`, `"cc"`, or `apple_common.Objc`.
-      features: Features that are enabled on the target being compiled.
+      feature_configuration: A feature configuration obtained from
+          `swift_common.configure_features`. If omitted, a default feature
+          configuration will be used, but this argument will be required in the
+          future.
       genfiles_dir: The Bazel `*-genfiles` directory root. If provided, its path
           is added to ClangImporter's header search paths for compatibility with
           Bazel's C++ and Objective-C rules which support inclusions of generated
@@ -426,6 +431,10 @@ def _compile_as_objects(
         compiler.
     """
 
+    # TODO(b/112900284): Make this a required argument.
+    if not feature_configuration:
+        feature_configuration = _configure_features(toolchain)
+
     # Force threaded mode for WMO builds, using the same number of cores that is
     # on a Mac Pro for historical reasons.
     # TODO(b/32571265): Generalize this based on platform and core count when an
@@ -438,9 +447,12 @@ def _compile_as_objects(
     compile_reqs = declare_compile_outputs(
         actions = actions,
         copts = copts + swift_fragment.copts(),
-        features = features,
         srcs = srcs,
         target_name = target_name,
+        index_while_building = is_feature_enabled(
+            "swift.index_while_building",
+            feature_configuration,
+        ),
     )
     output_objects = compile_reqs.output_objects
 
@@ -466,7 +478,7 @@ def _compile_as_objects(
         copts = copts,
         defines = defines,
         deps = deps,
-        features = features,
+        feature_configuration = feature_configuration,
         genfiles_dir = genfiles_dir,
         objc_fragment = objc_fragment,
     )
@@ -545,7 +557,7 @@ def _compile_as_library(
         copts = [],
         defines = [],
         deps = [],
-        features = [],
+        feature_configuration = None,
         genfiles_dir = None,
         library_name = None,
         linkopts = [],
@@ -589,7 +601,10 @@ def _compile_as_library(
       deps: Dependencies of the target being compiled. These targets must
           propagate one of the following providers: `SwiftClangModuleInfo`,
           `SwiftInfo`, `"cc"`, or `apple_common.Objc`.
-      features: Features that are enabled on the target being compiled.
+      feature_configuration: A feature configuration obtained from
+          `swift_common.configure_features`. If omitted, a default feature
+          configuration will be used, but this argument will be required in the
+          future.
       genfiles_dir: The Bazel `*-genfiles` directory root. If provided, its path
           is added to ClangImporter's header search paths for compatibility with
           Bazel's C++ and Objective-C rules which support inclusions of generated
@@ -627,6 +642,11 @@ def _compile_as_library(
         rule. This includes the `SwiftInfo` provider, and if Objective-C interop
         is enabled on the toolchain, an `apple_common.Objc` provider as well.
     """
+
+    # TODO(b/112900284): Make this a required argument.
+    if not feature_configuration:
+        feature_configuration = _configure_features(toolchain)
+
     if not module_name:
         fail("'module_name' must be provided. Use " +
              "'swift_common.derive_module_name' if necessary to derive one from " +
@@ -661,7 +681,7 @@ def _compile_as_library(
     additional_outputs = []
     compile_input_depsets = [depset(direct = additional_inputs)]
 
-    generates_header = not "swift.no_generated_header" in features
+    generates_header = not is_feature_enabled("swift.no_generated_header", feature_configuration)
     if generates_header and toolchain.supports_objc_interop and objc_fragment:
         # Generate a Swift bridging header for this library so that it can be
         # included by Objective-C code that may depend on it.
@@ -678,7 +698,7 @@ def _compile_as_library(
         # door lets them escape the module redefinition error, with the caveat that
         # certain import scenarios could lead to incorrect behavior because a header
         # can be imported textually instead of modularly.
-        if not "swift.no_generated_module_map" in features:
+        if not is_feature_enabled("swift.no_generated_module_map", feature_configuration):
             output_module_map = derived_files.module_map(
                 actions,
                 target_name = label.name,
@@ -696,7 +716,7 @@ def _compile_as_library(
         compilation_mode = compilation_mode,
         copts = copts,
         defines = defines,
-        features = features,
+        feature_configuration = feature_configuration,
         module_name = module_name,
         srcs = srcs,
         swift_fragment = swift_fragment,
@@ -780,6 +800,38 @@ def _compile_as_library(
         providers = providers,
     )
 
+def _configure_features(toolchain, requested_features = [], unsupported_features = []):
+    """Creates a feature configuration that should be passed to other Swift build APIs.
+
+    The feature configuration is a value that encapsulates the list of features that have been
+    explicitly enabled or disabled by the user as well as those enabled or disabled by the
+    toolchain. The other Swift build APIs query this value to determine which features should be
+    used during the build.
+
+    Users should treat the return value of this function as an opaque value and should only operate
+    on it using other API functions, like `swift_common.get_{enabled,disabled}_features`. Its
+    internal representation is an implementation detail and subject to change.
+
+    Args:
+        toolchain: The `SwiftToolchainInfo` provider of the toolchain being used to build.
+        requested_features: The list of user-enabled features _only_. This is typically obtained
+            using the `ctx.features` field in a rule implementation function. It should _not_ be
+            merged with any features from the toolchain; the feature configuration manages those.
+        unsupported_features: The list of user-disabled features _only_. This is typically obtained
+            using the `ctx.disabled_features` field in a rule implementation function. It should
+            _not_ be merged with any disabled features from the toolchain; the feature configuration
+            manages those.
+
+    Returns:
+        An opaque value that should be passed as the `feature_configuration` argument of other
+        `swift_common` API calls.
+    """
+    return struct(
+        requested_features = requested_features,
+        toolchain = toolchain,
+        unsupported_features = unsupported_features,
+    )
+
 def _derive_module_name(*args):
     """Returns a derived module name from the given build label.
 
@@ -817,6 +869,63 @@ def _derive_module_name(*args):
     if package_part:
         return package_part + "_" + name_part
     return name_part
+
+def _get_disabled_features(feature_configuration):
+    """Returns the list of disabled features in the feature configuration.
+
+    Args:
+        feature_configuration: The feature configuration.
+
+    Returns:
+        A list containing the names of features that are disabled in the given feature
+        configuration.
+    """
+
+    # The full set of disabled features includes the ones that the user explicitly asked to be
+    # disabled in a target/package...
+    disabled_features_set = sets.make(feature_configuration.unsupported_features)
+
+    # ...plus the ones that the toolchain does not support...
+    disabled_features_set = sets.union(
+        disabled_features_set,
+        sets.make(feature_configuration.toolchain.unsupported_features),
+    )
+
+    # ...unless the user has asked for any toolchain-unsupported features to be explicitly enabled
+    # on a target/package.
+    disabled_features_set = sets.difference(
+        disabled_features_set,
+        sets.make(feature_configuration.requested_features),
+    )
+    return sets.to_list(disabled_features_set)
+
+def _get_enabled_features(feature_configuration):
+    """Returns the list of enabled features in the feature configuration.
+
+    Args:
+        feature_configuration: The feature configuration.
+
+    Returns:
+        A list containing the names of features that are enabled in the given feature configuration.
+    """
+
+    # The full set of enabled features includes the ones that the user explicitly asked to be
+    # enabled in a target/package...
+    enabled_features_set = sets.make(feature_configuration.requested_features)
+
+    # ...plus the ones that the toolchain supports...
+    enabled_features_set = sets.union(
+        enabled_features_set,
+        sets.make(feature_configuration.toolchain.requested_features),
+    )
+
+    # ...unless the user has asked for any toolchain-supported features to be explicitly disnabled
+    # on a target/package.
+    enabled_features_set = sets.difference(
+        enabled_features_set,
+        sets.make(feature_configuration.unsupported_features),
+    )
+    return sets.to_list(enabled_features_set)
 
 def _library_rule_attrs():
     """Returns an attribute dictionary for `swift_library`-like rules.
@@ -983,7 +1092,7 @@ def _swiftc_command_line_and_inputs(
         copts = [],
         defines = [],
         deps = [],
-        features = [],
+        feature_configuration = None,
         genfiles_dir = None,
         objc_fragment = None):
     """Computes command line arguments and inputs needed to invoke `swiftc`.
@@ -1025,7 +1134,10 @@ def _swiftc_command_line_and_inputs(
       deps: Dependencies of the target being compiled. These targets must
           propagate one of the following providers: `SwiftClangModuleInfo`,
           `SwiftInfo`, `"cc"`, or `apple_common.Objc`.
-      features: Features that are enabled on the target being compiled.
+      feature_configuration: A feature configuration obtained from
+          `swift_common.configure_features`. If omitted, a default feature
+          configuration will be used, but this argument will be required in the
+          future.
       genfiles_dir: The Bazel `*-genfiles` directory root. If provided, its path
           is added to ClangImporter's header search paths for compatibility with
           Bazel's C++ and Objective-C rules which support inclusions of generated
@@ -1039,6 +1151,11 @@ def _swiftc_command_line_and_inputs(
       of the Bazel action that spawns a tool with the computed command line (i.e.,
       any source files, referenced module maps and headers, and so forth.)
     """
+
+    # TODO(b/112900284): Make this a required argument.
+    if not feature_configuration:
+        feature_configuration = _configure_features(toolchain)
+
     all_deps = deps + toolchain.implicit_deps
 
     args.add("-emit-object")
@@ -1051,7 +1168,7 @@ def _swiftc_command_line_and_inputs(
         wants_dsyms = objc_fragment.generate_dsym if objc_fragment else False,
     ))
     args.add_all(_coverage_copts(configuration = configuration))
-    args.add_all(_sanitizer_copts(features = features))
+    args.add_all(_sanitizer_copts(feature_configuration = feature_configuration))
     args.add_all(["-Xfrontend", "-color-diagnostics"])
 
     # Add the genfiles directory to ClangImporter's header search paths for
@@ -1130,7 +1247,10 @@ swift_common = struct(
     compilation_mode_copts = _compilation_mode_copts,
     compile_as_library = _compile_as_library,
     compile_as_objects = _compile_as_objects,
+    configure_features = _configure_features,
     derive_module_name = _derive_module_name,
+    get_disabled_features = _get_disabled_features,
+    get_enabled_features = _get_enabled_features,
     library_rule_attrs = _library_rule_attrs,
     merge_swift_info_providers = _merge_swift_info_providers,
     run_toolchain_action = _run_toolchain_action,

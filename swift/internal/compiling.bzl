@@ -103,18 +103,19 @@ def collect_transitive_compile_inputs(args, deps, direct_defines = []):
 def declare_compile_outputs(
         actions,
         copts,
-        features,
         srcs,
-        target_name):
+        target_name,
+        index_while_building = False):
     """Declares output files (and optional output file map) for a compile action.
 
     Args:
         actions: The object used to register actions.
         copts: The flags that will be passed to the compile action, which are scanned to determine
             whether a single frontend invocation will be used or not.
-        features: Features that are enabled for the target being built.
         srcs: The list of source files that will be compiled.
         target_name: The name (excluding package path) of the target being built.
+        index_while_building: If `True`, a tree artifact will be declared to hold Clang index store
+            data and the relevant option will be added during compilation to generate the indexes.
 
     Returns:
         A `struct` containing the following fields:
@@ -185,10 +186,10 @@ def declare_compile_outputs(
     args = ["-output-file-map", output_map_file]
     output_groups = {}
 
-    # Configure index-while-building if the feature is enabled. IDEs and other indexing tools can
-    # enable this feature on the command line during a build and then access the index store
-    # artifacts that are produced.
-    if "swift.index_while_building" in features:
+    # Configure index-while-building if requested. IDEs and other indexing tools can enable this
+    # feature on the command line during a build and then access the index store artifacts that are
+    # produced.
+    if index_while_building:
         index_store_dir = derived_files.indexstore_directory(actions, target_name = target_name)
         other_outputs.append(index_store_dir)
         args.extend(["-index-store-path", index_store_dir.path])

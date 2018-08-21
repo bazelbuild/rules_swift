@@ -37,6 +37,12 @@ def _swift_library_impl(ctx):
     toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
     objc_fragment = (ctx.fragments.objc if toolchain.supports_objc_interop else None)
 
+    feature_configuration = swift_common.configure_features(
+        toolchain = toolchain,
+        requested_features = ctx.features,
+        unsupported_features = ctx.disabled_features,
+    )
+
     compile_results = swift_common.compile_as_library(
         actions = ctx.actions,
         bin_dir = ctx.bin_dir,
@@ -52,7 +58,7 @@ def _swift_library_impl(ctx):
         configuration = ctx.configuration,
         defines = ctx.attr.defines,
         deps = ctx.attr.deps,
-        features = ctx.attr.features,
+        feature_configuration = feature_configuration,
         genfiles_dir = ctx.genfiles_dir,
         library_name = library_name,
         linkopts = linkopts,

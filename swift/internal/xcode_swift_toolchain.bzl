@@ -346,6 +346,7 @@ def _xcode_swift_toolchain_impl(ctx):
             implicit_deps = [],
             linker_opts_producer = linker_opts_producer,
             object_format = "macho",
+            requested_features = ctx.features,
             requires_autolink_extract = False,
             requires_workspace_relative_module_maps = False,
             root_dir = None,
@@ -359,6 +360,7 @@ def _xcode_swift_toolchain_impl(ctx):
             supports_response_files = False,
             swiftc_copts = swiftc_copts,
             system_name = "darwin",
+            unsupported_features = ctx.disabled_features,
         ),
     ]
 

@@ -53,6 +53,13 @@ following dependencies instead:\n\n""".format(
         output = reexport_src,
     )
 
+    toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
+    feature_configuration = swift_common.configure_features(
+        toolchain = toolchain,
+        requested_features = ctx.features,
+        unsupported_features = ctx.disabled_features,
+    )
+
     compile_results = swift_common.compile_as_library(
         actions = ctx.actions,
         bin_dir = ctx.bin_dir,
@@ -64,8 +71,8 @@ following dependencies instead:\n\n""".format(
         toolchain = ctx.attr._toolchain[SwiftToolchainInfo],
         configuration = ctx.configuration,
         deps = ctx.attr.deps,
+        feature_configuration = feature_configuration,
         genfiles_dir = ctx.genfiles_dir,
-        features = ctx.attr.features,
     )
 
     return compile_results.providers + [
