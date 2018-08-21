@@ -215,6 +215,15 @@ linking binaries with this toolchain.
 `String`. The object file format of the platform that the toolchain is targeting. The currently
 supported values are `"elf"` and `"macho"`.
 """,
+        "requested_features": """
+`List` of `string`s. Features that should be implicitly enabled by default for targets built using
+this toolchain, unless overridden by the user by listing their negation in the `features` attribute
+of a target/package or in the `--features` command line flag.
+
+These features determine various compilation and debugging behaviors of the Swift build rules, and
+they are also passed to the C++ APIs used when linking (so features defined in CROSSTOOL may be used
+here).
+""",
         "requires_autolink_extract": """
 `Boolean`. `True` if the toolchain requires autolink-extract jobs to be invoked to determine which
 imported libraries must be passed to the linker.
@@ -246,6 +255,15 @@ binaries with this toolchain.
 """,
         "system_name": """
 `String`. The name of the operating system that the toolchain is targeting.
+""",
+        "unsupported_features": """
+`List` of `string`s. Features that should be implicitly disabled by default for targets built using
+this toolchain, unless overridden by the user by listing them in the `features` attribute of a
+target/package or in the `--features` command line flag.
+
+These features determine various compilation and debugging behaviors of the Swift build rules, and
+they are also passed to the C++ APIs used when linking (so features defined in CROSSTOOL may be used
+here).
 """,
     },
 )

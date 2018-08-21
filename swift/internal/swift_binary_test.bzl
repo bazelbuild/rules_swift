@@ -16,6 +16,7 @@
 
 load(":api.bzl", "swift_common")
 load(":derived_files.bzl", "derived_files")
+load(":features.bzl", "is_feature_enabled")
 load(":linking.bzl", "register_link_action")
 load(":providers.bzl", "SwiftBinaryInfo", "SwiftToolchainInfo")
 load(":utils.bzl", "expand_locations", "get_optionally")
@@ -39,6 +40,12 @@ def _swift_linking_rule_impl(ctx, is_test):
     # whether we can access the `objc` configuration.
     toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
     objc_fragment = (ctx.fragments.objc if toolchain.supports_objc_interop else None)
+
+    feature_configuration = swift_common.configure_features(
+        toolchain = toolchain,
+        requested_features = ctx.features,
+        unsupported_features = ctx.disabled_features,
+    )
 
     copts = expand_locations(ctx, ctx.attr.copts, ctx.attr.swiftc_inputs)
     linkopts = expand_locations(ctx, ctx.attr.linkopts, ctx.attr.swiftc_inputs)
@@ -67,7 +74,7 @@ def _swift_linking_rule_impl(ctx, is_test):
             compilation_mode = ctx.var["COMPILATION_MODE"],
             copts = copts,
             defines = ctx.attr.defines,
-            features = ctx.features,
+            feature_configuration = feature_configuration,
             module_name = module_name,
             srcs = srcs,
             swift_fragment = ctx.fragments.swift,
@@ -95,20 +102,25 @@ def _swift_linking_rule_impl(ctx, is_test):
         is_test = is_test,
     ))
 
+    if is_feature_enabled("llvm_lld", feature_configuration):
+        link_args.add("-fuse-ld=lld")
+
     if toolchain.cc_toolchain_info and hasattr(cc_common, "get_memory_inefficient_command_line"):
         cpp_toolchain = find_cpp_toolchain(ctx)
-        feature_configuration = cc_common.configure_features(
+        cc_feature_configuration = cc_common.configure_features(
             cc_toolchain = cpp_toolchain,
-            requested_features = ctx.features + ["static_linking_mode"],
-            unsupported_features = ctx.disabled_features,
+            requested_features = (
+                swift_common.get_enabled_features(feature_configuration) + ["static_linking_mode"]
+            ),
+            unsupported_features = swift_common.get_disabled_features(feature_configuration),
         )
         variables = cc_common.create_link_variables(
-            feature_configuration = feature_configuration,
+            feature_configuration = cc_feature_configuration,
             cc_toolchain = cpp_toolchain,
             is_static_linking_mode = True,
         )
         link_cpp_toolchain_flags = cc_common.get_memory_inefficient_command_line(
-            feature_configuration = feature_configuration,
+            feature_configuration = cc_feature_configuration,
             action_name = CPP_LINK_EXECUTABLE_ACTION_NAME,
             variables = variables,
         )
@@ -120,7 +132,6 @@ def _swift_linking_rule_impl(ctx, is_test):
         clang_executable = toolchain.clang_executable,
         deps = ctx.attr.deps + toolchain.implicit_deps,
         expanded_linkopts = linkopts,
-        features = ctx.features,
         inputs = additional_inputs_to_linker,
         mnemonic = "SwiftLinkExecutable",
         objects = objects_to_link,
