@@ -167,6 +167,7 @@ def _swift_toolchain_impl(ctx):
             implicit_deps = [],
             linker_opts_producer = linker_opts_producer,
             object_format = "elf",
+            requested_features = ctx.features,
             requires_autolink_extract = True,
             root_dir = toolchain_root,
             stamp = ctx.attr.stamp,
@@ -179,6 +180,7 @@ def _swift_toolchain_impl(ctx):
             supports_response_files = False,
             swiftc_copts = [],
             system_name = ctx.attr.os,
+            unsupported_features = ctx.disabled_features,
         ),
     ]
 

@@ -25,7 +25,6 @@ def register_link_action(
         clang_executable,
         deps,
         expanded_linkopts,
-        features,
         inputs,
         mnemonic,
         objects,
@@ -46,7 +45,6 @@ def register_link_action(
         deps: A list of `deps` representing additional libraries that will be passed to the linker.
         expanded_linkopts: A list of strings representing options passed to the linker. Any
             `$(location ...)` placeholders are assumed to have already been expanded.
-        features: The list of features that are set on the target being linked.
         inputs: A `depset` containing additional inputs to the link action, such as those used in
             `$(location ...)` substitution, or libraries that need to be linked.
         mnemonic: The mnemonic printed by Bazel when the action executes.
@@ -64,9 +62,6 @@ def register_link_action(
         clang_executable = "clang"
 
     common_args = actions.args()
-    if "llvm_lld" in features:
-        common_args.add("-fuse-ld=lld")
-
     common_args.add_all(_coverage_linkopts(configuration))
 
     if toolchain.stamp:
