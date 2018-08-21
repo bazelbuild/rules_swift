@@ -17,7 +17,7 @@
 load(":api.bzl", "swift_common")
 load(":attrs.bzl", "SWIFT_COMMON_RULE_ATTRS")
 load(":providers.bzl", "SwiftClangModuleInfo", "merge_swift_clang_module_infos")
-load("@bazel_skylib//:lib.bzl", "dicts")
+load("//third_party/bazel_skylib/lib:dicts.bzl", "dicts")
 
 def _swift_import_impl(ctx):
     archives = ctx.files.archives
