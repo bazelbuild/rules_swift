@@ -14,7 +14,7 @@
 
 """Common utility definitions used by various BUILD rules."""
 
-load("@bazel_skylib//:lib.bzl", "paths")
+load("@bazel_skylib//lib:paths.bzl", "paths")
 
 def collect_transitive(targets, provider, key, direct = None):
     """Returns a `depset` that collects transitive information from providers.
