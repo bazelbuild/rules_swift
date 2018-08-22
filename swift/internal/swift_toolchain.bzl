@@ -19,6 +19,7 @@ toolchain package. If you are looking for rules to build Swift code using this
 toolchain, see `swift.bzl`.
 """
 
+load(":features.bzl", "SWIFT_FEATURE_AUTOLINK_EXTRACT", "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD")
 load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
 load(
     "@bazel_skylib//:lib.bzl",
@@ -167,20 +168,21 @@ def _swift_toolchain_impl(ctx):
             implicit_deps = [],
             linker_opts_producer = linker_opts_producer,
             object_format = "elf",
-            requested_features = ctx.features,
-            requires_autolink_extract = True,
+            # TODO(#34): Add SWIFT_FEATURE_USE_RESPONSE_FILES based on Swift compiler version once
+            # https://github.com/apple/swift/pull/16362 makes it into a release.
+            # TODO(#35): Add SWIFT_FEATURE_DEBUG_PREFIX_MAP based on Swift compiler version once
+            # https://github.com/apple/swift/pull/17665 makes it into a release.
+            requested_features = ctx.features + [
+                SWIFT_FEATURE_AUTOLINK_EXTRACT,
+            ],
             root_dir = toolchain_root,
             stamp = ctx.attr.stamp,
-            # TODO(#35): Set to True based on Swift compiler version once
-            # https://github.com/apple/swift/pull/17665 makes it into a release.
-            supports_debug_prefix_map = False,
             supports_objc_interop = False,
-            # TODO(#34): Set to True based on Swift compiler version once
-            # https://github.com/apple/swift/pull/16362 makes it into a release.
-            supports_response_files = False,
             swiftc_copts = [],
             system_name = ctx.attr.os,
-            unsupported_features = ctx.disabled_features,
+            unsupported_features = ctx.disabled_features + [
+                SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD,
+            ],
         ),
     ]
 
