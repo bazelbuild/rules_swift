@@ -25,7 +25,6 @@ which exports the `swift_common` module.
 
 load(
     ":actions.bzl",
-    "make_driver_args",
     _run_toolchain_action = "run_toolchain_action",
     _run_toolchain_shell_action = "run_toolchain_shell_action",
 )
@@ -44,7 +43,16 @@ load(
 )
 load(":debugging.bzl", "ensure_swiftmodule_is_embedded", "is_debugging")
 load(":derived_files.bzl", "derived_files")
-load(":features.bzl", "is_feature_enabled")
+load(
+    ":features.bzl",
+    "SWIFT_FEATURE_AUTOLINK_EXTRACT",
+    "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
+    "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
+    "SWIFT_FEATURE_NO_GENERATED_HEADER",
+    "SWIFT_FEATURE_NO_GENERATED_MODULE_MAP",
+    "SWIFT_FEATURE_USE_RESPONSE_FILES",
+    "is_feature_enabled",
+)
 load(
     ":providers.bzl",
     "SwiftClangModuleInfo",
@@ -53,6 +61,7 @@ load(
     "merge_swift_clang_module_infos",
 )
 load(":swift_cc_libs_aspect.bzl", "swift_cc_libs_excluding_directs_aspect")
+load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load("@bazel_skylib//lib:partial.bzl", "partial")
@@ -450,7 +459,7 @@ def _compile_as_objects(
         srcs = srcs,
         target_name = target_name,
         index_while_building = is_feature_enabled(
-            "swift.index_while_building",
+            SWIFT_FEATURE_INDEX_WHILE_BUILDING,
             feature_configuration,
         ),
     )
@@ -459,7 +468,11 @@ def _compile_as_objects(
     out_module = derived_files.swiftmodule(actions, module_name = module_name)
     out_doc = derived_files.swiftdoc(actions, module_name = module_name)
 
-    compile_args = make_driver_args(actions, toolchain)
+    compile_args = actions.args()
+    if is_feature_enabled(SWIFT_FEATURE_USE_RESPONSE_FILES, feature_configuration):
+        compile_args.use_param_file("@%s", use_always = True)
+        compile_args.set_param_file_format("multiline")
+
     compile_args.add("-emit-object")
     compile_args.add_all(compile_reqs.args)
     compile_args.add("-emit-module-path")
@@ -516,7 +529,7 @@ def _compile_as_objects(
         output_objects.extend(module_embed_results.objects_to_link)
 
     # Invoke an autolink-extract action for toolchains that require it.
-    if toolchain.requires_autolink_extract:
+    if is_feature_enabled(SWIFT_FEATURE_AUTOLINK_EXTRACT, feature_configuration):
         autolink_file = derived_files.autolink_flags(
             actions,
             target_name = target_name,
@@ -681,7 +694,10 @@ def _compile_as_library(
     additional_outputs = []
     compile_input_depsets = [depset(direct = additional_inputs)]
 
-    generates_header = not is_feature_enabled("swift.no_generated_header", feature_configuration)
+    generates_header = not is_feature_enabled(
+        SWIFT_FEATURE_NO_GENERATED_HEADER,
+        feature_configuration,
+    )
     if generates_header and toolchain.supports_objc_interop and objc_fragment:
         # Generate a Swift bridging header for this library so that it can be
         # included by Objective-C code that may depend on it.
@@ -698,7 +714,7 @@ def _compile_as_library(
         # door lets them escape the module redefinition error, with the caveat that
         # certain import scenarios could lead to incorrect behavior because a header
         # can be imported textually instead of modularly.
-        if not is_feature_enabled("swift.no_generated_module_map", feature_configuration):
+        if not is_feature_enabled(SWIFT_FEATURE_NO_GENERATED_MODULE_MAP, feature_configuration):
             output_module_map = derived_files.module_map(
                 actions,
                 target_name = label.name,
@@ -1170,6 +1186,12 @@ def _swiftc_command_line_and_inputs(
     args.add_all(_coverage_copts(configuration = configuration))
     args.add_all(_sanitizer_copts(feature_configuration = feature_configuration))
     args.add_all(["-Xfrontend", "-color-diagnostics"])
+
+    if is_feature_enabled(SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD, feature_configuration):
+        args.add_all(collections.before_each(
+            "-Xcc",
+            ["-Xclang", "-fmodule-map-file-home-is-cwd"],
+        ))
 
     # Add the genfiles directory to ClangImporter's header search paths for
     # compatibility with rules that generate headers there.

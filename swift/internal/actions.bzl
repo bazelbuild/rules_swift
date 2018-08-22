@@ -21,25 +21,6 @@ externally and in the rule implementations themselves.
 
 load("@bazel_skylib//:lib.bzl", "partial", "paths")
 
-def make_driver_args(actions, toolchain):
-    """Returns a new `Args` object for the Swift driver, respecting response file support.
-
-    Args:
-        actions: The `Actions` object with which to create the `Args` object.
-        toolchain: The `SwiftToolchainInfo` provider that prescribes the action's requirements.
-
-    Returns:
-        A new `Args` object that has been configured to write its content out to a response file if
-        the toolchain supports them.
-    """
-    args = actions.args()
-
-    if toolchain.supports_response_files:
-        args.use_param_file("@%s", use_always = True)
-        args.set_param_file_format("multiline")
-
-    return args
-
 def run_toolchain_action(actions, toolchain, **kwargs):
     """Equivalent to `actions.run`, but for tools in the Swift toolchain.
 
