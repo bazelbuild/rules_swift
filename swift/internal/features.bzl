@@ -14,6 +14,45 @@
 
 """Helper functions for working with Bazel features."""
 
+# We use the following constants within the rule definitions to prevent the possibility of typos
+# when referring to them as part of the implementation, but we explicitly do not export them since
+# it's not a common practice to use them that way in BUILD files; the expectation is that the actual
+# string literals would be used there. (There is also no good way to generate documentation yet for
+# constants since they don't have "doc" attributes, so exposing them in a more structured way
+# doesn't provide a benefit there either.)
+
+# If enabled, `swift-autolink-extract` will be invoked on the object files generated for a library
+# or binary, generating a response file that will be passed automatically to the linker containing
+# the libraries corresponding to modules that were imported. This is used to simulate the
+# autolinking behavior of Mach-O on platforms with different binary formats.
+SWIFT_FEATURE_AUTOLINK_EXTRACT = "swift.autolink_extract"
+
+# If enabled, debug builds will use the `-debug-prefix-map` feature to remap the current working
+# directory to `.`, which permits debugging remote or sandboxed builds.
+SWIFT_FEATURE_DEBUG_PREFIX_MAP = "swift.debug_prefix_map"
+
+# If enabled, the compilation action for a target will produce an index store.
+SWIFT_FEATURE_INDEX_WHILE_BUILDING = "swift.index_while_building"
+
+# If enabled, compilation actions and module map generation will assume that the header paths in
+# module maps are relative to the current working directory (i.e., the workspace root); if disabled,
+# header paths in module maps are relative to the location of the module map file.
+SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD = "swift.module_map_home_is_cwd"
+
+# If enabled, the compilation action for a library target will not generate an Objective-C header
+# for the module. This feature also implies `swift.no_generated_module_map`.
+SWIFT_FEATURE_NO_GENERATED_HEADER = "swift.no_generated_header"
+
+# If enabled, the compilation action for a library target will not generate a module map for the
+# Objective-C generated header. This feature is ignored if `swift.no_generated_header` is not
+# present.
+SWIFT_FEATURE_NO_GENERATED_MODULE_MAP = "swift.no_generated_module_map"
+
+# If enabled, actions invoking the Swift driver or frontend may write argument lists into response
+# files (i.e., "@args.txt") to avoid passing command lines that exceed the system limit. Toolchains
+# typically set this automatically if using a sufficiently recent version of Swift (4.2 or higher).
+SWIFT_FEATURE_USE_RESPONSE_FILES = "swift.use_response_files"
+
 def is_feature_enabled(feature, feature_configuration):
     """Returns a value indicating whether the given feature is enabled.
 

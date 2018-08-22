@@ -224,30 +224,13 @@ These features determine various compilation and debugging behaviors of the Swif
 they are also passed to the C++ APIs used when linking (so features defined in CROSSTOOL may be used
 here).
 """,
-        "requires_autolink_extract": """
-`Boolean`. `True` if the toolchain requires autolink-extract jobs to be invoked to determine which
-imported libraries must be passed to the linker.
-""",
-        "requires_workspace_relative_module_maps": """
-`Boolean`. `True` if the toolchain requires module map header paths to be workspace-relative
-(because the toolchain passes `-fmodule-map-file-home-is-cwd` to Swift's ClangImporter), or `False`
-if headers are to be read relative to the location of the module map file.
-""",
         "root_dir": "`String`. The workspace-relative root directory of the toolchain.",
         "stamp": """
 `Target`. A `cc`-providing target that should be linked into any binaries that are built with
 stamping enabled.
 """,
-        "supports_debug_prefix_map": """
-`Boolean`. Indicates whether the Swift driver supports the `-debug-prefix-map` option, which is used
-to remove non-hermetic absolute path prefixes in emitted debug info.
-""",
         "supports_objc_interop": """
 `Boolean`. Indicates whether or not the toolchain supports Objective-C interop.
-""",
-        "supports_response_files": """
-`Boolean`. Indicates whether the Swift driver supports passing command line arguments via response
-files (e.g., `swiftc @args.txt`).
 """,
         "swiftc_copts": """
 `List` of `strings`. Additional flags that should be passed to `swiftc` when compiling libraries or
