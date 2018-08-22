@@ -102,9 +102,6 @@ def _swift_linking_rule_impl(ctx, is_test):
         is_test = is_test,
     ))
 
-    if is_feature_enabled("llvm_lld", feature_configuration):
-        link_args.add("-fuse-ld=lld")
-
     if toolchain.cc_toolchain_info and hasattr(cc_common, "get_memory_inefficient_command_line"):
         cpp_toolchain = find_cpp_toolchain(ctx)
         cc_feature_configuration = cc_common.configure_features(
