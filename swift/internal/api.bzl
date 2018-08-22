@@ -753,7 +753,7 @@ def _compile_as_library(
     for target in cc_libs:
         cc_lib_files.extend([f for f in target.files if f.basename.endswith(".a")])
 
-    if toolchain.system_name == "darwin" or not toolchain.cc_toolchain_info:
+    if toolchain.system_name == "darwin":
         ar_executable = None
     else:
         ar_executable = toolchain.cc_toolchain_info.ar_executable
