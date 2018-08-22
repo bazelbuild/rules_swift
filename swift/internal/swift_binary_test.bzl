@@ -102,26 +102,26 @@ def _swift_linking_rule_impl(ctx, is_test):
         is_test = is_test,
     ))
 
-    if toolchain.cc_toolchain_info and hasattr(cc_common, "get_memory_inefficient_command_line"):
-        cpp_toolchain = find_cpp_toolchain(ctx)
-        cc_feature_configuration = cc_common.configure_features(
-            cc_toolchain = cpp_toolchain,
-            requested_features = (
-                swift_common.get_enabled_features(feature_configuration) + ["static_linking_mode"]
-            ),
-            unsupported_features = swift_common.get_disabled_features(feature_configuration),
-        )
-        variables = cc_common.create_link_variables(
-            feature_configuration = cc_feature_configuration,
-            cc_toolchain = cpp_toolchain,
-            is_static_linking_mode = True,
-        )
-        link_cpp_toolchain_flags = cc_common.get_memory_inefficient_command_line(
-            feature_configuration = cc_feature_configuration,
-            action_name = CPP_LINK_EXECUTABLE_ACTION_NAME,
-            variables = variables,
-        )
-        link_args.add_all(link_cpp_toolchain_flags)
+    # Get additional linker flags from the C++ toolchain.
+    cpp_toolchain = find_cpp_toolchain(ctx)
+    cc_feature_configuration = cc_common.configure_features(
+        cc_toolchain = cpp_toolchain,
+        requested_features = (
+            swift_common.get_enabled_features(feature_configuration) + ["static_linking_mode"]
+        ),
+        unsupported_features = swift_common.get_disabled_features(feature_configuration),
+    )
+    variables = cc_common.create_link_variables(
+        feature_configuration = cc_feature_configuration,
+        cc_toolchain = cpp_toolchain,
+        is_static_linking_mode = True,
+    )
+    link_cpp_toolchain_flags = cc_common.get_memory_inefficient_command_line(
+        feature_configuration = cc_feature_configuration,
+        action_name = CPP_LINK_EXECUTABLE_ACTION_NAME,
+        variables = variables,
+    )
+    link_args.add_all(link_cpp_toolchain_flags)
 
     register_link_action(
         actions = ctx.actions,

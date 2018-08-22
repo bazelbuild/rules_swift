@@ -177,10 +177,7 @@ to set the environment and execution requirements, as well as use a wrapper scri
 """,
         "cc_toolchain_info": """
 The `cc_common.CcToolchainInfo` provider from the Bazel C++ toolchain that this Swift toolchain
-depends on, if any.
-
-This key may be `None` if the toolchain does not depend on a Bazel C++ toolchain (for example, an
-Xcode-based Swift toolchain).
+depends on.
 """,
         "clang_executable": """
 `String`. The path to the `clang` executable, which is used to link binaries.
