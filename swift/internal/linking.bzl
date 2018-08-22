@@ -30,8 +30,7 @@ def register_link_action(
         objects,
         outputs,
         rule_specific_args,
-        toolchain,
-        configuration = None):
+        toolchain):
     """Registers an action that invokes `clang` to link object files.
 
     Args:
@@ -53,16 +52,11 @@ def register_link_action(
         rule_specific_args: Additional arguments that are rule-specific that will be passed to
             `clang`.
         toolchain: The `SwiftToolchainInfo` provider of the toolchain.
-        configuration: The default configuration from which certain compilation options are
-            determined, such as whether coverage is enabled. This object should be one obtained from
-            a rule's `ctx.configuraton` field. If omitted, no default-configuration-specific options
-            will be used.
     """
     if not clang_executable:
         clang_executable = "clang"
 
     common_args = actions.args()
-    common_args.add_all(_coverage_linkopts(configuration))
 
     if toolchain.stamp:
         stamp_lib_depsets = [toolchain.stamp.cc.libs]
@@ -131,26 +125,6 @@ def register_link_action(
         mnemonic = mnemonic,
         outputs = outputs,
     )
-
-def _coverage_linkopts(configuration):
-    """Returns `clang` linking flags for code converage if enabled.
-
-    This function takes advantage of the fact that even if we don't use `clang` to do any C/C++
-    compilation, we can pass the equivalent coverage options to it and the driver will still pass
-    the required instrumentation libraries to the underlying linker for us.
-
-    Args:
-        configuration: The default configuration from which certain linking options are determined,
-            such as whether coverage is enabled. This object should be one obtained from a rule's
-            `ctx.configuraton` field. If omitted, no default-configuration-specific options will be
-            used.
-
-    Returns:
-        A list of linking flags that enable code coverage if requested.
-    """
-    if configuration and configuration.coverage_enabled:
-        return ["-fprofile-instr-generate", "-fcoverage-mapping"]
-    return []
 
 def _link_library_map_fn(lib):
     """Maps a library to the appropriate flags to link them.
