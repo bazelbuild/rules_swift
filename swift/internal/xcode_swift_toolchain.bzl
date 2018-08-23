@@ -19,7 +19,12 @@ toolchain package. If you are looking for rules to build Swift code using this
 toolchain, see `swift.bzl`.
 """
 
-load(":features.bzl", "SWIFT_FEATURE_AUTOLINK_EXTRACT", "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD")
+load(
+    ":features.bzl",
+    "SWIFT_FEATURE_AUTOLINK_EXTRACT",
+    "SWIFT_FEATURE_BUNDLED_XCTESTS",
+    "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
+)
 load(":providers.bzl", "SwiftToolchainInfo")
 load("@bazel_skylib//:lib.bzl", "dicts", "partial")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
@@ -351,7 +356,9 @@ def _xcode_swift_toolchain_impl(ctx):
             # https://github.com/apple/swift/pull/16362 makes it into a release.
             # TODO(#35): Add SWIFT_FEATURE_DEBUG_PREFIX_MAP based on Xcode version once
             # https://github.com/apple/swift/pull/17665 makes it into a release.
-            requested_features = ctx.features,
+            requested_features = ctx.features + [
+                SWIFT_FEATURE_BUNDLED_XCTESTS,
+            ],
             root_dir = None,
             stamp = ctx.attr.stamp if _is_macos(platform) else None,
             supports_objc_interop = True,
