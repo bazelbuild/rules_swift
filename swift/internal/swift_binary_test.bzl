@@ -16,7 +16,7 @@
 
 load(":api.bzl", "swift_common")
 load(":derived_files.bzl", "derived_files")
-load(":features.bzl", "is_feature_enabled")
+load(":features.bzl", "SWIFT_FEATURE_BUNDLED_XCTESTS", "is_feature_enabled")
 load(":linking.bzl", "register_link_action")
 load(":providers.bzl", "SwiftBinaryInfo", "SwiftToolchainInfo")
 load(":utils.bzl", "expand_locations", "get_optionally")
@@ -24,31 +24,35 @@ load("@bazel_skylib//:lib.bzl", "dicts", "partial")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
 load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "CPP_LINK_EXECUTABLE_ACTION_NAME")
 
-def _swift_linking_rule_impl(ctx, is_test):
+def _swift_linking_rule_impl(
+        ctx,
+        feature_configuration,
+        is_test,
+        toolchain,
+        linkopts = []):
     """The shared implementation function for `swift_{binary,test}`.
 
     Args:
         ctx: The rule context.
+        feature_configuration: A feature configuration obtained from
+            `swift_common.configure_features`.
         is_test: A `Boolean` value indicating whether the binary is a test target.
+        toolchain: The `SwiftToolchainInfo` provider of the toolchain being used to build the
+            target.
+        linkopts: Additional rule-specific flags that should be passed to the linker.
 
     Returns:
-        A list of providers to be propagated by the target being built.
+        A tuple with two values: the `File` representing the binary that was linked, and a list of
+        providers to be propagated by the target being built.
     """
 
     # Bazel fails the build if you try to query a fragment that hasn't been declared, even
     # dynamically with `hasattr`/`getattr`. Thus, we have to use other information to determine
     # whether we can access the `objc` configuration.
-    toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
     objc_fragment = (ctx.fragments.objc if toolchain.supports_objc_interop else None)
 
-    feature_configuration = swift_common.configure_features(
-        toolchain = toolchain,
-        requested_features = ctx.features,
-        unsupported_features = ctx.disabled_features,
-    )
-
     copts = expand_locations(ctx, ctx.attr.copts, ctx.attr.swiftc_inputs)
-    linkopts = expand_locations(ctx, ctx.attr.linkopts, ctx.attr.swiftc_inputs)
+    linkopts = list(linkopts) + expand_locations(ctx, ctx.attr.linkopts, ctx.attr.swiftc_inputs)
 
     additional_inputs = ctx.files.swiftc_inputs
     srcs = ctx.files.srcs
@@ -151,24 +155,106 @@ def _swift_linking_rule_impl(ctx, is_test):
         toolchain = toolchain,
     )
 
-    return [
+    return out_bin, compilation_providers + [
+        OutputGroupInfo(**additional_output_groups),
+    ]
+
+def _create_xctest_runner(name, actions, binary, xctest_runner_template):
+    """Creates a shell script that will bundle a test binary and launch the `xctest` helper tool.
+
+    Args:
+        name: The name of the target being built, which will be used as the basename of the bundle
+            (followed by the `.xctest` bundle extension).
+        actions: The context's actions object.
+        binary: The `File` representing the test binary that should be bundled and executed.
+        xctest_runner_template: The `File` that will be used as a template to generate the test
+            runner shell script.
+
+    Returns:
+        A `File` representing the shell script that will launch the test bundle with the `xctest`
+        tool.
+    """
+    xctest_runner = derived_files.xctest_runner_script(actions, name)
+
+    actions.expand_template(
+        is_executable = True,
+        output = xctest_runner,
+        template = xctest_runner_template,
+        substitutions = {
+            "%binary%": binary.short_path,
+        },
+    )
+
+    return xctest_runner
+
+def _swift_binary_impl(ctx):
+    toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
+    feature_configuration = swift_common.configure_features(
+        toolchain = toolchain,
+        requested_features = ctx.features,
+        unsupported_features = ctx.disabled_features,
+    )
+
+    binary, providers = _swift_linking_rule_impl(
+        ctx,
+        feature_configuration = feature_configuration,
+        is_test = False,
+        toolchain = toolchain,
+    )
+
+    return providers + [
         DefaultInfo(
-            executable = out_bin,
+            executable = binary,
             runfiles = ctx.runfiles(
                 collect_data = True,
                 collect_default = True,
                 files = ctx.files.data,
             ),
         ),
-        OutputGroupInfo(**additional_output_groups),
-    ] + compilation_providers
-
-def _swift_binary_impl(ctx):
-    return _swift_linking_rule_impl(ctx, is_test = False)
+    ]
 
 def _swift_test_impl(ctx):
     toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
-    providers = _swift_linking_rule_impl(ctx, is_test = True)
+    feature_configuration = swift_common.configure_features(
+        toolchain = toolchain,
+        requested_features = ctx.features,
+        unsupported_features = ctx.disabled_features,
+    )
+
+    is_bundled = (toolchain.supports_objc_interop and
+                  is_feature_enabled(SWIFT_FEATURE_BUNDLED_XCTESTS, feature_configuration))
+
+    # If we need to run the test in an .xctest bundle, the binary must have Mach-O type `MH_BUNDLE`
+    # instead of `MH_EXECUTE`.
+    # TODO(allevato): This should really be done in the toolchain's linker_opts_producer partial,
+    # but it doesn't take the feature_configuration as an argument. We should update it to do so.
+    linkopts = ["-Wl,-bundle"] if is_bundled else []
+
+    binary, providers = _swift_linking_rule_impl(
+        ctx,
+        feature_configuration = feature_configuration,
+        is_test = True,
+        linkopts = linkopts,
+        toolchain = toolchain,
+    )
+
+    # If the tests are to be bundled, create the test runner script as the rule's executable and
+    # place the binary in runfiles so that it can be copied into place. Otherwise, just use the
+    # binary itself as the executable to launch.
+    # TODO(b/65413470): Make the output of the rule _itself_ an `.xctest` bundle once some
+    # limitations of directory artifacts are resolved.
+    if is_bundled:
+        xctest_runner = _create_xctest_runner(
+            name = ctx.label.name,
+            actions = ctx.actions,
+            binary = binary,
+            xctest_runner_template = ctx.file._xctest_runner_template,
+        )
+        additional_test_outputs = [binary]
+        executable = xctest_runner
+    else:
+        additional_test_outputs = []
+        executable = binary
 
     # TODO(b/79527231): Replace `instrumented_files` with a declared provider when it is available.
     return struct(
@@ -178,6 +264,15 @@ def _swift_test_impl(ctx):
             source_attributes = ["srcs"],
         ),
         providers = providers + [
+            DefaultInfo(
+                executable = executable,
+                files = depset(direct = [executable] + additional_test_outputs),
+                runfiles = ctx.runfiles(
+                    collect_data = True,
+                    collect_default = True,
+                    files = ctx.files.data + additional_test_outputs,
+                ),
+            ),
             testing.ExecutionInfo(toolchain.execution_requirements),
         ],
     )
@@ -218,12 +313,46 @@ Additional linker options that should be passed to `clang`. These strings are su
 """,
                 mandatory = False,
             ),
-            # Do not add references; temporary attribute for C++ toolchain
-            # Skylark migration.
+            # Do not add references; temporary attribute for C++ toolchain Skylark migration.
             "_cc_toolchain": attr.label(default = Label("@bazel_tools//tools/cpp:current_cc_toolchain")),
+            "_xctest_runner_template": attr.label(
+                allow_single_file = True,
+                default = Label(
+                    "@build_bazel_rules_swift//tools/xctest_runner:xctest_runner_template",
+                ),
+            ),
         },
     ),
-    doc = "Compiles and links Swift code into an executable test target.",
+    doc = """
+Compiles and links Swift code into an executable test target.
+
+The behavior of `swift_test` differs slightly for macOS targets, in order to provide seamless
+integration with Apple's XCTest framework. The output of the rule is still a binary, but one whose
+Mach-O type is `MH_BUNDLE` (a loadable bundle). Thus, the binary cannot be launched directly.
+Instead, running `bazel test` on the target will launch a test runner script that copies it into an
+`.xctest` bundle directory and then launches the `xctest` helper tool from Xcode, which uses
+Objective-C runtime reflection to locate the tests.
+
+On Linux, the output of a `swift_test` is a standard executable binary, because the implementation
+of XCTest on that platform currently requires authors to explicitly list the tests that are present
+and run them from their main program.
+
+Test bundling on macOS can be disabled on a per-target basis, if desired. You may wish to do this if
+you are not using XCTest, but rather a different test framework (or no framework at all) where the
+pass/fail outcome is represented as a zero/non-zero exit code (as is the case with other Bazel test
+rules like `cc_test`). To do so, disable the `"swift.bundled_xctests"` feature on the target:
+
+```python
+swift_test(
+    name = "MyTests",
+    srcs = [...],
+    features = ["-swift.bundled_xctests"],
+)
+```
+
+You can also disable this feature for all the tests in a package by applying it to your BUILD file's
+`package()` declaration instead of the individual targets.
+""",
     executable = True,
     fragments = [
         "cpp",

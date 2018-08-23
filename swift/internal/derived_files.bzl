@@ -282,6 +282,30 @@ def _whole_module_object_file(actions, target_name):
     """
     return actions.declare_file(_ar_safe_object_path("{}.o".format(target_name)))
 
+def _xctest_bundle(actions, target_name):
+    """Declares a directory representing the `.xctest` bundle of a Darwin `swift_test`.
+
+    Args:
+        actions: The context's actions object.
+        target_name: The name of the target being built.
+
+    Returns:
+        The declared `File`.
+    """
+    return actions.declare_directory("{}.xctest".format(target_name))
+
+def _xctest_runner_script(actions, target_name):
+    """Declares a file for the script that runs an `.xctest` bundle on Darwin.
+
+    Args:
+        actions: The context's actions object.
+        target_name: The name of the target being built.
+
+    Returns:
+        The declared `File`.
+    """
+    return actions.declare_file("{}.test-runner.sh".format(target_name))
+
 derived_files = struct(
     ar_mri_script = _ar_mri_script,
     autolink_flags = _autolink_flags,
@@ -298,4 +322,6 @@ derived_files = struct(
     swiftdoc = _swiftdoc,
     swiftmodule = _swiftmodule,
     whole_module_object_file = _whole_module_object_file,
+    xctest_bundle = _xctest_bundle,
+    xctest_runner_script = _xctest_runner_script,
 )

@@ -27,6 +27,12 @@
 # autolinking behavior of Mach-O on platforms with different binary formats.
 SWIFT_FEATURE_AUTOLINK_EXTRACT = "swift.autolink_extract"
 
+# If enabled, the `swift_test` rule will output an `.xctest` bundle for Darwin targets instead of a
+# standalone binary. This is necessary for XCTest-based tests that use runtime reflection to locate
+# test methods. This feature can be explicitly disabled on a per-target or per-package basis if
+# needed to make `swift_test` output just a binary.
+SWIFT_FEATURE_BUNDLED_XCTESTS = "swift.bundled_xctests"
+
 # If enabled, debug builds will use the `-debug-prefix-map` feature to remap the current working
 # directory to `.`, which permits debugging remote or sandboxed builds.
 SWIFT_FEATURE_DEBUG_PREFIX_MAP = "swift.debug_prefix_map"
