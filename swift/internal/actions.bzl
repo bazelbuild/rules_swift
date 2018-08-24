@@ -19,7 +19,8 @@ partials from callers who simply want to register toolchain actions, both
 externally and in the rule implementations themselves.
 """
 
-load("@bazel_skylib//:lib.bzl", "partial", "paths")
+load("@bazel_skylib//lib:partial.bzl", "partial")
+load("@bazel_skylib//lib:paths.bzl", "paths")
 
 def run_toolchain_action(actions, toolchain, **kwargs):
     """Equivalent to `actions.run`, but for tools in the Swift toolchain.
