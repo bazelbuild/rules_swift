@@ -26,7 +26,8 @@ load(
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
 )
 load(":providers.bzl", "SwiftToolchainInfo")
-load("@bazel_skylib//:lib.bzl", "dicts", "partial")
+load("@bazel_skylib//lib:dicts.bzl", "dicts")
+load("@bazel_skylib//lib:partial.bzl", "partial")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
 
 def _default_linker_opts(
