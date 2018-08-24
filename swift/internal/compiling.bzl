@@ -24,7 +24,8 @@ load(
     "SwiftToolchainInfo",
 )
 load(":utils.bzl", "collect_transitive")
-load("@bazel_skylib//:lib.bzl", "collections", "dicts", "paths")
+load("@bazel_skylib//lib:collections.bzl", "collections")
+load("@bazel_skylib//lib:paths.bzl", "paths")
 
 # Swift compiler options that cause the code to be compiled using whole-module optimization.
 _WMO_COPTS = ("-force-single-frontend-invocation", "-whole-module-optimization", "-wmo")
