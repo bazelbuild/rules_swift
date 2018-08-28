@@ -24,11 +24,11 @@ matrix:
       env:
         - BAZEL=HEAD SWIFT_VERSION=4.1.2 CC=clang TARGETS="//examples/... -//examples/apple/..."
     - os: osx
-      osx_image: xcode9.3
+      osx_image: xcode9.4
       env:
         - BAZEL=0.16.0 TARGETS=//examples/...
     - os: osx
-      osx_image: xcode9.3
+      osx_image: xcode9.4
       env:
         - BAZEL=HEAD TARGETS=//examples/...
 
