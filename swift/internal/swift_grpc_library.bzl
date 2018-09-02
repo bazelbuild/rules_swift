@@ -82,6 +82,7 @@ def _register_grpcswift_generate_action(
         format = "--plugin=protoc-gen-swiftgrpc=%s",
     )
     protoc_args.add(generated_dir_path, format = "--swiftgrpc_out=%s")
+    protoc_args.add("--swiftgrpc_opt=FileNaming=PathToUnderscores")
     protoc_args.add("--swiftgrpc_opt=Visibility=Public")
     if flavor == "client":
         protoc_args.add("--swiftgrpc_opt=Client=true")
