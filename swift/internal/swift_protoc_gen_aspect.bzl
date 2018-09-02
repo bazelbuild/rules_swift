@@ -129,7 +129,7 @@ def _register_pbswift_generate_action(
         format = "--plugin=protoc-gen-swift=%s",
     )
     protoc_args.add(generated_dir_path, format = "--swift_out=%s")
-    protoc_args.add("--swift_opt=FileNaming=FullPath")
+    protoc_args.add("--swift_opt=FileNaming=PathToUnderscores")
     protoc_args.add("--swift_opt=Visibility=Public")
     if module_mapping_file:
         protoc_args.add(

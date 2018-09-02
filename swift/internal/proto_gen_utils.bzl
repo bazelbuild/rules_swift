@@ -115,7 +115,7 @@ def _generated_file_path(name, extension_fragment, proto_file = None):
     )
     if proto_file:
         generated_file_path = paths.replace_extension(
-            workspace_relative_path(proto_file),
+            workspace_relative_path(proto_file).replace("/", "_"),
             ".{}.swift".format(extension_fragment),
         )
         return paths.join(dir_path, generated_file_path)
