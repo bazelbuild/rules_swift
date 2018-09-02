@@ -59,6 +59,15 @@ def _swift_proto_library_impl(ctx):
 
 swift_proto_library = rule(
     attrs = {
+        "modules": attr.string(
+            default = "on",
+            values = ["on", "off"],
+            doc = """
+Controls wether generate individual modules per proto file. Either `on` (the
+current and default behaviour) or `off`. This is mostly useful when using the
+`pbswift_files` output group.
+            """,
+        ),
         "deps": attr.label_list(
             aspects = [swift_protoc_gen_aspect],
             doc = """

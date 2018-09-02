@@ -258,7 +258,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
     proto_deps = [dep for dep in aspect_ctx.rule.attr.deps if SwiftProtoInfo in dep]
 
     minimal_module_mappings = []
-    if direct_srcs:
+    if direct_srcs and aspect_ctx.attr.modules == "on":
         minimal_module_mappings.append(
             _build_module_mapping_from_srcs(target, direct_srcs),
         )
@@ -417,6 +417,9 @@ swift_protoc_gen_aspect = aspect(
     attrs = dicts.add(
         swift_common.toolchain_attrs(),
         {
+            "modules": attr.string(
+                values = ["on", "off"],
+            ),
             "_mkdir_and_run": attr.label(
                 cfg = "host",
                 default = Label(
