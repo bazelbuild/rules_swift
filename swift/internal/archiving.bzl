@@ -106,7 +106,7 @@ def _register_ar_action(
     command = " && ".join([
         'MRI_SCRIPT="$PWD/$1"',
         'ARCHIVE="$PWD/$2"',
-        '%s rcsD -M < "$MRI_SCRIPT"' % ar_executable,
+        '%s -M < "$MRI_SCRIPT"' % ar_executable,
         'cp /tmp/%s "$ARCHIVE"' % output.basename,
     ])
 
