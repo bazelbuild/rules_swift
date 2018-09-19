@@ -24,6 +24,7 @@ load(
     "SWIFT_FEATURE_AUTOLINK_EXTRACT",
     "SWIFT_FEATURE_BUNDLED_XCTESTS",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
+    "SWIFT_FEATURE_USE_RESPONSE_FILES",
 )
 load(":providers.bzl", "SwiftToolchainInfo")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
@@ -140,6 +141,25 @@ def _is_macos(platform):
       `True` if the given platform is macOS.
     """
     return platform.platform_type == apple_common.platform_type.macos
+
+def _is_xcode_at_least_version(xcode_config, desired_version):
+    """Returns True if we are building with at least the given Xcode version.
+
+    Args:
+        xcode_config: the `apple_common.XcodeVersionConfig` provider.
+        desired_version: The minimum desired Xcode version, as a dotted version string.
+
+    Returns:
+        True if the current target is being built with a version of Xcode at least as high as the
+        given version.
+    """
+    current_version = xcode_config.xcode_version()
+    if not current_version:
+        fail("Could not determine Xcode version at all. This likely means Xcode isn't " +
+             "available; if you think this is a mistake, please file an issue.")
+
+    desired_version_value = apple_common.dotted_version(desired_version)
+    return current_version >= desired_version_value
 
 def _modified_action_args(
         action_args,
@@ -342,6 +362,14 @@ def _xcode_swift_toolchain_impl(ctx):
 
     cc_toolchain = find_cpp_toolchain(ctx)
 
+    # Compute the default requested features based on Xcode version. Xcode 10.0 implies Swift 4.2.
+    requested_features = ctx.features + [SWIFT_FEATURE_BUNDLED_XCTESTS]
+    if _is_xcode_at_least_version(xcode_config, "10.0"):
+        requested_features.append(SWIFT_FEATURE_USE_RESPONSE_FILES)
+
+    # TODO(#35): Add SWIFT_FEATURE_DEBUG_PREFIX_MAP based on Xcode version once
+    # https://github.com/apple/swift/pull/17665 makes it into a release.
+
     return [
         SwiftToolchainInfo(
             action_environment = env,
@@ -353,13 +381,7 @@ def _xcode_swift_toolchain_impl(ctx):
             implicit_deps = [],
             linker_opts_producer = linker_opts_producer,
             object_format = "macho",
-            # TODO(#34): Add SWIFT_FEATURE_USE_RESPONSE_FILES based on Xcode version once
-            # https://github.com/apple/swift/pull/16362 makes it into a release.
-            # TODO(#35): Add SWIFT_FEATURE_DEBUG_PREFIX_MAP based on Xcode version once
-            # https://github.com/apple/swift/pull/17665 makes it into a release.
-            requested_features = ctx.features + [
-                SWIFT_FEATURE_BUNDLED_XCTESTS,
-            ],
+            requested_features = requested_features,
             root_dir = None,
             stamp = ctx.attr.stamp if _is_macos(platform) else None,
             supports_objc_interop = True,
