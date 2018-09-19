@@ -396,7 +396,9 @@ The C++ toolchain from which linking flags and other tools needed by the Swift t
         ),
         "_xcrunwrapper": attr.label(
             cfg = "host",
-            default = Label("@bazel_tools//tools/objc:xcrunwrapper"),
+            default = Label(
+                "@build_bazel_rules_swift//tools/wrappers:xcrunwrapper",
+            ),
             executable = True,
         ),
     },
