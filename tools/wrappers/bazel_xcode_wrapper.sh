@@ -15,14 +15,16 @@
 # limitations under the License.
 
 # SYNOPSIS
-#   Invokes `xcrun`, replacing any special Bazel placeholder strings in the
-#   argument list or in params files with their actual values.
+#   Replaces special Bazel placeholder strings in the argument list or in
+#   params files with their actual values.
 #
 # USAGE
-#   xcrunwrapper.sh <arguments...>
+#   bazel_xcode_wrapper <executable> <arguments...>
 #
 # ARGUMENTS
-#   arguments...: Arguments passed directly to `xcrun`.
+#   executable: The actual executable to launch.
+#   arguments...: Arguments that are processed and then passed to the
+#     executable.
 
 set -eu
 
@@ -50,7 +52,7 @@ function rewrite_argument {
 function rewrite_params_file {
   PARAMSFILE="$1"
   if grep -qe '__BAZEL_XCODE_\(DEVELOPER_DIR\|SDKROOT\)__' "$PARAMSFILE" ; then
-    NEWFILE="$(mktemp "${TMPDIR%/}/xcrunwrapper_params.XXXXXXXXXX")"
+    NEWFILE="$(mktemp "${TMPDIR%/}/bazel_xcode_wrapper_params.XXXXXXXXXX")"
     sed \
         -e "s#__BAZEL_XCODE_DEVELOPER_DIR__#$WRAPPER_DEVDIR#g" \
         -e "s#__BAZEL_XCODE_SDKROOT__#$SDKROOT#g" \
@@ -97,4 +99,4 @@ done
 
 # We can't use `exec` here because we need to make sure the `trap` runs
 # afterward.
-/usr/bin/xcrun "$TOOLNAME" "${ARGS[@]}"
+"$TOOLNAME" "${ARGS[@]}"

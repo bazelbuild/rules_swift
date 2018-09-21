@@ -1,8 +1,14 @@
 licenses(["notice"])
 
 sh_binary(
-    name = "xcrunwrapper",
-    srcs = ["xcrunwrapper.sh"],
+    name = "bazel_xcode_wrapper",
+    srcs = ["bazel_xcode_wrapper.sh"],
+    visibility = ["//visibility:public"],
+)
+
+sh_binary(
+    name = "swift_wrapper",
+    srcs = ["swift_wrapper.sh"],
     visibility = ["//visibility:public"],
 )
 
