@@ -14,7 +14,7 @@
 
 """Implementation of compilation logic for Swift."""
 
-load(":actions.bzl", "run_toolchain_action")
+load(":actions.bzl", "run_toolchain_swift_action")
 load(":deps.bzl", "collect_link_libraries")
 load(":derived_files.bzl", "derived_files")
 load(
@@ -385,14 +385,14 @@ def register_autolink_extract_action(
     tool_args.add_all(objects)
     tool_args.add("-o", output)
 
-    run_toolchain_action(
+    run_toolchain_swift_action(
         actions = actions,
         toolchain = toolchain,
         arguments = [tool_args],
-        executable = "swift-autolink-extract",
         inputs = objects,
         mnemonic = "SwiftAutolinkExtract",
         outputs = [output],
+        swift_tool = "swift-autolink-extract",
     )
 
 def swift_library_output_map(name, module_link_name):

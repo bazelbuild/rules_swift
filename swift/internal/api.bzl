@@ -25,8 +25,9 @@ which exports the `swift_common` module.
 
 load(
     ":actions.bzl",
-    _run_toolchain_action = "run_toolchain_action",
-    _run_toolchain_shell_action = "run_toolchain_shell_action",
+    "run_toolchain_action",
+    "run_toolchain_shell_action",
+    "run_toolchain_swift_action",
 )
 load(":archiving.bzl", "register_static_archive_action")
 load(":attrs.bzl", "SWIFT_COMMON_RULE_ATTRS")
@@ -468,6 +469,9 @@ def _compile_as_objects(
     out_module = derived_files.swiftmodule(actions, module_name = module_name)
     out_doc = derived_files.swiftdoc(actions, module_name = module_name)
 
+    wrapper_args = actions.args()
+    wrapper_args.add("-Xwrapped-swift=-ephemeral-module-cache")
+
     compile_args = actions.args()
     if is_feature_enabled(SWIFT_FEATURE_USE_RESPONSE_FILES, feature_configuration):
         compile_args.use_param_file("@%s", use_always = True)
@@ -502,13 +506,13 @@ def _compile_as_objects(
     compile_outputs = ([out_module, out_doc] + output_objects +
                        compile_reqs.other_outputs) + additional_outputs
 
-    _run_toolchain_action(
+    run_toolchain_swift_action(
         actions = actions,
-        arguments = [compile_args] + arguments,
-        executable = "swiftc",
+        arguments = [wrapper_args, compile_args] + arguments,
         inputs = all_inputs,
         mnemonic = "SwiftCompile",
         outputs = compile_outputs,
+        swift_tool = "swiftc",
         toolchain = toolchain,
     )
 
@@ -1275,8 +1279,9 @@ swift_common = struct(
     get_enabled_features = _get_enabled_features,
     library_rule_attrs = _library_rule_attrs,
     merge_swift_info_providers = _merge_swift_info_providers,
-    run_toolchain_action = _run_toolchain_action,
-    run_toolchain_shell_action = _run_toolchain_shell_action,
+    run_toolchain_action = run_toolchain_action,
+    run_toolchain_shell_action = run_toolchain_shell_action,
+    run_toolchain_swift_action = run_toolchain_swift_action,
     swift_runtime_linkopts = _swift_runtime_linkopts,
     swiftc_command_line_and_inputs = _swiftc_command_line_and_inputs,
     toolchain_attrs = _toolchain_attrs,

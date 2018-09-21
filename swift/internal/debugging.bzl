@@ -14,7 +14,7 @@
 
 """Functions relating to debugging support during compilation and linking."""
 
-load(":actions.bzl", "run_toolchain_action")
+load(":actions.bzl", "run_toolchain_swift_action")
 load(":derived_files.bzl", "derived_files")
 load(":providers.bzl", "SwiftToolchainInfo")
 
@@ -113,12 +113,12 @@ def _register_modulewrap_action(
     tool_args.add(swiftmodule)
     tool_args.add("-o", object)
 
-    run_toolchain_action(
+    run_toolchain_swift_action(
         actions = actions,
         toolchain = toolchain,
         arguments = [tool_args],
-        executable = "swift",
         inputs = [swiftmodule],
         mnemonic = "SwiftModuleWrap",
         outputs = [object],
+        swift_tool = "swift",
     )

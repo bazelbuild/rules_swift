@@ -27,6 +27,7 @@ load(
     "SWIFT_FEATURE_USE_RESPONSE_FILES",
 )
 load(":providers.bzl", "SwiftToolchainInfo")
+load(":wrappers.bzl", "SWIFT_TOOL_WRAPPER_ATTRIBUTES")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:partial.bzl", "partial")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
@@ -192,7 +193,7 @@ def _modified_action_args(
 def _run_action(
         toolchain_env,
         toolchain_execution_requirements,
-        wrapper,
+        bazel_xcode_wrapper,
         actions,
         **kwargs):
     """Runs an action with the toolchain requirements.
@@ -203,7 +204,8 @@ def _run_action(
     Args:
         toolchain_env: The required environment from the toolchain.
         toolchain_execution_requirements: The required execution requirements from the toolchain.
-        wrapper: A `File` representing the wrapper executable for the action.
+        bazel_xcode_wrapper: A `File` representing the Bazel Xcode wrapper executable for the
+            action.
         actions: The `Actions` object with which to register actions.
         **kwargs: Additional arguments that are passed to `actions.run`.
     """
@@ -223,6 +225,7 @@ def _run_action(
     # it.
     user_executable = remaining_args.pop("executable")
     wrapper_args = actions.args()
+    wrapper_args.add("/usr/bin/xcrun")
     wrapper_args.add(user_executable)
 
     # We also need to include the user executable in the "tools" argument of the action, since it
@@ -242,7 +245,7 @@ def _run_action(
 
     actions.run(
         arguments = [wrapper_args] + user_args,
-        executable = wrapper,
+        executable = bazel_xcode_wrapper,
         tools = tools,
         **remaining_args
     )
@@ -250,7 +253,7 @@ def _run_action(
 def _run_shell_action(
         toolchain_env,
         toolchain_execution_requirements,
-        wrapper,
+        bazel_xcode_wrapper,
         actions,
         **kwargs):
     """Runs a shell action with the toolchain requirements.
@@ -261,7 +264,8 @@ def _run_shell_action(
     Args:
         toolchain_env: The required environment from the toolchain.
         toolchain_execution_requirements: The required execution requirements from the toolchain.
-        wrapper: A `File` representing the wrapper executable for the action.
+        bazel_xcode_wrapper: A `File` representing the Bazel Xcode wrapper executable for the
+            action.
         actions: The `Actions` object with which to register actions.
         **kwargs: Additional arguments that are passed to `actions.run_shell`.
     """
@@ -271,24 +275,85 @@ def _run_shell_action(
     # new command line.
     user_tools = remaining_args.pop("tools", [])
     if type(user_tools) == type([]):
-        tools = [wrapper] + user_tools
+        tools = [bazel_xcode_wrapper] + user_tools
     elif type(user_tools) == type(depset()):
-        tools = depset(direct = [wrapper], transitive = [user_tools])
+        tools = depset(direct = [bazel_xcode_wrapper], transitive = [user_tools])
     elif user_tools:
         fail("'tools' argument must be a sequence or depset.")
 
     # Prepend the wrapper executable to the command being executed.
     user_command = remaining_args.pop("command", "")
     if type(user_command) == type([]):
-        command = [wrapper.path] + user_command
+        command = [bazel_xcode_wrapper.path, "/usr/bin/xcrun"] + user_command
     else:
-        command = "{wrapper_path} {user_command}".format(
+        command = "{wrapper_path} /usr/bin/xcrun {user_command}".format(
             user_command = user_command,
-            wrapper_path = wrapper.path,
+            wrapper_path = bazel_xcode_wrapper.path,
         )
 
     actions.run_shell(
         command = command,
+        tools = tools,
+        **remaining_args
+    )
+
+def _run_swift_action(
+        toolchain_env,
+        toolchain_execution_requirements,
+        bazel_xcode_wrapper,
+        swift_wrapper,
+        actions,
+        **kwargs):
+    """Runs a Swift tool with the toolchain requirements.
+
+    This is the implementation of the `action_registrars.run_swift` partial, where the first four
+    arguments are pre-bound to toolchain-specific values.
+
+    Args:
+        toolchain_env: The required environment from the toolchain.
+        toolchain_execution_requirements: The required execution requirements from the toolchain.
+        bazel_xcode_wrapper: A `File` representing the Bazel Xcode wrapper executable for the
+            action.
+        swift_wrapper: A `File` representing the executable that wraps Swift tool invocations.
+        actions: The `Actions` object with which to register actions.
+        **kwargs: Additional arguments that are passed to `actions.run`.
+    """
+    remaining_args = _modified_action_args(kwargs, toolchain_env, toolchain_execution_requirements)
+
+    # Get the user's arguments. If the caller gave us a list of strings instead of a list of `Args`
+    # objects, convert it to a list of `Args` because we're going to create our own `Args` that we
+    # prepend to it.
+    user_args = remaining_args.pop("arguments", [])
+    if user_args and type(user_args[0]) == type(""):
+        user_args_strings = user_args
+        user_args_object = actions.args()
+        user_args_object.add_all(user_args_strings)
+        user_args = [user_args_object]
+
+    # The ordering that we want is `<bazel wrapper> <swift wrapper> xcrun <swift tool>`. This
+    # ensures that we ask `xcrun` to run the correct tool instead of having it get picked up
+    # from the system path.
+    swift_tool = remaining_args.pop("swift_tool")
+    wrapper_args = actions.args()
+    wrapper_args.add(swift_wrapper)
+    wrapper_args.add("/usr/bin/xcrun")
+    wrapper_args.add(swift_tool)
+
+    # We also need to include the Swift wrapper in the "tools" argument of the action.
+    user_tools = remaining_args.pop("tools", None)
+    if type(user_tools) == type([]):
+        tools = [swift_wrapper] + user_tools
+    elif type(user_tools) == type(depset()):
+        tools = depset(direct = [swift_wrapper], transitive = [user_tools])
+    elif user_tools:
+        fail("'tools' argument must be a sequence or depset.")
+    else:
+        # Only add the user_executable to the "tools" list if it's a File, not a string.
+        tools = [swift_wrapper]
+
+    actions.run(
+        arguments = [wrapper_args] + user_args,
+        executable = bazel_xcode_wrapper,
         tools = tools,
         **remaining_args
     )
@@ -354,10 +419,22 @@ def _xcode_swift_toolchain_impl(ctx):
     # Configure the action registrars that automatically prepend xcrunwrapper to registered actions.
     env = _xcode_env(xcode_config, platform)
     execution_requirements = {"requires-darwin": ""}
-    wrapper = ctx.executable._xcrunwrapper
+    bazel_xcode_wrapper = ctx.executable._bazel_xcode_wrapper
     action_registrars = struct(
-        run = partial.make(_run_action, env, execution_requirements, wrapper),
-        run_shell = partial.make(_run_shell_action, env, execution_requirements, wrapper),
+        run = partial.make(_run_action, env, execution_requirements, bazel_xcode_wrapper),
+        run_shell = partial.make(
+            _run_shell_action,
+            env,
+            execution_requirements,
+            bazel_xcode_wrapper,
+        ),
+        run_swift = partial.make(
+            _run_swift_action,
+            env,
+            execution_requirements,
+            bazel_xcode_wrapper,
+            ctx.executable._swift_wrapper,
+        ),
     )
 
     cc_toolchain = find_cpp_toolchain(ctx)
@@ -395,7 +472,7 @@ def _xcode_swift_toolchain_impl(ctx):
     ]
 
 xcode_swift_toolchain = rule(
-    attrs = {
+    attrs = dicts.add(SWIFT_TOOL_WRAPPER_ATTRIBUTES, {
         "stamp": attr.label(
             doc = """
 A `cc`-providing target that should be linked into any binaries that are built
@@ -416,14 +493,14 @@ The C++ toolchain from which linking flags and other tools needed by the Swift t
                 fragment = "apple",
             ),
         ),
-        "_xcrunwrapper": attr.label(
+        "_bazel_xcode_wrapper": attr.label(
             cfg = "host",
             default = Label(
-                "@build_bazel_rules_swift//tools/wrappers:xcrunwrapper",
+                "@build_bazel_rules_swift//tools/wrappers:bazel_xcode_wrapper",
             ),
             executable = True,
         ),
-    },
+    }),
     doc = "Represents a Swift compiler toolchain provided by Xcode.",
     fragments = [
         "apple",

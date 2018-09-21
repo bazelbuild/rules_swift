@@ -21,6 +21,7 @@ toolchain, see `swift.bzl`.
 
 load(":features.bzl", "SWIFT_FEATURE_AUTOLINK_EXTRACT", "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD")
 load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
+load(":wrappers.bzl", "SWIFT_TOOL_WRAPPER_ATTRIBUTES")
 load(
     "@bazel_skylib//:lib.bzl",
     "collections",
@@ -137,6 +138,41 @@ def _run_shell_action(toolchain_tools, actions, **kwargs):
     modified_args = _modified_action_args(kwargs, toolchain_tools)
     actions.run_shell(**modified_args)
 
+def _run_swift_action(toolchain_tools, swift_wrapper, actions, **kwargs):
+    """Runs a Swift action with the toolchain requirements.
+
+    This is the implementation of the `action_registrars.run_swift` partial, where
+    the first two arguments are pre-bound to toolchain-specific values.
+
+    Args:
+      toolchain_tools: A `depset` containing toolchain files that must be
+          available to the action when it executes (executables and libraries).
+      swift_wrapper: A `File` representing the executable that wraps Swift tool invocations.
+      actions: The `Actions` object with which to register actions.
+      **kwargs: Additional arguments that are passed to `actions.run`.
+    """
+    remaining_args = _modified_action_args(kwargs, toolchain_tools)
+
+    # Get the user's arguments. If the caller gave us a list of strings instead of a list of `Args`
+    # objects, convert it to a list of `Args` because we're going to create our own `Args` that we
+    # prepend to it.
+    user_args = remaining_args.pop("arguments", [])
+    if user_args and type(user_args[0]) == type(""):
+        user_args_strings = user_args
+        user_args_object = actions.args()
+        user_args_object.add_all(user_args_strings)
+        user_args = [user_args_object]
+
+    swift_tool = remaining_args.pop("swift_tool")
+    wrapper_args = actions.args()
+    wrapper_args.add(swift_tool)
+
+    actions.run(
+        arguments = [wrapper_args] + user_args,
+        executable = swift_wrapper,
+        **remaining_args
+    )
+
 def _swift_toolchain_impl(ctx):
     toolchain_root = ctx.attr.root
     cc_toolchain = find_cpp_toolchain(ctx)
@@ -152,6 +188,7 @@ def _swift_toolchain_impl(ctx):
     action_registrars = struct(
         run = partial.make(_run_action, tools),
         run_shell = partial.make(_run_shell_action, tools),
+        run_swift = partial.make(_run_swift_action, tools, ctx.executable._swift_wrapper),
     )
 
     # TODO(allevato): Move some of the remaining hardcoded values, like object
@@ -187,7 +224,7 @@ def _swift_toolchain_impl(ctx):
     ]
 
 swift_toolchain = rule(
-    attrs = {
+    attrs = dicts.add(SWIFT_TOOL_WRAPPER_ATTRIBUTES, {
         "arch": attr.string(
             doc = """
 The name of the architecture that this toolchain targets.
@@ -230,7 +267,7 @@ The C++ toolchain from which other tools needed by the Swift toolchain (such as
 `clang` and `ar`) will be retrieved.
 """,
         ),
-    },
+    }),
     doc = "Represents a Swift compiler toolchain.",
     implementation = _swift_toolchain_impl,
 )
