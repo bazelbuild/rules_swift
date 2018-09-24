@@ -32,7 +32,6 @@ load(":archiving.bzl", "register_static_archive_action")
 load(":attrs.bzl", "SWIFT_COMMON_RULE_ATTRS")
 load(
     ":compiling.bzl",
-    "collect_link_libraries",
     "collect_transitive_compile_inputs",
     "declare_compile_outputs",
     "find_swift_version_copt_value",
@@ -42,6 +41,7 @@ load(
     "write_objc_header_module_map",
 )
 load(":debugging.bzl", "ensure_swiftmodule_is_embedded", "is_debugging")
+load(":deps.bzl", "collect_link_libraries")
 load(":derived_files.bzl", "derived_files")
 load(
     ":features.bzl",
