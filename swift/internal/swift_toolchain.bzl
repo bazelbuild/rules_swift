@@ -20,15 +20,8 @@ toolchain, see `swift.bzl`.
 """
 
 load(":features.bzl", "SWIFT_FEATURE_AUTOLINK_EXTRACT", "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD")
-load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
-load(
-    "@bazel_skylib//:lib.bzl",
-    "collections",
-    "dicts",
-    "partial",
-    "paths",
-    "selects",
-)
+load(":providers.bzl", "SwiftToolchainInfo")
+load("@bazel_skylib//:lib.bzl", "partial")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
 
 def _default_linker_opts(
