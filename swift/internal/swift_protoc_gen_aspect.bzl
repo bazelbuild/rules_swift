@@ -183,7 +183,7 @@ def _register_pbswift_generate_action(
 
     # protoc takes an arg of @NAME as something to read, and expects one
     # arg per line in that file.
-    protoc_args.set_param_file_format("multiline")
+    protoc_args.set_param_file_format("shell")
     protoc_args.use_param_file("@%s")
 
     protoc_args.add(

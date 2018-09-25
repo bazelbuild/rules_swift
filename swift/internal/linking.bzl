@@ -75,7 +75,7 @@ def register_link_action(
     ]
 
     link_input_args = actions.args()
-    link_input_args.set_param_file_format("multiline")
+    link_input_args.set_param_file_format("shell")
     link_input_args.use_param_file("@%s", use_always = True)
 
     if toolchain.root_dir:
