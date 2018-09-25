@@ -155,7 +155,7 @@ def _register_libtool_action(
     args.add("-filelist")
 
     filelist = actions.args()
-    filelist.set_param_file_format("shell")
+    filelist.set_param_file_format("multiline")
     filelist.use_param_file("%s", use_always = True)
     filelist.add_all(objects)
     filelist.add_all(libraries)
