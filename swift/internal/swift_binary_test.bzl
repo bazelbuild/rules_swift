@@ -88,6 +88,7 @@ def _swift_linking_rule_impl(
             additional_input_depsets = [depset(direct = additional_inputs)],
             configuration = ctx.configuration,
             deps = ctx.attr.deps,
+            genfiles_dir = ctx.genfiles_dir,
             objc_fragment = objc_fragment,
         )
         link_args.add_all(compile_results.linker_flags)
