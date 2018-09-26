@@ -51,6 +51,7 @@ load(
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_NO_GENERATED_HEADER",
     "SWIFT_FEATURE_NO_GENERATED_MODULE_MAP",
+    "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
     "SWIFT_FEATURE_USE_RESPONSE_FILES",
     "is_feature_enabled",
 )
@@ -66,6 +67,7 @@ load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load("@bazel_skylib//lib:partial.bzl", "partial")
+load("@bazel_skylib//lib:paths.bzl", "paths")
 
 # The compilation modes supported by Bazel.
 _VALID_COMPILATION_MODES = [
@@ -351,6 +353,22 @@ def _sanitizer_copts(feature_configuration):
             copts.extend(flags)
     return copts
 
+def _global_module_cache_path(genfiles_dir):
+    """Returns the path of the global Clang module cache.
+
+    Args:
+      genfiles_dir: The Bazel `*-genfiles` directory root where the module
+          cache directory is created by Objective-C compilation actions. Note
+          that this is non-hermetic.
+
+    Returns:
+      The path to the global Clang module path.
+    """
+
+    # This path matches the one passed to Clang in Bazel's
+    # java/com/google/devtools/build/lib/rules/objc/CompilationSupport.java.
+    return paths.join(genfiles_dir.path, "_objc_module_cache")
+
 def _compile_as_objects(
         actions,
         arguments,
@@ -470,7 +488,14 @@ def _compile_as_objects(
     out_doc = derived_files.swiftdoc(actions, module_name = module_name)
 
     wrapper_args = actions.args()
-    wrapper_args.add("-Xwrapped-swift=-ephemeral-module-cache")
+    if is_feature_enabled(SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE, feature_configuration):
+        # If genfiles_dir is not provided, then we don't pass any special flags to the compiler,
+        # letting it decide where the cache should live. This is usually somewhere in the system
+        # temporary directory.
+        if genfiles_dir:
+            wrapper_args.add("-module-cache-path", _global_module_cache_path(genfiles_dir))
+    else:
+        wrapper_args.add("-Xwrapped-swift=-ephemeral-module-cache")
 
     compile_args = actions.args()
     if is_feature_enabled(SWIFT_FEATURE_USE_RESPONSE_FILES, feature_configuration):
