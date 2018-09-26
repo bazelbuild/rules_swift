@@ -54,6 +54,13 @@ SWIFT_FEATURE_NO_GENERATED_HEADER = "swift.no_generated_header"
 # present.
 SWIFT_FEATURE_NO_GENERATED_MODULE_MAP = "swift.no_generated_module_map"
 
+# If enabled, Swift compilation actions will use the same global Clang module cache used by
+# Objective-C compilation actions. This is disabled by default because under some circumstances
+# Clang module cache corruption can cause the Swift compiler to crash (sometimes when switching
+# configurations or syncing a repository), but disabling it also causes a noticeable build time
+# regression so it can be explicitly re-enabled by users who are not affected by those crashes.
+SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE = "swift.use_global_module_cache"
+
 # If enabled, actions invoking the Swift driver or frontend may write argument lists into response
 # files (i.e., "@args.txt") to avoid passing command lines that exceed the system limit. Toolchains
 # typically set this automatically if using a sufficiently recent version of Swift (4.2 or higher).
