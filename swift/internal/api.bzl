@@ -296,7 +296,7 @@ def _compilation_mode_copts(allow_testing, compilation_mode, wants_dsyms = False
     # compilation modes given in the Bazel documentation.
     flags = []
     if compilation_mode == "opt":
-        flags += ["-O", "-DNDEBUG"]
+        flags += ["-O", "-DNDEBUG", "-whole-module-optimization"]
     elif compilation_mode in ("dbg", "fastbuild"):
         if allow_testing:
             flags.append("-enable-testing")
