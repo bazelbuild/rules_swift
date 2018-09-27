@@ -47,6 +47,7 @@ load(":derived_files.bzl", "derived_files")
 load(
     ":features.bzl",
     "SWIFT_FEATURE_AUTOLINK_EXTRACT",
+    "SWIFT_FEATURE_ENABLE_BATCH_MODE",
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_NO_GENERATED_HEADER",
@@ -369,6 +370,21 @@ def _global_module_cache_path(genfiles_dir):
     # java/com/google/devtools/build/lib/rules/objc/CompilationSupport.java.
     return paths.join(genfiles_dir.path, "_objc_module_cache")
 
+def _is_wmo(copts, swift_fragment):
+    """Returns a value indicating whether a compilation will use whole module optimization.
+
+    Args:
+      copts: A list of compiler flags to scan for WMO usage.
+      swift_fragment: The `swift` configuration fragment from Bazel.
+
+    Returns:
+      True if WMO is enabled in the given list of flags.
+    """
+    all_copts = copts + swift_fragment.copts()
+    return ("-wmo" in all_copts or
+            "-whole-module-optimization" in all_copts or
+            "-force-single-frontend-invocation" in all_copts)
+
 def _compile_as_objects(
         actions,
         arguments,
@@ -467,7 +483,7 @@ def _compile_as_objects(
     # on a Mac Pro for historical reasons.
     # TODO(b/32571265): Generalize this based on platform and core count when an
     # API to obtain this is available.
-    if "-wmo" in copts or "-whole-module-optimization" in copts:
+    if _is_wmo(copts, swift_fragment):
         # We intentionally don't use `+=` or `extend` here to ensure that a
         # copy is made instead of extending the original.
         copts = copts + ["-num-threads", "12"]
@@ -1221,6 +1237,12 @@ def _swiftc_command_line_and_inputs(
             "-Xcc",
             ["-Xclang", "-fmodule-map-file-home-is-cwd"],
         ))
+
+    # Do not enable batch mode if the user requested WMO; this silences an "ignoring
+    # '-enable-batch-mode' because '-whole-module-optimization' was also specified" warning.
+    if (not _is_wmo(copts, swift_fragment) and
+        is_feature_enabled(SWIFT_FEATURE_ENABLE_BATCH_MODE, feature_configuration)):
+        args.add("-enable-batch-mode")
 
     # Add the genfiles directory to ClangImporter's header search paths for
     # compatibility with rules that generate headers there.
