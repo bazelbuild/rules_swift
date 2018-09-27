@@ -37,6 +37,12 @@ SWIFT_FEATURE_BUNDLED_XCTESTS = "swift.bundled_xctests"
 # directory to `.`, which permits debugging remote or sandboxed builds.
 SWIFT_FEATURE_DEBUG_PREFIX_MAP = "swift.debug_prefix_map"
 
+# If enabled, Swift compilation actions will use batch mode by passing `-enable-batch-mode` to
+# `swiftc`. This is a new compilation mode as of Swift 4.2 that is intended to speed up
+# non-incremental non-WMO builds by invoking a smaller number of frontend processes and passing
+# them batches of source files.
+SWIFT_FEATURE_ENABLE_BATCH_MODE = "swift.enable_batch_mode"
+
 # If enabled, the compilation action for a target will produce an index store.
 SWIFT_FEATURE_INDEX_WHILE_BUILDING = "swift.index_while_building"
 

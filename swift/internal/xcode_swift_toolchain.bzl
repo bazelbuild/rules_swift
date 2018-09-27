@@ -23,6 +23,7 @@ load(
     ":features.bzl",
     "SWIFT_FEATURE_AUTOLINK_EXTRACT",
     "SWIFT_FEATURE_BUNDLED_XCTESTS",
+    "SWIFT_FEATURE_ENABLE_BATCH_MODE",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_USE_RESPONSE_FILES",
 )
@@ -442,6 +443,7 @@ def _xcode_swift_toolchain_impl(ctx):
     # Compute the default requested features based on Xcode version. Xcode 10.0 implies Swift 4.2.
     requested_features = ctx.features + [SWIFT_FEATURE_BUNDLED_XCTESTS]
     if _is_xcode_at_least_version(xcode_config, "10.0"):
+        requested_features.append(SWIFT_FEATURE_ENABLE_BATCH_MODE)
         requested_features.append(SWIFT_FEATURE_USE_RESPONSE_FILES)
 
     # TODO(#35): Add SWIFT_FEATURE_DEBUG_PREFIX_MAP based on Xcode version once
