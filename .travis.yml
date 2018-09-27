@@ -41,8 +41,10 @@ script:
 notifications:
   email: false
 
-# Don't build the google branch since that is used by the export process and a
-# PR will be made after the fact.
+# Don't build the 0FCE97317C35428E3DEB2227505E46C9 branch since that is used by
+# the export process and a PR will also be created from it. It appears that
+# this branch name is created from a hash of persistent data from Copybara so
+# we can keep its name fixed.
 branches:
   except:
-    - google
+    - 0FCE97317C35428E3DEB2227505E46C9
