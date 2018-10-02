@@ -516,7 +516,7 @@ def _compile_as_objects(
     compile_args = actions.args()
     if is_feature_enabled(SWIFT_FEATURE_USE_RESPONSE_FILES, feature_configuration):
         compile_args.use_param_file("@%s", use_always = True)
-        compile_args.set_param_file_format("multiline")
+        compile_args.set_param_file_format("shell")
 
     compile_args.add("-emit-object")
     compile_args.add_all(compile_reqs.args)
