@@ -516,7 +516,6 @@ def _compile_as_objects(
     compile_args = actions.args()
     if is_feature_enabled(SWIFT_FEATURE_USE_RESPONSE_FILES, feature_configuration):
         compile_args.use_param_file("@%s", use_always = True)
-        compile_args.set_param_file_format("multiline")
 
     compile_args.add("-emit-object")
     compile_args.add_all(compile_reqs.args)
@@ -721,7 +720,6 @@ def _compile_as_library(
     library_copts = actions.args()
     if is_feature_enabled(SWIFT_FEATURE_USE_RESPONSE_FILES, feature_configuration):
         library_copts.use_param_file("@%s", use_always = True)
-        library_copts.set_param_file_format("multiline")
 
     # Builds on Apple platforms typically don't use `swift_binary`; they have
     # different linking logic to produce fat binaries. This means that all such
