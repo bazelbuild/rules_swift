@@ -719,6 +719,9 @@ def _compile_as_library(
     # Register the compilation actions to get an object file (.o) for the Swift
     # code, along with its swiftmodule and swiftdoc.
     library_copts = actions.args()
+    if is_feature_enabled(SWIFT_FEATURE_USE_RESPONSE_FILES, feature_configuration):
+        library_copts.use_param_file("@%s", use_always = True)
+        library_copts.set_param_file_format("multiline")
 
     # Builds on Apple platforms typically don't use `swift_binary`; they have
     # different linking logic to produce fat binaries. This means that all such
