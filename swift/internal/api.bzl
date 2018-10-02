@@ -408,7 +408,7 @@ def _compile_as_objects(
 
     Args:
       actions: The context's `actions` object.
-      arguments: A list of `Args` objects that provide additional arguments to the
+      arguments: A list of arguments that provide additional to pass to the
           compiler, not including the `copts` list.
       compilation_mode: The Bazel compilation mode; must be `dbg`, `fastbuild`, or
           `opt`.
@@ -547,9 +547,10 @@ def _compile_as_objects(
     compile_outputs = ([out_module, out_doc] + output_objects +
                        compile_reqs.other_outputs) + additional_outputs
 
+    compile_args.add_all(arguments)
     run_toolchain_swift_action(
         actions = actions,
-        arguments = [wrapper_args, compile_args] + arguments,
+        arguments = [wrapper_args, compile_args],
         inputs = all_inputs,
         mnemonic = "SwiftCompile",
         outputs = compile_outputs,
@@ -590,7 +591,7 @@ def _compile_as_objects(
 
     return struct(
         compile_inputs = all_inputs,
-        compile_options = ([compile_args] + arguments),
+        compile_options = [compile_args],
         linker_flags = linker_flags,
         linker_inputs = linker_inputs,
         output_doc = out_doc,
@@ -718,7 +719,7 @@ def _compile_as_library(
 
     # Register the compilation actions to get an object file (.o) for the Swift
     # code, along with its swiftmodule and swiftdoc.
-    library_copts = actions.args()
+    library_copts = []
 
     # Builds on Apple platforms typically don't use `swift_binary`; they have
     # different linking logic to produce fat binaries. This means that all such
@@ -732,7 +733,7 @@ def _compile_as_library(
             use_parse_as_library = False
             break
     if use_parse_as_library:
-        library_copts.add("-parse-as-library")
+        library_copts.append("-parse-as-library")
 
     objc_header = None
     output_module_map = None
@@ -747,8 +748,8 @@ def _compile_as_library(
         # Generate a Swift bridging header for this library so that it can be
         # included by Objective-C code that may depend on it.
         objc_header = derived_files.objc_header(actions, target_name = label.name)
-        library_copts.add("-emit-objc-header-path")
-        library_copts.add(objc_header)
+        library_copts.append("-emit-objc-header-path")
+        library_copts.append(objc_header)
         additional_outputs.append(objc_header)
 
         # Create a module map for the generated header file. This ensures that
@@ -773,7 +774,7 @@ def _compile_as_library(
 
     compile_results = _compile_as_objects(
         actions = actions,
-        arguments = [library_copts],
+        arguments = library_copts,
         compilation_mode = compilation_mode,
         copts = copts,
         defines = defines,
