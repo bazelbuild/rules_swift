@@ -517,7 +517,6 @@ def _compile_as_objects(
     if is_feature_enabled(SWIFT_FEATURE_USE_RESPONSE_FILES, feature_configuration):
         compile_args.use_param_file("@%s", use_always = True)
 
-    compile_args.add("-emit-object")
     compile_args.add_all(compile_reqs.args)
     compile_args.add("-emit-module-path")
     compile_args.add(out_module)
