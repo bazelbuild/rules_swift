@@ -15,7 +15,6 @@
 """Implementation of compilation logic for Swift."""
 
 load(":actions.bzl", "run_toolchain_swift_action")
-load(":deps.bzl", "collect_link_libraries")
 load(":derived_files.bzl", "derived_files")
 load(
     ":providers.bzl",
