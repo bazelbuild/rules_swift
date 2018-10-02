@@ -62,31 +62,6 @@ def expand_locations(ctx, values, targets = []):
     """
     return [ctx.expand_location(value, targets) for value in values]
 
-def get_optionally(object, keypath, default = None):
-    """Returns the value of a keypath evaluated on an object, or a default value.
-
-    This is equivalent to repeatedly evaluating each individual key on the value
-    before it, but short-circuiting and returning the default value if any of the
-    fields does not exist.
-
-    Args:
-      object: The object upon which the keypath will be evaluated.
-      keypath: The dot-separated keypath describing the fields to access on the
-          object.
-      default: The default value to return if any of the fields is not present. If
-          not provied, `None` will be used.
-
-    Returns:
-      The value of the keypath, or the default value if evaluation failed.
-    """
-    keys = keypath.split(".")
-    value = object
-    for key in keys:
-        if not hasattr(value, key):
-            return default
-        value = getattr(value, key)
-    return value
-
 def owner_relative_path(file):
     """Returns the part of the given file's path relative to its owning package.
 
