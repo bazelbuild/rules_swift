@@ -34,7 +34,6 @@ matrix:
 
 before_install:
   - .travis/install.sh
-
 script:
   - .travis/build.sh
 
