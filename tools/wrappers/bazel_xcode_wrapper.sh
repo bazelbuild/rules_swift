@@ -91,9 +91,7 @@ for ARG in "$@" ; do
     ARG="@$NEWFILE"
     ;;
   *)
-    echo $ARG
     ARG=$(rewrite_argument "$ARG")
-    echo $ARG
     ;;
   esac
   ARGS+=("$ARG")
@@ -101,5 +99,4 @@ done
 
 # We can't use `exec` here because we need to make sure the `trap` runs
 # afterward.
-echo "$TOOLNAME" "${ARGS[@]}"
 "$TOOLNAME" "${ARGS[@]}"
