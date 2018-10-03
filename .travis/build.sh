@@ -51,11 +51,6 @@ if [[ -n "${BAZEL:-}" ]]; then
     ALL_TEST_ARGS+=("--test_tag_filters=${TAGS}")
   fi
 
-  echo "DEBUG: xcode-select --print-path"
-  xcode-select --print-path
-  echo "DEBUG: xcrun -sdk macosx --show-sdk-path"
-  xcrun -sdk macosx --show-sdk-path
-
   bazel "${BAZELRC_ARGS[@]}" build "${ALL_BUILD_ARGS[@]}" -- ${TARGETS}
   bazel "${BAZELRC_ARGS[@]}" test "${ALL_BUILD_ARGS[@]}" "${ALL_TEST_ARGS[@]}" -- ${TARGETS}
   set +x

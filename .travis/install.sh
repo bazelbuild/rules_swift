@@ -18,6 +18,7 @@ set -eux
 
 if [[ "${TRAVIS_OS_NAME}" == "osx" ]]; then
   OS=darwin
+  rm -rf /Library/Developer/CommandLineTools
 else
   OS=linux
 fi
