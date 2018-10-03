@@ -41,7 +41,7 @@ if [[ -n "${BAZEL:-}" ]]; then
       --show_progress_rate_limit=30.0
       --verbose_failures
       --action_env=PATH
-      --macos_sdk_version=10.14
+      --macos_sdk_version=10.13
   )
   if [[ -n "${BUILD_ARGS:-}" ]]; then
     ALL_BUILD_ARGS+=(${BUILD_ARGS})
