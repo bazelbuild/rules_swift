@@ -41,10 +41,6 @@ if [[ -n "${BAZEL:-}" ]]; then
       --show_progress_rate_limit=30.0
       --verbose_failures
       --action_env=PATH
-      --action_env=SDKROOT
-      --action_env=DEVELOPER_DIR
-      --action_env=APPLE_SDK_PLATFORM
-      --action_env=APPLE_SDK_VERSION_OVERRIDE
       --subcommands
   )
   if [[ -n "${BUILD_ARGS:-}" ]]; then
