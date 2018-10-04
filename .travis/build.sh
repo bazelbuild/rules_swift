@@ -51,9 +51,8 @@ if [[ -n "${BAZEL:-}" ]]; then
     ALL_TEST_ARGS+=("--test_tag_filters=${TAGS}")
   fi
 
-  read -a targets <<< $TARGETS
-  bazel "${BAZELRC_ARGS[@]}" build "${ALL_BUILD_ARGS[@]}" -- "${targets[@]}"
-  bazel "${BAZELRC_ARGS[@]}" test "${ALL_BUILD_ARGS[@]}" "${ALL_TEST_ARGS[@]}" -- "${targets[@]}"
+  bazel "${BAZELRC_ARGS[@]}" build "${ALL_BUILD_ARGS[@]}" -- "${TARGETS}"
+  bazel "${BAZELRC_ARGS[@]}" test "${ALL_BUILD_ARGS[@]}" "${ALL_TEST_ARGS[@]}" -- "${TARGETS}"
   set +x
 fi
 
