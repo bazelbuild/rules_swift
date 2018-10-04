@@ -41,7 +41,6 @@ if [[ -n "${BAZEL:-}" ]]; then
       --show_progress_rate_limit=30.0
       --verbose_failures
       --action_env=PATH
-      --action_env=SDKROOT=/Applications/Xcode-10.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.14.sdk
   )
   if [[ -n "${BUILD_ARGS:-}" ]]; then
     ALL_BUILD_ARGS+=(${BUILD_ARGS})
@@ -52,7 +51,7 @@ if [[ -n "${BAZEL:-}" ]]; then
     ALL_TEST_ARGS+=("--test_tag_filters=${TAGS}")
   fi
 
-  bazel "${BAZELRC_ARGS[@]}" build "${ALL_BUILD_ARGS[@]}" -- ${TARGETS}
+  bazel "${BAZELRC_ARGS[@]}" build "${ALL_BUILD_ARGS[@]}" -- ${TARGETS} || cat bazel-out/../../execroot/*/external/local_config_cc/CROSSTOOL
   bazel "${BAZELRC_ARGS[@]}" test "${ALL_BUILD_ARGS[@]}" "${ALL_TEST_ARGS[@]}" -- ${TARGETS}
   set +x
 fi
