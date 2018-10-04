@@ -14,8 +14,6 @@
 
 """Definitions for handling Bazel repositories used by the Swift rules."""
 
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-
 def _create_linux_toolchain(repository_ctx):
     """Creates BUILD targets for the Swift toolchain on Linux.
 
@@ -127,7 +125,7 @@ def swift_rules_dependencies():
     )
 
     _maybe(
-        http_archive,
+        native.http_archive,
         name = "com_google_protobuf",
         # v3.6.1, latest as of 2018-10-03
         urls = ["https://github.com/kastiglione/protobuf/archive/v3.6.2.zip"],

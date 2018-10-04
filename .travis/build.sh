@@ -41,7 +41,7 @@ if [[ -n "${BAZEL:-}" ]]; then
       --show_progress_rate_limit=30.0
       --verbose_failures
       --action_env=PATH
-      --subcommands
+      --action_env=SDKROOT=/Applications/Xcode-10.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.14.sdk
   )
   if [[ -n "${BUILD_ARGS:-}" ]]; then
     ALL_BUILD_ARGS+=(${BUILD_ARGS})
