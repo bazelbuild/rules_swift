@@ -41,8 +41,6 @@ if [[ -n "${BAZEL:-}" ]]; then
       --show_progress_rate_limit=30.0
       --verbose_failures
       --action_env=PATH
-      --action_env=xcrun_verbose
-      --action_env=xcrun_log
   )
   if [[ -n "${BUILD_ARGS:-}" ]]; then
     ALL_BUILD_ARGS+=(${BUILD_ARGS})
@@ -53,7 +51,7 @@ if [[ -n "${BAZEL:-}" ]]; then
     ALL_TEST_ARGS+=("--test_tag_filters=${TAGS}")
   fi
 
-  xcrun_verbose=1 xcrun_log=1 bazel "${BAZELRC_ARGS[@]}" build "${ALL_BUILD_ARGS[@]}" -- ${TARGETS}
+  bazel "${BAZELRC_ARGS[@]}" build "${ALL_BUILD_ARGS[@]}" -- ${TARGETS}
   bazel "${BAZELRC_ARGS[@]}" test "${ALL_BUILD_ARGS[@]}" "${ALL_TEST_ARGS[@]}" -- ${TARGETS}
   set +x
 fi
