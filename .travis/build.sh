@@ -51,7 +51,8 @@ if [[ -n "${BAZEL:-}" ]]; then
     ALL_TEST_ARGS+=("--test_tag_filters=${TAGS}")
   fi
 
-  bazel "${BAZELRC_ARGS[@]}" build "${ALL_BUILD_ARGS[@]}" -- ${TARGETS} || cat bazel-out/../../execroot/*/external/local_config_cc/CROSSTOOL
+  mdfind 'kMDItemCFBundleIdentifier == "com.apple.dt.Xcode"'
+  bazel "${BAZELRC_ARGS[@]}" build "${ALL_BUILD_ARGS[@]}" -- ${TARGETS} || find bazel-out/../../execroot -name CROSSTOOL
   bazel "${BAZELRC_ARGS[@]}" test "${ALL_BUILD_ARGS[@]}" "${ALL_TEST_ARGS[@]}" -- ${TARGETS}
   set +x
 fi
