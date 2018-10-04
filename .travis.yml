@@ -34,11 +34,11 @@ matrix:
     - os: osx
       osx_image: xcode10
       env:
-        - BAZEL=0.17.2 TARGETS=//examples/... -//examples/xplatform/proto
+        - BAZEL=0.17.2 TARGETS=(//examples/... -//examples/xplatform/proto)
     - os: osx
       osx_image: xcode10
       env:
-        - BAZEL=HEAD TARGETS=//examples/... -//examples/xplatform/proto
+        - BAZEL=HEAD TARGETS=(//examples/... -//examples/xplatform/proto)
 
 before_install:
   - .travis/install.sh

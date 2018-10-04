@@ -128,8 +128,8 @@ def swift_rules_dependencies():
         native.http_archive,
         name = "com_google_protobuf",
         # v3.6.1, latest as of 2018-10-03
-        urls = ["https://github.com/kastiglione/protobuf/archive/v3.6.2.zip"],
-        strip_prefix = "protobuf-3.6.2",
+        urls = ["https://github.com/protocolbuffers/protobuf/releases/download/v3.6.1/protobuf-all-3.6.1.zip"],
+        strip_prefix = "protobuf-3.6.1",
         type = "zip",
     )
 
