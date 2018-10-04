@@ -24,7 +24,7 @@ set -eu
 # Create the .xctest bundle and copy the binary into it (a requirement of the
 # `xctest` tool).
 BINARY="$TEST_SRCDIR/$TEST_WORKSPACE/%binary%"
-BUNDLE_DIR="$(dirname "$BINARY").xctest"
+BUNDLE_DIR="$(dirname "$BINARY")/$(basename "$BINARY").xctest"
 mkdir -p "$BUNDLE_DIR/Contents/MacOS"
 ln -s "$BINARY" "$BUNDLE_DIR/Contents/MacOS/"
 
