@@ -51,7 +51,7 @@ if [[ -n "${BAZEL:-}" ]]; then
     ALL_TEST_ARGS+=("--test_tag_filters=${TAGS}")
   fi
 
-  ls /Library/Developer/CommandLineTools/usr/*/*xcrun* || echo No xcrun found
+  xcrun --kill-cache
   bazel "${BAZELRC_ARGS[@]}" build "${ALL_BUILD_ARGS[@]}" -- ${TARGETS}
   bazel "${BAZELRC_ARGS[@]}" test "${ALL_BUILD_ARGS[@]}" "${ALL_TEST_ARGS[@]}" -- ${TARGETS}
   set +x
