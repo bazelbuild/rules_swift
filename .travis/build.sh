@@ -51,8 +51,8 @@ if [[ -n "${BAZEL:-}" ]]; then
     ALL_TEST_ARGS+=("--test_tag_filters=${TAGS}")
   fi
 
-  mdfind 'kMDItemCFBundleIdentifier == "com.apple.dt.Xcode"'
-  bazel "${BAZELRC_ARGS[@]}" build "${ALL_BUILD_ARGS[@]}" -- ${TARGETS} || find bazel-out/../../execroot -name CROSSTOOL
+  ls /Library/Developer/CommandLineTools/usr/*/*xcrun* || echo No xcrun found
+  bazel "${BAZELRC_ARGS[@]}" build "${ALL_BUILD_ARGS[@]}" -- ${TARGETS}
   bazel "${BAZELRC_ARGS[@]}" test "${ALL_BUILD_ARGS[@]}" "${ALL_TEST_ARGS[@]}" -- ${TARGETS}
   set +x
 fi
