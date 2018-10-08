@@ -26,7 +26,7 @@ set -eu
 BINARY="$TEST_SRCDIR/$TEST_WORKSPACE/%binary%"
 BUNDLE_DIR="$(dirname "$BINARY")/$(basename "$BINARY").xctest"
 mkdir -p "$BUNDLE_DIR/Contents/MacOS"
-ln -s "$BINARY" "$BUNDLE_DIR/Contents/MacOS/"
+ln -sf "$BINARY" "$BUNDLE_DIR/Contents/MacOS/"
 
 # TODO(allevato): Support Bazel's --test_filter.
 exec xcrun xctest -XCTest All "$BUNDLE_DIR"
