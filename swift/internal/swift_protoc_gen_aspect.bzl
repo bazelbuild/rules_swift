@@ -215,9 +215,6 @@ def _register_pbswift_generate_action(
     actions.run(
         arguments = [mkdir_args, protoc_executable_args, protoc_args],
         executable = mkdir_and_run,
-        # TODO(b/79093417): Remove the Darwin requirement when we're building the
-        # generator on Linux.
-        execution_requirements = {"requires-darwin": ""},
         inputs = depset(
             direct = additional_command_inputs,
             transitive = [transitive_descriptor_sets],
