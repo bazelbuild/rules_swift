@@ -17,7 +17,7 @@
 load(":actions.bzl", "run_toolchain_action")
 load(":deps.bzl", "collect_link_libraries")
 load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
-load(":utils.bzl", "collect_transitive")
+load(":utils.bzl", "collect_transitive", "objc_provider_framework_name")
 
 def register_link_action(
         actions,
@@ -64,8 +64,16 @@ def register_link_action(
         stamp_lib_depsets = []
 
     deps_libraries = []
+    deps_sdk_dylibs = []
+    deps_sdk_frameworks = []
+    deps_frameworks = []
     for dep in deps:
         deps_libraries.extend(collect_link_libraries(dep))
+        if apple_common.Objc in dep:
+            info = dep[apple_common.Objc]
+            deps_frameworks.extend(info.framework_dir.to_list())
+            deps_sdk_dylibs.extend(info.sdk_dylib.to_list())
+            deps_sdk_frameworks.extend(info.sdk_framework.to_list())
 
     libraries = depset(transitive = deps_libraries + stamp_lib_depsets, order = "topological")
     link_input_depsets = [
@@ -88,6 +96,9 @@ def register_link_action(
 
     link_input_args.add_all(objects)
     link_input_args.add_all(libraries, map_each = _link_library_map_fn)
+    link_input_args.add_all(deps_frameworks, map_each = _link_framework_map_fn)
+    link_input_args.add_all(deps_sdk_dylibs, format_each = "-l%s")
+    link_input_args.add_all(deps_sdk_frameworks, format_each = "-framework %s")
 
     all_linkopts = depset(
         direct = expanded_linkopts,
@@ -142,3 +153,18 @@ def _link_library_map_fn(lib):
         return "-Wl,--whole-archive,{lib},--no-whole-archive".format(lib = lib.path)
     else:
         return lib.path
+
+def _link_framework_map_fn(framework_dir):
+    """Maps a framework path to the appropriate flag to link them.
+
+    Args:
+        framework_dir: A `File`, passed in when the calling `Args` object is
+            ready to map it to an argument.
+
+    Returns:
+        A command-line argument (string) to link the framework.
+    """
+    return "{}/{}".format(
+        framework_dir,
+        objc_provider_framework_name(framework_dir),
+    )
