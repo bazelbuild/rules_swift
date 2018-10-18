@@ -1116,31 +1116,6 @@ def _merge_swift_info_providers(targets):
         transitive_swiftmodules = depset(transitive = transitive_swiftmodules),
     )
 
-def _swift_runtime_linkopts(is_static, toolchain, is_test = False):
-    """Returns the flags that should be passed to `clang` when linking a binary.
-
-    This function provides the appropriate linker arguments to callers who need to
-    link a binary using something other than `swift_binary` (for example, an
-    application bundle containing a universal `apple_binary`).
-
-    Args:
-      is_static: A `Boolean` value indicating whether the binary should be linked
-          against the static (rather than the dynamic) Swift runtime libraries.
-      toolchain: The `SwiftToolchainInfo` provider of the toolchain whose linker
-          options are desired.
-      is_test: A `Boolean` value indicating whether the target being linked is a
-          test target.
-
-    Returns:
-      A `list` of command-line flags that should be passed to `clang` to link
-      against the Swift runtime libraries.
-    """
-    return partial.call(
-        toolchain.linker_opts_producer,
-        is_static = is_static,
-        is_test = is_test,
-    )
-
 def _swiftc_command_line_and_inputs(
         args,
         compilation_mode,
@@ -1330,7 +1305,6 @@ swift_common = struct(
     run_toolchain_action = run_toolchain_action,
     run_toolchain_shell_action = run_toolchain_shell_action,
     run_toolchain_swift_action = run_toolchain_swift_action,
-    swift_runtime_linkopts = _swift_runtime_linkopts,
     swiftc_command_line_and_inputs = _swiftc_command_line_and_inputs,
     toolchain_attrs = _toolchain_attrs,
 )
