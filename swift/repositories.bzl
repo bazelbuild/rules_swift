@@ -93,13 +93,15 @@ def _maybe(repo_rule, name, **kwargs):
     """Executes the given repository rule if it hasn't been executed already.
 
     Args:
-      repo_rule: The repository rule to be executed (e.g.,
-          `native.git_repository`.)
+      repo_rule: The repository rule to be executed (e.g., `git_repository`.)
       name: The name of the repository to be defined by the rule.
       **kwargs: Additional arguments passed directly to the repository rule.
     """
     if name not in native.existing_rules():
         repo_rule(name = name, **kwargs)
+
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 def swift_rules_dependencies():
     """Fetches repositories that are dependencies of the `rules_swift` workspace.
@@ -109,14 +111,14 @@ def swift_rules_dependencies():
     changes to those dependencies.
     """
     _maybe(
-        native.git_repository,
+        git_repository,
         name = "bazel_skylib",
         remote = "https://github.com/bazelbuild/bazel-skylib.git",
         tag = "0.4.0",
     )
 
     _maybe(
-        native.new_http_archive,
+        http_archive,
         name = "com_github_apple_swift_swift_protobuf",
         urls = ["https://github.com/apple/swift-protobuf/archive/1.0.3.zip"],
         strip_prefix = "swift-protobuf-1.0.3/",
@@ -125,7 +127,7 @@ def swift_rules_dependencies():
     )
 
     _maybe(
-        native.http_archive,
+        http_archive,
         name = "com_google_protobuf",
         # v3.5.1, latest as of 2018-01-11
         urls = ["https://codeload.github.com/google/protobuf/zip/106ffc04be1abf3ff3399f54ccf149815b287dd9"],
