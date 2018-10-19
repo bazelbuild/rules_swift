@@ -1220,7 +1220,6 @@ def _swiftc_command_line_and_inputs(
 
     all_deps = deps + toolchain.implicit_deps
 
-    args.add("-emit-object")
     args.add("-module-name")
     args.add(module_name)
 
