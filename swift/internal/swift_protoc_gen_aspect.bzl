@@ -14,7 +14,7 @@
 
 """An aspect attached to `proto_library` targets to generate Swift artifacts."""
 
-load(":api.bzl", "swift_common")
+load(":api.bzl", "SWIFT_FEATURE_NO_GENERATED_HEADER", "swift_common")
 load(":providers.bzl", "SwiftProtoInfo", "SwiftToolchainInfo")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:paths.bzl", "paths")
@@ -406,7 +406,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
 
         feature_configuration = swift_common.configure_features(
             toolchain = toolchain,
-            requested_features = aspect_ctx.features + ["swift.no_generated_header"],
+            requested_features = aspect_ctx.features + [SWIFT_FEATURE_NO_GENERATED_HEADER],
             unsupported_features = aspect_ctx.disabled_features,
         )
 
