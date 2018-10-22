@@ -73,13 +73,12 @@ module target depend on that.
             providers = [["cc"]],
         ),
         "module_map": attr.label(
-            allow_files = True,
+            allow_single_file = True,
             doc = """
 The module map file that should be loaded to import the C library dependency
 into Swift.
 """,
             mandatory = True,
-            single_file = True,
         ),
     },
     doc = """
