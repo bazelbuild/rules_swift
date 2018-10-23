@@ -142,7 +142,7 @@ def _intermediate_object_file(actions, target_name, src):
     )
 
 def _module_map(actions, target_name):
-    """Declares the module map for the generated Objective-C header of a target.
+    """Declares the module map for the generated C or Objective-C header of a target.
 
     Args:
       actions: The context's actions object.
