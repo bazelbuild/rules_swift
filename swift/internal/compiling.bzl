@@ -265,6 +265,9 @@ def new_objc_provider(
     if linkopts:
         objc_provider_args["linkopt"] = depset(direct = linkopts)
 
+    if static_archive.basename.endswith(".lo"):
+        objc_provider_args["force_load_library"] = depset(direct = [static_archive])
+
     # In addition to the generated header's module map, we must re-propagate the direct deps'
     # Objective-C module maps to dependents, because those Swift modules still need to see them. We
     # need to construct a new transitive objc provider to get the correct strict propagation
@@ -394,7 +397,7 @@ def register_autolink_extract_action(
         swift_tool = "swift-autolink-extract",
     )
 
-def swift_library_output_map(name, module_link_name):
+def swift_library_output_map(name, alwayslink, module_link_name):
     """Returns the dictionary of implicit outputs for a `swift_library`.
 
     This function is used to specify the `outputs` of the `swift_library` rule; as such, its
@@ -402,14 +405,18 @@ def swift_library_output_map(name, module_link_name):
 
     Args:
         name: The name of the target being built.
+        alwayslink: Indicates whether the object files in the library should always
+            be always be linked into any binaries that depend on it, even if some
+            contain no symbols referenced by the binary.
         module_link_name: The module link name of the target being built.
 
     Returns:
         The implicit outputs dictionary for a `swift_library`.
     """
     lib_name = module_link_name if module_link_name else name
+    extension = "lo" if alwayslink else "a"
     return {
-        "archive": "lib{}.a".format(lib_name),
+        "archive": "lib{}.{}".format(lib_name, extension),
     }
 
 def write_objc_header_module_map(
