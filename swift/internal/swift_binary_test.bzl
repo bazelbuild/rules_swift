@@ -19,6 +19,7 @@ load(":derived_files.bzl", "derived_files")
 load(":features.bzl", "SWIFT_FEATURE_BUNDLED_XCTESTS", "is_feature_enabled")
 load(":linking.bzl", "register_link_action")
 load(":providers.bzl", "SwiftBinaryInfo", "SwiftToolchainInfo")
+load(":swift_c_module_aspect.bzl", "swift_c_module_aspect")
 load(":utils.bzl", "expand_locations")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:partial.bzl", "partial")
@@ -281,7 +282,7 @@ def _swift_test_impl(ctx):
 
 swift_binary = rule(
     attrs = dicts.add(
-        swift_common.compilation_attrs(),
+        swift_common.compilation_attrs(additional_deps_aspects = [swift_c_module_aspect]),
         {
             "linkopts": attr.string_list(
                 doc = """
@@ -325,7 +326,7 @@ instead of `swift_binary`.
 
 swift_test = rule(
     attrs = dicts.add(
-        swift_common.compilation_attrs(),
+        swift_common.compilation_attrs(additional_deps_aspects = [swift_c_module_aspect]),
         {
             "linkopts": attr.string_list(
                 doc = """

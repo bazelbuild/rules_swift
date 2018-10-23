@@ -1,9 +1,4 @@
-load(
-    "@build_bazel_rules_swift//swift:swift.bzl",
-    "swift_binary",
-    "swift_c_module",
-    "swift_library",
-)
+load("@build_bazel_rules_swift//swift:swift.bzl", "swift_binary", "swift_library")
 
 licenses(["notice"])
 
@@ -19,28 +14,21 @@ cc_library(
     name = "c_counter",
     srcs = ["c_counter.cc"],
     hdrs = ["c_counter.h"],
+    tags = ["swift_module=CCounter"],
     deps = [":counter"],
 )
 
-# 3. Since `cc_library` targets don't write out module maps that are compatible
-# with Swift imports, we provide our own and wrap the original library in a new
-# target.
-swift_c_module(
-    name = "counter_module",
-    module_map = "module.modulemap",
-    deps = [":c_counter"],
-)
-
-# 4. The Swift library then depends on the module and imports it in its Swift
-# code.
+# 3. The Swift library then depends on the `cc_library`. This causes a
+# Swift-compatible module map to be created for the `cc_library` so that the
+# Swift code can import it.
 swift_library(
     name = "swift_counter",
     srcs = ["Counter.swift"],
     module_name = "Counter",
-    deps = [":counter_module"],
+    deps = [":c_counter"],
 )
 
-# 5. Finally, this binary is a straightforward target with no surprises. It just
+# 4. Finally, this binary is a straightforward target with no surprises. It just
 # imports the Swift `Counter` module above.
 swift_binary(
     name = "c_from_swift",

@@ -15,7 +15,7 @@
 """Implementation of the `swift_import` rule."""
 
 load(":api.bzl", "swift_common")
-load(":attrs.bzl", "SWIFT_COMMON_RULE_ATTRS")
+load(":attrs.bzl", "swift_common_rule_attrs")
 load(":providers.bzl", "SwiftClangModuleInfo", "merge_swift_clang_module_infos")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 
@@ -51,7 +51,7 @@ def _swift_import_impl(ctx):
 
 swift_import = rule(
     attrs = dicts.add(
-        SWIFT_COMMON_RULE_ATTRS,
+        swift_common_rule_attrs(),
         {
             "archives": attr.label_list(
                 allow_empty = False,
