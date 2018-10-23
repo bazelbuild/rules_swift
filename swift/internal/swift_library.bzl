@@ -53,6 +53,7 @@ def _swift_library_impl(ctx):
         swift_fragment = ctx.fragments.swift,
         toolchain = toolchain,
         additional_inputs = ctx.files.swiftc_inputs,
+        alwayslink = ctx.attr.alwayslink,
         cc_libs = ctx.attr.cc_libs,
         copts = copts,
         configuration = ctx.configuration,

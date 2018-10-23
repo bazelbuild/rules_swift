@@ -609,6 +609,7 @@ def _compile_as_library(
         toolchain,
         additional_inputs = [],
         allow_testing = True,
+        alwayslink = False,
         cc_libs = [],
         configuration = None,
         copts = [],
@@ -647,6 +648,9 @@ def _compile_as_library(
           referenced in compiler flags.
       allow_testing: Indicates whether the module should be compiled with testing
           enabled (only when the compilation mode is `fastbuild` or `dbg`).
+      alwayslink: Indicates whether the object files in the library should always
+          be always be linked into any binaries that depend on it, even if some
+          contain no symbols referenced by the binary.
       cc_libs: Additional `cc_library` targets whose static libraries should be
           merged into the resulting archive.
       configuration: The default configuration from which certain compilation
@@ -713,7 +717,11 @@ def _compile_as_library(
 
     if not library_name:
         library_name = label.name
-    out_archive = derived_files.static_archive(actions, link_name = library_name)
+    out_archive = derived_files.static_archive(
+        actions,
+        alwayslink = alwayslink,
+        link_name = library_name,
+    )
 
     # Register the compilation actions to get an object file (.o) for the Swift
     # code, along with its swiftmodule and swiftdoc.
@@ -1023,6 +1031,18 @@ def _library_rule_attrs():
     return dicts.add(
         _compilation_attrs(),
         {
+            "alwayslink": attr.bool(
+                default = False,
+                doc = """
+If true, any binary that depends (directly or indirectly) on this Swift module
+will link in all the object files for the files listed in `srcs`, even if some
+contain no symbols referenced by the binary. This is useful if your code isn't
+explicitly called by code in the binary; for example, if you rely on runtime
+checks for protocol conformances added in extensions in the library but do not
+directly reference any other symbols in the object file that adds that
+conformance.
+""",
+            ),
             "linkopts": attr.string_list(
                 doc = """
 Additional linker options that should be passed to the linker for the binary
