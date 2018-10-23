@@ -213,18 +213,22 @@ def _reexport_modules_src(actions, target_name):
     """
     return actions.declare_file("{}_exports.swift".format(target_name))
 
-def _static_archive(actions, link_name):
+def _static_archive(actions, alwayslink, link_name):
     """Declares a file for the static archive created by a compilation rule.
 
     Args:
       actions: The context's actions object.
+      alwayslink: Indicates whether the object files in the library should always
+          be always be linked into any binaries that depend on it, even if some
+          contain no symbols referenced by the binary.
       link_name: The name of the library being built, without a `lib` prefix or
           file extension.
 
     Returns:
       The declared `File`.
     """
-    return actions.declare_file("lib{}.a".format(link_name))
+    extension = "lo" if alwayslink else "a"
+    return actions.declare_file("lib{}.{}".format(link_name, extension))
 
 def _swiftc_output_file_map(actions, target_name):
     """Declares a file for the JSON-formatted output map for a compilation action.
