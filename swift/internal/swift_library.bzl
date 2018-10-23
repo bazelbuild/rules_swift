@@ -17,6 +17,7 @@
 load(":api.bzl", "swift_common")
 load(":compiling.bzl", "swift_library_output_map")
 load(":providers.bzl", "SwiftToolchainInfo")
+load(":swift_c_module_aspect.bzl", "swift_c_module_aspect")
 load(":utils.bzl", "expand_locations")
 
 def _swift_library_impl(ctx):
@@ -91,7 +92,7 @@ def _swift_library_impl(ctx):
     )
 
 swift_library = rule(
-    attrs = swift_common.library_rule_attrs(),
+    attrs = swift_common.library_rule_attrs(additional_deps_aspects = [swift_c_module_aspect]),
     doc = """
 Compiles and links Swift code into a static library and Swift module.
 """,

@@ -30,7 +30,7 @@ load(
     "run_toolchain_swift_action",
 )
 load(":archiving.bzl", "register_static_archive_action")
-load(":attrs.bzl", "SWIFT_COMMON_RULE_ATTRS")
+load(":attrs.bzl", "swift_common_rule_attrs")
 load(
     ":compiling.bzl",
     "collect_transitive_compile_inputs",
@@ -182,7 +182,7 @@ def _build_swift_info(
         ),
     )
 
-def _compilation_attrs():
+def _compilation_attrs(additional_deps_aspects = []):
     """Returns an attribute dictionary for rules that compile Swift into objects.
 
     The returned dictionary contains the subset of attributes that are shared by
@@ -207,13 +207,20 @@ def _compilation_attrs():
     Each of the attribute functions in the list above also contains the attributes
     from the earlier items in the list.
 
+    Args:
+      additional_deps_aspects: A list of additional aspects that should be applied
+          to `deps`. Defaults to the empty list. These must be passed by the
+          individual rules to avoid potential circular dependencies between the API
+          and the aspects; the API loaded the aspects directly, then those aspects
+          would not be able to load the API.
+
     Returns:
       A new attribute dictionary that can be added to the attributes of a custom
       build rule to provide a similar interface to `swift_binary`,
       `swift_library`, and `swift_test`.
     """
     return dicts.add(
-        SWIFT_COMMON_RULE_ATTRS,
+        swift_common_rule_attrs(additional_deps_aspects = additional_deps_aspects),
         _toolchain_attrs(),
         {
             "cc_libs": attr.label_list(
@@ -997,7 +1004,7 @@ def _get_enabled_features(feature_configuration):
     )
     return sets.to_list(enabled_features_set)
 
-def _library_rule_attrs():
+def _library_rule_attrs(additional_deps_aspects = []):
     """Returns an attribute dictionary for `swift_library`-like rules.
 
     The returned dictionary contains the same attributes that are defined by the
@@ -1024,12 +1031,19 @@ def _library_rule_attrs():
     Each of the attribute functions in the list above also contains the attributes
     from the earlier items in the list.
 
+    Args:
+      additional_deps_aspects: A list of additional aspects that should be applied
+          to `deps`. Defaults to the empty list. These must be passed by the
+          individual rules to avoid potential circular dependencies between the API
+          and the aspects; the API loaded the aspects directly, then those aspects
+          would not be able to load the API.
+
     Returns:
       A new attribute dictionary that can be added to the attributes of a custom
       build rule to provide the same interface as `swift_library`.
     """
     return dicts.add(
-        _compilation_attrs(),
+        _compilation_attrs(additional_deps_aspects = additional_deps_aspects),
         {
             "alwayslink": attr.bool(
                 default = False,
@@ -1298,14 +1312,16 @@ def _swiftc_command_line_and_inputs(
 
     return depset(transitive = input_depsets)
 
-def _toolchain_attrs():
+def _toolchain_attrs(toolchain_attr_name = "_toolchain"):
     """Returns an attribute dictionary for toolchain users.
 
-    The returned dictionary contains a `_toolchain` key whose value is a BUILD API
-    `attr.label` that references the default Swift toolchain. Users who are
-    authoring custom rules can add this dictionary to the attributes of their own
-    rule in order to depend on the toolchain and access its `SwiftToolchainInfo`
-    provider to pass it to other `swift_common` functions.
+    The returned dictionary contains a key with the name specified by the
+    argument `toolchain_attr_name` (which defaults to the value `"_toolchain"`),
+    the value of which is a BUILD API `attr.label` that references the default
+    Swift toolchain. Users who are authoring custom rules can add this dictionary
+    to the attributes of their own rule in order to depend on the toolchain and
+    access its `SwiftToolchainInfo` provider to pass it to other `swift_common`
+    functions.
 
     There is a hierarchy to the attribute sets offered by the `swift_common` API:
 
@@ -1319,15 +1335,20 @@ def _toolchain_attrs():
     Each of the attribute functions in the list above also contains the attributes
     from the earlier items in the list.
 
+    Args:
+      toolchain_attr_name: The name of the attribute that should be created that
+          points to the toolchain. This defaults to `_toolchain`, which is
+          sufficient for most rules; it is customizable for certain aspects where
+          having an attribute with the same name but different values applied to
+          a particular target causes a build crash.
+
     Returns:
       A new attribute dictionary that can be added to the attributes of a custom
       build rule to provide access to the Swift toolchain.
     """
     return {
-        "_toolchain": attr.label(
-            default = Label(
-                "@build_bazel_rules_swift_local_config//:toolchain",
-            ),
+        toolchain_attr_name: attr.label(
+            default = Label("@build_bazel_rules_swift_local_config//:toolchain"),
             providers = [[SwiftToolchainInfo]],
         ),
     }
