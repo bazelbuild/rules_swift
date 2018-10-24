@@ -851,6 +851,7 @@ def _compile_as_library(
     # which allows `objc_library` targets to import `swift_library` targets.
     if toolchain.supports_objc_interop and objc_fragment:
         providers.append(new_objc_provider(
+            defines = defines,
             deps = all_deps,
             include_path = bin_dir.path,
             link_inputs = compile_results.linker_inputs,
