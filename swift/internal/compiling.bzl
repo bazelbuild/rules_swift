@@ -232,6 +232,7 @@ def new_objc_provider(
         module_map,
         static_archive,
         swiftmodule,
+        defines = [],
         objc_header = None):
     """Creates an `apple_common.Objc` provider for a Swift target.
 
@@ -244,6 +245,8 @@ def new_objc_provider(
         module_map: The module map generated for the Swift target's Objective-C header, if any.
         static_archive: The static archive (`.a` file) containing the target's compiled code.
         swiftmodule: The `.swiftmodule` file for the compiled target.
+        defines: A list of `defines` from the propagating `swift_library` that should also be
+            defined for `objc_library` targets that depend on it.
         objc_header: The generated Objective-C header for the Swift target. If `None`, no headers
             will be propagated. This header is only needed for Swift code that defines classes that
             should be exposed to Objective-C.
@@ -260,6 +263,8 @@ def new_objc_provider(
         "uses_swift": True,
     }
 
+    if defines:
+        objc_provider_args["define"] = depset(direct = defines)
     if objc_header:
         objc_provider_args["header"] = depset(direct = [objc_header])
     if linkopts:
@@ -353,6 +358,13 @@ def objc_compile_requirements(args, deps, objc_fragment):
     # Ensure that headers imported by Swift modules have the correct defines propagated from
     # dependencies.
     args.add_all(depset(transitive = defines), before_each = "-Xcc", format_each = "-D%s")
+
+    # Take any Swift-compatible defines from Objective-C dependencies and define them for Swift.
+    args.add_all(
+        depset(transitive = defines),
+        map_each = _exclude_swift_incompatible_define,
+        format_each = "-D%s",
+    )
 
     # Load module maps explicitly instead of letting Clang discover them in the search paths. This
     # is needed to avoid a case where Clang may load the same header in modular and non-modular
@@ -513,6 +525,23 @@ def _emitted_output_nature(copts):
         emits_multiple_objects = not (is_wmo and num_threads == 1),
         emits_partial_modules = not is_wmo,
     )
+
+def _exclude_swift_incompatible_define(define):
+    """A `map_each` helper that excludes the given define if it is not Swift-compatible.
+
+    This function rejects any defines that are not of the form `FOO=1` or `FOO`. Note that in
+    C-family languages, the option `-DFOO` is equivalent to `-DFOO=1` so we must preserve both.
+
+    Args:
+        define: A string of the form `FOO` or `FOO=BAR` that represents an Objective-C define.
+
+    Returns:
+        The token portion of the define it is Swift-compatible, or `None` otherwise.
+    """
+    token, equal, value = define.partition("=")
+    if (not equal and not value) or (equal == "=" and value == "1"):
+        return token
+    return None
 
 def _safe_int(s):
     """Returns the integer value of `s` when interpreted as base 10, or `None` if it is invalid.
