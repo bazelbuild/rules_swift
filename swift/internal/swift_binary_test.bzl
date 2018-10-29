@@ -94,7 +94,9 @@ def _swift_linking_rule_impl(
         )
         link_args.add_all(compile_results.linker_flags)
         objects_to_link.extend(compile_results.output_objects)
-        additional_inputs_to_linker = compile_results.compile_inputs + compile_results.linker_inputs
+        additional_inputs_to_linker = depset(
+            direct = compile_results.compile_inputs.to_list() + compile_results.linker_inputs,
+        )
 
         dicts.add(additional_output_groups, compile_results.output_groups)
         compilation_providers.append(
