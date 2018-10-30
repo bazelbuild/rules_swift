@@ -39,6 +39,7 @@ if [[ -n "${BAZEL:-}" ]]; then
   BAZELRC_ARGS=("--bazelrc=.travis/bazelrc.${TRAVIS_OS_NAME}")
   ALL_BUILD_ARGS=(
       --show_progress_rate_limit=30.0
+      --sandbox_debug
       --verbose_failures
       --action_env=PATH
   )
