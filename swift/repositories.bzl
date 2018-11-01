@@ -129,9 +129,9 @@ def swift_rules_dependencies():
     _maybe(
         http_archive,
         name = "com_google_protobuf",
-        # v3.5.1, latest as of 2018-01-11
-        urls = ["https://codeload.github.com/google/protobuf/zip/106ffc04be1abf3ff3399f54ccf149815b287dd9"],
-        strip_prefix = "protobuf-106ffc04be1abf3ff3399f54ccf149815b287dd9",
+        # v3.6.1, latest as of 2018-10-31
+        urls = ["https://github.com/protocolbuffers/protobuf/releases/download/v3.6.1/protobuf-all-3.6.1.zip"],
+        strip_prefix = "protobuf-3.6.1",
         type = "zip",
     )
 
