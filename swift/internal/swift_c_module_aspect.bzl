@@ -147,12 +147,21 @@ def _swift_c_module_aspect_impl(target, aspect_ctx):
             workspace_relative = workspace_relative,
         )
 
+        # Ensure that public headers from libraries that this `cc_library` depend on are also
+        # available to the actions.
+        transitive_headers_sets = []
+        for dep in attr.deps:
+            cc_info = getattr(dep, "cc", None)
+            if cc_info:
+                transitive_headers_sets.append(cc_info.transitive_headers)
+
         return [SwiftClangModuleInfo(
             transitive_compile_flags = depset(
                 direct = ["-I{}".format(include) for include in attr.includes],
             ),
             transitive_defines = depset(direct = attr.defines),
             transitive_headers = depset(transitive = (
+                transitive_headers_sets +
                 [target.files for target in attr.hdrs] +
                 [target.files for target in attr.textual_hdrs]
             )),

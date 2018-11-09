@@ -18,6 +18,7 @@ load(":actions.bzl", "run_toolchain_swift_action")
 load(":derived_files.bzl", "derived_files")
 load(
     ":providers.bzl",
+    "SwiftCcLibsInfo",
     "SwiftClangModuleInfo",
     "SwiftInfo",
     "SwiftToolchainInfo",
@@ -262,6 +263,18 @@ def new_objc_provider(
         "providers": objc_providers,
         "uses_swift": True,
     }
+
+    # Collect static libraries that came from cc_library targets, and include them in the
+    # Objective-C provider. This ensures that they get linked into apple_binaries, which otherwise
+    # wouldn't be able to see them.
+    transitive_cc_libs = []
+    for dep in deps:
+        if SwiftCcLibsInfo in dep:
+            cc_libraries = dep[SwiftCcLibsInfo].libraries
+            if cc_libraries:
+                transitive_cc_libs.append(cc_libraries)
+    if transitive_cc_libs:
+        objc_provider_args["imported_library"] = depset(transitive = transitive_cc_libs)
 
     if defines:
         objc_provider_args["define"] = depset(direct = defines)
