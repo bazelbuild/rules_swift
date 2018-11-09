@@ -35,55 +35,58 @@ libraries to the depender.
 
 load(":providers.bzl", "SwiftCcLibsInfo")
 
-def _build_provider_for_cc_target(target, aspect_ctx):
-    """Builds a `SwiftCcLibsInfo` provider for a `cc`-propagating target.
+def _build_providers_for_cc_target(target, aspect_ctx):
+    """Builds `SwiftCcLibsInfo` and `objc` providers for a `cc`-propagating target.
 
     Args:
-      target: The `Target` to which the aspect is being applied.
-      aspect_ctx: The aspect context.
+        target: The `Target` to which the aspect is being applied.
+        aspect_ctx: The aspect context.
 
     Returns:
-      The `SwiftCcLibsInfo` provider.
+      The list of providers.
     """
     if aspect_ctx.attr._include_directs:
-        return SwiftCcLibsInfo(libraries = target.cc.libs)
+        all_libraries_set = target.cc.libs
+    else:
+        all_libraries = []
+        if hasattr(aspect_ctx.rule.attr, "deps"):
+            for dep in aspect_ctx.rule.attr.deps:
+                if hasattr(dep, "cc"):
+                    all_libraries.append(dep.cc.libs)
+        all_libraries_set = depset(transitive = all_libraries)
 
-    transitive_libraries = []
-    if hasattr(aspect_ctx.rule.attr, "deps"):
-        for dep in aspect_ctx.rule.attr.deps:
-            if hasattr(dep, "cc"):
-                transitive_libraries.append(dep.cc.libs)
-    return SwiftCcLibsInfo(libraries = depset(transitive = transitive_libraries))
+    return [SwiftCcLibsInfo(libraries = all_libraries_set)]
 
-def _build_transitive_provider(aspect_ctx):
-    """Builds a `SwiftCcLibsInfo` provider for a non-`cc`-propagating target.
+def _build_transitive_providers(aspect_ctx):
+    """Builds `SwiftCcLibsInfo` and `objc` providers for a non-`cc`-propagating target.
 
-    This ensures that libraries are still propagated transitively through
-    dependency edges between `swift_library` targets.
+    This ensures that libraries are still propagated transitively through dependency edges between
+    `swift_library` targets.
 
     Args:
-      aspect_ctx: The aspect context.
+        aspect_ctx: The aspect context.
 
     Returns:
-      The `SwiftCcLibsInfo` provider.
+      The list of providers.
     """
-    transitive_libraries = []
+    all_libraries = []
     if hasattr(aspect_ctx.rule.attr, "deps"):
         for dep in aspect_ctx.rule.attr.deps:
             if SwiftCcLibsInfo in dep:
-                transitive_libraries.append(dep[SwiftCcLibsInfo].libraries)
-    return SwiftCcLibsInfo(libraries = depset(transitive = transitive_libraries))
+                all_libraries.append(dep[SwiftCcLibsInfo].libraries)
+    all_libraries_set = depset(transitive = all_libraries)
+
+    return [SwiftCcLibsInfo(libraries = all_libraries_set)]
 
 def _swift_cc_libs_aspect_impl(target, aspect_ctx):
     if hasattr(target, "cc"):
-        return [_build_provider_for_cc_target(target, aspect_ctx)]
+        return _build_providers_for_cc_target(target, aspect_ctx)
     else:
-        return [_build_transitive_provider(aspect_ctx)]
+        return _build_transitive_providers(aspect_ctx)
 
 # This flavor of the aspect includes direct dependencies, so it is used to
 # collect libraries depended on by a `swift_library` via the `deps` attribute.
 swift_cc_libs_aspect = aspect(
-    attr_aspects = ["deps"],
     attrs = {
         "_include_directs": attr.bool(default = True),
     },
@@ -95,7 +98,6 @@ swift_cc_libs_aspect = aspect(
 # `cc_libs` attribute, but excluding the direct libraries because they will be
 # embedded directly in the `swift_library`'s archive.
 swift_cc_libs_excluding_directs_aspect = aspect(
-    attr_aspects = ["deps"],
     attrs = {
         "_include_directs": attr.bool(default = False),
     },
