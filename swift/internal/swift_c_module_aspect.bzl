@@ -159,7 +159,7 @@ def _swift_c_module_aspect_impl(target, aspect_ctx):
             transitive_compile_flags = depset(
                 direct = ["-I{}".format(include) for include in attr.includes],
             ),
-            transitive_defines = depset(direct = attr.defines),
+            transitive_defines = depset(direct = target.cc.defines),
             transitive_headers = depset(transitive = (
                 transitive_headers_sets +
                 [target.files for target in attr.hdrs] +
