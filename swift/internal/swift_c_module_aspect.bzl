@@ -157,7 +157,16 @@ def _swift_c_module_aspect_impl(target, aspect_ctx):
 
         return [SwiftClangModuleInfo(
             transitive_compile_flags = depset(
-                direct = ["-I{}".format(include) for include in attr.includes],
+                direct = [
+                    "-isystem{}".format(include)
+                    for include in target.cc.system_include_directories
+                ] + [
+                    "-iquote{}".format(include)
+                    for include in target.cc.quote_include_directories
+                ] + [
+                    "-I{}".format(include)
+                    for include in target.cc.include_directories
+                ],
             ),
             transitive_defines = depset(direct = target.cc.defines),
             transitive_headers = depset(transitive = (
