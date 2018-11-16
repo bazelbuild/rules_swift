@@ -61,6 +61,7 @@ def _default_linker_opts(
 
     linkopts = [
         "-fuse-ld={}".format(cc_toolchain.ld_executable),
+        "-pie",
         "-L{}".format(platform_lib_dir),
         "-Wl,-rpath,{}".format(platform_lib_dir),
         "-lm",
