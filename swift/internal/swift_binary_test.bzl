@@ -262,6 +262,11 @@ def _swift_test_impl(ctx):
         additional_test_outputs = []
         executable = binary
 
+    test_environment = dicts.add(
+        toolchain.action_environment,
+        {"TEST_BINARIES_FOR_LLVM_COV": binary.short_path},
+    )
+
     # TODO(b/79527231): Replace `instrumented_files` with a declared provider when it is available.
     return struct(
         instrumented_files = struct(
@@ -277,9 +282,13 @@ def _swift_test_impl(ctx):
                     collect_data = True,
                     collect_default = True,
                     files = ctx.files.data + additional_test_outputs,
+                    # _coverage_support is a private attribute added by Bazel to all test targets
+                    # (see https://github.com/bazelbuild/bazel/blob/master/src/main/java/com/google/devtools/build/lib/analysis/skylark/SkylarkRuleClassFunctions.java).
+                    transitive_files = ctx.attr._coverage_support.files,
                 ),
             ),
             testing.ExecutionInfo(toolchain.execution_requirements),
+            testing.TestEnvironment(test_environment),
         ],
     )
 
