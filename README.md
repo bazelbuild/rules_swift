@@ -11,10 +11,6 @@ This repository contains rules for [Bazel](https://bazel.build) that can be
 used to build Swift libraries and executables for Apple platforms (iOS, macOS,
 tvOS, and watchOS) and Linux.
 
-NOTE: The build rules in this repository are intended to replace the
-`swift_library` rule that is currently housed in
-[bazelbuild/rules_apple](https://github.com/bazelbuild/rules_apple).
-
 ## Reference Documentation
 
 [Click here](https://github.com/bazelbuild/rules_swift/tree/master/doc/index.md)
@@ -23,7 +19,7 @@ repository.
 
 ## Compatibility
 
-These rules have been verified to work with **Bazel 0.16.0.**
+These rules have been verified to work with **Bazel 0.19.0.**
 
 ## Quick Setup
 
@@ -51,7 +47,7 @@ rules you wish to depend on:
 git_repository(
     name = "build_bazel_rules_swift",
     remote = "https://github.com/bazelbuild/rules_swift.git",
-    tag = "0.3.0",
+    tag = "0.4.0",
 )
 
 load(
