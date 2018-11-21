@@ -17,7 +17,8 @@
 load(":actions.bzl", "run_toolchain_action")
 load(":deps.bzl", "collect_link_libraries")
 load(":providers.bzl", "SwiftInfo")
-load(":utils.bzl", "collect_transitive")
+load(":utils.bzl", "collect_transitive", "objc_provider_framework_name")
+load("@bazel_skylib//lib:paths.bzl", "paths")
 
 def register_link_action(
         actions,
@@ -64,8 +65,18 @@ def register_link_action(
         stamp_lib_depsets = []
 
     deps_libraries = []
+    deps_dynamic_framework_dirs = []
+    deps_static_framework_dirs = []
+    deps_sdk_dylibs = []
+    deps_sdk_frameworks = []
     for dep in deps:
         deps_libraries.extend(collect_link_libraries(dep))
+        if apple_common.Objc in dep:
+            objc = dep[apple_common.Objc]
+            deps_static_framework_dirs.append(objc.framework_dir)
+            deps_dynamic_framework_dirs.append(objc.dynamic_framework_dir)
+            deps_sdk_dylibs.append(objc.sdk_dylib)
+            deps_sdk_frameworks.append(objc.sdk_framework)
 
     libraries = depset(transitive = deps_libraries + stamp_lib_depsets, order = "topological")
     link_input_depsets = [
@@ -88,6 +99,32 @@ def register_link_action(
 
     link_input_args.add_all(objects)
     link_input_args.add_all(libraries, map_each = _link_library_map_fn)
+
+    # Add various requirements from propagated Objective-C frameworks:
+    # * Static prebuilt framework binaries are passed as regular arguments.
+    link_input_args.add_all(
+        depset(transitive = deps_static_framework_dirs),
+        map_each = _link_framework_map_fn,
+    )
+
+    # * `sdk_dylibs` values are passed with `-l`.
+    link_input_args.add_all(depset(transitive = deps_sdk_dylibs), format_each = "-l%s")
+
+    # * `sdk_frameworks` values are passed with `-framework`.
+    link_input_args.add_all(depset(transitive = deps_sdk_frameworks), before_each = "-framework")
+
+    # * Dynamic prebuilt frameworks are passed by providing their parent directory as a search path
+    #   using `-F` and the framework name as `-framework`.
+    link_input_args.add_all(
+        depset(transitive = deps_dynamic_framework_dirs),
+        format_each = "-F%s",
+        map_each = paths.dirname,
+    )
+    link_input_args.add_all(
+        depset(transitive = deps_dynamic_framework_dirs),
+        before_each = "-framework",
+        map_each = objc_provider_framework_name,
+    )
 
     all_linkopts = depset(
         direct = expanded_linkopts,
@@ -124,6 +161,20 @@ def register_link_action(
         inputs = depset(direct = objects, transitive = link_input_depsets),
         mnemonic = mnemonic,
         outputs = outputs,
+    )
+
+def _link_framework_map_fn(framework_dir):
+    """Maps a framework directory name to the underlying library to link.
+
+    Args:
+        framework_dir: The path to the framework directory.
+
+    Returns:
+        A command-line argument (string) to link the framework.
+    """
+    return "{}/{}".format(
+        framework_dir,
+        objc_provider_framework_name(framework_dir),
     )
 
 def _link_library_map_fn(lib):
