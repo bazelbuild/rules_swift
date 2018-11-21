@@ -16,7 +16,6 @@
 
 load(":actions.bzl", "run_toolchain_swift_action")
 load(":derived_files.bzl", "derived_files")
-load(":providers.bzl", "SwiftToolchainInfo")
 
 def ensure_swiftmodule_is_embedded(
         actions,

@@ -16,7 +16,7 @@
 
 load(":actions.bzl", "run_toolchain_action")
 load(":deps.bzl", "collect_link_libraries")
-load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
+load(":providers.bzl", "SwiftInfo")
 load(":utils.bzl", "collect_transitive")
 
 def register_link_action(
