@@ -98,8 +98,9 @@ def register_link_action(
         link_input_args.add(runtime_object_path)
 
     link_input_args.add_all(objects)
-    library_args = [_link_library_map_fn(toolchain, x) for x in libraries]
-    link_input_args.add_all(library_args)
+    is_darwin = toolchain.system_name == "darwin"
+    map_fn = _darwin_link_library_map_fn if is_darwin else _linux_link_library_map_fn
+    link_input_args.add_all(libraries, map_each = map_fn)
 
     # Add various requirements from propagated Objective-C frameworks:
     # * Static prebuilt framework binaries are passed as regular arguments.
@@ -178,7 +179,7 @@ def _link_framework_map_fn(framework_dir):
         objc_provider_framework_name(framework_dir),
     )
 
-def _link_library_map_fn(toolchain, lib):
+def _darwin_link_library_map_fn(lib):
     """Maps a library to the appropriate flags to link them.
 
     This function handles `alwayslink` (.lo) libraries correctly by surrounding them with
@@ -190,10 +191,24 @@ def _link_library_map_fn(toolchain, lib):
     Returns:
         A list of command-line arguments (strings) that link the library correctly.
     """
-    if not lib.basename.endswith(".lo"):
-        return lib.path
-
-    if toolchain.system_name == "darwin":
+    if lib.basename.endswith(".lo"):
         return "-Wl,-force_load,{lib}".format(lib = lib.path)
     else:
+        return lib.path
+
+def _linux_link_library_map_fn(lib):
+    """Maps a library to the appropriate flags to link them.
+
+    This function handles `alwayslink` (.lo) libraries correctly by surrounding them with
+    the appropriate arguments for the platform's linker.
+
+    Args:
+        lib: A `File`, passed in when the calling `Args` object is ready to map it to an argument.
+
+    Returns:
+        A list of command-line arguments (strings) that link the library correctly.
+    """
+    if lib.basename.endswith(".lo"):
         return "-Wl,--whole-archive,{lib},--no-whole-archive".format(lib = lib.path)
+    else:
+        return lib.path
