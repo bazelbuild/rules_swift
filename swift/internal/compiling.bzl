@@ -230,8 +230,8 @@ def new_objc_provider(
         link_inputs,
         linkopts,
         module_map,
-        static_archive,
-        swiftmodule,
+        static_archives,
+        swiftmodules,
         defines = [],
         objc_header = None):
     """Creates an `apple_common.Objc` provider for a Swift target.
@@ -243,8 +243,10 @@ def new_objc_provider(
         link_inputs: Additional linker input files that should be propagated to dependents.
         linkopts: Linker options that should be propagated to dependents.
         module_map: The module map generated for the Swift target's Objective-C header, if any.
-        static_archive: The static archive (`.a` file) containing the target's compiled code.
-        swiftmodule: The `.swiftmodule` file for the compiled target.
+        static_archives: A list (typically of one element) of the static archives (`.a` files)
+            containing the target's compiled code.
+        swiftmodules: A list (typically of one element) of the `.swiftmodule` files for the
+            compiled target.
         defines: A list of `defines` from the propagating `swift_library` that should also be
             defined for `objc_library` targets that depend on it.
         objc_header: The generated Objective-C header for the Swift target. If `None`, no headers
@@ -256,9 +258,8 @@ def new_objc_provider(
     """
     objc_providers = [dep[apple_common.Objc] for dep in deps if apple_common.Objc in dep]
     objc_provider_args = {
-        "include": depset(direct = [include_path]),
-        "library": depset(direct = [static_archive]),
-        "link_inputs": depset(direct = [swiftmodule] + link_inputs),
+        "library": depset(direct = static_archives),
+        "link_inputs": depset(direct = swiftmodules + link_inputs),
         "providers": objc_providers,
         "uses_swift": True,
     }
@@ -275,6 +276,8 @@ def new_objc_provider(
     if transitive_cc_libs:
         objc_provider_args["imported_library"] = depset(transitive = transitive_cc_libs)
 
+    if include_path:
+        objc_provider_args["include"] = depset(direct = [include_path])
     if defines:
         objc_provider_args["define"] = depset(direct = defines)
     if objc_header:
@@ -282,8 +285,13 @@ def new_objc_provider(
     if linkopts:
         objc_provider_args["linkopt"] = depset(direct = linkopts)
 
-    if static_archive.basename.endswith(".lo"):
-        objc_provider_args["force_load_library"] = depset(direct = [static_archive])
+    force_loaded_libraries = [
+        archive
+        for archive in static_archives
+        if archive.basename.endswith(".lo")
+    ]
+    if force_loaded_libraries:
+        objc_provider_args["force_load_library"] = depset(direct = force_loaded_libraries)
 
     # In addition to the generated header's module map, we must re-propagate the direct deps'
     # Objective-C module maps to dependents, because those Swift modules still need to see them. We
