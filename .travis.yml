@@ -13,6 +13,13 @@ language: generic
 #   target pattern with `-`.
 matrix:
   include:
+    # Do buildifier validations on linux since those travis hosts seem have
+    # better availability/turn around.
+    - os: linux
+      dist: trusty
+      sudo: false
+      env: BUILDIFER=RELEASE
+
     - os: linux
       dist: trusty
       sudo: required
