@@ -62,6 +62,17 @@ def expand_locations(ctx, values, targets = []):
     """
     return [ctx.expand_location(value, targets) for value in values]
 
+def objc_provider_framework_name(path):
+    """Returns the name of the framework from an `objc` provider path.
+
+    Args:
+        path: A path that came from an `objc` provider.
+
+    Returns:
+        A string containing the name of the framework (e.g., `Foo` for `Foo.framework`).
+    """
+    return path.rpartition("/")[2].partition(".")[0]
+
 def owner_relative_path(file):
     """Returns the part of the given file's path relative to its owning package.
 
