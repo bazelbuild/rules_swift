@@ -22,7 +22,7 @@ load(
     "SwiftClangModuleInfo",
     "SwiftInfo",
 )
-load(":utils.bzl", "collect_transitive")
+load(":utils.bzl", "collect_transitive", "objc_provider_framework_name")
 load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 
@@ -359,7 +359,7 @@ def objc_compile_requirements(args, deps, objc_fragment):
             "-Xfrontend",
             [
                 "-disable-autolink-framework",
-                _objc_provider_framework_name(framework),
+                objc_provider_framework_name(framework),
             ],
         ))
 
@@ -571,14 +571,3 @@ def _safe_int(s):
         if s[i] < "0" or s[i] > "9":
             return None
     return int(s)
-
-def _objc_provider_framework_name(path):
-    """Returns the name of the framework from an `objc` provider path.
-
-    Args:
-        path: A path that came from an `objc` provider.
-
-    Returns:
-        A string containing the name of the framework (e.g., `Foo` for `Foo.framework`).
-    """
-    return path.rpartition("/")[2].partition(".")[0]
