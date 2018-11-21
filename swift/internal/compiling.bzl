@@ -21,7 +21,6 @@ load(
     "SwiftCcLibsInfo",
     "SwiftClangModuleInfo",
     "SwiftInfo",
-    "SwiftToolchainInfo",
 )
 load(":utils.bzl", "collect_transitive")
 load("@bazel_skylib//lib:collections.bzl", "collections")
