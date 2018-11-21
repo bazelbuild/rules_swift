@@ -350,7 +350,7 @@ def objc_compile_requirements(args, deps, objc_fragment):
     # headers.
     args.add_all(depset(transitive = includes), format_each = "-I%s")
 
-    # Add framework search paths for any Objective-C frameworks propagated through static/dynamic
+    # Add framework search paths for any prebuilt frameworks propagated through static/dynamic
     # framework provider keys.
     args.add_all(
         depset(transitive = all_frameworks),
@@ -360,16 +360,11 @@ def objc_compile_requirements(args, deps, objc_fragment):
 
     # Disable the `LC_LINKER_OPTION` load commands for static framework automatic linking. This is
     # needed to correctly deduplicate static frameworks from also being linked into test binaries
-    # where it is also linked into the app binary. TODO(allevato): Update this to not expand the
-    # depset once `Args.add` supports returning multiple elements from a `map_fn`.
-    for framework in depset(transitive = static_frameworks).to_list():
-        args.add_all(collections.before_each(
-            "-Xfrontend",
-            [
-                "-disable-autolink-framework",
-                objc_provider_framework_name(framework),
-            ],
-        ))
+    # where it is also linked into the app binary.
+    args.add_all(
+        depset(transitive = static_frameworks),
+        map_each = _disable_autolink_framework_copts,
+    )
 
     # Swift's ClangImporter does not include the current directory by default in its search paths,
     # so we must add it to find workspace-relative imports in headers imported by module maps.
@@ -502,6 +497,23 @@ def _dirname_map_fn(f):
         The dirname of the file.
     """
     return f.dirname
+
+def _disable_autolink_framework_copts(framework_dir):
+    """A `map_each` helper that disables autolinking for the given framework directory.
+
+    Args:
+        framework_dir: A string representing a static framework directory.
+
+    Returns:
+        The list of `swiftc` flags needed to disable autolinking for the given framework.
+    """
+    return collections.before_each(
+        "-Xfrontend",
+        [
+            "-disable-autolink-framework",
+            objc_provider_framework_name(framework_dir),
+        ],
+    )
 
 def _emitted_output_nature(copts):
     """Returns a `struct` with information about the nature of emitted outputs for the given flags.
