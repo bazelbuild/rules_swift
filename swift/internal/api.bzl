@@ -857,8 +857,8 @@ def _compile_as_library(
             link_inputs = compile_results.linker_inputs,
             linkopts = compile_results.linker_flags,
             module_map = output_module_map,
-            static_archive = out_archive,
-            swiftmodule = compile_results.output_module,
+            static_archives = [out_archive],
+            swiftmodules = [compile_results.output_module],
             objc_header = objc_header,
         ))
 

@@ -16,6 +16,7 @@
 
 load(":api.bzl", "swift_common")
 load(":attrs.bzl", "swift_common_rule_attrs")
+load(":compiling.bzl", "new_objc_provider")
 load(":providers.bzl", "SwiftClangModuleInfo", "merge_swift_clang_module_infos")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 
@@ -39,6 +40,21 @@ def _swift_import_impl(ctx):
             direct_libraries = archives,
             direct_swiftdocs = swiftdocs,
             direct_swiftmodules = swiftmodules,
+        ),
+        # Propagate an `Objc` provider so that Apple-specific rules like `apple_binary` will link
+        # the imported library properly. Typically we'd want to only propagate this if the
+        # toolchain reports that it supports Objective-C interop, but that creates a problematic
+        # cyclic dependency for built-from-source toolchains, so we propagate it unconditionally;
+        # it will be ignored on non-Apple platforms anyway.
+        new_objc_provider(
+            deps = deps,
+            include_path = None,
+            link_inputs = [],
+            linkopts = [],
+            module_map = None,
+            objc_header = None,
+            static_archives = archives,
+            swiftmodules = swiftmodules,
         ),
     ]
 
@@ -84,5 +100,6 @@ The list of `.swiftmodule` files provided to Swift targets that depend on this t
 Allows for the use of precompiled Swift modules as dependencies in other `swift_library` and
 `swift_binary` targets.
 """,
+    fragments = ["objc"],
     implementation = _swift_import_impl,
 )
