@@ -182,8 +182,8 @@ def _link_framework_map_fn(framework_dir):
 def _darwin_link_library_map_fn(lib):
     """Maps a library to the appropriate flags to link them.
 
-    This function handles `alwayslink` (.lo) libraries correctly by surrounding them with
-    the appropriate arguments for the platform's linker.
+    This function handles `alwayslink` (.lo) libraries correctly by passing them with
+    `-force_load`.
 
     Args:
         lib: A `File`, passed in when the calling `Args` object is ready to map it to an argument.
@@ -200,7 +200,7 @@ def _linux_link_library_map_fn(lib):
     """Maps a library to the appropriate flags to link them.
 
     This function handles `alwayslink` (.lo) libraries correctly by surrounding them with
-    the appropriate arguments for the platform's linker.
+    `--(no-)whole-archive`.
 
     Args:
         lib: A `File`, passed in when the calling `Args` object is ready to map it to an argument.
