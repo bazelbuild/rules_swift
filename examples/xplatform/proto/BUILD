@@ -1,10 +1,10 @@
-licenses(["notice"])
-
 load(
     "@build_bazel_rules_swift//swift:swift.bzl",
     "swift_binary",
     "swift_proto_library",
 )
+
+licenses(["notice"])
 
 proto_library(
     name = "example_proto",

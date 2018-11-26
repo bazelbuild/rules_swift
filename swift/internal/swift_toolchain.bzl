@@ -19,12 +19,12 @@ toolchain package. If you are looking for rules to build Swift code using this
 toolchain, see `swift.bzl`.
 """
 
-load(":features.bzl", "SWIFT_FEATURE_AUTOLINK_EXTRACT", "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD")
-load(":providers.bzl", "SwiftToolchainInfo")
-load(":wrappers.bzl", "SWIFT_TOOL_WRAPPER_ATTRIBUTES")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:partial.bzl", "partial")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
+load(":features.bzl", "SWIFT_FEATURE_AUTOLINK_EXTRACT", "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD")
+load(":providers.bzl", "SwiftToolchainInfo")
+load(":wrappers.bzl", "SWIFT_TOOL_WRAPPER_ATTRIBUTES")
 
 def _default_linker_opts(
         cc_toolchain,

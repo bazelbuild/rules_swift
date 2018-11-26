@@ -14,6 +14,10 @@
 
 """Implementation of the `swift_binary` and `swift_test` rules."""
 
+load("@bazel_skylib//lib:dicts.bzl", "dicts")
+load("@bazel_skylib//lib:partial.bzl", "partial")
+load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "CPP_LINK_EXECUTABLE_ACTION_NAME")
+load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
 load(":api.bzl", "swift_common")
 load(":derived_files.bzl", "derived_files")
 load(":features.bzl", "SWIFT_FEATURE_BUNDLED_XCTESTS", "is_feature_enabled")
@@ -21,10 +25,6 @@ load(":linking.bzl", "register_link_action")
 load(":providers.bzl", "SwiftBinaryInfo", "SwiftToolchainInfo")
 load(":swift_c_module_aspect.bzl", "swift_c_module_aspect")
 load(":utils.bzl", "expand_locations")
-load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load("@bazel_skylib//lib:partial.bzl", "partial")
-load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
-load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "CPP_LINK_EXECUTABLE_ACTION_NAME")
 
 def _swift_linking_rule_impl(
         ctx,

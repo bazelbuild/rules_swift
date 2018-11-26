@@ -2,13 +2,13 @@
 # vice versa when it is linked into the existing native linking rules for Apple
 # platforms.
 
-licenses(["notice"])
-
 load(
     "@build_bazel_rules_swift//swift:swift.bzl",
     "swift_binary",
     "swift_library",
 )
+
+licenses(["notice"])
 
 objc_library(
     name = "PrintStream",

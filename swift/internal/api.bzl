@@ -23,6 +23,11 @@ Do not load this file directly; instead, load the top-level `swift.bzl` file,
 which exports the `swift_common` module.
 """
 
+load("@bazel_skylib//lib:collections.bzl", "collections")
+load("@bazel_skylib//lib:dicts.bzl", "dicts")
+load("@bazel_skylib//lib:new_sets.bzl", "sets")
+load("@bazel_skylib//lib:partial.bzl", "partial")
+load("@bazel_skylib//lib:paths.bzl", "paths")
 load(
     ":actions.bzl",
     "run_toolchain_action",
@@ -64,11 +69,6 @@ load(
     "merge_swift_clang_module_infos",
 )
 load(":swift_cc_libs_aspect.bzl", "swift_cc_libs_excluding_directs_aspect")
-load("@bazel_skylib//lib:collections.bzl", "collections")
-load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load("@bazel_skylib//lib:new_sets.bzl", "sets")
-load("@bazel_skylib//lib:partial.bzl", "partial")
-load("@bazel_skylib//lib:paths.bzl", "paths")
 
 # The compilation modes supported by Bazel.
 _VALID_COMPILATION_MODES = [
