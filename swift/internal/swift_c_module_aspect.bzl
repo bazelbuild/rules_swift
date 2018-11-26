@@ -14,11 +14,11 @@
 
 """Generates Swift-compatible module maps for direct C dependencies of Swift targets."""
 
+load("@bazel_skylib//lib:paths.bzl", "paths")
 load(":api.bzl", "swift_common")
 load(":derived_files.bzl", "derived_files")
 load(":features.bzl", "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD", "is_feature_enabled")
 load(":providers.bzl", "SwiftClangModuleInfo", "SwiftToolchainInfo")
-load("@bazel_skylib//lib:paths.bzl", "paths")
 
 def _explicit_module_name(tags):
     """Returns an explicit module name specified by a tag of the form `"swift_module=Foo"`.

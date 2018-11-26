@@ -14,11 +14,11 @@
 
 """Implementation of linking logic for Swift."""
 
+load("@bazel_skylib//lib:paths.bzl", "paths")
 load(":actions.bzl", "run_toolchain_action")
 load(":deps.bzl", "collect_link_libraries")
 load(":providers.bzl", "SwiftInfo")
 load(":utils.bzl", "collect_transitive", "objc_provider_framework_name")
-load("@bazel_skylib//lib:paths.bzl", "paths")
 
 def register_link_action(
         actions,
