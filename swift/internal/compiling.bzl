@@ -14,6 +14,8 @@
 
 """Implementation of compilation logic for Swift."""
 
+load("@bazel_skylib//lib:collections.bzl", "collections")
+load("@bazel_skylib//lib:paths.bzl", "paths")
 load(":actions.bzl", "run_toolchain_swift_action")
 load(":derived_files.bzl", "derived_files")
 load(
@@ -23,8 +25,6 @@ load(
     "SwiftInfo",
 )
 load(":utils.bzl", "collect_transitive", "objc_provider_framework_name")
-load("@bazel_skylib//lib:collections.bzl", "collections")
-load("@bazel_skylib//lib:paths.bzl", "paths")
 
 # Swift compiler options that cause the code to be compiled using whole-module optimization.
 _WMO_COPTS = ("-force-single-frontend-invocation", "-whole-module-optimization", "-wmo")
