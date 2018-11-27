@@ -2,14 +2,15 @@
 
 [![Build Status](https://travis-ci.org/bazelbuild/rules_swift.svg?branch=master)](https://travis-ci.org/bazelbuild/rules_swift)
 
-> ⚠️ The rules in this repository are in the beta stage of development. There are
-> many features that still need to be implemented and there may be bugs. If you
-> run into any problems, please
-> [file an issue!](https://github.com/bazelbuild/rules_swift/issues/new)
-
 This repository contains rules for [Bazel](https://bazel.build) that can be
-used to build Swift libraries and executables for Apple platforms (iOS, macOS,
-tvOS, and watchOS) and Linux.
+used to build Swift libraries, tests, and executables for macOS and Linux.
+
+To build applications for all of Apple's platforms (macOS, iOS, tvOS, and
+watchOS), they can be combined with the
+[Apple Rules](https://github.com/bazelbuild/rules_apple).
+
+If you run into any problems with these rules, please
+[file an issue!](https://github.com/bazelbuild/rules_swift/issues/new)
 
 ## Reference Documentation
 
@@ -78,7 +79,6 @@ uses `clang`.
 * Support for building and linking to shared libraries (`.dylib`/`.so`) written
   in Swift.
 * Interoperability with Swift Package Manager.
-* Improved C interoperability.
 * Migration to the Bazel platforms/toolchains APIs.
 * Support for multiple toolchains, and support for non-Xcode toolchains on
   macOS.
