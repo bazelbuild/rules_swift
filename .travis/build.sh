@@ -40,6 +40,7 @@ if [[ -n "${BAZEL:-}" ]]; then
   ALL_BUILD_ARGS=(
       --show_progress_rate_limit=30.0
       --verbose_failures
+      --sandbox_debug
       --action_env=PATH
   )
   if [[ -n "${BUILD_ARGS:-}" ]]; then
