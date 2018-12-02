@@ -96,7 +96,10 @@ def _default_linker_opts(
     ])
 
     if is_opt:
-        linkopts.append("-Wl,-dead_strip")
+        linkopts.extend([
+            "-Wl,-dead_strip",
+            "-Wl,-no_dead_strip_inits_and_terms",
+        ])
 
     # XCTest.framework only lives in the Xcode bundle (its platform framework
     # directory), so test binaries need to have that directory explicitly added to
