@@ -24,18 +24,18 @@ matrix:
       dist: trusty
       sudo: required
       env:
-        - BAZEL=0.19.0 SWIFT_VERSION=4.1.2 CC=clang TARGETS="//examples/... -//examples/apple/..."
+        - BAZEL=0.20.0 SWIFT_VERSION=4.1.2 CC=clang TARGETS="//examples/... -//examples/apple/..."
     - os: linux
       dist: trusty
       sudo: required
       env:
         - BAZEL=HEAD SWIFT_VERSION=4.1.2 CC=clang TARGETS="//examples/... -//examples/apple/..."
     - os: osx
-      osx_image: xcode9.4
+      osx_image: xcode10.1
       env:
-        - BAZEL=0.19.0 TARGETS=//examples/...
+        - BAZEL=0.20.0 TARGETS=//examples/...
     - os: osx
-      osx_image: xcode9.4
+      osx_image: xcode10.1
       env:
         - BAZEL=HEAD TARGETS=//examples/...
 
