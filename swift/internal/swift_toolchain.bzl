@@ -31,7 +31,8 @@ def _default_linker_opts(
         os,
         toolchain_root,
         is_static,
-        is_test):
+        is_test,
+        is_opt):
     """Returns options that should be passed by default to `clang` when linking.
 
     This function is wrapped in a `partial` that will be propagated as part of the
@@ -45,13 +46,14 @@ def _default_linker_opts(
         is_static: `True` to link against the static version of the Swift runtime, or `False` to
             link against dynamic/shared libraries.
         is_test: `True` if the target being linked is a test target.
+        is_opt: `True` if the target is being built with `opt` compilation mode.
 
     Returns:
         The command line options to pass to `clang` to link against the desired variant of the Swift
         runtime libraries.
     """
 
-    _ignore = is_test
+    _ignore = (is_opt, is_test)
 
     # TODO(#8): Support statically linking the Swift runtime.
     platform_lib_dir = "{toolchain_root}/lib/swift/{os}".format(

@@ -198,11 +198,13 @@ on Darwin is required.
 Skylib `partial`. A partial function that returns the flags that should be passed to Clang to link a
 binary or test target with the Swift runtime libraries.
 
-The partial should be called with two arguments:
+The partial should be called with these arguments:
 
 *   `is_static`: A `Boolean` value indicating whether to link against the static or dynamic runtime
     libraries.
 *   `is_test`: A `Boolean` value indicating whether the target being linked is a test target.
+*   `is_opt`: A `Boolean` value indicating whether the target be linked is being built with
+    optimizations.
 """,
         "linker_search_paths": """
 `List` of `string`s. Additional library search paths that should be passed to the linker when

@@ -39,7 +39,8 @@ def _default_linker_opts(
         platform,
         target,
         is_static,
-        is_test):
+        is_test,
+        is_opt):
     """Returns options that should be passed by default to `clang` when linking.
 
     This function is wrapped in a `partial` that will be propagated as part of the toolchain
@@ -54,6 +55,7 @@ def _default_linker_opts(
         is_static: `True` to link against the static version of the Swift runtime, or `False` to
             link against dynamic/shared libraries.
         is_test: `True` if the target being linked is a test target.
+        is_opt: `True` if the target is being built with `opt` compilation mode.
 
     Returns:
         The command line options to pass to `clang` to link against the desired variant of the Swift
@@ -92,6 +94,9 @@ def _default_linker_opts(
         "-ObjC",
         "-Wl,-objc_abi_version,2",
     ])
+
+    if is_opt:
+        linkopts.append("-Wl,-dead_strip")
 
     # XCTest.framework only lives in the Xcode bundle (its platform framework
     # directory), so test binaries need to have that directory explicitly added to

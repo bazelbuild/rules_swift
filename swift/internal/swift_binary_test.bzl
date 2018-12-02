@@ -58,6 +58,7 @@ def _swift_linking_rule_impl(
 
     additional_inputs = ctx.files.swiftc_inputs
     srcs = ctx.files.srcs
+    compilation_mode = ctx.var["COMPILATION_MODE"]
 
     out_bin = derived_files.executable(ctx.actions, target_name = ctx.label.name)
     objects_to_link = []
@@ -77,7 +78,7 @@ def _swift_linking_rule_impl(
         compile_results = swift_common.compile_as_objects(
             actions = ctx.actions,
             arguments = [],
-            compilation_mode = ctx.var["COMPILATION_MODE"],
+            compilation_mode = compilation_mode,
             copts = copts,
             defines = ctx.attr.defines,
             feature_configuration = feature_configuration,
@@ -110,6 +111,7 @@ def _swift_linking_rule_impl(
         toolchain.linker_opts_producer,
         is_static = True,
         is_test = is_test,
+        is_opt = compilation_mode == "opt",
     ))
 
     # Enable LLVM coverage in CROSSTOOL if this is a coverage build. Note that we explicitly enable

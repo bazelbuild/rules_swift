@@ -1151,7 +1151,7 @@ def _merge_swift_info_providers(targets):
         transitive_swiftmodules = depset(transitive = transitive_swiftmodules),
     )
 
-def _swift_runtime_linkopts(is_static, toolchain, is_test = False):
+def _swift_runtime_linkopts(is_static, toolchain, is_test = False, is_opt = False):
     """Returns the flags that should be passed to `clang` when linking a binary.
 
     This function provides the appropriate linker arguments to callers who need to
@@ -1165,6 +1165,8 @@ def _swift_runtime_linkopts(is_static, toolchain, is_test = False):
           options are desired.
       is_test: A `Boolean` value indicating whether the target being linked is a
           test target.
+      is_opt: A `Boolean` value indicating whether the target being linked is
+          built with optimizations.
 
     Returns:
       A `list` of command-line flags that should be passed to `clang` to link
@@ -1174,6 +1176,7 @@ def _swift_runtime_linkopts(is_static, toolchain, is_test = False):
         toolchain.linker_opts_producer,
         is_static = is_static,
         is_test = is_test,
+        is_opt = is_opt,
     )
 
 def _swiftc_command_line_and_inputs(
