@@ -109,6 +109,21 @@ function install_swift() {
   mkdir .swift
   curl -sL "https://swift.org/builds/swift-$VERSION-release/ubuntu1404/swift-$VERSION-RELEASE/swift-$VERSION-RELEASE-ubuntu14.04.tar.gz" | \
       tar xz -C .swift &> /dev/null
+
+  # TODO(bazelbuild/bazel#6834): This is a workaround for an apparent issue with
+  # the C++ toolchain configuration. The repository rule runs
+  # `clang -fuse-ld=gold` in a repository rule context to determine if gold is
+  # supported as the linker, which (I believe) can find `ld.gold` on the system
+  # path. It also passes the path to Clang's bin directory as a program prefix
+  # directory (`-B`), but if `ld.gold` doesn't live in this directory, then when
+  # `clang` is invoked in a build action context, it won't have access to
+  # `PATH`, so the subsequent link action fails.
+  #
+  # There are two ways to fix this: pass `--action_env=PATH` to Bazel or symlink
+  # `ld.gold` where Clang can find it within Bazel's sandbox. We choose the
+  # latter because it doesn't leak the system path into every action.
+  which ld.gold && \
+    sudo ln -s "$(which ld.gold)" /usr/local/clang-5.0.0/bin/ld.gold
 }
 
 # ------------------------------------------------------------------------------
