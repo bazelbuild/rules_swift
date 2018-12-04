@@ -157,6 +157,7 @@ def _swift_linking_rule_impl(
         mnemonic = "SwiftLinkExecutable",
         objects = objects_to_link,
         outputs = [out_bin],
+        progress_message = "Linking {}".format(out_bin.short_path),
         rule_specific_args = link_args,
         toolchain = toolchain,
     )
