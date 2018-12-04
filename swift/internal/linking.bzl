@@ -30,6 +30,7 @@ def register_link_action(
         mnemonic,
         objects,
         outputs,
+        progress_message,
         rule_specific_args,
         toolchain):
     """Registers an action that invokes `clang` to link object files.
@@ -50,6 +51,7 @@ def register_link_action(
         mnemonic: The mnemonic printed by Bazel when the action executes.
         objects: A list of object (.o) files that will be passed to the linker.
         outputs: A list of `File`s that should be passed as the outputs of the link action.
+        progress_message: The progress message printed by Bazel when the action executes.
         rule_specific_args: Additional arguments that are rule-specific that will be passed to
             `clang`.
         toolchain: The `SwiftToolchainInfo` provider of the toolchain.
@@ -165,6 +167,7 @@ def register_link_action(
         inputs = depset(direct = objects, transitive = link_input_depsets),
         mnemonic = mnemonic,
         outputs = outputs,
+        progress_message = progress_message,
     )
 
 def _link_framework_map_fn(framework_dir):

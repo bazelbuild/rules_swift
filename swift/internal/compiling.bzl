@@ -394,6 +394,7 @@ def objc_compile_requirements(args, deps, objc_fragment):
 
 def register_autolink_extract_action(
         actions,
+        module_name,
         objects,
         output,
         toolchain):
@@ -406,6 +407,8 @@ def register_autolink_extract_action(
 
     Args:
         actions: The object used to register actions.
+        module_name: The name of the module to which the `.o` files belong (used when generating
+            the progress message).
         objects: The list of object files whose autolink information will be extracted.
         output: A `File` into which the autolink information will be written.
         toolchain: The `SwiftToolchainInfo` provider of the toolchain.
@@ -421,6 +424,7 @@ def register_autolink_extract_action(
         inputs = objects,
         mnemonic = "SwiftAutolinkExtract",
         outputs = [output],
+        progress_message = "Extracting autolink data for Swift module {}".format(module_name),
         swift_tool = "swift-autolink-extract",
     )
 

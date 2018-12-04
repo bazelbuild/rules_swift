@@ -119,5 +119,6 @@ def _register_modulewrap_action(
         inputs = [swiftmodule],
         mnemonic = "SwiftModuleWrap",
         outputs = [object],
+        progress_message = "Wrapping {} for debugging".format(swiftmodule.short_path),
         swift_tool = "swift",
     )
