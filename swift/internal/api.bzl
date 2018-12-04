@@ -559,6 +559,7 @@ def _compile_as_objects(
         inputs = all_inputs,
         mnemonic = "SwiftCompile",
         outputs = compile_outputs,
+        progress_message = "Compiling Swift module {}".format(module_name),
         swift_tool = "swiftc",
         toolchain = toolchain,
     )
@@ -587,6 +588,7 @@ def _compile_as_objects(
         )
         register_autolink_extract_action(
             actions = actions,
+            module_name = module_name,
             objects = output_objects,
             output = autolink_file,
             toolchain = toolchain,
@@ -826,6 +828,7 @@ def _compile_as_library(
         mnemonic = "SwiftArchive",
         objects = compile_results.output_objects,
         output = out_archive,
+        progress_message = "Linking {}".format(out_archive.short_path),
         toolchain = toolchain,
     )
 

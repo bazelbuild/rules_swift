@@ -24,7 +24,8 @@ def register_static_archive_action(
         toolchain,
         libraries = [],
         mnemonic = "Archive",
-        objects = []):
+        objects = [],
+        progress_message = None):
     """Registers actions that create a static archive.
 
     Args:
@@ -38,6 +39,8 @@ def register_static_archive_action(
       mnemonic: The mnemonic to display when the action is executed.
       objects: A list of `File`s denoting object (.o) files that will be merged
           into the archive.
+      progress_message: The progress message to display when the action is
+          executed.
     """
     if ar_executable:
         _register_ar_action(
@@ -47,6 +50,7 @@ def register_static_archive_action(
             mnemonic = mnemonic,
             objects = objects,
             output = output,
+            progress_message = progress_message,
             toolchain = toolchain,
         )
     else:
@@ -56,6 +60,7 @@ def register_static_archive_action(
             mnemonic = mnemonic,
             objects = objects,
             output = output,
+            progress_message = progress_message,
             toolchain = toolchain,
         )
 
@@ -66,6 +71,7 @@ def _register_ar_action(
         mnemonic,
         objects,
         output,
+        progress_message,
         toolchain):
     """Registers an action that creates a static archive using `ar`.
 
@@ -82,6 +88,8 @@ def _register_ar_action(
       objects: A list of `File`s denoting object (.o) files that will be merged
           into the archive.
       output: A `File` to which the output archive will be written.
+      progress_message: The progress message to display when the action is
+          executed.
       toolchain: The `SwiftToolchainInfo` provider of the toolchain.
     """
     mri_commands = [
@@ -116,12 +124,13 @@ def _register_ar_action(
 
     run_toolchain_shell_action(
         actions = actions,
-        toolchain = toolchain,
         arguments = [args],
         command = command,
         inputs = [mri_script] + libraries + objects,
         mnemonic = mnemonic,
         outputs = [output],
+        progress_message = progress_message,
+        toolchain = toolchain,
     )
 
 def _register_libtool_action(
@@ -130,6 +139,7 @@ def _register_libtool_action(
         mnemonic,
         objects,
         output,
+        progress_message,
         toolchain):
     """Registers an action that creates a static archive using `libtool`.
 
@@ -144,6 +154,8 @@ def _register_libtool_action(
       objects: A list of `File`s denoting object (.o) files that will be merged
           into the archive.
       output: A `File` to which the output archive will be written.
+      progress_message: The progress message to display when the action is
+          executed.
       toolchain: The `SwiftToolchainInfo` provider of the toolchain.
     """
     args = actions.args()
@@ -162,10 +174,11 @@ def _register_libtool_action(
 
     run_toolchain_action(
         actions = actions,
-        toolchain = toolchain,
         arguments = [args, filelist],
         executable = "/usr/bin/libtool",
         inputs = libraries + objects,
         mnemonic = mnemonic,
         outputs = [output],
+        progress_message = progress_message,
+        toolchain = toolchain,
     )
