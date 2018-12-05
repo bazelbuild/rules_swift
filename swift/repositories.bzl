@@ -114,14 +114,14 @@ def swift_rules_dependencies():
         git_repository,
         name = "bazel_skylib",
         remote = "https://github.com/bazelbuild/bazel-skylib.git",
-        tag = "0.4.0",
+        tag = "0.5.0",
     )
 
     _maybe(
         http_archive,
         name = "com_github_apple_swift_swift_protobuf",
-        urls = ["https://github.com/apple/swift-protobuf/archive/1.0.3.zip"],
-        strip_prefix = "swift-protobuf-1.0.3/",
+        urls = ["https://github.com/apple/swift-protobuf/archive/1.2.0.zip"],
+        strip_prefix = "swift-protobuf-1.2.0/",
         type = "zip",
         build_file = "@build_bazel_rules_swift//third_party:com_github_apple_swift_swift_protobuf/BUILD.overlay",
     )
@@ -129,9 +129,9 @@ def swift_rules_dependencies():
     _maybe(
         http_archive,
         name = "com_google_protobuf",
-        # v3.6.1, latest as of 2018-10-31
-        urls = ["https://github.com/protocolbuffers/protobuf/releases/download/v3.6.1/protobuf-all-3.6.1.zip"],
-        strip_prefix = "protobuf-3.6.1",
+        # v3.6.1.2, latest as of 2018-12-04
+        urls = ["https://github.com/protocolbuffers/protobuf/archive/v3.6.1.2.zip"],
+        strip_prefix = "protobuf-3.6.1.2",
         type = "zip",
     )
 
