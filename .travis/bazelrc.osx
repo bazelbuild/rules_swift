@@ -5,7 +5,3 @@
 # ensures that we build artifacts that run on macOS.
 build --cpu=darwin_x86_64
 build --apple_platform_type=macos
-
-# TODO(protocolbuffers/protobuf#5418): Remove when there is a protobuf release
-# that contains the migration away from {PACKAGE,REPOSITORY}_NAME.
-build --incompatible_package_name_is_a_function=false
