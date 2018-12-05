@@ -1,6 +1,2 @@
 # This file will be used as the bazelrc file on Linux. Add settings to it if
 # you need to tweak Bazel's behavior or resource usage on that platform.
-
-# TODO(protocolbuffers/protobuf#5418): Remove when there is a protobuf release
-# that contains the migration away from {PACKAGE,REPOSITORY}_NAME.
-build --incompatible_package_name_is_a_function=false
