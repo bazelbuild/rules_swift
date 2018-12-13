@@ -118,6 +118,13 @@ def swift_rules_dependencies():
     )
 
     _maybe(
+        git_repository,
+        name = "build_bazel_apple_support",
+        remote = "https://github.com/bazelbuild/apple_support.git",
+        tag = "0.1.1",
+    )
+
+    _maybe(
         http_archive,
         name = "com_github_apple_swift_swift_protobuf",
         urls = ["https://github.com/apple/swift-protobuf/archive/1.2.0.zip"],
