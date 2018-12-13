@@ -283,9 +283,7 @@ def _swift_test_impl(ctx):
                     collect_data = True,
                     collect_default = True,
                     files = ctx.files.data + additional_test_outputs,
-                    # _coverage_support is a private attribute added by Bazel to all test targets
-                    # (see https://github.com/bazelbuild/bazel/blob/master/src/main/java/com/google/devtools/build/lib/analysis/skylark/SkylarkRuleClassFunctions.java).
-                    transitive_files = ctx.attr._coverage_support.files,
+                    transitive_files = ctx.attr._apple_coverage_support.files,
                 ),
             ),
             testing.ExecutionInfo(toolchain.execution_requirements),
@@ -347,6 +345,10 @@ Additional linker options that should be passed to `clang`. These strings are su
 `$(location ...)` expansion.
 """,
                 mandatory = False,
+            ),
+            "_apple_coverage_support": attr.label(
+                cfg = "host",
+                default = Label("@build_bazel_apple_support//tools:coverage_support"),
             ),
             # Do not add references; temporary attribute for C++ toolchain Skylark migration.
             "_cc_toolchain": attr.label(default = Label("@bazel_tools//tools/cpp:current_cc_toolchain")),
