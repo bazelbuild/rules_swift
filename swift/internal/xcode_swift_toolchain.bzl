@@ -482,6 +482,13 @@ with stamping enabled.
 """,
             providers = [["cc"]],
         ),
+        "_bazel_xcode_wrapper": attr.label(
+            cfg = "host",
+            default = Label(
+                "@build_bazel_rules_swift//tools/wrappers:bazel_xcode_wrapper",
+            ),
+            executable = True,
+        ),
         "_cc_toolchain": attr.label(
             default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
             doc = """
@@ -494,13 +501,6 @@ The C++ toolchain from which linking flags and other tools needed by the Swift t
                 name = "xcode_config_label",
                 fragment = "apple",
             ),
-        ),
-        "_bazel_xcode_wrapper": attr.label(
-            cfg = "host",
-            default = Label(
-                "@build_bazel_rules_swift//tools/wrappers:bazel_xcode_wrapper",
-            ),
-            executable = True,
         ),
     }),
     doc = "Represents a Swift compiler toolchain provided by Xcode.",

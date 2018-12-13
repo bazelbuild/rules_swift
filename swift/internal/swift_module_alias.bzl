@@ -90,14 +90,6 @@ swift_module_alias = rule(
     attrs = dicts.add(
         swift_common.toolchain_attrs(),
         {
-            "deps": attr.label_list(
-                doc = """
-A list of targets that are dependencies of the target being built, which will be
-linked into that target. Allowed kinds are `swift_import` and `swift_library`
-(or anything else propagating `SwiftInfo`).
-""",
-                providers = [[SwiftInfo]],
-            ),
             "module_name": attr.string(
                 doc = """
 The name of the Swift module being built.
@@ -106,6 +98,14 @@ If left unspecified, the module name will be computed based on the target's
 build label, by stripping the leading `//` and replacing `/`, `:`, and other
 non-identifier characters with underscores.
 """,
+            ),
+            "deps": attr.label_list(
+                doc = """
+A list of targets that are dependencies of the target being built, which will be
+linked into that target. Allowed kinds are `swift_import` and `swift_library`
+(or anything else propagating `SwiftInfo`).
+""",
+                providers = [[SwiftInfo]],
             ),
         },
     ),
