@@ -58,6 +58,14 @@ def _swift_c_module_impl(ctx):
 
 swift_c_module = rule(
     attrs = {
+        "module_map": attr.label(
+            allow_single_file = True,
+            doc = """
+The module map file that should be loaded to import the C library dependency
+into Swift.
+""",
+            mandatory = True,
+        ),
         "deps": attr.label_list(
             allow_empty = False,
             doc = """
@@ -71,14 +79,6 @@ module target depend on that.
 """,
             mandatory = True,
             providers = [["cc"]],
-        ),
-        "module_map": attr.label(
-            allow_single_file = True,
-            doc = """
-The module map file that should be loaded to import the C library dependency
-into Swift.
-""",
-            mandatory = True,
         ),
     },
     doc = """
