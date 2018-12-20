@@ -85,7 +85,7 @@ function install_buildifier() {
   fi
 
   if [[ "${VERSION}" == "HEAD" ]]; then
-    echo "buildifer head is not supported"
+    echo "buildifier head is not supported"
     exit 1
   fi
 
@@ -129,5 +129,5 @@ function install_swift() {
 # ------------------------------------------------------------------------------
 # Install what is requested.
 [[ -z "${BAZEL:-}" ]] || install_bazel "${BAZEL}"
-[[ -z "${BUILDIFER:-}" ]] || install_buildifier "${BUILDIFER}"
+[[ -z "${BUILDIFIER:-}" ]] || install_buildifier "${BUILDIFIER}"
 [[ -z "${SWIFT_VERSION:-}" ]] || install_swift "${SWIFT_VERSION}"
