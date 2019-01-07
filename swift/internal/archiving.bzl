@@ -124,6 +124,7 @@ def _register_ar_action(
 
     run_toolchain_shell_action(
         actions = actions,
+        env = {"ZERO_AR_DATE": "1"},
         arguments = [args],
         command = command,
         inputs = [mri_script] + libraries + objects,
@@ -175,6 +176,7 @@ def _register_libtool_action(
     run_toolchain_action(
         actions = actions,
         arguments = [args, filelist],
+        env = {"ZERO_AR_DATE": "1"},
         executable = "/usr/bin/libtool",
         inputs = libraries + objects,
         mnemonic = mnemonic,
