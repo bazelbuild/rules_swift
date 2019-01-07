@@ -1063,34 +1063,6 @@ library. Supports auto-linking.
 """,
                 mandatory = False,
             ),
-            # TODO(b/77853138): Remove once the Apple rules support bundling from
-            # `data`.
-            "resources": attr.label_list(
-                allow_empty = True,
-                allow_files = True,
-                doc = """
-Resources that should be processed by Xcode tools (such as interface builder
-documents, Core Data models, asset catalogs, and so forth) and included in the
-bundle that depends on this library.
-
-This attribute is ignored when building Linux targets.
-""",
-                mandatory = False,
-            ),
-            # TODO(b/77853138): Remove once the Apple rules support bundling from
-            # `data`.
-            "structured_resources": attr.label_list(
-                allow_empty = True,
-                allow_files = True,
-                doc = """
-Files that should be included in the bundle that depends on this library without
-any additional processing. The paths of these files relative to this library
-target are preserved inside the bundle.
-
-This attribute is ignored when building Linux targets.
-""",
-                mandatory = False,
-            ),
             "alwayslink": attr.bool(
                 default = False,
                 doc = """
