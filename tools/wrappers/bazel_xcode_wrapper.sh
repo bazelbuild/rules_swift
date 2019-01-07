@@ -97,11 +97,6 @@ for ARG in "$@" ; do
   ARGS+=("$ARG")
 done
 
-# libtool writes the date in the headers of the .ar file
-# unless this is set.
-ZERO_AR_DATE=1
-export ZERO_AR_DATE
-
 # We can't use `exec` here because we need to make sure the `trap` runs
 # afterward.
 "$TOOLNAME" "${ARGS[@]}"
