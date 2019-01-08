@@ -14,7 +14,6 @@ platforms:
     - "--cpu=darwin_x86_64"
     - "--apple_platform_type=macos"
     test_targets:
-    - "--"
     - "//examples/..."
   ubuntu1804:
     build_flags:
@@ -23,6 +22,7 @@ platforms:
     # https://github.com/bazelbuild/rules_swift/issues/4).
     - "--action_env=PATH"
     build_targets:
+    - "--"
     - "//examples/..."
     - "-//examples/apple/..."
     test_flags:
