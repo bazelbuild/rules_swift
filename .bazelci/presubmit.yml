@@ -22,10 +22,12 @@ platforms:
     # https://github.com/bazelbuild/rules_swift/issues/4).
     - "--action_env=PATH"
     build_targets:
+    - "--"
     - "//examples/..."
     - "-//examples/apple/..."
     test_flags:
     - "--action_env=PATH"
     test_targets:
+    - "--"
     - "//examples/..."
     - "-//examples/apple/..."
