@@ -20,6 +20,7 @@ swift_library(
     ]),
     module_name = "SwiftProtobufPluginLibrary",
     deps = [":SwiftProtobuf"],
+    visibility = ["//visibility:public"],
 )
 
 swift_binary(
