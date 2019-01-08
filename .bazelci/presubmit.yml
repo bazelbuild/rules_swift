@@ -14,6 +14,7 @@ platforms:
     - "--cpu=darwin_x86_64"
     - "--apple_platform_type=macos"
     test_targets:
+    - "--"
     - "//examples/..."
   ubuntu1804:
     build_flags:
@@ -27,5 +28,6 @@ platforms:
     test_flags:
     - "--action_env=PATH"
     test_targets:
+    - "--"
     - "//examples/..."
     - "-//examples/apple/..."
