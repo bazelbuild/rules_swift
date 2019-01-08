@@ -14,7 +14,7 @@
 
 """A rule that generates a Swift library from protocol buffer sources."""
 
-load(":providers.bzl", "SwiftInfo")
+load(":providers.bzl", "SwiftInfo", "SwiftProtoInfo")
 load(":swift_protoc_gen_aspect.bzl", "swift_protoc_gen_aspect")
 
 def _swift_proto_library_impl(ctx):
@@ -39,7 +39,7 @@ def _swift_proto_library_impl(ctx):
             swift_info.transitive_swiftmodules,
         ])
 
-    providers = [DefaultInfo(files = outputs), swift_info]
+    providers = [DefaultInfo(files = outputs), swift_info, dep[SwiftProtoInfo]]
 
     # Repropagate the apple_common.Objc provider if present so that apple_binary targets link
     # correctly.
@@ -76,7 +76,7 @@ of the `proto_library` target, *not* the name of the `swift_proto_library` targe
 if the following BUILD file were located in `//my/pkg`, the target would create a Swift module
 named `my_pkg_foo`:
 
-```
+```python
 proto_library(
     name = "foo",
     srcs = ["foo.proto"],

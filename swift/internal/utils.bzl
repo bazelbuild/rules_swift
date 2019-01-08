@@ -120,3 +120,15 @@ def owner_relative_path(file):
         )
     else:
         return paths.relativize(file.short_path, package)
+
+def workspace_relative_path(file):
+    """Returns the path of a file relative to its workspace.
+
+    Args:
+        file: The `File` object.
+
+    Returns:
+        The path of the file relative to its workspace.
+    """
+    workspace_path = paths.join(file.root.path, file.owner.workspace_root)
+    return paths.relativize(file.path, workspace_path)
