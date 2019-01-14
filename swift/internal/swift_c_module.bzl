@@ -14,6 +14,7 @@
 
 """Implementation of the `swift_c_module` rule."""
 
+load("@bazel_tools//tools/cpp:legacy_cc_starlark_api_shim.bzl", "get_compile_flags")
 load(":providers.bzl", "SwiftClangModuleInfo")
 
 def _swift_c_module_impl(ctx):
@@ -25,22 +26,22 @@ def _swift_c_module_impl(ctx):
     if len(ctx.attr.deps) == 1:
         dep = ctx.attr.deps[0]
         return struct(
-            # Repropagate the dependency's "cc" provider so that Swift targets only
+            # Repropagate the dependency's CcInfo provider so that Swift targets only
             # have to depend on the module target, not also on the original library
             # target. We must also repropagate the dependency, otherwise things we
             # will lose runtime dependencies that the library expects to be there
             # during a test (or a regular `bazel run`).
-            cc = dep.cc,
             providers = [
+                dep[CcInfo],
                 DefaultInfo(
                     data_runfiles = dep[DefaultInfo].data_runfiles,
                     default_runfiles = dep[DefaultInfo].default_runfiles,
                     files = depset(direct = [module_map]),
                 ),
                 SwiftClangModuleInfo(
-                    transitive_compile_flags = depset(direct = dep.cc.compile_flags),
-                    transitive_defines = depset(direct = dep.cc.defines),
-                    transitive_headers = dep.cc.transitive_headers,
+                    transitive_compile_flags = depset(direct = get_compile_flags(dep)),
+                    transitive_defines = dep[CcInfo].compilation_context.defines,
+                    transitive_headers = dep[CcInfo].compilation_context.headers,
                     transitive_modulemaps = depset(direct = [module_map]),
                 ),
             ],
@@ -78,7 +79,7 @@ that wraps them in its `deps` and has no other `srcs` or `hdrs`, and have the
 module target depend on that.
 """,
             mandatory = True,
-            providers = [["cc"]],
+            providers = [[CcInfo]],
         ),
     },
     doc = """

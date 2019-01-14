@@ -37,7 +37,7 @@ linked into that target. Allowed kinds of dependencies are:
 
 * `swift_c_module` (or anything propagating `SwiftClangModuleInfo`)
 * `swift_import` and `swift_library` (or anything propagating `SwiftInfo`)
-* `cc_library` (or anything propagating `"cc"`)
+* `cc_library` (or anything propagating `CcInfo`)
 
 Additionally, on platforms that support Objective-C interop, `objc_library`
 targets (or anything propagating the `apple_common.Objc` provider) are allowed
@@ -48,7 +48,7 @@ Linux), those dependencies will be **ignored.**
                 [SwiftClangModuleInfo],
                 [SwiftInfo],
                 [apple_common.Objc],
-                ["cc"],
+                [CcInfo],
             ],
         ),
     }

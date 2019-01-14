@@ -33,10 +33,11 @@ aspect, which attaches to `deps`, simply propagates the entire set of transitive
 libraries to the depender.
 """
 
+load("@bazel_tools//tools/cpp:legacy_cc_starlark_api_shim.bzl", "get_libs_for_static_executable")
 load(":providers.bzl", "SwiftCcLibsInfo")
 
 def _build_providers_for_cc_target(target, aspect_ctx):
-    """Builds `SwiftCcLibsInfo` and `objc` providers for a `cc`-propagating target.
+    """Builds `SwiftCcLibsInfo` and `objc` providers for a `CcInfo`-propagating target.
 
     Args:
         target: The `Target` to which the aspect is being applied.
@@ -46,19 +47,19 @@ def _build_providers_for_cc_target(target, aspect_ctx):
       The list of providers.
     """
     if aspect_ctx.attr._include_directs:
-        all_libraries_set = target.cc.libs
+        all_libraries_set = get_libs_for_static_executable(target)
     else:
         all_libraries = []
         if hasattr(aspect_ctx.rule.attr, "deps"):
             for dep in aspect_ctx.rule.attr.deps:
-                if hasattr(dep, "cc"):
-                    all_libraries.append(dep.cc.libs)
+                if CcInfo in dep:
+                    all_libraries.append(get_libs_for_static_executable(dep))
         all_libraries_set = depset(transitive = all_libraries)
 
     return [SwiftCcLibsInfo(libraries = all_libraries_set)]
 
 def _build_transitive_providers(aspect_ctx):
-    """Builds `SwiftCcLibsInfo` and `objc` providers for a non-`cc`-propagating target.
+    """Builds `SwiftCcLibsInfo` and `objc` providers for a non-`CcInfo`-propagating target.
 
     This ensures that libraries are still propagated transitively through dependency edges between
     `swift_library` targets.
@@ -79,7 +80,7 @@ def _build_transitive_providers(aspect_ctx):
     return [SwiftCcLibsInfo(libraries = all_libraries_set)]
 
 def _swift_cc_libs_aspect_impl(target, aspect_ctx):
-    if hasattr(target, "cc"):
+    if CcInfo in target:
         return _build_providers_for_cc_target(target, aspect_ctx)
     else:
         return _build_transitive_providers(aspect_ctx)

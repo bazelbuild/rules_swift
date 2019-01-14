@@ -148,12 +148,12 @@ def _build_swift_info(
             transitive_linkopts.append(swift_info.transitive_linkopts)
             transitive_swiftdocs.append(swift_info.transitive_swiftdocs)
             transitive_swiftmodules.append(swift_info.transitive_swiftmodules)
-        if hasattr(dep, "cc"):
-            transitive_linkopts.append(depset(direct = dep.cc.link_flags))
+        if CcInfo in dep:
+            transitive_linkopts.append(depset(direct = dep[CcInfo].linking_context.user_link_flags))
 
     for lib in additional_cc_libs:
         transitive_libraries.extend(collect_link_libraries(lib))
-        transitive_linkopts.append(depset(direct = lib.cc.link_flags))
+        transitive_linkopts.append(depset(direct = dep[CcInfo].linking_context.user_link_flags))
 
     return SwiftInfo(
         compile_options = compile_options,
@@ -240,7 +240,7 @@ intended to support cases where C and Swift code *must* exist in the same
 archive; for example, a Swift function annotated with `@_cdecl` which is then
 referenced from C code in the same library.
 """,
-                providers = [["cc"]],
+                providers = [[CcInfo]],
             ),
             "copts": attr.string_list(
                 doc = """
@@ -446,7 +446,7 @@ def _compile_as_objects(
       defines: Symbols that should be defined by passing `-D` to the compiler.
       deps: Dependencies of the target being compiled. These targets must
           propagate one of the following providers: `SwiftClangModuleInfo`,
-          `SwiftInfo`, `"cc"`, or `apple_common.Objc`.
+          `SwiftInfo`, `CcInfo`, or `apple_common.Objc`.
       feature_configuration: A feature configuration obtained from
           `swift_common.configure_features`. If omitted, a default feature
           configuration will be used, but this argument will be required in the
@@ -670,7 +670,7 @@ def _compile_as_library(
       defines: Symbols that should be defined by passing `-D` to the compiler.
       deps: Dependencies of the target being compiled. These targets must
           propagate one of the following providers: `SwiftClangModuleInfo`,
-          `SwiftInfo`, `"cc"`, or `apple_common.Objc`.
+          `SwiftInfo`, `CcInfo`, or `apple_common.Objc`.
       feature_configuration: A feature configuration obtained from
           `swift_common.configure_features`. If omitted, a default feature
           configuration will be used, but this argument will be required in the
@@ -1205,7 +1205,7 @@ def _swiftc_command_line_and_inputs(
       defines: Symbols that should be defined by passing `-D` to the compiler.
       deps: Dependencies of the target being compiled. These targets must
           propagate one of the following providers: `SwiftClangModuleInfo`,
-          `SwiftInfo`, `"cc"`, or `apple_common.Objc`.
+          `SwiftInfo`, `CcInfo`, or `apple_common.Objc`.
       feature_configuration: A feature configuration obtained from
           `swift_common.configure_features`. If omitted, a default feature
           configuration will be used, but this argument will be required in the

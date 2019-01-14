@@ -15,6 +15,7 @@
 """Implementation of linking logic for Swift."""
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("@bazel_tools//tools/cpp:legacy_cc_starlark_api_shim.bzl", "get_libs_for_static_executable")
 load(":actions.bzl", "run_toolchain_action")
 load(":deps.bzl", "collect_link_libraries")
 load(":providers.bzl", "SwiftInfo")
@@ -62,7 +63,7 @@ def register_link_action(
     common_args = actions.args()
 
     if toolchain.stamp:
-        stamp_lib_depsets = [toolchain.stamp.cc.libs]
+        stamp_lib_depsets = [get_libs_for_static_executable(toolchain.stamp)]
     else:
         stamp_lib_depsets = []
 
@@ -139,9 +140,9 @@ def register_link_action(
             for dep in deps
             if SwiftInfo in dep
         ] + [
-            depset(direct = dep.cc.link_flags)
+            depset(direct = dep[CcInfo].linking_context.user_link_flags)
             for dep in deps
-            if hasattr(dep, "cc")
+            if CcInfo in dep
         ],
     ).to_list()
 

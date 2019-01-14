@@ -223,7 +223,7 @@ here).
 """,
         "root_dir": "`String`. The workspace-relative root directory of the toolchain.",
         "stamp": """
-`Target`. A `cc`-providing target that should be linked into any binaries that are built with
+`Target`. A `CcInfo`-providing target that should be linked into any binaries that are built with
 stamping enabled.
 """,
         "supports_objc_interop": """
