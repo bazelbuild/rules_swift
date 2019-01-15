@@ -15,11 +15,15 @@
 """Implementation of linking logic for Swift."""
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("@bazel_tools//tools/cpp:legacy_cc_starlark_api_shim.bzl", "get_libs_for_static_executable")
 load(":actions.bzl", "run_toolchain_action")
 load(":deps.bzl", "collect_link_libraries")
 load(":providers.bzl", "SwiftInfo")
-load(":utils.bzl", "collect_transitive", "objc_provider_framework_name")
+load(
+    ":utils.bzl",
+    "collect_transitive",
+    "get_libs_for_static_executable",
+    "objc_provider_framework_name"
+)
 
 def register_link_action(
         actions,

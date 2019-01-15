@@ -14,8 +14,39 @@
 
 """Implementation of the `swift_c_module` rule."""
 
-load("@bazel_tools//tools/cpp:legacy_cc_starlark_api_shim.bzl", "get_compile_flags")
 load(":providers.bzl", "SwiftClangModuleInfo")
+
+def _get_compile_flags(dep):
+    """
+    Builds compilation flags. This replaces the old API dep.cc.compile_flags
+    This is not the command line that C++ rules will use. For that the toolchain API should be
+    used (feature configuration and variables).
+    Args:
+      dep: Target
+    Returns:
+      A list of strings
+    """
+    options = []
+    compilation_context = dep[CcInfo].compilation_context
+    for define in compilation_context.defines.to_list():
+        options.append("-D{}".format(define))
+
+    for system_include in compilation_context.system_includes.to_list():
+        if len(system_include) == 0:
+            system_include = "."
+        options.append("-isystem {}".format(system_include))
+
+    for include in compilation_context.includes.to_list():
+        if len(include) == 0:
+            include = "."
+        options.append("-I {}".format(include))
+
+    for quote_include in compilation_context.quote_includes.to_list():
+        if len(quote_include) == 0:
+            quote_include = "."
+        options.append("-iquote {}".format(quote_include))
+
+    return options
 
 def _swift_c_module_impl(ctx):
     if len(ctx.attr.deps) > 1:
@@ -39,7 +70,7 @@ def _swift_c_module_impl(ctx):
                     files = depset(direct = [module_map]),
                 ),
                 SwiftClangModuleInfo(
-                    transitive_compile_flags = depset(direct = get_compile_flags(dep)),
+                    transitive_compile_flags = depset(direct = _get_compile_flags(dep)),
                     transitive_defines = dep[CcInfo].compilation_context.defines,
                     transitive_headers = dep[CcInfo].compilation_context.headers,
                     transitive_modulemaps = depset(direct = [module_map]),

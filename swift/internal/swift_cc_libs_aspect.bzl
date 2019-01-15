@@ -33,8 +33,8 @@ aspect, which attaches to `deps`, simply propagates the entire set of transitive
 libraries to the depender.
 """
 
-load("@bazel_tools//tools/cpp:legacy_cc_starlark_api_shim.bzl", "get_libs_for_static_executable")
 load(":providers.bzl", "SwiftCcLibsInfo")
+load(":utils.bzl", "get_libs_for_static_executable")
 
 def _build_providers_for_cc_target(target, aspect_ctx):
     """Builds `SwiftCcLibsInfo` and `objc` providers for a `CcInfo`-propagating target.
