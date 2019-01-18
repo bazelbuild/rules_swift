@@ -42,6 +42,12 @@ if [[ -n "${BAZEL:-}" ]]; then
       --verbose_failures
       --action_env=PATH
   )
+
+  # Can be removed when https://github.com/bazelbuild/bazel/pull/7151 is released
+  if [[ $OSTYPE == darwin* ]]; then
+    ALL_BUILD_ARGS+=("--host_cpu=darwin_x86_64")
+  fi
+
   if [[ -n "${BUILD_ARGS:-}" ]]; then
     ALL_BUILD_ARGS+=(${BUILD_ARGS})
   fi
