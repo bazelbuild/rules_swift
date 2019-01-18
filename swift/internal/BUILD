@@ -13,6 +13,6 @@ filegroup(
         "@bazel_tools//tools/build_defs/cc:action_names_test_files",
     ],
     visibility = [
-        "@build_bazel_rules_swift//swift:__pkg__",
+        "//swift:__pkg__",
     ],
 )
