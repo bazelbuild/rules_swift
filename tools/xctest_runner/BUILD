@@ -12,6 +12,6 @@ filegroup(
     testonly = 1,
     srcs = glob(["**"]),
     visibility = [
-        "@build_bazel_rules_swift//tools:__pkg__",
+        "//tools:__pkg__",
     ],
 )

@@ -11,7 +11,7 @@ filegroup(
     name = "for_bazel_tests",
     testonly = 1,
     srcs = glob(["**"]) + [
-        "@build_bazel_rules_swift//swift/internal:for_bazel_tests",
+        "//swift/internal:for_bazel_tests",
     ],
     visibility = [
         "//:__pkg__",
