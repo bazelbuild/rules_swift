@@ -36,7 +36,7 @@ def get_libs_for_static_executable(dep):
             libs.append(library_to_link.interface_library)
         elif library_to_link.dynamic_library != None:
             libs.append(library_to_link.dynamic_library)
-    return depset(libs)
+    return depset(libs, order = "topological")
 
 def collect_transitive(targets, provider, key, direct = None):
     """Returns a `depset` that collects transitive information from providers.
