@@ -22,7 +22,7 @@ load(
     ":utils.bzl",
     "collect_transitive",
     "get_libs_for_static_executable",
-    "objc_provider_framework_name"
+    "objc_provider_framework_name",
 )
 
 def register_link_action(
