@@ -14,12 +14,13 @@
 
 """Implementation of static library archiving logic for Swift."""
 
-load(":actions.bzl", "run_toolchain_action", "run_toolchain_shell_action")
+load(":actions.bzl", "run_toolchain_shell_action")
 load(":derived_files.bzl", "derived_files")
 
 def register_static_archive_action(
         actions,
         ar_executable,
+        libtool_executable,
         output,
         toolchain,
         libraries = [],
@@ -57,6 +58,7 @@ def register_static_archive_action(
         _register_libtool_action(
             actions = actions,
             libraries = libraries,
+            libtool_executable = libtool_executable,
             mnemonic = mnemonic,
             objects = objects,
             output = output,
@@ -126,6 +128,7 @@ def _register_ar_action(
         actions = actions,
         arguments = [args],
         command = command,
+        env = {"ZERO_AR_DATE": "1"},
         inputs = [mri_script] + libraries + objects,
         mnemonic = mnemonic,
         outputs = [output],
@@ -135,6 +138,7 @@ def _register_ar_action(
 
 def _register_libtool_action(
         actions,
+        libtool_executable,
         libraries,
         mnemonic,
         objects,
@@ -172,13 +176,16 @@ def _register_libtool_action(
     filelist.add_all(objects)
     filelist.add_all(libraries)
 
-    run_toolchain_action(
+    # This is to work around https://github.com/bazelbuild/bazel/issues/1147
+    real_libtool_executable = libtool_executable.files.to_list()[0]
+    run_toolchain_shell_action(
         actions = actions,
         arguments = [args, filelist],
-        executable = "/usr/bin/libtool",
+        command = real_libtool_executable.path + " $@",
         inputs = libraries + objects,
         mnemonic = mnemonic,
         outputs = [output],
+        tools = libtool_executable.default_runfiles.files,
         progress_message = progress_message,
         toolchain = toolchain,
     )

@@ -197,6 +197,7 @@ def _swift_toolchain_impl(ctx):
             cpu = ctx.attr.arch,
             execution_requirements = {},
             implicit_deps = [],
+            libtool_executable = None,
             linker_opts_producer = linker_opts_producer,
             object_format = "elf",
             # TODO(#34): Add SWIFT_FEATURE_USE_RESPONSE_FILES based on Swift compiler version once

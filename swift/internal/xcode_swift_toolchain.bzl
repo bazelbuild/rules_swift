@@ -458,6 +458,7 @@ def _xcode_swift_toolchain_impl(ctx):
             cpu = cpu,
             execution_requirements = execution_requirements,
             implicit_deps = [],
+            libtool_executable = ctx.attr._libtool,
             linker_opts_producer = linker_opts_producer,
             object_format = "macho",
             requested_features = requested_features,
@@ -495,6 +496,13 @@ with stamping enabled.
 The C++ toolchain from which linking flags and other tools needed by the Swift toolchain (such as
 `clang`) will be retrieved.
 """,
+        ),
+        "_libtool": attr.label(
+            cfg = "host",
+            default = Label(
+                "@bazel_tools//tools/objc:libtool",
+            ),
+            executable = True,
         ),
         "_xcode_config": attr.label(
             default = configuration_field(

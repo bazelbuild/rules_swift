@@ -818,12 +818,15 @@ def _compile_as_library(
 
     if toolchain.system_name == "darwin":
         ar_executable = None
+        libtool_executable = toolchain.libtool_executable
     else:
         ar_executable = toolchain.cc_toolchain_info.ar_executable
+        libtool_executable = None
 
     register_static_archive_action(
         actions = actions,
         ar_executable = ar_executable,
+        libtool_executable = libtool_executable,
         libraries = cc_lib_files,
         mnemonic = "SwiftArchive",
         objects = compile_results.output_objects,

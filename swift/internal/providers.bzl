@@ -194,6 +194,9 @@ on Darwin is required.
 `List` of `Target`s. Library targets that should be added as implicit dependencies of any
 `swift_library`, `swift_binary`, or `swift_test` target.
 """,
+        "libtool_executable": """
+`String`. The path to the `libtool` executable, which is used to create archives on macOS.
+""",
         "linker_opts_producer": """
 Skylib `partial`. A partial function that returns the flags that should be passed to Clang to link a
 binary or test target with the Swift runtime libraries.
