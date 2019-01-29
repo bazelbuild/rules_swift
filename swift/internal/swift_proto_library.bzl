@@ -56,7 +56,7 @@ swift_proto_library = rule(
 Exactly one `proto_library` target (or any target that propagates a `proto` provider) from which
 the Swift library should be generated.
 """,
-            providers = ["proto"],
+            providers = [ProtoInfo],
         ),
     },
     doc = """
