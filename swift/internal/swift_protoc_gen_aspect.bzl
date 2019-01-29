@@ -227,7 +227,7 @@ def _gather_transitive_module_mappings(targets):
 def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
     toolchain = aspect_ctx.attr._toolchain[SwiftToolchainInfo]
 
-    direct_srcs = _filter_out_well_known_types(target.proto.direct_sources)
+    direct_srcs = _filter_out_well_known_types(target[ProtoInfo].direct_sources)
 
     # Direct sources are passed as arguments to protoc to generate *only* the
     # files in this target, but we need to pass the transitive sources as inputs
@@ -235,7 +235,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
     # protoc to parse.
     # Instead of providing all those files and opening/reading them, we use
     # protoc's support for reading descriptor sets to resolve things.
-    transitive_descriptor_sets = target.proto.transitive_descriptor_sets
+    transitive_descriptor_sets = target[ProtoInfo].transitive_descriptor_sets
     deps = [dep for dep in aspect_ctx.rule.attr.deps if SwiftProtoInfo in dep]
 
     minimal_module_mappings = []
