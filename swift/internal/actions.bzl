@@ -21,6 +21,7 @@ externally and in the rule implementations themselves.
 
 load("@bazel_skylib//lib:partial.bzl", "partial")
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("@bazel_skylib//lib:types.bzl", "types")
 
 def run_toolchain_action(actions, toolchain, **kwargs):
     """Equivalent to `actions.run`, but respecting toolchain settings.
@@ -41,7 +42,7 @@ def run_toolchain_action(actions, toolchain, **kwargs):
     modified_args = dict(kwargs)
 
     executable = modified_args.get("executable")
-    if (type(executable) == type("") and "/" not in executable and toolchain.root_dir):
+    if (types.is_string(executable) and "/" not in executable and toolchain.root_dir):
         modified_args["executable"] = paths.join(toolchain.root_dir, "bin", executable)
 
     partial.call(toolchain.action_registrars.run, actions, **modified_args)

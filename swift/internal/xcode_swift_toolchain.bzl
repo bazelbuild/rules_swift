@@ -21,6 +21,7 @@ toolchain, see `swift.bzl`.
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:partial.bzl", "partial")
+load("@bazel_skylib//lib:types.bzl", "types")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
 load(
     ":features.bzl",
@@ -216,7 +217,7 @@ def _run_action(
     # objects, convert it to a list of `Args` because we're going to create our own `Args` that we
     # prepend to it.
     user_args = remaining_args.pop("arguments", [])
-    if user_args and type(user_args[0]) == type(""):
+    if user_args and types.is_string(user_args[0]):
         user_args_strings = user_args
         user_args_object = actions.args()
         user_args_object.add_all(user_args_strings)
@@ -232,13 +233,13 @@ def _run_action(
     # We also need to include the user executable in the "tools" argument of the action, since it
     # won't be referenced by "executable" anymore.
     user_tools = remaining_args.pop("tools", None)
-    if type(user_tools) == type([]):
+    if types.is_list(user_tools):
         tools = [user_executable] + user_tools
     elif type(user_tools) == type(depset()):
         tools = depset(direct = [user_executable], transitive = [user_tools])
     elif user_tools:
         fail("'tools' argument must be a sequence or depset.")
-    elif type(user_executable) != type(""):
+    elif not types.is_string(user_executable):
         # Only add the user_executable to the "tools" list if it's a File, not a string.
         tools = [user_executable]
     else:
@@ -275,7 +276,7 @@ def _run_shell_action(
     # We need to add the wrapper to the tools of the action so that we can reference its path in the
     # new command line.
     user_tools = remaining_args.pop("tools", [])
-    if type(user_tools) == type([]):
+    if types.is_list(user_tools):
         tools = [bazel_xcode_wrapper] + user_tools
     elif type(user_tools) == type(depset()):
         tools = depset(direct = [bazel_xcode_wrapper], transitive = [user_tools])
@@ -284,7 +285,7 @@ def _run_shell_action(
 
     # Prepend the wrapper executable to the command being executed.
     user_command = remaining_args.pop("command", "")
-    if type(user_command) == type([]):
+    if types.is_list(user_command):
         command = [bazel_xcode_wrapper.path, "/usr/bin/xcrun"] + user_command
     else:
         command = "{wrapper_path} /usr/bin/xcrun {user_command}".format(
@@ -325,7 +326,7 @@ def _run_swift_action(
     # objects, convert it to a list of `Args` because we're going to create our own `Args` that we
     # prepend to it.
     user_args = remaining_args.pop("arguments", [])
-    if user_args and type(user_args[0]) == type(""):
+    if user_args and types.is_string(user_args[0]):
         user_args_strings = user_args
         user_args_object = actions.args()
         user_args_object.add_all(user_args_strings)
@@ -342,7 +343,7 @@ def _run_swift_action(
 
     # We also need to include the Swift wrapper in the "tools" argument of the action.
     user_tools = remaining_args.pop("tools", None)
-    if type(user_tools) == type([]):
+    if types.is_list(user_tools):
         tools = [swift_wrapper] + user_tools
     elif type(user_tools) == type(depset()):
         tools = depset(direct = [swift_wrapper], transitive = [user_tools])

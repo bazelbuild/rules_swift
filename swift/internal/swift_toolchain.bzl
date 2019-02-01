@@ -21,6 +21,7 @@ toolchain, see `swift.bzl`.
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:partial.bzl", "partial")
+load("@bazel_skylib//lib:types.bzl", "types")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
 load(":features.bzl", "SWIFT_FEATURE_AUTOLINK_EXTRACT", "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD")
 load(":providers.bzl", "SwiftToolchainInfo")
@@ -90,7 +91,7 @@ def _modified_action_args(action_args, toolchain_tools):
 
     # Add the toolchain's tools to the `tools` argument of the action.
     user_tools = modified_args.pop("tools", None)
-    if type(user_tools) == type([]):
+    if types.is_list(user_tools):
         tools = depset(direct = user_tools, transitive = [toolchain_tools])
     elif type(user_tools) == type(depset()):
         tools = depset(transitive = [user_tools, toolchain_tools])
@@ -151,7 +152,7 @@ def _run_swift_action(toolchain_tools, swift_wrapper, actions, **kwargs):
     # objects, convert it to a list of `Args` because we're going to create our own `Args` that we
     # prepend to it.
     user_args = remaining_args.pop("arguments", [])
-    if user_args and type(user_args[0]) == type(""):
+    if user_args and types.is_string(user_args[0]):
         user_args_strings = user_args
         user_args_object = actions.args()
         user_args_object.add_all(user_args_strings)
