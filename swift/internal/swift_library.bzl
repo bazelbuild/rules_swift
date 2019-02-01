@@ -67,6 +67,14 @@ def _swift_library_impl(ctx):
         objc_fragment = objc_fragment,
     )
 
+    direct_output_files = [
+        compile_results.output_archive,
+        compile_results.output_doc,
+        compile_results.output_module,
+    ]
+    if compile_results.output_header:
+        direct_output_files.append(compile_results.output_header)
+
     # TODO(b/79527231): Replace `instrumented_files` with a declared provider when it is available.
     return struct(
         instrumented_files = struct(
@@ -76,11 +84,7 @@ def _swift_library_impl(ctx):
         ),
         providers = compile_results.providers + [
             DefaultInfo(
-                files = depset(direct = [
-                    compile_results.output_archive,
-                    compile_results.output_doc,
-                    compile_results.output_module,
-                ]),
+                files = depset(direct = direct_output_files),
                 runfiles = ctx.runfiles(
                     collect_data = True,
                     collect_default = True,
