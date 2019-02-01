@@ -28,6 +28,7 @@ load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load("@bazel_skylib//lib:partial.bzl", "partial")
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("@bazel_skylib//lib:types.bzl", "types")
 load(
     ":actions.bzl",
     "run_toolchain_action",
@@ -938,8 +939,8 @@ def _derive_module_name(*args):
         package = label.package
         name = label.name
     elif (len(args) == 2 and
-          type(args[0]) == type("") and
-          type(args[1]) == type("")):
+          types.is_string(args[0]) and
+          types.is_string(args[1])):
         package = args[0]
         name = args[1]
     else:
