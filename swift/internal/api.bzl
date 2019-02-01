@@ -704,6 +704,7 @@ def _compile_as_library(
       * `output_archive`: The static archive (`.a`) that was produced by the
         archiving step after compilation.
       * `output_doc`: The `.swiftdoc` file that was produced by the compiler.
+      * `output_header`: The generated Swift bridging header if any, or `None`.
       * `output_groups`: A dictionary of output groups that should be returned by
         the calling rule through the `OutputGroupInfo` provider.
       * `output_module`: The `.swiftmodule` file that was produced by the
