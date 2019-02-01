@@ -15,6 +15,7 @@
 """Common utility definitions used by various BUILD rules."""
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("@bazel_skylib//lib:types.bzl", "types")
 
 def collect_transitive(targets, provider, key, direct = None):
     """Returns a `depset` that collects transitive information from providers.
@@ -32,7 +33,7 @@ def collect_transitive(targets, provider, key, direct = None):
       A `depset` whose transitive members are the value of the key in the given
       provider of each of the targets.
     """
-    if type(provider) == type(""):
+    if types.is_string(provider):
         transitives = [
             getattr(getattr(target, provider), key)
             for target in targets
