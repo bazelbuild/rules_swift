@@ -1,33 +1,37 @@
 ---
 platforms:
   macos:
+    environment:
+      CC: clang
     build_flags:
-    # For historical reasons, the default platform for Apple builds is iOS. This
-    # ensures that we build artifacts that run on macOS.
-    - "--cpu=darwin_x86_64"
-    - "--apple_platform_type=macos"
+      # For historical reasons, the default platform for Apple builds is iOS. This
+      # ensures that we build artifacts that run on macOS.
+      - "--cpu=darwin_x86_64"
+      - "--apple_platform_type=macos"
     build_targets:
-    - "//examples/..."
+      - "//examples/..."
     test_flags:
-    # For historical reasons, the default platform for Apple builds is iOS. This
-    # ensures that we build artifacts that run on macOS.
-    - "--cpu=darwin_x86_64"
-    - "--apple_platform_type=macos"
+      # For historical reasons, the default platform for Apple builds is iOS. This
+      # ensures that we build artifacts that run on macOS.
+      - "--cpu=darwin_x86_64"
+      - "--apple_platform_type=macos"
     test_targets:
-    - "//examples/..."
+      - "//examples/..."
   ubuntu1804:
+    environment:
+      CC: clang
     build_flags:
-    # On Linux, we look for Swift toolchain binaries on the path. We may be able
-    # to change this when we start auto-downloading toolchains (see
-    # https://github.com/bazelbuild/rules_swift/issues/4).
-    - "--action_env=PATH"
+      # On Linux, we look for Swift toolchain binaries on the path. We may be able
+      # to change this when we start auto-downloading toolchains (see
+      # https://github.com/bazelbuild/rules_swift/issues/4).
+      - "--action_env=PATH"
     build_targets:
-    - "--"
-    - "//examples/..."
-    - "-//examples/apple/..."
+      - "--"
+      - "//examples/..."
+      - "-//examples/apple/..."
     test_flags:
-    - "--action_env=PATH"
+      - "--action_env=PATH"
     test_targets:
-    - "--"
-    - "//examples/..."
-    - "-//examples/apple/..."
+      - "--"
+      - "//examples/..."
+      - "-//examples/apple/..."
