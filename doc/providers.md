@@ -6,74 +6,19 @@ build rules. Clients interested in writing custom rules that interface
 with the rules in this package should use these providers to communicate
 with the Swift build rules as needed.
 
+On this page:
 
-<a href="SwiftBinaryInfo"></a>
-## SwiftBinaryInfo
-
-Contains information about the compilation of a Swift binary target.
-
-<table class="fields-table">
-  <colgroup>
-    <col class="col-field" />
-    <col class="col-description" />
-  </colgroup>
-  <tbody>
-    <tr id="SwiftBinaryInfo.compile_options">
-      <td><code>compile_options</code></td>
-      <td><p><code>List</code> of <code>Args</code> objects. The command-line options that were passed to the
-compiler to compile this target. This is intended to be flattened into a params
-file by aspects to allow IDE integration with Bazel.</p></td>
-    </tr>
-  </tbody>
-</table>
-
-
-
-<a href="SwiftClangModuleInfo"></a>
-## SwiftClangModuleInfo
-
-
-Contains information about a Clang module with relative paths that needs to be
-propagated up to other Swift compilation/link actions.
-
-
-<table class="fields-table">
-  <colgroup>
-    <col class="col-field" />
-    <col class="col-description" />
-  </colgroup>
-  <tbody>
-    <tr id="SwiftClangModuleInfo.transitive_compile_flags">
-      <td><code>transitive_compile_flags</code></td>
-      <td><p><code>Depset</code> of <code>string</code>s. The C compiler flags that should be passed to Clang when
-depending on this target (for example, header search paths).</p></td>
-    </tr>
-    <tr id="SwiftClangModuleInfo.transitive_defines">
-      <td><code>transitive_defines</code></td>
-      <td><p><code>Depset</code> of <code>string</code>s. The C preprocessor defines that should be passed to Clang
-when depending on this target.</p></td>
-    </tr>
-    <tr id="SwiftClangModuleInfo.transitive_headers">
-      <td><code>transitive_headers</code></td>
-      <td><p><code>Depset</code> of <code>File</code>s. The transitive header files that must be available to
-compile actions when depending on this target.</p></td>
-    </tr>
-    <tr id="SwiftClangModuleInfo.transitive_modulemaps">
-      <td><code>transitive_modulemaps</code></td>
-      <td><p><code>Depset</code> of <code>File</code>s. The transitive module map files that will be passed to
-Clang using the <code>-fmodule-map-file</code> option.</p></td>
-    </tr>
-  </tbody>
-</table>
-
-
-
-<a href="SwiftInfo"></a>
+  * [SwiftInfo](#SwiftInfo)
+  * [SwiftToolchainInfo](#SwiftToolchainInfo)
+<a name="SwiftInfo"></a>
 ## SwiftInfo
-
 
 Contains information about the compiled artifacts of a Swift static library.
 
+This provider contains a large number of fields and many custom rules may not need to set all of
+them. Instead of constructing a `SwiftInfo` provider directly, consider using the
+`swift_common.build_swift_info` function, which has reasonable defaults for all of the fields and
+also automatically collects transitive values from a list of dependencies.
 
 <table class="fields-table">
   <colgroup>
@@ -83,111 +28,89 @@ Contains information about the compiled artifacts of a Swift static library.
   <tbody>
     <tr id="SwiftInfo.compile_options">
       <td><code>compile_options</code></td>
-      <td><p><code>List</code> of <code>Args</code> objects. The command-line options that were passed to the
-compiler to compile this target. This is intended to be flattened into a params
-file by aspects to allow IDE integration with Bazel.</p></td>
+      <td><p><code>List</code> of <code>Args</code> objects. The command-line options that were passed to the compiler to compile this
+target. This is intended to be flattened into a params file by aspects to allow IDE integration with
+Bazel.</p></td>
     </tr>
     <tr id="SwiftInfo.direct_defines">
       <td><code>direct_defines</code></td>
-      <td><p><code>List</code> of <code>string</code>s. The values specified by the <code>defines</code> attribute of the
-library that directly propagated this provider.</p></td>
+      <td><p><code>List</code> of <code>string</code>s. The values specified by the <code>defines</code> attribute of the library that directly
+propagated this provider.</p></td>
     </tr>
     <tr id="SwiftInfo.direct_libraries">
       <td><code>direct_libraries</code></td>
-      <td><p><code>List</code> of <code>File</code>s. The static libraries (<code>.a</code>) for the target that directly
-propagated this provider.</p></td>
+      <td><p><code>List</code> of <code>File</code>s. The static libraries (<code>.a</code>) for the target that directly propagated this
+provider.</p></td>
     </tr>
     <tr id="SwiftInfo.direct_linkopts">
       <td><code>direct_linkopts</code></td>
-      <td><p><code>List</code> of <code>string</code>s. Additional flags defined by this target that should be
-passed to the linker when this library is linked into a binary.</p></td>
+      <td><p><code>List</code> of <code>string</code>s. Additional flags defined by this target that should be passed to the linker
+when this library is linked into a binary.</p></td>
+    </tr>
+    <tr id="SwiftInfo.direct_swiftdocs">
+      <td><code>direct_swiftdocs</code></td>
+      <td><p><code>List</code> of <code>File</code>s. The Swift documentation (<code>.swiftdoc</code>) files for the library that directly
+propagated this provider.</p></td>
     </tr>
     <tr id="SwiftInfo.direct_swiftmodules">
       <td><code>direct_swiftmodules</code></td>
-      <td><p><code>List</code> of <code>File</code>s. The Swift modules (<code>.swiftmodule</code>) for the library that
-directly propagated this provider.</p></td>
+      <td><p><code>List</code> of <code>File</code>s. The Swift modules (<code>.swiftmodule</code>) for the library that directly propagated this
+provider.</p></td>
     </tr>
     <tr id="SwiftInfo.module_name">
       <td><code>module_name</code></td>
-      <td><p><code>String</code>. The name of the Swift module represented by the target that directly
-propagated this provider.</p>
-<p>This field will be equal to the explicitly assigned module name (if present);
-otherwise, it will be equal to the autogenerated module name.</p></td>
+      <td><p><code>String</code>. The name of the Swift module represented by the target that directly propagated this
+provider.</p>
+<p>This field will be equal to the explicitly assigned module name (if present); otherwise, it will be
+equal to the autogenerated module name.</p></td>
     </tr>
     <tr id="SwiftInfo.swift_version">
       <td><code>swift_version</code></td>
-      <td><p><code>String</code>. The version of the Swift language that was used when
-compiling the propagating target; that is, the value passed via the
-<code>-swift-version</code> compiler flag. This will be <code>None</code> if the flag was not set.</p></td>
+      <td><p><code>String</code>. The version of the Swift language that was used when compiling the propagating target;
+that is, the value passed via the <code>-swift-version</code> compiler flag. This will be <code>None</code> if the flag
+was not set.</p></td>
     </tr>
     <tr id="SwiftInfo.transitive_additional_inputs">
       <td><code>transitive_additional_inputs</code></td>
-      <td><p><code>Depset</code> of <code>File</code>s. The transitive additional inputs specified by the
-<code>swiftc_inputs</code> attribute of library and binary targets. This allows files used
-in <code>linkopts</code> location expansion in library targets to be propagated to the
-eventual linker action that needs to use them, even when they are not present in
-the same target.</p></td>
+      <td><p><code>Depset</code> of <code>File</code>s. The transitive additional inputs specified by the <code>swiftc_inputs</code> attribute of
+library and binary targets. This allows files used in <code>linkopts</code> location expansion in library
+targets to be propagated to the eventual linker action that needs to use them, even when they are
+not present in the same target.</p></td>
     </tr>
     <tr id="SwiftInfo.transitive_defines">
       <td><code>transitive_defines</code></td>
-      <td><p><code>Depset</code> of <code>string</code>s. The transitive <code>defines</code> specified for the library that
-propagated this provider and all of its dependencies.</p></td>
+      <td><p><code>Depset</code> of <code>string</code>s. The transitive <code>defines</code> specified for the library that propagated this
+provider and all of its dependencies.</p></td>
     </tr>
     <tr id="SwiftInfo.transitive_libraries">
       <td><code>transitive_libraries</code></td>
-      <td><p><code>Depset</code> of <code>File</code>s. The static libraries (<code>.a</code>) emitted by the target that
-propagated this provider and all of its dependencies.</p></td>
+      <td><p><code>Depset</code> of <code>File</code>s. The static libraries (<code>.a</code>) emitted by the target that propagated this provider
+and all of its dependencies.</p></td>
     </tr>
     <tr id="SwiftInfo.transitive_linkopts">
       <td><code>transitive_linkopts</code></td>
-      <td><p><code>Depset</code> of <code>string</code>s. The transitive <code>linkopts</code> specified for the library that
-propagated this provider and all of its dependencies.</p></td>
+      <td><p><code>Depset</code> of <code>string</code>s. The transitive <code>linkopts</code> specified for the library that propagated this
+provider and all of its dependencies.</p></td>
+    </tr>
+    <tr id="SwiftInfo.transitive_swiftdocs">
+      <td><code>transitive_swiftdocs</code></td>
+      <td><p><code>Depset</code> of <code>File</code>s. The transitive Swift documentation (<code>.swiftdoc</code>) files emitted by the library
+that propagated this provider and all of its dependencies.</p></td>
     </tr>
     <tr id="SwiftInfo.transitive_swiftmodules">
       <td><code>transitive_swiftmodules</code></td>
-      <td><p><code>Depset</code> of <code>File</code>s. The transitive Swift modules (<code>.swiftmodule</code>) emitted by
-the library that propagated this provider and all of its dependencies.</p></td>
+      <td><p><code>Depset</code> of <code>File</code>s. The transitive Swift modules (<code>.swiftmodule</code>) emitted by the library that
+propagated this provider and all of its dependencies.</p></td>
     </tr>
   </tbody>
 </table>
 
 
-
-<a href="SwiftProtoInfo"></a>
-## SwiftProtoInfo
-
-Propagates Swift-specific information about a `proto_library`.
-
-<table class="fields-table">
-  <colgroup>
-    <col class="col-field" />
-    <col class="col-description" />
-  </colgroup>
-  <tbody>
-    <tr id="SwiftProtoInfo.module_mappings">
-      <td><code>module_mappings</code></td>
-      <td><p><code>Sequence</code> of <code>struct</code>s. Each struct contains <code>module_name</code> and
-<code>proto_file_paths</code> fields that denote the transitive mappings from <code>.proto</code>
-files to Swift modules. This allows messages that reference messages in other
-libraries to import those modules in generated code.</p></td>
-    </tr>
-    <tr id="SwiftProtoInfo.pbswift_files">
-      <td><code>pbswift_files</code></td>
-      <td><p><code>Depset</code> of <code>File</code>s. The transitive Swift source files (<code>.pb.swift</code>) generated
-from the <code>.proto</code> files.</p></td>
-    </tr>
-  </tbody>
-</table>
-
-
-
-<a href="SwiftToolchainInfo"></a>
+<a name="SwiftToolchainInfo"></a>
 ## SwiftToolchainInfo
 
-
-Propagates information about a Swift toolchain to compilation and linking rules
-that use the toolchain.
-
+Propagates information about a Swift toolchain to compilation and linking rules that use the
+toolchain.
 
 <table class="fields-table">
   <colgroup>
@@ -197,16 +120,23 @@ that use the toolchain.
   <tbody>
     <tr id="SwiftToolchainInfo.action_environment">
       <td><code>action_environment</code></td>
-      <td><p><code>Dict</code>. Environment variables that should be set during any actions spawned to
-compile or link Swift code.</p></td>
+      <td><p><code>Dict</code>. Environment variables that should be set during any actions spawned to compile or link Swift
+code.</p></td>
+    </tr>
+    <tr id="SwiftToolchainInfo.action_registrars">
+      <td><code>action_registrars</code></td>
+      <td><p><code>Struct</code> containing two Skylib <code>partial</code>s: <code>run</code>, which registers an action using <code>actions.run</code>; and
+<code>run_shell</code>, which registers an action using <code>actions.run_shell</code>. These partials allow the toolchain
+to set the environment and execution requirements, as well as use a wrapper script if necessary.</p></td>
     </tr>
     <tr id="SwiftToolchainInfo.cc_toolchain_info">
       <td><code>cc_toolchain_info</code></td>
-      <td><p><code>Struct</code>, defined as that returned by <code>swift_cc_toolchain_info</code>. Contains
-information about the Bazel C++ toolchain that this Swift toolchain depends on,
-if any.</p>
-<p>This key may be <code>None</code> if the toolchain does not depend on a Bazel C++
-toolchain (for example, an Xcode-based Swift toolchain).</p></td>
+      <td><p>The <code>cc_common.CcToolchainInfo</code> provider from the Bazel C++ toolchain that this Swift toolchain
+depends on.</p></td>
+    </tr>
+    <tr id="SwiftToolchainInfo.clang_executable">
+      <td><code>clang_executable</code></td>
+      <td><p><code>String</code>. The path to the <code>clang</code> executable, which is used to link binaries.</p></td>
     </tr>
     <tr id="SwiftToolchainInfo.cpu">
       <td><code>cpu</code></td>
@@ -214,56 +144,54 @@ toolchain (for example, an Xcode-based Swift toolchain).</p></td>
     </tr>
     <tr id="SwiftToolchainInfo.execution_requirements">
       <td><code>execution_requirements</code></td>
-      <td><p><code>Dict</code>. Execution requirements that should be passed to any actions spawned to
-compile or link Swift code.</p>
-<p>For example, when using an Xcode toolchain, the execution requirements should be
-such that running on Darwin is required.</p></td>
+      <td><p><code>Dict</code>. Execution requirements that should be passed to any actions spawned to compile or link
+Swift code.</p>
+<p>For example, when using an Xcode toolchain, the execution requirements should be such that running
+on Darwin is required.</p></td>
     </tr>
     <tr id="SwiftToolchainInfo.implicit_deps">
       <td><code>implicit_deps</code></td>
-      <td><p><code>List</code> of <code>Target</code>s. Library targets that should be added as implicit
-dependencies of any <code>swift_library</code>, <code>swift_binary</code>, or <code>swift_test</code> target.</p></td>
+      <td><p><code>List</code> of <code>Target</code>s. Library targets that should be added as implicit dependencies of any
+<code>swift_library</code>, <code>swift_binary</code>, or <code>swift_test</code> target.</p></td>
     </tr>
-    <tr id="SwiftToolchainInfo.linker_opts">
-      <td><code>linker_opts</code></td>
-      <td><p><code>List</code> of <code>string</code>s. Additional flags that should be passed to Clang when
-linking a binary or test target using this toolchain.</p></td>
+    <tr id="SwiftToolchainInfo.linker_opts_producer">
+      <td><code>linker_opts_producer</code></td>
+      <td><p>Skylib <code>partial</code>. A partial function that returns the flags that should be passed to Clang to link a
+binary or test target with the Swift runtime libraries.</p>
+<p>The partial should be called with two arguments:</p>
+<ul>
+<li><code>is_static</code>: A <code>Boolean</code> value indicating whether to link against the static or dynamic runtime
+libraries.</li>
+<li><code>is_test</code>: A <code>Boolean</code> value indicating whether the target being linked is a test target.</li>
+</ul></td>
     </tr>
     <tr id="SwiftToolchainInfo.linker_search_paths">
       <td><code>linker_search_paths</code></td>
-      <td><p><code>List</code> of <code>string</code>s. Additional library search paths that should be passed to
-the linker when linking binaries with this toolchain.</p></td>
+      <td><p><code>List</code> of <code>string</code>s. Additional library search paths that should be passed to the linker when
+linking binaries with this toolchain.</p></td>
     </tr>
     <tr id="SwiftToolchainInfo.object_format">
       <td><code>object_format</code></td>
-      <td><p><code>String</code>. The object file format of the platform that the toolchain is
-targeting. The currently supported values are <code>"elf"</code> and <code>"macho"</code>.</p></td>
+      <td><p><code>String</code>. The object file format of the platform that the toolchain is targeting. The currently
+supported values are <code>"elf"</code> and <code>"macho"</code>.</p></td>
     </tr>
-    <tr id="SwiftToolchainInfo.requires_autolink_extract">
-      <td><code>requires_autolink_extract</code></td>
-      <td><p><code>Boolean</code>. <code>True</code> if the toolchain requires autolink-extract jobs to be invoked
-to determine which imported libraries must be passed to the linker.</p></td>
-    </tr>
-    <tr id="SwiftToolchainInfo.requires_workspace_relative_module_maps">
-      <td><code>requires_workspace_relative_module_maps</code></td>
-      <td><p><code>Boolean</code>. <code>True</code> if the toolchain requires module map header paths to be
-workspace-relative (because the toolchain passes <code>-fmodule-map-file-home-is-cwd</code>
-to Swift's ClangImporter), or <code>False</code> if headers are to be read relative to the
-location of the module map file.</p></td>
+    <tr id="SwiftToolchainInfo.requested_features">
+      <td><code>requested_features</code></td>
+      <td><p><code>List</code> of <code>string</code>s. Features that should be implicitly enabled by default for targets built using
+this toolchain, unless overridden by the user by listing their negation in the <code>features</code> attribute
+of a target/package or in the <code>--features</code> command line flag.</p>
+<p>These features determine various compilation and debugging behaviors of the Swift build rules, and
+they are also passed to the C++ APIs used when linking (so features defined in CROSSTOOL may be used
+here).</p></td>
     </tr>
     <tr id="SwiftToolchainInfo.root_dir">
       <td><code>root_dir</code></td>
       <td><p><code>String</code>. The workspace-relative root directory of the toolchain.</p></td>
     </tr>
-    <tr id="SwiftToolchainInfo.spawn_wrapper">
-      <td><code>spawn_wrapper</code></td>
-      <td><p><code>File</code>. An executable that is used to wrap invoked command lines for spawned
-actions in the toolchain.</p></td>
-    </tr>
     <tr id="SwiftToolchainInfo.stamp">
       <td><code>stamp</code></td>
-      <td><p><code>Target</code>. A <code>cc</code>-providing target that should be linked into any binaries that
-are built with stamping enabled.</p></td>
+      <td><p><code>Target</code>. A <code>cc</code>-providing target that should be linked into any binaries that are built with
+stamping enabled.</p></td>
     </tr>
     <tr id="SwiftToolchainInfo.supports_objc_interop">
       <td><code>supports_objc_interop</code></td>
@@ -271,14 +199,22 @@ are built with stamping enabled.</p></td>
     </tr>
     <tr id="SwiftToolchainInfo.swiftc_copts">
       <td><code>swiftc_copts</code></td>
-      <td><p><code>List</code> of <code>strings</code>. Additional flags that should be passed to <code>swiftc</code> when
-compiling libraries or binaries with this toolchain.</p></td>
+      <td><p><code>List</code> of <code>strings</code>. Additional flags that should be passed to <code>swiftc</code> when compiling libraries or
+binaries with this toolchain.</p></td>
     </tr>
     <tr id="SwiftToolchainInfo.system_name">
       <td><code>system_name</code></td>
       <td><p><code>String</code>. The name of the operating system that the toolchain is targeting.</p></td>
     </tr>
+    <tr id="SwiftToolchainInfo.unsupported_features">
+      <td><code>unsupported_features</code></td>
+      <td><p><code>List</code> of <code>string</code>s. Features that should be implicitly disabled by default for targets built using
+this toolchain, unless overridden by the user by listing them in the <code>features</code> attribute of a
+target/package or in the <code>--features</code> command line flag.</p>
+<p>These features determine various compilation and debugging behaviors of the Swift build rules, and
+they are also passed to the C++ APIs used when linking (so features defined in CROSSTOOL may be used
+here).</p></td>
+    </tr>
   </tbody>
 </table>
-
 

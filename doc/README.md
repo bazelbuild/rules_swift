@@ -7,8 +7,8 @@
 * [swift_import](rules.md#swift_import)
 * [swift_library](rules.md#swift_library)
 * [swift_module_alias](rules.md#swift_module_alias)
-* [swift_test](rules.md#swift_test)
 * [swift_proto_library](rules.md#swift_proto_library)
+* [swift_test](rules.md#swift_test)
 
 ## Repository Setup
 
@@ -20,8 +20,5 @@
 
 ## Skylark Providers
 
-* [SwiftBinaryInfo](providers.md#SwiftBinaryInfo)
-* [SwiftClangModuleInfo](providers.md#SwiftClangModuleInfo)
 * [SwiftInfo](providers.md#SwiftInfo)
-* [SwiftProtoInfo](providers.md#SwiftProtoInfo)
 * [SwiftToolchainInfo](providers.md#SwiftToolchainInfo)
