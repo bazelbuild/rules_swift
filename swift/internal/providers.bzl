@@ -29,9 +29,7 @@ Bazel.
 
 SwiftCcLibsInfo = provider(
     doc = """
-Contains information about C libraries that are dependencies of Swift libraries, excluding any that
-are embedded directly within the archive of a `swift_library` (via the `cc_libs` attribute) to
-prevent double-linkage.
+Contains information about C libraries that are dependencies of Swift libraries.
 
 This provider is an internal implementation detail of the Swift BUILD rules; it should not be used
 directly.
