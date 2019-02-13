@@ -28,10 +28,6 @@ def _swift_library_impl(ctx):
     if not module_name:
         module_name = swift_common.derive_module_name(ctx.label)
 
-    library_name = ctx.attr.module_link_name
-    if library_name:
-        copts.extend(["-module-link-name", library_name])
-
     # Bazel fails the build if you try to query a fragment that hasn't been declared, even
     # dynamically with `hasattr`/`getattr`. Thus, we have to use other information to determine
     # whether we can access the `objc` configuration.
@@ -55,14 +51,12 @@ def _swift_library_impl(ctx):
         toolchain = toolchain,
         additional_inputs = ctx.files.swiftc_inputs,
         alwayslink = ctx.attr.alwayslink,
-        cc_libs = ctx.attr.cc_libs,
         copts = copts,
         configuration = ctx.configuration,
         defines = ctx.attr.defines,
         deps = ctx.attr.deps,
         feature_configuration = feature_configuration,
         genfiles_dir = ctx.genfiles_dir,
-        library_name = library_name,
         linkopts = linkopts,
         objc_fragment = objc_fragment,
     )

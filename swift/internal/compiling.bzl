@@ -428,7 +428,7 @@ def register_autolink_extract_action(
         swift_tool = "swift-autolink-extract",
     )
 
-def swift_library_output_map(name, alwayslink, module_link_name):
+def swift_library_output_map(name, alwayslink):
     """Returns the dictionary of implicit outputs for a `swift_library`.
 
     This function is used to specify the `outputs` of the `swift_library` rule; as such, its
@@ -439,15 +439,13 @@ def swift_library_output_map(name, alwayslink, module_link_name):
         alwayslink: Indicates whether the object files in the library should always
             be always be linked into any binaries that depend on it, even if some
             contain no symbols referenced by the binary.
-        module_link_name: The module link name of the target being built.
 
     Returns:
         The implicit outputs dictionary for a `swift_library`.
     """
-    lib_name = module_link_name if module_link_name else name
     extension = "lo" if alwayslink else "a"
     return {
-        "archive": "lib{}.{}".format(lib_name, extension),
+        "archive": "lib{}.{}".format(name, extension),
     }
 
 def write_objc_header_module_map(
