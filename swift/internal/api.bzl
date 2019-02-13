@@ -69,7 +69,6 @@ load(
     "SwiftToolchainInfo",
     "merge_swift_clang_module_infos",
 )
-load(":swift_cc_libs_aspect.bzl", "swift_cc_libs_excluding_directs_aspect")
 
 # The compilation modes supported by Bazel.
 _VALID_COMPILATION_MODES = [
@@ -85,7 +84,6 @@ _SANITIZER_FEATURE_FLAG_MAP = {
 }
 
 def _build_swift_info(
-        additional_cc_libs = [],
         compile_options = [],
         deps = [],
         direct_additional_inputs = [],
@@ -103,8 +101,6 @@ def _build_swift_info(
     also automatically collects transitive values from dependencies.
 
     Args:
-        additional_cc_libs: A list of additional `cc_library` dependencies whose libraries and
-            linkopts need to be propagated by `SwiftInfo`.
         compile_options: A list of `Args` objects that contain the compilation options passed to
             `swiftc` to compile this target.
         deps: A list of dependencies of the target being built, which provide `SwiftInfo` providers.
@@ -151,10 +147,6 @@ def _build_swift_info(
             transitive_swiftmodules.append(swift_info.transitive_swiftmodules)
         if hasattr(dep, "cc"):
             transitive_linkopts.append(depset(direct = dep.cc.link_flags))
-
-    for lib in additional_cc_libs:
-        transitive_libraries.extend(collect_link_libraries(lib))
-        transitive_linkopts.append(depset(direct = lib.cc.link_flags))
 
     return SwiftInfo(
         compile_options = compile_options,
@@ -229,19 +221,6 @@ def _compilation_attrs(additional_deps_aspects = []):
                 doc = """
 A list of `.swift` source files that will be compiled into the library.
 """,
-            ),
-            "cc_libs": attr.label_list(
-                aspects = [swift_cc_libs_excluding_directs_aspect],
-                doc = """
-A list of `cc_library` targets that should be *merged* with the static library
-or binary produced by this target.
-
-Most normal Swift use cases do not need to make use of this attribute. It is
-intended to support cases where C and Swift code *must* exist in the same
-archive; for example, a Swift function annotated with `@_cdecl` which is then
-referenced from C code in the same library.
-""",
-                providers = [["cc"]],
             ),
             "copts": attr.string_list(
                 doc = """
@@ -620,7 +599,6 @@ def _compile_as_library(
         additional_inputs = [],
         allow_testing = True,
         alwayslink = False,
-        cc_libs = [],
         configuration = None,
         copts = [],
         defines = [],
@@ -661,8 +639,6 @@ def _compile_as_library(
       alwayslink: Indicates whether the object files in the library should always
           be always be linked into any binaries that depend on it, even if some
           contain no symbols referenced by the binary.
-      cc_libs: Additional `cc_library` targets whose static libraries should be
-          merged into the resulting archive.
       configuration: The default configuration from which certain compilation
           options are determined, such as whether coverage is enabled. This object
           should be one obtained from a rule's `ctx.configuraton` field. If
@@ -812,12 +788,7 @@ def _compile_as_library(
         objc_fragment = objc_fragment,
     )
 
-    # Create an archive that contains the compiled .o files. If we have any
-    # cc_libs that should also be included, merge those into the archive as well.
-    cc_lib_files = []
-    for target in cc_libs:
-        cc_lib_files.extend([f for f in target.files.to_list() if f.basename.endswith(".a")])
-
+    # Create an archive that contains the compiled .o files.
     if toolchain.system_name == "darwin":
         ar_executable = None
     else:
@@ -826,7 +797,6 @@ def _compile_as_library(
     register_static_archive_action(
         actions = actions,
         ar_executable = ar_executable,
-        libraries = cc_lib_files,
         mnemonic = "SwiftArchive",
         objects = compile_results.output_objects,
         output = out_archive,
@@ -836,7 +806,6 @@ def _compile_as_library(
 
     providers = [
         _build_swift_info(
-            additional_cc_libs = cc_libs,
             compile_options = compile_results.compile_options,
             deps = all_deps,
             direct_additional_inputs = (
@@ -1057,13 +1026,6 @@ Additional linker options that should be passed to the linker for the binary
 that depends on this target. These strings are subject to `$(location ...)`
 expansion.
 """,
-            ),
-            "module_link_name": attr.string(
-                doc = """
-The name of the library that should be linked to targets that depend on this
-library. Supports auto-linking.
-""",
-                mandatory = False,
             ),
             "alwayslink": attr.bool(
                 default = False,
