@@ -145,8 +145,10 @@ def _build_swift_info(
             transitive_linkopts.append(swift_info.transitive_linkopts)
             transitive_swiftdocs.append(swift_info.transitive_swiftdocs)
             transitive_swiftmodules.append(swift_info.transitive_swiftmodules)
-        if hasattr(dep, "cc"):
-            transitive_linkopts.append(depset(direct = dep.cc.link_flags))
+        if CcInfo in dep:
+            transitive_linkopts.append(
+                depset(direct = dep[CcInfo].linking_context.user_link_flags),
+            )
 
     return SwiftInfo(
         compile_options = compile_options,
@@ -425,8 +427,8 @@ def _compile_as_objects(
           requested, which affects the nature of the output files.
       defines: Symbols that should be defined by passing `-D` to the compiler.
       deps: Dependencies of the target being compiled. These targets must
-          propagate one of the following providers: `SwiftClangModuleInfo`,
-          `SwiftInfo`, `"cc"`, or `apple_common.Objc`.
+          propagate one of the following providers: `CcInfo`,
+          `SwiftClangModuleInfo`, `SwiftInfo`, or `apple_common.Objc`.
       feature_configuration: A feature configuration obtained from
           `swift_common.configure_features`. If omitted, a default feature
           configuration will be used, but this argument will be required in the
@@ -646,8 +648,8 @@ def _compile_as_library(
       copts: Additional flags that should be passed to `swiftc`.
       defines: Symbols that should be defined by passing `-D` to the compiler.
       deps: Dependencies of the target being compiled. These targets must
-          propagate one of the following providers: `SwiftClangModuleInfo`,
-          `SwiftInfo`, `"cc"`, or `apple_common.Objc`.
+          propagate one of the following providers: `CcInfo`,
+          `SwiftClangModuleInfo`, `SwiftInfo`, or `apple_common.Objc`.
       feature_configuration: A feature configuration obtained from
           `swift_common.configure_features`. If omitted, a default feature
           configuration will be used, but this argument will be required in the
@@ -1168,8 +1170,8 @@ def _swiftc_command_line_and_inputs(
           requested, which affects the nature of the output files.
       defines: Symbols that should be defined by passing `-D` to the compiler.
       deps: Dependencies of the target being compiled. These targets must
-          propagate one of the following providers: `SwiftClangModuleInfo`,
-          `SwiftInfo`, `"cc"`, or `apple_common.Objc`.
+          propagate one of the following providers: `CcInfo`,
+          `SwiftClangModuleInfo`, `SwiftInfo`, or `apple_common.Objc`.
       feature_configuration: A feature configuration obtained from
           `swift_common.configure_features`. If omitted, a default feature
           configuration will be used, but this argument will be required in the

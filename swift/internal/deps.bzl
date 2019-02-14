@@ -19,9 +19,9 @@ load(":providers.bzl", "SwiftCcLibsInfo", "SwiftInfo")
 def collect_link_libraries(target):
     """Returns a list of `depset`s containing the transitive libraries of `target`.
 
-    This function handles the differences between the various providers that we support (`SwiftInfo`
-    and `"cc"`) to provide a uniform API for collecting the transitive libraries that must be linked
-    against when building a particular target.
+    This function handles the differences between the various providers that we support to provide
+    a uniform API for collecting the transitive libraries that must be linked against when building
+    a particular target.
 
     Args:
         target: The target from which the transitive libraries will be collected.
