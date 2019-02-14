@@ -24,39 +24,27 @@ def _swift_c_module_impl(ctx):
 
     if len(ctx.attr.deps) == 1:
         dep = ctx.attr.deps[0]
-        cc_info = dep[CcInfo]
-        compilation_context = cc_info.compilation_context
-        return [
-            # Repropagate the dependency's `CcInfo` provider so that Swift targets only have to
-            # depend on the module target, not also on the original library target. We must also
-            # repropagate the dependency, otherwise things we will lose runtime dependencies that
-            # the library expects to be there during a test (or a regular `bazel run`).
-            cc_info,
-            DefaultInfo(
-                data_runfiles = dep[DefaultInfo].data_runfiles,
-                default_runfiles = dep[DefaultInfo].default_runfiles,
-                files = depset(direct = [module_map]),
-            ),
-            SwiftClangModuleInfo(
-                transitive_compile_flags = depset(
-                    # TODO(b/124373197): Expanding these depsets isn't great, but it's temporary
-                    # until we get rid of this provider completely.
-                    direct = include_flags + [
-                        "-I{}".format(p)
-                        for p in compilation_context.includes.to_list()
-                    ] + [
-                        "-iquote{}".format(p)
-                        for p in compilation_context.quote_includes.to_list()
-                    ] + [
-                        "-isystem{}".format(p)
-                        for p in compilation_context.system_includes.to_list()
-                    ],
+        return struct(
+            # Repropagate the dependency's "cc" provider so that Swift targets only
+            # have to depend on the module target, not also on the original library
+            # target. We must also repropagate the dependency, otherwise things we
+            # will lose runtime dependencies that the library expects to be there
+            # during a test (or a regular `bazel run`).
+            cc = dep.cc,
+            providers = [
+                DefaultInfo(
+                    data_runfiles = dep[DefaultInfo].data_runfiles,
+                    default_runfiles = dep[DefaultInfo].default_runfiles,
+                    files = depset(direct = [module_map]),
                 ),
-                transitive_defines = compilation_context.defines,
-                transitive_headers = compilation_context.headers,
-                transitive_modulemaps = depset(direct = [module_map]),
-            ),
-        ]
+                SwiftClangModuleInfo(
+                    transitive_compile_flags = depset(direct = dep.cc.compile_flags),
+                    transitive_defines = depset(direct = dep.cc.defines),
+                    transitive_headers = dep.cc.transitive_headers,
+                    transitive_modulemaps = depset(direct = [module_map]),
+                ),
+            ],
+        )
     else:
         return [
             DefaultInfo(files = depset(direct = [module_map])),
@@ -90,7 +78,7 @@ that wraps them in its `deps` and has no other `srcs` or `hdrs`, and have the
 module target depend on that.
 """,
             mandatory = True,
-            providers = [[CcInfo]],
+            providers = [["cc"]],
         ),
     },
     doc = """
