@@ -99,12 +99,23 @@ if [[ -n "${BUILDIFIER:-}" ]]; then
     fi
   fi
 
+  LINT_ARGS=(
+    --lint=warn
+    # uninitialized has issues:
+    # - https://github.com/bazelbuild/buildtools/issues/549
+    # - https://github.com/bazelbuild/buildtools/issues/550
+    # rule-impl-return doesn't deal well with having to return
+    #   legacy style, work being done to help with this, just
+    #   not ready yet.
+    --warnings=-rule-impl-return,-uninitialized
+  )
+
   # Check for lint issues?
   if [[ "${LINT:-yes}" == "yes" ]] ; then
     # NOTE: buildifier defaults to --mode=fix, so these lint runs also
     # reformat the files. But since this is on travis, that is fine.
     # https://github.com/bazelbuild/buildtools/issues/453
-    if ! find . "${FIND_ARGS[@]}" -print | xargs buildifier --lint=warn > /dev/null 2>&1 ; then
+    if ! find . "${FIND_ARGS[@]}" -print | xargs buildifier "${LINT_ARGS[@]}" > /dev/null 2>&1 ; then
       if [[ "${FOUND_ISSUES}" != "no" ]] ; then
         echo ""
       fi
@@ -112,7 +123,7 @@ if [[ -n "${BUILDIFIER:-}" ]]; then
       echo ""
       # buildifier now exist with error if there are issues, so use `|| true`
       # to keep the script running.
-      find . "${FIND_ARGS[@]}" -print | xargs buildifier --lint=warn || true
+      find . "${FIND_ARGS[@]}" -print | xargs buildifier "${LINT_ARGS[@]}" || true
       echo ""
       echo "Please download the latest buildifier"
       echo "   https://github.com/bazelbuild/buildtools/releases"
