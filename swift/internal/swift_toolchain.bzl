@@ -249,10 +249,10 @@ content, such as "linux" in "lib/swift/linux".
         ),
         "stamp": attr.label(
             doc = """
-A `cc`-providing target that should be linked into any binaries that are built
-with stamping enabled.
+A `CcInfo`-providing target that should be linked into any binaries that are built with stamping
+enabled.
 """,
-            providers = [["cc"]],
+            providers = [[CcInfo]],
         ),
         "_cc_toolchain": attr.label(
             cfg = "host",
