@@ -17,7 +17,7 @@
 load(":providers.bzl", "SwiftCcLibsInfo")
 
 def _build_providers_for_cc_target(target, aspect_ctx):
-    """Builds a `SwiftCcLibsInfo` provider for a `CcInfo`-propagating target.
+    """Builds a `SwiftCcLibsInfo` provider for a `cc`-propagating target.
 
     Args:
         target: The `Target` to which the aspect is being applied.
@@ -26,14 +26,7 @@ def _build_providers_for_cc_target(target, aspect_ctx):
     Returns:
         The list of providers.
     """
-    static_libraries = []
-    for library in target[CcInfo].linking_context.libraries_to_link:
-        if library.pic_static_library:
-            static_libraries.append(library.pic_static_library)
-        elif library.static_library:
-            static_libraries.append(library.static_library)
-
-    return [SwiftCcLibsInfo(libraries = depset(direct = static_libraries))]
+    return [SwiftCcLibsInfo(libraries = target.cc.libs)]
 
 def _build_transitive_providers(aspect_ctx):
     """Builds a `SwiftCcLibsInfo` provider for a non-`cc`-propagating target.
@@ -57,7 +50,7 @@ def _build_transitive_providers(aspect_ctx):
     return [SwiftCcLibsInfo(libraries = all_libraries_set)]
 
 def _swift_cc_libs_aspect_impl(target, aspect_ctx):
-    if CcInfo in target:
+    if hasattr(target, "cc"):
         return _build_providers_for_cc_target(target, aspect_ctx)
     else:
         return _build_transitive_providers(aspect_ctx)

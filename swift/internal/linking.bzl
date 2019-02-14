@@ -61,19 +61,12 @@ def register_link_action(
 
     common_args = actions.args()
 
-    deps_libraries = []
-
     if toolchain.stamp:
-        stamp_libs_to_link = []
-        for library in toolchain.stamp[CcInfo].linking_context.libraries_to_link:
-            if library.pic_static_library:
-                stamp_libs_to_link.append(library.pic_static_library)
-            elif library.static_library:
-                stamp_libs_to_link.append(library.static_library)
+        stamp_lib_depsets = [toolchain.stamp.cc.libs]
+    else:
+        stamp_lib_depsets = []
 
-        if stamp_libs_to_link:
-            deps_libraries.append(depset(direct = stamp_libs_to_link))
-
+    deps_libraries = []
     deps_dynamic_framework_dirs = []
     deps_static_framework_dirs = []
     deps_sdk_dylibs = []
@@ -87,7 +80,7 @@ def register_link_action(
             deps_sdk_dylibs.append(objc.sdk_dylib)
             deps_sdk_frameworks.append(objc.sdk_framework)
 
-    libraries = depset(transitive = deps_libraries, order = "topological")
+    libraries = depset(transitive = deps_libraries + stamp_lib_depsets, order = "topological")
     link_input_depsets = [
         libraries,
         inputs,
@@ -146,9 +139,9 @@ def register_link_action(
             for dep in deps
             if SwiftInfo in dep
         ] + [
-            depset(direct = dep[CcInfo].linking_context.user_link_flags)
+            depset(direct = dep.cc.link_flags)
             for dep in deps
-            if CcInfo in dep
+            if hasattr(dep, "cc")
         ],
     ).to_list()
 
