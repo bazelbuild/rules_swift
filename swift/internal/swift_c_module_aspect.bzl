@@ -151,24 +151,26 @@ def _swift_c_module_aspect_impl(target, aspect_ctx):
         # available to the actions.
         transitive_headers_sets = []
         for dep in attr.deps:
-            cc_info = getattr(dep, "cc", None)
-            if cc_info:
-                transitive_headers_sets.append(cc_info.transitive_headers)
+            if CcInfo in dep:
+                transitive_headers_sets.append(dep[CcInfo].compilation_context.headers)
 
+        compilation_context = target[CcInfo].compilation_context
         return [SwiftClangModuleInfo(
             transitive_compile_flags = depset(
+                # TODO(b/124373197): Expanding these depsets isn't great, but it's temporary
+                # until we get rid of this provider completely.
                 direct = [
                     "-isystem{}".format(include)
-                    for include in target.cc.system_include_directories
+                    for include in compilation_context.system_includes.to_list()
                 ] + [
                     "-iquote{}".format(include)
-                    for include in target.cc.quote_include_directories
+                    for include in compilation_context.quote_includes.to_list()
                 ] + [
                     "-I{}".format(include)
-                    for include in target.cc.include_directories
+                    for include in compilation_context.includes.to_list()
                 ],
             ),
-            transitive_defines = depset(direct = target.cc.defines),
+            transitive_defines = compilation_context.defines,
             transitive_headers = depset(transitive = (
                 transitive_headers_sets +
                 [target.files for target in attr.hdrs] +
