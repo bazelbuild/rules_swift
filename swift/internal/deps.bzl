@@ -31,15 +31,13 @@ def collect_link_libraries(target):
     """
     depsets = []
 
+    if apple_common.Objc in target:
+        depsets.append(target[apple_common.Objc].library)
+
     if SwiftInfo in target:
         depsets.append(target[SwiftInfo].transitive_libraries)
-    elif apple_common.Objc in target:
-        # This is an `elif` because `swift_library` targets propagate both; so we only want to pick
-        # up the libraries from the `Objc` provider if we didn't already get them from a `SwiftInfo`
-        # provider.
-        depsets.append(target[apple_common.Objc].library)
 
     if SwiftCcLibsInfo in target:
         depsets.append(target[SwiftCcLibsInfo].libraries)
 
-    return depsets
+    return [depset(transitive = depsets, order = "topological")]
