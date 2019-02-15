@@ -41,7 +41,7 @@ def _swift_c_module_impl(ctx):
                 transitive_compile_flags = depset(
                     # TODO(b/124373197): Expanding these depsets isn't great, but it's temporary
                     # until we get rid of this provider completely.
-                    direct = include_flags + [
+                    direct = [
                         "-I{}".format(p)
                         for p in compilation_context.includes.to_list()
                     ] + [
