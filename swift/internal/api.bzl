@@ -25,7 +25,6 @@ which exports the `swift_common` module.
 
 load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load("@bazel_skylib//lib:partial.bzl", "partial")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:types.bzl", "types")
@@ -60,7 +59,6 @@ load(
     "SWIFT_FEATURE_NO_GENERATED_MODULE_MAP",
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
     "SWIFT_FEATURE_USE_RESPONSE_FILES",
-    "is_feature_enabled",
 )
 load(
     ":providers.bzl",
@@ -338,8 +336,11 @@ def _sanitizer_copts(feature_configuration):
       compilation action.
     """
     copts = []
-    for (feature, flags) in _SANITIZER_FEATURE_FLAG_MAP.items():
-        if is_feature_enabled(feature, feature_configuration):
+    for (feature_name, flags) in _SANITIZER_FEATURE_FLAG_MAP.items():
+        if swift_common.is_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = feature_name,
+        ):
             copts.extend(flags)
     return copts
 
@@ -373,6 +374,18 @@ def _is_wmo(copts, swift_fragment):
     return ("-wmo" in all_copts or
             "-whole-module-optimization" in all_copts or
             "-force-single-frontend-invocation" in all_copts)
+
+def _cc_feature_configuration(feature_configuration):
+    """Returns the C++ feature configuration nested inside the given Swift feature configuration.
+
+    Args:
+        feature_configuration: The Swift feature configuration, as returned from
+            `swift_common.configure_features`.
+
+    Returns:
+        A C++ `FeatureConfiguration` value (see `cc_common` for more information).
+    """
+    return feature_configuration.cc_feature_configuration
 
 def _compile_as_objects(
         actions,
@@ -482,9 +495,9 @@ def _compile_as_objects(
         copts = copts + swift_fragment.copts(),
         srcs = srcs,
         target_name = target_name,
-        index_while_building = is_feature_enabled(
-            SWIFT_FEATURE_INDEX_WHILE_BUILDING,
-            feature_configuration,
+        index_while_building = swift_common.is_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_INDEX_WHILE_BUILDING,
         ),
     )
     output_objects = compile_reqs.output_objects
@@ -493,7 +506,10 @@ def _compile_as_objects(
     out_doc = derived_files.swiftdoc(actions, module_name = module_name)
 
     wrapper_args = actions.args()
-    if is_feature_enabled(SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE, feature_configuration):
+    if swift_common.is_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE,
+    ):
         # If genfiles_dir is not provided, then we don't pass any special flags to the compiler,
         # letting it decide where the cache should live. This is usually somewhere in the system
         # temporary directory.
@@ -503,7 +519,10 @@ def _compile_as_objects(
         wrapper_args.add("-Xwrapped-swift=-ephemeral-module-cache")
 
     compile_args = actions.args()
-    if is_feature_enabled(SWIFT_FEATURE_USE_RESPONSE_FILES, feature_configuration):
+    if swift_common.is_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_USE_RESPONSE_FILES,
+    ):
         compile_args.use_param_file("@%s", use_always = True)
 
     compile_args.add("-emit-object")
@@ -563,7 +582,10 @@ def _compile_as_objects(
         output_objects.extend(module_embed_results.objects_to_link)
 
     # Invoke an autolink-extract action for toolchains that require it.
-    if is_feature_enabled(SWIFT_FEATURE_AUTOLINK_EXTRACT, feature_configuration):
+    if swift_common.is_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_AUTOLINK_EXTRACT,
+    ):
         autolink_file = derived_files.autolink_flags(
             actions,
             target_name = target_name,
@@ -715,7 +737,10 @@ def _compile_as_library(
     # Register the compilation actions to get an object file (.o) for the Swift
     # code, along with its swiftmodule and swiftdoc.
     library_copts = actions.args()
-    if is_feature_enabled(SWIFT_FEATURE_USE_RESPONSE_FILES, feature_configuration):
+    if swift_common.is_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_USE_RESPONSE_FILES,
+    ):
         library_copts.use_param_file("@%s", use_always = True)
 
     # Builds on Apple platforms typically don't use `swift_binary`; they have
@@ -737,9 +762,9 @@ def _compile_as_library(
     additional_outputs = []
     compile_input_depsets = [depset(direct = additional_inputs)]
 
-    generates_header = not is_feature_enabled(
-        SWIFT_FEATURE_NO_GENERATED_HEADER,
-        feature_configuration,
+    generates_header = not swift_common.is_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_NO_GENERATED_HEADER,
     )
     if generates_header and toolchain.supports_objc_interop and objc_fragment:
         # Generate a Swift bridging header for this library so that it can be
@@ -757,7 +782,10 @@ def _compile_as_library(
         # door lets them escape the module redefinition error, with the caveat that
         # certain import scenarios could lead to incorrect behavior because a header
         # can be imported textually instead of modularly.
-        if not is_feature_enabled(SWIFT_FEATURE_NO_GENERATED_MODULE_MAP, feature_configuration):
+        if not swift_common.is_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_NO_GENERATED_MODULE_MAP,
+        ):
             output_module_map = derived_files.module_map(
                 actions,
                 target_name = label.name,
@@ -854,36 +882,52 @@ def _compile_as_library(
         providers = providers,
     )
 
-def _configure_features(toolchain, requested_features = [], unsupported_features = []):
+def _configure_features(swift_toolchain, requested_features = [], unsupported_features = []):
     """Creates a feature configuration that should be passed to other Swift build APIs.
 
-    The feature configuration is a value that encapsulates the list of features that have been
-    explicitly enabled or disabled by the user as well as those enabled or disabled by the
-    toolchain. The other Swift build APIs query this value to determine which features should be
-    used during the build.
-
-    Users should treat the return value of this function as an opaque value and should only operate
-    on it using other API functions, like `swift_common.get_{enabled,disabled}_features`. Its
-    internal representation is an implementation detail and subject to change.
+    This function calls through to `cc_common.configure_features` to configure underlying C++
+    features as well, and nests the C++ feature configuration inside the Swift one. Users who need
+    to call C++ APIs that require a feature configuration can extract it by calling
+    `swift_common.cc_feature_configuration(feature_configuration)`.
 
     Args:
-        toolchain: The `SwiftToolchainInfo` provider of the toolchain being used to build.
-        requested_features: The list of user-enabled features _only_. This is typically obtained
-            using the `ctx.features` field in a rule implementation function. It should _not_ be
-            merged with any features from the toolchain; the feature configuration manages those.
-        unsupported_features: The list of user-disabled features _only_. This is typically obtained
-            using the `ctx.disabled_features` field in a rule implementation function. It should
-            _not_ be merged with any disabled features from the toolchain; the feature configuration
-            manages those.
+        swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain being used to build.
+            The C++ toolchain associated with the Swift toolchain is used to create the underlying
+            C++ feature configuration.
+        requested_features: The list of features to be enabled. This is typically obtained using
+            the `ctx.features` field in a rule implementation function.
+        unsupported_features: The list of features that are unsupported by the current rule. This
+            is typically obtained using the `ctx.disabled_features` field in a rule implementation
+            function.
 
     Returns:
-        An opaque value that should be passed as the `feature_configuration` argument of other
-        `swift_common` API calls.
+        An opaque value representing the feature configuration that can be passed to other
+        `swift_common` functions.
     """
+    all_requested_features = collections.uniq(
+        swift_toolchain.requested_features + requested_features,
+    )
+    all_unsupported_features = collections.uniq(
+        swift_toolchain.unsupported_features + unsupported_features,
+    )
+
+    # Verify the consistency of Swift features requested vs. those that are not supported by the
+    # toolchain. We don't need to do this for C++ features because `cc_common.configure_features`
+    # handles verifying those.
+    for feature in requested_features:
+        if feature.startswith("swift.") and feature in all_unsupported_features:
+            fail("Feature '{}' was requested, ".format(feature) +
+                 "but it is not supported by the current toolchain or rule.")
+
+    cc_feature_configuration = cc_common.configure_features(
+        cc_toolchain = swift_toolchain.cc_toolchain_info,
+        requested_features = all_requested_features,
+        unsupported_features = all_unsupported_features,
+    )
     return struct(
-        requested_features = requested_features,
-        toolchain = toolchain,
-        unsupported_features = unsupported_features,
+        cc_feature_configuration = cc_feature_configuration,
+        requested_features = all_requested_features,
+        unsupported_features = all_unsupported_features,
     )
 
 def _derive_module_name(*args):
@@ -924,62 +968,27 @@ def _derive_module_name(*args):
         return package_part + "_" + name_part
     return name_part
 
-def _get_disabled_features(feature_configuration):
-    """Returns the list of disabled features in the feature configuration.
+def _is_enabled(feature_configuration, feature_name):
+    """Returns `True` if the given feature is enabled in the feature configuration.
+
+    This function handles both Swift-specific features and C++ features so that users do not have
+    to manually extract the C++ configuration in order to check it.
 
     Args:
-        feature_configuration: The feature configuration.
+        feature_configuration: The Swift feature configuration, as returned by
+            `swift_common.configure_features`.
+        feature_name: The name of the feature to check.
 
     Returns:
-        A list containing the names of features that are disabled in the given feature
-        configuration.
+        `True` if the given feature is enabled in the feature configuration.
     """
-
-    # The full set of disabled features includes the ones that the user explicitly asked to be
-    # disabled in a target/package...
-    disabled_features_set = sets.make(feature_configuration.unsupported_features)
-
-    # ...plus the ones that the toolchain does not support...
-    disabled_features_set = sets.union(
-        disabled_features_set,
-        sets.make(feature_configuration.toolchain.unsupported_features),
-    )
-
-    # ...unless the user has asked for any toolchain-unsupported features to be explicitly enabled
-    # on a target/package.
-    disabled_features_set = sets.difference(
-        disabled_features_set,
-        sets.make(feature_configuration.requested_features),
-    )
-    return sets.to_list(disabled_features_set)
-
-def _get_enabled_features(feature_configuration):
-    """Returns the list of enabled features in the feature configuration.
-
-    Args:
-        feature_configuration: The feature configuration.
-
-    Returns:
-        A list containing the names of features that are enabled in the given feature configuration.
-    """
-
-    # The full set of enabled features includes the ones that the user explicitly asked to be
-    # enabled in a target/package...
-    enabled_features_set = sets.make(feature_configuration.requested_features)
-
-    # ...plus the ones that the toolchain supports...
-    enabled_features_set = sets.union(
-        enabled_features_set,
-        sets.make(feature_configuration.toolchain.requested_features),
-    )
-
-    # ...unless the user has asked for any toolchain-supported features to be explicitly disnabled
-    # on a target/package.
-    enabled_features_set = sets.difference(
-        enabled_features_set,
-        sets.make(feature_configuration.unsupported_features),
-    )
-    return sets.to_list(enabled_features_set)
+    if feature_name.startswith("swift."):
+        return feature_name in feature_configuration.requested_features
+    else:
+        return cc_common.is_enabled(
+            feature_configuration = _cc_feature_configuration(feature_configuration),
+            feature_name = feature_name,
+        )
 
 def _library_rule_attrs(additional_deps_aspects = []):
     """Returns an attribute dictionary for `swift_library`-like rules.
@@ -1208,7 +1217,10 @@ def _swiftc_command_line_and_inputs(
     args.add_all(_sanitizer_copts(feature_configuration = feature_configuration))
     args.add_all(["-Xfrontend", "-color-diagnostics"])
 
-    if is_feature_enabled(SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD, feature_configuration):
+    if swift_common.is_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD,
+    ):
         args.add_all(collections.before_each(
             "-Xcc",
             ["-Xclang", "-fmodule-map-file-home-is-cwd"],
@@ -1216,8 +1228,13 @@ def _swiftc_command_line_and_inputs(
 
     # Do not enable batch mode if the user requested WMO; this silences an "ignoring
     # '-enable-batch-mode' because '-whole-module-optimization' was also specified" warning.
-    if (not _is_wmo(copts, swift_fragment) and
-        is_feature_enabled(SWIFT_FEATURE_ENABLE_BATCH_MODE, feature_configuration)):
+    if (
+        not _is_wmo(copts, swift_fragment) and
+        swift_common.is_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_ENABLE_BATCH_MODE,
+        )
+    ):
         args.add("-enable-batch-mode")
 
     # Add the genfiles directory to ClangImporter's header search paths for
@@ -1299,14 +1316,14 @@ def _toolchain_attrs(toolchain_attr_name = "_toolchain"):
 # invoking actions that compile Swift code from other rules.
 swift_common = struct(
     build_swift_info = _build_swift_info,
+    cc_feature_configuration = _cc_feature_configuration,
     compilation_attrs = _compilation_attrs,
     compilation_mode_copts = _compilation_mode_copts,
     compile_as_library = _compile_as_library,
     compile_as_objects = _compile_as_objects,
     configure_features = _configure_features,
     derive_module_name = _derive_module_name,
-    get_disabled_features = _get_disabled_features,
-    get_enabled_features = _get_enabled_features,
+    is_enabled = _is_enabled,
     library_rule_attrs = _library_rule_attrs,
     merge_swift_info_providers = _merge_swift_info_providers,
     run_toolchain_action = run_toolchain_action,

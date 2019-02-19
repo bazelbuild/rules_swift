@@ -17,7 +17,7 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load(":api.bzl", "swift_common")
 load(":derived_files.bzl", "derived_files")
-load(":features.bzl", "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD", "is_feature_enabled")
+load(":features.bzl", "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD")
 load(":providers.bzl", "SwiftClangModuleInfo", "SwiftToolchainInfo")
 
 def _explicit_module_name(tags):
@@ -123,13 +123,13 @@ def _swift_c_module_aspect_impl(target, aspect_ctx):
     # Determine if the toolchain requires module maps to use workspace-relative paths or not.
     toolchain = aspect_ctx.attr._toolchain_for_aspect[SwiftToolchainInfo]
     feature_configuration = swift_common.configure_features(
-        toolchain,
         requested_features = aspect_ctx.features,
+        swift_toolchain = toolchain,
         unsupported_features = aspect_ctx.disabled_features,
     )
-    workspace_relative = is_feature_enabled(
-        SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD,
-        feature_configuration,
+    workspace_relative = swift_common.is_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD,
     )
 
     # It's not great to depend on the rule name directly, but we need to access the exact `hdrs`

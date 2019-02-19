@@ -39,8 +39,8 @@ def _swift_library_impl(ctx):
     objc_fragment = (ctx.fragments.objc if toolchain.supports_objc_interop else None)
 
     feature_configuration = swift_common.configure_features(
-        toolchain = toolchain,
         requested_features = ctx.features,
+        swift_toolchain = toolchain,
         unsupported_features = ctx.disabled_features,
     )
 
