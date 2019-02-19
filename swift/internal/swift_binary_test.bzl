@@ -17,14 +17,46 @@
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:partial.bzl", "partial")
 load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "CPP_LINK_EXECUTABLE_ACTION_NAME")
-load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
 load(":api.bzl", "swift_common")
 load(":derived_files.bzl", "derived_files")
-load(":features.bzl", "SWIFT_FEATURE_BUNDLED_XCTESTS", "is_feature_enabled")
+load(":features.bzl", "SWIFT_FEATURE_BUNDLED_XCTESTS")
 load(":linking.bzl", "register_link_action")
 load(":providers.bzl", "SwiftBinaryInfo", "SwiftToolchainInfo")
 load(":swift_c_module_aspect.bzl", "swift_c_module_aspect")
 load(":utils.bzl", "expand_locations")
+
+def _configure_features_for_binary(ctx, requested_features = [], unsupported_features = []):
+    """Creates and returns the feature configuration for binary linking.
+
+    This helper automatically handles common features for all Swift binary-creating targets, like
+    code coverage.
+
+    Args:
+        ctx: The rule context.
+        requested_features: Additional features that are requested for a particular rule/target.
+        unsupported_features: Additional features that are unsupported for a particular
+            rule/target.
+
+    Returns:
+        The `FeatureConfiguration` that was created.
+    """
+    toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
+
+    # Combine the features from the rule context with those passed into this function.
+    requested_features = ctx.features + requested_features
+    unsupported_features = ctx.disabled_features + unsupported_features
+
+    # Enable LLVM coverage in CROSSTOOL if this is a coverage build. Note that we explicitly enable
+    # LLVM format and disable GCC format because the former is the only one that Swift supports.
+    if ctx.configuration.coverage_enabled:
+        requested_features.append("llvm_coverage_map_format")
+        unsupported_features.append("gcc_coverage_map_format")
+
+    return swift_common.configure_features(
+        requested_features = requested_features,
+        swift_toolchain = toolchain,
+        unsupported_features = unsupported_features,
+    )
 
 def _swift_linking_rule_impl(
         ctx,
@@ -112,37 +144,18 @@ def _swift_linking_rule_impl(
         is_test = is_test,
     ))
 
-    # Enable LLVM coverage in CROSSTOOL if this is a coverage build. Note that we explicitly enable
-    # LLVM format and disable GCC format because the former is the only one that Swift supports.
-    if ctx.configuration.coverage_enabled:
-        coverage_features_to_enable = ["llvm_coverage_map_format"]
-        coverage_features_to_disable = ["gcc_coverage_map_format"]
-    else:
-        coverage_features_to_enable = []
-        coverage_features_to_disable = []
-
     # Get additional linker flags from the C++ toolchain.
-    cpp_toolchain = find_cpp_toolchain(ctx)
-    cc_feature_configuration = cc_common.configure_features(
-        cc_toolchain = cpp_toolchain,
-        requested_features = (
-            swift_common.get_enabled_features(feature_configuration) +
-            ["static_linking_mode"] +
-            coverage_features_to_enable
-        ),
-        unsupported_features = (
-            swift_common.get_disabled_features(feature_configuration) +
-            coverage_features_to_disable
-        ),
+    cc_feature_configuration = swift_common.cc_feature_configuration(
+        feature_configuration = feature_configuration,
     )
     variables = cc_common.create_link_variables(
+        cc_toolchain = toolchain.cc_toolchain_info,
         feature_configuration = cc_feature_configuration,
-        cc_toolchain = cpp_toolchain,
         is_static_linking_mode = True,
     )
     link_cpp_toolchain_flags = cc_common.get_memory_inefficient_command_line(
-        feature_configuration = cc_feature_configuration,
         action_name = CPP_LINK_EXECUTABLE_ACTION_NAME,
+        feature_configuration = cc_feature_configuration,
         variables = variables,
     )
     link_args.add_all(link_cpp_toolchain_flags)
@@ -196,10 +209,9 @@ def _create_xctest_runner(name, actions, binary, xctest_runner_template):
 
 def _swift_binary_impl(ctx):
     toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
-    feature_configuration = swift_common.configure_features(
-        toolchain = toolchain,
-        requested_features = ctx.features,
-        unsupported_features = ctx.disabled_features,
+    feature_configuration = _configure_features_for_binary(
+        ctx = ctx,
+        requested_features = ["static_linking_mode"],
     )
 
     binary, providers = _swift_linking_rule_impl(
@@ -222,14 +234,16 @@ def _swift_binary_impl(ctx):
 
 def _swift_test_impl(ctx):
     toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
-    feature_configuration = swift_common.configure_features(
-        toolchain = toolchain,
-        requested_features = ctx.features,
-        unsupported_features = ctx.disabled_features,
+    feature_configuration = _configure_features_for_binary(
+        ctx = ctx,
+        requested_features = ["static_linking_mode"],
     )
 
     is_bundled = (toolchain.supports_objc_interop and
-                  is_feature_enabled(SWIFT_FEATURE_BUNDLED_XCTESTS, feature_configuration))
+                  swift_common.is_enabled(
+                      feature_configuration = feature_configuration,
+                      feature_name = SWIFT_FEATURE_BUNDLED_XCTESTS,
+                  ))
 
     # If we need to run the test in an .xctest bundle, the binary must have Mach-O type `MH_BUNDLE`
     # instead of `MH_EXECUTE`.

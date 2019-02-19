@@ -71,37 +71,3 @@ SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE = "swift.use_global_module_cache"
 # files (i.e., "@args.txt") to avoid passing command lines that exceed the system limit. Toolchains
 # typically set this automatically if using a sufficiently recent version of Swift (4.2 or higher).
 SWIFT_FEATURE_USE_RESPONSE_FILES = "swift.use_response_files"
-
-def is_feature_enabled(feature, feature_configuration):
-    """Returns a value indicating whether the given feature is enabled.
-
-    This function scans the user-provided feature lists with those defined by the toolchain.
-    User-provided features always take precedence, so the user can force-enable a feature `"foo"`
-    that has been disabled by default by the toolchain if they explicitly write `features = ["foo"]`
-    in their target/package or pass `--features=foo` on the command line. Likewise, the user can
-    force-disable a feature `"foo"` that has been enabled by default by the toolchain if they
-    explicitly write `features = ["-foo"]` in their target/package or pass `--features=-foo` on the
-    command line.
-
-    If a feature is present in both the `features` and `disabled_features` lists, then disabling
-    takes precedence. Bazel should prevent this case from ever occurring when it evaluates the set
-    of features to pass to the rule context, however.
-
-    Args:
-        feature: The feature to be tested.
-        feature_configuration: A value returned by `swift_common.configure_features` that specifies
-            the enabled and disabled features of a particular target.
-
-    Returns:
-        `True` if the feature is explicitly enabled, or `False` if it is either explicitly disabled
-        or not found in any of the feature lists.
-    """
-    if feature in feature_configuration.unsupported_features:
-        return False
-    if feature in feature_configuration.requested_features:
-        return True
-    if feature in feature_configuration.toolchain.unsupported_features:
-        return False
-    if feature in feature_configuration.toolchain.requested_features:
-        return True
-    return False
