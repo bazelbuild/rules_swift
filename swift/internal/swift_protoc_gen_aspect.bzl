@@ -272,8 +272,8 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
         compile_deps = deps + aspect_ctx.attr._proto_support
 
         feature_configuration = swift_common.configure_features(
-            toolchain = toolchain,
             requested_features = aspect_ctx.features + [SWIFT_FEATURE_NO_GENERATED_HEADER],
+            swift_toolchain = toolchain,
             unsupported_features = aspect_ctx.disabled_features,
         )
 
