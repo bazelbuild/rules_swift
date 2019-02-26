@@ -1,6 +1,7 @@
 ---
 tasks:
   macos_latest:
+    name: "Latest Bazel"
     platform: macos
     bazel: latest
     build_targets:
@@ -9,6 +10,7 @@ tasks:
       - "//examples/..."
 
   macos_last_green:
+    name: "Last Green Bazel"
     platform: macos
     bazel: last_green
     build_targets:
@@ -17,6 +19,7 @@ tasks:
       - "//examples/..."
 
   ubuntu1804_latest:
+    name: "Latest Bazel"
     platform: ubuntu1804
     bazel: latest
     environment:
@@ -38,6 +41,7 @@ tasks:
       - "-//examples/apple/..."
 
   ubuntu1804_last_green:
+    name: "Last Green Bazel"
     platform: ubuntu1804
     bazel: last_green
     environment:
