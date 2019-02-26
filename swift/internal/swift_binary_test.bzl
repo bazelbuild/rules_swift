@@ -268,28 +268,26 @@ def _swift_test_impl(ctx):
         {"TEST_BINARIES_FOR_LLVM_COV": binary.short_path},
     )
 
-    # TODO(b/79527231): Replace `instrumented_files` with a declared provider when it is available.
-    return struct(
-        instrumented_files = struct(
+    return providers + [
+        DefaultInfo(
+            executable = executable,
+            files = depset(direct = [executable] + additional_test_outputs),
+            runfiles = ctx.runfiles(
+                collect_data = True,
+                collect_default = True,
+                files = ctx.files.data + additional_test_outputs,
+                transitive_files = ctx.attr._apple_coverage_support.files,
+            ),
+        ),
+        coverage_common.instrumented_files_info(
+            ctx,
             dependency_attributes = ["deps"],
             extensions = ["swift"],
             source_attributes = ["srcs"],
         ),
-        providers = providers + [
-            DefaultInfo(
-                executable = executable,
-                files = depset(direct = [executable] + additional_test_outputs),
-                runfiles = ctx.runfiles(
-                    collect_data = True,
-                    collect_default = True,
-                    files = ctx.files.data + additional_test_outputs,
-                    transitive_files = ctx.attr._apple_coverage_support.files,
-                ),
-            ),
-            testing.ExecutionInfo(toolchain.execution_requirements),
-            testing.TestEnvironment(test_environment),
-        ],
-    )
+        testing.ExecutionInfo(toolchain.execution_requirements),
+        testing.TestEnvironment(test_environment),
+    ]
 
 swift_binary = rule(
     attrs = dicts.add(
