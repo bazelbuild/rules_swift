@@ -73,25 +73,23 @@ def _swift_library_impl(ctx):
     if compile_results.output_header:
         direct_output_files.append(compile_results.output_header)
 
-    # TODO(b/79527231): Replace `instrumented_files` with a declared provider when it is available.
-    return struct(
-        instrumented_files = struct(
+    return compile_results.providers + [
+        DefaultInfo(
+            files = depset(direct = direct_output_files),
+            runfiles = ctx.runfiles(
+                collect_data = True,
+                collect_default = True,
+                files = ctx.files.data,
+            ),
+        ),
+        coverage_common.instrumented_files_info(
+            ctx,
             dependency_attributes = ["deps"],
             extensions = ["swift"],
             source_attributes = ["srcs"],
         ),
-        providers = compile_results.providers + [
-            DefaultInfo(
-                files = depset(direct = direct_output_files),
-                runfiles = ctx.runfiles(
-                    collect_data = True,
-                    collect_default = True,
-                    files = ctx.files.data,
-                ),
-            ),
-            OutputGroupInfo(**compile_results.output_groups),
-        ],
-    )
+        OutputGroupInfo(**compile_results.output_groups),
+    ]
 
 swift_library = rule(
     attrs = swift_common.library_rule_attrs(additional_deps_aspects = [
