@@ -121,7 +121,7 @@ def swift_rules_dependencies():
         git_repository,
         name = "build_bazel_apple_support",
         remote = "https://github.com/bazelbuild/apple_support.git",
-        tag = "0.4.0",
+        tag = "0.5.0",
     )
 
     _maybe(

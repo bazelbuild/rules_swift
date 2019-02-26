@@ -21,7 +21,9 @@ repository.
 
 ## Compatibility
 
-These rules have been verified to work with **Bazel 0.19.0.**
+Please refer to the
+[release notes](https://github.com/bazelbuild/rules_swift/releases) for a given
+release to see which version of Bazel it is compatible with.
 
 ## Quick Setup
 
@@ -49,7 +51,7 @@ rules you wish to depend on:
 git_repository(
     name = "build_bazel_rules_swift",
     remote = "https://github.com/bazelbuild/rules_swift.git",
-    tag = "0.4.0",
+    tag = "0.7.0",
 )
 
 load(
