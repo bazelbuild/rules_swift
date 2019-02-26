@@ -331,7 +331,7 @@ binary that can run on macOS, you must specify the correct CPU and platform on t
 follows:
 
 ```shell
-$ bazel build //package:target --cpu=darwin_x86_64 --apple_platform_type=macos
+$ bazel build //package:target
 ```
 
 If you want to create a multi-architecture binary or a bundled application, please use one of the

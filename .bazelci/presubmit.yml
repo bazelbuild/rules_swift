@@ -3,18 +3,8 @@ platforms:
   macos:
     environment:
       CC: clang
-    build_flags:
-      # For historical reasons, the default platform for Apple builds is iOS. This
-      # ensures that we build artifacts that run on macOS.
-      - "--cpu=darwin_x86_64"
-      - "--apple_platform_type=macos"
     build_targets:
       - "//examples/..."
-    test_flags:
-      # For historical reasons, the default platform for Apple builds is iOS. This
-      # ensures that we build artifacts that run on macOS.
-      - "--cpu=darwin_x86_64"
-      - "--apple_platform_type=macos"
     test_targets:
       - "//examples/..."
   ubuntu1804:
