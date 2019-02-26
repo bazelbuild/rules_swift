@@ -1,7 +1,0 @@
-# This file will be used as the bazelrc file on macOS. Add settings to it if
-# you need to tweak Bazel's behavior or resource usage on that platform.
-
-# For historical reasons, the default platform for Apple builds is iOS. This
-# ensures that we build artifacts that run on macOS.
-build --cpu=darwin_x86_64
-build --apple_platform_type=macos
