@@ -15,7 +15,7 @@ If you run into any problems with these rules, please
 
 ## Reference Documentation
 
-[Click here](https://github.com/bazelbuild/rules_swift/tree/master/doc/index.md)
+[Click here](https://github.com/bazelbuild/rules_swift/tree/master/doc)
 for the reference documentation for the rules and other definitions in this
 repository.
 
