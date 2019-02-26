@@ -33,7 +33,7 @@ def _build_providers_for_cc_target(target, aspect_ctx):
         elif library.static_library:
             static_libraries.append(library.static_library)
 
-    return [SwiftCcLibsInfo(libraries = depset(direct = static_libraries))]
+    return [SwiftCcLibsInfo(libraries = depset(direct = static_libraries, order = "topological"))]
 
 def _build_transitive_providers(aspect_ctx):
     """Builds a `SwiftCcLibsInfo` provider for a non-`cc`-propagating target.
@@ -52,7 +52,7 @@ def _build_transitive_providers(aspect_ctx):
         for dep in aspect_ctx.rule.attr.deps:
             if SwiftCcLibsInfo in dep:
                 all_libraries.append(dep[SwiftCcLibsInfo].libraries)
-    all_libraries_set = depset(transitive = all_libraries)
+    all_libraries_set = depset(transitive = all_libraries, order = "topological")
 
     return [SwiftCcLibsInfo(libraries = all_libraries_set)]
 
