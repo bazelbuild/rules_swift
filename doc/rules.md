@@ -33,14 +33,7 @@ On Linux, this rule produces an executable binary for the desired target archite
 
 On Apple platforms, this rule produces a _single-architecture_ binary; it does not produce fat
 binaries. As such, this rule is mainly useful for creating Swift tools intended to run on the
-local build machine. However, for historical reasons, the default Apple platform in Bazel is
-**iOS** instead of macOS. Therefore, if you wish to build a simple single-architecture Swift
-binary that can run on macOS, you must specify the correct CPU and platform on the command line as
-follows:
-
-```shell
-$ bazel build //package:target --cpu=darwin_x86_64 --apple_platform_type=macos
-```
+local build machine.
 
 If you want to create a multi-architecture binary or a bundled application, please use one of the
 platform-specific application rules in [rules_apple](https://github.com/bazelbuild/rules_apple)

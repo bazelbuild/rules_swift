@@ -36,7 +36,6 @@ if [[ -n "${BAZEL:-}" ]]; then
   # Since they are environment variables, they can't be Bash arrays, so we use
   # double-quoted strings to set them instead and just let them expand below.
   set -x
-  BAZELRC_ARGS=("--bazelrc=.travis/bazelrc.${TRAVIS_OS_NAME}")
   ALL_BUILD_ARGS=(
       --show_progress_rate_limit=30.0
       --verbose_failures
@@ -57,8 +56,8 @@ if [[ -n "${BAZEL:-}" ]]; then
     ALL_TEST_ARGS+=("--test_tag_filters=${TAGS}")
   fi
 
-  bazel "${BAZELRC_ARGS[@]}" build "${ALL_BUILD_ARGS[@]}" -- ${TARGETS}
-  bazel "${BAZELRC_ARGS[@]}" test "${ALL_BUILD_ARGS[@]}" "${ALL_TEST_ARGS[@]}" -- ${TARGETS}
+  bazel build "${ALL_BUILD_ARGS[@]}" -- ${TARGETS}
+  bazel test "${ALL_BUILD_ARGS[@]}" "${ALL_TEST_ARGS[@]}" -- ${TARGETS}
   set +x
 fi
 
