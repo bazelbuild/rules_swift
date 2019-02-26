@@ -20,16 +20,6 @@ matrix:
       sudo: false
       env: BUILDIFIER=RELEASE
 
-    - os: linux
-      dist: trusty
-      sudo: required
-      env:
-        - BAZEL=HEAD SWIFT_VERSION=4.2.1 CC=clang TARGETS="//examples/... -//examples/apple/..."
-    - os: osx
-      osx_image: xcode10.1
-      env:
-        - BAZEL=HEAD TARGETS=//examples/...
-
 before_install:
   - .travis/install.sh
 
