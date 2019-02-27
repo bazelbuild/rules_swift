@@ -60,6 +60,10 @@ SWIFT_FEATURE_NO_GENERATED_HEADER = "swift.no_generated_header"
 # present.
 SWIFT_FEATURE_NO_GENERATED_MODULE_MAP = "swift.no_generated_module_map"
 
+# If enabled, builds using the "opt" compilation mode will invoke `swiftc` with the
+# `-whole-module-optimization` flag (in addition to `-O`).
+SWIFT_FEATURE_OPT_USES_WMO = "swift.opt_uses_wmo"
+
 # If enabled, Swift compilation actions will use the same global Clang module cache used by
 # Objective-C compilation actions. This is disabled by default because under some circumstances
 # Clang module cache corruption can cause the Swift compiler to crash (sometimes when switching

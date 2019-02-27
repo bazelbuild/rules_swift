@@ -46,7 +46,7 @@ load(
     "register_autolink_extract_action",
     "write_objc_header_module_map",
 )
-load(":debugging.bzl", "ensure_swiftmodule_is_embedded", "is_debugging")
+load(":debugging.bzl", "ensure_swiftmodule_is_embedded")
 load(":deps.bzl", "collect_link_libraries")
 load(":derived_files.bzl", "derived_files")
 load(
@@ -57,6 +57,7 @@ load(
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_NO_GENERATED_HEADER",
     "SWIFT_FEATURE_NO_GENERATED_MODULE_MAP",
+    "SWIFT_FEATURE_OPT_USES_WMO",
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
     "SWIFT_FEATURE_USE_RESPONSE_FILES",
 )
@@ -67,13 +68,6 @@ load(
     "SwiftToolchainInfo",
     "merge_swift_clang_module_infos",
 )
-
-# The compilation modes supported by Bazel.
-_VALID_COMPILATION_MODES = [
-    "dbg",
-    "fastbuild",
-    "opt",
-]
 
 # The Swift copts to pass for various sanitizer features.
 _SANITIZER_FEATURE_FLAG_MAP = {
@@ -262,15 +256,17 @@ support location expansion.
         },
     )
 
-def _compilation_mode_copts(allow_testing, compilation_mode, wants_dsyms = False):
-    """Returns `swiftc` compilation flags that match the given compilation mode.
+def _compilation_mode_copts(
+        allow_testing,
+        feature_configuration,
+        wants_dsyms = False):
+    """Returns `swiftc` compilation flags that match the current compilation mode.
 
     Args:
       allow_testing: If `True`, the `-enable-testing` flag will also be added to
           "dbg" and "fastbuild" builds. This argument is ignored for "opt" builds.
-      compilation_mode: The compilation mode string ("fastbuild", "dbg", or
-          "opt"). The build will fail if this is `None` or some other unrecognized
-          mode.
+      feature_configuration: A feature configuration obtained from
+          `swift_common.configure_features`.
       wants_dsyms: If `True`, the caller is requesting that the debug information
           be extracted into dSYM binaries. This affects the debug mode used during
           compilation.
@@ -278,17 +274,26 @@ def _compilation_mode_copts(allow_testing, compilation_mode, wants_dsyms = False
     Returns:
       A list of strings containing copts that should be passed to Swift.
     """
-    if compilation_mode not in _VALID_COMPILATION_MODES:
-        fail("'compilation_mode' must be one of: {}".format(
-            _VALID_COMPILATION_MODES,
-        ))
+    is_dbg = _is_enabled(feature_configuration = feature_configuration, feature_name = "dbg")
+    is_fastbuild = _is_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = "fastbuild",
+    )
+    is_opt = _is_enabled(feature_configuration = feature_configuration, feature_name = "opt")
 
     # The combinations of flags used here mirror the descriptions of these
-    # compilation modes given in the Bazel documentation.
+    # compilation modes given in the Bazel documentation:
+    # https://docs.bazel.build/versions/master/user-manual.html#flag--compilation_mode
     flags = []
-    if compilation_mode == "opt":
-        flags += ["-O", "-DNDEBUG"]
-    elif compilation_mode in ("dbg", "fastbuild"):
+    if is_opt:
+        flags.extend(["-O", "-DNDEBUG"])
+        if _is_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_OPT_USES_WMO,
+        ):
+            flags.append("-whole-module-optimization")
+
+    elif is_dbg or is_fastbuild:
         if allow_testing:
             flags.append("-enable-testing")
 
@@ -297,33 +302,47 @@ def _compilation_mode_copts(allow_testing, compilation_mode, wants_dsyms = False
         # exclusively just compile to object files directly, we need to manually
         # pass the following frontend option to ensure that LLDB has the necessary
         # import search paths to find definitions during debugging.
-        flags += ["-Onone", "-DDEBUG", "-Xfrontend", "-serialize-debugging-options"]
+        flags.extend(["-Onone", "-DDEBUG", "-Xfrontend", "-serialize-debugging-options"])
 
     # The combination of dsymutil and -gline-tables-only appears to cause
     # spurious warnings about symbols in the debug map, so if the caller is
     # requesting dSYMs, then force `-g` regardless of compilation mode.
-    if compilation_mode == "dbg" or wants_dsyms:
+    if is_dbg or wants_dsyms:
         flags.append("-g")
-    elif compilation_mode == "fastbuild":
+    elif is_fastbuild:
         flags.append("-gline-tables-only")
 
     return flags
 
-def _coverage_copts(configuration):
+def _coverage_copts(feature_configuration):
     """Returns `swiftc` compilation flags for code converage if enabled.
 
     Args:
-      configuration: The default configuration from which certain compilation
-          options are determined, such as whether coverage is enabled. This object
-          should be one obtained from a rule's `ctx.configuraton` field. If
-          omitted, no default-configuration-specific options will be used.
+        feature_configuration: The feature configuration.
 
     Returns:
-      A list of compiler flags that enable code coverage if requested.
+        A list of compiler flags that enable code coverage if requested.
     """
-    if configuration and configuration.coverage_enabled:
+    if _is_enabled(feature_configuration = feature_configuration, feature_name = "coverage"):
         return ["-profile-generate", "-profile-coverage-mapping"]
     return []
+
+def _is_debugging(feature_configuration):
+    """Returns `True` if the current compilation mode produces debug info.
+
+    We replicate the behavior of the C++ build rules for Swift, which are described here:
+    https://docs.bazel.build/versions/master/user-manual.html#flag--compilation_mode
+
+    Args:
+        feature_configuration: The feature configuration.
+
+    Returns:
+        `True` if the current compilation mode produces debug info.
+    """
+    return (
+        _is_enabled(feature_configuration = feature_configuration, feature_name = "dbg") or
+        _is_enabled(feature_configuration = feature_configuration, feature_name = "fastbuild")
+    )
 
 def _sanitizer_copts(feature_configuration):
     """Returns `swiftc` compilation flags for any requested sanitizer features.
@@ -360,20 +379,34 @@ def _global_module_cache_path(genfiles_dir):
     # java/com/google/devtools/build/lib/rules/objc/CompilationSupport.java.
     return paths.join(genfiles_dir.path, "_objc_module_cache")
 
-def _is_wmo(copts, swift_fragment):
+def _is_wmo(copts, feature_configuration, swift_fragment):
     """Returns a value indicating whether a compilation will use whole module optimization.
 
     Args:
-      copts: A list of compiler flags to scan for WMO usage.
-      swift_fragment: The `swift` configuration fragment from Bazel.
+        copts: A list of compiler flags to scan for WMO usage.
+        feature_configuration: The Swift feature configuration, as returned from
+            `swift_common.configure_features`.
+        swift_fragment: The `swift` configuration fragment from Bazel.
 
     Returns:
-      True if WMO is enabled in the given list of flags.
+        True if WMO is enabled in the given list of flags.
     """
-    all_copts = copts + swift_fragment.copts()
-    return ("-wmo" in all_copts or
-            "-whole-module-optimization" in all_copts or
-            "-force-single-frontend-invocation" in all_copts)
+
+    # First, check the feature configuration to see if the current compilation mode implies
+    # whole-module-optimization.
+    is_opt = _is_enabled(feature_configuration = feature_configuration, feature_name = "opt")
+    opt_uses_wmo = _is_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_OPT_USES_WMO,
+    )
+    if is_opt and opt_uses_wmo:
+        return True
+
+    # Otherwise, check any explicit copts the user may have set on the target or command line.
+    explicit_copts = copts + swift_fragment.copts()
+    return ("-wmo" in explicit_copts or
+            "-whole-module-optimization" in explicit_copts or
+            "-force-single-frontend-invocation" in explicit_copts)
 
 def _cc_feature_configuration(feature_configuration):
     """Returns the C++ feature configuration nested inside the given Swift feature configuration.
@@ -390,7 +423,6 @@ def _cc_feature_configuration(feature_configuration):
 def _compile_as_objects(
         actions,
         arguments,
-        compilation_mode,
         module_name,
         srcs,
         swift_fragment,
@@ -399,6 +431,7 @@ def _compile_as_objects(
         additional_input_depsets = [],
         additional_outputs = [],
         allow_testing = True,
+        compilation_mode = None,
         configuration = None,
         copts = [],
         defines = [],
@@ -412,8 +445,6 @@ def _compile_as_objects(
       actions: The context's `actions` object.
       arguments: A list of `Args` objects that provide additional arguments to the
           compiler, not including the `copts` list.
-      compilation_mode: The Bazel compilation mode; must be `dbg`, `fastbuild`, or
-          `opt`.
       module_name: The name of the Swift module being compiled. This must be
           present and valid; use `swift_common.derive_module_name` to generate a
           default from the target's label if needed.
@@ -429,10 +460,10 @@ def _compile_as_objects(
           treated as additional outputs of the compilation action.
       allow_testing: Indicates whether the module should be compiled with testing
           enabled (only when the compilation mode is `fastbuild` or `dbg`).
-      configuration: The default configuration from which certain compilation
-          options are determined, such as whether coverage is enabled. This object
-          should be one obtained from a rule's `ctx.configuraton` field. If
-          omitted, no default-configuration-specific options will be used.
+      compilation_mode: This argument is no longer used and will be removed in a
+          future version.
+      configuration: This argument is no longer used and will be removed in a
+          future version.
       copts: A list (**not** an `Args` object) of compiler flags that apply to the
           target being built. These flags, along with those from Bazel's Swift
           configuration fragment (i.e., `--swiftcopt` command line flags) are
@@ -476,6 +507,7 @@ def _compile_as_objects(
       * `output_objects`: The object (`.o`) files that were produced by the
         compiler.
     """
+    _ignore = [compilation_mode, configuration]
 
     # TODO(b/112900284): Make this a required argument.
     if not feature_configuration:
@@ -485,7 +517,7 @@ def _compile_as_objects(
     # on a Mac Pro for historical reasons.
     # TODO(b/32571265): Generalize this based on platform and core count when an
     # API to obtain this is available.
-    if _is_wmo(copts, swift_fragment):
+    if _is_wmo(copts, feature_configuration, swift_fragment):
         # We intentionally don't use `+=` or `extend` here to ensure that a
         # copy is made instead of extending the original.
         copts = copts + ["-num-threads", "12"]
@@ -532,14 +564,12 @@ def _compile_as_objects(
 
     basic_inputs = _swiftc_command_line_and_inputs(
         args = compile_args,
-        compilation_mode = compilation_mode,
         module_name = module_name,
         srcs = srcs,
         swift_fragment = swift_fragment,
         toolchain = toolchain,
         additional_input_depsets = additional_input_depsets,
         allow_testing = allow_testing,
-        configuration = configuration,
         copts = copts,
         defines = defines,
         deps = deps,
@@ -570,7 +600,7 @@ def _compile_as_objects(
 
     # Ensure that the .swiftmodule file is embedded in the final library or binary
     # for debugging purposes.
-    if is_debugging(compilation_mode):
+    if _is_debugging(feature_configuration = feature_configuration):
         module_embed_results = ensure_swiftmodule_is_embedded(
             actions = actions,
             swiftmodule = out_module,
@@ -614,7 +644,6 @@ def _compile_as_objects(
 def _compile_as_library(
         actions,
         bin_dir,
-        compilation_mode,
         label,
         module_name,
         srcs,
@@ -623,6 +652,7 @@ def _compile_as_library(
         additional_inputs = [],
         allow_testing = True,
         alwayslink = False,
+        compilation_mode = None,
         configuration = None,
         copts = [],
         defines = [],
@@ -645,8 +675,6 @@ def _compile_as_library(
     Args:
       actions: The rule context's `actions` object.
       bin_dir: The Bazel `*-bin` directory root.
-      compilation_mode: The Bazel compilation mode; must be `dbg`, `fastbuild`, or
-          `opt`.
       label: The target label for which the code is being compiled, which is used
           to determine unique file paths for the outputs.
       module_name: The name of the Swift module being compiled. This must be
@@ -663,10 +691,10 @@ def _compile_as_library(
       alwayslink: Indicates whether the object files in the library should always
           be always be linked into any binaries that depend on it, even if some
           contain no symbols referenced by the binary.
-      configuration: The default configuration from which certain compilation
-          options are determined, such as whether coverage is enabled. This object
-          should be one obtained from a rule's `ctx.configuraton` field. If
-          omitted, no default-configuration-specific options will be used.
+      compilation_mode: This argument is no longer used and will be removed in a
+          future version.
+      configuration: This argument is no longer used and will be removed in a
+          future version.
       copts: Additional flags that should be passed to `swiftc`.
       defines: Symbols that should be defined by passing `-D` to the compiler.
       deps: Dependencies of the target being compiled. These targets must
@@ -714,6 +742,7 @@ def _compile_as_library(
         rule. This includes the `SwiftInfo` provider, and if Objective-C interop
         is enabled on the toolchain, an `apple_common.Objc` provider as well.
     """
+    _ignore = [compilation_mode, configuration]
 
     # TODO(b/112900284): Make this a required argument.
     if not feature_configuration:
@@ -800,7 +829,6 @@ def _compile_as_library(
     compile_results = _compile_as_objects(
         actions = actions,
         arguments = [library_copts],
-        compilation_mode = compilation_mode,
         copts = copts,
         defines = defines,
         feature_configuration = feature_configuration,
@@ -812,7 +840,6 @@ def _compile_as_library(
         additional_input_depsets = compile_input_depsets,
         additional_outputs = additional_outputs,
         allow_testing = allow_testing,
-        configuration = configuration,
         deps = deps,
         genfiles_dir = genfiles_dir,
         objc_fragment = objc_fragment,
@@ -1128,13 +1155,13 @@ def _swift_runtime_linkopts(is_static, toolchain, is_test = False):
 
 def _swiftc_command_line_and_inputs(
         args,
-        compilation_mode,
         module_name,
         srcs,
         swift_fragment,
         toolchain,
         additional_input_depsets = [],
         allow_testing = True,
+        compilation_mode = None,
         configuration = None,
         copts = [],
         defines = [],
@@ -1155,8 +1182,6 @@ def _swiftc_command_line_and_inputs(
 
     Args:
       args: An `Args` object into which the command line arguments will be added.
-      compilation_mode: The Bazel compilation mode; must be `dbg`, `fastbuild`, or
-          `opt`.
       module_name: The name of the Swift module being compiled. This must be
           present and valid; use `swift_common.derive_module_name` to generate a
           default from the target's label if needed.
@@ -1168,10 +1193,10 @@ def _swiftc_command_line_and_inputs(
           action because they are referenced by compiler flags.
       allow_testing: Indicates whether the module should be compiled with testing
           enabled (only when the compilation mode is `fastbuild` or `dbg`).
-      configuration: The default configuration from which certain compilation
-          options are determined, such as whether coverage is enabled. This object
-          should be one obtained from a rule's `ctx.configuraton` field. If
-          omitted, no default-configuration-specific options will be used.
+      compilation_mode: This argument is no longer used and will be removed in a
+          future version.
+      configuration: This argument is no longer used and will be removed in a
+          future version.
       copts: A list (**not** an `Args` object) of compiler flags that apply to the
           target being built. These flags, along with those from Bazel's Swift
           configuration fragment (i.e., `--swiftcopt` command line flags) are
@@ -1198,6 +1223,7 @@ def _swiftc_command_line_and_inputs(
       of the Bazel action that spawns a tool with the computed command line (i.e.,
       any source files, referenced module maps and headers, and so forth.)
     """
+    _ignore = [compilation_mode, configuration]
 
     # TODO(b/112900284): Make this a required argument.
     if not feature_configuration:
@@ -1210,10 +1236,10 @@ def _swiftc_command_line_and_inputs(
 
     args.add_all(_compilation_mode_copts(
         allow_testing = allow_testing,
-        compilation_mode = compilation_mode,
+        feature_configuration = feature_configuration,
         wants_dsyms = objc_fragment.generate_dsym if objc_fragment else False,
     ))
-    args.add_all(_coverage_copts(configuration = configuration))
+    args.add_all(_coverage_copts(feature_configuration = feature_configuration))
     args.add_all(_sanitizer_copts(feature_configuration = feature_configuration))
     args.add_all(["-Xfrontend", "-color-diagnostics"])
 
@@ -1229,7 +1255,7 @@ def _swiftc_command_line_and_inputs(
     # Do not enable batch mode if the user requested WMO; this silences an "ignoring
     # '-enable-batch-mode' because '-whole-module-optimization' was also specified" warning.
     if (
-        not _is_wmo(copts, swift_fragment) and
+        not _is_wmo(copts, feature_configuration, swift_fragment) and
         swift_common.is_enabled(
             feature_configuration = feature_configuration,
             feature_name = SWIFT_FEATURE_ENABLE_BATCH_MODE,
@@ -1318,7 +1344,6 @@ swift_common = struct(
     build_swift_info = _build_swift_info,
     cc_feature_configuration = _cc_feature_configuration,
     compilation_attrs = _compilation_attrs,
-    compilation_mode_copts = _compilation_mode_copts,
     compile_as_library = _compile_as_library,
     compile_as_objects = _compile_as_objects,
     configure_features = _configure_features,
