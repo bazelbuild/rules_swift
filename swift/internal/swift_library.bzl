@@ -47,7 +47,6 @@ def _swift_library_impl(ctx):
     compile_results = swift_common.compile_as_library(
         actions = ctx.actions,
         bin_dir = ctx.bin_dir,
-        compilation_mode = ctx.var["COMPILATION_MODE"],
         label = ctx.label,
         module_name = module_name,
         srcs = ctx.files.srcs,
@@ -56,7 +55,6 @@ def _swift_library_impl(ctx):
         additional_inputs = ctx.files.swiftc_inputs,
         alwayslink = ctx.attr.alwayslink,
         copts = copts,
-        configuration = ctx.configuration,
         defines = ctx.attr.defines,
         deps = ctx.attr.deps,
         feature_configuration = feature_configuration,

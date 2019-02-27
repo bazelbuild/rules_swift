@@ -79,17 +79,6 @@ def ensure_swiftmodule_is_embedded(
         objects_to_link = objects_to_link,
     )
 
-def is_debugging(compilation_mode):
-    """Returns `True` if the given compilation mode produces debug info.
-
-    Args:
-      compilation_mode: The compilation mode being used by Bazel.
-
-    Returns:
-      `True` if the given compilation mode produces debug info.
-    """
-    return compilation_mode in ("dbg", "fastbuild")
-
 def _register_modulewrap_action(
         actions,
         object,

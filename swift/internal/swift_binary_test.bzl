@@ -109,7 +109,6 @@ def _swift_linking_rule_impl(
         compile_results = swift_common.compile_as_objects(
             actions = ctx.actions,
             arguments = [],
-            compilation_mode = ctx.var["COMPILATION_MODE"],
             copts = copts,
             defines = ctx.attr.defines,
             feature_configuration = feature_configuration,
@@ -119,7 +118,6 @@ def _swift_linking_rule_impl(
             target_name = ctx.label.name,
             toolchain = toolchain,
             additional_input_depsets = [depset(direct = additional_inputs)],
-            configuration = ctx.configuration,
             deps = ctx.attr.deps,
             genfiles_dir = ctx.genfiles_dir,
             objc_fragment = objc_fragment,
