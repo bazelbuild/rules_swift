@@ -255,7 +255,6 @@ enabled.
             providers = [[CcInfo]],
         ),
         "_cc_toolchain": attr.label(
-            cfg = "host",
             default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
             doc = """
 The C++ toolchain from which other tools needed by the Swift toolchain (such as
