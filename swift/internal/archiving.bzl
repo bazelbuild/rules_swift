@@ -14,8 +14,7 @@
 
 """Implementation of static library archiving logic for Swift."""
 
-load(":actions.bzl", "run_toolchain_action", "run_toolchain_shell_action")
-load(":derived_files.bzl", "derived_files")
+load(":actions.bzl", "run_toolchain_action")
 
 def register_static_archive_action(
         actions,
