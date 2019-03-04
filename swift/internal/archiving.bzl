@@ -92,41 +92,19 @@ def _register_ar_action(
           executed.
       toolchain: The `SwiftToolchainInfo` provider of the toolchain.
     """
-    mri_commands = [
-        "create /tmp/%s" % output.basename,
-    ] + [
-        "addmod %s" % object_file.path
-        for object_file in objects
-    ] + [
-        "addlib %s" % library.path
-        for library in libraries
-    ] + [
-        "save",
-        "end",
-    ]
-
-    mri_script = derived_files.ar_mri_script(actions, for_archive = output)
-    actions.write(
-        content = "\n".join(mri_commands),
-        output = mri_script,
-    )
-
-    command = " && ".join([
-        'MRI_SCRIPT="$PWD/$1"',
-        'ARCHIVE="$PWD/$2"',
-        '%s -M < "$MRI_SCRIPT"' % ar_executable,
-        'cp /tmp/%s "$ARCHIVE"' % output.basename,
-    ])
 
     args = actions.args()
-    args.add(mri_script)
+    args.add("cr")
     args.add(output)
 
-    run_toolchain_shell_action(
+    args.add_all(objects)
+    args.add_all(libraries)
+
+    run_toolchain_action(
         actions = actions,
         arguments = [args],
-        command = command,
-        inputs = [mri_script] + libraries + objects,
+        executable = ar_executable,
+        inputs = libraries + objects,
         mnemonic = mnemonic,
         outputs = [output],
         progress_message = progress_message,
