@@ -17,55 +17,6 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load(":utils.bzl", "owner_relative_path")
 
-def _ar_mri_script(actions, for_archive):
-    """Declares a file for the MRI script that will be used to create an archive.
-
-    Args:
-      actions: The context's actions object.
-      for_archive: A `File` representing the static archive that will be created.
-
-    Returns:
-      The declared `File`.
-    """
-    return actions.declare_file(
-        "{}.mri".format(for_archive.basename),
-        sibling = for_archive,
-    )
-
-def _ar_safe_object_path(path):
-    """Return the path for a new .o file that is safe for a GNU `ar` MRI script.
-
-    GNU `ar` uses an extremely primitive lex/yacc-based parser for MRI scripts
-    that only supports the following characters in file paths: A-Z, a-z, 0-9,
-    slash (/), backslash (\), dollar sign ($), colon (:), period (.), hyphen (-),
-    and underscore (_). Notably, it does *not* support the plus sign (+), which is
-    quite commonly used in Swift to denote files that contain extensions. This
-    file returns an MRI-safe .o file name for a particular source file by applying
-    the following mapping:
-
-      * _  ->  __
-      * +  ->  _P
-      * All other characters stay the same.
-
-    This is a helper function and is not exported in the `derived_files` module.
-
-    Args:
-      path: The path of the file being created.
-
-    Returns:
-      A safe version of the file path.
-    """
-    safe_path = ""
-    for i in range(0, len(path)):
-        ch = path[i]
-        if ch == "_":
-            safe_path += "__"
-        elif ch == "+":
-            safe_path += "_P"
-        else:
-            safe_path += ch
-    return safe_path
-
 def _autolink_flags(actions, target_name):
     """Declares the response file into which autolink flags will be extracted.
 
@@ -138,7 +89,7 @@ def _intermediate_object_file(actions, target_name, src):
     """
     dirname, basename = _intermediate_frontend_file_path(target_name, src)
     return actions.declare_file(
-        paths.join(dirname, _ar_safe_object_path("{}.o".format(basename))),
+        paths.join(dirname, "{}.o".format(basename)),
     )
 
 def _module_map(actions, target_name):
@@ -284,7 +235,7 @@ def _whole_module_object_file(actions, target_name):
     Returns:
       The declared `File`.
     """
-    return actions.declare_file(_ar_safe_object_path("{}.o".format(target_name)))
+    return actions.declare_file("{}.o".format(target_name))
 
 def _xctest_bundle(actions, target_name):
     """Declares a directory representing the `.xctest` bundle of a Darwin `swift_test`.
@@ -311,7 +262,6 @@ def _xctest_runner_script(actions, target_name):
     return actions.declare_file("{}.test-runner.sh".format(target_name))
 
 derived_files = struct(
-    ar_mri_script = _ar_mri_script,
     autolink_flags = _autolink_flags,
     executable = _executable,
     indexstore_directory = _indexstore_directory,
