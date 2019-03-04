@@ -14,15 +14,13 @@
 
 """Implementation of static library archiving logic for Swift."""
 
-load(":actions.bzl", "run_toolchain_action", "run_toolchain_shell_action")
-load(":derived_files.bzl", "derived_files")
+load(":actions.bzl", "run_toolchain_action")
 
 def register_static_archive_action(
         actions,
         ar_executable,
         output,
         toolchain,
-        libraries = [],
         mnemonic = "Archive",
         objects = [],
         progress_message = None):
@@ -34,8 +32,6 @@ def register_static_archive_action(
           archive, if it should be used.
       output: A `File` to which the output archive will be written.
       toolchain: The `SwiftToolchainInfo` provider of the toolchain.
-      libraries: A list of `File`s representing static libraries whose contents
-          will be merged into the output archive.
       mnemonic: The mnemonic to display when the action is executed.
       objects: A list of `File`s denoting object (.o) files that will be merged
           into the archive.
@@ -46,7 +42,6 @@ def register_static_archive_action(
         _register_ar_action(
             actions = actions,
             ar_executable = ar_executable,
-            libraries = libraries,
             mnemonic = mnemonic,
             objects = objects,
             output = output,
@@ -56,7 +51,6 @@ def register_static_archive_action(
     else:
         _register_libtool_action(
             actions = actions,
-            libraries = libraries,
             mnemonic = mnemonic,
             objects = objects,
             output = output,
@@ -67,7 +61,6 @@ def register_static_archive_action(
 def _register_ar_action(
         actions,
         ar_executable,
-        libraries,
         mnemonic,
         objects,
         output,
@@ -82,8 +75,6 @@ def _register_ar_action(
       actions: The object used to register actions.
       ar_executable: The path to the `ar` executable to use when creating the
           archive, if it should be used.
-      libraries: A list of `File`s representing static libraries whose contents
-          will be merged into the output archive.
       mnemonic: The mnemonic to display when the action is executed.
       objects: A list of `File`s denoting object (.o) files that will be merged
           into the archive.
@@ -92,41 +83,17 @@ def _register_ar_action(
           executed.
       toolchain: The `SwiftToolchainInfo` provider of the toolchain.
     """
-    mri_commands = [
-        "create /tmp/%s" % output.basename,
-    ] + [
-        "addmod %s" % object_file.path
-        for object_file in objects
-    ] + [
-        "addlib %s" % library.path
-        for library in libraries
-    ] + [
-        "save",
-        "end",
-    ]
-
-    mri_script = derived_files.ar_mri_script(actions, for_archive = output)
-    actions.write(
-        content = "\n".join(mri_commands),
-        output = mri_script,
-    )
-
-    command = " && ".join([
-        'MRI_SCRIPT="$PWD/$1"',
-        'ARCHIVE="$PWD/$2"',
-        '%s -M < "$MRI_SCRIPT"' % ar_executable,
-        'cp /tmp/%s "$ARCHIVE"' % output.basename,
-    ])
 
     args = actions.args()
-    args.add(mri_script)
+    args.add("cr")
     args.add(output)
+    args.add_all(objects)
 
-    run_toolchain_shell_action(
+    run_toolchain_action(
         actions = actions,
         arguments = [args],
-        command = command,
-        inputs = [mri_script] + libraries + objects,
+        executable = ar_executable,
+        inputs = objects,
         mnemonic = mnemonic,
         outputs = [output],
         progress_message = progress_message,
@@ -135,7 +102,6 @@ def _register_ar_action(
 
 def _register_libtool_action(
         actions,
-        libraries,
         mnemonic,
         objects,
         output,
@@ -148,8 +114,6 @@ def _register_libtool_action(
 
     Args:
       actions: The object used to register actions.
-      libraries: A list of `File`s representing static libraries whose contents
-          will be merged into the output archive.
       mnemonic: The mnemonic to display when the action is executed.
       objects: A list of `File`s denoting object (.o) files that will be merged
           into the archive.
@@ -170,13 +134,12 @@ def _register_libtool_action(
     filelist.set_param_file_format("multiline")
     filelist.use_param_file("%s", use_always = True)
     filelist.add_all(objects)
-    filelist.add_all(libraries)
 
     run_toolchain_action(
         actions = actions,
         arguments = [args, filelist],
         executable = "/usr/bin/libtool",
-        inputs = libraries + objects,
+        inputs = objects,
         mnemonic = mnemonic,
         outputs = [output],
         progress_message = progress_message,
