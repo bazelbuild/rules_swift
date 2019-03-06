@@ -313,6 +313,8 @@ def _compilation_mode_copts(
         # pass the following frontend option to ensure that LLDB has the necessary
         # import search paths to find definitions during debugging.
         flags.extend(["-Onone", "-DDEBUG", "-Xfrontend", "-serialize-debugging-options"])
+    else:
+        fail("The build's compilation_mode wasn't matched")
 
     # The combination of dsymutil and -gline-tables-only appears to cause
     # spurious warnings about symbols in the debug map, so if the caller is
