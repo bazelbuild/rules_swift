@@ -51,10 +51,7 @@ if [[ -n "${BUILDIFIER:-}" ]]; then
     # uninitialized has issues:
     # - https://github.com/bazelbuild/buildtools/issues/549
     # - https://github.com/bazelbuild/buildtools/issues/550
-    # rule-impl-return doesn't deal well with having to return
-    #   legacy style, work being done to help with this, just
-    #   not ready yet.
-    --warnings=-rule-impl-return,-uninitialized
+    --warnings=-uninitialized
   )
 
   # Check for lint issues?
