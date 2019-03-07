@@ -62,4 +62,9 @@ tasks:
       - "//examples/..."
       - "-//examples/apple/..."
 
-buildifier: latest
+buildifier:
+  version: latest
+  # uninitialized has issues:
+  # - https://github.com/bazelbuild/buildtools/issues/549
+  # - https://github.com/bazelbuild/buildtools/issues/550
+  warnings: -uninitialized
