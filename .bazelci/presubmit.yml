@@ -62,4 +62,4 @@ tasks:
       - "//examples/..."
       - "-//examples/apple/..."
 
-buildifier: true
+buildifier: latest
