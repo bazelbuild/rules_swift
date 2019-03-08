@@ -375,8 +375,13 @@ def _swift_apple_target_triple(cpu, platform, version):
     if platform_string == "macos":
         platform_string = "macosx"
 
-    return "{cpu}-apple-{platform}{version}".format(
+    environment = ""
+    if not platform.is_device:
+        environment = "-simulator"
+
+    return "{cpu}-apple-{platform}{version}{environment}".format(
         cpu = cpu,
+        environment = environment,
         platform = platform_string,
         version = version,
     )
