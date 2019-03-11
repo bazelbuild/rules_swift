@@ -39,12 +39,13 @@ def _default_linker_opts(
         apple_toolchain,
         platform,
         target,
+        xcode_config,
         is_static,
         is_test):
     """Returns options that should be passed by default to `clang` when linking.
 
     This function is wrapped in a `partial` that will be propagated as part of the toolchain
-    provider. The first four arguments are pre-bound; the `is_static` and `is_test` arguments are
+    provider. The first five arguments are pre-bound; the `is_static` and `is_test` arguments are
     expected to be passed by the caller.
 
     Args:
@@ -52,6 +53,7 @@ def _default_linker_opts(
         apple_toolchain: The `apple_common.apple_toolchain()` object.
         platform: The `apple_platform` value describing the target platform.
         target: The target triple.
+        xcode_config: The Xcode configuration.
         is_static: `True` to link against the static version of the Swift runtime, or `False` to
             link against dynamic/shared libraries.
         is_test: `True` if the target being linked is a test target.
@@ -63,7 +65,15 @@ def _default_linker_opts(
     platform_framework_dir = apple_toolchain.platform_developer_framework_dir(apple_fragment)
     linkopts = []
 
-    if is_static:
+    uses_runtime_in_os = _is_xcode_at_least_version(xcode_config, "10.2")
+    if uses_runtime_in_os:
+        # Starting with Xcode 10.2, Apple forbids statically linking to the Swift runtime. The
+        # libraries are distributed with the OS and located in /usr/lib/swift.
+        swift_subdir = "swift"
+        linkopts.append("-Wl,-rpath,/usr/lib/swift")
+    elif is_static:
+        # This branch and the branch below now only support Xcode 10.1 and below. Eventually,
+        # once we drop support for those versions, they can be deleted.
         swift_subdir = "swift_static"
         linkopts.extend([
             "-Wl,-force_load_swift_libs",
@@ -82,6 +92,15 @@ def _default_linker_opts(
         swift_subdir = swift_subdir,
         toolchain = "XcodeDefault",
     )
+
+    # TODO(b/128303533): It's possible to run Xcode 10.2 on a version of macOS 10.14.x that does
+    # not yet include `/usr/lib/swift`. Later Xcode 10.2 betas have deleted the `swift_static`
+    # directory, so we must manually add the dylibs to the binary's rpath or those binaries won't
+    # be able to run at all. This is added after `/usr/lib/swift` above so the system versions
+    # will always be preferred if they are present.
+    # This workaround can be removed once Xcode 10.2 and macOS 10.14.4 are out of beta.
+    if uses_runtime_in_os and platform == apple_common.platform.macos:
+        linkopts.append("-Wl,-rpath,{}".format(swift_lib_dir))
 
     linkopts.extend([
         "-F{}".format(platform_framework_dir),
@@ -420,6 +439,7 @@ def _xcode_swift_toolchain_impl(ctx):
         apple_toolchain,
         platform,
         target,
+        xcode_config,
     )
     swiftc_copts = _default_swiftc_copts(apple_fragment, apple_toolchain, target)
 
