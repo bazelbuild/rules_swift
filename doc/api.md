@@ -320,7 +320,7 @@ omitted, no default-configuration-specific options will be used.</p></td>
       <td><code>deps</code></td>
       <td><p><code>Optional; default is []</code></p><p>Dependencies of the target being compiled. These targets must
 propagate one of the following providers: <code>SwiftClangModuleInfo</code>,
-<code>SwiftInfo</code>, <code>"cc"</code>, or <code>apple_common.Objc</code>.</p></td>
+<code>SwiftInfo</code>, <code>CcInfo</code>, or <code>apple_common.Objc</code>.</p></td>
     </tr>
     <tr id="swift_common.compile_as_library.feature_configuration">
       <td><code>feature_configuration</code></td>
@@ -479,7 +479,7 @@ requested, which affects the nature of the output files.</p></td>
       <td><code>deps</code></td>
       <td><p><code>Optional; default is []</code></p><p>Dependencies of the target being compiled. These targets must
 propagate one of the following providers: <code>SwiftClangModuleInfo</code>,
-<code>SwiftInfo</code>, <code>"cc"</code>, or <code>apple_common.Objc</code>.</p></td>
+<code>SwiftInfo</code>, <code>CcInfo</code>, or <code>apple_common.Objc</code>.</p></td>
     </tr>
     <tr id="swift_common.compile_as_objects.feature_configuration">
       <td><code>feature_configuration</code></td>
@@ -1035,7 +1035,7 @@ requested, which affects the nature of the output files.</p></td>
       <td><code>deps</code></td>
       <td><p><code>Optional; default is []</code></p><p>Dependencies of the target being compiled. These targets must
 propagate one of the following providers: <code>SwiftClangModuleInfo</code>,
-<code>SwiftInfo</code>, <code>"cc"</code>, or <code>apple_common.Objc</code>.</p></td>
+<code>SwiftInfo</code>, <code>CcInfo</code>, or <code>apple_common.Objc</code>.</p></td>
     </tr>
     <tr id="swift_common.swiftc_command_line_and_inputs.feature_configuration">
       <td><code>feature_configuration</code></td>

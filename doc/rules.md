@@ -68,7 +68,7 @@ linked into that target. Allowed kinds of dependencies are:</p>
 <ul>
 <li><code>swift_c_module</code> (or anything propagating <code>SwiftClangModuleInfo</code>)</li>
 <li><code>swift_import</code> and <code>swift_library</code> (or anything propagating <code>SwiftInfo</code>)</li>
-<li><code>cc_library</code> (or anything propagating <code>"cc"</code>)</li>
+<li><code>cc_library</code> (or anything propagating <code>CcInfo</code>)</li>
 </ul>
 <p>Additionally, on platforms that support Objective-C interop, <code>objc_library</code>
 targets (or anything propagating the <code>apple_common.Objc</code> provider) are allowed
@@ -234,7 +234,7 @@ linked into that target. Allowed kinds of dependencies are:</p>
 <ul>
 <li><code>swift_c_module</code> (or anything propagating <code>SwiftClangModuleInfo</code>)</li>
 <li><code>swift_import</code> and <code>swift_library</code> (or anything propagating <code>SwiftInfo</code>)</li>
-<li><code>cc_library</code> (or anything propagating <code>"cc"</code>)</li>
+<li><code>cc_library</code> (or anything propagating <code>CcInfo</code>)</li>
 </ul>
 <p>Additionally, on platforms that support Objective-C interop, <code>objc_library</code>
 targets (or anything propagating the <code>apple_common.Objc</code> provider) are allowed
@@ -301,7 +301,7 @@ linked into that target. Allowed kinds of dependencies are:</p>
 <ul>
 <li><code>swift_c_module</code> (or anything propagating <code>SwiftClangModuleInfo</code>)</li>
 <li><code>swift_import</code> and <code>swift_library</code> (or anything propagating <code>SwiftInfo</code>)</li>
-<li><code>cc_library</code> (or anything propagating <code>"cc"</code>)</li>
+<li><code>cc_library</code> (or anything propagating <code>CcInfo</code>)</li>
 </ul>
 <p>Additionally, on platforms that support Objective-C interop, <code>objc_library</code>
 targets (or anything propagating the <code>apple_common.Objc</code> provider) are allowed
@@ -615,7 +615,7 @@ linked into that target. Allowed kinds of dependencies are:</p>
 <ul>
 <li><code>swift_c_module</code> (or anything propagating <code>SwiftClangModuleInfo</code>)</li>
 <li><code>swift_import</code> and <code>swift_library</code> (or anything propagating <code>SwiftInfo</code>)</li>
-<li><code>cc_library</code> (or anything propagating <code>"cc"</code>)</li>
+<li><code>cc_library</code> (or anything propagating <code>CcInfo</code>)</li>
 </ul>
 <p>Additionally, on platforms that support Objective-C interop, <code>objc_library</code>
 targets (or anything propagating the <code>apple_common.Objc</code> provider) are allowed
