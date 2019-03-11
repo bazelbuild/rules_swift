@@ -15,16 +15,14 @@
 """Common utility definitions used by various BUILD rules."""
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("@bazel_skylib//lib:types.bzl", "types")
 
 def collect_transitive(targets, provider, key, direct = None):
     """Returns a `depset` that collects transitive information from providers.
 
     Args:
       targets: The list of targets whose providers should be accessed.
-      provider: The provider containing the data to be merged. This can either be
-          a declared provider object or a string denoting an old-style provider.
-          If the provider is not propagated by the target, it is ignored.
+      provider: The provider containing the data to be merged. If the provider is
+          not propagated by the target, it is ignored.
       key: The key containing the data in the provider to be collected.
       direct: A list of values that should become the direct members of the
           `depset`, if any.
@@ -33,18 +31,11 @@ def collect_transitive(targets, provider, key, direct = None):
       A `depset` whose transitive members are the value of the key in the given
       provider of each of the targets.
     """
-    if types.is_string(provider):
-        transitives = [
-            getattr(getattr(target, provider), key)
-            for target in targets
-            if hasattr(target, provider)
-        ]
-    else:
-        transitives = [
-            getattr(target[provider], key)
-            for target in targets
-            if provider in target
-        ]
+    transitives = [
+        getattr(target[provider], key)
+        for target in targets
+        if provider in target
+    ]
     if direct:
         return depset(direct = direct, transitive = transitives)
     return depset(transitive = transitives)
