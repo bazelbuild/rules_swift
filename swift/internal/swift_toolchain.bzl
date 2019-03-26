@@ -23,7 +23,12 @@ load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:partial.bzl", "partial")
 load("@bazel_skylib//lib:types.bzl", "types")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
-load(":features.bzl", "SWIFT_FEATURE_AUTOLINK_EXTRACT", "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD")
+load(
+    ":features.bzl",
+    "SWIFT_FEATURE_AUTOLINK_EXTRACT",
+    "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
+    "features_for_build_modes",
+)
 load(":providers.bzl", "SwiftToolchainInfo")
 load(":wrappers.bzl", "SWIFT_TOOL_WRAPPER_ATTRIBUTES")
 
@@ -186,6 +191,13 @@ def _swift_toolchain_impl(ctx):
         run_swift = partial.make(_run_swift_action, tools, ctx.executable._swift_wrapper),
     )
 
+    # Compute the default requested features and conditional ones based on Xcode version.
+    requested_features = features_for_build_modes(ctx)
+    requested_features.extend(ctx.features)
+    requested_features.append(SWIFT_FEATURE_AUTOLINK_EXTRACT)
+    # TODO(#34): Add SWIFT_FEATURE_USE_RESPONSE_FILES based on Swift compiler version.
+    # TODO(#35): Add SWIFT_FEATURE_DEBUG_PREFIX_MAP based on Swift compiler version.
+
     # TODO(allevato): Move some of the remaining hardcoded values, like object
     # format, autolink-extract, and Obj-C interop support, to attributes so that
     # we can remove the assumptions that are only valid on Linux.
@@ -200,13 +212,7 @@ def _swift_toolchain_impl(ctx):
             implicit_deps = [],
             linker_opts_producer = linker_opts_producer,
             object_format = "elf",
-            # TODO(#34): Add SWIFT_FEATURE_USE_RESPONSE_FILES based on Swift compiler version once
-            # https://github.com/apple/swift/pull/16362 makes it into a release.
-            # TODO(#35): Add SWIFT_FEATURE_DEBUG_PREFIX_MAP based on Swift compiler version once
-            # https://github.com/apple/swift/pull/17665 makes it into a release.
-            requested_features = ctx.features + [
-                SWIFT_FEATURE_AUTOLINK_EXTRACT,
-            ],
+            requested_features = requested_features,
             root_dir = toolchain_root,
             stamp = ctx.attr.stamp,
             supports_objc_interop = False,
