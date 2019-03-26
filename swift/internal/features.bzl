@@ -21,6 +21,17 @@
 # constants since they don't have "doc" attributes, so exposing them in a more structured way
 # doesn't provide a benefit there either.)
 
+# These features correspond to the current Bazel compilation mode. Exactly one of them will be
+# enabled by the toolchain. (We define our own because we cannot depend on the equivalent C++
+# features being enabled if the toolchain does not require them for any of its behavior.)
+SWIFT_FEATURE_DBG = "swift.dbg"
+SWIFT_FEATURE_FASTBUILD = "swift.fastbuild"
+SWIFT_FEATURE_OPT = "swift.opt"
+
+# This feature is enabled if coverage collection is enabled for the build. (See the note above
+# about not depending on the C++ features.)
+SWIFT_FEATURE_COVERAGE = "swift.coverage"
+
 # If enabled, `swift-autolink-extract` will be invoked on the object files generated for a library
 # or binary, generating a response file that will be passed automatically to the linker containing
 # the libraries corresponding to modules that were imported. This is used to simulate the
@@ -75,3 +86,22 @@ SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE = "swift.use_global_module_cache"
 # files (i.e., "@args.txt") to avoid passing command lines that exceed the system limit. Toolchains
 # typically set this automatically if using a sufficiently recent version of Swift (4.2 or higher).
 SWIFT_FEATURE_USE_RESPONSE_FILES = "swift.use_response_files"
+
+def features_for_build_modes(ctx):
+    """Returns a list of Swift toolchain features corresponding to current build modes.
+
+    This function explicitly breaks the "don't pass `ctx` as an argument" rule-of-thumb because it
+    is internal and only called from the toolchain rules, so there is no concern about supporting
+    differing call sites.
+
+    Args:
+        ctx: The current rule context.
+
+    Returns:
+        A list of Swift toolchain features to enable.
+    """
+    features = []
+    features.append("swift.{}".format(ctx.var["COMPILATION_MODE"]))
+    if ctx.configuration.coverage_enabled:
+        features.append("swift.coverage")
+    return features

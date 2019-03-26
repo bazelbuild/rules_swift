@@ -30,6 +30,7 @@ load(
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_USE_RESPONSE_FILES",
+    "features_for_build_modes",
 )
 load(":providers.bzl", "SwiftToolchainInfo")
 load(":wrappers.bzl", "SWIFT_TOOL_WRAPPER_ATTRIBUTES")
@@ -466,14 +467,17 @@ def _xcode_swift_toolchain_impl(ctx):
 
     cc_toolchain = find_cpp_toolchain(ctx)
 
-    # Compute the default requested features based on Xcode version. Xcode 10.0 implies Swift 4.2.
-    requested_features = ctx.features + [SWIFT_FEATURE_BUNDLED_XCTESTS]
+    # Compute the default requested features and conditional ones based on Xcode version.
+    requested_features = features_for_build_modes(ctx)
+    requested_features.extend(ctx.features)
+    requested_features.append(SWIFT_FEATURE_BUNDLED_XCTESTS)
+
+    # Xcode 10.0 implies Swift 4.2.
     if _is_xcode_at_least_version(xcode_config, "10.0"):
         requested_features.append(SWIFT_FEATURE_ENABLE_BATCH_MODE)
         requested_features.append(SWIFT_FEATURE_USE_RESPONSE_FILES)
 
-    # TODO(#35): Add SWIFT_FEATURE_DEBUG_PREFIX_MAP based on Xcode version once
-    # https://github.com/apple/swift/pull/17665 makes it into a release.
+    # TODO(#35): Add SWIFT_FEATURE_DEBUG_PREFIX_MAP based on Xcode version.
 
     return [
         SwiftToolchainInfo(

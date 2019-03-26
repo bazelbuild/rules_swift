@@ -52,11 +52,15 @@ load(":derived_files.bzl", "derived_files")
 load(
     ":features.bzl",
     "SWIFT_FEATURE_AUTOLINK_EXTRACT",
+    "SWIFT_FEATURE_COVERAGE",
+    "SWIFT_FEATURE_DBG",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
+    "SWIFT_FEATURE_FASTBUILD",
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_NO_GENERATED_HEADER",
     "SWIFT_FEATURE_NO_GENERATED_MODULE_MAP",
+    "SWIFT_FEATURE_OPT",
     "SWIFT_FEATURE_OPT_USES_WMO",
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
     "SWIFT_FEATURE_USE_RESPONSE_FILES",
@@ -274,12 +278,18 @@ def _compilation_mode_copts(
     Returns:
       A list of strings containing copts that should be passed to Swift.
     """
-    is_dbg = _is_enabled(feature_configuration = feature_configuration, feature_name = "dbg")
+    is_dbg = _is_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_DBG,
+    )
     is_fastbuild = _is_enabled(
         feature_configuration = feature_configuration,
-        feature_name = "fastbuild",
+        feature_name = SWIFT_FEATURE_FASTBUILD,
     )
-    is_opt = _is_enabled(feature_configuration = feature_configuration, feature_name = "opt")
+    is_opt = _is_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_OPT,
+    )
 
     # The combinations of flags used here mirror the descriptions of these
     # compilation modes given in the Bazel documentation:
@@ -323,7 +333,10 @@ def _coverage_copts(feature_configuration):
     Returns:
         A list of compiler flags that enable code coverage if requested.
     """
-    if _is_enabled(feature_configuration = feature_configuration, feature_name = "coverage"):
+    if _is_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_COVERAGE,
+    ):
         return ["-profile-generate", "-profile-coverage-mapping"]
     return []
 
@@ -340,8 +353,13 @@ def _is_debugging(feature_configuration):
         `True` if the current compilation mode produces debug info.
     """
     return (
-        _is_enabled(feature_configuration = feature_configuration, feature_name = "dbg") or
-        _is_enabled(feature_configuration = feature_configuration, feature_name = "fastbuild")
+        _is_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_DBG,
+        ) or _is_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_FASTBUILD,
+        )
     )
 
 def _sanitizer_copts(feature_configuration):
@@ -394,7 +412,10 @@ def _is_wmo(copts, feature_configuration, swift_fragment):
 
     # First, check the feature configuration to see if the current compilation mode implies
     # whole-module-optimization.
-    is_opt = _is_enabled(feature_configuration = feature_configuration, feature_name = "opt")
+    is_opt = _is_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_OPT,
+    )
     opt_uses_wmo = _is_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_OPT_USES_WMO,
