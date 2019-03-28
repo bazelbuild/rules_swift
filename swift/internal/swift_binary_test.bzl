@@ -129,7 +129,10 @@ def _swift_linking_rule_impl(
             transitive = [compile_results.compile_inputs],
         )
 
-        dicts.add(additional_output_groups, compile_results.output_groups)
+        additional_output_groups = dicts.add(
+            additional_output_groups,
+            compile_results.output_groups,
+        )
         compilation_providers.append(
             SwiftBinaryInfo(compile_options = compile_results.compile_options),
         )
