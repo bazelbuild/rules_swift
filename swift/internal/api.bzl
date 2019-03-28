@@ -215,6 +215,7 @@ def _compilation_attrs(additional_deps_aspects = []):
         _toolchain_attrs(),
         {
             "srcs": attr.label_list(
+                flags = ["DIRECT_COMPILE_TIME_INPUT"],
                 allow_files = ["swift"],
                 doc = """
 A list of `.swift` source files that will be compiled into the library.
