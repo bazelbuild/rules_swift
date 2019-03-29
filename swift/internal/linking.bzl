@@ -15,6 +15,10 @@
 """Implementation of linking logic for Swift."""
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load(
+    "@build_bazel_apple_support//lib:framework_migration.bzl",
+    "framework_migration",
+)
 load(":actions.bzl", "run_toolchain_action")
 load(":deps.bzl", "collect_link_libraries")
 load(":providers.bzl", "SwiftInfo")
@@ -74,16 +78,32 @@ def register_link_action(
         if stamp_libs_to_link:
             deps_libraries.append(depset(direct = stamp_libs_to_link))
 
-    deps_dynamic_framework_dirs = []
-    deps_static_framework_dirs = []
+    deps_dynamic_framework_names = []
+    deps_dynamic_framework_paths = []
+    deps_static_framework_files = []
     deps_sdk_dylibs = []
     deps_sdk_frameworks = []
     for dep in deps:
         deps_libraries.extend(collect_link_libraries(dep))
         if apple_common.Objc in dep:
             objc = dep[apple_common.Objc]
-            deps_static_framework_dirs.append(objc.framework_dir)
-            deps_dynamic_framework_dirs.append(objc.dynamic_framework_dir)
+            if framework_migration.is_post_framework_migration():
+                deps_dynamic_framework_names.append(objc.dynamic_framework_names())
+                deps_dynamic_framework_paths.append(objc.dynamic_framework_paths())
+                deps_static_framework_files.append(objc.static_framework_file)
+            else:
+                deps_dynamic_framework_names.append(depset(
+                    [objc_provider_framework_name(fdir) for fdir in objc.dynamic_framework_dir],
+                ))
+                deps_dynamic_framework_paths.append(depset(
+                    [fdir.dirname for fdir in objc.dynamic_framework_dir],
+                ))
+                deps_static_framework_files.append(depset(
+                    [
+                        paths.join(fdir, objc_provider_framework_name(fdir))
+                        for fdir in objc.framework_dir
+                    ],
+                ))
             deps_sdk_dylibs.append(objc.sdk_dylib)
             deps_sdk_frameworks.append(objc.sdk_framework)
 
@@ -116,8 +136,7 @@ def register_link_action(
     # Add various requirements from propagated Objective-C frameworks:
     # * Static prebuilt framework binaries are passed as regular arguments.
     link_input_args.add_all(
-        depset(transitive = deps_static_framework_dirs),
-        map_each = _link_framework_map_fn,
+        depset(transitive = deps_static_framework_files),
     )
 
     # * `sdk_dylibs` values are passed with `-l`.
@@ -129,14 +148,12 @@ def register_link_action(
     # * Dynamic prebuilt frameworks are passed by providing their parent directory as a search path
     #   using `-F` and the framework name as `-framework`.
     link_input_args.add_all(
-        depset(transitive = deps_dynamic_framework_dirs),
+        depset(transitive = deps_dynamic_framework_paths),
         format_each = "-F%s",
-        map_each = paths.dirname,
     )
     link_input_args.add_all(
-        depset(transitive = deps_dynamic_framework_dirs),
+        depset(transitive = deps_dynamic_framework_names),
         before_each = "-framework",
-        map_each = objc_provider_framework_name,
     )
 
     all_linkopts = depset(
@@ -175,20 +192,6 @@ def register_link_action(
         mnemonic = mnemonic,
         outputs = outputs,
         progress_message = progress_message,
-    )
-
-def _link_framework_map_fn(framework_dir):
-    """Maps a framework directory name to the underlying library to link.
-
-    Args:
-        framework_dir: The path to the framework directory.
-
-    Returns:
-        A command-line argument (string) to link the framework.
-    """
-    return "{}/{}".format(
-        framework_dir,
-        objc_provider_framework_name(framework_dir),
     )
 
 def _link_library_darwin_map_fn(lib):
