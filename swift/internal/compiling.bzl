@@ -16,6 +16,10 @@
 
 load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load(
+    "@build_bazel_apple_support//lib:framework_migration.bzl",
+    "framework_migration",
+)
 load(":actions.bzl", "run_toolchain_swift_action")
 load(":derived_files.bzl", "derived_files")
 load(
@@ -325,23 +329,31 @@ def objc_compile_requirements(args, deps, objc_fragment):
     includes = []
     inputs = []
     module_maps = []
-    static_frameworks = []
+    static_framework_names = []
     all_frameworks = []
 
     objc_providers = [dep[apple_common.Objc] for dep in deps if apple_common.Objc in dep]
 
+    post_framework_cleanup = framework_migration.is_post_framework_migration()
+
     for objc in objc_providers:
         inputs.append(objc.header)
         inputs.append(objc.umbrella_header)
-        inputs.append(objc.static_framework_file)
-        inputs.append(objc.dynamic_framework_file)
 
         defines.append(objc.define)
         includes.append(objc.include)
 
-        static_frameworks.append(objc.framework_dir)
-        all_frameworks.append(objc.framework_dir)
-        all_frameworks.append(objc.dynamic_framework_dir)
+        if post_framework_cleanup:
+            static_framework_names.append(objc.static_framework_names())
+            all_frameworks.append(objc.framework_search_path_only)
+        else:
+            inputs.append(objc.static_framework_file)
+            inputs.append(objc.dynamic_framework_file)
+            static_framework_names.append(depset(
+                [objc_provider_framework_name(fdir) for fdir in objc.framework_dir],
+            ))
+            all_frameworks.append(objc.framework_dir)
+            all_frameworks.append(objc.dynamic_framework_dir)
 
     # Collect module maps for dependencies. These must be pulled from a combined transitive
     # provider to get the correct strict propagation behavior that we use to workaround command-line
@@ -354,8 +366,7 @@ def objc_compile_requirements(args, deps, objc_fragment):
     # headers.
     args.add_all(depset(transitive = includes), format_each = "-I%s")
 
-    # Add framework search paths for any prebuilt frameworks propagated through static/dynamic
-    # framework provider keys.
+    # Add framework search paths for any prebuilt frameworks.
     args.add_all(
         depset(transitive = all_frameworks),
         format_each = "-F%s",
@@ -366,7 +377,7 @@ def objc_compile_requirements(args, deps, objc_fragment):
     # needed to correctly deduplicate static frameworks from also being linked into test binaries
     # where it is also linked into the app binary.
     args.add_all(
-        depset(transitive = static_frameworks),
+        depset(transitive = static_framework_names),
         map_each = _disable_autolink_framework_copts,
     )
 
@@ -504,11 +515,11 @@ def _dirname_map_fn(f):
     """
     return f.dirname
 
-def _disable_autolink_framework_copts(framework_dir):
-    """A `map_each` helper that disables autolinking for the given framework directory.
+def _disable_autolink_framework_copts(framework_name):
+    """A `map_each` helper that disables autolinking for the given framework.
 
     Args:
-        framework_dir: A string representing a static framework directory.
+        framework_name: The name of the framework.
 
     Returns:
         The list of `swiftc` flags needed to disable autolinking for the given framework.
@@ -517,7 +528,7 @@ def _disable_autolink_framework_copts(framework_dir):
         "-Xfrontend",
         [
             "-disable-autolink-framework",
-            objc_provider_framework_name(framework_dir),
+            framework_name,
         ],
     )
 
