@@ -100,6 +100,5 @@ The list of `.swiftmodule` files provided to Swift targets that depend on this t
 Allows for the use of precompiled Swift modules as dependencies in other `swift_library` and
 `swift_binary` targets.
 """,
-    fragments = ["objc"],
     implementation = _swift_import_impl,
 )

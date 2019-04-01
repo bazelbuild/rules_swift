@@ -180,6 +180,12 @@ depends on.
         "clang_executable": """
 `String`. The path to the `clang` executable, which is used to link binaries.
 """,
+        "command_line_copts": """
+`List` of `strings`. Flags that were passed to Bazel using the `--swiftcopt` command line flag.
+These flags have the highest precedence; they are added to compilation command lines after the
+toolchain default flags (`SwiftToolchainInfo.swiftc_copts`) and after flags specified in the
+`copts` attributes of Swift targets.
+""",
         "cpu": "`String`. The CPU architecture that the toolchain is targeting.",
         "execution_requirements": """
 `Dict`. Execution requirements that should be passed to any actions spawned to compile or link
@@ -229,7 +235,8 @@ stamping enabled.
 """,
         "swiftc_copts": """
 `List` of `strings`. Additional flags that should be passed to `swiftc` when compiling libraries or
-binaries with this toolchain.
+binaries with this toolchain. These flags will come first in compilation command lines, allowing
+them to be overridden by `copts` attributes and `--swiftcopt` flags.
 """,
         "system_name": """
 `String`. The name of the operating system that the toolchain is targeting.
