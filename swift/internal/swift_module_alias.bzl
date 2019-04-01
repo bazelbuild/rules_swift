@@ -60,20 +60,16 @@ following dependencies instead:\n\n""".format(
         unsupported_features = ctx.disabled_features,
     )
 
-    objc_fragment = (ctx.fragments.objc if toolchain.supports_objc_interop else None)
-
     compile_results = swift_common.compile_as_library(
         actions = ctx.actions,
         bin_dir = ctx.bin_dir,
         label = ctx.label,
         module_name = module_name,
         srcs = [reexport_src],
-        swift_fragment = ctx.fragments.swift,
         toolchain = ctx.attr._toolchain[SwiftToolchainInfo],
         deps = ctx.attr.deps,
         feature_configuration = feature_configuration,
         genfiles_dir = ctx.genfiles_dir,
-        objc_fragment = objc_fragment,
     )
 
     return compile_results.providers + [
@@ -133,6 +129,5 @@ to create "umbrella modules".
 > `deps` in the new module. You depend on undocumented features at your own
 > risk, as they may change in a future version of Swift.
 """,
-    fragments = ["swift", "objc"],
     implementation = _swift_module_alias_impl,
 )

@@ -79,12 +79,6 @@ def _swift_linking_rule_impl(
         A tuple with two values: the `File` representing the binary that was linked, and a list of
         providers to be propagated by the target being built.
     """
-
-    # Bazel fails the build if you try to query a fragment that hasn't been declared, even
-    # dynamically with `hasattr`/`getattr`. Thus, we have to use other information to determine
-    # whether we can access the `objc` configuration.
-    objc_fragment = (ctx.fragments.objc if toolchain.supports_objc_interop else None)
-
     copts = expand_locations(ctx, ctx.attr.copts, ctx.attr.swiftc_inputs)
     linkopts = list(linkopts) + expand_locations(ctx, ctx.attr.linkopts, ctx.attr.swiftc_inputs)
 
@@ -114,13 +108,11 @@ def _swift_linking_rule_impl(
             feature_configuration = feature_configuration,
             module_name = module_name,
             srcs = srcs,
-            swift_fragment = ctx.fragments.swift,
             target_name = ctx.label.name,
             toolchain = toolchain,
             additional_input_depsets = [depset(direct = additional_inputs)],
             deps = ctx.attr.deps,
             genfiles_dir = ctx.genfiles_dir,
-            objc_fragment = objc_fragment,
         )
         link_args.add_all(compile_results.linker_flags)
         objects_to_link.extend(compile_results.output_objects)
@@ -340,11 +332,6 @@ platform-specific application rules in [rules_apple](https://github.com/bazelbui
 instead of `swift_binary`.
 """,
     executable = True,
-    fragments = [
-        "cpp",
-        "objc",
-        "swift",
-    ],
     implementation = _swift_binary_impl,
 )
 
@@ -404,11 +391,6 @@ You can also disable this feature for all the tests in a package by applying it 
 `package()` declaration instead of the individual targets.
 """,
     executable = True,
-    fragments = [
-        "cpp",
-        "objc",
-        "swift",
-    ],
     test = True,
     implementation = _swift_test_impl,
 )

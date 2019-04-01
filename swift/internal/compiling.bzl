@@ -314,13 +314,12 @@ def new_objc_provider(
 
     return apple_common.new_objc_provider(**objc_provider_args)
 
-def objc_compile_requirements(args, deps, objc_fragment):
+def objc_compile_requirements(args, deps):
     """Collects compilation requirements for Objective-C dependencies.
 
     Args:
         args: An `Args` object to which compile options will be added.
         deps: The `deps` of the target being built.
-        objc_fragment: The `objc` configuration fragment.
 
     Returns:
         A `depset` of files that should be included among the inputs of the compile action.
@@ -402,9 +401,6 @@ def objc_compile_requirements(args, deps, objc_fragment):
     # <https://llvm.org/bugs/show_bug.cgi?id=19501>
     args.add_all(module_maps, before_each = "-Xcc", format_each = "-fmodule-map-file=%s")
 
-    # Add any copts required by the `objc` configuration fragment.
-    args.add_all(_clang_copts(objc_fragment), before_each = "-Xcc")
-
     return depset(transitive = inputs)
 
 def register_autolink_extract_action(
@@ -485,22 +481,6 @@ def write_objc_header_module_map(
         ),
         output = output,
     )
-
-def _clang_copts(objc_fragment):
-    """Returns copts that should be passed to `clang` from the `objc` fragment.
-
-    Args:
-        objc_fragment: The `objc` configuration fragment.
-
-    Returns:
-        A list of `clang` copts.
-    """
-
-    # In general, every compilation mode flag from native `objc_*` rules should be passed, but `-g`
-    # seems to break Clang module compilation. Since this flag does not make much sense for module
-    # compilation and only touches headers, it's ok to omit.
-    clang_copts = objc_fragment.copts + objc_fragment.copts_for_current_compilation_mode
-    return [copt for copt in clang_copts if copt != "-g"]
 
 def _dirname_map_fn(f):
     """Returns the dir name of a file.

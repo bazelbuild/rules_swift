@@ -32,11 +32,7 @@ def _swift_library_impl(ctx):
     if not module_name:
         module_name = swift_common.derive_module_name(ctx.label)
 
-    # Bazel fails the build if you try to query a fragment that hasn't been declared, even
-    # dynamically with `hasattr`/`getattr`. Thus, we have to use other information to determine
-    # whether we can access the `objc` configuration.
     toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
-    objc_fragment = (ctx.fragments.objc if toolchain.supports_objc_interop else None)
 
     feature_configuration = swift_common.configure_features(
         requested_features = ctx.features,
@@ -50,7 +46,6 @@ def _swift_library_impl(ctx):
         label = ctx.label,
         module_name = module_name,
         srcs = ctx.files.srcs,
-        swift_fragment = ctx.fragments.swift,
         toolchain = toolchain,
         additional_inputs = ctx.files.swiftc_inputs,
         alwayslink = ctx.attr.alwayslink,
@@ -60,7 +55,6 @@ def _swift_library_impl(ctx):
         feature_configuration = feature_configuration,
         genfiles_dir = ctx.genfiles_dir,
         linkopts = linkopts,
-        objc_fragment = objc_fragment,
     )
 
     direct_output_files = [
@@ -97,10 +91,6 @@ swift_library = rule(
     doc = """
 Compiles and links Swift code into a static library and Swift module.
 """,
-    fragments = [
-        "objc",
-        "swift",
-    ],
     outputs = swift_library_output_map,
     implementation = _swift_library_impl,
 )

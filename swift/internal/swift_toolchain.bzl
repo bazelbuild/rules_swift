@@ -207,6 +207,7 @@ def _swift_toolchain_impl(ctx):
             action_registrars = action_registrars,
             cc_toolchain_info = cc_toolchain,
             clang_executable = ctx.attr.clang_executable,
+            command_line_copts = ctx.fragments.swift.copts(),
             cpu = ctx.attr.arch,
             execution_requirements = {},
             implicit_deps = [],
@@ -269,5 +270,6 @@ The C++ toolchain from which other tools needed by the Swift toolchain (such as
         ),
     }),
     doc = "Represents a Swift compiler toolchain.",
+    fragments = ["swift"],
     implementation = _swift_toolchain_impl,
 )
