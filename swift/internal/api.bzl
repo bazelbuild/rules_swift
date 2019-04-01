@@ -291,6 +291,10 @@ def _compilation_mode_copts(feature_configuration):
         feature_name = SWIFT_FEATURE_FULL_DEBUG_INFO,
     )
 
+    # Safety check that exactly one of these features is set; the user shouldn't mess with them.
+    if int(is_dbg) + int(is_fastbuild) + int(is_opt) != 1:
+        fail("Exactly one of the features `swift.{dbg,fastbuild,opt}` must be enabled.")
+
     # The combinations of flags used here mirror the descriptions of these
     # compilation modes given in the Bazel documentation:
     # https://docs.bazel.build/versions/master/user-manual.html#flag--compilation_mode
