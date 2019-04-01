@@ -16,6 +16,10 @@
 
 load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load(
+    "@build_bazel_apple_support//lib:framework_migration.bzl",
+    "framework_migration",
+)
 load(":actions.bzl", "run_toolchain_swift_action")
 load(":derived_files.bzl", "derived_files")
 load(
@@ -139,7 +143,9 @@ def declare_compile_outputs(
             args = ["-o", out_obj],
             compile_inputs = [],
             other_outputs = [],
-            output_groups = {},
+            output_groups = {
+                "compilation_outputs": depset(items = [out_obj]),
+            },
             output_objects = [out_obj],
         )
 
@@ -184,7 +190,9 @@ def declare_compile_outputs(
     )
 
     args = ["-output-file-map", output_map_file]
-    output_groups = {}
+    output_groups = {
+        "compilation_outputs": depset(items = output_objs),
+    }
 
     # Configure index-while-building if requested. IDEs and other indexing tools can enable this
     # feature on the command line during a build and then access the index store artifacts that are
@@ -306,13 +314,12 @@ def new_objc_provider(
 
     return apple_common.new_objc_provider(**objc_provider_args)
 
-def objc_compile_requirements(args, deps, objc_fragment):
+def objc_compile_requirements(args, deps):
     """Collects compilation requirements for Objective-C dependencies.
 
     Args:
         args: An `Args` object to which compile options will be added.
         deps: The `deps` of the target being built.
-        objc_fragment: The `objc` configuration fragment.
 
     Returns:
         A `depset` of files that should be included among the inputs of the compile action.
@@ -321,23 +328,31 @@ def objc_compile_requirements(args, deps, objc_fragment):
     includes = []
     inputs = []
     module_maps = []
-    static_frameworks = []
+    static_framework_names = []
     all_frameworks = []
 
     objc_providers = [dep[apple_common.Objc] for dep in deps if apple_common.Objc in dep]
 
+    post_framework_cleanup = framework_migration.is_post_framework_migration()
+
     for objc in objc_providers:
         inputs.append(objc.header)
         inputs.append(objc.umbrella_header)
-        inputs.append(objc.static_framework_file)
-        inputs.append(objc.dynamic_framework_file)
 
         defines.append(objc.define)
         includes.append(objc.include)
 
-        static_frameworks.append(objc.framework_dir)
-        all_frameworks.append(objc.framework_dir)
-        all_frameworks.append(objc.dynamic_framework_dir)
+        if post_framework_cleanup:
+            static_framework_names.append(objc.static_framework_names())
+            all_frameworks.append(objc.framework_search_path_only)
+        else:
+            inputs.append(objc.static_framework_file)
+            inputs.append(objc.dynamic_framework_file)
+            static_framework_names.append(depset(
+                [objc_provider_framework_name(fdir) for fdir in objc.framework_dir],
+            ))
+            all_frameworks.append(objc.framework_dir)
+            all_frameworks.append(objc.dynamic_framework_dir)
 
     # Collect module maps for dependencies. These must be pulled from a combined transitive
     # provider to get the correct strict propagation behavior that we use to workaround command-line
@@ -350,8 +365,7 @@ def objc_compile_requirements(args, deps, objc_fragment):
     # headers.
     args.add_all(depset(transitive = includes), format_each = "-I%s")
 
-    # Add framework search paths for any prebuilt frameworks propagated through static/dynamic
-    # framework provider keys.
+    # Add framework search paths for any prebuilt frameworks.
     args.add_all(
         depset(transitive = all_frameworks),
         format_each = "-F%s",
@@ -362,7 +376,7 @@ def objc_compile_requirements(args, deps, objc_fragment):
     # needed to correctly deduplicate static frameworks from also being linked into test binaries
     # where it is also linked into the app binary.
     args.add_all(
-        depset(transitive = static_frameworks),
+        depset(transitive = static_framework_names),
         map_each = _disable_autolink_framework_copts,
     )
 
@@ -386,9 +400,6 @@ def objc_compile_requirements(args, deps, objc_fragment):
     # contexts, leading to duplicate definitions in the same file.
     # <https://llvm.org/bugs/show_bug.cgi?id=19501>
     args.add_all(module_maps, before_each = "-Xcc", format_each = "-fmodule-map-file=%s")
-
-    # Add any copts required by the `objc` configuration fragment.
-    args.add_all(_clang_copts(objc_fragment), before_each = "-Xcc")
 
     return depset(transitive = inputs)
 
@@ -471,22 +482,6 @@ def write_objc_header_module_map(
         output = output,
     )
 
-def _clang_copts(objc_fragment):
-    """Returns copts that should be passed to `clang` from the `objc` fragment.
-
-    Args:
-        objc_fragment: The `objc` configuration fragment.
-
-    Returns:
-        A list of `clang` copts.
-    """
-
-    # In general, every compilation mode flag from native `objc_*` rules should be passed, but `-g`
-    # seems to break Clang module compilation. Since this flag does not make much sense for module
-    # compilation and only touches headers, it's ok to omit.
-    clang_copts = objc_fragment.copts + objc_fragment.copts_for_current_compilation_mode
-    return [copt for copt in clang_copts if copt != "-g"]
-
 def _dirname_map_fn(f):
     """Returns the dir name of a file.
 
@@ -500,11 +495,11 @@ def _dirname_map_fn(f):
     """
     return f.dirname
 
-def _disable_autolink_framework_copts(framework_dir):
-    """A `map_each` helper that disables autolinking for the given framework directory.
+def _disable_autolink_framework_copts(framework_name):
+    """A `map_each` helper that disables autolinking for the given framework.
 
     Args:
-        framework_dir: A string representing a static framework directory.
+        framework_name: The name of the framework.
 
     Returns:
         The list of `swiftc` flags needed to disable autolinking for the given framework.
@@ -513,7 +508,7 @@ def _disable_autolink_framework_copts(framework_dir):
         "-Xfrontend",
         [
             "-disable-autolink-framework",
-            objc_provider_framework_name(framework_dir),
+            framework_name,
         ],
     )
 

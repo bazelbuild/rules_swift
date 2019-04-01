@@ -16,7 +16,7 @@
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(":api.bzl", "swift_common")
-load(":features.bzl", "SWIFT_FEATURE_NO_GENERATED_HEADER")
+load(":features.bzl", "SWIFT_FEATURE_ENABLE_TESTING", "SWIFT_FEATURE_NO_GENERATED_HEADER")
 load(
     ":proto_gen_utils.bzl",
     "declare_generated_files",
@@ -274,7 +274,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
         feature_configuration = swift_common.configure_features(
             requested_features = aspect_ctx.features + [SWIFT_FEATURE_NO_GENERATED_HEADER],
             swift_toolchain = toolchain,
-            unsupported_features = aspect_ctx.disabled_features,
+            unsupported_features = aspect_ctx.disabled_features + [SWIFT_FEATURE_ENABLE_TESTING],
         )
 
         compile_results = swift_common.compile_as_library(
@@ -283,9 +283,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             label = target.label,
             module_name = swift_common.derive_module_name(target.label),
             srcs = pbswift_files,
-            swift_fragment = aspect_ctx.fragments.swift,
             toolchain = toolchain,
-            allow_testing = False,
             deps = compile_deps,
             feature_configuration = feature_configuration,
             genfiles_dir = aspect_ctx.genfiles_dir,
@@ -293,11 +291,6 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             # use the `lib{name}.a` pattern. This will produce `lib{name}.swift.a`
             # instead.
             library_name = "{}.swift".format(target.label.name),
-            # The generated protos themselves are not usable in Objective-C, but we
-            # still need the Objective-C provider that it propagates since it
-            # carries the static libraries that apple_binary will want to link on
-            # those platforms.
-            objc_fragment = aspect_ctx.fragments.objc,
         )
         providers = compile_results.providers
     else:
@@ -365,9 +358,5 @@ provider.
 Most users should not need to use this aspect directly; it is an implementation
 detail of the `swift_proto_library` rule.
 """,
-    fragments = [
-        "objc",
-        "swift",
-    ],
     implementation = _swift_protoc_gen_aspect_impl,
 )

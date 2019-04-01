@@ -14,7 +14,6 @@
 
 """Definitions for handling Bazel repositories used by the Swift rules."""
 
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 def _create_linux_toolchain(repository_ctx):
@@ -96,7 +95,7 @@ def _maybe(repo_rule, name, **kwargs):
     """Executes the given repository rule if it hasn't been executed already.
 
     Args:
-      repo_rule: The repository rule to be executed (e.g., `git_repository`.)
+      repo_rule: The repository rule to be executed (e.g., `http_archive`.)
       name: The name of the repository to be defined by the rule.
       **kwargs: Additional arguments passed directly to the repository rule.
     """
@@ -111,17 +110,21 @@ def swift_rules_dependencies():
     changes to those dependencies.
     """
     _maybe(
-        git_repository,
+        http_archive,
         name = "bazel_skylib",
-        remote = "https://github.com/bazelbuild/bazel-skylib.git",
-        tag = "0.7.0",
+        urls = [
+            "https://github.com/bazelbuild/bazel-skylib/releases/download/0.8.0/bazel-skylib.0.8.0.tar.gz",
+        ],
+        sha256 = "2ef429f5d7ce7111263289644d233707dba35e39696377ebab8b0bc701f7818e",
     )
 
     _maybe(
-        git_repository,
+        http_archive,
         name = "build_bazel_apple_support",
-        remote = "https://github.com/bazelbuild/apple_support.git",
-        tag = "0.5.0",
+        urls = [
+            "https://github.com/bazelbuild/apple_support/releases/download/0.6.0/apple_support.0.6.0.tar.gz",
+        ],
+        sha256 = "7356dbd44dea71570a929d1d4731e870622151a5f27164d966dda97305f33471",
     )
 
     _maybe(

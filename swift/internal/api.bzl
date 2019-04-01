@@ -25,6 +25,7 @@ which exports the `swift_common` module.
 
 load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
+load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load("@bazel_skylib//lib:partial.bzl", "partial")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:types.bzl", "types")
@@ -55,7 +56,9 @@ load(
     "SWIFT_FEATURE_COVERAGE",
     "SWIFT_FEATURE_DBG",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
+    "SWIFT_FEATURE_ENABLE_TESTING",
     "SWIFT_FEATURE_FASTBUILD",
+    "SWIFT_FEATURE_FULL_DEBUG_INFO",
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_NO_GENERATED_HEADER",
@@ -215,6 +218,7 @@ def _compilation_attrs(additional_deps_aspects = []):
         _toolchain_attrs(),
         {
             "srcs": attr.label_list(
+                flags = ["DIRECT_COMPILE_TIME_INPUT"],
                 allow_files = ["swift"],
                 doc = """
 A list of `.swift` source files that will be compiled into the library.
@@ -260,20 +264,12 @@ support location expansion.
         },
     )
 
-def _compilation_mode_copts(
-        allow_testing,
-        feature_configuration,
-        wants_dsyms = False):
+def _compilation_mode_copts(feature_configuration):
     """Returns `swiftc` compilation flags that match the current compilation mode.
 
     Args:
-      allow_testing: If `True`, the `-enable-testing` flag will also be added to
-          "dbg" and "fastbuild" builds. This argument is ignored for "opt" builds.
       feature_configuration: A feature configuration obtained from
           `swift_common.configure_features`.
-      wants_dsyms: If `True`, the caller is requesting that the debug information
-          be extracted into dSYM binaries. This affects the debug mode used during
-          compilation.
 
     Returns:
       A list of strings containing copts that should be passed to Swift.
@@ -290,6 +286,10 @@ def _compilation_mode_copts(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_OPT,
     )
+    wants_full_debug_info = _is_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_FULL_DEBUG_INFO,
+    )
 
     # The combinations of flags used here mirror the descriptions of these
     # compilation modes given in the Bazel documentation:
@@ -304,9 +304,6 @@ def _compilation_mode_copts(
             flags.append("-whole-module-optimization")
 
     elif is_dbg or is_fastbuild:
-        if allow_testing:
-            flags.append("-enable-testing")
-
         # The Swift compiler only serializes debugging options in narrow
         # circumstances (for example, for application binaries). Since we almost
         # exclusively just compile to object files directly, we need to manually
@@ -316,10 +313,16 @@ def _compilation_mode_copts(
     else:
         fail("The build's compilation_mode wasn't matched")
 
+    if _is_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_ENABLE_TESTING,
+    ):
+        flags.append("-enable-testing")
+
     # The combination of dsymutil and -gline-tables-only appears to cause
     # spurious warnings about symbols in the debug map, so if the caller is
     # requesting dSYMs, then force `-g` regardless of compilation mode.
-    if is_dbg or wants_dsyms:
+    if is_dbg or wants_full_debug_info:
         flags.append("-g")
     elif is_fastbuild:
         flags.append("-gline-tables-only")
@@ -399,14 +402,13 @@ def _global_module_cache_path(genfiles_dir):
     # java/com/google/devtools/build/lib/rules/objc/CompilationSupport.java.
     return paths.join(genfiles_dir.path, "_objc_module_cache")
 
-def _is_wmo(copts, feature_configuration, swift_fragment):
+def _is_wmo(copts, feature_configuration):
     """Returns a value indicating whether a compilation will use whole module optimization.
 
     Args:
         copts: A list of compiler flags to scan for WMO usage.
         feature_configuration: The Swift feature configuration, as returned from
             `swift_common.configure_features`.
-        swift_fragment: The `swift` configuration fragment from Bazel.
 
     Returns:
         True if WMO is enabled in the given list of flags.
@@ -426,10 +428,9 @@ def _is_wmo(copts, feature_configuration, swift_fragment):
         return True
 
     # Otherwise, check any explicit copts the user may have set on the target or command line.
-    explicit_copts = copts + swift_fragment.copts()
-    return ("-wmo" in explicit_copts or
-            "-whole-module-optimization" in explicit_copts or
-            "-force-single-frontend-invocation" in explicit_copts)
+    return ("-wmo" in copts or
+            "-whole-module-optimization" in copts or
+            "-force-single-frontend-invocation" in copts)
 
 def _cc_feature_configuration(feature_configuration):
     """Returns the C++ feature configuration nested inside the given Swift feature configuration.
@@ -446,9 +447,9 @@ def _cc_feature_configuration(feature_configuration):
 def _compile_as_objects(
         actions,
         arguments,
+        feature_configuration,
         module_name,
         srcs,
-        swift_fragment,
         target_name,
         toolchain,
         additional_input_depsets = [],
@@ -459,20 +460,21 @@ def _compile_as_objects(
         copts = [],
         defines = [],
         deps = [],
-        feature_configuration = None,
         genfiles_dir = None,
-        objc_fragment = None):
+        objc_fragment = None,
+        swift_fragment = None):
     """Compiles Swift source files into object files (and optionally a module).
 
     Args:
       actions: The context's `actions` object.
       arguments: A list of `Args` objects that provide additional arguments to the
           compiler, not including the `copts` list.
+      feature_configuration: A feature configuration obtained from
+          `swift_common.configure_features`.
       module_name: The name of the Swift module being compiled. This must be
           present and valid; use `swift_common.derive_module_name` to generate a
           default from the target's label if needed.
       srcs: The Swift source files to compile.
-      swift_fragment: The `swift` configuration fragment from Bazel.
       target_name: The name of the target for which the code is being compiled,
           which is used to determine unique file paths for the outputs.
       toolchain: The `SwiftToolchainInfo` provider of the toolchain.
@@ -481,8 +483,8 @@ def _compile_as_objects(
           action because they are referenced by compiler flags.
       additional_outputs: A list of `File`s representing files that should be
           treated as additional outputs of the compilation action.
-      allow_testing: Indicates whether the module should be compiled with testing
-          enabled (only when the compilation mode is `fastbuild` or `dbg`).
+      allow_testing: This argument is no longer used and will be removed in a
+          future version.
       compilation_mode: This argument is no longer used and will be removed in a
           future version.
       configuration: This argument is no longer used and will be removed in a
@@ -496,17 +498,14 @@ def _compile_as_objects(
       deps: Dependencies of the target being compiled. These targets must
           propagate one of the following providers: `CcInfo`,
           `SwiftClangModuleInfo`, `SwiftInfo`, or `apple_common.Objc`.
-      feature_configuration: A feature configuration obtained from
-          `swift_common.configure_features`. If omitted, a default feature
-          configuration will be used, but this argument will be required in the
-          future.
       genfiles_dir: The Bazel `*-genfiles` directory root. If provided, its path
           is added to ClangImporter's header search paths for compatibility with
           Bazel's C++ and Objective-C rules which support inclusions of generated
           headers from that location.
-      objc_fragment: The `objc` configuration fragment from Bazel. This must be
-          provided if the toolchain supports Objective-C interop; if it does not,
-          then this argument may be omitted.
+      objc_fragment: This argument is no longer used and will be removed in a
+          future version.
+      swift_fragment: This argument is no longer used and will be removed in a
+          future version.
 
     Returns:
       A `struct` containing the following fields:
@@ -530,24 +529,20 @@ def _compile_as_objects(
       * `output_objects`: The object (`.o`) files that were produced by the
         compiler.
     """
-    _ignore = [compilation_mode, configuration]
-
-    # TODO(b/112900284): Make this a required argument.
-    if not feature_configuration:
-        feature_configuration = _configure_features(toolchain)
+    _ignore = [allow_testing, compilation_mode, configuration, objc_fragment, swift_fragment]
 
     # Force threaded mode for WMO builds, using the same number of cores that is
     # on a Mac Pro for historical reasons.
     # TODO(b/32571265): Generalize this based on platform and core count when an
     # API to obtain this is available.
-    if _is_wmo(copts, feature_configuration, swift_fragment):
+    if _is_wmo(copts + toolchain.command_line_copts, feature_configuration):
         # We intentionally don't use `+=` or `extend` here to ensure that a
         # copy is made instead of extending the original.
         copts = copts + ["-num-threads", "12"]
 
     compile_reqs = declare_compile_outputs(
         actions = actions,
-        copts = copts + swift_fragment.copts(),
+        copts = copts + toolchain.command_line_copts,
         srcs = srcs,
         target_name = target_name,
         index_while_building = swift_common.is_enabled(
@@ -589,16 +584,13 @@ def _compile_as_objects(
         args = compile_args,
         module_name = module_name,
         srcs = srcs,
-        swift_fragment = swift_fragment,
         toolchain = toolchain,
         additional_input_depsets = additional_input_depsets,
-        allow_testing = allow_testing,
         copts = copts,
         defines = defines,
         deps = deps,
         feature_configuration = feature_configuration,
         genfiles_dir = genfiles_dir,
-        objc_fragment = objc_fragment,
     )
 
     all_inputs = depset(
@@ -667,10 +659,10 @@ def _compile_as_objects(
 def _compile_as_library(
         actions,
         bin_dir,
+        feature_configuration,
         label,
         module_name,
         srcs,
-        swift_fragment,
         toolchain,
         additional_inputs = [],
         allow_testing = True,
@@ -680,11 +672,11 @@ def _compile_as_library(
         copts = [],
         defines = [],
         deps = [],
-        feature_configuration = None,
         genfiles_dir = None,
         library_name = None,
         linkopts = [],
-        objc_fragment = None):
+        objc_fragment = None,
+        swift_fragment = None):
     """Compiles Swift source files into static and/or shared libraries.
 
     This is a high-level API that wraps the compilation and library creation steps
@@ -698,19 +690,20 @@ def _compile_as_library(
     Args:
       actions: The rule context's `actions` object.
       bin_dir: The Bazel `*-bin` directory root.
+      feature_configuration: A feature configuration obtained from
+          `swift_common.configure_features`.
       label: The target label for which the code is being compiled, which is used
           to determine unique file paths for the outputs.
       module_name: The name of the Swift module being compiled. This must be
           present and valid; use `swift_common.derive_module_name` to generate a
           default from the target's label if needed.
       srcs: The Swift source files to compile.
-      swift_fragment: The `swift` configuration fragment from Bazel.
       toolchain: The `SwiftToolchainInfo` provider of the toolchain.
       additional_inputs: A list of `File`s representing additional inputs that
           need to be passed to the Swift compile action because they are
           referenced in compiler flags.
-      allow_testing: Indicates whether the module should be compiled with testing
-          enabled (only when the compilation mode is `fastbuild` or `dbg`).
+      allow_testing: This argument is no longer used and will be removed in a
+          future version.
       alwayslink: Indicates whether the object files in the library should always
           be always be linked into any binaries that depend on it, even if some
           contain no symbols referenced by the binary.
@@ -723,10 +716,6 @@ def _compile_as_library(
       deps: Dependencies of the target being compiled. These targets must
           propagate one of the following providers: `CcInfo`,
           `SwiftClangModuleInfo`, `SwiftInfo`, or `apple_common.Objc`.
-      feature_configuration: A feature configuration obtained from
-          `swift_common.configure_features`. If omitted, a default feature
-          configuration will be used, but this argument will be required in the
-          future.
       genfiles_dir: The Bazel `*-genfiles` directory root. If provided, its path
           is added to ClangImporter's header search paths for compatibility with
           Bazel's C++ and Objective-C rules which support inclusions of generated
@@ -740,9 +729,10 @@ def _compile_as_library(
           used directly by any action registered by this function, but they are
           added to the `SwiftInfo` provider that it returns so that the linker
           flags can be propagated to dependent targets.
-      objc_fragment: The `objc` configuration fragment from Bazel. This must be
-          provided if the toolchain supports Objective-C interop; if it does not,
-          then this argument may be omitted.
+      objc_fragment: This argument is no longer used and will be removed in a
+          future version.
+      swift_fragment: This argument is no longer used and will be removed in a
+          future version.
 
     Returns:
       A `struct` containing the following fields:
@@ -765,11 +755,7 @@ def _compile_as_library(
         rule. This includes the `SwiftInfo` provider, and if Objective-C interop
         is enabled on the toolchain, an `apple_common.Objc` provider as well.
     """
-    _ignore = [compilation_mode, configuration]
-
-    # TODO(b/112900284): Make this a required argument.
-    if not feature_configuration:
-        feature_configuration = _configure_features(toolchain)
+    _ignore = [allow_testing, compilation_mode, configuration, objc_fragment, swift_fragment]
 
     if not module_name:
         fail("'module_name' must be provided. Use " +
@@ -818,7 +804,7 @@ def _compile_as_library(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_NO_GENERATED_HEADER,
     )
-    if generates_header and toolchain.supports_objc_interop and objc_fragment:
+    if generates_header and toolchain.supports_objc_interop:
         # Generate a Swift bridging header for this library so that it can be
         # included by Objective-C code that may depend on it.
         objc_header = derived_files.objc_header(actions, target_name = label.name)
@@ -857,15 +843,12 @@ def _compile_as_library(
         feature_configuration = feature_configuration,
         module_name = module_name,
         srcs = srcs,
-        swift_fragment = swift_fragment,
         target_name = label.name,
         toolchain = toolchain,
         additional_input_depsets = compile_input_depsets,
         additional_outputs = additional_outputs,
-        allow_testing = allow_testing,
         deps = deps,
         genfiles_dir = genfiles_dir,
-        objc_fragment = objc_fragment,
     )
 
     # Create an archive that contains the compiled .o files.
@@ -903,7 +886,7 @@ def _compile_as_library(
 
     # Propagate an `objc` provider if the toolchain supports Objective-C interop,
     # which allows `objc_library` targets to import `swift_library` targets.
-    if toolchain.supports_objc_interop and objc_fragment:
+    if toolchain.supports_objc_interop:
         providers.append(new_objc_provider(
             defines = defines,
             deps = all_deps,
@@ -954,9 +937,18 @@ def _configure_features(swift_toolchain, requested_features = [], unsupported_fe
         An opaque value representing the feature configuration that can be passed to other
         `swift_common` functions.
     """
-    all_requested_features = collections.uniq(
-        swift_toolchain.requested_features + requested_features,
+
+    # The features to enable for a particular rule/target are the ones requested by the toolchain,
+    # plus the ones requested by the target itself, *minus* any that are explicitly disabled on the
+    # target itself.
+    requested_features_set = sets.make(swift_toolchain.requested_features)
+    requested_features_set = sets.union(requested_features_set, sets.make(requested_features))
+    requested_features_set = sets.difference(
+        requested_features_set,
+        sets.make(unsupported_features),
     )
+    all_requested_features = sets.to_list(requested_features_set)
+
     all_unsupported_features = collections.uniq(
         swift_toolchain.unsupported_features + unsupported_features,
     )
@@ -1178,9 +1170,9 @@ def _swift_runtime_linkopts(is_static, toolchain, is_test = False):
 
 def _swiftc_command_line_and_inputs(
         args,
+        feature_configuration,
         module_name,
         srcs,
-        swift_fragment,
         toolchain,
         additional_input_depsets = [],
         allow_testing = True,
@@ -1189,9 +1181,9 @@ def _swiftc_command_line_and_inputs(
         copts = [],
         defines = [],
         deps = [],
-        feature_configuration = None,
         genfiles_dir = None,
-        objc_fragment = None):
+        objc_fragment = None,
+        swift_fragment = None):
     """Computes command line arguments and inputs needed to invoke `swiftc`.
 
     The command line arguments computed by this function are any that do *not*
@@ -1205,17 +1197,18 @@ def _swiftc_command_line_and_inputs(
 
     Args:
       args: An `Args` object into which the command line arguments will be added.
+      feature_configuration: A feature configuration obtained from
+          `swift_common.configure_features`.
       module_name: The name of the Swift module being compiled. This must be
           present and valid; use `swift_common.derive_module_name` to generate a
           default from the target's label if needed.
       srcs: The Swift source files to compile.
-      swift_fragment: The `swift` configuration fragment from Bazel.
       toolchain: The `SwiftToolchainInfo` provider of the toolchain.
       additional_input_depsets: A list of `depset`s of `File`s representing
           additional input files that need to be passed to the Swift compile
           action because they are referenced by compiler flags.
-      allow_testing: Indicates whether the module should be compiled with testing
-          enabled (only when the compilation mode is `fastbuild` or `dbg`).
+      allow_testing: This argument is no longer used and will be removed in a
+          future version.
       compilation_mode: This argument is no longer used and will be removed in a
           future version.
       configuration: This argument is no longer used and will be removed in a
@@ -1229,39 +1222,28 @@ def _swiftc_command_line_and_inputs(
       deps: Dependencies of the target being compiled. These targets must
           propagate one of the following providers: `CcInfo`,
           `SwiftClangModuleInfo`, `SwiftInfo`, or `apple_common.Objc`.
-      feature_configuration: A feature configuration obtained from
-          `swift_common.configure_features`. If omitted, a default feature
-          configuration will be used, but this argument will be required in the
-          future.
       genfiles_dir: The Bazel `*-genfiles` directory root. If provided, its path
           is added to ClangImporter's header search paths for compatibility with
           Bazel's C++ and Objective-C rules which support inclusions of generated
           headers from that location.
-      objc_fragment: The `objc` configuration fragment from Bazel. This must be
-          provided if the toolchain supports Objective-C interop; if it does not,
-          then this argument may be omitted.
+      objc_fragment: This argument is no longer used and will be removed in a
+          future version.
+      swift_fragment: This argument is no longer used and will be removed in a
+          future version.
 
     Returns:
       A `depset` containing the full set of files that need to be passed as inputs
       of the Bazel action that spawns a tool with the computed command line (i.e.,
       any source files, referenced module maps and headers, and so forth.)
     """
-    _ignore = [compilation_mode, configuration]
-
-    # TODO(b/112900284): Make this a required argument.
-    if not feature_configuration:
-        feature_configuration = _configure_features(toolchain)
+    _ignore = [allow_testing, compilation_mode, configuration, objc_fragment, swift_fragment]
 
     all_deps = deps + toolchain.implicit_deps
 
     args.add("-module-name")
     args.add(module_name)
 
-    args.add_all(_compilation_mode_copts(
-        allow_testing = allow_testing,
-        feature_configuration = feature_configuration,
-        wants_dsyms = objc_fragment.generate_dsym if objc_fragment else False,
-    ))
+    args.add_all(_compilation_mode_copts(feature_configuration = feature_configuration))
     args.add_all(_coverage_copts(feature_configuration = feature_configuration))
     args.add_all(_sanitizer_copts(feature_configuration = feature_configuration))
     args.add_all(["-Xfrontend", "-color-diagnostics"])
@@ -1278,7 +1260,7 @@ def _swiftc_command_line_and_inputs(
     # Do not enable batch mode if the user requested WMO; this silences an "ignoring
     # '-enable-batch-mode' because '-whole-module-optimization' was also specified" warning.
     if (
-        not _is_wmo(copts, feature_configuration, swift_fragment) and
+        not _is_wmo(copts + toolchain.command_line_copts, feature_configuration) and
         swift_common.is_enabled(
             feature_configuration = feature_configuration,
             feature_name = SWIFT_FEATURE_ENABLE_BATCH_MODE,
@@ -1300,13 +1282,12 @@ def _swiftc_command_line_and_inputs(
     input_depsets.extend(transitive_inputs)
     input_depsets.append(depset(direct = srcs))
 
-    if toolchain.supports_objc_interop and objc_fragment:
+    if toolchain.supports_objc_interop:
         # Collect any additional inputs and flags needed to pull in Objective-C
         # dependencies.
         input_depsets.append(objc_compile_requirements(
             args = args,
             deps = all_deps,
-            objc_fragment = objc_fragment,
         ))
 
     # Add toolchain copts, target copts, and command-line `--swiftcopt` flags,
@@ -1314,7 +1295,7 @@ def _swiftc_command_line_and_inputs(
     # uses if needed.
     args.add_all(toolchain.swiftc_copts)
     args.add_all(copts)
-    args.add_all(swift_fragment.copts())
+    args.add_all(toolchain.command_line_copts)
 
     args.add_all(srcs)
 

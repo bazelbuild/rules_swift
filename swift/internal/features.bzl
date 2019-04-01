@@ -54,6 +54,16 @@ SWIFT_FEATURE_DEBUG_PREFIX_MAP = "swift.debug_prefix_map"
 # them batches of source files.
 SWIFT_FEATURE_ENABLE_BATCH_MODE = "swift.enable_batch_mode"
 
+# If enabled, Swift compilation actions will pass the `-enable-testing` flag that modifies
+# visibility controls to let a module be imported with the `@testable` attribute. This feature
+# will be enabled by default for dbg/fastbuild builds and disabled by default for opt builds.
+SWIFT_FEATURE_ENABLE_TESTING = "swift.enable_testing"
+
+# If enabled, full debug info should be generated instead of line-tables-only. This is required
+# when dSYMs are requested via the `--apple_generate_dsym` flag but the compilation mode is
+# `fastbuild`, because `dsymutil` emits spurious warnings otherwise.
+SWIFT_FEATURE_FULL_DEBUG_INFO = "swift.full_debug_info"
+
 # If enabled, the compilation action for a target will produce an index store.
 SWIFT_FEATURE_INDEX_WHILE_BUILDING = "swift.index_while_building"
 
@@ -87,7 +97,7 @@ SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE = "swift.use_global_module_cache"
 # typically set this automatically if using a sufficiently recent version of Swift (4.2 or higher).
 SWIFT_FEATURE_USE_RESPONSE_FILES = "swift.use_response_files"
 
-def features_for_build_modes(ctx):
+def features_for_build_modes(ctx, objc_fragment = None):
     """Returns a list of Swift toolchain features corresponding to current build modes.
 
     This function explicitly breaks the "don't pass `ctx` as an argument" rule-of-thumb because it
@@ -96,12 +106,18 @@ def features_for_build_modes(ctx):
 
     Args:
         ctx: The current rule context.
+        objc_fragment: The Objective-C configuration fragment, if available.
 
     Returns:
         A list of Swift toolchain features to enable.
     """
+    compilation_mode = ctx.var["COMPILATION_MODE"]
     features = []
-    features.append("swift.{}".format(ctx.var["COMPILATION_MODE"]))
+    features.append("swift.{}".format(compilation_mode))
     if ctx.configuration.coverage_enabled:
-        features.append("swift.coverage")
+        features.append(SWIFT_FEATURE_COVERAGE)
+    if compilation_mode in ("dbg", "fastbuild"):
+        features.append(SWIFT_FEATURE_ENABLE_TESTING)
+        if objc_fragment and objc_fragment.generate_dsym:
+            features.append(SWIFT_FEATURE_FULL_DEBUG_INFO)
     return features

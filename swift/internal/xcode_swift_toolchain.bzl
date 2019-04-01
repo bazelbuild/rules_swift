@@ -19,6 +19,7 @@ toolchain package. If you are looking for rules to build Swift code using this
 toolchain, see `swift.bzl`.
 """
 
+load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:partial.bzl", "partial")
 load("@bazel_skylib//lib:types.bzl", "types")
@@ -34,6 +35,23 @@ load(
 )
 load(":providers.bzl", "SwiftToolchainInfo")
 load(":wrappers.bzl", "SWIFT_TOOL_WRAPPER_ATTRIBUTES")
+
+def _command_line_objc_copts(objc_fragment):
+    """Returns copts that should be passed to `clang` from the `objc` fragment.
+
+    Args:
+        objc_fragment: The `objc` configuration fragment.
+
+    Returns:
+        A list of `clang` copts, each of which is preceded by `-Xcc` so that they can be passed
+        through `swiftc` to its underlying ClangImporter instance.
+    """
+
+    # In general, every compilation mode flag from native `objc_*` rules should be passed, but `-g`
+    # seems to break Clang module compilation. Since this flag does not make much sense for module
+    # compilation and only touches headers, it's ok to omit.
+    clang_copts = objc_fragment.copts + objc_fragment.copts_for_current_compilation_mode
+    return collections.before_each("-Xcc", [copt for copt in clang_copts if copt != "-g"])
 
 def _default_linker_opts(
         apple_fragment,
@@ -468,7 +486,7 @@ def _xcode_swift_toolchain_impl(ctx):
     cc_toolchain = find_cpp_toolchain(ctx)
 
     # Compute the default requested features and conditional ones based on Xcode version.
-    requested_features = features_for_build_modes(ctx)
+    requested_features = features_for_build_modes(ctx, objc_fragment = ctx.fragments.objc)
     requested_features.extend(ctx.features)
     requested_features.append(SWIFT_FEATURE_BUNDLED_XCTESTS)
 
@@ -479,12 +497,15 @@ def _xcode_swift_toolchain_impl(ctx):
 
     # TODO(#35): Add SWIFT_FEATURE_DEBUG_PREFIX_MAP based on Xcode version.
 
+    command_line_copts = _command_line_objc_copts(ctx.fragments.objc) + ctx.fragments.swift.copts()
+
     return [
         SwiftToolchainInfo(
             action_environment = env,
             action_registrars = action_registrars,
             cc_toolchain_info = cc_toolchain,
             clang_executable = None,
+            command_line_copts = command_line_copts,
             cpu = cpu,
             execution_requirements = execution_requirements,
             implicit_deps = [],
@@ -536,7 +557,8 @@ The C++ toolchain from which linking flags and other tools needed by the Swift t
     doc = "Represents a Swift compiler toolchain provided by Xcode.",
     fragments = [
         "apple",
-        "cpp",
+        "objc",
+        "swift",
     ],
     implementation = _xcode_swift_toolchain_impl,
 )
