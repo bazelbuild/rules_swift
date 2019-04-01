@@ -25,6 +25,7 @@ which exports the `swift_common` module.
 
 load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
+load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load("@bazel_skylib//lib:partial.bzl", "partial")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:types.bzl", "types")
@@ -55,6 +56,7 @@ load(
     "SWIFT_FEATURE_COVERAGE",
     "SWIFT_FEATURE_DBG",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
+    "SWIFT_FEATURE_ENABLE_TESTING",
     "SWIFT_FEATURE_FASTBUILD",
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
@@ -261,15 +263,10 @@ support location expansion.
         },
     )
 
-def _compilation_mode_copts(
-        allow_testing,
-        feature_configuration,
-        wants_dsyms = False):
+def _compilation_mode_copts(feature_configuration, wants_dsyms = False):
     """Returns `swiftc` compilation flags that match the current compilation mode.
 
     Args:
-      allow_testing: If `True`, the `-enable-testing` flag will also be added to
-          "dbg" and "fastbuild" builds. This argument is ignored for "opt" builds.
       feature_configuration: A feature configuration obtained from
           `swift_common.configure_features`.
       wants_dsyms: If `True`, the caller is requesting that the debug information
@@ -305,15 +302,18 @@ def _compilation_mode_copts(
             flags.append("-whole-module-optimization")
 
     elif is_dbg or is_fastbuild:
-        if allow_testing:
-            flags.append("-enable-testing")
-
         # The Swift compiler only serializes debugging options in narrow
         # circumstances (for example, for application binaries). Since we almost
         # exclusively just compile to object files directly, we need to manually
         # pass the following frontend option to ensure that LLDB has the necessary
         # import search paths to find definitions during debugging.
         flags.extend(["-Onone", "-DDEBUG", "-Xfrontend", "-serialize-debugging-options"])
+
+    if _is_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_ENABLE_TESTING,
+    ):
+        flags.append("-enable-testing")
 
     # The combination of dsymutil and -gline-tables-only appears to cause
     # spurious warnings about symbols in the debug map, so if the caller is
@@ -480,8 +480,8 @@ def _compile_as_objects(
           action because they are referenced by compiler flags.
       additional_outputs: A list of `File`s representing files that should be
           treated as additional outputs of the compilation action.
-      allow_testing: Indicates whether the module should be compiled with testing
-          enabled (only when the compilation mode is `fastbuild` or `dbg`).
+      allow_testing: This argument is no longer used and will be removed in a
+          future version.
       compilation_mode: This argument is no longer used and will be removed in a
           future version.
       configuration: This argument is no longer used and will be removed in a
@@ -529,7 +529,7 @@ def _compile_as_objects(
       * `output_objects`: The object (`.o`) files that were produced by the
         compiler.
     """
-    _ignore = [compilation_mode, configuration]
+    _ignore = [allow_testing, compilation_mode, configuration]
 
     # TODO(b/112900284): Make this a required argument.
     if not feature_configuration:
@@ -591,7 +591,6 @@ def _compile_as_objects(
         swift_fragment = swift_fragment,
         toolchain = toolchain,
         additional_input_depsets = additional_input_depsets,
-        allow_testing = allow_testing,
         copts = copts,
         defines = defines,
         deps = deps,
@@ -708,8 +707,8 @@ def _compile_as_library(
       additional_inputs: A list of `File`s representing additional inputs that
           need to be passed to the Swift compile action because they are
           referenced in compiler flags.
-      allow_testing: Indicates whether the module should be compiled with testing
-          enabled (only when the compilation mode is `fastbuild` or `dbg`).
+      allow_testing: This argument is no longer used and will be removed in a
+          future version.
       alwayslink: Indicates whether the object files in the library should always
           be always be linked into any binaries that depend on it, even if some
           contain no symbols referenced by the binary.
@@ -764,7 +763,7 @@ def _compile_as_library(
         rule. This includes the `SwiftInfo` provider, and if Objective-C interop
         is enabled on the toolchain, an `apple_common.Objc` provider as well.
     """
-    _ignore = [compilation_mode, configuration]
+    _ignore = [allow_testing, compilation_mode, configuration]
 
     # TODO(b/112900284): Make this a required argument.
     if not feature_configuration:
@@ -861,7 +860,6 @@ def _compile_as_library(
         toolchain = toolchain,
         additional_input_depsets = compile_input_depsets,
         additional_outputs = additional_outputs,
-        allow_testing = allow_testing,
         deps = deps,
         genfiles_dir = genfiles_dir,
         objc_fragment = objc_fragment,
@@ -953,9 +951,18 @@ def _configure_features(swift_toolchain, requested_features = [], unsupported_fe
         An opaque value representing the feature configuration that can be passed to other
         `swift_common` functions.
     """
-    all_requested_features = collections.uniq(
-        swift_toolchain.requested_features + requested_features,
+
+    # The features to enable for a particular rule/target are the ones requested by the toolchain,
+    # plus the ones requested by the target itself, *minus* any that are explicitly disabled on the
+    # target itself.
+    requested_features_set = sets.make(swift_toolchain.requested_features)
+    requested_features_set = sets.union(requested_features_set, sets.make(requested_features))
+    requested_features_set = sets.difference(
+        requested_features_set,
+        sets.make(unsupported_features),
     )
+    all_requested_features = sets.to_list(requested_features_set)
+
     all_unsupported_features = collections.uniq(
         swift_toolchain.unsupported_features + unsupported_features,
     )
@@ -1213,8 +1220,8 @@ def _swiftc_command_line_and_inputs(
       additional_input_depsets: A list of `depset`s of `File`s representing
           additional input files that need to be passed to the Swift compile
           action because they are referenced by compiler flags.
-      allow_testing: Indicates whether the module should be compiled with testing
-          enabled (only when the compilation mode is `fastbuild` or `dbg`).
+      allow_testing: This argument is no longer used and will be removed in a
+          future version.
       compilation_mode: This argument is no longer used and will be removed in a
           future version.
       configuration: This argument is no longer used and will be removed in a
@@ -1245,7 +1252,7 @@ def _swiftc_command_line_and_inputs(
       of the Bazel action that spawns a tool with the computed command line (i.e.,
       any source files, referenced module maps and headers, and so forth.)
     """
-    _ignore = [compilation_mode, configuration]
+    _ignore = [allow_testing, compilation_mode, configuration]
 
     # TODO(b/112900284): Make this a required argument.
     if not feature_configuration:
@@ -1257,7 +1264,6 @@ def _swiftc_command_line_and_inputs(
     args.add(module_name)
 
     args.add_all(_compilation_mode_copts(
-        allow_testing = allow_testing,
         feature_configuration = feature_configuration,
         wants_dsyms = objc_fragment.generate_dsym if objc_fragment else False,
     ))
