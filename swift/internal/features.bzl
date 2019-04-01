@@ -54,6 +54,11 @@ SWIFT_FEATURE_DEBUG_PREFIX_MAP = "swift.debug_prefix_map"
 # them batches of source files.
 SWIFT_FEATURE_ENABLE_BATCH_MODE = "swift.enable_batch_mode"
 
+# If enabled, Swift compilation actions will pass the `-enable-testing` flag that modifies
+# visibility controls to let a module be imported with the `@testable` attribute. This feature
+# will be enabled by default for dbg/fastbuild builds and disabled by default for opt builds.
+SWIFT_FEATURE_ENABLE_TESTING = "swift.enable_testing"
+
 # If enabled, the compilation action for a target will produce an index store.
 SWIFT_FEATURE_INDEX_WHILE_BUILDING = "swift.index_while_building"
 
@@ -100,8 +105,11 @@ def features_for_build_modes(ctx):
     Returns:
         A list of Swift toolchain features to enable.
     """
+    compilation_mode = ctx.var["COMPILATION_MODE"]
     features = []
-    features.append("swift.{}".format(ctx.var["COMPILATION_MODE"]))
+    features.append("swift.{}".format(compilation_mode))
     if ctx.configuration.coverage_enabled:
-        features.append("swift.coverage")
+        features.append(SWIFT_FEATURE_COVERAGE)
+    if compilation_mode in ("dbg", "fastbuild"):
+        features.append(SWIFT_FEATURE_ENABLE_TESTING)
     return features
