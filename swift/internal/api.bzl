@@ -58,6 +58,7 @@ load(
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
     "SWIFT_FEATURE_ENABLE_TESTING",
     "SWIFT_FEATURE_FASTBUILD",
+    "SWIFT_FEATURE_FULL_DEBUG_INFO",
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_NO_GENERATED_HEADER",
@@ -263,15 +264,12 @@ support location expansion.
         },
     )
 
-def _compilation_mode_copts(feature_configuration, wants_dsyms = False):
+def _compilation_mode_copts(feature_configuration):
     """Returns `swiftc` compilation flags that match the current compilation mode.
 
     Args:
       feature_configuration: A feature configuration obtained from
           `swift_common.configure_features`.
-      wants_dsyms: If `True`, the caller is requesting that the debug information
-          be extracted into dSYM binaries. This affects the debug mode used during
-          compilation.
 
     Returns:
       A list of strings containing copts that should be passed to Swift.
@@ -287,6 +285,10 @@ def _compilation_mode_copts(feature_configuration, wants_dsyms = False):
     is_opt = _is_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_OPT,
+    )
+    wants_full_debug_info = _is_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_FULL_DEBUG_INFO,
     )
 
     # The combinations of flags used here mirror the descriptions of these
@@ -318,7 +320,7 @@ def _compilation_mode_copts(feature_configuration, wants_dsyms = False):
     # The combination of dsymutil and -gline-tables-only appears to cause
     # spurious warnings about symbols in the debug map, so if the caller is
     # requesting dSYMs, then force `-g` regardless of compilation mode.
-    if is_dbg or wants_dsyms:
+    if is_dbg or wants_full_debug_info:
         flags.append("-g")
     elif is_fastbuild:
         flags.append("-gline-tables-only")
@@ -1257,10 +1259,7 @@ def _swiftc_command_line_and_inputs(
     args.add("-module-name")
     args.add(module_name)
 
-    args.add_all(_compilation_mode_copts(
-        feature_configuration = feature_configuration,
-        wants_dsyms = objc_fragment.generate_dsym if objc_fragment else False,
-    ))
+    args.add_all(_compilation_mode_copts(feature_configuration = feature_configuration))
     args.add_all(_coverage_copts(feature_configuration = feature_configuration))
     args.add_all(_sanitizer_copts(feature_configuration = feature_configuration))
     args.add_all(["-Xfrontend", "-color-diagnostics"])
