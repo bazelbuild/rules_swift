@@ -16,7 +16,7 @@
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(":api.bzl", "swift_common")
-load(":features.bzl", "SWIFT_FEATURE_NO_GENERATED_HEADER")
+load(":features.bzl", "SWIFT_FEATURE_ENABLE_TESTING", "SWIFT_FEATURE_NO_GENERATED_HEADER")
 load(
     ":proto_gen_utils.bzl",
     "declare_generated_files",
@@ -274,7 +274,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
         feature_configuration = swift_common.configure_features(
             requested_features = aspect_ctx.features + [SWIFT_FEATURE_NO_GENERATED_HEADER],
             swift_toolchain = toolchain,
-            unsupported_features = aspect_ctx.disabled_features,
+            unsupported_features = aspect_ctx.disabled_features + [SWIFT_FEATURE_ENABLE_TESTING],
         )
 
         compile_results = swift_common.compile_as_library(
@@ -285,7 +285,6 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             srcs = pbswift_files,
             swift_fragment = aspect_ctx.fragments.swift,
             toolchain = toolchain,
-            allow_testing = False,
             deps = compile_deps,
             feature_configuration = feature_configuration,
             genfiles_dir = aspect_ctx.genfiles_dir,
