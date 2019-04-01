@@ -14,7 +14,6 @@
 
 """Definitions for handling Bazel repositories used by the Swift rules."""
 
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 def _create_linux_toolchain(repository_ctx):
@@ -96,7 +95,7 @@ def _maybe(repo_rule, name, **kwargs):
     """Executes the given repository rule if it hasn't been executed already.
 
     Args:
-      repo_rule: The repository rule to be executed (e.g., `git_repository`.)
+      repo_rule: The repository rule to be executed (e.g., `http_archive`.)
       name: The name of the repository to be defined by the rule.
       **kwargs: Additional arguments passed directly to the repository rule.
     """
