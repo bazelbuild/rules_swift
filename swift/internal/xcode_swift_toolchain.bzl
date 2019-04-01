@@ -486,7 +486,7 @@ def _xcode_swift_toolchain_impl(ctx):
     cc_toolchain = find_cpp_toolchain(ctx)
 
     # Compute the default requested features and conditional ones based on Xcode version.
-    requested_features = features_for_build_modes(ctx)
+    requested_features = features_for_build_modes(ctx, objc_fragment = ctx.fragments.objc)
     requested_features.extend(ctx.features)
     requested_features.append(SWIFT_FEATURE_BUNDLED_XCTESTS)
 
