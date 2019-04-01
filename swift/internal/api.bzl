@@ -445,6 +445,7 @@ def _cc_feature_configuration(feature_configuration):
 def _compile_as_objects(
         actions,
         arguments,
+        feature_configuration,
         module_name,
         srcs,
         target_name,
@@ -457,7 +458,6 @@ def _compile_as_objects(
         copts = [],
         defines = [],
         deps = [],
-        feature_configuration = None,
         genfiles_dir = None,
         objc_fragment = None,
         swift_fragment = None):
@@ -467,6 +467,8 @@ def _compile_as_objects(
       actions: The context's `actions` object.
       arguments: A list of `Args` objects that provide additional arguments to the
           compiler, not including the `copts` list.
+      feature_configuration: A feature configuration obtained from
+          `swift_common.configure_features`.
       module_name: The name of the Swift module being compiled. This must be
           present and valid; use `swift_common.derive_module_name` to generate a
           default from the target's label if needed.
@@ -494,10 +496,6 @@ def _compile_as_objects(
       deps: Dependencies of the target being compiled. These targets must
           propagate one of the following providers: `CcInfo`,
           `SwiftClangModuleInfo`, `SwiftInfo`, or `apple_common.Objc`.
-      feature_configuration: A feature configuration obtained from
-          `swift_common.configure_features`. If omitted, a default feature
-          configuration will be used, but this argument will be required in the
-          future.
       genfiles_dir: The Bazel `*-genfiles` directory root. If provided, its path
           is added to ClangImporter's header search paths for compatibility with
           Bazel's C++ and Objective-C rules which support inclusions of generated
@@ -530,10 +528,6 @@ def _compile_as_objects(
         compiler.
     """
     _ignore = [allow_testing, compilation_mode, configuration, objc_fragment, swift_fragment]
-
-    # TODO(b/112900284): Make this a required argument.
-    if not feature_configuration:
-        feature_configuration = _configure_features(toolchain)
 
     # Force threaded mode for WMO builds, using the same number of cores that is
     # on a Mac Pro for historical reasons.
@@ -663,6 +657,7 @@ def _compile_as_objects(
 def _compile_as_library(
         actions,
         bin_dir,
+        feature_configuration,
         label,
         module_name,
         srcs,
@@ -675,7 +670,6 @@ def _compile_as_library(
         copts = [],
         defines = [],
         deps = [],
-        feature_configuration = None,
         genfiles_dir = None,
         library_name = None,
         linkopts = [],
@@ -694,6 +688,8 @@ def _compile_as_library(
     Args:
       actions: The rule context's `actions` object.
       bin_dir: The Bazel `*-bin` directory root.
+      feature_configuration: A feature configuration obtained from
+          `swift_common.configure_features`.
       label: The target label for which the code is being compiled, which is used
           to determine unique file paths for the outputs.
       module_name: The name of the Swift module being compiled. This must be
@@ -718,10 +714,6 @@ def _compile_as_library(
       deps: Dependencies of the target being compiled. These targets must
           propagate one of the following providers: `CcInfo`,
           `SwiftClangModuleInfo`, `SwiftInfo`, or `apple_common.Objc`.
-      feature_configuration: A feature configuration obtained from
-          `swift_common.configure_features`. If omitted, a default feature
-          configuration will be used, but this argument will be required in the
-          future.
       genfiles_dir: The Bazel `*-genfiles` directory root. If provided, its path
           is added to ClangImporter's header search paths for compatibility with
           Bazel's C++ and Objective-C rules which support inclusions of generated
@@ -762,10 +754,6 @@ def _compile_as_library(
         is enabled on the toolchain, an `apple_common.Objc` provider as well.
     """
     _ignore = [allow_testing, compilation_mode, configuration, objc_fragment, swift_fragment]
-
-    # TODO(b/112900284): Make this a required argument.
-    if not feature_configuration:
-        feature_configuration = _configure_features(toolchain)
 
     if not module_name:
         fail("'module_name' must be provided. Use " +
@@ -1180,6 +1168,7 @@ def _swift_runtime_linkopts(is_static, toolchain, is_test = False):
 
 def _swiftc_command_line_and_inputs(
         args,
+        feature_configuration,
         module_name,
         srcs,
         toolchain,
@@ -1190,7 +1179,6 @@ def _swiftc_command_line_and_inputs(
         copts = [],
         defines = [],
         deps = [],
-        feature_configuration = None,
         genfiles_dir = None,
         objc_fragment = None,
         swift_fragment = None):
@@ -1207,6 +1195,8 @@ def _swiftc_command_line_and_inputs(
 
     Args:
       args: An `Args` object into which the command line arguments will be added.
+      feature_configuration: A feature configuration obtained from
+          `swift_common.configure_features`.
       module_name: The name of the Swift module being compiled. This must be
           present and valid; use `swift_common.derive_module_name` to generate a
           default from the target's label if needed.
@@ -1230,10 +1220,6 @@ def _swiftc_command_line_and_inputs(
       deps: Dependencies of the target being compiled. These targets must
           propagate one of the following providers: `CcInfo`,
           `SwiftClangModuleInfo`, `SwiftInfo`, or `apple_common.Objc`.
-      feature_configuration: A feature configuration obtained from
-          `swift_common.configure_features`. If omitted, a default feature
-          configuration will be used, but this argument will be required in the
-          future.
       genfiles_dir: The Bazel `*-genfiles` directory root. If provided, its path
           is added to ClangImporter's header search paths for compatibility with
           Bazel's C++ and Objective-C rules which support inclusions of generated
@@ -1249,10 +1235,6 @@ def _swiftc_command_line_and_inputs(
       any source files, referenced module maps and headers, and so forth.)
     """
     _ignore = [allow_testing, compilation_mode, configuration, objc_fragment, swift_fragment]
-
-    # TODO(b/112900284): Make this a required argument.
-    if not feature_configuration:
-        feature_configuration = _configure_features(toolchain)
 
     all_deps = deps + toolchain.implicit_deps
 
