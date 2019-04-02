@@ -456,15 +456,10 @@ def _compile_as_objects(
         toolchain,
         additional_input_depsets = [],
         additional_outputs = [],
-        allow_testing = True,
-        compilation_mode = None,
-        configuration = None,
         copts = [],
         defines = [],
         deps = [],
-        genfiles_dir = None,
-        objc_fragment = None,
-        swift_fragment = None):
+        genfiles_dir = None):
     """Compiles Swift source files into object files (and optionally a module).
 
     Args:
@@ -485,12 +480,6 @@ def _compile_as_objects(
           action because they are referenced by compiler flags.
       additional_outputs: A list of `File`s representing files that should be
           treated as additional outputs of the compilation action.
-      allow_testing: This argument is no longer used and will be removed in a
-          future version.
-      compilation_mode: This argument is no longer used and will be removed in a
-          future version.
-      configuration: This argument is no longer used and will be removed in a
-          future version.
       copts: A list (**not** an `Args` object) of compiler flags that apply to the
           target being built. These flags, along with those from Bazel's Swift
           configuration fragment (i.e., `--swiftcopt` command line flags) are
@@ -504,10 +493,6 @@ def _compile_as_objects(
           is added to ClangImporter's header search paths for compatibility with
           Bazel's C++ and Objective-C rules which support inclusions of generated
           headers from that location.
-      objc_fragment: This argument is no longer used and will be removed in a
-          future version.
-      swift_fragment: This argument is no longer used and will be removed in a
-          future version.
 
     Returns:
       A `struct` containing the following fields:
@@ -531,7 +516,6 @@ def _compile_as_objects(
       * `output_objects`: The object (`.o`) files that were produced by the
         compiler.
     """
-    _ignore = [allow_testing, compilation_mode, configuration, objc_fragment, swift_fragment]
 
     # Force threaded mode for WMO builds, using the same number of cores that is
     # on a Mac Pro for historical reasons.
@@ -667,18 +651,13 @@ def _compile_as_library(
         srcs,
         toolchain,
         additional_inputs = [],
-        allow_testing = True,
         alwayslink = False,
-        compilation_mode = None,
-        configuration = None,
         copts = [],
         defines = [],
         deps = [],
         genfiles_dir = None,
         library_name = None,
-        linkopts = [],
-        objc_fragment = None,
-        swift_fragment = None):
+        linkopts = []):
     """Compiles Swift source files into static and/or shared libraries.
 
     This is a high-level API that wraps the compilation and library creation steps
@@ -704,15 +683,9 @@ def _compile_as_library(
       additional_inputs: A list of `File`s representing additional inputs that
           need to be passed to the Swift compile action because they are
           referenced in compiler flags.
-      allow_testing: This argument is no longer used and will be removed in a
-          future version.
       alwayslink: Indicates whether the object files in the library should always
           be always be linked into any binaries that depend on it, even if some
           contain no symbols referenced by the binary.
-      compilation_mode: This argument is no longer used and will be removed in a
-          future version.
-      configuration: This argument is no longer used and will be removed in a
-          future version.
       copts: Additional flags that should be passed to `swiftc`.
       defines: Symbols that should be defined by passing `-D` to the compiler.
       deps: Dependencies of the target being compiled. These targets must
@@ -731,10 +704,6 @@ def _compile_as_library(
           used directly by any action registered by this function, but they are
           added to the `SwiftInfo` provider that it returns so that the linker
           flags can be propagated to dependent targets.
-      objc_fragment: This argument is no longer used and will be removed in a
-          future version.
-      swift_fragment: This argument is no longer used and will be removed in a
-          future version.
 
     Returns:
       A `struct` containing the following fields:
@@ -757,8 +726,6 @@ def _compile_as_library(
         rule. This includes the `SwiftInfo` provider, and if Objective-C interop
         is enabled on the toolchain, an `apple_common.Objc` provider as well.
     """
-    _ignore = [allow_testing, compilation_mode, configuration, objc_fragment, swift_fragment]
-
     if not module_name:
         fail("'module_name' must be provided. Use " +
              "'swift_common.derive_module_name' if necessary to derive one from " +
@@ -1177,15 +1144,10 @@ def _swiftc_command_line_and_inputs(
         srcs,
         toolchain,
         additional_input_depsets = [],
-        allow_testing = True,
-        compilation_mode = None,
-        configuration = None,
         copts = [],
         defines = [],
         deps = [],
-        genfiles_dir = None,
-        objc_fragment = None,
-        swift_fragment = None):
+        genfiles_dir = None):
     """Computes command line arguments and inputs needed to invoke `swiftc`.
 
     The command line arguments computed by this function are any that do *not*
@@ -1209,12 +1171,6 @@ def _swiftc_command_line_and_inputs(
       additional_input_depsets: A list of `depset`s of `File`s representing
           additional input files that need to be passed to the Swift compile
           action because they are referenced by compiler flags.
-      allow_testing: This argument is no longer used and will be removed in a
-          future version.
-      compilation_mode: This argument is no longer used and will be removed in a
-          future version.
-      configuration: This argument is no longer used and will be removed in a
-          future version.
       copts: A list (**not** an `Args` object) of compiler flags that apply to the
           target being built. These flags, along with those from Bazel's Swift
           configuration fragment (i.e., `--swiftcopt` command line flags) are
@@ -1228,18 +1184,12 @@ def _swiftc_command_line_and_inputs(
           is added to ClangImporter's header search paths for compatibility with
           Bazel's C++ and Objective-C rules which support inclusions of generated
           headers from that location.
-      objc_fragment: This argument is no longer used and will be removed in a
-          future version.
-      swift_fragment: This argument is no longer used and will be removed in a
-          future version.
 
     Returns:
       A `depset` containing the full set of files that need to be passed as inputs
       of the Bazel action that spawns a tool with the computed command line (i.e.,
       any source files, referenced module maps and headers, and so forth.)
     """
-    _ignore = [allow_testing, compilation_mode, configuration, objc_fragment, swift_fragment]
-
     all_deps = deps + toolchain.implicit_deps
 
     args.add("-module-name")
