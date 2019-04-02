@@ -318,7 +318,7 @@ def _run_shell_action(
         tools = [bazel_xcode_wrapper] + user_tools
     elif type(user_tools) == type(depset()):
         tools = depset(direct = [bazel_xcode_wrapper], transitive = [user_tools])
-    elif user_tools:
+    else:
         fail("'tools' argument must be a sequence or depset.")
 
     # Prepend the wrapper executable to the command being executed.
