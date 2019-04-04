@@ -99,7 +99,7 @@ def _maybe(repo_rule, name, **kwargs):
       name: The name of the repository to be defined by the rule.
       **kwargs: Additional arguments passed directly to the repository rule.
     """
-    if name not in native.existing_rules():
+    if not native.existing_rule(name):
         repo_rule(name = name, **kwargs)
 
 def swift_rules_dependencies():
