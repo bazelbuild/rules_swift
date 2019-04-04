@@ -1,5 +1,8 @@
 # Build API
 
+<!-- Generated file, do not edit directly. -->
+
+
 
 The `swift_common` module provides API access to the behavior implemented
 by the Swift build rules, so that other custom rules can invoke Swift
@@ -8,14 +11,13 @@ compilation and/or linking as part of their implementation.
 On this page:
 
   * [swift_common.build_swift_info](#swift_common.build_swift_info)
+  * [swift_common.cc_feature_configuration](#swift_common.cc_feature_configuration)
   * [swift_common.compilation_attrs](#swift_common.compilation_attrs)
-  * [swift_common.compilation_mode_copts](#swift_common.compilation_mode_copts)
   * [swift_common.compile_as_library](#swift_common.compile_as_library)
   * [swift_common.compile_as_objects](#swift_common.compile_as_objects)
   * [swift_common.configure_features](#swift_common.configure_features)
   * [swift_common.derive_module_name](#swift_common.derive_module_name)
-  * [swift_common.get_disabled_features](#swift_common.get_disabled_features)
-  * [swift_common.get_enabled_features](#swift_common.get_enabled_features)
+  * [swift_common.is_enabled](#swift_common.is_enabled)
   * [swift_common.library_rule_attrs](#swift_common.library_rule_attrs)
   * [swift_common.merge_swift_info_providers](#swift_common.merge_swift_info_providers)
   * [swift_common.run_toolchain_action](#swift_common.run_toolchain_action)
@@ -29,9 +31,9 @@ On this page:
 ## swift_common.build_swift_info
 
 <pre style="white-space: normal">
-swift_common.build_swift_info(<a href="#swift_common.build_swift_info.additional_cc_libs">additional_cc_libs</a>=[], <a href="#swift_common.build_swift_info.compile_options">compile_options</a>=[], <a href="#swift_common.build_swift_info.deps">deps</a>=[],
-<a href="#swift_common.build_swift_info.direct_additional_inputs">direct_additional_inputs</a>=[], <a href="#swift_common.build_swift_info.direct_defines">direct_defines</a>=[], <a href="#swift_common.build_swift_info.direct_libraries">direct_libraries</a>=[], <a href="#swift_common.build_swift_info.direct_linkopts">direct_linkopts</a>=[],
-<a href="#swift_common.build_swift_info.direct_swiftdocs">direct_swiftdocs</a>=[], <a href="#swift_common.build_swift_info.direct_swiftmodules">direct_swiftmodules</a>=[], <a href="#swift_common.build_swift_info.module_name">module_name</a>=None, <a href="#swift_common.build_swift_info.swift_version">swift_version</a>=None)
+swift_common.build_swift_info(<a href="#swift_common.build_swift_info.compile_options">compile_options</a>=[], <a href="#swift_common.build_swift_info.deps">deps</a>=[], <a href="#swift_common.build_swift_info.direct_additional_inputs">direct_additional_inputs</a>=[],
+<a href="#swift_common.build_swift_info.direct_defines">direct_defines</a>=[], <a href="#swift_common.build_swift_info.direct_libraries">direct_libraries</a>=[], <a href="#swift_common.build_swift_info.direct_linkopts">direct_linkopts</a>=[], <a href="#swift_common.build_swift_info.direct_swiftdocs">direct_swiftdocs</a>=[],
+<a href="#swift_common.build_swift_info.direct_swiftmodules">direct_swiftmodules</a>=[], <a href="#swift_common.build_swift_info.module_name">module_name</a>=None, <a href="#swift_common.build_swift_info.swift_version">swift_version</a>=None)
 </pre>
 
 Builds a `SwiftInfo` provider from direct outputs and dependencies.
@@ -49,11 +51,6 @@ also automatically collects transitive values from dependencies.
     <col class="col-description" />
   </colgroup>
   <tbody>
-    <tr id="swift_common.build_swift_info.additional_cc_libs">
-      <td><code>additional_cc_libs</code></td>
-      <td><p><code>Optional; default is []</code></p><p>A list of additional <code>cc_library</code> dependencies whose libraries and
-linkopts need to be propagated by <code>SwiftInfo</code>.</p></td>
-    </tr>
     <tr id="swift_common.build_swift_info.compile_options">
       <td><code>compile_options</code></td>
       <td><p><code>Optional; default is []</code></p><p>A list of <code>Args</code> objects that contain the compilation options passed to
@@ -113,6 +110,37 @@ compiling this target, or <code>None</code> if it was not set or is not relevant
 A new `SwiftInfo` provider that propagates the direct and transitive libraries and modules
 for the target being built.
 
+<a name="swift_common.cc_feature_configuration"></a>
+## swift_common.cc_feature_configuration
+
+<pre style="white-space: normal">
+swift_common.cc_feature_configuration(<a href="#swift_common.cc_feature_configuration.feature_configuration">feature_configuration</a>)
+</pre>
+
+Returns the C++ feature configuration nested inside the given Swift feature configuration.
+
+<a name="swift_common.cc_feature_configuration.arguments"></a>
+### Arguments
+
+<table class="params-table">
+  <colgroup>
+    <col class="col-param" />
+    <col class="col-description" />
+  </colgroup>
+  <tbody>
+    <tr id="swift_common.cc_feature_configuration.feature_configuration">
+      <td><code>feature_configuration</code></td>
+      <td><p><code>Required</code></p><p>The Swift feature configuration, as returned from
+<code>swift_common.configure_features</code>.</p></td>
+    </tr>
+  </tbody>
+</table>
+
+<a name="swift_common.cc_feature_configuration.returns"></a>
+### Returns
+
+A C++ `FeatureConfiguration` value (see `cc_common` for more information).
+
 <a name="swift_common.compilation_attrs"></a>
 ## swift_common.compilation_attrs
 
@@ -171,57 +199,13 @@ A new attribute dictionary that can be added to the attributes of a custom
 build rule to provide a similar interface to `swift_binary`,
 `swift_library`, and `swift_test`.
 
-<a name="swift_common.compilation_mode_copts"></a>
-## swift_common.compilation_mode_copts
-
-<pre style="white-space: normal">
-swift_common.compilation_mode_copts(<a href="#swift_common.compilation_mode_copts.allow_testing">allow_testing</a>, <a href="#swift_common.compilation_mode_copts.compilation_mode">compilation_mode</a>, <a href="#swift_common.compilation_mode_copts.wants_dsyms">wants_dsyms</a>=False)
-</pre>
-
-Returns `swiftc` compilation flags that match the given compilation mode.
-
-<a name="swift_common.compilation_mode_copts.arguments"></a>
-### Arguments
-
-<table class="params-table">
-  <colgroup>
-    <col class="col-param" />
-    <col class="col-description" />
-  </colgroup>
-  <tbody>
-    <tr id="swift_common.compilation_mode_copts.allow_testing">
-      <td><code>allow_testing</code></td>
-      <td><p><code>Required</code></p><p>If <code>True</code>, the <code>-enable-testing</code> flag will also be added to
-"dbg" and "fastbuild" builds. This argument is ignored for "opt" builds.</p></td>
-    </tr>
-    <tr id="swift_common.compilation_mode_copts.compilation_mode">
-      <td><code>compilation_mode</code></td>
-      <td><p><code>Required</code></p><p>The compilation mode string ("fastbuild", "dbg", or
-"opt"). The build will fail if this is <code>None</code> or some other unrecognized
-mode.</p></td>
-    </tr>
-    <tr id="swift_common.compilation_mode_copts.wants_dsyms">
-      <td><code>wants_dsyms</code></td>
-      <td><p><code>Optional; default is False</code></p><p>If <code>True</code>, the caller is requesting that the debug information
-be extracted into dSYM binaries. This affects the debug mode used during
-compilation.</p></td>
-    </tr>
-  </tbody>
-</table>
-
-<a name="swift_common.compilation_mode_copts.returns"></a>
-### Returns
-
-A list of strings containing copts that should be passed to Swift.
-
 <a name="swift_common.compile_as_library"></a>
 ## swift_common.compile_as_library
 
 <pre style="white-space: normal">
-swift_common.compile_as_library(<a href="#swift_common.compile_as_library.actions">actions</a>, <a href="#swift_common.compile_as_library.bin_dir">bin_dir</a>, <a href="#swift_common.compile_as_library.compilation_mode">compilation_mode</a>, <a href="#swift_common.compile_as_library.label">label</a>, <a href="#swift_common.compile_as_library.module_name">module_name</a>, <a href="#swift_common.compile_as_library.srcs">srcs</a>,
-<a href="#swift_common.compile_as_library.swift_fragment">swift_fragment</a>, <a href="#swift_common.compile_as_library.toolchain">toolchain</a>, <a href="#swift_common.compile_as_library.additional_inputs">additional_inputs</a>=[], <a href="#swift_common.compile_as_library.allow_testing">allow_testing</a>=True, <a href="#swift_common.compile_as_library.alwayslink">alwayslink</a>=False, <a href="#swift_common.compile_as_library.cc_libs">cc_libs</a>=[],
-<a href="#swift_common.compile_as_library.configuration">configuration</a>=None, <a href="#swift_common.compile_as_library.copts">copts</a>=[], <a href="#swift_common.compile_as_library.defines">defines</a>=[], <a href="#swift_common.compile_as_library.deps">deps</a>=[], <a href="#swift_common.compile_as_library.feature_configuration">feature_configuration</a>=None, <a href="#swift_common.compile_as_library.genfiles_dir">genfiles_dir</a>=None,
-<a href="#swift_common.compile_as_library.library_name">library_name</a>=None, <a href="#swift_common.compile_as_library.linkopts">linkopts</a>=[], <a href="#swift_common.compile_as_library.objc_fragment">objc_fragment</a>=None)
+swift_common.compile_as_library(<a href="#swift_common.compile_as_library.actions">actions</a>, <a href="#swift_common.compile_as_library.bin_dir">bin_dir</a>, <a href="#swift_common.compile_as_library.feature_configuration">feature_configuration</a>, <a href="#swift_common.compile_as_library.label">label</a>, <a href="#swift_common.compile_as_library.module_name">module_name</a>, <a href="#swift_common.compile_as_library.srcs">srcs</a>,
+<a href="#swift_common.compile_as_library.toolchain">toolchain</a>, <a href="#swift_common.compile_as_library.additional_inputs">additional_inputs</a>=[], <a href="#swift_common.compile_as_library.alwayslink">alwayslink</a>=False, <a href="#swift_common.compile_as_library.copts">copts</a>=[], <a href="#swift_common.compile_as_library.defines">defines</a>=[], <a href="#swift_common.compile_as_library.deps">deps</a>=[], <a href="#swift_common.compile_as_library.genfiles_dir">genfiles_dir</a>=None,
+<a href="#swift_common.compile_as_library.library_name">library_name</a>=None, <a href="#swift_common.compile_as_library.linkopts">linkopts</a>=[])
 </pre>
 
 Compiles Swift source files into static and/or shared libraries.
@@ -251,10 +235,10 @@ provider that allows other `objc_library` targets to depend on it.
       <td><code>bin_dir</code></td>
       <td><p><code>Required</code></p><p>The Bazel <code>*-bin</code> directory root.</p></td>
     </tr>
-    <tr id="swift_common.compile_as_library.compilation_mode">
-      <td><code>compilation_mode</code></td>
-      <td><p><code>Required</code></p><p>The Bazel compilation mode; must be <code>dbg</code>, <code>fastbuild</code>, or
-<code>opt</code>.</p></td>
+    <tr id="swift_common.compile_as_library.feature_configuration">
+      <td><code>feature_configuration</code></td>
+      <td><p><code>Required</code></p><p>A feature configuration obtained from
+<code>swift_common.configure_features</code>.</p></td>
     </tr>
     <tr id="swift_common.compile_as_library.label">
       <td><code>label</code></td>
@@ -271,10 +255,6 @@ default from the target's label if needed.</p></td>
       <td><code>srcs</code></td>
       <td><p><code>Required</code></p><p>The Swift source files to compile.</p></td>
     </tr>
-    <tr id="swift_common.compile_as_library.swift_fragment">
-      <td><code>swift_fragment</code></td>
-      <td><p><code>Required</code></p><p>The <code>swift</code> configuration fragment from Bazel.</p></td>
-    </tr>
     <tr id="swift_common.compile_as_library.toolchain">
       <td><code>toolchain</code></td>
       <td><p><code>Required</code></p><p>The <code>SwiftToolchainInfo</code> provider of the toolchain.</p></td>
@@ -285,28 +265,11 @@ default from the target's label if needed.</p></td>
 need to be passed to the Swift compile action because they are
 referenced in compiler flags.</p></td>
     </tr>
-    <tr id="swift_common.compile_as_library.allow_testing">
-      <td><code>allow_testing</code></td>
-      <td><p><code>Optional; default is True</code></p><p>Indicates whether the module should be compiled with testing
-enabled (only when the compilation mode is <code>fastbuild</code> or <code>dbg</code>).</p></td>
-    </tr>
     <tr id="swift_common.compile_as_library.alwayslink">
       <td><code>alwayslink</code></td>
       <td><p><code>Optional; default is False</code></p><p>Indicates whether the object files in the library should always
 be always be linked into any binaries that depend on it, even if some
 contain no symbols referenced by the binary.</p></td>
-    </tr>
-    <tr id="swift_common.compile_as_library.cc_libs">
-      <td><code>cc_libs</code></td>
-      <td><p><code>Optional; default is []</code></p><p>Additional <code>cc_library</code> targets whose static libraries should be
-merged into the resulting archive.</p></td>
-    </tr>
-    <tr id="swift_common.compile_as_library.configuration">
-      <td><code>configuration</code></td>
-      <td><p><code>Optional; default is None</code></p><p>The default configuration from which certain compilation
-options are determined, such as whether coverage is enabled. This object
-should be one obtained from a rule's <code>ctx.configuraton</code> field. If
-omitted, no default-configuration-specific options will be used.</p></td>
     </tr>
     <tr id="swift_common.compile_as_library.copts">
       <td><code>copts</code></td>
@@ -319,15 +282,8 @@ omitted, no default-configuration-specific options will be used.</p></td>
     <tr id="swift_common.compile_as_library.deps">
       <td><code>deps</code></td>
       <td><p><code>Optional; default is []</code></p><p>Dependencies of the target being compiled. These targets must
-propagate one of the following providers: <code>SwiftClangModuleInfo</code>,
-<code>SwiftInfo</code>, <code>"cc"</code>, or <code>apple_common.Objc</code>.</p></td>
-    </tr>
-    <tr id="swift_common.compile_as_library.feature_configuration">
-      <td><code>feature_configuration</code></td>
-      <td><p><code>Optional; default is None</code></p><p>A feature configuration obtained from
-<code>swift_common.configure_features</code>. If omitted, a default feature
-configuration will be used, but this argument will be required in the
-future.</p></td>
+propagate one of the following providers: <code>CcInfo</code>,
+<code>SwiftClangModuleInfo</code>, <code>SwiftInfo</code>, or <code>apple_common.Objc</code>.</p></td>
     </tr>
     <tr id="swift_common.compile_as_library.genfiles_dir">
       <td><code>genfiles_dir</code></td>
@@ -351,12 +307,6 @@ used directly by any action registered by this function, but they are
 added to the <code>SwiftInfo</code> provider that it returns so that the linker
 flags can be propagated to dependent targets.</p></td>
     </tr>
-    <tr id="swift_common.compile_as_library.objc_fragment">
-      <td><code>objc_fragment</code></td>
-      <td><p><code>Optional; default is None</code></p><p>The <code>objc</code> configuration fragment from Bazel. This must be
-provided if the toolchain supports Objective-C interop; if it does not,
-then this argument may be omitted.</p></td>
-    </tr>
   </tbody>
 </table>
 
@@ -374,6 +324,7 @@ A `struct` containing the following fields:
 * `output_archive`: The static archive (`.a`) that was produced by the
   archiving step after compilation.
 * `output_doc`: The `.swiftdoc` file that was produced by the compiler.
+* `output_header`: The generated Swift bridging header if any, or `None`.
 * `output_groups`: A dictionary of output groups that should be returned by
   the calling rule through the `OutputGroupInfo` provider.
 * `output_module`: The `.swiftmodule` file that was produced by the
@@ -386,10 +337,9 @@ A `struct` containing the following fields:
 ## swift_common.compile_as_objects
 
 <pre style="white-space: normal">
-swift_common.compile_as_objects(<a href="#swift_common.compile_as_objects.actions">actions</a>, <a href="#swift_common.compile_as_objects.arguments">arguments</a>, <a href="#swift_common.compile_as_objects.compilation_mode">compilation_mode</a>, <a href="#swift_common.compile_as_objects.module_name">module_name</a>, <a href="#swift_common.compile_as_objects.srcs">srcs</a>,
-<a href="#swift_common.compile_as_objects.swift_fragment">swift_fragment</a>, <a href="#swift_common.compile_as_objects.target_name">target_name</a>, <a href="#swift_common.compile_as_objects.toolchain">toolchain</a>, <a href="#swift_common.compile_as_objects.additional_input_depsets">additional_input_depsets</a>=[], <a href="#swift_common.compile_as_objects.additional_outputs">additional_outputs</a>=[],
-<a href="#swift_common.compile_as_objects.allow_testing">allow_testing</a>=True, <a href="#swift_common.compile_as_objects.configuration">configuration</a>=None, <a href="#swift_common.compile_as_objects.copts">copts</a>=[], <a href="#swift_common.compile_as_objects.defines">defines</a>=[], <a href="#swift_common.compile_as_objects.deps">deps</a>=[], <a href="#swift_common.compile_as_objects.feature_configuration">feature_configuration</a>=None,
-<a href="#swift_common.compile_as_objects.genfiles_dir">genfiles_dir</a>=None, <a href="#swift_common.compile_as_objects.objc_fragment">objc_fragment</a>=None)
+swift_common.compile_as_objects(<a href="#swift_common.compile_as_objects.actions">actions</a>, <a href="#swift_common.compile_as_objects.arguments">arguments</a>, <a href="#swift_common.compile_as_objects.feature_configuration">feature_configuration</a>, <a href="#swift_common.compile_as_objects.module_name">module_name</a>, <a href="#swift_common.compile_as_objects.srcs">srcs</a>,
+<a href="#swift_common.compile_as_objects.target_name">target_name</a>, <a href="#swift_common.compile_as_objects.toolchain">toolchain</a>, <a href="#swift_common.compile_as_objects.additional_input_depsets">additional_input_depsets</a>=[], <a href="#swift_common.compile_as_objects.additional_outputs">additional_outputs</a>=[], <a href="#swift_common.compile_as_objects.copts">copts</a>=[], <a href="#swift_common.compile_as_objects.defines">defines</a>=[],
+<a href="#swift_common.compile_as_objects.deps">deps</a>=[], <a href="#swift_common.compile_as_objects.genfiles_dir">genfiles_dir</a>=None)
 </pre>
 
 Compiles Swift source files into object files (and optionally a module).
@@ -412,10 +362,10 @@ Compiles Swift source files into object files (and optionally a module).
       <td><p><code>Required</code></p><p>A list of <code>Args</code> objects that provide additional arguments to the
 compiler, not including the <code>copts</code> list.</p></td>
     </tr>
-    <tr id="swift_common.compile_as_objects.compilation_mode">
-      <td><code>compilation_mode</code></td>
-      <td><p><code>Required</code></p><p>The Bazel compilation mode; must be <code>dbg</code>, <code>fastbuild</code>, or
-<code>opt</code>.</p></td>
+    <tr id="swift_common.compile_as_objects.feature_configuration">
+      <td><code>feature_configuration</code></td>
+      <td><p><code>Required</code></p><p>A feature configuration obtained from
+<code>swift_common.configure_features</code>.</p></td>
     </tr>
     <tr id="swift_common.compile_as_objects.module_name">
       <td><code>module_name</code></td>
@@ -426,10 +376,6 @@ default from the target's label if needed.</p></td>
     <tr id="swift_common.compile_as_objects.srcs">
       <td><code>srcs</code></td>
       <td><p><code>Required</code></p><p>The Swift source files to compile.</p></td>
-    </tr>
-    <tr id="swift_common.compile_as_objects.swift_fragment">
-      <td><code>swift_fragment</code></td>
-      <td><p><code>Required</code></p><p>The <code>swift</code> configuration fragment from Bazel.</p></td>
     </tr>
     <tr id="swift_common.compile_as_objects.target_name">
       <td><code>target_name</code></td>
@@ -451,18 +397,6 @@ action because they are referenced by compiler flags.</p></td>
       <td><p><code>Optional; default is []</code></p><p>A list of <code>File</code>s representing files that should be
 treated as additional outputs of the compilation action.</p></td>
     </tr>
-    <tr id="swift_common.compile_as_objects.allow_testing">
-      <td><code>allow_testing</code></td>
-      <td><p><code>Optional; default is True</code></p><p>Indicates whether the module should be compiled with testing
-enabled (only when the compilation mode is <code>fastbuild</code> or <code>dbg</code>).</p></td>
-    </tr>
-    <tr id="swift_common.compile_as_objects.configuration">
-      <td><code>configuration</code></td>
-      <td><p><code>Optional; default is None</code></p><p>The default configuration from which certain compilation
-options are determined, such as whether coverage is enabled. This object
-should be one obtained from a rule's <code>ctx.configuraton</code> field. If
-omitted, no default-configuration-specific options will be used.</p></td>
-    </tr>
     <tr id="swift_common.compile_as_objects.copts">
       <td><code>copts</code></td>
       <td><p><code>Optional; default is []</code></p><p>A list (<strong>not</strong> an <code>Args</code> object) of compiler flags that apply to the
@@ -478,15 +412,8 @@ requested, which affects the nature of the output files.</p></td>
     <tr id="swift_common.compile_as_objects.deps">
       <td><code>deps</code></td>
       <td><p><code>Optional; default is []</code></p><p>Dependencies of the target being compiled. These targets must
-propagate one of the following providers: <code>SwiftClangModuleInfo</code>,
-<code>SwiftInfo</code>, <code>"cc"</code>, or <code>apple_common.Objc</code>.</p></td>
-    </tr>
-    <tr id="swift_common.compile_as_objects.feature_configuration">
-      <td><code>feature_configuration</code></td>
-      <td><p><code>Optional; default is None</code></p><p>A feature configuration obtained from
-<code>swift_common.configure_features</code>. If omitted, a default feature
-configuration will be used, but this argument will be required in the
-future.</p></td>
+propagate one of the following providers: <code>CcInfo</code>,
+<code>SwiftClangModuleInfo</code>, <code>SwiftInfo</code>, or <code>apple_common.Objc</code>.</p></td>
     </tr>
     <tr id="swift_common.compile_as_objects.genfiles_dir">
       <td><code>genfiles_dir</code></td>
@@ -494,12 +421,6 @@ future.</p></td>
 is added to ClangImporter's header search paths for compatibility with
 Bazel's C++ and Objective-C rules which support inclusions of generated
 headers from that location.</p></td>
-    </tr>
-    <tr id="swift_common.compile_as_objects.objc_fragment">
-      <td><code>objc_fragment</code></td>
-      <td><p><code>Optional; default is None</code></p><p>The <code>objc</code> configuration fragment from Bazel. This must be
-provided if the toolchain supports Objective-C interop; if it does not,
-then this argument may be omitted.</p></td>
     </tr>
   </tbody>
 </table>
@@ -532,19 +453,15 @@ A `struct` containing the following fields:
 ## swift_common.configure_features
 
 <pre style="white-space: normal">
-swift_common.configure_features(<a href="#swift_common.configure_features.toolchain">toolchain</a>, <a href="#swift_common.configure_features.requested_features">requested_features</a>=[], <a href="#swift_common.configure_features.unsupported_features">unsupported_features</a>=[])
+swift_common.configure_features(<a href="#swift_common.configure_features.swift_toolchain">swift_toolchain</a>, <a href="#swift_common.configure_features.requested_features">requested_features</a>=[], <a href="#swift_common.configure_features.unsupported_features">unsupported_features</a>=[])
 </pre>
 
 Creates a feature configuration that should be passed to other Swift build APIs.
 
-The feature configuration is a value that encapsulates the list of features that have been
-explicitly enabled or disabled by the user as well as those enabled or disabled by the
-toolchain. The other Swift build APIs query this value to determine which features should be
-used during the build.
-
-Users should treat the return value of this function as an opaque value and should only operate
-on it using other API functions, like `swift_common.get_{enabled,disabled}_features`. Its
-internal representation is an implementation detail and subject to change.
+This function calls through to `cc_common.configure_features` to configure underlying C++
+features as well, and nests the C++ feature configuration inside the Swift one. Users who need
+to call C++ APIs that require a feature configuration can extract it by calling
+`swift_common.cc_feature_configuration(feature_configuration)`.
 
 <a name="swift_common.configure_features.arguments"></a>
 ### Arguments
@@ -555,22 +472,22 @@ internal representation is an implementation detail and subject to change.
     <col class="col-description" />
   </colgroup>
   <tbody>
-    <tr id="swift_common.configure_features.toolchain">
-      <td><code>toolchain</code></td>
-      <td><p><code>Required</code></p><p>The <code>SwiftToolchainInfo</code> provider of the toolchain being used to build.</p></td>
+    <tr id="swift_common.configure_features.swift_toolchain">
+      <td><code>swift_toolchain</code></td>
+      <td><p><code>Required</code></p><p>The <code>SwiftToolchainInfo</code> provider of the toolchain being used to build.
+The C++ toolchain associated with the Swift toolchain is used to create the underlying
+C++ feature configuration.</p></td>
     </tr>
     <tr id="swift_common.configure_features.requested_features">
       <td><code>requested_features</code></td>
-      <td><p><code>Optional; default is []</code></p><p>The list of user-enabled features <em>only</em>. This is typically obtained
-using the <code>ctx.features</code> field in a rule implementation function. It should <em>not</em> be
-merged with any features from the toolchain; the feature configuration manages those.</p></td>
+      <td><p><code>Optional; default is []</code></p><p>The list of features to be enabled. This is typically obtained using
+the <code>ctx.features</code> field in a rule implementation function.</p></td>
     </tr>
     <tr id="swift_common.configure_features.unsupported_features">
       <td><code>unsupported_features</code></td>
-      <td><p><code>Optional; default is []</code></p><p>The list of user-disabled features <em>only</em>. This is typically obtained
-using the <code>ctx.disabled_features</code> field in a rule implementation function. It should
-<em>not</em> be merged with any disabled features from the toolchain; the feature configuration
-manages those.</p></td>
+      <td><p><code>Optional; default is []</code></p><p>The list of features that are unsupported by the current rule. This
+is typically obtained using the <code>ctx.disabled_features</code> field in a rule implementation
+function.</p></td>
     </tr>
   </tbody>
 </table>
@@ -578,8 +495,8 @@ manages those.</p></td>
 <a name="swift_common.configure_features.returns"></a>
 ### Returns
 
-An opaque value that should be passed as the `feature_configuration` argument of other
-`swift_common` API calls.
+An opaque value representing the feature configuration that can be passed to other
+`swift_common` functions.
 
 <a name="swift_common.derive_module_name"></a>
 ## swift_common.derive_module_name
@@ -619,16 +536,19 @@ argument is the target name.</p></td>
 
 The module name derived from the label.
 
-<a name="swift_common.get_disabled_features"></a>
-## swift_common.get_disabled_features
+<a name="swift_common.is_enabled"></a>
+## swift_common.is_enabled
 
 <pre style="white-space: normal">
-swift_common.get_disabled_features(<a href="#swift_common.get_disabled_features.feature_configuration">feature_configuration</a>)
+swift_common.is_enabled(<a href="#swift_common.is_enabled.feature_configuration">feature_configuration</a>, <a href="#swift_common.is_enabled.feature_name">feature_name</a>)
 </pre>
 
-Returns the list of disabled features in the feature configuration.
+Returns `True` if the given feature is enabled in the feature configuration.
 
-<a name="swift_common.get_disabled_features.arguments"></a>
+This function handles both Swift-specific features and C++ features so that users do not have
+to manually extract the C++ configuration in order to check it.
+
+<a name="swift_common.is_enabled.arguments"></a>
 ### Arguments
 
 <table class="params-table">
@@ -637,48 +557,22 @@ Returns the list of disabled features in the feature configuration.
     <col class="col-description" />
   </colgroup>
   <tbody>
-    <tr id="swift_common.get_disabled_features.feature_configuration">
+    <tr id="swift_common.is_enabled.feature_configuration">
       <td><code>feature_configuration</code></td>
-      <td><p><code>Required</code></p><p>The feature configuration.</p></td>
+      <td><p><code>Required</code></p><p>The Swift feature configuration, as returned by
+<code>swift_common.configure_features</code>.</p></td>
+    </tr>
+    <tr id="swift_common.is_enabled.feature_name">
+      <td><code>feature_name</code></td>
+      <td><p><code>Required</code></p><p>The name of the feature to check.</p></td>
     </tr>
   </tbody>
 </table>
 
-<a name="swift_common.get_disabled_features.returns"></a>
+<a name="swift_common.is_enabled.returns"></a>
 ### Returns
 
-A list containing the names of features that are disabled in the given feature
-configuration.
-
-<a name="swift_common.get_enabled_features"></a>
-## swift_common.get_enabled_features
-
-<pre style="white-space: normal">
-swift_common.get_enabled_features(<a href="#swift_common.get_enabled_features.feature_configuration">feature_configuration</a>)
-</pre>
-
-Returns the list of enabled features in the feature configuration.
-
-<a name="swift_common.get_enabled_features.arguments"></a>
-### Arguments
-
-<table class="params-table">
-  <colgroup>
-    <col class="col-param" />
-    <col class="col-description" />
-  </colgroup>
-  <tbody>
-    <tr id="swift_common.get_enabled_features.feature_configuration">
-      <td><code>feature_configuration</code></td>
-      <td><p><code>Required</code></p><p>The feature configuration.</p></td>
-    </tr>
-  </tbody>
-</table>
-
-<a name="swift_common.get_enabled_features.returns"></a>
-### Returns
-
-A list containing the names of features that are enabled in the given feature configuration.
+`True` if the given feature is enabled in the feature configuration.
 
 <a name="swift_common.library_rule_attrs"></a>
 ## swift_common.library_rule_attrs
@@ -949,9 +843,8 @@ against the Swift runtime libraries.
 ## swift_common.swiftc_command_line_and_inputs
 
 <pre style="white-space: normal">
-swift_common.swiftc_command_line_and_inputs(<a href="#swift_common.swiftc_command_line_and_inputs.args">args</a>, <a href="#swift_common.swiftc_command_line_and_inputs.compilation_mode">compilation_mode</a>, <a href="#swift_common.swiftc_command_line_and_inputs.module_name">module_name</a>, <a href="#swift_common.swiftc_command_line_and_inputs.srcs">srcs</a>,
-<a href="#swift_common.swiftc_command_line_and_inputs.swift_fragment">swift_fragment</a>, <a href="#swift_common.swiftc_command_line_and_inputs.toolchain">toolchain</a>, <a href="#swift_common.swiftc_command_line_and_inputs.additional_input_depsets">additional_input_depsets</a>=[], <a href="#swift_common.swiftc_command_line_and_inputs.allow_testing">allow_testing</a>=True, <a href="#swift_common.swiftc_command_line_and_inputs.configuration">configuration</a>=None,
-<a href="#swift_common.swiftc_command_line_and_inputs.copts">copts</a>=[], <a href="#swift_common.swiftc_command_line_and_inputs.defines">defines</a>=[], <a href="#swift_common.swiftc_command_line_and_inputs.deps">deps</a>=[], <a href="#swift_common.swiftc_command_line_and_inputs.feature_configuration">feature_configuration</a>=None, <a href="#swift_common.swiftc_command_line_and_inputs.genfiles_dir">genfiles_dir</a>=None, <a href="#swift_common.swiftc_command_line_and_inputs.objc_fragment">objc_fragment</a>=None)
+swift_common.swiftc_command_line_and_inputs(<a href="#swift_common.swiftc_command_line_and_inputs.args">args</a>, <a href="#swift_common.swiftc_command_line_and_inputs.feature_configuration">feature_configuration</a>, <a href="#swift_common.swiftc_command_line_and_inputs.module_name">module_name</a>, <a href="#swift_common.swiftc_command_line_and_inputs.srcs">srcs</a>,
+<a href="#swift_common.swiftc_command_line_and_inputs.toolchain">toolchain</a>, <a href="#swift_common.swiftc_command_line_and_inputs.additional_input_depsets">additional_input_depsets</a>=[], <a href="#swift_common.swiftc_command_line_and_inputs.copts">copts</a>=[], <a href="#swift_common.swiftc_command_line_and_inputs.defines">defines</a>=[], <a href="#swift_common.swiftc_command_line_and_inputs.deps">deps</a>=[], <a href="#swift_common.swiftc_command_line_and_inputs.genfiles_dir">genfiles_dir</a>=None)
 </pre>
 
 Computes command line arguments and inputs needed to invoke `swiftc`.
@@ -978,10 +871,10 @@ gather information about dependencies for indexing and code completion.
       <td><code>args</code></td>
       <td><p><code>Required</code></p><p>An <code>Args</code> object into which the command line arguments will be added.</p></td>
     </tr>
-    <tr id="swift_common.swiftc_command_line_and_inputs.compilation_mode">
-      <td><code>compilation_mode</code></td>
-      <td><p><code>Required</code></p><p>The Bazel compilation mode; must be <code>dbg</code>, <code>fastbuild</code>, or
-<code>opt</code>.</p></td>
+    <tr id="swift_common.swiftc_command_line_and_inputs.feature_configuration">
+      <td><code>feature_configuration</code></td>
+      <td><p><code>Required</code></p><p>A feature configuration obtained from
+<code>swift_common.configure_features</code>.</p></td>
     </tr>
     <tr id="swift_common.swiftc_command_line_and_inputs.module_name">
       <td><code>module_name</code></td>
@@ -993,10 +886,6 @@ default from the target's label if needed.</p></td>
       <td><code>srcs</code></td>
       <td><p><code>Required</code></p><p>The Swift source files to compile.</p></td>
     </tr>
-    <tr id="swift_common.swiftc_command_line_and_inputs.swift_fragment">
-      <td><code>swift_fragment</code></td>
-      <td><p><code>Required</code></p><p>The <code>swift</code> configuration fragment from Bazel.</p></td>
-    </tr>
     <tr id="swift_common.swiftc_command_line_and_inputs.toolchain">
       <td><code>toolchain</code></td>
       <td><p><code>Required</code></p><p>The <code>SwiftToolchainInfo</code> provider of the toolchain.</p></td>
@@ -1006,18 +895,6 @@ default from the target's label if needed.</p></td>
       <td><p><code>Optional; default is []</code></p><p>A list of <code>depset</code>s of <code>File</code>s representing
 additional input files that need to be passed to the Swift compile
 action because they are referenced by compiler flags.</p></td>
-    </tr>
-    <tr id="swift_common.swiftc_command_line_and_inputs.allow_testing">
-      <td><code>allow_testing</code></td>
-      <td><p><code>Optional; default is True</code></p><p>Indicates whether the module should be compiled with testing
-enabled (only when the compilation mode is <code>fastbuild</code> or <code>dbg</code>).</p></td>
-    </tr>
-    <tr id="swift_common.swiftc_command_line_and_inputs.configuration">
-      <td><code>configuration</code></td>
-      <td><p><code>Optional; default is None</code></p><p>The default configuration from which certain compilation
-options are determined, such as whether coverage is enabled. This object
-should be one obtained from a rule's <code>ctx.configuraton</code> field. If
-omitted, no default-configuration-specific options will be used.</p></td>
     </tr>
     <tr id="swift_common.swiftc_command_line_and_inputs.copts">
       <td><code>copts</code></td>
@@ -1034,15 +911,8 @@ requested, which affects the nature of the output files.</p></td>
     <tr id="swift_common.swiftc_command_line_and_inputs.deps">
       <td><code>deps</code></td>
       <td><p><code>Optional; default is []</code></p><p>Dependencies of the target being compiled. These targets must
-propagate one of the following providers: <code>SwiftClangModuleInfo</code>,
-<code>SwiftInfo</code>, <code>"cc"</code>, or <code>apple_common.Objc</code>.</p></td>
-    </tr>
-    <tr id="swift_common.swiftc_command_line_and_inputs.feature_configuration">
-      <td><code>feature_configuration</code></td>
-      <td><p><code>Optional; default is None</code></p><p>A feature configuration obtained from
-<code>swift_common.configure_features</code>. If omitted, a default feature
-configuration will be used, but this argument will be required in the
-future.</p></td>
+propagate one of the following providers: <code>CcInfo</code>,
+<code>SwiftClangModuleInfo</code>, <code>SwiftInfo</code>, or <code>apple_common.Objc</code>.</p></td>
     </tr>
     <tr id="swift_common.swiftc_command_line_and_inputs.genfiles_dir">
       <td><code>genfiles_dir</code></td>
@@ -1050,12 +920,6 @@ future.</p></td>
 is added to ClangImporter's header search paths for compatibility with
 Bazel's C++ and Objective-C rules which support inclusions of generated
 headers from that location.</p></td>
-    </tr>
-    <tr id="swift_common.swiftc_command_line_and_inputs.objc_fragment">
-      <td><code>objc_fragment</code></td>
-      <td><p><code>Optional; default is None</code></p><p>The <code>objc</code> configuration fragment from Bazel. This must be
-provided if the toolchain supports Objective-C interop; if it does not,
-then this argument may be omitted.</p></td>
     </tr>
   </tbody>
 </table>
