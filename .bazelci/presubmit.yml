@@ -67,4 +67,6 @@ buildifier:
   # uninitialized has issues:
   # - https://github.com/bazelbuild/buildtools/issues/549
   # - https://github.com/bazelbuild/buildtools/issues/550
+  # https://github.com/bazelbuild/buildtools/pull/552 fixed part and worked
+  # around the other, but until there is a release with that, it stays off.
   warnings: -uninitialized
