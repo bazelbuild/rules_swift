@@ -1,5 +1,8 @@
 # Providers
 
+<!-- Generated file, do not edit directly. -->
+
+
 
 The providers described below are propagated and required by various Swift
 build rules. Clients interested in writing custom rules that interface
@@ -138,6 +141,13 @@ depends on.</p></td>
       <td><code>clang_executable</code></td>
       <td><p><code>String</code>. The path to the <code>clang</code> executable, which is used to link binaries.</p></td>
     </tr>
+    <tr id="SwiftToolchainInfo.command_line_copts">
+      <td><code>command_line_copts</code></td>
+      <td><p><code>List</code> of <code>strings</code>. Flags that were passed to Bazel using the <code>--swiftcopt</code> command line flag.
+These flags have the highest precedence; they are added to compilation command lines after the
+toolchain default flags (<code>SwiftToolchainInfo.swiftc_copts</code>) and after flags specified in the
+<code>copts</code> attributes of Swift targets.</p></td>
+    </tr>
     <tr id="SwiftToolchainInfo.cpu">
       <td><code>cpu</code></td>
       <td><p><code>String</code>. The CPU architecture that the toolchain is targeting.</p></td>
@@ -190,7 +200,7 @@ here).</p></td>
     </tr>
     <tr id="SwiftToolchainInfo.stamp">
       <td><code>stamp</code></td>
-      <td><p><code>Target</code>. A <code>cc</code>-providing target that should be linked into any binaries that are built with
+      <td><p><code>Target</code>. A <code>CcInfo</code>-providing target that should be linked into any binaries that are built with
 stamping enabled.</p></td>
     </tr>
     <tr id="SwiftToolchainInfo.supports_objc_interop">
@@ -200,7 +210,8 @@ stamping enabled.</p></td>
     <tr id="SwiftToolchainInfo.swiftc_copts">
       <td><code>swiftc_copts</code></td>
       <td><p><code>List</code> of <code>strings</code>. Additional flags that should be passed to <code>swiftc</code> when compiling libraries or
-binaries with this toolchain.</p></td>
+binaries with this toolchain. These flags will come first in compilation command lines, allowing
+them to be overridden by <code>copts</code> attributes and <code>--swiftcopt</code> flags.</p></td>
     </tr>
     <tr id="SwiftToolchainInfo.system_name">
       <td><code>system_name</code></td>
