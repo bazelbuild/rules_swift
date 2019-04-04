@@ -1,0 +1,67 @@
+load(
+    "@build_bazel_rules_swift//swift:swift.bzl",
+    "swift_binary",
+    "swift_library",
+)
+
+swift_library(
+    name = "SwiftGRPC",
+    srcs = glob([
+        "Sources/SwiftGRPC/**/*.swift",
+    ]),
+    copts = ["-DSWIFT_PACKAGE"],  # activates CgRPC iports
+    module_name = "SwiftGRPC",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":CgRPC",
+        "@com_github_apple_swift_protobuf//:SwiftProtobuf",
+    ],
+)
+
+cc_library(
+    name = "BoringSSL",
+    srcs = glob([
+        "Sources/BoringSSL/crypto/**/*.c",
+        "Sources/BoringSSL/crypto/**/*.cc",
+        "Sources/BoringSSL/crypto/**/*.h",
+        "Sources/BoringSSL/ssl/**/*.c",
+        "Sources/BoringSSL/ssl/**/*.cc",
+        "Sources/BoringSSL/ssl/**/*.h",
+        "Sources/BoringSSL/third_party/**/*.c",
+        "Sources/BoringSSL/third_party/**/*.h",
+    ]),
+    hdrs = glob(["Sources/BoringSSL/include/**/*.h"]),
+    includes = ["Sources/BoringSSL/include"],
+)
+
+cc_library(
+    name = "CgRPC",
+    srcs = glob([
+        "Sources/CgRPC/include/**/*.h",
+        "Sources/CgRPC/shim/*.c",
+        "Sources/CgRPC/src/**/*.c",
+        "Sources/CgRPC/src/**/*.cc",
+        "Sources/CgRPC/src/**/*.h",
+        "Sources/CgRPC/third_party/nanopb/**/*.c",
+        "Sources/CgRPC/third_party/nanopb/**/*.h",
+    ]) + ["Sources/CgRPC/shim/internal.h"],
+    hdrs = ["Sources/CgRPC/shim/cgrpc.h"],
+    includes = ["Sources/CgRPC/include"],
+    tags = ["swift_module=CgRPC"],
+    deps = [
+        ":BoringSSL",
+        "//external:zlib",
+    ],
+)
+
+swift_binary(
+    name = "protoc-gen-swiftgrpc",
+    srcs = glob([
+        "Sources/protoc-gen-swiftgrpc/*.swift",
+    ]),
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_apple_swift_protobuf//:SwiftProtobuf",
+        "@com_github_apple_swift_protobuf//:SwiftProtobufPluginLibrary",
+    ],
+)

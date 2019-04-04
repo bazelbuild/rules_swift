@@ -19,8 +19,8 @@ swift_library(
         "Sources/SwiftProtobufPluginLibrary/*.swift",
     ]),
     module_name = "SwiftProtobufPluginLibrary",
-    deps = [":SwiftProtobuf"],
     visibility = ["//visibility:public"],
+    deps = [":SwiftProtobuf"],
 )
 
 swift_binary(
@@ -28,6 +28,6 @@ swift_binary(
     srcs = glob([
         "Sources/protoc-gen-swift/*.swift",
     ]),
-    deps = [":SwiftProtobufPluginLibrary"],
     visibility = ["//visibility:public"],
+    deps = [":SwiftProtobufPluginLibrary"],
 )
