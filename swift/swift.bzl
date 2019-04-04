@@ -41,6 +41,10 @@ load(
     _swift_c_module = "swift_c_module",
 )
 load(
+    "@build_bazel_rules_swift//swift/internal:swift_grpc_library.bzl",
+    _swift_grpc_library = "swift_grpc_library",
+)
+load(
     "@build_bazel_rules_swift//swift/internal:swift_import.bzl",
     _swift_import = "swift_import",
 )
@@ -75,6 +79,7 @@ swift_common = _swift_common
 # Re-export rules.
 swift_binary = _swift_binary
 swift_c_module = _swift_c_module
+swift_grpc_library = _swift_grpc_library
 swift_import = _swift_import
 swift_library = _swift_library
 swift_test = _swift_test

@@ -129,21 +129,50 @@ def swift_rules_dependencies():
 
     _maybe(
         http_archive,
-        name = "com_github_apple_swift_swift_protobuf",
-        urls = ["https://github.com/apple/swift-protobuf/archive/1.2.0.zip"],
-        strip_prefix = "swift-protobuf-1.2.0/",
+        name = "com_github_apple_swift_protobuf",
+        urls = ["https://github.com/apple/swift-protobuf/archive/1.4.0.zip"],
+        sha256 = "70ed9d031144752f106276d495e854b314d7fab4c3e1cd97150655d882dd0eb6",
+        strip_prefix = "swift-protobuf-1.4.0/",
         type = "zip",
-        build_file = "@build_bazel_rules_swift//third_party:com_github_apple_swift_swift_protobuf/BUILD.overlay",
+        build_file = "@build_bazel_rules_swift//third_party:com_github_apple_swift_protobuf/BUILD.overlay",
+    )
+
+    _maybe(
+        http_archive,
+        name = "com_github_grpc_grpc_swift",
+        urls = ["https://github.com/grpc/grpc-swift/archive/0.8.1.zip"],
+        sha256 = "04b797a2d0fe03687768f5c503917f418d7612b950ec89919f0a8e3cb70b7a43",
+        strip_prefix = "grpc-swift-0.8.1/",
+        type = "zip",
+        build_file = "@build_bazel_rules_swift//third_party:com_github_grpc_grpc_swift/BUILD.overlay",
     )
 
     _maybe(
         http_archive,
         name = "com_google_protobuf",
-        # v3.6.1.2, latest as of 2018-12-04
-        urls = ["https://github.com/protocolbuffers/protobuf/archive/v3.6.1.2.zip"],
-        strip_prefix = "protobuf-3.6.1.2",
+        # v3.7.1, latest as of 2019-04-03
+        urls = ["https://github.com/protocolbuffers/protobuf/archive/v3.7.1.zip"],
+        sha256 = "f976a4cd3f1699b6d20c1e944ca1de6754777918320c719742e1674fcf247b7e",
+        strip_prefix = "protobuf-3.7.1",
         type = "zip",
     )
+
+    # TODO(https://github.com/protocolbuffers/protobuf/issues/5918):
+    # Remove this when protobuf releases protobuf_deps.bzl and instruct users to call
+    # `protobuf_deps()` instead.
+    if not native.existing_rule("net_zlib"):
+        http_archive(
+            name = "net_zlib",
+            build_file = "@com_google_protobuf//examples:third_party/zlib.BUILD",
+            sha256 = "c3e5e9fdd5004dcb542feda5ee4f0ff0744628baf8ed2dd5d66f8ca1197cb1a1",
+            strip_prefix = "zlib-1.2.11",
+            urls = ["https://zlib.net/zlib-1.2.11.tar.gz"],
+        )
+
+        native.bind(
+            name = "zlib",
+            actual = "@net_zlib//:zlib",
+        )
 
     _maybe(
         _swift_autoconfiguration,

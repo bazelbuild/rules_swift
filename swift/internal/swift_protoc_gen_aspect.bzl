@@ -332,7 +332,7 @@ swift_protoc_gen_aspect = aspect(
             # TODO(b/63389580): Migrate to proto_lang_toolchain.
             "_proto_support": attr.label_list(
                 default = [
-                    Label("@com_github_apple_swift_swift_protobuf//:SwiftProtobuf"),
+                    Label("@com_github_apple_swift_protobuf//:SwiftProtobuf"),
                 ],
             ),
             "_protoc": attr.label(
@@ -342,7 +342,7 @@ swift_protoc_gen_aspect = aspect(
             ),
             "_protoc_gen_swift": attr.label(
                 cfg = "host",
-                default = Label("@com_github_apple_swift_swift_protobuf//:ProtoCompilerPlugin"),
+                default = Label("@com_github_apple_swift_protobuf//:ProtoCompilerPlugin"),
                 executable = True,
             ),
         },
