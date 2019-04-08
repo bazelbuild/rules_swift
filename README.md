@@ -97,3 +97,16 @@ uses `clang`.
   macOS.
 * Automatically download a Linux toolchain from [swift.org](https://swift.org)
   if one is not already installed.
+
+## Acknowledgments
+
+We gratefully acknowledge the following external packages that rules_swift
+depends on:
+
+* [Apple Support for Bazel](https://github.com/bazelbuild/apple_support) (Google)
+* [Bazel Skylib](https://github.com/bazelbuild/bazel-skylib) (Google)
+* [JSON for Modern C++](https://github.com/nlohmann/json) (Niels Lohmann)
+* [Protocol Buffers](https://github.com/protocolbuffers/protobuf) (Google)
+* [Swift gRPC](https://github.com/grpc/grpc-swift) (Google)
+* [Swift Protobuf](https://github.com/apple/swift-protobuf) (Apple)
+* [zlib](https://www.zlib.net) (Jean-loup Gailly and Mark Adler)

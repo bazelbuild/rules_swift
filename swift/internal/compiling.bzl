@@ -184,6 +184,11 @@ def declare_compile_outputs(
 
         output_map[src.path] = struct(**src_output_map)
 
+    # Output the module-wide `.swiftdeps` file, which is used for incremental builds.
+    swiftdeps = derived_files.swift_dependencies_file(actions, target_name = target_name)
+    other_outputs.append(swiftdeps)
+    output_map[""] = {"swift-dependencies": swiftdeps.path}
+
     actions.write(
         content = struct(**output_map).to_json(),
         output = output_map_file,

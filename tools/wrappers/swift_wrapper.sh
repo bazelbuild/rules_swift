@@ -115,6 +115,7 @@ shift
 
 TMPDIR="${TMPDIR:-/tmp}"
 MODULE_CACHE_DIR=
+USE_WORKER=0
 
 # Process the argument list.
 ARGS=()
@@ -128,12 +129,22 @@ for ARG in "$@" ; do
     fi
     ARGS+=("@$NEWFILE")
     ;;
+  --persistent_worker)
+    USE_WORKER=1
+    ;;
   *)
     ARGS+=($(rewrite_argument "$ARG"))
     ;;
   esac
 done
 
-# Invoke the underlying command with the modified arguments. We don't use
-# `exec` here beause we need the cleanup trap to run after execution.
-"$TOOLNAME" "${ARGS[@]}"
+if [[ "$USE_WORKER" -eq 1 ]] ; then
+  # This assumes that the worker executable is passed as a tool input to
+  # run_toolchain_swift_action.
+  SCRIPTDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null && pwd)"
+  "$SCRIPTDIR/../worker/worker" "$TOOLNAME" "${ARGS[@]}"
+else
+  # Invoke the underlying command with the modified arguments. We don't use
+  # `exec` here beause we need the cleanup trap to run after execution.
+  "$TOOLNAME" "${ARGS[@]}"
+fi
