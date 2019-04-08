@@ -585,15 +585,24 @@ def _compile_as_objects(
     compile_outputs = ([out_module, out_doc] + output_objects +
                        compile_reqs.other_outputs) + additional_outputs
 
+    if toolchain.swift_worker:
+        execution_requirements = {"supports-workers": "1"}
+        tools = [toolchain.swift_worker]
+    else:
+        execution_requirements = {}
+        tools = []
+
     run_toolchain_swift_action(
         actions = actions,
         arguments = [wrapper_args, compile_args] + arguments,
+        execution_requirements = execution_requirements,
         inputs = all_inputs,
         mnemonic = "SwiftCompile",
         outputs = compile_outputs,
         progress_message = "Compiling Swift module {}".format(module_name),
         swift_tool = "swiftc",
         toolchain = toolchain,
+        tools = tools,
     )
 
     linker_flags = []

@@ -516,6 +516,7 @@ def _xcode_swift_toolchain_impl(ctx):
             stamp = ctx.attr.stamp if _is_macos(platform) else None,
             supports_objc_interop = True,
             swiftc_copts = swiftc_copts,
+            swift_worker = ctx.executable._swift_worker,
             system_name = "darwin",
             unsupported_features = ctx.disabled_features + [
                 SWIFT_FEATURE_AUTOLINK_EXTRACT,

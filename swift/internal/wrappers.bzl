@@ -15,6 +15,13 @@
 """Attributes for Swift tool wrapper executables used by the toolchains."""
 
 SWIFT_TOOL_WRAPPER_ATTRIBUTES = {
+    "_swift_worker": attr.label(
+        cfg = "host",
+        default = Label(
+            "@build_bazel_rules_swift//tools/worker",
+        ),
+        executable = True,
+    ),
     "_swift_wrapper": attr.label(
         cfg = "host",
         default = Label(

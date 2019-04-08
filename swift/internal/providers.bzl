@@ -238,6 +238,9 @@ stamping enabled.
 binaries with this toolchain. These flags will come first in compilation command lines, allowing
 them to be overridden by `copts` attributes and `--swiftcopt` flags.
 """,
+        "swift_worker": """
+`File`. The executable representing the Swift persistent worker to use for incremental builds.
+""",
         "system_name": """
 `String`. The name of the operating system that the toolchain is targeting.
 """,

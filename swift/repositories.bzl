@@ -149,6 +149,15 @@ def swift_rules_dependencies():
 
     _maybe(
         http_archive,
+        name = "com_github_nlohmann_json",
+        urls = ["https://github.com/nlohmann/json/releases/download/v3.6.1/include.zip"],
+        sha256 = "69cc88207ce91347ea530b227ff0776db82dcb8de6704e1a3d74f4841bc651cf",
+        type = "zip",
+        build_file = "@build_bazel_rules_swift//third_party:com_github_nlohmann_json/BUILD.overlay",
+    )
+
+    _maybe(
+        http_archive,
         name = "com_google_protobuf",
         # v3.7.1, latest as of 2019-04-03
         urls = ["https://github.com/protocolbuffers/protobuf/archive/v3.7.1.zip"],

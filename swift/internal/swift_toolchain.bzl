@@ -218,6 +218,7 @@ def _swift_toolchain_impl(ctx):
             stamp = ctx.attr.stamp,
             supports_objc_interop = False,
             swiftc_copts = [],
+            swift_worker = ctx.executable._swift_worker,
             system_name = ctx.attr.os,
             unsupported_features = ctx.disabled_features + [
                 SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD,
