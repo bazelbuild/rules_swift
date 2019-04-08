@@ -30,3 +30,13 @@ cc_binary(
         "@com_google_protobuf//:protobuf",
     ],
 )
+
+# Consumed by Bazel integration tests.
+filegroup(
+    name = "for_bazel_tests",
+    testonly = 1,
+    srcs = glob(["**"]),
+    visibility = [
+        "//tools:__pkg__",
+    ],
+)

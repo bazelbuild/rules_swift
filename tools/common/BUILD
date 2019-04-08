@@ -40,3 +40,13 @@ cc_library(
     name = "temp_file",
     hdrs = ["temp_file.h"],
 )
+
+# Consumed by Bazel integration tests.
+filegroup(
+    name = "for_bazel_tests",
+    testonly = 1,
+    srcs = glob(["**"]),
+    visibility = [
+        "//tools:__pkg__",
+    ],
+)
