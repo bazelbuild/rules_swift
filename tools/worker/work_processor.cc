@@ -32,6 +32,7 @@
 
 namespace {
 
+#if __APPLE__
 // Returns the requested environment variable in the current process's
 // environment. Aborts if this variable is unset.
 std::string GetMandatoryEnvVar(const std::string &var_name) {
@@ -42,6 +43,7 @@ std::string GetMandatoryEnvVar(const std::string &var_name) {
   }
   return env_value;
 }
+#endif
 
 // Returns true if the given command line argument enables whole-module
 // optimization in the compiler.
