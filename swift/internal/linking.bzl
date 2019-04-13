@@ -88,8 +88,8 @@ def register_link_action(
         if apple_common.Objc in dep:
             objc = dep[apple_common.Objc]
             if framework_migration.is_post_framework_migration():
-                deps_dynamic_framework_names.append(objc.dynamic_framework_names())
-                deps_dynamic_framework_paths.append(objc.dynamic_framework_paths())
+                deps_dynamic_framework_names.append(objc.dynamic_framework_names)
+                deps_dynamic_framework_paths.append(objc.dynamic_framework_paths)
                 deps_static_framework_files.append(objc.static_framework_file)
             else:
                 deps_dynamic_framework_names.append(depset(

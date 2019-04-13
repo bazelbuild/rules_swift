@@ -348,7 +348,7 @@ def objc_compile_requirements(args, deps):
         includes.append(objc.include)
 
         if post_framework_cleanup:
-            static_framework_names.append(objc.static_framework_names())
+            static_framework_names.append(objc.static_framework_names)
             all_frameworks.append(objc.framework_search_path_only)
         else:
             inputs.append(objc.static_framework_file)
