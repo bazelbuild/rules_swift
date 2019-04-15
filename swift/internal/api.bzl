@@ -83,7 +83,6 @@ _SANITIZER_FEATURE_FLAG_MAP = {
 }
 
 def _build_swift_info(
-        compile_options = [],
         deps = [],
         direct_additional_inputs = [],
         direct_defines = [],
@@ -100,8 +99,6 @@ def _build_swift_info(
     also automatically collects transitive values from dependencies.
 
     Args:
-        compile_options: A list of `Args` objects that contain the compilation options passed to
-            `swiftc` to compile this target.
         deps: A list of dependencies of the target being built, which provide `SwiftInfo` providers.
         direct_additional_inputs: A list of additional input files passed into a library or binary
             target via the `swiftc_inputs` attribute.
@@ -150,7 +147,6 @@ def _build_swift_info(
             )
 
     return SwiftInfo(
-        compile_options = compile_options,
         direct_defines = direct_defines,
         direct_libraries = direct_libraries,
         direct_linkopts = direct_linkopts,
@@ -500,9 +496,6 @@ def _compile_as_objects(
       * `compile_inputs`: A `depset` of `File`s representing the full collection
         of files that were used as inputs to the compile action. This can be used
         if those files need to also be made available to subsequent link actions.
-      * `compile_options`: A list of `Args` objects containing the complete set
-        of command line flags that were passed to the compiler. This is mainly
-        exposed for aspects to inspect so that IDEs can integrate with SourceKit.
       * `linker_flags`: A list of strings representing additional flags that
         should be passed to the linker when linking these objects into a binary.
       * `linker_inputs`: A list of `File`s representing additional input files
@@ -642,7 +635,6 @@ def _compile_as_objects(
 
     return struct(
         compile_inputs = all_inputs,
-        compile_options = ([compile_args] + arguments),
         linker_flags = linker_flags,
         linker_inputs = linker_inputs,
         output_doc = out_doc,
@@ -720,9 +712,6 @@ def _compile_as_library(
       * `compile_inputs`: A `depset` of `File`s representing the full collection
         of files that were used as inputs to the compile action. This can be used
         if those files need to also be made available to subsequent link actions.
-      * `compile_options`: A list of `Args` objects containing the complete set
-        of command line flags that were passed to the compiler. This is mainly
-        exposed for aspects to inspect so that IDEs can integrate with SourceKit.
       * `output_archive`: The static archive (`.a`) that was produced by the
         archiving step after compilation.
       * `output_doc`: The `.swiftdoc` file that was produced by the compiler.
@@ -847,7 +836,6 @@ def _compile_as_library(
 
     providers = [
         _build_swift_info(
-            compile_options = compile_results.compile_options,
             deps = all_deps,
             direct_additional_inputs = (
                 additional_inputs + compile_results.linker_inputs
@@ -884,7 +872,6 @@ def _compile_as_library(
 
     return struct(
         compile_inputs = compile_results.compile_inputs,
-        compile_options = compile_results.compile_options,
         output_archive = out_archive,
         output_doc = compile_results.output_doc,
         output_groups = compile_results.output_groups,
@@ -1105,7 +1092,6 @@ def _merge_swift_info_providers(targets):
             transitive_swiftmodules.append(p.transitive_swiftmodules)
 
     return SwiftInfo(
-        compile_options = [],
         direct_defines = [],
         direct_libraries = [],
         direct_linkopts = [],

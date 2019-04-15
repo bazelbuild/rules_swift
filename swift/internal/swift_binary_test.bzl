@@ -21,7 +21,7 @@ load(":api.bzl", "swift_common")
 load(":derived_files.bzl", "derived_files")
 load(":features.bzl", "SWIFT_FEATURE_BUNDLED_XCTESTS")
 load(":linking.bzl", "register_link_action")
-load(":providers.bzl", "SwiftBinaryInfo", "SwiftToolchainInfo")
+load(":providers.bzl", "SwiftToolchainInfo")
 load(":swift_c_module_aspect.bzl", "swift_c_module_aspect")
 load(":utils.bzl", "expand_locations")
 
@@ -124,9 +124,6 @@ def _swift_linking_rule_impl(
         additional_output_groups = dicts.add(
             additional_output_groups,
             compile_results.output_groups,
-        )
-        compilation_providers.append(
-            SwiftBinaryInfo(compile_options = compile_results.compile_options),
         )
 
     # TODO(b/70228246): Also support mostly-static and fully-dynamic modes, here and for the C++
