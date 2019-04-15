@@ -16,17 +16,6 @@
 
 load(":utils.bzl", "collect_transitive")
 
-SwiftBinaryInfo = provider(
-    doc = "Contains information about the compilation of a Swift binary target.",
-    fields = {
-        "compile_options": """
-`List` of `Args` objects. The command-line options that were passed to the compiler to compile this
-target. This is intended to be flattened into a params file by aspects to allow IDE integration with
-Bazel.
-""",
-    },
-)
-
 SwiftCcLibsInfo = provider(
     doc = """
 Contains information about C libraries that are dependencies of Swift libraries.
@@ -77,11 +66,6 @@ them. Instead of constructing a `SwiftInfo` provider directly, consider using th
 also automatically collects transitive values from a list of dependencies.
 """,
     fields = {
-        "compile_options": """
-`List` of `Args` objects. The command-line options that were passed to the compiler to compile this
-target. This is intended to be flattened into a params file by aspects to allow IDE integration with
-Bazel.
-""",
         "direct_defines": """
 `List` of `string`s. The values specified by the `defines` attribute of the library that directly
 propagated this provider.
