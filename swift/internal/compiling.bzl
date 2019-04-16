@@ -354,7 +354,7 @@ def objc_compile_requirements(args, deps):
             inputs.append(objc.static_framework_file)
             inputs.append(objc.dynamic_framework_file)
             static_framework_names.append(depset(
-                [objc_provider_framework_name(fdir) for fdir in objc.framework_dir],
+                [objc_provider_framework_name(fdir) for fdir in objc.framework_dir.to_list()],
             ))
             all_frameworks.append(objc.framework_dir)
             all_frameworks.append(objc.dynamic_framework_dir)
