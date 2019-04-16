@@ -107,11 +107,7 @@ def _register_grpcswift_generate_action(
     protoc_args.add_joined(transitive_descriptor_sets, join_with = ":")
     protoc_args.add_all([workspace_relative_path(f) for f in direct_srcs])
 
-    additional_command_inputs = [
-        mkdir_and_run,
-        protoc_executable,
-        protoc_plugin_executable,
-    ]
+    additional_command_inputs = []
     if module_mapping_file:
         additional_command_inputs.append(module_mapping_file)
 
@@ -124,6 +120,11 @@ def _register_grpcswift_generate_action(
             direct = additional_command_inputs,
             transitive = [transitive_descriptor_sets],
         ),
+        tools = [
+            mkdir_and_run,
+            protoc_executable,
+            protoc_plugin_executable,
+        ],
         mnemonic = "ProtocGenSwiftGRPC",
         outputs = generated_files,
         progress_message = "Generating Swift sources for {}".format(label),
