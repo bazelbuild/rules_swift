@@ -384,21 +384,30 @@ def _sanitizer_copts(feature_configuration):
             copts.extend(flags)
     return copts
 
-def _global_module_cache_path(genfiles_dir):
-    """Returns the path of the global Clang module cache.
+def _global_module_cache_path(bin_dir):
+    """Returns the path to the location where the Swift compiler should cache modules.
+
+    Note that the use of this cache is non-hermetic; the cached modules are not declared inputs or
+    outputs and they are not wiped between builds. The cache is purely a build performance
+    optimization that reduces the need for large dependency graphs to repeatedly parse the same
+    content multiple times.
 
     Args:
-      genfiles_dir: The Bazel `*-genfiles` directory root where the module
-          cache directory is created by Objective-C compilation actions. Note
-          that this is non-hermetic.
+      bin_dir: The Bazel `*-bin` directory root where the module cache directory should be created.
+          By placing it in `*-bin` (instead of the default, a path based on `/tmp/*`), the cache
+          will be reliably cleaned when invoking `bazel clean`.
 
     Returns:
-      The path to the global Clang module path.
+      The path to the module cache.
     """
 
-    # This path matches the one passed to Clang in Bazel's
-    # java/com/google/devtools/build/lib/rules/objc/CompilationSupport.java.
-    return paths.join(genfiles_dir.path, "_objc_module_cache")
+    # This path explicitly differs from the one used for Objective-C. This is because the
+    # Clang invocation for Objective-C does not produce the same hashes as the invocation used
+    # internally by Swift's ClangImporter. This means that the cached modules will never actually
+    # be shared, and making the paths the same would be at best useless and at worse actively
+    # harmful if there ever were to be a collision. We can revisit this decision if it ever
+    # becomes possible to reliably share module caches between Clang and Swift.
+    return paths.join(bin_dir.path, "_swift_module_cache")
 
 def _is_wmo(copts, feature_configuration):
     """Returns a value indicating whether a compilation will use whole module optimization.
@@ -452,6 +461,7 @@ def _compile_as_objects(
         toolchain,
         additional_input_depsets = [],
         additional_outputs = [],
+        bin_dir = None,
         copts = [],
         defines = [],
         deps = [],
@@ -476,6 +486,8 @@ def _compile_as_objects(
           action because they are referenced by compiler flags.
       additional_outputs: A list of `File`s representing files that should be
           treated as additional outputs of the compilation action.
+      bin_dir: The Bazel `*-bin` directory root. If provided, its path is used to
+          store the cache for modules precompiled by Swift's ClangImporter.
       copts: A list (**not** an `Args` object) of compiler flags that apply to the
           target being built. These flags, along with those from Bazel's Swift
           configuration fragment (i.e., `--swiftcopt` command line flags) are
@@ -539,11 +551,11 @@ def _compile_as_objects(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE,
     ):
-        # If genfiles_dir is not provided, then we don't pass any special flags to the compiler,
+        # If bin_dir is not provided, then we don't pass any special flags to the compiler,
         # letting it decide where the cache should live. This is usually somewhere in the system
         # temporary directory.
-        if genfiles_dir:
-            wrapper_args.add("-module-cache-path", _global_module_cache_path(genfiles_dir))
+        if bin_dir:
+            wrapper_args.add("-module-cache-path", _global_module_cache_path(bin_dir))
     else:
         wrapper_args.add("-Xwrapped-swift=-ephemeral-module-cache")
 
@@ -805,6 +817,7 @@ def _compile_as_library(
     compile_results = _compile_as_objects(
         actions = actions,
         arguments = [library_copts],
+        bin_dir = bin_dir,
         copts = copts,
         defines = defines,
         feature_configuration = feature_configuration,

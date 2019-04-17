@@ -103,6 +103,7 @@ def _swift_linking_rule_impl(
         compile_results = swift_common.compile_as_objects(
             actions = ctx.actions,
             arguments = [],
+            bin_dir = ctx.bin_dir,
             copts = copts,
             defines = ctx.attr.defines,
             feature_configuration = feature_configuration,
