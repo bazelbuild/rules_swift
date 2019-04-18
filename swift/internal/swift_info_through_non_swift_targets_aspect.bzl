@@ -29,7 +29,9 @@ def _swift_info_through_non_swift_targets_aspect_impl(target, aspect_ctx):
     if not swift_deps:
         return []
 
-    return [swift_common.merge_swift_info_providers(swift_deps)]
+    return [swift_common.merge_swift_infos(
+        [dep[SwiftInfo] for dep in swift_deps if SwiftInfo in dep],
+    )]
 
 swift_info_through_non_swift_targets_aspect = aspect(
     attr_aspects = ["deps"],

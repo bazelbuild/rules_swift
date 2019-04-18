@@ -48,7 +48,7 @@ load(
     "write_objc_header_module_map",
 )
 load(":debugging.bzl", "ensure_swiftmodule_is_embedded")
-load(":deps.bzl", "collect_link_libraries")
+load(":deps.bzl", "legacy_build_swift_info")
 load(":derived_files.bzl", "derived_files")
 load(
     ":features.bzl",
@@ -82,94 +82,55 @@ _SANITIZER_FEATURE_FLAG_MAP = {
     "tsan": ["-sanitize=thread"],
 }
 
-def _build_swift_info(
-        deps = [],
-        direct_additional_inputs = [],
-        direct_defines = [],
-        direct_libraries = [],
-        direct_linkopts = [],
-        direct_swiftdocs = [],
-        direct_swiftmodules = [],
+def _create_swift_info(
+        additional_inputs = [],
+        defines = [],
+        libraries = [],
+        linkopts = [],
         module_name = None,
+        swiftdocs = [],
+        swiftmodules = [],
         swift_version = None):
-    """Builds a `SwiftInfo` provider from direct outputs and dependencies.
+    """Creates a new `SwiftInfo` provider with the given values.
 
     This function is recommended instead of directly creating a `SwiftInfo` provider because it
-    encodes reasonable defaults for fields that some rules may not be interested in, and because it
-    also automatically collects transitive values from dependencies.
+    encodes reasonable defaults for fields that some rules may not be interested in and ensures
+    that the direct and transitive fields are set consistently.
 
     Args:
-        deps: A list of dependencies of the target being built, which provide `SwiftInfo` providers.
-        direct_additional_inputs: A list of additional input files passed into a library or binary
-            target via the `swiftc_inputs` attribute.
-        direct_defines: A list of defines that will be provided as `copts` of the target being
-            built.
-        direct_libraries: A list of `.a` files that are the direct outputs of the target being
-            built.
-        direct_linkopts: A list of linker flags that will be passed to the linker when the target
-            being built is linked into a binary.
-        direct_swiftdocs: A list of `.swiftdoc` files that are the direct outputs of the target
-            being built.
-        direct_swiftmodules: A list of `.swiftmodule` files that are the direct outputs of the
-            target being built.
+        additional_inputs: A list of additional input files passed into a library or binary target
+            via the `swiftc_inputs` attribute.
+        defines: A list of defines that will be provided as `copts` of the target being built.
+        libraries: A list of `.a` files that are the direct outputs of the target being built.
+        linkopts: A list of linker flags that will be passed to the linker when the target being
+            built is linked into a binary.
         module_name: A string containing the name of the Swift module, or `None` if the provider
             does not represent a compiled module (this happens, for example, with `proto_library`
             targets that act as "collectors" of other modules but have no sources of their own).
+        swiftdocs: A list of `.swiftdoc` files that are the direct outputs of the target being
+            built.
+        swiftmodules: A list of `.swiftmodule` files that are the direct outputs of the target
+            being built.
         swift_version: A string containing the value of the `-swift-version` flag used when
             compiling this target, or `None` if it was not set or is not relevant.
 
     Returns:
-        A new `SwiftInfo` provider that propagates the direct and transitive libraries and modules
-        for the target being built.
+        A new `SwiftInfo` provider with the given values.
     """
-    transitive_additional_inputs = []
-    transitive_defines = []
-    transitive_libraries = []
-    transitive_linkopts = []
-    transitive_swiftdocs = []
-    transitive_swiftmodules = []
-
-    # Note that we also collect the transitive libraries and linker flags from `cc_library`
-    # dependencies and propagate them through the `SwiftInfo` provider; this is necessary because we
-    # cannot construct our own `CcSkylarkApiProviders` from within Skylark, but only consume them.
-    for dep in deps:
-        transitive_libraries.extend(collect_link_libraries(dep))
-        if SwiftInfo in dep:
-            swift_info = dep[SwiftInfo]
-            transitive_additional_inputs.append(swift_info.transitive_additional_inputs)
-            transitive_defines.append(swift_info.transitive_defines)
-            transitive_linkopts.append(swift_info.transitive_linkopts)
-            transitive_swiftdocs.append(swift_info.transitive_swiftdocs)
-            transitive_swiftmodules.append(swift_info.transitive_swiftmodules)
-        if CcInfo in dep:
-            transitive_linkopts.append(
-                depset(direct = dep[CcInfo].linking_context.user_link_flags),
-            )
-
     return SwiftInfo(
-        direct_defines = direct_defines,
-        direct_libraries = direct_libraries,
-        direct_linkopts = direct_linkopts,
-        direct_swiftdocs = direct_swiftdocs,
-        direct_swiftmodules = direct_swiftmodules,
+        direct_defines = defines,
+        direct_libraries = libraries,
+        direct_linkopts = linkopts,
+        direct_swiftdocs = swiftdocs,
+        direct_swiftmodules = swiftmodules,
         module_name = module_name,
         swift_version = swift_version,
-        transitive_additional_inputs = depset(
-            direct = direct_additional_inputs,
-            transitive = transitive_additional_inputs,
-        ),
-        transitive_defines = depset(direct = direct_defines, transitive = transitive_defines),
-        transitive_libraries = depset(
-            direct = direct_libraries,
-            transitive = transitive_libraries,
-            order = "topological",
-        ),
-        transitive_linkopts = depset(direct = direct_linkopts, transitive = transitive_linkopts),
-        transitive_swiftdocs = depset(direct = direct_swiftdocs, transitive = transitive_swiftdocs),
-        transitive_swiftmodules = depset(
-            direct = direct_swiftmodules,
-            transitive = transitive_swiftmodules,
-        ),
+        transitive_additional_inputs = depset(direct = additional_inputs),
+        transitive_defines = depset(direct = defines),
+        transitive_libraries = depset(direct = libraries, order = "topological"),
+        transitive_linkopts = depset(direct = linkopts),
+        transitive_swiftdocs = depset(direct = swiftdocs),
+        transitive_swiftmodules = depset(direct = swiftmodules),
     )
 
 def _compilation_attrs(additional_deps_aspects = []):
@@ -847,12 +808,12 @@ def _compile_as_library(
         toolchain = toolchain,
     )
 
+    # TODO(b/130741225): Move this logic out of the API and have the rules themselves manipulate
+    # providers.
     providers = [
-        _build_swift_info(
+        legacy_build_swift_info(
             deps = all_deps,
-            direct_additional_inputs = (
-                additional_inputs + compile_results.linker_inputs
-            ),
+            direct_additional_inputs = additional_inputs + compile_results.linker_inputs,
             direct_defines = defines,
             direct_libraries = [out_archive],
             direct_linkopts = linkopts + compile_results.linker_flags,
@@ -1073,19 +1034,14 @@ conformance.
         },
     )
 
-def _merge_swift_info_providers(targets):
-    """Merges the transitive `SwiftInfo` of the given targets into a new provider.
-
-    This function should be used when it is necessary to merge `SwiftInfo`
-    providers outside of a compile action (which does it automatically).
+def _merge_swift_infos(swift_infos):
+    """Merges a list of `SwiftInfo` providers into one.
 
     Args:
-      targets: A sequence of targets that may propagate `SwiftInfo` providers.
-          Those that do not are ignored.
+        swift_infos: A sequence of `SwiftInfo`providers to merge.
 
     Returns:
-      A new `SwiftInfo` provider that contains the transitive information from all
-      the targets.
+        A new `SwiftInfo` provider.
     """
     transitive_additional_inputs = []
     transitive_defines = []
@@ -1094,15 +1050,13 @@ def _merge_swift_info_providers(targets):
     transitive_swiftdocs = []
     transitive_swiftmodules = []
 
-    for target in targets:
-        if SwiftInfo in target:
-            p = target[SwiftInfo]
-            transitive_additional_inputs.append(p.transitive_additional_inputs)
-            transitive_defines.append(p.transitive_defines)
-            transitive_libraries.append(p.transitive_libraries)
-            transitive_linkopts.append(p.transitive_linkopts)
-            transitive_swiftdocs.append(p.transitive_swiftdocs)
-            transitive_swiftmodules.append(p.transitive_swiftmodules)
+    for swift_info in swift_infos:
+        transitive_additional_inputs.append(swift_info.transitive_additional_inputs)
+        transitive_defines.append(swift_info.transitive_defines)
+        transitive_libraries.append(swift_info.transitive_libraries)
+        transitive_linkopts.append(swift_info.transitive_linkopts)
+        transitive_swiftdocs.append(swift_info.transitive_swiftdocs)
+        transitive_swiftmodules.append(swift_info.transitive_swiftmodules)
 
     return SwiftInfo(
         direct_defines = [],
@@ -1305,16 +1259,16 @@ def _toolchain_attrs(toolchain_attr_name = "_toolchain"):
 # The exported `swift_common` module, which defines the public API for directly
 # invoking actions that compile Swift code from other rules.
 swift_common = struct(
-    build_swift_info = _build_swift_info,
     cc_feature_configuration = _cc_feature_configuration,
     compilation_attrs = _compilation_attrs,
     compile_as_library = _compile_as_library,
     compile_as_objects = _compile_as_objects,
     configure_features = _configure_features,
+    create_swift_info = _create_swift_info,
     derive_module_name = _derive_module_name,
     is_enabled = _is_enabled,
     library_rule_attrs = _library_rule_attrs,
-    merge_swift_info_providers = _merge_swift_info_providers,
+    merge_swift_infos = _merge_swift_infos,
     run_toolchain_action = run_toolchain_action,
     run_toolchain_shell_action = run_toolchain_shell_action,
     run_toolchain_swift_action = run_toolchain_swift_action,
