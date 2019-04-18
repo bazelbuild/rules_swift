@@ -15,9 +15,9 @@
 """Implementation of the `swift_import` rule."""
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load(":api.bzl", "swift_common")
 load(":attrs.bzl", "swift_common_rule_attrs")
 load(":compiling.bzl", "new_objc_provider")
+load(":deps.bzl", "legacy_build_swift_info")
 load(":providers.bzl", "SwiftClangModuleInfo", "merge_swift_clang_module_infos")
 
 def _swift_import_impl(ctx):
@@ -35,7 +35,7 @@ def _swift_import_impl(ctx):
                 files = ctx.files.data,
             ),
         ),
-        swift_common.build_swift_info(
+        legacy_build_swift_info(
             deps = deps,
             direct_libraries = archives,
             direct_swiftdocs = swiftdocs,

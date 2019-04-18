@@ -58,12 +58,12 @@ depending on this target.
 
 SwiftInfo = provider(
     doc = """
-Contains information about the compiled artifacts of a Swift static library.
+Contains information about the compiled artifacts of a Swift module.
 
 This provider contains a large number of fields and many custom rules may not need to set all of
 them. Instead of constructing a `SwiftInfo` provider directly, consider using the
-`swift_common.build_swift_info` function, which has reasonable defaults for all of the fields and
-also automatically collects transitive values from a list of dependencies.
+`swift_common.create_swift_info` function, which has reasonable defaults for any fields not
+explicitly set.
 """,
     fields = {
         "direct_defines": """
