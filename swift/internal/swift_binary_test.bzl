@@ -87,6 +87,7 @@ def _swift_linking_rule_impl(
 
     copts = expand_locations(ctx, ctx.attr.copts, ctx.attr.swiftc_inputs)
     linkopts = list(linkopts) + expand_locations(ctx, ctx.attr.linkopts, ctx.attr.swiftc_inputs)
+    linkopts += ctx.fragments.cpp.linkopts
 
     additional_inputs = ctx.files.swiftc_inputs
     srcs = ctx.files.srcs
