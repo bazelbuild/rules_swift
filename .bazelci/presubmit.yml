@@ -4,6 +4,10 @@ tasks:
     name: "Latest Bazel"
     platform: macos
     bazel: latest
+    build_flags:
+      - "--copt=-Werror"
+      - "--swiftcopt=-warnings-as-errors"
+      - "--linkopt=-fatal_warnings"
     build_targets:
       - "//examples/..."
     test_targets:
@@ -29,6 +33,9 @@ tasks:
       # able to change this when we start auto-downloading toolchains (see
       # https://github.com/bazelbuild/rules_swift/issues/4).
       - "--action_env=PATH"
+      - "--copt=-Werror"
+      - "--swiftcopt=-warnings-as-errors"
+      - "--linkopt=-fatal-warnings"
     build_targets:
       - "--"
       - "//examples/..."
@@ -51,6 +58,9 @@ tasks:
       # able to change this when we start auto-downloading toolchains (see
       # https://github.com/bazelbuild/rules_swift/issues/4).
       - "--action_env=PATH"
+      - "--copt=-Werror"
+      - "--swiftcopt=-warnings-as-errors"
+      - "--linkopt=-fatal-warnings"
     build_targets:
       - "--"
       - "//examples/..."
