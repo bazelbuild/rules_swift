@@ -46,6 +46,7 @@ cc_library(
         "Sources/CgRPC/third_party/nanopb/**/*.h",
     ]) + ["Sources/CgRPC/shim/internal.h"],
     hdrs = ["Sources/CgRPC/shim/cgrpc.h"],
+    copts = ["-DPB_NO_PACKED_STRUCTS=1"],
     includes = ["Sources/CgRPC/include"],
     tags = ["swift_module=CgRPC"],
     deps = [
