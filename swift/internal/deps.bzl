@@ -39,6 +39,16 @@ def collect_link_libraries(target):
 
     if SwiftCcLibsInfo in target:
         depsets.append(target[SwiftCcLibsInfo].libraries)
+    elif CcInfo in target:
+        # TODO(b/124371696): This edge case occurs for the "malloc" target of binaries, which is
+        # passed directly to the link action and does not pass through swift_cc_libs_aspect. This
+        # can be removed when all linking logic is consolidated into `CcInfo`.
+        linking_context = target[CcInfo].linking_context
+        for library in linking_context.libraries_to_link:
+            if library.pic_static_library:
+                depsets.append(depset(direct = [library.pic_static_library]))
+            elif library.static_library:
+                depsets.append(depset(direct = [library.static_library]))
 
     return [depset(transitive = depsets, order = "topological")]
 

@@ -25,6 +25,34 @@ load(":providers.bzl", "SwiftToolchainInfo")
 load(":swift_c_module_aspect.bzl", "swift_c_module_aspect")
 load(":utils.bzl", "expand_locations")
 
+# Attributes common to both `swift_binary` and `swift_test`.
+_BINARY_RULE_ATTRS = dicts.add(
+    swift_common.compilation_attrs(additional_deps_aspects = [swift_c_module_aspect]),
+    {
+        "linkopts": attr.string_list(
+            doc = """
+Additional linker options that should be passed to `clang`. These strings are subject to
+`$(location ...)` expansion.
+""",
+            mandatory = False,
+        ),
+        "malloc": attr.label(
+            default = Label("@bazel_tools//tools/cpp:malloc"),
+            doc = """
+Override the default dependency on `malloc`.
+
+By default, Swift binaries are linked against `@bazel_tools//tools/cpp:malloc"`, which is an empty
+library and the resulting binary will use libc's `malloc`. This label must refer to a `cc_library`
+rule.
+""",
+            mandatory = False,
+            providers = [[CcInfo]],
+        ),
+        # Do not add references; temporary attribute for C++ toolchain Skylark migration.
+        "_cc_toolchain": attr.label(default = Label("@bazel_tools//tools/cpp:current_cc_toolchain")),
+    },
+)
+
 def _configure_features_for_binary(ctx, requested_features = [], unsupported_features = []):
     """Creates and returns the feature configuration for binary linking.
 
@@ -151,11 +179,15 @@ def _swift_linking_rule_impl(
     )
     link_args.add_all(link_cpp_toolchain_flags)
 
+    deps_to_link = ctx.attr.deps + toolchain.implicit_deps
+    if ctx.attr.malloc:
+        deps_to_link.append(ctx.attr.malloc)
+
     register_link_action(
         actions = ctx.actions,
         action_environment = toolchain.action_environment,
         clang_executable = toolchain.clang_executable,
-        deps = ctx.attr.deps + toolchain.implicit_deps,
+        deps = deps_to_link,
         expanded_linkopts = linkopts,
         inputs = additional_inputs_to_linker,
         mnemonic = "SwiftLinkExecutable",
@@ -295,20 +327,7 @@ def _swift_test_impl(ctx):
     ]
 
 swift_binary = rule(
-    attrs = dicts.add(
-        swift_common.compilation_attrs(additional_deps_aspects = [swift_c_module_aspect]),
-        {
-            "linkopts": attr.string_list(
-                doc = """
-Additional linker options that should be passed to `clang`. These strings are subject to
-`$(location ...)` expansion.
-""",
-                mandatory = False,
-            ),
-            # Do not add references; temporary attribute for C++ toolchain Skylark migration.
-            "_cc_toolchain": attr.label(default = Label("@bazel_tools//tools/cpp:current_cc_toolchain")),
-        },
-    ),
+    attrs = _BINARY_RULE_ATTRS,
     doc = """
 Compiles and links Swift code into an executable binary.
 
@@ -335,21 +354,12 @@ instead of `swift_binary`.
 
 swift_test = rule(
     attrs = dicts.add(
-        swift_common.compilation_attrs(additional_deps_aspects = [swift_c_module_aspect]),
+        _BINARY_RULE_ATTRS,
         {
-            "linkopts": attr.string_list(
-                doc = """
-Additional linker options that should be passed to `clang`. These strings are subject to
-`$(location ...)` expansion.
-""",
-                mandatory = False,
-            ),
             "_apple_coverage_support": attr.label(
                 cfg = "host",
                 default = Label("@build_bazel_apple_support//tools:coverage_support"),
             ),
-            # Do not add references; temporary attribute for C++ toolchain Skylark migration.
-            "_cc_toolchain": attr.label(default = Label("@bazel_tools//tools/cpp:current_cc_toolchain")),
             "_xctest_runner_template": attr.label(
                 allow_single_file = True,
                 default = Label(
