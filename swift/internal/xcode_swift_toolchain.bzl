@@ -484,6 +484,7 @@ def _xcode_swift_toolchain_impl(ctx):
     )
 
     cc_toolchain = find_cpp_toolchain(ctx)
+    cc_toolchain_files = ctx.attr._cc_toolchain.files
 
     # Compute the default requested features and conditional ones based on Xcode version.
     requested_features = features_for_build_modes(ctx, objc_fragment = ctx.fragments.objc)
@@ -503,6 +504,7 @@ def _xcode_swift_toolchain_impl(ctx):
         SwiftToolchainInfo(
             action_environment = env,
             action_registrars = action_registrars,
+            cc_toolchain_files = cc_toolchain_files,
             cc_toolchain_info = cc_toolchain,
             clang_executable = None,
             command_line_copts = command_line_copts,
