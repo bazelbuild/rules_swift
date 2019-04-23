@@ -55,6 +55,7 @@ load(
     "SWIFT_FEATURE_AUTOLINK_EXTRACT",
     "SWIFT_FEATURE_COVERAGE",
     "SWIFT_FEATURE_DBG",
+    "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
     "SWIFT_FEATURE_ENABLE_TESTING",
     "SWIFT_FEATURE_FASTBUILD",
@@ -519,6 +520,12 @@ def _compile_as_objects(
             wrapper_args.add("-module-cache-path", _global_module_cache_path(bin_dir))
     else:
         wrapper_args.add("-Xwrapped-swift=-ephemeral-module-cache")
+
+    if swift_common.is_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_DEBUG_PREFIX_MAP,
+    ):
+        wrapper_args.add("-Xwrapped-swift=-debug-prefix-pwd-is-dot")
 
     compile_args = actions.args()
     if swift_common.is_enabled(
