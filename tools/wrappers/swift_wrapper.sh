@@ -70,6 +70,9 @@ for ARG in "$@" ; do
   --persistent_worker)
     USE_WORKER=1
     ;;
+  -Xwrapped-swift=-debug-prefix-pwd-is-dot)
+    ARGS+=(-debug-prefix-map "$PWD=.")
+    ;;
   -Xwrapped-swift=-ephemeral-module-cache)
     MODULE_CACHE_DIR="$(mktemp -d "${TMPDIR%/}/wrapped_swift_module_cache.XXXXXXXXXX")"
     ARGS+=(-module-cache-path "$MODULE_CACHE_DIR")
