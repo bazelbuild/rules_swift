@@ -69,7 +69,10 @@ def _intermediate_frontend_file_path(target_name, src):
     """
     objs_dir = "{}_objs".format(target_name)
     owner_rel_path = owner_relative_path(src)
-    return paths.join(objs_dir, paths.dirname(owner_rel_path)), src.basename
+
+    # TODO(b/131185317): Remove this once ar_wrapper handles filenames with spaces correctly.
+    safe_name = src.basename.replace(" ", "__SPACE__")
+    return paths.join(objs_dir, paths.dirname(owner_rel_path)), safe_name
 
 def _intermediate_object_file(actions, target_name, src):
     """Declares a file for an intermediate object file during compilation.
