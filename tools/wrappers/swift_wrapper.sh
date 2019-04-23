@@ -46,67 +46,13 @@
 
 set -eu
 
-# SYNOPSIS
-#   Rewrites special arguments in the given argument string, echoing the result.
-#
-# USAGE
-#   rewrite_argument <argument>
-function rewrite_argument {
-  case "$1" in
-  -Xwrapped-swift=-ephemeral-module-cache)
-    MODULE_CACHE_DIR="$(mktemp -d "${TMPDIR%/}/wrapped_swift_module_cache.XXXXXXXXXX")"
-    echo "-module-cache-path $MODULE_CACHE_DIR"
-    ;;
-  -fmodule-map-file=[^/]*)
-    # TODO(allevato): Remove this workaround once this patch is in a release:
-    # https://github.com/apple/swift-lldb/pull/1369
-    MODULE_MAP_FILE="${1#-fmodule-map-file=}"
-    echo "-fmodule-map-file=$PWD/$MODULE_MAP_FILE"
-    ;;
-  *)
-    echo "$1"
-    ;;
-  esac
-}
-
-# SYNOPSIS
-#   Rewrites special arguments in the given params file, if any.
-#   If there were no substitutions to be made, the original path is echoed back
-#   out; otherwise, this function echoes the path to a temporary file
-#   containing the rewritten file.
-#
-# USAGE
-#   rewrite_params_file <path>
-function rewrite_params_file {
-  PARAMSFILE="$1"
-  if grep -qe '-fmodule-map-file=' "$PARAMSFILE" ; then
-    NEWFILE="$(mktemp "${TMPDIR%/}/swift_wrapper_params.XXXXXXXXXX")"
-    # TODO(allevato): Remove this workaround once this patch is in a release:
-    # https://github.com/apple/swift-lldb/pull/1369
-    sed \
-        -e "s#-fmodule-map-file=\([^/]\)#-fmodule-map-file=$PWD/\1#g" \
-        "$PARAMSFILE" > "$NEWFILE"
-    echo "$NEWFILE"
-  else
-    # There were no placeholders to substitute, so just return the original
-    # file.
-    echo "$PARAMSFILE"
-  fi
-}
-
 # Called when the wrapper exits (normally or abnormally) to clean up any
 # temporary state.
 function cleanup {
   if [[ -n "$MODULE_CACHE_DIR" ]] ; then
     rm -rf "$MODULE_CACHE_DIR"
   fi
-  if [[ ${#TEMPFILES[@]} -ne 0 ]] ; then
-    rm "${TEMPFILES[@]}"
-  fi
 }
-# If any temporary files are created (like rewritten response files), clean
-# them up when the script exits.
-TEMPFILES=()
 
 trap cleanup EXIT
 
@@ -121,19 +67,15 @@ USE_WORKER=0
 ARGS=()
 for ARG in "$@" ; do
   case "$ARG" in
-  @*)
-    PARAMSFILE="${ARG:1}"
-    NEWFILE=$(rewrite_params_file "$PARAMSFILE")
-    if [[ "$PARAMSFILE" != "$NEWFILE" ]] ; then
-      TEMPFILES+=("$NEWFILE")
-    fi
-    ARGS+=("@$NEWFILE")
-    ;;
   --persistent_worker)
     USE_WORKER=1
     ;;
+  -Xwrapped-swift=-ephemeral-module-cache)
+    MODULE_CACHE_DIR="$(mktemp -d "${TMPDIR%/}/wrapped_swift_module_cache.XXXXXXXXXX")"
+    ARGS+=(-module-cache-path "$MODULE_CACHE_DIR")
+    ;;
   *)
-    ARGS+=($(rewrite_argument "$ARG"))
+    ARGS+=("$ARG")
     ;;
   esac
 done
