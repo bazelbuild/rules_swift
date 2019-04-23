@@ -793,19 +793,16 @@ def _compile_as_library(
     )
 
     # Create an archive that contains the compiled .o files.
-    if toolchain.system_name == "darwin":
-        ar_executable = None
-    else:
-        ar_executable = toolchain.cc_toolchain_info.ar_executable
-
     register_static_archive_action(
         actions = actions,
-        ar_executable = ar_executable,
+        cc_feature_configuration = _cc_feature_configuration(
+            feature_configuration = feature_configuration,
+        ),
         mnemonic = "SwiftArchive",
         objects = compile_results.output_objects,
         output = out_archive,
         progress_message = "Linking {}".format(out_archive.short_path),
-        toolchain = toolchain,
+        swift_toolchain = toolchain,
     )
 
     # TODO(b/130741225): Move this logic out of the API and have the rules themselves manipulate
