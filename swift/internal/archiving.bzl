@@ -14,65 +14,134 @@
 
 """Implementation of static library archiving logic for Swift."""
 
-load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "CPP_LINK_STATIC_LIBRARY_ACTION_NAME")
+load(":actions.bzl", "run_toolchain_action")
 
 def register_static_archive_action(
         actions,
-        cc_feature_configuration,
-        cc_toolchain,
-        cc_toolchain_files,
+        ar_executable,
         output,
+        toolchain,
         mnemonic = "Archive",
         objects = [],
         progress_message = None):
-    """Registers an action that creates a static archive.
+    """Registers actions that create a static archive.
 
     Args:
-        actions: The object used to register actions.
-        cc_feature_configuration: The C++ feature configuration to use when constructing the
-            action.
-        cc_toolchain: The C++ toolchain provider to use when constructing the action.
-        cc_toolchain_files: A `depset` containing the files from the C++ toolchain, which are
-            required to ensure that the tools are available in the action inputs.
-        output: A `File` to which the output archive will be written.
-        mnemonic: The mnemonic to display when the action is executed.
-        objects: A list of `File`s denoting object (.o) files that will be merged into the archive.
-        progress_message: The progress message to display when the action is executed.
+      actions: The object used to register actions.
+      ar_executable: The path to the `ar` executable to use when creating the
+          archive, if it should be used.
+      output: A `File` to which the output archive will be written.
+      toolchain: The `SwiftToolchainInfo` provider of the toolchain.
+      mnemonic: The mnemonic to display when the action is executed.
+      objects: A list of `File`s denoting object (.o) files that will be merged
+          into the archive.
+      progress_message: The progress message to display when the action is
+          executed.
     """
-    archiver_path = cc_common.get_tool_for_action(
-        action_name = CPP_LINK_STATIC_LIBRARY_ACTION_NAME,
-        feature_configuration = cc_feature_configuration,
-    )
-    archiver_variables = cc_common.create_link_variables(
-        cc_toolchain = cc_toolchain,
-        feature_configuration = cc_feature_configuration,
-        is_using_linker = False,
-        output_file = output.path,
-    )
+    if ar_executable:
+        _register_ar_action(
+            actions = actions,
+            ar_executable = ar_executable,
+            mnemonic = mnemonic,
+            objects = objects,
+            output = output,
+            progress_message = progress_message,
+            toolchain = toolchain,
+        )
+    else:
+        _register_libtool_action(
+            actions = actions,
+            mnemonic = mnemonic,
+            objects = objects,
+            output = output,
+            progress_message = progress_message,
+            toolchain = toolchain,
+        )
 
-    command_line = cc_common.get_memory_inefficient_command_line(
-        action_name = CPP_LINK_STATIC_LIBRARY_ACTION_NAME,
-        feature_configuration = cc_feature_configuration,
-        variables = archiver_variables,
-    )
+def _register_ar_action(
+        actions,
+        ar_executable,
+        mnemonic,
+        objects,
+        output,
+        progress_message,
+        toolchain):
+    """Registers an action that creates a static archive using `ar`.
+
+    This function is used to create static archives when the Swift toolchain
+    depends on a Linux toolchain.
+
+    Args:
+      actions: The object used to register actions.
+      ar_executable: The path to the `ar` executable to use when creating the
+          archive, if it should be used.
+      mnemonic: The mnemonic to display when the action is executed.
+      objects: A list of `File`s denoting object (.o) files that will be merged
+          into the archive.
+      output: A `File` to which the output archive will be written.
+      progress_message: The progress message to display when the action is
+          executed.
+      toolchain: The `SwiftToolchainInfo` provider of the toolchain.
+    """
+
     args = actions.args()
-    args.add_all(command_line)
+    args.add("cr")
+    args.add(output)
     args.add_all(objects)
 
-    env = cc_common.get_environment_variables(
-        action_name = CPP_LINK_STATIC_LIBRARY_ACTION_NAME,
-        feature_configuration = cc_feature_configuration,
-        variables = archiver_variables,
+    run_toolchain_action(
+        actions = actions,
+        arguments = [args],
+        executable = ar_executable,
+        inputs = objects,
+        mnemonic = mnemonic,
+        outputs = [output],
+        progress_message = progress_message,
+        toolchain = toolchain,
     )
 
-    actions.run(
-        executable = archiver_path,
-        arguments = [args],
-        env = env,
-        inputs = depset(
-            direct = objects,
-            # TODO(bazelbuild/bazel#7427): Use `CcToolchainInfo` getters when they are available.
-            transitive = [cc_toolchain_files],
-        ),
+def _register_libtool_action(
+        actions,
+        mnemonic,
+        objects,
+        output,
+        progress_message,
+        toolchain):
+    """Registers an action that creates a static archive using `libtool`.
+
+    This function is used to create static archives when the Swift toolchain
+    depends on an Xcode toolchain.
+
+    Args:
+      actions: The object used to register actions.
+      mnemonic: The mnemonic to display when the action is executed.
+      objects: A list of `File`s denoting object (.o) files that will be merged
+          into the archive.
+      output: A `File` to which the output archive will be written.
+      progress_message: The progress message to display when the action is
+          executed.
+      toolchain: The `SwiftToolchainInfo` provider of the toolchain.
+    """
+    args = actions.args()
+    args.add("-static")
+    args.add("-o", output)
+
+    # This must be the last argument in this set, because the filelist args object
+    # immediately follows it in the invocation below.
+    args.add("-filelist")
+
+    filelist = actions.args()
+    filelist.set_param_file_format("multiline")
+    filelist.use_param_file("%s", use_always = True)
+    filelist.add_all(objects)
+
+    run_toolchain_action(
+        actions = actions,
+        arguments = [args, filelist],
+        executable = "/usr/bin/libtool",
+        inputs = objects,
+        mnemonic = mnemonic,
         outputs = [output],
+        progress_message = progress_message,
+        toolchain = toolchain,
     )

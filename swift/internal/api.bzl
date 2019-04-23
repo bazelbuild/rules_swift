@@ -800,15 +800,12 @@ def _compile_as_library(
 
     register_static_archive_action(
         actions = actions,
-        cc_feature_configuration = _cc_feature_configuration(
-            feature_configuration = feature_configuration,
-        ),
-        cc_toolchain = toolchain.cc_toolchain_info,
-        cc_toolchain_files = toolchain.cc_toolchain_files,
+        ar_executable = ar_executable,
         mnemonic = "SwiftArchive",
         objects = compile_results.output_objects,
         output = out_archive,
         progress_message = "Linking {}".format(out_archive.short_path),
+        toolchain = toolchain,
     )
 
     # TODO(b/130741225): Move this logic out of the API and have the rules themselves manipulate
