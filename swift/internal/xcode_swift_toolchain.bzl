@@ -184,6 +184,20 @@ def _is_macos(platform):
     """
     return platform.platform_type == apple_common.platform_type.macos
 
+def _trim_version(version):
+    """Trim the given version number down to a maximum of three components.
+
+    Args:
+        version: The version number to trim; either a string or a `DottedVersion` value.
+
+    Returns:
+        The trimmed version number as a `DottedVersion` value.
+    """
+    version = str(version)
+    parts = version.split(".")
+    maxparts = min(len(parts), 3)
+    return apple_common.dotted_version(".".join(parts[:maxparts]))
+
 def _is_xcode_at_least_version(xcode_config, desired_version):
     """Returns True if we are building with at least the given Xcode version.
 
@@ -200,8 +214,10 @@ def _is_xcode_at_least_version(xcode_config, desired_version):
         fail("Could not determine Xcode version at all. This likely means Xcode isn't " +
              "available; if you think this is a mistake, please file an issue.")
 
-    desired_version_value = apple_common.dotted_version(desired_version)
-    return current_version >= desired_version_value
+    # TODO(b/131195460): DottedVersion comparison is broken for four-component versions that are
+    # returned by modern Xcodes. Work around it for now.
+    desired_version_value = _trim_version(desired_version)
+    return _trim_version(current_version) >= desired_version_value
 
 def _modified_action_args(
         action_args,
