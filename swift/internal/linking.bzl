@@ -93,15 +93,18 @@ def register_link_action(
                 deps_static_framework_files.append(objc.static_framework_file)
             else:
                 deps_dynamic_framework_names.append(depset(
-                    [objc_provider_framework_name(fdir) for fdir in objc.dynamic_framework_dir],
+                    [
+                        objc_provider_framework_name(fdir)
+                        for fdir in objc.dynamic_framework_dir.to_list()
+                    ],
                 ))
                 deps_dynamic_framework_paths.append(depset(
-                    [fdir.dirname for fdir in objc.dynamic_framework_dir],
+                    [fdir.dirname for fdir in objc.dynamic_framework_dir.to_list()],
                 ))
                 deps_static_framework_files.append(depset(
                     [
                         paths.join(fdir, objc_provider_framework_name(fdir))
-                        for fdir in objc.framework_dir
+                        for fdir in objc.framework_dir.to_list()
                     ],
                 ))
             deps_sdk_dylibs.append(objc.sdk_dylib)
