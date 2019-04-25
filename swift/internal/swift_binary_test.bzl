@@ -109,6 +109,7 @@ def _swift_linking_rule_impl(
     """
     copts = expand_locations(ctx, ctx.attr.copts, ctx.attr.swiftc_inputs)
     linkopts = list(linkopts) + expand_locations(ctx, ctx.attr.linkopts, ctx.attr.swiftc_inputs)
+    linkopts += ctx.fragments.cpp.linkopts
 
     additional_inputs = ctx.files.swiftc_inputs
     srcs = ctx.files.srcs
@@ -349,6 +350,7 @@ platform-specific application rules in [rules_apple](https://github.com/bazelbui
 instead of `swift_binary`.
 """,
     executable = True,
+    fragments = ["cpp"],
     implementation = _swift_binary_impl,
 )
 
@@ -399,6 +401,7 @@ You can also disable this feature for all the tests in a package by applying it 
 `package()` declaration instead of the individual targets.
 """,
     executable = True,
+    fragments = ["cpp"],
     test = True,
     implementation = _swift_test_impl,
 )
