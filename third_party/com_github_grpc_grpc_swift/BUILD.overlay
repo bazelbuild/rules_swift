@@ -31,6 +31,7 @@ cc_library(
         "Sources/BoringSSL/third_party/**/*.h",
     ]),
     hdrs = glob(["Sources/BoringSSL/include/**/*.h"]),
+    copts = ["-Wno-unused-function"],
     includes = ["Sources/BoringSSL/include"],
 )
 
