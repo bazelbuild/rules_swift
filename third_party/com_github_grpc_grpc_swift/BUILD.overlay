@@ -9,7 +9,7 @@ swift_library(
     srcs = glob([
         "Sources/SwiftGRPC/**/*.swift",
     ]),
-    copts = ["-DSWIFT_PACKAGE"],  # activates CgRPC iports
+    copts = ["-DSWIFT_PACKAGE"],  # activates CgRPC imports
     module_name = "SwiftGRPC",
     visibility = ["//visibility:public"],
     deps = [
