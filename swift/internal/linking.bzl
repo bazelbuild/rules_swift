@@ -19,12 +19,129 @@ load(
     "@build_bazel_apple_support//lib:framework_migration.bzl",
     "framework_migration",
 )
+load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "CPP_LINK_STATIC_LIBRARY_ACTION_NAME")
 load(":actions.bzl", "run_toolchain_action")
 load(":deps.bzl", "collect_link_libraries")
+load(":derived_files.bzl", "derived_files")
 load(":providers.bzl", "SwiftInfo")
 load(":utils.bzl", "collect_transitive", "objc_provider_framework_name")
 
-def register_link_action(
+def _register_static_library_link_action(
+        actions,
+        cc_feature_configuration,
+        objects,
+        output,
+        swift_toolchain):
+    """Registers an action that creates a static library.
+
+    Args:
+        actions: The object used to register actions.
+        cc_feature_configuration: The C++ feature configuration to use when constructing the
+            action.
+        objects: A list of `File`s denoting object (`.o`) files that will be linked.
+        output: A `File` to which the output library will be written.
+        swift_toolchain: The Swift toolchain provider to use when constructing the action.
+    """
+    archiver_path = cc_common.get_tool_for_action(
+        action_name = CPP_LINK_STATIC_LIBRARY_ACTION_NAME,
+        feature_configuration = cc_feature_configuration,
+    )
+    archiver_variables = cc_common.create_link_variables(
+        cc_toolchain = swift_toolchain.cc_toolchain_info,
+        feature_configuration = cc_feature_configuration,
+        is_using_linker = False,
+        output_file = output.path,
+    )
+
+    command_line = cc_common.get_memory_inefficient_command_line(
+        action_name = CPP_LINK_STATIC_LIBRARY_ACTION_NAME,
+        feature_configuration = cc_feature_configuration,
+        variables = archiver_variables,
+    )
+    args = actions.args()
+    args.add_all(command_line)
+    args.add_all(objects)
+
+    env = cc_common.get_environment_variables(
+        action_name = CPP_LINK_STATIC_LIBRARY_ACTION_NAME,
+        feature_configuration = cc_feature_configuration,
+        variables = archiver_variables,
+    )
+
+    actions.run(
+        executable = archiver_path,
+        arguments = [args],
+        env = env,
+        # TODO(allevato): It seems like the `cc_common` APIs should have a way to get this value
+        # so that it can be handled consistently for the toolchain in use.
+        execution_requirements = swift_toolchain.execution_requirements,
+        inputs = depset(
+            direct = objects,
+            # TODO(bazelbuild/bazel#7427): Use `CcToolchainInfo` getters when they are available.
+            transitive = [swift_toolchain.cc_toolchain_files],
+        ),
+        mnemonic = "SwiftArchive",
+        outputs = [output],
+        progress_message = "Linking {}".format(output.short_path),
+    )
+
+def register_libraries_to_link(
+        actions,
+        alwayslink,
+        cc_feature_configuration,
+        is_dynamic,
+        is_static,
+        library_name,
+        objects,
+        swift_toolchain):
+    """Declares files for the requested libraries and registers actions to link them.
+
+    Args:
+        actions: The object used to register actions.
+        alwayslink: If True, create a static library that should be always-linked (having a `.lo`
+            extension instead of `.a`). This argument is ignored if `is_static` is False.
+        cc_feature_configuration: The C++ feature configuration to use when constructing the
+            action.
+        is_dynamic: If True, declare and link a dynamic library.
+        is_static: If True, declare and link a static library.
+        library_name: The basename (without extension) of the libraries to declare.
+        objects: A list of `File`s denoting object (`.o`) files that will be linked.
+        swift_toolchain: The Swift toolchain provider to use when constructing the action.
+
+    Returns:
+        A `LibraryToLink` object containing the libraries that were created.
+    """
+    dynamic_library = None
+    if is_dynamic:
+        # TODO(b/70228246): Implement this.
+        pass
+
+    if is_static:
+        static_library = derived_files.static_archive(
+            actions = actions,
+            alwayslink = alwayslink,
+            link_name = library_name,
+        )
+        _register_static_library_link_action(
+            actions = actions,
+            cc_feature_configuration = cc_feature_configuration,
+            objects = objects,
+            output = static_library,
+            swift_toolchain = swift_toolchain,
+        )
+    else:
+        static_library = None
+
+    return cc_common.create_library_to_link(
+        actions = actions,
+        alwayslink = alwayslink,
+        cc_toolchain = swift_toolchain.cc_toolchain_info,
+        feature_configuration = cc_feature_configuration,
+        pic_static_library = static_library,
+        dynamic_library = dynamic_library,
+    )
+
+def register_link_executable_action(
         actions,
         action_environment,
         clang_executable,

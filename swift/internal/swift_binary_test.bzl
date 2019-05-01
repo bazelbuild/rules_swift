@@ -20,7 +20,7 @@ load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "CPP_LINK_EXECUTABLE_
 load(":api.bzl", "swift_common")
 load(":derived_files.bzl", "derived_files")
 load(":features.bzl", "SWIFT_FEATURE_BUNDLED_XCTESTS")
-load(":linking.bzl", "register_link_action")
+load(":linking.bzl", "register_link_executable_action")
 load(":providers.bzl", "SwiftToolchainInfo")
 load(":swift_c_module_aspect.bzl", "swift_c_module_aspect")
 load(":utils.bzl", "expand_locations")
@@ -184,7 +184,7 @@ def _swift_linking_rule_impl(
     if ctx.attr.malloc:
         deps_to_link.append(ctx.attr.malloc)
 
-    register_link_action(
+    register_link_executable_action(
         actions = ctx.actions,
         action_environment = toolchain.action_environment,
         clang_executable = toolchain.clang_executable,

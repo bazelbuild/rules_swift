@@ -40,6 +40,16 @@ def collect_transitive(targets, provider, key, direct = None):
         return depset(direct = direct, transitive = transitives)
     return depset(transitive = transitives)
 
+def compact(sequence):
+    """Returns a copy of the sequence with any `None` items removed.
+
+    Args:
+        sequence: The sequence of items to compact.
+
+    Returns: A copy of the sequence with any `None` items removed.
+    """
+    return [item for item in sequence if item != None]
+
 def expand_locations(ctx, values, targets = []):
     """Expands the `$(location)` placeholders in each of the given values.
 

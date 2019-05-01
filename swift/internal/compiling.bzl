@@ -126,6 +126,8 @@ def declare_compile_outputs(
 
         *   `args`: A list of values that should be added to the `Args` of the compile action.
         *   `compile_inputs`: Additional input files that should be passed to the compile action.
+        *   `indexstore`: A `File` representing the index store directory that was generated if
+            index-while-building was enabled, or None.
         *   `other_outputs`: Additional output files that should be declared by the compile action,
             but which are not processed further.
         *   `output_groups`: A dictionary of additional output groups that should be propagated by
@@ -142,6 +144,8 @@ def declare_compile_outputs(
         return struct(
             args = ["-o", out_obj],
             compile_inputs = [],
+            # TODO(allevato): We need to handle indexing here too.
+            indexstore = None,
             other_outputs = [],
             output_groups = {
                 "compilation_outputs": depset(items = [out_obj]),
@@ -207,10 +211,13 @@ def declare_compile_outputs(
         other_outputs.append(index_store_dir)
         args.extend(["-index-store-path", index_store_dir.path])
         output_groups["swift_index_store"] = depset(direct = [index_store_dir])
+    else:
+        index_store_dir = None
 
     return struct(
         args = args,
         compile_inputs = [output_map_file],
+        indexstore = index_store_dir,
         other_outputs = other_outputs,
         output_groups = output_groups,
         output_objects = output_objs,
