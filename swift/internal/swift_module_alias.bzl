@@ -16,11 +16,26 @@
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(":api.bzl", "swift_common")
+load(":compiling.bzl", "new_objc_provider")
+load(":deps.bzl", "legacy_build_swift_info")
 load(":derived_files.bzl", "derived_files")
-load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
+load(":linking.bzl", "register_libraries_to_link")
+load(
+    ":providers.bzl",
+    "SwiftClangModuleInfo",
+    "SwiftInfo",
+    "SwiftToolchainInfo",
+    "merge_swift_clang_module_infos",
+)
+load(":utils.bzl", "compact")
 
 def _swift_module_alias_impl(ctx):
-    module_mapping = {dep[SwiftInfo].module_name: dep.label for dep in ctx.attr.deps}
+    deps = ctx.attr.deps
+    module_mapping = {
+        dep[SwiftInfo].module_name: dep.label
+        for dep in deps
+        if dep[SwiftInfo].module_name
+    }
 
     module_name = ctx.attr.module_name
     if not module_name:
@@ -53,35 +68,77 @@ following dependencies instead:\n\n""".format(
         output = reexport_src,
     )
 
-    toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
+    swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
     feature_configuration = swift_common.configure_features(
         requested_features = ctx.features,
-        swift_toolchain = toolchain,
+        swift_toolchain = swift_toolchain,
         unsupported_features = ctx.disabled_features,
     )
 
-    compile_results = swift_common.compile_as_library(
+    compilation_outputs = swift_common.compile(
         actions = ctx.actions,
         bin_dir = ctx.bin_dir,
-        label = ctx.label,
-        module_name = module_name,
-        srcs = [reexport_src],
-        toolchain = ctx.attr._toolchain[SwiftToolchainInfo],
-        deps = ctx.attr.deps,
+        copts = ["-parse-as-library"],
+        deps = deps,
         feature_configuration = feature_configuration,
         genfiles_dir = ctx.genfiles_dir,
+        module_name = module_name,
+        srcs = [reexport_src],
+        swift_toolchain = swift_toolchain,
+        target_name = ctx.label.name,
     )
 
-    return compile_results.providers + [
-        DefaultInfo(
-            files = depset(direct = [
-                compile_results.output_archive,
-                compile_results.output_doc,
-                compile_results.output_module,
-            ]),
+    library_to_link = register_libraries_to_link(
+        actions = ctx.actions,
+        alwayslink = False,
+        cc_feature_configuration = swift_common.cc_feature_configuration(
+            feature_configuration = feature_configuration,
         ),
-        OutputGroupInfo(**compile_results.output_groups),
+        is_dynamic = False,
+        is_static = True,
+        library_name = ctx.label.name,
+        objects = compilation_outputs.object_files,
+        swift_toolchain = swift_toolchain,
+    )
+
+    providers = [
+        DefaultInfo(
+            files = depset(compact([
+                compilation_outputs.swiftdoc,
+                compilation_outputs.swiftmodule,
+                library_to_link.dynamic_library,
+                library_to_link.pic_static_library,
+            ])),
+        ),
+        legacy_build_swift_info(
+            deps = deps,
+            direct_additional_inputs = compilation_outputs.linker_inputs,
+            direct_libraries = compact([library_to_link.pic_static_library]),
+            direct_linkopts = compilation_outputs.linker_flags,
+            direct_swiftdocs = [compilation_outputs.swiftdoc],
+            direct_swiftmodules = [compilation_outputs.swiftmodule],
+        ),
     ]
+
+    # Propagate an `objc` provider if the toolchain supports Objective-C interop,
+    # which allows `objc_library` targets to import `swift_library` targets.
+    if swift_toolchain.supports_objc_interop:
+        providers.append(new_objc_provider(
+            deps = deps,
+            include_path = ctx.bin_dir.path,
+            link_inputs = compilation_outputs.linker_inputs,
+            linkopts = compilation_outputs.linker_flags,
+            module_map = compilation_outputs.generated_module_map,
+            static_archives = compact([library_to_link.pic_static_library]),
+            swiftmodules = [compilation_outputs.swiftmodule],
+            objc_header = compilation_outputs.generated_header,
+        ))
+
+    if any([SwiftClangModuleInfo in dep for dep in deps]):
+        clang_module = merge_swift_clang_module_infos(deps)
+        providers.append(clang_module)
+
+    return providers
 
 swift_module_alias = rule(
     attrs = dicts.add(
