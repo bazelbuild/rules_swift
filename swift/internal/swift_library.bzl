@@ -137,6 +137,7 @@ def _swift_library_impl(ctx):
         legacy_build_swift_info(
             deps = deps,
             direct_additional_inputs = compilation_outputs.linker_inputs + additional_inputs,
+            direct_defines = ctx.attr.defines,
             direct_libraries = compact([library_to_link.pic_static_library]),
             direct_linkopts = compilation_outputs.linker_flags + linkopts,
             direct_swiftdocs = [compilation_outputs.swiftdoc],
