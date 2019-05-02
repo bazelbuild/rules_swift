@@ -68,7 +68,7 @@ def _configure_features_for_binary(ctx, requested_features = [], unsupported_fea
     Returns:
         The `FeatureConfiguration` that was created.
     """
-    toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
+    swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
 
     # Combine the features from the rule context with those passed into this function.
     requested_features = ctx.features + requested_features
@@ -82,7 +82,7 @@ def _configure_features_for_binary(ctx, requested_features = [], unsupported_fea
 
     return swift_common.configure_features(
         requested_features = requested_features,
-        swift_toolchain = toolchain,
+        swift_toolchain = swift_toolchain,
         unsupported_features = unsupported_features,
     )
 
@@ -90,7 +90,7 @@ def _swift_linking_rule_impl(
         ctx,
         feature_configuration,
         is_test,
-        toolchain,
+        swift_toolchain,
         linkopts = []):
     """The shared implementation function for `swift_{binary,test}`.
 
@@ -99,7 +99,7 @@ def _swift_linking_rule_impl(
         feature_configuration: A feature configuration obtained from
             `swift_common.configure_features`.
         is_test: A `Boolean` value indicating whether the binary is a test target.
-        toolchain: The `SwiftToolchainInfo` provider of the toolchain being used to build the
+        swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain being used to build the
             target.
         linkopts: Additional rule-specific flags that should be passed to the linker.
 
@@ -116,8 +116,7 @@ def _swift_linking_rule_impl(
 
     out_bin = derived_files.executable(ctx.actions, target_name = ctx.label.name)
     objects_to_link = []
-    additional_output_groups = {}
-    compilation_providers = []
+    output_groups = {}
 
     link_args = ctx.actions.args()
     link_args.add("-o", out_bin)
@@ -129,37 +128,31 @@ def _swift_linking_rule_impl(
         if not module_name:
             module_name = swift_common.derive_module_name(ctx.label)
 
-        compile_results = swift_common.compile_as_objects(
+        compilation_outputs = swift_common.compile(
             actions = ctx.actions,
-            arguments = [],
+            additional_inputs = additional_inputs,
             bin_dir = ctx.bin_dir,
             copts = copts,
             defines = ctx.attr.defines,
+            deps = ctx.attr.deps,
             feature_configuration = feature_configuration,
+            genfiles_dir = ctx.genfiles_dir,
             module_name = module_name,
             srcs = srcs,
+            swift_toolchain = swift_toolchain,
             target_name = ctx.label.name,
-            toolchain = toolchain,
-            additional_input_depsets = [depset(direct = additional_inputs)],
-            deps = ctx.attr.deps,
-            genfiles_dir = ctx.genfiles_dir,
         )
-        link_args.add_all(compile_results.linker_flags)
-        objects_to_link.extend(compile_results.output_objects)
-        additional_inputs_to_linker = depset(
-            direct = compile_results.linker_inputs,
-            transitive = [compile_results.compile_inputs],
-        )
+        link_args.add_all(compilation_outputs.linker_flags)
+        objects_to_link.extend(compilation_outputs.object_files)
+        additional_inputs_to_linker = depset(compilation_outputs.linker_inputs)
 
-        additional_output_groups = dicts.add(
-            additional_output_groups,
-            compile_results.output_groups,
-        )
+        if compilation_outputs.indexstore:
+            output_groups["swift_index_store"] = depset([compilation_outputs.indexstore])
 
     # TODO(b/70228246): Also support mostly-static and fully-dynamic modes, here and for the C++
     # toolchain args below.
     link_args.add_all(partial.call(
-        toolchain.linker_opts_producer,
+        swift_toolchain.linker_opts_producer,
         is_static = True,
         is_test = is_test,
     ))
@@ -169,7 +162,7 @@ def _swift_linking_rule_impl(
         feature_configuration = feature_configuration,
     )
     variables = cc_common.create_link_variables(
-        cc_toolchain = toolchain.cc_toolchain_info,
+        cc_toolchain = swift_toolchain.cc_toolchain_info,
         feature_configuration = cc_feature_configuration,
         is_static_linking_mode = True,
     )
@@ -180,14 +173,14 @@ def _swift_linking_rule_impl(
     )
     link_args.add_all(link_cpp_toolchain_flags)
 
-    deps_to_link = ctx.attr.deps + toolchain.implicit_deps
+    deps_to_link = ctx.attr.deps + swift_toolchain.implicit_deps
     if ctx.attr.malloc:
         deps_to_link.append(ctx.attr.malloc)
 
     register_link_executable_action(
         actions = ctx.actions,
-        action_environment = toolchain.action_environment,
-        clang_executable = toolchain.clang_executable,
+        action_environment = swift_toolchain.action_environment,
+        clang_executable = swift_toolchain.clang_executable,
         deps = deps_to_link,
         expanded_linkopts = linkopts,
         inputs = additional_inputs_to_linker,
@@ -196,12 +189,10 @@ def _swift_linking_rule_impl(
         outputs = [out_bin],
         progress_message = "Linking {}".format(out_bin.short_path),
         rule_specific_args = link_args,
-        toolchain = toolchain,
+        swift_toolchain = swift_toolchain,
     )
 
-    return out_bin, compilation_providers + [
-        OutputGroupInfo(**additional_output_groups),
-    ]
+    return out_bin, [OutputGroupInfo(**output_groups)]
 
 def _create_xctest_runner(name, actions, binary, xctest_runner_template):
     """Creates a shell script that will bundle a test binary and launch the `xctest` helper tool.
@@ -232,7 +223,7 @@ def _create_xctest_runner(name, actions, binary, xctest_runner_template):
     return xctest_runner
 
 def _swift_binary_impl(ctx):
-    toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
+    swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
     feature_configuration = _configure_features_for_binary(
         ctx = ctx,
         requested_features = ["static_linking_mode"],
@@ -242,7 +233,7 @@ def _swift_binary_impl(ctx):
         ctx,
         feature_configuration = feature_configuration,
         is_test = False,
-        toolchain = toolchain,
+        swift_toolchain = swift_toolchain,
     )
 
     return providers + [
@@ -257,13 +248,13 @@ def _swift_binary_impl(ctx):
     ]
 
 def _swift_test_impl(ctx):
-    toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
+    swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
     feature_configuration = _configure_features_for_binary(
         ctx = ctx,
         requested_features = ["static_linking_mode"],
     )
 
-    is_bundled = (toolchain.supports_objc_interop and
+    is_bundled = (swift_toolchain.supports_objc_interop and
                   swift_common.is_enabled(
                       feature_configuration = feature_configuration,
                       feature_name = SWIFT_FEATURE_BUNDLED_XCTESTS,
@@ -280,7 +271,7 @@ def _swift_test_impl(ctx):
         feature_configuration = feature_configuration,
         is_test = True,
         linkopts = linkopts,
-        toolchain = toolchain,
+        swift_toolchain = swift_toolchain,
     )
 
     # If the tests are to be bundled, create the test runner script as the rule's executable and
@@ -302,7 +293,7 @@ def _swift_test_impl(ctx):
         executable = binary
 
     test_environment = dicts.add(
-        toolchain.action_environment,
+        swift_toolchain.action_environment,
         {"TEST_BINARIES_FOR_LLVM_COV": binary.short_path},
     )
 
@@ -323,7 +314,7 @@ def _swift_test_impl(ctx):
             extensions = ["swift"],
             source_attributes = ["srcs"],
         ),
-        testing.ExecutionInfo(toolchain.execution_requirements),
+        testing.ExecutionInfo(swift_toolchain.execution_requirements),
         testing.TestEnvironment(test_environment),
     ]
 
