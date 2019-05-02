@@ -481,6 +481,10 @@ def _xcode_swift_toolchain_impl(ctx):
 
     # Configure the action registrars that automatically prepend xcrunwrapper to registered actions.
     env = _xcode_env(xcode_config, platform)
+    custom_toolchain = ctx.var.get("SWIFT_CUSTOM_TOOLCHAIN")
+    if custom_toolchain:
+        env["TOOLCHAINS"] = custom_toolchain
+
     execution_requirements = {"requires-darwin": ""}
     bazel_xcode_wrapper = ctx.executable._bazel_xcode_wrapper
     action_registrars = struct(
