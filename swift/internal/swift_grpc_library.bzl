@@ -16,15 +16,25 @@
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(":api.bzl", "swift_common")
+load(":compiling.bzl", "new_objc_provider")
+load(":deps.bzl", "legacy_build_swift_info")
 load(":features.bzl", "SWIFT_FEATURE_ENABLE_TESTING", "SWIFT_FEATURE_NO_GENERATED_HEADER")
+load(":linking.bzl", "register_libraries_to_link")
 load(
     ":proto_gen_utils.bzl",
     "declare_generated_files",
     "extract_generated_dir_path",
     "register_module_mapping_write_action",
 )
-load(":providers.bzl", "SwiftInfo", "SwiftProtoInfo", "SwiftToolchainInfo")
-load(":utils.bzl", "workspace_relative_path")
+load(
+    ":providers.bzl",
+    "SwiftClangModuleInfo",
+    "SwiftInfo",
+    "SwiftProtoInfo",
+    "SwiftToolchainInfo",
+    "merge_swift_clang_module_infos",
+)
+load(":utils.bzl", "compact", "workspace_relative_path")
 
 def _register_grpcswift_generate_action(
         label,
@@ -138,7 +148,7 @@ def _swift_grpc_library_impl(ctx):
     if len(ctx.attr.srcs) != 1:
         fail("You must list exactly one target in the srcs attribute.", attr = "srcs")
 
-    toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
+    swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
 
     # Direct sources are passed as arguments to protoc to generate *only* the
     # files in this target, but we need to pass the transitive sources as inputs
@@ -187,33 +197,77 @@ def _swift_grpc_library_impl(ctx):
 
     feature_configuration = swift_common.configure_features(
         requested_features = ctx.features + [SWIFT_FEATURE_NO_GENERATED_HEADER],
-        swift_toolchain = toolchain,
+        swift_toolchain = swift_toolchain,
         unsupported_features = unsupported_features,
     )
 
-    compile_results = swift_common.compile_as_library(
+    module_name = swift_common.derive_module_name(ctx.label)
+
+    compilation_outputs = swift_common.compile(
         actions = ctx.actions,
         bin_dir = ctx.bin_dir,
-        label = ctx.label,
-        module_name = swift_common.derive_module_name(ctx.label),
-        srcs = generated_files,
-        toolchain = toolchain,
+        copts = ["-parse-as-library"],
         deps = compile_deps,
         feature_configuration = feature_configuration,
         genfiles_dir = ctx.genfiles_dir,
+        module_name = module_name,
+        srcs = generated_files,
+        swift_toolchain = swift_toolchain,
+        target_name = ctx.label.name,
     )
 
-    return compile_results.providers + [
-        DefaultInfo(
-            files = depset(direct = [
-                compile_results.output_archive,
-                compile_results.output_doc,
-                compile_results.output_module,
-            ]),
+    library_to_link = register_libraries_to_link(
+        actions = ctx.actions,
+        alwayslink = False,
+        cc_feature_configuration = swift_common.cc_feature_configuration(
+            feature_configuration = feature_configuration,
         ),
-        OutputGroupInfo(**compile_results.output_groups),
+        is_dynamic = False,
+        is_static = True,
+        library_name = ctx.label.name,
+        objects = compilation_outputs.object_files,
+        swift_toolchain = swift_toolchain,
+    )
+
+    providers = [
+        DefaultInfo(
+            files = depset(direct = compact([
+                compilation_outputs.swiftdoc,
+                compilation_outputs.swiftmodule,
+                library_to_link.pic_static_library,
+            ])),
+        ),
         deps[0][SwiftProtoInfo],
+        legacy_build_swift_info(
+            deps = compile_deps,
+            direct_additional_inputs = compilation_outputs.linker_inputs,
+            direct_libraries = compact([library_to_link.pic_static_library]),
+            direct_linkopts = compilation_outputs.linker_flags,
+            direct_swiftdocs = [compilation_outputs.swiftdoc],
+            direct_swiftmodules = [compilation_outputs.swiftmodule],
+            module_name = module_name,
+        ),
     ]
+
+    # Propagate an `objc` provider if the toolchain supports Objective-C interop, which ensures
+    # that the libraries get linked into `apple_binary` targets properly.
+    if swift_toolchain.supports_objc_interop:
+        providers.append(new_objc_provider(
+            deps = compile_deps,
+            include_path = ctx.bin_dir.path,
+            link_inputs = compilation_outputs.linker_inputs,
+            linkopts = compilation_outputs.linker_flags,
+            module_map = compilation_outputs.generated_module_map,
+            static_archives = compact([library_to_link.pic_static_library]),
+            swiftmodules = [compilation_outputs.swiftmodule],
+            objc_header = compilation_outputs.generated_header,
+        ))
+
+    if any([SwiftClangModuleInfo in dep for dep in compile_deps]):
+        clang_module = merge_swift_clang_module_infos(compile_deps)
+        providers.append(clang_module)
+
+    return providers
 
 swift_grpc_library = rule(
     attrs = dicts.add(
