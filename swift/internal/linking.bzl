@@ -153,7 +153,7 @@ def register_link_executable_action(
         outputs,
         progress_message,
         rule_specific_args,
-        toolchain):
+        swift_toolchain):
     """Registers an action that invokes `clang` to link object files.
 
     Args:
@@ -175,7 +175,7 @@ def register_link_executable_action(
         progress_message: The progress message printed by Bazel when the action executes.
         rule_specific_args: Additional arguments that are rule-specific that will be passed to
             `clang`.
-        toolchain: The `SwiftToolchainInfo` provider of the toolchain.
+        swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
     """
     if not clang_executable:
         clang_executable = "clang"
@@ -184,9 +184,9 @@ def register_link_executable_action(
 
     deps_libraries = []
 
-    if toolchain.stamp:
+    if swift_toolchain.stamp:
         stamp_libs_to_link = []
-        for library in toolchain.stamp[CcInfo].linking_context.libraries_to_link:
+        for library in swift_toolchain.stamp[CcInfo].linking_context.libraries_to_link:
             if library.pic_static_library:
                 stamp_libs_to_link.append(library.pic_static_library)
             elif library.static_library:
@@ -238,17 +238,17 @@ def register_link_executable_action(
     link_input_args.set_param_file_format("multiline")
     link_input_args.use_param_file("@%s", use_always = True)
 
-    if toolchain.root_dir:
+    if swift_toolchain.root_dir:
         runtime_object_path = "{root}/lib/swift/{system}/{cpu}/swiftrt.o".format(
-            cpu = toolchain.cpu,
-            root = toolchain.root_dir,
-            system = toolchain.system_name,
+            cpu = swift_toolchain.cpu,
+            root = swift_toolchain.root_dir,
+            system = swift_toolchain.system_name,
         )
         link_input_args.add(runtime_object_path)
 
     link_input_args.add_all(objects)
 
-    is_darwin = toolchain.system_name == "darwin"
+    is_darwin = swift_toolchain.system_name == "darwin"
     link_input_args.add_all(libraries, map_each = (
         _link_library_darwin_map_fn if is_darwin else _link_library_linux_map_fn
     ))
@@ -300,7 +300,6 @@ def register_link_executable_action(
 
     run_toolchain_action(
         actions = actions,
-        toolchain = toolchain,
         arguments = [
             common_args,
             link_input_args,
@@ -312,6 +311,7 @@ def register_link_executable_action(
         mnemonic = mnemonic,
         outputs = outputs,
         progress_message = progress_message,
+        toolchain = swift_toolchain,
     )
 
 def _link_library_darwin_map_fn(lib):
