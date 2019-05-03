@@ -74,13 +74,11 @@ _SANITIZER_FEATURE_FLAG_MAP = {
 }
 
 def _create_swift_info(
-        additional_inputs = [],
         defines = [],
-        libraries = [],
-        linkopts = [],
         module_name = None,
         swiftdocs = [],
         swiftmodules = [],
+        swift_infos = [],
         swift_version = None):
     """Creates a new `SwiftInfo` provider with the given values.
 
@@ -88,40 +86,46 @@ def _create_swift_info(
     encodes reasonable defaults for fields that some rules may not be interested in and ensures
     that the direct and transitive fields are set consistently.
 
+    This function can also be used to do a simple merge of `SwiftInfo` providers, by leaving all
+    of the arguments except for `swift_infos` as their empty defaults. In that case, the returned
+    provider will not represent a true Swift module; it is merely a "collector" for other
+    dependencies.
+
     Args:
-        additional_inputs: A list of additional input files passed into a library or binary target
-            via the `swiftc_inputs` attribute.
         defines: A list of defines that will be provided as `copts` of the target being built.
-        libraries: A list of `.a` files that are the direct outputs of the target being built.
-        linkopts: A list of linker flags that will be passed to the linker when the target being
-            built is linked into a binary.
-        module_name: A string containing the name of the Swift module, or `None` if the provider
-            does not represent a compiled module (this happens, for example, with `proto_library`
-            targets that act as "collectors" of other modules but have no sources of their own).
+        module_name: A string containing the name of the Swift module. If this is `None`, the
+            provider does not represent a compiled module but rather a collection of modules (this
+            happens, for example, with `proto_library` targets that have no sources of their own
+            but depend on others that do).
         swiftdocs: A list of `.swiftdoc` files that are the direct outputs of the target being
-            built.
+            built. If omitted, an empty list is used.
         swiftmodules: A list of `.swiftmodule` files that are the direct outputs of the target
-            being built.
+            being built. If omitted, an empty list is used.
+        swift_infos: A list of `SwiftInfo` providers from dependencies, whose transitive fields
+            should be merged into the new one. If omitted, no transitive data is collected.
         swift_version: A string containing the value of the `-swift-version` flag used when
-            compiling this target, or `None` if it was not set or is not relevant.
+            compiling this target, or `None` (the default) if it was not set or is not relevant.
 
     Returns:
         A new `SwiftInfo` provider with the given values.
     """
+    transitive_defines = []
+    transitive_swiftdocs = []
+    transitive_swiftmodules = []
+    for swift_info in swift_infos:
+        transitive_defines.append(swift_info.transitive_defines)
+        transitive_swiftdocs.append(swift_info.transitive_swiftdocs)
+        transitive_swiftmodules.append(swift_info.transitive_swiftmodules)
+
     return SwiftInfo(
         direct_defines = defines,
-        direct_libraries = libraries,
-        direct_linkopts = linkopts,
         direct_swiftdocs = swiftdocs,
         direct_swiftmodules = swiftmodules,
         module_name = module_name,
         swift_version = swift_version,
-        transitive_additional_inputs = depset(direct = additional_inputs),
-        transitive_defines = depset(direct = defines),
-        transitive_libraries = depset(direct = libraries, order = "topological"),
-        transitive_linkopts = depset(direct = linkopts),
-        transitive_swiftdocs = depset(direct = swiftdocs),
-        transitive_swiftmodules = depset(direct = swiftmodules),
+        transitive_defines = depset(defines, transitive = transitive_defines),
+        transitive_swiftdocs = depset(swiftdocs, transitive = transitive_swiftdocs),
+        transitive_swiftmodules = depset(swiftmodules, transitive = transitive_swiftmodules),
     )
 
 def _compilation_attrs(additional_deps_aspects = []):
@@ -831,46 +835,6 @@ conformance.
         },
     )
 
-def _merge_swift_infos(swift_infos):
-    """Merges a list of `SwiftInfo` providers into one.
-
-    Args:
-        swift_infos: A sequence of `SwiftInfo`providers to merge.
-
-    Returns:
-        A new `SwiftInfo` provider.
-    """
-    transitive_additional_inputs = []
-    transitive_defines = []
-    transitive_libraries = []
-    transitive_linkopts = []
-    transitive_swiftdocs = []
-    transitive_swiftmodules = []
-
-    for swift_info in swift_infos:
-        transitive_additional_inputs.append(swift_info.transitive_additional_inputs)
-        transitive_defines.append(swift_info.transitive_defines)
-        transitive_libraries.append(swift_info.transitive_libraries)
-        transitive_linkopts.append(swift_info.transitive_linkopts)
-        transitive_swiftdocs.append(swift_info.transitive_swiftdocs)
-        transitive_swiftmodules.append(swift_info.transitive_swiftmodules)
-
-    return SwiftInfo(
-        direct_defines = [],
-        direct_libraries = [],
-        direct_linkopts = [],
-        direct_swiftdocs = [],
-        direct_swiftmodules = [],
-        module_name = None,
-        swift_version = None,
-        transitive_additional_inputs = depset(transitive = transitive_additional_inputs),
-        transitive_defines = depset(transitive = transitive_defines),
-        transitive_libraries = depset(transitive = transitive_libraries),
-        transitive_linkopts = depset(transitive = transitive_linkopts),
-        transitive_swiftdocs = depset(transitive = transitive_swiftdocs),
-        transitive_swiftmodules = depset(transitive = transitive_swiftmodules),
-    )
-
 def _swift_runtime_linkopts(is_static, toolchain, is_test = False):
     """Returns the flags that should be passed to `clang` when linking a binary.
 
@@ -1064,7 +1028,6 @@ swift_common = struct(
     derive_module_name = _derive_module_name,
     is_enabled = _is_enabled,
     library_rule_attrs = _library_rule_attrs,
-    merge_swift_infos = _merge_swift_infos,
     run_toolchain_action = run_toolchain_action,
     run_toolchain_shell_action = run_toolchain_shell_action,
     run_toolchain_swift_action = run_toolchain_swift_action,

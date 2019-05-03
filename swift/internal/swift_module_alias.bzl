@@ -17,7 +17,6 @@
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(":api.bzl", "swift_common")
 load(":compiling.bzl", "new_objc_provider")
-load(":deps.bzl", "legacy_build_swift_info")
 load(":derived_files.bzl", "derived_files")
 load(":linking.bzl", "register_libraries_to_link")
 load(
@@ -27,7 +26,7 @@ load(
     "SwiftToolchainInfo",
     "merge_swift_clang_module_infos",
 )
-load(":utils.bzl", "compact")
+load(":utils.bzl", "compact", "create_cc_info", "get_providers")
 
 def _swift_module_alias_impl(ctx):
     deps = ctx.attr.deps
@@ -110,13 +109,15 @@ following dependencies instead:\n\n""".format(
                 library_to_link.pic_static_library,
             ])),
         ),
-        legacy_build_swift_info(
-            deps = deps,
-            direct_additional_inputs = compilation_outputs.linker_inputs,
-            direct_libraries = compact([library_to_link.pic_static_library]),
-            direct_linkopts = compilation_outputs.linker_flags,
-            direct_swiftdocs = [compilation_outputs.swiftdoc],
-            direct_swiftmodules = [compilation_outputs.swiftmodule],
+        create_cc_info(
+            cc_infos = get_providers(deps, CcInfo),
+            compilation_outputs = compilation_outputs,
+            libraries_to_link = [library_to_link],
+        ),
+        swift_common.create_swift_info(
+            swiftdocs = [compilation_outputs.swiftdoc],
+            swiftmodules = [compilation_outputs.swiftmodule],
+            swift_infos = get_providers(deps, SwiftInfo),
         ),
     ]
 

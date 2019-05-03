@@ -16,6 +16,42 @@
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 
+def collect_cc_libraries(
+        cc_info,
+        include_dynamic = False,
+        include_interface = False,
+        include_pic_static = False,
+        include_static = False):
+    """Returns a list of link libraries referenced in the given `CcInfo` provider.
+
+    Args:
+        cc_info: The `CcInfo` provider whose libraries should be returned.
+        include_dynamic: True if dynamic libraries should be included in the list.
+        include_interface: True if interface libraries should be included in the list.
+        include_pic_static: True if PIC static libraries should be included in the list. If there
+            is no PIC library, the non-PIC library will be used instead.
+        include_static: True if non-PIC static libraries should be included in the list.
+
+    Returns:
+        The list of libraries built or depended on by the given provier.
+    """
+    libraries = []
+    for library in cc_info.linking_context.libraries_to_link:
+        if include_pic_static:
+            if library.pic_static_library:
+                libraries.append(library.pic_static_library)
+            elif library.static_library:
+                libraries.append(library.static_library)
+        elif include_static and library.static_library:
+            libraries.append(library.static_library)
+
+        if include_dynamic and library.dynamic_library:
+            libraries.append(library.dynamic_library)
+        if include_interface and library.interface_library:
+            libraries.append(library.interface_library)
+
+    return libraries
+
 def collect_transitive(targets, provider, key, direct = None):
     """Returns a `depset` that collects transitive information from providers.
 
@@ -50,6 +86,43 @@ def compact(sequence):
     """
     return [item for item in sequence if item != None]
 
+def create_cc_info(
+        additional_inputs = [],
+        cc_infos = [],
+        compilation_outputs = None,
+        libraries_to_link = [],
+        user_link_flags = []):
+    """Creates a `CcInfo` provider from Swift compilation information and dependencies.
+
+    Args:
+        additional_inputs: A list of additional files that should be passed as inputs to the final
+            link action.
+        cc_infos: A list of `CcInfo` providers from dependencies that should be merged into the
+            new provider.
+        compilation_outputs: The compilation outputs from a Swift compile action, as returned by
+            `swift_common.compile`, or None.
+        libraries_to_link: A list of `LibraryToLink` objects that represent the libraries that
+            should be linked into the final binary.
+        user_link_flags: A list of flags that should be passed to the final link action.
+
+    Returns:
+        A new `CcInfo`.
+    """
+    all_additional_inputs = list(additional_inputs)
+    all_user_link_flags = list(user_link_flags)
+    if compilation_outputs:
+        all_additional_inputs.extend(compilation_outputs.linker_inputs)
+        all_user_link_flags.extend(compilation_outputs.linker_flags)
+
+    this_cc_info = CcInfo(
+        linking_context = cc_common.create_linking_context(
+            additional_inputs = all_additional_inputs,
+            libraries_to_link = libraries_to_link,
+            user_link_flags = all_user_link_flags,
+        ),
+    )
+    return cc_common.merge_cc_infos(cc_infos = [this_cc_info] + cc_infos)
+
 def expand_locations(ctx, values, targets = []):
     """Expands the `$(location)` placeholders in each of the given values.
 
@@ -63,6 +136,29 @@ def expand_locations(ctx, values, targets = []):
       A list of strings with any `$(location)` placeholders filled in.
     """
     return [ctx.expand_location(value, targets) for value in values]
+
+def get_providers(targets, provider, map_fn = None):
+    """Returns a list containing the given provider (or a field) from each target in the list.
+
+    The returned list may not be the same size as `targets` if some of the targets do not contain
+    the requested provider. This is not an error.
+
+    The main purpose of this function is to make this common operation more readable and prevent
+    mistyping the list comprehension.
+
+    Args:
+        targets: A list of targets.
+        provider: The provider to retrieve.
+        map_fn: A function that takes a single argument and returns a single value. If this is
+            present, it will be called on each provider in the list and the result will be
+            returned in the list returned by `get_providers`.
+
+    Returns:
+        A list of the providers requested from the targets.
+    """
+    if map_fn:
+        return [map_fn(target[provider]) for target in targets if provider in target]
+    return [target[provider] for target in targets if provider in target]
 
 def objc_provider_framework_name(path):
     """Returns the name of the framework from an `objc` provider path.

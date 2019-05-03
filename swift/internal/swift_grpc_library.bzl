@@ -17,7 +17,6 @@
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(":api.bzl", "swift_common")
 load(":compiling.bzl", "new_objc_provider")
-load(":deps.bzl", "legacy_build_swift_info")
 load(":features.bzl", "SWIFT_FEATURE_ENABLE_TESTING", "SWIFT_FEATURE_NO_GENERATED_HEADER")
 load(":linking.bzl", "register_libraries_to_link")
 load(
@@ -34,7 +33,7 @@ load(
     "SwiftToolchainInfo",
     "merge_swift_clang_module_infos",
 )
-load(":utils.bzl", "compact", "workspace_relative_path")
+load(":utils.bzl", "compact", "create_cc_info", "get_providers", "workspace_relative_path")
 
 def _register_grpcswift_generate_action(
         label,
@@ -231,21 +230,23 @@ def _swift_grpc_library_impl(ctx):
 
     providers = [
         DefaultInfo(
-            files = depset(direct = compact([
+            files = depset(direct = generated_files + compact([
                 compilation_outputs.swiftdoc,
                 compilation_outputs.swiftmodule,
                 library_to_link.pic_static_library,
             ])),
         ),
+        create_cc_info(
+            cc_infos = get_providers(compile_deps, CcInfo),
+            compilation_outputs = compilation_outputs,
+            libraries_to_link = [library_to_link],
+        ),
         deps[0][SwiftProtoInfo],
-        legacy_build_swift_info(
-            deps = compile_deps,
-            direct_additional_inputs = compilation_outputs.linker_inputs,
-            direct_libraries = compact([library_to_link.pic_static_library]),
-            direct_linkopts = compilation_outputs.linker_flags,
-            direct_swiftdocs = [compilation_outputs.swiftdoc],
-            direct_swiftmodules = [compilation_outputs.swiftmodule],
+        swift_common.create_swift_info(
             module_name = module_name,
+            swiftdocs = [compilation_outputs.swiftdoc],
+            swiftmodules = [compilation_outputs.swiftmodule],
+            swift_infos = get_providers(compile_deps, SwiftInfo),
         ),
     ]
 

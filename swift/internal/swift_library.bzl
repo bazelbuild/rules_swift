@@ -21,11 +21,11 @@ load(
     "new_objc_provider",
     "swift_library_output_map",
 )
-load(":deps.bzl", "legacy_build_swift_info")
 load(":linking.bzl", "register_libraries_to_link")
 load(
     ":providers.bzl",
     "SwiftClangModuleInfo",
+    "SwiftInfo",
     "SwiftToolchainInfo",
     "merge_swift_clang_module_infos",
 )
@@ -34,7 +34,7 @@ load(
     ":swift_info_through_non_swift_targets_aspect.bzl",
     "swift_info_through_non_swift_targets_aspect",
 )
-load(":utils.bzl", "compact", "expand_locations")
+load(":utils.bzl", "compact", "create_cc_info", "expand_locations", "get_providers")
 
 def _maybe_parse_as_library_copts(srcs):
     """Returns a list of compiler flags depending on whether a `main.swift` file is present.
@@ -128,21 +128,25 @@ def _swift_library_impl(ctx):
             ),
         ),
         OutputGroupInfo(**output_groups),
+        create_cc_info(
+            additional_inputs = additional_inputs,
+            cc_infos = get_providers(deps, CcInfo),
+            compilation_outputs = compilation_outputs,
+            libraries_to_link = [library_to_link],
+            user_link_flags = linkopts,
+        ),
         coverage_common.instrumented_files_info(
             ctx,
             dependency_attributes = ["deps"],
             extensions = ["swift"],
             source_attributes = ["srcs"],
         ),
-        legacy_build_swift_info(
-            deps = deps,
-            direct_additional_inputs = compilation_outputs.linker_inputs + additional_inputs,
-            direct_defines = ctx.attr.defines,
-            direct_libraries = compact([library_to_link.pic_static_library]),
-            direct_linkopts = compilation_outputs.linker_flags + linkopts,
-            direct_swiftdocs = [compilation_outputs.swiftdoc],
-            direct_swiftmodules = [compilation_outputs.swiftmodule],
+        swift_common.create_swift_info(
+            defines = ctx.attr.defines,
             module_name = module_name,
+            swiftdocs = [compilation_outputs.swiftdoc],
+            swiftmodules = [compilation_outputs.swiftmodule],
+            swift_infos = get_providers(deps, SwiftInfo),
             swift_version = find_swift_version_copt_value(copts),
         ),
     ]
