@@ -100,6 +100,12 @@ following flag to Bazel:
 where `toolchain.id` is the value of the `CFBundleIdentifier` key in the
 toolchain's Info.plist file.
 
+To list the available toolchains and their bundle identifiers, you can run:
+
+```
+bazel run @build_bazel_rules_swift//tools/dump_toolchains
+```
+
 **Linux hosts:** At this time, Bazel uses whichever `swift` executable is
 encountered first on your `PATH`.
 
