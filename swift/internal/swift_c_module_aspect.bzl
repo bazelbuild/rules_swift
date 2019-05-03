@@ -19,6 +19,7 @@ load(":api.bzl", "swift_common")
 load(":derived_files.bzl", "derived_files")
 load(":features.bzl", "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD")
 load(":providers.bzl", "SwiftClangModuleInfo", "SwiftToolchainInfo")
+load(":utils.bzl", "get_providers")
 
 def _explicit_module_name(tags):
     """Returns an explicit module name specified by a tag of the form `"swift_module=Foo"`.
@@ -149,10 +150,10 @@ def _swift_c_module_aspect_impl(target, aspect_ctx):
 
         # Ensure that public headers from libraries that this `cc_library` depend on are also
         # available to the actions.
-        transitive_headers_sets = []
-        for dep in attr.deps:
-            if CcInfo in dep:
-                transitive_headers_sets.append(dep[CcInfo].compilation_context.headers)
+        transitive_headers_sets = [
+            cc_info.compilation_context.headers
+            for cc_info in get_providers(attr.deps, CcInfo)
+        ]
 
         compilation_context = target[CcInfo].compilation_context
         return [SwiftClangModuleInfo(

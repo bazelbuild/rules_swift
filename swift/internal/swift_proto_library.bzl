@@ -15,31 +15,36 @@
 """A rule that generates a Swift library from protocol buffer sources."""
 
 load(":providers.bzl", "SwiftInfo", "SwiftProtoInfo")
-load(":swift_protoc_gen_aspect.bzl", "swift_protoc_gen_aspect")
+load(":swift_protoc_gen_aspect.bzl", "SwiftProtoCcInfo", "swift_protoc_gen_aspect")
 
 def _swift_proto_library_impl(ctx):
     if len(ctx.attr.deps) != 1:
         fail("You must list exactly one target in the deps attribute.", attr = "deps")
 
     dep = ctx.attr.deps[0]
+    cc_info = dep[SwiftProtoCcInfo].cc_info
     swift_info = dep[SwiftInfo]
+    swift_proto_info = dep[SwiftProtoInfo]
 
-    # If the proto_library dependency has srcs, then the Swift compile actions produce a library
-    # and module for that target; doing so causes all the other dependencies' libraries/modules to
-    # also be built, so it's sufficient to just output those direct files. If the proto_library
-    # dependency only has deps, however, no Swift compile actions are registered for *this* target,
-    # so in order for it to build anything, we must list the transitive outputs as our outputs.
-    # This has the effect of dumping a potentially large number of files at the end of the build
-    # log, if the proto dependency tree is large, but otherwise it's harmless.
-    if swift_info.direct_libraries and swift_info.direct_swiftmodules:
-        outputs = depset(direct = swift_info.direct_libraries + swift_info.direct_swiftmodules)
-    else:
-        outputs = depset(transitive = [
-            swift_info.transitive_libraries,
-            swift_info.transitive_swiftmodules,
-        ])
-
-    providers = [DefaultInfo(files = outputs), swift_info, dep[SwiftProtoInfo]]
+    providers = [
+        # Return the generated sources as the default outputs if the user builds this target
+        # standalone (along with the direct .swiftmodules, to force compilation). This lets users
+        # easily inspect those sources to determine the interfaces of the generated protos, which
+        # have previously been a bit difficult to find.
+        DefaultInfo(
+            files = depset(
+                swift_info.direct_swiftmodules,
+                transitive = [swift_proto_info.pbswift_files],
+            ),
+        ),
+        # Repropagate the Swift* and Cc* providers that the aspect attached to the `proto_library`
+        # dependency so that the modules and link libraries are passed through correctly.
+        cc_info,
+        swift_info,
+        # Repropagate the `SwiftProtoInfo` provider so that downstream rules/aspects can access the
+        # sources if necessary. (This should typically only be used for IDE support.)
+        swift_proto_info,
+    ]
 
     # Repropagate the apple_common.Objc provider if present so that apple_binary targets link
     # correctly.

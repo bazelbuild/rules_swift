@@ -22,13 +22,14 @@ load(
 )
 load(":actions.bzl", "run_toolchain_swift_action")
 load(":derived_files.bzl", "derived_files")
+load(":providers.bzl", "SwiftClangModuleInfo", "SwiftInfo")
 load(
-    ":providers.bzl",
-    "SwiftCcLibsInfo",
-    "SwiftClangModuleInfo",
-    "SwiftInfo",
+    ":utils.bzl",
+    "collect_cc_libraries",
+    "collect_transitive",
+    "get_providers",
+    "objc_provider_framework_name",
 )
-load(":utils.bzl", "collect_transitive", "objc_provider_framework_name")
 
 # Swift compiler options that cause the code to be compiled using whole-module optimization.
 _WMO_COPTS = ("-force-single-frontend-invocation", "-whole-module-optimization", "-wmo")
@@ -276,25 +277,25 @@ def new_objc_provider(
     Returns:
         An `apple_common.Objc` provider that should be returned by the calling rule.
     """
-    objc_providers = [dep[apple_common.Objc] for dep in deps if apple_common.Objc in dep]
+    objc_providers = get_providers(deps, apple_common.Objc)
     objc_provider_args = {
-        "library": depset(direct = static_archives),
         "link_inputs": depset(direct = swiftmodules + link_inputs),
         "providers": objc_providers,
         "uses_swift": True,
     }
 
-    # Collect static libraries that came from cc_library targets, and include them in the
-    # Objective-C provider. This ensures that they get linked into apple_binaries, which otherwise
-    # wouldn't be able to see them.
+    # The link action registered by `apple_binary` only looks at `Objc` providers, not `CcInfo`,
+    # for libraries to link. Until that rule is migrated over, we need to collect libraries from
+    # `CcInfo` (which will include Swift and C++) and put them into the new `Objc` provider.
     transitive_cc_libs = []
-    for dep in deps:
-        if SwiftCcLibsInfo in dep:
-            cc_libraries = dep[SwiftCcLibsInfo].libraries
-            if cc_libraries:
-                transitive_cc_libs.append(cc_libraries)
-    if transitive_cc_libs:
-        objc_provider_args["imported_library"] = depset(transitive = transitive_cc_libs)
+    for cc_info in get_providers(deps, CcInfo):
+        static_libs = collect_cc_libraries(cc_info = cc_info, include_static = True)
+        transitive_cc_libs.append(depset(static_libs, order = "topological"))
+    objc_provider_args["library"] = depset(
+        static_archives,
+        transitive = transitive_cc_libs,
+        order = "topological",
+    )
 
     if include_path:
         objc_provider_args["include"] = depset(direct = [include_path])
@@ -343,7 +344,7 @@ def objc_compile_requirements(args, deps):
     static_framework_names = []
     all_frameworks = []
 
-    objc_providers = [dep[apple_common.Objc] for dep in deps if apple_common.Objc in dep]
+    objc_providers = get_providers(deps, apple_common.Objc)
 
     post_framework_cleanup = framework_migration.is_post_framework_migration()
 

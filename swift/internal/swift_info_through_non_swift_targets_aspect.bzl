@@ -16,6 +16,7 @@
 
 load(":api.bzl", "swift_common")
 load(":providers.bzl", "SwiftInfo")
+load(":utils.bzl", "get_providers")
 
 def _swift_info_through_non_swift_targets_aspect_impl(target, aspect_ctx):
     # Do nothing if the target already propagates `SwiftInfo`.
@@ -25,13 +26,11 @@ def _swift_info_through_non_swift_targets_aspect_impl(target, aspect_ctx):
     # If there aren't any deps that propagate `SwiftInfo`, do nothing; we don't want to propagate
     # an empty one.
     deps = getattr(aspect_ctx.rule.attr, "deps", [])
-    swift_deps = [dep for dep in deps if SwiftInfo in dep]
-    if not swift_deps:
+    swift_infos = get_providers(deps, SwiftInfo)
+    if not swift_infos:
         return []
 
-    return [swift_common.merge_swift_infos(
-        [dep[SwiftInfo] for dep in swift_deps if SwiftInfo in dep],
-    )]
+    return [swift_common.create_swift_info(swift_infos = swift_infos)]
 
 swift_info_through_non_swift_targets_aspect = aspect(
     attr_aspects = ["deps"],

@@ -15,16 +15,37 @@
 """Implementation of the `swift_import` rule."""
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
+load(":api.bzl", "swift_common")
 load(":attrs.bzl", "swift_common_rule_attrs")
 load(":compiling.bzl", "new_objc_provider")
-load(":deps.bzl", "legacy_build_swift_info")
-load(":providers.bzl", "SwiftClangModuleInfo", "merge_swift_clang_module_infos")
+load(":providers.bzl", "SwiftClangModuleInfo", "SwiftInfo", "merge_swift_clang_module_infos")
+load(":utils.bzl", "create_cc_info", "get_providers")
 
 def _swift_import_impl(ctx):
     archives = ctx.files.archives
     deps = ctx.attr.deps
     swiftdocs = ctx.files.swiftdocs
     swiftmodules = ctx.files.swiftmodules
+
+    # We have to depend on the C++ toolchain directly here to create the libraries to link.
+    # Depending on the Swift toolchain causes a problematic cyclic dependency for built-from-source
+    # toolchains.
+    cc_toolchain = ctx.attr._cc_toolchain[cc_common.CcToolchainInfo]
+    cc_feature_configuration = cc_common.configure_features(
+        cc_toolchain = cc_toolchain,
+        requested_features = ctx.features,
+        unsupported_features = ctx.disabled_features,
+    )
+
+    libraries_to_link = [
+        cc_common.create_library_to_link(
+            actions = ctx.actions,
+            cc_toolchain = cc_toolchain,
+            feature_configuration = cc_feature_configuration,
+            static_library = archive,
+        )
+        for archive in archives
+    ]
 
     providers = [
         DefaultInfo(
@@ -35,17 +56,15 @@ def _swift_import_impl(ctx):
                 files = ctx.files.data,
             ),
         ),
-        legacy_build_swift_info(
-            deps = deps,
-            direct_libraries = archives,
-            direct_swiftdocs = swiftdocs,
-            direct_swiftmodules = swiftmodules,
+        create_cc_info(
+            cc_infos = get_providers(deps, CcInfo),
+            libraries_to_link = libraries_to_link,
         ),
         # Propagate an `Objc` provider so that Apple-specific rules like `apple_binary` will link
         # the imported library properly. Typically we'd want to only propagate this if the
-        # toolchain reports that it supports Objective-C interop, but that creates a problematic
-        # cyclic dependency for built-from-source toolchains, so we propagate it unconditionally;
-        # it will be ignored on non-Apple platforms anyway.
+        # toolchain reports that it supports Objective-C interop, but we would hit the same cyclic
+        # dependency mentioned above, so we propagate it unconditionally; it will be ignored on
+        # non-Apple platforms anyway.
         new_objc_provider(
             deps = deps,
             include_path = None,
@@ -55,6 +74,11 @@ def _swift_import_impl(ctx):
             objc_header = None,
             static_archives = archives,
             swiftmodules = swiftmodules,
+        ),
+        swift_common.create_swift_info(
+            swiftdocs = swiftdocs,
+            swiftmodules = swiftmodules,
+            swift_infos = get_providers(deps, SwiftInfo),
         ),
     ]
 
@@ -93,6 +117,13 @@ The list of `.swiftdoc` files provided to Swift targets that depend on this targ
 The list of `.swiftmodule` files provided to Swift targets that depend on this target.
 """,
                 mandatory = True,
+            ),
+            "_cc_toolchain": attr.label(
+                default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
+                doc = """
+The C++ toolchain from which linking flags and other tools needed by the Swift toolchain (such as
+`clang`) will be retrieved.
+""",
             ),
         },
     ),

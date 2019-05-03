@@ -21,10 +21,8 @@ load(
 )
 load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "CPP_LINK_STATIC_LIBRARY_ACTION_NAME")
 load(":actions.bzl", "run_toolchain_action")
-load(":deps.bzl", "collect_link_libraries")
 load(":derived_files.bzl", "derived_files")
-load(":providers.bzl", "SwiftInfo")
-load(":utils.bzl", "collect_transitive", "objc_provider_framework_name")
+load(":utils.bzl", "collect_cc_libraries", "objc_provider_framework_name")
 
 def _register_static_library_link_action(
         actions,
@@ -193,15 +191,23 @@ def register_link_executable_action(
                 stamp_libs_to_link.append(library.static_library)
 
         if stamp_libs_to_link:
-            deps_libraries.append(depset(direct = stamp_libs_to_link))
+            deps_libraries.extend(stamp_libs_to_link)
 
+    additional_input_depsets = []
+    all_linkopts = list(expanded_linkopts)
     deps_dynamic_framework_names = []
     deps_dynamic_framework_paths = []
     deps_static_framework_files = []
     deps_sdk_dylibs = []
     deps_sdk_frameworks = []
     for dep in deps:
-        deps_libraries.extend(collect_link_libraries(dep))
+        if CcInfo in dep:
+            cc_info = dep[CcInfo]
+            additional_input_depsets.append(cc_info.linking_context.additional_inputs)
+            all_linkopts.extend(cc_info.linking_context.user_link_flags)
+            deps_libraries.extend(
+                collect_cc_libraries(cc_info = cc_info, include_pic_static = True),
+            )
         if apple_common.Objc in dep:
             objc = dep[apple_common.Objc]
             if framework_migration.is_post_framework_migration():
@@ -227,12 +233,11 @@ def register_link_executable_action(
             deps_sdk_dylibs.append(objc.sdk_dylib)
             deps_sdk_frameworks.append(objc.sdk_framework)
 
-    libraries = depset(transitive = deps_libraries, order = "topological")
+    libraries = depset(deps_libraries, order = "topological")
     link_input_depsets = [
         libraries,
         inputs,
-        collect_transitive(deps, SwiftInfo, "transitive_additional_inputs"),
-    ]
+    ] + additional_input_depsets
 
     link_input_args = actions.args()
     link_input_args.set_param_file_format("multiline")
@@ -275,19 +280,6 @@ def register_link_executable_action(
         depset(transitive = deps_dynamic_framework_names),
         before_each = "-framework",
     )
-
-    all_linkopts = depset(
-        direct = expanded_linkopts,
-        transitive = [
-            dep[SwiftInfo].transitive_linkopts
-            for dep in deps
-            if SwiftInfo in dep
-        ] + [
-            depset(direct = dep[CcInfo].linking_context.user_link_flags)
-            for dep in deps
-            if CcInfo in dep
-        ],
-    ).to_list()
 
     # Workaround that removes a linker option that breaks swift binaries.
     # TODO(b/77640204): Remove this workaround.
