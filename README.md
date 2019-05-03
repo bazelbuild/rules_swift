@@ -87,6 +87,22 @@ environment variable `CC=clang` when invoking Bazel.
 This step is not necessary for macOS users because the Xcode toolchain always
 uses `clang`.
 
+## Building with Custom Toolchains
+
+**macOS hosts:** You can build with a custom toolchain installed in
+`/Library/Developer/Toolchains` instead of Xcode's default. To do so, pass the
+following flag to Bazel:
+
+```
+--define=SWIFT_CUSTOM_TOOLCHAIN=toolchain.id
+```
+
+where `toolchain.id` is the value of the `CFBundleIdentifier` key in the
+toolchain's Info.plist file.
+
+**Linux hosts:** At this time, Bazel uses whichever `swift` executable is
+encountered first on your `PATH`.
+
 ## Future Work
 
 * Support for building and linking to shared libraries (`.dylib`/`.so`) written
