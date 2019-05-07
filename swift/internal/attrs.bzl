@@ -14,8 +14,7 @@
 
 """Common attributes used by multiple Swift build rules."""
 
-load(":legacy_swift_clang_module_info_aspect.bzl", "legacy_swift_clang_module_info_aspect")
-load(":providers.bzl", "SwiftInfo")
+load(":providers.bzl", "SwiftClangModuleInfo", "SwiftInfo")
 
 def swift_common_rule_attrs(additional_deps_aspects = []):
     return {
@@ -30,13 +29,14 @@ binary or library, or other programs needed by it.
 """,
         ),
         "deps": attr.label_list(
-            aspects = [legacy_swift_clang_module_info_aspect] + additional_deps_aspects,
+            aspects = additional_deps_aspects,
             doc = """
 A list of targets that are dependencies of the target being built, which will be
 linked into that target. Allowed kinds of dependencies are:
 
-*   `swift_c_module`, `swift_import` and `swift_library` (or anything propagating `SwiftInfo`)
-*   `cc_library` (or anything propagating `CcInfo`)
+* `swift_c_module` (or anything propagating `SwiftClangModuleInfo`)
+* `swift_import` and `swift_library` (or anything propagating `SwiftInfo`)
+* `cc_library` (or anything propagating `CcInfo`)
 
 Additionally, on platforms that support Objective-C interop, `objc_library`
 targets (or anything propagating the `apple_common.Objc` provider) are allowed
@@ -45,6 +45,7 @@ Linux), those dependencies will be **ignored.**
 """,
             providers = [
                 [CcInfo],
+                [SwiftClangModuleInfo],
                 [SwiftInfo],
                 [apple_common.Objc],
             ],

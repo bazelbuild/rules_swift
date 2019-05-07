@@ -75,7 +75,6 @@ _SANITIZER_FEATURE_FLAG_MAP = {
 
 def _create_swift_info(
         defines = [],
-        modulemaps = [],
         module_name = None,
         swiftdocs = [],
         swiftmodules = [],
@@ -94,8 +93,6 @@ def _create_swift_info(
 
     Args:
         defines: A list of defines that will be provided as `copts` of the target being built.
-        modulemaps: A list of module maps that should be passed to ClangImporter by any target
-            that depends on the one propagating this provider.
         module_name: A string containing the name of the Swift module. If this is `None`, the
             provider does not represent a compiled module but rather a collection of modules (this
             happens, for example, with `proto_library` targets that have no sources of their own
@@ -113,12 +110,10 @@ def _create_swift_info(
         A new `SwiftInfo` provider with the given values.
     """
     transitive_defines = []
-    transitive_modulemaps = []
     transitive_swiftdocs = []
     transitive_swiftmodules = []
     for swift_info in swift_infos:
         transitive_defines.append(swift_info.transitive_defines)
-        transitive_modulemaps.append(swift_info.transitive_modulemaps)
         transitive_swiftdocs.append(swift_info.transitive_swiftdocs)
         transitive_swiftmodules.append(swift_info.transitive_swiftmodules)
 
@@ -129,7 +124,6 @@ def _create_swift_info(
         module_name = module_name,
         swift_version = swift_version,
         transitive_defines = depset(defines, transitive = transitive_defines),
-        transitive_modulemaps = depset(modulemaps, transitive = transitive_modulemaps),
         transitive_swiftdocs = depset(swiftdocs, transitive = transitive_swiftdocs),
         transitive_swiftmodules = depset(swiftmodules, transitive = transitive_swiftmodules),
     )
@@ -449,7 +443,8 @@ def _compile(
             which affects the nature of the output files.
         defines: Symbols that should be defined by passing `-D` to the compiler.
         deps: Dependencies of the target being compiled. These targets must propagate one of the
-            following providers: `CcInfo`, `SwiftInfo`, or `apple_common.Objc`.
+            following providers: `CcInfo`, `SwiftClangModuleInfo`, `SwiftInfo`, or
+            `apple_common.Objc`.
         genfiles_dir: The Bazel `*-genfiles` directory root. If provided, its path is added to
             ClangImporter's header search paths for compatibility with Bazel's C++ and Objective-C
             rules which support inclusions of generated headers from that location.
@@ -906,8 +901,8 @@ def _swiftc_command_line_and_inputs(
           requested, which affects the nature of the output files.
       defines: Symbols that should be defined by passing `-D` to the compiler.
       deps: Dependencies of the target being compiled. These targets must
-          propagate one of the following providers: `CcInfo`, `SwiftInfo`, or
-          `apple_common.Objc`.
+          propagate one of the following providers: `CcInfo`,
+          `SwiftClangModuleInfo`, `SwiftInfo`, or `apple_common.Objc`.
       genfiles_dir: The Bazel `*-genfiles` directory root. If provided, its path
           is added to ClangImporter's header search paths for compatibility with
           Bazel's C++ and Objective-C rules which support inclusions of generated

@@ -22,8 +22,18 @@ load(
     "swift_library_output_map",
 )
 load(":linking.bzl", "register_libraries_to_link")
-load(":non_swift_target_aspect.bzl", "non_swift_target_aspect")
-load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
+load(
+    ":providers.bzl",
+    "SwiftClangModuleInfo",
+    "SwiftInfo",
+    "SwiftToolchainInfo",
+    "merge_swift_clang_module_infos",
+)
+load(":swift_c_module_aspect.bzl", "swift_c_module_aspect")
+load(
+    ":swift_info_through_non_swift_targets_aspect.bzl",
+    "swift_info_through_non_swift_targets_aspect",
+)
 load(":utils.bzl", "compact", "create_cc_info", "expand_locations", "get_providers")
 
 def _maybe_parse_as_library_copts(srcs):
@@ -156,11 +166,16 @@ def _swift_library_impl(ctx):
             objc_header = compilation_outputs.generated_header,
         ))
 
+    if any([SwiftClangModuleInfo in dep for dep in deps]):
+        clang_module = merge_swift_clang_module_infos(deps)
+        providers.append(clang_module)
+
     return providers
 
 swift_library = rule(
     attrs = swift_common.library_rule_attrs(additional_deps_aspects = [
-        non_swift_target_aspect,
+        swift_c_module_aspect,
+        swift_info_through_non_swift_targets_aspect,
     ]),
     doc = """
 Compiles and links Swift code into a static library and Swift module.
