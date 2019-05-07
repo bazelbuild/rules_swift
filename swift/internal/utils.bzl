@@ -52,6 +52,30 @@ def collect_cc_libraries(
 
     return libraries
 
+def collect_transitive(targets, provider, key, direct = None):
+    """Returns a `depset` that collects transitive information from providers.
+
+    Args:
+      targets: The list of targets whose providers should be accessed.
+      provider: The provider containing the data to be merged. If the provider is
+          not propagated by the target, it is ignored.
+      key: The key containing the data in the provider to be collected.
+      direct: A list of values that should become the direct members of the
+          `depset`, if any.
+
+    Returns:
+      A `depset` whose transitive members are the value of the key in the given
+      provider of each of the targets.
+    """
+    transitives = [
+        getattr(target[provider], key)
+        for target in targets
+        if provider in target
+    ]
+    if direct:
+        return depset(direct = direct, transitive = transitives)
+    return depset(transitive = transitives)
+
 def compact(sequence):
     """Returns a copy of the sequence with any `None` items removed.
 

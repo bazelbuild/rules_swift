@@ -22,10 +22,11 @@ load(
 )
 load(":actions.bzl", "run_toolchain_swift_action")
 load(":derived_files.bzl", "derived_files")
-load(":providers.bzl", "SwiftInfo")
+load(":providers.bzl", "SwiftClangModuleInfo", "SwiftInfo")
 load(
     ":utils.bzl",
     "collect_cc_libraries",
+    "collect_transitive",
     "get_providers",
     "objc_provider_framework_name",
 )
@@ -49,67 +50,58 @@ def collect_transitive_compile_inputs(args, deps, direct_defines = []):
     input_depsets = []
 
     # Collect all the search paths, module maps, flags, and so forth from transitive dependencies.
-    transitive_cc_defines = []
-    transitive_cc_headers = []
-    transitive_cc_includes = []
-    transitive_cc_quote_includes = []
-    transitive_cc_system_includes = []
-    transitive_defines = []
-    transitive_modulemaps = []
-    transitive_swiftmodules = []
-    for dep in deps:
-        if SwiftInfo in dep:
-            swift_info = dep[SwiftInfo]
-            transitive_defines.append(swift_info.transitive_defines)
-            transitive_modulemaps.append(swift_info.transitive_modulemaps)
-            transitive_swiftmodules.append(swift_info.transitive_swiftmodules)
-        if CcInfo in dep:
-            compilation_context = dep[CcInfo].compilation_context
-            transitive_cc_defines.append(compilation_context.defines)
-            transitive_cc_headers.append(compilation_context.headers)
-            transitive_cc_includes.append(compilation_context.includes)
-            transitive_cc_quote_includes.append(compilation_context.quote_includes)
-            transitive_cc_system_includes.append(compilation_context.system_includes)
-
-    # Add import paths for the directories containing dependencies' swiftmodules.
-    all_swiftmodules = depset(transitive = transitive_swiftmodules)
-    args.add_all(all_swiftmodules, format_each = "-I%s", map_each = _dirname_map_fn)
-    input_depsets.append(all_swiftmodules)
-
-    # Pass Swift defines propagated by dependencies.
-    all_defines = depset(direct_defines, transitive = transitive_defines)
-    args.add_all(all_defines, format_each = "-D%s")
-
-    # Pass module maps from C/C++ dependencies to ClangImporter.
-    # TODO(allevato): Will `CcInfo` eventually keep these in its compilation context?
-    all_modulemaps = depset(transitive = transitive_modulemaps)
-    input_depsets.append(all_modulemaps)
-    args.add_all(all_modulemaps, before_each = "-Xcc", format_each = "-fmodule-map-file=%s")
-
-    # Add C++ headers from dependencies to the action inputs so the compiler can read them.
-    input_depsets.append(depset(transitive = transitive_cc_headers))
-
-    # Pass any C++ defines and include search paths to ClangImporter.
-    args.add_all(
-        depset(transitive = transitive_cc_defines),
-        before_each = "-Xcc",
-        format_each = "-D%s",
+    transitive_swiftmodules = collect_transitive(
+        deps,
+        SwiftInfo,
+        "transitive_swiftmodules",
     )
-    args.add_all(
-        depset(transitive = transitive_cc_includes),
-        before_each = "-Xcc",
-        format_each = "-I%s",
+    args.add_all(transitive_swiftmodules, format_each = "-I%s", map_each = _dirname_map_fn)
+    input_depsets.append(transitive_swiftmodules)
+
+    transitive_defines = collect_transitive(
+        deps,
+        SwiftInfo,
+        "transitive_defines",
+        direct = direct_defines,
     )
-    args.add_all(
-        depset(transitive = transitive_cc_quote_includes),
-        before_each = "-Xcc",
-        format_each = "-iquote%s",
+    args.add_all(transitive_defines, format_each = "-D%s")
+
+    transitive_modulemaps = collect_transitive(
+        deps,
+        SwiftClangModuleInfo,
+        "transitive_modulemaps",
     )
+    input_depsets.append(transitive_modulemaps)
     args.add_all(
-        depset(transitive = transitive_cc_system_includes),
+        transitive_modulemaps,
         before_each = "-Xcc",
-        format_each = "-isystem%s",
+        format_each = "-fmodule-map-file=%s",
     )
+
+    transitive_cc_headers = collect_transitive(
+        deps,
+        SwiftClangModuleInfo,
+        "transitive_headers",
+    )
+    input_depsets.append(transitive_cc_headers)
+
+    transitive_cc_compile_flags = collect_transitive(
+        deps,
+        SwiftClangModuleInfo,
+        "transitive_compile_flags",
+    )
+
+    # Handle possible spaces in these arguments correctly (for example,
+    # `-isystem foo`) by prepending `-Xcc` to each one.
+    for arg in transitive_cc_compile_flags.to_list():
+        args.add_all(arg.split(" "), before_each = "-Xcc")
+
+    transitive_cc_defines = collect_transitive(
+        deps,
+        SwiftClangModuleInfo,
+        "transitive_defines",
+    )
+    args.add_all(transitive_cc_defines, before_each = "-Xcc", format_each = "-D%s")
 
     return input_depsets
 

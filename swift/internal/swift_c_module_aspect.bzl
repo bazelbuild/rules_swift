@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Attaches `SwiftInfo` providers as needed to non-Swift targets in the dependency graph."""
+"""Generates Swift-compatible module maps for direct C dependencies of Swift targets."""
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load(":api.bzl", "swift_common")
 load(":derived_files.bzl", "derived_files")
 load(":features.bzl", "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD")
-load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
+load(":providers.bzl", "SwiftClangModuleInfo", "SwiftToolchainInfo")
 load(":utils.bzl", "get_providers")
 
 def _explicit_module_name(tags):
@@ -106,40 +106,38 @@ def _write_module_map(
 
     actions.write(output = module_map, content = content)
 
-def _non_swift_target_aspect_impl(target, aspect_ctx):
-    # Do nothing if the target already propagates `SwiftInfo`.
-    if SwiftInfo in target:
+def _swift_c_module_aspect_impl(target, aspect_ctx):
+    # Do nothing if the target already propagates `SwiftClangModuleInfo`.
+    if SwiftClangModuleInfo in target:
         return []
 
     attr = aspect_ctx.rule.attr
-    swift_infos = get_providers(attr.deps, SwiftInfo)
+
+    # If there's an explicit module name, use it; otherwise, auto-derive one using the usual
+    # derivation logic for Swift targets.
+    module_name = _explicit_module_name(attr.tags)
+    if not module_name:
+        if "/" in target.label.name or "+" in target.label.name:
+            return []
+        module_name = swift_common.derive_module_name(target.label)
+
+    # Determine if the toolchain requires module maps to use workspace-relative paths or not.
+    toolchain = aspect_ctx.attr._toolchain_for_aspect[SwiftToolchainInfo]
+    feature_configuration = swift_common.configure_features(
+        requested_features = aspect_ctx.features,
+        swift_toolchain = toolchain,
+        unsupported_features = aspect_ctx.disabled_features,
+    )
+    workspace_relative = swift_common.is_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD,
+    )
 
     # It's not great to depend on the rule name directly, but we need to access the exact `hdrs`
     # and `textual_hdrs` attributes (which may not be propagated distinctly by a provider) and
     # also make sure that we don't pick up rules like `objc_library` which already handle module
     # map generation.
-    # TODO(allevato): Can `CcInfo.compilation_context` propagate these headers distinctly?
     if aspect_ctx.rule.kind == "cc_library":
-        # If there's an explicit module name, use it; otherwise, auto-derive one using the usual
-        # derivation logic for Swift targets.
-        module_name = _explicit_module_name(attr.tags)
-        if not module_name:
-            if "/" in target.label.name or "+" in target.label.name:
-                return []
-            module_name = swift_common.derive_module_name(target.label)
-
-        # Determine if the toolchain requires module maps to use workspace-relative paths or not.
-        toolchain = aspect_ctx.attr._toolchain_for_aspect[SwiftToolchainInfo]
-        feature_configuration = swift_common.configure_features(
-            requested_features = aspect_ctx.features,
-            swift_toolchain = toolchain,
-            unsupported_features = aspect_ctx.disabled_features,
-        )
-        workspace_relative = swift_common.is_enabled(
-            feature_configuration = feature_configuration,
-            feature_name = SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD,
-        )
-
         module_map = derived_files.module_map(aspect_ctx.actions, target.label.name)
         _write_module_map(
             actions = aspect_ctx.actions,
@@ -158,46 +156,47 @@ def _non_swift_target_aspect_impl(target, aspect_ctx):
         ]
 
         compilation_context = target[CcInfo].compilation_context
-        return [swift_common.create_swift_info(
-            modulemaps = [module_map],
-            module_name = module_name,
-            swift_infos = swift_infos,
+        return [SwiftClangModuleInfo(
+            transitive_compile_flags = depset(
+                # TODO(b/124373197): Expanding these depsets isn't great, but it's temporary
+                # until we get rid of this provider completely.
+                direct = [
+                    "-isystem{}".format(include)
+                    for include in compilation_context.system_includes.to_list()
+                ] + [
+                    "-iquote{}".format(include)
+                    for include in compilation_context.quote_includes.to_list()
+                ] + [
+                    "-I{}".format(include)
+                    for include in compilation_context.includes.to_list()
+                ],
+            ),
+            transitive_defines = compilation_context.defines,
+            transitive_headers = depset(transitive = (
+                transitive_headers_sets +
+                [target.files for target in attr.hdrs] +
+                [target.files for target in attr.textual_hdrs]
+            )),
+            transitive_modulemaps = depset(direct = [module_map]),
         )]
 
-    # If it's any other rule, just merge the `SwiftInfo` providers from its deps.
     # TODO(b/118311259): Figure out how to handle transitive dependencies, in case a C-only
     # module incldues headers from another C-only module. We currently have a lot of targets with
     # labels that clash when mangled into a Swift module name, so we need to figure out how to
     # handle those (either by adding the `swift_module` tag to them, or opting them in some other
     # way).
-    if swift_infos:
-        return [swift_common.create_swift_info(swift_infos = swift_infos)]
-
     return []
 
-non_swift_target_aspect = aspect(
+swift_c_module_aspect = aspect(
     attrs = swift_common.toolchain_attrs(toolchain_attr_name = "_toolchain_for_aspect"),
     doc = """
-Attaches a `SwiftInfo` provider to any non-Swift target underneath a Swift target.
+Generates Swift-compatible module maps for direct `cc_library` dependencies.
 
-There are two reasons to attach a `SwiftInfo` provider to non-Swift targets:
-
-*   For a `cc_library`, we want to generate a module map so that it can be imported directly by
-    Swift, as well as propagate the merged `SwiftInfo`s of its children so that information from
-    those dependencies isn't lost. (For example, consider a `swift_library` that depends on an
-    `objc_library` that depends on a `swift_library`.)
-
-    The modules generated by this aspect have names that are automatically derived from the label
-    of the `cc_library` target, using the same logic used to derive the module names for Swift
-    targets.
-
-*   For any other target, we want to propagate the merged `SwiftInfo`s of its children.
-
-These can't be separate aspects because they would both try to attach a `SwiftInfo`, and we don't
-know which order they would run in.
+The modules generated by this aspect have names that are automatically derived from the label of
+the `cc_library` target, using the same logic used to derive the module names for Swift targets.
 
 This aspect is an implementation detail of the Swift build rules and is not meant to be attached
 to other rules or run independently.
 """,
-    implementation = _non_swift_target_aspect_impl,
+    implementation = _swift_c_module_aspect_impl,
 )

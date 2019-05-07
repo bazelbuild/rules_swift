@@ -18,7 +18,7 @@ load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(":api.bzl", "swift_common")
 load(":attrs.bzl", "swift_common_rule_attrs")
 load(":compiling.bzl", "new_objc_provider")
-load(":providers.bzl", "SwiftInfo")
+load(":providers.bzl", "SwiftClangModuleInfo", "SwiftInfo", "merge_swift_clang_module_infos")
 load(":utils.bzl", "create_cc_info", "get_providers")
 
 def _swift_import_impl(ctx):
@@ -81,6 +81,11 @@ def _swift_import_impl(ctx):
             swift_infos = get_providers(deps, SwiftInfo),
         ),
     ]
+
+    # Only propagate `SwiftClangModuleInfo` if any of our deps does.
+    if any([SwiftClangModuleInfo in dep for dep in deps]):
+        clang_module = merge_swift_clang_module_infos(deps)
+        providers.append(clang_module)
 
     return providers
 
