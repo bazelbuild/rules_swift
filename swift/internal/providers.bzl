@@ -14,12 +14,12 @@
 
 """Defines Skylark providers that propagated by the Swift BUILD rules."""
 
-load(":utils.bzl", "collect_transitive")
-
 SwiftClangModuleInfo = provider(
     doc = """
 Contains information about a Clang module with relative paths that needs to be propagated up to
 other Swift compilation/link actions.
+
+This provider is deprecated and will be removed in a future release.
 """,
     fields = {
         "transitive_compile_flags": """
@@ -78,6 +78,10 @@ was not set.
         "transitive_defines": """
 `Depset` of `string`s. The transitive `defines` specified for the library that propagated this
 provider and all of its dependencies.
+""",
+        "transitive_modulemaps": """
+`Depset` of `File`s. The transitive module map files that will be passed to Clang using the
+`-fmodule-map-file` option.
 """,
         "transitive_swiftdocs": """
 `Depset` of `File`s. The transitive Swift documentation (`.swiftdoc`) files emitted by the library
@@ -220,36 +224,3 @@ The Swift toolchain that was used to build the targets propagating this provider
 """,
     },
 )
-
-def merge_swift_clang_module_infos(targets):
-    """Merges transitive `SwiftClangModuleInfo` providers.
-
-    Args:
-        targets: The targets whose `SwiftClangModuleInfo` providers should be merged.
-
-    Returns:
-        A new `SwiftClangModuleInfo` that contains the transitive closure of all the
-        `SwiftClangModuleInfo` providers of the given targets.
-    """
-    return SwiftClangModuleInfo(
-        transitive_compile_flags = collect_transitive(
-            targets,
-            SwiftClangModuleInfo,
-            "transitive_compile_flags",
-        ),
-        transitive_defines = collect_transitive(
-            targets,
-            SwiftClangModuleInfo,
-            "transitive_defines",
-        ),
-        transitive_headers = collect_transitive(
-            targets,
-            SwiftClangModuleInfo,
-            "transitive_headers",
-        ),
-        transitive_modulemaps = collect_transitive(
-            targets,
-            SwiftClangModuleInfo,
-            "transitive_modulemaps",
-        ),
-    )

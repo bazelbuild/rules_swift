@@ -19,13 +19,7 @@ load(":api.bzl", "swift_common")
 load(":compiling.bzl", "new_objc_provider")
 load(":derived_files.bzl", "derived_files")
 load(":linking.bzl", "register_libraries_to_link")
-load(
-    ":providers.bzl",
-    "SwiftClangModuleInfo",
-    "SwiftInfo",
-    "SwiftToolchainInfo",
-    "merge_swift_clang_module_infos",
-)
+load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
 load(":utils.bzl", "compact", "create_cc_info", "get_providers")
 
 def _swift_module_alias_impl(ctx):
@@ -134,10 +128,6 @@ following dependencies instead:\n\n""".format(
             swiftmodules = [compilation_outputs.swiftmodule],
             objc_header = compilation_outputs.generated_header,
         ))
-
-    if any([SwiftClangModuleInfo in dep for dep in deps]):
-        clang_module = merge_swift_clang_module_infos(deps)
-        providers.append(clang_module)
 
     return providers
 

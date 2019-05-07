@@ -25,14 +25,7 @@ load(
     "extract_generated_dir_path",
     "register_module_mapping_write_action",
 )
-load(
-    ":providers.bzl",
-    "SwiftClangModuleInfo",
-    "SwiftInfo",
-    "SwiftProtoInfo",
-    "SwiftToolchainInfo",
-    "merge_swift_clang_module_infos",
-)
+load(":providers.bzl", "SwiftInfo", "SwiftProtoInfo", "SwiftToolchainInfo")
 load(":utils.bzl", "compact", "create_cc_info", "get_providers", "workspace_relative_path")
 
 def _register_grpcswift_generate_action(
@@ -263,10 +256,6 @@ def _swift_grpc_library_impl(ctx):
             swiftmodules = [compilation_outputs.swiftmodule],
             objc_header = compilation_outputs.generated_header,
         ))
-
-    if any([SwiftClangModuleInfo in dep for dep in compile_deps]):
-        clang_module = merge_swift_clang_module_infos(compile_deps)
-        providers.append(clang_module)
 
     return providers
 
