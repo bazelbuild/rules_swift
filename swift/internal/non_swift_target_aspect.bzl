@@ -112,7 +112,8 @@ def _non_swift_target_aspect_impl(target, aspect_ctx):
         return []
 
     attr = aspect_ctx.rule.attr
-    swift_infos = get_providers(attr.deps, SwiftInfo)
+    deps = getattr(attr, "deps", [])
+    swift_infos = get_providers(deps, SwiftInfo)
 
     # It's not great to depend on the rule name directly, but we need to access the exact `hdrs`
     # and `textual_hdrs` attributes (which may not be propagated distinctly by a provider) and
@@ -154,7 +155,7 @@ def _non_swift_target_aspect_impl(target, aspect_ctx):
         # available to the actions.
         transitive_headers_sets = [
             cc_info.compilation_context.headers
-            for cc_info in get_providers(attr.deps, CcInfo)
+            for cc_info in get_providers(deps, CcInfo)
         ]
 
         compilation_context = target[CcInfo].compilation_context
@@ -177,6 +178,7 @@ def _non_swift_target_aspect_impl(target, aspect_ctx):
 
 non_swift_target_aspect = aspect(
     attrs = swift_common.toolchain_attrs(toolchain_attr_name = "_toolchain_for_aspect"),
+    attr_aspects = ["deps"],
     doc = """
 Attaches a `SwiftInfo` provider to any non-Swift target underneath a Swift target.
 
