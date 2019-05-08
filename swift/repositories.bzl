@@ -130,9 +130,9 @@ def swift_rules_dependencies():
     _maybe(
         http_archive,
         name = "com_github_apple_swift_protobuf",
-        urls = ["https://github.com/apple/swift-protobuf/archive/1.4.0.zip"],
-        sha256 = "70ed9d031144752f106276d495e854b314d7fab4c3e1cd97150655d882dd0eb6",
-        strip_prefix = "swift-protobuf-1.4.0/",
+        urls = ["https://github.com/apple/swift-protobuf/archive/1.5.0.zip"],
+        sha256 = "7f0f64881cabb4e96bd5eaae2449bc599b11d9205036c919f9528fff8b23ec78",
+        strip_prefix = "swift-protobuf-1.5.0/",
         type = "zip",
         build_file = "@build_bazel_rules_swift//third_party:com_github_apple_swift_protobuf/BUILD.overlay",
     )
@@ -140,9 +140,9 @@ def swift_rules_dependencies():
     _maybe(
         http_archive,
         name = "com_github_grpc_grpc_swift",
-        urls = ["https://github.com/grpc/grpc-swift/archive/0.8.1.zip"],
-        sha256 = "04b797a2d0fe03687768f5c503917f418d7612b950ec89919f0a8e3cb70b7a43",
-        strip_prefix = "grpc-swift-0.8.1/",
+        urls = ["https://github.com/grpc/grpc-swift/archive/0.9.0.zip"],
+        sha256 = "b9818134f497df073cb49e0df59bfeea801291230d6fc048fdc6aa76e453a3cb",
+        strip_prefix = "grpc-swift-0.9.0/",
         type = "zip",
         build_file = "@build_bazel_rules_swift//third_party:com_github_grpc_grpc_swift/BUILD.overlay",
     )
