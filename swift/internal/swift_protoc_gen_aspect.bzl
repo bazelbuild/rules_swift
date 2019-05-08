@@ -298,6 +298,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
         # support libraries like the SwiftProtobuf runtime as deps to the compile
         # action.
         feature_configuration = swift_common.configure_features(
+            ctx = aspect_ctx,
             requested_features = aspect_ctx.features + [SWIFT_FEATURE_NO_GENERATED_HEADER],
             swift_toolchain = swift_toolchain,
             unsupported_features = aspect_ctx.disabled_features + [SWIFT_FEATURE_ENABLE_TESTING],
@@ -463,5 +464,6 @@ provider.
 Most users should not need to use this aspect directly; it is an implementation
 detail of the `swift_proto_library` rule.
 """,
+    fragments = ["cpp"],
     implementation = _swift_protoc_gen_aspect_impl,
 )

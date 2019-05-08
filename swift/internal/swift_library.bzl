@@ -74,6 +74,7 @@ def _swift_library_impl(ctx):
     deps = ctx.attr.deps + swift_toolchain.implicit_deps
 
     feature_configuration = swift_common.configure_features(
+        ctx = ctx,
         requested_features = ctx.features,
         swift_toolchain = swift_toolchain,
         unsupported_features = ctx.disabled_features,
@@ -182,4 +183,5 @@ Compiles and links Swift code into a static library and Swift module.
 """,
     outputs = swift_library_output_map,
     implementation = _swift_library_impl,
+    fragments = ["cpp"],
 )
