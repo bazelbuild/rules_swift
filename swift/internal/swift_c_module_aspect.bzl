@@ -124,6 +124,7 @@ def _swift_c_module_aspect_impl(target, aspect_ctx):
     # Determine if the toolchain requires module maps to use workspace-relative paths or not.
     toolchain = aspect_ctx.attr._toolchain_for_aspect[SwiftToolchainInfo]
     feature_configuration = swift_common.configure_features(
+        ctx = aspect_ctx,
         requested_features = aspect_ctx.features,
         swift_toolchain = toolchain,
         unsupported_features = aspect_ctx.disabled_features,
@@ -199,4 +200,5 @@ This aspect is an implementation detail of the Swift build rules and is not mean
 to other rules or run independently.
 """,
     implementation = _swift_c_module_aspect_impl,
+    fragments = ["cpp"],
 )

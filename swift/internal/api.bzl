@@ -655,7 +655,7 @@ def _compile(
         swiftmodule = swiftmodule,
     )
 
-def _configure_features(swift_toolchain, requested_features = [], unsupported_features = []):
+def _configure_features(ctx, swift_toolchain, requested_features = [], unsupported_features = []):
     """Creates a feature configuration that should be passed to other Swift build APIs.
 
     This function calls through to `cc_common.configure_features` to configure underlying C++
@@ -664,6 +664,7 @@ def _configure_features(swift_toolchain, requested_features = [], unsupported_fe
     `swift_common.cc_feature_configuration(feature_configuration)`.
 
     Args:
+        ctx: The rule context.
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain being used to build.
             The C++ toolchain associated with the Swift toolchain is used to create the underlying
             C++ feature configuration.
@@ -702,6 +703,7 @@ def _configure_features(swift_toolchain, requested_features = [], unsupported_fe
                  "but it is not supported by the current toolchain or rule.")
 
     cc_feature_configuration = cc_common.configure_features(
+        ctx = ctx,
         cc_toolchain = swift_toolchain.cc_toolchain_info,
         requested_features = all_requested_features,
         unsupported_features = all_unsupported_features,
