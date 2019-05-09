@@ -14,7 +14,7 @@
 
 """Implementation of the `swift_c_module` rule."""
 
-load(":providers.bzl", "SwiftClangModuleInfo")
+load(":api.bzl", "swift_common")
 
 def _swift_c_module_impl(ctx):
     if len(ctx.attr.deps) > 1:
@@ -24,48 +24,30 @@ def _swift_c_module_impl(ctx):
 
     if len(ctx.attr.deps) == 1:
         dep = ctx.attr.deps[0]
-        cc_info = dep[CcInfo]
-        compilation_context = cc_info.compilation_context
+        dep_cc_info = dep[CcInfo]
+        this_cc_info = CcInfo(
+            compilation_context = cc_common.create_compilation_context(
+                includes = ctx.attr.includes,
+            ),
+        )
+
         return [
             # Repropagate the dependency's `CcInfo` provider so that Swift targets only have to
             # depend on the module target, not also on the original library target. We must also
             # repropagate the dependency, otherwise things we will lose runtime dependencies that
             # the library expects to be there during a test (or a regular `bazel run`).
-            cc_info,
+            cc_common.merge_cc_infos(cc_infos = [dep_cc_info, this_cc_info]),
             DefaultInfo(
                 data_runfiles = dep[DefaultInfo].data_runfiles,
                 default_runfiles = dep[DefaultInfo].default_runfiles,
                 files = depset(direct = [module_map]),
             ),
-            SwiftClangModuleInfo(
-                transitive_compile_flags = depset(
-                    # TODO(b/124373197): Expanding these depsets isn't great, but it's temporary
-                    # until we get rid of this provider completely.
-                    direct = [
-                        "-I{}".format(p)
-                        for p in compilation_context.includes.to_list()
-                    ] + [
-                        "-iquote{}".format(p)
-                        for p in compilation_context.quote_includes.to_list()
-                    ] + [
-                        "-isystem{}".format(p)
-                        for p in compilation_context.system_includes.to_list()
-                    ],
-                ),
-                transitive_defines = compilation_context.defines,
-                transitive_headers = compilation_context.headers,
-                transitive_modulemaps = depset(direct = [module_map]),
-            ),
+            swift_common.create_swift_info(modulemaps = [module_map]),
         ]
     else:
         return [
-            DefaultInfo(files = depset(direct = [module_map])),
-            SwiftClangModuleInfo(
-                transitive_compile_flags = depset(),
-                transitive_defines = depset(),
-                transitive_headers = depset(),
-                transitive_modulemaps = depset(direct = [module_map]),
-            ),
+            DefaultInfo(files = depset([module_map])),
+            swift_common.create_swift_info(modulemaps = [module_map]),
         ]
 
 swift_c_module = rule(

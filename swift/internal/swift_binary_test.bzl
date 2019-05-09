@@ -21,13 +21,13 @@ load(":api.bzl", "swift_common")
 load(":derived_files.bzl", "derived_files")
 load(":features.bzl", "SWIFT_FEATURE_BUNDLED_XCTESTS")
 load(":linking.bzl", "register_link_executable_action")
+load(":non_swift_target_aspect.bzl", "non_swift_target_aspect")
 load(":providers.bzl", "SwiftToolchainInfo")
-load(":swift_c_module_aspect.bzl", "swift_c_module_aspect")
 load(":utils.bzl", "expand_locations")
 
 # Attributes common to both `swift_binary` and `swift_test`.
 _BINARY_RULE_ATTRS = dicts.add(
-    swift_common.compilation_attrs(additional_deps_aspects = [swift_c_module_aspect]),
+    swift_common.compilation_attrs(additional_deps_aspects = [non_swift_target_aspect]),
     {
         "linkopts": attr.string_list(
             doc = """
