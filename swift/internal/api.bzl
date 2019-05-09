@@ -273,6 +273,9 @@ def _compilation_mode_copts(feature_configuration):
         # import search paths to find definitions during debugging.
         flags.extend(["-Onone", "-DDEBUG", "-Xfrontend", "-serialize-debugging-options"])
 
+    if is_dbg:
+        flags.append("-enforce-exclusivity=checked")
+
     if _is_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_ENABLE_TESTING,
