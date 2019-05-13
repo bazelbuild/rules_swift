@@ -178,5 +178,6 @@ to create "umbrella modules".
 > `deps` in the new module. You depend on undocumented features at your own
 > risk, as they may change in a future version of Swift.
 """,
+    fragments = ["cpp"],
     implementation = _swift_module_alias_impl,
 )
