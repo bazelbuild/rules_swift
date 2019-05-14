@@ -506,7 +506,7 @@ def _xcode_swift_toolchain_impl(ctx):
     )
 
     cc_toolchain = find_cpp_toolchain(ctx)
-    cc_toolchain_files = ctx.attr._cc_toolchain.files
+    cc_toolchain_files = cc_toolchain.all_files
 
     # Compute the default requested features and conditional ones based on Xcode version.
     requested_features = features_for_build_modes(ctx, objc_fragment = ctx.fragments.objc)
@@ -587,5 +587,6 @@ The C++ toolchain from which linking flags and other tools needed by the Swift t
         "objc",
         "swift",
     ],
+    toolchains = ["@bazel_tools//tools/cpp:toolchain_type"],
     implementation = _xcode_swift_toolchain_impl,
 )
