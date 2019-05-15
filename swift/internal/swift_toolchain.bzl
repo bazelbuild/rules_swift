@@ -176,7 +176,7 @@ def _run_swift_action(toolchain_tools, swift_wrapper, actions, **kwargs):
 def _swift_toolchain_impl(ctx):
     toolchain_root = ctx.attr.root
     cc_toolchain = find_cpp_toolchain(ctx)
-    cc_toolchain_files = ctx.attr._cc_toolchain.files
+    cc_toolchain_files = cc_toolchain.all_files
 
     linker_opts_producer = partial.make(
         _default_linker_opts,
@@ -274,5 +274,6 @@ The C++ toolchain from which other tools needed by the Swift toolchain (such as
     }),
     doc = "Represents a Swift compiler toolchain.",
     fragments = ["swift"],
+    toolchains = ["@bazel_tools//tools/cpp:toolchain_type"],
     implementation = _swift_toolchain_impl,
 )
