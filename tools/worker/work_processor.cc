@@ -160,8 +160,6 @@ void WorkProcessor::ProcessWorkRequest(
   if (!is_wmo) {
     // Copy the output files from the incremental storage area back to the
     // locations where Bazel declared the files.
-    // TODO(allevato): Investigate copy-on-write on macOS, or hard-linking in
-    // general, as a possible optimization.
     for (auto expected_object_pair : output_file_map.incremental_outputs()) {
       if (!CopyFile(expected_object_pair.second, expected_object_pair.first)) {
         std::cerr << "Could not copy " << expected_object_pair.second << " to "
