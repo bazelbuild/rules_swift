@@ -32,6 +32,7 @@ def _swift_import_impl(ctx):
     # toolchains.
     cc_toolchain = ctx.attr._cc_toolchain[cc_common.CcToolchainInfo]
     cc_feature_configuration = cc_common.configure_features(
+        ctx = ctx,
         cc_toolchain = cc_toolchain,
         requested_features = ctx.features,
         unsupported_features = ctx.disabled_features,
@@ -126,5 +127,6 @@ The C++ toolchain from which linking flags and other tools needed by the Swift t
 Allows for the use of precompiled Swift modules as dependencies in other `swift_library` and
 `swift_binary` targets.
 """,
+    fragments = ["cpp"],
     implementation = _swift_import_impl,
 )
