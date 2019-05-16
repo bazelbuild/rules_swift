@@ -33,7 +33,8 @@ bool CopyFile(const std::string &src, const std::string &dest) {
 #ifdef __APPLE__
   // The `copyfile` function with `COPYFILE_ALL` mode preserves permissions and
   // modification time.
-  return copyfile(src.c_str(), dest.c_str(), nullptr, COPYFILE_ALL) == 0;
+  return copyfile(src.c_str(), dest.c_str(), nullptr,
+                  COPYFILE_ALL | COPYFILE_CLONE) == 0;
 #elif __unix__
   // On Linux, we can use `sendfile` to copy it more easily than calling
   // `read`/`write` in a loop.
