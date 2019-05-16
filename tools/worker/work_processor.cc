@@ -164,6 +164,7 @@ void WorkProcessor::ProcessWorkRequest(
       if (!CopyFile(expected_object_pair.second, expected_object_pair.first)) {
         std::cerr << "Could not copy " << expected_object_pair.second << " to "
                   << expected_object_pair.first << " (errno " << errno << ")\n";
+        exit_code = EXIT_FAILURE;
       }
     }
   }
