@@ -52,8 +52,10 @@ def _maybe_parse_as_library_copts(srcs):
 
 def _swift_library_impl(ctx):
     additional_inputs = ctx.files.swiftc_inputs
-    copts = expand_locations(ctx, ctx.attr.copts, additional_inputs)
-    linkopts = expand_locations(ctx, ctx.attr.linkopts, additional_inputs)
+
+    # These can't use additional_inputs since expand_locations needs targets, not files.
+    copts = expand_locations(ctx, ctx.attr.copts, ctx.attr.swiftc_inputs)
+    linkopts = expand_locations(ctx, ctx.attr.linkopts, ctx.attr.swiftc_inputs)
     srcs = ctx.files.srcs
 
     module_name = ctx.attr.module_name
