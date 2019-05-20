@@ -281,12 +281,6 @@ def register_link_executable_action(
         before_each = "-framework",
     )
 
-    # Workaround that removes a linker option that breaks swift binaries.
-    # TODO(b/77640204): Remove this workaround.
-    enable_text_relocation_linkopt = "-Wl,-z,notext"
-    if enable_text_relocation_linkopt in all_linkopts:
-        all_linkopts.remove(enable_text_relocation_linkopt)
-
     user_args = actions.args()
     user_args.add_all(all_linkopts)
 
