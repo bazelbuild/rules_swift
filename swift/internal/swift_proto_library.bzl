@@ -22,7 +22,8 @@ def _swift_proto_library_impl(ctx):
         fail("You must list exactly one target in the deps attribute.", attr = "deps")
 
     dep = ctx.attr.deps[0]
-    cc_info = dep[SwiftProtoCcInfo].cc_info
+    proto_cc_info = dep[SwiftProtoCcInfo]
+    cc_info = proto_cc_info.cc_info
     swift_info = dep[SwiftInfo]
     swift_proto_info = dep[SwiftProtoInfo]
 
@@ -46,10 +47,10 @@ def _swift_proto_library_impl(ctx):
         swift_proto_info,
     ]
 
-    # Repropagate the apple_common.Objc provider if present so that apple_binary targets link
+    # Propagate a nested apple_common.Objc provider if present so that apple_binary targets link
     # correctly.
-    if apple_common.Objc in dep:
-        providers.append(dep[apple_common.Objc])
+    if proto_cc_info.objc_info:
+        providers.append(proto_cc_info.objc_info)
 
     return providers
 
