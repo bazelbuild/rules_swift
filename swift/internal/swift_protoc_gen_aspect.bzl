@@ -16,7 +16,6 @@
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(":api.bzl", "swift_common")
-load(":compiling.bzl", "new_objc_provider")
 load(":features.bzl", "SWIFT_FEATURE_ENABLE_TESTING", "SWIFT_FEATURE_NO_GENERATED_HEADER")
 load(":linking.bzl", "register_libraries_to_link")
 load(
@@ -60,6 +59,7 @@ This provider is an implementation detail not meant to be used by clients.
 """,
     fields = {
         "cc_info": "The underlying `CcInfo` provider.",
+        "objc_info": "The underlying `apple_common.Objc` provider.",
     },
 )
 
@@ -342,6 +342,44 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             get_providers(proto_deps, SwiftProtoCcInfo, _extract_cc_info) +
             get_providers(support_deps, CcInfo)
         )
+
+        # Propagate an `objc` provider if the toolchain supports Objective-C interop, which ensures
+        # that the libraries get linked into `apple_binary` targets properly.
+        if swift_toolchain.supports_objc_interop:
+            objc_infos = get_providers(
+                proto_deps,
+                SwiftProtoCcInfo,
+                _extract_objc_info,
+            ) + get_providers(support_deps, apple_common.Objc)
+
+            objc_info_args = {}
+            if compilation_outputs.generated_header:
+                objc_info_args["header"] = depset([compilation_outputs.generated_header])
+            if library_to_link.pic_static_library:
+                objc_info_args["library"] = depset(
+                    [library_to_link.pic_static_library],
+                    order = "topological",
+                )
+            if compilation_outputs.linker_flags:
+                objc_info_args["linkopt"] = depset(compilation_outputs.linker_flags)
+            if compilation_outputs.generated_module_map:
+                objc_info_args["module_map"] = depset([compilation_outputs.generated_module_map])
+
+            linker_inputs = (
+                compilation_outputs.linker_inputs + compact([compilation_outputs.swiftmodule])
+            )
+            if linker_inputs:
+                objc_info_args["link_inputs"] = depset(linker_inputs)
+
+            objc_info = apple_common.new_objc_provider(
+                include = depset([aspect_ctx.bin_dir.path]),
+                providers = objc_infos,
+                uses_swift = True,
+                **objc_info_args
+            )
+        else:
+            objc_info = None
+
         providers = [
             SwiftProtoCcInfo(
                 cc_info = create_cc_info(
@@ -349,6 +387,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
                     compilation_outputs = compilation_outputs,
                     libraries_to_link = [library_to_link],
                 ),
+                objc_info = objc_info,
             ),
             swift_common.create_swift_info(
                 module_name = module_name,
@@ -357,41 +396,31 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
                 swift_infos = get_providers(proto_deps + support_deps, SwiftInfo),
             ),
         ]
-
-        # Propagate an `objc` provider if the toolchain supports Objective-C interop, which ensures
-        # that the libraries get linked into `apple_binary` targets properly.
-        if swift_toolchain.supports_objc_interop:
-            providers.append(new_objc_provider(
-                deps = proto_deps + support_deps,
-                include_path = aspect_ctx.bin_dir.path,
-                link_inputs = compilation_outputs.linker_inputs,
-                linkopts = compilation_outputs.linker_flags,
-                module_map = compilation_outputs.generated_module_map,
-                static_archives = compact([library_to_link.pic_static_library]),
-                swiftmodules = [compilation_outputs.swiftmodule],
-                objc_header = compilation_outputs.generated_header,
-            ))
     else:
         # If there are no srcs, merge the `SwiftInfo` and `CcInfo` providers and propagate them. Do
         # likewise for `apple_common.Objc` providers if the toolchain supports Objective-C interop.
         # Note that we don't need to handle the runtime support libraries here; we can assume that
         # they've already been pulled in by a `proto_library` that had srcs.
         pbswift_files = []
+
+        if swift_toolchain.supports_objc_interop:
+            objc_providers = get_providers(proto_deps, SwiftProtoCcInfo, _extract_objc_info)
+            objc_provider = apple_common.new_objc_provider(providers = objc_providers)
+            objc_info = objc_provider
+        else:
+            objc_info = None
+
         providers = [
             SwiftProtoCcInfo(
                 cc_info = cc_common.merge_cc_infos(
                     cc_infos = get_providers(proto_deps, SwiftProtoCcInfo, _extract_cc_info),
                 ),
+                objc_info = objc_info,
             ),
             swift_common.create_swift_info(
                 swift_infos = get_providers(proto_deps, SwiftInfo),
             ),
         ]
-
-        if swift_toolchain.supports_objc_interop:
-            objc_providers = get_providers(proto_deps, apple_common.Objc)
-            objc_provider = apple_common.new_objc_provider(providers = objc_providers)
-            providers.append(objc_provider)
 
     providers.append(_build_swift_proto_info_provider(
         pbswift_files,
@@ -411,6 +440,17 @@ def _extract_cc_info(proto_cc_info):
         The `CcInfo` nested inside the `SwiftProtoCcInfo`.
     """
     return proto_cc_info.cc_info
+
+def _extract_objc_info(proto_cc_info):
+    """A map function for `get_providers` to extract the `Objc` provider from a `SwiftProtoCcInfo`.
+
+    Args:
+        proto_cc_info: A `SwiftProtoCcInfo` provider.
+
+    Returns:
+        The `ObjcInfo` nested inside the `SwiftProtoCcInfo`.
+    """
+    return proto_cc_info.objc_info
 
 swift_protoc_gen_aspect = aspect(
     attr_aspects = ["deps"],
