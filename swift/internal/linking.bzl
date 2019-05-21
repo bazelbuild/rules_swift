@@ -75,8 +75,7 @@ def _register_static_library_link_action(
         execution_requirements = swift_toolchain.execution_requirements,
         inputs = depset(
             direct = objects,
-            # TODO(bazelbuild/bazel#7427): Use `CcToolchainInfo` getters when they are available.
-            transitive = [swift_toolchain.cc_toolchain_files],
+            transitive = [swift_toolchain.cc_toolchain_info.all_files],
         ),
         mnemonic = "SwiftArchive",
         outputs = [output],
