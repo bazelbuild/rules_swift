@@ -142,6 +142,7 @@ def register_libraries_to_link(
 def register_link_executable_action(
         actions,
         action_environment,
+        cc_feature_configuration,
         clang_executable,
         deps,
         expanded_linkopts,
@@ -157,6 +158,8 @@ def register_link_executable_action(
     Args:
         actions: The object used to register actions.
         action_environment: A `dict` of environment variables that should be set for the compile
+            action.
+        cc_feature_configuration: The C++ feature configuration to use when constructing the
             action.
         clang_executable: The path to the `clang` executable that will be invoked to link, which is
             assumed to be present among the tools that the toolchain passes to its action
@@ -280,6 +283,19 @@ def register_link_executable_action(
         depset(transitive = deps_dynamic_framework_names),
         before_each = "-framework",
     )
+
+    # If the C++ toolchain provides an embedded runtime, include it. See the documentation for
+    # `CcToolchainInfo.{dynamic,static}_runtime_lib` for an explanation of the feature check:
+    # https://docs.bazel.build/versions/master/skylark/lib/CcToolchainInfo.html#static_runtime_lib
+    if cc_common.is_enabled(
+        feature_configuration = cc_feature_configuration,
+        feature_name = "static_link_cpp_runtimes",
+    ):
+        # TODO(b/70228246): Call dynamic_runtime_lib if dynamic linking.
+        cc_runtime_libs = swift_toolchain.cc_toolchain_info.static_runtime_lib(
+            feature_configuration = cc_feature_configuration,
+        )
+        link_input_args.add_all(cc_runtime_libs)
 
     user_args = actions.args()
     user_args.add_all(all_linkopts)
