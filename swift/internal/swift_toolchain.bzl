@@ -192,16 +192,14 @@ def _swift_toolchain_impl(ctx):
         run_swift = partial.make(_run_swift_action, tools, ctx.executable._swift_wrapper),
     )
 
-    # Compute the default requested features and conditional ones based on Xcode version.
+    # Combine build mode features, autoconfigured features, and required features.
     requested_features = features_for_build_modes(ctx)
     requested_features.extend(ctx.features)
     requested_features.append(SWIFT_FEATURE_AUTOLINK_EXTRACT)
-    # TODO(#34): Add SWIFT_FEATURE_USE_RESPONSE_FILES based on Swift compiler version.
-    # TODO(#35): Add SWIFT_FEATURE_DEBUG_PREFIX_MAP based on Swift compiler version.
 
-    # TODO(allevato): Move some of the remaining hardcoded values, like object
-    # format, autolink-extract, and Obj-C interop support, to attributes so that
-    # we can remove the assumptions that are only valid on Linux.
+    # TODO(allevato): Move some of the remaining hardcoded values, like object format and Obj-C
+    # interop support, to attributes so that we can remove the assumptions that are only valid on
+    # Linux.
     return [
         SwiftToolchainInfo(
             action_environment = {},
