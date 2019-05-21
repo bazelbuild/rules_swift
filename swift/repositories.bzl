@@ -15,80 +15,9 @@
 """Definitions for handling Bazel repositories used by the Swift rules."""
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-
-def _create_linux_toolchain(repository_ctx):
-    """Creates BUILD targets for the Swift toolchain on Linux.
-
-    Args:
-      repository_ctx: The repository rule context.
-    """
-    if repository_ctx.os.environ.get("CC") != "clang":
-        fail("ERROR: rules_swift uses Bazel's CROSSTOOL to link, but Swift " +
-             "requires that the driver used is clang. Please set `CC=clang` in " +
-             "your environment before invoking Bazel.")
-
-    path_to_swiftc = repository_ctx.which("swiftc")
-    path_to_clang = repository_ctx.which("clang")
-    root = path_to_swiftc.dirname.dirname
-
-    repository_ctx.file(
-        "BUILD",
-        """
 load(
-    "@build_bazel_rules_swift//swift/internal:swift_toolchain.bzl",
-    "swift_toolchain",
-)
-
-package(default_visibility = ["//visibility:public"])
-
-swift_toolchain(
-    name = "toolchain",
-    arch = "x86_64",
-    clang_executable = "{path_to_clang}",
-    os = "linux",
-    root = "{root}",
-)
-""".format(
-            path_to_clang = path_to_clang,
-            root = root,
-        ),
-    )
-
-def _create_xcode_toolchain(repository_ctx):
-    """Creates BUILD targets for the Swift toolchain on macOS using Xcode.
-
-    Args:
-      repository_ctx: The repository rule context.
-    """
-    repository_ctx.file(
-        "BUILD",
-        """
-load(
-    "@build_bazel_rules_swift//swift/internal:xcode_swift_toolchain.bzl",
-    "xcode_swift_toolchain",
-)
-
-package(default_visibility = ["//visibility:public"])
-
-xcode_swift_toolchain(
-    name = "toolchain",
-)
-""",
-    )
-
-def _swift_autoconfiguration_impl(repository_ctx):
-    # TODO(allevato): This is expedient and fragile. Use the platforms/toolchains
-    # APIs instead to define proper toolchains, and make it possible to support
-    # non-Xcode toolchains on macOS as well.
-    os_name = repository_ctx.os.name.lower()
-    if os_name.startswith("mac os"):
-        _create_xcode_toolchain(repository_ctx)
-    else:
-        _create_linux_toolchain(repository_ctx)
-
-_swift_autoconfiguration = repository_rule(
-    environ = ["CC", "PATH"],
-    implementation = _swift_autoconfiguration_impl,
+    "@build_bazel_rules_swift//swift/internal:swift_autoconfiguration.bzl",
+    "swift_autoconfiguration",
 )
 
 def _maybe(repo_rule, name, **kwargs):
@@ -184,6 +113,6 @@ def swift_rules_dependencies():
         )
 
     _maybe(
-        _swift_autoconfiguration,
+        swift_autoconfiguration,
         name = "build_bazel_rules_swift_local_config",
     )
