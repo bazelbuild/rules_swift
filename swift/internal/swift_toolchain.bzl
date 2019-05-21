@@ -176,7 +176,6 @@ def _run_swift_action(toolchain_tools, swift_wrapper, actions, **kwargs):
 def _swift_toolchain_impl(ctx):
     toolchain_root = ctx.attr.root
     cc_toolchain = find_cpp_toolchain(ctx)
-    cc_toolchain_files = cc_toolchain.all_files
 
     linker_opts_producer = partial.make(
         _default_linker_opts,
@@ -185,7 +184,7 @@ def _swift_toolchain_impl(ctx):
         toolchain_root,
     )
 
-    tools = depset(transitive = [ctx.attr._cc_toolchain.files])
+    tools = depset(transitive = [cc_toolchain.all_files])
     action_registrars = struct(
         run = partial.make(_run_action, tools),
         run_shell = partial.make(_run_shell_action, tools),
@@ -204,7 +203,6 @@ def _swift_toolchain_impl(ctx):
         SwiftToolchainInfo(
             action_environment = {},
             action_registrars = action_registrars,
-            cc_toolchain_files = cc_toolchain_files,
             cc_toolchain_info = cc_toolchain,
             clang_executable = ctx.attr.clang_executable,
             command_line_copts = ctx.fragments.swift.copts(),

@@ -124,12 +124,6 @@ code.
 `run_shell`, which registers an action using `actions.run_shell`. These partials allow the toolchain
 to set the environment and execution requirements, as well as use a wrapper script if necessary.
 """,
-        "cc_toolchain_files": """
-A `depset` of the `File`s in the C++ toolchain.
-
-This field is temporary until `cc_common.CcToolchainInfo` provides getters to access these files
-(https://github.com/bazelbuild/bazel/issues/7427).
-""",
         "cc_toolchain_info": """
 The `cc_common.CcToolchainInfo` provider from the Bazel C++ toolchain that this Swift toolchain
 depends on.
