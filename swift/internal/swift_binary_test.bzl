@@ -181,6 +181,7 @@ def _swift_linking_rule_impl(
     register_link_executable_action(
         actions = ctx.actions,
         action_environment = swift_toolchain.action_environment,
+        cc_feature_configuration = cc_feature_configuration,
         clang_executable = swift_toolchain.clang_executable,
         deps = deps_to_link,
         expanded_linkopts = linkopts,
