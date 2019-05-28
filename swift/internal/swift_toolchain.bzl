@@ -204,7 +204,6 @@ def _swift_toolchain_impl(ctx):
             action_environment = {},
             action_registrars = action_registrars,
             cc_toolchain_info = cc_toolchain,
-            clang_executable = ctx.attr.clang_executable,
             command_line_copts = ctx.fragments.swift.copts(),
             cpu = ctx.attr.arch,
             execution_requirements = {},
@@ -232,12 +231,6 @@ The name of the architecture that this toolchain targets.
 
 This name should match the name used in the toolchain's directory layout for architecture-specific
 content, such as "x86_64" in "lib/swift/linux/x86_64".
-""",
-            mandatory = True,
-        ),
-        "clang_executable": attr.string(
-            doc = """
-The path to the `clang` executable, which is used for linking.
 """,
             mandatory = True,
         ),

@@ -128,9 +128,6 @@ to set the environment and execution requirements, as well as use a wrapper scri
 The `cc_common.CcToolchainInfo` provider from the Bazel C++ toolchain that this Swift toolchain
 depends on.
 """,
-        "clang_executable": """
-`String`. The path to the `clang` executable, which is used to link binaries.
-""",
         "command_line_copts": """
 `List` of `strings`. Flags that were passed to Bazel using the `--swiftcopt` command line flag.
 These flags have the highest precedence; they are added to compilation command lines after the
@@ -158,10 +155,6 @@ The partial should be called with two arguments:
 *   `is_static`: A `Boolean` value indicating whether to link against the static or dynamic runtime
     libraries.
 *   `is_test`: A `Boolean` value indicating whether the target being linked is a test target.
-""",
-        "linker_search_paths": """
-`List` of `string`s. Additional library search paths that should be passed to the linker when
-linking binaries with this toolchain.
 """,
         "object_format": """
 `String`. The object file format of the platform that the toolchain is targeting. The currently

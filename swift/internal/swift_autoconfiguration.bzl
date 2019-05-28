@@ -136,7 +136,6 @@ def _create_linux_toolchain(repository_ctx):
              "your environment before invoking Bazel.")
 
     path_to_swiftc = repository_ctx.which("swiftc")
-    path_to_clang = repository_ctx.which("clang")
     root = path_to_swiftc.dirname.dirname
     feature_values = _compute_feature_values(repository_ctx, path_to_swiftc)
 
@@ -153,14 +152,12 @@ package(default_visibility = ["//visibility:public"])
 swift_toolchain(
     name = "toolchain",
     arch = "x86_64",
-    clang_executable = "{path_to_clang}",
     features = [{feature_list}],
     os = "linux",
     root = "{root}",
 )
 """.format(
             feature_list = ", ".join(['"{}"'.format(feature) for feature in feature_values]),
-            path_to_clang = path_to_clang,
             root = root,
         ),
     )

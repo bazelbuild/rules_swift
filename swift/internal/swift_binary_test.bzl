@@ -16,7 +16,6 @@
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:partial.bzl", "partial")
-load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "CPP_LINK_EXECUTABLE_ACTION_NAME")
 load(":api.bzl", "swift_common")
 load(":derived_files.bzl", "derived_files")
 load(":features.bzl", "SWIFT_FEATURE_BUNDLED_XCTESTS")
@@ -109,8 +108,12 @@ def _swift_linking_rule_impl(
         providers to be propagated by the target being built.
     """
     copts = expand_locations(ctx, ctx.attr.copts, ctx.attr.swiftc_inputs)
-    linkopts = list(linkopts) + expand_locations(ctx, ctx.attr.linkopts, ctx.attr.swiftc_inputs)
-    linkopts += ctx.fragments.cpp.linkopts
+    user_link_flags = list(linkopts) + expand_locations(
+        ctx,
+        ctx.attr.linkopts,
+        ctx.attr.swiftc_inputs,
+    )
+    user_link_flags.extend(ctx.fragments.cpp.linkopts)
 
     additional_inputs = ctx.files.swiftc_inputs
     srcs = ctx.files.srcs
@@ -118,9 +121,6 @@ def _swift_linking_rule_impl(
     out_bin = derived_files.executable(ctx.actions, target_name = ctx.label.name)
     objects_to_link = []
     output_groups = {}
-
-    link_args = ctx.actions.args()
-    link_args.add("-o", out_bin)
 
     if not srcs:
         additional_inputs_to_linker = depset(direct = additional_inputs)
@@ -143,7 +143,7 @@ def _swift_linking_rule_impl(
             swift_toolchain = swift_toolchain,
             target_name = ctx.label.name,
         )
-        link_args.add_all(compilation_outputs.linker_flags)
+        user_link_flags.extend(compilation_outputs.linker_flags)
         objects_to_link.extend(compilation_outputs.object_files)
         additional_inputs_to_linker = depset(compilation_outputs.linker_inputs)
 
@@ -152,46 +152,30 @@ def _swift_linking_rule_impl(
 
     # TODO(b/70228246): Also support mostly-static and fully-dynamic modes, here and for the C++
     # toolchain args below.
-    link_args.add_all(partial.call(
+    user_link_flags.extend(partial.call(
         swift_toolchain.linker_opts_producer,
         is_static = True,
         is_test = is_test,
     ))
 
-    # Get additional linker flags from the C++ toolchain.
-    cc_feature_configuration = swift_common.cc_feature_configuration(
-        feature_configuration = feature_configuration,
-    )
-    variables = cc_common.create_link_variables(
-        cc_toolchain = swift_toolchain.cc_toolchain_info,
-        feature_configuration = cc_feature_configuration,
-        is_static_linking_mode = True,
-    )
-    link_cpp_toolchain_flags = cc_common.get_memory_inefficient_command_line(
-        action_name = CPP_LINK_EXECUTABLE_ACTION_NAME,
-        feature_configuration = cc_feature_configuration,
-        variables = variables,
-    )
-    link_args.add_all(link_cpp_toolchain_flags)
-
     deps_to_link = ctx.attr.deps + swift_toolchain.implicit_deps
     if ctx.attr.malloc:
         deps_to_link.append(ctx.attr.malloc)
 
+    cc_feature_configuration = swift_common.cc_feature_configuration(
+        feature_configuration = feature_configuration,
+    )
     register_link_executable_action(
         actions = ctx.actions,
-        action_environment = swift_toolchain.action_environment,
         cc_feature_configuration = cc_feature_configuration,
-        clang_executable = swift_toolchain.clang_executable,
         deps = deps_to_link,
-        expanded_linkopts = linkopts,
         inputs = additional_inputs_to_linker,
         mnemonic = "SwiftLinkExecutable",
         objects = objects_to_link,
-        outputs = [out_bin],
+        output = out_bin,
         progress_message = "Linking {}".format(out_bin.short_path),
-        rule_specific_args = link_args,
         swift_toolchain = swift_toolchain,
+        user_link_flags = user_link_flags,
     )
 
     return out_bin, [OutputGroupInfo(**output_groups)]

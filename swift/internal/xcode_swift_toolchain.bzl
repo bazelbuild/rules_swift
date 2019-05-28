@@ -528,7 +528,6 @@ def _xcode_swift_toolchain_impl(ctx):
             action_environment = env,
             action_registrars = action_registrars,
             cc_toolchain_info = cc_toolchain,
-            clang_executable = None,
             command_line_copts = command_line_copts,
             cpu = cpu,
             execution_requirements = execution_requirements,

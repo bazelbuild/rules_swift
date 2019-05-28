@@ -19,8 +19,11 @@ load(
     "@build_bazel_apple_support//lib:framework_migration.bzl",
     "framework_migration",
 )
-load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "CPP_LINK_STATIC_LIBRARY_ACTION_NAME")
-load(":actions.bzl", "run_toolchain_action")
+load(
+    "@bazel_tools//tools/build_defs/cc:action_names.bzl",
+    "CPP_LINK_EXECUTABLE_ACTION_NAME",
+    "CPP_LINK_STATIC_LIBRARY_ACTION_NAME",
+)
 load(":derived_files.bzl", "derived_files")
 load(":utils.bzl", "collect_cc_libraries", "objc_provider_framework_name")
 
@@ -140,47 +143,57 @@ def register_libraries_to_link(
 
 def register_link_executable_action(
         actions,
-        action_environment,
         cc_feature_configuration,
-        clang_executable,
         deps,
-        expanded_linkopts,
         inputs,
         mnemonic,
         objects,
-        outputs,
+        output,
         progress_message,
-        rule_specific_args,
-        swift_toolchain):
+        swift_toolchain,
+        user_link_flags):
     """Registers an action that invokes `clang` to link object files.
 
     Args:
         actions: The object used to register actions.
-        action_environment: A `dict` of environment variables that should be set for the compile
-            action.
         cc_feature_configuration: The C++ feature configuration to use when constructing the
             action.
-        clang_executable: The path to the `clang` executable that will be invoked to link, which is
-            assumed to be present among the tools that the toolchain passes to its action
-            registrars. If this is `None`, then simply `clang` will be used with the assumption that
-            the registrar knows where and how to find it.
         deps: A list of `deps` representing additional libraries that will be passed to the linker.
-        expanded_linkopts: A list of strings representing options passed to the linker. Any
-            `$(location ...)` placeholders are assumed to have already been expanded.
         inputs: A `depset` containing additional inputs to the link action, such as those used in
             `$(location ...)` substitution, or libraries that need to be linked.
         mnemonic: The mnemonic printed by Bazel when the action executes.
         objects: A list of object (.o) files that will be passed to the linker.
-        outputs: A list of `File`s that should be passed as the outputs of the link action.
+        output: The `File` representing the binary output by the linker.
         progress_message: The progress message printed by Bazel when the action executes.
-        rule_specific_args: Additional arguments that are rule-specific that will be passed to
-            `clang`.
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
+        user_link_flags: A list of strings representing options passed to the linker. Any
+            `$(location ...)` placeholders are assumed to have already been expanded.
     """
-    if not clang_executable:
-        clang_executable = "clang"
+    args = actions.args()
 
-    common_args = actions.args()
+    linker_path = cc_common.get_tool_for_action(
+        action_name = CPP_LINK_EXECUTABLE_ACTION_NAME,
+        feature_configuration = cc_feature_configuration,
+    )
+    link_variables = cc_common.create_link_variables(
+        cc_toolchain = swift_toolchain.cc_toolchain_info,
+        feature_configuration = cc_feature_configuration,
+        is_static_linking_mode = True,
+    )
+    command_line = cc_common.get_memory_inefficient_command_line(
+        action_name = CPP_LINK_EXECUTABLE_ACTION_NAME,
+        feature_configuration = cc_feature_configuration,
+        variables = link_variables,
+    )
+    env = cc_common.get_environment_variables(
+        action_name = CPP_LINK_EXECUTABLE_ACTION_NAME,
+        feature_configuration = cc_feature_configuration,
+        variables = link_variables,
+    )
+
+    args.add_all(command_line)
+    args.add("-o", output)
+    args.add_all(user_link_flags)
 
     deps_libraries = []
 
@@ -196,7 +209,6 @@ def register_link_executable_action(
             deps_libraries.extend(stamp_libs_to_link)
 
     additional_input_depsets = []
-    all_linkopts = list(expanded_linkopts)
     deps_dynamic_framework_names = []
     deps_dynamic_framework_paths = []
     deps_static_framework_files = []
@@ -206,7 +218,7 @@ def register_link_executable_action(
         if CcInfo in dep:
             cc_info = dep[CcInfo]
             additional_input_depsets.append(cc_info.linking_context.additional_inputs)
-            all_linkopts.extend(cc_info.linking_context.user_link_flags)
+            args.add_all(cc_info.linking_context.user_link_flags)
             deps_libraries.extend(
                 collect_cc_libraries(cc_info = cc_info, include_pic_static = True),
             )
@@ -296,23 +308,20 @@ def register_link_executable_action(
         )
         link_input_args.add_all(cc_runtime_libs)
 
-    user_args = actions.args()
-    user_args.add_all(all_linkopts)
+    execution_requirements = swift_toolchain.execution_requirements
 
-    run_toolchain_action(
-        actions = actions,
-        arguments = [
-            common_args,
-            link_input_args,
-            rule_specific_args,
-            user_args,
-        ],
-        executable = clang_executable,
-        inputs = depset(direct = objects, transitive = link_input_depsets),
+    actions.run(
+        arguments = [args, link_input_args],
+        env = env,
+        executable = linker_path,
+        execution_requirements = execution_requirements,
+        inputs = depset(
+            direct = objects,
+            transitive = link_input_depsets + [swift_toolchain.cc_toolchain_info.all_files],
+        ),
         mnemonic = mnemonic,
-        outputs = outputs,
+        outputs = [output],
         progress_message = progress_message,
-        toolchain = swift_toolchain,
     )
 
 def _link_library_darwin_map_fn(lib):
