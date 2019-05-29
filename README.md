@@ -70,6 +70,13 @@ load(
 )
 
 apple_support_dependencies()
+
+load(
+    "@com_google_protobuf//:protobuf_deps.bzl",
+    "protobuf_deps",
+)
+
+protobuf_deps()
 ```
 
 The `swift_rules_dependencies` macro creates a toolchain appropriate for your
