@@ -52,7 +52,7 @@ cc_library(
     tags = ["swift_module=CgRPC"],
     deps = [
         ":BoringSSL",
-        "//external:zlib",
+        "@zlib//:zlib",
     ],
 )
 
