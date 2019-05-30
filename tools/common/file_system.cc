@@ -29,6 +29,14 @@
 
 #include "tools/common/path_utils.h"
 
+std::string GetCurrentDirectory() {
+  // Passing null,0 causes getcwd to allocate the buffer of the correct size.
+  char *buffer = getcwd(nullptr, 0);
+  std::string cwd(buffer);
+  free(buffer);
+  return cwd;
+}
+
 bool CopyFile(const std::string &src, const std::string &dest) {
 #ifdef __APPLE__
   // The `copyfile` function with `COPYFILE_ALL` mode preserves permissions and

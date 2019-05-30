@@ -20,7 +20,7 @@ load(
     "framework_migration",
 )
 load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "CPP_LINK_STATIC_LIBRARY_ACTION_NAME")
-load(":actions.bzl", "run_toolchain_action")
+load(":actions.bzl", "run_swift_action")
 load(":derived_files.bzl", "derived_files")
 load(":utils.bzl", "collect_cc_libraries", "objc_provider_framework_name")
 
@@ -182,6 +182,10 @@ def register_link_executable_action(
 
     common_args = actions.args()
 
+    # TODO(b/133833674): Remove this and get the executable from CROSSTOOL (see the comment at
+    # the end of the function for more information).
+    common_args.add(clang_executable)
+
     deps_libraries = []
 
     if swift_toolchain.stamp:
@@ -299,7 +303,19 @@ def register_link_executable_action(
     user_args = actions.args()
     user_args.add_all(all_linkopts)
 
-    run_toolchain_action(
+    execution_requirements = swift_toolchain.execution_requirements
+
+    # TODO(b/133833674): Even though we're invoking clang, not swift, we do so through the
+    # worker (in non-persistent mode) to get the necessary `xcrun` wrapping and placeholder
+    # substitution on macOS. This shouldn't actually be necessary; we should be able to query
+    # CROSSTOOL for the linker tool and that should include the correct wrapping. However, the
+    # Bazel OSX CROSSTOOL currently uses `cc_wrapper.sh` instead of `wrapped_clang` for C++
+    # linking actions (it properly uses `wrapped_clang` for Objective-C linking), so until that
+    # is resolved (https://github.com/bazelbuild/bazel/pull/8495), we have to use this workaround.
+    # This also means that, until we migrate to `wrapped_clang`, we're missing out on other
+    # features like dSYM extraction, but that's actually not any different that the situation
+    # today.
+    run_swift_action(
         actions = actions,
         arguments = [
             common_args,
@@ -307,12 +323,18 @@ def register_link_executable_action(
             rule_specific_args,
             user_args,
         ],
-        executable = clang_executable,
-        inputs = depset(direct = objects, transitive = link_input_depsets),
+        env = action_environment,
+        execution_requirements = execution_requirements,
+        inputs = depset(
+            objects,
+            transitive = link_input_depsets + [
+                swift_toolchain.cc_toolchain_info.all_files,
+            ],
+        ),
         mnemonic = mnemonic,
         outputs = outputs,
         progress_message = progress_message,
-        toolchain = swift_toolchain,
+        swift_toolchain = swift_toolchain,
     )
 
 def _link_library_darwin_map_fn(lib):

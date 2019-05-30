@@ -20,7 +20,7 @@ load(
     "@build_bazel_apple_support//lib:framework_migration.bzl",
     "framework_migration",
 )
-load(":actions.bzl", "run_toolchain_swift_action")
+load(":actions.bzl", "get_swift_tool", "run_swift_action")
 load(":derived_files.bzl", "derived_files")
 load(":providers.bzl", "SwiftInfo")
 load(
@@ -445,19 +445,19 @@ def register_autolink_extract_action(
         output: A `File` into which the autolink information will be written.
         toolchain: The `SwiftToolchainInfo` provider of the toolchain.
     """
-    tool_args = actions.args()
-    tool_args.add_all(objects)
-    tool_args.add("-o", output)
+    args = actions.args()
+    args.add(get_swift_tool(swift_toolchain = toolchain, tool = "swift-autolink-extract"))
+    args.add_all(objects)
+    args.add("-o", output)
 
-    run_toolchain_swift_action(
+    run_swift_action(
         actions = actions,
-        toolchain = toolchain,
-        arguments = [tool_args],
+        arguments = [args],
         inputs = objects,
         mnemonic = "SwiftAutolinkExtract",
         outputs = [output],
         progress_message = "Extracting autolink data for Swift module {}".format(module_name),
-        swift_tool = "swift-autolink-extract",
+        swift_toolchain = toolchain,
     )
 
 def swift_library_output_map(name, alwayslink):

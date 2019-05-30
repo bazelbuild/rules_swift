@@ -14,7 +14,7 @@
 
 """Functions relating to debugging support during compilation and linking."""
 
-load(":actions.bzl", "run_toolchain_swift_action")
+load(":actions.bzl", "get_swift_tool", "run_swift_action")
 load(":derived_files.bzl", "derived_files")
 
 def ensure_swiftmodule_is_embedded(
@@ -96,18 +96,18 @@ def _register_modulewrap_action(
       swiftmodule: The `.swiftmodule` file to be wrapped.
       toolchain: The `SwiftToolchainInfo` provider of the toolchain.
     """
-    tool_args = actions.args()
-    tool_args.add("-modulewrap")
-    tool_args.add(swiftmodule)
-    tool_args.add("-o", object)
+    args = actions.args()
+    args.add(get_swift_tool(swift_toolchain = toolchain, tool = "swift"))
+    args.add("-modulewrap")
+    args.add(swiftmodule)
+    args.add("-o", object)
 
-    run_toolchain_swift_action(
+    run_swift_action(
         actions = actions,
-        toolchain = toolchain,
-        arguments = [tool_args],
+        arguments = [args],
         inputs = [swiftmodule],
         mnemonic = "SwiftModuleWrap",
         outputs = [object],
         progress_message = "Wrapping {} for debugging".format(swiftmodule.short_path),
-        swift_tool = "swift",
+        swift_toolchain = toolchain,
     )

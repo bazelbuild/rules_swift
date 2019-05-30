@@ -12,10 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-int main(int argc, char *argv[]) {
-  // This executable intentionally does nothing; integration tests that define
-  // the Bazel flag `--define=RULES_SWIFT_BUILD_DUMMY_WORKER=1` should also
-  // ensure that they do not pass `--strategy=SwiftCompile=worker` at the same
-  // time.
-  return 254;
+#include "tools/worker/compile_without_worker.h"
+
+#include <iostream>
+#include <string>
+#include <vector>
+
+#include "tools/worker/swift_runner.h"
+
+int CompileWithoutWorker(const std::vector<std::string> &args) {
+  return SwiftRunner(args).Run(&std::cerr, /*stdout_to_stderr=*/false);
 }

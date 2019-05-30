@@ -10,7 +10,6 @@ filegroup(
         "//tools/common:for_bazel_tests",
         "//tools/mkdir_and_run:for_bazel_tests",
         "//tools/worker:for_bazel_tests",
-        "//tools/wrappers:for_bazel_tests",
     ],
     visibility = [
         "//:__pkg__",

@@ -119,10 +119,9 @@ toolchain.
 `Dict`. Environment variables that should be set during any actions spawned to compile or link Swift
 code.
 """,
-        "action_registrars": """
-`Struct` containing two Skylib `partial`s: `run`, which registers an action using `actions.run`; and
-`run_shell`, which registers an action using `actions.run_shell`. These partials allow the toolchain
-to set the environment and execution requirements, as well as use a wrapper script if necessary.
+        "all_files": """
+A `depset` of `File`s containing all the Swift toolchain files (tools, libraries, and other resource
+files) so they can be passed as `tools` to actions using this toolchain.
 """,
         "cc_toolchain_info": """
 The `cc_common.CcToolchainInfo` provider from the Bazel C++ toolchain that this Swift toolchain
@@ -159,10 +158,6 @@ The partial should be called with two arguments:
     libraries.
 *   `is_test`: A `Boolean` value indicating whether the target being linked is a test target.
 """,
-        "linker_search_paths": """
-`List` of `string`s. Additional library search paths that should be passed to the linker when
-linking binaries with this toolchain.
-""",
         "object_format": """
 `String`. The object file format of the platform that the toolchain is targeting. The currently
 supported values are `"elf"` and `"macho"`.
@@ -190,7 +185,8 @@ binaries with this toolchain. These flags will come first in compilation command
 them to be overridden by `copts` attributes and `--swiftcopt` flags.
 """,
         "swift_worker": """
-`File`. The executable representing the Swift persistent worker to use for incremental builds.
+`File`. The executable representing the worker executable used to invoke the compiler and other
+Swift tools (for both incremental and non-incremental compiles).
 """,
         "system_name": """
 `String`. The name of the operating system that the toolchain is targeting.

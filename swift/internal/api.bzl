@@ -29,12 +29,7 @@ load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load("@bazel_skylib//lib:partial.bzl", "partial")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:types.bzl", "types")
-load(
-    ":actions.bzl",
-    "run_toolchain_action",
-    "run_toolchain_shell_action",
-    "run_toolchain_swift_action",
-)
+load(":actions.bzl", "get_swift_tool", "run_swift_action")
 load(":attrs.bzl", "swift_common_rule_attrs")
 load(
     ":compiling.bzl",
@@ -501,7 +496,12 @@ def _compile(
     swiftmodule = derived_files.swiftmodule(actions, module_name = module_name)
     swiftdoc = derived_files.swiftdoc(actions, module_name = module_name)
 
-    wrapper_args = actions.args()
+    # Since all actions go through the worker (whether in persistent mode or not), the actual tool
+    # we want to run (swiftc) should be the first "argument".
+    tool_args = actions.args()
+    tool_args.add(get_swift_tool(swift_toolchain = swift_toolchain, tool = "swiftc"))
+
+    args = actions.args()
     if _is_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE,
@@ -510,33 +510,39 @@ def _compile(
         # letting it decide where the cache should live. This is usually somewhere in the system
         # temporary directory.
         if bin_dir:
-            wrapper_args.add("-module-cache-path", _global_module_cache_path(bin_dir))
+            args.add("-module-cache-path", _global_module_cache_path(bin_dir))
     else:
-        wrapper_args.add("-Xwrapped-swift=-ephemeral-module-cache")
+        args.add("-Xwrapped-swift=-ephemeral-module-cache")
 
     if _is_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_DEBUG_PREFIX_MAP,
     ):
-        wrapper_args.add("-Xwrapped-swift=-debug-prefix-pwd-is-dot")
+        args.add("-Xwrapped-swift=-debug-prefix-pwd-is-dot")
 
-    compile_args = actions.args()
     if _is_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_USE_RESPONSE_FILES,
     ):
-        compile_args.use_param_file("@%s", use_always = True)
+        args.set_param_file_format("multiline")
+        args.use_param_file("@%s", use_always = True)
 
-    compile_args.add("-emit-object")
-    compile_args.add_all(compile_reqs.args)
-    compile_args.add("-emit-module-path")
-    compile_args.add(swiftmodule)
+        # Only enable persistent workers if the toolchain supports response files, because the
+        # worker unconditionally writes its arguments into one to prevent command line overflow.
+        execution_requirements = {"supports-workers": "1"}
+    else:
+        execution_requirements = {}
+
+    args.add("-emit-object")
+    args.add_all(compile_reqs.args)
+    args.add("-emit-module-path")
+    args.add(swiftmodule)
 
     # Add any command line arguments that do *not* have to do with emitting outputs.
     basic_inputs = _swiftc_command_line_and_inputs(
         # TODO(allevato): Make this argument a list of files instead.
         additional_input_depsets = [depset(additional_inputs)],
-        args = compile_args,
+        args = args,
         copts = copts,
         defines = defines,
         deps = deps,
@@ -557,8 +563,8 @@ def _compile(
     )
     if generates_header and swift_toolchain.supports_objc_interop:
         generated_header = derived_files.objc_header(actions = actions, target_name = target_name)
-        compile_args.add("-emit-objc-header-path")
-        compile_args.add(generated_header)
+        args.add("-emit-objc-header-path")
+        args.add(generated_header)
         additional_outputs.append(generated_header)
 
         # Create a module map for the generated header file. This ensures that inclusions of it are
@@ -589,29 +595,24 @@ def _compile(
         generated_module_map = None
 
     all_inputs = depset(
-        transitive = [basic_inputs, depset(direct = compile_reqs.compile_inputs)],
+        transitive = [
+            basic_inputs,
+            swift_toolchain.cc_toolchain_info.all_files,
+            depset(compile_reqs.compile_inputs),
+        ],
     )
     compile_outputs = ([swiftmodule, swiftdoc] + output_objects +
                        compile_reqs.other_outputs) + additional_outputs
 
-    if swift_toolchain.swift_worker:
-        execution_requirements = {"supports-workers": "1"}
-        tools = [swift_toolchain.swift_worker]
-    else:
-        execution_requirements = {}
-        tools = []
-
-    run_toolchain_swift_action(
+    run_swift_action(
         actions = actions,
-        arguments = [wrapper_args, compile_args],
+        arguments = [tool_args, args],
         execution_requirements = execution_requirements,
         inputs = all_inputs,
         mnemonic = "SwiftCompile",
         outputs = compile_outputs,
         progress_message = "Compiling Swift module {}".format(module_name),
-        swift_tool = "swiftc",
-        toolchain = swift_toolchain,
-        tools = tools,
+        swift_toolchain = swift_toolchain,
     )
 
     linker_flags = []
@@ -1035,9 +1036,6 @@ swift_common = struct(
     derive_module_name = _derive_module_name,
     is_enabled = _is_enabled,
     library_rule_attrs = _library_rule_attrs,
-    run_toolchain_action = run_toolchain_action,
-    run_toolchain_shell_action = run_toolchain_shell_action,
-    run_toolchain_swift_action = run_toolchain_swift_action,
     swift_runtime_linkopts = _swift_runtime_linkopts,
     swiftc_command_line_and_inputs = _swiftc_command_line_and_inputs,
     toolchain_attrs = _toolchain_attrs,
