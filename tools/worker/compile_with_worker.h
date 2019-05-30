@@ -12,19 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef BUILD_BAZEL_RULES_SWIFT_TOOLS_COMMON_FILE_SYSTEM_H_
-#define BUILD_BAZEL_RULES_SWIFT_TOOLS_COMMON_FILE_SYSTEM_H_
+#ifndef BUILD_BAZEL_RULES_SWIFT_TOOLS_WORKER_COMPILE_WITH_WORKER_H_
+#define BUILD_BAZEL_RULES_SWIFT_TOOLS_WORKER_COMPILE_WITH_WORKER_H_
 
 #include <string>
+#include <vector>
 
-// Gets the path to the current working directory.
-std::string GetCurrentDirectory();
+// Starts the worker processing loop and listens to stdin for work requests from
+// Bazel.
+int CompileWithWorker(const std::vector<std::string> &args);
 
-// Copies the file at src to dest. Returns true if successful.
-bool CopyFile(const std::string &src, const std::string &dest);
-
-// Creates a directory at the given path, along with any parent directories that
-// don't already exist. Returns true if successful.
-bool MakeDirs(const std::string &path, int mode);
-
-#endif  // BUILD_BAZEL_RULES_SWIFT_TOOLS_COMMON_FILE_SYSTEM_H_
+#endif  // BUILD_BAZEL_RULES_SWIFT_TOOLS_WORKER_COMPILE_WITH_WORKER_H_

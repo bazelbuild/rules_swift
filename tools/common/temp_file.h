@@ -15,6 +15,10 @@
 #ifndef BUILD_BAZEL_RULES_SWIFT_TOOLS_COMMON_TEMP_FILE_H
 #define BUILD_BAZEL_RULES_SWIFT_TOOLS_COMMON_TEMP_FILE_H
 
+#include <fts.h>
+#include <string.h>
+#include <unistd.h>
+
 #include <cerrno>
 #include <cstdlib>
 #include <iostream>
@@ -53,6 +57,67 @@ class TempFile {
 
  private:
   explicit TempFile(const std::string &path) : path_(path) {}
+
+  std::string path_;
+};
+
+// An RAII temporary directory that is recursively deleted.
+class TempDirectory {
+ public:
+  // Create a new temporary directory using the given path template string (the
+  // same form used by `mkdtemp`). The file will automatically be deleted when
+  // the object goes out of scope.
+  static std::unique_ptr<TempDirectory> Create(
+      const std::string &path_template) {
+    size_t size = path_template.size() + 1;
+    std::unique_ptr<char[]> path(new char[size]);
+    snprintf(path.get(), size, "%s", path_template.c_str());
+
+    if (mkdtemp(path.get()) == nullptr) {
+      std::cerr << "Failed to create temporary directory: " << strerror(errno)
+                << "\n";
+      return nullptr;
+    }
+    return std::unique_ptr<TempDirectory>(new TempDirectory(path.get()));
+  }
+
+  // Explicitly make TempDirectory non-copyable and movable.
+  TempDirectory(const TempDirectory &) = delete;
+  TempDirectory &operator=(const TempDirectory &) = delete;
+  TempDirectory(TempDirectory &&) = default;
+  TempDirectory &operator=(TempDirectory &&) = default;
+
+  ~TempDirectory() {
+    char *files[] = {(char *)path_.c_str(), nullptr};
+    // Don't have the walk change directories, don't traverse symlinks, and
+    // don't cross devices.
+    auto fts_handle =
+        fts_open(files, FTS_NOCHDIR | FTS_PHYSICAL | FTS_XDEV, nullptr);
+    if (!fts_handle) {
+      return;
+    }
+
+    FTSENT *entry;
+    while ((entry = fts_read(fts_handle))) {
+      switch (entry->fts_info) {
+        case FTS_F:        // regular file
+        case FTS_SL:       // symlink
+        case FTS_SLNONE:   // symlink without target
+        case FTS_DP:       // directory, post-order (after traversing children)
+        case FTS_DEFAULT:  // other non-error conditions
+          remove(entry->fts_accpath);
+          break;
+      }
+    }
+
+    fts_close(fts_handle);
+  }
+
+  // Gets the path to the temporary directory.
+  std::string GetPath() const { return path_; }
+
+ private:
+  explicit TempDirectory(const std::string &path) : path_(path) {}
 
   std::string path_;
 };

@@ -12,19 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef BUILD_BAZEL_RULES_SWIFT_TOOLS_COMMON_FILE_SYSTEM_H_
-#define BUILD_BAZEL_RULES_SWIFT_TOOLS_COMMON_FILE_SYSTEM_H_
-
 #include <string>
+#include <vector>
 
-// Gets the path to the current working directory.
-std::string GetCurrentDirectory();
+#include "tools/worker/compile_without_worker.h"
 
-// Copies the file at src to dest. Returns true if successful.
-bool CopyFile(const std::string &src, const std::string &dest);
-
-// Creates a directory at the given path, along with any parent directories that
-// don't already exist. Returns true if successful.
-bool MakeDirs(const std::string &path, int mode);
-
-#endif  // BUILD_BAZEL_RULES_SWIFT_TOOLS_COMMON_FILE_SYSTEM_H_
+int main(int argc, char *argv[]) {
+  return CompileWithoutWorker(std::vector<std::string>(argv + 1, argv + argc));
+}

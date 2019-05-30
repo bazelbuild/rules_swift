@@ -24,26 +24,13 @@
 #include <google/protobuf/text_format.h>
 #include "tools/common/file_system.h"
 #include "tools/common/path_utils.h"
-#include "tools/common/process.h"
 #include "tools/common/string_utils.h"
 #include "tools/common/temp_file.h"
 #include "tools/worker/output_file_map.h"
+#include "tools/worker/swift_runner.h"
 #include <nlohmann/json.hpp>
 
 namespace {
-
-#if __APPLE__
-// Returns the requested environment variable in the current process's
-// environment. Aborts if this variable is unset.
-std::string GetMandatoryEnvVar(const std::string &var_name) {
-  char *env_value = getenv(var_name.c_str());
-  if (env_value == nullptr) {
-    std::cerr << "Error: " << var_name << " not set.\n";
-    abort();
-  }
-  return env_value;
-}
-#endif
 
 // Returns true if the given command line argument enables whole-module
 // optimization in the compiler.
@@ -54,27 +41,8 @@ static bool ArgumentEnablesWMO(const std::string &arg) {
 
 };  // end namespace
 
-WorkProcessor::WorkProcessor(int argc, char **argv) {
-#if __APPLE__
-  // On Apple platforms, replace the magic Bazel placeholders with the path
-  // in the corresponding environment variable.
-  std::string developer_dir = GetMandatoryEnvVar("DEVELOPER_DIR");
-  std::string sdk_root = GetMandatoryEnvVar("SDKROOT");
-
-  bazel_placeholders_ = {
-      {"__BAZEL_XCODE_DEVELOPER_DIR__", developer_dir},
-      {"__BAZEL_XCODE_SDKROOT__", sdk_root},
-  };
-
-  for (int i = 1; i < argc; i++) {
-    std::string arg(argv[i]);
-    MakeSubstitutions(&arg, bazel_placeholders_);
-    universal_args_.push_back(arg);
-  }
-#else
-  // On non-Apple platforms, we don't need to make any substitutions.
-  universal_args_.insert(universal_args_.end(), argv + 1, argv + argc);
-#endif
+WorkProcessor::WorkProcessor(const std::vector<std::string> &args) {
+  universal_args_.insert(universal_args_.end(), args.begin(), args.end());
 }
 
 void WorkProcessor::ProcessWorkRequest(
@@ -82,8 +50,13 @@ void WorkProcessor::ProcessWorkRequest(
     blaze::worker::WorkResponse *response) {
   std::vector<std::string> processed_args(universal_args_);
 
-  // Write the processed arguments out to a params file.
-  auto params_file = TempFile::Create("swiftc_args.XXXXXXXXXX");
+  // Bazel's worker spawning strategy reads the arguments from the params file
+  // and inserts them into the proto. This means that if we just try to pass
+  // them verbatim to swiftc, we might end up with a command line that's too
+  // long. Rather than try to figure out these limits (which is very
+  // OS-specific and easy to get wrong), we unconditionally write the processed
+  // arguments out to a params file.
+  auto params_file = TempFile::Create("swiftc_params.XXXXXX");
   std::ofstream params_file_stream(params_file->GetPath());
 
   OutputFileMap output_file_map;
@@ -93,8 +66,6 @@ void WorkProcessor::ProcessWorkRequest(
   std::string prev_arg;
   for (auto arg : request.arguments()) {
     auto original_arg = arg;
-    MakeSubstitutions(&arg, bazel_placeholders_);
-
     // Peel off the `-output-file-map` argument, so we can rewrite it if
     // necessary later.
     if (arg == "-output-file-map") {
@@ -154,8 +125,9 @@ void WorkProcessor::ProcessWorkRequest(
   }
 
   std::ostringstream stderr_stream;
-  int exit_code = RunSubProcess(processed_args, &stderr_stream,
-                                /*stdout_to_stderr=*/true);
+  SwiftRunner swift_runner(processed_args, /*force_response_file=*/true);
+
+  int exit_code = swift_runner.Run(&stderr_stream, /*stdout_to_stderr=*/true);
 
   if (!is_wmo) {
     // Copy the output files from the incremental storage area back to the

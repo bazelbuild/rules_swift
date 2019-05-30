@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "tools/worker/compile_with_worker.h"
+
 #include <unistd.h>
 
 #include <iostream>
@@ -73,7 +75,7 @@
 // we copy those outputs into the locations where Bazel declared them, so that
 // it can find them as well.
 
-int main(int argc, char *argv[]) {
+int CompileWithWorker(const std::vector<std::string> &args) {
   // Set up the input and output streams used to communicate with Bazel over
   // stdin and stdout.
   google::protobuf::io::FileInputStream file_input_stream(STDIN_FILENO);
@@ -84,9 +86,8 @@ int main(int argc, char *argv[]) {
   // Pass the "universal arguments" to the Swift work processor. They will be
   // rewritten to replace any placeholders if necessary, and then passed at the
   // beginning of any process invocation. Note that these arguments include the
-  // tool itself (i.e., "swiftc") and any platform-specific wrapping that may be
-  // present, like "xcrun".
-  WorkProcessor swift_worker(argc, argv);
+  // tool itself (i.e., "swiftc").
+  WorkProcessor swift_worker(args);
 
   while (true) {
     blaze::worker::WorkRequest request;

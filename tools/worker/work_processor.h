@@ -17,6 +17,7 @@
 
 #include <map>
 #include <string>
+#include <vector>
 
 #include "third_party/bazel_protos/worker_protocol.pb.h"
 
@@ -26,7 +27,7 @@ class WorkProcessor {
  public:
   // Initializes a new work processor with the given universal arguments from
   // the job invocation.
-  WorkProcessor(int argc, char **argv);
+  WorkProcessor(const std::vector<std::string> &args);
 
   // Processes the given work request and writes its exit code and stderr output
   // (if any) into the given response.
@@ -35,7 +36,6 @@ class WorkProcessor {
 
  private:
   std::vector<std::string> universal_args_;
-  std::map<std::string, std::string> bazel_placeholders_;
 };
 
 #endif  // BUILD_BAZEL_RULES_SWIFT_TOOLS_WORKER_WORK_PROCESSOR_H
