@@ -606,7 +606,7 @@ def _compile(
 
     run_swift_action(
         actions = actions,
-        arguments = [tool_args, args],
+        arguments = [tool_args, "-module-name", module_name, args],
         execution_requirements = execution_requirements,
         inputs = all_inputs,
         mnemonic = "SwiftCompile",
