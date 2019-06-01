@@ -385,6 +385,7 @@ def objc_compile_requirements(args, deps):
     # Add the objc dependencies' header search paths so that imported modules can find their
     # headers.
     args.add_all(depset(transitive = includes), format_each = "-I%s")
+    args.add_all(depset(transitive = includes), before_each = "-Xcc", format_each = "-I%s")
 
     # Add framework search paths for any prebuilt frameworks.
     args.add_all(
