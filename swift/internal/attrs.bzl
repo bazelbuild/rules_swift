@@ -14,7 +14,6 @@
 
 """Common attributes used by multiple Swift build rules."""
 
-load(":legacy_swift_clang_module_info_aspect.bzl", "legacy_swift_clang_module_info_aspect")
 load(":providers.bzl", "SwiftInfo")
 
 def swift_common_rule_attrs(additional_deps_aspects = []):
@@ -30,7 +29,7 @@ binary or library, or other programs needed by it.
 """,
         ),
         "deps": attr.label_list(
-            aspects = [legacy_swift_clang_module_info_aspect] + additional_deps_aspects,
+            aspects = additional_deps_aspects,
             doc = """
 A list of targets that are dependencies of the target being built, which will be
 linked into that target. Allowed kinds of dependencies are:

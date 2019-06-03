@@ -14,33 +14,6 @@
 
 """Defines Skylark providers that propagated by the Swift BUILD rules."""
 
-SwiftClangModuleInfo = provider(
-    doc = """
-Contains information about a Clang module with relative paths that needs to be propagated up to
-other Swift compilation/link actions.
-
-This provider is deprecated and will be removed in a future release.
-""",
-    fields = {
-        "transitive_compile_flags": """
-`Depset` of `string`s. The C compiler flags that should be passed to Clang when depending on this
-target (for example, header search paths).
-""",
-        "transitive_defines": """
-`Depset` of `string`s. The C preprocessor defines that should be passed to Clang when depending on
-this target.
-""",
-        "transitive_headers": """
-`Depset` of `File`s. The transitive header files that must be available to compile actions when
-depending on this target.
-""",
-        "transitive_modulemaps": """
-`Depset` of `File`s. The transitive module map files that will be passed to Clang using the
-`-fmodule-map-file` option.
-""",
-    },
-)
-
 SwiftInfo = provider(
     doc = """
 Contains information about the compiled artifacts of a Swift module.
