@@ -36,7 +36,13 @@ def collect_cc_libraries(
         The list of libraries built or depended on by the given provier.
     """
     libraries = []
-    for library in cc_info.linking_context.libraries_to_link:
+
+    # TODO(https://github.com/bazelbuild/bazel/issues/8118): Remove once flag is flipped
+    libraries_to_link = cc_info.linking_context.libraries_to_link
+    if hasattr(libraries_to_link, "to_list"):
+        libraries_to_link = libraries_to_link.to_list()
+
+    for library in libraries_to_link:
         if include_pic_static:
             if library.pic_static_library:
                 libraries.append(library.pic_static_library)
