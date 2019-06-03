@@ -24,7 +24,6 @@ load(
 )
 load(
     "@build_bazel_rules_swift//swift/internal:providers.bzl",
-    _SwiftClangModuleInfo = "SwiftClangModuleInfo",
     _SwiftInfo = "SwiftInfo",
     _SwiftProtoInfo = "SwiftProtoInfo",
     _SwiftToolchainInfo = "SwiftToolchainInfo",
@@ -65,7 +64,6 @@ load(
 )
 
 # Re-export providers.
-SwiftClangModuleInfo = _SwiftClangModuleInfo
 SwiftInfo = _SwiftInfo
 SwiftProtoInfo = _SwiftProtoInfo
 SwiftToolchainInfo = _SwiftToolchainInfo
