@@ -98,17 +98,10 @@ toolchain.
       <td><p><code>Dict</code>. Environment variables that should be set during any actions spawned to compile or link Swift
 code.</p></td>
     </tr>
-    <tr id="SwiftToolchainInfo.action_registrars">
-      <td><code>action_registrars</code></td>
-      <td><p><code>Struct</code> containing two Skylib <code>partial</code>s: <code>run</code>, which registers an action using <code>actions.run</code>; and
-<code>run_shell</code>, which registers an action using <code>actions.run_shell</code>. These partials allow the toolchain
-to set the environment and execution requirements, as well as use a wrapper script if necessary.</p></td>
-    </tr>
-    <tr id="SwiftToolchainInfo.cc_toolchain_files">
-      <td><code>cc_toolchain_files</code></td>
-      <td><p>A <code>depset</code> of the <code>File</code>s in the C++ toolchain.</p>
-<p>This field is temporary until <code>cc_common.CcToolchainInfo</code> provides getters to access these files
-(<a href="https://github.com/bazelbuild/bazel/issues/7427">https://github.com/bazelbuild/bazel/issues/7427</a>).</p></td>
+    <tr id="SwiftToolchainInfo.all_files">
+      <td><code>all_files</code></td>
+      <td><p>A <code>depset</code> of <code>File</code>s containing all the Swift toolchain files (tools, libraries, and other resource
+files) so they can be passed as <code>tools</code> to actions using this toolchain.</p></td>
     </tr>
     <tr id="SwiftToolchainInfo.cc_toolchain_info">
       <td><code>cc_toolchain_info</code></td>
@@ -153,11 +146,6 @@ libraries.</li>
 <li><code>is_test</code>: A <code>Boolean</code> value indicating whether the target being linked is a test target.</li>
 </ul></td>
     </tr>
-    <tr id="SwiftToolchainInfo.linker_search_paths">
-      <td><code>linker_search_paths</code></td>
-      <td><p><code>List</code> of <code>string</code>s. Additional library search paths that should be passed to the linker when
-linking binaries with this toolchain.</p></td>
-    </tr>
     <tr id="SwiftToolchainInfo.object_format">
       <td><code>object_format</code></td>
       <td><p><code>String</code>. The object file format of the platform that the toolchain is targeting. The currently
@@ -187,7 +175,8 @@ stamping enabled.</p></td>
     </tr>
     <tr id="SwiftToolchainInfo.swift_worker">
       <td><code>swift_worker</code></td>
-      <td><p><code>File</code>. The executable representing the Swift persistent worker to use for incremental builds.</p></td>
+      <td><p><code>File</code>. The executable representing the worker executable used to invoke the compiler and other
+Swift tools (for both incremental and non-incremental compiles).</p></td>
     </tr>
     <tr id="SwiftToolchainInfo.swiftc_copts">
       <td><code>swiftc_copts</code></td>
