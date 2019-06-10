@@ -121,7 +121,7 @@ SwiftRunner::SwiftRunner(const std::vector<std::string> &args,
 }
 
 int SwiftRunner::Run(std::ostream *stderr_stream, bool stdout_to_stderr) {
-  int exit_code = RunSubProcess(args_, &std::cerr, /*stdout_to_stderr=*/false);
+  int exit_code = RunSubProcess(args_, stderr_stream, stdout_to_stderr);
   return exit_code;
 }
 
