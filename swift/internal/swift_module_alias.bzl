@@ -34,23 +34,6 @@ def _swift_module_alias_impl(ctx):
     if not module_name:
         module_name = swift_common.derive_module_name(ctx.label)
 
-    # Print a warning message directing users to the new modules that they need to
-    # import. This "nag" is intended to prevent users from misusing this rule to
-    # simply forward imported modules.
-    warning = """\n
-WARNING: The Swift target \"{target}\" (defining module {module_name}) is \
-deprecated. Please update your BUILD targets and Swift code to import the \
-following dependencies instead:\n\n""".format(
-        target = str(ctx.label),
-        module_name = module_name,
-    )
-    for dep_module_name, dep_target in module_mapping.items():
-        warning += '  - "{target}" (import {module_name})\n'.format(
-            target = str(dep_target),
-            module_name = dep_module_name,
-        )
-    print(warning + "\n")
-
     # Generate a source file that imports each of the deps using `@_exported`.
     reexport_src = derived_files.reexport_modules_src(ctx.actions, ctx.label.name)
     ctx.actions.write(
@@ -169,10 +152,6 @@ module name or the alias module name, so callers can be migrated separately
 after moving the physical build target as needed. (An exception to this is
 runtime type metadata, which only encodes the module name of the type where the
 symbol is defined; it is not repeated by the alias module.)
-
-This rule unconditionally prints a message directing users to migrate from the
-alias to the aliased modules---this is intended to prevent misuse of this rule
-to create "umbrella modules".
 
 > Caution: This rule uses the undocumented `@_exported` feature to re-export the
 > `deps` in the new module. You depend on undocumented features at your own
