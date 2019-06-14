@@ -248,15 +248,6 @@ def register_link_executable_action(
     link_input_args = actions.args()
     link_input_args.set_param_file_format("multiline")
     link_input_args.use_param_file("@%s", use_always = True)
-
-    if swift_toolchain.root_dir:
-        runtime_object_path = "{root}/lib/swift/{system}/{cpu}/swiftrt.o".format(
-            cpu = swift_toolchain.cpu,
-            root = swift_toolchain.root_dir,
-            system = swift_toolchain.system_name,
-        )
-        link_input_args.add(runtime_object_path)
-
     link_input_args.add_all(objects)
 
     is_darwin = swift_toolchain.system_name == "darwin"

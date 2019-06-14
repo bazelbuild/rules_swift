@@ -32,6 +32,7 @@ load(":providers.bzl", "SwiftToolchainInfo")
 
 def _default_linker_opts(
         cc_toolchain,
+        cpu,
         os,
         toolchain_root,
         is_static,
@@ -44,6 +45,7 @@ def _default_linker_opts(
 
     Args:
         cc_toolchain: The cpp toolchain from which the `ld` executable is determined.
+        cpu: The CPU architecture, which is used as part of the library path.
         os: The operating system name, which is used as part of the library path.
         toolchain_root: The toolchain's root directory.
         is_static: `True` to link against the static version of the Swift runtime, or `False` to
@@ -63,6 +65,11 @@ def _default_linker_opts(
         toolchain_root = toolchain_root,
     )
 
+    runtime_object_path = "{platform_lib_dir}/{cpu}/swiftrt.o".format(
+        cpu = cpu,
+        platform_lib_dir = platform_lib_dir,
+    )
+
     linkopts = [
         "-pie",
         "-L{}".format(platform_lib_dir),
@@ -71,6 +78,7 @@ def _default_linker_opts(
         "-lstdc++",
         "-lrt",
         "-ldl",
+        runtime_object_path,
     ]
 
     if is_static:
@@ -85,6 +93,7 @@ def _swift_toolchain_impl(ctx):
     linker_opts_producer = partial.make(
         _default_linker_opts,
         cc_toolchain,
+        ctx.attr.arch,
         ctx.attr.os,
         toolchain_root,
     )
