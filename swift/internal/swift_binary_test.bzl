@@ -116,6 +116,7 @@ def _swift_linking_rule_impl(
     srcs = ctx.files.srcs
 
     out_bin = derived_files.executable(ctx.actions, target_name = ctx.label.name)
+    compilation_outputs = None
     objects_to_link = []
     output_groups = {}
 
@@ -152,11 +153,12 @@ def _swift_linking_rule_impl(
 
     # TODO(b/70228246): Also support mostly-static and fully-dynamic modes, here and for the C++
     # toolchain args below.
-    link_args.add_all(partial.call(
+    toolchain_linker_flags = partial.call(
         swift_toolchain.linker_opts_producer,
         is_static = True,
         is_test = is_test,
-    ))
+    )
+    link_args.add_all(toolchain_linker_flags)
 
     # Get additional linker flags from the C++ toolchain.
     cc_feature_configuration = swift_common.cc_feature_configuration(
@@ -194,7 +196,9 @@ def _swift_linking_rule_impl(
         swift_toolchain = swift_toolchain,
     )
 
-    return out_bin, [OutputGroupInfo(**output_groups)]
+    providers = [OutputGroupInfo(**output_groups)]
+
+    return out_bin, providers
 
 def _create_xctest_runner(name, actions, binary, xctest_runner_template):
     """Creates a shell script that will bundle a test binary and launch the `xctest` helper tool.
