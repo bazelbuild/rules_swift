@@ -32,13 +32,17 @@ class TempFile {
   // form used by `mkstemp`). The file will automatically be deleted when the
   // object goes out of scope.
   static std::unique_ptr<TempFile> Create(const std::string &path_template) {
-    size_t size = path_template.size() + 1;
+    const char *tmpDir = getenv("TMPDIR");
+    if (!tmpDir) {
+      tmpDir = "/tmp";
+    }
+    size_t size = strlen(tmpDir) + path_template.size() + 2;
     std::unique_ptr<char[]> path(new char[size]);
-    snprintf(path.get(), size, "%s", path_template.c_str());
+    snprintf(path.get(), size, "%s/%s", tmpDir, path_template.c_str());
 
     if (mkstemp(path.get()) == -1) {
-      std::cerr << "Failed to create temporary file: " << strerror(errno)
-                << "\n";
+      std::cerr << "Failed to create temporary file '" << path.get() << "': "
+                << strerror(errno) << "\n";
       return nullptr;
     }
     return std::unique_ptr<TempFile>(new TempFile(path.get()));
@@ -69,13 +73,17 @@ class TempDirectory {
   // the object goes out of scope.
   static std::unique_ptr<TempDirectory> Create(
       const std::string &path_template) {
-    size_t size = path_template.size() + 1;
+    const char *tmpDir = getenv("TMPDIR");
+    if (!tmpDir) {
+      tmpDir = "/tmp";
+    }
+    size_t size = strlen(tmpDir) + path_template.size() + 2;
     std::unique_ptr<char[]> path(new char[size]);
-    snprintf(path.get(), size, "%s", path_template.c_str());
+    snprintf(path.get(), size, "%s/%s", tmpDir, path_template.c_str());
 
     if (mkdtemp(path.get()) == nullptr) {
-      std::cerr << "Failed to create temporary directory: " << strerror(errno)
-                << "\n";
+      std::cerr << "Failed to create temporary directory '" << path.get()
+                << "': " << strerror(errno) << "\n";
       return nullptr;
     }
     return std::unique_ptr<TempDirectory>(new TempDirectory(path.get()));
