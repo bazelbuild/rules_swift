@@ -150,6 +150,10 @@ def _swift_linking_rule_impl(
 
         if compilation_outputs.indexstore:
             output_groups["swift_index_store"] = depset([compilation_outputs.indexstore])
+        if compilation_outputs.stats_directory:
+            output_groups["swift_compile_stats_direct"] = depset(
+                [compilation_outputs.stats_directory],
+            )
 
     # TODO(b/70228246): Also support mostly-static and fully-dynamic modes, here and for the C++
     # toolchain args below.

@@ -103,6 +103,8 @@ def _swift_library_impl(ctx):
     output_groups = {}
     if compilation_outputs.indexstore:
         output_groups["swift_index_store"] = depset([compilation_outputs.indexstore])
+    if compilation_outputs.stats_directory:
+        output_groups["swift_compile_stats_direct"] = depset([compilation_outputs.stats_directory])
 
     direct_output_files = compact([
         compilation_outputs.generated_header,

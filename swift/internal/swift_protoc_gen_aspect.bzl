@@ -380,7 +380,14 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
         else:
             objc_info = None
 
+        output_groups = {}
+        if compilation_outputs.stats_directory:
+            output_groups["swift_compile_stats_direct"] = depset(
+                [compilation_outputs.stats_directory],
+            )
+
         providers = [
+            OutputGroupInfo(**output_groups),
             SwiftProtoCcInfo(
                 cc_info = create_cc_info(
                     cc_infos = cc_infos,

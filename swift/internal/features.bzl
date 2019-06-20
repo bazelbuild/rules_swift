@@ -44,6 +44,14 @@ SWIFT_FEATURE_AUTOLINK_EXTRACT = "swift.autolink_extract"
 # needed to make `swift_test` output just a binary.
 SWIFT_FEATURE_BUNDLED_XCTESTS = "swift.bundled_xctests"
 
+# If enabled, the Swift compiler will emit a directory containing JSON files with timing
+# information about the driver/frontend's actions. This directory will be emitted as a default
+# output when a Swift target is built directly, and it will also be propagated in an output
+# group named `swift_compile_stats_direct". Typically this output group will not be accessed
+# directly, but used by the `collect_swift_compile_stats` aspect to gather the transitive stats
+# for the entire build.
+SWIFT_FEATURE_COMPILE_STATS = "swift.compile_stats"
+
 # If enabled, debug builds will use the `-debug-prefix-map` feature to remap the current working
 # directory to `.`, which permits debugging remote or sandboxed builds.
 SWIFT_FEATURE_DEBUG_PREFIX_MAP = "swift.debug_prefix_map"
