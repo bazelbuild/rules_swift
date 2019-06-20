@@ -119,6 +119,28 @@ def expand_locations(ctx, values, targets = []):
     """
     return [ctx.expand_location(value, targets) for value in values]
 
+def get_output_groups(targets, group_name):
+    """Returns a list containing the files of the given output group from each target in a list.
+
+    The returned list may not be the same size as `targets` if some of the targets do not contain
+    the requested output group. This is not an error.
+
+    Args:
+        targets: A list of targets.
+        group_name: The name of the output group.
+
+    Returns:
+        A list of `depset`s of `File`s from the requested output group for each target.
+    """
+    groups = []
+
+    for target in targets:
+        group = getattr(target[OutputGroupInfo], group_name, None)
+        if group:
+            groups.append(group)
+
+    return groups
+
 def get_providers(targets, provider, map_fn = None):
     """Returns a list containing the given provider (or a field) from each target in the list.
 

@@ -222,6 +222,10 @@ def _swift_grpc_library_impl(ctx):
         swift_toolchain = swift_toolchain,
     )
 
+    output_groups = {}
+    if compilation_outputs.stats_directory:
+        output_groups["swift_compile_stats_direct"] = depset([compilation_outputs.stats_directory])
+
     providers = [
         DefaultInfo(
             files = depset(direct = generated_files + compact([
@@ -230,6 +234,7 @@ def _swift_grpc_library_impl(ctx):
                 library_to_link.pic_static_library,
             ])),
         ),
+        OutputGroupInfo(**output_groups),
         create_cc_info(
             cc_infos = get_providers(compile_deps, CcInfo),
             compilation_outputs = compilation_outputs,

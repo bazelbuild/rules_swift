@@ -44,6 +44,7 @@ load(":derived_files.bzl", "derived_files")
 load(
     ":features.bzl",
     "SWIFT_FEATURE_AUTOLINK_EXTRACT",
+    "SWIFT_FEATURE_COMPILE_STATS",
     "SWIFT_FEATURE_COVERAGE",
     "SWIFT_FEATURE_DBG",
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
@@ -468,6 +469,9 @@ def _compile(
             these objects into a binary. If there are none, this field will always be an empty
             list, never None.
         *   `object_files`: A list of `.o` files that were produced by the compiler.
+        *   `stats_directory`: A `File` representing the directory that contains the timing
+            statistics emitted by the compiler. If no stats were requested, this field will be
+            None.
         *   `swiftdoc`: The `.swiftdoc` file that was produced by the compiler.
         *   `swiftmodule`: The `.swiftmodule` file that was produced by the compiler.
     """
@@ -495,6 +499,7 @@ def _compile(
 
     swiftmodule = derived_files.swiftmodule(actions, module_name = module_name)
     swiftdoc = derived_files.swiftdoc(actions, module_name = module_name)
+    additional_outputs = []
 
     # Since all actions go through the worker (whether in persistent mode or not), the actual tool
     # we want to run (swiftc) should be the first "argument".
@@ -533,6 +538,17 @@ def _compile(
     else:
         execution_requirements = {}
 
+    # Emit compilation timing statistics if the user enabled that feature.
+    if _is_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_COMPILE_STATS,
+    ):
+        stats_directory = derived_files.stats_directory(actions, target_name)
+        additional_outputs.append(stats_directory)
+        args.add("-stats-output-dir", stats_directory.path)
+    else:
+        stats_directory = None
+
     args.add("-emit-object")
     args.add_all(compile_reqs.args)
     args.add("-emit-module-path")
@@ -552,8 +568,6 @@ def _compile(
         srcs = srcs,
         toolchain = swift_toolchain,
     )
-
-    additional_outputs = []
 
     # If the toolchain supports Objective-C interop, generate a Swift header for this library so
     # that it can be included by Objective-C code that depends on it.
@@ -657,6 +671,7 @@ def _compile(
         linker_flags = linker_flags,
         linker_inputs = linker_inputs,
         object_files = output_objects,
+        stats_directory = stats_directory,
         swiftdoc = swiftdoc,
         swiftmodule = swiftmodule,
     )
