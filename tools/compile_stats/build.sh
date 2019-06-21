@@ -16,6 +16,24 @@
 
 set -euo pipefail
 
+manifest="$(mktemp "${TMPDIR:-/tmp}/compile_stats_manifest.XXXXXX")"
+trap "rm -f $manifest" EXIT
+
+collect_stats_flags=(
+  --features=swift.compile_stats
+  --output_groups=swift_compile_stats
+  --aspects=@build_bazel_rules_swift//swift:stats.bzl%collect_swift_compile_stats
+)
+
+# Build the desired targets, with stderr being output as normal.
+bazel build "${collect_stats_flags[@]}" "$@"
+
+# Build the targets *again*, this time with `--experimental_show_artifacts`.
+# This should be a null build since we just built everything above. The reason
+# we split this is because the artifact output also goes to stderr, so we'd have
+# to either capture the whole thing or redirect it to `tee` with color/curses
+# support disabled, which would be difficult for the user to read.
+#
 # A human-readable explanation of the code below:
 #
 # 1. Build the requested targets while collecting the stats outputs. Use the
@@ -29,13 +47,15 @@ set -euo pipefail
 # 4. Pass those directories into `find` to print just the filenames of the
 #    contents of those directories.
 
-bazel build \
-    --features=swift.compile_stats \
-    --output_groups=swift_compile_stats \
-    --aspects=@build_bazel_rules_swift//swift:stats.bzl%collect_swift_compile_stats \
-    --experimental_show_artifacts \
-    "$@" \
+bazel build --experimental_show_artifacts "${collect_stats_flags[@]}" "$@" \
     2>&1 > /dev/null \
     | sed -e '/Build artifacts:/,$!d' \
     | sed -e 's/^>>>//' -e 't' -e 'd' \
-    | xargs -I{} find {} -type f
+    | xargs -I{} find {} -type f \
+    > "$manifest"
+
+# Run the report generating tool.
+bazel run \
+    --apple_platform_type=macos \
+    @build_bazel_rules_swift//tools/compile_stats:stats_processor -- \
+    "$manifest"
