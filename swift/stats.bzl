@@ -19,7 +19,8 @@ load("@build_bazel_rules_swift//swift/internal:utils.bzl", "get_output_groups")
 def _collect_swift_compile_stats_impl(target, aspect_ctx):
     output_groups = target[OutputGroupInfo]
 
-    merged_stats = get_output_groups(aspect_ctx.rule.attr.deps, "swift_compile_stats")
+    deps = getattr(aspect_ctx.rule.attr, "deps", [])
+    merged_stats = get_output_groups(deps, "swift_compile_stats")
     direct_stats = getattr(output_groups, "swift_compile_stats_direct", None)
     if direct_stats:
         merged_stats.append(direct_stats)
