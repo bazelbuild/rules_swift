@@ -51,8 +51,9 @@ bazel build --experimental_show_artifacts "${collect_stats_flags[@]}" "$@" \
     2>&1 > /dev/null \
     | sed -e '/Build artifacts:/,$!d' \
     | sed -e 's/^>>>//' -e 't' -e 'd' \
-    | xargs -I{} find {} -type f \
-    > "$manifest"
+    | while read statsdir ; do
+        find "$statsdir" -type f
+      done > "$manifest"
 
 # Run the report generating tool.
 bazel run \
