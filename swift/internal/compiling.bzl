@@ -352,6 +352,10 @@ def objc_compile_requirements(args, deps):
     static_framework_names = []
     all_frameworks = []
 
+    if hasattr(apple_common, "ObjcProtoDirectDependencyInfo"):
+        for direct_dep in get_providers(deps, apple_common.ObjcProtoDirectDependencyInfo):
+            includes.append(direct_dep.includes)
+
     objc_providers = get_providers(deps, apple_common.Objc)
 
     post_framework_cleanup = framework_migration.is_post_framework_migration()
