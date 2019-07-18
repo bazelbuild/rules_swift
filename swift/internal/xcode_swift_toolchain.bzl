@@ -131,6 +131,10 @@ def _default_linker_opts(
         "-Wl,-objc_abi_version,2",
     ])
 
+    use_system_swift_libs = _is_xcode_at_least_version(xcode_config, "11.0")
+    if use_system_swift_libs:
+        linkopts.append("-L/usr/lib/swift")
+
     # XCTest.framework only lives in the Xcode bundle (its platform framework
     # directory), so test binaries need to have that directory explicitly added to
     # their rpaths.
