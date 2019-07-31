@@ -126,6 +126,6 @@ def features_for_build_modes(ctx, objc_fragment = None):
         features.append(SWIFT_FEATURE_COVERAGE)
     if compilation_mode in ("dbg", "fastbuild"):
         features.append(SWIFT_FEATURE_ENABLE_TESTING)
-        if objc_fragment and objc_fragment.generate_dsym:
-            features.append(SWIFT_FEATURE_FULL_DEBUG_INFO)
+    if objc_fragment and objc_fragment.generate_dsym:
+        features.append(SWIFT_FEATURE_FULL_DEBUG_INFO)
     return features
