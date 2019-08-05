@@ -141,7 +141,6 @@ def register_libraries_to_link(
 def register_link_executable_action(
         actions,
         action_environment,
-        additional_linking_contexts,
         cc_feature_configuration,
         clang_executable,
         deps,
@@ -159,8 +158,6 @@ def register_link_executable_action(
         actions: The object used to register actions.
         action_environment: A `dict` of environment variables that should be set for the compile
             action.
-        additional_linking_contexts: Additional linking contexts that provide libraries or flags
-            that should be linked into the executable.
         cc_feature_configuration: The C++ feature configuration to use when constructing the
             action.
         clang_executable: The path to the `clang` executable that will be invoked to link, which is
@@ -190,6 +187,17 @@ def register_link_executable_action(
     common_args.add(clang_executable)
 
     deps_libraries = []
+
+    if swift_toolchain.stamp:
+        stamp_libs_to_link = []
+        for library in swift_toolchain.stamp[CcInfo].linking_context.libraries_to_link:
+            if library.pic_static_library:
+                stamp_libs_to_link.append(library.pic_static_library)
+            elif library.static_library:
+                stamp_libs_to_link.append(library.static_library)
+
+        if stamp_libs_to_link:
+            deps_libraries.extend(stamp_libs_to_link)
 
     additional_input_depsets = []
     all_linkopts = list(expanded_linkopts)
@@ -230,15 +238,6 @@ def register_link_executable_action(
                 ))
             deps_sdk_dylibs.append(objc.sdk_dylib)
             deps_sdk_frameworks.append(objc.sdk_framework)
-
-    for linking_context in additional_linking_contexts:
-        additional_input_depsets.append(linking_context.additional_inputs)
-        all_linkopts.extend(linking_context.user_link_flags)
-        for library in linking_context.libraries_to_link:
-            if library.pic_static_library:
-                deps_libraries.append(library.pic_static_library)
-            elif library.static_library:
-                deps_libraries.append(library.static_library)
 
     libraries = depset(deps_libraries, order = "topological")
     link_input_depsets = [
