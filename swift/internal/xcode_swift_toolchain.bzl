@@ -328,7 +328,7 @@ def _xcode_swift_toolchain_impl(ctx):
             object_format = "macho",
             requested_features = requested_features,
             root_dir = None,
-            stamp = ctx.attr.stamp if _is_macos(platform) else None,
+            stamp_producer = None,
             supports_objc_interop = True,
             swiftc_copts = swiftc_copts,
             swift_worker = ctx.executable._worker,
@@ -342,13 +342,6 @@ def _xcode_swift_toolchain_impl(ctx):
 
 xcode_swift_toolchain = rule(
     attrs = dicts.add({
-        "stamp": attr.label(
-            doc = """
-A `CcInfo`-providing target that should be linked into any binaries that are built with stamping
-enabled.
-""",
-            providers = [[CcInfo]],
-        ),
         "_cc_toolchain": attr.label(
             default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
             doc = """

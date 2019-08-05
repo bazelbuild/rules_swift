@@ -25,33 +25,55 @@ load(":non_swift_target_aspect.bzl", "non_swift_target_aspect")
 load(":providers.bzl", "SwiftToolchainInfo")
 load(":utils.bzl", "expand_locations")
 
-# Attributes common to both `swift_binary` and `swift_test`.
-_BINARY_RULE_ATTRS = dicts.add(
-    swift_common.compilation_attrs(additional_deps_aspects = [non_swift_target_aspect]),
-    {
-        "linkopts": attr.string_list(
-            doc = """
+def _binary_rule_attrs(stamp_default):
+    """Returns the dictionary of attributes common to both `swift_binary` and `swift_test`.
+
+    Args:
+        stamp_default: The default value of the `stamp` attribute.
+
+    Returns:
+        A `dict` of attributes for a binary or test rule.
+    """
+    return dicts.add(
+        swift_common.compilation_attrs(additional_deps_aspects = [non_swift_target_aspect]),
+        {
+            "linkopts": attr.string_list(
+                doc = """
 Additional linker options that should be passed to `clang`. These strings are subject to
 `$(location ...)` expansion.
 """,
-            mandatory = False,
-        ),
-        "malloc": attr.label(
-            default = Label("@bazel_tools//tools/cpp:malloc"),
-            doc = """
+                mandatory = False,
+            ),
+            "malloc": attr.label(
+                default = Label("@bazel_tools//tools/cpp:malloc"),
+                doc = """
 Override the default dependency on `malloc`.
 
 By default, Swift binaries are linked against `@bazel_tools//tools/cpp:malloc"`, which is an empty
 library and the resulting binary will use libc's `malloc`. This label must refer to a `cc_library`
 rule.
 """,
-            mandatory = False,
-            providers = [[CcInfo]],
-        ),
-        # Do not add references; temporary attribute for C++ toolchain Skylark migration.
-        "_cc_toolchain": attr.label(default = Label("@bazel_tools//tools/cpp:current_cc_toolchain")),
-    },
-)
+                mandatory = False,
+                providers = [[CcInfo]],
+            ),
+            "stamp": attr.bool(
+                default = stamp_default,
+                doc = """
+Enable or disable link stamping.
+
+If this value is true (and if the toolchain supports link stamping), then the toolchain's stamping
+logic will be invoked to link additional identifying information into the binary. This information
+typically comes from the stable and volatile build information written by Bazel in the output
+directory, but could be anything that the toolchain wishes to link into binaries.
+
+If false, no stamp information will be linked into the binary, which improves build caching.
+""",
+                mandatory = False,
+            ),
+            # Do not add references; temporary attribute for C++ toolchain Skylark migration.
+            "_cc_toolchain": attr.label(default = Label("@bazel_tools//tools/cpp:current_cc_toolchain")),
+        },
+    )
 
 def _configure_features_for_binary(ctx, requested_features = [], unsupported_features = []):
     """Creates and returns the feature configuration for binary linking.
@@ -184,9 +206,22 @@ def _swift_linking_rule_impl(
     if ctx.attr.malloc:
         deps_to_link.append(ctx.attr.malloc)
 
+    additional_linking_contexts = []
+    if swift_toolchain.stamp_producer:
+        stamp_context = partial.call(
+            swift_toolchain.stamp_producer,
+            ctx,
+            cc_feature_configuration,
+            swift_toolchain.cc_toolchain_info,
+            out_bin,
+        )
+        if stamp_context:
+            additional_linking_contexts.append(stamp_context)
+
     register_link_executable_action(
         actions = ctx.actions,
         action_environment = swift_toolchain.action_environment,
+        additional_linking_contexts = additional_linking_contexts,
         cc_feature_configuration = cc_feature_configuration,
         clang_executable = swift_toolchain.clang_executable,
         deps = deps_to_link,
@@ -329,7 +364,7 @@ def _swift_test_impl(ctx):
     ]
 
 swift_binary = rule(
-    attrs = _BINARY_RULE_ATTRS,
+    attrs = _binary_rule_attrs(stamp_default = True),
     doc = """
 Compiles and links Swift code into an executable binary.
 
@@ -357,7 +392,7 @@ instead of `swift_binary`.
 
 swift_test = rule(
     attrs = dicts.add(
-        _BINARY_RULE_ATTRS,
+        _binary_rule_attrs(stamp_default = False),
         {
             "_apple_coverage_support": attr.label(
                 cfg = "host",
