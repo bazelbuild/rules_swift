@@ -145,26 +145,9 @@ they are also passed to the C++ APIs used when linking (so features defined in C
 here).
 """,
         "root_dir": "`String`. The workspace-relative root directory of the toolchain.",
-        "stamp_producer": """
-Skylib `partial`. A partial function that compiles build data that should be stamped into binaries.
-This value may be `None` if the toolchain does not support link stamping.
-
-The `swift_binary` and `swift_test` rules call this function _whether or not_ link stamping is
-enabled for that target. This provides toolchains the option of still linking fixed placeholder
-data into the binary if desired, instead of linking nothing at all. Whether stamping is enabled can
-be checked by inspecting `ctx.attr.stamp` inside the partial's implementation.
-
-The rule implementation will call this partial and pass it the following four arguments:
-
-*    `ctx`: The rule context of the target being built.
-*    `cc_feature_configuration`: The C++ feature configuration to use when compiling the stamp
-     code.
-*    `cc_toolchain`: The C++ toolchain (`CcToolchainInfo` provider) to use when compiling the
-     stamp code.
-*    `binary`: The `File` object representing the binary being linked.
-
-The partial should return a `CcLinkingContext` containing the data (such as object files) to be
-linked into the binary, or `None` if nothing should be linked into the binary.
+        "stamp": """
+`Target`. A `CcInfo`-providing target that should be linked into any binaries that are built with
+stamping enabled.
 """,
         "supports_objc_interop": """
 `Boolean`. Indicates whether or not the toolchain supports Objective-C interop.
