@@ -122,7 +122,7 @@ def _swift_toolchain_impl(ctx):
             object_format = "elf",
             requested_features = requested_features,
             root_dir = toolchain_root,
-            stamp = ctx.attr.stamp,
+            stamp_producer = None,
             supports_objc_interop = False,
             swiftc_copts = [],
             swift_worker = ctx.executable._worker,
@@ -161,13 +161,6 @@ content, such as "linux" in "lib/swift/linux".
         ),
         "root": attr.string(
             mandatory = True,
-        ),
-        "stamp": attr.label(
-            doc = """
-A `CcInfo`-providing target that should be linked into any binaries that are built with stamping
-enabled.
-""",
-            providers = [[CcInfo]],
         ),
         "_cc_toolchain": attr.label(
             default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
