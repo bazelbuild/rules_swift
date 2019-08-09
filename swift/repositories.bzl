@@ -59,9 +59,9 @@ def swift_rules_dependencies():
     _maybe(
         http_archive,
         name = "com_github_apple_swift_protobuf",
-        urls = ["https://github.com/apple/swift-protobuf/archive/1.5.0.zip"],
-        sha256 = "7f0f64881cabb4e96bd5eaae2449bc599b11d9205036c919f9528fff8b23ec78",
-        strip_prefix = "swift-protobuf-1.5.0/",
+        urls = ["https://github.com/apple/swift-protobuf/archive/1.6.0.zip"],
+        sha256 = "4d6d2543da84474fe50a543f70ba145d99c4d14a4aac10d7b3c7dc9f0f7ecec3",
+        strip_prefix = "swift-protobuf-1.6.0/",
         type = "zip",
         build_file = "@build_bazel_rules_swift//third_party:com_github_apple_swift_protobuf/BUILD.overlay",
     )
