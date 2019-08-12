@@ -42,26 +42,26 @@ def swift_rules_dependencies():
         http_archive,
         name = "bazel_skylib",
         urls = [
-            "https://github.com/bazelbuild/bazel-skylib/releases/download/0.8.0/bazel-skylib.0.8.0.tar.gz",
+            "https://github.com/bazelbuild/bazel-skylib/releases/download/0.9.0/bazel_skylib-0.9.0.tar.gz",
         ],
-        sha256 = "2ef429f5d7ce7111263289644d233707dba35e39696377ebab8b0bc701f7818e",
+        sha256 = "1dde365491125a3db70731e25658dfdd3bc5dbdfd11b840b3e987ecf043c7ca0",
     )
 
     _maybe(
         http_archive,
         name = "build_bazel_apple_support",
         urls = [
-            "https://github.com/bazelbuild/apple_support/releases/download/0.6.0/apple_support.0.6.0.tar.gz",
+            "https://github.com/bazelbuild/apple_support/releases/download/0.7.1/apple_support.0.7.1.tar.gz",
         ],
-        sha256 = "7356dbd44dea71570a929d1d4731e870622151a5f27164d966dda97305f33471",
+        sha256 = "122ebf7fe7d1c8e938af6aeaee0efe788a3a2449ece5a8d6a428cb18d6f88033",
     )
 
     _maybe(
         http_archive,
         name = "com_github_apple_swift_protobuf",
-        urls = ["https://github.com/apple/swift-protobuf/archive/1.5.0.zip"],
-        sha256 = "7f0f64881cabb4e96bd5eaae2449bc599b11d9205036c919f9528fff8b23ec78",
-        strip_prefix = "swift-protobuf-1.5.0/",
+        urls = ["https://github.com/apple/swift-protobuf/archive/1.6.0.zip"],
+        sha256 = "4d6d2543da84474fe50a543f70ba145d99c4d14a4aac10d7b3c7dc9f0f7ecec3",
+        strip_prefix = "swift-protobuf-1.6.0/",
         type = "zip",
         build_file = "@build_bazel_rules_swift//third_party:com_github_apple_swift_protobuf/BUILD.overlay",
     )
