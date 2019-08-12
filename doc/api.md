@@ -214,6 +214,9 @@ A `struct` containing the following fields:
     these objects into a binary. If there are none, this field will always be an empty
     list, never None.
 *   `object_files`: A list of `.o` files that were produced by the compiler.
+*   `stats_directory`: A `File` representing the directory that contains the timing
+    statistics emitted by the compiler. If no stats were requested, this field will be
+    None.
 *   `swiftdoc`: The `.swiftdoc` file that was produced by the compiler.
 *   `swiftmodule`: The `.swiftmodule` file that was produced by the compiler.
 
