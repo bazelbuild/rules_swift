@@ -13,6 +13,8 @@ On this page:
 
   * [SwiftInfo](#SwiftInfo)
   * [SwiftToolchainInfo](#SwiftToolchainInfo)
+  * [SwiftProtoInfo](#SwiftProtoInfo)
+  * [SwiftUsageInfo](#SwiftUsageInfo)
 <a name="SwiftInfo"></a>
 ## SwiftInfo
 
@@ -196,6 +198,52 @@ target/package or in the <code>--features</code> command line flag.</p>
 <p>These features determine various compilation and debugging behaviors of the Swift build rules, and
 they are also passed to the C++ APIs used when linking (so features defined in CROSSTOOL may be used
 here).</p></td>
+    </tr>
+  </tbody>
+</table>
+
+
+<a name="SwiftProtoInfo"></a>
+## SwiftProtoInfo
+
+Propagates Swift-specific information about a `proto_library`.
+
+<table class="fields-table">
+  <colgroup>
+    <col class="col-field" />
+    <col class="col-description" />
+  </colgroup>
+  <tbody>
+    <tr id="SwiftProtoInfo.module_mappings">
+      <td><code>module_mappings</code></td>
+      <td><p><code>Sequence</code> of <code>struct</code>s. Each struct contains <code>module_name</code> and <code>proto_file_paths</code> fields that
+denote the transitive mappings from <code>.proto</code> files to Swift modules. This allows messages that
+reference messages in other libraries to import those modules in generated code.</p></td>
+    </tr>
+    <tr id="SwiftProtoInfo.pbswift_files">
+      <td><code>pbswift_files</code></td>
+      <td><p><code>Depset</code> of <code>File</code>s. The transitive Swift source files (<code>.pb.swift</code>) generated from the <code>.proto</code>
+files.</p></td>
+    </tr>
+  </tbody>
+</table>
+
+
+<a name="SwiftUsageInfo"></a>
+## SwiftUsageInfo
+
+A provider that indicates that Swift was used by a target or any target that it depends on, and
+specifically which toolchain was used.
+
+<table class="fields-table">
+  <colgroup>
+    <col class="col-field" />
+    <col class="col-description" />
+  </colgroup>
+  <tbody>
+    <tr id="SwiftUsageInfo.toolchain">
+      <td><code>toolchain</code></td>
+      <td><p>The Swift toolchain that was used to build the targets propagating this provider.</p></td>
     </tr>
   </tbody>
 </table>
