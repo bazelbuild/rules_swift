@@ -499,10 +499,6 @@ after moving the physical build target as needed. (An exception to this is
 runtime type metadata, which only encodes the module name of the type where the
 symbol is defined; it is not repeated by the alias module.)
 
-This rule unconditionally prints a message directing users to migrate from the
-alias to the aliased modules---this is intended to prevent misuse of this rule
-to create "umbrella modules".
-
 > Caution: This rule uses the undocumented `@_exported` feature to re-export the
 > `deps` in the new module. You depend on undocumented features at your own
 > risk, as they may change in a future version of Swift.
