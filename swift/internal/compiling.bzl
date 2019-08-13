@@ -391,6 +391,7 @@ def objc_compile_requirements(args, deps):
     """
     defines = []
     includes = []
+    system_includes = []
     inputs = []
     module_maps = []
     static_framework_names = []
@@ -404,6 +405,7 @@ def objc_compile_requirements(args, deps):
 
         defines.append(objc.define)
         includes.append(objc.include)
+        system_includes.append(objc.include_system)
 
         static_framework_names.append(objc.static_framework_names)
         all_frameworks.append(objc.framework_search_path_only)
@@ -420,6 +422,7 @@ def objc_compile_requirements(args, deps):
     # Add the objc dependencies' header search paths so that imported modules
     # can find their headers.
     args.add_all(depset(transitive = includes), format_each = "-I%s")
+    args.add_all(depset(transitive = system_includes), before_each = "-Xcc", format_each = "-isystem%s")
 
     # Add framework search paths for any prebuilt frameworks.
     args.add_all(
