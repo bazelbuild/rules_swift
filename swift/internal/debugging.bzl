@@ -100,6 +100,11 @@ def _register_modulewrap_action(
     args.add(get_swift_tool(swift_toolchain = toolchain, tool = "swift"))
     args.add("-modulewrap")
     args.add(swiftmodule)
+
+    # Workaround because bazel's c++ toolchain returns "local" instead of a
+    # real triple.
+    if toolchain.cc_toolchain_info.target_gnu_system_name != "local":
+        args.add("-target", toolchain.cc_toolchain_info.target_gnu_system_name)
     args.add("-o", object)
 
     run_swift_action(
