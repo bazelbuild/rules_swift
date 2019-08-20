@@ -291,6 +291,7 @@ def register_link_executable_action(
             feature_configuration = cc_feature_configuration,
         )
         link_input_args.add_all(cc_runtime_libs)
+        link_input_depsets.append(cc_runtime_libs)
 
     user_args = actions.args()
     user_args.add_all(all_linkopts)
