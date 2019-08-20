@@ -232,5 +232,11 @@ def workspace_relative_path(file):
     Returns:
         The path of the file relative to its workspace.
     """
+    # Bazel creates symlinks to the .proto files under a directory called
+    # "_virtual_imports/<rule name>" if we do any sort of munging of import
+    # paths (e.g. using strip_import_prefix / import_prefix attributes)
+    virtual_imports = "/_virtual_imports/"
+    if virtual_imports in file.path:
+        return file.path.split(virtual_imports)[1].split("/", 1)[1]
     workspace_path = paths.join(file.root.path, file.owner.workspace_root)
     return paths.relativize(file.path, workspace_path)
