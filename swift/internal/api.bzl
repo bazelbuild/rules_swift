@@ -438,7 +438,9 @@ def _compile(
         additional_inputs: A list of `File`s representing additional input files that need to be
             passed to the Swift compile action because they are referenced by compiler flags.
         bin_dir: The Bazel `*-bin` directory root. If provided, its path is used to store the cache
-            for modules precompiled by Swift's ClangImporter.
+            for modules precompiled by Swift's ClangImporter, and it is added to ClangImporter's
+            header search paths for compatibility with Bazel's C++ and Objective-C rules which
+            support includes of generated headers from that location.
         copts: A list of compiler flags that apply to the target being built. These flags, along
             with those from Bazel's Swift configuration fragment (i.e., `--swiftcopt` command line
             flags) are scanned to determine whether whole module optimization is being requested,
@@ -559,6 +561,7 @@ def _compile(
         # TODO(allevato): Make this argument a list of files instead.
         additional_input_depsets = [depset(additional_inputs)],
         args = args,
+        bin_dir = bin_dir,
         copts = copts,
         defines = defines,
         deps = deps,
@@ -890,6 +893,7 @@ def _swiftc_command_line_and_inputs(
         srcs,
         toolchain,
         additional_input_depsets = [],
+        bin_dir = None,
         copts = [],
         defines = [],
         deps = [],
@@ -917,6 +921,10 @@ def _swiftc_command_line_and_inputs(
       additional_input_depsets: A list of `depset`s of `File`s representing
           additional input files that need to be passed to the Swift compile
           action because they are referenced by compiler flags.
+      bin_dir: The Bazel `*-bin` directory root. If provided, its path is added
+          to ClangImporter's header search paths for compatibility with Bazel's
+          C++ and Objective-C rules which support inclusions of generated
+          headers from that location.
       copts: A list (**not** an `Args` object) of compiler flags that apply to the
           target being built. These flags, along with those from Bazel's Swift
           configuration fragment (i.e., `--swiftcopt` command line flags) are
@@ -966,8 +974,10 @@ def _swiftc_command_line_and_inputs(
     ):
         args.add("-enable-batch-mode")
 
-    # Add the genfiles directory to ClangImporter's header search paths for
-    # compatibility with rules that generate headers there.
+    # Add the bin and genfiles directories to ClangImporter's header search
+    # paths for compatibility with rules that generate headers there.
+    if bin_dir:
+        args.add_all(["-Xcc", "-iquote{}".format(bin_dir.path)])
     if genfiles_dir:
         args.add_all(["-Xcc", "-iquote{}".format(genfiles_dir.path)])
 
