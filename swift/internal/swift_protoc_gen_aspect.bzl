@@ -270,7 +270,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
         minimal_module_mappings.extend(_gather_transitive_module_mappings(proto_deps))
 
     transitive_module_mapping_file = register_module_mapping_write_action(
-        target,
+        target.label.name,
         aspect_ctx.actions,
         minimal_module_mappings,
     )
