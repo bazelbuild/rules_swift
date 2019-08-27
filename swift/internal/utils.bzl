@@ -164,6 +164,23 @@ def get_providers(targets, provider, map_fn = None):
         return [map_fn(target[provider]) for target in targets if provider in target]
     return [target[provider] for target in targets if provider in target]
 
+def merge_runfiles(all_runfiles):
+    """Merges a list of `runfiles` objects.
+
+    Args:
+        all_runfiles: A list containing zero or more `runfiles` objects to merge.
+
+    Returns:
+        A merged `runfiles` object, or `None` if the list was empty.
+    """
+    result = None
+    for runfiles in all_runfiles:
+        if result == None:
+            result = runfiles
+        else:
+            result = result.merge(runfiles)
+    return result
+
 def objc_provider_framework_name(path):
     """Returns the name of the framework from an `objc` provider path.
 

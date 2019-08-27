@@ -15,40 +15,28 @@
 """Implementation of the `swift_c_module` rule."""
 
 load(":api.bzl", "swift_common")
+load(":utils.bzl", "merge_runfiles")
 
 def _swift_c_module_impl(ctx):
-    if len(ctx.attr.deps) > 1:
-        fail("swift_c_module may have no more than one dependency.", attr = "deps")
-
     module_map = ctx.file.module_map
 
-    if len(ctx.attr.deps) == 1:
-        dep = ctx.attr.deps[0]
-        dep_cc_info = dep[CcInfo]
-        this_cc_info = CcInfo(
-            compilation_context = cc_common.create_compilation_context(
-                includes = ctx.attr.includes,
-            ),
-        )
+    deps = ctx.attr.deps
+    cc_infos = [dep[CcInfo] for dep in deps]
+    data_runfiles = [dep[DefaultInfo].data_runfiles for dep in deps]
+    default_runfiles = [dep[DefaultInfo].default_runfiles for dep in deps]
 
-        return [
-            # Repropagate the dependency's `CcInfo` provider so that Swift targets only have to
-            # depend on the module target, not also on the original library target. We must also
-            # repropagate the dependency, otherwise things we will lose runtime dependencies that
-            # the library expects to be there during a test (or a regular `bazel run`).
-            cc_common.merge_cc_infos(cc_infos = [dep_cc_info, this_cc_info]),
-            DefaultInfo(
-                data_runfiles = dep[DefaultInfo].data_runfiles,
-                default_runfiles = dep[DefaultInfo].default_runfiles,
-                files = depset(direct = [module_map]),
-            ),
-            swift_common.create_swift_info(modulemaps = [module_map]),
-        ]
-    else:
-        return [
-            DefaultInfo(files = depset([module_map])),
-            swift_common.create_swift_info(modulemaps = [module_map]),
-        ]
+    return [
+        cc_common.merge_cc_infos(cc_infos = cc_infos),
+        # We must repropagate the dependencies' DefaultInfos, otherwise we
+        # will lose runtime dependencies that the library expects to be
+        # there during a test (or a regular `bazel run`).
+        DefaultInfo(
+            data_runfiles = merge_runfiles(data_runfiles),
+            default_runfiles = merge_runfiles(default_runfiles),
+            files = depset([module_map]),
+        ),
+        swift_common.create_swift_info(modulemaps = [module_map]),
+    ]
 
 swift_c_module = rule(
     attrs = {
@@ -63,36 +51,43 @@ into Swift.
         "deps": attr.label_list(
             allow_empty = False,
             doc = """
-A list containing at most one `cc_library` target that is being wrapped with a
-new module map.
-
-If you need to create a `swift_c_module` to that pulls headers from multiple
-`cc_library` targets into a single module, create a new `cc_library` target
-that wraps them in its `deps` and has no other `srcs` or `hdrs`, and have the
-module target depend on that.
+A list of C targets (or anything propagating `CcInfo`) that are dependencies of
+this target and whose headers may be referenced by the module map.
 """,
             mandatory = True,
             providers = [[CcInfo]],
         ),
     },
     doc = """
-Wraps a `cc_library` in a new module map that allows it to be imported into
-Swift to access its C interfaces.
+Wraps one or more C targets in a new module map that allows it to be imported
+into Swift to access its C interfaces.
+
+The `cc_library` rule in Bazel does not produce module maps that are compatible
+with Swift. In order to make interop between Swift and C possible, users have
+one of two options:
+
+1.  **Use an auto-generated module map.** In this case, the `swift_c_module`
+    rule is not needed. If a `cc_library` is a direct dependency of a
+    `swift_{binary,library,test}` target, a module map will be automatically
+    generated for it and the module's name will be derived from the Bazel target
+    label (in the same fashion that module names for Swift targets are derived).
+    The module name can be overridden by setting the `swift_module` tag on the
+    `cc_library`; e.g., `tags = ["swift_module=MyModule"]`.
+
+2.  **Use a custom module map.** For finer control over the headers that are
+    exported by the module, use the `swift_c_module` rule to provide a custom
+    module map that specifies the name of the module, its headers, and any other
+    module information. The `cc_library` targets that contain the headers that
+    you wish to expose to Swift should be listed in the `deps` of your
+    `swift_c_module` (and by listing multiple targets, you can export multiple
+    libraries under a single module if desired). Then, your
+    `swift_{binary,library,test}` targets should depend on the `swift_c_module`
+    target, not on the underlying `cc_library` target(s).
 
 NOTE: Swift at this time does not support interop directly with C++. Any headers
 referenced by a module map that is imported into Swift must have only C features
 visible, often by using preprocessor conditions like `#if __cplusplus` to hide
 any C++ declarations.
-
-The `cc_library` rule in Bazel does not produce module maps that are compatible
-with Swift. In order to make interop between Swift and C possible, users can
-write their own module map that includes any of the transitive public headers of
-the `cc_library` dependency of this target and has a module name that is a valid
-Swift identifier.
-
-Then, write a `swift_{binary,library,test}` target that depends on this
-`swift_c_module` target and the Swift sources will be able to import the module
-with the name given in the module map.
 """,
     implementation = _swift_c_module_impl,
 )
