@@ -9,6 +9,9 @@ licenses(["notice"])
 proto_library(
     name = "example_proto",
     srcs = ["example.proto"],
+    deps = [
+        "@com_google_protobuf//:api_proto",
+    ],
 )
 
 swift_proto_library(

@@ -14,7 +14,14 @@
 
 syntax = "proto3";
 
+import "google/protobuf/api.proto";
+
 message Person {
   string name = 1;
   int32 age = 2;
+}
+
+message Server {
+  string name = 1;
+  google.protobuf.Api api = 2;
 }
