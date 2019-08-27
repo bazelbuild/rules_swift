@@ -44,6 +44,7 @@ load(":derived_files.bzl", "derived_files")
 load(
     ":features.bzl",
     "SWIFT_FEATURE_AUTOLINK_EXTRACT",
+    "SWIFT_FEATURE_CACHEABLE_SWIFTMODULES,"
     "SWIFT_FEATURE_COMPILE_STATS",
     "SWIFT_FEATURE_COVERAGE",
     "SWIFT_FEATURE_DBG",
