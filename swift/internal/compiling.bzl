@@ -215,7 +215,7 @@ def declare_compile_outputs(
     # Configure index-while-building if requested. IDEs and other indexing tools can enable this
     # feature on the command line during a build and then access the index store artifacts that are
     # produced.
-    if index_while_building:
+    if index_while_building and not _index_store_path_overridden(copts):
         index_store_dir = derived_files.indexstore_directory(actions, target_name = target_name)
         other_outputs.append(index_store_dir)
         args.extend(["-index-store-path", index_store_dir.path])
@@ -502,6 +502,22 @@ def write_objc_header_module_map(
         ),
         output = output,
     )
+
+def _index_store_path_overridden(copts):
+    """Checks if index_while_building must be disabled.
+
+    Index while building is disabled when the copts include a custom -index-store-path.
+
+    Args:
+        copts: The list of copts to be scanned.
+
+    Returns:
+        True if the index_while_building must be disabled, otherwise False.
+    """
+    for opt in copts:
+        if opt == "-index-store-path":
+            return True
+    return False
 
 def _dirname_map_fn(f):
     """Returns the dir name of a file.
