@@ -105,6 +105,15 @@ SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE = "swift.use_global_module_cache"
 # typically set this automatically if using a sufficiently recent version of Swift (4.2 or higher).
 SWIFT_FEATURE_USE_RESPONSE_FILES = "swift.use_response_files"
 
+# If enabled, builds using the "dbg" compilation mode will explicitly disable swiftc from producing
+# swiftmodules containing embedded file paths, which are inherently non-portable across machines.
+#
+# To used these modules from lldb, target settings must be correctly populated. For example:
+#     target.swift-module-search-paths
+#     target.swift-framework-search-paths
+#     target.swift-extra-clang-flags
+SWIFT_FEATURE_CACHEABLE_SWIFTMODULES = "swift.cacheable_swiftmodules"
+
 def features_for_build_modes(ctx, objc_fragment = None):
     """Returns a list of Swift toolchain features corresponding to current build modes.
 
