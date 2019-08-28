@@ -44,6 +44,7 @@ load(":derived_files.bzl", "derived_files")
 load(
     ":features.bzl",
     "SWIFT_FEATURE_AUTOLINK_EXTRACT",
+    "SWIFT_FEATURE_CACHEABLE_SWIFTMODULES",
     "SWIFT_FEATURE_COMPILE_STATS",
     "SWIFT_FEATURE_COVERAGE",
     "SWIFT_FEATURE_DBG",
@@ -262,12 +263,22 @@ def _compilation_mode_copts(feature_configuration):
             flags.append("-whole-module-optimization")
 
     elif is_dbg or is_fastbuild:
-        # The Swift compiler only serializes debugging options in narrow
-        # circumstances (for example, for application binaries). Since we almost
-        # exclusively just compile to object files directly, we need to manually
-        # pass the following frontend option to ensure that LLDB has the necessary
-        # import search paths to find definitions during debugging.
-        flags.extend(["-Onone", "-DDEBUG", "-Xfrontend", "-serialize-debugging-options"])
+        flags.extend(["-Onone", "-DDEBUG"])
+        if _is_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_CACHEABLE_SWIFTMODULES,
+        ):
+            # For a swiftmodule to be usable from cache, it must not contain embedded paths. This
+            # behavior must be explicitly disabled, because swiftc will enable this by default under
+            # some circumstances.
+            flags.extend(["-Xfrontend", "-no-serialize-debugging-options"])
+        else:
+            # The Swift compiler only serializes debugging options in narrow
+            # circumstances (for example, for application binaries). Since we almost
+            # exclusively just compile to object files directly, we need to manually
+            # pass the following frontend option to ensure that LLDB has the necessary
+            # import search paths to find definitions during debugging.
+            flags.extend(["-Xfrontend", "-serialize-debugging-options"])
 
     if _is_enabled(
         feature_configuration = feature_configuration,
