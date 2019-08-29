@@ -67,6 +67,13 @@ This provider is an implementation detail not meant to be used by clients.
     },
 )
 
+def _proto_include_path(f):
+    virtual_imports = "/_virtual_imports/"
+    if virtual_imports in f.path:
+        return f.path.split(virtual_imports, 1)[1].split("/", 1)[1]
+    else:
+        return workspace_relative_path(f)
+
 def _filter_out_well_known_types(srcs):
     """Returns the given list of files, excluding any well-known type protos.
 
@@ -80,7 +87,7 @@ def _filter_out_well_known_types(srcs):
     return [
         f
         for f in srcs
-        if workspace_relative_path(f) not in _RUNTIME_BUNDLED_PROTO_FILES
+        if _proto_include_path(f) not in _RUNTIME_BUNDLED_PROTO_FILES
     ]
 
 def _register_pbswift_generate_action(
@@ -142,7 +149,7 @@ def _register_pbswift_generate_action(
         )
     protoc_args.add("--descriptor_set_in")
     protoc_args.add_joined(transitive_descriptor_sets, join_with = ":")
-    protoc_args.add_all([workspace_relative_path(f) for f in direct_srcs])
+    protoc_args.add_all([_proto_include_path(f) for f in direct_srcs])
 
     additional_command_inputs = []
     if module_mapping_file:
