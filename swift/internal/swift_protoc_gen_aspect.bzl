@@ -80,6 +80,7 @@ def _filter_out_well_known_types(srcs, proto_source_root):
 
     Args:
       srcs: A list of `.proto` files.
+      proto_source_root: the source root where the `.proto` files are.
 
     Returns:
       The given list of files with any well-known type protos (those living under
@@ -94,8 +95,8 @@ def _filter_out_well_known_types(srcs, proto_source_root):
 def _register_pbswift_generate_action(
         label,
         actions,
-        proto_source_root,
         direct_srcs,
+        proto_source_root,
         transitive_descriptor_sets,
         module_mapping_file,
         mkdir_and_run,
@@ -108,6 +109,7 @@ def _register_pbswift_generate_action(
         actions: The context's actions object.
         direct_srcs: The direct `.proto` sources belonging to the target being analyzed, which
             will be passed to `protoc-gen-swift`.
+        proto_source_root: the source root where the `.proto` files are.
         transitive_descriptor_sets: The transitive `DescriptorSet`s from the `proto_library` being
             analyzed.
         module_mapping_file: The `File` containing the mapping between `.proto` files and Swift
@@ -296,8 +298,8 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
         pbswift_files = _register_pbswift_generate_action(
             target.label,
             aspect_ctx.actions,
-            target[ProtoInfo].proto_source_root,
             direct_srcs,
+            target[ProtoInfo].proto_source_root,
             transitive_descriptor_sets,
             transitive_module_mapping_file,
             aspect_ctx.executable._mkdir_and_run,
