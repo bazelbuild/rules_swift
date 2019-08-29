@@ -23,6 +23,9 @@ licenses(["notice"])
 proto_library(
     name = "echo_proto",
     srcs = ["echo.proto"],
+    deps = [
+        "@com_google_protobuf//:any_proto",
+    ],
 )
 
 swift_proto_library(
