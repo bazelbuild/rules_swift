@@ -67,14 +67,15 @@ This provider is an implementation detail not meant to be used by clients.
     },
 )
 
-def _proto_include_path(f):
-    virtual_imports = "/_virtual_imports/"
-    if virtual_imports in f.path:
-        return f.path.split(virtual_imports, 1)[1].split("/", 1)[1]
+def _proto_import_path(f, proto_source_root):
+    if f.path.startswith(proto_source_root):
+        return f.path[len(proto_source_root) + 1:]
     else:
+        # Happens before Bazel 1.0, where proto_source_root was not
+        # guaranteed to be a parent of the .proto file
         return workspace_relative_path(f)
 
-def _filter_out_well_known_types(srcs):
+def _filter_out_well_known_types(srcs, proto_source_root):
     """Returns the given list of files, excluding any well-known type protos.
 
     Args:
@@ -87,12 +88,13 @@ def _filter_out_well_known_types(srcs):
     return [
         f
         for f in srcs
-        if _proto_include_path(f) not in _RUNTIME_BUNDLED_PROTO_FILES
+        if _proto_import_path(f, proto_source_root) not in _RUNTIME_BUNDLED_PROTO_FILES
     ]
 
 def _register_pbswift_generate_action(
         label,
         actions,
+        proto_source_root,
         direct_srcs,
         transitive_descriptor_sets,
         module_mapping_file,
@@ -149,7 +151,9 @@ def _register_pbswift_generate_action(
         )
     protoc_args.add("--descriptor_set_in")
     protoc_args.add_joined(transitive_descriptor_sets, join_with = ":")
-    protoc_args.add_all([_proto_include_path(f) for f in direct_srcs])
+    protoc_args.add_all(
+        [_proto_import_path(f, proto_source_root) for f in direct_srcs],
+    )
 
     additional_command_inputs = []
     if module_mapping_file:
@@ -257,7 +261,10 @@ def _gather_transitive_module_mappings(targets):
 def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
     swift_toolchain = aspect_ctx.attr._toolchain[SwiftToolchainInfo]
 
-    direct_srcs = _filter_out_well_known_types(target[ProtoInfo].direct_sources)
+    direct_srcs = _filter_out_well_known_types(
+        target[ProtoInfo].direct_sources,
+        target[ProtoInfo].proto_source_root,
+    )
 
     # Direct sources are passed as arguments to protoc to generate *only* the
     # files in this target, but we need to pass the transitive sources as inputs
@@ -289,6 +296,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
         pbswift_files = _register_pbswift_generate_action(
             target.label,
             aspect_ctx.actions,
+            target[ProtoInfo].proto_source_root,
             direct_srcs,
             transitive_descriptor_sets,
             transitive_module_mapping_file,
