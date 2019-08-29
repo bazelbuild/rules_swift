@@ -14,12 +14,15 @@
 
 syntax = "proto3";
 
+import "google/protobuf/any.proto";
+
 service EchoService {
   rpc Echo(EchoRequest) returns (EchoResponse);
 }
 
 message EchoRequest {
   string contents = 1;
+  google.protobuf.Any extra = 2;
 }
 
 message EchoResponse {

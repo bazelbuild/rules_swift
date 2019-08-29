@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import Foundation
+import SwiftProtobuf
 import examples_xplatform_grpc_echo_proto
 import examples_xplatform_grpc_echo_client_services_swift
 
@@ -21,6 +23,8 @@ let client = EchoServiceServiceClient(address: "0.0.0.0:9000", secure: false)
 // Construct a request to the echo service.
 var request = EchoRequest()
 request.contents = "Hello, world!"
+let timestamp = Google_Protobuf_Timestamp(date: Date())
+request.extra = try! Google_Protobuf_Any(message: timestamp)
 
 // Make the remote method call and print the response we receive.
 let response = try client.echo(request)
