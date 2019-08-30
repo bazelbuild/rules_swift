@@ -256,7 +256,8 @@ def proto_import_path(f, proto_source_root):
     """ Returns the import path of a `.proto` file given its path.
 
     Args:
-        file: The `File` object.
+        f: The `File` object representing the `.proto` file.
+        proto_source_root: The source root for the `.proto` file.
 
     Returns:
         The path the `.proto` file should be imported at.

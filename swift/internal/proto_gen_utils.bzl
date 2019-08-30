@@ -105,6 +105,7 @@ def _generated_file_path(name, extension_fragment, proto_source_root, proto_file
         extension_fragment: An extension fragment that precedes `.swift` on the end of the
             generated files. In other words, the file `foo.proto` will generate a file named
             `foo.{extension_fragment}.swift`.
+        proto_source_root: The source root for the `.proto` file.
         proto_file: The `.proto` file whose generated `.swift` path should be computed.
 
     Returns:
