@@ -26,12 +26,19 @@ load(
     "register_module_mapping_write_action",
 )
 load(":providers.bzl", "SwiftInfo", "SwiftProtoInfo", "SwiftToolchainInfo")
-load(":utils.bzl", "compact", "create_cc_info", "get_providers", "workspace_relative_path")
+load(
+    ":utils.bzl",
+    "compact",
+    "create_cc_info",
+    "get_providers",
+    "proto_import_path",
+)
 
 def _register_grpcswift_generate_action(
         label,
         actions,
         direct_srcs,
+        proto_source_root,
         transitive_descriptor_sets,
         module_mapping_file,
         mkdir_and_run,
@@ -46,6 +53,7 @@ def _register_grpcswift_generate_action(
         actions: The context's actions object.
         direct_srcs: The direct `.proto` sources belonging to the target being analyzed, which
             will be passed to `protoc`.
+        proto_source_root: the source root for `direct_srcs`.
         transitive_descriptor_sets: The transitive `DescriptorSet`s from the `proto_library` being
             analyzed.
         module_mapping_file: The `File` containing the mapping between `.proto` files and Swift
@@ -61,8 +69,19 @@ def _register_grpcswift_generate_action(
     Returns:
         A list of generated `.grpc.swift` files corresponding to the `.proto` sources.
     """
-    generated_files = declare_generated_files(label.name, actions, "grpc", direct_srcs)
-    generated_dir_path = extract_generated_dir_path(label.name, "grpc", generated_files)
+    generated_files = declare_generated_files(
+        label.name,
+        actions,
+        "grpc",
+        proto_source_root,
+        direct_srcs,
+    )
+    generated_dir_path = extract_generated_dir_path(
+        label.name,
+        "grpc",
+        proto_source_root,
+        generated_files,
+    )
 
     mkdir_args = actions.args()
     mkdir_args.add(generated_dir_path)
@@ -107,7 +126,7 @@ def _register_grpcswift_generate_action(
         )
     protoc_args.add("--descriptor_set_in")
     protoc_args.add_joined(transitive_descriptor_sets, join_with = ":")
-    protoc_args.add_all([workspace_relative_path(f) for f in direct_srcs])
+    protoc_args.add_all([proto_import_path(f, proto_source_root) for f in direct_srcs])
 
     additional_command_inputs = []
     if module_mapping_file:
@@ -168,6 +187,7 @@ def _swift_grpc_library_impl(ctx):
         ctx.label,
         ctx.actions,
         direct_srcs,
+        ctx.attr.srcs[0][ProtoInfo].proto_source_root,
         transitive_descriptor_sets,
         transitive_module_mapping_file,
         ctx.executable._mkdir_and_run,
