@@ -240,7 +240,7 @@ def owner_relative_path(file):
     else:
         return paths.relativize(file.short_path, package)
 
-def workspace_relative_path(file):
+def _workspace_relative_path(file):
     """Returns the path of a file relative to its workspace.
 
     Args:
@@ -267,4 +267,4 @@ def proto_import_path(f, proto_source_root):
     else:
         # Happens before Bazel 1.0, where proto_source_root was not
         # guaranteed to be a parent of the .proto file
-        return workspace_relative_path(f)
+        return _workspace_relative_path(f)
