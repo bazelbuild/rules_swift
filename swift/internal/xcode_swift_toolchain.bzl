@@ -152,7 +152,7 @@ def _default_linker_opts(
     # their rpaths.
     if is_test:
         linkopts.append("-Wl,-rpath,{}".format(platform_framework_dir))
-        linkopts.append("-L{}".format(_swift_developer_lib_dir(platform_framework_dir))
+        linkopts.append("-L{}".format(_swift_developer_lib_dir(platform_framework_dir)))
 
     return linkopts
 
