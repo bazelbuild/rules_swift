@@ -25,7 +25,13 @@ load(
     "register_module_mapping_write_action",
 )
 load(":providers.bzl", "SwiftInfo", "SwiftProtoInfo", "SwiftToolchainInfo")
-load(":utils.bzl", "compact", "create_cc_info", "get_providers", "workspace_relative_path")
+load(
+    ":utils.bzl",
+    "compact",
+    "create_cc_info",
+    "get_providers",
+    "proto_import_path",
+)
 
 # The paths of proto files bundled with the runtime. This is mainly the well
 # known type protos, but also includes descriptor.proto to make generation of
@@ -67,11 +73,12 @@ This provider is an implementation detail not meant to be used by clients.
     },
 )
 
-def _filter_out_well_known_types(srcs):
+def _filter_out_well_known_types(srcs, proto_source_root):
     """Returns the given list of files, excluding any well-known type protos.
 
     Args:
       srcs: A list of `.proto` files.
+      proto_source_root: the source root where the `.proto` files are.
 
     Returns:
       The given list of files with any well-known type protos (those living under
@@ -80,13 +87,14 @@ def _filter_out_well_known_types(srcs):
     return [
         f
         for f in srcs
-        if workspace_relative_path(f) not in _RUNTIME_BUNDLED_PROTO_FILES
+        if proto_import_path(f, proto_source_root) not in _RUNTIME_BUNDLED_PROTO_FILES
     ]
 
 def _register_pbswift_generate_action(
         label,
         actions,
         direct_srcs,
+        proto_source_root,
         transitive_descriptor_sets,
         module_mapping_file,
         mkdir_and_run,
@@ -99,6 +107,7 @@ def _register_pbswift_generate_action(
         actions: The context's actions object.
         direct_srcs: The direct `.proto` sources belonging to the target being analyzed, which
             will be passed to `protoc-gen-swift`.
+        proto_source_root: the source root where the `.proto` files are.
         transitive_descriptor_sets: The transitive `DescriptorSet`s from the `proto_library` being
             analyzed.
         module_mapping_file: The `File` containing the mapping between `.proto` files and Swift
@@ -112,8 +121,19 @@ def _register_pbswift_generate_action(
     Returns:
         A list of generated `.pb.swift` files corresponding to the `.proto` sources.
     """
-    generated_files = declare_generated_files(label.name, actions, "pb", direct_srcs)
-    generated_dir_path = extract_generated_dir_path(label.name, "pb", generated_files)
+    generated_files = declare_generated_files(
+        label.name,
+        actions,
+        "pb",
+        proto_source_root,
+        direct_srcs,
+    )
+    generated_dir_path = extract_generated_dir_path(
+        label.name,
+        "pb",
+        proto_source_root,
+        generated_files,
+    )
 
     mkdir_args = actions.args()
     mkdir_args.add(generated_dir_path)
@@ -142,7 +162,9 @@ def _register_pbswift_generate_action(
         )
     protoc_args.add("--descriptor_set_in")
     protoc_args.add_joined(transitive_descriptor_sets, join_with = ":")
-    protoc_args.add_all([workspace_relative_path(f) for f in direct_srcs])
+    protoc_args.add_all(
+        [proto_import_path(f, proto_source_root) for f in direct_srcs],
+    )
 
     additional_command_inputs = []
     if module_mapping_file:
@@ -195,12 +217,13 @@ def _build_swift_proto_info_provider(
         ),
     )
 
-def _build_module_mapping_from_srcs(target, proto_srcs):
+def _build_module_mapping_from_srcs(target, proto_srcs, proto_source_root):
     """Returns the sequence of module mapping `struct`s for the given sources.
 
     Args:
       target: The `proto_library` target whose module mapping is being rendered.
       proto_srcs: The `.proto` files that belong to the target.
+      proto_source_root: The source root for `proto_srcs`.
 
     Returns:
       A string containing the module mapping for the target in protobuf text
@@ -216,7 +239,7 @@ def _build_module_mapping_from_srcs(target, proto_srcs):
     # update to protoc-gen-swift?
     return struct(
         module_name = swift_common.derive_module_name(target.label),
-        proto_file_paths = [workspace_relative_path(f) for f in proto_srcs],
+        proto_file_paths = [proto_import_path(f, proto_source_root) for f in proto_srcs],
     )
 
 def _gather_transitive_module_mappings(targets):
@@ -250,7 +273,10 @@ def _gather_transitive_module_mappings(targets):
 def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
     swift_toolchain = aspect_ctx.attr._toolchain[SwiftToolchainInfo]
 
-    direct_srcs = _filter_out_well_known_types(target[ProtoInfo].direct_sources)
+    direct_srcs = _filter_out_well_known_types(
+        target[ProtoInfo].direct_sources,
+        target[ProtoInfo].proto_source_root,
+    )
 
     # Direct sources are passed as arguments to protoc to generate *only* the
     # files in this target, but we need to pass the transitive sources as inputs
@@ -264,7 +290,11 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
     minimal_module_mappings = []
     if direct_srcs:
         minimal_module_mappings.append(
-            _build_module_mapping_from_srcs(target, direct_srcs),
+            _build_module_mapping_from_srcs(
+                target,
+                direct_srcs,
+                target[ProtoInfo].proto_source_root,
+            ),
         )
     if proto_deps:
         minimal_module_mappings.extend(_gather_transitive_module_mappings(proto_deps))
@@ -283,6 +313,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             target.label,
             aspect_ctx.actions,
             direct_srcs,
+            target[ProtoInfo].proto_source_root,
             transitive_descriptor_sets,
             transitive_module_mapping_file,
             aspect_ctx.executable._mkdir_and_run,

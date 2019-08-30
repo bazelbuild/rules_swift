@@ -15,9 +15,9 @@
 """Utility functions shared by rules/aspects that generate sources from .proto files."""
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load(":utils.bzl", "workspace_relative_path")
+load(":utils.bzl", "proto_import_path")
 
-def declare_generated_files(name, actions, extension_fragment, proto_srcs):
+def declare_generated_files(name, actions, extension_fragment, proto_source_root, proto_srcs):
     """Declares generated `.swift` files that correspond to a list of `.proto` files.
 
     Args:
@@ -26,6 +26,7 @@ def declare_generated_files(name, actions, extension_fragment, proto_srcs):
         extension_fragment: An extension fragment that precedes `.swift` on the end of the
             generated files. In other words, the file `foo.proto` will generate a file named
             `foo.{extension_fragment}.swift`.
+        proto_source_root: the source root of the `.proto` files in `proto_srcs`.
         proto_srcs: A list of `.proto` files.
 
     Returns:
@@ -33,11 +34,11 @@ def declare_generated_files(name, actions, extension_fragment, proto_srcs):
         extensions instead of `.proto`.
     """
     return [
-        actions.declare_file(_generated_file_path(name, extension_fragment, f))
+        actions.declare_file(_generated_file_path(name, extension_fragment, proto_source_root, f))
         for f in proto_srcs
     ]
 
-def extract_generated_dir_path(name, extension_fragment, generated_files):
+def extract_generated_dir_path(name, extension_fragment, proto_source_root, generated_files):
     """Extracts the full path to the directory where `.swift` files are generated.
 
     This dance is required because we cannot get the full (repository-relative) path to the
@@ -52,6 +53,8 @@ def extract_generated_dir_path(name, extension_fragment, generated_files):
         extension_fragment: An extension fragment that precedes `.swift` on the end of the
             generated files. In other words, the file `foo.proto` will generate a file named
             `foo.{extension_fragment}.swift`.
+        proto_source_root: the source root for the `.proto` files `generated_files` are generated
+            from.
         generated_files: A list of generated `.swift` files, one of which will be used to extract
             the directory path.
 
@@ -62,7 +65,7 @@ def extract_generated_dir_path(name, extension_fragment, generated_files):
         return None
 
     first_path = generated_files[0].path
-    dir_name = _generated_file_path(name, extension_fragment)
+    dir_name = _generated_file_path(name, extension_fragment, proto_source_root)
     offset = first_path.find(dir_name)
     return first_path[:offset + len(dir_name)]
 
@@ -88,7 +91,7 @@ def register_module_mapping_write_action(name, actions, module_mappings):
 
     return mapping_file
 
-def _generated_file_path(name, extension_fragment, proto_file = None):
+def _generated_file_path(name, extension_fragment, proto_source_root, proto_file = None):
     """Returns the short path of a generated `.swift` file corresponding to a `.proto` file.
 
     The returned workspace-relative path should be used to declare output files so that they are
@@ -102,6 +105,7 @@ def _generated_file_path(name, extension_fragment, proto_file = None):
         extension_fragment: An extension fragment that precedes `.swift` on the end of the
             generated files. In other words, the file `foo.proto` will generate a file named
             `foo.{extension_fragment}.swift`.
+        proto_source_root: The source root for the `.proto` file.
         proto_file: The `.proto` file whose generated `.swift` path should be computed.
 
     Returns:
@@ -115,7 +119,7 @@ def _generated_file_path(name, extension_fragment, proto_file = None):
     )
     if proto_file:
         generated_file_path = paths.replace_extension(
-            workspace_relative_path(proto_file),
+            proto_import_path(proto_file, proto_source_root),
             ".{}.swift".format(extension_fragment),
         )
         return paths.join(dir_path, generated_file_path)
