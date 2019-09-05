@@ -18,6 +18,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include <array>
 #include <cerrno>
 #include <cstring>
 #include <iostream>
@@ -31,21 +32,69 @@ extern char **environ;
 
 namespace {
 
+// Type to encapsulate pipe(2).
+struct Pipe {
+  Pipe() {
+    auto result = pipe(pipe_.data());
+    valid_ = result == 0;
+  }
+
+  Pipe(Pipe &&pipe) : pipe_(std::move(pipe.pipe_)), valid_(pipe.valid_) {
+    if (valid_) {
+      for (auto &fd : pipe.pipe_) {
+        fd = -1;
+      }
+    }
+  }
+
+  bool Valid() const { return valid_; }
+
+  // Pipes are movable only.
+  Pipe(const Pipe &) = delete;
+  Pipe &operator=(const Pipe &) = delete;
+
+  ~Pipe() {
+    if (valid_) {
+      for (const auto fd : pipe_) {
+        if (fd > 0) {
+          close(fd);
+        }
+      }
+    }
+  }
+
+  void CloseWriteEnd() {
+    auto &fd = pipe_[1];
+    if (fd > 0) {
+      close(fd);
+      fd = -1;
+    }
+  }
+
+  int ReadFD() const { return pipe_[0]; }
+  int WriteFD() const { return pipe_[1]; }
+
+private:
+  std::array<int, 2> pipe_;
+  bool valid_;
+};
+
 // An RAII class that manages the pipes and posix_spawn state needed to redirect
-// subprocess I/O. Currently only supports stderr, but can be extended to handle
-// stdin and stdout if needed.
+// subprocess I/O. Currently supports stdout and stderr, but can be extended to
+// handle stdin if needed.
 class PosixSpawnIORedirector {
  public:
   // Create an I/O redirector that can be used with posix_spawn to capture
-  // stderr.
+  // stdout and stderr.
   static std::unique_ptr<PosixSpawnIORedirector> Create(bool stdoutToStderr) {
-    int stderr_pipe[2];
-    if (pipe(stderr_pipe) != 0) {
+    Pipe stdout_pipe;
+    Pipe stderr_pipe;
+    if (!stdout_pipe.Valid() || !stderr_pipe.Valid()) {
       return nullptr;
     }
 
-    return std::unique_ptr<PosixSpawnIORedirector>(
-        new PosixSpawnIORedirector(stderr_pipe, stdoutToStderr));
+    return std::unique_ptr<PosixSpawnIORedirector>(new PosixSpawnIORedirector(
+        std::move(stdout_pipe), std::move(stderr_pipe), stdoutToStderr));
   }
 
   // Explicitly make PosixSpawnIORedirector non-copyable and movable.
@@ -55,8 +104,6 @@ class PosixSpawnIORedirector {
   PosixSpawnIORedirector &operator=(PosixSpawnIORedirector &&) = default;
 
   ~PosixSpawnIORedirector() {
-    SafeClose(&stderr_pipe_[0]);
-    SafeClose(&stderr_pipe_[1]);
     posix_spawn_file_actions_destroy(&file_actions_);
   }
 
@@ -64,56 +111,73 @@ class PosixSpawnIORedirector {
   // passed to posix_spawn to enable this redirection.
   posix_spawn_file_actions_t *PosixSpawnFileActions() { return &file_actions_; }
 
-  // Returns a pointer to the two-element file descriptor array for the stderr
-  // pipe.
-  int *StderrPipe() { return stderr_pipe_; }
+  // Consumes all the data output to stdout and stderr by the subprocess and
+  // writes it to the respective output stream.
+  void ConsumeAllSubprocessOutput(std::ostream *stdout_stream,
+                                  std::ostream *stderr_stream);
 
-  // Consumes all the data output to stderr by the subprocess and writes it to
-  // the given output stream.
-  void ConsumeAllSubprocessOutput(std::ostream *stderr_stream);
-
- private:
-  explicit PosixSpawnIORedirector(int stderr_pipe[], bool stdoutToStderr) {
-    memcpy(stderr_pipe_, stderr_pipe, sizeof(int) * 2);
-
+private:
+  explicit PosixSpawnIORedirector(Pipe &&stdout_pipe, Pipe &&stderr_pipe,
+                                  bool stdoutToStderr)
+      : stdout_pipe_(std::move(stdout_pipe)),
+        stderr_pipe_(std::move(stderr_pipe)) {
     posix_spawn_file_actions_init(&file_actions_);
-    posix_spawn_file_actions_addclose(&file_actions_, stderr_pipe_[0]);
+
     if (stdoutToStderr) {
-      posix_spawn_file_actions_adddup2(&file_actions_, stderr_pipe_[1],
+      posix_spawn_file_actions_adddup2(&file_actions_, stderr_pipe_.WriteFD(),
+                                       STDOUT_FILENO);
+    } else {
+      posix_spawn_file_actions_adddup2(&file_actions_, stdout_pipe_.WriteFD(),
                                        STDOUT_FILENO);
     }
-    posix_spawn_file_actions_adddup2(&file_actions_, stderr_pipe_[1],
+    posix_spawn_file_actions_adddup2(&file_actions_, stderr_pipe_.WriteFD(),
                                      STDERR_FILENO);
-    posix_spawn_file_actions_addclose(&file_actions_, stderr_pipe_[1]);
+
+    posix_spawn_file_actions_addclose(&file_actions_, stdout_pipe_.ReadFD());
+    posix_spawn_file_actions_addclose(&file_actions_, stdout_pipe_.WriteFD());
+    posix_spawn_file_actions_addclose(&file_actions_, stderr_pipe_.ReadFD());
+    posix_spawn_file_actions_addclose(&file_actions_, stderr_pipe_.WriteFD());
   }
 
   // Closes a file descriptor only if it hasn't already been closed.
-  void SafeClose(int *fd) {
-    if (*fd >= 0) {
-      close(*fd);
-      *fd = -1;
-    }
-  }
-
-  int stderr_pipe_[2];
+  Pipe stdout_pipe_;
+  Pipe stderr_pipe_;
   posix_spawn_file_actions_t file_actions_;
 };
 
 void PosixSpawnIORedirector::ConsumeAllSubprocessOutput(
-    std::ostream *stderr_stream) {
-  SafeClose(&stderr_pipe_[1]);
+    std::ostream *stdout_stream, std::ostream *stderr_stream) {
+  // The parent process doesn't write to the pipes.
+  stdout_pipe_.CloseWriteEnd();
+  stderr_pipe_.CloseWriteEnd();
 
-  char stderr_buffer[1024];
-  pollfd stderr_poll = {stderr_pipe_[0], POLLIN};
+  std::vector<pollfd> polls;
+  if (stdout_stream) {
+    polls.push_back({stdout_pipe_.ReadFD(), POLLIN});
+  }
+  if (stderr_stream) {
+    polls.push_back({stderr_pipe_.ReadFD(), POLLIN});
+  }
+
+  char buffer[1024];
   int status;
-  while ((status = poll(&stderr_poll, 1, -1)) > 0) {
-    if (stderr_poll.revents) {
-      int bytes_read =
-          read(stderr_pipe_[0], stderr_buffer, sizeof(stderr_buffer));
-      if (bytes_read == 0) {
-        break;
+  while ((status = poll(polls.data(), polls.size(), -1)) > 0) {
+    for (const auto &pipe_poll : polls) {
+      if (!pipe_poll.revents) {
+        continue;
       }
-      stderr_stream->write(stderr_buffer, bytes_read);
+
+      int bytes_read = read(pipe_poll.fd, buffer, sizeof(buffer));
+      if (bytes_read == 0) {
+        // End of file.
+        return;
+      }
+
+      if (pipe_poll.fd == stdout_pipe_.ReadFD()) {
+        stdout_stream->write(buffer, bytes_read);
+      } else if (pipe_poll.fd == stderr_pipe_.ReadFD()) {
+        stderr_stream->write(buffer, bytes_read);
+      }
     }
   }
 }
@@ -143,7 +207,8 @@ void ExecProcess(const std::vector<std::string> &args) {
 }
 
 int RunSubProcess(const std::vector<std::string> &args,
-                  std::ostream *stderr_stream, bool stdout_to_stderr) {
+                  std::ostream *stdout_stream, std::ostream *stderr_stream,
+                  bool stdout_to_stderr) {
   std::vector<const char *> exec_argv = ConvertToCArgs(args);
 
   // Set up a pipe to redirect stderr from the child process so that we can
@@ -159,7 +224,7 @@ int RunSubProcess(const std::vector<std::string> &args,
   int status =
       posix_spawn(&pid, args[0].c_str(), redirector->PosixSpawnFileActions(),
                   nullptr, const_cast<char **>(exec_argv.data()), environ);
-  redirector->ConsumeAllSubprocessOutput(stderr_stream);
+  redirector->ConsumeAllSubprocessOutput(stdout_stream, stderr_stream);
 
   if (status == 0) {
     int wait_status;

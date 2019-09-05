@@ -27,6 +27,7 @@ void ExecProcess(const std::vector<std::string> &args);
 // set, then stdout is redirected to the stderr stream as well. Returns the exit
 // code of the spawned process.
 int RunSubProcess(const std::vector<std::string> &args,
-                  std::ostream *stderr_stream, bool stdout_to_stderr = false);
+                  std::ostream *stdout_stream, std::ostream *stderr_stream,
+                  bool stdout_to_stderr = false);
 
 #endif  // BUILD_BAZEL_RULES_SWIFT_TOOLS_WRAPPERS_PROCESS_H

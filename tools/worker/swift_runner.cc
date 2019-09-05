@@ -120,8 +120,10 @@ SwiftRunner::SwiftRunner(const std::vector<std::string> &args,
   args_ = ProcessArguments(args);
 }
 
-int SwiftRunner::Run(std::ostream *stderr_stream, bool stdout_to_stderr) {
-  int exit_code = RunSubProcess(args_, stderr_stream, stdout_to_stderr);
+int SwiftRunner::Run(std::ostream *stdout_stream, std::ostream *stderr_stream,
+                     bool stdout_to_stderr) {
+  int exit_code =
+      RunSubProcess(args_, stdout_stream, stderr_stream, stdout_to_stderr);
   return exit_code;
 }
 

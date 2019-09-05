@@ -62,6 +62,7 @@ void WorkProcessor::ProcessWorkRequest(
   OutputFileMap output_file_map;
   std::string output_file_map_path;
   bool is_wmo = false;
+  bool is_parseable_output = false;
 
   std::string prev_arg;
   for (auto arg : request.arguments()) {
@@ -76,6 +77,8 @@ void WorkProcessor::ProcessWorkRequest(
       arg.clear();
     } else if (ArgumentEnablesWMO(arg)) {
       is_wmo = true;
+    } else if (arg == "-parseable-output") {
+      is_parseable_output = true;
     }
 
     if (!arg.empty()) {
@@ -124,10 +127,13 @@ void WorkProcessor::ProcessWorkRequest(
     }
   }
 
-  std::ostringstream stderr_stream;
   SwiftRunner swift_runner(processed_args, /*force_response_file=*/true);
 
-  int exit_code = swift_runner.Run(&stderr_stream, /*stdout_to_stderr=*/true);
+  std::ostringstream stdout_stream;
+  std::ostringstream stderr_stream;
+  bool stdout_to_stderr = !is_parseable_output;
+  int exit_code =
+      swift_runner.Run(&stdout_stream, &stderr_stream, stdout_to_stderr);
 
   if (!is_wmo) {
     // Copy the output files from the incremental storage area back to the
@@ -141,6 +147,14 @@ void WorkProcessor::ProcessWorkRequest(
     }
   }
 
+  if (is_parseable_output) {
+    response->set_output(stdout_stream.str());
+    auto log_path =
+        PathJoin(Dirname(output_file_map_path), "parseable_output.txt");
+    std::ofstream out{log_path, std::ios::binary};
+    out << stderr_stream.str();
+  } else {
+    response->set_output(stderr_stream.str());
+  }
   response->set_exit_code(exit_code);
-  response->set_output(stderr_stream.str());
 }

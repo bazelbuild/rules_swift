@@ -25,6 +25,8 @@ const char *Basename(const char *path);
 // "/foo/bar/baz.txt", returns "/foo/bar".
 std::string Dirname(const std::string &path);
 
+std::string PathJoin(const std::string &tail, const std::string &head);
+
 // Replaces the file extension of path with new_extension. It is assumed that
 // new_extension starts with a dot if it is desired for a dot to precede the new
 // extension in the returned path. If the path does not have a file extension,

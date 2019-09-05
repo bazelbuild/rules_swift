@@ -59,7 +59,8 @@ class SwiftRunner {
 
   // Run the Swift compiler, redirecting stderr to the specified stream. If
   // stdout_to_stderr is true, then stdout is also redirected to that stream.
-  int Run(std::ostream *stderr_stream, bool stdout_to_stderr = false);
+  int Run(std::ostream *stdout_stream, std::ostream *stderr_stream,
+          bool stdout_to_stderr = false);
 
  private:
   // Processes an argument that looks like it might be a response file (i.e., it
