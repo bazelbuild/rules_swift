@@ -139,7 +139,6 @@ private:
     posix_spawn_file_actions_addclose(&file_actions_, stderr_pipe_.WriteFD());
   }
 
-  // Closes a file descriptor only if it hasn't already been closed.
   Pipe stdout_pipe_;
   Pipe stderr_pipe_;
   posix_spawn_file_actions_t file_actions_;
