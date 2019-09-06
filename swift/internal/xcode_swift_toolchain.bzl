@@ -37,15 +37,21 @@ load(
 load(":providers.bzl", "SwiftToolchainInfo")
 
 def _swift_developer_lib_dir(platform_framework_dir):
-    """Returns the directory contain extra Swift specific developer libraries
+    """Returns the directory containing extra Swift developer libraries.
 
     Args:
-        platform_framework_dir: The developer platform framework directory for the current platform
+        platform_framework_dir: The developer platform framework directory for
+            the current platform.
 
     Returns:
-        The directory containing Swift specific development libraries and swiftmodules
+        The directory containing extra Swift-specific development libraries and
+        swiftmodules.
     """
-    return paths.join(paths.dirname(paths.dirname(platform_framework_dir)), "usr", "lib")
+    return paths.join(
+        paths.dirname(paths.dirname(platform_framework_dir)),
+        "usr",
+        "lib",
+    )
 
 def _command_line_objc_copts(objc_fragment):
     """Returns copts that should be passed to `clang` from the `objc` fragment.
