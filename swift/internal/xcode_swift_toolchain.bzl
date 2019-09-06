@@ -143,16 +143,23 @@ def _default_linker_opts(
 
     return linkopts
 
-def _default_swiftc_copts(apple_fragment, apple_toolchain, target):
+def _default_swiftc_copts(
+        apple_fragment,
+        apple_toolchain,
+        target,
+        toolchain_root):
     """Returns options that should be passed by default to `swiftc`.
 
     Args:
         apple_fragment: The `apple` configuration fragment.
         apple_toolchain: The `apple_common.apple_toolchain()` object.
         target: The target triple.
+        toolchain_root: The optional toolchain root, if specified by the
+            `--define=SWIFT_USE_TOOLCHAIN_ROOT=<path>` flag.
 
     Returns:
-        A list of options that will be passed to any compile action created by this toolchain.
+        A list of options that will be passed to any compile action created by
+        this toolchain.
     """
     copts = [
         "-target",
@@ -163,14 +170,29 @@ def _default_swiftc_copts(apple_fragment, apple_toolchain, target):
         apple_toolchain.platform_developer_framework_dir(apple_fragment),
     ]
 
+    # If we have a custom "toolchain root" (meaning a bin/ dir with a custom
+    # compiler that we want to use in place of the original, but not a *full*
+    # toolchain, make sure we use the resource dir of the *original* toolchain
+    # so that libraries are still found (otherwise, by default, the compiler
+    # will look in its parent directory for them).
+    if toolchain_root:
+        copts.extend([
+            "-resource-dir",
+            ("{developer_dir}/Toolchains/{toolchain}.xctoolchain/" +
+             "usr/lib/swift").format(
+                developer_dir = apple_toolchain.developer_dir(),
+                toolchain = "XcodeDefault",
+            ),
+        ])
+
     bitcode_mode = str(apple_fragment.bitcode_mode)
     if bitcode_mode == "embedded":
         copts.append("-embed-bitcode")
     elif bitcode_mode == "embedded_markers":
         copts.append("-embed-bitcode-marker")
     elif bitcode_mode != "none":
-        fail("Internal error: expected apple_fragment.bitcode_mode to be one of: " +
-             "['embedded', 'embedded_markers', 'none']")
+        fail("Internal error: expected apple_fragment.bitcode_mode to be " +
+             "one of: ['embedded', 'embedded_markers', 'none']")
 
     return copts
 
@@ -283,12 +305,33 @@ def _xcode_swift_toolchain_impl(ctx):
         target,
         xcode_config,
     )
-    swiftc_copts = _default_swiftc_copts(apple_fragment, apple_toolchain, target)
+
+    # `--define=SWIFT_USE_TOOLCHAIN_ROOT=<path>` is a rapid development feature
+    # that lets you build *just* a custom `swift` driver (and `swiftc`
+    # symlink), rather than a full toolchain, and point compilation actions at
+    # those. Note that the files must still be in a "toolchain-like" directory
+    # structure, meaning that the path passed here must contain a `bin`
+    # directory and that directory contains the `swift` and `swiftc` files.
+    #
+    # To use a "standard" custom toolchain built using the full Swift build
+    # script, use `--define=SWIFT_CUSTOM_TOOLCHAIN=<id>` as shown below.
+    toolchain_root = ctx.var.get("SWIFT_USE_TOOLCHAIN_ROOT")
+    custom_toolchain = ctx.var.get("SWIFT_CUSTOM_TOOLCHAIN")
+
+    if toolchain_root and custom_toolchain:
+        fail("Do not use SWIFT_USE_TOOLCHAIN_ROOT and SWIFT_CUSTOM_TOOLCHAIN" +
+             "in the same build.")
+
+    swiftc_copts = _default_swiftc_copts(
+        apple_fragment,
+        apple_toolchain,
+        target,
+        toolchain_root,
+    )
 
     # Configure the action registrars that automatically prepend xcrunwrapper to registered actions.
     env = _xcode_env(xcode_config, platform)
     swift_toolchain_env = {}
-    custom_toolchain = ctx.var.get("SWIFT_CUSTOM_TOOLCHAIN")
     if custom_toolchain:
         swift_toolchain_env["TOOLCHAINS"] = custom_toolchain
 
@@ -327,7 +370,7 @@ def _xcode_swift_toolchain_impl(ctx):
             linker_opts_producer = linker_opts_producer,
             object_format = "macho",
             requested_features = requested_features,
-            root_dir = None,
+            root_dir = toolchain_root,
             stamp_producer = None,
             supports_objc_interop = True,
             swiftc_copts = swiftc_copts,
