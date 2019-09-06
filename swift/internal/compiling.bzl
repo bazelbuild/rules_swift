@@ -30,9 +30,6 @@ load(
     "objc_provider_framework_name",
 )
 
-# Swift compiler options that cause the code to be compiled using whole-module optimization.
-_WMO_COPTS = ("-force-single-frontend-invocation", "-whole-module-optimization", "-wmo")
-
 def collect_transitive_compile_inputs(args, deps, direct_defines = []):
     """Collect transitive inputs and flags from Swift providers.
 
@@ -116,6 +113,7 @@ def collect_transitive_compile_inputs(args, deps, direct_defines = []):
 def declare_compile_outputs(
         actions,
         copts,
+        is_wmo,
         srcs,
         target_name,
         index_while_building = False):
@@ -125,6 +123,7 @@ def declare_compile_outputs(
         actions: The object used to register actions.
         copts: The flags that will be passed to the compile action, which are scanned to determine
             whether a single frontend invocation will be used or not.
+        is_wmo: Whether the compilation is happening with whole module optimization.
         srcs: The list of source files that will be compiled.
         target_name: The name (excluding package path) of the target being built.
         index_while_building: If `True`, a tree artifact will be declared to hold Clang index store
@@ -144,7 +143,7 @@ def declare_compile_outputs(
         *   `output_objects`: A list of object (.o) files that will be the result of the compile
             action and which should be archived afterward.
     """
-    output_nature = _emitted_output_nature(copts)
+    output_nature = _emitted_output_nature(copts, is_wmo)
 
     if not output_nature.emits_multiple_objects:
         # If we're emitting a single object, we don't use an object map; we just declare the output
@@ -549,7 +548,7 @@ def _disable_autolink_framework_copts(framework_name):
         ],
     )
 
-def _emitted_output_nature(copts):
+def _emitted_output_nature(copts, is_wmo):
     """Returns a `struct` with information about the nature of emitted outputs for the given flags.
 
     The compiler emits a single object if it is invoked with whole-module optimization enabled and
@@ -559,6 +558,7 @@ def _emitted_output_nature(copts):
 
     Args:
         copts: The options passed into the compile action.
+        is_wmo: Whether the compilation is happening with whole module optimization.
 
     Returns:
         A struct containing the following fields:
@@ -569,14 +569,11 @@ def _emitted_output_nature(copts):
         *   `emits_partial_modules`: `True` if the Swift frontend emits partial `.swiftmodule` files
             for the individual source files in a compilation action with the given flags.
     """
-    is_wmo = False
     saw_space_separated_num_threads = False
     num_threads = 1
 
     for copt in copts:
-        if copt in _WMO_COPTS:
-            is_wmo = True
-        elif saw_space_separated_num_threads:
+        if saw_space_separated_num_threads:
             saw_space_separated_num_threads = False
             num_threads = _safe_int(copt)
         elif copt == "-num-threads":

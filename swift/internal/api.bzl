@@ -493,7 +493,8 @@ def _compile(
     # on a Mac Pro for historical reasons.
     # TODO(b/32571265): Generalize this based on platform and core count when an
     # API to obtain this is available.
-    if _is_wmo(copts + swift_toolchain.command_line_copts, feature_configuration):
+    is_wmo = _is_wmo(copts + swift_toolchain.command_line_copts, feature_configuration)
+    if is_wmo:
         # We intentionally don't use `+=` or `extend` here to ensure that a
         # copy is made instead of extending the original.
         copts = copts + ["-num-threads", "12"]
@@ -501,6 +502,7 @@ def _compile(
     compile_reqs = declare_compile_outputs(
         actions = actions,
         copts = copts + swift_toolchain.command_line_copts,
+        is_wmo = is_wmo,
         srcs = srcs,
         target_name = target_name,
         index_while_building = swift_common.is_enabled(
