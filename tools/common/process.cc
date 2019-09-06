@@ -39,12 +39,19 @@ struct Pipe {
     valid_ = result == 0;
   }
 
-  Pipe(Pipe &&pipe) : pipe_(std::move(pipe.pipe_)), valid_(pipe.valid_) {
+  Pipe(Pipe &&other) : pipe_(other.pipe_), valid_(other.valid_) {
     if (valid_) {
-      for (auto &fd : pipe.pipe_) {
+      for (auto &fd : other.pipe_) {
         fd = -1;
       }
     }
+  }
+
+  Pipe &operator=(Pipe &&other) {
+    pipe_ = other.pipe_;
+    valid_ = other.valid_;
+    other.valid_ = false;
+    return *this;
   }
 
   bool Valid() const { return valid_; }
