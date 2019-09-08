@@ -34,6 +34,12 @@ def _get_swift_toolchain(target, aspect_ctx):
     return None
 
 def _swift_usage_aspect_impl(target, aspect_ctx):
+    # Targets can directly propagate their own `SwiftUsageInfo` provider. In
+    # those case, this aspect must not propagate a `SwiftUsageInfo`, because
+    # doing so results in a Bazel error.
+    if SwiftUsageInfo in target:
+        return []
+
     # If the target itself propagates `SwiftInfo`, get the toolchain from it.
     found_toolchain = _get_swift_toolchain(target, aspect_ctx)
 
