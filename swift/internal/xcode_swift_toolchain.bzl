@@ -22,6 +22,7 @@ toolchain, see `swift.bzl`.
 load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:partial.bzl", "partial")
+load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
 load(
     ":features.bzl",
@@ -34,6 +35,23 @@ load(
     "features_for_build_modes",
 )
 load(":providers.bzl", "SwiftToolchainInfo")
+
+def _swift_developer_lib_dir(platform_framework_dir):
+    """Returns the directory containing extra Swift developer libraries.
+
+    Args:
+        platform_framework_dir: The developer platform framework directory for
+            the current platform.
+
+    Returns:
+        The directory containing extra Swift-specific development libraries and
+        swiftmodules.
+    """
+    return paths.join(
+        paths.dirname(paths.dirname(platform_framework_dir)),
+        "usr",
+        "lib",
+    )
 
 def _command_line_objc_copts(objc_fragment):
     """Returns copts that should be passed to `clang` from the `objc` fragment.
@@ -140,6 +158,7 @@ def _default_linker_opts(
     # their rpaths.
     if is_test:
         linkopts.append("-Wl,-rpath,{}".format(platform_framework_dir))
+        linkopts.append("-L{}".format(_swift_developer_lib_dir(platform_framework_dir)))
 
     return linkopts
 
@@ -161,13 +180,16 @@ def _default_swiftc_copts(
         A list of options that will be passed to any compile action created by
         this toolchain.
     """
+    platform_framework_dir = apple_toolchain.platform_developer_framework_dir(apple_fragment)
     copts = [
         "-target",
         target,
         "-sdk",
         apple_toolchain.sdk_dir(),
         "-F",
-        apple_toolchain.platform_developer_framework_dir(apple_fragment),
+        platform_framework_dir,
+        "-I",
+        _swift_developer_lib_dir(platform_framework_dir),
     ]
 
     # If we have a custom "toolchain root" (meaning a bin/ dir with a custom
