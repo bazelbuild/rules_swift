@@ -63,4 +63,11 @@ tasks:
     - .bazelci/update_workspace_to_deps_heads.sh
     <<: *linux_common
 
-buildifier: latest
+buildifier:
+  version: latest
+  # Disable 'bzl-visibility' since it doesn't work properly.
+  #  https://github.com/bazelbuild/buildtools/issues/718
+  # TODO(b/140761855): Remove native-cc from this list.
+  # TODO(b/140761855): Remove native-proto from this list.
+  # TODO(b/140761855): Remove native-py from this list.
+  warnings: -bzl-visibility,-native-cc,-native-proto,-native-py
