@@ -202,7 +202,10 @@ def _swift_linking_rule_impl(
     )
     link_args.add_all(link_cpp_toolchain_flags)
 
-    deps_to_link = ctx.attr.deps + swift_toolchain.implicit_deps
+    deps_to_link = ctx.attr.deps + swift_common.get_implicit_deps(
+        feature_configuration = feature_configuration,
+        swift_toolchain = swift_toolchain,
+    )
     if ctx.attr.malloc:
         deps_to_link.append(ctx.attr.malloc)
 

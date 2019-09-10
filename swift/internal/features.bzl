@@ -75,6 +75,12 @@ SWIFT_FEATURE_FULL_DEBUG_INFO = "swift.full_debug_info"
 # If enabled, the compilation action for a target will produce an index store.
 SWIFT_FEATURE_INDEX_WHILE_BUILDING = "swift.index_while_building"
 
+# If enabled, Swift libraries, binaries, and tests will only have automatic dependencies on the
+# targets provided by the toolchain's `required_implicit_deps` field but not those in the
+# `optional_implicit_deps` field. Users may still explicitly list the latter in the `deps` of
+# their targets if they are needed.
+SWIFT_FEATURE_MINIMAL_DEPS = "swift.minimal_deps"
+
 # If enabled, compilation actions and module map generation will assume that the header paths in
 # module maps are relative to the current working directory (i.e., the workspace root); if disabled,
 # header paths in module maps are relative to the location of the module map file.

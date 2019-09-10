@@ -54,6 +54,7 @@ load(
     "SWIFT_FEATURE_FASTBUILD",
     "SWIFT_FEATURE_FULL_DEBUG_INFO",
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
+    "SWIFT_FEATURE_MINIMAL_DEPS",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_NO_GENERATED_HEADER",
     "SWIFT_FEATURE_NO_GENERATED_MODULE_MAP",
@@ -789,6 +790,26 @@ def _derive_module_name(*args):
         return package_part + "_" + name_part
     return name_part
 
+def _get_implicit_deps(feature_configuration, swift_toolchain):
+    """Gets the list of implicit dependencies from the toolchain.
+
+    Args:
+        feature_configuration: The feature configuration, which determines
+            whether optional implicit dependencies are included.
+        swift_toolchain: The Swift toolchain.
+
+    Returns:
+        A list of targets that should be treated as implicit dependencies of
+        the toolchain under the given feature configuration.
+    """
+    deps = list(swift_toolchain.required_implicit_deps)
+    if not _is_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_MINIMAL_DEPS,
+    ):
+        deps.extend(swift_toolchain.optional_implicit_deps)
+    return deps
+
 def _is_enabled(feature_configuration, feature_name):
     """Returns `True` if the given feature is enabled in the feature configuration.
 
@@ -957,7 +978,10 @@ def _swiftc_command_line_and_inputs(
       of the Bazel action that spawns a tool with the computed command line (i.e.,
       any source files, referenced module maps and headers, and so forth.)
     """
-    all_deps = deps + toolchain.implicit_deps
+    all_deps = deps + _get_implicit_deps(
+        feature_configuration = feature_configuration,
+        swift_toolchain = toolchain,
+    )
 
     args.add("-module-name")
     args.add(module_name)
@@ -1072,6 +1096,7 @@ swift_common = struct(
     configure_features = _configure_features,
     create_swift_info = _create_swift_info,
     derive_module_name = _derive_module_name,
+    get_implicit_deps = _get_implicit_deps,
     is_enabled = _is_enabled,
     library_rule_attrs = _library_rule_attrs,
     swift_runtime_linkopts = _swift_runtime_linkopts,
