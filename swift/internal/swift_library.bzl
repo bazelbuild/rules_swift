@@ -63,13 +63,16 @@ def _swift_library_impl(ctx):
         module_name = swift_common.derive_module_name(ctx.label)
 
     swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
-    deps = ctx.attr.deps + swift_toolchain.implicit_deps
-
     feature_configuration = swift_common.configure_features(
         ctx = ctx,
         requested_features = ctx.features,
         swift_toolchain = swift_toolchain,
         unsupported_features = ctx.disabled_features,
+    )
+
+    deps = ctx.attr.deps + swift_common.get_implicit_deps(
+        feature_configuration = feature_configuration,
+        swift_toolchain = swift_toolchain,
     )
 
     compilation_outputs = swift_common.compile(

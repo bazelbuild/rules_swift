@@ -117,10 +117,6 @@ Swift code.
 For example, when using an Xcode toolchain, the execution requirements should be such that running
 on Darwin is required.
 """,
-        "implicit_deps": """
-`List` of `Target`s. Library targets that should be added as implicit dependencies of any
-`swift_library`, `swift_binary`, or `swift_test` target.
-""",
         "linker_opts_producer": """
 Skylib `partial`. A partial function that returns the flags that should be passed to Clang to link a
 binary or test target with the Swift runtime libraries.
@@ -135,6 +131,11 @@ The partial should be called with two arguments:
 `String`. The object file format of the platform that the toolchain is targeting. The currently
 supported values are `"elf"` and `"macho"`.
 """,
+        "optional_implicit_deps": """
+`List` of `Target`s. Library targets that should be added as implicit dependencies of any
+`swift_library`, `swift_binary`, or `swift_test` target that does not have the feature
+`swift.minimal_deps` applied.
+""",
         "requested_features": """
 `List` of `string`s. Features that should be implicitly enabled by default for targets built using
 this toolchain, unless overridden by the user by listing their negation in the `features` attribute
@@ -143,6 +144,10 @@ of a target/package or in the `--features` command line flag.
 These features determine various compilation and debugging behaviors of the Swift build rules, and
 they are also passed to the C++ APIs used when linking (so features defined in CROSSTOOL may be used
 here).
+""",
+        "required_implicit_deps": """
+`List` of `Target`s. Library targets that should be unconditionally added as implicit dependencies
+of any `swift_library`, `swift_binary`, or `swift_test` target.
 """,
         "root_dir": "`String`. The workspace-relative root directory of the toolchain.",
         "stamp_producer": """
