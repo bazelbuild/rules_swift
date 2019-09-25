@@ -120,6 +120,19 @@ SWIFT_FEATURE_USE_RESPONSE_FILES = "swift.use_response_files"
 #     target.swift-extra-clang-flags
 SWIFT_FEATURE_CACHEABLE_SWIFTMODULES = "swift.cacheable_swiftmodules"
 
+# If enabled, enables features that require the library evolution compilation mode. If disabled,
+# features that require library evolution mode are noops.
+SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION = "swift.supports_library_evolution"
+
+# If enabled, requests the `-enable-library-evolution` swiftc flag which is required for newer
+# features like swiftinterface file generation.
+# If the SWIFT_FEATURES_SUPPORTS_LIBRARY_EVOLUTION feature is not enabled, this feature is a noop.
+SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION = "swift.enable_library_evolution"
+
+# If enabled, requests the swiftinterface file to be built on the swiftc invocation.
+# If the SWIFT_FEATURES_SUPPORTS_LIBRARY_EVOLUTION feature is not enabled, this feature is a noop.
+SWIFT_FEATURE_EMIT_SWIFTINTERFACE = "swift.emit_swiftinterface"
+
 def features_for_build_modes(ctx, objc_fragment = None):
     """Returns a list of Swift toolchain features corresponding to current build modes.
 

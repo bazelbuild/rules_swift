@@ -60,6 +60,10 @@ provider and all of its dependencies.
 `Depset` of `File`s. The transitive Swift documentation (`.swiftdoc`) files emitted by the library
 that propagated this provider and all of its dependencies.
 """,
+        "transitive_swiftinterfaces": """
+`Depset` of `File`s. The transitive Swift interface (`.swiftinterface`) files emitted by the library
+that propagated this provider and all of its dependencies.
+""",
         "transitive_swiftmodules": """
 `Depset` of `File`s. The transitive Swift modules (`.swiftmodule`) emitted by the library that
 propagated this provider and all of its dependencies.
