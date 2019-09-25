@@ -31,6 +31,7 @@ load(
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
+    "SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_USE_RESPONSE_FILES",
     "features_for_build_modes",
 )
@@ -374,6 +375,10 @@ def _xcode_swift_toolchain_impl(ctx):
     # Xcode 10.2 implies Swift 5.0.
     if _is_xcode_at_least_version(xcode_config, "10.2"):
         requested_features.append(SWIFT_FEATURE_DEBUG_PREFIX_MAP)
+
+    # Xcode 11.0 implies Swift 5.1.
+    if _is_xcode_at_least_version(xcode_config, "11.0"):
+        requested_features.append(SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION)
 
     command_line_copts = _command_line_objc_copts(ctx.fragments.objc) + ctx.fragments.swift.copts()
 

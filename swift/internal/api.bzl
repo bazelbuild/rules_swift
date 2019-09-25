@@ -49,7 +49,9 @@ load(
     "SWIFT_FEATURE_COVERAGE",
     "SWIFT_FEATURE_DBG",
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
+    "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
+    "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_ENABLE_TESTING",
     "SWIFT_FEATURE_FASTBUILD",
     "SWIFT_FEATURE_FULL_DEBUG_INFO",
@@ -60,6 +62,7 @@ load(
     "SWIFT_FEATURE_NO_GENERATED_MODULE_MAP",
     "SWIFT_FEATURE_OPT",
     "SWIFT_FEATURE_OPT_USES_WMO",
+    "SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
     "SWIFT_FEATURE_USE_RESPONSE_FILES",
 )
@@ -77,6 +80,7 @@ def _create_swift_info(
         module_name = None,
         swiftdocs = [],
         swiftmodules = [],
+        swiftinterfaces = [],
         swift_infos = [],
         swift_version = None):
     """Creates a new `SwiftInfo` provider with the given values.
@@ -100,6 +104,8 @@ def _create_swift_info(
             but depend on others that do).
         swiftdocs: A list of `.swiftdoc` files that are the direct outputs of the target being
             built. If omitted, an empty list is used.
+        swiftinterfaces: A list of `.swiftinterface` files that are the direct outputs of the target
+            built. If omitted, an empty list is used.
         swiftmodules: A list of `.swiftmodule` files that are the direct outputs of the target
             being built. If omitted, an empty list is used.
         swift_infos: A list of `SwiftInfo` providers from dependencies, whose transitive fields
@@ -113,11 +119,13 @@ def _create_swift_info(
     transitive_defines = []
     transitive_modulemaps = []
     transitive_swiftdocs = []
+    transitive_swiftinterfaces = []
     transitive_swiftmodules = []
     for swift_info in swift_infos:
         transitive_defines.append(swift_info.transitive_defines)
         transitive_modulemaps.append(swift_info.transitive_modulemaps)
         transitive_swiftdocs.append(swift_info.transitive_swiftdocs)
+        transitive_swiftinterfaces.append(swift_info.transitive_swiftinterfaces)
         transitive_swiftmodules.append(swift_info.transitive_swiftmodules)
 
     return SwiftInfo(
@@ -129,6 +137,10 @@ def _create_swift_info(
         transitive_defines = depset(defines, transitive = transitive_defines),
         transitive_modulemaps = depset(modulemaps, transitive = transitive_modulemaps),
         transitive_swiftdocs = depset(swiftdocs, transitive = transitive_swiftdocs),
+        transitive_swiftinterfaces = depset(
+            swiftinterfaces,
+            transitive = transitive_swiftinterfaces,
+        ),
         transitive_swiftmodules = depset(swiftmodules, transitive = transitive_swiftmodules),
     )
 
@@ -570,6 +582,30 @@ def _compile(
     args.add("-emit-module-path")
     args.add(swiftmodule)
 
+    swiftinterface = None
+
+    # Check and enabled features related to the library evolution compilation mode as requested.
+    if _is_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION,
+    ):
+        if _is_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION,
+        ):
+            args.add("-enable-library-evolution")
+
+            # swiftinterface generation requires the library evolution feature to be available and
+            # enabled.
+            if _is_enabled(
+                feature_configuration = feature_configuration,
+                feature_name = SWIFT_FEATURE_EMIT_SWIFTINTERFACE,
+            ):
+                swiftinterface = derived_files.swiftinterface(actions, module_name = module_name)
+                args.add("-emit-module-interface-path")
+                args.add(swiftinterface)
+                additional_outputs.append(swiftinterface)
+
     # Add any command line arguments that do *not* have to do with emitting outputs.
     basic_inputs = _swiftc_command_line_and_inputs(
         # TODO(allevato): Make this argument a list of files instead.
@@ -690,6 +726,7 @@ def _compile(
         object_files = output_objects,
         stats_directory = stats_directory,
         swiftdoc = swiftdoc,
+        swiftinterface = swiftinterface,
         swiftmodule = swiftmodule,
     )
 
@@ -790,6 +827,19 @@ def _derive_module_name(*args):
         return package_part + "_" + name_part
     return name_part
 
+def _config_attrs():
+    """Returns the Starlark configuration flags and settings attributes.
+
+    Returns:
+        A dictionary of configuration attributes to be added to rules that read configuration
+        settings.
+    """
+    return {
+        "_config_emit_swiftinterface": attr.label(
+            default = "@build_bazel_rules_swift//swift:emit_swiftinterface",
+        ),
+    }
+
 def _get_implicit_deps(feature_configuration, swift_toolchain):
     """Gets the list of implicit dependencies from the toolchain.
 
@@ -872,6 +922,7 @@ def _library_rule_attrs(additional_deps_aspects = []):
     """
     return dicts.add(
         _compilation_attrs(additional_deps_aspects = additional_deps_aspects),
+        _config_attrs(),
         {
             "linkopts": attr.string_list(
                 doc = """

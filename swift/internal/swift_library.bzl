@@ -21,10 +21,16 @@ load(
     "new_objc_provider",
     "swift_library_output_map",
 )
+load(
+    ":features.bzl",
+    "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
+    "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
+)
 load(":linking.bzl", "register_libraries_to_link")
 load(":non_swift_target_aspect.bzl", "non_swift_target_aspect")
 load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
 load(":utils.bzl", "compact", "create_cc_info", "expand_locations", "get_providers")
+load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 
 def _maybe_parse_as_library_copts(srcs):
     """Returns a list of compiler flags depending on whether a `main.swift` file is present.
@@ -58,6 +64,11 @@ def _swift_library_impl(ctx):
     linkopts = expand_locations(ctx, ctx.attr.linkopts, ctx.attr.swiftc_inputs)
     srcs = ctx.files.srcs
 
+    extra_features = []
+    if ctx.attr._config_emit_swiftinterface[BuildSettingInfo].value:
+        extra_features.append(SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION)
+        extra_features.append(SWIFT_FEATURE_EMIT_SWIFTINTERFACE)
+
     module_name = ctx.attr.module_name
     if not module_name:
         module_name = swift_common.derive_module_name(ctx.label)
@@ -65,7 +76,7 @@ def _swift_library_impl(ctx):
     swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
     feature_configuration = swift_common.configure_features(
         ctx = ctx,
-        requested_features = ctx.features,
+        requested_features = ctx.features + extra_features,
         swift_toolchain = swift_toolchain,
         unsupported_features = ctx.disabled_features,
     )
@@ -108,6 +119,8 @@ def _swift_library_impl(ctx):
         output_groups["swift_index_store"] = depset([compilation_outputs.indexstore])
     if compilation_outputs.stats_directory:
         output_groups["swift_compile_stats_direct"] = depset([compilation_outputs.stats_directory])
+    if compilation_outputs.swiftinterface:
+        output_groups["swiftinterface"] = depset([compilation_outputs.swiftinterface])
 
     direct_output_files = compact([
         compilation_outputs.generated_header,
@@ -143,6 +156,7 @@ def _swift_library_impl(ctx):
             defines = ctx.attr.defines,
             module_name = module_name,
             swiftdocs = [compilation_outputs.swiftdoc],
+            swiftinterfaces = compact([compilation_outputs.swiftinterface]),
             swiftmodules = [compilation_outputs.swiftmodule],
             swift_infos = get_providers(deps, SwiftInfo),
             swift_version = find_swift_version_copt_value(copts),
