@@ -52,6 +52,10 @@ was not set.
 `Depset` of `string`s. The transitive `defines` specified for the library that propagated this
 provider and all of its dependencies.
 """,
+        "transitive_generated_headers": """
+`Depset` of `File`s. The transitive generated header files that can be used by Objective-C sources
+to interop with the transitive Swift libraries.
+""",
         "transitive_modulemaps": """
 `Depset` of `File`s. The transitive module map files that will be passed to Clang using the
 `-fmodule-map-file` option.
