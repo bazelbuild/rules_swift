@@ -154,6 +154,7 @@ def _swift_library_impl(ctx):
         ),
         swift_common.create_swift_info(
             defines = ctx.attr.defines,
+            generated_headers = compact([compilation_outputs.generated_header]),
             module_name = module_name,
             swiftdocs = [compilation_outputs.swiftdoc],
             swiftinterfaces = compact([compilation_outputs.swiftinterface]),
