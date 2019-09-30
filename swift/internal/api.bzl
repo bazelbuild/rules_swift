@@ -1153,6 +1153,7 @@ swift_common = struct(
     cc_feature_configuration = _cc_feature_configuration,
     compilation_attrs = _compilation_attrs,
     compile = _compile,
+    config_attrs = _config_attrs,
     configure_features = _configure_features,
     create_swift_info = _create_swift_info,
     derive_module_name = _derive_module_name,
