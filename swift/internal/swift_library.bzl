@@ -19,6 +19,7 @@ load(
     ":compiling.bzl",
     "find_swift_version_copt_value",
     "new_objc_provider",
+    "output_groups_from_compilation_outputs",
     "swift_library_output_map",
 )
 load(
@@ -114,14 +115,6 @@ def _swift_library_impl(ctx):
         swift_toolchain = swift_toolchain,
     )
 
-    output_groups = {}
-    if compilation_outputs.indexstore:
-        output_groups["swift_index_store"] = depset([compilation_outputs.indexstore])
-    if compilation_outputs.stats_directory:
-        output_groups["swift_compile_stats_direct"] = depset([compilation_outputs.stats_directory])
-    if compilation_outputs.swiftinterface:
-        output_groups["swiftinterface"] = depset([compilation_outputs.swiftinterface])
-
     direct_output_files = compact([
         compilation_outputs.generated_header,
         compilation_outputs.swiftdoc,
@@ -138,7 +131,9 @@ def _swift_library_impl(ctx):
                 files = ctx.files.data,
             ),
         ),
-        OutputGroupInfo(**output_groups),
+        OutputGroupInfo(**output_groups_from_compilation_outputs(
+            compilation_outputs = compilation_outputs,
+        )),
         create_cc_info(
             additional_inputs = additional_inputs,
             cc_infos = get_providers(deps, CcInfo),

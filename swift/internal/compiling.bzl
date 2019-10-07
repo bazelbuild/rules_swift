@@ -423,6 +423,36 @@ def objc_compile_requirements(args, deps):
 
     return depset(transitive = inputs)
 
+def output_groups_from_compilation_outputs(compilation_outputs):
+    """Returns a dictionary of output groups from Swift compilation outputs.
+
+    Args:
+        compilation_outputs: The result of calling `swift_common.compile`.
+
+    Returns:
+        A `dict` whose keys are the names of output groups and values are
+        `depset`s of `File`s, which can be splatted as keyword arguments to the
+        `OutputGroupInfo` constructor.
+    """
+    output_groups = {}
+
+    if compilation_outputs.indexstore:
+        output_groups["swift_index_store"] = depset([
+            compilation_outputs.indexstore,
+        ])
+
+    if compilation_outputs.stats_directory:
+        output_groups["swift_compile_stats_direct"] = depset([
+            compilation_outputs.stats_directory,
+        ])
+
+    if compilation_outputs.swiftinterface:
+        output_groups["swiftinterface"] = depset([
+            compilation_outputs.swiftinterface,
+        ])
+
+    return output_groups
+
 def register_autolink_extract_action(
         actions,
         module_name,

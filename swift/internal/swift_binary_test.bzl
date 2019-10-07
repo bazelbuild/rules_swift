@@ -18,6 +18,7 @@ load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:partial.bzl", "partial")
 load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "CPP_LINK_EXECUTABLE_ACTION_NAME")
 load(":api.bzl", "swift_common")
+load(":compiling.bzl", "output_groups_from_compilation_outputs")
 load(":derived_files.bzl", "derived_files")
 load(":features.bzl", "SWIFT_FEATURE_BUNDLED_XCTESTS")
 load(":linking.bzl", "register_link_executable_action")
@@ -170,12 +171,9 @@ def _swift_linking_rule_impl(
         objects_to_link.extend(compilation_outputs.object_files)
         additional_inputs_to_linker = depset(compilation_outputs.linker_inputs)
 
-        if compilation_outputs.indexstore:
-            output_groups["swift_index_store"] = depset([compilation_outputs.indexstore])
-        if compilation_outputs.stats_directory:
-            output_groups["swift_compile_stats_direct"] = depset(
-                [compilation_outputs.stats_directory],
-            )
+        output_groups = output_groups_from_compilation_outputs(
+            compilation_outputs = compilation_outputs,
+        )
 
     # TODO(b/70228246): Also support mostly-static and fully-dynamic modes, here and for the C++
     # toolchain args below.
