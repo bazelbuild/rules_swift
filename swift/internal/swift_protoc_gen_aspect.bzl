@@ -16,6 +16,7 @@
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(":api.bzl", "swift_common")
+load(":compiling.bzl", "output_groups_from_compilation_outputs")
 load(":features.bzl", "SWIFT_FEATURE_ENABLE_TESTING", "SWIFT_FEATURE_NO_GENERATED_HEADER")
 load(":linking.bzl", "register_libraries_to_link")
 load(
@@ -415,14 +416,10 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
         else:
             objc_info = None
 
-        output_groups = {}
-        if compilation_outputs.stats_directory:
-            output_groups["swift_compile_stats_direct"] = depset(
-                [compilation_outputs.stats_directory],
-            )
-
         providers = [
-            OutputGroupInfo(**output_groups),
+            OutputGroupInfo(**output_groups_from_compilation_outputs(
+                compilation_outputs = compilation_outputs,
+            )),
             SwiftProtoCcInfo(
                 cc_info = create_cc_info(
                     cc_infos = cc_infos,

@@ -16,7 +16,11 @@
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(":api.bzl", "swift_common")
-load(":compiling.bzl", "new_objc_provider")
+load(
+    ":compiling.bzl",
+    "new_objc_provider",
+    "output_groups_from_compilation_outputs",
+)
 load(":derived_files.bzl", "derived_files")
 load(":linking.bzl", "register_libraries_to_link")
 load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
@@ -78,10 +82,6 @@ def _swift_module_alias_impl(ctx):
         swift_toolchain = swift_toolchain,
     )
 
-    output_groups = {}
-    if compilation_outputs.stats_directory:
-        output_groups["swift_compile_stats_direct"] = depset([compilation_outputs.stats_directory])
-
     providers = [
         DefaultInfo(
             files = depset(compact([
@@ -91,7 +91,9 @@ def _swift_module_alias_impl(ctx):
                 library_to_link.pic_static_library,
             ])),
         ),
-        OutputGroupInfo(**output_groups),
+        OutputGroupInfo(**output_groups_from_compilation_outputs(
+            compilation_outputs = compilation_outputs,
+        )),
         create_cc_info(
             cc_infos = get_providers(deps, CcInfo),
             compilation_outputs = compilation_outputs,
