@@ -20,12 +20,12 @@ def _get_swift_toolchain(target, aspect_ctx):
     """Gets the `SwiftToolchainInfo` used to build the given target, if any.
 
     Args:
-      target: The target being built.
-      aspect_ctx: The aspect context.
+        target: The target being built.
+        aspect_ctx: The aspect context.
 
     Returns:
-      The `SwiftToolchainInfo` provider, or `None` if the target was not a Swift
-      target.
+        The `SwiftToolchainInfo` provider, or `None` if the target was not a
+        Swift target.
     """
     if SwiftInfo in target:
         toolchain_target = getattr(aspect_ctx.rule.attr, "_toolchain", None)
@@ -46,11 +46,10 @@ def _swift_usage_aspect_impl(target, aspect_ctx):
     if found_toolchain:
         return [SwiftUsageInfo(toolchain = found_toolchain)]
 
-    # If one of the deps propagates `SwiftUsageInfo` provider, we can repropagate
-    # that information.
-    # TODO(allevato): We currently make the assumption that all Swift
-    # dependencies are built with the same toolchain (as in Bazel toolchain, not
-    # Swift toolchain).
+    # If one of the deps propagates `SwiftUsageInfo` provider, we can
+    # repropagate that information. We currently make the assumption that all
+    # Swift dependencies are built with the same toolchain (as in Bazel
+    # toolchain, not Swift toolchain).
     for dep in getattr(aspect_ctx.rule.attr, "deps", []):
         if SwiftUsageInfo in dep:
             return [dep[SwiftUsageInfo]]
@@ -61,7 +60,7 @@ def _swift_usage_aspect_impl(target, aspect_ctx):
 
 swift_usage_aspect = aspect(
     attr_aspects = ["deps"],
-    doc = """
+    doc = """\
 Collects information about how Swift is used in a dependency tree.
 
 When attached to an attribute, this aspect will propagate a `SwiftUsageInfo`

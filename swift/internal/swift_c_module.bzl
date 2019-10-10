@@ -42,7 +42,7 @@ swift_c_module = rule(
     attrs = {
         "module_map": attr.label(
             allow_single_file = True,
-            doc = """
+            doc = """\
 The module map file that should be loaded to import the C library dependency
 into Swift.
 """,
@@ -50,7 +50,7 @@ into Swift.
         ),
         "deps": attr.label_list(
             allow_empty = False,
-            doc = """
+            doc = """\
 A list of C targets (or anything propagating `CcInfo`) that are dependencies of
 this target and whose headers may be referenced by the module map.
 """,
@@ -58,7 +58,7 @@ this target and whose headers may be referenced by the module map.
             providers = [[CcInfo]],
         ),
     },
-    doc = """
+    doc = """\
 Wraps one or more C targets in a new module map that allows it to be imported
 into Swift to access its C interfaces.
 

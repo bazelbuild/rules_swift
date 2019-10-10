@@ -23,13 +23,15 @@ def get_swift_tool(swift_toolchain, tool):
 
     Args:
         swift_toolchain: The Swift toolchain being used to register actions.
-        tool: The name of a tool in the Swift toolchain (i.e., in the `bin` directory).
+        tool: The name of a tool in the Swift toolchain (i.e., in the `bin`
+            directory).
 
     Returns:
-        The path to the tool. If the toolchain provides a root directory, then the path will
-        include the `bin` directory of that toolchain. If the toolchain does not provide a root,
-        then it is assumed that the tool will be available by invoking just its name (e.g., found
-        on the system path or by another delegating tool like `xcrun` from Xcode).
+        The path to the tool. If the toolchain provides a root directory, then
+        the path will include the `bin` directory of that toolchain. If the
+        toolchain does not provide a root, then it is assumed that the tool will
+        be available by invoking just its name (e.g., found on the system path
+        or by another delegating tool like `xcrun` from Xcode).
     """
     if ("/" not in tool and swift_toolchain.root_dir):
         return paths.join(swift_toolchain.root_dir, "bin", tool)
@@ -38,20 +40,22 @@ def get_swift_tool(swift_toolchain, tool):
 def run_swift_action(actions, swift_toolchain, **kwargs):
     """Executes a Swift toolchain tool using the worker.
 
-    This function applies the toolchain's environment and execution requirements and wraps the
-    invocation in the worker tool that handles platform-specific requirements (for example, `xcrun`
-    on Darwin) and in additional pre- and post-processing to handle certain tasks like debug prefix
-    remapping and module cache health.
+    This function applies the toolchain's environment and execution requirements
+    and wraps the invocation in the worker tool that handles platform-specific
+    requirements (for example, `xcrun` on Darwin) and in additional pre- and
+    post-processing to handle certain tasks like debug prefix remapping and
+    module cache health.
 
-    Since this function uses the worker as the `executable` of the underlying action, it is an
-    error to pass `executable` into this function. Instead, the tool to run should be the first
-    item in the `arguments` list (or in the first `Args` object). This tool should be obtained
-    using `get_swift_tool` in order to correctly handle toolchains with explicit root directories.
+    Since this function uses the worker as the `executable` of the underlying
+    action, it is an error to pass `executable` into this function. Instead, the
+    tool to run should be the first item in the `arguments` list (or in the
+    first `Args` object). This tool should be obtained using `get_swift_tool` in
+    order to correctly handle toolchains with explicit root directories.
 
     Args:
-      actions: The `Actions` object with which to register actions.
-      swift_toolchain: The Swift toolchain being used to register actions.
-      **kwargs: Additional arguments to `actions.run`.
+        actions: The `Actions` object with which to register actions.
+        swift_toolchain: The Swift toolchain being used to register actions.
+        **kwargs: Additional arguments to `actions.run`.
     """
     if "executable" in kwargs:
         fail("run_swift_action does not support 'executable'. " +

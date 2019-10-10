@@ -29,29 +29,29 @@ def ensure_swiftmodule_is_embedded(
     purposes.
 
     Args:
-      actions: The object used to register actions.
-      swiftmodule: The `.swiftmodule` file to be wrapped.
-      target_name: The name of the target being built.
-      toolchain: The `SwiftToolchainInfo` provider of the toolchain.
+        actions: The object used to register actions.
+        swiftmodule: The `.swiftmodule` file to be wrapped.
+        target_name: The name of the target being built.
+        toolchain: The `SwiftToolchainInfo` provider of the toolchain.
 
     Returns:
       A `struct` containing three fields:
 
-      * `linker_flags`: A list of additional flags that should be propagated to
-        the linker.
-      * `linker_inputs`: A list of additional inputs that are not necessarily
-        object files, but which are referenced in `linker_flags` and should
-        therefore be passed to the linker.
-      * `objects_to_link`: A list of `.o` files that should be included in the
-        static archive or binary that represents the module.
+      *   `linker_flags`: A list of additional flags that should be propagated
+          to the linker.
+      *   `linker_inputs`: A list of additional inputs that are not necessarily
+          object files, but which are referenced in `linker_flags` and should
+          therefore be passed to the linker.
+      *   `objects_to_link`: A list of `.o` files that should be included in the
+          static archive or binary that represents the module.
     """
     linker_flags = []
     linker_inputs = []
     objects_to_link = []
 
     if toolchain.object_format == "elf":
-        # For ELF-format binaries, we need to invoke a Swift modulewrap action to
-        # wrap the .swiftmodule file in a .o file that gets propagated to the
+        # For ELF-format binaries, we need to invoke a Swift modulewrap action
+        # to wrap the .swiftmodule file in a .o file that gets propagated to the
         # linker.
         modulewrap_obj = derived_files.modulewrap_object(
             actions,
@@ -86,23 +86,23 @@ def _register_modulewrap_action(
         toolchain):
     """Wraps a Swift module in a `.o` file that can be linked into a binary.
 
-    This step (invoking `swift -modulewrap`) is required for the `.swiftmodule` of
-    the main module of an executable on platforms with ELF-format object files;
-    otherwise, debuggers will not be able to see those symbols.
+    This step (invoking `swift -modulewrap`) is required for the `.swiftmodule`
+    of the main module of an executable on platforms with ELF-format object
+    files; otherwise, debuggers will not be able to see those symbols.
 
     Args:
-      actions: The object used to register actions.
-      object: The object file that will be produced by the modulewrap task.
-      swiftmodule: The `.swiftmodule` file to be wrapped.
-      toolchain: The `SwiftToolchainInfo` provider of the toolchain.
+        actions: The object used to register actions.
+        object: The object file that will be produced by the modulewrap task.
+        swiftmodule: The `.swiftmodule` file to be wrapped.
+        toolchain: The `SwiftToolchainInfo` provider of the toolchain.
     """
     args = actions.args()
     args.add(get_swift_tool(swift_toolchain = toolchain, tool = "swift"))
     args.add("-modulewrap")
     args.add(swiftmodule)
 
-    # Workaround because bazel's c++ toolchain returns "local" instead of a
-    # real triple.
+    # Awkward workaround because Bazel's C++ toolchain returns "local" instead
+    # of a real triple.
     if toolchain.cc_toolchain_info.target_gnu_system_name != "local":
         args.add("-target", toolchain.cc_toolchain_info.target_gnu_system_name)
     args.add("-o", object)
@@ -113,6 +113,8 @@ def _register_modulewrap_action(
         inputs = [swiftmodule],
         mnemonic = "SwiftModuleWrap",
         outputs = [object],
-        progress_message = "Wrapping {} for debugging".format(swiftmodule.short_path),
+        progress_message = (
+            "Wrapping {} for debugging".format(swiftmodule.short_path)
+        ),
         swift_toolchain = toolchain,
     )

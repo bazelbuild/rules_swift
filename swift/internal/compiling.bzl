@@ -27,16 +27,18 @@ def collect_transitive_compile_inputs(args, deps, direct_defines = []):
     Args:
         args: An `Args` object to which
         deps: The dependencies for which the inputs should be gathered.
-        direct_defines: The list of defines for the target being built, which are merged with the
-            transitive defines before they are added to `args` in order to prevent duplication.
+        direct_defines: The list of defines for the target being built, which
+            are merged with the transitive defines before they are added to
+            `args` in order to prevent duplication.
 
     Returns:
-        A list of `depset`s representing files that must be passed as inputs to the Swift
-        compilation action.
+        A list of `depset`s representing files that must be passed as inputs to
+        the Swift compilation action.
     """
     input_depsets = []
 
-    # Collect all the search paths, module maps, flags, and so forth from transitive dependencies.
+    # Collect all the search paths, module maps, flags, and so forth from
+    # transitive dependencies.
     transitive_cc_defines = []
     transitive_cc_headers = []
     transitive_cc_includes = []
@@ -56,12 +58,21 @@ def collect_transitive_compile_inputs(args, deps, direct_defines = []):
             transitive_cc_defines.append(compilation_context.defines)
             transitive_cc_headers.append(compilation_context.headers)
             transitive_cc_includes.append(compilation_context.includes)
-            transitive_cc_quote_includes.append(compilation_context.quote_includes)
-            transitive_cc_system_includes.append(compilation_context.system_includes)
+            transitive_cc_quote_includes.append(
+                compilation_context.quote_includes,
+            )
+            transitive_cc_system_includes.append(
+                compilation_context.system_includes,
+            )
 
-    # Add import paths for the directories containing dependencies' swiftmodules.
+    # Add import paths for the directories containing dependencies'
+    # swiftmodules.
     all_swiftmodules = depset(transitive = transitive_swiftmodules)
-    args.add_all(all_swiftmodules, format_each = "-I%s", map_each = _dirname_map_fn)
+    args.add_all(
+        all_swiftmodules,
+        format_each = "-I%s",
+        map_each = _dirname_map_fn,
+    )
     input_depsets.append(all_swiftmodules)
 
     # Pass Swift defines propagated by dependencies.
@@ -69,12 +80,18 @@ def collect_transitive_compile_inputs(args, deps, direct_defines = []):
     args.add_all(all_defines, format_each = "-D%s")
 
     # Pass module maps from C/C++ dependencies to ClangImporter.
-    # TODO(allevato): Will `CcInfo` eventually keep these in its compilation context?
+    # TODO(allevato): Will `CcInfo` eventually keep these in its compilation
+    # context?
     all_modulemaps = depset(transitive = transitive_modulemaps)
     input_depsets.append(all_modulemaps)
-    args.add_all(all_modulemaps, before_each = "-Xcc", format_each = "-fmodule-map-file=%s")
+    args.add_all(
+        all_modulemaps,
+        before_each = "-Xcc",
+        format_each = "-fmodule-map-file=%s",
+    )
 
-    # Add C++ headers from dependencies to the action inputs so the compiler can read them.
+    # Add C++ headers from dependencies to the action inputs so the compiler can
+    # read them.
     input_depsets.append(depset(transitive = transitive_cc_headers))
 
     # Pass any C++ defines and include search paths to ClangImporter.
@@ -108,38 +125,49 @@ def declare_compile_outputs(
         srcs,
         target_name,
         index_while_building = False):
-    """Declares output files (and optional output file map) for a compile action.
+    """Declares output files and optional output file map for a compile action.
 
     Args:
         actions: The object used to register actions.
-        copts: The flags that will be passed to the compile action, which are scanned to determine
-            whether a single frontend invocation will be used or not.
-        is_wmo: Whether the compilation is happening with whole module optimization.
+        copts: The flags that will be passed to the compile action, which are
+            scanned to determine whether a single frontend invocation will be
+            used or not.
+        is_wmo: Whether the compilation is happening with whole module
+            optimization.
         srcs: The list of source files that will be compiled.
-        target_name: The name (excluding package path) of the target being built.
-        index_while_building: If `True`, a tree artifact will be declared to hold Clang index store
-            data and the relevant option will be added during compilation to generate the indexes.
+        target_name: The name (excluding package path) of the target being
+            built.
+        index_while_building: If `True`, a tree artifact will be declared to
+            hold Clang index store data and the relevant option will be added
+            during compilation to generate the indexes.
 
     Returns:
         A `struct` containing the following fields:
 
-        *   `args`: A list of values that should be added to the `Args` of the compile action.
-        *   `compile_inputs`: Additional input files that should be passed to the compile action.
-        *   `indexstore`: A `File` representing the index store directory that was generated if
-            index-while-building was enabled, or None.
-        *   `other_outputs`: Additional output files that should be declared by the compile action,
-            but which are not processed further.
-        *   `output_groups`: A dictionary of additional output groups that should be propagated by
-            the calling rule using the `OutputGroupInfo` provider.
-        *   `output_objects`: A list of object (.o) files that will be the result of the compile
-            action and which should be archived afterward.
+        *   `args`: A list of values that should be added to the `Args` of the
+            compile action.
+        *   `compile_inputs`: Additional input files that should be passed to
+            the compile action.
+        *   `indexstore`: A `File` representing the index store directory that
+            was generated if index-while-building was enabled, or None.
+        *   `other_outputs`: Additional output files that should be declared by
+            the compile action, but which are not processed further.
+        *   `output_groups`: A dictionary of additional output groups that
+            should be propagated by the calling rule using the `OutputGroupInfo`
+            provider.
+        *   `output_objects`: A list of object (.o) files that will be the
+            result of the compile action and which should be archived afterward.
     """
     output_nature = _emitted_output_nature(copts, is_wmo)
 
     if not output_nature.emits_multiple_objects:
-        # If we're emitting a single object, we don't use an object map; we just declare the output
-        # file that the compiler will generate and there are no other partial outputs.
-        out_obj = derived_files.whole_module_object_file(actions, target_name = target_name)
+        # If we're emitting a single object, we don't use an object map; we just
+        # declare the output file that the compiler will generate and there are
+        # no other partial outputs.
+        out_obj = derived_files.whole_module_object_file(
+            actions = actions,
+            target_name = target_name,
+        )
         return struct(
             args = ["-o", out_obj],
             compile_inputs = [],
@@ -152,33 +180,42 @@ def declare_compile_outputs(
             output_objects = [out_obj],
         )
 
-    # Otherwise, we need to create an output map that lists the individual object files so that we
-    # can pass them all to the archive action.
-    output_map_file = derived_files.swiftc_output_file_map(actions, target_name = target_name)
+    # Otherwise, we need to create an output map that lists the individual
+    # object files so that we can pass them all to the archive action.
+    output_map_file = derived_files.swiftc_output_file_map(
+        actions = actions,
+        target_name = target_name,
+    )
 
-    # The output map data, which is keyed by source path and will be written to `output_map_file`.
+    # The output map data, which is keyed by source path and will be written to
+    # `output_map_file`.
     output_map = {}
 
     # Object files that will be used to build the archive.
     output_objs = []
 
-    # Additional files, such as partial Swift modules, that must be declared as action outputs
-    # although they are not processed further.
+    # Additional files, such as partial Swift modules, that must be declared as
+    # action outputs although they are not processed further.
     other_outputs = []
 
     for src in srcs:
         src_output_map = {}
 
         # Declare the object file (there is one per source file).
-        obj = derived_files.intermediate_object_file(actions, target_name = target_name, src = src)
+        obj = derived_files.intermediate_object_file(
+            actions = actions,
+            target_name = target_name,
+            src = src,
+        )
         output_objs.append(obj)
         src_output_map["object"] = obj.path
 
-        # Multi-threaded WMO compiles still produce a single .swiftmodule file, despite producing
-        # multiple object files, so we have to check explicitly for that case.
+        # Multi-threaded WMO compiles still produce a single .swiftmodule file,
+        # despite producing multiple object files, so we have to check
+        # explicitly for that case.
         if output_nature.emits_partial_modules:
             partial_module = derived_files.partial_swiftmodule(
-                actions,
+                actions = actions,
                 target_name = target_name,
                 src = src,
             )
@@ -187,8 +224,12 @@ def declare_compile_outputs(
 
         output_map[src.path] = struct(**src_output_map)
 
-    # Output the module-wide `.swiftdeps` file, which is used for incremental builds.
-    swiftdeps = derived_files.swift_dependencies_file(actions, target_name = target_name)
+    # Output the module-wide `.swiftdeps` file, which is used for incremental
+    # builds.
+    swiftdeps = derived_files.swift_dependencies_file(
+        actions = actions,
+        target_name = target_name,
+    )
     other_outputs.append(swiftdeps)
     output_map[""] = {"swift-dependencies": swiftdeps.path}
 
@@ -202,11 +243,14 @@ def declare_compile_outputs(
         "compilation_outputs": depset(items = output_objs),
     }
 
-    # Configure index-while-building if requested. IDEs and other indexing tools can enable this
-    # feature on the command line during a build and then access the index store artifacts that are
-    # produced.
+    # Configure index-while-building if requested. IDEs and other indexing tools
+    # can enable this feature on the command line during a build and then access
+    # the index store artifacts that are produced.
     if index_while_building and not _index_store_path_overridden(copts):
-        index_store_dir = derived_files.indexstore_directory(actions, target_name = target_name)
+        index_store_dir = derived_files.indexstore_directory(
+            actions = actions,
+            target_name = target_name,
+        )
         other_outputs.append(index_store_dir)
         args.extend(["-index-store-path", index_store_dir.path])
         output_groups["swift_index_store"] = depset(direct = [index_store_dir])
@@ -229,7 +273,8 @@ def find_swift_version_copt_value(copts):
         copts: The list of copts to be scanned.
 
     Returns:
-        The value of the `-swift-version` argument, or None if it was not found in the copt list.
+        The value of the `-swift-version` argument, or None if it was not found
+        in the copt list.
     """
 
     # Note that the argument can occur multiple times, and the last one wins.
@@ -256,24 +301,30 @@ def new_objc_provider(
     """Creates an `apple_common.Objc` provider for a Swift target.
 
     Args:
-        deps: The dependencies of the target being built, whose `Objc` providers will be passed to
-            the new one in order to propagate the correct transitive fields.
-        include_path: A header search path that should be propagated to dependents.
-        link_inputs: Additional linker input files that should be propagated to dependents.
+        deps: The dependencies of the target being built, whose `Objc` providers
+            will be passed to the new one in order to propagate the correct
+            transitive fields.
+        include_path: A header search path that should be propagated to
+            dependents.
+        link_inputs: Additional linker input files that should be propagated to
+            dependents.
         linkopts: Linker options that should be propagated to dependents.
-        module_map: The module map generated for the Swift target's Objective-C header, if any.
-        static_archives: A list (typically of one element) of the static archives (`.a` files)
-            containing the target's compiled code.
-        swiftmodules: A list (typically of one element) of the `.swiftmodule` files for the
-            compiled target.
-        defines: A list of `defines` from the propagating `swift_library` that should also be
-            defined for `objc_library` targets that depend on it.
-        objc_header: The generated Objective-C header for the Swift target. If `None`, no headers
-            will be propagated. This header is only needed for Swift code that defines classes that
-            should be exposed to Objective-C.
+        module_map: The module map generated for the Swift target's Objective-C
+            header, if any.
+        static_archives: A list (typically of one element) of the static
+            archives (`.a` files) containing the target's compiled code.
+        swiftmodules: A list (typically of one element) of the `.swiftmodule`
+            files for the compiled target.
+        defines: A list of `defines` from the propagating `swift_library` that
+            should also be defined for `objc_library` targets that depend on it.
+        objc_header: The generated Objective-C header for the Swift target. If
+            `None`, no headers will be propagated. This header is only needed
+            for Swift code that defines classes that should be exposed to
+            Objective-C.
 
     Returns:
-        An `apple_common.Objc` provider that should be returned by the calling rule.
+        An `apple_common.Objc` provider that should be returned by the calling
+        rule.
     """
     objc_providers = get_providers(deps, apple_common.Objc)
     objc_provider_args = {
@@ -282,12 +333,16 @@ def new_objc_provider(
         "uses_swift": True,
     }
 
-    # The link action registered by `apple_binary` only looks at `Objc` providers, not `CcInfo`,
-    # for libraries to link. Until that rule is migrated over, we need to collect libraries from
-    # `CcInfo` (which will include Swift and C++) and put them into the new `Objc` provider.
+    # The link action registered by `apple_binary` only looks at `Objc`
+    # providers, not `CcInfo`, for libraries to link. Until that rule is
+    # migrated over, we need to collect libraries from `CcInfo` (which will
+    # include Swift and C++) and put them into the new `Objc` provider.
     transitive_cc_libs = []
     for cc_info in get_providers(deps, CcInfo):
-        static_libs = collect_cc_libraries(cc_info = cc_info, include_static = True)
+        static_libs = collect_cc_libraries(
+            cc_info = cc_info,
+            include_static = True,
+        )
         transitive_cc_libs.append(depset(static_libs, order = "topological"))
     objc_provider_args["library"] = depset(
         static_archives,
@@ -310,17 +365,23 @@ def new_objc_provider(
         if archive.basename.endswith(".lo")
     ]
     if force_loaded_libraries:
-        objc_provider_args["force_load_library"] = depset(direct = force_loaded_libraries)
+        objc_provider_args["force_load_library"] = depset(
+            direct = force_loaded_libraries,
+        )
 
-    # In addition to the generated header's module map, we must re-propagate the direct deps'
-    # Objective-C module maps to dependents, because those Swift modules still need to see them. We
-    # need to construct a new transitive objc provider to get the correct strict propagation
-    # behavior.
+    # In addition to the generated header's module map, we must re-propagate the
+    # direct deps' Objective-C module maps to dependents, because those Swift
+    # modules still need to see them. We need to construct a new transitive objc
+    # provider to get the correct strict propagation behavior.
     transitive_objc_provider_args = {"providers": objc_providers}
     if module_map:
-        transitive_objc_provider_args["module_map"] = depset(direct = [module_map])
+        transitive_objc_provider_args["module_map"] = depset(
+            direct = [module_map],
+        )
 
-    transitive_objc = apple_common.new_objc_provider(**transitive_objc_provider_args)
+    transitive_objc = apple_common.new_objc_provider(
+        **transitive_objc_provider_args
+    )
     objc_provider_args["module_map"] = transitive_objc.module_map
 
     return apple_common.new_objc_provider(**objc_provider_args)
@@ -333,7 +394,8 @@ def objc_compile_requirements(args, deps):
         deps: The `deps` of the target being built.
 
     Returns:
-        A `depset` of files that should be included among the inputs of the compile action.
+        A `depset` of files that should be included among the inputs of the
+        compile action.
     """
     defines = []
     includes = []
@@ -354,15 +416,17 @@ def objc_compile_requirements(args, deps):
         static_framework_names.append(objc.static_framework_names)
         all_frameworks.append(objc.framework_search_path_only)
 
-    # Collect module maps for dependencies. These must be pulled from a combined transitive
-    # provider to get the correct strict propagation behavior that we use to workaround command-line
-    # length issues until Swift 4.2 is available.
-    transitive_objc_provider = apple_common.new_objc_provider(providers = objc_providers)
+    # Collect module maps for dependencies. These must be pulled from a combined
+    # transitive provider to get the correct strict propagation behavior that we
+    # use to workaround command-line length issues until Swift 4.2 is available.
+    transitive_objc_provider = apple_common.new_objc_provider(
+        providers = objc_providers,
+    )
     module_maps = transitive_objc_provider.module_map
     inputs.append(module_maps)
 
-    # Add the objc dependencies' header search paths so that imported modules can find their
-    # headers.
+    # Add the objc dependencies' header search paths so that imported modules
+    # can find their headers.
     args.add_all(depset(transitive = includes), format_each = "-I%s")
 
     # Add framework search paths for any prebuilt frameworks.
@@ -372,34 +436,46 @@ def objc_compile_requirements(args, deps):
         map_each = paths.dirname,
     )
 
-    # Disable the `LC_LINKER_OPTION` load commands for static framework automatic linking. This is
-    # needed to correctly deduplicate static frameworks from also being linked into test binaries
-    # where it is also linked into the app binary.
+    # Disable the `LC_LINKER_OPTION` load commands for static framework
+    # automatic linking. This is needed to correctly deduplicate static
+    # frameworks from also being linked into test binaries where it is also
+    # linked into the app binary.
     args.add_all(
         depset(transitive = static_framework_names),
         map_each = _disable_autolink_framework_copts,
     )
 
-    # Swift's ClangImporter does not include the current directory by default in its search paths,
-    # so we must add it to find workspace-relative imports in headers imported by module maps.
+    # Swift's ClangImporter does not include the current directory by default in
+    # its search paths, so we must add it to find workspace-relative imports in
+    # headers imported by module maps.
     args.add_all(["-Xcc", "-iquote."])
 
-    # Ensure that headers imported by Swift modules have the correct defines propagated from
-    # dependencies.
-    args.add_all(depset(transitive = defines), before_each = "-Xcc", format_each = "-D%s")
+    # Ensure that headers imported by Swift modules have the correct defines
+    # propagated from dependencies.
+    args.add_all(
+        depset(transitive = defines),
+        before_each = "-Xcc",
+        format_each = "-D%s",
+    )
 
-    # Take any Swift-compatible defines from Objective-C dependencies and define them for Swift.
+    # Take any Swift-compatible defines from Objective-C dependencies and define
+    # them for Swift.
     args.add_all(
         depset(transitive = defines),
         map_each = _exclude_swift_incompatible_define,
         format_each = "-D%s",
     )
 
-    # Load module maps explicitly instead of letting Clang discover them in the search paths. This
-    # is needed to avoid a case where Clang may load the same header in modular and non-modular
-    # contexts, leading to duplicate definitions in the same file.
+    # Load module maps explicitly instead of letting Clang discover them in the
+    # search paths. This is needed to avoid a case where Clang may load the same
+    # header in modular and non-modular contexts, leading to duplicate
+    # definitions in the same file.
     # <https://llvm.org/bugs/show_bug.cgi?id=19501>
-    args.add_all(module_maps, before_each = "-Xcc", format_each = "-fmodule-map-file=%s")
+    args.add_all(
+        module_maps,
+        before_each = "-Xcc",
+        format_each = "-fmodule-map-file=%s",
+    )
 
     return depset(transitive = inputs)
 
@@ -441,21 +517,26 @@ def register_autolink_extract_action(
         toolchain):
     """Extracts autolink information from Swift `.o` files.
 
-    For some platforms (such as Linux), autolinking of imported frameworks is achieved by extracting
-    the information about which libraries are needed from the `.o` files and producing a text file
-    with the necessary linker flags. That file can then be passed to the linker as a response file
-    (i.e., `@flags.txt`).
+    For some platforms (such as Linux), autolinking of imported frameworks is
+    achieved by extracting the information about which libraries are needed from
+    the `.o` files and producing a text file with the necessary linker flags.
+    That file can then be passed to the linker as a response file (i.e.,
+    `@flags.txt`).
 
     Args:
         actions: The object used to register actions.
-        module_name: The name of the module to which the `.o` files belong (used when generating
-            the progress message).
-        objects: The list of object files whose autolink information will be extracted.
+        module_name: The name of the module to which the `.o` files belong (used
+            when generating the progress message).
+        objects: The list of object files whose autolink information will be
+            extracted.
         output: A `File` into which the autolink information will be written.
         toolchain: The `SwiftToolchainInfo` provider of the toolchain.
     """
     args = actions.args()
-    args.add(get_swift_tool(swift_toolchain = toolchain, tool = "swift-autolink-extract"))
+    args.add(get_swift_tool(
+        swift_toolchain = toolchain,
+        tool = "swift-autolink-extract",
+    ))
     args.add_all(objects)
     args.add("-o", output)
 
@@ -465,21 +546,24 @@ def register_autolink_extract_action(
         inputs = objects,
         mnemonic = "SwiftAutolinkExtract",
         outputs = [output],
-        progress_message = "Extracting autolink data for Swift module {}".format(module_name),
+        progress_message = (
+            "Extracting autolink data for Swift module {}".format(module_name)
+        ),
         swift_toolchain = toolchain,
     )
 
 def swift_library_output_map(name, alwayslink):
     """Returns the dictionary of implicit outputs for a `swift_library`.
 
-    This function is used to specify the `outputs` of the `swift_library` rule; as such, its
-    arguments must be named exactly the same as the attributes to which they refer.
+    This function is used to specify the `outputs` of the `swift_library` rule;
+    as such, its arguments must be named exactly the same as the attributes to
+    which they refer.
 
     Args:
         name: The name of the target being built.
-        alwayslink: Indicates whether the object files in the library should always
-            be always be linked into any binaries that depend on it, even if some
-            contain no symbols referenced by the binary.
+        alwayslink: Indicates whether the object files in the library should
+            always be always be linked into any binaries that depend on it, even
+            if some contain no symbols referenced by the binary.
 
     Returns:
         The implicit outputs dictionary for a `swift_library`.
@@ -515,7 +599,8 @@ def write_objc_header_module_map(
 def _index_store_path_overridden(copts):
     """Checks if index_while_building must be disabled.
 
-    Index while building is disabled when the copts include a custom -index-store-path.
+    Index while building is disabled when the copts include a custom
+    `-index-store-path`.
 
     Args:
         copts: The list of copts to be scanned.
@@ -531,7 +616,8 @@ def _index_store_path_overridden(copts):
 def _dirname_map_fn(f):
     """Returns the dir name of a file.
 
-    This function is intended to be used as a mapping function for file passed into `Args.add`.
+    This function is intended to be used as a mapping function for file passed
+    into `Args.add`.
 
     Args:
         f: The file.
@@ -548,7 +634,8 @@ def _disable_autolink_framework_copts(framework_name):
         framework_name: The name of the framework.
 
     Returns:
-        The list of `swiftc` flags needed to disable autolinking for the given framework.
+        The list of `swiftc` flags needed to disable autolinking for the given
+        framework.
     """
     return collections.before_each(
         "-Xfrontend",
@@ -559,25 +646,28 @@ def _disable_autolink_framework_copts(framework_name):
     )
 
 def _emitted_output_nature(copts, is_wmo):
-    """Returns a `struct` with information about the nature of emitted outputs for the given flags.
+    """Returns information about the nature of emitted compilation outputs.
 
-    The compiler emits a single object if it is invoked with whole-module optimization enabled and
-    is single-threaded (`-num-threads` is not present or is equal to 1); otherwise, it emits one
-    object file per source file. It also emits a single `.swiftmodule` file for WMO builds,
-    _regardless of thread count,_ so we have to treat that case separately.
+    The compiler emits a single object if it is invoked with whole-module
+    optimization enabled and is single-threaded (`-num-threads` is not present
+    or is equal to 1); otherwise, it emits one object file per source file. It
+    also emits a single `.swiftmodule` file for WMO builds, _regardless of
+    thread count,_ so we have to treat that case separately.
 
     Args:
         copts: The options passed into the compile action.
-        is_wmo: Whether the compilation is happening with whole module optimization.
+        is_wmo: Whether the compilation is happening with whole module
+            optimization.
 
     Returns:
         A struct containing the following fields:
 
-        *   `emits_multiple_objects`: `True` if the Swift frontend emits an object file per source
-            file, instead of a single object file for the whole module, in a compilation action with
-            the given flags.
-        *   `emits_partial_modules`: `True` if the Swift frontend emits partial `.swiftmodule` files
-            for the individual source files in a compilation action with the given flags.
+        *   `emits_multiple_objects`: `True` if the Swift frontend emits an
+            object file per source file, instead of a single object file for the
+            whole module, in a compilation action with the given flags.
+        *   `emits_partial_modules`: `True` if the Swift frontend emits partial
+            `.swiftmodule` files for the individual source files in a
+            compilation action with the given flags.
     """
     saw_space_separated_num_threads = False
     num_threads = 1
@@ -600,16 +690,19 @@ def _emitted_output_nature(copts, is_wmo):
     )
 
 def _exclude_swift_incompatible_define(define):
-    """A `map_each` helper that excludes the given define if it is not Swift-compatible.
+    """A `map_each` helper that excludes a define if it is not Swift-compatible.
 
-    This function rejects any defines that are not of the form `FOO=1` or `FOO`. Note that in
-    C-family languages, the option `-DFOO` is equivalent to `-DFOO=1` so we must preserve both.
+    This function rejects any defines that are not of the form `FOO=1` or `FOO`.
+    Note that in C-family languages, the option `-DFOO` is equivalent to
+    `-DFOO=1` so we must preserve both.
 
     Args:
-        define: A string of the form `FOO` or `FOO=BAR` that represents an Objective-C define.
+        define: A string of the form `FOO` or `FOO=BAR` that represents an
+        Objective-C define.
 
     Returns:
-        The token portion of the define it is Swift-compatible, or `None` otherwise.
+        The token portion of the define it is Swift-compatible, or `None`
+        otherwise.
     """
     token, equal, value = define.partition("=")
     if (not equal and not value) or (equal == "=" and value == "1"):
@@ -617,10 +710,11 @@ def _exclude_swift_incompatible_define(define):
     return None
 
 def _safe_int(s):
-    """Returns the integer value of `s` when interpreted as base 10, or `None` if it is invalid.
+    """Returns the base-10 integer value of `s` or `None` if it is invalid.
 
-    This function is needed because `int()` fails the build when passed a string that isn't a valid
-    integer, with no way to recover (https://github.com/bazelbuild/bazel/issues/5940).
+    This function is needed because `int()` fails the build when passed a string
+    that isn't a valid integer, with no way to recover
+    (https://github.com/bazelbuild/bazel/issues/5940).
 
     Args:
         s: The string to be converted to an integer.

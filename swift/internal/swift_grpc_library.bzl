@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""A rule that generates a Swift library from gRPC services defined in protobuf sources."""
+"""A Swift library rule that generates gRPC services defined in protos."""
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(":api.bzl", "swift_common")
@@ -21,7 +21,11 @@ load(
     "new_objc_provider",
     "output_groups_from_compilation_outputs",
 )
-load(":features.bzl", "SWIFT_FEATURE_ENABLE_TESTING", "SWIFT_FEATURE_NO_GENERATED_HEADER")
+load(
+    ":features.bzl",
+    "SWIFT_FEATURE_ENABLE_TESTING",
+    "SWIFT_FEATURE_NO_GENERATED_HEADER",
+)
 load(":linking.bzl", "register_libraries_to_link")
 load(
     ":proto_gen_utils.bzl",
@@ -50,28 +54,31 @@ def _register_grpcswift_generate_action(
         protoc_plugin_executable,
         flavor,
         extra_module_imports):
-    """Registers the actions that generate `.grpc.swift` files from `.proto` files.
+    """Registers actions to generate `.grpc.swift` files from `.proto` files.
 
     Args:
         label: The label of the target being analyzed.
         actions: The context's actions object.
-        direct_srcs: The direct `.proto` sources belonging to the target being analyzed, which
-            will be passed to `protoc`.
+        direct_srcs: The direct `.proto` sources belonging to the target being
+            analyzed, which will be passed to `protoc`.
         proto_source_root: the source root for `direct_srcs`.
-        transitive_descriptor_sets: The transitive `DescriptorSet`s from the `proto_library` being
-            analyzed.
-        module_mapping_file: The `File` containing the mapping between `.proto` files and Swift
-            modules for the transitive dependencies of the target being analyzed. May be `None`, in
-            which case no module mapping will be passed (the case for leaf nodes in the dependency
+        transitive_descriptor_sets: The transitive `DescriptorSet`s from the
+            `proto_library` being analyzed.
+        module_mapping_file: The `File` containing the mapping between `.proto`
+            files and Swift modules for the transitive dependencies of the
+            target being analyzed. May be `None`, in which case no module
+            mapping will be passed (the case for leaf nodes in the dependency
             graph).
         mkdir_and_run: The `File` representing the `mkdir_and_run` executable.
         protoc_executable: The `File` representing the `protoc` executable.
-        protoc_plugin_executable: The `File` representing the `protoc` plugin executable.
+        protoc_plugin_executable: The `File` representing the `protoc` plugin
+            executable.
         flavor: The library flavor to generate.
         extra_module_imports: Additional modules to import.
 
     Returns:
-        A list of generated `.grpc.swift` files corresponding to the `.proto` sources.
+        A list of generated `.grpc.swift` files corresponding to the `.proto`
+        sources.
     """
     generated_files = declare_generated_files(
         label.name,
@@ -130,14 +137,17 @@ def _register_grpcswift_generate_action(
         )
     protoc_args.add("--descriptor_set_in")
     protoc_args.add_joined(transitive_descriptor_sets, join_with = ":")
-    protoc_args.add_all([proto_import_path(f, proto_source_root) for f in direct_srcs])
+    protoc_args.add_all([
+        proto_import_path(f, proto_source_root)
+        for f in direct_srcs
+    ])
 
     additional_command_inputs = []
     if module_mapping_file:
         additional_command_inputs.append(module_mapping_file)
 
-    # TODO(b/23975430): This should be a simple `actions.run_shell`, but until the
-    # cited bug is fixed, we have to use the wrapper script.
+    # TODO(b/23975430): This should be a simple `actions.run_shell`, but until
+    # the cited bug is fixed, we have to use the wrapper script.
     actions.run(
         arguments = [mkdir_args, protoc_executable_args, protoc_args],
         executable = mkdir_and_run,
@@ -159,9 +169,15 @@ def _register_grpcswift_generate_action(
 
 def _swift_grpc_library_impl(ctx):
     if len(ctx.attr.deps) != 1:
-        fail("You must list exactly one target in the deps attribute.", attr = "deps")
+        fail(
+            "You must list exactly one target in the deps attribute.",
+            attr = "deps",
+        )
     if len(ctx.attr.srcs) != 1:
-        fail("You must list exactly one target in the srcs attribute.", attr = "srcs")
+        fail(
+            "You must list exactly one target in the srcs attribute.",
+            attr = "srcs",
+        )
 
     swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
 
@@ -172,7 +188,9 @@ def _swift_grpc_library_impl(ctx):
     # Instead of providing all those files and opening/reading them, we use
     # protoc's support for reading descriptor sets to resolve things.
     direct_srcs = ctx.attr.srcs[0][ProtoInfo].direct_sources
-    transitive_descriptor_sets = ctx.attr.srcs[0][ProtoInfo].transitive_descriptor_sets
+    transitive_descriptor_sets = (
+        ctx.attr.srcs[0][ProtoInfo].transitive_descriptor_sets
+    )
     deps = ctx.attr.deps
 
     minimal_module_mappings = deps[0][SwiftProtoInfo].module_mappings
@@ -271,8 +289,9 @@ def _swift_grpc_library_impl(ctx):
         ),
     ]
 
-    # Propagate an `objc` provider if the toolchain supports Objective-C interop, which ensures
-    # that the libraries get linked into `apple_binary` targets properly.
+    # Propagate an `objc` provider if the toolchain supports Objective-C
+    # interop, which ensures that the libraries get linked into `apple_binary`
+    # targets properly.
     if swift_toolchain.supports_objc_interop:
         providers.append(new_objc_provider(
             deps = compile_deps,
@@ -292,16 +311,16 @@ swift_grpc_library = rule(
         swift_common.toolchain_attrs(),
         {
             "srcs": attr.label_list(
-                doc = """
+                doc = """\
 Exactly one `proto_library` target that defines the services being generated.
 """,
                 providers = [ProtoInfo],
             ),
             "deps": attr.label_list(
-                doc = """
-Exactly one `swift_proto_library` or `swift_grpc_library` target that contains the Swift protos
-used by the services being generated. Test stubs should depend on the `swift_grpc_library`
-implementing the service.
+                doc = """\
+Exactly one `swift_proto_library` or `swift_grpc_library` target that contains
+the Swift protos used by the services being generated. Test stubs should depend
+on the `swift_grpc_library` implementing the service.
 """,
                 providers = [[SwiftInfo, SwiftProtoInfo]],
             ),
@@ -312,17 +331,19 @@ implementing the service.
                     "server",
                 ],
                 mandatory = True,
-                doc = """
+                doc = """\
 The kind of definitions that should be generated:
 
-* `"client"` to generate client definitions.
-* `"client_stubs"` to generate client test stubs.
-* `"server"` to generate server definitions.
+*   `"client"` to generate client definitions.
+*   `"client_stubs"` to generate client test stubs.
+*   `"server"` to generate server definitions.
 """,
             ),
             "_mkdir_and_run": attr.label(
                 cfg = "host",
-                default = Label("@build_bazel_rules_swift//tools/mkdir_and_run"),
+                default = Label(
+                    "@build_bazel_rules_swift//tools/mkdir_and_run",
+                ),
                 executable = True,
             ),
             # TODO(b/63389580): Migrate to proto_lang_toolchain.
@@ -331,32 +352,38 @@ The kind of definitions that should be generated:
             ),
             "_protoc": attr.label(
                 cfg = "host",
-                default = Label("@com_google_protobuf//:protoc"),
+                default = Label(
+                    "@com_google_protobuf//:protoc",
+                ),
                 executable = True,
             ),
             "_protoc_gen_swiftgrpc": attr.label(
                 cfg = "host",
-                default = Label("@com_github_grpc_grpc_swift//:protoc-gen-swiftgrpc"),
+                default = Label(
+                    "@com_github_grpc_grpc_swift//:protoc-gen-swiftgrpc",
+                ),
                 executable = True,
             ),
         },
     ),
-    doc = """
-Generates a Swift library from the gRPC services defined in protocol buffer sources.
+    doc = """\
+Generates a Swift library from gRPC services defined in protocol buffer sources.
 
-There should be one `swift_grpc_library` for any `proto_library` that defines services. A target
-based on this rule can be used as a dependency anywhere that a `swift_library` can be used.
+There should be one `swift_grpc_library` for any `proto_library` that defines
+services. A target based on this rule can be used as a dependency anywhere that
+a `swift_library` can be used.
 
-We recommend that `swift_grpc_library` targets be located in the same package as the
-`proto_library` and `swift_proto_library` targets they depend on. For more best practices around
-the use of Swift protocol buffer build rules, see the documentation for `swift_proto_library`.
+We recommend that `swift_grpc_library` targets be located in the same package as
+the `proto_library` and `swift_proto_library` targets they depend on. For more
+best practices around the use of Swift protocol buffer build rules, see the
+documentation for `swift_proto_library`.
 
 #### Defining Build Targets for Services
 
-Note that `swift_grpc_library` only generates the gRPC service interfaces (the `service`
-definitions) from the `.proto` files. Any messages defined in the same `.proto` file must be
-generated using a `swift_proto_library` target. Thus, the typical structure of a Swift gRPC
-library is similar to the following:
+Note that `swift_grpc_library` only generates the gRPC service interfaces (the
+`service` definitions) from the `.proto` files. Any messages defined in the same
+`.proto` file must be generated using a `swift_proto_library` target. Thus, the
+typical structure of a Swift gRPC library is similar to the following:
 
 ```python
 proto_library(
@@ -373,24 +400,34 @@ swift_proto_library(
 # Generate Swift types from the services.
 swift_grpc_library(
     name = "my_protos_client_services_swift",
-    # The `srcs` attribute points to the `proto_library` containing the service definitions...
+
+    # The `srcs` attribute points to the `proto_library` containing the service
+    # definitions...
     srcs = [":my_protos"],
-    # ...the `flavor` attribute specifies what kind of definitions to generate...
+
+    # ...the `flavor` attribute specifies the kind of definitions to generate...
     flavor = "client",
-    # ...and the `deps` attribute points to the `swift_proto_library` that was generated from
-    # the same `proto_library` and which contains the messages used by those services.
+
+    # ...and the `deps` attribute points to the `swift_proto_library` that was
+    # generated from the same `proto_library` and which contains the messages
+    # used by those services.
     deps = [":my_protos_swift"],
 )
 
 # Generate test stubs from swift services.
 swift_grpc_library(
     name = "my_protos_client_stubs_swift",
-    # The `srcs` attribute points to the `proto_library` containing the service definitions...
+
+    # The `srcs` attribute points to the `proto_library` containing the service
+    # definitions...
     srcs = [":my_protos"],
-    # ...the `flavor` attribute specifies what kind of definitions to generate...
+
+    # ...the `flavor` attribute specifies the kind of definitions to generate...
     flavor = "client_stubs",
-    # ...and the `deps` attribute points to the `swift_grpc_library` that was generated from
-    # the same `proto_library` and which contains the service implementation.
+
+    # ...and the `deps` attribute points to the `swift_grpc_library` that was
+    # generated from the same `proto_library` and which contains the service
+    # implementation.
     deps = [":my_protos_client_services_swift"],
 )
 ```

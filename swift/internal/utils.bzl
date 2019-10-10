@@ -22,22 +22,27 @@ def collect_cc_libraries(
         include_interface = False,
         include_pic_static = False,
         include_static = False):
-    """Returns a list of link libraries referenced in the given `CcInfo` provider.
+    """Returns a list of libraries referenced in the given `CcInfo` provider.
 
     Args:
         cc_info: The `CcInfo` provider whose libraries should be returned.
-        include_dynamic: True if dynamic libraries should be included in the list.
-        include_interface: True if interface libraries should be included in the list.
-        include_pic_static: True if PIC static libraries should be included in the list. If there
-            is no PIC library, the non-PIC library will be used instead.
-        include_static: True if non-PIC static libraries should be included in the list.
+        include_dynamic: True if dynamic libraries should be included in the
+            list.
+        include_interface: True if interface libraries should be included in the
+            list.
+        include_pic_static: True if PIC static libraries should be included in
+            the list. If there is no PIC library, the non-PIC library will be
+            used instead.
+        include_static: True if non-PIC static libraries should be included in
+            the list.
 
     Returns:
         The list of libraries built or depended on by the given provier.
     """
     libraries = []
 
-    # TODO(https://github.com/bazelbuild/bazel/issues/8118): Remove once flag is flipped
+    # TODO(https://github.com/bazelbuild/bazel/issues/8118): Remove once flag is
+    # flipped.
     libraries_to_link = cc_info.linking_context.libraries_to_link
     if hasattr(libraries_to_link, "to_list"):
         libraries_to_link = libraries_to_link.to_list()
@@ -74,18 +79,19 @@ def create_cc_info(
         compilation_outputs = None,
         libraries_to_link = [],
         user_link_flags = []):
-    """Creates a `CcInfo` provider from Swift compilation information and dependencies.
+    """Creates a `CcInfo` provider from Swift compilation info and deps.
 
     Args:
-        additional_inputs: A list of additional files that should be passed as inputs to the final
-            link action.
-        cc_infos: A list of `CcInfo` providers from dependencies that should be merged into the
-            new provider.
-        compilation_outputs: The compilation outputs from a Swift compile action, as returned by
-            `swift_common.compile`, or None.
-        libraries_to_link: A list of `LibraryToLink` objects that represent the libraries that
-            should be linked into the final binary.
-        user_link_flags: A list of flags that should be passed to the final link action.
+        additional_inputs: A list of additional files that should be passed as
+            inputs to the final link action.
+        cc_infos: A list of `CcInfo` providers from dependencies that should be
+            merged into the new provider.
+        compilation_outputs: The compilation outputs from a Swift compile
+            action, as returned by `swift_common.compile`, or None.
+        libraries_to_link: A list of `LibraryToLink` objects that represent the
+            libraries that should be linked into the final binary.
+        user_link_flags: A list of flags that should be passed to the final link
+            action.
 
     Returns:
         A new `CcInfo`.
@@ -109,28 +115,29 @@ def expand_locations(ctx, values, targets = []):
     """Expands the `$(location)` placeholders in each of the given values.
 
     Args:
-      ctx: The rule context.
-      values: A list of strings, which may contain `$(location)` placeholders.
-      targets: A list of additional targets (other than the calling rule's `deps`)
-          that should be searched for substitutable labels.
+        ctx: The rule context.
+        values: A list of strings, which may contain `$(location)` placeholders.
+        targets: A list of additional targets (other than the calling rule's
+            `deps`) that should be searched for substitutable labels.
 
     Returns:
-      A list of strings with any `$(location)` placeholders filled in.
+        A list of strings with any `$(location)` placeholders filled in.
     """
     return [ctx.expand_location(value, targets) for value in values]
 
 def get_output_groups(targets, group_name):
-    """Returns a list containing the files of the given output group from each target in a list.
+    """Returns files in an output group from each target in a list.
 
-    The returned list may not be the same size as `targets` if some of the targets do not contain
-    the requested output group. This is not an error.
+    The returned list may not be the same size as `targets` if some of the
+    targets do not contain the requested output group. This is not an error.
 
     Args:
         targets: A list of targets.
         group_name: The name of the output group.
 
     Returns:
-        A list of `depset`s of `File`s from the requested output group for each target.
+        A list of `depset`s of `File`s from the requested output group for each
+        target.
     """
     groups = []
 
@@ -142,33 +149,39 @@ def get_output_groups(targets, group_name):
     return groups
 
 def get_providers(targets, provider, map_fn = None):
-    """Returns a list containing the given provider (or a field) from each target in the list.
+    """Returns the given provider (or a field) from each target in the list.
 
-    The returned list may not be the same size as `targets` if some of the targets do not contain
-    the requested provider. This is not an error.
+    The returned list may not be the same size as `targets` if some of the
+    targets do not contain the requested provider. This is not an error.
 
-    The main purpose of this function is to make this common operation more readable and prevent
-    mistyping the list comprehension.
+    The main purpose of this function is to make this common operation more
+    readable and prevent mistyping the list comprehension.
 
     Args:
         targets: A list of targets.
         provider: The provider to retrieve.
-        map_fn: A function that takes a single argument and returns a single value. If this is
-            present, it will be called on each provider in the list and the result will be
-            returned in the list returned by `get_providers`.
+        map_fn: A function that takes a single argument and returns a single
+            value. If this is present, it will be called on each provider in the
+            list and the result will be returned in the list returned by
+            `get_providers`.
 
     Returns:
         A list of the providers requested from the targets.
     """
     if map_fn:
-        return [map_fn(target[provider]) for target in targets if provider in target]
+        return [
+            map_fn(target[provider])
+            for target in targets
+            if provider in target
+        ]
     return [target[provider] for target in targets if provider in target]
 
 def merge_runfiles(all_runfiles):
     """Merges a list of `runfiles` objects.
 
     Args:
-        all_runfiles: A list containing zero or more `runfiles` objects to merge.
+        all_runfiles: A list containing zero or more `runfiles` objects to
+            merge.
 
     Returns:
         A merged `runfiles` object, or `None` if the list was empty.
@@ -188,33 +201,36 @@ def owner_relative_path(file):
     external repositoriies.
 
     Args:
-      file: The file whose owner-relative path should be returned.
+        file: The file whose owner-relative path should be returned.
 
     Returns:
-      The owner-relative path to the file.
+        The owner-relative path to the file.
     """
     root = file.owner.workspace_root
     package = file.owner.package
 
     if file.is_source:
-        # Even though the docs say a File's `short_path` doesn't include the root,
-        # Bazel special cases anything from an external repository and includes a
-        # relative path (`../`) to the file. On the File's `owner` we can get the
-        # `workspace_root` to try and line things up, but it is in the form of
-        # "external/[name]". However the File's `path` does include the root and
-        # leaves it in the "external/" form, so we just relativize based on that
-        # instead.
+        # Even though the docs say a File's `short_path` doesn't include the
+        # root, Bazel special cases anything from an external repository and
+        # includes a relative path (`../`) to the file. On the File's `owner` we
+        # can get the `workspace_root` to try and line things up, but it is in
+        # the form of "external/[name]". However the File's `path` does include
+        # the root and leaves it in the "external/" form, so we just relativize
+        # based on that instead.
         return paths.relativize(file.path, paths.join(root, package))
     elif root:
         # As above, but for generated files. The same mangling happens in
         # `short_path`, but since it is generated, the `path` includes the extra
         # output directories used by Bazel. So, we pick off the parent directory
-        # segment that Bazel adds to the `short_path` and turn it into "external/"
-        # so a relative path from the owner can be computed.
+        # segment that Bazel adds to the `short_path` and turn it into
+        # "external/" so a relative path from the owner can be computed.
         short_path = file.short_path
 
         # Sanity check.
-        if (not root.startswith("external/") or not short_path.startswith("../")):
+        if (
+            not root.startswith("external/") or
+            not short_path.startswith("../")
+        ):
             fail(("Generated file in a different workspace with unexpected " +
                   "short_path ({short_path}) and owner.workspace_root " +
                   "({root}).").format(

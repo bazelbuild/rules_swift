@@ -39,7 +39,10 @@ def _swift_module_alias_impl(ctx):
         module_name = swift_common.derive_module_name(ctx.label)
 
     # Generate a source file that imports each of the deps using `@_exported`.
-    reexport_src = derived_files.reexport_modules_src(ctx.actions, ctx.label.name)
+    reexport_src = derived_files.reexport_modules_src(
+        actions = ctx.actions,
+        target_name = ctx.label.name,
+    )
     ctx.actions.write(
         content = "\n".join([
             "@_exported import {}".format(module)
@@ -107,8 +110,9 @@ def _swift_module_alias_impl(ctx):
         ),
     ]
 
-    # Propagate an `objc` provider if the toolchain supports Objective-C interop,
-    # which allows `objc_library` targets to import `swift_library` targets.
+    # Propagate an `objc` provider if the toolchain supports Objective-C
+    # interop, which allows `objc_library` targets to import `swift_library`
+    # targets.
     if swift_toolchain.supports_objc_interop:
         providers.append(new_objc_provider(
             deps = deps,
@@ -128,7 +132,7 @@ swift_module_alias = rule(
         swift_common.toolchain_attrs(),
         {
             "module_name": attr.string(
-                doc = """
+                doc = """\
 The name of the Swift module being built.
 
 If left unspecified, the module name will be computed based on the target's
@@ -137,7 +141,7 @@ non-identifier characters with underscores.
 """,
             ),
             "deps": attr.label_list(
-                doc = """
+                doc = """\
 A list of targets that are dependencies of the target being built, which will be
 linked into that target. Allowed kinds are `swift_import` and `swift_library`
 (or anything else propagating `SwiftInfo`).
@@ -146,7 +150,7 @@ linked into that target. Allowed kinds are `swift_import` and `swift_library`
             ),
         },
     ),
-    doc = """
+    doc = """\
 Creates a Swift module that re-exports other modules.
 
 This rule effectively creates an "alias" for one or more modules such that a

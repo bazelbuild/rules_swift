@@ -30,25 +30,33 @@ load(
 load(":linking.bzl", "register_libraries_to_link")
 load(":non_swift_target_aspect.bzl", "non_swift_target_aspect")
 load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
-load(":utils.bzl", "compact", "create_cc_info", "expand_locations", "get_providers")
+load(
+    ":utils.bzl",
+    "compact",
+    "create_cc_info",
+    "expand_locations",
+    "get_providers",
+)
 load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 
 def _maybe_parse_as_library_copts(srcs):
-    """Returns a list of compiler flags depending on whether a `main.swift` file is present.
+    """Returns a list of compiler flags depending on `main.swift`'s presence.
 
-    Builds on Apple platforms typically don't use `swift_binary`; they use different linking logic
-    (https://github.com/bazelbuild/rules_apple) to produce fat binaries and bundles. This means
-    that all such application code will typically be in a `swift_library` target, and that
-    includes a possible custom main entry point. For this reason, we need to support the creation
-    of `swift_library` targets containing a `main.swift` file, which should *not* pass the
-    `-parse-as-library` flag to the compiler.
+    Builds on Apple platforms typically don't use `swift_binary`; they use
+    different linking logic (https://github.com/bazelbuild/rules_apple) to
+    produce fat binaries and bundles. This means that all such application code
+    will typically be in a `swift_library` target, and that includes a possible
+    custom main entry point. For this reason, we need to support the creation of
+    `swift_library` targets containing a `main.swift` file, which should *not*
+    pass the `-parse-as-library` flag to the compiler.
 
     Args:
         srcs: A list of source files to check for the presence of `main.swift`.
 
     Returns:
-        An empty list if `main.swift` was present in `srcs`, or a list containing a single
-        element `"-parse-as-library"` if `main.swift` was not present.
+        An empty list if `main.swift` was present in `srcs`, or a list
+        containing a single element `"-parse-as-library"` if `main.swift` was
+        not present.
     """
     use_parse_as_library = True
     for src in srcs:
@@ -60,7 +68,8 @@ def _maybe_parse_as_library_copts(srcs):
 def _swift_library_impl(ctx):
     additional_inputs = ctx.files.swiftc_inputs
 
-    # These can't use additional_inputs since expand_locations needs targets, not files.
+    # These can't use additional_inputs since expand_locations needs targets,
+    # not files.
     copts = expand_locations(ctx, ctx.attr.copts, ctx.attr.swiftc_inputs)
     linkopts = expand_locations(ctx, ctx.attr.linkopts, ctx.attr.swiftc_inputs)
     srcs = ctx.files.srcs
@@ -159,8 +168,9 @@ def _swift_library_impl(ctx):
         ),
     ]
 
-    # Propagate an `objc` provider if the toolchain supports Objective-C interop,
-    # which allows `objc_library` targets to import `swift_library` targets.
+    # Propagate an `objc` provider if the toolchain supports Objective-C
+    # interop, which allows `objc_library` targets to import `swift_library`
+    # targets.
     if swift_toolchain.supports_objc_interop:
         providers.append(new_objc_provider(
             defines = ctx.attr.defines,
@@ -180,7 +190,7 @@ swift_library = rule(
     attrs = swift_common.library_rule_attrs(additional_deps_aspects = [
         non_swift_target_aspect,
     ]),
-    doc = """
+    doc = """\
 Compiles and links Swift code into a static library and Swift module.
 """,
     outputs = swift_library_output_map,
