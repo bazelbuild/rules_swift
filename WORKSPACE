@@ -24,7 +24,6 @@ load(
 
 protobuf_deps()
 
-
 # I don't know where to put this since sub workspaces does not work well in bazel
 # https://github.com/bazelbuild/bazel/issues/2391
 load(
@@ -36,5 +35,5 @@ swift_package_install(
     name = "exampledeps",
     package = "@//:Package.swift",
     package_resolved = "@//:Package.resolved",
-    symlink_build_path = True
+    symlink_build_path = True,
 )

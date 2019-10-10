@@ -4,6 +4,6 @@ swift_binary(
     name = "swift_package_manager",
     srcs = ["main.swift"],
     deps = [
-        "@exampledeps//SocketIO"
-    ]
+        "@exampledeps//SocketIO",
+    ],
 )
