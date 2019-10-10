@@ -375,12 +375,12 @@ def _xcode_swift_toolchain_impl(ctx):
         toolchain_root,
     )
 
-    # Configure the action registrars that automatically prepend xcrunwrapper to
-    # registered actions.
+    # Configure the environment variables that the worker needs to fill in the
+    # Bazel placeholders for SDK root and developer directory, along with the
+    # custom toolchain if requested.
     env = _xcode_env(xcode_config, platform)
-    swift_toolchain_env = {}
     if custom_toolchain:
-        swift_toolchain_env["TOOLCHAINS"] = custom_toolchain
+        env["TOOLCHAINS"] = custom_toolchain
 
     execution_requirements = {"requires-darwin": ""}
 
