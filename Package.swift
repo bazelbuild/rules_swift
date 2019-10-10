@@ -7,6 +7,6 @@ let package = Package(
     name: "rules_swift",
     dependencies: [
         // Dependencies declare other packages that this package depends on.
-        .package(url: "https://github.com/socketio/socket.io-client-swift", .branch("master"))
+        .package(url: "https://github.com/socketio/socket.io-client-swift", from: "14.0.0")
     ]
 )
