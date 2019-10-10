@@ -1,6 +1,6 @@
 workspace(
     name = "build_bazel_rules_swift",
-    managed_directories = {"@exampledeps": [".build"]},
+   # managed_directories = {"@exampledeps": [".build"]}, Fails under CI
 )
 
 load(
@@ -35,6 +35,6 @@ swift_package_install(
     name = "exampledeps",
     package = "@//:Package.swift",
     package_resolved = "@//:Package.resolved",
-    symlink_build_path = True,
+    #symlink_build_path = True, Fails under CI
     debug = True
 )
