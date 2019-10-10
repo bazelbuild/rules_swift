@@ -21,15 +21,8 @@ set -eu
 # because the test binary is an `MH_BUNDLE` that needs to be loaded dynamically
 # and runtime reflection is used to locate the test methods.
 
-# Create the .xctest bundle and copy the binary into it (a requirement of the
-# `xctest` tool).
-BINARY="$TEST_SRCDIR/$TEST_WORKSPACE/%binary%"
-BUNDLE_DIR="$(dirname "$BINARY")/$(basename "$BINARY").xctest"
-mkdir -p "$BUNDLE_DIR/Contents/MacOS"
-ln -sf "$BINARY" "$BUNDLE_DIR/Contents/MacOS/"
-
 # TODO(allevato): Support Bazel's --test_filter.
-exec xcrun xctest -XCTest All "$BUNDLE_DIR"
+exec xcrun xctest -XCTest All "%bundle%"
 
 # We should never make it here unless `exec` failed.
 exit 2

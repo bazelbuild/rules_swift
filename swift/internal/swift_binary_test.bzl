@@ -266,15 +266,50 @@ def _swift_linking_rule_impl(
 
     return out_bin, providers
 
-def _create_xctest_runner(name, actions, binary, xctest_runner_template):
-    """Creates a script that will bundle a test binary and launch `xctest`.
+def _create_xctest_bundle(name, actions, binary):
+    """Creates an `.xctest` bundle that contains the given binary.
 
     Args:
         name: The name of the target being built, which will be used as the
-            basename of the bundle (followed by the `.xctest` bundle extension).
+            basename of the bundle (followed by the .xctest bundle extension).
         actions: The context's actions object.
-        binary: The `File` representing the test binary that should be bundled
-            and executed.
+        binary: The binary that will be copied into the test bundle.
+
+    Returns:
+        A `File` (tree artifact) representing the `.xctest` bundle.
+    """
+    xctest_bundle = derived_files.xctest_bundle(
+        actions = actions,
+        target_name = name,
+    )
+
+    args = actions.args()
+    args.add(xctest_bundle.path)
+    args.add(binary)
+
+    actions.run_shell(
+        arguments = [args],
+        command = (
+            'mkdir -p "$1/Contents/MacOS" && ' +
+            'cp "$2" "$1/Contents/MacOS"'
+        ),
+        inputs = [binary],
+        mnemonic = "SwiftCreateTestBundle",
+        outputs = [xctest_bundle],
+        progress_message = "Creating test bundle for {}".format(name),
+    )
+
+    return xctest_bundle
+
+def _create_xctest_runner(name, actions, bundle, xctest_runner_template):
+    """Creates a script that will launch `xctest` with the given test bundle.
+
+    Args:
+        name: The name of the target being built, which will be used as the
+            basename of the test runner script.
+        actions: The context's actions object.
+        bundle: The `File` representing the `.xctest` bundle that should be
+            executed.
         xctest_runner_template: The `File` that will be used as a template to
             generate the test runner shell script.
 
@@ -282,14 +317,17 @@ def _create_xctest_runner(name, actions, binary, xctest_runner_template):
         A `File` representing the shell script that will launch the test bundle
         with the `xctest` tool.
     """
-    xctest_runner = derived_files.xctest_runner_script(actions, name)
+    xctest_runner = derived_files.xctest_runner_script(
+        actions = actions,
+        target_name = name,
+    )
 
     actions.expand_template(
         is_executable = True,
         output = xctest_runner,
         template = xctest_runner_template,
         substitutions = {
-            "%binary%": binary.short_path,
+            "%bundle%": bundle.short_path,
         },
     )
 
@@ -335,9 +373,6 @@ def _swift_test_impl(ctx):
 
     # If we need to run the test in an .xctest bundle, the binary must have
     # Mach-O type `MH_BUNDLE` instead of `MH_EXECUTE`.
-    # TODO(allevato): This should really be done in the toolchain's
-    # linker_opts_producer partial, but it doesn't take the
-    # feature_configuration as an argument. We should update it to do so.
     linkopts = ["-Wl,-bundle"] if is_bundled else []
 
     binary, providers = _swift_linking_rule_impl(
@@ -348,20 +383,22 @@ def _swift_test_impl(ctx):
         swift_toolchain = swift_toolchain,
     )
 
-    # If the tests are to be bundled, create the test runner script as the
-    # rule's executable and place the binary in runfiles so that it can be
-    # copied into place. Otherwise, just use the binary itself as the executable
-    # to launch.
-    # TODO(b/65413470): Make the output of the rule _itself_ an `.xctest` bundle
-    # once some limitations of directory artifacts are resolved.
+    # If the tests are to be bundled, create the bundle and the test runner
+    # script that launches it via `xctest`. Otherwise, just use the binary
+    # itself as the executable to launch.
     if is_bundled:
-        xctest_runner = _create_xctest_runner(
+        xctest_bundle = _create_xctest_bundle(
             name = ctx.label.name,
             actions = ctx.actions,
             binary = binary,
+        )
+        xctest_runner = _create_xctest_runner(
+            name = ctx.label.name,
+            actions = ctx.actions,
+            bundle = xctest_bundle,
             xctest_runner_template = ctx.file._xctest_runner_template,
         )
-        additional_test_outputs = [binary]
+        additional_test_outputs = [xctest_bundle]
         executable = xctest_runner
     else:
         additional_test_outputs = []
