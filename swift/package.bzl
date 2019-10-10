@@ -12,6 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""BUILD rules to define Swift libraries and executable binaries.
+
+This file is the public interface that users should import to use the Swift
+rules. Do not import definitions from the `internal` subdirectory directly.
+"""
+
 load(
     "@build_bazel_rules_swift//swift/internal:swift_package_install.bzl",
     _swift_package_install = "swift_package_install",

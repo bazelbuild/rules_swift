@@ -1,3 +1,14 @@
+"""Registers the actions that generate `.grpc.swift` files from `.proto` files.
+
+Args:
+    package: Package.swift manifest file that will be used when installing your dependencies.
+    package_resolved: Package.resolved file that will be used when resolving version of your dependencies.
+    symlink_build_path: When this option True the .build path of WORKSPACE will be symlinked to repository.
+    debug: To Debug this rule set this attribute to True
+Returns:
+    None
+"""
+
 def _swift_package_install_impl(ctx):
     # To debug make this
     QUIET = ctx.attr.debug != True
@@ -28,15 +39,15 @@ def _swift_package_install_impl(ctx):
         fail("Installing swift packages failed: %s (%s)" % (result.stdout, result.stderr))
 
     ctx.report_progress("Building packages and generating build file tree.")
-    swiftPath = ctx.which("swift")
-    arPath = ctx.which("ar")
+    swift_path = ctx.which("swift")
+    ar_path = ctx.which("ar")
     result = ctx.execute(
         [
             "swift",
             ctx.path(ctx.attr._resolver),
             ctx.name,
-            swiftPath,
-            arPath,
+            swift_path,
+            ar_path,
             ".build/release",
         ],
         quiet = QUIET,
@@ -51,7 +62,7 @@ swift_package_install = repository_rule(
             mandatory = True,
             allow_files = [".swift"],
             doc = """
-            Package.swift manifest file that will be used when installing your dependencies
+            Package.swift manifest file that will be used when installing your dependencies.
             Each dependency specifies a source URL and version requirements. 
             The source URL is a URL accessible to the current user that resolves to a Git repository. 
             The version requirements, which follow Semantic Versioning (SemVer) conventions, 
