@@ -36,4 +36,5 @@ swift_package_install(
     package = "@//:Package.swift",
     package_resolved = "@//:Package.resolved",
     symlink_build_path = True,
+    debug = True
 )

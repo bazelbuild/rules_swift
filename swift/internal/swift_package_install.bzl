@@ -22,6 +22,12 @@ def _swift_package_install_impl(ctx):
         # May be we should get .build path through attributes if necessary
         ctx.symlink(ctx.path(str(workspace_dir) + "/.build"), ctx.path(".build"))
 
+    if not QUIET:
+        ctx.execute(
+            ['swift', '--version'], 
+            quiet = False
+        )
+
     ctx.file(
         "resolve.sh",
         content = """
