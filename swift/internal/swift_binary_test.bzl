@@ -16,7 +16,10 @@
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:partial.bzl", "partial")
-load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "CPP_LINK_EXECUTABLE_ACTION_NAME")
+load(
+    "@bazel_tools//tools/build_defs/cc:action_names.bzl",
+    "CPP_LINK_EXECUTABLE_ACTION_NAME",
+)
 load(":api.bzl", "swift_common")
 load(":compiling.bzl", "output_groups_from_compilation_outputs")
 load(":derived_files.bzl", "derived_files")
@@ -27,7 +30,7 @@ load(":providers.bzl", "SwiftToolchainInfo")
 load(":utils.bzl", "expand_locations")
 
 def _binary_rule_attrs(stamp_default):
-    """Returns the dictionary of attributes common to both `swift_binary` and `swift_test`.
+    """Returns attributes common to both `swift_binary` and `swift_test`.
 
     Args:
         stamp_default: The default value of the `stamp` attribute.
@@ -36,69 +39,82 @@ def _binary_rule_attrs(stamp_default):
         A `dict` of attributes for a binary or test rule.
     """
     return dicts.add(
-        swift_common.compilation_attrs(additional_deps_aspects = [non_swift_target_aspect]),
+        swift_common.compilation_attrs(
+            additional_deps_aspects = [non_swift_target_aspect],
+        ),
         {
             "linkopts": attr.string_list(
-                doc = """
-Additional linker options that should be passed to `clang`. These strings are subject to
-`$(location ...)` expansion.
+                doc = """\
+Additional linker options that should be passed to `clang`. These strings are
+subject to `$(location ...)` expansion.
 """,
                 mandatory = False,
             ),
             "malloc": attr.label(
                 default = Label("@bazel_tools//tools/cpp:malloc"),
-                doc = """
+                doc = """\
 Override the default dependency on `malloc`.
 
-By default, Swift binaries are linked against `@bazel_tools//tools/cpp:malloc"`, which is an empty
-library and the resulting binary will use libc's `malloc`. This label must refer to a `cc_library`
-rule.
+By default, Swift binaries are linked against `@bazel_tools//tools/cpp:malloc"`,
+which is an empty library and the resulting binary will use libc's `malloc`.
+This label must refer to a `cc_library` rule.
 """,
                 mandatory = False,
                 providers = [[CcInfo]],
             ),
             "stamp": attr.bool(
                 default = stamp_default,
-                doc = """
+                doc = """\
 Enable or disable link stamping.
 
-If this value is true (and if the toolchain supports link stamping), then the toolchain's stamping
-logic will be invoked to link additional identifying information into the binary. This information
-typically comes from the stable and volatile build information written by Bazel in the output
-directory, but could be anything that the toolchain wishes to link into binaries.
+If this value is true (and if the toolchain supports link stamping), then the
+toolchain's stamping logic will be invoked to link additional identifying
+information into the binary. This information typically comes from the stable
+and volatile build information written by Bazel in the output directory, but
+could be anything that the toolchain wishes to link into binaries.
 
-If false, no stamp information will be linked into the binary, which improves build caching.
+If false, no stamp information will be linked into the binary, which improves
+build caching.
 """,
                 mandatory = False,
             ),
-            # Do not add references; temporary attribute for C++ toolchain Skylark migration.
-            "_cc_toolchain": attr.label(default = Label("@bazel_tools//tools/cpp:current_cc_toolchain")),
+            # Do not add references; temporary attribute for C++ toolchain
+            # Skylark migration.
+            "_cc_toolchain": attr.label(
+                default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
+            ),
         },
     )
 
-def _configure_features_for_binary(ctx, requested_features = [], unsupported_features = []):
+def _configure_features_for_binary(
+        ctx,
+        requested_features = [],
+        unsupported_features = []):
     """Creates and returns the feature configuration for binary linking.
 
-    This helper automatically handles common features for all Swift binary-creating targets, like
-    code coverage.
+    This helper automatically handles common features for all Swift
+    binary-creating targets, like code coverage.
 
     Args:
         ctx: The rule context.
-        requested_features: Additional features that are requested for a particular rule/target.
-        unsupported_features: Additional features that are unsupported for a particular
-            rule/target.
+        requested_features: Additional features that are requested for a
+            particular rule/target.
+        unsupported_features: Additional features that are unsupported for a
+            particular rule/target.
 
     Returns:
         The `FeatureConfiguration` that was created.
     """
     swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
 
-    # Combine the features from the rule context with those passed into this function.
+    # Combine the features from the rule context with those passed into this
+    # function.
     requested_features = ctx.features + requested_features
     unsupported_features = ctx.disabled_features + unsupported_features
 
-    # Enable LLVM coverage in CROSSTOOL if this is a coverage build. Note that we explicitly enable
-    # LLVM format and disable GCC format because the former is the only one that Swift supports.
+    # Enable LLVM coverage in CROSSTOOL if this is a coverage build. Note that
+    # we explicitly enable LLVM format and disable GCC format because the former
+    # is the only one that Swift supports.
     if ctx.configuration.coverage_enabled:
         requested_features.append("llvm_coverage_map_format")
         unsupported_features.append("gcc_coverage_map_format")
@@ -122,23 +138,33 @@ def _swift_linking_rule_impl(
         ctx: The rule context.
         feature_configuration: A feature configuration obtained from
             `swift_common.configure_features`.
-        is_test: A `Boolean` value indicating whether the binary is a test target.
-        swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain being used to build the
+        is_test: A `Boolean` value indicating whether the binary is a test
             target.
-        linkopts: Additional rule-specific flags that should be passed to the linker.
+        swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain
+            being used to build the target.
+        linkopts: Additional rule-specific flags that should be passed to the
+            linker.
 
     Returns:
-        A tuple with two values: the `File` representing the binary that was linked, and a list of
-        providers to be propagated by the target being built.
+        A tuple with two values: the `File` representing the binary that was
+        linked, and a list of providers to be propagated by the target being
+        built.
     """
     copts = expand_locations(ctx, ctx.attr.copts, ctx.attr.swiftc_inputs)
-    linkopts = list(linkopts) + expand_locations(ctx, ctx.attr.linkopts, ctx.attr.swiftc_inputs)
+    linkopts = list(linkopts) + expand_locations(
+        ctx,
+        ctx.attr.linkopts,
+        ctx.attr.swiftc_inputs,
+    )
     linkopts += ctx.fragments.cpp.linkopts
 
     additional_inputs = ctx.files.swiftc_inputs
     srcs = ctx.files.srcs
 
-    out_bin = derived_files.executable(ctx.actions, target_name = ctx.label.name)
+    out_bin = derived_files.executable(
+        actions = ctx.actions,
+        target_name = ctx.label.name,
+    )
     compilation_outputs = None
     objects_to_link = []
     output_groups = {}
@@ -175,8 +201,8 @@ def _swift_linking_rule_impl(
             compilation_outputs = compilation_outputs,
         )
 
-    # TODO(b/70228246): Also support mostly-static and fully-dynamic modes, here and for the C++
-    # toolchain args below.
+    # TODO(b/70228246): Also support mostly-static and fully-dynamic modes, here
+    # and for the C++ toolchain args below.
     toolchain_linker_flags = partial.call(
         swift_toolchain.linker_opts_producer,
         is_static = True,
@@ -241,19 +267,20 @@ def _swift_linking_rule_impl(
     return out_bin, providers
 
 def _create_xctest_runner(name, actions, binary, xctest_runner_template):
-    """Creates a shell script that will bundle a test binary and launch the `xctest` helper tool.
+    """Creates a script that will bundle a test binary and launch `xctest`.
 
     Args:
-        name: The name of the target being built, which will be used as the basename of the bundle
-            (followed by the `.xctest` bundle extension).
+        name: The name of the target being built, which will be used as the
+            basename of the bundle (followed by the `.xctest` bundle extension).
         actions: The context's actions object.
-        binary: The `File` representing the test binary that should be bundled and executed.
-        xctest_runner_template: The `File` that will be used as a template to generate the test
-            runner shell script.
+        binary: The `File` representing the test binary that should be bundled
+            and executed.
+        xctest_runner_template: The `File` that will be used as a template to
+            generate the test runner shell script.
 
     Returns:
-        A `File` representing the shell script that will launch the test bundle with the `xctest`
-        tool.
+        A `File` representing the shell script that will launch the test bundle
+        with the `xctest` tool.
     """
     xctest_runner = derived_files.xctest_runner_script(actions, name)
 
@@ -306,10 +333,11 @@ def _swift_test_impl(ctx):
                       feature_name = SWIFT_FEATURE_BUNDLED_XCTESTS,
                   ))
 
-    # If we need to run the test in an .xctest bundle, the binary must have Mach-O type `MH_BUNDLE`
-    # instead of `MH_EXECUTE`.
-    # TODO(allevato): This should really be done in the toolchain's linker_opts_producer partial,
-    # but it doesn't take the feature_configuration as an argument. We should update it to do so.
+    # If we need to run the test in an .xctest bundle, the binary must have
+    # Mach-O type `MH_BUNDLE` instead of `MH_EXECUTE`.
+    # TODO(allevato): This should really be done in the toolchain's
+    # linker_opts_producer partial, but it doesn't take the
+    # feature_configuration as an argument. We should update it to do so.
     linkopts = ["-Wl,-bundle"] if is_bundled else []
 
     binary, providers = _swift_linking_rule_impl(
@@ -320,11 +348,12 @@ def _swift_test_impl(ctx):
         swift_toolchain = swift_toolchain,
     )
 
-    # If the tests are to be bundled, create the test runner script as the rule's executable and
-    # place the binary in runfiles so that it can be copied into place. Otherwise, just use the
-    # binary itself as the executable to launch.
-    # TODO(b/65413470): Make the output of the rule _itself_ an `.xctest` bundle once some
-    # limitations of directory artifacts are resolved.
+    # If the tests are to be bundled, create the test runner script as the
+    # rule's executable and place the binary in runfiles so that it can be
+    # copied into place. Otherwise, just use the binary itself as the executable
+    # to launch.
+    # TODO(b/65413470): Make the output of the rule _itself_ an `.xctest` bundle
+    # once some limitations of directory artifacts are resolved.
     if is_bundled:
         xctest_runner = _create_xctest_runner(
             name = ctx.label.name,
@@ -366,25 +395,20 @@ def _swift_test_impl(ctx):
 
 swift_binary = rule(
     attrs = _binary_rule_attrs(stamp_default = True),
-    doc = """
+    doc = """\
 Compiles and links Swift code into an executable binary.
 
-On Linux, this rule produces an executable binary for the desired target architecture.
+On Linux, this rule produces an executable binary for the desired target
+architecture.
 
-On Apple platforms, this rule produces a _single-architecture_ binary; it does not produce fat
-binaries. As such, this rule is mainly useful for creating Swift tools intended to run on the
-local build machine. However, for historical reasons, the default Apple platform in Bazel is
-**iOS** instead of macOS. Therefore, if you wish to build a simple single-architecture Swift
-binary that can run on macOS, you must specify the correct CPU and platform on the command line as
-follows:
+On Apple platforms, this rule produces a _single-architecture_ binary; it does
+not produce fat binaries. As such, this rule is mainly useful for creating Swift
+tools intended to run on the local build machine.
 
-```shell
-$ bazel build //package:target
-```
-
-If you want to create a multi-architecture binary or a bundled application, please use one of the
-platform-specific application rules in [rules_apple](https://github.com/bazelbuild/rules_apple)
-instead of `swift_binary`.
+If you want to create a multi-architecture binary or a bundled application,
+please use one of the platform-specific application rules in
+[rules_apple](https://github.com/bazelbuild/rules_apple) instead of
+`swift_binary`.
 """,
     executable = True,
     fragments = ["cpp"],
@@ -397,7 +421,9 @@ swift_test = rule(
         {
             "_apple_coverage_support": attr.label(
                 cfg = "host",
-                default = Label("@build_bazel_apple_support//tools:coverage_support"),
+                default = Label(
+                    "@build_bazel_apple_support//tools:coverage_support",
+                ),
             ),
             "_xctest_runner_template": attr.label(
                 allow_single_file = True,
@@ -407,24 +433,27 @@ swift_test = rule(
             ),
         },
     ),
-    doc = """
+    doc = """\
 Compiles and links Swift code into an executable test target.
 
-The behavior of `swift_test` differs slightly for macOS targets, in order to provide seamless
-integration with Apple's XCTest framework. The output of the rule is still a binary, but one whose
-Mach-O type is `MH_BUNDLE` (a loadable bundle). Thus, the binary cannot be launched directly.
-Instead, running `bazel test` on the target will launch a test runner script that copies it into an
-`.xctest` bundle directory and then launches the `xctest` helper tool from Xcode, which uses
-Objective-C runtime reflection to locate the tests.
+The behavior of `swift_test` differs slightly for macOS targets, in order to
+provide seamless integration with Apple's XCTest framework. The output of the
+rule is still a binary, but one whose Mach-O type is `MH_BUNDLE` (a loadable
+bundle). Thus, the binary cannot be launched directly. Instead, running
+`bazel test` on the target will launch a test runner script that copies it into
+an `.xctest` bundle directory and then launches the `xctest` helper tool from
+Xcode, which uses Objective-C runtime reflection to locate the tests.
 
-On Linux, the output of a `swift_test` is a standard executable binary, because the implementation
-of XCTest on that platform currently requires authors to explicitly list the tests that are present
-and run them from their main program.
+On Linux, the output of a `swift_test` is a standard executable binary, because
+the implementation of XCTest on that platform currently requires authors to
+explicitly list the tests that are present and run them from their main program.
 
-Test bundling on macOS can be disabled on a per-target basis, if desired. You may wish to do this if
-you are not using XCTest, but rather a different test framework (or no framework at all) where the
-pass/fail outcome is represented as a zero/non-zero exit code (as is the case with other Bazel test
-rules like `cc_test`). To do so, disable the `"swift.bundled_xctests"` feature on the target:
+Test bundling on macOS can be disabled on a per-target basis, if desired. You
+may wish to do this if you are not using XCTest, but rather a different test
+framework (or no framework at all) where the pass/fail outcome is represented as
+a zero/non-zero exit code (as is the case with other Bazel test rules like
+`cc_test`). To do so, disable the `"swift.bundled_xctests"` feature on the
+target:
 
 ```python
 swift_test(
@@ -434,8 +463,8 @@ swift_test(
 )
 ```
 
-You can also disable this feature for all the tests in a package by applying it to your BUILD file's
-`package()` declaration instead of the individual targets.
+You can also disable this feature for all the tests in a package by applying it
+to your BUILD file's `package()` declaration instead of the individual targets.
 """,
     executable = True,
     fragments = ["cpp"],

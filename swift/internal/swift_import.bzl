@@ -27,9 +27,9 @@ def _swift_import_impl(ctx):
     swiftdocs = ctx.files.swiftdocs
     swiftmodules = ctx.files.swiftmodules
 
-    # We have to depend on the C++ toolchain directly here to create the libraries to link.
-    # Depending on the Swift toolchain causes a problematic cyclic dependency for built-from-source
-    # toolchains.
+    # We have to depend on the C++ toolchain directly here to create the
+    # libraries to link. Depending on the Swift toolchain causes a problematic
+    # cyclic dependency for built-from-source toolchains.
     cc_toolchain = ctx.attr._cc_toolchain[cc_common.CcToolchainInfo]
     cc_feature_configuration = cc_common.configure_features(
         ctx = ctx,
@@ -61,11 +61,12 @@ def _swift_import_impl(ctx):
             cc_infos = get_providers(deps, CcInfo),
             libraries_to_link = libraries_to_link,
         ),
-        # Propagate an `Objc` provider so that Apple-specific rules like `apple_binary` will link
-        # the imported library properly. Typically we'd want to only propagate this if the
-        # toolchain reports that it supports Objective-C interop, but we would hit the same cyclic
-        # dependency mentioned above, so we propagate it unconditionally; it will be ignored on
-        # non-Apple platforms anyway.
+        # Propagate an `Objc` provider so that Apple-specific rules like
+        # apple_binary` will link the imported library properly. Typically we'd
+        # want to only propagate this if the toolchain reports that it supports
+        # Objective-C interop, but we would hit the same cyclic dependency
+        # mentioned above, so we propagate it unconditionally; it will be
+        # ignored on non-Apple platforms anyway.
         new_objc_provider(
             deps = deps,
             include_path = None,
@@ -92,7 +93,7 @@ swift_import = rule(
             "archives": attr.label_list(
                 allow_empty = False,
                 allow_files = ["a"],
-                doc = """
+                doc = """\
 The list of `.a` files provided to Swift targets that depend on this target.
 """,
                 mandatory = True,
@@ -100,8 +101,9 @@ The list of `.a` files provided to Swift targets that depend on this target.
             "swiftdocs": attr.label_list(
                 allow_empty = True,
                 allow_files = ["swiftdoc"],
-                doc = """
-The list of `.swiftdoc` files provided to Swift targets that depend on this target.
+                doc = """\
+The list of `.swiftdoc` files provided to Swift targets that depend on this
+target.
 """,
                 default = [],
                 mandatory = False,
@@ -109,23 +111,24 @@ The list of `.swiftdoc` files provided to Swift targets that depend on this targ
             "swiftmodules": attr.label_list(
                 allow_empty = False,
                 allow_files = ["swiftmodule"],
-                doc = """
-The list of `.swiftmodule` files provided to Swift targets that depend on this target.
+                doc = """\
+The list of `.swiftmodule` files provided to Swift targets that depend on this
+target.
 """,
                 mandatory = True,
             ),
             "_cc_toolchain": attr.label(
                 default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
-                doc = """
-The C++ toolchain from which linking flags and other tools needed by the Swift toolchain (such as
-`clang`) will be retrieved.
+                doc = """\
+The C++ toolchain from which linking flags and other tools needed by the Swift
+toolchain (such as `clang`) will be retrieved.
 """,
             ),
         },
     ),
-    doc = """
-Allows for the use of precompiled Swift modules as dependencies in other `swift_library` and
-`swift_binary` targets.
+    doc = """\
+Allows for the use of precompiled Swift modules as dependencies in other
+`swift_library` and `swift_binary` targets.
 """,
     fragments = ["cpp"],
     implementation = _swift_import_impl,

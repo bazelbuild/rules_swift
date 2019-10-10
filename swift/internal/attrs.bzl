@@ -20,7 +20,7 @@ def swift_common_rule_attrs(additional_deps_aspects = []):
     return {
         "data": attr.label_list(
             allow_files = True,
-            doc = """
+            doc = """\
 The list of files needed by this target at runtime.
 
 Files and targets named in the `data` attribute will appear in the `*.runfiles`
@@ -30,11 +30,12 @@ binary or library, or other programs needed by it.
         ),
         "deps": attr.label_list(
             aspects = additional_deps_aspects,
-            doc = """
+            doc = """\
 A list of targets that are dependencies of the target being built, which will be
 linked into that target. Allowed kinds of dependencies are:
 
-*   `swift_c_module`, `swift_import` and `swift_library` (or anything propagating `SwiftInfo`)
+*   `swift_c_module`, `swift_import` and `swift_library` (or anything
+    propagating `SwiftInfo`)
 *   `cc_library` (or anything propagating `CcInfo`)
 
 Additionally, on platforms that support Objective-C interop, `objc_library`

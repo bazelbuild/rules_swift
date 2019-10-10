@@ -32,11 +32,11 @@ def _maybe(repo_rule, name, **kwargs):
         repo_rule(name = name, **kwargs)
 
 def swift_rules_dependencies():
-    """Fetches repositories that are dependencies of the `rules_swift` workspace.
+    """Fetches repositories that are dependencies of `rules_swift`.
 
     Users should call this macro in their `WORKSPACE` to ensure that all of the
-    dependencies of the Swift rules are downloaded and that they are isolated from
-    changes to those dependencies.
+    dependencies of the Swift rules are downloaded and that they are isolated
+    from changes to those dependencies.
     """
     _maybe(
         http_archive,
@@ -79,7 +79,9 @@ def swift_rules_dependencies():
     _maybe(
         http_archive,
         name = "com_github_nlohmann_json",
-        urls = ["https://github.com/nlohmann/json/releases/download/v3.6.1/include.zip"],
+        urls = [
+            "https://github.com/nlohmann/json/releases/download/v3.6.1/include.zip",
+        ],
         sha256 = "69cc88207ce91347ea530b227ff0776db82dcb8de6704e1a3d74f4841bc651cf",
         type = "zip",
         build_file = "@build_bazel_rules_swift//third_party:com_github_nlohmann_json/BUILD.overlay",
@@ -89,7 +91,9 @@ def swift_rules_dependencies():
         http_archive,
         name = "com_google_protobuf",
         # v3.8.0, latest as of 2019-05-28
-        urls = ["https://github.com/protocolbuffers/protobuf/archive/v3.8.0.zip"],
+        urls = [
+            "https://github.com/protocolbuffers/protobuf/archive/v3.8.0.zip",
+        ],
         sha256 = "1e622ce4b84b88b6d2cdf1db38d1a634fe2392d74f0b7b74ff98f3a51838ee53",
         strip_prefix = "protobuf-3.8.0",
         type = "zip",

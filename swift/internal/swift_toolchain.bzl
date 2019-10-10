@@ -39,22 +39,24 @@ def _default_linker_opts(
         is_test):
     """Returns options that should be passed by default to `clang` when linking.
 
-    This function is wrapped in a `partial` that will be propagated as part of the
-    toolchain provider. The first three arguments are pre-bound; the `is_static`
-    and `is_test` arguments are expected to be passed by the caller.
+    This function is wrapped in a `partial` that will be propagated as part of
+    the toolchain provider. The first three arguments are pre-bound; the
+    `is_static` and `is_test` arguments are expected to be passed by the caller.
 
     Args:
-        cc_toolchain: The cpp toolchain from which the `ld` executable is determined.
+        cc_toolchain: The cpp toolchain from which the `ld` executable is
+            determined.
         cpu: The CPU architecture, which is used as part of the library path.
-        os: The operating system name, which is used as part of the library path.
+        os: The operating system name, which is used as part of the library
+            path.
         toolchain_root: The toolchain's root directory.
-        is_static: `True` to link against the static version of the Swift runtime, or `False` to
-            link against dynamic/shared libraries.
+        is_static: `True` to link against the static version of the Swift
+            runtime, or `False` to link against dynamic/shared libraries.
         is_test: `True` if the target being linked is a test target.
 
     Returns:
-        The command line options to pass to `clang` to link against the desired variant of the Swift
-        runtime libraries.
+        The command line options to pass to `clang` to link against the desired
+        variant of the Swift runtime libraries.
     """
 
     _ignore = is_test
@@ -98,14 +100,15 @@ def _swift_toolchain_impl(ctx):
         toolchain_root,
     )
 
-    # Combine build mode features, autoconfigured features, and required features.
+    # Combine build mode features, autoconfigured features, and required
+    # features.
     requested_features = features_for_build_modes(ctx)
     requested_features.extend(ctx.features)
     requested_features.append(SWIFT_FEATURE_AUTOLINK_EXTRACT)
 
-    # TODO(allevato): Move some of the remaining hardcoded values, like object format and Obj-C
-    # interop support, to attributes so that we can remove the assumptions that are only valid on
-    # Linux.
+    # TODO(allevato): Move some of the remaining hardcoded values, like object
+    # format and Obj-C interop support, to attributes so that we can remove the
+    # assumptions that are only valid on Linux.
     return [
         SwiftToolchainInfo(
             action_environment = {},
@@ -137,26 +140,26 @@ def _swift_toolchain_impl(ctx):
 swift_toolchain = rule(
     attrs = dicts.add({
         "arch": attr.string(
-            doc = """
+            doc = """\
 The name of the architecture that this toolchain targets.
 
-This name should match the name used in the toolchain's directory layout for architecture-specific
-content, such as "x86_64" in "lib/swift/linux/x86_64".
+This name should match the name used in the toolchain's directory layout for
+architecture-specific content, such as "x86_64" in "lib/swift/linux/x86_64".
 """,
             mandatory = True,
         ),
         "clang_executable": attr.string(
-            doc = """
+            doc = """\
 The path to the `clang` executable, which is used for linking.
 """,
             mandatory = True,
         ),
         "os": attr.string(
-            doc = """
+            doc = """\
 The name of the operating system that this toolchain targets.
 
-This name should match the name used in the toolchain's directory layout for platform-specific
-content, such as "linux" in "lib/swift/linux".
+This name should match the name used in the toolchain's directory layout for
+platform-specific content, such as "linux" in "lib/swift/linux".
 """,
             mandatory = True,
         ),
@@ -165,7 +168,7 @@ content, such as "linux" in "lib/swift/linux".
         ),
         "_cc_toolchain": attr.label(
             default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
-            doc = """
+            doc = """\
 The C++ toolchain from which other tools needed by the Swift toolchain (such as
 `clang` and `ar`) will be retrieved.
 """,
@@ -174,7 +177,7 @@ The C++ toolchain from which other tools needed by the Swift toolchain (such as
             cfg = "host",
             allow_files = True,
             default = Label("//tools/worker"),
-            doc = """
+            doc = """\
 An executable that wraps Swift compiler invocations and also provides support
 for incremental compilation using a persistent mode.
 """,
