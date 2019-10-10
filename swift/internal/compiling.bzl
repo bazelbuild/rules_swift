@@ -16,19 +16,10 @@
 
 load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load(
-    "@build_bazel_apple_support//lib:framework_migration.bzl",
-    "framework_migration",
-)
 load(":actions.bzl", "get_swift_tool", "run_swift_action")
 load(":derived_files.bzl", "derived_files")
 load(":providers.bzl", "SwiftInfo")
-load(
-    ":utils.bzl",
-    "collect_cc_libraries",
-    "get_providers",
-    "objc_provider_framework_name",
-)
+load(":utils.bzl", "collect_cc_libraries", "get_providers")
 
 def collect_transitive_compile_inputs(args, deps, direct_defines = []):
     """Collect transitive inputs and flags from Swift providers.
@@ -353,8 +344,6 @@ def objc_compile_requirements(args, deps):
 
     objc_providers = get_providers(deps, apple_common.Objc)
 
-    post_framework_cleanup = framework_migration.is_post_framework_migration()
-
     for objc in objc_providers:
         inputs.append(objc.header)
         inputs.append(objc.umbrella_header)
@@ -362,17 +351,8 @@ def objc_compile_requirements(args, deps):
         defines.append(objc.define)
         includes.append(objc.include)
 
-        if post_framework_cleanup:
-            static_framework_names.append(objc.static_framework_names)
-            all_frameworks.append(objc.framework_search_path_only)
-        else:
-            inputs.append(objc.static_framework_file)
-            inputs.append(objc.dynamic_framework_file)
-            static_framework_names.append(depset(
-                [objc_provider_framework_name(fdir) for fdir in objc.framework_dir.to_list()],
-            ))
-            all_frameworks.append(objc.framework_dir)
-            all_frameworks.append(objc.dynamic_framework_dir)
+        static_framework_names.append(objc.static_framework_names)
+        all_frameworks.append(objc.framework_search_path_only)
 
     # Collect module maps for dependencies. These must be pulled from a combined transitive
     # provider to get the correct strict propagation behavior that we use to workaround command-line

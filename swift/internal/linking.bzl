@@ -14,15 +14,10 @@
 
 """Implementation of linking logic for Swift."""
 
-load("@bazel_skylib//lib:paths.bzl", "paths")
-load(
-    "@build_bazel_apple_support//lib:framework_migration.bzl",
-    "framework_migration",
-)
 load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "CPP_LINK_STATIC_LIBRARY_ACTION_NAME")
 load(":actions.bzl", "run_swift_action")
 load(":derived_files.bzl", "derived_files")
-load(":utils.bzl", "collect_cc_libraries", "objc_provider_framework_name")
+load(":utils.bzl", "collect_cc_libraries")
 
 def _register_static_library_link_action(
         actions,
@@ -208,26 +203,9 @@ def register_link_executable_action(
             )
         if apple_common.Objc in dep:
             objc = dep[apple_common.Objc]
-            if framework_migration.is_post_framework_migration():
-                deps_dynamic_framework_names.append(objc.dynamic_framework_names)
-                deps_dynamic_framework_paths.append(objc.dynamic_framework_paths)
-                deps_static_framework_files.append(objc.static_framework_file)
-            else:
-                deps_dynamic_framework_names.append(depset(
-                    [
-                        objc_provider_framework_name(fdir)
-                        for fdir in objc.dynamic_framework_dir.to_list()
-                    ],
-                ))
-                deps_dynamic_framework_paths.append(depset(
-                    [fdir.dirname for fdir in objc.dynamic_framework_dir.to_list()],
-                ))
-                deps_static_framework_files.append(depset(
-                    [
-                        paths.join(fdir, objc_provider_framework_name(fdir))
-                        for fdir in objc.framework_dir.to_list()
-                    ],
-                ))
+            deps_dynamic_framework_names.append(objc.dynamic_framework_names)
+            deps_dynamic_framework_paths.append(objc.dynamic_framework_paths)
+            deps_static_framework_files.append(objc.static_framework_file)
             deps_sdk_dylibs.append(objc.sdk_dylib)
             deps_sdk_frameworks.append(objc.sdk_framework)
 
