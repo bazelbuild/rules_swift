@@ -5,9 +5,9 @@
         "package": "SocketIO",
         "repositoryURL": "https://github.com/socketio/socket.io-client-swift",
         "state": {
-          "branch": null,
-          "revision": "148c30247480cd96a068d38b1594e95a5f7bc1df",
-          "version": "15.0.0"
+          "branch": "master",
+          "revision": "5dcfe18748f55cc1a001e640fa96ec2a4b098a55",
+          "version": null
         }
       },
       {
@@ -23,9 +23,9 @@
         "package": "SwiftyJSON",
         "repositoryURL": "https://github.com/SwiftyJSON/SwiftyJSON.git",
         "state": {
-          "branch": null,
-          "revision": "2b6054efa051565954e1d2b9da831680026cd768",
-          "version": "4.3.0"
+          "branch": "master",
+          "revision": "bad5f2f94a71216a32c030a3586bdcfc1f7e660b",
+          "version": null
         }
       }
     ]
