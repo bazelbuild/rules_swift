@@ -1,0 +1,4 @@
+# These options are required to make use of managed_directories
+# especially when symlink_build_path attribute is True
+build --experimental_allow_incremental_repository_updates
+query --experimental_allow_incremental_repository_updates

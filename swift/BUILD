@@ -6,6 +6,7 @@ load("@bazel_skylib//rules:common_settings.bzl", "bool_setting")
 
 exports_files([
     "swift.bzl",
+    "package.bzl"
 ])
 
 # Consumed by Bazel integration tests.
