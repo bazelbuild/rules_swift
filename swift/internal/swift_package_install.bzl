@@ -24,8 +24,8 @@ def _swift_package_install_impl(ctx):
 
     if not QUIET:
         ctx.execute(
-            ['swift', '--version'], 
-            quiet = False
+            ["swift", "--version"],
+            quiet = False,
         )
 
     ctx.file(

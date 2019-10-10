@@ -1,7 +1,10 @@
-workspace(
-    name = "build_bazel_rules_swift",
-   # managed_directories = {"@exampledeps": [".build"]}, Fails under CI
-)
+workspace(name = "build_bazel_rules_swift")
+
+# Fails under CI because of update_workspace_to_deps_heads
+# workspace(
+#     name = "build_bazel_rules_swift",
+#     managed_directories = {"@exampledeps": [".build"]}, 
+# )
 
 load(
     "@build_bazel_rules_swift//swift:repositories.bzl",
