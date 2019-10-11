@@ -25,42 +25,14 @@ x_defaults:
     test_targets: *linux_targets
 
 tasks:
-  macos_latest:
-    name: "Latest Bazel"
-    bazel: latest
-    <<: *mac_common
-
   macos_last_green:
     name: "Last Green Bazel"
     bazel: last_green
     <<: *mac_common
 
-  macos_latest_head_deps:
-    name: "Latest Bazel with Head Deps"
-    bazel: latest
-    shell_commands:
-    # Update the WORKSPACE to use head versions of some deps to ensure nothing
-    # has landed on them breaking this project.
-    - .bazelci/update_workspace_to_deps_heads.sh
-    <<: *mac_common
-
-  ubuntu1804_latest:
-    name: "Latest Bazel"
-    bazel: latest
-    <<: *linux_common
-
   ubuntu1804_last_green:
     name: "Last Green Bazel"
     bazel: last_green
-    <<: *linux_common
-
-  ubuntu1804_latest_head_deps:
-    name: "Latest Bazel with Head Deps"
-    bazel: latest
-    shell_commands:
-    # Update the WORKSPACE to use head versions of some deps to ensure nothing
-    # has landed on them breaking this project.
-    - .bazelci/update_workspace_to_deps_heads.sh
     <<: *linux_common
 
 buildifier:

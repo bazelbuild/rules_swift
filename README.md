@@ -47,14 +47,23 @@ replacing the `urls` and `sha256` attributes with the values from the release
 you wish to depend on:
 
 ```python
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
-http_archive(
+# rules_swift and apple_support no longer support releases. If you'd like to pin
+# down these dependencies to a specific commit, please add the following to the
+# top of your WORKSPACE, using the commit you'd like to pin for each of the
+# repositories.
+git_repository(
     name = "build_bazel_rules_swift",
-    sha256 = "96a86afcbdab215f8363e65a10cf023b752e90b23abf02272c4fc668fcb70311",
-    urls = [
-        "https://github.com/bazelbuild/rules_swift/releases/download/0.11.1/rules_swift.0.11.1.tar.gz",
-    ],
+    remote = "https://github.com/bazelbuild/rules_swift.git",
+    commit = "[SOME_HASH_VALUE]",
+)
+
+git_repository(
+    name = "build_bazel_apple_support",
+    remote = "https://github.com/bazelbuild/apple_support.git",
+    commit = "[SOME_HASH_VALUE]",
 )
 
 load(
