@@ -72,6 +72,7 @@ def collect_transitive_compile_inputs(args, deps, direct_defines = []):
         all_swiftmodules,
         format_each = "-I%s",
         map_each = _dirname_map_fn,
+        uniquify = True,
     )
     input_depsets.append(all_swiftmodules)
 
