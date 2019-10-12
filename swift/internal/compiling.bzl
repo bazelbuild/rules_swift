@@ -153,9 +153,6 @@ def declare_compile_outputs(
             was generated if index-while-building was enabled, or None.
         *   `other_outputs`: Additional output files that should be declared by
             the compile action, but which are not processed further.
-        *   `output_groups`: A dictionary of additional output groups that
-            should be propagated by the calling rule using the `OutputGroupInfo`
-            provider.
         *   `output_objects`: A list of object (.o) files that will be the
             result of the compile action and which should be archived afterward.
     """
@@ -175,9 +172,6 @@ def declare_compile_outputs(
             # TODO(allevato): We need to handle indexing here too.
             indexstore = None,
             other_outputs = [],
-            output_groups = {
-                "compilation_outputs": depset(direct = [out_obj]),
-            },
             output_objects = [out_obj],
         )
 
@@ -231,9 +225,6 @@ def declare_compile_outputs(
     )
 
     args = ["-output-file-map", output_map_file]
-    output_groups = {
-        "compilation_outputs": depset(direct = output_objs),
-    }
 
     # Configure index-while-building if requested. IDEs and other indexing tools
     # can enable this feature on the command line during a build and then access
@@ -245,7 +236,6 @@ def declare_compile_outputs(
         )
         other_outputs.append(index_store_dir)
         args.extend(["-index-store-path", index_store_dir.path])
-        output_groups["swift_index_store"] = depset(direct = [index_store_dir])
     else:
         index_store_dir = None
 
@@ -254,7 +244,6 @@ def declare_compile_outputs(
         compile_inputs = [output_map_file],
         indexstore = index_store_dir,
         other_outputs = other_outputs,
-        output_groups = output_groups,
         output_objects = output_objs,
     )
 
