@@ -14,13 +14,12 @@
 
 """Implementation of linking logic for Swift."""
 
+load("@bazel_skylib//lib:collections.bzl", "collections")
 load(
     "@bazel_tools//tools/build_defs/cc:action_names.bzl",
     "CPP_LINK_STATIC_LIBRARY_ACTION_NAME",
 )
-load(":actions.bzl", "run_swift_action")
 load(":derived_files.bzl", "derived_files")
-load(":utils.bzl", "collect_cc_libraries")
 
 def _register_static_library_link_action(
         actions,
@@ -66,14 +65,17 @@ def _register_static_library_link_action(
         variables = archiver_variables,
     )
 
+    execution_requirements_list = cc_common.get_execution_requirements(
+        action_name = CPP_LINK_STATIC_LIBRARY_ACTION_NAME,
+        feature_configuration = cc_feature_configuration,
+    )
+    execution_requirements = {req: "1" for req in execution_requirements_list}
+
     actions.run(
-        executable = archiver_path,
         arguments = [args],
         env = env,
-        # TODO(allevato): It seems like the `cc_common` APIs should have a way
-        # to get this value so that it can be handled consistently for the
-        # toolchain in use.
-        execution_requirements = swift_toolchain.execution_requirements,
+        executable = archiver_path,
+        execution_requirements = execution_requirements,
         inputs = depset(
             direct = objects,
             transitive = [swift_toolchain.cc_toolchain_info.all_files],
@@ -143,237 +145,95 @@ def register_libraries_to_link(
         dynamic_library = dynamic_library,
     )
 
-def register_link_executable_action(
+def register_link_binary_action(
         actions,
-        action_environment,
+        additional_inputs,
         additional_linking_contexts,
         cc_feature_configuration,
-        clang_executable,
         deps,
-        expanded_linkopts,
-        inputs,
-        mnemonic,
+        name,
         objects,
-        outputs,
-        progress_message,
-        rule_specific_args,
-        swift_toolchain):
-    """Registers an action that invokes `clang` to link object files.
+        output_type,
+        swift_toolchain,
+        user_link_flags):
+    """Registers an action that invokes the linker to produce a binary.
 
     Args:
         actions: The object used to register actions.
-        action_environment: A `dict` of environment variables that should be set
-            for the compile action.
+        additional_inputs: A list of additional inputs to the link action,
+            such as those used in `$(location ...)` substitution, linker
+            scripts, and so forth.
         additional_linking_contexts: Additional linking contexts that provide
             libraries or flags that should be linked into the executable.
         cc_feature_configuration: The C++ feature configuration to use when
             constructing the action.
-        clang_executable: The path to the `clang` executable that will be
-            invoked to link, which is assumed to be present among the tools that
-            the toolchain passes to its action registrars. If this is `None`,
-            then simply `clang` will be used with the assumption that the
-            registrar knows where and how to find it.
-        deps: A list of `deps` representing additional libraries that will be
+        deps: A list of targets representing additional libraries that will be
             passed to the linker.
-        expanded_linkopts: A list of strings representing options passed to the
-            linker. Any `$(location ...)` placeholders are assumed to have
-            already been expanded.
-        inputs: A `depset` containing additional inputs to the link action, such
-            as those used in `$(location ...)` substitution, or libraries that
-            need to be linked.
-        mnemonic: The mnemonic printed by Bazel when the action executes.
+        name: The name of the target being linked, which is used to derive the
+            output artifact.
         objects: A list of object (.o) files that will be passed to the linker.
-        outputs: A list of `File`s that should be passed as the outputs of the
-            link action.
-        progress_message: The progress message printed by Bazel when the action
-            executes.
-        rule_specific_args: Additional arguments that are rule-specific that
-            will be passed to `clang`.
+        output_type: A string indicating the output type; "executable" or
+            "dynamic_library".
+        user_link_flags: Additional flags passed to the linker. Any
+            `$(location ...)` placeholders are assumed to have already been
+            expanded.
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
+
+    Returns:
+        A `CcLinkingOutputs` object that contains the `executable` or
+        `library_to_link` that was linked (depending on the value of the
+        `output_type` argument).
     """
-    if not clang_executable:
-        clang_executable = "clang"
+    linking_contexts = []
 
-    common_args = actions.args()
-
-    # TODO(b/133833674): Remove this and get the executable from CROSSTOOL (see
-    # the comment at the end of the function for more information).
-    common_args.add(clang_executable)
-
-    deps_libraries = []
-
-    additional_input_depsets = []
-    all_linkopts = list(expanded_linkopts)
-    deps_dynamic_framework_names = []
-    deps_dynamic_framework_paths = []
-    deps_static_framework_files = []
-    deps_sdk_dylibs = []
-    deps_sdk_frameworks = []
     for dep in deps:
         if CcInfo in dep:
             cc_info = dep[CcInfo]
-            additional_input_depsets.append(
-                cc_info.linking_context.additional_inputs,
-            )
-            all_linkopts.extend(cc_info.linking_context.user_link_flags)
-            deps_libraries.extend(
-                collect_cc_libraries(
-                    cc_info = cc_info,
-                    include_pic_static = True,
-                ),
-            )
+            linking_contexts.append(cc_info.linking_context)
+
+        # TODO(allevato): Remove all of this when `apple_common.Objc` goes away.
         if apple_common.Objc in dep:
             objc = dep[apple_common.Objc]
-            deps_dynamic_framework_names.append(objc.dynamic_framework_names)
-            deps_dynamic_framework_paths.append(objc.dynamic_framework_paths)
-            deps_static_framework_files.append(objc.static_framework_file)
-            deps_sdk_dylibs.append(objc.sdk_dylib)
-            deps_sdk_frameworks.append(objc.sdk_framework)
 
-    for linking_context in additional_linking_contexts:
-        additional_input_depsets.append(linking_context.additional_inputs)
-        all_linkopts.extend(linking_context.user_link_flags)
-        for library in linking_context.libraries_to_link:
-            if library.pic_static_library:
-                deps_libraries.append(library.pic_static_library)
-            elif library.static_library:
-                deps_libraries.append(library.static_library)
+            static_framework_files = objc.static_framework_file.to_list()
 
-    libraries = depset(deps_libraries, order = "topological")
-    link_input_depsets = [
-        libraries,
-        inputs,
-    ] + additional_input_depsets
+            # We don't need to handle the `objc.sdk_framework` field here
+            # because those values have also been put into the user link flags
+            # of a CcInfo, but the others don't seem to have been.
+            dep_link_flags = [
+                "-l{}".format(dylib)
+                for dylib in objc.sdk_dylib.to_list()
+            ]
+            dep_link_flags.extend([
+                "-F{}".format(path)
+                for path in objc.dynamic_framework_paths.to_list()
+            ])
+            dep_link_flags.extend(collections.before_each(
+                "-framework",
+                objc.dynamic_framework_names.to_list(),
+            ))
+            dep_link_flags.extend(static_framework_files)
 
-    link_input_args = actions.args()
-    link_input_args.set_param_file_format("multiline")
-    link_input_args.use_param_file("@%s", use_always = True)
-    link_input_args.add_all(objects)
+            linking_contexts.append(
+                cc_common.create_linking_context(
+                    user_link_flags = dep_link_flags,
+                ),
+            )
 
-    is_darwin = swift_toolchain.system_name == "darwin"
-    link_input_args.add_all(libraries, map_each = (
-        _link_library_darwin_map_fn if is_darwin else _link_library_linux_map_fn
-    ))
+    linking_contexts.extend(additional_linking_contexts)
 
-    # Add various requirements from propagated Objective-C frameworks:
-    # * Static prebuilt framework binaries are passed as regular arguments.
-    link_input_args.add_all(
-        depset(transitive = deps_static_framework_files),
-    )
-
-    # * `sdk_dylibs` values are passed with `-l`.
-    link_input_args.add_all(
-        depset(transitive = deps_sdk_dylibs),
-        format_each = "-l%s",
-    )
-
-    # * `sdk_frameworks` values are passed with `-framework`.
-    link_input_args.add_all(
-        depset(transitive = deps_sdk_frameworks),
-        before_each = "-framework",
-    )
-
-    # * Dynamic prebuilt frameworks are passed by providing their parent
-    #   directory as a search path using `-F` and the framework name as
-    #   `-framework`.
-    link_input_args.add_all(
-        depset(transitive = deps_dynamic_framework_paths),
-        format_each = "-F%s",
-    )
-    link_input_args.add_all(
-        depset(transitive = deps_dynamic_framework_names),
-        before_each = "-framework",
-    )
-
-    # If the C++ toolchain provides an embedded runtime, include it. See the
-    # documentation for `CcToolchainInfo.{dynamic,static}_runtime_lib` for an
-    # explanation of the feature check:
-    # https://docs.bazel.build/versions/master/skylark/lib/CcToolchainInfo.html#static_runtime_lib
-    if cc_common.is_enabled(
-        feature_configuration = cc_feature_configuration,
-        feature_name = "static_link_cpp_runtimes",
-    ):
-        # TODO(b/70228246): Call dynamic_runtime_lib if dynamic linking.
-        cc_runtime_libs = swift_toolchain.cc_toolchain_info.static_runtime_lib(
-            feature_configuration = cc_feature_configuration,
-        )
-        link_input_args.add_all(cc_runtime_libs)
-        link_input_depsets.append(cc_runtime_libs)
-
-    user_args = actions.args()
-    user_args.add_all(all_linkopts)
-
-    execution_requirements = swift_toolchain.execution_requirements
-
-    # TODO(b/133833674): Even though we're invoking clang, not swift, we do so
-    # through the worker (in non-persistent mode) to get the necessary `xcrun`
-    # wrapping and placeholder substitution on macOS. This shouldn't actually be
-    # necessary; we should be able to query CROSSTOOL for the linker tool and
-    # that should include the correct wrapping. However, the Bazel OSX CROSSTOOL
-    # currently uses `cc_wrapper.sh` instead of `wrapped_clang` for C++ linking
-    # actions (it properly uses `wrapped_clang` for Objective-C linking), so
-    # until that is resolved (https://github.com/bazelbuild/bazel/pull/8495), we
-    # have to use this workaround. This also means that, until we migrate to
-    # `wrapped_clang`, we're missing out on other features like dSYM extraction,
-    # but that's actually not any different that the situation today.
-    run_swift_action(
+    return cc_common.link(
         actions = actions,
-        arguments = [
-            common_args,
-            link_input_args,
-            rule_specific_args,
-            user_args,
-        ],
-        env = action_environment,
-        execution_requirements = execution_requirements,
-        inputs = depset(
-            objects,
-            transitive = link_input_depsets + [
-                swift_toolchain.cc_toolchain_info.all_files,
-            ],
+        additional_inputs = additional_inputs,
+        cc_toolchain = swift_toolchain.cc_toolchain_info,
+        compilation_outputs = cc_common.create_compilation_outputs(
+            objects = depset(objects),
+            pic_objects = depset(objects),
         ),
-        mnemonic = mnemonic,
-        outputs = outputs,
-        progress_message = progress_message,
-        swift_toolchain = swift_toolchain,
+        feature_configuration = cc_feature_configuration,
+        name = name,
+        user_link_flags = user_link_flags,
+        linking_contexts = linking_contexts,
+        link_deps_statically = True,
+        output_type = output_type,
     )
-
-def _link_library_darwin_map_fn(lib):
-    """Maps a library to the appropriate flags to link them.
-
-    This function handles `alwayslink` (.lo) libraries correctly by passing them
-    with `-force_load`.
-
-    Args:
-        lib: A `File`, passed in when the calling `Args` object is ready to map
-        it to an argument.
-
-    Returns:
-        A list of command-line arguments (strings) that link the library
-        correctly.
-    """
-    if lib.basename.endswith(".lo"):
-        return "-Wl,-force_load,{lib}".format(lib = lib.path)
-    else:
-        return lib.path
-
-def _link_library_linux_map_fn(lib):
-    """Maps a library to the appropriate flags to link them.
-
-    This function handles `alwayslink` (.lo) libraries correctly by surrounding
-    them with `--(no-)whole-archive`.
-
-    Args:
-        lib: A `File`, passed in when the calling `Args` object is ready to map
-        it to an argument.
-
-    Returns:
-        A list of command-line arguments (strings) that link the library
-        correctly.
-    """
-    if lib.basename.endswith(".lo"):
-        return "-Wl,--whole-archive,{lib},--no-whole-archive".format(
-            lib = lib.path,
-        )
-    else:
-        return lib.path

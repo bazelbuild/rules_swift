@@ -16,15 +16,12 @@
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:partial.bzl", "partial")
-load(
-    "@bazel_tools//tools/build_defs/cc:action_names.bzl",
-    "CPP_LINK_EXECUTABLE_ACTION_NAME",
-)
+load("@bazel_skylib//lib:paths.bzl", "paths")
 load(":api.bzl", "swift_common")
 load(":compiling.bzl", "output_groups_from_compilation_outputs")
 load(":derived_files.bzl", "derived_files")
 load(":features.bzl", "SWIFT_FEATURE_BUNDLED_XCTESTS")
-load(":linking.bzl", "register_link_executable_action")
+load(":linking.bzl", "register_link_binary_action")
 load(":non_swift_target_aspect.bzl", "non_swift_target_aspect")
 load(":providers.bzl", "SwiftToolchainInfo")
 load(":utils.bzl", "expand_locations")
@@ -150,34 +147,26 @@ def _swift_linking_rule_impl(
         linked, and a list of providers to be propagated by the target being
         built.
     """
-    copts = expand_locations(ctx, ctx.attr.copts, ctx.attr.swiftc_inputs)
-    linkopts = list(linkopts) + expand_locations(
-        ctx,
-        ctx.attr.linkopts,
-        ctx.attr.swiftc_inputs,
-    )
-    linkopts += ctx.fragments.cpp.linkopts
-
     additional_inputs = ctx.files.swiftc_inputs
-    srcs = ctx.files.srcs
-
-    out_bin = derived_files.executable(
-        actions = ctx.actions,
-        target_name = ctx.label.name,
+    additional_inputs_to_linker = list(additional_inputs)
+    additional_linking_contexts = []
+    cc_feature_configuration = swift_common.cc_feature_configuration(
+        feature_configuration = feature_configuration,
     )
     compilation_outputs = None
     objects_to_link = []
     output_groups = {}
+    srcs = ctx.files.srcs
+    user_link_flags = list(linkopts)
 
-    link_args = ctx.actions.args()
-    link_args.add("-o", out_bin)
-
-    if not srcs:
-        additional_inputs_to_linker = depset(direct = additional_inputs)
-    else:
+    # If the rule has sources, compile those first and collect the outputs to
+    # be passed to the linker.
+    if srcs:
         module_name = ctx.attr.module_name
         if not module_name:
             module_name = swift_common.derive_module_name(ctx.label)
+
+        copts = expand_locations(ctx, ctx.attr.copts, ctx.attr.swiftc_inputs)
 
         compilation_outputs = swift_common.compile(
             actions = ctx.actions,
@@ -193,78 +182,77 @@ def _swift_linking_rule_impl(
             swift_toolchain = swift_toolchain,
             target_name = ctx.label.name,
         )
-        link_args.add_all(compilation_outputs.linker_flags)
+        user_link_flags.extend(compilation_outputs.linker_flags)
         objects_to_link.extend(compilation_outputs.object_files)
-        additional_inputs_to_linker = depset(compilation_outputs.linker_inputs)
+        additional_inputs_to_linker.extend(compilation_outputs.linker_inputs)
 
         output_groups = output_groups_from_compilation_outputs(
             compilation_outputs = compilation_outputs,
         )
 
-    # TODO(b/70228246): Also support mostly-static and fully-dynamic modes, here
-    # and for the C++ toolchain args below.
+    # Retrieve any additional linker flags required by the Swift toolchain.
+    # TODO(b/70228246): Also support mostly-static and fully-dynamic modes,
+    # here and for the C++ toolchain args below.
     toolchain_linker_flags = partial.call(
         swift_toolchain.linker_opts_producer,
         is_static = True,
         is_test = is_test,
     )
-    link_args.add_all(toolchain_linker_flags)
+    user_link_flags.extend(toolchain_linker_flags)
 
-    # Get additional linker flags from the C++ toolchain.
-    cc_feature_configuration = swift_common.cc_feature_configuration(
-        feature_configuration = feature_configuration,
-    )
-    variables = cc_common.create_link_variables(
-        cc_toolchain = swift_toolchain.cc_toolchain_info,
-        feature_configuration = cc_feature_configuration,
-        is_static_linking_mode = True,
-    )
-    link_cpp_toolchain_flags = cc_common.get_memory_inefficient_command_line(
-        action_name = CPP_LINK_EXECUTABLE_ACTION_NAME,
-        feature_configuration = cc_feature_configuration,
-        variables = variables,
-    )
-    link_args.add_all(link_cpp_toolchain_flags)
-
+    # Collect the dependencies of the target being linked as well as the
+    # toolchain's implicit dependencies (depending on the current feature
+    # configuration).
     deps_to_link = ctx.attr.deps + swift_common.get_implicit_deps(
         feature_configuration = feature_configuration,
         swift_toolchain = swift_toolchain,
     )
-    if ctx.attr.malloc:
-        deps_to_link.append(ctx.attr.malloc)
 
-    additional_linking_contexts = []
+    # If a custom malloc implementation has been provided, pass that to the
+    # linker as well.
+    if ctx.attr.malloc:
+        additional_linking_contexts.append(
+            ctx.attr.malloc[CcInfo].linking_context,
+        )
+
+    # If the toolchain supports link-stamping, ask it for a linking context
+    # that stamps the build information into the binary.
     if swift_toolchain.stamp_producer:
         stamp_context = partial.call(
             swift_toolchain.stamp_producer,
             ctx,
             cc_feature_configuration,
             swift_toolchain.cc_toolchain_info,
-            out_bin,
+            paths.join(ctx.label.package, ctx.label.name),
         )
         if stamp_context:
             additional_linking_contexts.append(stamp_context)
 
-    register_link_executable_action(
+    # Finally, consider linker flags in the `linkopts` attribute and the
+    # `--linkopt` command line flag last, so they get highest priority.
+    user_link_flags.extend(expand_locations(
+        ctx,
+        ctx.attr.linkopts,
+        ctx.attr.swiftc_inputs,
+    ))
+    user_link_flags.extend(ctx.fragments.cpp.linkopts)
+
+    linking_outputs = register_link_binary_action(
         actions = ctx.actions,
-        action_environment = swift_toolchain.action_environment,
+        additional_inputs = additional_inputs_to_linker,
         additional_linking_contexts = additional_linking_contexts,
         cc_feature_configuration = cc_feature_configuration,
-        clang_executable = swift_toolchain.clang_executable,
         deps = deps_to_link,
-        expanded_linkopts = linkopts,
-        inputs = additional_inputs_to_linker,
-        mnemonic = "SwiftLinkExecutable",
+        name = ctx.label.name,
         objects = objects_to_link,
-        outputs = [out_bin],
-        progress_message = "Linking {}".format(out_bin.short_path),
-        rule_specific_args = link_args,
+        output_type = "executable",
         swift_toolchain = swift_toolchain,
+        user_link_flags = user_link_flags,
     )
 
     providers = [OutputGroupInfo(**output_groups)]
 
-    return out_bin, providers
+    return linking_outputs.executable, providers
 
 def _create_xctest_bundle(name, actions, binary):
     """Creates an `.xctest` bundle that contains the given binary.
