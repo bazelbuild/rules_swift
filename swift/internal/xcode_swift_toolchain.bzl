@@ -171,10 +171,10 @@ def _default_linker_opts(
     # directory), so test binaries need to have that directory explicitly added
     # to their rpaths.
     if is_test:
-        linkopts.append("-Wl,-rpath,{}".format(platform_framework_dir))
-        linkopts.append("-L{}".format(
-            _swift_developer_lib_dir(platform_framework_dir),
-        ))
+        linkopts.extend([
+            "-Wl,-rpath,{}".format(platform_framework_dir),
+            "-L{}".format(_swift_developer_lib_dir(platform_framework_dir)),
+        ])
 
     return linkopts
 
