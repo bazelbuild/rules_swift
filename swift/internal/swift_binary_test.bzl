@@ -80,6 +80,13 @@ build caching.
             "_cc_toolchain": attr.label(
                 default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
             ),
+            # TODO(b/119082664): Used internally only.
+            "_grep_includes": attr.label(
+                allow_single_file = True,
+                cfg = "host",
+                default = Label("@bazel_tools//tools/cpp:grep-includes"),
+                executable = True,
+            ),
         },
     )
 
@@ -243,6 +250,7 @@ def _swift_linking_rule_impl(
         additional_linking_contexts = additional_linking_contexts,
         cc_feature_configuration = cc_feature_configuration,
         deps = deps_to_link,
+        grep_includes = ctx.file._grep_includes,
         name = ctx.label.name,
         objects = objects_to_link,
         output_type = "executable",

@@ -151,6 +151,7 @@ def register_link_binary_action(
         additional_linking_contexts,
         cc_feature_configuration,
         deps,
+        grep_includes,
         name,
         objects,
         output_type,
@@ -169,6 +170,7 @@ def register_link_binary_action(
             constructing the action.
         deps: A list of targets representing additional libraries that will be
             passed to the linker.
+        grep_includes: Used internally only.
         name: The name of the target being linked, which is used to derive the
             output artifact.
         objects: A list of object (.o) files that will be passed to the linker.
@@ -222,6 +224,7 @@ def register_link_binary_action(
 
     linking_contexts.extend(additional_linking_contexts)
 
+    _ignore = [grep_includes]  # Silence buildifier
     return cc_common.link(
         actions = actions,
         additional_inputs = additional_inputs,
