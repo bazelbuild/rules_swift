@@ -20,6 +20,7 @@ load(
     "@bazel_skylib//lib:unittest.bzl",
     "analysistest",
     "asserts",
+    "unittest",
 )
 
 # A sentinel value returned by `_evaluate_field` when a `None` value is
@@ -35,11 +36,19 @@ _EVALUATE_FIELD_FAILED = provider()
 def _evaluate_field(env, source, field):
     """Evaluates a field or field path on an object and returns its value.
 
+    This function projects across collections. That is, if the result of
+    evaluating a field along the path is a depset or a list, then the result
+    will be normalized into a list and remaining fields in the path will be
+    evaluated on every item in that list, not on the list itself.
+
+    If a field path component in a projected collection is followed by an
+    exclamation point, then this indicates that any `None` values produced at
+    that stage of evaluation should be removed from the list before continuing.
     If evaluating the path fails because a `None` value is encountered anywhere
-    before the last component, an assertion failure is logged and the special
-    value `EVALUATE_FIELD_FAILED` is returned. This value lets the caller
-    short-circuit additional test logic that may not be relevant if evaluation
-    is known to have failed.
+    before the last component and they are not filtered out, then an assertion
+    failure is logged and the special value `EVALUATE_FIELD_FAILED` is returned.
+    This value lets the caller short-circuit additional test logic that may not
+    be relevant if evaluation is known to have failed.
 
     Args:
         env: The analysis test environment.
@@ -54,15 +63,51 @@ def _evaluate_field(env, source, field):
         `_EVALUATE_FIELD_FAILED` is returned.
     """
     components = field.split(".")
-    for component in components:
-        if source == None:
-            asserts.expect_failure(
-                env,
-                "Got 'None' evaluating '{}' in '{}'.".format(component, field),
-            )
-            return _EVALUATE_FIELD_FAILED
 
-        source = getattr(source, component, None)
+    for component in components:
+        source = _normalize_collection(source)
+        filter_nones = component.endswith("!")
+        if filter_nones:
+            component = component[:-1]
+
+        if types.is_list(source):
+            if any([item == None for item in source]):
+                unittest.fail(
+                    env,
+                    "Got 'None' evaluating '{}' on an element in '{}'.".format(
+                        component,
+                        field,
+                    ),
+                )
+                return _EVALUATE_FIELD_FAILED
+
+            source = [getattr(item, component, None) for item in source]
+            if filter_nones:
+                source = [item for item in source if item != None]
+        else:
+            if source == None:
+                unittest.fail(
+                    env,
+                    "Got 'None' evaluating '{}' in '{}'.".format(
+                        component,
+                        field,
+                    ),
+                )
+                return _EVALUATE_FIELD_FAILED
+
+            source = getattr(source, component, None)
+            if filter_nones:
+                source = _normalize_collection(source)
+                if types.is_list(source):
+                    source = [item for item in source if item != None]
+                else:
+                    unittest.fail(
+                        env,
+                        ("Expected to filter 'None' values evaluating '{}' " +
+                         "on an element in '{}', but the result was not a " +
+                         "collection.").format(component, field),
+                    )
+                    return _EVALUATE_FIELD_FAILED
 
     return source
 
@@ -88,11 +133,13 @@ def _lookup_provider_by_name(env, target, provider_name):
         The provider value, or `None` if it was not propagated by the target.
     """
     provider = None
-    if provider_name == "SwiftInfo":
+    if provider_name == "CcInfo":
+        provider = CcInfo
+    elif provider_name == "SwiftInfo":
         provider = SwiftInfo
 
     if not provider:
-        asserts.expect_failure(
+        unittest.fail(
             env,
             "Provider '{}' is not supported.".format(provider_name),
         )
@@ -101,7 +148,7 @@ def _lookup_provider_by_name(env, target, provider_name):
     if provider in target:
         return target[provider]
 
-    asserts.expect_failure(
+    unittest.fail(
         env,
         "Target '{}' did not provide '{}'.".format(target.label, provider_name),
     )
@@ -125,100 +172,130 @@ def _field_access_description(target, provider, field):
     """
     return "<{}>[{}].{}".format(target.label, provider, field)
 
-def _prettify_list(items):
-    """Returns the given list formatted as a multiline string.
+def _prettify(object):
+    """Returns a prettified version of the given value for failure messages.
+
+    If the object is a list, it will be formatted as a multiline string;
+    otherwise, it will simply be the `repr` of the value.
 
     Args:
-        items: A list.
+        object: The object to prettify.
 
     Returns:
-        A multiline string containing the list items, one per line, that can be
-        output as part of an assertion failure message.
+        A string that can be used to display the value in a failure message.
     """
-    return "[\n    " + ",\n    ".join(items) + "\n]"
-
-def _normalize_collection(env, collection):
-    """Returns the given collection as a list, regardless of its original type.
-
-    If the type is not a collection or a supported type of collection, then an
-    assertion failure is registered in the test environment.
-
-    Args:
-        env: The analysis test environment.
-        collection: The collection to normalize. Supported types are lists and
-            depsets.
-
-    Returns:
-        A list containing the same items in `collection`.
-    """
-    if types.is_depset(collection):
-        return collection.to_list()
-    elif types.is_list(collection):
-        return collection
+    object = _normalize_collection(object)
+    if types.is_list(object):
+        return ("[\n    " +
+                ",\n    ".join([repr(item) for item in object]) +
+                "\n]")
     else:
-        asserts.expect_failure(
-            env,
-            "Expected a depset or list, but got '{}'.".format(type(collection)),
-        )
-        return None
+        return repr(object)
+
+def _normalize_collection(object):
+    """Returns object as a list if it is a collection, otherwise returns itself.
+
+    Args:
+        object: The object to normalize. If it is a list or a depset, it will be
+            returned as a list. Otherwise, it will be returned unchanged.
+
+    Returns:
+        A list containing the same items in `object` if it is a collection,
+        otherwise the original object is returned.
+    """
+    if types.is_depset(object):
+        return object.to_list()
+    else:
+        return object
 
 def _compare_expected_files(env, access_description, expected, actual):
     """Implements the `expected_files` comparison.
 
     This compares a set of files retrieved from a provider field against a list
     of expected strings that are equal to or suffixes of the paths to those
-    files.
+    files, as well as excluded files and a wildcard. See the documentation of
+    the `expected_files` attribute on the rule definition below for specifics.
 
     Args:
         env: The analysis test environment.
         access_description: A target/provider/field access description string
             printed in assertion failure messages.
-        expected: The list of expected file path suffixes.
+        expected: The list of expected file path inclusions/exclusions.
         actual: The collection of files obtained from the provider.
     """
-    actual = _normalize_collection(env, actual)
-    if actual == None:
-        return
+    actual = _normalize_collection(actual)
 
-    if any([type(item) != "File" for item in actual]):
-        asserts.expect_failure(
+    if (
+        not types.is_list(actual) or
+        any([type(item) != "File" for item in actual])
+    ):
+        unittest.fail(
             env,
-            "Expected '{}' to contain only files, but got {}.".format(
-                _prettify_list(actual),
+            ("Expected '{}' to be a collection of files, " +
+             "but got a {}: {}.").format(
+                access_description,
+                type(actual),
+                _prettify(actual),
             ),
         )
         return
 
     remaining = list(actual)
 
+    expected_is_subset = "*" in expected
+    expected_include = [
+        s
+        for s in expected
+        if not s.startswith("-") and s != "*"
+    ]
+    expected_exclude = [s[1:] for s in expected if s.startswith("-")]
+
     # For every expected file, pick off the first actual that we find that has
     # the expected string as a suffix.
     failed = False
-    for suffix in expected:
+    for suffix in expected_include:
         if not remaining:
             # It's a failure if we are still expecting files but there are no
             # more actual files.
             failed = True
             break
 
+        found_expected_file = False
         for i in range(len(remaining)):
             actual_path = remaining[i].path
             if actual_path.endswith(suffix):
+                found_expected_file = True
                 remaining.pop(i)
                 break
 
-    # The remaining list should be empty at this point, if we found all of the
-    # expected files.
-    if remaining:
+        # It's a failure if we never found a file we expected.
+        if not found_expected_file:
+            failed = True
+            break
+
+    # For every file expected to *not* be present, check the list of remaining
+    # files and fail if we find a match.
+    for suffix in expected_exclude:
+        for f in remaining:
+            if f.path.endswith(suffix):
+                failed = True
+                break
+
+    # If we found all the expected files, the remaining list should be empty.
+    # Fail if the list is not empty and we're not looking for a subset.
+    if not expected_is_subset and remaining:
         failed = True
 
     asserts.false(
         env,
         failed,
-        "Expected '{}' to be files ending in {}, but got {}.".format(
+        "Expected '{}' to match {}, but got {}.".format(
             access_description,
-            _prettify_list(expected),
-            _prettify_list([f.path for f in actual]),
+            _prettify(expected),
+            _prettify([
+                f.path if type(f) == "File" else repr(f)
+                for f in actual
+            ]),
         ),
     )
 
@@ -272,16 +349,33 @@ def make_provider_test_rule(config_settings = {}):
                 doc = """\
 The expected list of files when evaluating the given provider's field.
 
-This list is evaluated as file path suffixes; files are matched if a string in
-this list matches the end of a path in the actual list of files. This allows the
-test to be unconcerned about specific configuration details, such as output
-directories for generated files.
+This list can contain three types of strings:
+
+*   A path suffix (`foo/bar/baz.ext`), denoting that a file whose path has the
+    given suffix must be present.
+*   A negated path suffix (`-foo/bar/baz.ext`), denoting that a file whose path
+    has the given suffix must *not* be present.
+*   A wildcard (`*`), denoting that the expected list of files can be a *subset*
+    of the actual list. If the wildcard is omitted, the expected list of files
+    must match the actual list completely; unmatched files will result in a test
+    failure.
+
+The use of path suffixes allows the test to be unconcerned about specific
+configuration details, such as output directories for generated files.
 """,
             ),
             "field": attr.string(
                 mandatory = True,
                 doc = """\
 The field name or dotted field path of the provider that should be tested.
+
+Evaluation of field path components is projected across collections. That is, if
+the result of evaluating a field along the path is a depset or a list, then the
+result will be normalized into a list and remaining fields in the path will be
+evaluated on every item in that list, not on the list itself. Likewise, if such
+a field path component is followed by `!`, then any `None` elements that may
+have resulted during evaluation will be removed from the list before evaluating
+the next component.
 """,
             ),
             "provider": attr.string(
@@ -290,7 +384,7 @@ The field name or dotted field path of the provider that should be tested.
 The name of the provider expected to be propagated by the target under test, and
 on which the field will be checked.
 
-Currently, the only recognized provider is `SwiftInfo`.
+Currently, the only recognized providers are `CcInfo` and `SwiftInfo`.
 """,
             ),
         },
