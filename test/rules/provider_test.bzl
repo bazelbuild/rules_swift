@@ -336,7 +336,7 @@ def _provider_test_impl(ctx):
 
     return analysistest.end(env)
 
-def make_provider_test_rule(config_settings = None):
+def make_provider_test_rule(config_settings = {}):
     """Returns a new `provider_test`-like rule with custom config settings.
 
     Args:
