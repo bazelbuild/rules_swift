@@ -303,6 +303,12 @@ def _provider_test_impl(ctx):
     env = analysistest.begin(ctx)
     target_under_test = ctx.attr.target_under_test
 
+    # If configuration settings were provided, then we have a transition and
+    # target_under_test will be a list. In that case, get the actual target by
+    # pulling the first one out.
+    if types.is_list(target_under_test):
+        target_under_test = target_under_test[0]
+
     provider_name = ctx.attr.provider
     provider = _lookup_provider_by_name(env, target_under_test, provider_name)
     if not provider:
@@ -330,7 +336,7 @@ def _provider_test_impl(ctx):
 
     return analysistest.end(env)
 
-def make_provider_test_rule(config_settings = {}):
+def make_provider_test_rule(config_settings = None):
     """Returns a new `provider_test`-like rule with custom config settings.
 
     Args:
@@ -388,6 +394,7 @@ Currently, the only recognized providers are `CcInfo` and `SwiftInfo`.
 """,
             ),
         },
+        config_settings = config_settings,
     )
 
 # A default instantiation of the rule when no custom config settings are needed.
