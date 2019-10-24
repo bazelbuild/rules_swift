@@ -28,11 +28,40 @@ area of this target, if it has one. This may include data files needed by a
 binary or library, or other programs needed by it.
 """,
         ),
-        "deps": attr.label_list(
+        "deps": swift_deps_attr(
             aspects = additional_deps_aspects,
             doc = """\
 A list of targets that are dependencies of the target being built, which will be
-linked into that target. Allowed kinds of dependencies are:
+linked into that target.
+
+If the Swift toolchain supports implementation-only imports (`private_deps` on
+`swift_library`), then targets in `deps` are treated as regular
+(non-implementation-only) imports that are propagated both to their direct and
+indirect (transitive) dependents.
+""",
+        ),
+    }
+
+def swift_deps_attr(doc, **kwargs):
+    """Returns an attribute suitable for representing Swift rule dependencies.
+
+    The returned attribute will be configured to accept targets that propagate
+    `CcInfo`, `SwiftInfo`, or `apple_common.Objc` providers.
+
+    Args:
+        doc: A string containing a summary description of the purpose of the
+            attribute. This string will be followed by additional text that
+            lists the permitted kinds of targets that may go in this attribute.
+        **kwargs: Additional arguments that are passed to `attr.label_list`
+            unmodified.
+
+    Returns:
+        A rule attribute.
+    """
+    return attr.label_list(
+        doc = doc + """\
+
+Allowed kinds of dependencies are:
 
 *   `swift_c_module`, `swift_import` and `swift_library` (or anything
     propagating `SwiftInfo`)
@@ -43,10 +72,10 @@ targets (or anything propagating the `apple_common.Objc` provider) are allowed
 as dependencies. On platforms that do not support Objective-C interop (such as
 Linux), those dependencies will be **ignored.**
 """,
-            providers = [
-                [CcInfo],
-                [SwiftInfo],
-                [apple_common.Objc],
-            ],
-        ),
-    }
+        providers = [
+            [CcInfo],
+            [SwiftInfo],
+            [apple_common.Objc],
+        ],
+        **kwargs
+    )

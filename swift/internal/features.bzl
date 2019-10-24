@@ -152,6 +152,11 @@ SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION = "swift.enable_library_evolution"
 # enabled, this feature is a noop.
 SWIFT_FEATURE_EMIT_SWIFTINTERFACE = "swift.emit_swiftinterface"
 
+# If enabled, the toolchain supports private deps (implementation-only imports).
+# This allows Bazel to avoid propagating swiftmodules of such dependencies
+# higher in the dependency graph than they need to be.
+SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS = "swift.supports_private_deps"
+
 def features_for_build_modes(ctx, objc_fragment = None):
     """Returns a list of Swift toolchain features for current build modes.
 
