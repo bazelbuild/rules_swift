@@ -78,18 +78,24 @@ def create_cc_info(
         cc_infos = [],
         compilation_outputs = None,
         libraries_to_link = [],
+        private_cc_infos = [],
         user_link_flags = []):
     """Creates a `CcInfo` provider from Swift compilation info and deps.
 
     Args:
         additional_inputs: A list of additional files that should be passed as
             inputs to the final link action.
-        cc_infos: A list of `CcInfo` providers from dependencies that should be
-            merged into the new provider.
+        cc_infos: A list of `CcInfo` providers from public dependencies, whose
+            compilation and linking contexts should both be merged into the new
+            provider.
         compilation_outputs: The compilation outputs from a Swift compile
             action, as returned by `swift_common.compile`, or None.
         libraries_to_link: A list of `LibraryToLink` objects that represent the
             libraries that should be linked into the final binary.
+        private_cc_infos: A list of `CcInfo` providers from private
+            (implementation-only) dependencies, whose linking contexts should be
+            merged into the new provider but whose compilation contexts should
+            be excluded.
         user_link_flags: A list of flags that should be passed to the final link
             action.
 
@@ -102,14 +108,27 @@ def create_cc_info(
         all_additional_inputs.extend(compilation_outputs.linker_inputs)
         all_user_link_flags.extend(compilation_outputs.linker_flags)
 
-    this_cc_info = CcInfo(
-        linking_context = cc_common.create_linking_context(
-            additional_inputs = all_additional_inputs,
-            libraries_to_link = libraries_to_link,
-            user_link_flags = all_user_link_flags,
+    local_cc_infos = [
+        CcInfo(
+            linking_context = cc_common.create_linking_context(
+                additional_inputs = all_additional_inputs,
+                libraries_to_link = libraries_to_link,
+                user_link_flags = all_user_link_flags,
+            ),
         ),
-    )
-    return cc_common.merge_cc_infos(cc_infos = [this_cc_info] + cc_infos)
+    ]
+
+    if private_cc_infos:
+        # Merge the private deps' CcInfos, but discard the compilation context
+        # and only propagate the linking context.
+        full_private_cc_info = cc_common.merge_cc_infos(
+            cc_infos = private_cc_infos,
+        )
+        local_cc_infos.append(CcInfo(
+            linking_context = full_private_cc_info.linking_context,
+        ))
+
+    return cc_common.merge_cc_infos(cc_infos = local_cc_infos + cc_infos)
 
 def expand_locations(ctx, values, targets = []):
     """Expands the `$(location)` placeholders in each of the given values.

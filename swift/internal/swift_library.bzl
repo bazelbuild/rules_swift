@@ -15,6 +15,7 @@
 """Implementation of the `swift_library` rule."""
 
 load(":api.bzl", "swift_common")
+load(":attrs.bzl", "swift_deps_attr")
 load(
     ":compiling.bzl",
     "find_swift_version_copt_value",
@@ -26,6 +27,7 @@ load(
     ":features.bzl",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
+    "SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS",
 )
 load(":linking.bzl", "register_libraries_to_link")
 load(":non_swift_target_aspect.bzl", "non_swift_target_aspect")
@@ -37,6 +39,8 @@ load(
     "expand_locations",
     "get_providers",
 )
+load("@bazel_skylib//lib:dicts.bzl", "dicts")
+load("@bazel_skylib//lib:sets.bzl", "sets")
 load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 
 def _maybe_parse_as_library_copts(srcs):
@@ -65,6 +69,33 @@ def _maybe_parse_as_library_copts(srcs):
             break
     return ["-parse-as-library"] if use_parse_as_library else []
 
+def _check_deps_are_disjoint(label, deps, private_deps):
+    """Checks that the given sets of dependencies are disjoint.
+
+    If the same target is listed in both sets, the build will fail.
+
+    Args:
+        label: The label of the target that will be printed in the failure
+            message if the sets are not disjoint.
+        deps: The list of public dependencies of the target.
+        private_deps: The list of private dependencies of the target.
+    """
+
+    # If either set is empty, we don't need to check.
+    if not deps or not private_deps:
+        return
+
+    deps_set = sets.make([str(dep.label) for dep in deps])
+    private_deps_set = sets.make([str(dep.label) for dep in private_deps])
+    intersection = sets.to_list(sets.intersection(deps_set, private_deps_set))
+    if intersection:
+        detail_msg = ["\n  - {}".format(label) for label in intersection]
+        fail(("In target '{}', 'deps' and 'private_deps' must be disjoint, " +
+              "but the following targets were found in both: {}").format(
+            label,
+            detail_msg,
+        ))
+
 def _swift_library_impl(ctx):
     additional_inputs = ctx.files.swiftc_inputs
 
@@ -91,10 +122,32 @@ def _swift_library_impl(ctx):
         unsupported_features = ctx.disabled_features,
     )
 
-    deps = ctx.attr.deps + swift_common.get_implicit_deps(
+    implicit_deps = swift_common.get_implicit_deps(
         feature_configuration = feature_configuration,
         swift_toolchain = swift_toolchain,
     )
+    if swift_common.is_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS,
+    ):
+        # The implicit deps can be added to the private deps; since they are
+        # added to the compilation of every library, they don't need to be
+        # propagated. However, it's not an error to list one of the implicit
+        # deps in "deps", either, so we need to make sure not to pass them in to
+        # `_check_deps_are_disjoint`.
+        deps = ctx.attr.deps
+        private_deps = ctx.attr.private_deps + implicit_deps
+        _check_deps_are_disjoint(ctx.label, deps, ctx.attr.private_deps)
+    elif ctx.attr.private_deps:
+        fail(
+            ("In target '{}', 'private_deps' cannot be used because this " +
+             "version of the Swift toolchain does not support " +
+             "implementation-only imports.").format(ctx.label),
+            attr = "private_deps",
+        )
+    else:
+        deps = ctx.attr.deps
+        private_deps = []
 
     compilation_outputs = swift_common.compile(
         actions = ctx.actions,
@@ -102,7 +155,7 @@ def _swift_library_impl(ctx):
         bin_dir = ctx.bin_dir,
         copts = _maybe_parse_as_library_copts(srcs) + copts,
         defines = ctx.attr.defines,
-        deps = deps,
+        deps = deps + private_deps,
         feature_configuration = feature_configuration,
         genfiles_dir = ctx.genfiles_dir,
         module_name = module_name,
@@ -148,11 +201,12 @@ def _swift_library_impl(ctx):
             cc_infos = get_providers(deps, CcInfo),
             compilation_outputs = compilation_outputs,
             libraries_to_link = [library_to_link],
+            private_cc_infos = get_providers(private_deps, CcInfo),
             user_link_flags = linkopts,
         ),
         coverage_common.instrumented_files_info(
             ctx,
-            dependency_attributes = ["deps"],
+            dependency_attributes = ["deps", "private_deps"],
             extensions = ["swift"],
             source_attributes = ["srcs"],
         ),
@@ -163,6 +217,8 @@ def _swift_library_impl(ctx):
             swiftdocs = [compilation_outputs.swiftdoc],
             swiftinterfaces = compact([compilation_outputs.swiftinterface]),
             swiftmodules = [compilation_outputs.swiftmodule],
+            # Note that private_deps are explicitly omitted here; they should
+            # not propagate.
             swift_infos = get_providers(deps, SwiftInfo),
             swift_version = find_swift_version_copt_value(copts),
         ),
@@ -174,7 +230,11 @@ def _swift_library_impl(ctx):
     if swift_toolchain.supports_objc_interop:
         providers.append(new_objc_provider(
             defines = ctx.attr.defines,
-            deps = deps,
+            # We must include private_deps here because some of the information
+            # propagated here is related to linking.
+            # TODO(allevato): This means we can't yet completely avoid
+            # propagating headers/module maps from impl-only Obj-C dependencies.
+            deps = deps + private_deps,
             include_path = ctx.bin_dir.path,
             link_inputs = compilation_outputs.linker_inputs + additional_inputs,
             linkopts = compilation_outputs.linker_flags + linkopts,
@@ -187,9 +247,22 @@ def _swift_library_impl(ctx):
     return providers
 
 swift_library = rule(
-    attrs = swift_common.library_rule_attrs(additional_deps_aspects = [
-        non_swift_target_aspect,
-    ]),
+    attrs = dicts.add(
+        swift_common.library_rule_attrs(additional_deps_aspects = [
+            non_swift_target_aspect,
+        ]),
+        {
+            "private_deps": swift_deps_attr(
+                aspects = [non_swift_target_aspect],
+                doc = """\
+A list of targets that are implementation-only dependencies of the target being
+built. Libraries/linker flags from these dependencies will be propagated to
+dependent for linking, but artifacts/flags required for compilation (such as
+.swiftmodule files, C headers, and search paths) will not be propagated.
+""",
+            ),
+        },
+    ),
     doc = """\
 Compiles and links Swift code into a static library and Swift module.
 """,
