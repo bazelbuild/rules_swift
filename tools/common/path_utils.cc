@@ -31,14 +31,26 @@ std::string Dirname(const std::string &path) {
 }
 
 std::string ReplaceExtension(const std::string &path,
-                             const std::string &new_extension) {
-  auto last_dot = path.rfind('.');
+                             const std::string &new_extension,
+                             bool all_extensions) {
   auto last_slash = path.rfind('/');
 
-  // If there was no dot, or if it was part of a previous path segment, append
-  // the extension to the path.
-  if (last_dot == std::string::npos || last_dot < last_slash) {
+  std::string::size_type dot;
+  if (all_extensions) {
+    // Find the first dot, signifying the first of all extensions.
+    if (last_slash != std::string::npos) {
+      dot = path.find('.', last_slash);
+    } else {
+      dot = path.find('.');
+    }
+  } else {
+    // Find the last extension only.
+    dot = path.rfind('.');
+  }
+
+  // If there was no dot append the extension to the path.
+  if (dot == std::string::npos) {
     return path + new_extension;
   }
-  return path.substr(0, last_dot) + new_extension;
+  return path.substr(0, dot) + new_extension;
 }

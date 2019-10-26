@@ -30,6 +30,7 @@ std::string Dirname(const std::string &path);
 // extension in the returned path. If the path does not have a file extension,
 // then new_extension is appended to it.
 std::string ReplaceExtension(const std::string &path,
-                             const std::string &new_extension);
+                             const std::string &new_extension,
+                             bool all_extensions = false);
 
 #endif  // BUILD_BAZEL_RULES_SWIFT_TOOLS_COMMON_PATH_UTILS_H_
