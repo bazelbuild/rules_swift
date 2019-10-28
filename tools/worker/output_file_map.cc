@@ -46,7 +46,7 @@ static std::string MakeIncrementalOutputPath(std::string path) {
 void OutputFileMap::ReadFromPath(const std::string &path) {
   std::ifstream stream(path);
   stream >> json_;
-  UpdateForIncremental();
+  UpdateForIncremental(path);
 }
 
 void OutputFileMap::WriteToPath(const std::string &path) {
@@ -54,25 +54,22 @@ void OutputFileMap::WriteToPath(const std::string &path) {
   stream << json_;
 }
 
-void OutputFileMap::UpdateForIncremental() {
+void OutputFileMap::UpdateForIncremental(const std::string &path) {
   nlohmann::json new_output_file_map;
   std::map<std::string, std::string> incremental_outputs;
+
+  // The empty string key is used to represent outputs that are for the whole
+  // module, rather than for a particular source file.
+  nlohmann::json module_map;
+  // Derive the swiftdeps file name from the .output-file-map.json name.
+  auto new_path = ReplaceExtension(path, ".swiftdeps", /*all_extensions=*/true);
+  auto swiftdeps_path = MakeIncrementalOutputPath(new_path);
+  module_map["swift-dependencies"] = swiftdeps_path;
+  new_output_file_map[""] = module_map;
 
   for (auto &element : json_.items()) {
     auto src = element.key();
     auto outputs = element.value();
-
-    // The empty string key is used to represent outputs that are for the whole
-    // module, rather than for a particular source file.
-    if (src.empty()) {
-      nlohmann::json empty_map = outputs;
-      auto path = outputs["swift-dependencies"].get<std::string>();
-      auto new_path = MakeIncrementalOutputPath(path);
-      empty_map["swift-dependencies"] = new_path;
-      incremental_outputs[path] = new_path;
-      new_output_file_map[""] = empty_map;
-      continue;
-    }
 
     nlohmann::json src_map;
 

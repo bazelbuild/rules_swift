@@ -50,7 +50,7 @@ class OutputFileMap {
  private:
   // Modifies the output file map's JSON structure in-place to replace file
   // paths with equivalents in the incremental storage area.
-  void UpdateForIncremental();
+  void UpdateForIncremental(const std::string &path);
 
   nlohmann::json json_;
   std::map<std::string, std::string> incremental_outputs_;

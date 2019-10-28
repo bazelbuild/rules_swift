@@ -249,29 +249,6 @@ def _swiftmodule(actions, module_name):
     """
     return actions.declare_file("{}.swiftmodule".format(module_name))
 
-def _swift_dependencies_file(actions, target_name, src = None):
-    """Declares a file for compiler-generated Swift dependencies for a target.
-
-    This file is used during incremental compilation to determine which object
-    files and partial modules need to be rebuilt when a particular source file
-    changes.
-
-    Args:
-        actions: The context's actions object.
-        target_name: The name of the target being built.
-        src: An optional `File` representing the source file being compiled.
-
-    Returns:
-        The declared `File`.
-    """
-    if src:
-        dirname, basename = _intermediate_frontend_file_path(target_name, src)
-        return actions.declare_file(
-            paths.join(dirname, "{}.swiftdeps".format(basename)),
-        )
-
-    return actions.declare_file("{}.swiftdeps".format(target_name))
-
 def _whole_module_object_file(actions, target_name):
     """Declares a file for object files created with whole module optimization.
 
@@ -328,7 +305,6 @@ derived_files = struct(
     swiftdoc = _swiftdoc,
     swiftinterface = _swiftinterface,
     swiftmodule = _swiftmodule,
-    swift_dependencies_file = _swift_dependencies_file,
     whole_module_object_file = _whole_module_object_file,
     xctest_bundle = _xctest_bundle,
     xctest_runner_script = _xctest_runner_script,
