@@ -61,6 +61,7 @@ load(
     "SWIFT_FEATURE_NO_GENERATED_HEADER",
     "SWIFT_FEATURE_NO_GENERATED_MODULE_MAP",
     "SWIFT_FEATURE_OPT",
+    "SWIFT_FEATURE_OPT_USES_OSIZE",
     "SWIFT_FEATURE_OPT_USES_WMO",
     "SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
@@ -300,7 +301,15 @@ def _compilation_mode_copts(feature_configuration):
     # https://docs.bazel.build/versions/master/user-manual.html#flag--compilation_mode
     flags = []
     if is_opt:
-        flags.extend(["-O", "-DNDEBUG"])
+        flags.append("-DNDEBUG")
+        if _is_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_OPT_USES_OSIZE,
+        ):
+            flags.append("-Osize")
+        else:
+            flags.append("-O")
+
         if _is_enabled(
             feature_configuration = feature_configuration,
             feature_name = SWIFT_FEATURE_OPT_USES_WMO,
