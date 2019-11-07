@@ -128,6 +128,7 @@ def _objc_header(actions, target_name, header_name = None):
     Args:
         actions: The context's actions object.
         target_name: The name of the target being built.
+        header_name: The name of the header being declared.
 
     Returns:
         The declared `File`.
