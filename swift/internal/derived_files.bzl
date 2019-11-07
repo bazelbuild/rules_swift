@@ -122,7 +122,7 @@ def _modulewrap_object(actions, target_name):
     """
     return actions.declare_file("{}.modulewrap.o".format(target_name))
 
-def _objc_header(actions, target_name):
+def _objc_header(actions, target_name, header_name = None):
     """Declares the generated header file exposing Swift APIs to Objective-C.
 
     Args:
@@ -132,7 +132,8 @@ def _objc_header(actions, target_name):
     Returns:
         The declared `File`.
     """
-    return actions.declare_file("{}-Swift.h".format(target_name))
+    if not header_name: header_name = "{}-Swift.h".format(target_name)
+    return actions.declare_file(header_name)
 
 def _partial_swiftmodule(actions, target_name, src):
     """Declares a file for a partial Swift module created during compilation.

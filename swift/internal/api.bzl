@@ -243,6 +243,12 @@ directly to `copts`, only using this feature in the rare case that a library
 needs to propagate a symbol up to those that depend on it.
 """,
             ),
+            "generated_header_name": attr.string(
+                doc = """\
+The name of the generated Objective-C interface header.
+If not provided, defaults to `${target_name}-Swift.h`.
+""",
+            ),
             "module_name": attr.string(
                 doc = """\
 The name of the Swift module being built.
@@ -498,6 +504,7 @@ def _compile(
         copts = [],
         defines = [],
         deps = [],
+        generated_header_name = None,
         genfiles_dir = None):
     """Compiles a Swift module.
 
@@ -530,6 +537,8 @@ def _compile(
         deps: Dependencies of the target being compiled. These targets must
             propagate one of the following providers: `CcInfo`, `SwiftInfo`, or
             `apple_common.Objc`.
+        generated_header_name: The name of the generated Objective-C interface header.
+            If not provided, defaults to `${target_name}-Swift.h`.
         genfiles_dir: The Bazel `*-genfiles` directory root. If provided, its
             path is added to ClangImporter's header search paths for
             compatibility with Bazel's C++ and Objective-C rules which support
@@ -705,6 +714,7 @@ def _compile(
         generated_header = derived_files.objc_header(
             actions = actions,
             target_name = target_name,
+            header_name = generated_header_name,
         )
         args.add("-emit-objc-header-path")
         args.add(generated_header)
