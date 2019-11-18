@@ -243,12 +243,6 @@ directly to `copts`, only using this feature in the rare case that a library
 needs to propagate a symbol up to those that depend on it.
 """,
             ),
-            "generated_header_name": attr.string(
-                doc = """\
-The name of the generated Objective-C interface header.
-If not provided, it defaults to `${target_name}-Swift.h`.
-""",
-            ),
             "module_name": attr.string(
                 doc = """\
 The name of the Swift module being built.
@@ -1045,6 +1039,12 @@ explicitly called by code in the binary; for example, if you rely on runtime
 checks for protocol conformances added in extensions in the library but do not
 directly reference any other symbols in the object file that adds that
 conformance.
+""",
+            ),
+            "generated_header_name": attr.string(
+                doc = """\
+The name of the generated Objective-C interface header.
+If not provided, it defaults to `${target_name}-Swift.h`.
 """,
             ),
         },

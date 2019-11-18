@@ -65,7 +65,6 @@ def _swift_module_alias_impl(ctx):
         copts = ["-parse-as-library"],
         deps = deps,
         feature_configuration = feature_configuration,
-        generated_header_name = ctx.attr.generated_header_name,
         genfiles_dir = ctx.genfiles_dir,
         module_name = module_name,
         srcs = [reexport_src],

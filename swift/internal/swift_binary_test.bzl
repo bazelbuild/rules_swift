@@ -183,7 +183,6 @@ def _swift_linking_rule_impl(
             defines = ctx.attr.defines,
             deps = ctx.attr.deps,
             feature_configuration = feature_configuration,
-            generated_header_name = ctx.attr.generated_header_name,
             genfiles_dir = ctx.genfiles_dir,
             module_name = module_name,
             srcs = srcs,
