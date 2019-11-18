@@ -133,7 +133,9 @@ def _objc_header(actions, target_name, header_name = None):
     Returns:
         The declared `File`.
     """
-    if not header_name: header_name = "{}-Swift.h".format(target_name)
+    if not header_name:
+      header_name = "{}-Swift.h".format(target_name)
+
     return actions.declare_file(header_name)
 
 def _partial_swiftmodule(actions, target_name, src):

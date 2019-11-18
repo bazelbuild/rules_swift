@@ -246,7 +246,7 @@ needs to propagate a symbol up to those that depend on it.
             "generated_header_name": attr.string(
                 doc = """\
 The name of the generated Objective-C interface header.
-If not provided, defaults to `${target_name}-Swift.h`.
+If not provided, it defaults to `${target_name}-Swift.h`.
 """,
             ),
             "module_name": attr.string(
@@ -538,7 +538,7 @@ def _compile(
             propagate one of the following providers: `CcInfo`, `SwiftInfo`, or
             `apple_common.Objc`.
         generated_header_name: The name of the generated Objective-C interface header.
-            If not provided, defaults to `${target_name}-Swift.h`.
+            If not provided, it defaults to `${target_name}-Swift.h`.
         genfiles_dir: The Bazel `*-genfiles` directory root. If provided, its
             path is added to ClangImporter's header search paths for
             compatibility with Bazel's C++ and Objective-C rules which support
