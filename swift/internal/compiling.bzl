@@ -16,7 +16,7 @@
 
 load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load(":actions.bzl", "get_swift_tool", "run_swift_action")
+load(":actions.bzl", "run_swift_action")
 load(":derived_files.bzl", "derived_files")
 load(":providers.bzl", "SwiftInfo")
 load(":utils.bzl", "collect_cc_libraries", "get_providers")
@@ -525,16 +525,13 @@ def register_autolink_extract_action(
         toolchain: The `SwiftToolchainInfo` provider of the toolchain.
     """
     args = actions.args()
-    args.add(get_swift_tool(
-        swift_toolchain = toolchain,
-        tool = "swift-autolink-extract",
-    ))
     args.add_all(objects)
     args.add("-o", output)
 
     run_swift_action(
         actions = actions,
         arguments = [args],
+        driver_mode = "swift-autolink-extract",
         inputs = objects,
         mnemonic = "SwiftAutolinkExtract",
         outputs = [output],

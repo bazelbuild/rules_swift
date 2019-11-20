@@ -29,7 +29,7 @@ load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load("@bazel_skylib//lib:partial.bzl", "partial")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:types.bzl", "types")
-load(":actions.bzl", "get_swift_tool", "run_swift_action")
+load(":actions.bzl", "run_swift_action")
 load(":attrs.bzl", "swift_common_rule_attrs")
 load(
     ":compiling.bzl",
@@ -600,14 +600,6 @@ def _compile(
     swiftdoc = derived_files.swiftdoc(actions, module_name = module_name)
     additional_outputs = []
 
-    # Since all actions go through the worker (whether in persistent mode or
-    # not), the actual tool we want to run (swiftc) should be the first
-    # "argument".
-    tool_args = actions.args()
-    tool_args.add(
-        get_swift_tool(swift_toolchain = swift_toolchain, tool = "swiftc"),
-    )
-
     args = actions.args()
     if _is_enabled(
         feature_configuration = feature_configuration,
@@ -758,7 +750,8 @@ def _compile(
 
     run_swift_action(
         actions = actions,
-        arguments = [tool_args, args],
+        arguments = [args],
+        driver_mode = "swiftc",
         execution_requirements = execution_requirements,
         inputs = all_inputs,
         mnemonic = "SwiftCompile",

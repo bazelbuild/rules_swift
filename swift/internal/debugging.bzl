@@ -14,7 +14,7 @@
 
 """Functions relating to debugging support during compilation and linking."""
 
-load(":actions.bzl", "get_swift_tool", "run_swift_action")
+load(":actions.bzl", "run_swift_action")
 load(":derived_files.bzl", "derived_files")
 
 def ensure_swiftmodule_is_embedded(
@@ -97,7 +97,6 @@ def _register_modulewrap_action(
         toolchain: The `SwiftToolchainInfo` provider of the toolchain.
     """
     args = actions.args()
-    args.add(get_swift_tool(swift_toolchain = toolchain, tool = "swift"))
     args.add("-modulewrap")
     args.add(swiftmodule)
 
@@ -110,6 +109,7 @@ def _register_modulewrap_action(
     run_swift_action(
         actions = actions,
         arguments = [args],
+        driver_mode = "swift",
         inputs = [swiftmodule],
         mnemonic = "SwiftModuleWrap",
         outputs = [object],

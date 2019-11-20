@@ -106,6 +106,11 @@ def _swift_toolchain_impl(ctx):
     requested_features.extend(ctx.features)
     requested_features.append(SWIFT_FEATURE_AUTOLINK_EXTRACT)
 
+    all_files = []
+    swift_executable = ctx.file.swift_executable
+    if swift_executable:
+        all_files.append(swift_executable)
+
     # TODO(allevato): Move some of the remaining hardcoded values, like object
     # format and Obj-C interop support, to attributes so that we can remove the
     # assumptions that are only valid on Linux.
@@ -114,9 +119,8 @@ def _swift_toolchain_impl(ctx):
             action_environment = {},
             # Swift.org toolchains assume everything is just available on the
             # PATH and we don't try to pass the toolchain contents here.
-            all_files = depset(),
+            all_files = depset(all_files),
             cc_toolchain_info = cc_toolchain,
-            clang_executable = ctx.attr.clang_executable,
             command_line_copts = ctx.fragments.swift.copts(),
             cpu = ctx.attr.arch,
             execution_requirements = {},
@@ -129,6 +133,7 @@ def _swift_toolchain_impl(ctx):
             stamp_producer = None,
             supports_objc_interop = False,
             swiftc_copts = [],
+            swift_executable = swift_executable,
             swift_worker = ctx.executable._worker,
             system_name = ctx.attr.os,
             unsupported_features = ctx.disabled_features + [
@@ -148,12 +153,6 @@ architecture-specific content, such as "x86_64" in "lib/swift/linux/x86_64".
 """,
             mandatory = True,
         ),
-        "clang_executable": attr.string(
-            doc = """\
-The path to the `clang` executable, which is used for linking.
-""",
-            mandatory = True,
-        ),
         "os": attr.string(
             doc = """\
 The name of the operating system that this toolchain targets.
@@ -165,6 +164,19 @@ platform-specific content, such as "linux" in "lib/swift/linux".
         ),
         "root": attr.string(
             mandatory = True,
+        ),
+        "swift_executable": attr.label(
+            # TODO(allevato): Use a label-typed build setting to allow this to
+            # have a default that is overridden from the command line.
+            allow_single_file = True,
+            doc = """\
+A replacement Swift driver executable.
+
+If this is empty, the default Swift driver in the toolchain will be used.
+Otherwise, this binary will be used and `--driver-mode` will be passed to ensure
+that it is invoked in the correct mode (i.e., `swift`, `swiftc`,
+`swift-autolink-extract`, etc.).
+""",
         ),
         "_cc_toolchain": attr.label(
             default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),

@@ -112,9 +112,6 @@ using this toolchain.
 The `cc_common.CcToolchainInfo` provider from the Bazel C++ toolchain that this
 Swift toolchain depends on.
 """,
-        "clang_executable": """\
-`String`. The path to the `clang` executable, which is used to link binaries.
-""",
         "command_line_copts": """\
 `List` of `strings`. Flags that were passed to Bazel using the `--swiftcopt`
 command line flag. These flags have the highest precedence; they are added to
@@ -204,6 +201,14 @@ linked into the binary.
 compiling libraries or binaries with this toolchain. These flags will come first
 in compilation command lines, allowing them to be overridden by `copts`
 attributes and `--swiftcopt` flags.
+""",
+        "swift_executable": """\
+A replacement Swift driver executable.
+
+If this is `None`, the default Swift driver in the toolchain will be used.
+Otherwise, this binary will be used and `--driver-mode` will be passed to ensure
+that it is invoked in the correct mode (i.e., `swift`, `swiftc`,
+`swift-autolink-extract`, etc.).
 """,
         "swift_worker": """\
 `File`. The executable representing the worker executable used to invoke the
