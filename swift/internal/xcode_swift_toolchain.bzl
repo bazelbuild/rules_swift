@@ -182,6 +182,7 @@ def _default_linker_opts(
 def _default_swiftc_copts(
         apple_fragment,
         apple_toolchain,
+        swift_executable,
         target,
         toolchain_root):
     """Returns options that should be passed by default to `swiftc`.
@@ -189,6 +190,8 @@ def _default_swiftc_copts(
     Args:
         apple_fragment: The `apple` configuration fragment.
         apple_toolchain: The `apple_common.apple_toolchain()` object.
+        swift_executable: A `File` representing a custom Swift driver to be used
+            by the toolchain, or `None` to use the default driver.
         target: The target triple.
         toolchain_root: The optional toolchain root, if specified by the
             `--define=SWIFT_USE_TOOLCHAIN_ROOT=<path>` flag.
@@ -213,10 +216,10 @@ def _default_swiftc_copts(
 
     # If we have a custom "toolchain root" (meaning a bin/ dir with a custom
     # compiler that we want to use in place of the original, but not a *full*
-    # toolchain, make sure we use the resource dir of the *original* toolchain
-    # so that libraries are still found (otherwise, by default, the compiler
-    # will look in its parent directory for them).
-    if toolchain_root:
+    # toolchain) or a custom Swift driver, make sure we use the resource dir of
+    # the *original* toolchain so that libraries are still found (otherwise, by
+    # default, the driver will look in its parent directory for them).
+    if swift_executable or toolchain_root:
         copts.extend([
             "-resource-dir",
             ("{developer_dir}/Toolchains/{toolchain}.xctoolchain/" +
@@ -343,8 +346,12 @@ def _xcode_swift_toolchain_impl(ctx):
     # structure, meaning that the path passed here must contain a `bin`
     # directory and that directory contains the `swift` and `swiftc` files.
     #
+    # TODO(allevato): Retire this feature in favor of the `swift_executable`
+    # attribute, which supports remote builds.
+    #
     # To use a "standard" custom toolchain built using the full Swift build
     # script, use `--define=SWIFT_CUSTOM_TOOLCHAIN=<id>` as shown below.
+    swift_executable = ctx.file.swift_executable
     toolchain_root = ctx.var.get("SWIFT_USE_TOOLCHAIN_ROOT")
     custom_toolchain = ctx.var.get("SWIFT_CUSTOM_TOOLCHAIN")
 
@@ -355,6 +362,7 @@ def _xcode_swift_toolchain_impl(ctx):
     swiftc_copts = _default_swiftc_copts(
         apple_fragment,
         apple_toolchain,
+        swift_executable,
         target,
         toolchain_root,
     )
@@ -398,14 +406,17 @@ def _xcode_swift_toolchain_impl(ctx):
         ctx.fragments.swift.copts()
     )
 
+    all_files = []
+    if swift_executable:
+        all_files.append(swift_executable)
+
     return [
         SwiftToolchainInfo(
             action_environment = env,
             # Xcode toolchains don't pass any files explicitly here because
             # they're just available as part of the Xcode bundle.
-            all_files = depset(),
+            all_files = depset(all_files),
             cc_toolchain_info = cc_toolchain,
-            clang_executable = None,
             command_line_copts = command_line_copts,
             cpu = cpu,
             execution_requirements = execution_requirements,
@@ -418,6 +429,7 @@ def _xcode_swift_toolchain_impl(ctx):
             stamp_producer = None,
             supports_objc_interop = True,
             swiftc_copts = swiftc_copts,
+            swift_executable = swift_executable,
             swift_worker = ctx.executable._worker,
             system_name = "darwin",
             unsupported_features = ctx.disabled_features + [
@@ -429,6 +441,19 @@ def _xcode_swift_toolchain_impl(ctx):
 
 xcode_swift_toolchain = rule(
     attrs = dicts.add({
+        "swift_executable": attr.label(
+            # TODO(allevato): Use a label-typed build setting to allow this to
+            # have a default that is overridden from the command line.
+            allow_single_file = True,
+            doc = """\
+A replacement Swift driver executable.
+
+If this is empty, the default Swift driver in the toolchain will be used.
+Otherwise, this binary will be used and `--driver-mode` will be passed to ensure
+that it is invoked in the correct mode (i.e., `swift`, `swiftc`,
+`swift-autolink-extract`, etc.).
+""",
+        ),
         "_cc_toolchain": attr.label(
             default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
             doc = """\
