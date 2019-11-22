@@ -22,6 +22,7 @@ toolchain, see `swift.bzl`.
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:partial.bzl", "partial")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
+load(":attrs.bzl", "swift_toolchain_driver_attrs")
 load(
     ":features.bzl",
     "SWIFT_FEATURE_AUTOLINK_EXTRACT",
@@ -29,6 +30,7 @@ load(
     "features_for_build_modes",
 )
 load(":providers.bzl", "SwiftToolchainInfo")
+load(":utils.bzl", "get_swift_executable_for_toolchain")
 
 def _default_linker_opts(
         cc_toolchain,
@@ -106,8 +108,11 @@ def _swift_toolchain_impl(ctx):
     requested_features.extend(ctx.features)
     requested_features.append(SWIFT_FEATURE_AUTOLINK_EXTRACT)
 
+    # Swift.org toolchains assume everything is just available on the PATH so we
+    # we don't pass any files unless we have a custom driver executable in the
+    # workspace.
     all_files = []
-    swift_executable = ctx.file.swift_executable
+    swift_executable = get_swift_executable_for_toolchain(ctx)
     if swift_executable:
         all_files.append(swift_executable)
 
@@ -117,8 +122,6 @@ def _swift_toolchain_impl(ctx):
     return [
         SwiftToolchainInfo(
             action_environment = {},
-            # Swift.org toolchains assume everything is just available on the
-            # PATH and we don't try to pass the toolchain contents here.
             all_files = depset(all_files),
             cc_toolchain_info = cc_toolchain,
             command_line_copts = ctx.fragments.swift.copts(),
@@ -143,59 +146,49 @@ def _swift_toolchain_impl(ctx):
     ]
 
 swift_toolchain = rule(
-    attrs = dicts.add({
-        "arch": attr.string(
-            doc = """\
+    attrs = dicts.add(
+        swift_toolchain_driver_attrs(),
+        {
+            "arch": attr.string(
+                doc = """\
 The name of the architecture that this toolchain targets.
 
 This name should match the name used in the toolchain's directory layout for
 architecture-specific content, such as "x86_64" in "lib/swift/linux/x86_64".
 """,
-            mandatory = True,
-        ),
-        "os": attr.string(
-            doc = """\
+                mandatory = True,
+            ),
+            "os": attr.string(
+                doc = """\
 The name of the operating system that this toolchain targets.
 
 This name should match the name used in the toolchain's directory layout for
 platform-specific content, such as "linux" in "lib/swift/linux".
 """,
-            mandatory = True,
-        ),
-        "root": attr.string(
-            mandatory = True,
-        ),
-        "swift_executable": attr.label(
-            # TODO(allevato): Use a label-typed build setting to allow this to
-            # have a default that is overridden from the command line.
-            allow_single_file = True,
-            doc = """\
-A replacement Swift driver executable.
-
-If this is empty, the default Swift driver in the toolchain will be used.
-Otherwise, this binary will be used and `--driver-mode` will be passed to ensure
-that it is invoked in the correct mode (i.e., `swift`, `swiftc`,
-`swift-autolink-extract`, etc.).
-""",
-        ),
-        "_cc_toolchain": attr.label(
-            default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
-            doc = """\
+                mandatory = True,
+            ),
+            "root": attr.string(
+                mandatory = True,
+            ),
+            "_cc_toolchain": attr.label(
+                default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
+                doc = """\
 The C++ toolchain from which other tools needed by the Swift toolchain (such as
 `clang` and `ar`) will be retrieved.
 """,
-        ),
-        "_worker": attr.label(
-            cfg = "host",
-            allow_files = True,
-            default = Label("//tools/worker"),
-            doc = """\
+            ),
+            "_worker": attr.label(
+                cfg = "host",
+                allow_files = True,
+                default = Label("//tools/worker"),
+                doc = """\
 An executable that wraps Swift compiler invocations and also provides support
 for incremental compilation using a persistent mode.
 """,
-            executable = True,
-        ),
-    }),
+                executable = True,
+            ),
+        },
+    ),
     doc = "Represents a Swift compiler toolchain.",
     fragments = ["swift"],
     toolchains = ["@bazel_tools//tools/cpp:toolchain_type"],

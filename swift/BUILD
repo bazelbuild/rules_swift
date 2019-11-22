@@ -25,3 +25,17 @@ bool_setting(
     name = "emit_swiftinterface",
     build_setting_default = False,
 )
+
+# Allows a user to override the default Swift driver during a build, if the
+# toolchain is using the default.
+label_flag(
+    name = "default_swift_executable",
+    build_setting_default = ":empty",
+)
+
+# Empty filegroup used as the default value for `:default_swift_executable`
+# since the `build_setting_default` value is required.
+filegroup(
+    name = "empty",
+    visibility = ["//visibility:private"],
+)

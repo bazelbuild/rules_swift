@@ -144,6 +144,44 @@ def expand_locations(ctx, values, targets = []):
     """
     return [ctx.expand_location(value, targets) for value in values]
 
+def get_swift_executable_for_toolchain(ctx):
+    """Returns the Swift driver executable that the toolchain should use.
+
+    Args:
+        ctx: The toolchain's rule context.
+
+    Returns:
+        A `File` representing a custom Swift driver executable that the
+        toolchain should use if provided by the toolchain target or by a command
+        line option, or `None` if the default driver bundled with the toolchain
+        should be used.
+    """
+
+    # If the toolchain target itself specifies a custom driver, use that.
+    swift_executable = getattr(ctx.file, "swift_executable", None)
+
+    # If no custom driver was provided by the target, check the value of the
+    # command-line option and use that if it was provided.
+    if not swift_executable:
+        default_swift_executable_files = getattr(
+            ctx.files,
+            "_default_swift_executable",
+            None,
+        )
+
+        if default_swift_executable_files:
+            if len(default_swift_executable_files) > 1:
+                fail(
+                    "The 'default_swift_executable' option must point to a " +
+                    "single file, but we found {}".format(
+                        str(default_swift_executable_files),
+                    ),
+                )
+
+            swift_executable = default_swift_executable_files[0]
+
+    return swift_executable
+
 def get_output_groups(targets, group_name):
     """Returns files in an output group from each target in a list.
 
