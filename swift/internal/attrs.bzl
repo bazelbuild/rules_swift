@@ -79,3 +79,37 @@ Linux), those dependencies will be **ignored.**
         ],
         **kwargs
     )
+
+def swift_toolchain_driver_attrs():
+    """Returns attributes used to attach custom drivers to toolchains.
+
+    These attributes are useful for compiler development alongside Bazel. The
+    public attribute (`swift_executable`) lets a custom driver be permanently
+    associated with a particular toolchain instance. If not specified, the
+    private default is associated with a command-line option that can be used to
+    provide a custom driver at build time.
+
+    Returns:
+        A dictionary of attributes that should be added to a toolchain rule.
+    """
+    return {
+        "swift_executable": attr.label(
+            allow_single_file = True,
+            cfg = "host",
+            doc = """\
+A replacement Swift driver executable.
+
+If this is empty, the default Swift driver in the toolchain will be used.
+Otherwise, this binary will be used and `--driver-mode` will be passed to ensure
+that it is invoked in the correct mode (i.e., `swift`, `swiftc`,
+`swift-autolink-extract`, etc.).
+""",
+        ),
+        "_default_swift_executable": attr.label(
+            allow_files = True,
+            cfg = "host",
+            default = Label(
+                "@build_bazel_rules_swift//swift:default_swift_executable",
+            ),
+        ),
+    }

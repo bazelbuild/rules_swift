@@ -24,6 +24,7 @@ load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:partial.bzl", "partial")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
+load(":attrs.bzl", "swift_toolchain_driver_attrs")
 load(
     ":features.bzl",
     "SWIFT_FEATURE_AUTOLINK_EXTRACT",
@@ -37,6 +38,7 @@ load(
     "features_for_build_modes",
 )
 load(":providers.bzl", "SwiftToolchainInfo")
+load(":utils.bzl", "get_swift_executable_for_toolchain")
 
 def _swift_developer_lib_dir(platform_framework_dir):
     """Returns the directory containing extra Swift developer libraries.
@@ -351,7 +353,8 @@ def _xcode_swift_toolchain_impl(ctx):
     #
     # To use a "standard" custom toolchain built using the full Swift build
     # script, use `--define=SWIFT_CUSTOM_TOOLCHAIN=<id>` as shown below.
-    swift_executable = ctx.file.swift_executable
+    swift_executable = get_swift_executable_for_toolchain(ctx)
+
     toolchain_root = ctx.var.get("SWIFT_USE_TOOLCHAIN_ROOT")
     custom_toolchain = ctx.var.get("SWIFT_CUSTOM_TOOLCHAIN")
 
@@ -440,46 +443,36 @@ def _xcode_swift_toolchain_impl(ctx):
     ]
 
 xcode_swift_toolchain = rule(
-    attrs = dicts.add({
-        "swift_executable": attr.label(
-            # TODO(allevato): Use a label-typed build setting to allow this to
-            # have a default that is overridden from the command line.
-            allow_single_file = True,
-            doc = """\
-A replacement Swift driver executable.
-
-If this is empty, the default Swift driver in the toolchain will be used.
-Otherwise, this binary will be used and `--driver-mode` will be passed to ensure
-that it is invoked in the correct mode (i.e., `swift`, `swiftc`,
-`swift-autolink-extract`, etc.).
-""",
-        ),
-        "_cc_toolchain": attr.label(
-            default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
-            doc = """\
+    attrs = dicts.add(
+        swift_toolchain_driver_attrs(),
+        {
+            "_cc_toolchain": attr.label(
+                default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
+                doc = """\
 The C++ toolchain from which linking flags and other tools needed by the Swift
 toolchain (such as `clang`) will be retrieved.
 """,
-        ),
-        "_worker": attr.label(
-            cfg = "host",
-            allow_files = True,
-            default = Label(
-                "@build_bazel_rules_swift//tools/worker",
             ),
-            doc = """\
+            "_worker": attr.label(
+                cfg = "host",
+                allow_files = True,
+                default = Label(
+                    "@build_bazel_rules_swift//tools/worker",
+                ),
+                doc = """\
 An executable that wraps Swift compiler invocations and also provides support
 for incremental compilation using a persistent mode.
 """,
-            executable = True,
-        ),
-        "_xcode_config": attr.label(
-            default = configuration_field(
-                name = "xcode_config_label",
-                fragment = "apple",
+                executable = True,
             ),
-        ),
-    }),
+            "_xcode_config": attr.label(
+                default = configuration_field(
+                    name = "xcode_config_label",
+                    fragment = "apple",
+                ),
+            ),
+        },
+    ),
     doc = "Represents a Swift compiler toolchain provided by Xcode.",
     fragments = [
         "apple",
