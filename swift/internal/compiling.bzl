@@ -426,6 +426,7 @@ def objc_compile_requirements(args, deps):
         depset(transitive = all_frameworks),
         format_each = "-F%s",
         map_each = paths.dirname,
+        uniquify = True,
     )
 
     # Disable the `LC_LINKER_OPTION` load commands for static framework
