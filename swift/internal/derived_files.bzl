@@ -133,8 +133,15 @@ def _objc_header(actions, target_name, header_name = None):
     Returns:
         The declared `File`.
     """
-    if not header_name:
-      header_name = "{}-Swift.h".format(target_name)
+    if header_name:
+        if not header_name.endswith(".h"):
+            fail(("The generated objc header name for {} must end in" +
+                  " '.h', given '{}'") % (target_name, header_name))
+        if header_name.find("/"):
+            fail(("The generated objc header name for {} cannot contain a " +
+                  "'/', given '{}'") % (target_name, header_name))
+    else:
+        header_name = "{}-Swift.h".format(target_name)
 
     return actions.declare_file(header_name)
 
