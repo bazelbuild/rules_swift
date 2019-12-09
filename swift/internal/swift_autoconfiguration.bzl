@@ -114,6 +114,27 @@ def _check_use_response_files(repository_ctx, swiftc_path, temp_dir):
         "@{}".format(param_file),
     )
 
+def _write_swift_version(repository_ctx, swiftc_path):
+    """Write a file containing the current Swift version info
+
+    This is used to encode the current version of Swift as an input for caching
+
+    Args:
+        repository_ctx: The repository context.
+        swiftc_path: The `path` to the `swiftc` executable.
+
+    Returns:
+        The written file containing the version info
+    """
+    result = repository_ctx.execute([swiftc_path, "-version"])
+    contents = "unknown"
+    if result.return_code == 0:
+        contents = result.stdout.strip()
+
+    filename = "swift_version"
+    repository_ctx.file(filename, contents, executable = False)
+    return filename
+
 def _compute_feature_values(repository_ctx, swiftc_path):
     """Computes a list of supported/unsupported features by running checks.
 
@@ -182,6 +203,7 @@ def _create_linux_toolchain(repository_ctx):
     path_to_swiftc = repository_ctx.which("swiftc")
     root = path_to_swiftc.dirname.dirname
     feature_values = _compute_feature_values(repository_ctx, path_to_swiftc)
+    version_file = _write_swift_version(repository_ctx, path_to_swiftc)
 
     repository_ctx.file(
         "BUILD",
@@ -199,6 +221,7 @@ swift_toolchain(
     features = [{feature_list}],
     os = "linux",
     root = "{root}",
+    version_file = "{version_file}",
 )
 """.format(
             feature_list = ", ".join([
@@ -206,6 +229,7 @@ swift_toolchain(
                 for feature in feature_values
             ]),
             root = root,
+            version_file = version_file,
         ),
     )
 
