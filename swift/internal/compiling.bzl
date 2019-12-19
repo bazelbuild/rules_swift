@@ -176,7 +176,7 @@ def declare_compile_outputs(
             indexstore = None,
             other_outputs = [],
             output_groups = {
-                "compilation_outputs": depset(items = [out_obj]),
+                "compilation_outputs": depset(direct = [out_obj]),
             },
             output_objects = [out_obj],
         )
@@ -232,7 +232,7 @@ def declare_compile_outputs(
 
     args = ["-output-file-map", output_map_file]
     output_groups = {
-        "compilation_outputs": depset(items = output_objs),
+        "compilation_outputs": depset(direct = output_objs),
     }
 
     # Configure index-while-building if requested. IDEs and other indexing tools
