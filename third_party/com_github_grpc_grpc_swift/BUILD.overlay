@@ -22,7 +22,6 @@ cc_library(
     name = "BoringSSL",
     srcs = glob([
         "Sources/BoringSSL/crypto/**/*.c",
-        "Sources/BoringSSL/crypto/**/*.cc",
         "Sources/BoringSSL/crypto/**/*.h",
         "Sources/BoringSSL/ssl/**/*.c",
         "Sources/BoringSSL/ssl/**/*.cc",
