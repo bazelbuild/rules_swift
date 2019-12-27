@@ -377,7 +377,14 @@ def _xcode_swift_toolchain_impl(ctx):
     if custom_toolchain:
         env["TOOLCHAINS"] = custom_toolchain
 
+    # TODO(steinman): Replace this with xcode_config.execution_info once it is available.
     execution_requirements = {"requires-darwin": ""}
+    if xcode_config:
+        if xcode_config.availability() == "remote":
+            execution_requirements["no-local"] = "1"
+        elif xcode_config.availability() == "local":
+            execution_requirements["no-remote"] = "1"
+        execution_requirements["supports-xcode-requirements-set"] = "1"
 
     cc_toolchain = find_cpp_toolchain(ctx)
 
