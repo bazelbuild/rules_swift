@@ -403,7 +403,6 @@ def objc_compile_requirements(args, deps):
         inputs.append(objc.umbrella_header)
 
         defines.append(objc.define)
-        includes.append(objc.include)
 
         static_framework_names.append(objc.static_framework_names)
         all_frameworks.append(objc.framework_search_path_only)
@@ -411,11 +410,15 @@ def objc_compile_requirements(args, deps):
     # Collect module maps for dependencies. These must be pulled from a combined
     # transitive provider to get the correct strict propagation behavior that we
     # use to workaround command-line length issues until Swift 4.2 is available.
+    #
+    # Similarly, includes also has strict propagation behavior and must be
+    # handled this way.
     transitive_objc_provider = apple_common.new_objc_provider(
         providers = objc_providers,
     )
     module_maps = transitive_objc_provider.module_map
     inputs.append(module_maps)
+    includes.append(transitive_objc_provider.include)
 
     # Add the objc dependencies' header search paths so that imported modules
     # can find their headers.
