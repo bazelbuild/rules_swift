@@ -513,7 +513,7 @@ def _clang_search_paths_configurator(prerequisites, args):
             prerequisites.cc_info.compilation_context.includes,
             # TODO(b/146575101): Replace with `objc_info.include` once this bug
             # is fixed. See `_merge_target_providers` below for more details.
-            prerequisites.objc_include_paths_workaround,
+            prerequisites.objc_info.include,
         ]),
         before_each = "-Xcc",
         format_each = "-I%s",
@@ -1194,11 +1194,6 @@ def _merge_targets_providers(supports_objc_interop, targets):
     cc_infos = []
     objc_infos = []
     swift_infos = []
-
-    # TODO(b/146575101): This is only being used to preserve the current
-    # behavior of strict Objective-C include paths being propagated one more
-    # level than they should be. Once the remaining targets that depend on this
-    # behavior have been fixed, remove it.
     objc_include_paths_workaround_depsets = []
 
     for target in targets:
@@ -1209,9 +1204,6 @@ def _merge_targets_providers(supports_objc_interop, targets):
 
         if apple_common.Objc in target and supports_objc_interop:
             objc_infos.append(target[apple_common.Objc])
-            objc_include_paths_workaround_depsets.append(
-                target[apple_common.Objc].include,
-            )
 
     return struct(
         cc_info = cc_common.merge_cc_infos(cc_infos = cc_infos),
