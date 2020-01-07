@@ -22,15 +22,69 @@ toolchain, see `swift.bzl`.
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:partial.bzl", "partial")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
+load(":actions.bzl", "swift_action_names")
 load(":attrs.bzl", "swift_toolchain_driver_attrs")
+load(":compiling.bzl", "autolink_extract_action_configs")
+load(":debugging.bzl", "modulewrap_action_configs")
 load(
     ":features.bzl",
-    "SWIFT_FEATURE_AUTOLINK_EXTRACT",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
+    "SWIFT_FEATURE_USE_RESPONSE_FILES",
     "features_for_build_modes",
 )
 load(":providers.bzl", "SwiftToolchainInfo")
+load(":toolchain_config.bzl", "swift_toolchain_config")
 load(":utils.bzl", "get_swift_executable_for_toolchain")
+
+def _all_tool_configs(
+        swift_executable,
+        toolchain_root,
+        use_param_file):
+    """Returns the tool configurations for the Swift toolchain.
+
+    Args:
+        swift_executable: A custom Swift driver executable to be used during the
+            build, if provided.
+        toolchain_root: The root directory of the toolchain.
+        use_param_file: If True, the compile action should use a param file for
+            its arguments.
+
+    Returns:
+        A dictionary mapping action name to tool configurations.
+    """
+    _swift_driver_tool_config = swift_toolchain_config.driver_tool_config
+
+    return {
+        swift_action_names.AUTOLINK_EXTRACT: _swift_driver_tool_config(
+            driver_mode = "swift-autolink-extract",
+            swift_executable = swift_executable,
+            toolchain_root = toolchain_root,
+            worker_mode = "wrap",
+        ),
+        swift_action_names.COMPILE: _swift_driver_tool_config(
+            driver_mode = "swiftc",
+            swift_executable = swift_executable,
+            toolchain_root = toolchain_root,
+            use_param_file = use_param_file,
+            worker_mode = "persistent",
+        ),
+        swift_action_names.MODULEWRAP: _swift_driver_tool_config(
+            # This must come first after the driver name.
+            args = ["-modulewrap"],
+            driver_mode = "swift",
+            swift_executable = swift_executable,
+            toolchain_root = toolchain_root,
+            worker_mode = "wrap",
+        ),
+    }
+
+def _all_action_configs():
+    """Returns the action configurations for the Swift toolchain.
+
+    Returns:
+        A list of action configurations for the toolchain.
+    """
+    return modulewrap_action_configs() + autolink_extract_action_configs()
 
 def _default_linker_opts(
         cc_toolchain,
@@ -106,7 +160,6 @@ def _swift_toolchain_impl(ctx):
     # features.
     requested_features = features_for_build_modes(ctx)
     requested_features.extend(ctx.features)
-    requested_features.append(SWIFT_FEATURE_AUTOLINK_EXTRACT)
 
     # Swift.org toolchains assume everything is just available on the PATH so we
     # we don't pass any files unless we have a custom driver executable in the
@@ -116,17 +169,23 @@ def _swift_toolchain_impl(ctx):
     if swift_executable:
         all_files.append(swift_executable)
 
+    all_tool_configs = _all_tool_configs(
+        swift_executable = swift_executable,
+        toolchain_root = toolchain_root,
+        use_param_file = SWIFT_FEATURE_USE_RESPONSE_FILES in ctx.features,
+    )
+    all_action_configs = _all_action_configs()
+
     # TODO(allevato): Move some of the remaining hardcoded values, like object
     # format and Obj-C interop support, to attributes so that we can remove the
     # assumptions that are only valid on Linux.
     return [
         SwiftToolchainInfo(
-            action_environment = {},
+            action_configs = all_action_configs,
             all_files = depset(all_files),
             cc_toolchain_info = cc_toolchain,
             command_line_copts = ctx.fragments.swift.copts(),
             cpu = ctx.attr.arch,
-            execution_requirements = {},
             linker_opts_producer = linker_opts_producer,
             object_format = "elf",
             optional_implicit_deps = [],
@@ -135,10 +194,13 @@ def _swift_toolchain_impl(ctx):
             root_dir = toolchain_root,
             stamp_producer = None,
             supports_objc_interop = False,
-            swiftc_copts = [],
-            swift_executable = swift_executable,
             swift_worker = ctx.executable._worker,
             system_name = ctx.attr.os,
+            test_configuration = struct(
+                env = {},
+                execution_requirements = {},
+            ),
+            tool_configs = all_tool_configs,
             unsupported_features = ctx.disabled_features + [
                 SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD,
             ],

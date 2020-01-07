@@ -30,16 +30,15 @@ SWIFT_FEATURE_DBG = "swift.dbg"
 SWIFT_FEATURE_FASTBUILD = "swift.fastbuild"
 SWIFT_FEATURE_OPT = "swift.opt"
 
+# These features correspond to the current Bitcode mode as specified by the
+# `apple` configuration fragment when targeting Apple platforms. At most one of
+# these will be enabled by the toolchain.
+SWIFT_FEATURE_BITCODE_EMBEDDED = "swift.bitcode_embedded"
+SWIFT_FEATURE_BITCODE_EMBEDDED_MARKERS = "swift.bitcode_embedded_markers"
+
 # This feature is enabled if coverage collection is enabled for the build. (See
 # the note above about not depending on the C++ features.)
 SWIFT_FEATURE_COVERAGE = "swift.coverage"
-
-# If enabled, `swift-autolink-extract` will be invoked on the object files
-# generated for a library or binary, generating a response file that will be
-# passed automatically to the linker containing the libraries corresponding to
-# modules that were imported. This is used to simulate the autolinking behavior
-# of Mach-O on platforms with different binary formats.
-SWIFT_FEATURE_AUTOLINK_EXTRACT = "swift.autolink_extract"
 
 # If enabled, the `swift_test` rule will output an `.xctest` bundle for Darwin
 # targets instead of a standalone binary. This is necessary for XCTest-based
@@ -161,6 +160,26 @@ SWIFT_FEATURE_EMIT_SWIFTINTERFACE = "swift.emit_swiftinterface"
 # higher in the dependency graph than they need to be.
 SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS = "swift.supports_private_deps"
 
+def are_all_features_enabled(feature_configuration, feature_names):
+    """Returns `True` if all features are enabled in the feature configuration.
+
+    Args:
+        feature_configuration: The Swift feature configuration, as returned by
+            `swift_common.configure_features`.
+        feature_names: The list of feature names to check.
+
+    Returns:
+        `True` if all of the given features are enabled in the feature
+        configuration.
+    """
+    for feature_name in feature_names:
+        if not is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = feature_name,
+        ):
+            return False
+    return True
+
 def features_for_build_modes(ctx, objc_fragment = None):
     """Returns a list of Swift toolchain features for current build modes.
 
@@ -185,3 +204,42 @@ def features_for_build_modes(ctx, objc_fragment = None):
     if objc_fragment and objc_fragment.generate_dsym:
         features.append(SWIFT_FEATURE_FULL_DEBUG_INFO)
     return features
+
+def get_cc_feature_configuration(feature_configuration):
+    """Returns the C++ feature configuration in a Swift feature configuration.
+
+    Args:
+        feature_configuration: The Swift feature configuration, as returned from
+            `swift_common.configure_features`.
+
+    Returns:
+        A C++ `FeatureConfiguration` value (see
+        [`cc_common.configure_features`](https://docs.bazel.build/versions/master/skylark/lib/cc_common.html#configure_features)
+        for more information).
+    """
+    return feature_configuration.cc_feature_configuration
+
+def is_feature_enabled(feature_configuration, feature_name):
+    """Returns `True` if the feature is enabled in the feature configuration.
+
+    This function handles both Swift-specific features and C++ features so that
+    users do not have to manually extract the C++ configuration in order to
+    check it.
+
+    Args:
+        feature_configuration: The Swift feature configuration, as returned by
+            `swift_common.configure_features`.
+        feature_name: The name of the feature to check.
+
+    Returns:
+        `True` if the given feature is enabled in the feature configuration.
+    """
+    if feature_name.startswith("swift."):
+        return feature_name in feature_configuration.requested_features
+    else:
+        return cc_common.is_enabled(
+            feature_configuration = get_cc_feature_configuration(
+                feature_configuration = feature_configuration,
+            ),
+            feature_name = feature_name,
+        )

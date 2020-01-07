@@ -29,7 +29,13 @@ load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load("@bazel_skylib//lib:partial.bzl", "partial")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:types.bzl", "types")
-load(":actions.bzl", "run_swift_action")
+load(
+    ":actions.bzl",
+    "apply_action_configs",
+    "is_action_enabled",
+    "run_swift_action",
+    "swift_action_names",
+)
 load(":attrs.bzl", "swift_common_rule_attrs")
 load(
     ":compiling.bzl",
@@ -43,7 +49,6 @@ load(":debugging.bzl", "ensure_swiftmodule_is_embedded")
 load(":derived_files.bzl", "derived_files")
 load(
     ":features.bzl",
-    "SWIFT_FEATURE_AUTOLINK_EXTRACT",
     "SWIFT_FEATURE_CACHEABLE_SWIFTMODULES",
     "SWIFT_FEATURE_COMPILE_STATS",
     "SWIFT_FEATURE_COVERAGE",
@@ -66,6 +71,8 @@ load(
     "SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
     "SWIFT_FEATURE_USE_RESPONSE_FILES",
+    "get_cc_feature_configuration",
+    "is_feature_enabled",
 )
 load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
 
@@ -273,19 +280,19 @@ def _compilation_mode_copts(feature_configuration):
         A list of strings containing command line flags that should be passed to
         `swiftc`.
     """
-    is_dbg = _is_enabled(
+    is_dbg = is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_DBG,
     )
-    is_fastbuild = _is_enabled(
+    is_fastbuild = is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_FASTBUILD,
     )
-    is_opt = _is_enabled(
+    is_opt = is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_OPT,
     )
-    wants_full_debug_info = _is_enabled(
+    wants_full_debug_info = is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_FULL_DEBUG_INFO,
     )
@@ -302,7 +309,7 @@ def _compilation_mode_copts(feature_configuration):
     flags = []
     if is_opt:
         flags.append("-DNDEBUG")
-        if _is_enabled(
+        if is_feature_enabled(
             feature_configuration = feature_configuration,
             feature_name = SWIFT_FEATURE_OPT_USES_OSIZE,
         ):
@@ -310,7 +317,7 @@ def _compilation_mode_copts(feature_configuration):
         else:
             flags.append("-O")
 
-        if _is_enabled(
+        if is_feature_enabled(
             feature_configuration = feature_configuration,
             feature_name = SWIFT_FEATURE_OPT_USES_WMO,
         ):
@@ -318,7 +325,7 @@ def _compilation_mode_copts(feature_configuration):
 
     elif is_dbg or is_fastbuild:
         flags.extend(["-Onone", "-DDEBUG"])
-        if _is_enabled(
+        if is_feature_enabled(
             feature_configuration = feature_configuration,
             feature_name = SWIFT_FEATURE_CACHEABLE_SWIFTMODULES,
         ):
@@ -336,7 +343,7 @@ def _compilation_mode_copts(feature_configuration):
             # debugging.
             flags.extend(["-Xfrontend", "-serialize-debugging-options"])
 
-    if _is_enabled(
+    if is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_ENABLE_TESTING,
     ):
@@ -362,7 +369,7 @@ def _coverage_copts(feature_configuration):
         A list of strings containing command line flags that should be passed to
         `swiftc`.
     """
-    if _is_enabled(
+    if is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_COVERAGE,
     ):
@@ -383,10 +390,10 @@ def _is_debugging(feature_configuration):
         `True` if the current compilation mode produces debug info.
     """
     return (
-        _is_enabled(
+        is_feature_enabled(
             feature_configuration = feature_configuration,
             feature_name = SWIFT_FEATURE_DBG,
-        ) or _is_enabled(
+        ) or is_feature_enabled(
             feature_configuration = feature_configuration,
             feature_name = SWIFT_FEATURE_FASTBUILD,
         )
@@ -404,7 +411,7 @@ def _sanitizer_copts(feature_configuration):
     """
     copts = []
     for (feature_name, flags) in _SANITIZER_FEATURE_FLAG_MAP.items():
-        if swift_common.is_enabled(
+        if is_feature_enabled(
             feature_configuration = feature_configuration,
             feature_name = feature_name,
         ):
@@ -455,11 +462,11 @@ def _is_wmo(copts, feature_configuration):
 
     # First, check the feature configuration to see if the current compilation
     # mode implies whole-module-optimization.
-    is_opt = _is_enabled(
+    is_opt = is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_OPT,
     )
-    opt_uses_wmo = _is_enabled(
+    opt_uses_wmo = is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_OPT_USES_WMO,
     )
@@ -471,20 +478,6 @@ def _is_wmo(copts, feature_configuration):
     return ("-wmo" in copts or
             "-whole-module-optimization" in copts or
             "-force-single-frontend-invocation" in copts)
-
-def _cc_feature_configuration(feature_configuration):
-    """Returns the C++ feature configuration in a Swift feature configuration.
-
-    Args:
-        feature_configuration: The Swift feature configuration, as returned from
-            `swift_common.configure_features`.
-
-    Returns:
-        A C++ `FeatureConfiguration` value (see
-        [`cc_common.configure_features`](https://docs.bazel.build/versions/master/skylark/lib/cc_common.html#configure_features)
-        for more information).
-    """
-    return feature_configuration.cc_feature_configuration
 
 def _compile(
         actions,
@@ -589,7 +582,7 @@ def _compile(
         is_wmo = is_wmo,
         srcs = srcs,
         target_name = target_name,
-        index_while_building = swift_common.is_enabled(
+        index_while_building = is_feature_enabled(
             feature_configuration = feature_configuration,
             feature_name = SWIFT_FEATURE_INDEX_WHILE_BUILDING,
         ),
@@ -601,7 +594,7 @@ def _compile(
     additional_outputs = []
 
     args = actions.args()
-    if _is_enabled(
+    if is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE,
     ):
@@ -613,13 +606,13 @@ def _compile(
     else:
         args.add("-Xwrapped-swift=-ephemeral-module-cache")
 
-    if _is_enabled(
+    if is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_DEBUG_PREFIX_MAP,
     ):
         args.add("-Xwrapped-swift=-debug-prefix-pwd-is-dot")
 
-    if _is_enabled(
+    if is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_USE_RESPONSE_FILES,
     ):
@@ -634,7 +627,7 @@ def _compile(
         execution_requirements = {}
 
     # Emit compilation timing statistics if the user enabled that feature.
-    if _is_enabled(
+    if is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_COMPILE_STATS,
     ):
@@ -653,11 +646,11 @@ def _compile(
 
     # Check and enabled features related to the library evolution compilation
     # mode as requested.
-    if _is_enabled(
+    if is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION,
     ):
-        if _is_enabled(
+        if is_feature_enabled(
             feature_configuration = feature_configuration,
             feature_name = SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION,
         ):
@@ -665,7 +658,7 @@ def _compile(
 
             # swiftinterface generation requires the library evolution feature
             # to be available and enabled.
-            if _is_enabled(
+            if is_feature_enabled(
                 feature_configuration = feature_configuration,
                 feature_name = SWIFT_FEATURE_EMIT_SWIFTINTERFACE,
             ):
@@ -697,7 +690,7 @@ def _compile(
     # If the toolchain supports Objective-C interop, generate a Swift header for
     # this library so that it can be included by Objective-C code that depends
     # on it.
-    generates_header = not _is_enabled(
+    generates_header = not is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_NO_GENERATED_HEADER,
     )
@@ -718,7 +711,7 @@ def _compile(
         # trap door lets them escape the module redefinition error, with the
         # caveat that certain import scenarios could lead to incorrect behavior
         # because a header can be imported textually instead of modularly.
-        if not _is_enabled(
+        if not is_feature_enabled(
             feature_configuration = feature_configuration,
             feature_name = SWIFT_FEATURE_NO_GENERATED_MODULE_MAP,
         ):
@@ -748,10 +741,11 @@ def _compile(
     compile_outputs = ([swiftmodule, swiftdoc] + output_objects +
                        compile_reqs.other_outputs) + additional_outputs
 
+    # TODO(b/147091143): Migrate to `run_toolchain_action`.
     run_swift_action(
         actions = actions,
+        action_name = swift_action_names.COMPILE,
         arguments = [args],
-        driver_mode = "swiftc",
         execution_requirements = execution_requirements,
         inputs = all_inputs,
         mnemonic = "SwiftCompile",
@@ -768,18 +762,19 @@ def _compile(
     if _is_debugging(feature_configuration = feature_configuration):
         module_embed_results = ensure_swiftmodule_is_embedded(
             actions = actions,
+            feature_configuration = feature_configuration,
             swiftmodule = swiftmodule,
             target_name = target_name,
-            toolchain = swift_toolchain,
+            swift_toolchain = swift_toolchain,
         )
         linker_flags.extend(module_embed_results.linker_flags)
         linker_inputs.extend(module_embed_results.linker_inputs)
         output_objects.extend(module_embed_results.objects_to_link)
 
     # Invoke an autolink-extract action for toolchains that require it.
-    if swift_common.is_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_AUTOLINK_EXTRACT,
+    if is_action_enabled(
+        action_name = swift_action_names.AUTOLINK_EXTRACT,
+        swift_toolchain = swift_toolchain,
     ):
         autolink_file = derived_files.autolink_flags(
             actions,
@@ -787,10 +782,11 @@ def _compile(
         )
         register_autolink_extract_action(
             actions = actions,
+            feature_configuration = feature_configuration,
             module_name = module_name,
             objects = output_objects,
             output = autolink_file,
-            toolchain = swift_toolchain,
+            swift_toolchain = swift_toolchain,
         )
         linker_flags.append("@{}".format(autolink_file.path))
         linker_inputs.append(autolink_file)
@@ -942,37 +938,12 @@ def _get_implicit_deps(feature_configuration, swift_toolchain):
         the toolchain under the given feature configuration.
     """
     deps = list(swift_toolchain.required_implicit_deps)
-    if not _is_enabled(
+    if not is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_MINIMAL_DEPS,
     ):
         deps.extend(swift_toolchain.optional_implicit_deps)
     return deps
-
-def _is_enabled(feature_configuration, feature_name):
-    """Returns `True` if the feature is enabled in the feature configuration.
-
-    This function handles both Swift-specific features and C++ features so that
-    users do not have to manually extract the C++ configuration in order to
-    check it.
-
-    Args:
-        feature_configuration: The Swift feature configuration, as returned by
-            `swift_common.configure_features`.
-        feature_name: The name of the feature to check.
-
-    Returns:
-        `True` if the given feature is enabled in the feature configuration.
-    """
-    if feature_name.startswith("swift."):
-        return feature_name in feature_configuration.requested_features
-    else:
-        return cc_common.is_enabled(
-            feature_configuration = _cc_feature_configuration(
-                feature_configuration = feature_configuration,
-            ),
-            feature_name = feature_name,
-        )
 
 def _library_rule_attrs(additional_deps_aspects = []):
     """Returns an attribute dictionary for `swift_library`-like rules.
@@ -1144,7 +1115,7 @@ def _swiftc_command_line_and_inputs(
     ))
     args.add_all(["-Xfrontend", "-color-diagnostics"])
 
-    if swift_common.is_enabled(
+    if is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD,
     ):
@@ -1160,8 +1131,7 @@ def _swiftc_command_line_and_inputs(
         not _is_wmo(
             copts + toolchain.command_line_copts,
             feature_configuration,
-        ) and
-        swift_common.is_enabled(
+        ) and is_feature_enabled(
             feature_configuration = feature_configuration,
             feature_name = SWIFT_FEATURE_ENABLE_BATCH_MODE,
         )
@@ -1195,11 +1165,25 @@ def _swiftc_command_line_and_inputs(
     # Add toolchain copts, target copts, and command-line `--swiftcopt` flags,
     # in that order, so that more targeted usages can override more general
     # uses if needed.
-    args.add_all(toolchain.swiftc_copts)
+    #
+    # TODO(b/147091143): Completely migrate compilation actions to
+    # `run_toolchain_action`.
+    action_inputs = apply_action_configs(
+        action_name = swift_action_names.COMPILE,
+        args = args,
+        feature_configuration = feature_configuration,
+        prerequisites = struct(),
+        swift_toolchain = toolchain,
+    )
     args.add_all(copts)
     args.add_all(toolchain.command_line_copts)
 
     args.add_all(srcs)
+
+    input_depsets.append(depset(
+        action_inputs.inputs,
+        transitive = action_inputs.transitive_inputs,
+    ))
 
     return depset(transitive = input_depsets)
 
@@ -1249,14 +1233,14 @@ def _toolchain_attrs(toolchain_attr_name = "_toolchain"):
 # The exported `swift_common` module, which defines the public API for directly
 # invoking actions that compile Swift code from other rules.
 swift_common = struct(
-    cc_feature_configuration = _cc_feature_configuration,
+    cc_feature_configuration = get_cc_feature_configuration,
     compilation_attrs = _compilation_attrs,
     compile = _compile,
     configure_features = _configure_features,
     create_swift_info = _create_swift_info,
     derive_module_name = _derive_module_name,
     get_implicit_deps = _get_implicit_deps,
-    is_enabled = _is_enabled,
+    is_enabled = is_feature_enabled,
     library_rule_attrs = _library_rule_attrs,
     swift_runtime_linkopts = _swift_runtime_linkopts,
     swiftc_command_line_and_inputs = _swiftc_command_line_and_inputs,
