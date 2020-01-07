@@ -24,7 +24,7 @@ load("@bazel_skylib//lib:partial.bzl", "partial")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
 load(":actions.bzl", "swift_action_names")
 load(":attrs.bzl", "swift_toolchain_driver_attrs")
-load(":compiling.bzl", "autolink_extract_action_configs")
+load(":autolinking.bzl", "autolink_extract_action_configs")
 load(":debugging.bzl", "modulewrap_action_configs")
 load(
     ":features.bzl",
