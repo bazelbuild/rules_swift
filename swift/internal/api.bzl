@@ -37,12 +37,12 @@ load(
     "swift_action_names",
 )
 load(":attrs.bzl", "swift_common_rule_attrs")
+load(":autolinking.bzl", "register_autolink_extract_action")
 load(
     ":compiling.bzl",
     "collect_transitive_compile_inputs",
     "declare_compile_outputs",
     "objc_compile_requirements",
-    "register_autolink_extract_action",
     "write_objc_header_module_map",
 )
 load(":debugging.bzl", "ensure_swiftmodule_is_embedded")
@@ -757,6 +757,11 @@ def _compile(
     linker_flags = []
     linker_inputs = []
 
+    # Object files that should be linked into the binary but not passed to the
+    # driver for autolink extraction, because they don't contribute anything
+    # meaningful there (e.g., modulewrap outputs).
+    objects_excluded_from_autolinking = []
+
     # Ensure that the .swiftmodule file is embedded in the final library or
     # binary for debugging purposes.
     if _is_debugging(feature_configuration = feature_configuration):
@@ -769,7 +774,9 @@ def _compile(
         )
         linker_flags.extend(module_embed_results.linker_flags)
         linker_inputs.extend(module_embed_results.linker_inputs)
-        output_objects.extend(module_embed_results.objects_to_link)
+        objects_excluded_from_autolinking.extend(
+            module_embed_results.objects_to_link,
+        )
 
     # Invoke an autolink-extract action for toolchains that require it.
     if is_action_enabled(
@@ -782,14 +789,16 @@ def _compile(
         )
         register_autolink_extract_action(
             actions = actions,
+            autolink_file = autolink_file,
             feature_configuration = feature_configuration,
             module_name = module_name,
-            objects = output_objects,
-            output = autolink_file,
+            object_files = output_objects,
             swift_toolchain = swift_toolchain,
         )
         linker_flags.append("@{}".format(autolink_file.path))
         linker_inputs.append(autolink_file)
+
+    output_objects.extend(objects_excluded_from_autolinking)
 
     return struct(
         generated_header = generated_header,
