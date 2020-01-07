@@ -282,7 +282,7 @@ def _all_action_configs(
         swift_toolchain_config.action_config(
             actions = [swift_action_names.COMPILE],
             configurators = [
-                swift_toolchain_config.add_arg("-embed-bitcode-markers"),
+                swift_toolchain_config.add_arg("-embed-bitcode-marker"),
             ],
             features = [SWIFT_FEATURE_BITCODE_EMBEDDED_MARKERS],
         ),
