@@ -24,10 +24,12 @@ load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:partial.bzl", "partial")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
+load(":actions.bzl", "swift_action_names")
 load(":attrs.bzl", "swift_toolchain_driver_attrs")
 load(
     ":features.bzl",
-    "SWIFT_FEATURE_AUTOLINK_EXTRACT",
+    "SWIFT_FEATURE_BITCODE_EMBEDDED",
+    "SWIFT_FEATURE_BITCODE_EMBEDDED_MARKERS",
     "SWIFT_FEATURE_BUNDLED_XCTESTS",
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
@@ -37,6 +39,7 @@ load(
     "SWIFT_FEATURE_USE_RESPONSE_FILES",
     "features_for_build_modes",
 )
+load(":toolchain_config.bzl", "swift_toolchain_config")
 load(":providers.bzl", "SwiftToolchainInfo")
 load(":utils.bzl", "get_swift_executable_for_toolchain")
 
@@ -181,66 +184,170 @@ def _default_linker_opts(
 
     return linkopts
 
-def _default_swiftc_copts(
+def _features_for_bitcode_mode(bitcode_mode):
+    """Gets the list of features to enable for the selected Bitcode mode.
+
+    Args:
+        bitcode_mode: The `bitcode_mode` value from the Apple configuration
+            fragment.
+
+    Returns:
+        A list containing the features to enable.
+    """
+    bitcode_mode_string = str(bitcode_mode)
+    if bitcode_mode_string == "embedded":
+        return [SWIFT_FEATURE_BITCODE_EMBEDDED]
+    elif bitcode_mode_string == "embedded_markers":
+        return [SWIFT_FEATURE_BITCODE_EMBEDDED_MARKERS]
+    elif bitcode_mode_string == "none":
+        return []
+
+    fail("Internal error: expected bitcode_mode to be one of: " +
+         "['embedded', 'embedded_markers', 'none'], but got '{}'".format(
+             bitcode_mode_string,
+         ))
+
+def _resource_directory_configurator(developer_dir, prerequisites, args):
+    """Configures compiler flags about the toolchain's resource directory.
+
+    We must pass a resource directory explicitly if the build rules are invoked
+    using a custom driver executable or a partial toolchain root, so that the
+    compiler doesn't try to find its resources relative to that binary.
+
+    Args:
+        developer_dir: The path to Xcode's Developer directory. This argument is
+            pre-bound in the partial.
+        prerequisites: The value returned by
+            `swift_common.action_prerequisites`.
+        args: The `Args` object to which flags will be added.
+    """
+    args.add(
+        "-resource-dir",
+        (
+            "{developer_dir}/Toolchains/{toolchain}.xctoolchain/" +
+            "usr/lib/swift"
+        ).format(
+            developer_dir = developer_dir,
+            toolchain = "XcodeDefault",
+        ),
+    )
+
+def _all_action_configs(
         apple_fragment,
         apple_toolchain,
-        swift_executable,
-        target,
-        toolchain_root):
-    """Returns options that should be passed by default to `swiftc`.
+        needs_resource_directory,
+        target_triple):
+    """Returns the action configurations for the Swift toolchain.
 
     Args:
         apple_fragment: The `apple` configuration fragment.
         apple_toolchain: The `apple_common.apple_toolchain()` object.
-        swift_executable: A `File` representing a custom Swift driver to be used
-            by the toolchain, or `None` to use the default driver.
-        target: The target triple.
-        toolchain_root: The optional toolchain root, if specified by the
-            `--define=SWIFT_USE_TOOLCHAIN_ROOT=<path>` flag.
+        needs_resource_directory: If True, the toolchain needs the resource
+            directory passed explicitly to the compiler.
+        target_triple: The target triple.
 
     Returns:
-        A list of options that will be passed to any compile action created by
-        this toolchain.
+        The action configurations for the Swift toolchain.
     """
-    platform_framework_dir = apple_toolchain.platform_developer_framework_dir(
-        apple_fragment,
+    developer_dir = apple_toolchain.developer_dir()
+    platform_framework_dir = (
+        apple_toolchain.platform_developer_framework_dir(apple_fragment)
     )
-    copts = [
-        "-target",
-        target,
-        "-sdk",
-        apple_toolchain.sdk_dir(),
-        "-F",
-        platform_framework_dir,
-        "-I",
-        _swift_developer_lib_dir(platform_framework_dir),
+    sdk_dir = apple_toolchain.sdk_dir()
+
+    action_configs = [
+        # Basic compilation flags (target triple and toolchain search paths).
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [
+                swift_toolchain_config.add_arg("-target", target_triple),
+                swift_toolchain_config.add_arg("-sdk", sdk_dir),
+                swift_toolchain_config.add_arg(
+                    platform_framework_dir,
+                    format = "-F%s",
+                ),
+                swift_toolchain_config.add_arg(
+                    _swift_developer_lib_dir(platform_framework_dir),
+                    format = "-I%s",
+                ),
+            ],
+        ),
+
+        # Bitcode-related flags.
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [swift_toolchain_config.add_arg("-embed-bitcode")],
+            features = [SWIFT_FEATURE_BITCODE_EMBEDDED],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [
+                swift_toolchain_config.add_arg("-embed-bitcode-markers"),
+            ],
+            features = [SWIFT_FEATURE_BITCODE_EMBEDDED_MARKERS],
+        ),
     ]
 
-    # If we have a custom "toolchain root" (meaning a bin/ dir with a custom
-    # compiler that we want to use in place of the original, but not a *full*
-    # toolchain) or a custom Swift driver, make sure we use the resource dir of
-    # the *original* toolchain so that libraries are still found (otherwise, by
-    # default, the driver will look in its parent directory for them).
-    if swift_executable or toolchain_root:
-        copts.extend([
-            "-resource-dir",
-            ("{developer_dir}/Toolchains/{toolchain}.xctoolchain/" +
-             "usr/lib/swift").format(
-                developer_dir = apple_toolchain.developer_dir(),
-                toolchain = "XcodeDefault",
+    if needs_resource_directory:
+        # If the user is using a custom driver but not a complete custom
+        # toolchain, provide the original toolchain's resources as the resource
+        # directory so that modules are found correctly.
+        action_configs.append(
+            swift_toolchain_config.action_config(
+                actions = [swift_action_names.COMPILE],
+                configurators = [
+                    partial.make(
+                        _resource_directory_configurator,
+                        developer_dir,
+                    ),
+                ],
             ),
-        ])
+        )
 
-    bitcode_mode = str(apple_fragment.bitcode_mode)
-    if bitcode_mode == "embedded":
-        copts.append("-embed-bitcode")
-    elif bitcode_mode == "embedded_markers":
-        copts.append("-embed-bitcode-marker")
-    elif bitcode_mode != "none":
-        fail("Internal error: expected apple_fragment.bitcode_mode to be " +
-             "one of: ['embedded', 'embedded_markers', 'none']")
+    return action_configs
 
-    return copts
+def _all_tool_configs(
+        custom_toolchain,
+        env,
+        execution_requirements,
+        swift_executable,
+        toolchain_root,
+        use_param_file):
+    """Returns the tool configurations for the Swift toolchain.
+
+    Args:
+        custom_toolchain: The bundle identifier of a custom Swift toolchain, if
+            one was requested.
+        env: The environment variables to set when launching tools.
+        execution_requirements: The execution requirements for tools.
+        swift_executable: A custom Swift driver executable to be used during the
+            build, if provided.
+        toolchain_root: The root directory of the toolchain, if provided.
+        use_param_file: If True, actions should have their arguments written to
+            param files.
+
+    Returns:
+        A dictionary mapping action name to tool configuration.
+    """
+
+    # Configure the environment variables that the worker needs to fill in the
+    # Bazel placeholders for SDK root and developer directory, along with the
+    # custom toolchain if requested.
+    if custom_toolchain:
+        env = dict(env)
+        env["TOOLCHAINS"] = custom_toolchain
+
+    return {
+        swift_action_names.COMPILE: swift_toolchain_config.driver_tool_config(
+            driver_mode = "swiftc",
+            env = env,
+            execution_requirements = execution_requirements,
+            swift_executable = swift_executable,
+            toolchain_root = toolchain_root,
+            use_param_file = use_param_file,
+            worker_mode = "persistent",
+        ),
+    }
 
 def _is_macos(platform):
     """Returns `True` if the given platform is macOS.
@@ -319,9 +426,35 @@ def _xcode_env(xcode_config, platform):
         apple_common.target_apple_env(xcode_config, platform),
     )
 
+def _xcode_execution_requirements(xcode_config):
+    """Returns execution requirements for actions involving Xcode.
+
+    Args:
+        xcode_config: The Xcode configuration object.
+
+    Returns:
+        A dictionary of execution requirements to be passed when registering
+        actions.
+    """
+
+    # All Swift actions should be executed on Darwin, even if Bazel is running
+    # on a non-Darwin host.
+    # TODO(steinman): Replace this with xcode_config.execution_info once it is
+    # available.
+    execution_requirements = {"requires-darwin": ""}
+    if xcode_config:
+        if xcode_config.availability() == "remote":
+            execution_requirements["no-local"] = "1"
+        elif xcode_config.availability() == "local":
+            execution_requirements["no-remote"] = "1"
+        execution_requirements["supports-xcode-requirements-set"] = "1"
+
+    return execution_requirements
+
 def _xcode_swift_toolchain_impl(ctx):
     apple_fragment = ctx.fragments.apple
     apple_toolchain = apple_common.apple_toolchain()
+    cc_toolchain = find_cpp_toolchain(ctx)
 
     cpu = apple_fragment.single_arch_cpu
     platform = apple_fragment.single_arch_platform
@@ -354,39 +487,11 @@ def _xcode_swift_toolchain_impl(ctx):
     # To use a "standard" custom toolchain built using the full Swift build
     # script, use `--define=SWIFT_CUSTOM_TOOLCHAIN=<id>` as shown below.
     swift_executable = get_swift_executable_for_toolchain(ctx)
-
     toolchain_root = ctx.var.get("SWIFT_USE_TOOLCHAIN_ROOT")
     custom_toolchain = ctx.var.get("SWIFT_CUSTOM_TOOLCHAIN")
-
     if toolchain_root and custom_toolchain:
         fail("Do not use SWIFT_USE_TOOLCHAIN_ROOT and SWIFT_CUSTOM_TOOLCHAIN" +
              "in the same build.")
-
-    swiftc_copts = _default_swiftc_copts(
-        apple_fragment,
-        apple_toolchain,
-        swift_executable,
-        target,
-        toolchain_root,
-    )
-
-    # Configure the environment variables that the worker needs to fill in the
-    # Bazel placeholders for SDK root and developer directory, along with the
-    # custom toolchain if requested.
-    env = _xcode_env(xcode_config, platform)
-    if custom_toolchain:
-        env["TOOLCHAINS"] = custom_toolchain
-
-    # TODO(steinman): Replace this with xcode_config.execution_info once it is available.
-    execution_requirements = {"requires-darwin": ""}
-    if xcode_config:
-        if xcode_config.availability() == "remote":
-            execution_requirements["no-local"] = "1"
-        elif xcode_config.availability() == "local":
-            execution_requirements["no-remote"] = "1"
-        execution_requirements["supports-xcode-requirements-set"] = "1"
-
-    cc_toolchain = find_cpp_toolchain(ctx)
 
     # Compute the default requested features and conditional ones based on Xcode
     # version.
@@ -396,11 +501,17 @@ def _xcode_swift_toolchain_impl(ctx):
     )
     requested_features.extend(ctx.features)
     requested_features.append(SWIFT_FEATURE_BUNDLED_XCTESTS)
+    requested_features.extend(
+        _features_for_bitcode_mode(apple_fragment.bitcode_mode),
+    )
 
     # Xcode 10.0 implies Swift 4.2.
     if _is_xcode_at_least_version(xcode_config, "10.0"):
+        use_param_file = True
         requested_features.append(SWIFT_FEATURE_ENABLE_BATCH_MODE)
         requested_features.append(SWIFT_FEATURE_USE_RESPONSE_FILES)
+    else:
+        use_param_file = False
 
     # Xcode 10.2 implies Swift 5.0.
     if _is_xcode_at_least_version(xcode_config, "10.2"):
@@ -416,34 +527,55 @@ def _xcode_swift_toolchain_impl(ctx):
         ctx.fragments.swift.copts()
     )
 
+    env = _xcode_env(platform = platform, xcode_config = xcode_config)
+    execution_requirements = _xcode_execution_requirements(
+        xcode_config = xcode_config,
+    )
+
+    all_tool_configs = _all_tool_configs(
+        custom_toolchain = custom_toolchain,
+        env = env,
+        execution_requirements = execution_requirements,
+        swift_executable = swift_executable,
+        toolchain_root = toolchain_root,
+        use_param_file = use_param_file,
+    )
+    all_action_configs = _all_action_configs(
+        apple_fragment = apple_fragment,
+        apple_toolchain = apple_toolchain,
+        needs_resource_directory = swift_executable or toolchain_root,
+        target_triple = target,
+    )
+
+    # Xcode toolchains don't pass any files explicitly here because they're
+    # just available as part of the Xcode bundle, unless we're being asked to
+    # use a custom driver executable.
     all_files = []
     if swift_executable:
         all_files.append(swift_executable)
 
     return [
         SwiftToolchainInfo(
-            action_environment = env,
-            # Xcode toolchains don't pass any files explicitly here because
-            # they're just available as part of the Xcode bundle.
+            action_configs = all_action_configs,
             all_files = depset(all_files),
             cc_toolchain_info = cc_toolchain,
             command_line_copts = command_line_copts,
             cpu = cpu,
-            execution_requirements = execution_requirements,
             linker_opts_producer = linker_opts_producer,
             object_format = "macho",
             optional_implicit_deps = [],
             requested_features = requested_features,
             required_implicit_deps = [],
-            root_dir = toolchain_root,
             stamp_producer = None,
             supports_objc_interop = True,
-            swiftc_copts = swiftc_copts,
-            swift_executable = swift_executable,
             swift_worker = ctx.executable._worker,
             system_name = "darwin",
+            test_configuration = struct(
+                env = env,
+                execution_requirements = execution_requirements,
+            ),
+            tool_configs = all_tool_configs,
             unsupported_features = ctx.disabled_features + [
-                SWIFT_FEATURE_AUTOLINK_EXTRACT,
                 SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD,
             ],
         ),

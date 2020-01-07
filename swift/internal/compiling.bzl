@@ -16,9 +16,10 @@
 
 load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load(":actions.bzl", "run_swift_action")
+load(":actions.bzl", "run_toolchain_action", "swift_action_names")
 load(":derived_files.bzl", "derived_files")
 load(":providers.bzl", "SwiftInfo")
+load(":toolchain_config.bzl", "swift_toolchain_config")
 load(":utils.bzl", "collect_cc_libraries", "get_providers")
 
 def collect_transitive_compile_inputs(args, deps, direct_defines = []):
@@ -501,12 +502,43 @@ def output_groups_from_compilation_outputs(compilation_outputs):
 
     return output_groups
 
+def autolink_extract_action_configs():
+    """Returns the list of action configs needed to perform autolink extraction.
+
+    If a toolchain supports autolink extraction, it should add these to its list
+    of action configs so that those actions will be correctly configured.
+
+    Returns:
+        The list of action configs needed to perform autolink extraction.
+    """
+    return [
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.AUTOLINK_EXTRACT],
+            configurators = [
+                _autolink_extract_input_configurator,
+                _autolink_extract_output_configurator,
+            ],
+        ),
+    ]
+
+def _autolink_extract_input_configurator(prerequisites, args):
+    """Configures the inputs of the autolink-extract action."""
+    object_files = prerequisites.object_files
+
+    args.add_all(object_files)
+    return swift_toolchain_config.config_result(inputs = object_files)
+
+def _autolink_extract_output_configurator(prerequisites, args):
+    """Configures the outputs of the autolink-extract action."""
+    args.add("-o", prerequisites.autolink_file)
+
 def register_autolink_extract_action(
         actions,
+        feature_configuration,
         module_name,
         objects,
         output,
-        toolchain):
+        swift_toolchain):
     """Extracts autolink information from Swift `.o` files.
 
     For some platforms (such as Linux), autolinking of imported frameworks is
@@ -517,28 +549,28 @@ def register_autolink_extract_action(
 
     Args:
         actions: The object used to register actions.
+        feature_configuration: The Swift feature configuration.
         module_name: The name of the module to which the `.o` files belong (used
             when generating the progress message).
         objects: The list of object files whose autolink information will be
             extracted.
         output: A `File` into which the autolink information will be written.
-        toolchain: The `SwiftToolchainInfo` provider of the toolchain.
+        swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
     """
-    args = actions.args()
-    args.add_all(objects)
-    args.add("-o", output)
-
-    run_swift_action(
+    prerequisites = struct(
+        autolink_file = output,
+        object_files = objects,
+    )
+    run_toolchain_action(
         actions = actions,
-        arguments = [args],
-        driver_mode = "swift-autolink-extract",
-        inputs = objects,
-        mnemonic = "SwiftAutolinkExtract",
+        action_name = swift_action_names.AUTOLINK_EXTRACT,
+        feature_configuration = feature_configuration,
         outputs = [output],
+        prerequisites = prerequisites,
         progress_message = (
             "Extracting autolink data for Swift module {}".format(module_name)
         ),
-        swift_toolchain = toolchain,
+        swift_toolchain = swift_toolchain,
     )
 
 def swift_library_output_map(name, alwayslink):

@@ -401,7 +401,7 @@ def _swift_test_impl(ctx):
         executable = binary
 
     test_environment = dicts.add(
-        swift_toolchain.action_environment,
+        swift_toolchain.test_configuration.env,
         {"TEST_BINARIES_FOR_LLVM_COV": binary.short_path},
     )
 
@@ -422,7 +422,9 @@ def _swift_test_impl(ctx):
             extensions = ["swift"],
             source_attributes = ["srcs"],
         ),
-        testing.ExecutionInfo(swift_toolchain.execution_requirements),
+        testing.ExecutionInfo(
+            swift_toolchain.test_configuration.execution_requirements,
+        ),
         testing.TestEnvironment(test_environment),
     ]
 

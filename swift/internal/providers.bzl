@@ -99,9 +99,8 @@ Propagates information about a Swift toolchain to compilation and linking rules
 that use the toolchain.
 """,
     fields = {
-        "action_environment": """\
-`Dict`. Environment variables that should be set during any actions spawned to
-compile or link Swift code.
+        "action_configs": """\
+This field is an internal implementation detail of the build rules.
 """,
         "all_files": """\
 A `depset` of `File`s containing all the Swift toolchain files (tools,
@@ -121,13 +120,6 @@ attributes of Swift targets.
 """,
         "cpu": """\
 `String`. The CPU architecture that the toolchain is targeting.
-""",
-        "execution_requirements": """\
-`Dict`. Execution requirements that should be passed to any actions spawned to
-compile or link Swift code.
-
-For example, when using an Xcode toolchain, the execution requirements should be
-such that running on Darwin is required.
 """,
         "linker_opts_producer": """\
 Skylib `partial`. A partial function that returns the flags that should be
@@ -196,20 +188,6 @@ linked into the binary.
         "supports_objc_interop": """\
 `Boolean`. Indicates whether or not the toolchain supports Objective-C interop.
 """,
-        "swiftc_copts": """\
-`List` of `strings`. Additional flags that should be passed to `swiftc` when
-compiling libraries or binaries with this toolchain. These flags will come first
-in compilation command lines, allowing them to be overridden by `copts`
-attributes and `--swiftcopt` flags.
-""",
-        "swift_executable": """\
-A replacement Swift driver executable.
-
-If this is `None`, the default Swift driver in the toolchain will be used.
-Otherwise, this binary will be used and `--driver-mode` will be passed to ensure
-that it is invoked in the correct mode (i.e., `swift`, `swiftc`,
-`swift-autolink-extract`, etc.).
-""",
         "swift_worker": """\
 `File`. The executable representing the worker executable used to invoke the
 compiler and other Swift tools (for both incremental and non-incremental
@@ -217,6 +195,21 @@ compiles).
 """,
         "system_name": """\
 `String`. The name of the operating system that the toolchain is targeting.
+""",
+        "test_configuration": """\
+`Struct` containing two fields:
+
+*   `env`: A `dict` of environment variables to be set when running tests
+    that were built with this toolchain.
+*   `execution_requirements`: A `dict` of execution requirements for tests
+    that were built with this toolchain.
+
+This is used, for example, with Xcode-based toolchains to ensure that the
+`xctest` helper and coverage tools are found in the correct developer
+directory when running tests.
+""",
+        "tool_configs": """\
+This field is an internal implementation detail of the build rules.
 """,
         "unsupported_features": """\
 `List` of `string`s. Features that should be implicitly disabled by default for
