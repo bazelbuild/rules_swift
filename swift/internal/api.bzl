@@ -915,7 +915,7 @@ def _derive_module_name(*args):
              "of type 'Label' or two arguments of type 'str'.")
 
     package_part = (package.lstrip("//").replace("/", "_").replace("-", "_")
-        .replace(".", "_"))
+        .replace(".", "_").replace(" ", "_"))
     name_part = name.replace("-", "_")
     if package_part:
         return package_part + "_" + name_part
