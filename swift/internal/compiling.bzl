@@ -39,6 +39,7 @@ load(
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_ENABLE_TESTING",
+    "SWIFT_FEATURE_ENABLE_VFSOVERLAYS",
     "SWIFT_FEATURE_FASTBUILD",
     "SWIFT_FEATURE_FULL_DEBUG_INFO",
     "SWIFT_FEATURE_IMPLICIT_MODULES",
@@ -64,6 +65,8 @@ load(
     "get_providers",
     "struct_fields",
 )
+
+VIRTUAL_IMPORT_SEARCH_PATH = "/build_bazel_rules_swift/swiftmodules"
 
 # The number of threads to use for WMO builds, using the same number of cores
 # that is on a Mac Pro for historical reasons.
@@ -359,12 +362,18 @@ def compile_action_configs():
     ]
 
     #### Search paths for Swift module dependencies
-    action_configs.append(
+    action_configs += [
         swift_toolchain_config.action_config(
             actions = [swift_action_names.COMPILE],
             configurators = [_dependencies_swiftmodules_configurator],
+            not_features = [SWIFT_FEATURE_ENABLE_VFSOVERLAYS],
         ),
-    )
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [_dependencies_swiftmodules_vfsoverlay_configurator],
+            features = [SWIFT_FEATURE_ENABLE_VFSOVERLAYS],
+        ),
+    ]
 
     #### Search paths for framework dependencies
     action_configs.append(
@@ -823,6 +832,23 @@ def _dependencies_swiftmodules_configurator(prerequisites, args):
             for module in prerequisites.transitive_modules
             if module.swift
         ],
+    )
+
+def _dependencies_swiftmodules_vfsoverlay_configurator(prerequisites, args):
+    """Provides a single `.swiftmodule` search path using a vfsoverlay."""
+    swiftmodules = prerequisites.swift_info.transitive_swiftmodules.to_list()
+
+    # Bug: `swiftc` doesn't pass its `-vfsoverlay` arg to the frontend.
+    # Workaround: Pass `-vfsoverlay` directly via `-Xfrontend`.
+    args.add_all((
+        "-Xfrontend", "-vfsoverlay",
+        "-Xfrontend", prerequisites.vfsoverlay.yaml_file.path,
+        "-I{}".format(prerequisites.vfsoverlay.import_search_path),
+    ))
+
+    return swift_toolchain_config.config_result(
+        inputs = [prerequisites.vfsoverlay.yaml_file.path],
+        transitive_inputs = [swiftmodules],
     )
 
 def _module_name_configurator(prerequisites, args):
@@ -1385,6 +1411,18 @@ def _declare_compile_outputs(
         user_compile_flags = user_compile_flags,
     )
 
+    if is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_ENABLE_VFSOVERLAYS,
+    ):
+        vfsoverlay = _write_swiftc_vfsoverlay(
+            actions = actions,
+            module_name = module_name,
+            swiftmodules = swiftmodules,
+        )
+    else:
+        vfsoverlay = None
+
     if not output_nature.emits_multiple_objects:
         # If we're emitting a single object, we don't use an object map; we just
         # declare the output file that the compiler will generate and there are
@@ -1436,6 +1474,7 @@ def _declare_compile_outputs(
         swiftdoc_file = swiftdoc_file,
         swiftinterface_file = swiftinterface_file,
         swiftmodule_file = swiftmodule_file,
+        vfsoverlay = vfsoverlay,
     )
     return compile_outputs, other_outputs
 
@@ -1878,6 +1917,75 @@ def _write_objc_header_module_map(
         ),
         output = output,
     )
+
+def _write_swiftc_vfsoverlay(actions, module_name, swiftmodules):
+    """Writes a generated vfsoverlay to a file.
+
+    Args:
+        actions: The object used to register actions.
+        module_name: The name of the Swift module.
+        swiftmodules: The `List` of swiftmodule `File`s to include in the
+             vfsoverlay.
+
+    Returns:
+        A struct representing the vfsoverlay, containing the following fields:
+
+        *   `yaml_file`: A `File` representing the vfsoverlay generated for the
+            input `swiftmodules`.
+        *   `import_search_path`: The path of the virtual directory containing
+            each of the input `swiftmodules`.
+    """
+    yaml_file = derived_files.swiftc_vfsoverlay(actions, module_name)
+    yaml = _generate_swiftc_vfsoverlay(
+        virtual_import_search_path = VIRTUAL_IMPORT_SEARCH_PATH,
+        swiftmodules = swiftmodules,
+    )
+
+    actions.write(
+        content = yaml,
+        output = yaml_file,
+    )
+
+    return struct(
+        yaml_file = yaml_file,
+        import_search_path = VIRTUAL_IMPORT_SEARCH_PATH,
+    )
+
+def _generate_swiftc_vfsoverlay(virtual_import_search_path, swiftmodules):
+    """Generates a vfsoverlay encapsulating a single directory of swiftmodules.
+
+    Args:
+        virtual_import_search_path: The virtual path containing entries for all
+            `swiftmodules`.
+        swiftmodules: The `List` of swiftmodule `File`s to include in the
+             virtual file system.
+
+    Returns:
+        A string containing the YAML representation of the vfsoverlay.
+    """
+    # These explicit vfsoverlay settings ensure the VFS actually improves
+    # performance. Without these, the performance is worse.
+    contents = """\
+version: 0
+case-sensitive: false
+fallthrough: false
+overlay-relative: false
+use-external-names: false
+roots:
+  - type: directory
+    name: \"{}\"
+    contents:""".format(virtual_import_search_path)
+
+    for swiftmodule in swiftmodules:
+        contents += """
+      - type: file
+        name: {}
+        external-contents: \"{}\"""".format(
+            swiftmodule.basename,
+            swiftmodule.path
+        )
+
+    return contents
 
 def _index_store_path_overridden(copts):
     """Checks if index_while_building must be disabled.

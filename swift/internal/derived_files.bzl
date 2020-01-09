@@ -225,6 +225,28 @@ def _swiftc_output_file_map(actions, target_name):
     """
     return actions.declare_file("{}.output_file_map.json".format(target_name))
 
+def _swiftc_vfsoverlay(actions, module_name):
+    """Declares a file for the vfsoverlay for a compilation action.
+
+    The vfsoverlay is YAML-formatted file that allows us to provide a single
+    import search path argument, instead of one import search path per package.
+    This defines a virtual file system, independent of the real file system
+    layout.
+
+    Using a single import search path can avoid the worst case: a quadratic
+    search to find N modules (transitive dependencies) in N directories. For
+    targets with large transitive dependency sets, this can bring significant
+    improvements to compile times.
+
+    Args:
+        actions: The context's actions object.
+        module_name: The name of the module being built.
+
+    Returns:
+        The declared `File`.
+    """
+    return actions.declare_file("{}.vfsoverlay.yaml".format(module_name))
+
 def _swiftdoc(actions, module_name):
     """Declares a file for the Swift doc file created by a compilation rule.
 
@@ -315,6 +337,7 @@ derived_files = struct(
     static_archive = _static_archive,
     stats_directory = _stats_directory,
     swiftc_output_file_map = _swiftc_output_file_map,
+    swiftc_vfsoverlay = _swiftc_vfsoverlay,
     swiftdoc = _swiftdoc,
     swiftinterface = _swiftinterface,
     swiftmodule = _swiftmodule,
