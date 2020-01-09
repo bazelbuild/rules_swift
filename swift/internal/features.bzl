@@ -23,6 +23,12 @@ load(
     "SWIFT_FEATURE_FULL_DEBUG_INFO",
 )
 
+# If enabled, Swift compilation actions will use a single import search path by
+# generating a vfsoverlay containing a single virtual swiftmodule directory.
+# For Swift actions with large transitive dependency sets, this results in
+# faster searching of swiftmodules, and faster compilation times.
+SWIFT_FEATURE_ENABLE_VFSOVERLAYS = "swift.enable_vfsoverlays"
+
 def are_all_features_enabled(feature_configuration, feature_names):
     """Returns `True` if all features are enabled in the feature configuration.
 
