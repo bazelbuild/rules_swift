@@ -24,6 +24,7 @@ _ActionConfigInfo = provider(
         "actions",
         "configurators",
         "features",
+        "not_features",
     ],
 )
 
@@ -101,7 +102,11 @@ def _normalize_action_config_features(features):
     # Otherwise, return the original list of lists.
     return features
 
-def _action_config(actions, configurators, features = None):
+def _action_config(
+        actions,
+        configurators,
+        features = None,
+        not_features = None):
     """Returns a new Swift toolchain action configuration.
 
     This function validates the inputs, causing the build to fail if they have
@@ -124,6 +129,12 @@ def _action_config(actions, configurators, features = None):
             mentioned in *one* of the inner lists must be enabled; or a single
             non-empty `list` of feature names, which is a shorthand form
             equivalent to that single list wrapped in another list.
+        not_features: The `list` of features that must *not* be enabled for the
+            configurators to be applied to the action. Unlike the `features`
+            argument, this is only a single list, and it is a conjunction; if
+            and only if *all* of the features in the list are enabled, the
+            configurators will not be applied, even if `features` was also
+            satisfied.
 
     Returns:
         A validated action configuration.
@@ -132,6 +143,7 @@ def _action_config(actions, configurators, features = None):
         actions = actions,
         configurators = configurators,
         features = _normalize_action_config_features(features),
+        not_features = not_features,
     )
 
 def _add_arg_impl(

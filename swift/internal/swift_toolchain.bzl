@@ -25,6 +25,7 @@ load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
 load(":actions.bzl", "swift_action_names")
 load(":attrs.bzl", "swift_toolchain_driver_attrs")
 load(":autolinking.bzl", "autolink_extract_action_configs")
+load(":compiling.bzl", "compile_action_configs")
 load(":debugging.bzl", "modulewrap_action_configs")
 load(
     ":features.bzl",
@@ -84,7 +85,11 @@ def _all_action_configs():
     Returns:
         A list of action configurations for the toolchain.
     """
-    return modulewrap_action_configs() + autolink_extract_action_configs()
+    return (
+        compile_action_configs() +
+        modulewrap_action_configs() +
+        autolink_extract_action_configs()
+    )
 
 def _default_linker_opts(
         cc_toolchain,

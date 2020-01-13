@@ -15,10 +15,360 @@
 """Implementation of compilation logic for Swift."""
 
 load("@bazel_skylib//lib:collections.bzl", "collections")
+load("@bazel_skylib//lib:partial.bzl", "partial")
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load(":actions.bzl", "swift_action_names")
 load(":derived_files.bzl", "derived_files")
+load(
+    ":features.bzl",
+    "SWIFT_FEATURE_CACHEABLE_SWIFTMODULES",
+    "SWIFT_FEATURE_COVERAGE",
+    "SWIFT_FEATURE_DBG",
+    "SWIFT_FEATURE_ENABLE_BATCH_MODE",
+    "SWIFT_FEATURE_ENABLE_TESTING",
+    "SWIFT_FEATURE_FASTBUILD",
+    "SWIFT_FEATURE_FULL_DEBUG_INFO",
+    "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
+    "SWIFT_FEATURE_OPT",
+    "SWIFT_FEATURE_OPT_USES_OSIZE",
+    "SWIFT_FEATURE_OPT_USES_WMO",
+)
 load(":providers.bzl", "SwiftInfo")
+load(":toolchain_config.bzl", "swift_toolchain_config")
 load(":utils.bzl", "collect_cc_libraries", "get_providers")
+
+# The number of threads to use for WMO builds, using the same number of cores
+# that is on a Mac Pro for historical reasons.
+# TODO(b/32571265): Generalize this based on platform and core count
+# when an API to obtain this is available.
+_DEFAULT_WMO_THREAD_COUNT = 12
+
+def compile_action_configs():
+    """Returns the list of action configs needed to perform Swift compilation.
+
+    Toolchains must add these to their own list of action configs so that
+    compilation actions will be correctly configured.
+
+    Returns:
+        The list of action configs needed to perform compilation.
+    """
+
+    #### Compilation-mode-related flags
+    #
+    # These configs set flags based on the current compilation mode. They mirror
+    # the descriptions of these compilation modes given in the Bazel
+    # documentation:
+    # https://docs.bazel.build/versions/master/user-manual.html#flag--compilation_mode
+    action_configs = [
+        # Define appropriate conditional compilation symbols depending on the
+        # build mode.
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [
+                swift_toolchain_config.add_arg("-DDEBUG"),
+            ],
+            features = [[SWIFT_FEATURE_DBG], [SWIFT_FEATURE_FASTBUILD]],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [
+                swift_toolchain_config.add_arg("-DNDEBUG"),
+            ],
+            features = [SWIFT_FEATURE_OPT],
+        ),
+
+        # Set the optimization mode. For dbg/fastbuild, use `-O0`. For opt, use
+        # `-O` unless the `swift.opt_uses_osize` feature is enabled, then use
+        # `-Osize`.
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [
+                swift_toolchain_config.add_arg("-Onone"),
+            ],
+            features = [[SWIFT_FEATURE_DBG], [SWIFT_FEATURE_FASTBUILD]],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [
+                swift_toolchain_config.add_arg("-O"),
+            ],
+            features = [SWIFT_FEATURE_OPT],
+            not_features = [SWIFT_FEATURE_OPT_USES_OSIZE],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [
+                swift_toolchain_config.add_arg("-Osize"),
+            ],
+            features = [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_OSIZE],
+        ),
+
+        # If the `swift.opt_uses_wmo` feature is enabled, opt builds should also
+        # automatically imply whole-module optimization.
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [
+                swift_toolchain_config.add_arg("-whole-module-optimization"),
+            ],
+            features = [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_WMO],
+        ),
+
+        # Enable or disable serialization of debugging options into
+        # swiftmodules.
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [
+                swift_toolchain_config.add_arg(
+                    "-Xfrontend",
+                    "-no-serialize-debugging-options",
+                ),
+            ],
+            features = [SWIFT_FEATURE_CACHEABLE_SWIFTMODULES],
+            not_features = [SWIFT_FEATURE_OPT],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [
+                swift_toolchain_config.add_arg(
+                    "-Xfrontend",
+                    "-serialize-debugging-options",
+                ),
+            ],
+            not_features = [
+                SWIFT_FEATURE_OPT,
+                SWIFT_FEATURE_CACHEABLE_SWIFTMODULES,
+            ],
+        ),
+
+        # Enable testability if requested.
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [
+                swift_toolchain_config.add_arg("-enable-testing"),
+            ],
+            features = [SWIFT_FEATURE_ENABLE_TESTING],
+        ),
+
+        # Emit appropriate levels of debug info. On Apple platforms, requesting
+        # dSYMs (regardless of compilation mode) forces full debug info because
+        # `dsymutil` produces spurious warnings about symbols in the debug map
+        # when run on DI emitted by `-gline-tables-only`.
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [swift_toolchain_config.add_arg("-g")],
+            features = [[SWIFT_FEATURE_DBG], [SWIFT_FEATURE_FULL_DEBUG_INFO]],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [
+                swift_toolchain_config.add_arg("-gline-tables-only"),
+            ],
+            features = [SWIFT_FEATURE_FASTBUILD],
+            not_features = [SWIFT_FEATURE_FULL_DEBUG_INFO],
+        ),
+    ]
+
+    #### Coverage and sanitizer instrumentation flags
+    #
+    # Note that for the sanitizer flags, we don't define Swift-specific ones;
+    # if the underlying C++ toolchain doesn't define them, we don't bother
+    # supporting them either.
+    action_configs += [
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [
+                swift_toolchain_config.add_arg("-profile-generate"),
+                swift_toolchain_config.add_arg("-profile-coverage-mapping"),
+            ],
+            features = [SWIFT_FEATURE_COVERAGE],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [
+                swift_toolchain_config.add_arg("-sanitize=address"),
+            ],
+            features = ["asan"],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [
+                swift_toolchain_config.add_arg("-sanitize=thread"),
+            ],
+            features = ["tsan"],
+        ),
+    ]
+
+    #### ClangImporter flags
+    action_configs += [
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [
+                swift_toolchain_config.add_arg("-Xcc", "-Xclang"),
+                swift_toolchain_config.add_arg(
+                    "-Xcc",
+                    "-fmodule-map-file-home-is-cwd",
+                ),
+            ],
+            features = [SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [_output_dirs_clang_search_paths_configurator],
+        ),
+    ]
+
+    #### Various other Swift compilation flags
+    action_configs += [
+        # Request color diagnostics, since Bazel pipes the output and causes the
+        # driver's TTY check to fail.
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [
+                swift_toolchain_config.add_arg(
+                    "-Xfrontend",
+                    "-color-diagnostics",
+                ),
+            ],
+        ),
+
+        # Request batch mode if the compiler supports it. We only do this if the
+        # user hasn't requested WMO in some fashion, because otherwise an
+        # annoying warning message is emitted. At this level, we can disable the
+        # configurator if the `swift.opt` and `swift.opt_uses_wmo` features are
+        # both present. Inside the configurator, we also check the user compile
+        # flags themselves, since some Swift users enable it there as a build
+        # performance hack.
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [_batch_mode_configurator],
+            features = [SWIFT_FEATURE_ENABLE_BATCH_MODE],
+            not_features = [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_WMO],
+        ),
+
+        # Set the number of threads to use for WMO.
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [
+                partial.make(
+                    _wmo_thread_count_configurator,
+                    # WMO is implied by features, so don't check the user
+                    # compile flags.
+                    False,
+                ),
+            ],
+            features = [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_WMO],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [
+                partial.make(
+                    _wmo_thread_count_configurator,
+                    # WMO is not implied by features, so check the user compile
+                    # flags in case they enabled it there.
+                    True,
+                ),
+            ],
+            not_features = [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_WMO],
+        ),
+
+        # Set the module name.
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [_module_name_configurator],
+        ),
+    ]
+
+    # NOTE: The position of this action config in the list is important, because
+    # it places user compile flags after flags added by the rules, allowing
+    # `copts` attributes and `--swiftcopt` flag values to override flags set by
+    # the rule implementations as a last resort.
+    action_configs.append(
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [_user_compile_flags_configurator],
+        ),
+    )
+
+    action_configs.append(
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [_source_files_configurator],
+        ),
+    )
+
+    return action_configs
+
+def _batch_mode_configurator(prerequisites, args):
+    """Adds flags to enable batch compilation mode."""
+    if not _is_wmo_manually_requested(prerequisites.user_compile_flags):
+        args.add("-enable-batch-mode")
+
+def _output_dirs_clang_search_paths_configurator(prerequisites, args):
+    """Adds Clang search paths for the Bazel output directories.
+
+    This allows Swift to find generated headers in `bazel-bin` and
+    `bazel-genfiles` even when included using their workspace-relative path,
+    matching the behavior used when compiling C/C++/Objective-C.
+    """
+    if prerequisites.bin_dir:
+        args.add_all([
+            "-Xcc",
+            "-iquote{}".format(prerequisites.bin_dir.path),
+        ])
+
+    if prerequisites.genfiles_dir:
+        args.add_all([
+            "-Xcc",
+            "-iquote{}".format(prerequisites.genfiles_dir.path),
+        ])
+
+def _module_name_configurator(prerequisites, args):
+    """Adds the module name flag to the command line."""
+    args.add("-module-name", prerequisites.module_name)
+
+def _source_files_configurator(prerequisites, args):
+    """Adds source files to the command line and required inputs."""
+    args.add_all(prerequisites.source_files)
+    return swift_toolchain_config.config_result(
+        inputs = prerequisites.source_files,
+    )
+
+def _user_compile_flags_configurator(prerequisites, args):
+    """Adds user compile flags to the command line."""
+    args.add_all(prerequisites.user_compile_flags)
+
+def _wmo_thread_count_configurator(should_check_flags, prerequisites, args):
+    """Adds thread count flags for WMO compiles to the command line.
+
+    Args:
+        should_check_flags: If `True`, WMO wasn't enabled by a feature so the
+            user compile flags should be checked for an explicit WMO option.
+            This argument is pre-bound when the partial is created for the
+            action config. If `False`, unconditionally apply the flags, because
+            it is assumed that the configurator was triggered by feature
+            satisfaction.
+        prerequisites: The action prerequisites.
+        args: The `Args` object to which flags will be added.
+    """
+    if not should_check_flags or (
+        should_check_flags and
+        _is_wmo_manually_requested(prerequisites.user_compile_flags)
+    ):
+        # Force threaded mode for WMO builds.
+        args.add("-num-threads", str(_DEFAULT_WMO_THREAD_COUNT))
+
+def _is_wmo_manually_requested(user_compile_flags):
+    """Returns `True` if a WMO flag is in the given list of compiler flags.
+
+    Args:
+        user_compile_flags: A list of compiler flags to scan for WMO usage.
+
+    Returns:
+        True if WMO is enabled in the given list of flags.
+    """
+    return ("-wmo" in user_compile_flags or
+            "-whole-module-optimization" in user_compile_flags or
+            "-force-single-frontend-invocation" in user_compile_flags)
 
 def collect_transitive_compile_inputs(args, deps, direct_defines = []):
     """Collect transitive inputs and flags from Swift providers.
@@ -120,23 +470,23 @@ def collect_transitive_compile_inputs(args, deps, direct_defines = []):
 
 def declare_compile_outputs(
         actions,
-        copts,
-        is_wmo,
+        is_wmo_implied_by_features,
         srcs,
         target_name,
+        user_compile_flags,
         index_while_building = False):
     """Declares output files and optional output file map for a compile action.
 
     Args:
         actions: The object used to register actions.
-        copts: The flags that will be passed to the compile action, which are
-            scanned to determine whether a single frontend invocation will be
-            used or not.
-        is_wmo: Whether the compilation is happening with whole module
-            optimization.
+        is_wmo_implied_by_features: `True` if whole module optimization is
+            implied by the features set in the feature configuration.
         srcs: The list of source files that will be compiled.
         target_name: The name (excluding package path) of the target being
             built.
+        user_compile_flags: The flags that will be passed to the compile action,
+            which are scanned to determine whether a single frontend invocation
+            will be used or not.
         index_while_building: If `True`, a tree artifact will be declared to
             hold Clang index store data and the relevant option will be added
             during compilation to generate the indexes.
@@ -158,7 +508,10 @@ def declare_compile_outputs(
         *   `output_objects`: A list of object (.o) files that will be the
             result of the compile action and which should be archived afterward.
     """
-    output_nature = _emitted_output_nature(copts, is_wmo)
+    output_nature = _emitted_output_nature(
+        is_wmo_implied_by_features = is_wmo_implied_by_features,
+        user_compile_flags = user_compile_flags,
+    )
 
     if not output_nature.emits_multiple_objects:
         # If we're emitting a single object, we don't use an object map; we just
@@ -237,7 +590,10 @@ def declare_compile_outputs(
     # Configure index-while-building if requested. IDEs and other indexing tools
     # can enable this feature on the command line during a build and then access
     # the index store artifacts that are produced.
-    if index_while_building and not _index_store_path_overridden(copts):
+    if (
+        index_while_building and
+        not _index_store_path_overridden(user_compile_flags)
+    ):
         index_store_dir = derived_files.indexstore_directory(
             actions = actions,
             target_name = target_name,
@@ -593,7 +949,7 @@ def _disable_autolink_framework_copts(framework_name):
         ],
     )
 
-def _emitted_output_nature(copts, is_wmo):
+def _emitted_output_nature(is_wmo_implied_by_features, user_compile_flags):
     """Returns information about the nature of emitted compilation outputs.
 
     The compiler emits a single object if it is invoked with whole-module
@@ -603,9 +959,9 @@ def _emitted_output_nature(copts, is_wmo):
     thread count,_ so we have to treat that case separately.
 
     Args:
-        copts: The options passed into the compile action.
-        is_wmo: Whether the compilation is happening with whole module
-            optimization.
+        is_wmo_implied_by_features: Whether WMO is implied by features set in
+            the feature configuration.
+        user_compile_flags: The options passed into the compile action.
 
     Returns:
         A struct containing the following fields:
@@ -617,10 +973,20 @@ def _emitted_output_nature(copts, is_wmo):
             `.swiftmodule` files for the individual source files in a
             compilation action with the given flags.
     """
-    saw_space_separated_num_threads = False
-    num_threads = 1
+    is_wmo = (
+        is_wmo_implied_by_features or
+        _is_wmo_manually_requested(user_compile_flags)
+    )
 
-    for copt in copts:
+    saw_space_separated_num_threads = False
+
+    # If WMO is enabled, the action config will automatically add
+    # `-num-threads 12` to the command line. We need to stage that as our
+    # initial default here to ensure that we return the right value if the user
+    # compile flags don't otherwise override it.
+    num_threads = _DEFAULT_WMO_THREAD_COUNT if is_wmo else 1
+
+    for copt in user_compile_flags:
         if saw_space_separated_num_threads:
             saw_space_separated_num_threads = False
             num_threads = _safe_int(copt)
