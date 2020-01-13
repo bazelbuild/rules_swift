@@ -49,38 +49,26 @@ load(":debugging.bzl", "ensure_swiftmodule_is_embedded")
 load(":derived_files.bzl", "derived_files")
 load(
     ":features.bzl",
-    "SWIFT_FEATURE_CACHEABLE_SWIFTMODULES",
     "SWIFT_FEATURE_COMPILE_STATS",
-    "SWIFT_FEATURE_COVERAGE",
     "SWIFT_FEATURE_DBG",
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
-    "SWIFT_FEATURE_ENABLE_BATCH_MODE",
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
-    "SWIFT_FEATURE_ENABLE_TESTING",
     "SWIFT_FEATURE_FASTBUILD",
-    "SWIFT_FEATURE_FULL_DEBUG_INFO",
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
     "SWIFT_FEATURE_MINIMAL_DEPS",
-    "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_NO_GENERATED_HEADER",
     "SWIFT_FEATURE_NO_GENERATED_MODULE_MAP",
     "SWIFT_FEATURE_OPT",
-    "SWIFT_FEATURE_OPT_USES_OSIZE",
     "SWIFT_FEATURE_OPT_USES_WMO",
     "SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
     "SWIFT_FEATURE_USE_RESPONSE_FILES",
+    "are_all_features_enabled",
     "get_cc_feature_configuration",
     "is_feature_enabled",
 )
 load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
-
-# The Swift copts to pass for various sanitizer features.
-_SANITIZER_FEATURE_FLAG_MAP = {
-    "asan": ["-sanitize=address"],
-    "tsan": ["-sanitize=thread"],
-}
 
 def _create_swift_info(
         defines = [],
@@ -269,113 +257,6 @@ support location expansion.
         },
     )
 
-def _compilation_mode_copts(feature_configuration):
-    """Returns `swiftc` command line flags for the current compilation mode.
-
-    Args:
-        feature_configuration: A feature configuration obtained from
-            `swift_common.configure_features`.
-
-    Returns:
-        A list of strings containing command line flags that should be passed to
-        `swiftc`.
-    """
-    is_dbg = is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_DBG,
-    )
-    is_fastbuild = is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_FASTBUILD,
-    )
-    is_opt = is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_OPT,
-    )
-    wants_full_debug_info = is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_FULL_DEBUG_INFO,
-    )
-
-    # Safety check that exactly one of these features is set; the user shouldn't
-    # mess with them.
-    if int(is_dbg) + int(is_fastbuild) + int(is_opt) != 1:
-        fail("Exactly one of the features `swift.{dbg,fastbuild,opt}` must " +
-             "be enabled.")
-
-    # The combinations of flags used here mirror the descriptions of these
-    # compilation modes given in the Bazel documentation:
-    # https://docs.bazel.build/versions/master/user-manual.html#flag--compilation_mode
-    flags = []
-    if is_opt:
-        flags.append("-DNDEBUG")
-        if is_feature_enabled(
-            feature_configuration = feature_configuration,
-            feature_name = SWIFT_FEATURE_OPT_USES_OSIZE,
-        ):
-            flags.append("-Osize")
-        else:
-            flags.append("-O")
-
-        if is_feature_enabled(
-            feature_configuration = feature_configuration,
-            feature_name = SWIFT_FEATURE_OPT_USES_WMO,
-        ):
-            flags.append("-whole-module-optimization")
-
-    elif is_dbg or is_fastbuild:
-        flags.extend(["-Onone", "-DDEBUG"])
-        if is_feature_enabled(
-            feature_configuration = feature_configuration,
-            feature_name = SWIFT_FEATURE_CACHEABLE_SWIFTMODULES,
-        ):
-            # For a .swiftmodule to be usable from the cache, it must not
-            # contain absolute paths. This behavior must be explicitly disabled,
-            # because swiftc will enable this by default under some
-            # circumstances.
-            flags.extend(["-Xfrontend", "-no-serialize-debugging-options"])
-        else:
-            # The Swift compiler only serializes debugging options in narrow
-            # circumstances (for example, for application binaries). Since we
-            # almost exclusively just compile to object files directly, we need
-            # to manually pass the following frontend option to ensure that LLDB
-            # has the necessary import search paths to find definitions during
-            # debugging.
-            flags.extend(["-Xfrontend", "-serialize-debugging-options"])
-
-    if is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_ENABLE_TESTING,
-    ):
-        flags.append("-enable-testing")
-
-    # The combination of dsymutil and -gline-tables-only appears to cause
-    # spurious warnings about symbols in the debug map, so if the caller is
-    # requesting dSYMs, then force `-g` regardless of compilation mode.
-    if is_dbg or wants_full_debug_info:
-        flags.append("-g")
-    elif is_fastbuild:
-        flags.append("-gline-tables-only")
-
-    return flags
-
-def _coverage_copts(feature_configuration):
-    """Returns `swiftc` command line flags for code converage if enabled.
-
-    Args:
-        feature_configuration: The feature configuration.
-
-    Returns:
-        A list of strings containing command line flags that should be passed to
-        `swiftc`.
-    """
-    if is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_COVERAGE,
-    ):
-        return ["-profile-generate", "-profile-coverage-mapping"]
-    return []
-
 def _is_debugging(feature_configuration):
     """Returns `True` if the current compilation mode produces debug info.
 
@@ -398,25 +279,6 @@ def _is_debugging(feature_configuration):
             feature_name = SWIFT_FEATURE_FASTBUILD,
         )
     )
-
-def _sanitizer_copts(feature_configuration):
-    """Returns `swiftc` compilation flags for any requested sanitizer features.
-
-    Args:
-      feature_configuration: The feature configuration.
-
-    Returns:
-      A list of compiler flags that enable the requested sanitizers for a Swift
-      compilation action.
-    """
-    copts = []
-    for (feature_name, flags) in _SANITIZER_FEATURE_FLAG_MAP.items():
-        if is_feature_enabled(
-            feature_configuration = feature_configuration,
-            feature_name = feature_name,
-        ):
-            copts.extend(flags)
-    return copts
 
 def _global_module_cache_path(bin_dir):
     """Returns the path where the Swift compiler should globally cache modules.
@@ -447,37 +309,6 @@ def _global_module_cache_path(bin_dir):
     # ever becomes possible to reliably share module caches between Clang and
     # Swift.
     return paths.join(bin_dir.path, "_swift_module_cache")
-
-def _is_wmo(copts, feature_configuration):
-    """Returns `True` if a compilation will use whole module optimization.
-
-    Args:
-        copts: A list of compiler flags to scan for WMO usage.
-        feature_configuration: The Swift feature configuration, as returned from
-            `swift_common.configure_features`.
-
-    Returns:
-        True if WMO is enabled in the given list of flags.
-    """
-
-    # First, check the feature configuration to see if the current compilation
-    # mode implies whole-module-optimization.
-    is_opt = is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_OPT,
-    )
-    opt_uses_wmo = is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_OPT_USES_WMO,
-    )
-    if is_opt and opt_uses_wmo:
-        return True
-
-    # Otherwise, check any explicit copts the user may have set on the target or
-    # command line.
-    return ("-wmo" in copts or
-            "-whole-module-optimization" in copts or
-            "-force-single-frontend-invocation" in copts)
 
 def _compile(
         actions,
@@ -562,30 +393,20 @@ def _compile(
         *   `swiftmodule`: The `.swiftmodule` file that was produced by the
             compiler.
     """
-
-    # Force threaded mode for WMO builds, using the same number of cores that is
-    # on a Mac Pro for historical reasons.
-    # TODO(b/32571265): Generalize this based on platform and core count when an
-    # API to obtain this is available.
-    is_wmo = _is_wmo(
-        copts + swift_toolchain.command_line_copts,
-        feature_configuration,
+    is_wmo_implied_by_features = are_all_features_enabled(
+        feature_configuration = feature_configuration,
+        feature_names = [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_WMO],
     )
-    if is_wmo:
-        # We intentionally don't use `+=` or `extend` here to ensure that a
-        # copy is made instead of extending the original.
-        copts = copts + ["-num-threads", "12"]
-
     compile_reqs = declare_compile_outputs(
         actions = actions,
-        copts = copts + swift_toolchain.command_line_copts,
-        is_wmo = is_wmo,
-        srcs = srcs,
-        target_name = target_name,
         index_while_building = is_feature_enabled(
             feature_configuration = feature_configuration,
             feature_name = SWIFT_FEATURE_INDEX_WHILE_BUILDING,
         ),
+        is_wmo_implied_by_features = is_wmo_implied_by_features,
+        srcs = srcs,
+        target_name = target_name,
+        user_compile_flags = copts + swift_toolchain.command_line_copts,
     )
     output_objects = compile_reqs.output_objects
 
@@ -670,20 +491,24 @@ def _compile(
                 args.add(swiftinterface)
                 additional_outputs.append(swiftinterface)
 
+    prerequisites = struct(
+        bin_dir = bin_dir,
+        genfiles_dir = genfiles_dir,
+        module_name = module_name,
+        source_files = srcs,
+        user_compile_flags = copts + swift_toolchain.command_line_copts,
+    )
+
     # Add any command line arguments that do *not* have to do with emitting
     # outputs.
     basic_inputs = _swiftc_command_line_and_inputs(
         # TODO(allevato): Make this argument a list of files instead.
         additional_input_depsets = [depset(additional_inputs)],
         args = args,
-        bin_dir = bin_dir,
-        copts = copts,
         defines = defines,
         deps = deps,
         feature_configuration = feature_configuration,
-        genfiles_dir = genfiles_dir,
-        module_name = module_name,
-        srcs = srcs,
+        prerequisites = prerequisites,
         toolchain = swift_toolchain,
     )
 
@@ -1049,15 +874,11 @@ def _swift_runtime_linkopts(is_static, toolchain, is_test = False):
 def _swiftc_command_line_and_inputs(
         args,
         feature_configuration,
-        module_name,
-        srcs,
+        prerequisites,
         toolchain,
         additional_input_depsets = [],
-        bin_dir = None,
-        copts = [],
         defines = [],
-        deps = [],
-        genfiles_dir = None):
+        deps = []):
     """Computes command line arguments and inputs needed to invoke `swiftc`.
 
     The command line arguments computed by this function are any that do *not*
@@ -1075,31 +896,15 @@ def _swiftc_command_line_and_inputs(
             added.
         feature_configuration: A feature configuration obtained from
             `swift_common.configure_features`.
-        module_name: The name of the Swift module being compiled. This must be
-            present and valid; use `swift_common.derive_module_name` to generate
-            a default from the target's label if needed.
-        srcs: The Swift source files to compile.
+        prerequisites: The prerequisites `struct` passed to the compile action.
         toolchain: The `SwiftToolchainInfo` provider of the toolchain.
         additional_input_depsets: A list of `depset`s of `File`s representing
             additional input files that need to be passed to the Swift compile
             action because they are referenced by compiler flags.
-        bin_dir: The Bazel `*-bin` directory root. If provided, its path is
-            added to ClangImporter's header search paths for compatibility with
-            Bazel's C++ and Objective-C rules which support inclusions of
-            generated headers from that location.
-        copts: A list (**not** an `Args` object) of compiler flags that apply to
-            the target being built. These flags, along with those from Bazel's
-            Swift configuration fragment (i.e., `--swiftcopt` command line
-            flags) are scanned to determine whether whole module optimization is
-            being requested, which affects the nature of the output files.
         defines: Symbols that should be defined by passing `-D` to the compiler.
         deps: Dependencies of the target being compiled. These targets must
             propagate one of the following providers: `CcInfo`, `SwiftInfo`, or
             `apple_common.Objc`.
-        genfiles_dir: The Bazel `*-genfiles` directory root. If provided, its
-            path is added to ClangImporter's header search paths for
-            compatibility with Bazel's C++ and Objective-C rules which support
-            inclusions of generated headers from that location.
 
     Returns:
         A `depset` containing the full set of files that need to be passed as
@@ -1112,48 +917,6 @@ def _swiftc_command_line_and_inputs(
         swift_toolchain = toolchain,
     )
 
-    args.add("-module-name")
-    args.add(module_name)
-
-    args.add_all(_compilation_mode_copts(
-        feature_configuration = feature_configuration,
-    ))
-    args.add_all(_coverage_copts(feature_configuration = feature_configuration))
-    args.add_all(_sanitizer_copts(
-        feature_configuration = feature_configuration,
-    ))
-    args.add_all(["-Xfrontend", "-color-diagnostics"])
-
-    if is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD,
-    ):
-        args.add_all(collections.before_each(
-            "-Xcc",
-            ["-Xclang", "-fmodule-map-file-home-is-cwd"],
-        ))
-
-    # Do not enable batch mode if the user requested WMO; this silences an
-    # "ignoring '-enable-batch-mode' because '-whole-module-optimization' was
-    # also specified" warning.
-    if (
-        not _is_wmo(
-            copts + toolchain.command_line_copts,
-            feature_configuration,
-        ) and is_feature_enabled(
-            feature_configuration = feature_configuration,
-            feature_name = SWIFT_FEATURE_ENABLE_BATCH_MODE,
-        )
-    ):
-        args.add("-enable-batch-mode")
-
-    # Add the bin and genfiles directories to ClangImporter's header search
-    # paths for compatibility with rules that generate headers there.
-    if bin_dir:
-        args.add_all(["-Xcc", "-iquote{}".format(bin_dir.path)])
-    if genfiles_dir:
-        args.add_all(["-Xcc", "-iquote{}".format(genfiles_dir.path)])
-
     input_depsets = list(additional_input_depsets)
     transitive_inputs = collect_transitive_compile_inputs(
         args = args,
@@ -1161,7 +924,6 @@ def _swiftc_command_line_and_inputs(
         direct_defines = defines,
     )
     input_depsets.extend(transitive_inputs)
-    input_depsets.append(depset(direct = srcs))
 
     if toolchain.supports_objc_interop:
         # Collect any additional inputs and flags needed to pull in Objective-C
@@ -1171,23 +933,15 @@ def _swiftc_command_line_and_inputs(
             deps = all_deps,
         ))
 
-    # Add toolchain copts, target copts, and command-line `--swiftcopt` flags,
-    # in that order, so that more targeted usages can override more general
-    # uses if needed.
-    #
     # TODO(b/147091143): Completely migrate compilation actions to
     # `run_toolchain_action`.
     action_inputs = apply_action_configs(
         action_name = swift_action_names.COMPILE,
         args = args,
         feature_configuration = feature_configuration,
-        prerequisites = struct(),
+        prerequisites = prerequisites,
         swift_toolchain = toolchain,
     )
-    args.add_all(copts)
-    args.add_all(toolchain.command_line_copts)
-
-    args.add_all(srcs)
 
     input_depsets.append(depset(
         action_inputs.inputs,
@@ -1252,6 +1006,5 @@ swift_common = struct(
     is_enabled = is_feature_enabled,
     library_rule_attrs = _library_rule_attrs,
     swift_runtime_linkopts = _swift_runtime_linkopts,
-    swiftc_command_line_and_inputs = _swiftc_command_line_and_inputs,
     toolchain_attrs = _toolchain_attrs,
 )
