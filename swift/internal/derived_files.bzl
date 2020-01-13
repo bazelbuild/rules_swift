@@ -137,7 +137,7 @@ def _objc_header(actions, target_name, header_name = None):
         if not header_name.endswith(".h"):
             fail(("The generated objc header name for {} must end in" +
                   " '.h', given '{}'") % (target_name, header_name))
-        if header_name.find("/"):
+        if "/" in header_name:
             fail(("The generated objc header name for {} cannot contain a " +
                   "'/', given '{}'") % (target_name, header_name))
     else:
