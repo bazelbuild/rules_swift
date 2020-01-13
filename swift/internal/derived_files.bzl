@@ -233,11 +233,6 @@ def _swiftc_vfsoverlay(actions, module_name):
     This defines a virtual file system, independent of the real file system
     layout.
 
-    Using a single import search path can avoid the worst case: a quadratic
-    search to find N modules (transitive dependencies) in N directories. For
-    targets with large transitive dependency sets, this can bring significant
-    improvements to compile times.
-
     Args:
         actions: The context's actions object.
         module_name: The name of the module being built.
