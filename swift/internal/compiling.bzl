@@ -17,21 +17,42 @@
 load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:partial.bzl", "partial")
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load(":actions.bzl", "swift_action_names")
+load(
+    ":actions.bzl",
+    "apply_action_configs",
+    "is_action_enabled",
+    "run_swift_action",
+    "swift_action_names",
+)
+load(":autolinking.bzl", "register_autolink_extract_action")
+load(":debugging.bzl", "ensure_swiftmodule_is_embedded")
 load(":derived_files.bzl", "derived_files")
 load(
     ":features.bzl",
     "SWIFT_FEATURE_CACHEABLE_SWIFTMODULES",
+    "SWIFT_FEATURE_COMPILE_STATS",
     "SWIFT_FEATURE_COVERAGE",
     "SWIFT_FEATURE_DBG",
+    "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
+    "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
+    "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_ENABLE_TESTING",
     "SWIFT_FEATURE_FASTBUILD",
     "SWIFT_FEATURE_FULL_DEBUG_INFO",
+    "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
+    "SWIFT_FEATURE_MINIMAL_DEPS",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
+    "SWIFT_FEATURE_NO_GENERATED_HEADER",
+    "SWIFT_FEATURE_NO_GENERATED_MODULE_MAP",
     "SWIFT_FEATURE_OPT",
     "SWIFT_FEATURE_OPT_USES_OSIZE",
     "SWIFT_FEATURE_OPT_USES_WMO",
+    "SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION",
+    "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
+    "SWIFT_FEATURE_USE_RESPONSE_FILES",
+    "are_all_features_enabled",
+    "is_feature_enabled",
 )
 load(":providers.bzl", "SwiftInfo")
 load(":toolchain_config.bzl", "swift_toolchain_config")
@@ -53,13 +74,64 @@ def compile_action_configs():
         The list of action configs needed to perform compilation.
     """
 
+    #### Flags that control compilation outputs
+    action_configs = [
+        # Emit object file(s).
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [
+                swift_toolchain_config.add_arg("-emit-object"),
+            ],
+        ),
+
+        # Configure the path to the emitted .swiftmodule file.
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [_emit_module_path_configurator],
+        ),
+
+        # Configure library evolution and the path to the .swiftinterface file.
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [
+                swift_toolchain_config.add_arg("-enable-library-evolution"),
+            ],
+            features = [
+                SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION,
+                SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION,
+            ],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [_emit_module_interface_path_configurator],
+            features = [
+                SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION,
+                SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION,
+                SWIFT_FEATURE_EMIT_SWIFTINTERFACE,
+            ],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [_emit_objc_header_path_configurator],
+            not_features = [SWIFT_FEATURE_NO_GENERATED_HEADER],
+        ),
+
+        # Configure the location where compiler performance statistics are
+        # dumped.
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [_stats_output_dir_configurator],
+            features = [SWIFT_FEATURE_COMPILE_STATS],
+        ),
+    ]
+
     #### Compilation-mode-related flags
     #
     # These configs set flags based on the current compilation mode. They mirror
     # the descriptions of these compilation modes given in the Bazel
     # documentation:
     # https://docs.bazel.build/versions/master/user-manual.html#flag--compilation_mode
-    action_configs = [
+    action_configs += [
         # Define appropriate conditional compilation symbols depending on the
         # build mode.
         swift_toolchain_config.action_config(
@@ -166,6 +238,17 @@ def compile_action_configs():
             features = [SWIFT_FEATURE_FASTBUILD],
             not_features = [SWIFT_FEATURE_FULL_DEBUG_INFO],
         ),
+
+        # Make paths written into debug info workspace-relative.
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [
+                swift_toolchain_config.add_arg(
+                    "-Xwrapped-swift=-debug-prefix-pwd-is-dot",
+                ),
+            ],
+            features = [SWIFT_FEATURE_DEBUG_PREFIX_MAP],
+        ),
     ]
 
     #### Coverage and sanitizer instrumentation flags
@@ -198,8 +281,10 @@ def compile_action_configs():
         ),
     ]
 
-    #### ClangImporter flags
+    #### Flags controlling how Swift/Clang modular inputs are processed
     action_configs += [
+        # Treat paths in .modulemap files as workspace-relative, not modulemap-
+        # relative.
         swift_toolchain_config.action_config(
             actions = [swift_action_names.COMPILE],
             configurators = [
@@ -211,11 +296,33 @@ def compile_action_configs():
             ],
             features = [SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD],
         ),
+
+        # Configure the implicit module cache.
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [_global_module_cache_configurator],
+            features = [SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [
+                swift_toolchain_config.add_arg(
+                    "-Xwrapped-swift=-ephemeral-module-cache",
+                ),
+            ],
+            not_features = [SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE],
+        ),
+    ]
+
+    #### Other ClangImporter flags
+    action_configs.append(
+        # Add `bazel-{bin,genfiles}` to the Clang search path to find generated
+        # headers using workspace-relative paths.
         swift_toolchain_config.action_config(
             actions = [swift_action_names.COMPILE],
             configurators = [_output_dirs_clang_search_paths_configurator],
         ),
-    ]
+    )
 
     #### Various other Swift compilation flags
     action_configs += [
@@ -298,6 +405,30 @@ def compile_action_configs():
 
     return action_configs
 
+def _emit_module_path_configurator(prerequisites, args):
+    """Adds the `.swiftmodule` output path to the command line."""
+    args.add("-emit-module-path", prerequisites.swiftmodule_file)
+
+def _emit_module_interface_path_configurator(prerequisites, args):
+    """Adds the `.swiftinterface` output path to the command line."""
+    args.add("-emit-module-interface-path", prerequisites.swiftinterface_file)
+
+def _emit_objc_header_path_configurator(prerequisites, args):
+    """Adds the generated header output path to the command line."""
+    args.add("-emit-objc-header-path", prerequisites.generated_header_file)
+
+def _global_module_cache_configurator(prerequisites, args):
+    """Adds flags to enable the global module cache."""
+
+    # If bin_dir is not provided, then we don't pass any special flags to
+    # the compiler, letting it decide where the cache should live. This is
+    # usually somewhere in the system temporary directory.
+    if prerequisites.bin_dir:
+        args.add(
+            "-module-cache-path",
+            paths.join(prerequisites.bin_dir.path, "_swift_module_cache"),
+        )
+
 def _batch_mode_configurator(prerequisites, args):
     """Adds flags to enable batch compilation mode."""
     if not _is_wmo_manually_requested(prerequisites.user_compile_flags):
@@ -325,6 +456,10 @@ def _output_dirs_clang_search_paths_configurator(prerequisites, args):
 def _module_name_configurator(prerequisites, args):
     """Adds the module name flag to the command line."""
     args.add("-module-name", prerequisites.module_name)
+
+def _stats_output_dir_configurator(prerequisites, args):
+    """Adds the compile stats output directory path to the command line."""
+    args.add("-stats-output-dir", prerequisites.stats_directory.path)
 
 def _source_files_configurator(prerequisites, args):
     """Adds source files to the command line and required inputs."""
@@ -370,7 +505,343 @@ def _is_wmo_manually_requested(user_compile_flags):
             "-whole-module-optimization" in user_compile_flags or
             "-force-single-frontend-invocation" in user_compile_flags)
 
-def collect_transitive_compile_inputs(args, deps, direct_defines = []):
+def compile(
+        actions,
+        feature_configuration,
+        module_name,
+        srcs,
+        swift_toolchain,
+        target_name,
+        additional_inputs = [],
+        bin_dir = None,
+        copts = [],
+        defines = [],
+        deps = [],
+        genfiles_dir = None):
+    """Compiles a Swift module.
+
+    Args:
+        actions: The context's `actions` object.
+        feature_configuration: A feature configuration obtained from
+            `swift_common.configure_features`.
+        module_name: The name of the Swift module being compiled. This must be
+            present and valid; use `swift_common.derive_module_name` to generate
+            a default from the target's label if needed.
+        srcs: The Swift source files to compile.
+        swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
+        target_name: The name of the target for which the code is being
+            compiled, which is used to determine unique file paths for the
+            outputs.
+        additional_inputs: A list of `File`s representing additional input files
+            that need to be passed to the Swift compile action because they are
+            referenced by compiler flags.
+        bin_dir: The Bazel `*-bin` directory root. If provided, its path is used
+            to store the cache for modules precompiled by Swift's ClangImporter,
+            and it is added to ClangImporter's header search paths for
+            compatibility with Bazel's C++ and Objective-C rules which support
+            includes of generated headers from that location.
+        copts: A list of compiler flags that apply to the target being built.
+            These flags, along with those from Bazel's Swift configuration
+            fragment (i.e., `--swiftcopt` command line flags) are scanned to
+            determine whether whole module optimization is being requested,
+            which affects the nature of the output files.
+        defines: Symbols that should be defined by passing `-D` to the compiler.
+        deps: Dependencies of the target being compiled. These targets must
+            propagate one of the following providers: `CcInfo`, `SwiftInfo`, or
+            `apple_common.Objc`.
+        genfiles_dir: The Bazel `*-genfiles` directory root. If provided, its
+            path is added to ClangImporter's header search paths for
+            compatibility with Bazel's C++ and Objective-C rules which support
+            inclusions of generated headers from that location.
+
+    Returns:
+        A `struct` containing the following fields:
+
+        *   `generated_header`: A `File` representing the Objective-C header
+            that was generated for the compiled module. If no header was
+            generated, this field will be None.
+        *   `generated_header_module_map`: A `File` representing the module map
+            that was generated to correspond to the generated Objective-C
+            header. If no module map was generated, this field will be None.
+        *   `indexstore`: A `File` representing the directory that contains the
+            index store data generated by the compiler if index-while-building
+            is enabled. May be None if no indexing was requested.
+        *   `linker_flags`: A list of strings representing additional flags that
+            should be passed to the linker when linking these objects into a
+            binary. If there are none, this field will always be an empty list,
+            never None.
+        *   `linker_inputs`: A list of `File`s representing additional input
+            files (such as those referenced in `linker_flags`) that need to be
+            available to the link action when linking these objects into a
+            binary. If there are none, this field will always be an empty list,
+            never None.
+        *   `object_files`: A list of `.o` files that were produced by the
+            compiler.
+        *   `stats_directory`: A `File` representing the directory that contains
+            the timing statistics emitted by the compiler. If no stats were
+            requested, this field will be None.
+        *   `swiftdoc`: The `.swiftdoc` file that was produced by the compiler.
+        *   `swiftinterface`: The `.swiftinterface` file that was produced by
+            the compiler. If no interface file was produced (because the
+            toolchain does not support them or it was not requested), this field
+            will be None.
+        *   `swiftmodule`: The `.swiftmodule` file that was produced by the
+            compiler.
+    """
+    is_wmo_implied_by_features = are_all_features_enabled(
+        feature_configuration = feature_configuration,
+        feature_names = [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_WMO],
+    )
+    compile_reqs = _declare_compile_outputs(
+        actions = actions,
+        index_while_building = is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_INDEX_WHILE_BUILDING,
+        ),
+        is_wmo_implied_by_features = is_wmo_implied_by_features,
+        srcs = srcs,
+        target_name = target_name,
+        user_compile_flags = copts + swift_toolchain.command_line_copts,
+    )
+    output_objects = compile_reqs.output_objects
+
+    swiftmodule = derived_files.swiftmodule(actions, module_name = module_name)
+    swiftdoc = derived_files.swiftdoc(actions, module_name = module_name)
+    additional_outputs = []
+
+    args = actions.args()
+
+    if is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_USE_RESPONSE_FILES,
+    ):
+        args.set_param_file_format("multiline")
+        args.use_param_file("@%s", use_always = True)
+
+        # Only enable persistent workers if the toolchain supports response
+        # files, because the worker unconditionally writes its arguments into
+        # one to prevent command line overflow.
+        execution_requirements = {"supports-workers": "1"}
+    else:
+        execution_requirements = {}
+
+    # Emit compilation timing statistics if the user enabled that feature.
+    if is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_COMPILE_STATS,
+    ):
+        stats_directory = derived_files.stats_directory(actions, target_name)
+        additional_outputs.append(stats_directory)
+    else:
+        stats_directory = None
+
+    args.add_all(compile_reqs.args)
+
+    # Check and enabled features related to the library evolution compilation
+    # mode as requested.
+    if are_all_features_enabled(
+        feature_configuration = feature_configuration,
+        feature_names = [
+            SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION,
+            SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION,
+            SWIFT_FEATURE_EMIT_SWIFTINTERFACE,
+        ],
+    ):
+        swiftinterface = derived_files.swiftinterface(
+            actions = actions,
+            module_name = module_name,
+        )
+        additional_outputs.append(swiftinterface)
+    else:
+        swiftinterface = None
+
+    # If supported, generate a Swift header for this library so that it can be
+    # included by Objective-C code that depends on it.
+    if not is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_NO_GENERATED_HEADER,
+    ):
+        generated_header = derived_files.objc_header(
+            actions = actions,
+            target_name = target_name,
+        )
+        additional_outputs.append(generated_header)
+
+        # Create a module map for the generated header file. This ensures that
+        # inclusions of it are treated modularly, not textually.
+        #
+        # Caveat: Generated module maps are incompatible with the hack that some
+        # folks are using to support mixed Objective-C and Swift modules. This
+        # trap door lets them escape the module redefinition error, with the
+        # caveat that certain import scenarios could lead to incorrect behavior
+        # because a header can be imported textually instead of modularly.
+        if not is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_NO_GENERATED_MODULE_MAP,
+        ):
+            generated_module_map = derived_files.module_map(
+                actions = actions,
+                target_name = target_name,
+            )
+            write_objc_header_module_map(
+                actions = actions,
+                module_name = module_name,
+                objc_header = generated_header,
+                output = generated_module_map,
+            )
+        else:
+            generated_module_map = None
+    else:
+        generated_header = None
+        generated_module_map = None
+
+    prerequisites = struct(
+        bin_dir = bin_dir,
+        generated_header_file = generated_header,
+        genfiles_dir = genfiles_dir,
+        module_name = module_name,
+        source_files = srcs,
+        stats_directory = stats_directory,
+        swiftinterface_file = swiftinterface,
+        swiftmodule_file = swiftmodule,
+        user_compile_flags = copts + swift_toolchain.command_line_copts,
+    )
+
+    all_deps = deps + get_implicit_deps(
+        feature_configuration = feature_configuration,
+        swift_toolchain = swift_toolchain,
+    )
+
+    direct_inputs = list(additional_inputs)
+    transitive_inputs = _collect_transitive_compile_inputs(
+        args = args,
+        deps = all_deps,
+        direct_defines = defines,
+    )
+
+    if swift_toolchain.supports_objc_interop:
+        # Collect any additional inputs and flags needed to pull in Objective-C
+        # dependencies.
+        transitive_inputs.append(_objc_compile_requirements(
+            args = args,
+            deps = all_deps,
+        ))
+
+    # TODO(b/147091143): Completely migrate compilation actions to
+    # `run_toolchain_action`.
+    action_inputs = apply_action_configs(
+        action_name = swift_action_names.COMPILE,
+        args = args,
+        feature_configuration = feature_configuration,
+        prerequisites = prerequisites,
+        swift_toolchain = swift_toolchain,
+    )
+
+    direct_inputs.extend(action_inputs.inputs)
+    transitive_inputs.extend(action_inputs.transitive_inputs)
+
+    all_inputs = depset(
+        direct_inputs + compile_reqs.compile_inputs,
+        transitive = transitive_inputs + [
+            swift_toolchain.cc_toolchain_info.all_files,
+        ],
+    )
+    compile_outputs = ([swiftmodule, swiftdoc] + output_objects +
+                       compile_reqs.other_outputs) + additional_outputs
+
+    # TODO(b/147091143): Migrate to `run_toolchain_action`.
+    run_swift_action(
+        actions = actions,
+        action_name = swift_action_names.COMPILE,
+        arguments = [args],
+        execution_requirements = execution_requirements,
+        inputs = all_inputs,
+        mnemonic = "SwiftCompile",
+        outputs = compile_outputs,
+        progress_message = "Compiling Swift module {}".format(module_name),
+        swift_toolchain = swift_toolchain,
+    )
+
+    linker_flags = []
+    linker_inputs = []
+
+    # Object files that should be linked into the binary but not passed to the
+    # driver for autolink extraction, because they don't contribute anything
+    # meaningful there (e.g., modulewrap outputs).
+    objects_excluded_from_autolinking = []
+
+    # Ensure that the .swiftmodule file is embedded in the final library or
+    # binary for debugging purposes.
+    if _is_debugging(feature_configuration = feature_configuration):
+        module_embed_results = ensure_swiftmodule_is_embedded(
+            actions = actions,
+            feature_configuration = feature_configuration,
+            swiftmodule = swiftmodule,
+            target_name = target_name,
+            swift_toolchain = swift_toolchain,
+        )
+        linker_flags.extend(module_embed_results.linker_flags)
+        linker_inputs.extend(module_embed_results.linker_inputs)
+        objects_excluded_from_autolinking.extend(
+            module_embed_results.objects_to_link,
+        )
+
+    # Invoke an autolink-extract action for toolchains that require it.
+    if is_action_enabled(
+        action_name = swift_action_names.AUTOLINK_EXTRACT,
+        swift_toolchain = swift_toolchain,
+    ):
+        autolink_file = derived_files.autolink_flags(
+            actions,
+            target_name = target_name,
+        )
+        register_autolink_extract_action(
+            actions = actions,
+            autolink_file = autolink_file,
+            feature_configuration = feature_configuration,
+            module_name = module_name,
+            object_files = output_objects,
+            swift_toolchain = swift_toolchain,
+        )
+        linker_flags.append("@{}".format(autolink_file.path))
+        linker_inputs.append(autolink_file)
+
+    output_objects.extend(objects_excluded_from_autolinking)
+
+    return struct(
+        generated_header = generated_header,
+        generated_module_map = generated_module_map,
+        indexstore = compile_reqs.indexstore,
+        linker_flags = linker_flags,
+        linker_inputs = linker_inputs,
+        object_files = output_objects,
+        stats_directory = stats_directory,
+        swiftdoc = swiftdoc,
+        swiftinterface = swiftinterface,
+        swiftmodule = swiftmodule,
+    )
+
+def get_implicit_deps(feature_configuration, swift_toolchain):
+    """Gets the list of implicit dependencies from the toolchain.
+
+    Args:
+        feature_configuration: The feature configuration, which determines
+            whether optional implicit dependencies are included.
+        swift_toolchain: The Swift toolchain.
+
+    Returns:
+        A list of targets that should be treated as implicit dependencies of
+        the toolchain under the given feature configuration.
+    """
+    deps = list(swift_toolchain.required_implicit_deps)
+    if not is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_MINIMAL_DEPS,
+    ):
+        deps.extend(swift_toolchain.optional_implicit_deps)
+    return deps
+
+def _collect_transitive_compile_inputs(args, deps, direct_defines = []):
     """Collect transitive inputs and flags from Swift providers.
 
     Args:
@@ -468,7 +939,7 @@ def collect_transitive_compile_inputs(args, deps, direct_defines = []):
 
     return input_depsets
 
-def declare_compile_outputs(
+def _declare_compile_outputs(
         actions,
         is_wmo_implied_by_features,
         srcs,
@@ -733,7 +1204,7 @@ def new_objc_provider(
 
     return apple_common.new_objc_provider(**objc_provider_args)
 
-def objc_compile_requirements(args, deps):
+def _objc_compile_requirements(args, deps):
     """Collects compilation requirements for Objective-C dependencies.
 
     Args:
@@ -1040,3 +1511,26 @@ def _safe_int(s):
         if s[i] < "0" or s[i] > "9":
             return None
     return int(s)
+
+def _is_debugging(feature_configuration):
+    """Returns `True` if the current compilation mode produces debug info.
+
+    We replicate the behavior of the C++ build rules for Swift, which are
+    described here:
+    https://docs.bazel.build/versions/master/user-manual.html#flag--compilation_mode
+
+    Args:
+        feature_configuration: The feature configuration.
+
+    Returns:
+        `True` if the current compilation mode produces debug info.
+    """
+    return (
+        is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_DBG,
+        ) or is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_FASTBUILD,
+        )
+    )
