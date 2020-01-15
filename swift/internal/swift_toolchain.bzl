@@ -30,6 +30,8 @@ load(":debugging.bzl", "modulewrap_action_configs")
 load(
     ":features.bzl",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
+    "SWIFT_FEATURE_NO_GENERATED_HEADER",
+    "SWIFT_FEATURE_NO_GENERATED_MODULE_MAP",
     "SWIFT_FEATURE_USE_RESPONSE_FILES",
     "features_for_build_modes",
 )
@@ -164,6 +166,10 @@ def _swift_toolchain_impl(ctx):
     # Combine build mode features, autoconfigured features, and required
     # features.
     requested_features = features_for_build_modes(ctx)
+    requested_features.extend([
+        SWIFT_FEATURE_NO_GENERATED_HEADER,
+        SWIFT_FEATURE_NO_GENERATED_MODULE_MAP,
+    ])
     requested_features.extend(ctx.features)
 
     # Swift.org toolchains assume everything is just available on the PATH so we
