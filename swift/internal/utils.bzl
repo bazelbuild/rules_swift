@@ -302,6 +302,22 @@ def owner_relative_path(file):
     else:
         return paths.relativize(file.short_path, package)
 
+def struct_fields(s):
+    """Returns a dictionary containing the fields in the struct `s`.
+
+    Args:
+        s: A `struct`.
+
+    Returns:
+        The fields in `s` and their values.
+    """
+    return {
+        field: getattr(s, field)
+        for field in dir(s)
+        # TODO(b/36412967): Remove the `to_json` and `to_proto` checks.
+        if field not in ("to_json", "to_proto")
+    }
+
 def _workspace_relative_path(file):
     """Returns the path of a file relative to its workspace.
 
