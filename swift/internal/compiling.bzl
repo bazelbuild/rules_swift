@@ -56,7 +56,13 @@ load(
 )
 load(":providers.bzl", "SwiftInfo")
 load(":toolchain_config.bzl", "swift_toolchain_config")
-load(":utils.bzl", "collect_cc_libraries", "get_providers")
+load(
+    ":utils.bzl",
+    "collect_cc_libraries",
+    "compact",
+    "get_providers",
+    "struct_fields",
+)
 
 # The number of threads to use for WMO builds, using the same number of cores
 # that is on a Mac Pro for historical reasons.
@@ -82,6 +88,12 @@ def compile_action_configs():
             configurators = [
                 swift_toolchain_config.add_arg("-emit-object"),
             ],
+        ),
+
+        # Add the single object file or object file map, whichever is needed.
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [_output_object_or_file_map_configurator],
         ),
 
         # Configure the path to the emitted .swiftmodule file.
@@ -383,6 +395,13 @@ def compile_action_configs():
             actions = [swift_action_names.COMPILE],
             configurators = [_module_name_configurator],
         ),
+
+        # Configure index-while-building.
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [_index_while_building_configurator],
+            features = [SWIFT_FEATURE_INDEX_WHILE_BUILDING],
+        ),
     ]
 
     # NOTE: The position of this action config in the list is important, because
@@ -404,6 +423,26 @@ def compile_action_configs():
     )
 
     return action_configs
+
+def _output_object_or_file_map_configurator(prerequisites, args):
+    """Adds the output file map or single object file to the command line."""
+    output_file_map = prerequisites.output_file_map
+    if output_file_map:
+        args.add("-output-file-map", output_file_map)
+        return swift_toolchain_config.config_result(
+            inputs = [output_file_map],
+        )
+
+    object_files = prerequisites.object_files
+    if len(object_files) != 1:
+        fail(
+            "Internal error: If not using an output file map, there should " +
+            "only be a single object file expected as the output, but we " +
+            "found: {}".format(object_files),
+        )
+
+    args.add("-o", object_files[0])
+    return None
 
 def _emit_module_path_configurator(prerequisites, args):
     """Adds the `.swiftmodule` output path to the command line."""
@@ -505,6 +544,11 @@ def _is_wmo_manually_requested(user_compile_flags):
             "-whole-module-optimization" in user_compile_flags or
             "-force-single-frontend-invocation" in user_compile_flags)
 
+def _index_while_building_configurator(prerequisites, args):
+    """Adds flags for index-store generation to the command line."""
+    if not _index_store_path_overridden(prerequisites.user_compile_flags):
+        args.add("-index-store-path", prerequisites.indexstore_directory.path)
+
 def compile(
         actions,
         feature_configuration,
@@ -588,26 +632,14 @@ def compile(
         *   `swiftmodule`: The `.swiftmodule` file that was produced by the
             compiler.
     """
-    is_wmo_implied_by_features = are_all_features_enabled(
-        feature_configuration = feature_configuration,
-        feature_names = [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_WMO],
-    )
-    compile_reqs = _declare_compile_outputs(
+    compile_outputs, other_outputs = _declare_compile_outputs(
         actions = actions,
-        index_while_building = is_feature_enabled(
-            feature_configuration = feature_configuration,
-            feature_name = SWIFT_FEATURE_INDEX_WHILE_BUILDING,
-        ),
-        is_wmo_implied_by_features = is_wmo_implied_by_features,
+        feature_configuration = feature_configuration,
+        module_name = module_name,
         srcs = srcs,
         target_name = target_name,
         user_compile_flags = copts + swift_toolchain.command_line_copts,
     )
-    output_objects = compile_reqs.output_objects
-
-    swiftmodule = derived_files.swiftmodule(actions, module_name = module_name)
-    swiftdoc = derived_files.swiftdoc(actions, module_name = module_name)
-    additional_outputs = []
 
     args = actions.args()
 
@@ -625,86 +657,14 @@ def compile(
     else:
         execution_requirements = {}
 
-    # Emit compilation timing statistics if the user enabled that feature.
-    if is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_COMPILE_STATS,
-    ):
-        stats_directory = derived_files.stats_directory(actions, target_name)
-        additional_outputs.append(stats_directory)
-    else:
-        stats_directory = None
-
-    args.add_all(compile_reqs.args)
-
-    # Check and enabled features related to the library evolution compilation
-    # mode as requested.
-    if are_all_features_enabled(
-        feature_configuration = feature_configuration,
-        feature_names = [
-            SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION,
-            SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION,
-            SWIFT_FEATURE_EMIT_SWIFTINTERFACE,
-        ],
-    ):
-        swiftinterface = derived_files.swiftinterface(
-            actions = actions,
-            module_name = module_name,
-        )
-        additional_outputs.append(swiftinterface)
-    else:
-        swiftinterface = None
-
-    # If supported, generate a Swift header for this library so that it can be
-    # included by Objective-C code that depends on it.
-    if not is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_NO_GENERATED_HEADER,
-    ):
-        generated_header = derived_files.objc_header(
-            actions = actions,
-            target_name = target_name,
-        )
-        additional_outputs.append(generated_header)
-
-        # Create a module map for the generated header file. This ensures that
-        # inclusions of it are treated modularly, not textually.
-        #
-        # Caveat: Generated module maps are incompatible with the hack that some
-        # folks are using to support mixed Objective-C and Swift modules. This
-        # trap door lets them escape the module redefinition error, with the
-        # caveat that certain import scenarios could lead to incorrect behavior
-        # because a header can be imported textually instead of modularly.
-        if not is_feature_enabled(
-            feature_configuration = feature_configuration,
-            feature_name = SWIFT_FEATURE_NO_GENERATED_MODULE_MAP,
-        ):
-            generated_module_map = derived_files.module_map(
-                actions = actions,
-                target_name = target_name,
-            )
-            write_objc_header_module_map(
-                actions = actions,
-                module_name = module_name,
-                objc_header = generated_header,
-                output = generated_module_map,
-            )
-        else:
-            generated_module_map = None
-    else:
-        generated_header = None
-        generated_module_map = None
-
     prerequisites = struct(
         bin_dir = bin_dir,
-        generated_header_file = generated_header,
         genfiles_dir = genfiles_dir,
         module_name = module_name,
         source_files = srcs,
-        stats_directory = stats_directory,
-        swiftinterface_file = swiftinterface,
-        swiftmodule_file = swiftmodule,
         user_compile_flags = copts + swift_toolchain.command_line_copts,
+        # Merge the compile outputs into the prerequisites.
+        **struct_fields(compile_outputs)
     )
 
     all_deps = deps + get_implicit_deps(
@@ -741,13 +701,20 @@ def compile(
     transitive_inputs.extend(action_inputs.transitive_inputs)
 
     all_inputs = depset(
-        direct_inputs + compile_reqs.compile_inputs,
+        direct_inputs,
         transitive = transitive_inputs + [
             swift_toolchain.cc_toolchain_info.all_files,
         ],
     )
-    compile_outputs = ([swiftmodule, swiftdoc] + output_objects +
-                       compile_reqs.other_outputs) + additional_outputs
+
+    all_compile_outputs = compact([
+        compile_outputs.generated_header_file,
+        compile_outputs.indexstore_directory,
+        compile_outputs.stats_directory,
+        compile_outputs.swiftdoc_file,
+        compile_outputs.swiftinterface_file,
+        compile_outputs.swiftmodule_file,
+    ]) + compile_outputs.object_files + other_outputs
 
     # TODO(b/147091143): Migrate to `run_toolchain_action`.
     run_swift_action(
@@ -757,7 +724,7 @@ def compile(
         execution_requirements = execution_requirements,
         inputs = all_inputs,
         mnemonic = "SwiftCompile",
-        outputs = compile_outputs,
+        outputs = all_compile_outputs,
         progress_message = "Compiling Swift module {}".format(module_name),
         swift_toolchain = swift_toolchain,
     )
@@ -765,10 +732,10 @@ def compile(
     linker_flags = []
     linker_inputs = []
 
-    # Object files that should be linked into the binary but not passed to the
-    # driver for autolink extraction, because they don't contribute anything
-    # meaningful there (e.g., modulewrap outputs).
-    objects_excluded_from_autolinking = []
+    # Keep a separate list of all object files that should be returned for
+    # linking into the binary so that we can add the modulewrap output as well
+    # for platforms that support that action.
+    all_object_files = list(compile_outputs.object_files)
 
     # Ensure that the .swiftmodule file is embedded in the final library or
     # binary for debugging purposes.
@@ -776,15 +743,13 @@ def compile(
         module_embed_results = ensure_swiftmodule_is_embedded(
             actions = actions,
             feature_configuration = feature_configuration,
-            swiftmodule = swiftmodule,
+            swiftmodule = compile_outputs.swiftmodule_file,
             target_name = target_name,
             swift_toolchain = swift_toolchain,
         )
         linker_flags.extend(module_embed_results.linker_flags)
         linker_inputs.extend(module_embed_results.linker_inputs)
-        objects_excluded_from_autolinking.extend(
-            module_embed_results.objects_to_link,
-        )
+        all_object_files.extend(module_embed_results.objects_to_link)
 
     # Invoke an autolink-extract action for toolchains that require it.
     if is_action_enabled(
@@ -800,25 +765,23 @@ def compile(
             autolink_file = autolink_file,
             feature_configuration = feature_configuration,
             module_name = module_name,
-            object_files = output_objects,
+            object_files = compile_outputs.object_files,
             swift_toolchain = swift_toolchain,
         )
         linker_flags.append("@{}".format(autolink_file.path))
         linker_inputs.append(autolink_file)
 
-    output_objects.extend(objects_excluded_from_autolinking)
-
     return struct(
-        generated_header = generated_header,
-        generated_module_map = generated_module_map,
-        indexstore = compile_reqs.indexstore,
+        generated_header = compile_outputs.generated_header_file,
+        generated_module_map = compile_outputs.generated_module_map_file,
+        indexstore = compile_outputs.indexstore_directory,
         linker_flags = linker_flags,
         linker_inputs = linker_inputs,
-        object_files = output_objects,
-        stats_directory = stats_directory,
-        swiftdoc = swiftdoc,
-        swiftinterface = swiftinterface,
-        swiftmodule = swiftmodule,
+        object_files = all_object_files,
+        stats_directory = compile_outputs.stats_directory,
+        swiftdoc = compile_outputs.swiftdoc_file,
+        swiftinterface = compile_outputs.swiftinterface_file,
+        swiftmodule = compile_outputs.swiftmodule_file,
     )
 
 def get_implicit_deps(feature_configuration, swift_toolchain):
@@ -941,44 +904,117 @@ def _collect_transitive_compile_inputs(args, deps, direct_defines = []):
 
 def _declare_compile_outputs(
         actions,
-        is_wmo_implied_by_features,
+        feature_configuration,
+        module_name,
         srcs,
         target_name,
-        user_compile_flags,
-        index_while_building = False):
+        user_compile_flags):
     """Declares output files and optional output file map for a compile action.
 
     Args:
         actions: The object used to register actions.
-        is_wmo_implied_by_features: `True` if whole module optimization is
-            implied by the features set in the feature configuration.
+        feature_configuration: A feature configuration obtained from
+            `swift_common.configure_features`.
+        module_name: The name of the Swift module being compiled.
         srcs: The list of source files that will be compiled.
         target_name: The name (excluding package path) of the target being
             built.
         user_compile_flags: The flags that will be passed to the compile action,
             which are scanned to determine whether a single frontend invocation
             will be used or not.
-        index_while_building: If `True`, a tree artifact will be declared to
-            hold Clang index store data and the relevant option will be added
-            during compilation to generate the indexes.
 
     Returns:
-        A `struct` containing the following fields:
+        A tuple containing two elements:
 
-        *   `args`: A list of values that should be added to the `Args` of the
-            compile action.
-        *   `compile_inputs`: Additional input files that should be passed to
-            the compile action.
-        *   `indexstore`: A `File` representing the index store directory that
-            was generated if index-while-building was enabled, or None.
-        *   `other_outputs`: Additional output files that should be declared by
-            the compile action, but which are not processed further.
-        *   `output_groups`: A dictionary of additional output groups that
-            should be propagated by the calling rule using the `OutputGroupInfo`
-            provider.
-        *   `output_objects`: A list of object (.o) files that will be the
-            result of the compile action and which should be archived afterward.
+        *   A `struct` that should be merged into the `prerequisites` of the
+            compilation action.
+        *   A list of `File`s that represent additional inputs that are not
+            needed as configurator prerequisites nor are processed further but
+            which should also be tracked as outputs of the compilation action.
     """
+
+    # First, declare "constant" outputs (outputs whose nature doesn't change
+    # depending on compilation mode, like WMO vs. non-WMO).
+    swiftmodule_file = derived_files.swiftmodule(
+        actions = actions,
+        module_name = module_name,
+    )
+    swiftdoc_file = derived_files.swiftdoc(
+        actions = actions,
+        module_name = module_name,
+    )
+
+    if are_all_features_enabled(
+        feature_configuration = feature_configuration,
+        feature_names = [
+            SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION,
+            SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION,
+            SWIFT_FEATURE_EMIT_SWIFTINTERFACE,
+        ],
+    ):
+        swiftinterface_file = derived_files.swiftinterface(
+            actions = actions,
+            module_name = module_name,
+        )
+    else:
+        swiftinterface_file = None
+
+    if is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_COMPILE_STATS,
+    ):
+        stats_directory = derived_files.stats_directory(
+            actions = actions,
+            target_name = target_name,
+        )
+    else:
+        stats_directory = None
+
+    # If supported, generate a Swift header for this library so that it can be
+    # included by Objective-C code that depends on it.
+    if not is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_NO_GENERATED_HEADER,
+    ):
+        generated_header = derived_files.objc_header(
+            actions = actions,
+            target_name = target_name,
+        )
+
+        # Create a module map for the generated header file. This ensures that
+        # inclusions of it are treated modularly, not textually.
+        #
+        # Caveat: Generated module maps are incompatible with the hack that some
+        # folks are using to support mixed Objective-C and Swift modules. This
+        # trap door lets them escape the module redefinition error, with the
+        # caveat that certain import scenarios could lead to incorrect behavior
+        # because a header can be imported textually instead of modularly.
+        if not is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_NO_GENERATED_MODULE_MAP,
+        ):
+            generated_module_map = derived_files.module_map(
+                actions = actions,
+                target_name = target_name,
+            )
+            _write_objc_header_module_map(
+                actions = actions,
+                module_name = module_name,
+                objc_header = generated_header,
+                output = generated_module_map,
+            )
+        else:
+            generated_module_map = None
+    else:
+        generated_header = None
+        generated_module_map = None
+
+    # Now, declare outputs like object files for which there may be one or many,
+    # depending on the compilation mode.
+    is_wmo_implied_by_features = are_all_features_enabled(
+        feature_configuration = feature_configuration,
+        feature_names = [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_WMO],
+    )
     output_nature = _emitted_output_nature(
         is_wmo_implied_by_features = is_wmo_implied_by_features,
         user_compile_flags = user_compile_flags,
@@ -988,24 +1024,85 @@ def _declare_compile_outputs(
         # If we're emitting a single object, we don't use an object map; we just
         # declare the output file that the compiler will generate and there are
         # no other partial outputs.
-        out_obj = derived_files.whole_module_object_file(
+        object_files = [derived_files.whole_module_object_file(
+            actions = actions,
+            target_name = target_name,
+        )]
+        other_outputs = []
+        output_file_map = None
+    else:
+        # Otherwise, we need to create an output map that lists the individual
+        # object files so that we can pass them all to the archive action.
+        output_info = _declare_multiple_outputs_and_write_output_file_map(
+            actions = actions,
+            emits_partial_modules = output_nature.emits_partial_modules,
+            srcs = srcs,
+            target_name = target_name,
+        )
+        object_files = output_info.object_files
+        other_outputs = output_info.other_outputs
+        output_file_map = output_info.output_file_map
+
+    # Configure index-while-building if requested. IDEs and other indexing tools
+    # can enable this feature on the command line during a build and then access
+    # the index store artifacts that are produced.
+    index_while_building = is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_INDEX_WHILE_BUILDING,
+    )
+    if (
+        index_while_building and
+        not _index_store_path_overridden(user_compile_flags)
+    ):
+        indexstore_directory = derived_files.indexstore_directory(
             actions = actions,
             target_name = target_name,
         )
-        return struct(
-            args = ["-o", out_obj],
-            compile_inputs = [],
-            # TODO(allevato): We need to handle indexing here too.
-            indexstore = None,
-            other_outputs = [],
-            output_groups = {
-                "compilation_outputs": depset(direct = [out_obj]),
-            },
-            output_objects = [out_obj],
-        )
+    else:
+        indexstore_directory = None
 
-    # Otherwise, we need to create an output map that lists the individual
-    # object files so that we can pass them all to the archive action.
+    compile_outputs = struct(
+        generated_header_file = generated_header,
+        generated_module_map_file = generated_module_map,
+        indexstore_directory = indexstore_directory,
+        object_files = object_files,
+        output_file_map = output_file_map,
+        stats_directory = stats_directory,
+        swiftdoc_file = swiftdoc_file,
+        swiftinterface_file = swiftinterface_file,
+        swiftmodule_file = swiftmodule_file,
+    )
+    return compile_outputs, other_outputs
+
+def _declare_multiple_outputs_and_write_output_file_map(
+        actions,
+        emits_partial_modules,
+        srcs,
+        target_name):
+    """Declares low-level outputs and writes the output map for a compilation.
+
+    Args:
+        actions: The object used to register actions.
+        emits_partial_modules: `True` if the compilation action is expected to
+            emit partial `.swiftmodule` files (i.e., one `.swiftmodule` file per
+            source file, as in a non-WMO compilation).
+        srcs: The list of source files that will be compiled.
+        target_name: The name (excluding package path) of the target being
+            built.
+
+    Returns:
+        A `struct` with the following fields:
+
+        *   `object_files`: A list of object files that were declared and
+            recorded in the output file map, which should be tracked as outputs
+            of the compilation action.
+        *   `other_outputs`: A list of additional output files that were
+            declared and recorded in the output file map, which should be
+            tracked as outputs of the compilation action.
+        *   `output_file_map`: A `File` that represents the output file map that
+            was written and that should be passed as an input to the compilation
+            action via the `-output-file-map` flag.
+    """
     output_map_file = derived_files.swiftc_output_file_map(
         actions = actions,
         target_name = target_name,
@@ -1037,7 +1134,7 @@ def _declare_compile_outputs(
         # Multi-threaded WMO compiles still produce a single .swiftmodule file,
         # despite producing multiple object files, so we have to check
         # explicitly for that case.
-        if output_nature.emits_partial_modules:
+        if emits_partial_modules:
             partial_module = derived_files.partial_swiftmodule(
                 actions = actions,
                 target_name = target_name,
@@ -1053,35 +1150,10 @@ def _declare_compile_outputs(
         output = output_map_file,
     )
 
-    args = ["-output-file-map", output_map_file]
-    output_groups = {
-        "compilation_outputs": depset(direct = output_objs),
-    }
-
-    # Configure index-while-building if requested. IDEs and other indexing tools
-    # can enable this feature on the command line during a build and then access
-    # the index store artifacts that are produced.
-    if (
-        index_while_building and
-        not _index_store_path_overridden(user_compile_flags)
-    ):
-        index_store_dir = derived_files.indexstore_directory(
-            actions = actions,
-            target_name = target_name,
-        )
-        other_outputs.append(index_store_dir)
-        args.extend(["-index-store-path", index_store_dir.path])
-        output_groups["swift_index_store"] = depset(direct = [index_store_dir])
-    else:
-        index_store_dir = None
-
     return struct(
-        args = args,
-        compile_inputs = [output_map_file],
-        indexstore = index_store_dir,
+        object_files = output_objs,
         other_outputs = other_outputs,
-        output_groups = output_groups,
-        output_objects = output_objs,
+        output_file_map = output_map_file,
     )
 
 def find_swift_version_copt_value(copts):
@@ -1348,7 +1420,7 @@ def swift_library_output_map(name, alwayslink):
         "archive": "lib{}.{}".format(name, extension),
     }
 
-def write_objc_header_module_map(
+def _write_objc_header_module_map(
         actions,
         module_name,
         objc_header,
