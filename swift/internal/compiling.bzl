@@ -486,7 +486,9 @@ def _output_dirs_clang_search_paths_configurator(prerequisites, args):
             "-iquote{}".format(prerequisites.bin_dir.path),
         ])
 
-    if prerequisites.genfiles_dir:
+    if prerequisites.genfiles_dir and (
+        prerequisites.genfiles_dir != prerequisites.bin_dir
+    ):
         args.add_all([
             "-Xcc",
             "-iquote{}".format(prerequisites.genfiles_dir.path),
