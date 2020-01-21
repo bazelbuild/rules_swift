@@ -14,7 +14,6 @@
 
 """Functions for registering actions that invoke Swift tools."""
 
-load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:partial.bzl", "partial")
 load("@bazel_skylib//lib:types.bzl", "types")
 load(":features.bzl", "are_all_features_enabled")
@@ -58,16 +57,13 @@ def _apply_configurator(configurator, prerequisites, args):
     else:
         return partial.call(configurator, prerequisites, args)
 
-def apply_action_configs(
+def _apply_action_configs(
         action_name,
         args,
         feature_configuration,
         prerequisites,
         swift_toolchain):
     """Applies the action configs for the given action.
-
-    TODO(b/147091143): Make this function private after the compilation actions
-    have been migrated to `run_toolchain_action`.
 
     Args:
         action_name: The name of the action that should be run.
@@ -149,79 +145,6 @@ def is_action_enabled(action_name, swift_toolchain):
     tool_config = swift_toolchain.tool_configs.get(action_name)
     return bool(tool_config)
 
-def run_swift_action(
-        actions,
-        action_name,
-        arguments,
-        swift_toolchain,
-        **kwargs):
-    """Executes the Swift driver using the worker.
-
-    This function applies the toolchain's environment and execution requirements
-    and wraps the invocation in the worker tool that handles platform-specific
-    requirements (for example, `xcrun` on Darwin) and in additional pre- and
-    post-processing to handle certain tasks like debug prefix remapping and
-    module cache health.
-
-    Since this function uses the worker as the `executable` of the underlying
-    action, it is an error to pass `executable` into this function. Instead, the
-    `driver_mode` argument should be used to specify which Swift tool should be
-    invoked (`swift`, `swiftc`, `swift-autolink-extract`, etc.). This lets the
-    rules correctly handle the case where a custom driver executable is provided
-    by passing the `--driver-mode` flag that overrides its internal `argv[0]`
-    handling.
-
-    TODO(b/147091143): Remove this once all actions have migrated off of it.
-
-    Args:
-        actions: The `Actions` object with which to register actions.
-        action_name: The name of the toolchain action to run. This is used to
-            retrieve the configured tool's environment and execution
-            requirements during the migration phase.
-        arguments: The arguments to pass to the invoked action.
-        swift_toolchain: The Swift toolchain being used to register actions.
-        **kwargs: Additional arguments to `actions.run`.
-    """
-    if "executable" in kwargs:
-        fail("run_swift_action does not support 'executable'. " +
-             "Use 'driver_mode' instead.")
-
-    remaining_args = dict(kwargs)
-
-    # Note that we add the toolchain values second; we do not want the caller to
-    # ever be able to override those values.
-    tool_config = swift_toolchain.tool_configs.get(action_name)
-    env = dicts.add(remaining_args.pop("env", None) or {}, tool_config.env)
-    execution_requirements = dicts.add(
-        remaining_args.pop("execution_requirements", None) or {},
-        tool_config.execution_requirements,
-    )
-
-    # Add the toolchain's files to the `tools` argument of the action.
-    user_tools = remaining_args.pop("tools", None)
-    toolchain_files = swift_toolchain.all_files
-    if types.is_list(user_tools):
-        tools = depset(user_tools, transitive = [toolchain_files])
-    elif type(user_tools) == type(depset()):
-        tools = depset(transitive = [user_tools, toolchain_files])
-    elif user_tools:
-        fail("'tools' argument must be a sequence or depset.")
-    else:
-        tools = toolchain_files
-
-    driver_mode_args = actions.args()
-    driver_mode_args.add(tool_config.executable)
-    driver_mode_args.add_all(tool_config.args)
-
-    actions.run(
-        arguments = [driver_mode_args] + arguments,
-        env = env,
-        executable = swift_toolchain.swift_worker,
-        execution_requirements = execution_requirements,
-        tools = tools,
-        **remaining_args
-    )
-
 def run_toolchain_action(
         actions,
         action_name,
@@ -264,9 +187,14 @@ def run_toolchain_action(
 
     # If the tool configuration says to use the worker process, then use the
     # worker as the actual executable and pass the tool as the first argument
-    # (and as a tool input). Otherwise, just use the tool as the executable
-    # directly.
+    # (and as a tool input). We do this in a separate `Args` object so that the
+    # tool name/path is added directly to the command line, not added to a param
+    # file.
+    #
+    # If the tool configuration says not to use the worker, then we just use the
+    # tool as the executable directly.
     tools = []
+    tool_executable_args = actions.args()
     if tool_config.worker_mode:
         # Only enable persistent workers if the toolchain supports response
         # files, because the worker unconditionally writes its arguments into
@@ -275,10 +203,10 @@ def run_toolchain_action(
             tool_config.worker_mode == "persistent" and
             tool_config.use_param_file
         ):
-            execution_requirements["supports-workers"] = 1
+            execution_requirements["supports-workers"] = "1"
 
         executable = swift_toolchain.swift_worker
-        args.add(tool_config.executable)
+        tool_executable_args.add(tool_config.executable)
         if not types.is_string(tool_config.executable):
             tools.append(tool_config.executable)
     else:
@@ -292,7 +220,7 @@ def run_toolchain_action(
     # Apply the action configs that are relevant based on the requested action
     # and feature configuration, to populate the `Args` object and collect the
     # required inputs.
-    action_inputs = apply_action_configs(
+    action_inputs = _apply_action_configs(
         action_name = action_name,
         args = args,
         feature_configuration = feature_configuration,
@@ -301,7 +229,7 @@ def run_toolchain_action(
     )
 
     actions.run(
-        arguments = [args],
+        arguments = [tool_executable_args, args],
         env = tool_config.env,
         executable = executable,
         execution_requirements = execution_requirements,
