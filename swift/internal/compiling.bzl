@@ -1391,7 +1391,7 @@ def new_objc_provider(
     if objc_header:
         objc_provider_args["header"] = depset(direct = [objc_header])
     if linkopts:
-        objc_provider_args["linkopt"] = depset(direct = linkopts)
+        objc_provider_args["linkopt"] = depset(direct = linkopts, order = "topological")
 
     force_loaded_libraries = [
         archive
