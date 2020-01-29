@@ -48,6 +48,11 @@
 //     the directory afterwards. This should resolve issues where the module
 //     cache state is not refreshed correctly in all situations, which
 //     sometimes results in hard-to-diagnose crashes in `swiftc`.
+//
+// -Xwrapped-swift=-parseable-output-path=<path>
+//     When specified, the Swift compiler will be invoked with the
+//     `-parseable-output` flag, and the parseable output will be written to the
+//     file at the given path.
 class SwiftRunner {
  public:
   // Create a new spawner that launches a Swift tool with the given arguments.
@@ -57,10 +62,8 @@ class SwiftRunner {
   SwiftRunner(const std::vector<std::string> &args,
               bool force_response_file = false);
 
-  // Run the Swift compiler, redirecting stderr to the specified stream. If
-  // stdout_to_stderr is true, then stdout is also redirected to that stream.
-  int Run(std::ostream *stdout_stream, std::ostream *stderr_stream,
-          bool stdout_to_stderr = false);
+  // Run the Swift compiler, redirecting its output to the specified stream.
+  int Run(std::ostream *output_stream);
 
  private:
   // Processes an argument that looks like it might be a response file (i.e., it
@@ -111,6 +114,9 @@ class SwiftRunner {
 
   // The arguments, post-substitution, passed to the spawner.
   std::vector<std::string> args_;
+
+  // The declared file where the compiler's parseable output will be written.
+  std::string parseable_output_path_;
 
   // Temporary files (e.g., rewritten response files) that should be cleaned up
   // after the driver has terminated.

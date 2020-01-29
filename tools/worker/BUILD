@@ -56,6 +56,7 @@ cc_library(
         "//tools/common:process",
         "//tools/common:string_utils",
         "//tools/common:temp_file",
+        "@com_github_nlohmann_json//:json",
     ],
 )
 

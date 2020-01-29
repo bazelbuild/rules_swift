@@ -81,7 +81,7 @@ struct Pipe {
   int ReadFD() const { return pipe_[0]; }
   int WriteFD() const { return pipe_[1]; }
 
-private:
+ private:
   std::array<int, 2> pipe_;
   bool valid_;
 };
@@ -93,7 +93,7 @@ class PosixSpawnIORedirector {
  public:
   // Create an I/O redirector that can be used with posix_spawn to capture
   // stdout and stderr.
-  static std::unique_ptr<PosixSpawnIORedirector> Create(bool stdoutToStderr) {
+  static std::unique_ptr<PosixSpawnIORedirector> Create() {
     Pipe stdout_pipe;
     Pipe stderr_pipe;
     if (!stdout_pipe.Valid() || !stderr_pipe.Valid()) {
@@ -101,7 +101,7 @@ class PosixSpawnIORedirector {
     }
 
     return std::unique_ptr<PosixSpawnIORedirector>(new PosixSpawnIORedirector(
-        std::move(stdout_pipe), std::move(stderr_pipe), stdoutToStderr));
+        std::move(stdout_pipe), std::move(stderr_pipe)));
   }
 
   // Explicitly make PosixSpawnIORedirector non-copyable and movable.
@@ -123,20 +123,14 @@ class PosixSpawnIORedirector {
   void ConsumeAllSubprocessOutput(std::ostream *stdout_stream,
                                   std::ostream *stderr_stream);
 
-private:
-  explicit PosixSpawnIORedirector(Pipe &&stdout_pipe, Pipe &&stderr_pipe,
-                                  bool stdoutToStderr)
+ private:
+  explicit PosixSpawnIORedirector(Pipe &&stdout_pipe, Pipe &&stderr_pipe)
       : stdout_pipe_(std::move(stdout_pipe)),
         stderr_pipe_(std::move(stderr_pipe)) {
     posix_spawn_file_actions_init(&file_actions_);
 
-    if (stdoutToStderr) {
-      posix_spawn_file_actions_adddup2(&file_actions_, stderr_pipe_.WriteFD(),
-                                       STDOUT_FILENO);
-    } else {
-      posix_spawn_file_actions_adddup2(&file_actions_, stdout_pipe_.WriteFD(),
-                                       STDOUT_FILENO);
-    }
+    posix_spawn_file_actions_adddup2(&file_actions_, stdout_pipe_.WriteFD(),
+                                     STDOUT_FILENO);
     posix_spawn_file_actions_adddup2(&file_actions_, stderr_pipe_.WriteFD(),
                                      STDERR_FILENO);
 
@@ -213,14 +207,13 @@ void ExecProcess(const std::vector<std::string> &args) {
 }
 
 int RunSubProcess(const std::vector<std::string> &args,
-                  std::ostream *stdout_stream, std::ostream *stderr_stream,
-                  bool stdout_to_stderr) {
+                  std::ostream *stdout_stream, std::ostream *stderr_stream) {
   std::vector<const char *> exec_argv = ConvertToCArgs(args);
 
   // Set up a pipe to redirect stderr from the child process so that we can
   // capture it and return it in the response message.
   std::unique_ptr<PosixSpawnIORedirector> redirector =
-      PosixSpawnIORedirector::Create(stdout_to_stderr);
+      PosixSpawnIORedirector::Create();
   if (!redirector) {
     (*stderr_stream) << "Error creating stderr pipe for child process.\n";
     return 254;

@@ -15,6 +15,7 @@
 #include "tools/worker/swift_runner.h"
 
 #include <fstream>
+#include <nlohmann/json.hpp>
 
 #include "tools/common/file_system.h"
 #include "tools/common/process.h"
@@ -120,10 +121,33 @@ SwiftRunner::SwiftRunner(const std::vector<std::string> &args,
   args_ = ProcessArguments(args);
 }
 
-int SwiftRunner::Run(std::ostream *stdout_stream, std::ostream *stderr_stream,
-                     bool stdout_to_stderr) {
-  int exit_code =
-      RunSubProcess(args_, stdout_stream, stderr_stream, stdout_to_stderr);
+int SwiftRunner::Run(std::ostream *output_stream) {
+  std::fstream parseable_output_stream;
+  parseable_output_stream.open(
+      parseable_output_path_,
+      std::ios::in | std::ios::trunc | std::ios::out | std::ios::binary);
+  auto exit_code = RunSubProcess(args_, /*stdout_stream*/ output_stream,
+                                 /*stderr_stream*/ &parseable_output_stream);
+
+  parseable_output_stream.seekg(0);
+  while (!parseable_output_stream.eof()) {
+    std::string header;
+    std::getline(parseable_output_stream, header);
+    if (header.empty()) {
+      continue;
+    }
+
+    auto body_length = std::stoi(header);
+    std::string body;
+    body.resize(body_length);
+    parseable_output_stream.read(&body[0], body_length);
+
+    auto message = nlohmann::json::parse(body);
+    if (message.contains("output")) {
+      *output_stream << message["output"].get<std::string>() << std::endl;
+    }
+  }
+
   return exit_code;
 }
 
@@ -196,6 +220,11 @@ bool SwiftRunner::ProcessArgument(
     consumer("-module-cache-path");
     consumer(module_cache_dir->GetPath());
     temp_directories_.push_back(std::move(module_cache_dir));
+    changed = true;
+  } else if (arg.find("-Xwrapped-swift=-parseable-output-path=") == 0) {
+    consumer("-parseable-output");
+    parseable_output_path_ =
+        arg.substr(strlen("-Xwrapped-swift=-parseable-output-path="));
     changed = true;
   } else if (arg.find("-Xwrapped-swift=") == 0) {
     // TODO(allevato): Report that an unknown wrapper arg was found and give the

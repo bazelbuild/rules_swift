@@ -14,21 +14,21 @@
 
 #include "tools/worker/work_processor.h"
 
+#include <google/protobuf/text_format.h>
 #include <sys/stat.h>
 
 #include <fstream>
 #include <map>
+#include <nlohmann/json.hpp>
 #include <sstream>
 #include <string>
 
-#include <google/protobuf/text_format.h>
 #include "tools/common/file_system.h"
 #include "tools/common/path_utils.h"
 #include "tools/common/string_utils.h"
 #include "tools/common/temp_file.h"
 #include "tools/worker/output_file_map.h"
 #include "tools/worker/swift_runner.h"
-#include <nlohmann/json.hpp>
 
 namespace {
 
@@ -62,7 +62,6 @@ void WorkProcessor::ProcessWorkRequest(
   OutputFileMap output_file_map;
   std::string output_file_map_path;
   bool is_wmo = false;
-  bool is_parseable_output = false;
 
   std::string prev_arg;
   for (auto arg : request.arguments()) {
@@ -77,8 +76,6 @@ void WorkProcessor::ProcessWorkRequest(
       arg.clear();
     } else if (ArgumentEnablesWMO(arg)) {
       is_wmo = true;
-    } else if (arg == "-parseable-output") {
-      is_parseable_output = true;
     }
 
     if (!arg.empty()) {
@@ -129,11 +126,8 @@ void WorkProcessor::ProcessWorkRequest(
 
   SwiftRunner swift_runner(processed_args, /*force_response_file=*/true);
 
-  std::ostringstream stdout_stream;
-  std::ostringstream stderr_stream;
-  bool stdout_to_stderr = !is_parseable_output;
-  int exit_code =
-      swift_runner.Run(&stdout_stream, &stderr_stream, stdout_to_stderr);
+  std::ostringstream output_stream;
+  int exit_code = swift_runner.Run(&output_stream);
 
   if (!is_wmo) {
     // Copy the output files from the incremental storage area back to the
@@ -147,14 +141,6 @@ void WorkProcessor::ProcessWorkRequest(
     }
   }
 
-  if (is_parseable_output) {
-    response->set_output(stdout_stream.str());
-    auto log_path =
-        PathJoin(Dirname(output_file_map_path), "parseable_output.txt");
-    std::ofstream out{log_path, std::ios::binary};
-    out << stderr_stream.str();
-  } else {
-    response->set_output(stderr_stream.str());
-  }
   response->set_exit_code(exit_code);
+  response->set_output(output_stream.str());
 }

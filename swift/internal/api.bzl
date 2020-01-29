@@ -594,6 +594,17 @@ def _compile(
     additional_outputs = []
 
     args = actions.args()
+
+    parseable_output_file = derived_files.parseable_output(
+        actions = actions,
+        target_name = target_name,
+    )
+    additional_outputs.append(parseable_output_file)
+
+    args.add("-Xwrapped-swift=-parseable-output-path={}".format(
+        parseable_output_file.path
+    ))
+
     if is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE,

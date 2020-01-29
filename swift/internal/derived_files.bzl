@@ -134,6 +134,18 @@ def _objc_header(actions, target_name):
     """
     return actions.declare_file("{}-Swift.h".format(target_name))
 
+def _parseable_output(actions, target_name):
+    """TODO
+
+    Args:
+        actions: The context's actions object.
+        target_name: The name of the target being built.
+
+    Returns:
+        The declared `File`.
+    """
+    return actions.declare_file("{}.compile.log".format(target_name))
+
 def _partial_swiftmodule(actions, target_name, src):
     """Declares a file for a partial Swift module created during compilation.
 
@@ -297,6 +309,7 @@ derived_files = struct(
     module_map = _module_map,
     modulewrap_object = _modulewrap_object,
     objc_header = _objc_header,
+    parseable_output = _parseable_output,
     partial_swiftmodule = _partial_swiftmodule,
     reexport_modules_src = _reexport_modules_src,
     static_archive = _static_archive,

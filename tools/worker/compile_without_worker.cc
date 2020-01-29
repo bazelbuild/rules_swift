@@ -21,6 +21,5 @@
 #include "tools/worker/swift_runner.h"
 
 int CompileWithoutWorker(const std::vector<std::string> &args) {
-  return SwiftRunner(args).Run(/*stdout_stream=*/nullptr, &std::cerr,
-                               /*stdout_to_stderr=*/false);
+  return SwiftRunner(args).Run(&std::cerr);
 }
