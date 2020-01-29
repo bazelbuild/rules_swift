@@ -30,16 +30,6 @@ std::string Dirname(const std::string &path) {
   return path.substr(0, last_slash);
 }
 
-std::string PathJoin(const std::string &tail, const std::string &head) {
-  if (tail.back() == '/') {
-    return PathJoin(tail.substr(0, tail.size() - 1), head);
-  }
-  if (head.front() == '/') {
-    return PathJoin(tail, head.substr(1));
-  }
-  return tail + '/' + head;
-}
-
 std::string ReplaceExtension(const std::string &path,
                              const std::string &new_extension,
                              bool all_extensions) {
