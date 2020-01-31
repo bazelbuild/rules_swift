@@ -727,6 +727,7 @@ def compile(
         copts = [],
         defines = [],
         deps = [],
+        generated_header_name = None,
         genfiles_dir = None):
     """Compiles a Swift module.
 
@@ -759,6 +760,9 @@ def compile(
         deps: Dependencies of the target being compiled. These targets must
             propagate one of the following providers: `CcInfo`, `SwiftInfo`, or
             `apple_common.Objc`.
+        generated_header_name: The name of the Objective-C generated header that
+            should be generated for this module. If omitted, the name
+            `${target_name}-Swift.h` will be used.
         genfiles_dir: The Bazel `*-genfiles` directory root. If provided, its
             path is added to ClangImporter's header search paths for
             compatibility with Bazel's C++ and Objective-C rules which support
@@ -800,6 +804,7 @@ def compile(
     """
     compile_outputs, other_outputs = _declare_compile_outputs(
         actions = actions,
+        generated_header_name = generated_header_name,
         feature_configuration = feature_configuration,
         module_name = module_name,
         srcs = srcs,
@@ -912,6 +917,7 @@ def get_implicit_deps(feature_configuration, swift_toolchain):
 
 def _declare_compile_outputs(
         actions,
+        generated_header_name,
         feature_configuration,
         module_name,
         srcs,
@@ -921,6 +927,8 @@ def _declare_compile_outputs(
 
     Args:
         actions: The object used to register actions.
+        generated_header_name: The desired name of the generated header for this
+            module, or `None` to use `${target_name}-Swift.h`.
         feature_configuration: A feature configuration obtained from
             `swift_common.configure_features`.
         module_name: The name of the Swift module being compiled.
@@ -978,43 +986,48 @@ def _declare_compile_outputs(
     else:
         stats_directory = None
 
-    # If supported, generate a Swift header for this library so that it can be
+    # If supported, generate the Swift header for this library so that it can be
     # included by Objective-C code that depends on it.
     if not is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_NO_GENERATED_HEADER,
     ):
-        generated_header = derived_files.objc_header(
-            actions = actions,
-            target_name = target_name,
-        )
-
-        # Create a module map for the generated header file. This ensures that
-        # inclusions of it are treated modularly, not textually.
-        #
-        # Caveat: Generated module maps are incompatible with the hack that some
-        # folks are using to support mixed Objective-C and Swift modules. This
-        # trap door lets them escape the module redefinition error, with the
-        # caveat that certain import scenarios could lead to incorrect behavior
-        # because a header can be imported textually instead of modularly.
-        if not is_feature_enabled(
-            feature_configuration = feature_configuration,
-            feature_name = SWIFT_FEATURE_NO_GENERATED_MODULE_MAP,
-        ):
-            generated_module_map = derived_files.module_map(
+        if generated_header_name:
+            generated_header = _declare_validated_generated_header(
+                actions = actions,
+                generated_header_name = generated_header_name,
+            )
+        else:
+            generated_header = derived_files.default_generated_header(
                 actions = actions,
                 target_name = target_name,
             )
-            _write_objc_header_module_map(
-                actions = actions,
-                module_name = module_name,
-                objc_header = generated_header,
-                output = generated_module_map,
-            )
-        else:
-            generated_module_map = None
     else:
         generated_header = None
+
+    # If not disabled, create a module map for the generated header file. This
+    # ensures that inclusions of it are treated modularly, not textually.
+    #
+    # Caveat: Generated module maps are incompatible with the hack that some
+    # folks are using to support mixed Objective-C and Swift modules. This
+    # trap door lets them escape the module redefinition error, with the
+    # caveat that certain import scenarios could lead to incorrect behavior
+    # because a header can be imported textually instead of modularly.
+    if generated_header and not is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_NO_GENERATED_MODULE_MAP,
+    ):
+        generated_module_map = derived_files.module_map(
+            actions = actions,
+            target_name = target_name,
+        )
+        _write_objc_header_module_map(
+            actions = actions,
+            module_name = module_name,
+            objc_header = generated_header,
+            output = generated_module_map,
+        )
+    else:
         generated_module_map = None
 
     # Now, declare outputs like object files for which there may be one or many,
@@ -1163,6 +1176,34 @@ def _declare_multiple_outputs_and_write_output_file_map(
         other_outputs = other_outputs,
         output_file_map = output_map_file,
     )
+
+def _declare_validated_generated_header(actions, generated_header_name):
+    """Validates and declares the explicitly named generated header.
+
+    If the file does not have a `.h` extension or conatins path separators, the
+    build will fail.
+
+    Args:
+        actions: The context's `actions` object.
+        generated_header_name: The desired name of the generated header.
+
+    Returns:
+        A `File` that should be used as the output for the generated header.
+    """
+    if "/" in generated_header_name:
+        fail(
+            "The generated header for a Swift module may not contain " +
+            "directory components (got '{}').".format(generated_header_name),
+        )
+
+    extension = paths.split_extension(generated_header_name)[1]
+    if extension != ".h":
+        fail(
+            "The generated header for a Swift module must have a '.h' " +
+            "extension (got '{}').".format(generated_header_name),
+        )
+
+    return actions.declare_file(generated_header_name)
 
 def _merge_targets_providers(supports_objc_interop, targets):
     """Merges the compilation-related providers for the given targets.

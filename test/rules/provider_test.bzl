@@ -135,8 +135,12 @@ def _lookup_provider_by_name(env, target, provider_name):
     provider = None
     if provider_name == "CcInfo":
         provider = CcInfo
+    elif provider_name == "DefaultInfo":
+        provider = DefaultInfo
     elif provider_name == "SwiftInfo":
         provider = SwiftInfo
+    elif provider_name == "apple_common.Objc":
+        provider = apple_common.Objc
 
     if not provider:
         unittest.fail(
@@ -390,7 +394,12 @@ the next component.
 The name of the provider expected to be propagated by the target under test, and
 on which the field will be checked.
 
-Currently, the only recognized providers are `CcInfo` and `SwiftInfo`.
+Currently, only the following providers are recognized:
+
+*   `CcInfo`
+*   `DefaultInfo`
+*   `SwiftInfo`
+*   `apple_common.Objc`
 """,
             ),
         },

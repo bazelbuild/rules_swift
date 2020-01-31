@@ -157,6 +157,7 @@ def _swift_library_impl(ctx):
         defines = ctx.attr.defines,
         deps = deps + private_deps,
         feature_configuration = feature_configuration,
+        generated_header_name = ctx.attr.generated_header_name,
         genfiles_dir = ctx.genfiles_dir,
         module_name = module_name,
         srcs = srcs,
