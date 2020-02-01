@@ -42,7 +42,8 @@ load(":utils.bzl", "get_swift_executable_for_toolchain")
 def _all_tool_configs(
         swift_executable,
         toolchain_root,
-        use_param_file):
+        use_param_file,
+        additional_tools):
     """Returns the tool configurations for the Swift toolchain.
 
     Args:
@@ -51,6 +52,7 @@ def _all_tool_configs(
         toolchain_root: The root directory of the toolchain.
         use_param_file: If True, the compile action should use a param file for
             its arguments.
+        additional_tools: Any extra tool inputs to pass to each driver config
 
     Returns:
         A dictionary mapping action name to tool configurations.
@@ -63,6 +65,7 @@ def _all_tool_configs(
             swift_executable = swift_executable,
             toolchain_root = toolchain_root,
             worker_mode = "wrap",
+            additional_tools = additional_tools,
         ),
         swift_action_names.COMPILE: _swift_driver_tool_config(
             driver_mode = "swiftc",
@@ -70,6 +73,7 @@ def _all_tool_configs(
             toolchain_root = toolchain_root,
             use_param_file = use_param_file,
             worker_mode = "persistent",
+            additional_tools = additional_tools,
         ),
         swift_action_names.MODULEWRAP: _swift_driver_tool_config(
             # This must come first after the driver name.
@@ -78,6 +82,7 @@ def _all_tool_configs(
             swift_executable = swift_executable,
             toolchain_root = toolchain_root,
             worker_mode = "wrap",
+            additional_tools = additional_tools,
         ),
     }
 
@@ -184,6 +189,7 @@ def _swift_toolchain_impl(ctx):
         swift_executable = swift_executable,
         toolchain_root = toolchain_root,
         use_param_file = SWIFT_FEATURE_USE_RESPONSE_FILES in ctx.features,
+        additional_tools = [ctx.file.version_file],
     )
     all_action_configs = _all_action_configs()
 
@@ -242,6 +248,10 @@ platform-specific content, such as "linux" in "lib/swift/linux".
             ),
             "root": attr.string(
                 mandatory = True,
+            ),
+            "version_file": attr.label(
+                mandatory = True,
+                allow_single_file = True,
             ),
             "_cc_toolchain": attr.label(
                 default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
