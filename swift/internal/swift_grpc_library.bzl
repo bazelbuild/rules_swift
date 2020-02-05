@@ -15,6 +15,7 @@
 """A Swift library rule that generates gRPC services defined in protos."""
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
+load("@rules_proto//proto:defs.bzl", "ProtoInfo")
 load(":api.bzl", "swift_common")
 load(
     ":compiling.bzl",

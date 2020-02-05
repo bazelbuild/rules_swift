@@ -14,6 +14,7 @@
 
 """A rule that generates a Swift library from protocol buffer sources."""
 
+load("@rules_proto//proto:defs.bzl", "ProtoInfo")
 load(":providers.bzl", "SwiftInfo", "SwiftProtoInfo")
 load(
     ":swift_protoc_gen_aspect.bzl",

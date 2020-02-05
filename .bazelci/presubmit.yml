@@ -42,4 +42,4 @@ buildifier:
   # TODO(b/140761855): Remove native-cc from this list.
   # TODO(b/140761855): Remove native-proto from this list.
   # TODO(b/140761855): Remove native-py from this list.
-  warnings: -bzl-visibility,-native-cc,-native-proto,-native-py
+  warnings: -bzl-visibility,-native-cc,-native-py
