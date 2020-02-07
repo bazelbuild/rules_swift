@@ -836,7 +836,7 @@ def _dependencies_swiftmodules_configurator(prerequisites, args):
 
 def _dependencies_swiftmodules_vfsoverlay_configurator(prerequisites, args):
     """Provides a single `.swiftmodule` search path using a vfsoverlay."""
-    swiftmodules = prerequisites.swift_info.transitive_swiftmodules.to_list()
+    swiftmodules = prerequisites.swift_info.transitive_swiftmodules
 
     # Bug: `swiftc` doesn't pass its `-vfsoverlay` arg to the frontend.
     # Workaround: Pass `-vfsoverlay` directly via `-Xfrontend`.
@@ -847,7 +847,7 @@ def _dependencies_swiftmodules_vfsoverlay_configurator(prerequisites, args):
     ))
 
     return swift_toolchain_config.config_result(
-        inputs = [prerequisites.vfsoverlay.yaml_file.path],
+        inputs = [prerequisites.vfsoverlay.yaml_file],
         transitive_inputs = [swiftmodules],
     )
 
@@ -1063,6 +1063,19 @@ def compile(
         *   `swiftmodule`: The `.swiftmodule` file that was produced by the
             compiler.
     """
+    # Merge the providers from our dependencies so that we have one each for
+    # `SwiftInfo`, `CcInfo`, and `apple_common.Objc`. Then we can pass these
+    # into the action prerequisites so that configurators have easy access to
+    # the full set of values and inputs through a single accessor.
+    all_deps = deps + get_implicit_deps(
+        feature_configuration = feature_configuration,
+        swift_toolchain = swift_toolchain,
+    )
+    merged_providers = _merge_targets_providers(
+        supports_objc_interop = swift_toolchain.supports_objc_interop,
+        targets = all_deps,
+    )
+
     compile_outputs, other_outputs = _declare_compile_outputs(
         actions = actions,
         generated_header_name = generated_header_name,
@@ -1071,6 +1084,7 @@ def compile(
         srcs = srcs,
         target_name = target_name,
         user_compile_flags = copts + swift_toolchain.command_line_copts,
+        swift_info = merged_providers.swift_info,
     )
     all_compile_outputs = compact([
         # The `.swiftmodule` file is explicitly listed as the first output
@@ -1084,19 +1098,6 @@ def compile(
         compile_outputs.indexstore_directory,
         compile_outputs.stats_directory,
     ]) + compile_outputs.object_files + other_outputs
-
-    # Merge the providers from our dependencies so that we have one each for
-    # `SwiftInfo`, `CcInfo`, and `apple_common.Objc`. Then we can pass these
-    # into the action prerequisites so that configurators have easy access to
-    # the full set of values and inputs through a single accessor.
-    all_deps = deps + get_implicit_deps(
-        feature_configuration = feature_configuration,
-        swift_toolchain = swift_toolchain,
-    )
-    merged_providers = _merge_targets_providers(
-        supports_objc_interop = swift_toolchain.supports_objc_interop,
-        targets = all_deps,
-    )
 
     prerequisites = struct(
         additional_inputs = additional_inputs,
@@ -1293,7 +1294,8 @@ def _declare_compile_outputs(
         module_name,
         srcs,
         target_name,
-        user_compile_flags):
+        user_compile_flags,
+        swift_info):
     """Declares output files and optional output file map for a compile action.
 
     Args:
@@ -1418,7 +1420,7 @@ def _declare_compile_outputs(
         vfsoverlay = _write_swiftc_vfsoverlay(
             actions = actions,
             module_name = module_name,
-            swiftmodules = swiftmodules,
+            swiftmodules = swift_info.transitive_swiftmodules.to_list(),
         )
     else:
         vfsoverlay = None
