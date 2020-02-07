@@ -1978,6 +1978,10 @@ roots:
     name: \"{}\"
     contents:""".format(virtual_import_search_path)
 
+    if not swiftmodules:
+        contents += " []"
+        return contents
+
     for swiftmodule in swiftmodules:
         contents += """
       - type: file
