@@ -202,7 +202,7 @@ def _swift_grpc_library_impl(ctx):
 
     extra_module_imports = []
     if ctx.attr.flavor == "client_stubs":
-        extra_module_imports += [swift_common.derive_module_name(deps[0].label)]
+        extra_module_imports.append(swift_common.derive_module_name(deps[0].label))
 
     # Generate the Swift sources from the .proto files.
     generated_files = _register_grpcswift_generate_action(

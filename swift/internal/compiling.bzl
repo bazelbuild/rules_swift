@@ -548,6 +548,7 @@ def _clang_search_paths_configurator(prerequisites, args):
 
     args.add_all(
         prerequisites.cc_info.compilation_context.system_includes,
+        map_each = _filter_out_unsupported_include_paths,
         before_each = "-Xcc",
         format_each = "-isystem%s",
     )
@@ -1565,6 +1566,10 @@ def _dirname_map_fn(f):
         The dirname of the file.
     """
     return f.dirname
+
+def _filter_out_unsupported_include_paths(path):
+    """Stub for a filter function only used internally."""
+    return path
 
 def _disable_autolink_framework_copts(framework_name):
     """A `map_each` helper that disables autolinking for the given framework.
