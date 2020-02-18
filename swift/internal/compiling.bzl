@@ -116,7 +116,6 @@ def compile_action_configs():
             configurators = [_emit_module_interface_path_configurator],
             features = [
                 SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION,
-                SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION,
                 SWIFT_FEATURE_EMIT_SWIFTINTERFACE,
             ],
         ),
@@ -965,7 +964,6 @@ def _declare_compile_outputs(
         feature_configuration = feature_configuration,
         feature_names = [
             SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION,
-            SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION,
             SWIFT_FEATURE_EMIT_SWIFTINTERFACE,
         ],
     ):
