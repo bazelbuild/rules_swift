@@ -181,6 +181,7 @@ def _swift_library_impl(ctx):
     direct_output_files = compact([
         compilation_outputs.generated_header,
         compilation_outputs.swiftdoc,
+        compilation_outputs.swiftinterface,
         compilation_outputs.swiftmodule,
         library_to_link.pic_static_library,
     ])
