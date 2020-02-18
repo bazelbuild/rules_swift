@@ -41,15 +41,25 @@ This aspect is an implementation detail of the Swift build rules and is not
 meant to be attached to other rules or run independently.
 """
 
-load("@bazel_skylib//lib:paths.bzl", "paths")
 load(":api.bzl", "swift_common")
 load(":derived_files.bzl", "derived_files")
 load(":features.bzl", "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD")
+load(":module_maps.bzl", "write_module_map")
 load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
 load(":utils.bzl", "get_providers")
 
-def _explicit_module_name(tags):
-    """Returns an explicit module name specified by a tag.
+def _tagged_target_module_name(label, tags):
+    """Returns the module name of a `swift_module`-tagged target.
+
+    The `swift_module` tag may take one of two forms:
+
+    *   `swift_module`: By itself, this indicates that the target is compatible
+        with Swift and should be given a module name that is derived from its
+        target label.
+    *   `swift_module=name`: The module should be given the name `name`.
+
+    If the `swift_module` tag is not present, no module name is used or
+    computed.
 
     Since tags are unprocessed strings, nothing prevents the `swift_module` tag
     from being listed multiple times on the same target with different values.
@@ -57,160 +67,122 @@ def _explicit_module_name(tags):
     list.
 
     Args:
+        label: The target label from which a module name should be derived, if
+            necessary.
         tags: The list of tags from the `cc_library` target to which the aspect
             is being applied.
 
     Returns:
-        The desired module name if it was present in `tags`, or `None`.
+        If the `swift_module` tag was present, then the return value is the
+        explicit name if it was of the form `swift_module=name`, or the
+        label-derived name if the tag was not followed by a name. Otherwise, if
+        the tag is not present, `None` is returned.
     """
     module_name = None
     for tag in tags:
-        if tag.startswith("swift_module="):
+        if tag == "swift_module":
+            module_name = swift_common.derive_module_name(label)
+        elif tag.startswith("swift_module="):
             _, _, module_name = tag.partition("=")
     return module_name
 
-def _header_path(file, module_map, workspace_relative):
-    """Returns the path to a header file to be written in the module map.
+def _handle_cc_target(
+        aspect_ctx,
+        feature_configuration,
+        swift_infos,
+        swift_toolchain,
+        target):
+    """Processes a C++ target that is a dependency of a Swift target.
 
     Args:
-        file: A `File` representing the header whose path should be returned.
-        module_map: A `File` representing the module map being written, which is
-            used during path relativization if necessary.
-        workspace_relative: A Boolean value indicating whether the path should
-            be workspace-relative or module-map-relative.
+        aspect_ctx: The aspect's context.
+        feature_configuration: The current feature configuration.
+        swift_infos: The `SwiftInfo` providers of the current target's
+            dependencies, which should be merged into the `SwiftInfo` provider
+            created and returned for this C++ target.
+        swift_toolchain: The Swift toolchain being used to build this target.
+        target: The C++ target to which the aspect is currently being applied.
 
     Returns:
-        The path to the header file, relative to either the workspace or the
-        module map as requested.
+        A list of providers that should be returned by the aspect.
     """
+    attr = aspect_ctx.rule.attr
 
-    # If the module map is workspace-relative, then the file's path is what we
-    # want.
-    if workspace_relative:
-        return file.path
+    module_name = _tagged_target_module_name(
+        label = target.label,
+        tags = attr.tags,
+    )
 
-    # Otherwise, since the module map is generated, we need to get the full path
-    # to it rather than just its short path (that is, the path starting with
-    # bazel-out/). Then, we can simply walk up the same number of parent
-    # directories as there are path segments, and append the header file's path
-    # to that.
-    num_segments = len(paths.dirname(module_map.path).split("/"))
-    return ("../" * num_segments) + file.path
+    if not module_name:
+        if swift_infos:
+            return [swift_common.create_swift_info(swift_infos = swift_infos)]
+        else:
+            return []
 
-def _write_module_map(
-        actions,
-        module_map,
-        module_name,
-        hdrs = [],
-        textual_hdrs = [],
-        workspace_relative = False):
-    """Writes the content of the module map to a file.
+    # Determine if the toolchain requires module maps to use
+    # workspace-relative paths or not.
+    workspace_relative = swift_common.is_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD,
+    )
 
-    Args:
-        actions: The actions object from the aspect context.
-        module_map: A `File` representing the module map being written.
-        module_name: The name of the module being generated.
-        hdrs: The value of `attr.hdrs` for the target being written (which is a
-            list of targets that are either source files or generated files).
-        textual_hdrs: The value of `attr.textual_hdrs` for the target being
-            written (which is a list of targets that are either source files or
-            generated files).
-        workspace_relative: A Boolean value indicating whether the path should
-            be workspace-relative or module-map-relative.
-    """
-    content = "module {} {{\n".format(module_name)
+    module_map_file = derived_files.module_map(
+        actions = aspect_ctx.actions,
+        target_name = target.label.name,
+    )
+    write_module_map(
+        actions = aspect_ctx.actions,
+        headers = [
+            file
+            for target in attr.hdrs
+            for file in target.files.to_list()
+        ],
+        module_map_file = module_map_file,
+        module_name = module_name,
+        textual_headers = [
+            file
+            for target in attr.textual_hdrs
+            for file in target.files.to_list()
+        ],
+        workspace_relative = workspace_relative,
+    )
 
-    # TODO(allevato): Should we consider moving this to an external tool to
-    # avoid the analysis time expansion of these depsets? We're doing this in
-    # the initial version because these sets tend to be very small.
-    for target in hdrs:
-        content += "".join([
-            '    header "{}"\n'.format(_header_path(
-                header,
-                module_map,
-                workspace_relative,
-            ))
-            for header in target.files.to_list()
-        ])
-    for target in textual_hdrs:
-        content += "".join([
-            '    textual header "{}"\n'.format(_header_path(
-                header,
-                module_map,
-                workspace_relative,
-            ))
-            for header in target.files.to_list()
-        ])
-    content += "    export *\n"
-    content += "}\n"
-
-    actions.write(output = module_map, content = content)
+    return [swift_common.create_swift_info(
+        modulemaps = [module_map_file],
+        module_name = module_name,
+        swift_infos = swift_infos,
+    )]
 
 def _non_swift_target_aspect_impl(target, aspect_ctx):
     # Do nothing if the target already propagates `SwiftInfo`.
     if SwiftInfo in target:
         return []
 
-    attr = aspect_ctx.rule.attr
+    deps = getattr(attr, "deps", [])
+    swift_infos = get_providers(deps, SwiftInfo)
 
-    # It's not great to depend on the rule name directly, but we need to access
-    # the exact `hdrs` and `textual_hdrs` attributes (which may not be
-    # propagated distinctly by a provider) and also make sure that we don't pick
-    # up rules like `objc_library` which already handle module map generation.
-    # TODO(allevato): Can `CcInfo.compilation_context` propagate these headers
-    # distinctly?
+    swift_toolchain = aspect_ctx.attr._toolchain_for_aspect[SwiftToolchainInfo]
+    feature_configuration = swift_common.configure_features(
+        ctx = aspect_ctx,
+        requested_features = aspect_ctx.features,
+        swift_toolchain = swift_toolchain,
+        unsupported_features = aspect_ctx.disabled_features,
+    )
+
+    # TODO(b/143292468): Stop checking the rule kind and look for the presence
+    # of `CcInfo` once `CcInfo.compilation_context` propagates direct headers
+    # and direct textual headers separately.
     if aspect_ctx.rule.kind == "cc_library":
-        # If there's an explicit module name, use it; otherwise, auto-derive one
-        # using the usual derivation logic for Swift targets.
-        module_name = _explicit_module_name(attr.tags)
-        if not module_name:
-            if "/" in target.label.name or "+" in target.label.name:
-                return []
-            module_name = swift_common.derive_module_name(target.label)
-
-        # Determine if the toolchain requires module maps to use
-        # workspace-relative paths or not.
-        toolchain = aspect_ctx.attr._toolchain_for_aspect[SwiftToolchainInfo]
-        feature_configuration = swift_common.configure_features(
-            ctx = aspect_ctx,
-            requested_features = aspect_ctx.features,
-            swift_toolchain = toolchain,
-            unsupported_features = aspect_ctx.disabled_features,
-        )
-        workspace_relative = swift_common.is_enabled(
+        return _handle_cc_target(
+            aspect_ctx = aspect_ctx,
             feature_configuration = feature_configuration,
-            feature_name = SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD,
+            swift_infos = swift_infos,
+            swift_toolchain = swift_toolchain,
+            target = target,
         )
-
-        module_map = derived_files.module_map(
-            actions = aspect_ctx.actions,
-            target_name = target.label.name,
-        )
-        _write_module_map(
-            actions = aspect_ctx.actions,
-            hdrs = attr.hdrs,
-            module_map = module_map,
-            module_name = module_name,
-            textual_hdrs = attr.textual_hdrs,
-            workspace_relative = workspace_relative,
-        )
-
-        # TODO(b/118311259): Figure out how to handle transitive dependencies,
-        # in case a C-only module incldues headers from another C-only module.
-        # We currently have a lot of targets with labels that clash when mangled
-        # into a Swift module name, so we need to figure out how to handle those
-        # (either by adding the `swift_module` tag to them, or opting them in
-        # some other way). So for now, when we hit a `cc_library` target, we
-        # explicitly discard any of the Swift info from its dependencies.
-        return [swift_common.create_swift_info(
-            modulemaps = [module_map],
-            module_name = module_name,
-        )]
 
     # If it's any other rule, just merge the `SwiftInfo` providers from its
     # deps.
-    deps = getattr(attr, "deps", [])
-    swift_infos = get_providers(deps, SwiftInfo)
     if swift_infos:
         return [swift_common.create_swift_info(swift_infos = swift_infos)]
 
