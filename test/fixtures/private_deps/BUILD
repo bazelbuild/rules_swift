@@ -48,7 +48,7 @@ cc_library(
         "-pic",
         "-supports_pic",
     ],
-    tags = FIXTURE_TAGS,
+    tags = FIXTURE_TAGS + ["swift_module"],
 )
 
 cc_library(
@@ -59,7 +59,7 @@ cc_library(
         "-pic",
         "-supports_pic",
     ],
-    tags = FIXTURE_TAGS,
+    tags = FIXTURE_TAGS + ["swift_module"],
 )
 
 swift_library(
