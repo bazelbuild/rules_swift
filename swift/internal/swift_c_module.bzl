@@ -25,8 +25,12 @@ def _swift_c_module_impl(ctx):
     data_runfiles = [dep[DefaultInfo].data_runfiles for dep in deps]
     default_runfiles = [dep[DefaultInfo].default_runfiles for dep in deps]
 
-    return [
-        cc_common.merge_cc_infos(cc_infos = cc_infos),
+    if cc_infos:
+        cc_info = cc_common.merge_cc_infos(cc_infos = cc_infos)
+    else:
+        cc_info = None
+
+    providers = [
         # We must repropagate the dependencies' DefaultInfos, otherwise we
         # will lose runtime dependencies that the library expects to be
         # there during a test (or a regular `bazel run`).
@@ -38,6 +42,11 @@ def _swift_c_module_impl(ctx):
         swift_common.create_swift_info(modulemaps = [module_map]),
     ]
 
+    if cc_info:
+        providers.append(cc_info)
+
+    return providers
+
 swift_c_module = rule(
     attrs = {
         "module_map": attr.label(
@@ -45,6 +54,21 @@ swift_c_module = rule(
             doc = """\
 The module map file that should be loaded to import the C library dependency
 into Swift.
+""",
+            mandatory = True,
+        ),
+        "module_name": attr.string(
+            doc = """\
+The name of the top-level module in the module map that this target represents.
+
+A single `module.modulemap` file can define multiple top-level modules. When
+building with implicit modules, the presence of that module map allows any of
+the modules defined in it to be imported. When building explicit modules,
+however, there is a one-to-one correspondence between top-level modules and
+BUILD targets and the module name must be known without reading the module map
+file, so it must be provided directly. Therefore, one may have multiple
+`swift_c_module` targets that reference the same `module.modulemap` file but
+with different module names and headers.
 """,
             mandatory = True,
         ),
