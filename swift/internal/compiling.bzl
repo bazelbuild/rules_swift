@@ -560,7 +560,6 @@ def _dependencies_clang_defines_configurator(prerequisites, args):
     """Adds C/C++ dependencies' preprocessor defines to the command line."""
     all_clang_defines = depset(transitive = [
         prerequisites.cc_info.compilation_context.defines,
-        prerequisites.objc_info.define,
     ])
     args.add_all(all_clang_defines, before_each = "-Xcc", format_each = "-D%s")
 
@@ -600,7 +599,6 @@ def _dependencies_clang_modules_configurator(prerequisites, args):
     # should not include its headers in the inputs.
     header_depsets = [
         prerequisites.cc_info.compilation_context.headers,
-        prerequisites.objc_info.header,
         prerequisites.objc_info.umbrella_header,
     ]
 
@@ -614,9 +612,8 @@ def _dependencies_clang_modules_configurator(prerequisites, args):
 def _framework_search_paths_configurator(prerequisites, args):
     """Add search paths for prebuilt frameworks to the command line."""
     args.add_all(
-        prerequisites.objc_info.framework_search_path_only,
+        prerequisites.cc_info.compilation_context.framework_includes,
         format_each = "-F%s",
-        map_each = paths.dirname,
     )
 
 def _static_frameworks_disable_autolink_configurator(prerequisites, args):
@@ -722,7 +719,7 @@ def _conditional_compilation_flag_configurator(prerequisites, args):
             prerequisites.transitive_defines,
             # Take any Swift-compatible defines from Objective-C dependencies
             # and define them for Swift.
-            prerequisites.objc_info.define,
+            prerequisites.cc_info.compilation_context.defines,
         ],
     )
     args.add_all(
@@ -1326,7 +1323,7 @@ def _merge_targets_providers(supports_objc_interop, targets):
         if apple_common.Objc in target and supports_objc_interop:
             objc_infos.append(target[apple_common.Objc])
             objc_include_paths_workaround_depsets.append(
-                target[apple_common.Objc].include,
+                target[apple_common.Objc].strict_include,
             )
 
     return struct(
