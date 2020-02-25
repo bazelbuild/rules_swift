@@ -19,10 +19,6 @@ rules. Do not import definitions from the `internal` subdirectory directly.
 """
 
 load(
-    "@build_bazel_rules_swift//swift/internal:api.bzl",
-    _swift_common = "swift_common",
-)
-load(
     "@build_bazel_rules_swift//swift/internal:providers.bzl",
     _SwiftInfo = "SwiftInfo",
     _SwiftProtoInfo = "SwiftProtoInfo",
@@ -37,6 +33,10 @@ load(
 load(
     "@build_bazel_rules_swift//swift/internal:swift_c_module.bzl",
     _swift_c_module = "swift_c_module",
+)
+load(
+    "@build_bazel_rules_swift//swift/internal:swift_common.bzl",
+    _swift_common = "swift_common",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:swift_grpc_library.bzl",

@@ -15,14 +15,13 @@
 """A Swift library rule that generates gRPC services defined in protos."""
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load(":api.bzl", "swift_common")
 load(
     ":compiling.bzl",
     "new_objc_provider",
     "output_groups_from_compilation_outputs",
 )
 load(
-    ":features.bzl",
+    ":feature_names.bzl",
     "SWIFT_FEATURE_ENABLE_TESTING",
     "SWIFT_FEATURE_NO_GENERATED_HEADER",
 )
@@ -34,6 +33,7 @@ load(
     "register_module_mapping_write_action",
 )
 load(":providers.bzl", "SwiftInfo", "SwiftProtoInfo", "SwiftToolchainInfo")
+load(":swift_common.bzl", "swift_common")
 load(
     ":utils.bzl",
     "compact",

@@ -28,13 +28,13 @@ load(":autolinking.bzl", "autolink_extract_action_configs")
 load(":compiling.bzl", "compile_action_configs")
 load(":debugging.bzl", "modulewrap_action_configs")
 load(
-    ":features.bzl",
+    ":feature_names.bzl",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_NO_GENERATED_HEADER",
     "SWIFT_FEATURE_NO_GENERATED_MODULE_MAP",
     "SWIFT_FEATURE_USE_RESPONSE_FILES",
-    "features_for_build_modes",
 )
+load(":features.bzl", "features_for_build_modes")
 load(":providers.bzl", "SwiftToolchainInfo")
 load(":toolchain_config.bzl", "swift_toolchain_config")
 load(":utils.bzl", "get_swift_executable_for_toolchain")

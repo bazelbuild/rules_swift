@@ -14,7 +14,7 @@
 
 """Implementation of the `swift_c_module` rule."""
 
-load(":api.bzl", "swift_common")
+load(":swift_common.bzl", "swift_common")
 load(":utils.bzl", "merge_runfiles")
 
 def _swift_c_module_impl(ctx):

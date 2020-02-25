@@ -41,11 +41,13 @@ This aspect is an implementation detail of the Swift build rules and is not
 meant to be attached to other rules or run independently.
 """
 
-load(":api.bzl", "swift_common")
+load(":attrs.bzl", "swift_toolchain_attrs")
+load(":compiling.bzl", "derive_module_name")
 load(":derived_files.bzl", "derived_files")
-load(":features.bzl", "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD")
+load(":feature_names.bzl", "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD")
+load(":features.bzl", "configure_features", "is_feature_enabled")
 load(":module_maps.bzl", "write_module_map")
-load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
+load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo", "create_swift_info")
 load(":utils.bzl", "get_providers")
 
 def _tagged_target_module_name(label, tags):
@@ -81,7 +83,7 @@ def _tagged_target_module_name(label, tags):
     module_name = None
     for tag in tags:
         if tag == "swift_module":
-            module_name = swift_common.derive_module_name(label)
+            module_name = derive_module_name(label)
         elif tag.startswith("swift_module="):
             _, _, module_name = tag.partition("=")
     return module_name
@@ -115,13 +117,13 @@ def _handle_cc_target(
 
     if not module_name:
         if swift_infos:
-            return [swift_common.create_swift_info(swift_infos = swift_infos)]
+            return [create_swift_info(swift_infos = swift_infos)]
         else:
             return []
 
     # Determine if the toolchain requires module maps to use
     # workspace-relative paths or not.
-    workspace_relative = swift_common.is_enabled(
+    workspace_relative = is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD,
     )
@@ -147,7 +149,7 @@ def _handle_cc_target(
         workspace_relative = workspace_relative,
     )
 
-    return [swift_common.create_swift_info(
+    return [create_swift_info(
         modulemaps = [module_map_file],
         module_name = module_name,
         swift_infos = swift_infos,
@@ -163,7 +165,7 @@ def _non_swift_target_aspect_impl(target, aspect_ctx):
     swift_infos = get_providers(deps, SwiftInfo)
 
     swift_toolchain = aspect_ctx.attr._toolchain_for_aspect[SwiftToolchainInfo]
-    feature_configuration = swift_common.configure_features(
+    feature_configuration = configure_features(
         ctx = aspect_ctx,
         requested_features = aspect_ctx.features,
         swift_toolchain = swift_toolchain,
@@ -185,12 +187,12 @@ def _non_swift_target_aspect_impl(target, aspect_ctx):
     # If it's any other rule, just merge the `SwiftInfo` providers from its
     # deps.
     if swift_infos:
-        return [swift_common.create_swift_info(swift_infos = swift_infos)]
+        return [create_swift_info(swift_infos = swift_infos)]
 
     return []
 
 non_swift_target_aspect = aspect(
-    attrs = swift_common.toolchain_attrs(
+    attrs = swift_toolchain_attrs(
         toolchain_attr_name = "_toolchain_for_aspect",
     ),
     attr_aspects = ["deps"],

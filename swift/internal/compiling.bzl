@@ -17,6 +17,7 @@
 load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:partial.bzl", "partial")
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("@bazel_skylib//lib:types.bzl", "types")
 load(
     ":actions.bzl",
     "is_action_enabled",
@@ -27,7 +28,7 @@ load(":autolinking.bzl", "register_autolink_extract_action")
 load(":debugging.bzl", "ensure_swiftmodule_is_embedded")
 load(":derived_files.bzl", "derived_files")
 load(
-    ":features.bzl",
+    ":feature_names.bzl",
     "SWIFT_FEATURE_CACHEABLE_SWIFTMODULES",
     "SWIFT_FEATURE_COMPILE_STATS",
     "SWIFT_FEATURE_COVERAGE",
@@ -49,9 +50,8 @@ load(
     "SWIFT_FEATURE_OPT_USES_WMO",
     "SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
-    "are_all_features_enabled",
-    "is_feature_enabled",
 )
+load(":features.bzl", "are_all_features_enabled", "is_feature_enabled")
 load(":providers.bzl", "SwiftInfo", "create_swift_info")
 load(":toolchain_config.bzl", "swift_toolchain_config")
 load(
@@ -714,6 +714,45 @@ def _additional_inputs_configurator(prerequisites, args):
     return swift_toolchain_config.config_result(
         inputs = prerequisites.additional_inputs,
     )
+
+def derive_module_name(*args):
+    """Returns a derived module name from the given build label.
+
+    For targets whose module name is not explicitly specified, the module name
+    is computed by creating an underscore-delimited string from the components
+    of the label, replacing any non-identifier characters also with underscores.
+
+    This mapping is not intended to be reversible.
+
+    Args:
+        *args: Either a single argument of type `Label`, or two arguments of
+            type `str` where the first argument is the package name and the
+            second argument is the target name.
+
+    Returns:
+        The module name derived from the label.
+    """
+    if (len(args) == 1 and
+        hasattr(args[0], "package") and
+        hasattr(args[0], "name")):
+        label = args[0]
+        package = label.package
+        name = label.name
+    elif (len(args) == 2 and
+          types.is_string(args[0]) and
+          types.is_string(args[1])):
+        package = args[0]
+        name = args[1]
+    else:
+        fail("derive_module_name may only be called with a single argument " +
+             "of type 'Label' or two arguments of type 'str'.")
+
+    package_part = (package.lstrip("//").replace("/", "_").replace("-", "_")
+        .replace(".", "_"))
+    name_part = name.replace("-", "_")
+    if package_part:
+        return package_part + "_" + name_part
+    return name_part
 
 def compile(
         actions,

@@ -15,7 +15,6 @@
 """Implementation of the `swift_module_alias` rule."""
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load(":api.bzl", "swift_common")
 load(
     ":compiling.bzl",
     "new_objc_provider",
@@ -24,6 +23,7 @@ load(
 load(":derived_files.bzl", "derived_files")
 load(":linking.bzl", "register_libraries_to_link")
 load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
+load(":swift_common.bzl", "swift_common")
 load(":utils.bzl", "compact", "create_cc_info", "get_providers")
 
 def _swift_module_alias_impl(ctx):
