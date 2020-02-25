@@ -28,7 +28,7 @@ load(":actions.bzl", "swift_action_names")
 load(":attrs.bzl", "swift_toolchain_driver_attrs")
 load(":compiling.bzl", "compile_action_configs")
 load(
-    ":features.bzl",
+    ":feature_names.bzl",
     "SWIFT_FEATURE_BITCODE_EMBEDDED",
     "SWIFT_FEATURE_BITCODE_EMBEDDED_MARKERS",
     "SWIFT_FEATURE_BUNDLED_XCTESTS",
@@ -38,8 +38,8 @@ load(
     "SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS",
     "SWIFT_FEATURE_USE_RESPONSE_FILES",
-    "features_for_build_modes",
 )
+load(":features.bzl", "features_for_build_modes")
 load(":toolchain_config.bzl", "swift_toolchain_config")
 load(":providers.bzl", "SwiftToolchainInfo")
 load(":utils.bzl", "get_swift_executable_for_toolchain")

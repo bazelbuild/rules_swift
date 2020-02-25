@@ -14,151 +14,14 @@
 
 """Helper functions for working with Bazel features."""
 
-# We use the following constants within the rule definitions to prevent the
-# possibility of typos when referring to them as part of the implementation, but
-# we explicitly do not export them since it's not a common practice to use them
-# that way in BUILD files; the expectation is that the actual string literals
-# would be used there. (There is also no good way to generate documentation yet
-# for constants since they don't have "doc" attributes, so exposing them in a
-# more structured way doesn't provide a benefit there either.)
-
-# These features correspond to the current Bazel compilation mode. Exactly one
-# of them will be enabled by the toolchain. (We define our own because we cannot
-# depend on the equivalent C++ features being enabled if the toolchain does not
-# require them for any of its behavior.)
-SWIFT_FEATURE_DBG = "swift.dbg"
-SWIFT_FEATURE_FASTBUILD = "swift.fastbuild"
-SWIFT_FEATURE_OPT = "swift.opt"
-
-# These features correspond to the current Bitcode mode as specified by the
-# `apple` configuration fragment when targeting Apple platforms. At most one of
-# these will be enabled by the toolchain.
-SWIFT_FEATURE_BITCODE_EMBEDDED = "swift.bitcode_embedded"
-SWIFT_FEATURE_BITCODE_EMBEDDED_MARKERS = "swift.bitcode_embedded_markers"
-
-# This feature is enabled if coverage collection is enabled for the build. (See
-# the note above about not depending on the C++ features.)
-SWIFT_FEATURE_COVERAGE = "swift.coverage"
-
-# If enabled, the `swift_test` rule will output an `.xctest` bundle for Darwin
-# targets instead of a standalone binary. This is necessary for XCTest-based
-# tests that use runtime reflection to locate test methods. This feature can be
-# explicitly disabled on a per-target or per-package basis if needed to make
-# `swift_test` output just a binary.
-SWIFT_FEATURE_BUNDLED_XCTESTS = "swift.bundled_xctests"
-
-# If enabled, the Swift compiler will emit a directory containing JSON files
-# with timing information about the driver/frontend's actions. This directory
-# will be emitted as a default output when a Swift target is built directly, and
-# it will also be propagated in an output group named
-# `swift_compile_stats_direct`. Typically this output group will not be accessed
-# directly, but used by the `collect_swift_compile_stats` aspect to gather the
-# transitive stats for the entire build.
-SWIFT_FEATURE_COMPILE_STATS = "swift.compile_stats"
-
-# If enabled, debug builds will use the `-debug-prefix-map` feature to remap the
-# current working directory to `.`, which permits debugging remote or sandboxed
-# builds.
-SWIFT_FEATURE_DEBUG_PREFIX_MAP = "swift.debug_prefix_map"
-
-# If enabled, Swift compilation actions will use batch mode by passing
-# `-enable-batch-mode` to `swiftc`. This is a new compilation mode as of
-# Swift 4.2 that is intended to speed up non-incremental non-WMO builds by
-# invoking a smaller number of frontend processes and passing them batches of
-# source files.
-SWIFT_FEATURE_ENABLE_BATCH_MODE = "swift.enable_batch_mode"
-
-# If enabled, Swift compilation actions will pass the `-enable-testing` flag
-# that modifies visibility controls to let a module be imported with the
-# `@testable` attribute. This feature will be enabled by default for
-# dbg/fastbuild builds and disabled by default for opt builds.
-SWIFT_FEATURE_ENABLE_TESTING = "swift.enable_testing"
-
-# If enabled, full debug info should be generated instead of line-tables-only.
-# This is required when dSYMs are requested via the `--apple_generate_dsym` flag
-# but the compilation mode is `fastbuild`, because `dsymutil` emits spurious
-# warnings otherwise.
-SWIFT_FEATURE_FULL_DEBUG_INFO = "swift.full_debug_info"
-
-# If enabled, the compilation action for a target will produce an index store.
-SWIFT_FEATURE_INDEX_WHILE_BUILDING = "swift.index_while_building"
-
-# If enabled, Swift libraries, binaries, and tests will only have automatic
-# dependencies on the targets provided by the toolchain's
-# `required_implicit_deps` field but not those in the `optional_implicit_deps`
-# field. Users may still explicitly list the latter in the `deps` of their
-# targets if they are needed.
-SWIFT_FEATURE_MINIMAL_DEPS = "swift.minimal_deps"
-
-# If enabled, compilation actions and module map generation will assume that the
-# header paths in module maps are relative to the current working directory
-# (i.e., the workspace root); if disabled, header paths in module maps are
-# relative to the location of the module map file.
-SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD = "swift.module_map_home_is_cwd"
-
-# If enabled, the compilation action for a library target will not generate an
-# Objective-C header for the module. This feature also implies
-# `swift.no_generated_module_map`.
-SWIFT_FEATURE_NO_GENERATED_HEADER = "swift.no_generated_header"
-
-# If enabled, the compilation action for a library target will not generate a
-# module map for the Objective-C generated header. This feature is ignored if
-# `swift.no_generated_header` is not present.
-SWIFT_FEATURE_NO_GENERATED_MODULE_MAP = "swift.no_generated_module_map"
-
-# If enabled, builds using the "opt" compilation mode will invoke `swiftc` with
-# the `-whole-module-optimization` flag (in addition to `-O`).
-SWIFT_FEATURE_OPT_USES_WMO = "swift.opt_uses_wmo"
-
-# If enabled, builds using the "opt" compilation mode will invoke `swiftc` with
-# the `-Osize` flag instead of `-O`.
-SWIFT_FEATURE_OPT_USES_OSIZE = "swift.opt_uses_osize"
-
-# If enabled, Swift compilation actions will use the same global Clang module
-# cache used by Objective-C compilation actions. This is disabled by default
-# because under some circumstances Clang module cache corruption can cause the
-# Swift compiler to crash (sometimes when switching configurations or syncing a
-# repository), but disabling it also causes a noticeable build time regression
-# so it can be explicitly re-enabled by users who are not affected by those
-# crashes.
-SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE = "swift.use_global_module_cache"
-
-# If enabled, actions invoking the Swift driver or frontend may write argument
-# lists into response files (i.e., "@args.txt") to avoid passing command lines
-# that exceed the system limit. Toolchains typically set this automatically if
-# using a sufficiently recent version of Swift (4.2 or higher).
-SWIFT_FEATURE_USE_RESPONSE_FILES = "swift.use_response_files"
-
-# If enabled, builds using the "dbg" compilation mode will explicitly disable
-# swiftc from producing swiftmodules containing embedded file paths, which are
-# inherently non-portable across machines.
-#
-# To used these modules from lldb, target settings must be correctly populated.
-# For example:
-#     target.swift-module-search-paths
-#     target.swift-framework-search-paths
-#     target.swift-extra-clang-flags
-SWIFT_FEATURE_CACHEABLE_SWIFTMODULES = "swift.cacheable_swiftmodules"
-
-# If enabled, enables features that require the library evolution compilation
-# mode. If disabled, features that require library evolution mode are noops.
-SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION = "swift.supports_library_evolution"
-
-# If enabled, requests the `-enable-library-evolution` swiftc flag which is
-# required for newer features like swiftinterface file generation. If the
-# `SWIFT_FEATURES_SUPPORTS_LIBRARY_EVOLUTION` feature is not enabled, this
-# feature is a noop.
-SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION = "swift.enable_library_evolution"
-
-# If enabled, requests the swiftinterface file to be built on the swiftc
-# invocation. If the `SWIFT_FEATURES_SUPPORTS_LIBRARY_EVOLUTION` feature is not
-# enabled, this feature is a noop.
-SWIFT_FEATURE_EMIT_SWIFTINTERFACE = "swift.emit_swiftinterface"
-
-# If enabled, the toolchain supports private deps (implementation-only imports).
-# This allows Bazel to avoid propagating swiftmodules of such dependencies
-# higher in the dependency graph than they need to be.
-SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS = "swift.supports_private_deps"
+load("@bazel_skylib//lib:collections.bzl", "collections")
+load("@bazel_skylib//lib:new_sets.bzl", "sets")
+load(
+    ":feature_names.bzl",
+    "SWIFT_FEATURE_COVERAGE",
+    "SWIFT_FEATURE_ENABLE_TESTING",
+    "SWIFT_FEATURE_FULL_DEBUG_INFO",
+)
 
 def are_all_features_enabled(feature_configuration, feature_names):
     """Returns `True` if all features are enabled in the feature configuration.
@@ -179,6 +42,75 @@ def are_all_features_enabled(feature_configuration, feature_names):
         ):
             return False
     return True
+
+def configure_features(
+        ctx,
+        swift_toolchain,
+        requested_features = [],
+        unsupported_features = []):
+    """Creates a feature configuration to be passed to Swift build APIs.
+
+    This function calls through to `cc_common.configure_features` to configure
+    underlying C++ features as well, and nests the C++ feature configuration
+    inside the Swift one. Users who need to call C++ APIs that require a feature
+    configuration can extract it by calling
+    `swift_common.cc_feature_configuration(feature_configuration)`.
+
+    Args:
+        ctx: The rule context.
+        swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain
+            being used to build. The C++ toolchain associated with the Swift
+            toolchain is used to create the underlying C++ feature
+            configuration.
+        requested_features: The list of features to be enabled. This is
+            typically obtained using the `ctx.features` field in a rule
+            implementation function.
+        unsupported_features: The list of features that are unsupported by the
+            current rule. This is typically obtained using the
+            `ctx.disabled_features` field in a rule implementation function.
+
+    Returns:
+        An opaque value representing the feature configuration that can be
+        passed to other `swift_common` functions.
+    """
+
+    # The features to enable for a particular rule/target are the ones requested
+    # by the toolchain, plus the ones requested by the target itself, *minus*
+    # any that are explicitly disabled on the target itself.
+    requested_features_set = sets.make(swift_toolchain.requested_features)
+    requested_features_set = sets.union(
+        requested_features_set,
+        sets.make(requested_features),
+    )
+    requested_features_set = sets.difference(
+        requested_features_set,
+        sets.make(unsupported_features),
+    )
+    all_requested_features = sets.to_list(requested_features_set)
+
+    all_unsupported_features = collections.uniq(
+        swift_toolchain.unsupported_features + unsupported_features,
+    )
+
+    # Verify the consistency of Swift features requested vs. those that are not
+    # supported by the toolchain. We don't need to do this for C++ features
+    # because `cc_common.configure_features` handles verifying those.
+    for feature in requested_features:
+        if feature.startswith("swift.") and feature in all_unsupported_features:
+            fail("Feature '{}' was requested, ".format(feature) +
+                 "but it is not supported by the current toolchain or rule.")
+
+    cc_feature_configuration = cc_common.configure_features(
+        ctx = ctx,
+        cc_toolchain = swift_toolchain.cc_toolchain_info,
+        requested_features = all_requested_features,
+        unsupported_features = all_unsupported_features,
+    )
+    return struct(
+        cc_feature_configuration = cc_feature_configuration,
+        requested_features = all_requested_features,
+        unsupported_features = all_unsupported_features,
+    )
 
 def features_for_build_modes(ctx, objc_fragment = None):
     """Returns a list of Swift toolchain features for current build modes.

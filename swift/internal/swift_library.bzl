@@ -14,7 +14,6 @@
 
 """Implementation of the `swift_library` rule."""
 
-load(":api.bzl", "swift_common")
 load(":attrs.bzl", "swift_deps_attr")
 load(
     ":compiling.bzl",
@@ -24,7 +23,7 @@ load(
     "swift_library_output_map",
 )
 load(
-    ":features.bzl",
+    ":feature_names.bzl",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS",
@@ -32,6 +31,7 @@ load(
 load(":linking.bzl", "register_libraries_to_link")
 load(":non_swift_target_aspect.bzl", "non_swift_target_aspect")
 load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
+load(":swift_common.bzl", "swift_common")
 load(
     ":utils.bzl",
     "compact",

@@ -17,13 +17,13 @@
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:partial.bzl", "partial")
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load(":api.bzl", "swift_common")
 load(":compiling.bzl", "output_groups_from_compilation_outputs")
 load(":derived_files.bzl", "derived_files")
-load(":features.bzl", "SWIFT_FEATURE_BUNDLED_XCTESTS")
+load(":feature_names.bzl", "SWIFT_FEATURE_BUNDLED_XCTESTS")
 load(":linking.bzl", "register_link_binary_action")
 load(":non_swift_target_aspect.bzl", "non_swift_target_aspect")
 load(":providers.bzl", "SwiftToolchainInfo")
+load(":swift_common.bzl", "swift_common")
 load(":utils.bzl", "expand_locations")
 
 def _binary_rule_attrs(stamp_default):

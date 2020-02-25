@@ -25,7 +25,7 @@ Skylib.
 """
 
 load(
-    "@build_bazel_rules_swift//swift/internal:features.bzl",
+    "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
     "SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS",

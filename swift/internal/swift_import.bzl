@@ -15,10 +15,10 @@
 """Implementation of the `swift_import` rule."""
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load(":api.bzl", "swift_common")
 load(":attrs.bzl", "swift_common_rule_attrs")
 load(":compiling.bzl", "new_objc_provider")
 load(":providers.bzl", "SwiftInfo")
+load(":swift_common.bzl", "swift_common")
 load(":utils.bzl", "create_cc_info", "get_providers")
 
 def _swift_import_impl(ctx):

@@ -15,6 +15,7 @@
 """Implementation of linking logic for Swift."""
 
 load("@bazel_skylib//lib:collections.bzl", "collections")
+load("@bazel_skylib//lib:partial.bzl", "partial")
 load(
     "@bazel_tools//tools/build_defs/cc:action_names.bzl",
     "CPP_LINK_STATIC_LIBRARY_ACTION_NAME",
@@ -239,4 +240,30 @@ def register_link_binary_action(
         linking_contexts = linking_contexts,
         link_deps_statically = True,
         output_type = output_type,
+    )
+
+def swift_runtime_linkopts(is_static, toolchain, is_test = False):
+    """Returns the flags that should be passed when linking a Swift binary.
+
+    This function provides the appropriate linker arguments to callers who need
+    to link a binary using something other than `swift_binary` (for example, an
+    application bundle containing a universal `apple_binary`).
+
+    Args:
+        is_static: A `Boolean` value indicating whether the binary should be
+            linked against the static (rather than the dynamic) Swift runtime
+            libraries.
+        toolchain: The `SwiftToolchainInfo` provider of the toolchain whose
+            linker options are desired.
+        is_test: A `Boolean` value indicating whether the target being linked is
+            a test target.
+
+    Returns:
+        A `list` of command line flags that should be passed when linking a
+        binary against the Swift runtime libraries.
+    """
+    return partial.call(
+        toolchain.linker_opts_producer,
+        is_static = is_static,
+        is_test = is_test,
     )
