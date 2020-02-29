@@ -129,12 +129,16 @@ def _action_config(
             mentioned in *one* of the inner lists must be enabled; or a single
             non-empty `list` of feature names, which is a shorthand form
             equivalent to that single list wrapped in another list.
-        not_features: The `list` of features that must *not* be enabled for the
-            configurators to be applied to the action. Unlike the `features`
-            argument, this is only a single list, and it is a conjunction; if
-            and only if *all* of the features in the list are enabled, the
-            configurators will not be applied, even if `features` was also
-            satisfied.
+        not_features: The `list` of features that must be disabled for the
+            configurators to be applied to the action. Like `features`, this
+            argument can take one of three forms: `None` (the default), in
+            which case the configurators are applied if `features` was
+            satisfied; a non-empty `list` of `list`s of feature names (strings),
+            in which case *all* features mentioned in *one* of the inner lists
+            must be disabled, otherwise the configurators will not be applied,
+            even if `features` was satisfied; or a single non-empty `list` of
+            feature names, which is a shorthand form equivalent to that single
+            list wrapped in another list.
 
     Returns:
         A validated action configuration.
@@ -143,7 +147,7 @@ def _action_config(
         actions = actions,
         configurators = configurators,
         features = _normalize_action_config_features(features),
-        not_features = not_features,
+        not_features = _normalize_action_config_features(not_features),
     )
 
 def _add_arg_impl(
