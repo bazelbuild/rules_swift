@@ -77,6 +77,8 @@ def create_cc_info(
         additional_inputs = [],
         cc_infos = [],
         compilation_outputs = None,
+        defines = [],
+        includes = [],
         libraries_to_link = [],
         private_cc_infos = [],
         user_link_flags = []):
@@ -90,6 +92,10 @@ def create_cc_info(
             provider.
         compilation_outputs: The compilation outputs from a Swift compile
             action, as returned by `swift_common.compile`, or None.
+        defines: The list of compiler defines to insert into the compilation
+            context.
+        includes: The list of include paths to insert into the compilation
+            context.
         libraries_to_link: A list of `LibraryToLink` objects that represent the
             libraries that should be linked into the final binary.
         private_cc_infos: A list of `CcInfo` providers from private
@@ -104,9 +110,11 @@ def create_cc_info(
     """
     all_additional_inputs = list(additional_inputs)
     all_user_link_flags = list(user_link_flags)
+    all_headers = []
     if compilation_outputs:
         all_additional_inputs.extend(compilation_outputs.linker_inputs)
         all_user_link_flags.extend(compilation_outputs.linker_flags)
+        all_headers = compact([compilation_outputs.generated_header])
 
     local_cc_infos = [
         CcInfo(
@@ -114,6 +122,11 @@ def create_cc_info(
                 additional_inputs = all_additional_inputs,
                 libraries_to_link = libraries_to_link,
                 user_link_flags = all_user_link_flags,
+            ),
+            compilation_context = cc_common.create_compilation_context(
+                defines = depset(defines),
+                headers = depset(all_headers),
+                includes = depset(includes),
             ),
         ),
     ]

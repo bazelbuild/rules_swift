@@ -100,6 +100,7 @@ def _swift_module_alias_impl(ctx):
         create_cc_info(
             cc_infos = get_providers(deps, CcInfo),
             compilation_outputs = compilation_outputs,
+            includes = [ctx.bin_dir.path],
             libraries_to_link = [library_to_link],
         ),
         swift_common.create_swift_info(

@@ -202,6 +202,8 @@ def _swift_library_impl(ctx):
             additional_inputs = additional_inputs,
             cc_infos = get_providers(deps, CcInfo),
             compilation_outputs = compilation_outputs,
+            defines = ctx.attr.defines,
+            includes = [ctx.bin_dir.path],
             libraries_to_link = [library_to_link],
             private_cc_infos = get_providers(private_deps, CcInfo),
             user_link_flags = linkopts,
