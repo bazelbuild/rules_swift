@@ -108,10 +108,15 @@ def _apply_action_configs(
         # features, check those as well and possibly decide to not apply the
         # configurators based on those.
         if should_apply_configurators and action_config.not_features:
-            should_apply_configurators = not are_all_features_enabled(
-                feature_configuration = feature_configuration,
-                feature_names = action_config.not_features,
-            )
+            # The configurators will not be applied if any of the
+            # `not_features` exclusion lists are entirely enabled.
+            for feature_names in action_config.not_features:
+                if are_all_features_enabled(
+                    feature_configuration = feature_configuration,
+                    feature_names = feature_names,
+                ):
+                    should_apply_configurators = False
+                    break
 
         # If one of the feature lists is completely satisfied, invoke the
         # configurators.
