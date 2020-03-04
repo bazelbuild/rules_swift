@@ -1311,6 +1311,8 @@ def _declare_compile_outputs(
         user_compile_flags: The flags that will be passed to the compile action,
             which are scanned to determine whether a single frontend invocation
             will be used or not.
+        swift_info: The merged SwiftInfo representing the action's Swift
+            dependencies.
 
     Returns:
         A tuple containing two elements:
