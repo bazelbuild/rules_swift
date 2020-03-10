@@ -40,4 +40,6 @@ buildifier:
   # TODO(b/140761855): Remove native-cc from this list.
   # TODO(b/140761855): Remove native-proto from this list.
   # TODO(b/140761855): Remove native-py from this list.
-  warnings: -native-cc,-native-proto,-native-py
+  # Disable 'bzl-visibility' since it doesn't work properly.
+  #  https://github.com/bazelbuild/buildtools/issues/718
+  warnings: -native-cc,-native-proto,-native-py,-bzl-visibility
