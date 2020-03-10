@@ -1522,9 +1522,19 @@ def output_groups_from_compilation_outputs(compilation_outputs):
             compilation_outputs.stats_directory,
         ])
 
+    if compilation_outputs.swiftdoc:
+        output_groups["swiftdoc"] = depset([
+            compilation_outputs.swiftdoc,
+        ])
+
     if compilation_outputs.swiftinterface:
         output_groups["swiftinterface"] = depset([
             compilation_outputs.swiftinterface,
+        ])
+
+    if compilation_outputs.swiftmodule:
+        output_groups["swiftmodule"] = depset([
+            compilation_outputs.swiftmodule,
         ])
 
     return output_groups
