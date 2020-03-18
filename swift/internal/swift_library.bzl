@@ -165,6 +165,21 @@ def _swift_library_impl(ctx):
         target_name = ctx.label.name,
     )
 
+    # If a module map was created for the generated header, propagate it as a
+    # Clang module so that it is passed as a module input to upstream
+    # compilation actions.
+    if compilation_outputs.generated_module_map:
+        clang_module = swift_common.create_clang_module(
+            compilation_context = cc_common.create_compilation_context(
+                headers = depset([compilation_outputs.generated_header]),
+            ),
+            module_map = compilation_outputs.generated_module_map,
+            # TODO(b/142867898): Precompile the module and place it here.
+            precompiled_module = None,
+        )
+    else:
+        clang_module = None
+
     library_to_link = register_libraries_to_link(
         actions = ctx.actions,
         alwayslink = ctx.attr.alwayslink,
@@ -215,6 +230,14 @@ def _swift_library_impl(ctx):
             source_attributes = ["srcs"],
         ),
         swift_common.create_swift_info(
+            modules = [
+                swift_common.create_module(
+                    name = module_name,
+                    clang = clang_module,
+                    # TODO(b/149999519): Add Swift module info here by calling
+                    # `swift_common.create_swift_module`.
+                ),
+            ],
             defines = ctx.attr.defines,
             generated_headers = compact([compilation_outputs.generated_header]),
             module_name = module_name,

@@ -27,8 +27,10 @@ def _swift_c_module_impl(ctx):
 
     if cc_infos:
         cc_info = cc_common.merge_cc_infos(cc_infos = cc_infos)
+        compilation_context = cc_info.compilation_context
     else:
         cc_info = None
+        compilation_context = cc_common.create_compilation_context()
 
     providers = [
         # We must repropagate the dependencies' DefaultInfos, otherwise we
@@ -39,7 +41,20 @@ def _swift_c_module_impl(ctx):
             default_runfiles = merge_runfiles(default_runfiles),
             files = depset([module_map]),
         ),
-        swift_common.create_swift_info(modulemaps = [module_map]),
+        swift_common.create_swift_info(
+            modules = [
+                swift_common.create_module(
+                    name = ctx.attr.module_name,
+                    clang = swift_common.create_clang_module(
+                        compilation_context = compilation_context,
+                        module_map = module_map,
+                        # TODO(b/142867898): Precompile the module and place it
+                        # here.
+                        precompiled_module = None,
+                    ),
+                ),
+            ],
+        ),
     ]
 
     if cc_info:
