@@ -28,6 +28,10 @@ has reasonable defaults for any fields not explicitly set.
 `List` of `string`s. The values specified by the `defines` attribute of the
 library that directly propagated this provider.
 """,
+        "direct_modules": """\
+`List` of values returned from `swift_common.create_module`. The modules (both
+Swift and C/Objective-C) emitted by the library that propagated this provider.
+""",
         "direct_swiftdocs": """\
 `List` of `File`s. The Swift documentation (`.swiftdoc`) files for the library
 that directly propagated this provider.
@@ -59,6 +63,13 @@ Objective-C sources to interop with the transitive Swift libraries.
         "transitive_modulemaps": """\
 `Depset` of `File`s. The transitive module map files that will be passed to
 Clang using the `-fmodule-map-file` option.
+
+This field is deprecated; use `transitive_modules` instead.
+""",
+        "transitive_modules": """\
+`Depset` of values returned from `swift_common.create_module`. The transitive
+modules (both Swift and C/Objective-C) emitted by the library that propagated
+this provider and all of its dependencies.
 """,
         "transitive_swiftdocs": """\
 `Depset` of `File`s. The transitive Swift documentation (`.swiftdoc`) files
@@ -237,11 +248,93 @@ provider.
     },
 )
 
+def create_module(name, clang = None, swift = None):
+    """Creates a value containing Clang/Swift module artifacts of a dependency.
+
+    At least one of the `clang` and `swift` arguments must not be `None`. It is
+    valid for both to be present; this is the case for most Swift modules, which
+    provide both Swift module artifacts as well as a generated header/module map
+    for Objective-C targets to depend on.
+
+    Args:
+        name: The name of the module.
+        clang: A value returned by `swift_common.create_clang_module` that
+            contains artifacts related to Clang modules, such as a module map or
+            precompiled module. This may be `None` if the module is a pure Swift
+            module with no generated Objective-C interface.
+        swift: A value returned by `swift_common.create_swift_module` that
+            contains artifacts related to Swift modules, such as the
+            `.swiftmodule`, `.swiftdoc`, and/or `.swiftinterface` files emitted
+            by the compiler. This may be `None` if the module is a pure
+            C/Objective-C module.
+
+    Returns:
+        A `struct` containing the `name`, `clang`, and `swift` fields provided
+        as arguments.
+    """
+
+    # TODO(b/149999519): Once Swift module artifacts have migrated to this API,
+    # fail if both `clang` and `swift` are `None`.
+    return struct(
+        clang = clang,
+        name = name,
+        swift = swift,
+    )
+
+def create_clang_module(
+        compilation_context,
+        module_map,
+        precompiled_module = None):
+    """Creates a value representing a Clang module used as a Swift dependency.
+
+    Args:
+        compilation_context: A `CcCompilationContext` that contains the header
+            files, include paths, and other context necessary to compile targets
+            that depend on this module (if using the text module map instead of
+            the precompiled module).
+        module_map: A `File` representing the text module map file that defines
+            this module.
+        precompiled_module: A `File` representing the precompiled module (`.pcm`
+            file) if one was emitted for the module. This may be `None` if no
+            explicit module was built for the module; in that case, targets that
+            depend on the module will fall back to the text module map and
+            headers.
+
+    Returns:
+        A `struct` containing the `compilation_context`, `module_map`, and
+        `precompiled_module` fields provided as arguments.
+    """
+    return struct(
+        compilation_context = compilation_context,
+        module_map = module_map,
+        precompiled_module = precompiled_module,
+    )
+
+def create_swift_module(swiftdoc, swiftmodule, swiftinterface = None):
+    """Creates a value representing a Swift module use as a Swift dependency.
+
+    Args:
+        swiftdoc: The `.swiftdoc` file emitted by the compiler for this module.
+        swiftmodule: The `.swiftmodule` file emitted by the compiler for this
+            module.
+        swiftinterface: The `.swiftinterface` file emitted by the compiler for
+            this module. May be `None` if no module interface file was emitted.
+
+    Returns:
+        A `struct` containing the `swiftdoc`, `swiftmodule`, and
+        `swiftinterface` fields provided as arguments.
+    """
+    return struct(
+        swiftdoc = swiftdoc,
+        swiftinterface = swiftinterface,
+        swiftmodule = swiftmodule,
+    )
+
 def create_swift_info(
         defines = [],
         generated_headers = [],
-        modulemaps = [],
         module_name = None,
+        modules = [],
         swiftdocs = [],
         swiftmodules = [],
         swiftinterfaces = [],
@@ -264,15 +357,16 @@ def create_swift_info(
             target being built.
         generated_headers: A list of headers generated by Swift for Objective-C
             interop for the target being built.
-        modulemaps: A list of module maps that should be passed to ClangImporter
-            by any target that depends on the one propagating this provider.
         module_name: A string containing the name of the Swift module. If this
             is `None`, the provider does not represent a compiled module but
             rather a collection of modules (this happens, for example, with
             `proto_library` targets that have no sources of their own but depend
             on others that do).
+        modules: A list of values (as returned by `swift_common.create_module`)
+            that represent Clang and/or Swift module artifacts that are direct
+            outputs of the target being built.
         swiftdocs: A list of `.swiftdoc` files that are the direct outputs of
-        the target being built. If omitted, an empty list is used.
+            the target being built. If omitted, an empty list is used.
         swiftinterfaces: A list of `.swiftinterface` files that are the direct
             outputs of the target built. If omitted, an empty list is used.
         swiftmodules: A list of `.swiftmodule` files that are the direct outputs
@@ -290,6 +384,7 @@ def create_swift_info(
     transitive_defines = []
     transitive_generated_headers = []
     transitive_modulemaps = []
+    transitive_modules = []
     transitive_swiftdocs = []
     transitive_swiftinterfaces = []
     transitive_swiftmodules = []
@@ -299,10 +394,14 @@ def create_swift_info(
             swift_info.transitive_generated_headers,
         )
         transitive_modulemaps.append(swift_info.transitive_modulemaps)
+        transitive_modules.append(swift_info.transitive_modules)
         transitive_swiftdocs.append(swift_info.transitive_swiftdocs)
         transitive_swiftinterfaces.append(swift_info.transitive_swiftinterfaces)
         transitive_swiftmodules.append(swift_info.transitive_swiftmodules)
 
+    # TODO(b/149999519): Remove `transitive_modulemaps`,
+    # `(direct|transitive)_swift*` fields, `module_name`, and `swift_version`
+    # after Tulsi is migrated.
     return SwiftInfo(
         direct_defines = defines,
         direct_swiftdocs = swiftdocs,
@@ -315,9 +414,10 @@ def create_swift_info(
             transitive = transitive_generated_headers,
         ),
         transitive_modulemaps = depset(
-            modulemaps,
+            [m.clang.module_map for m in modules if m.clang],
             transitive = transitive_modulemaps,
         ),
+        transitive_modules = depset(modules, transitive = transitive_modules),
         transitive_swiftdocs = depset(
             swiftdocs,
             transitive = transitive_swiftdocs,

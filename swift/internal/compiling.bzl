@@ -560,31 +560,58 @@ def _dependencies_clang_defines_configurator(prerequisites, args):
     ])
     args.add_all(all_clang_defines, before_each = "-Xcc", format_each = "-D%s")
 
+def _clang_module_dependency_args(clang_module):
+    """A `map_each` function that returns `swiftc` arguments for a Clang module.
+
+    Args:
+        clang_module: A struct containing information about the clang module, as
+            defined by `swift_common.create_clang_module`.
+
+    Returns:
+        A list of arguments to pass to `swiftc`.
+    """
+
+    # TODO(b/142867898): Use the precompiled module with `-fmodule-file` if it
+    # is present and the target has requested it.
+    return [
+        "-Xcc",
+        "-fmodule-map-file={}".format(clang_module.module_map.path),
+    ]
+
 def _dependencies_clang_modules_configurator(prerequisites, args):
     """Adds dependencies' Clang modules as inputs and command line flags."""
 
-    # TODO(b/142867898): Once we start consuming precompiled modules for some
-    # dependencies, use `-fmodule-file` instead, and don't include those
-    # modules' header files in the inputs below.
-    modulemap_depsets = [
-        prerequisites.swift_info.transitive_modulemaps,
-        prerequisites.objc_info.module_map,
+    # Flattening this `depset` is necessary because we need to extract the
+    # module maps or precompiled modules out of structured values and do so
+    # conditionally. This should not lead to poor performance because the
+    # flattening happens only when the action is about to be registered, rather
+    # than the same `depset` being flattened and re-merged multiple times up the
+    # build graph.
+    clang_modules = [
+        module.clang
+        for module in prerequisites.swift_info.transitive_modules.to_list()
+        if module.clang
     ]
-    args.add_all(
-        depset(transitive = modulemap_depsets),
-        before_each = "-Xcc",
-        format_each = "-fmodule-map-file=%s",
-    )
+
+    args.add_all(clang_modules, map_each = _clang_module_dependency_args)
 
     # Also add the headers from C/C++/ObjC dependencies to the inputs here.
+    # TODO(b/144372256): Use the compilation context from each element of
+    # `clang_modules` to get the headers (among other values, like include
+    # paths) once Objective-C compilation is migrated to CcCompilationContext.
+    # TODO(b/142867898): When using the precompiled module for a dependency, we
+    # should not include its headers in the inputs.
     header_depsets = [
         prerequisites.cc_info.compilation_context.headers,
         prerequisites.objc_info.header,
         prerequisites.objc_info.umbrella_header,
     ]
 
+    module_inputs = [m.module_map for m in clang_modules]
+
     return swift_toolchain_config.config_result(
-        transitive_inputs = header_depsets + modulemap_depsets,
+        inputs = module_inputs,
+        transitive_inputs = header_depsets,
     )
 
 def _framework_search_paths_configurator(prerequisites, args):
