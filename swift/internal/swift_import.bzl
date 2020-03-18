@@ -19,13 +19,13 @@ load(":attrs.bzl", "swift_common_rule_attrs")
 load(":compiling.bzl", "new_objc_provider")
 load(":providers.bzl", "SwiftInfo")
 load(":swift_common.bzl", "swift_common")
-load(":utils.bzl", "create_cc_info", "get_providers")
+load(":utils.bzl", "compact", "create_cc_info", "get_providers")
 
 def _swift_import_impl(ctx):
     archives = ctx.files.archives
     deps = ctx.attr.deps
-    swiftdocs = ctx.files.swiftdocs
-    swiftmodules = ctx.files.swiftmodules
+    swiftdoc = ctx.file.swiftdoc
+    swiftmodule = ctx.file.swiftmodule
 
     # We have to depend on the C++ toolchain directly here to create the
     # libraries to link. Depending on the Swift toolchain causes a problematic
@@ -50,7 +50,7 @@ def _swift_import_impl(ctx):
 
     providers = [
         DefaultInfo(
-            files = depset(direct = archives + swiftdocs + swiftmodules),
+            files = depset(archives + [swiftmodule] + compact([swiftdoc])),
             runfiles = ctx.runfiles(
                 collect_data = True,
                 collect_default = True,
@@ -75,11 +75,12 @@ def _swift_import_impl(ctx):
             module_map = None,
             objc_header = None,
             static_archives = archives,
-            swiftmodules = swiftmodules,
+            swiftmodules = [swiftmodule],
         ),
         swift_common.create_swift_info(
-            swiftdocs = swiftdocs,
-            swiftmodules = swiftmodules,
+            module_name = ctx.attr.module_name,
+            swiftdocs = compact([swiftdoc]),
+            swiftmodules = [swiftmodule],
             swift_infos = get_providers(deps, SwiftInfo),
         ),
     ]
@@ -98,22 +99,21 @@ The list of `.a` files provided to Swift targets that depend on this target.
 """,
                 mandatory = True,
             ),
-            "swiftdocs": attr.label_list(
-                allow_empty = True,
-                allow_files = ["swiftdoc"],
+            "module_name": attr.string(
+                doc = "The name of the module represented by this target.",
+                mandatory = True,
+            ),
+            "swiftdoc": attr.label(
+                allow_single_file = ["swiftdoc"],
                 doc = """\
-The list of `.swiftdoc` files provided to Swift targets that depend on this
-target.
+The `.swiftdoc` file provided to Swift targets that depend on this target.
 """,
-                default = [],
                 mandatory = False,
             ),
-            "swiftmodules": attr.label_list(
-                allow_empty = False,
-                allow_files = ["swiftmodule"],
+            "swiftmodule": attr.label(
+                allow_single_file = ["swiftmodule"],
                 doc = """\
-The list of `.swiftmodule` files provided to Swift targets that depend on this
-target.
+The `.swiftmodule` file provided to Swift targets that depend on this target.
 """,
                 mandatory = True,
             ),
