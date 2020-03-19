@@ -38,16 +38,13 @@ load(
 )
 load(":linking.bzl", "swift_runtime_linkopts")
 load(
-    ":non_swift_target_aspect.bzl",
-    "non_swift_target_aspect",
-)
-load(
     ":providers.bzl",
     "create_clang_module",
     "create_module",
     "create_swift_info",
     "create_swift_module",
 )
+load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 
 # The exported `swift_common` module, which defines the public API for directly
 # invoking actions that compile Swift code from other rules.
@@ -64,7 +61,7 @@ swift_common = struct(
     get_implicit_deps = get_implicit_deps,
     is_enabled = is_feature_enabled,
     library_rule_attrs = swift_library_rule_attrs,
-    swift_clang_module_aspect = non_swift_target_aspect,
+    swift_clang_module_aspect = swift_clang_module_aspect,
     swift_runtime_linkopts = swift_runtime_linkopts,
     toolchain_attrs = swift_toolchain_attrs,
 )

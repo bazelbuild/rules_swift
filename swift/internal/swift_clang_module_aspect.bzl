@@ -231,7 +231,7 @@ def _handle_objc_target(
         swift_infos = swift_infos,
     )]
 
-def _non_swift_target_aspect_impl(target, aspect_ctx):
+def _swift_clang_module_aspect_impl(target, aspect_ctx):
     # Do nothing if the target already propagates `SwiftInfo`.
     if SwiftInfo in target:
         return []
@@ -283,7 +283,7 @@ def _non_swift_target_aspect_impl(target, aspect_ctx):
 
     return []
 
-non_swift_target_aspect = aspect(
+swift_clang_module_aspect = aspect(
     attr_aspects = _MULTIPLE_TARGET_ASPECT_ATTRS + _SINGLE_TARGET_ASPECT_ATTRS,
     attrs = swift_toolchain_attrs(
         toolchain_attr_name = "_toolchain_for_aspect",
@@ -321,7 +321,7 @@ library's attribute and then merge its `SwiftInfo` provider with any others that
 it propagates for its targets.
 """,
     fragments = ["cpp"],
-    implementation = _non_swift_target_aspect_impl,
+    implementation = _swift_clang_module_aspect_impl,
     required_aspect_providers = [
         [apple_common.Objc],
         [CcInfo],
