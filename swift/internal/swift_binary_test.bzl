@@ -21,7 +21,6 @@ load(":compiling.bzl", "output_groups_from_compilation_outputs")
 load(":derived_files.bzl", "derived_files")
 load(":feature_names.bzl", "SWIFT_FEATURE_BUNDLED_XCTESTS")
 load(":linking.bzl", "register_link_binary_action")
-load(":non_swift_target_aspect.bzl", "non_swift_target_aspect")
 load(":providers.bzl", "SwiftToolchainInfo")
 load(":swift_common.bzl", "swift_common")
 load(":utils.bzl", "expand_locations")
@@ -37,7 +36,7 @@ def _binary_rule_attrs(stamp_default):
     """
     return dicts.add(
         swift_common.compilation_attrs(
-            additional_deps_aspects = [non_swift_target_aspect],
+            additional_deps_aspects = [swift_common.swift_clang_module_aspect],
         ),
         {
             "linkopts": attr.string_list(

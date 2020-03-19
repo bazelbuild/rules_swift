@@ -29,7 +29,6 @@ load(
     "SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS",
 )
 load(":linking.bzl", "register_libraries_to_link")
-load(":non_swift_target_aspect.bzl", "non_swift_target_aspect")
 load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
 load(":swift_common.bzl", "swift_common")
 load(
@@ -274,11 +273,11 @@ def _swift_library_impl(ctx):
 swift_library = rule(
     attrs = dicts.add(
         swift_common.library_rule_attrs(additional_deps_aspects = [
-            non_swift_target_aspect,
+            swift_common.swift_clang_module_aspect,
         ]),
         {
             "private_deps": swift_deps_attr(
-                aspects = [non_swift_target_aspect],
+                aspects = [swift_common.swift_clang_module_aspect],
                 doc = """\
 A list of targets that are implementation-only dependencies of the target being
 built. Libraries/linker flags from these dependencies will be propagated to
