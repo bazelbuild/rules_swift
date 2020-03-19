@@ -282,9 +282,15 @@ def _swift_grpc_library_impl(ctx):
         ),
         deps[0][SwiftProtoInfo],
         swift_common.create_swift_info(
-            module_name = module_name,
-            swiftdocs = [compilation_outputs.swiftdoc],
-            swiftmodules = [compilation_outputs.swiftmodule],
+            modules = [
+                swift_common.create_module(
+                    name = module_name,
+                    swift = swift_common.create_swift_module(
+                        swiftdoc = compilation_outputs.swiftdoc,
+                        swiftmodule = compilation_outputs.swiftmodule,
+                    ),
+                ),
+            ],
             swift_infos = get_providers(compile_deps, SwiftInfo),
         ),
     ]

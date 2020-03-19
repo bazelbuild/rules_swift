@@ -42,7 +42,10 @@ def _swift_proto_library_impl(ctx):
         # previously been a bit difficult to find.
         DefaultInfo(
             files = depset(
-                swift_info.direct_swiftmodules,
+                [
+                    module.swift.swiftmodule
+                    for module in swift_info.direct_modules
+                ],
                 transitive = [swift_proto_info.pbswift_files],
             ),
         ),

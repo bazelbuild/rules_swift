@@ -580,16 +580,9 @@ def _clang_module_dependency_args(clang_module):
 
 def _dependencies_clang_modules_configurator(prerequisites, args):
     """Adds dependencies' Clang modules as inputs and command line flags."""
-
-    # Flattening this `depset` is necessary because we need to extract the
-    # module maps or precompiled modules out of structured values and do so
-    # conditionally. This should not lead to poor performance because the
-    # flattening happens only when the action is about to be registered, rather
-    # than the same `depset` being flattened and re-merged multiple times up the
-    # build graph.
     clang_modules = [
         module.clang
-        for module in prerequisites.swift_info.transitive_modules.to_list()
+        for module in prerequisites.transitive_modules
         if module.clang
     ]
 
@@ -645,15 +638,19 @@ def _static_frameworks_disable_autolink_configurator(prerequisites, args):
 
 def _dependencies_swiftmodules_configurator(prerequisites, args):
     """Adds `.swiftmodule` files from deps to search paths and action inputs."""
-    swiftmodules = prerequisites.swift_info.transitive_swiftmodules
     args.add_all(
-        swiftmodules,
+        prerequisites.transitive_modules,
         format_each = "-I%s",
-        map_each = _dirname_map_fn,
+        map_each = _swift_module_search_path_map_fn,
         uniquify = True,
     )
+
     return swift_toolchain_config.config_result(
-        transitive_inputs = [swiftmodules],
+        inputs = [
+            module.swift.swiftmodule
+            for module in prerequisites.transitive_modules
+            if module.swift
+        ],
     )
 
 def _module_name_configurator(prerequisites, args):
@@ -718,7 +715,7 @@ def _conditional_compilation_flag_configurator(prerequisites, args):
     all_defines = depset(
         prerequisites.defines,
         transitive = [
-            prerequisites.swift_info.transitive_defines,
+            prerequisites.transitive_defines,
             # Take any Swift-compatible defines from Objective-C dependencies
             # and define them for Swift.
             prerequisites.objc_info.define,
@@ -915,7 +912,16 @@ def compile(
         ),
         objc_info = merged_providers.objc_info,
         source_files = srcs,
-        swift_info = merged_providers.swift_info,
+        transitive_defines = merged_providers.swift_info.transitive_defines,
+        # Flattening this `depset` is necessary because we need to extract the
+        # module maps or precompiled modules out of structured values and do so
+        # conditionally. This should not lead to poor performance because the
+        # flattening happens only once as the action is being registered, rather
+        # than the same `depset` being flattened and re-merged multiple times up
+        # the build graph.
+        transitive_modules = (
+            merged_providers.swift_info.transitive_modules.to_list()
+        ),
         user_compile_flags = copts + swift_toolchain.command_line_copts,
         # Merge the compile outputs into the prerequisites.
         **struct_fields(compile_outputs)
@@ -1617,19 +1623,24 @@ def _index_store_path_overridden(copts):
             return True
     return False
 
-def _dirname_map_fn(f):
-    """Returns the dir name of a file.
+def _swift_module_search_path_map_fn(module):
+    """Returns the path to the directory containing a `.swiftmodule` file.
 
-    This function is intended to be used as a mapping function for file passed
-    into `Args.add`.
+    This function is intended to be used as a mapping function for modules
+    passed into `Args.add_all`.
 
     Args:
-        f: The file.
+        module: The module structure (as returned by
+            `swift_common.create_module`) extracted from the transitive
+            modules of a `SwiftInfo` provider.
 
     Returns:
-        The dirname of the file.
+        The dirname of the module's `.swiftmodule` file.
     """
-    return f.dirname
+    if module.swift:
+        return module.swift.swiftmodule.dirname
+    else:
+        return None
 
 def _filter_out_unsupported_include_paths(path):
     """Stub for a filter function only used internally."""

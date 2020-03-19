@@ -46,6 +46,7 @@ load(
     "create_clang_module",
     "create_module",
     "create_swift_info",
+    "create_swift_module",
 )
 
 # The exported `swift_common` module, which defines the public API for directly
@@ -58,6 +59,7 @@ swift_common = struct(
     create_clang_module = create_clang_module,
     create_module = create_module,
     create_swift_info = create_swift_info,
+    create_swift_module = create_swift_module,
     derive_module_name = derive_module_name,
     get_implicit_deps = get_implicit_deps,
     is_enabled = is_feature_enabled,
