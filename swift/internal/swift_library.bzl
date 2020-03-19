@@ -234,16 +234,14 @@ def _swift_library_impl(ctx):
                 swift_common.create_module(
                     name = module_name,
                     clang = clang_module,
-                    # TODO(b/149999519): Add Swift module info here by calling
-                    # `swift_common.create_swift_module`.
+                    swift = swift_common.create_swift_module(
+                        defines = ctx.attr.defines,
+                        swiftdoc = compilation_outputs.swiftdoc,
+                        swiftinterface = compilation_outputs.swiftinterface,
+                        swiftmodule = compilation_outputs.swiftmodule,
+                    ),
                 ),
             ],
-            defines = ctx.attr.defines,
-            generated_headers = compact([compilation_outputs.generated_header]),
-            module_name = module_name,
-            swiftdocs = [compilation_outputs.swiftdoc],
-            swiftinterfaces = compact([compilation_outputs.swiftinterface]),
-            swiftmodules = [compilation_outputs.swiftmodule],
             # Note that private_deps are explicitly omitted here; they should
             # not propagate.
             swift_infos = get_providers(deps, SwiftInfo),

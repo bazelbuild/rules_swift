@@ -104,9 +104,15 @@ def _swift_module_alias_impl(ctx):
             libraries_to_link = [library_to_link],
         ),
         swift_common.create_swift_info(
-            module_name = module_name,
-            swiftdocs = [compilation_outputs.swiftdoc],
-            swiftmodules = [compilation_outputs.swiftmodule],
+            modules = [
+                swift_common.create_module(
+                    name = module_name,
+                    swift = swift_common.create_swift_module(
+                        swiftdoc = compilation_outputs.swiftdoc,
+                        swiftmodule = compilation_outputs.swiftmodule,
+                    ),
+                ),
+            ],
             swift_infos = get_providers(deps, SwiftInfo),
         ),
     ]

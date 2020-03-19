@@ -78,9 +78,15 @@ def _swift_import_impl(ctx):
             swiftmodules = [swiftmodule],
         ),
         swift_common.create_swift_info(
-            module_name = ctx.attr.module_name,
-            swiftdocs = compact([swiftdoc]),
-            swiftmodules = [swiftmodule],
+            modules = [
+                swift_common.create_module(
+                    name = ctx.attr.module_name,
+                    swift = swift_common.create_swift_module(
+                        swiftdoc = swiftdoc,
+                        swiftmodule = swiftmodule,
+                    ),
+                ),
+            ],
             swift_infos = get_providers(deps, SwiftInfo),
         ),
     ]
