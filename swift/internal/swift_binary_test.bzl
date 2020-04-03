@@ -16,7 +16,6 @@
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:partial.bzl", "partial")
-load("@bazel_skylib//lib:paths.bzl", "paths")
 load(":compiling.bzl", "output_groups_from_compilation_outputs")
 load(":derived_files.bzl", "derived_files")
 load(":feature_names.bzl", "SWIFT_FEATURE_BUNDLED_XCTESTS")
@@ -58,19 +57,19 @@ This label must refer to a `cc_library` rule.
                 mandatory = False,
                 providers = [[CcInfo]],
             ),
-            "stamp": attr.bool(
+            "stamp": attr.int(
                 default = stamp_default,
                 doc = """\
-Enable or disable link stamping.
+Enable or disable link stamping; that is, whether to encode build information
+into the binary. Possible values are:
 
-If this value is true (and if the toolchain supports link stamping), then the
-toolchain's stamping logic will be invoked to link additional identifying
-information into the binary. This information typically comes from the stable
-and volatile build information written by Bazel in the output directory, but
-could be anything that the toolchain wishes to link into binaries.
-
-If false, no stamp information will be linked into the binary, which improves
-build caching.
+* `stamp = 1`: Stamp the build information into the binary. Stamped binaries are
+  only rebuilt when their dependencies change. Use this if there are tests that
+  depend on the build information.
+* `stamp = 0`: Always replace build information by constant values. This gives
+  good build result caching.
+* `stamp = -1`: Embedding of build information is controlled by the
+  `--[no]stamp` flag.
 """,
                 mandatory = False,
             ),
@@ -221,19 +220,6 @@ def _swift_linking_rule_impl(
             ctx.attr.malloc[CcInfo].linking_context,
         )
 
-    # If the toolchain supports link-stamping, ask it for a linking context
-    # that stamps the build information into the binary.
-    if swift_toolchain.stamp_producer:
-        stamp_context = partial.call(
-            swift_toolchain.stamp_producer,
-            ctx,
-            cc_feature_configuration,
-            swift_toolchain.cc_toolchain_info,
-            paths.join(ctx.label.package, ctx.label.name),
-        )
-        if stamp_context:
-            additional_linking_contexts.append(stamp_context)
-
     # Finally, consider linker flags in the `linkopts` attribute and the
     # `--linkopt` command line flag last, so they get highest priority.
     user_link_flags.extend(expand_locations(
@@ -253,6 +239,7 @@ def _swift_linking_rule_impl(
         name = ctx.label.name,
         objects = objects_to_link,
         output_type = "executable",
+        stamp = ctx.attr.stamp,
         swift_toolchain = swift_toolchain,
         user_link_flags = user_link_flags,
     )
@@ -428,7 +415,7 @@ def _swift_test_impl(ctx):
     ]
 
 swift_binary = rule(
-    attrs = _binary_rule_attrs(stamp_default = True),
+    attrs = _binary_rule_attrs(stamp_default = -1),
     doc = """\
 Compiles and links Swift code into an executable binary.
 
@@ -451,7 +438,7 @@ please use one of the platform-specific application rules in
 
 swift_test = rule(
     attrs = dicts.add(
-        _binary_rule_attrs(stamp_default = False),
+        _binary_rule_attrs(stamp_default = 0),
         {
             "_apple_coverage_support": attr.label(
                 cfg = "host",

@@ -568,7 +568,6 @@ def _xcode_swift_toolchain_impl(ctx):
             optional_implicit_deps = [],
             requested_features = requested_features,
             required_implicit_deps = [],
-            stamp_producer = None,
             supports_objc_interop = True,
             swift_worker = ctx.executable._worker,
             system_name = "darwin",
