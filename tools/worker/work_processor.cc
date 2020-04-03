@@ -112,7 +112,8 @@ void WorkProcessor::ProcessWorkRequest(
   params_file_stream.close();
 
   if (!is_wmo) {
-    for (auto expected_object_pair : output_file_map.incremental_outputs()) {
+    for (const auto &expected_object_pair :
+         output_file_map.incremental_outputs()) {
       // Bazel creates the intermediate directories for the files declared at
       // analysis time, but we need to manually create the ones for the
       // incremental storage area.
@@ -132,7 +133,8 @@ void WorkProcessor::ProcessWorkRequest(
   if (!is_wmo) {
     // Copy the output files from the incremental storage area back to the
     // locations where Bazel declared the files.
-    for (auto expected_object_pair : output_file_map.incremental_outputs()) {
+    for (const auto &expected_object_pair :
+         output_file_map.incremental_outputs()) {
       if (!CopyFile(expected_object_pair.second, expected_object_pair.first)) {
         std::cerr << "Could not copy " << expected_object_pair.second << " to "
                   << expected_object_pair.first << " (errno " << errno << ")\n";

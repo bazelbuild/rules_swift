@@ -42,7 +42,7 @@ static std::unique_ptr<TempFile> WriteResponseFile(
   auto response_file = TempFile::Create("swiftc_params.XXXXXX");
   std::ofstream response_file_stream(response_file->GetPath());
 
-  for (auto arg : args) {
+  for (const auto &arg : args) {
     // When Clang/Swift write out a response file to communicate from driver to
     // frontend, they just quote every argument to be safe; we duplicate that
     // instead of trying to be "smarter" and only quoting when necessary.

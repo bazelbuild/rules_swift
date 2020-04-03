@@ -34,7 +34,7 @@ bool MakeSubstitutions(std::string *arg,
   bool changed = false;
 
   // Replace placeholders in the string with their actual values.
-  for (std::pair<std::string, std::string> mapping : mappings) {
+  for (const std::pair<const std::string, std::string> &mapping : mappings) {
     changed |= FindAndReplace(mapping.first, mapping.second, arg);
   }
 
