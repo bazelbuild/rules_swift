@@ -209,7 +209,6 @@ def _swift_toolchain_impl(ctx):
             requested_features = requested_features,
             required_implicit_deps = [],
             root_dir = toolchain_root,
-            stamp_producer = None,
             supports_objc_interop = False,
             swift_worker = ctx.executable._worker,
             system_name = ctx.attr.os,

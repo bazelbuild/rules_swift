@@ -156,6 +156,7 @@ def register_link_binary_action(
         name,
         objects,
         output_type,
+        stamp,
         swift_toolchain,
         user_link_flags):
     """Registers an action that invokes the linker to produce a binary.
@@ -177,10 +178,13 @@ def register_link_binary_action(
         objects: A list of object (.o) files that will be passed to the linker.
         output_type: A string indicating the output type; "executable" or
             "dynamic_library".
+        stamp: A tri-state value (-1, 0, or 1) that specifies whether link
+            stamping is enabled. See `cc_common.link` for details about the
+            behavior of this argument.
+        swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
         user_link_flags: Additional flags passed to the linker. Any
             `$(location ...)` placeholders are assumed to have already been
             expanded.
-        swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
 
     Returns:
         A `CcLinkingOutputs` object that contains the `executable` or
@@ -240,6 +244,7 @@ def register_link_binary_action(
         linking_contexts = linking_contexts,
         link_deps_statically = True,
         output_type = output_type,
+        stamp = stamp,
     )
 
 def swift_runtime_linkopts(is_static, toolchain, is_test = False):
