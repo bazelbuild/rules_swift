@@ -836,7 +836,11 @@ def _dependencies_swiftmodules_configurator(prerequisites, args):
 
 def _dependencies_swiftmodules_vfsoverlay_configurator(prerequisites, args):
     """Provides a single `.swiftmodule` search path using a vfsoverlay."""
-    swiftmodules = prerequisites.swift_info.transitive_swiftmodules
+    swiftmodules = depset([
+        module.swift.swiftmodule
+        for module in prerequisites.transitive_modules
+        if module.swift
+    ])
 
     # Bug: `swiftc` doesn't pass its `-vfsoverlay` arg to the frontend.
     # Workaround: Pass `-vfsoverlay` directly via `-Xfrontend`.
