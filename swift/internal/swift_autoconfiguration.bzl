@@ -85,7 +85,7 @@ def _check_debug_prefix_map(repository_ctx, swiftc_path, temp_dir):
 
 def _check_supports_private_deps(repository_ctx, swiftc_path, temp_dir):
     """Returns True if `swiftc` supports implementation-only imports."""
-    param_file = _scratch_file(
+    source_file = _scratch_file(
         repository_ctx,
         temp_dir,
         "main.swift",
@@ -97,7 +97,7 @@ print("Hello")
     return _swift_succeeds(
         repository_ctx,
         swiftc_path,
-        "@{}".format(param_file),
+        source_file,
     )
 
 def _check_use_response_files(repository_ctx, swiftc_path, temp_dir):
