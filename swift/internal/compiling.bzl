@@ -256,7 +256,11 @@ def compile_action_configs():
                     "-Xwrapped-swift=-debug-prefix-pwd-is-dot",
                 ),
             ],
-            features = [SWIFT_FEATURE_DEBUG_PREFIX_MAP],
+            features = [
+                [SWIFT_FEATURE_DEBUG_PREFIX_MAP, SWIFT_FEATURE_DBG],
+                [SWIFT_FEATURE_DEBUG_PREFIX_MAP, SWIFT_FEATURE_FASTBUILD],
+                [SWIFT_FEATURE_DEBUG_PREFIX_MAP, SWIFT_FEATURE_FULL_DEBUG_INFO],
+            ],
         ),
     ]
 
