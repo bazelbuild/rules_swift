@@ -1971,33 +1971,32 @@ def _generate_swiftc_vfsoverlay(virtual_import_search_path, swiftmodules):
     Returns:
         A string containing the YAML representation of the vfsoverlay.
     """
+    virtual_swiftmodules = [
+        {
+            "type": "file",
+            "name": swiftmodule.basename,
+            "external-contents": swiftmodule.path,
+        }
+        for swiftmodule in swiftmodules
+    ]
+
     # These explicit vfsoverlay settings ensure the VFS actually improves
     # performance. Without these, the performance is worse.
-    contents = """\
-version: 0
-case-sensitive: false
-fallthrough: false
-overlay-relative: false
-use-external-names: false
-roots:
-  - type: directory
-    name: \"{}\"
-    contents:""".format(virtual_import_search_path)
+    overlay = {
+        "version": 0,
+        "case-sensitive": False,
+        "overlay-relative": False,
+        "use-external-names": False,
+        "roots": [
+            {
+                "type": "directory",
+                "name": virtual_import_search_path,
+                "contents": virtual_swiftmodules,
+            }
+        ]
+    }
 
-    if not swiftmodules:
-        contents += " []"
-        return contents
-
-    for swiftmodule in swiftmodules:
-        contents += """
-      - type: file
-        name: {}
-        external-contents: \"{}\"""".format(
-            swiftmodule.basename,
-            swiftmodule.path
-        )
-
-    return contents
+    return struct(**overlay).to_json()
 
 def _index_store_path_overridden(copts):
     """Checks if index_while_building must be disabled.
