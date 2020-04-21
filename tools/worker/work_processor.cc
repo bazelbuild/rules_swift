@@ -72,7 +72,6 @@ void WorkProcessor::ProcessWorkRequest(
       arg.clear();
     } else if (prev_arg == "-output-file-map") {
       output_file_map_path = arg;
-      output_file_map.ReadFromPath(output_file_map_path);
       arg.clear();
     } else if (ArgumentEnablesWMO(arg)) {
       is_wmo = true;
@@ -87,6 +86,8 @@ void WorkProcessor::ProcessWorkRequest(
 
   if (!output_file_map_path.empty()) {
     if (!is_wmo) {
+      output_file_map.ReadFromPath(output_file_map_path);
+
       // Rewrite the output file map to use the incremental storage area and
       // pass the compiler the path to the rewritten file.
       auto new_path =
