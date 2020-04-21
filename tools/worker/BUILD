@@ -42,10 +42,18 @@ cc_library(
 
 cc_library(
     name = "compile_without_worker",
-    srcs = ["compile_without_worker.cc"],
+    srcs = [
+        "compile_without_worker.cc",
+        "output_file_map.cc",
+        "output_file_map.h",
+    ],
     hdrs = ["compile_without_worker.h"],
     deps = [
         ":swift_runner",
+        "//tools/common:path_utils",
+        "//tools/common:string_utils",
+        "//tools/common:temp_file",
+        "@com_github_nlohmann_json//:json",
     ],
 )
 

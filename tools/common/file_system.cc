@@ -29,6 +29,18 @@
 
 #include "tools/common/path_utils.h"
 
+namespace {
+
+static std::string RealPath(const std::string &src) {
+  // Passing path,null causes realpath to allocate the buffer of the correct size.
+  char *buffer = realpath(src.c_str(), nullptr);
+  std::string realpath(buffer);
+  free(buffer);
+  return realpath;
+}
+
+}  // namespace
+
 std::string GetCurrentDirectory() {
   // Passing null,0 causes getcwd to allocate the buffer of the correct size.
   char *buffer = getcwd(nullptr, 0);
@@ -71,6 +83,17 @@ bool CopyFile(const std::string &src, const std::string &dest) {
 // use something like `CopyFileA`.
 #error Only macOS and Unix are supported at this time.
 #endif
+}
+
+std::string MakePathAbsolute(const std::string &arg) {
+  if (arg.find("__BAZEL_PWD__/", 0) == 0) {
+    // If "__BAZEL_PWD__/"" is at the start of a path it's replaced with the
+    // current directory and is then realpath'ed. This implements the
+    // swift.absolute_source_files feature.
+    return RealPath(GetCurrentDirectory() + arg.substr(13, std::string::npos));
+  } else {
+    return arg;
+  }
 }
 
 bool MakeDirs(const std::string &path, int mode) {

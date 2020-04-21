@@ -14,9 +14,11 @@
 
 #include "tools/worker/swift_runner.h"
 
+#include <algorithm>
 #include <fstream>
 
 #include "tools/common/file_system.h"
+#include "tools/common/path_utils.h"
 #include "tools/common/process.h"
 #include "tools/common/string_utils.h"
 #include "tools/common/temp_file.h"
@@ -58,45 +60,6 @@ static std::unique_ptr<TempFile> WriteResponseFile(
 
   response_file_stream.close();
   return response_file;
-}
-
-// Unescape and unquote an argument read from a line of a response file.
-static std::string Unescape(const std::string &arg) {
-  std::string result;
-  auto length = arg.size();
-  for (size_t i = 0; i < length; ++i) {
-    auto ch = arg[i];
-
-    // If it's a backslash, consume it and append the character that follows.
-    if (ch == '\\' && i + 1 < length) {
-      ++i;
-      result.push_back(arg[i]);
-      continue;
-    }
-
-    // If it's a quote, process everything up to the matching quote, unescaping
-    // backslashed characters as needed.
-    if (ch == '"' || ch == '\'') {
-      auto quote = ch;
-      ++i;
-      while (i != length && arg[i] != quote) {
-        if (arg[i] == '\\' && i + 1 < length) {
-          ++i;
-        }
-        result.push_back(arg[i]);
-        ++i;
-      }
-      if (i == length) {
-        break;
-      }
-      continue;
-    }
-
-    // It's a regular character.
-    result.push_back(ch);
-  }
-
-  return result;
 }
 
 }  // namespace
@@ -162,6 +125,12 @@ bool SwiftRunner::ProcessPossibleResponseFile(
         });
   }
 
+  // If we have to transform source file paths, do another pass on the arguments
+  if (use_absolute_paths_) {
+    std::transform(
+        new_args.begin(), new_args.end(), new_args.begin(), MakePathAbsolute);
+  }
+
   if (changed) {
     auto new_file = WriteResponseFile(new_args);
     consumer("@" + new_file->GetPath());
@@ -194,6 +163,9 @@ bool SwiftRunner::ProcessArgument(
     consumer("-module-cache-path");
     consumer(module_cache_dir->GetPath());
     temp_directories_.push_back(std::move(module_cache_dir));
+    changed = true;
+  } else if (arg == "-Xwrapped-swift=-use-absolute-paths") {
+    use_absolute_paths_ = true;
     changed = true;
   } else if (arg.find("-Xwrapped-swift=") == 0) {
     // TODO(allevato): Report that an unknown wrapper arg was found and give the
@@ -237,6 +209,12 @@ std::vector<std::string> SwiftRunner::ProcessArguments(
     ProcessArgument(
         *it, [&](const std::string &arg) { args_destination.push_back(arg); });
     ++it;
+  }
+
+  // If we have to transform source file paths, do another pass on the arguments
+  if (use_absolute_paths_) {
+    std::transform(args_destination.begin(), args_destination.end(),
+                   args_destination.begin(), MakePathAbsolute);
   }
 
   if (force_response_file_) {

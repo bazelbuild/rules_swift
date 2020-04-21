@@ -61,6 +61,12 @@ SWIFT_FEATURE_COMPILE_STATS = "swift.compile_stats"
 # builds.
 SWIFT_FEATURE_DEBUG_PREFIX_MAP = "swift.debug_prefix_map"
 
+# If enabled, Swift compilation actions will pass absolute paths, resolved with
+# realpath, for source files. This will allow `#file` (in Swift < 5.3) and
+# `#filePath` (in Swift >= 5.3) to match Xcode's behavior. Remote or sandboxed
+# builds probably shouldn't enable this feature.
+SWIFT_FEATURE_ABSOLUTE_SOURCE_FILES = "swift.absolute_source_files"
+
 # If enabled, C and Objective-C libraries that are direct or transitive
 # dependencies of a Swift library will emit explicit precompiled modules that
 # are compatible with Swift's ClangImporter and propagate them up the build

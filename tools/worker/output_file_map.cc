@@ -20,6 +20,7 @@
 #include <nlohmann/json.hpp>
 #include <string>
 
+#include "tools/common/file_system.h"
 #include "tools/common/path_utils.h"
 
 namespace {
@@ -46,12 +47,22 @@ static std::string MakeIncrementalOutputPath(std::string path) {
 void OutputFileMap::ReadFromPath(const std::string &path) {
   std::ifstream stream(path);
   stream >> json_;
-  UpdateForIncremental(path);
 }
 
 void OutputFileMap::WriteToPath(const std::string &path) {
   std::ofstream stream(path);
   stream << json_;
+}
+
+void OutputFileMap::UpdateForAbsolutePaths() {
+  nlohmann::json new_output_file_map;
+
+  for (auto &element : json_.items()) {
+    auto absolute_src = MakePathAbsolute(element.key());
+    new_output_file_map[absolute_src] = element.value();
+  }
+
+  json_ = new_output_file_map;
 }
 
 void OutputFileMap::UpdateForIncremental(const std::string &path) {

@@ -29,6 +29,7 @@ load(":debugging.bzl", "ensure_swiftmodule_is_embedded")
 load(":derived_files.bzl", "derived_files")
 load(
     ":feature_names.bzl",
+    "SWIFT_FEATURE_ABSOLUTE_SOURCE_FILES",
     "SWIFT_FEATURE_CACHEABLE_SWIFTMODULES",
     "SWIFT_FEATURE_COMPILE_STATS",
     "SWIFT_FEATURE_COVERAGE",
@@ -529,7 +530,24 @@ def compile_action_configs():
                 swift_action_names.COMPILE,
                 swift_action_names.PRECOMPILE_C_MODULE,
             ],
+            configurators = [
+                _absolute_source_files_configurator,
+                swift_toolchain_config.add_arg(
+                    "-Xwrapped-swift=-use-absolute-paths",
+                ),
+            ],
+            features = [SWIFT_FEATURE_ABSOLUTE_SOURCE_FILES],
+        ),
+    )
+
+    action_configs.append(
+        swift_toolchain_config.action_config(
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.PRECOMPILE_C_MODULE,
+            ],
             configurators = [_source_files_configurator],
+            not_features = [SWIFT_FEATURE_ABSOLUTE_SOURCE_FILES],
         ),
     )
 
@@ -863,6 +881,20 @@ def _module_name_configurator(prerequisites, args):
 def _stats_output_dir_configurator(prerequisites, args):
     """Adds the compile stats output directory path to the command line."""
     args.add("-stats-output-dir", prerequisites.stats_directory.path)
+
+def _make_path_absolute(source_file):
+    """Adds a placeholder prefix for the PWD that will be replaced by swift_runner."""
+    return "__BAZEL_PWD__/{}".format(source_file.path)
+
+def _absolute_source_files_configurator(prerequisites, args):
+    """Adds source files, with absolute paths, to the command line and required inputs."""
+    args.add_all(
+        prerequisites.source_files,
+        map_each = _make_path_absolute,
+    )
+    return swift_toolchain_config.config_result(
+        inputs = prerequisites.source_files,
+    )
 
 def _source_files_configurator(prerequisites, args):
     """Adds source files to the command line and required inputs."""
@@ -1462,9 +1494,14 @@ def _declare_compile_outputs(
     else:
         # Otherwise, we need to create an output map that lists the individual
         # object files so that we can pass them all to the archive action.
+        write_absolute_source_file_paths = is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_ABSOLUTE_SOURCE_FILES,
+        )
         output_info = _declare_multiple_outputs_and_write_output_file_map(
             actions = actions,
             emits_partial_modules = output_nature.emits_partial_modules,
+            write_absolute_source_file_paths = write_absolute_source_file_paths,
             srcs = srcs,
             target_name = target_name,
         )
@@ -1506,6 +1543,7 @@ def _declare_compile_outputs(
 def _declare_multiple_outputs_and_write_output_file_map(
         actions,
         emits_partial_modules,
+        write_absolute_source_file_paths,
         srcs,
         target_name):
     """Declares low-level outputs and writes the output map for a compilation.
@@ -1515,6 +1553,8 @@ def _declare_multiple_outputs_and_write_output_file_map(
         emits_partial_modules: `True` if the compilation action is expected to
             emit partial `.swiftmodule` files (i.e., one `.swiftmodule` file per
             source file, as in a non-WMO compilation).
+        write_absolute_source_file_paths: `True` if the output map needs to
+            have absolute paths for source files.
         srcs: The list of source files that will be compiled.
         target_name: The name (excluding package path) of the target being
             built.
@@ -1572,7 +1612,10 @@ def _declare_multiple_outputs_and_write_output_file_map(
             other_outputs.append(partial_module)
             src_output_map["swiftmodule"] = partial_module.path
 
-        output_map[src.path] = struct(**src_output_map)
+        if write_absolute_source_file_paths:
+            output_map[_make_path_absolute(src)] = struct(**src_output_map)
+        else:
+            output_map[src.path] = struct(**src_output_map)
 
     actions.write(
         content = struct(**output_map).to_json(),

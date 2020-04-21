@@ -48,11 +48,18 @@
 //     the directory afterwards. This should resolve issues where the module
 //     cache state is not refreshed correctly in all situations, which
 //     sometimes results in hard-to-diagnose crashes in `swiftc`.
+//
+// -Xwrapped-swift=-use-absolute-paths
+//     When specified, the spawner will pass in absolute paths to `swiftc`.
+//     This is needed for some Xcode integrations, where it requires `#filePath`
+//     to return an absolute path.
 class SwiftRunner {
  public:
   // Create a new spawner that launches a Swift tool with the given arguments.
-  // The first argument is assumed to be that tool. If force_response_file is
-  // true, then the remaining arguments will be unconditionally written into a
+  // The first argument is assumed to be that tool. if use_absolute_paths is
+  // true, then source file paths are transformed to absolute paths, to support
+  // the swift.absolute_source_files feature. If force_response_file is true,
+  // then the remaining arguments will be unconditionally written into a
   // response file instead of being passed on the command line.
   SwiftRunner(const std::vector<std::string> &args,
               bool force_response_file = false);
@@ -122,6 +129,11 @@ class SwiftRunner {
   // Arguments will be unconditionally written into a response file and passed
   // to the tool that way.
   bool force_response_file_;
+
+  // Source file with "__BAZEL_PWD__" at the start of their path will be
+  // rewritten to include the process working directory, then run through
+  // realpath.
+  bool use_absolute_paths_;
 };
 
 #endif  // BUILD_BAZEL_RULES_SWIFT_TOOLS_WORKER_SWIFT_RUNNER_H_

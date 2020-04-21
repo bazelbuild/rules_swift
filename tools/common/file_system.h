@@ -23,6 +23,11 @@ std::string GetCurrentDirectory();
 // Copies the file at src to dest. Returns true if successful.
 bool CopyFile(const std::string &src, const std::string &dest);
 
+// If "__BAZEL_PWD__/"" is at the start of the path it's replaced with the
+// current directory and is then realpath'ed. This implements the
+// swift.absolute_source_files feature.
+std::string MakePathAbsolute(const std::string &path);
+
 // Creates a directory at the given path, along with any parent directories that
 // don't already exist. Returns true if successful.
 bool MakeDirs(const std::string &path, int mode);

@@ -59,9 +59,9 @@ void WorkProcessor::ProcessWorkRequest(
   auto params_file = TempFile::Create("swiftc_params.XXXXXX");
   std::ofstream params_file_stream(params_file->GetPath());
 
-  OutputFileMap output_file_map;
   std::string output_file_map_path;
   bool is_wmo = false;
+  bool use_absolute_paths = false;
 
   std::string prev_arg;
   for (auto arg : request.arguments()) {
@@ -75,6 +75,8 @@ void WorkProcessor::ProcessWorkRequest(
       arg.clear();
     } else if (ArgumentEnablesWMO(arg)) {
       is_wmo = true;
+    } else if (arg == "-Xwrapped-swift=-use-absolute-paths") {
+      use_absolute_paths = true;
     }
 
     if (!arg.empty()) {
@@ -84,23 +86,32 @@ void WorkProcessor::ProcessWorkRequest(
     prev_arg = original_arg;
   }
 
+  OutputFileMap output_file_map;
+
   if (!output_file_map_path.empty()) {
-    if (!is_wmo) {
+    if (!is_wmo || use_absolute_paths) {
       output_file_map.ReadFromPath(output_file_map_path);
 
-      // Rewrite the output file map to use the incremental storage area and
-      // pass the compiler the path to the rewritten file.
-      auto new_path =
-          ReplaceExtension(output_file_map_path, ".incremental.json");
+      if (!is_wmo) {
+        // Rewrite the output file map to use the incremental storage area.
+        output_file_map.UpdateForIncremental(output_file_map_path);
+
+        // Pass the incremental flags only if WMO is disabled. WMO would overrule
+        // incremental mode anyway, but since we control the passing of this flag,
+        // there's no reason to pass it when it's a no-op.
+        params_file_stream << "-incremental\n";
+      }
+      if (use_absolute_paths) {
+        output_file_map.UpdateForAbsolutePaths();
+      }
+
+      // Rewrite the output file map.
+      auto new_path = ReplaceExtension(output_file_map_path, ".processed.json");
       output_file_map.WriteToPath(new_path);
 
+      // Pass the compiler the path to the rewritten file.
       params_file_stream << "-output-file-map\n";
       params_file_stream << new_path << '\n';
-
-      // Pass the incremental flags only if WMO is disabled. WMO would overrule
-      // incremental mode anyway, but since we control the passing of this flag,
-      // there's no reason to pass it when it's a no-op.
-      params_file_stream << "-incremental\n";
     } else {
       // If WMO is forcing us out of incremental mode, just put the original
       // output file map back so the outputs end up where they should.

@@ -40,3 +40,41 @@ bool MakeSubstitutions(std::string *arg,
 
   return changed;
 }
+
+std::string Unescape(const std::string &arg) {
+  std::string result;
+  auto length = arg.size();
+  for (size_t i = 0; i < length; ++i) {
+    auto ch = arg[i];
+
+    // If it's a backslash, consume it and append the character that follows.
+    if (ch == '\\' && i + 1 < length) {
+      ++i;
+      result.push_back(arg[i]);
+      continue;
+    }
+
+    // If it's a quote, process everything up to the matching quote, unescaping
+    // backslashed characters as needed.
+    if (ch == '"' || ch == '\'') {
+      auto quote = ch;
+      ++i;
+      while (i != length && arg[i] != quote) {
+        if (arg[i] == '\\' && i + 1 < length) {
+          ++i;
+        }
+        result.push_back(arg[i]);
+        ++i;
+      }
+      if (i == length) {
+        break;
+      }
+      continue;
+    }
+
+    // It's a regular character.
+    result.push_back(ch);
+  }
+
+  return result;
+}
