@@ -441,13 +441,15 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             if linker_inputs:
                 objc_info_args["link_inputs"] = depset(linker_inputs)
 
+            includes = [aspect_ctx.bin_dir.path]
             objc_info = apple_common.new_objc_provider(
-                include = depset([aspect_ctx.bin_dir.path]),
+                include = depset(includes),
                 providers = objc_infos,
                 uses_swift = True,
                 **objc_info_args
             )
         else:
+            includes = None
             objc_info = None
 
         providers = [
@@ -458,6 +460,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
                 cc_info = create_cc_info(
                     cc_infos = cc_infos,
                     compilation_outputs = compilation_outputs,
+                    includes = includes,
                     libraries_to_link = [library_to_link],
                 ),
                 objc_info = objc_info,
