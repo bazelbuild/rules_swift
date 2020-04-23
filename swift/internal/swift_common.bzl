@@ -29,7 +29,13 @@ load(
     "swift_library_rule_attrs",
     "swift_toolchain_attrs",
 )
-load(":compiling.bzl", "compile", "derive_module_name", "get_implicit_deps")
+load(
+    ":compiling.bzl",
+    "compile",
+    "derive_module_name",
+    "get_implicit_deps",
+    "precompile_clang_module",
+)
 load(
     ":features.bzl",
     "configure_features",
@@ -61,6 +67,7 @@ swift_common = struct(
     get_implicit_deps = get_implicit_deps,
     is_enabled = is_feature_enabled,
     library_rule_attrs = swift_library_rule_attrs,
+    precompile_clang_module = precompile_clang_module,
     swift_clang_module_aspect = swift_clang_module_aspect,
     swift_runtime_linkopts = swift_runtime_linkopts,
     toolchain_attrs = swift_toolchain_attrs,

@@ -34,6 +34,7 @@ load(
     "SWIFT_FEATURE_COVERAGE",
     "SWIFT_FEATURE_DBG",
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
+    "SWIFT_FEATURE_EMIT_C_MODULE",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
@@ -49,6 +50,7 @@ load(
     "SWIFT_FEATURE_OPT_USES_OSIZE",
     "SWIFT_FEATURE_OPT_USES_WMO",
     "SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION",
+    "SWIFT_FEATURE_USE_C_MODULES",
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
 )
 load(":features.bzl", "are_all_features_enabled", "is_feature_enabled")
@@ -92,6 +94,26 @@ def compile_action_configs():
         swift_toolchain_config.action_config(
             actions = [swift_action_names.COMPILE],
             configurators = [_output_object_or_file_map_configurator],
+        ),
+
+        # Emit precompiled Clang modules, and embed all files that were read
+        # during compilation into the PCM.
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.PRECOMPILE_C_MODULE],
+            configurators = [
+                swift_toolchain_config.add_arg("-emit-pcm"),
+                swift_toolchain_config.add_arg("-Xcc", "-Xclang"),
+                swift_toolchain_config.add_arg(
+                    "-Xcc",
+                    "-fmodules-embed-all-files",
+                ),
+            ],
+        ),
+
+        # Add the output precompiled module file path to the command line.
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.PRECOMPILE_C_MODULE],
+            configurators = [_output_pcm_file_configurator],
         ),
 
         # Configure the path to the emitted .swiftmodule file.
@@ -299,7 +321,10 @@ def compile_action_configs():
         # Treat paths in .modulemap files as workspace-relative, not modulemap-
         # relative.
         swift_toolchain_config.action_config(
-            actions = [swift_action_names.COMPILE],
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.PRECOMPILE_C_MODULE,
+            ],
             configurators = [
                 swift_toolchain_config.add_arg("-Xcc", "-Xclang"),
                 swift_toolchain_config.add_arg(
@@ -310,11 +335,13 @@ def compile_action_configs():
             features = [SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD],
         ),
 
-        # Configure the implicit module cache.
+        # Configure how implicit modules are handled--either using the module
+        # cache, or disabled completely when using explicit modules.
         swift_toolchain_config.action_config(
             actions = [swift_action_names.COMPILE],
             configurators = [_global_module_cache_configurator],
             features = [SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE],
+            not_features = [SWIFT_FEATURE_USE_C_MODULES],
         ),
         swift_toolchain_config.action_config(
             actions = [swift_action_names.COMPILE],
@@ -323,40 +350,85 @@ def compile_action_configs():
                     "-Xwrapped-swift=-ephemeral-module-cache",
                 ),
             ],
-            not_features = [SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE],
+            not_features = [
+                [SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE],
+                [SWIFT_FEATURE_USE_C_MODULES],
+            ],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.PRECOMPILE_C_MODULE,
+            ],
+            configurators = [
+                swift_toolchain_config.add_arg("-Xcc", "-fno-implicit-modules"),
+            ],
+            features = [SWIFT_FEATURE_USE_C_MODULES],
         ),
     ]
 
-    #### Search paths for Swift and framework dependencies
+    #### Search paths for Swift module dependencies
     action_configs.append(
         swift_toolchain_config.action_config(
             actions = [swift_action_names.COMPILE],
-            configurators = [
-                _dependencies_swiftmodules_configurator,
-                _framework_search_paths_configurator,
+            configurators = [_dependencies_swiftmodules_configurator],
+        ),
+    )
+
+    #### Search paths for framework dependencies
+    action_configs.append(
+        swift_toolchain_config.action_config(
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.PRECOMPILE_C_MODULE,
             ],
+            configurators = [_framework_search_paths_configurator],
         ),
     )
 
     #### Other ClangImporter flags
-    action_configs.append(
-        # Pass flags to Clang for search paths and module dependencies.
+    action_configs.extend([
+        # Pass flags to Clang for search paths and propagated defines.
         swift_toolchain_config.action_config(
-            actions = [swift_action_names.COMPILE],
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.PRECOMPILE_C_MODULE,
+            ],
             configurators = [
                 _clang_search_paths_configurator,
                 _dependencies_clang_defines_configurator,
-                _dependencies_clang_modules_configurator,
             ],
         ),
-    )
+
+        # Pass flags to Clang for dependencies' module maps or explicit modules,
+        # whichever are being used for this build.
+        swift_toolchain_config.action_config(
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.PRECOMPILE_C_MODULE,
+            ],
+            configurators = [_dependencies_clang_modules_configurator],
+            features = [SWIFT_FEATURE_USE_C_MODULES],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.PRECOMPILE_C_MODULE,
+            ],
+            configurators = [_dependencies_clang_modulemaps_configurator],
+            not_features = [SWIFT_FEATURE_USE_C_MODULES],
+        ),
+    ])
 
     #### Various other Swift compilation flags
     action_configs += [
         # Request color diagnostics, since Bazel pipes the output and causes the
         # driver's TTY check to fail.
         swift_toolchain_config.action_config(
-            actions = [swift_action_names.COMPILE],
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.PRECOMPILE_C_MODULE,
+            ],
             configurators = [
                 swift_toolchain_config.add_arg(
                     "-Xfrontend",
@@ -407,7 +479,10 @@ def compile_action_configs():
 
         # Set the module name.
         swift_toolchain_config.action_config(
-            actions = [swift_action_names.COMPILE],
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.PRECOMPILE_C_MODULE,
+            ],
             configurators = [_module_name_configurator],
         ),
 
@@ -445,7 +520,10 @@ def compile_action_configs():
 
     action_configs.append(
         swift_toolchain_config.action_config(
-            actions = [swift_action_names.COMPILE],
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.PRECOMPILE_C_MODULE,
+            ],
             configurators = [_source_files_configurator],
         ),
     )
@@ -479,6 +557,10 @@ def _output_object_or_file_map_configurator(prerequisites, args):
 
     args.add("-o", object_files[0])
     return None
+
+def _output_pcm_file_configurator(prerequisites, args):
+    """Adds the `.pcm` output path to the command line."""
+    args.add("-o", prerequisites.pcm_file)
 
 def _emit_module_path_configurator(prerequisites, args):
     """Adds the `.swiftmodule` output path to the command line."""
@@ -563,50 +645,157 @@ def _dependencies_clang_defines_configurator(prerequisites, args):
     ])
     args.add_all(all_clang_defines, before_each = "-Xcc", format_each = "-D%s")
 
-def _clang_module_dependency_args(clang_module):
-    """A `map_each` function that returns `swiftc` arguments for a Clang module.
+def _collect_clang_module_inputs(
+        cc_info,
+        modules,
+        objc_info,
+        prefer_precompiled_modules,
+        required_headers = None):
+    """Collects Clang module-related inputs to pass to an action.
 
     Args:
-        clang_module: A struct containing information about the clang module, as
-            defined by `swift_common.create_clang_module`.
+        cc_info: The `CcInfo` provider of the target being compiled. The direct
+            headers of this provider will be collected as inputs.
+        modules: A list of module structures (as returned by
+            `swift_common.create_module`). The precompiled Clang modules or the
+            textual module maps and headers of these modules (depending on the
+            value of `prefer_precompiled_modules`) will be collected as inputs.
+        objc_info: The `apple_common.Objc` provider of the target being
+            compiled.
+        prefer_precompiled_modules: If True, precompiled module artifacts should
+            be preferred over textual module map files and headers for modules
+            that have them. If False, textual module map files and headers
+            should always be used.
+        required_headers: A `depset` of header files that are required for
+            compilation. This depends on the action; for example, a Swift
+            compilation action requires no headers, but a Clang module
+            precompilation action requires that the headers of the direct
+            dependencies be present in the sandbox when they are included based
+            on their file path.
 
     Returns:
-        A list of arguments to pass to `swiftc`.
+        A toolchain configuration result (i.e.,
+        `swift_toolchain_config.config_result`) that contains the input
+        artifacts for the action.
     """
+    module_inputs = []
+    header_depsets = []
 
-    # TODO(b/142867898): Use the precompiled module with `-fmodule-file` if it
-    # is present and the target has requested it.
-    return [
-        "-Xcc",
-        "-fmodule-map-file={}".format(clang_module.module_map.path),
-    ]
+    if cc_info:
+        compilation_context = cc_info.compilation_context
+        module_inputs.extend(compilation_context.direct_headers)
+        module_inputs.extend(compilation_context.direct_textual_headers)
 
-def _dependencies_clang_modules_configurator(prerequisites, args):
-    """Adds dependencies' Clang modules as inputs and command line flags."""
-    clang_modules = [
-        module.clang
-        for module in prerequisites.transitive_modules
-        if module.clang
-    ]
+    for module in modules:
+        clang_module = module.clang
+        module_map = clang_module.module_map
+        if prefer_precompiled_modules:
+            # If the build prefers precompiled modules, use the .pcm if it
+            # exists; otherwise, use the textual module map and the headers for
+            # that module (because we only want to propagate the headers that
+            # are required, not the full transitive set).
+            precompiled_module = clang_module.precompiled_module
+            if precompiled_module:
+                module_inputs.append(precompiled_module)
+            else:
+                module_inputs.append(clang_module.module_map)
+                module_inputs.extend(
+                    clang_module.compilation_context.direct_headers,
+                )
+                module_inputs.extend(
+                    clang_module.compilation_context.direct_textual_headers,
+                )
+        else:
+            # If the build prefers textual module maps and headers, just get the
+            # module map for each module, and we'll collect the full transitive
+            # header set below.
+            module_inputs.append(module_map)
 
-    args.add_all(clang_modules, map_each = _clang_module_dependency_args)
+    # If we prefer textual module maps and headers for the build, fall back to
+    # using the full set of transitive headers.
+    if not prefer_precompiled_modules:
+        if cc_info:
+            header_depsets.append(cc_info.compilation_context.headers)
+        if objc_info:
+            header_depsets.append(objc_info.umbrella_header)
 
-    # Also add the headers from C/C++/ObjC dependencies to the inputs here.
-    # TODO(b/144372256): Use the compilation context from each element of
-    # `clang_modules` to get the headers (among other values, like include
-    # paths) once Objective-C compilation is migrated to CcCompilationContext.
-    # TODO(b/142867898): When using the precompiled module for a dependency, we
-    # should not include its headers in the inputs.
-    header_depsets = [
-        prerequisites.cc_info.compilation_context.headers,
-        prerequisites.objc_info.umbrella_header,
-    ]
-
-    module_inputs = [m.module_map for m in clang_modules]
+    if required_headers:
+        header_depsets.append(required_headers)
 
     return swift_toolchain_config.config_result(
         inputs = module_inputs,
         transitive_inputs = header_depsets,
+    )
+
+def _clang_modulemap_dependency_args(module):
+    """Returns `swiftc` arguments for the module map of a Clang module.
+
+    Args:
+        module: A struct containing information about the module, as defined by
+            `swift_common.create_module`.
+
+    Returns:
+        A list of arguments to pass to `swiftc`.
+    """
+    return [
+        "-Xcc",
+        "-fmodule-map-file={}".format(module.clang.module_map.path),
+    ]
+
+def _clang_module_dependency_args(module):
+    """Returns `swiftc` arguments for a precompiled Clang module, if possible.
+
+    If no precompiled module was emitted for this module, then this function
+    falls back to the textual module map.
+
+    Args:
+        module: A struct containing information about the module, as defined by
+            `swift_common.create_module`.
+
+    Returns:
+        A list of arguments to pass to `swiftc`.
+    """
+    if not module.clang.precompiled_module:
+        return _clang_modulemap_dependency_args(module)
+    return [
+        "-Xcc",
+        "-fmodule-file={}".format(module.clang.precompiled_module.path),
+    ]
+
+def _dependencies_clang_modulemaps_configurator(prerequisites, args):
+    """Configures Clang module maps from dependencies."""
+    modules = [
+        module
+        for module in prerequisites.transitive_modules
+        if module.clang
+    ]
+
+    args.add_all(modules, map_each = _clang_modulemap_dependency_args)
+
+    return _collect_clang_module_inputs(
+        cc_info = prerequisites.cc_info,
+        modules = modules,
+        objc_info = prerequisites.objc_info,
+        prefer_precompiled_modules = False,
+    )
+
+def _dependencies_clang_modules_configurator(prerequisites, args):
+    """Configures precompiled Clang modules from dependencies."""
+    modules = [
+        module
+        for module in prerequisites.transitive_modules
+        if module.clang
+    ]
+
+    args.add_all(modules, map_each = _clang_module_dependency_args)
+
+    required_headers = getattr(prerequisites, "required_headers", None)
+    return _collect_clang_module_inputs(
+        cc_info = prerequisites.cc_info,
+        modules = modules,
+        objc_info = prerequisites.objc_info,
+        prefer_precompiled_modules = True,
+        required_headers = required_headers,
     )
 
 def _framework_search_paths_configurator(prerequisites, args):
@@ -967,6 +1156,106 @@ def compile(
         swiftinterface = compile_outputs.swiftinterface_file,
         swiftmodule = compile_outputs.swiftmodule_file,
     )
+
+def precompile_clang_module(
+        actions,
+        cc_compilation_context,
+        feature_configuration,
+        module_map_file,
+        module_name,
+        swift_toolchain,
+        target_name,
+        bin_dir = None,
+        genfiles_dir = None,
+        required_headers = None,
+        swift_info = None):
+    """Precompiles an explicit Clang module that is compatible with Swift.
+
+    Args:
+        actions: The context's `actions` object.
+        cc_compilation_context: A `CcCompilationContext` that contains headers
+            and other information needed to compile this module.
+        feature_configuration: A feature configuration obtained from
+            `swift_common.configure_features`.
+        module_map_file: A textual module map file that defines the Clang module
+            to be compiled.
+        module_name: The name of the top-level module in the module map that
+            will be compiled.
+        swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
+        target_name: The name of the target for which the code is being
+            compiled, which is used to determine unique file paths for the
+            outputs.
+        bin_dir: The Bazel `*-bin` directory root. If provided, its path is used
+            to store the cache for modules precompiled by Swift's ClangImporter,
+            and it is added to ClangImporter's header search paths for
+            compatibility with Bazel's C++ and Objective-C rules which support
+            includes of generated headers from that location.
+        genfiles_dir: The Bazel `*-genfiles` directory root. If provided, its
+            path is added to ClangImporter's header search paths for
+            compatibility with Bazel's C++ and Objective-C rules which support
+            inclusions of generated headers from that location.
+        required_headers: A `depset` of header files that must be present on the
+            file system/in the sandbox for compilation to succeed. This is
+            typically the set of headers of the direct dependencies of the
+            module being compiled, which Clang needs to be physically present
+            before it detects that they belong to one of the precompiled module
+            dependencies.
+        swift_info: A `SwiftInfo` provider that contains dependencies required
+            to compile this module.
+
+    Returns:
+        A `File` representing the precompiled module (`.pcm`) file, or `None` if
+        the toolchain or target does not support precompiled modules.
+    """
+
+    # Exit early if the toolchain does not support precompiled modules or if the
+    # feature configuration for the target being built does not want a module to
+    # be emitted.
+    if not is_action_enabled(
+        action_name = swift_action_names.PRECOMPILE_C_MODULE,
+        swift_toolchain = swift_toolchain,
+    ):
+        return None
+    if not is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_EMIT_C_MODULE,
+    ):
+        return None
+
+    precompiled_module = derived_files.precompiled_module(
+        actions = actions,
+        target_name = target_name,
+    )
+
+    if swift_info:
+        transitive_modules = swift_info.transitive_modules.to_list()
+    else:
+        transitive_modules = []
+
+    prerequisites = struct(
+        bin_dir = bin_dir,
+        cc_info = CcInfo(compilation_context = cc_compilation_context),
+        genfiles_dir = genfiles_dir,
+        module_name = module_name,
+        objc_include_paths_workaround = depset(),
+        objc_info = apple_common.new_objc_provider(),
+        pcm_file = precompiled_module,
+        required_headers = required_headers,
+        source_files = [module_map_file],
+        transitive_modules = transitive_modules,
+    )
+
+    run_toolchain_action(
+        actions = actions,
+        action_name = swift_action_names.PRECOMPILE_C_MODULE,
+        feature_configuration = feature_configuration,
+        outputs = [precompiled_module],
+        prerequisites = prerequisites,
+        progress_message = "Precompiling C module {}".format(module_name),
+        swift_toolchain = swift_toolchain,
+    )
+
+    return precompiled_module
 
 def get_implicit_deps(feature_configuration, swift_toolchain):
     """Gets the list of implicit dependencies from the toolchain.

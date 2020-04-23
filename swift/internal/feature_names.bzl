@@ -61,6 +61,12 @@ SWIFT_FEATURE_COMPILE_STATS = "swift.compile_stats"
 # builds.
 SWIFT_FEATURE_DEBUG_PREFIX_MAP = "swift.debug_prefix_map"
 
+# If enabled, C and Objective-C libraries that are direct or transitive
+# dependencies of a Swift library will emit explicit precompiled modules that
+# are compatible with Swift's ClangImporter and propagate them up the build
+# graph.
+SWIFT_FEATURE_EMIT_C_MODULE = "swift.emit_c_module"
+
 # If enabled, Swift compilation actions will use batch mode by passing
 # `-enable-batch-mode` to `swiftc`. This is a new compilation mode as of
 # Swift 4.2 that is intended to speed up non-incremental non-WMO builds by
@@ -113,6 +119,11 @@ SWIFT_FEATURE_OPT_USES_WMO = "swift.opt_uses_wmo"
 # If enabled, builds using the "opt" compilation mode will invoke `swiftc` with
 # the `-Osize` flag instead of `-O`.
 SWIFT_FEATURE_OPT_USES_OSIZE = "swift.opt_uses_osize"
+
+# If enabled, Swift compiler invocations will use precompiled modules from
+# dependencies instead of module maps and headers, if those dependencies provide
+# them.
+SWIFT_FEATURE_USE_C_MODULES = "swift.use_c_modules"
 
 # If enabled, Swift compilation actions will use the same global Clang module
 # cache used by Objective-C compilation actions. This is disabled by default

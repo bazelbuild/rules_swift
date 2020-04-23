@@ -156,6 +156,18 @@ def _partial_swiftmodule(actions, target_name, src):
         paths.join(dirname, "{}.partial_swiftmodule".format(basename)),
     )
 
+def _precompiled_module(actions, target_name):
+    """Declares the precompiled module for a C/Objective-C target.
+
+    Args:
+        actions: The context's actions object.
+        target_name: The name of the target.
+
+    Returns:
+        The declared `File`.
+    """
+    return actions.declare_file("{}.swift.pcm".format(target_name))
+
 def _reexport_modules_src(actions, target_name):
     """Declares a source file used to re-export other Swift modules.
 
@@ -298,6 +310,7 @@ derived_files = struct(
     module_map = _module_map,
     modulewrap_object = _modulewrap_object,
     partial_swiftmodule = _partial_swiftmodule,
+    precompiled_module = _precompiled_module,
     reexport_modules_src = _reexport_modules_src,
     static_archive = _static_archive,
     stats_directory = _stats_directory,
