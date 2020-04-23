@@ -33,6 +33,10 @@ swift_action_names = struct(
     # Wraps a `.swiftmodule` in a `.o` file on ELF platforms so that it can be
     # linked into a binary for debugging.
     MODULEWRAP = "SwiftModuleWrap",
+
+    # Precompiles an explicit module for a C/Objective-C module map and its
+    # headers, emitting a `.pcm` file.
+    PRECOMPILE_C_MODULE = "SwiftPrecompileCModule",
 )
 
 def _apply_configurator(configurator, prerequisites, args):
