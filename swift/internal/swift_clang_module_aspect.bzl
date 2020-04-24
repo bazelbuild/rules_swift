@@ -15,7 +15,7 @@
 """Propagates unified `SwiftInfo` providers for C/Objective-C targets."""
 
 load(":attrs.bzl", "swift_toolchain_attrs")
-load(":compiling.bzl", "derive_module_name")
+load(":compiling.bzl", "derive_module_name", "precompile_clang_module")
 load(":derived_files.bzl", "derived_files")
 load(":feature_names.bzl", "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD")
 load(":features.bzl", "configure_features", "is_feature_enabled")
@@ -107,9 +107,14 @@ def _handle_cc_target(
         tags = attr.tags,
     )
 
+    if swift_infos:
+        merged_swift_info = create_swift_info(swift_infos = swift_infos)
+    else:
+        merged_swift_info = None
+
     if not module_name:
-        if swift_infos:
-            return [create_swift_info(swift_infos = swift_infos)]
+        if merged_swift_info:
+            return [merged_swift_info]
         else:
             return []
 
@@ -141,20 +146,43 @@ def _handle_cc_target(
         workspace_relative = workspace_relative,
     )
 
+    compilation_context = target[CcInfo].compilation_context
+    direct_deps_headers_sets = []
+    for dep in attr.deps:
+        if CcInfo in dep:
+            dep_compilation_context = dep[CcInfo].compilation_context
+            direct_deps_headers_sets.append(
+                depset(
+                    dep_compilation_context.direct_headers +
+                    dep_compilation_context.direct_textual_headers,
+                ),
+            )
+
+    precompiled_module = precompile_clang_module(
+        actions = aspect_ctx.actions,
+        bin_dir = aspect_ctx.bin_dir,
+        cc_compilation_context = compilation_context,
+        feature_configuration = feature_configuration,
+        genfiles_dir = aspect_ctx.genfiles_dir,
+        module_map_file = module_map_file,
+        module_name = module_name,
+        required_headers = depset(transitive = direct_deps_headers_sets),
+        swift_info = merged_swift_info,
+        swift_toolchain = swift_toolchain,
+        target_name = target.label.name,
+    )
+
     return [create_swift_info(
         modules = [
             create_module(
                 name = module_name,
                 clang = create_clang_module(
-                    compilation_context = target[CcInfo].compilation_context,
+                    compilation_context = compilation_context,
                     module_map = module_map_file,
-                    # TODO(b/142867898): Precompile the module and place it
-                    # here.
-                    precompiled_module = None,
+                    precompiled_module = precompiled_module,
                 ),
             ),
         ],
-        module_name = module_name,
         swift_infos = swift_infos,
     )]
 
