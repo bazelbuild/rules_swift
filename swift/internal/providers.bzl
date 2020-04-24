@@ -332,11 +332,8 @@ def create_swift_info(
     true Swift module; it is merely a "collector" for other dependencies.
 
     Args:
-        module_name: A string containing the name of the Swift module. If this
-            is `None`, the provider does not represent a compiled module but
-            rather a collection of modules (this happens, for example, with
-            `proto_library` targets that have no sources of their own but depend
-            on others that do).
+        module_name: This argument is deprecated. The module name(s) should be
+            specified in the values passed to the `modules` argument.
         modules: A list of values (as returned by `swift_common.create_module`)
             that represent Clang and/or Swift module artifacts that are direct
             outputs of the target being built.
@@ -387,10 +384,10 @@ def create_swift_info(
 
     # TODO(b/149999519): Remove the legacy `module_name` field and this
     # transitional code.
-    if not module_name and len(modules) == 1 and modules[0].swift:
-        # Populate the module name based on the single Swift module provided, if
-        # there was one, and if the legacy `module_name` parameter wasn't
-        # already given.
+    if not module_name and len(modules) == 1:
+        # Populate the module name based on the single module provided, if there
+        # was one, and if the legacy `module_name` parameter wasn't already
+        # given.
         module_name = modules[0].name
 
     transitive_defines = []
