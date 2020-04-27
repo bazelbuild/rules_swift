@@ -143,6 +143,59 @@ def create_cc_info(
 
     return cc_common.merge_cc_infos(cc_infos = local_cc_infos + cc_infos)
 
+def direct_preserving_compilation_context(compilation_contexts):
+    """Creates a compilation context that preserves direct information.
+
+    TODO(b/154642538): This is a cheat, because right now, merging `CcInfo`
+    providers does not preserve the direct header information. Unfortunately,
+    when we have a `swift_c_module` that depends on one or more `cc_library`
+    targets, we need to preserve this information so that we only include the
+    required headers for the module when precompiling it.
+
+    The returned compilation context is not *quite* identical to one that would
+    be a true merge; specifically, the distinction between textual headers and
+    regular headers is lost, because `cc_common.create_compilation_context` does
+    not have an argument for textual headers. Since this context is currently
+    only used to collect action inputs, this is not problematic.
+
+    Args:
+        compilation_contexts: A list of `CcCompilationContext`s that should be
+            merged, preserving their direct information.
+
+    Returns:
+        A compilation context that contains the merged information of the given
+        compilation contexts, specifically preserving the direct header
+        information.
+    """
+    defines = []
+    direct_headers = []
+    framework_includes = []
+    includes = []
+    local_defines = []
+    quote_includes = []
+    system_includes = []
+
+    for compilation_context in compilation_contexts:
+        direct_headers.extend(compilation_context.direct_headers)
+        direct_headers.extend(compilation_context.direct_textual_headers)
+
+        defines.append(compilation_context.defines)
+        framework_includes.append(compilation_context.framework_includes)
+        includes.append(compilation_context.includes)
+        local_defines.append(compilation_context.local_defines)
+        quote_includes.append(compilation_context.quote_includes)
+        system_includes.append(compilation_context.system_includes)
+
+    return cc_common.create_compilation_context(
+        defines = depset(transitive = defines),
+        headers = depset(direct_headers),
+        framework_includes = depset(transitive = framework_includes),
+        includes = depset(transitive = includes),
+        local_defines = depset(transitive = local_defines),
+        quote_includes = depset(transitive = quote_includes),
+        system_includes = depset(transitive = system_includes),
+    )
+
 def expand_locations(ctx, values, targets = []):
     """Expands the `$(location)` placeholders in each of the given values.
 
