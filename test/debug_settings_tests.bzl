@@ -58,6 +58,14 @@ OPT_CONFIG_SETTINGS = {
     ],
 }
 
+CACHEABLE_OPT_CONFIG_SETTINGS = {
+    "//command_line_option:compilation_mode": "opt",
+    "//command_line_option:features": [
+        "swift.cacheable_swiftmodules",
+        "swift.debug_prefix_map",
+    ],
+}
+
 dbg_action_command_line_test = make_action_command_line_test_rule(
     config_settings = DBG_CONFIG_SETTINGS,
 )
@@ -76,6 +84,10 @@ fastbuild_full_di_action_command_line_test = make_action_command_line_test_rule(
 
 opt_action_command_line_test = make_action_command_line_test_rule(
     config_settings = OPT_CONFIG_SETTINGS,
+)
+
+cacheable_opt_action_command_line_test = make_action_command_line_test_rule(
+    config_settings = CACHEABLE_OPT_CONFIG_SETTINGS,
 )
 
 def debug_settings_test_suite():
@@ -176,6 +188,22 @@ def debug_settings_test_suite():
             "-Xwrapped-swift=-debug-prefix-pwd-is-dot",
             "-g",
             "-gline-tables-only",
+        ],
+        mnemonic = "SwiftCompile",
+        tags = [name],
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+    )
+
+    # Verify that `-c opt` builds do not serialize debugging options or remap
+    # paths, and have appropriate flags otherwise.
+    cacheable_opt_action_command_line_test(
+        name = "{}_cacheable_opt_build".format(name),
+        expected_argv = [
+            "-DNDEBUG",
+            "-Xfrontend -no-serialize-debugging-options",
+        ],
+        not_expected_argv = [
+            "-Xfrontend -serialize-debugging-options",
         ],
         mnemonic = "SwiftCompile",
         tags = [name],
