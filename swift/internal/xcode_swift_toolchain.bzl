@@ -37,6 +37,7 @@ load(
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS",
+    "SWIFT_FEATURE_USE_C_MODULES",
     "SWIFT_FEATURE_USE_RESPONSE_FILES",
 )
 load(":features.bzl", "features_for_build_modes")
@@ -284,7 +285,10 @@ def _all_action_configs(
     action_configs = [
         # Basic compilation flags (target triple and toolchain search paths).
         swift_toolchain_config.action_config(
-            actions = [swift_action_names.COMPILE],
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.PRECOMPILE_C_MODULE,
+            ],
             configurators = [
                 swift_toolchain_config.add_arg("-target", target_triple),
                 swift_toolchain_config.add_arg("-sdk", sdk_dir),
@@ -320,7 +324,10 @@ def _all_action_configs(
         # directory so that modules are found correctly.
         action_configs.append(
             swift_toolchain_config.action_config(
-                actions = [swift_action_names.COMPILE],
+                actions = [
+                    swift_action_names.COMPILE,
+                    swift_action_names.PRECOMPILE_C_MODULE,
+                ],
                 configurators = [
                     partial.make(
                         _resource_directory_configurator,
@@ -337,6 +344,7 @@ def _all_tool_configs(
         custom_toolchain,
         env,
         execution_requirements,
+        supports_c_modules,
         swift_executable,
         toolchain_root,
         use_param_file):
@@ -347,6 +355,8 @@ def _all_tool_configs(
             one was requested.
         env: The environment variables to set when launching tools.
         execution_requirements: The execution requirements for tools.
+        supports_c_modules: If True, the toolchain supports precompiled C
+            modules.
         swift_executable: A custom Swift driver executable to be used during the
             build, if provided.
         toolchain_root: The root directory of the toolchain, if provided.
@@ -364,7 +374,7 @@ def _all_tool_configs(
         env = dict(env)
         env["TOOLCHAINS"] = custom_toolchain
 
-    return {
+    tool_configs = {
         swift_action_names.COMPILE: swift_toolchain_config.driver_tool_config(
             driver_mode = "swiftc",
             env = env,
@@ -375,6 +385,21 @@ def _all_tool_configs(
             worker_mode = "persistent",
         ),
     }
+
+    if supports_c_modules:
+        tool_configs[swift_action_names.PRECOMPILE_C_MODULE] = (
+            swift_toolchain_config.driver_tool_config(
+                driver_mode = "swiftc",
+                env = env,
+                execution_requirements = execution_requirements,
+                swift_executable = swift_executable,
+                toolchain_root = toolchain_root,
+                use_param_file = use_param_file,
+                worker_mode = "persistent",
+            )
+        )
+
+    return tool_configs
 
 def _is_macos(platform):
     """Returns `True` if the given platform is macOS.
@@ -549,6 +574,15 @@ def _xcode_swift_toolchain_impl(ctx):
         requested_features.append(SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION)
         requested_features.append(SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS)
 
+    # Xcode 11.4 implies Swift 5.2.
+    if _is_xcode_at_least_version(xcode_config, "11.4"):
+        supports_c_modules = True
+
+        # TODO(b/142867898): Add `SWIFT_FEATURE_EMIT_C_MODULE` by default.
+        requested_features.append(SWIFT_FEATURE_USE_C_MODULES)
+    else:
+        supports_c_modules = False
+
     command_line_copts = _command_line_objc_copts(
         ctx.var["COMPILATION_MODE"],
         ctx.fragments.objc,
@@ -563,6 +597,7 @@ def _xcode_swift_toolchain_impl(ctx):
         custom_toolchain = custom_toolchain,
         env = env,
         execution_requirements = execution_requirements,
+        supports_c_modules = supports_c_modules,
         swift_executable = swift_executable,
         toolchain_root = toolchain_root,
         use_param_file = use_param_file,
