@@ -647,15 +647,17 @@ def _dependencies_clang_defines_configurator(prerequisites, args):
 
 def _collect_clang_module_inputs(
         cc_info,
+        is_swift,
         modules,
         objc_info,
-        prefer_precompiled_modules,
-        required_headers = None):
+        prefer_precompiled_modules):
     """Collects Clang module-related inputs to pass to an action.
 
     Args:
         cc_info: The `CcInfo` provider of the target being compiled. The direct
             headers of this provider will be collected as inputs.
+        is_swift: If True, this is a Swift compilation; otherwise, it is a
+            Clang module compilation.
         modules: A list of module structures (as returned by
             `swift_common.create_module`). The precompiled Clang modules or the
             textual module maps and headers of these modules (depending on the
@@ -666,12 +668,6 @@ def _collect_clang_module_inputs(
             be preferred over textual module map files and headers for modules
             that have them. If False, textual module map files and headers
             should always be used.
-        required_headers: A `depset` of header files that are required for
-            compilation. This depends on the action; for example, a Swift
-            compilation action requires no headers, but a Clang module
-            precompilation action requires that the headers of the direct
-            dependencies be present in the sandbox when they are included based
-            on their file path.
 
     Returns:
         A toolchain configuration result (i.e.,
@@ -681,10 +677,10 @@ def _collect_clang_module_inputs(
     module_inputs = []
     header_depsets = []
 
-    if cc_info:
-        compilation_context = cc_info.compilation_context
-        module_inputs.extend(compilation_context.direct_headers)
-        module_inputs.extend(compilation_context.direct_textual_headers)
+    # Swift compiles (not Clang module compiles) that prefer precompiled modules
+    # do not need the full set of transitive headers.
+    if cc_info and not (is_swift and prefer_precompiled_modules):
+        header_depsets.append(cc_info.compilation_context.headers)
 
     for module in modules:
         clang_module = module.clang
@@ -707,20 +703,15 @@ def _collect_clang_module_inputs(
                 )
         else:
             # If the build prefers textual module maps and headers, just get the
-            # module map for each module, and we'll collect the full transitive
-            # header set below.
+            # module map for each module; we've already collected the full
+            # transitive header set below.
             module_inputs.append(module_map)
 
     # If we prefer textual module maps and headers for the build, fall back to
     # using the full set of transitive headers.
     if not prefer_precompiled_modules:
-        if cc_info:
-            header_depsets.append(cc_info.compilation_context.headers)
         if objc_info:
             header_depsets.append(objc_info.umbrella_header)
-
-    if required_headers:
-        header_depsets.append(required_headers)
 
     return swift_toolchain_config.config_result(
         inputs = module_inputs,
@@ -774,6 +765,7 @@ def _dependencies_clang_modulemaps_configurator(prerequisites, args):
 
     return _collect_clang_module_inputs(
         cc_info = prerequisites.cc_info,
+        is_swift = prerequisites.is_swift,
         modules = modules,
         objc_info = prerequisites.objc_info,
         prefer_precompiled_modules = False,
@@ -789,13 +781,12 @@ def _dependencies_clang_modules_configurator(prerequisites, args):
 
     args.add_all(modules, map_each = _clang_module_dependency_args)
 
-    required_headers = getattr(prerequisites, "required_headers", None)
     return _collect_clang_module_inputs(
         cc_info = prerequisites.cc_info,
+        is_swift = prerequisites.is_swift,
         modules = modules,
         objc_info = prerequisites.objc_info,
         prefer_precompiled_modules = True,
-        required_headers = required_headers,
     )
 
 def _framework_search_paths_configurator(prerequisites, args):
@@ -1096,6 +1087,7 @@ def compile(
         cc_info = merged_providers.cc_info,
         defines = defines,
         genfiles_dir = genfiles_dir,
+        is_swift = True,
         module_name = module_name,
         objc_include_paths_workaround = (
             merged_providers.objc_include_paths_workaround
@@ -1167,14 +1159,20 @@ def precompile_clang_module(
         target_name,
         bin_dir = None,
         genfiles_dir = None,
-        required_headers = None,
         swift_info = None):
     """Precompiles an explicit Clang module that is compatible with Swift.
 
     Args:
         actions: The context's `actions` object.
         cc_compilation_context: A `CcCompilationContext` that contains headers
-            and other information needed to compile this module.
+            and other information needed to compile this module. This
+            compilation context should contain all headers required to compile
+            the module, which includes the headers for the module itself *and*
+            any others that must be present on the file system/in the sandbox
+            for compilation to succeed. The latter typically refers to the set
+            of headers of the direct dependencies of the module being compiled,
+            which Clang needs to be physically present before it detects that
+            they belong to one of the precompiled module dependencies.
         feature_configuration: A feature configuration obtained from
             `swift_common.configure_features`.
         module_map_file: A textual module map file that defines the Clang module
@@ -1194,12 +1192,6 @@ def precompile_clang_module(
             path is added to ClangImporter's header search paths for
             compatibility with Bazel's C++ and Objective-C rules which support
             inclusions of generated headers from that location.
-        required_headers: A `depset` of header files that must be present on the
-            file system/in the sandbox for compilation to succeed. This is
-            typically the set of headers of the direct dependencies of the
-            module being compiled, which Clang needs to be physically present
-            before it detects that they belong to one of the precompiled module
-            dependencies.
         swift_info: A `SwiftInfo` provider that contains dependencies required
             to compile this module.
 
@@ -1236,11 +1228,11 @@ def precompile_clang_module(
         bin_dir = bin_dir,
         cc_info = CcInfo(compilation_context = cc_compilation_context),
         genfiles_dir = genfiles_dir,
+        is_swift = False,
         module_name = module_name,
         objc_include_paths_workaround = depset(),
         objc_info = apple_common.new_objc_provider(),
         pcm_file = precompiled_module,
-        required_headers = required_headers,
         source_files = [module_map_file],
         transitive_modules = transitive_modules,
     )
