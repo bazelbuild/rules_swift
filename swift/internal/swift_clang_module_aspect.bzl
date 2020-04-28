@@ -28,7 +28,7 @@ load(
     "create_module",
     "create_swift_info",
 )
-load(":utils.bzl", "get_providers")
+load(":utils.bzl", "direct_preserving_compilation_context", "get_providers")
 
 _MULTIPLE_TARGET_ASPECT_ATTRS = [
     "deps",
@@ -147,26 +147,25 @@ def _handle_cc_target(
     )
 
     compilation_context = target[CcInfo].compilation_context
-    direct_deps_headers_sets = []
-    for dep in attr.deps:
-        if CcInfo in dep:
-            dep_compilation_context = dep[CcInfo].compilation_context
-            direct_deps_headers_sets.append(
-                depset(
-                    dep_compilation_context.direct_headers +
-                    dep_compilation_context.direct_textual_headers,
-                ),
-            )
+
+    compilation_contexts_to_compile = [compilation_context]
+    compilation_contexts_to_compile.extend([
+        dep[CcInfo].compilation_context
+        for dep in attr.deps
+        if CcInfo in dep
+    ])
+    compilation_context_to_compile = direct_preserving_compilation_context(
+        compilation_contexts = compilation_contexts_to_compile,
+    )
 
     precompiled_module = precompile_clang_module(
         actions = aspect_ctx.actions,
         bin_dir = aspect_ctx.bin_dir,
-        cc_compilation_context = compilation_context,
+        cc_compilation_context = compilation_context_to_compile,
         feature_configuration = feature_configuration,
         genfiles_dir = aspect_ctx.genfiles_dir,
         module_map_file = module_map_file,
         module_name = module_name,
-        required_headers = depset(transitive = direct_deps_headers_sets),
         swift_info = merged_swift_info,
         swift_toolchain = swift_toolchain,
         target_name = target.label.name,
