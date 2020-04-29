@@ -37,6 +37,10 @@ std::string GetCurrentDirectory() {
   return cwd;
 }
 
+bool FileExists(const std::string &path) {
+  return access(path.c_str(), 0) == 0;
+}
+
 bool CopyFile(const std::string &src, const std::string &dest) {
 #ifdef __APPLE__
   // The `copyfile` function with `COPYFILE_ALL` mode preserves permissions and

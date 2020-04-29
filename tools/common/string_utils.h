@@ -22,4 +22,7 @@
 bool MakeSubstitutions(std::string *arg,
                        const std::map<std::string, std::string> &mappings);
 
+// Unescape and unquote an argument read from a line of a response file.
+std::string Unescape(const std::string &arg);
+
 #endif  // BUILD_BAZEL_RULES_SWIFT_TOOLS_COMMON_STRING_UTILS_H_

@@ -20,6 +20,9 @@
 // Gets the path to the current working directory.
 std::string GetCurrentDirectory();
 
+// Returns true if something exists at path.
+bool FileExists(const std::string &path);
+
 // Copies the file at src to dest. Returns true if successful.
 bool CopyFile(const std::string &src, const std::string &dest);
 

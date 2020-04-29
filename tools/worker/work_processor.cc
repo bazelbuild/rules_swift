@@ -61,6 +61,8 @@ void WorkProcessor::ProcessWorkRequest(
 
   OutputFileMap output_file_map;
   std::string output_file_map_path;
+  std::string index_store_path;
+  std::string global_index_store_path;
   bool is_wmo = false;
 
   std::string prev_arg;
@@ -72,6 +74,18 @@ void WorkProcessor::ProcessWorkRequest(
       arg.clear();
     } else if (prev_arg == "-output-file-map") {
       output_file_map_path = arg;
+      arg.clear();
+    } else if (arg == "-index-store-path") {
+      // Peel off the `-index-store-path` argument, so we can rewrite it if
+      // necessary later.
+      arg.clear();
+    } else if (prev_arg == "-index-store-path") {
+      index_store_path = arg;
+      arg.clear();
+    } else if (arg == "-Xwrapped-swift=-global-index-store-path") {
+      arg.clear();
+    } else if (prev_arg == "-Xwrapped-swift=-global-index-store-path") {
+      global_index_store_path = arg;
       arg.clear();
     } else if (ArgumentEnablesWMO(arg)) {
       is_wmo = true;
@@ -106,6 +120,18 @@ void WorkProcessor::ProcessWorkRequest(
       // output file map back so the outputs end up where they should.
       params_file_stream << "-output-file-map\n";
       params_file_stream << output_file_map_path << '\n';
+    }
+  }
+
+  if (!index_store_path.empty()) {
+    if (!global_index_store_path.empty() && FileExists(global_index_store_path + "/rules_swift_global_index_enabled")) {
+      // Use the global index store path instead.
+      params_file_stream << "-index-store-path\n";
+      params_file_stream << global_index_store_path << '\n';
+    } else {
+      // Just put the original index store path back.
+      params_file_stream << "-index-store-path\n";
+      params_file_stream << index_store_path << '\n';
     }
   }
 

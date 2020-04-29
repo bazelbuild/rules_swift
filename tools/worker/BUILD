@@ -46,6 +46,9 @@ cc_library(
     hdrs = ["compile_without_worker.h"],
     deps = [
         ":swift_runner",
+        "//tools/common:file_system",
+        "//tools/common:string_utils",
+        "//tools/common:temp_file",
     ],
 )
 

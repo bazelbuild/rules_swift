@@ -1155,6 +1155,20 @@ def _index_while_building_configurator(prerequisites, args):
     if not _index_store_path_overridden(prerequisites.user_compile_flags):
         args.add("-index-store-path", prerequisites.indexstore_directory.path)
 
+        # "-global-index-store-path" doesn't change where the index store is
+        # output to on its own, it's only used if at that path a file named
+        # "rules_swift_global_index_enabled" exists, which needs to be managed
+        # by an external process.
+        # Always passing this flag allows caching of the results if they are
+        # output to the non-global location. This allows for incremental
+        # compilation to use the "rules_swift_global_index_enabled" file and
+        # merge cached a fresh results (outside of Bazel).
+        if prerequisites.bin_dir:
+            args.add(
+                "-Xwrapped-swift=-global-index-store-path",
+                paths.join(prerequisites.bin_dir.path, "_indexstore"),
+            )
+
 def _conditional_compilation_flag_configurator(prerequisites, args):
     """Adds (non-Clang) conditional compilation flags to the command line."""
     all_defines = depset(
