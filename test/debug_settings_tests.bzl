@@ -26,6 +26,14 @@ DBG_CONFIG_SETTINGS = {
     ],
 }
 
+DISABLE_D_FLAGS_DBG_CONFIG_SETTINGS = {
+    "//command_line_option:compilation_mode": "dbg",
+    "//command_line_option:features": [
+        "swift.debug_prefix_map",
+        "swift.disable_default_d_flags",
+    ],
+}
+
 CACHEABLE_DBG_CONFIG_SETTINGS = {
     "//command_line_option:compilation_mode": "dbg",
     "//command_line_option:features": [
@@ -38,6 +46,14 @@ FASTBUILD_CONFIG_SETTINGS = {
     "//command_line_option:compilation_mode": "fastbuild",
     "//command_line_option:features": [
         "swift.debug_prefix_map",
+    ],
+}
+
+DISABLE_D_FLAGS_FASTBUILD_CONFIG_SETTINGS = {
+    "//command_line_option:compilation_mode": "fastbuild",
+    "//command_line_option:features": [
+        "swift.debug_prefix_map",
+        "swift.disable_default_d_flags",
     ],
 }
 
@@ -58,8 +74,30 @@ OPT_CONFIG_SETTINGS = {
     ],
 }
 
+DISABLE_D_FLAGS_OPT_CONFIG_SETTINGS = {
+    "//command_line_option:compilation_mode": "opt",
+    "//command_line_option:features": [
+        # This feature indicates *support*, not unconditional enablement, which
+        # is why it is present for `opt` mode as well.
+        "swift.debug_prefix_map",
+        "swift.disable_default_d_flags",
+    ],
+}
+
+CACHEABLE_OPT_CONFIG_SETTINGS = {
+    "//command_line_option:compilation_mode": "opt",
+    "//command_line_option:features": [
+        "swift.cacheable_swiftmodules",
+        "swift.debug_prefix_map",
+    ],
+}
+
 dbg_action_command_line_test = make_action_command_line_test_rule(
     config_settings = DBG_CONFIG_SETTINGS,
+)
+
+disable_d_flags_dbg_action_command_line_test = make_action_command_line_test_rule(
+    config_settings = DISABLE_D_FLAGS_DBG_CONFIG_SETTINGS,
 )
 
 cacheable_dbg_action_command_line_test = make_action_command_line_test_rule(
@@ -70,12 +108,20 @@ fastbuild_action_command_line_test = make_action_command_line_test_rule(
     config_settings = FASTBUILD_CONFIG_SETTINGS,
 )
 
+disable_d_flags_fastbuild_action_command_line_test = make_action_command_line_test_rule(
+    config_settings = DISABLE_D_FLAGS_FASTBUILD_CONFIG_SETTINGS,
+)
+
 fastbuild_full_di_action_command_line_test = make_action_command_line_test_rule(
     config_settings = FASTBUILD_FULL_DI_CONFIG_SETTINGS,
 )
 
 opt_action_command_line_test = make_action_command_line_test_rule(
     config_settings = OPT_CONFIG_SETTINGS,
+)
+
+disable_d_flags_opt_action_command_line_test = make_action_command_line_test_rule(
+    config_settings = DISABLE_D_FLAGS_OPT_CONFIG_SETTINGS,
 )
 
 def debug_settings_test_suite():
@@ -96,6 +142,19 @@ def debug_settings_test_suite():
             "-DNDEBUG",
             "-Xfrontend -no-serialize-debugging-options",
             "-gline-tables-only",
+        ],
+        mnemonic = "SwiftCompile",
+        tags = [name],
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+    )
+
+    # Verify that no default `-D` flags are passed when the disable feature
+    # is passed
+    disable_d_flags_dbg_action_command_line_test(
+        name = "{}_disable_d_flags_dbg_build".format(name),
+        not_expected_argv = [
+            "-DDEBUG",
+            "-DNDEBUG",
         ],
         mnemonic = "SwiftCompile",
         tags = [name],
@@ -143,6 +202,19 @@ def debug_settings_test_suite():
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
 
+    # Verify that no default `-D` flags are passed when the disable feature
+    # is passed
+    disable_d_flags_fastbuild_action_command_line_test(
+        name = "{}_disable_d_flags_fastbuild_build".format(name),
+        not_expected_argv = [
+            "-DDEBUG",
+            "-DNDEBUG",
+        ],
+        mnemonic = "SwiftCompile",
+        tags = [name],
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+    )
+
     # Verify that `-c fastbuild` builds with `swift.full_debug_info` use `-g`
     # instead of `-gline-tables-only` (this is required for Apple dSYM support).
     fastbuild_full_di_action_command_line_test(
@@ -176,6 +248,19 @@ def debug_settings_test_suite():
             "-Xwrapped-swift=-debug-prefix-pwd-is-dot",
             "-g",
             "-gline-tables-only",
+        ],
+        mnemonic = "SwiftCompile",
+        tags = [name],
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+    )
+
+    # Verify that no default `-D` flags are passed when the disable feature
+    # is passed
+    disable_d_flags_opt_action_command_line_test(
+        name = "{}_disable_d_flags_opt_build".format(name),
+        not_expected_argv = [
+            "-DDEBUG",
+            "-DNDEBUG",
         ],
         mnemonic = "SwiftCompile",
         tags = [name],

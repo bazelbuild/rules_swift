@@ -34,6 +34,7 @@ load(
     "SWIFT_FEATURE_COVERAGE",
     "SWIFT_FEATURE_DBG",
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
+    "SWIFT_FEATURE_DISABLE_DEFAULT_D_FLAGS",
     "SWIFT_FEATURE_EMIT_C_MODULE",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
@@ -179,6 +180,7 @@ def compile_action_configs():
                 swift_toolchain_config.add_arg("-DDEBUG"),
             ],
             features = [[SWIFT_FEATURE_DBG], [SWIFT_FEATURE_FASTBUILD]],
+            not_features = [SWIFT_FEATURE_DISABLE_DEFAULT_D_FLAGS],
         ),
         swift_toolchain_config.action_config(
             actions = [swift_action_names.COMPILE],
@@ -186,6 +188,7 @@ def compile_action_configs():
                 swift_toolchain_config.add_arg("-DNDEBUG"),
             ],
             features = [SWIFT_FEATURE_OPT],
+            not_features = [SWIFT_FEATURE_DISABLE_DEFAULT_D_FLAGS],
         ),
 
         # Set the optimization mode. For dbg/fastbuild, use `-O0`. For opt, use

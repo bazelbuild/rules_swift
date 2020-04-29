@@ -200,3 +200,7 @@ SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS = "swift.supports_private_deps"
 # numbers of `-Wl,-add_ast_path,<path>` flags to the linker do not overrun the
 # system command line limit.
 SWIFT_FEATURE_NO_EMBED_DEBUG_MODULE = "swift.no_embed_debug_module"
+
+# If enabled rules_swift will not add default -D flags, such as -DDEBUG,
+# to swiftc invocations
+SWIFT_FEATURE_DISABLE_DEFAULT_D_FLAGS = "swift.disable_default_d_flags"
