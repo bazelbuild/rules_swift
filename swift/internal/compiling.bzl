@@ -1844,27 +1844,6 @@ def output_groups_from_compilation_outputs(compilation_outputs):
 
     return output_groups
 
-def swift_library_output_map(name, alwayslink):
-    """Returns the dictionary of implicit outputs for a `swift_library`.
-
-    This function is used to specify the `outputs` of the `swift_library` rule;
-    as such, its arguments must be named exactly the same as the attributes to
-    which they refer.
-
-    Args:
-        name: The name of the target being built.
-        alwayslink: Indicates whether the object files in the library should
-            always be always be linked into any binaries that depend on it, even
-            if some contain no symbols referenced by the binary.
-
-    Returns:
-        The implicit outputs dictionary for a `swift_library`.
-    """
-    extension = "lo" if alwayslink else "a"
-    return {
-        "archive": "lib{}.{}".format(name, extension),
-    }
-
 def _write_objc_header_module_map(
         actions,
         module_name,

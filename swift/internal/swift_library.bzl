@@ -20,7 +20,6 @@ load(
     "find_swift_version_copt_value",
     "new_objc_provider",
     "output_groups_from_compilation_outputs",
-    "swift_library_output_map",
 )
 load(
     ":feature_names.bzl",
@@ -147,6 +146,16 @@ def _swift_library_impl(ctx):
     else:
         deps = ctx.attr.deps
         private_deps = []
+
+    if not srcs:
+        return [
+            swift_common.create_swift_info(
+                # Note that private_deps are explicitly omitted here; they should
+                # not propagate.
+                swift_infos = get_providers(deps, SwiftInfo),
+                swift_version = find_swift_version_copt_value(copts),
+            ),
+        ]
 
     compilation_outputs = swift_common.compile(
         actions = ctx.actions,
@@ -290,7 +299,6 @@ dependent for linking, but artifacts/flags required for compilation (such as
     doc = """\
 Compiles and links Swift code into a static library and Swift module.
 """,
-    outputs = swift_library_output_map,
     implementation = _swift_library_impl,
     fragments = ["cpp"],
 )
