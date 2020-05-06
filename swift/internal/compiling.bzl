@@ -1598,11 +1598,11 @@ def _declare_validated_generated_header(actions, generated_header_name):
     Returns:
         A `File` that should be used as the output for the generated header.
     """
-    if "/" in generated_header_name:
+    """if "/" in generated_header_name:
         fail(
             "The generated header for a Swift module may not contain " +
             "directory components (got '{}').".format(generated_header_name),
-        )
+        )"""
 
     extension = paths.split_extension(generated_header_name)[1]
     if extension != ".h":
