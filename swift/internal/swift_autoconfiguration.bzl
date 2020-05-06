@@ -28,6 +28,7 @@ load(
     "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
+    "SWIFT_FEATURE_IMPLICIT_MODULES",
     "SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS",
     "SWIFT_FEATURE_USE_RESPONSE_FILES",
 )
@@ -205,6 +206,12 @@ def _create_linux_toolchain(repository_ctx):
     feature_values = _compute_feature_values(repository_ctx, path_to_swiftc)
     version_file = _write_swift_version(repository_ctx, path_to_swiftc)
 
+    # TODO: This is being enabled here, rather than in the toolchain rule
+    # implementations, so that we can provide a way to optionally turn it off
+    # later when we have a way to model modules from outside Bazel workspaces
+    # (i.e., from the Swift toolchain) as explicit modules.
+    feature_values.append(SWIFT_FEATURE_IMPLICIT_MODULES)
+
     repository_ctx.file(
         "BUILD",
         """
@@ -241,6 +248,12 @@ def _create_xcode_toolchain(repository_ctx):
     """
     path_to_swiftc = repository_ctx.which("swiftc")
 
+    # TODO: This is being enabled here, rather than in the toolchain rule
+    # implementations, so that we can provide a way to optionally turn it off
+    # later when we have a way to model modules from outside Bazel workspaces
+    # (i.e., from the Swift toolchain and Xcode SDKs) as explicit modules.
+    feature_values = [SWIFT_FEATURE_IMPLICIT_MODULES]
+
     repository_ctx.file(
         "BUILD",
         """
@@ -253,8 +266,14 @@ package(default_visibility = ["//visibility:public"])
 
 xcode_swift_toolchain(
     name = "toolchain",
+    features = [{feature_list}],
 )
-""",
+""".format(
+            feature_list = ", ".join([
+                '"{}"'.format(feature)
+                for feature in feature_values
+            ]),
+        ),
     )
 
 def _swift_autoconfiguration_impl(repository_ctx):
