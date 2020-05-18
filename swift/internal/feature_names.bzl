@@ -146,6 +146,13 @@ SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE = "swift.use_global_module_cache"
 # using a sufficiently recent version of Swift (4.2 or higher).
 SWIFT_FEATURE_USE_RESPONSE_FILES = "swift.use_response_files"
 
+# If enabled, Swift compilation actions will create a virtual file system
+# overlay containing all its dependencies' `.swiftmodule` files and use that
+# overlay as its sole search path. This improves build performance by avoiding
+# worst-case O(N^2) search (N modules, each in its own subdirectory), especially
+# when access to those paths involves traversing a networked file system.
+SWIFT_FEATURE_VFSOVERLAY = "swift.vfsoverlay"
+
 # If enabled, builds using the "dbg" compilation mode will explicitly disable
 # swiftc from producing swiftmodules containing embedded file paths, which are
 # inherently non-portable across machines.
