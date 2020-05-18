@@ -53,6 +53,7 @@ load(
     "SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_USE_C_MODULES",
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
+    "SWIFT_FEATURE_VFSOVERLAY",
 )
 load(":features.bzl", "are_all_features_enabled", "is_feature_enabled")
 load(":providers.bzl", "SwiftInfo", "create_swift_info")
@@ -64,6 +65,11 @@ load(
     "get_providers",
     "struct_fields",
 )
+load(":vfsoverlay.bzl", "write_vfsoverlay")
+
+# VFS root where all .swiftmodule files will be placed when
+# SWIFT_FEATURE_VFSOVERLAY is enabled.
+_SWIFTMODULES_VFS_ROOT = "/__build_bazel_rules_swift/swiftmodules"
 
 # The number of threads to use for WMO builds, using the same number of cores
 # that is on a Mac Pro for historical reasons.
@@ -359,12 +365,20 @@ def compile_action_configs():
     ]
 
     #### Search paths for Swift module dependencies
-    action_configs.append(
+    action_configs.extend([
         swift_toolchain_config.action_config(
             actions = [swift_action_names.COMPILE],
             configurators = [_dependencies_swiftmodules_configurator],
+            not_features = [SWIFT_FEATURE_VFSOVERLAY],
         ),
-    )
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [
+                _dependencies_swiftmodules_vfsoverlay_configurator,
+            ],
+            features = [SWIFT_FEATURE_VFSOVERLAY],
+        ),
+    ])
 
     #### Search paths for framework dependencies
     action_configs.append(
@@ -818,11 +832,23 @@ def _dependencies_swiftmodules_configurator(prerequisites, args):
     )
 
     return swift_toolchain_config.config_result(
-        inputs = [
-            module.swift.swiftmodule
-            for module in prerequisites.transitive_modules
-            if module.swift
-        ],
+        inputs = prerequisites.transitive_swiftmodules,
+    )
+
+def _dependencies_swiftmodules_vfsoverlay_configurator(prerequisites, args):
+    """Provides a single `.swiftmodule` search path using a VFS overlay."""
+    swiftmodules = prerequisites.transitive_swiftmodules
+
+    # Bug: `swiftc` doesn't pass its `-vfsoverlay` arg to the frontend.
+    # Workaround: Pass `-vfsoverlay` directly via `-Xfrontend`.
+    args.add(
+        "-Xfrontend",
+        "-vfsoverlay{}".format(prerequisites.vfsoverlay_file.path),
+    )
+    args.add("-I{}".format(prerequisites.vfsoverlay_search_path))
+
+    return swift_toolchain_config.config_result(
+        inputs = swiftmodules + [prerequisites.vfsoverlay_file],
     )
 
 def _module_name_configurator(prerequisites, args):
@@ -1072,6 +1098,42 @@ def compile(
         targets = all_deps,
     )
 
+    # Flattening this `depset` is necessary because we need to extract the
+    # module maps or precompiled modules out of structured values and do so
+    # conditionally. This should not lead to poor performance because the
+    # flattening happens only once as the action is being registered, rather
+    # than the same `depset` being flattened and re-merged multiple times up
+    # the build graph.
+    transitive_modules = (
+        merged_providers.swift_info.transitive_modules.to_list()
+    )
+
+    # We need this when generating the VFS overlay file and also when
+    # configuring inputs for the compile action, so it's best to precompute it
+    # here.
+    transitive_swiftmodules = [
+        module.swift.swiftmodule
+        for module in transitive_modules
+        if module.swift
+    ]
+
+    if is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_VFSOVERLAY,
+    ):
+        vfsoverlay_file = derived_files.vfsoverlay(
+            actions = actions,
+            target_name = target_name,
+        )
+        write_vfsoverlay(
+            actions = actions,
+            swiftmodules = transitive_swiftmodules,
+            vfsoverlay_file = vfsoverlay_file,
+            virtual_swiftmodule_root = _SWIFTMODULES_VFS_ROOT,
+        )
+    else:
+        vfsoverlay_file = None
+
     prerequisites = struct(
         additional_inputs = additional_inputs,
         bin_dir = bin_dir,
@@ -1086,16 +1148,11 @@ def compile(
         objc_info = merged_providers.objc_info,
         source_files = srcs,
         transitive_defines = merged_providers.swift_info.transitive_defines,
-        # Flattening this `depset` is necessary because we need to extract the
-        # module maps or precompiled modules out of structured values and do so
-        # conditionally. This should not lead to poor performance because the
-        # flattening happens only once as the action is being registered, rather
-        # than the same `depset` being flattened and re-merged multiple times up
-        # the build graph.
-        transitive_modules = (
-            merged_providers.swift_info.transitive_modules.to_list()
-        ),
+        transitive_modules = transitive_modules,
+        transitive_swiftmodules = transitive_swiftmodules,
         user_compile_flags = copts + swift_toolchain.command_line_copts,
+        vfsoverlay_file = vfsoverlay_file,
+        vfsoverlay_search_path = _SWIFTMODULES_VFS_ROOT,
         # Merge the compile outputs into the prerequisites.
         **struct_fields(compile_outputs)
     )
