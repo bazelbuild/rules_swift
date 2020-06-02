@@ -74,7 +74,7 @@ into the binary. Possible values are:
                 mandatory = False,
             ),
             # Do not add references; temporary attribute for C++ toolchain
-            # Skylark migration.
+            # Starlark migration.
             "_cc_toolchain": attr.label(
                 default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
             ),

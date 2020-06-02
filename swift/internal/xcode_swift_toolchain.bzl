@@ -187,7 +187,7 @@ def _default_linker_opts(
     linkopts.extend([
         "-F{}".format(platform_framework_dir),
         "-L{}".format(swift_lib_dir),
-        # TODO(b/112000244): These should get added by the C++ Skylark API, but
+        # TODO(b/112000244): These should get added by the C++ Starlark API, but
         # we're using the "c++-link-executable" action right now instead of
         # "objc-executable" because the latter requires additional variables not
         # provided by cc_common. Figure out how to handle this correctly.

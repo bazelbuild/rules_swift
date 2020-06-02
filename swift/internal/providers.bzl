@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Defines Skylark providers that propagated by the Swift BUILD rules."""
+"""Defines Starlark providers that propagated by the Swift BUILD rules."""
 
 load("@bazel_skylib//lib:sets.bzl", "sets")
 
