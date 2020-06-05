@@ -15,9 +15,13 @@
 """An aspect attached to `proto_library` targets to generate Swift artifacts."""
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
+load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
+load(":attrs.bzl", "swift_config_attrs")
 load(":compiling.bzl", "output_groups_from_compilation_outputs")
 load(
     ":feature_names.bzl",
+    "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
+    "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_ENABLE_TESTING",
     "SWIFT_FEATURE_NO_GENERATED_HEADER",
 )
@@ -342,13 +346,25 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             aspect_ctx.executable._protoc_gen_swift,
         )
 
+        extra_features = []
+
+        # This feature is not fully supported because the SwiftProtobuf library
+        # has not yet been designed to fully support library evolution. The
+        # intent of this is to allow users building distributable frameworks to
+        # use Swift protos as an _implementation-only_ detail of their
+        # framework, where those protos would not be exposed to clients in the
+        # API. Rely on it at your own risk.
+        if aspect_ctx.attr._config_emit_swiftinterface[BuildSettingInfo].value:
+            extra_features.append(SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION)
+            extra_features.append(SWIFT_FEATURE_EMIT_SWIFTINTERFACE)
+
         # Compile the generated Swift sources and produce a static library and a
         # .swiftmodule as outputs. In addition to the other proto deps, we also
         # pass support libraries like the SwiftProtobuf runtime as deps to the
         # compile action.
         feature_configuration = swift_common.configure_features(
             ctx = aspect_ctx,
-            requested_features = aspect_ctx.features + [
+            requested_features = aspect_ctx.features + extra_features + [
                 SWIFT_FEATURE_NO_GENERATED_HEADER,
             ],
             swift_toolchain = swift_toolchain,
@@ -472,6 +488,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
                         swift = swift_common.create_swift_module(
                             swiftdoc = compilation_outputs.swiftdoc,
                             swiftmodule = compilation_outputs.swiftmodule,
+                            swiftinterface = compilation_outputs.swiftinterface,
                         ),
                     ),
                 ],
@@ -552,6 +569,7 @@ swift_protoc_gen_aspect = aspect(
     attr_aspects = ["deps"],
     attrs = dicts.add(
         swift_common.toolchain_attrs(),
+        swift_config_attrs(),
         {
             "_mkdir_and_run": attr.label(
                 cfg = "host",
