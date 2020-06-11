@@ -28,7 +28,7 @@ load(
     "create_module",
     "create_swift_info",
 )
-load(":utils.bzl", "direct_preserving_compilation_context", "get_providers")
+load(":utils.bzl", "get_providers")
 
 _MULTIPLE_TARGET_ASPECT_ATTRS = [
     "deps",
@@ -146,22 +146,28 @@ def _handle_cc_target(
         workspace_relative = workspace_relative,
     )
 
-    compilation_context = target[CcInfo].compilation_context
+    # We only need to propagate the information from the compilation contexts,
+    # but we can't merge those directly; we can only merge `CcInfo` objects. So
+    # we "unwrap" the compilation context from each provider and then "rewrap"
+    # it in a new provider that lacks the linking context so that our merge
+    # operation does less work.
+    target_and_deps_cc_infos = [
+        CcInfo(compilation_context = target[CcInfo].compilation_context),
+    ]
+    for dep in attr.deps:
+        if CcInfo in dep:
+            target_and_deps_cc_infos.append(
+                CcInfo(compilation_context = dep[CcInfo].compilation_context),
+            )
 
-    compilation_contexts_to_compile = [compilation_context]
-    compilation_contexts_to_compile.extend([
-        dep[CcInfo].compilation_context
-        for dep in attr.deps
-        if CcInfo in dep
-    ])
-    compilation_context_to_compile = direct_preserving_compilation_context(
-        compilation_contexts = compilation_contexts_to_compile,
-    )
+    compilation_context = cc_common.merge_cc_infos(
+        direct_cc_infos = target_and_deps_cc_infos,
+    ).compilation_context
 
     precompiled_module = precompile_clang_module(
         actions = aspect_ctx.actions,
         bin_dir = aspect_ctx.bin_dir,
-        cc_compilation_context = compilation_context_to_compile,
+        cc_compilation_context = compilation_context,
         feature_configuration = feature_configuration,
         genfiles_dir = aspect_ctx.genfiles_dir,
         module_map_file = module_map_file,
