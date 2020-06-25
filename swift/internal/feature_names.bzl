@@ -108,6 +108,14 @@ SWIFT_FEATURE_MINIMAL_DEPS = "swift.minimal_deps"
 # relative to the location of the module map file.
 SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD = "swift.module_map_home_is_cwd"
 
+# If enabled, private headers (headers specified in the `srcs` of a target) will
+# not be included in generated module maps.
+# TODO(b/142867898): This only exists for compatibility with the existing
+# Objective-C behavior in Bazel and should be removed.
+SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS = (
+    "swift.module_map_no_private_headers"
+)
+
 # If enabled, the compilation action for a library target will not generate an
 # Objective-C header for the module. This feature also implies
 # `swift.no_generated_module_map`.

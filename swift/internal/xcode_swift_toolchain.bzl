@@ -35,6 +35,7 @@ load(
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
+    "SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS",
     "SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS",
     "SWIFT_FEATURE_USE_RESPONSE_FILES",
@@ -531,6 +532,10 @@ def _xcode_swift_toolchain_impl(ctx):
     requested_features.extend(
         _features_for_bitcode_mode(apple_fragment.bitcode_mode),
     )
+
+    # TODO(b/142867898): Added to match existing Bazel Objective-C module map
+    # behavior; remove it when possible.
+    requested_features.append(SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS)
 
     # Xcode 10.0 implies Swift 4.2.
     if _is_xcode_at_least_version(xcode_config, "10.0"):

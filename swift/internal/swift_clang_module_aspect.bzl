@@ -17,7 +17,11 @@
 load(":attrs.bzl", "swift_toolchain_attrs")
 load(":compiling.bzl", "derive_module_name", "precompile_clang_module")
 load(":derived_files.bzl", "derived_files")
-load(":feature_names.bzl", "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD")
+load(
+    ":feature_names.bzl",
+    "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
+    "SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS",
+)
 load(":features.bzl", "configure_features", "is_feature_enabled")
 load(":module_maps.bzl", "write_module_map")
 load(
@@ -80,6 +84,61 @@ def _tagged_target_module_name(label, tags):
             _, _, module_name = tag.partition("=")
     return module_name
 
+def _generate_module_map(
+        actions,
+        compilation_context,
+        dependent_module_names,
+        feature_configuration,
+        module_name,
+        target):
+    """Generates the module map file for the given target.
+
+    Args:
+        actions: The object used to register actions.
+        compilation_context: The C++ compilation context that provides the
+            headers for the module.
+        dependent_module_names: A `list` of names of Clang modules that are
+            direct dependencies of the target whose module map is being written.
+        feature_configuration: A Swift feature configuration.
+        module_name: The name of the module.
+        target: The target for which the module map is being generated.
+
+    Returns: A `File` representing the generated module map.
+    """
+
+    # Determine if the toolchain requires module maps to use
+    # workspace-relative paths or not, and other features controlling the
+    # content permitted in the module map.
+    workspace_relative = is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD,
+    )
+    exclude_private_headers = is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS,
+    )
+
+    if exclude_private_headers:
+        private_headers = []
+    else:
+        private_headers = compilation_context.direct_private_headers
+
+    module_map_file = derived_files.module_map(
+        actions = actions,
+        target_name = target.label.name,
+    )
+    write_module_map(
+        actions = actions,
+        dependent_module_names = dependent_module_names,
+        module_map_file = module_map_file,
+        module_name = module_name,
+        private_headers = private_headers,
+        public_headers = compilation_context.direct_public_headers,
+        public_textual_headers = compilation_context.direct_textual_headers,
+        workspace_relative = workspace_relative,
+    )
+    return module_map_file
+
 def _handle_cc_target(
         aspect_ctx,
         feature_configuration,
@@ -102,80 +161,114 @@ def _handle_cc_target(
     """
     attr = aspect_ctx.rule.attr
 
-    module_name = _tagged_target_module_name(
-        label = target.label,
-        tags = attr.tags,
-    )
+    # TODO(b/142867898): Only check `CcInfo` once all native rules correctly
+    # propagate both.
+    if CcInfo in target:
+        compilation_context = target[CcInfo].compilation_context
+    else:
+        compilation_context = target[apple_common.Objc].compilation_context
 
     if swift_infos:
         merged_swift_info = create_swift_info(swift_infos = swift_infos)
     else:
         merged_swift_info = None
 
-    if not module_name:
+    module_map_file = None
+    module_name = None
+
+    # Collect the names of Clang modules that the module being built directly
+    # depends on.
+    dependent_module_names = []
+    for swift_info in swift_infos:
+        for module in swift_info.direct_modules:
+            if module.clang:
+                dependent_module_names.append(module.name)
+
+    if apple_common.Objc in target:
+        # TODO(b/142867898): For `objc_library`, stop using the module map from
+        # the Objc provider and generate our own. (For imported frameworks,
+        # continue using the module map included with it.)
+        objc = target[apple_common.Objc]
+        module_maps = objc.direct_module_maps
+        if module_maps:
+            if aspect_ctx.rule.kind == "objc_library":
+                module_name = getattr(attr, "module_name", None)
+                if not module_name:
+                    module_name = derive_module_name(target.label)
+            module_map_file = module_maps[0]
+    else:
+        # For all other targets, there is no mechanism to provide a custom
+        # module map, and we only generate one if the target is tagged.
+        module_name = _tagged_target_module_name(
+            label = target.label,
+            tags = attr.tags,
+        )
+        if module_name:
+            module_map_file = _generate_module_map(
+                actions = aspect_ctx.actions,
+                compilation_context = compilation_context,
+                dependent_module_names = dependent_module_names,
+                feature_configuration = feature_configuration,
+                module_name = module_name,
+                target = target,
+            )
+
+    if not module_map_file:
         if merged_swift_info:
             return [merged_swift_info]
         else:
             return []
 
-    # Determine if the toolchain requires module maps to use
-    # workspace-relative paths or not.
-    workspace_relative = is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD,
-    )
+    # TODO(b/159918106): We might get here without a module name if we had an
+    # Objective-C rule other than `objc_library` that had a module map, such as
+    # a framework import rule. For now, we won't support compiling those as
+    # explicit modules; fix this.
+    if module_name:
+        # We only need to propagate the information from the compilation
+        # contexts, but we can't merge those directly; we can only merge
+        # `CcInfo` objects. So we "unwrap" the compilation context from each
+        # provider and then "rewrap" it in a new provider that lacks the linking
+        # context so that our merge operation does less work.
+        target_and_deps_cc_infos = [
+            CcInfo(compilation_context = compilation_context),
+        ]
+        for dep in getattr(attr, "deps", []):
+            # TODO(b/142867898): Only check `CcInfo` once all native rules
+            # correctly propagate both.
+            if CcInfo in dep:
+                dep_context = dep[CcInfo].compilation_context
+            elif apple_common.Objc in dep:
+                dep_context = dep[apple_common.Objc].compilation_context
+            else:
+                dep_context = None
 
-    module_map_file = derived_files.module_map(
-        actions = aspect_ctx.actions,
-        target_name = target.label.name,
-    )
-    write_module_map(
-        actions = aspect_ctx.actions,
-        headers = [
-            file
-            for target in attr.hdrs
-            for file in target.files.to_list()
-        ],
-        module_map_file = module_map_file,
-        module_name = module_name,
-        textual_headers = [
-            file
-            for target in attr.textual_hdrs
-            for file in target.files.to_list()
-        ],
-        workspace_relative = workspace_relative,
-    )
+            if dep_context:
+                target_and_deps_cc_infos.append(
+                    CcInfo(compilation_context = dep_context),
+                )
 
-    # We only need to propagate the information from the compilation contexts,
-    # but we can't merge those directly; we can only merge `CcInfo` objects. So
-    # we "unwrap" the compilation context from each provider and then "rewrap"
-    # it in a new provider that lacks the linking context so that our merge
-    # operation does less work.
-    target_and_deps_cc_infos = [
-        CcInfo(compilation_context = target[CcInfo].compilation_context),
-    ]
-    for dep in attr.deps:
-        if CcInfo in dep:
-            target_and_deps_cc_infos.append(
-                CcInfo(compilation_context = dep[CcInfo].compilation_context),
-            )
+        compilation_context_to_compile = cc_common.merge_cc_infos(
+            direct_cc_infos = target_and_deps_cc_infos,
+        ).compilation_context
 
-    compilation_context = cc_common.merge_cc_infos(
-        direct_cc_infos = target_and_deps_cc_infos,
-    ).compilation_context
-
-    precompiled_module = precompile_clang_module(
-        actions = aspect_ctx.actions,
-        bin_dir = aspect_ctx.bin_dir,
-        cc_compilation_context = compilation_context,
-        feature_configuration = feature_configuration,
-        genfiles_dir = aspect_ctx.genfiles_dir,
-        module_map_file = module_map_file,
-        module_name = module_name,
-        swift_info = merged_swift_info,
-        swift_toolchain = swift_toolchain,
-        target_name = target.label.name,
-    )
+        precompiled_module = precompile_clang_module(
+            actions = aspect_ctx.actions,
+            bin_dir = aspect_ctx.bin_dir,
+            cc_compilation_context = compilation_context_to_compile,
+            feature_configuration = feature_configuration,
+            genfiles_dir = aspect_ctx.genfiles_dir,
+            module_map_file = module_map_file,
+            module_name = module_name,
+            swift_info = merged_swift_info,
+            swift_toolchain = swift_toolchain,
+            target_name = target.label.name,
+        )
+    else:
+        # TODO(b/159918106): Derive the module name *now* from the target label
+        # so that we propagate it and preserve the old rule behavior, even
+        # though this module name is probably wrong (for frameworks).
+        module_name = derive_module_name(target.label)
+        precompiled_module = None
 
     return [create_swift_info(
         modules = [
@@ -188,79 +281,6 @@ def _handle_cc_target(
                 ),
             ),
         ],
-        swift_infos = swift_infos,
-    )]
-
-def _handle_objc_target(
-        aspect_ctx,
-        feature_configuration,
-        swift_infos,
-        swift_toolchain,
-        target):
-    """Processes an `Objc`-propagating dependency of a Swift target.
-
-    This function moves Objective-C module map information into a value (as
-    returned by `swift_common.create_clang_module`) in the `SwiftInfo` provider
-    so that the compilation logic of the rules can treat `cc_library` and
-    `objc_library` modules uniformly.
-
-    Args:
-        aspect_ctx: The aspect's context.
-        feature_configuration: The current feature configuration.
-        swift_infos: The `SwiftInfo` providers of the current target's
-            dependencies, which should be merged into the `SwiftInfo` provider
-            created and returned for this Objective-C target.
-        swift_toolchain: The Swift toolchain being used to build this target.
-        target: The Objective-C target to which the aspect is currently being
-            applied.
-
-    Returns:
-        A list of providers that should be returned by the aspect.
-    """
-    attr = aspect_ctx.rule.attr
-
-    # Some ObjC providers may not have module maps (e.g., providers that only
-    # propagate legacy resource attributes or which otherwise do not provide
-    # compilation context information).
-    direct_module_maps = target[apple_common.Objc].direct_module_maps
-    if not direct_module_maps:
-        if swift_infos:
-            return [create_swift_info(swift_infos = swift_infos)]
-        else:
-            return []
-
-    module_map_file = direct_module_maps[0]
-
-    # Use the `module_name` attribute if it exists for rules that let the user
-    # explicitly specify it (e.g., `objc_library`). If the attribute does not
-    # exist or has not been set, derive the module name.
-    module_name = getattr(attr, "module_name", None)
-    if not module_name:
-        module_name = derive_module_name(target.label)
-
-    # TODO(b/144372256): Protect against the case where some custom Objective-C
-    # rules may not have a `CcInfo` provider by returning a dummy compilation
-    # context until those rules are forced to migrate to the C++ APIs when the
-    # relevant fields are removed from the Objc provider.
-    if CcInfo in target:
-        compilation_context = target[CcInfo].compilation_context
-    else:
-        compilation_context = cc_common.create_compilation_context()
-
-    return [create_swift_info(
-        modules = [
-            create_module(
-                name = module_name,
-                clang = create_clang_module(
-                    compilation_context = compilation_context,
-                    module_map = module_map_file,
-                    # TODO(b/142867898): Precompile the module and place it
-                    # here.
-                    precompiled_module = None,
-                ),
-            ),
-        ],
-        module_name = module_name,
         swift_infos = swift_infos,
     )]
 
@@ -289,19 +309,10 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx):
         unsupported_features = aspect_ctx.disabled_features,
     )
 
-    # TODO(b/143292468): Stop checking the rule kind and look for the presence
-    # of `CcInfo` once `CcInfo.compilation_context` propagates direct headers
-    # and direct textual headers separately.
-    if aspect_ctx.rule.kind == "cc_library":
+    # TODO(b/142867898): Only check `CcInfo` once all native rules correctly
+    # propagate both.
+    if apple_common.Objc in target or CcInfo in target:
         return _handle_cc_target(
-            aspect_ctx = aspect_ctx,
-            feature_configuration = feature_configuration,
-            swift_infos = swift_infos,
-            swift_toolchain = swift_toolchain,
-            target = target,
-        )
-    elif apple_common.Objc in target:
-        return _handle_objc_target(
             aspect_ctx = aspect_ctx,
             feature_configuration = feature_configuration,
             swift_infos = swift_infos,
