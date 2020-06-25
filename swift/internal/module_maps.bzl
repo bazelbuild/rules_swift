@@ -20,8 +20,11 @@ def write_module_map(
         actions,
         module_map_file,
         module_name,
-        headers = [],
-        textual_headers = [],
+        dependent_module_names = [],
+        public_headers = [],
+        public_textual_headers = [],
+        private_headers = [],
+        private_textual_headers = [],
         workspace_relative = False):
     """Writes the content of the module map to a file.
 
@@ -29,22 +32,38 @@ def write_module_map(
         actions: The actions object from the aspect context.
         module_map_file: A `File` representing the module map being written.
         module_name: The name of the module being generated.
-        headers: The `list` of `File`s representing the public headers of the
-            target whose module map is being written.
-        textual_headers: The `list` of `File`s representing the textual headers
-            of the target whose module map is being written.
+        dependent_module_names: A `list` of names of Clang modules that are
+            direct dependencies of the target whose module map is being written.
+        public_headers: The `list` of `File`s representing the public modular
+            headers of the target whose module map is being written.
+        public_textual_headers: The `list` of `File`s representing the public
+            textual headers of the target whose module map is being written.
+        private_headers: The `list` of `File`s representing the private modular
+            headers of the target whose module map is being written.
+        private_textual_headers: The `list` of `File`s representing the private
+            textual headers of the target whose module map is being written.
         workspace_relative: A Boolean value indicating whether the header paths
             written in the module map file should be relative to the workspace
             or relative to the module map file.
     """
-    content = "module {} {{\n".format(module_name)
+    content = 'module "{}" {{\n'.format(module_name)
+    content += "    export *\n\n"
+
     content += "".join([
         '    header "{}"\n'.format(_header_path(
             header_file = header_file,
             module_map_file = module_map_file,
             workspace_relative = workspace_relative,
         ))
-        for header_file in headers
+        for header_file in public_headers
+    ])
+    content += "".join([
+        '    private header "{}"\n'.format(_header_path(
+            header_file = header_file,
+            module_map_file = module_map_file,
+            workspace_relative = workspace_relative,
+        ))
+        for header_file in private_headers
     ])
     content += "".join([
         '    textual header "{}"\n'.format(_header_path(
@@ -52,9 +71,22 @@ def write_module_map(
             module_map_file = module_map_file,
             workspace_relative = workspace_relative,
         ))
-        for header_file in textual_headers
+        for header_file in public_textual_headers
     ])
-    content += "    export *\n"
+    content += "".join([
+        '    private textual header "{}"\n'.format(_header_path(
+            header_file = header_file,
+            module_map_file = module_map_file,
+            workspace_relative = workspace_relative,
+        ))
+        for header_file in private_textual_headers
+    ])
+
+    content += "".join([
+        '    use "{}"\n'.format(name)
+        for name in dependent_module_names
+    ])
+
     content += "}\n"
 
     actions.write(
