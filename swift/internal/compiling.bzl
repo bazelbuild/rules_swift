@@ -809,13 +809,13 @@ def _emit_objc_header_path_configurator(prerequisites, args):
 def _global_module_cache_configurator(prerequisites, args):
     """Adds flags to enable the global module cache."""
 
-    # If bin_dir is not provided, then we don't pass any special flags to
-    # the compiler, letting it decide where the cache should live. This is
-    # usually somewhere in the system temporary directory.
-    if prerequisites.bin_dir:
+    # If module_cache_bin_path is not provided, then we don't pass any special
+    # flags to the compiler, letting it decide where the cache should live.
+    # This is usually somewhere in the system temporary directory.
+    if prerequisites.module_cache_bin_path:
         args.add(
             "-module-cache-path",
-            paths.join(prerequisites.bin_dir.path, "_swift_module_cache"),
+            paths.join(prerequisites.module_cache_bin_path, "_swift_module_cache"),
         )
 
 def _batch_mode_configurator(prerequisites, args):
@@ -1245,6 +1245,7 @@ def compile(
         srcs,
         swift_toolchain,
         target_name,
+        workspace_name,
         additional_inputs = [],
         bin_dir = None,
         copts = [],
@@ -1264,6 +1265,9 @@ def compile(
         srcs: The Swift source files to compile.
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
         target_name: The name of the target for which the code is being
+            compiled, which is used to determine unique file paths for the
+            outputs.
+        workspace_name: The name of the workspace for which the code is being
             compiled, which is used to determine unique file paths for the
             outputs.
         additional_inputs: A list of `File`s representing additional input files
@@ -1419,6 +1423,8 @@ def compile(
     else:
         vfsoverlay_file = None
 
+    module_cache_bin_path = paths.join("/private/var/tmp/bazel-global", workspace_name, bin_dir.path) if bin_dir else None
+
     prerequisites = struct(
         additional_inputs = additional_inputs,
         bin_dir = bin_dir,
@@ -1426,6 +1432,7 @@ def compile(
         defines = defines,
         genfiles_dir = genfiles_dir,
         is_swift = True,
+        module_cache_bin_path = module_cache_bin_path,
         module_name = module_name,
         objc_include_paths_workaround = (
             merged_providers.objc_include_paths_workaround

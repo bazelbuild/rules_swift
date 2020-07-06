@@ -291,6 +291,7 @@ def _swift_grpc_library_impl(ctx):
         srcs = generated_files,
         swift_toolchain = swift_toolchain,
         target_name = ctx.label.name,
+        workspace_name = ctx.workspace_name,
     )
 
     library_to_link = register_libraries_to_link(
