@@ -1,6 +1,81 @@
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+
 package(default_visibility = ["//:__subpackages__"])
 
 licenses(["notice"])
+
+bzl_library(
+    name = "rules",
+    srcs = [
+        "swift_binary_test.bzl",
+        "swift_c_module.bzl",
+        "swift_grpc_library.bzl",
+        "swift_import.bzl",
+        "swift_library.bzl",
+        "swift_module_alias.bzl",
+        "swift_proto_library.bzl",
+    ],
+    deps = [
+        ":build_defs",
+        ":swift_common",
+        ":swift_protoc_gen_aspect",
+        "@bazel_skylib//lib:dicts",
+        "@bazel_skylib//lib:new_sets",
+        "@bazel_skylib//lib:partial",
+        "@bazel_skylib//lib:paths",
+        "@bazel_skylib//rules:common_settings",
+    ],
+)
+
+bzl_library(
+    name = "swift_common",
+    srcs = ["swift_common.bzl"],
+    deps = [":build_defs"],
+)
+
+bzl_library(
+    name = "swift_protoc_gen_aspect",
+    srcs = ["swift_protoc_gen_aspect.bzl"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":build_defs",
+        ":swift_common",
+    ],
+)
+
+bzl_library(
+    name = "build_defs",
+    srcs = [
+        "actions.bzl",
+        "attrs.bzl",
+        "autolinking.bzl",
+        "compiling.bzl",
+        "debugging.bzl",
+        "derived_files.bzl",
+        "feature_names.bzl",
+        "features.bzl",
+        "linking.bzl",
+        "module_maps.bzl",
+        "proto_gen_utils.bzl",
+        "providers.bzl",
+        "swift_clang_module_aspect.bzl",
+        "swift_usage_aspect.bzl",
+        "toolchain_config.bzl",
+        "utils.bzl",
+        "vfsoverlay.bzl",
+    ],
+    deps = [
+        "@bazel_skylib//lib:collections",
+        "@bazel_skylib//lib:dicts",
+        "@bazel_skylib//lib:new_sets",
+        "@bazel_skylib//lib:partial",
+        "@bazel_skylib//lib:paths",
+        "@bazel_skylib//lib:sets",
+        "@bazel_skylib//lib:types",
+        "@bazel_skylib//rules:common_settings",
+        "@bazel_tools//tools/build_defs/cc:action_names",
+    ],
+)
 
 # Consumed by Bazel integration tests.
 filegroup(
