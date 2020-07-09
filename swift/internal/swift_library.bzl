@@ -253,13 +253,11 @@ def _swift_library_impl(ctx):
     # targets.
     if swift_toolchain.supports_objc_interop:
         providers.append(new_objc_provider(
-            defines = ctx.attr.defines,
             # We must include private_deps here because some of the information
             # propagated here is related to linking.
             # TODO(allevato): This means we can't yet completely avoid
             # propagating headers/module maps from impl-only Obj-C dependencies.
             deps = deps + private_deps,
-            include_path = ctx.bin_dir.path,
             link_inputs = compilation_outputs.linker_inputs + additional_inputs,
             linkopts = compilation_outputs.linker_flags + linkopts,
             module_map = compilation_outputs.generated_module_map,
