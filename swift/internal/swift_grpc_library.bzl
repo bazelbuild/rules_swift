@@ -301,7 +301,6 @@ def _swift_grpc_library_impl(ctx):
     if swift_toolchain.supports_objc_interop:
         providers.append(new_objc_provider(
             deps = compile_deps,
-            include_path = ctx.bin_dir.path,
             link_inputs = compilation_outputs.linker_inputs,
             linkopts = compilation_outputs.linker_flags,
             module_map = compilation_outputs.generated_module_map,

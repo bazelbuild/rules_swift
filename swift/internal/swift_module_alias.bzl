@@ -123,7 +123,6 @@ def _swift_module_alias_impl(ctx):
     if swift_toolchain.supports_objc_interop:
         providers.append(new_objc_provider(
             deps = deps,
-            include_path = ctx.bin_dir.path,
             link_inputs = compilation_outputs.linker_inputs,
             linkopts = compilation_outputs.linker_flags,
             module_map = compilation_outputs.generated_module_map,

@@ -161,12 +161,12 @@ def _handle_cc_target(
     """
     attr = aspect_ctx.rule.attr
 
-    # TODO(b/142867898): Only check `CcInfo` once all native rules correctly
-    # propagate both.
+    # TODO(b/142867898): Only check `CcInfo` once all rules correctly propagate
+    # it.
     if CcInfo in target:
         compilation_context = target[CcInfo].compilation_context
     else:
-        compilation_context = target[apple_common.Objc].compilation_context
+        compilation_context = None
 
     if swift_infos:
         merged_swift_info = create_swift_info(swift_infos = swift_infos)
@@ -233,18 +233,9 @@ def _handle_cc_target(
             CcInfo(compilation_context = compilation_context),
         ]
         for dep in getattr(attr, "deps", []):
-            # TODO(b/142867898): Only check `CcInfo` once all native rules
-            # correctly propagate both.
             if CcInfo in dep:
-                dep_context = dep[CcInfo].compilation_context
-            elif apple_common.Objc in dep:
-                dep_context = dep[apple_common.Objc].compilation_context
-            else:
-                dep_context = None
-
-            if dep_context:
                 target_and_deps_cc_infos.append(
-                    CcInfo(compilation_context = dep_context),
+                    CcInfo(compilation_context = dep[CcInfo].compilation_context),
                 )
 
         compilation_context_to_compile = cc_common.merge_cc_infos(

@@ -459,7 +459,6 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
 
             includes = [aspect_ctx.bin_dir.path]
             objc_info = apple_common.new_objc_provider(
-                include = depset(includes),
                 providers = objc_infos,
                 uses_swift = True,
                 **objc_info_args

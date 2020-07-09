@@ -1766,13 +1766,11 @@ def find_swift_version_copt_value(copts):
 
 def new_objc_provider(
         deps,
-        include_path,
         link_inputs,
         linkopts,
         module_map,
         static_archives,
         swiftmodules,
-        defines = [],
         objc_header = None):
     """Creates an `apple_common.Objc` provider for a Swift target.
 
@@ -1780,8 +1778,6 @@ def new_objc_provider(
         deps: The dependencies of the target being built, whose `Objc` providers
             will be passed to the new one in order to propagate the correct
             transitive fields.
-        include_path: A header search path that should be propagated to
-            dependents.
         link_inputs: Additional linker input files that should be propagated to
             dependents.
         linkopts: Linker options that should be propagated to dependents.
@@ -1791,8 +1787,6 @@ def new_objc_provider(
             archives (`.a` files) containing the target's compiled code.
         swiftmodules: A list (typically of one element) of the `.swiftmodule`
             files for the compiled target.
-        defines: A list of `defines` from the propagating `swift_library` that
-            should also be defined for `objc_library` targets that depend on it.
         objc_header: The generated Objective-C header for the Swift target. If
             `None`, no headers will be propagated. This header is only needed
             for Swift code that defines classes that should be exposed to
@@ -1826,10 +1820,6 @@ def new_objc_provider(
         order = "topological",
     )
 
-    if include_path:
-        objc_provider_args["include"] = depset(direct = [include_path])
-    if defines:
-        objc_provider_args["define"] = depset(direct = defines)
     if objc_header:
         objc_provider_args["header"] = depset(direct = [objc_header])
     if linkopts:
