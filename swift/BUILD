@@ -1,3 +1,4 @@
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("@bazel_skylib//rules:common_settings.bzl", "bool_setting")
 
 package(default_visibility = ["//visibility:public"])
@@ -7,6 +8,16 @@ licenses(["notice"])
 exports_files([
     "swift.bzl",
 ])
+
+bzl_library(
+    name = "swift",
+    srcs = ["swift.bzl"],
+    deps = [
+        "//swift/internal:build_defs",
+        "//swift/internal:rules",
+        "//swift/internal:swift_common",
+    ],
+)
 
 # Consumed by Bazel integration tests.
 filegroup(
