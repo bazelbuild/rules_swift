@@ -1,7 +1,5 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 
-package(default_visibility = ["//:__subpackages__"])
-
 licenses(["notice"])
 
 bzl_library(
@@ -14,11 +12,14 @@ bzl_library(
         "swift_library.bzl",
         "swift_module_alias.bzl",
         "swift_proto_library.bzl",
+        "swift_protoc_gen_aspect.bzl",
+    ],
+    visibility = [
+        "//swift:__pkg__",
     ],
     deps = [
         ":build_defs",
         ":swift_common",
-        ":swift_protoc_gen_aspect",
         "@bazel_skylib//lib:dicts",
         "@bazel_skylib//lib:new_sets",
         "@bazel_skylib//lib:partial",
@@ -30,17 +31,10 @@ bzl_library(
 bzl_library(
     name = "swift_common",
     srcs = ["swift_common.bzl"],
-    deps = [":build_defs"],
-)
-
-bzl_library(
-    name = "swift_protoc_gen_aspect",
-    srcs = ["swift_protoc_gen_aspect.bzl"],
-    visibility = ["//visibility:private"],
-    deps = [
-        ":build_defs",
-        ":swift_common",
+    visibility = [
+        "//swift:__pkg__",
     ],
+    deps = [":build_defs"],
 )
 
 bzl_library(
@@ -63,6 +57,9 @@ bzl_library(
         "toolchain_config.bzl",
         "utils.bzl",
         "vfsoverlay.bzl",
+    ],
+    visibility = [
+        "//swift:__pkg__",
     ],
     deps = [
         "@bazel_skylib//lib:collections",

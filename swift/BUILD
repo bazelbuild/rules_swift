@@ -19,6 +19,14 @@ bzl_library(
     ],
 )
 
+bzl_library(
+    name = "stats",
+    srcs = ["stats.bzl"],
+    deps = [
+        "//swift/internal:build_defs",
+    ],
+)
+
 # Consumed by Bazel integration tests.
 filegroup(
     name = "for_bazel_tests",
