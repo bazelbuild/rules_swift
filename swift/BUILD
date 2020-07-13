@@ -5,10 +5,6 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-exports_files([
-    "swift.bzl",
-])
-
 bzl_library(
     name = "swift",
     srcs = ["swift.bzl"],
