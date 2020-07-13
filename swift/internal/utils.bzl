@@ -353,6 +353,10 @@ def proto_import_path(f, proto_source_root):
     Returns:
         The path the `.proto` file should be imported at.
     """
+
+    # The simple repo case seems to say this branch is never happening as the
+    # proto_source_root seems to always be ".". So the general logic here likely
+    # needs a revisit.
     if f.path.startswith(proto_source_root):
         return f.path[len(proto_source_root) + 1:]
     else:
