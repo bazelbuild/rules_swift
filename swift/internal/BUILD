@@ -74,6 +74,25 @@ bzl_library(
     ],
 )
 
+bzl_library(
+    name = "toolchain_support",
+    srcs = [
+        "swift_autoconfiguration.bzl",
+        "swift_toolchain.bzl",
+        "xcode_swift_toolchain.bzl",
+    ],
+    visibility = [
+        "//swift:__pkg__",
+    ],
+    deps = [
+        ":build_defs",
+        "@bazel_skylib//lib:collections",
+        "@bazel_skylib//lib:dicts",
+        "@bazel_skylib//lib:partial",
+        "@bazel_skylib//lib:paths",
+    ],
+)
+
 # Consumed by Bazel integration tests.
 filegroup(
     name = "for_bazel_tests",
