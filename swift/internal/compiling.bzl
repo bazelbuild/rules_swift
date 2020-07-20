@@ -45,6 +45,7 @@ load(
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
     "SWIFT_FEATURE_MINIMAL_DEPS",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
+    "SWIFT_FEATURE_NO_EMBED_DEBUG_MODULE",
     "SWIFT_FEATURE_NO_GENERATED_HEADER",
     "SWIFT_FEATURE_NO_GENERATED_MODULE_MAP",
     "SWIFT_FEATURE_OPT",
@@ -1704,7 +1705,14 @@ def _register_post_compile_actions(
     # binary for debugging purposes.
     linker_flags = []
     linker_inputs = []
-    if _is_debugging(feature_configuration = feature_configuration):
+    should_embed_swiftmodule_for_debugging = (
+        _is_debugging(feature_configuration = feature_configuration) and
+        not is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_NO_EMBED_DEBUG_MODULE,
+        )
+    )
+    if should_embed_swiftmodule_for_debugging:
         module_embed_results = ensure_swiftmodule_is_embedded(
             actions = actions,
             feature_configuration = feature_configuration,
