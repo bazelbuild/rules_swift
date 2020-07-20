@@ -191,3 +191,12 @@ SWIFT_FEATURE_EMIT_SWIFTINTERFACE = "swift.emit_swiftinterface"
 # This allows Bazel to avoid propagating swiftmodules of such dependencies
 # higher in the dependency graph than they need to be.
 SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS = "swift.supports_private_deps"
+
+# If enabled, the .swiftmodule file for the affected target will not be
+# embedded in debug info and propagated to the linker.
+#
+# The name of this feature is negative because it is meant to be a temporary
+# workaround until ld64 is fixed (in Xcode 12) so that builds that pass large
+# numbers of `-Wl,-add_ast_path,<path>` flags to the linker do not overrun the
+# system command line limit.
+SWIFT_FEATURE_NO_EMBED_DEBUG_MODULE = "swift.no_embed_debug_module"
