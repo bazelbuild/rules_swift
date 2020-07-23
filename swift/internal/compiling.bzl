@@ -978,6 +978,7 @@ def derive_module_name(*args):
     return name_part
 
 def compile(
+        *,
         actions,
         feature_configuration,
         module_name,
@@ -1199,6 +1200,7 @@ def compile(
     )
 
 def precompile_clang_module(
+        *,
         actions,
         cc_compilation_context,
         feature_configuration,
