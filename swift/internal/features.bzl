@@ -46,6 +46,7 @@ def are_all_features_enabled(feature_configuration, feature_names):
 def configure_features(
         ctx,
         swift_toolchain,
+        *,
         requested_features = [],
         unsupported_features = []):
     """Creates a feature configuration to be passed to Swift build APIs.
