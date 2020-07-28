@@ -23,7 +23,6 @@ cc_library(
     srcs = glob([
         "Sources/BoringSSL/crypto/**/*.c",
         "Sources/BoringSSL/crypto/**/*.h",
-        "Sources/BoringSSL/ssl/**/*.c",
         "Sources/BoringSSL/ssl/**/*.cc",
         "Sources/BoringSSL/ssl/**/*.h",
         "Sources/BoringSSL/third_party/**/*.c",
@@ -43,7 +42,6 @@ cc_library(
         "Sources/CgRPC/src/**/*.cc",
         "Sources/CgRPC/src/**/*.h",
         "Sources/CgRPC/third_party/nanopb/**/*.c",
-        "Sources/CgRPC/third_party/nanopb/**/*.h",
     ]) + ["Sources/CgRPC/shim/internal.h"],
     hdrs = ["Sources/CgRPC/shim/cgrpc.h"],
     copts = ["-DPB_NO_PACKED_STRUCTS=1"],
