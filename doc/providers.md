@@ -36,6 +36,11 @@ has reasonable defaults for any fields not explicitly set.
       <td><p><code>List</code> of <code>string</code>s. The values specified by the <code>defines</code> attribute of the
 library that directly propagated this provider.</p></td>
     </tr>
+    <tr id="SwiftInfo.direct_modules">
+      <td><code>direct_modules</code></td>
+      <td><p><code>List</code> of values returned from <code>swift_common.create_module</code>. The modules (both
+Swift and C/Objective-C) emitted by the library that propagated this provider.</p></td>
+    </tr>
     <tr id="SwiftInfo.direct_swiftdocs">
       <td><code>direct_swiftdocs</code></td>
       <td><p><code>List</code> of <code>File</code>s. The Swift documentation (<code>.swiftdoc</code>) files for the library
@@ -72,7 +77,14 @@ Objective-C sources to interop with the transitive Swift libraries.</p></td>
     <tr id="SwiftInfo.transitive_modulemaps">
       <td><code>transitive_modulemaps</code></td>
       <td><p><code>Depset</code> of <code>File</code>s. The transitive module map files that will be passed to
-Clang using the <code>-fmodule-map-file</code> option.</p></td>
+Clang using the <code>-fmodule-map-file</code> option.</p>
+<p>This field is deprecated; use <code>transitive_modules</code> instead.</p></td>
+    </tr>
+    <tr id="SwiftInfo.transitive_modules">
+      <td><code>transitive_modules</code></td>
+      <td><p><code>Depset</code> of values returned from <code>swift_common.create_module</code>. The transitive
+modules (both Swift and C/Objective-C) emitted by the library that propagated
+this provider and all of its dependencies.</p></td>
     </tr>
     <tr id="SwiftInfo.transitive_swiftdocs">
       <td><code>transitive_swiftdocs</code></td>
@@ -107,10 +119,9 @@ that use the toolchain.
     <col class="col-description" />
   </colgroup>
   <tbody>
-    <tr id="SwiftToolchainInfo.action_environment">
-      <td><code>action_environment</code></td>
-      <td><p><code>Dict</code>. Environment variables that should be set during any actions spawned to
-compile or link Swift code.</p></td>
+    <tr id="SwiftToolchainInfo.action_configs">
+      <td><code>action_configs</code></td>
+      <td><p>This field is an internal implementation detail of the build rules.</p></td>
     </tr>
     <tr id="SwiftToolchainInfo.all_files">
       <td><code>all_files</code></td>
@@ -134,13 +145,6 @@ attributes of Swift targets.</p></td>
     <tr id="SwiftToolchainInfo.cpu">
       <td><code>cpu</code></td>
       <td><p><code>String</code>. The CPU architecture that the toolchain is targeting.</p></td>
-    </tr>
-    <tr id="SwiftToolchainInfo.execution_requirements">
-      <td><code>execution_requirements</code></td>
-      <td><p><code>Dict</code>. Execution requirements that should be passed to any actions spawned to
-compile or link Swift code.</p>
-<p>For example, when using an Xcode toolchain, the execution requirements should be
-such that running on Darwin is required.</p></td>
     </tr>
     <tr id="SwiftToolchainInfo.linker_opts_producer">
       <td><code>linker_opts_producer</code></td>
@@ -186,41 +190,9 @@ target.</p></td>
       <td><code>root_dir</code></td>
       <td><p><code>String</code>. The workspace-relative root directory of the toolchain.</p></td>
     </tr>
-    <tr id="SwiftToolchainInfo.stamp_producer">
-      <td><code>stamp_producer</code></td>
-      <td><p>Skylib <code>partial</code>. A partial function that compiles build data that should be
-stamped into binaries. This value may be <code>None</code> if the toolchain does not
-support link stamping.</p>
-<p>The <code>swift_binary</code> and <code>swift_test</code> rules call this function <em>whether or not</em>
-link stamping is enabled for that target. This provides toolchains the option of
-still linking fixed placeholder data into the binary if desired, instead of
-linking nothing at all. Whether stamping is enabled can be checked by inspecting
-<code>ctx.attr.stamp</code> inside the partial's implementation.</p>
-<p>The rule implementation will call this partial and pass it the following four
-arguments:</p>
-<ul>
-<li><code>ctx</code>: The rule context of the target being built.</li>
-<li><code>cc_feature_configuration</code>: The C++ feature configuration to use when
-compiling the stamp code.</li>
-<li><code>cc_toolchain</code>: The C++ toolchain (<code>CcToolchainInfo</code> provider) to use when
-compiling the stamp code.</li>
-<li><code>binary_path</code>: The short path of the binary being linked.</li>
-</ul>
-<p>The partial should return a <code>CcLinkingContext</code> containing the data (such as
-object files) to be linked into the binary, or <code>None</code> if nothing should be
-linked into the binary.</p></td>
-    </tr>
     <tr id="SwiftToolchainInfo.supports_objc_interop">
       <td><code>supports_objc_interop</code></td>
       <td><p><code>Boolean</code>. Indicates whether or not the toolchain supports Objective-C interop.</p></td>
-    </tr>
-    <tr id="SwiftToolchainInfo.swift_executable">
-      <td><code>swift_executable</code></td>
-      <td><p>A replacement Swift driver executable.</p>
-<p>If this is <code>None</code>, the default Swift driver in the toolchain will be used.
-Otherwise, this binary will be used and <code>--driver-mode</code> will be passed to ensure
-that it is invoked in the correct mode (i.e., <code>swift</code>, <code>swiftc</code>,
-<code>swift-autolink-extract</code>, etc.).</p></td>
     </tr>
     <tr id="SwiftToolchainInfo.swift_worker">
       <td><code>swift_worker</code></td>
@@ -228,16 +200,26 @@ that it is invoked in the correct mode (i.e., <code>swift</code>, <code>swiftc</
 compiler and other Swift tools (for both incremental and non-incremental
 compiles).</p></td>
     </tr>
-    <tr id="SwiftToolchainInfo.swiftc_copts">
-      <td><code>swiftc_copts</code></td>
-      <td><p><code>List</code> of <code>strings</code>. Additional flags that should be passed to <code>swiftc</code> when
-compiling libraries or binaries with this toolchain. These flags will come first
-in compilation command lines, allowing them to be overridden by <code>copts</code>
-attributes and <code>--swiftcopt</code> flags.</p></td>
-    </tr>
     <tr id="SwiftToolchainInfo.system_name">
       <td><code>system_name</code></td>
       <td><p><code>String</code>. The name of the operating system that the toolchain is targeting.</p></td>
+    </tr>
+    <tr id="SwiftToolchainInfo.test_configuration">
+      <td><code>test_configuration</code></td>
+      <td><p><code>Struct</code> containing two fields:</p>
+<ul>
+<li><code>env</code>: A <code>dict</code> of environment variables to be set when running tests
+that were built with this toolchain.</li>
+<li><code>execution_requirements</code>: A <code>dict</code> of execution requirements for tests
+that were built with this toolchain.</li>
+</ul>
+<p>This is used, for example, with Xcode-based toolchains to ensure that the
+<code>xctest</code> helper and coverage tools are found in the correct developer
+directory when running tests.</p></td>
+    </tr>
+    <tr id="SwiftToolchainInfo.tool_configs">
+      <td><code>tool_configs</code></td>
+      <td><p>This field is an internal implementation detail of the build rules.</p></td>
     </tr>
     <tr id="SwiftToolchainInfo.unsupported_features">
       <td><code>unsupported_features</code></td>
