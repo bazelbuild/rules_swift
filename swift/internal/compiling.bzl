@@ -700,18 +700,17 @@ def _collect_clang_module_inputs(
             if precompiled_module:
                 module_inputs.append(precompiled_module)
             else:
-                module_inputs.append(clang_module.module_map)
                 module_inputs.extend(
                     clang_module.compilation_context.direct_headers,
                 )
                 module_inputs.extend(
                     clang_module.compilation_context.direct_textual_headers,
                 )
-        else:
-            # If the build prefers textual module maps and headers, just get the
-            # module map for each module; we've already collected the full
-            # transitive header set below.
-            module_inputs.append(module_map)
+
+        # Add the module map, which we use for both implicit and explicit module
+        # builds. For implicit module builds, we don't worry about the headers
+        # above because we collect the full transitive header set below.
+        module_inputs.append(module_map)
 
     # If we prefer textual module maps and headers for the build, fall back to
     # using the full set of transitive headers.
@@ -752,12 +751,18 @@ def _clang_module_dependency_args(module):
     Returns:
         A list of arguments to pass to `swiftc`.
     """
-    if not module.clang.precompiled_module:
-        return _clang_modulemap_dependency_args(module)
-    return [
-        "-Xcc",
-        "-fmodule-file={}".format(module.clang.precompiled_module.path),
-    ]
+    args = []
+    if module.clang.precompiled_module:
+        args.extend([
+            "-Xcc",
+            "-fmodule-file={}={}".format(
+                module.name,
+                module.clang.precompiled_module.path,
+            ),
+        ])
+    if module.clang.module_map:
+        args.extend(_clang_modulemap_dependency_args(module))
+    return args
 
 def _dependencies_clang_modulemaps_configurator(prerequisites, args):
     """Configures Clang module maps from dependencies."""
