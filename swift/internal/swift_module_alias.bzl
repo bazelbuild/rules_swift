@@ -97,6 +97,10 @@ def _swift_module_alias_impl(ctx):
         OutputGroupInfo(**output_groups_from_compilation_outputs(
             compilation_outputs = compilation_outputs,
         )),
+        coverage_common.instrumented_files_info(
+            ctx,
+            dependency_attributes = ["deps"],
+        ),
         create_cc_info(
             cc_infos = get_providers(deps, CcInfo),
             compilation_outputs = compilation_outputs,
