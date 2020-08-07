@@ -14,7 +14,6 @@
 
 """Definitions for handling Bazel repositories used by the Swift rules."""
 
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load(
     "@build_bazel_rules_swift//swift/internal:swift_autoconfiguration.bzl",
@@ -49,10 +48,12 @@ def swift_rules_dependencies():
     )
 
     _maybe(
-        git_repository,
+        http_archive,
         name = "build_bazel_apple_support",
-        remote = "https://github.com/bazelbuild/apple_support.git",
-        branch = "master",
+        urls = [
+            "https://github.com/bazelbuild/apple_support/releases/download/0.7.2/apple_support.0.7.2.tar.gz",
+        ],
+        sha256 = "9114c452eee622598cf9cdc90ecb12b06af7f914f33440b26deba9a9704d450c",
     )
 
     _maybe(
