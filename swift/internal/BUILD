@@ -70,7 +70,7 @@ bzl_library(
         "@bazel_skylib//lib:sets",
         "@bazel_skylib//lib:types",
         "@bazel_skylib//rules:common_settings",
-        "@bazel_tools//tools/build_defs/cc:action_names",
+        "@bazel_tools//tools/build_defs/cc:action_names.bzl",
     ],
 )
 
