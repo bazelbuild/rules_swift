@@ -16,7 +16,7 @@ swift_library(
     tags = FIXTURE_TAGS,
 )
 
-objc_library(
+cc_library(
     name = "middle",
     hdrs = ["Empty.h"],
     tags = FIXTURE_TAGS,
