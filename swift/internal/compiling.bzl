@@ -235,7 +235,6 @@ def compile_action_configs():
                 ),
             ],
             features = [SWIFT_FEATURE_CACHEABLE_SWIFTMODULES],
-            not_features = [SWIFT_FEATURE_OPT],
         ),
         swift_toolchain_config.action_config(
             actions = [swift_action_names.COMPILE],
