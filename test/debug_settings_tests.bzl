@@ -90,9 +90,12 @@ cacheable_opt_action_command_line_test = make_action_command_line_test_rule(
     config_settings = CACHEABLE_OPT_CONFIG_SETTINGS,
 )
 
-def debug_settings_test_suite():
-    """Test suite for serializing debugging options."""
-    name = "debug_settings"
+def debug_settings_test_suite(name = "debug_settings"):
+    """Test suite for serializing debugging options.
+
+    Args:
+        name: The name prefix for all the nested tests
+    """
 
     # Verify that `-c dbg` builds serialize debugging options, remap paths, and
     # have other appropriate debug flags.

@@ -1,3 +1,4 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
 load("//swift:swift.bzl", "swift_library")
 load("//test/fixtures:common.bzl", "FIXTURE_TAGS")
 

@@ -1,3 +1,5 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
+
 licenses(["notice"])
 
 # Workaround for the rules_apple integration tests to force the use of a
