@@ -1,3 +1,4 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
 load(
     "@build_bazel_rules_swift//swift:swift.bzl",
     "swift_binary",
@@ -49,7 +50,7 @@ cc_library(
     tags = ["swift_module=CgRPC"],
     deps = [
         ":BoringSSL",
-        "@zlib//:zlib",
+        "@zlib",
     ],
 )
 

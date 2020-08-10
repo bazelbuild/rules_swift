@@ -10,6 +10,7 @@
 # 3.  Run the `echo_client` binary in the same terminal. It will send a request
 #     to this service and then print the response that it received.
 
+load("@rules_proto//proto:defs.bzl", "proto_library")
 load(
     "//swift:swift.bzl",
     "swift_binary",

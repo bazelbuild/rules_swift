@@ -27,9 +27,12 @@ private_deps_provider_test = make_provider_test_rule(
     },
 )
 
-def private_deps_test_suite():
-    """Test suite for propagation behavior of `swift_library.private_deps`."""
-    name = "private_deps"
+def private_deps_test_suite(name = "private_deps"):
+    """Test suite for propagation behavior of `swift_library.private_deps`.
+
+    Args:
+        name: The name prefix for all the nested tests
+    """
 
     # Each of the two leaf libraries should propagate their own modules.
     private_deps_provider_test(

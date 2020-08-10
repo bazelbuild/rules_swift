@@ -1,3 +1,4 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
 load("//swift:swift.bzl", "swift_binary", "swift_library")
 
 licenses(["notice"])

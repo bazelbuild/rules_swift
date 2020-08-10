@@ -52,9 +52,12 @@ no_generate_header_provider_test = make_provider_test_rule(
     config_settings = NO_GENERATE_HEADER_CONFIG_SETTINGS,
 )
 
-def generated_header_test_suite():
-    """Test suite for `swift_library.generated_header`."""
-    name = "generated_header"
+def generated_header_test_suite(name = "generated_header"):
+    """Test suite for `swift_library.generated_header`.
+
+    Args:
+        name: The name prefix for all the nested tests
+    """
 
     # Verify that the generated header by default gets an automatically
     # generated name and is an output of the rule.
