@@ -8,6 +8,7 @@ x_defaults:
       - "//examples/..."
     test_targets:
       - "//examples/..."
+      - "//test/..."
   linux_common: &linux_common
     platform: ubuntu1804
     environment:
@@ -17,12 +18,16 @@ x_defaults:
       # able to change this when we start auto-downloading toolchains (see
       # https://github.com/bazelbuild/rules_swift/issues/4).
       - "--action_env=PATH"
-    build_targets: &linux_targets
+    build_targets:
       - "--"
       - "//examples/..."
       - "-//examples/apple/..."
     test_flags: *linux_flags
-    test_targets: *linux_targets
+    test_targets:
+      - "--"
+      - "//examples/..."
+      # - "//test/..." TODO: Enable once https://github.com/bazelbuild/continuous-integration/pull/1015 is deployed
+      - "-//examples/apple/..."
 
 tasks:
   macos_latest:

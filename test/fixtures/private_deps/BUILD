@@ -39,6 +39,7 @@ swift_library(
 
 cc_library(
     name = "private_cc",
+    srcs = ["private.c"],
     hdrs = ["private.h"],
     features = [
         # A bit hacky, but by claiming we don't support PIC, we can get the
@@ -53,6 +54,7 @@ cc_library(
 
 cc_library(
     name = "public_cc",
+    srcs = ["public.c"],
     hdrs = ["public.h"],
     features = [
         # See the comment in the target above.

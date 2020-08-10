@@ -75,8 +75,8 @@ def private_deps_test_suite():
     private_deps_provider_test(
         name = "{}_client_cc_deps_headers".format(name),
         expected_files = [
-            "/test/fixtures/private_deps/public.h",
-            "-/test/fixtures/private_deps/private.h",
+            "test/fixtures/private_deps/public.h",
+            "-test/fixtures/private_deps/private.h",
             # Some C++ toolchains implicitly propagate standard library headers,
             # so we can't look for an exact match here.
             "*",
