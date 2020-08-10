@@ -2,6 +2,7 @@
 # vice versa when it is linked into the existing native linking rules for Apple
 # platforms.
 
+load("@rules_cc//cc:defs.bzl", "objc_library")
 load(
     "//swift:swift.bzl",
     "swift_binary",

@@ -68,13 +68,4 @@ tasks:
     - .bazelci/update_workspace_to_deps_heads.sh
     <<: *linux_common
 
-buildifier:
-  version: latest
-  # TODO(b/140761855): Remove native-cc from this list.
-  # TODO(b/140761855): Remove native-proto from this list.
-  # TODO(b/140761855): Remove native-py from this list.
-  # Disable 'bzl-visibility' since it doesn't work properly.
-  #  https://github.com/bazelbuild/buildtools/issues/718
-  # TODO(b/155657940): Remove unnamed-macro from this list.
-  # TODO(b/158011388): Remove skylark-{comment,docstring} from this list.
-  warnings: -native-cc,-native-proto,-native-py,-bzl-visibility,-unnamed-macro,-skylark-comment,-skylark-docstring
+buildifier: latest
