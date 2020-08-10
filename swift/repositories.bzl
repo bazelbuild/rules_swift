@@ -58,6 +58,15 @@ def swift_rules_dependencies():
 
     _maybe(
         http_archive,
+        name = "rules_cc",
+        # Latest 08-10-20
+        urls = ["https://github.com/bazelbuild/rules_cc/archive/1477dbab59b401daa94acedbeaefe79bf9112167.tar.gz"],
+        sha256 = "b87996d308549fc3933f57a786004ef65b44b83fd63f1b0303a4bbc3fd26bbaf",
+        strip_prefix = "rules_cc-1477dbab59b401daa94acedbeaefe79bf9112167/",
+    )
+
+    _maybe(
+        http_archive,
         name = "com_github_apple_swift_protobuf",
         urls = ["https://github.com/apple/swift-protobuf/archive/1.7.0.zip"],
         sha256 = "a4546ee8e95e7f7d4cf46b5b667e824b58f3943a71c352bf1e0b91660afdf3c3",
