@@ -16,9 +16,8 @@
 #define BUILD_BAZEL_RULES_SWIFT_TOOLS_WORKER_OUTPUT_FILE_MAP_H
 
 #include <map>
-#include <string>
-
 #include <nlohmann/json.hpp>
+#include <string>
 
 // Supports loading and rewriting a `swiftc` output file map to support
 // incremental compilation.

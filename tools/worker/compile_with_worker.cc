@@ -14,12 +14,12 @@
 
 #include "tools/worker/compile_with_worker.h"
 
+#include <google/protobuf/io/zero_copy_stream_impl.h>
+#include <google/protobuf/util/delimited_message_util.h>
 #include <unistd.h>
 
 #include <iostream>
 
-#include <google/protobuf/io/zero_copy_stream_impl.h>
-#include <google/protobuf/util/delimited_message_util.h>
 #include "third_party/bazel_protos/worker_protocol.pb.h"
 #include "tools/worker/work_processor.h"
 
