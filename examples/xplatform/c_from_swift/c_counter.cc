@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "examples/xplatform/c_from_swift/c_counter.h"
+
 #include "examples/xplatform/c_from_swift/counter.h"
 
 using ::swiftexample::Counter;

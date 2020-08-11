@@ -41,8 +41,8 @@ class TempFile {
     snprintf(path.get(), size, "%s/%s", tmpDir, path_template.c_str());
 
     if (mkstemp(path.get()) == -1) {
-      std::cerr << "Failed to create temporary file '" << path.get() << "': "
-                << strerror(errno) << "\n";
+      std::cerr << "Failed to create temporary file '" << path.get()
+                << "': " << strerror(errno) << "\n";
       return nullptr;
     }
     return std::unique_ptr<TempFile>(new TempFile(path.get()));
