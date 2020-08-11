@@ -51,6 +51,7 @@ tasks:
 
   ubuntu_clang_format:
     name: "clang-format"
+    platform: ubuntu1804
     shell_commands:
     - which clang-format
 
