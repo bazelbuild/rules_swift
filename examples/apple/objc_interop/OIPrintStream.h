@@ -15,7 +15,7 @@
 #import <Foundation/Foundation.h>
 
 /** A very contrived interface for writing strings to a file handle. */
-@interface OIPrintStream: NSObject
+@interface OIPrintStream : NSObject
 
 - (nonnull instancetype)initWithFileHandle:(nonnull NSFileHandle *)fileHandle;
 
