@@ -21,22 +21,23 @@ if [[ "$(uname)" != Darwin ]]; then
   exit 1
 fi
 
-toolchain_directory=/Library/Developer/Toolchains
-if [[ ! -d "$toolchain_directory" ]]; then
-  echo "error: '$toolchain_directory' doesn't exist"
-  exit 1
-fi
+readonly toolchain_directories=(
+  /Library/Developer/Toolchains
+  ~/Library/Developer/Toolchains
+)
 
-for toolchain in "$toolchain_directory"/*.xctoolchain
+for toolchain_directory in "${toolchain_directories[@]}"
 do
-  plist_path="$toolchain/Info.plist"
+  for toolchain in "$toolchain_directory"/*.xctoolchain
+  do
+    plist_path="$toolchain/Info.plist"
 
-  if [[ ! -f "$plist_path" ]]; then
-    echo "error: '$toolchain' is missing Info.plist"
-    exit 1
-  fi
+    if [[ ! -f "$plist_path" ]]; then
+      echo "error: '$toolchain' is missing Info.plist"
+      exit 1
+    fi
 
-  bundle_id=$(/usr/libexec/PlistBuddy -c "print :CFBundleIdentifier" "$plist_path")
-  toolchain_name=$(basename "$toolchain")
-  echo "$toolchain_name -> $bundle_id"
+    bundle_id=$(/usr/libexec/PlistBuddy -c "print :CFBundleIdentifier" "$plist_path")
+    echo "$toolchain -> $bundle_id"
+  done
 done
