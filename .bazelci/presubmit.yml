@@ -53,7 +53,7 @@ tasks:
     name: "clang-format"
     platform: ubuntu1804
     shell_commands:
-    - which clang-format
+    - clang-format -h
 
   ubuntu1804_latest:
     name: "Latest Bazel"
