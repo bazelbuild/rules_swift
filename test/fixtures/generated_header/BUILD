@@ -28,8 +28,8 @@ swift_library(
 )
 
 swift_library(
-    name = "invalid_path_separator",
+    name = "valid_path_separator",
     srcs = ["Empty.swift"],
-    generated_header_name = "Invalid/Separator.h",
+    generated_header_name = "Valid/Separator.h",
     tags = FIXTURE_TAGS,
 )
