@@ -1588,8 +1588,7 @@ def _declare_multiple_outputs_and_write_output_file_map(
 def _declare_validated_generated_header(actions, generated_header_name):
     """Validates and declares the explicitly named generated header.
 
-    If the file does not have a `.h` extension or conatins path separators, the
-    build will fail.
+    If the file does not have a `.h` extension, the build will fail.
 
     Args:
         actions: The context's `actions` object.
@@ -1598,12 +1597,6 @@ def _declare_validated_generated_header(actions, generated_header_name):
     Returns:
         A `File` that should be used as the output for the generated header.
     """
-    if "/" in generated_header_name:
-        fail(
-            "The generated header for a Swift module may not contain " +
-            "directory components (got '{}').".format(generated_header_name),
-        )
-
     extension = paths.split_extension(generated_header_name)[1]
     if extension != ".h":
         fail(

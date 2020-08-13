@@ -121,12 +121,17 @@ def generated_header_test_suite(name = "generated_header"):
         target_under_test = "@build_bazel_rules_swift//test/fixtures/generated_header:invalid_extension",
     )
 
-    # Verify that the build fails to analyze if a path separator is used.
-    generate_header_and_module_map_failure_test(
-        name = "{}_invalid_path_separator".format(name),
-        expected_message = "The generated header for a Swift module may not contain directory components",
+    # Verify that the build analyzes if a path separator is used.
+    generate_header_and_module_map_provider_test(
+        name = "{}_valid_path_separator".format(name),
+        expected_files = [
+            "test/fixtures/generated_header/Valid/Separator.h",
+            "*",
+        ],
+        field = "files",
+        provider = "DefaultInfo",
         tags = [name],
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/generated_header:invalid_path_separator",
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/generated_header:valid_path_separator",
     )
 
     # Verify that the header is not generated if the feature
