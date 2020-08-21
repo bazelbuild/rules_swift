@@ -51,7 +51,9 @@ load(
     "SWIFT_FEATURE_OPT",
     "SWIFT_FEATURE_OPT_USES_OSIZE",
     "SWIFT_FEATURE_OPT_USES_WMO",
+    "SWIFT_FEATURE_STRICT_MODULES",
     "SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION",
+    "SWIFT_FEATURE_SYSTEM_MODULE",
     "SWIFT_FEATURE_USE_C_MODULES",
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
     "SWIFT_FEATURE_VFSOVERLAY",
@@ -362,6 +364,72 @@ def compile_action_configs():
             ],
             features = [SWIFT_FEATURE_IMPLICIT_MODULES],
             not_features = [SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.PRECOMPILE_C_MODULE,
+            ],
+            configurators = [
+                # If we're consuming explicit modules of C dependencies, disable
+                # all implicit module usage (both searching for module maps and
+                # implicit compilation) to ensure that all modules must be
+                # explicitly provided.
+                swift_toolchain_config.add_arg(
+                    "-Xcc",
+                    "-fno-implicit-modules",
+                ),
+                swift_toolchain_config.add_arg(
+                    "-Xcc",
+                    "-fno-implicit-module-maps",
+                ),
+            ],
+            features = [SWIFT_FEATURE_USE_C_MODULES],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.PRECOMPILE_C_MODULE],
+            configurators = [
+                # Enforce `use` declarations for user modules since we generate
+                # those, but not for system modules since they typically do not
+                # have the proper `use` decls.
+                swift_toolchain_config.add_arg(
+                    "-Xcc",
+                    "-fmodules-decluse",
+                ),
+            ],
+            not_features = [
+                [SWIFT_FEATURE_STRICT_MODULES],
+                [SWIFT_FEATURE_SYSTEM_MODULE],
+            ],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.PRECOMPILE_C_MODULE],
+            configurators = [
+                swift_toolchain_config.add_arg(
+                    "-Xcc",
+                    "-fmodules-strict-decluse",
+                ),
+            ],
+            features = [SWIFT_FEATURE_STRICT_MODULES],
+            not_features = [SWIFT_FEATURE_SYSTEM_MODULE],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.PRECOMPILE_C_MODULE],
+            configurators = [
+                # TODO(b/165649949): ClangImporter doesn't currently handle the
+                # IsSystem bit correctly for the input file, which causes the
+                # module map to be treated as a user input. To work around this
+                # for now, we disable all diagnostics when compiling the
+                # explicit module for system modules, since they're not useful
+                # anyway; this is "close enough" to compiling it as a system
+                # module for the purposes of avoiding noise in the build logs.
+                swift_toolchain_config.add_arg("-Xcc", "-w"),
+                swift_toolchain_config.add_arg(
+                    "-Xcc",
+                    "-Wno-nullability-declspec",
+                ),
+            ],
+            features = [SWIFT_FEATURE_SYSTEM_MODULE],
         ),
     ]
 
@@ -710,7 +778,8 @@ def _collect_clang_module_inputs(
         # Add the module map, which we use for both implicit and explicit module
         # builds. For implicit module builds, we don't worry about the headers
         # above because we collect the full transitive header set below.
-        module_inputs.append(module_map)
+        if not types.is_string(module_map):
+            module_inputs.append(module_map)
 
     # If we prefer textual module maps and headers for the build, fall back to
     # using the full set of transitive headers.
@@ -733,9 +802,15 @@ def _clang_modulemap_dependency_args(module):
     Returns:
         A list of arguments to pass to `swiftc`.
     """
+    module_map = module.clang.module_map
+    if types.is_string(module_map):
+        module_map_path = module_map
+    else:
+        module_map_path = module_map.path
+
     return [
         "-Xcc",
-        "-fmodule-map-file={}".format(module.clang.module_map.path),
+        "-fmodule-map-file={}".format(module_map_path),
     ]
 
 def _clang_module_dependency_args(module):
@@ -868,8 +943,16 @@ def _stats_output_dir_configurator(prerequisites, args):
 def _source_files_configurator(prerequisites, args):
     """Adds source files to the command line and required inputs."""
     args.add_all(prerequisites.source_files)
+
+    # Only add source files to the input file set if they are not strings (for
+    # example, the module map of a system framework will be passed in as a file
+    # path relative to the SDK root, not as a `File` object).
     return swift_toolchain_config.config_result(
-        inputs = prerequisites.source_files,
+        inputs = [
+            source_file
+            for source_file in prerequisites.source_files
+            if not types.is_string(source_file)
+        ],
     )
 
 def _user_compile_flags_configurator(prerequisites, args):
