@@ -285,7 +285,10 @@ def _all_action_configs(
     action_configs = [
         # Basic compilation flags (target triple and toolchain search paths).
         swift_toolchain_config.action_config(
-            actions = [swift_action_names.COMPILE],
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.PRECOMPILE_C_MODULE,
+            ],
             configurators = [
                 swift_toolchain_config.add_arg("-target", target_triple),
                 swift_toolchain_config.add_arg("-sdk", sdk_dir),
@@ -299,15 +302,31 @@ def _all_action_configs(
                 ),
             ],
         ),
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.PRECOMPILE_C_MODULE],
+            configurators = [
+                swift_toolchain_config.add_arg(
+                    "-Xcc",
+                    platform_framework_dir,
+                    format = "-F%s",
+                ),
+            ],
+        ),
 
         # Bitcode-related flags.
         swift_toolchain_config.action_config(
-            actions = [swift_action_names.COMPILE],
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.PRECOMPILE_C_MODULE,
+            ],
             configurators = [swift_toolchain_config.add_arg("-embed-bitcode")],
             features = [SWIFT_FEATURE_BITCODE_EMBEDDED],
         ),
         swift_toolchain_config.action_config(
-            actions = [swift_action_names.COMPILE],
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.PRECOMPILE_C_MODULE,
+            ],
             configurators = [
                 swift_toolchain_config.add_arg("-embed-bitcode-marker"),
             ],
@@ -321,7 +340,10 @@ def _all_action_configs(
         # directory so that modules are found correctly.
         action_configs.append(
             swift_toolchain_config.action_config(
-                actions = [swift_action_names.COMPILE],
+                actions = [
+                    swift_action_names.COMPILE,
+                    swift_action_names.PRECOMPILE_C_MODULE,
+                ],
                 configurators = [
                     partial.make(
                         _resource_directory_configurator,
@@ -340,7 +362,8 @@ def _all_tool_configs(
         execution_requirements,
         swift_executable,
         toolchain_root,
-        use_param_file):
+        use_param_file,
+        xcode_config):
     """Returns the tool configurations for the Swift toolchain.
 
     Args:
@@ -353,6 +376,7 @@ def _all_tool_configs(
         toolchain_root: The root directory of the toolchain, if provided.
         use_param_file: If True, actions should have their arguments written to
             param files.
+        xcode_config: The `apple_common.XcodeVersionConfig` provider.
 
     Returns:
         A dictionary mapping action name to tool configuration.
@@ -365,7 +389,7 @@ def _all_tool_configs(
         env = dict(env)
         env["TOOLCHAINS"] = custom_toolchain
 
-    return {
+    tool_configs = {
         swift_action_names.COMPILE: swift_toolchain_config.driver_tool_config(
             driver_mode = "swiftc",
             env = env,
@@ -376,6 +400,22 @@ def _all_tool_configs(
             worker_mode = "persistent",
         ),
     }
+
+    # Xcode 12.0 implies Swift 5.3.
+    if _is_xcode_at_least_version(xcode_config, "12.0"):
+        tool_configs[swift_action_names.PRECOMPILE_C_MODULE] = (
+            swift_toolchain_config.driver_tool_config(
+                driver_mode = "swiftc",
+                env = env,
+                execution_requirements = execution_requirements,
+                swift_executable = swift_executable,
+                toolchain_root = toolchain_root,
+                use_param_file = use_param_file,
+                worker_mode = "wrap",
+            )
+        )
+
+    return tool_configs
 
 def _is_macos(platform):
     """Returns `True` if the given platform is macOS.
@@ -393,7 +433,7 @@ def _is_xcode_at_least_version(xcode_config, desired_version):
     """Returns True if we are building with at least the given Xcode version.
 
     Args:
-        xcode_config: the `apple_common.XcodeVersionConfig` provider.
+        xcode_config: The `apple_common.XcodeVersionConfig` provider.
         desired_version: The minimum desired Xcode version, as a dotted version
             string.
 
@@ -571,6 +611,7 @@ def _xcode_swift_toolchain_impl(ctx):
         swift_executable = swift_executable,
         toolchain_root = toolchain_root,
         use_param_file = use_param_file,
+        xcode_config = xcode_config,
     )
     all_action_configs = _all_action_configs(
         apple_fragment = apple_fragment,
