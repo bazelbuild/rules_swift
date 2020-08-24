@@ -635,6 +635,7 @@ def _xcode_swift_toolchain_impl(ctx):
             command_line_copts = command_line_copts,
             cpu = cpu,
             linker_opts_producer = linker_opts_producer,
+            linker_supports_filelist = True,
             object_format = "macho",
             optional_implicit_deps = [],
             requested_features = requested_features,

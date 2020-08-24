@@ -162,6 +162,10 @@ The partial should be called with two arguments:
 *   `is_test`: A `Boolean` value indicating whether the target being linked is a
     test target.
 """,
+        "linker_supports_filelist": """\
+`Boolean`. Indicates whether or not the toolchain's linker supports the input
+files passed to it via a file list.
+""",
         "object_format": """\
 `String`. The object file format of the platform that the toolchain is
 targeting. The currently supported values are `"elf"` and `"macho"`.
