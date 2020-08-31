@@ -78,6 +78,15 @@ into the binary. Possible values are:
             "_cc_toolchain": attr.label(
                 default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
             ),
+            # A late-bound attribute denoting the value of the `--custom_malloc`
+            # command line flag (or None if the flag is not provided).
+            "_custom_malloc": attr.label(
+                default = configuration_field(
+                    fragment = "cpp",
+                    name = "custom_malloc",
+                ),
+                providers = [[CcInfo]],
+            ),
             # TODO(b/119082664): Used internally only.
             "_grep_includes": attr.label(
                 allow_single_file = True,
@@ -215,10 +224,8 @@ def _swift_linking_rule_impl(
 
     # If a custom malloc implementation has been provided, pass that to the
     # linker as well.
-    if ctx.attr.malloc:
-        additional_linking_contexts.append(
-            ctx.attr.malloc[CcInfo].linking_context,
-        )
+    malloc = ctx.attr._custom_malloc or ctx.attr.malloc
+    additional_linking_contexts.append(malloc[CcInfo].linking_context)
 
     # Finally, consider linker flags in the `linkopts` attribute and the
     # `--linkopt` command line flag last, so they get highest priority.
