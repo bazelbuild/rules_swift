@@ -168,12 +168,6 @@ def _swift_toolchain_impl(ctx):
         toolchain_root,
     )
 
-    # The static archiver on Linux doesn't currently support the `-filelist`
-    # flag. This should be handled by the C++ toolchain once we migrate away
-    # from invoking the linker directly for static linking.
-    # See https://github.com/bazelbuild/rules_swift/pull/349#issuecomment-550353580.
-    linker_supports_filelist = True if ctx.attr.os == "darwin" else False
-
     # Combine build mode features, autoconfigured features, and required
     # features.
     requested_features = features_for_build_modes(ctx)
@@ -210,7 +204,7 @@ def _swift_toolchain_impl(ctx):
             command_line_copts = ctx.fragments.swift.copts(),
             cpu = ctx.attr.arch,
             linker_opts_producer = linker_opts_producer,
-            linker_supports_filelist = linker_supports_filelist,
+            linker_supports_filelist = False,
             object_format = "elf",
             optional_implicit_deps = [],
             requested_features = requested_features,
