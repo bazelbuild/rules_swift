@@ -68,9 +68,9 @@ def swift_rules_dependencies():
     _maybe(
         http_archive,
         name = "com_github_apple_swift_protobuf",
-        urls = ["https://github.com/apple/swift-protobuf/archive/1.7.0.zip"],
-        sha256 = "a4546ee8e95e7f7d4cf46b5b667e824b58f3943a71c352bf1e0b91660afdf3c3",
-        strip_prefix = "swift-protobuf-1.7.0/",
+        urls = ["https://github.com/apple/swift-protobuf/archive/1.12.0.zip"],
+        sha256 = "a9c1c14d81df690ed4c15bfb3c0aab0cb7a3f198ee95620561b89b1da7b76a9f",
+        strip_prefix = "swift-protobuf-1.12.0/",
         type = "zip",
         build_file = "@build_bazel_rules_swift//third_party:com_github_apple_swift_protobuf/BUILD.overlay",
     )
@@ -99,12 +99,12 @@ def swift_rules_dependencies():
     _maybe(
         http_archive,
         name = "com_google_protobuf",
-        # v3.11.2, latest as of 2019-12-19
+        # latest as of 2020-09-01
         urls = [
-            "https://github.com/protocolbuffers/protobuf/archive/v3.11.2.zip",
+            "https://github.com/protocolbuffers/protobuf/archive/v3.13.0.zip",
         ],
-        sha256 = "e4f8bedb19a93d0dccc359a126f51158282e0b24d92e0cad9c76a9699698268d",
-        strip_prefix = "protobuf-3.11.2",
+        sha256 = "1c744a6a1f2c901e68c5521bc275e22bdc66256eeb605c2781923365b7087e5f",
+        strip_prefix = "protobuf-3.13.0",
         type = "zip",
     )
 
