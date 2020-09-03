@@ -6,28 +6,34 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])
 
 bzl_library(
-    name = "swift",
-    srcs = ["swift.bzl"],
+    name = "repositories",
+    srcs = ["repositories.bzl"],
     deps = [
-        "//swift/internal:build_defs",
-        "//swift/internal:rules",
-        "//swift/internal:swift_common",
+        "//swift/internal:swift_autoconfiguration",
+        "@bazel_tools//tools/build_defs/repo:http.bzl",
     ],
 )
 
 bzl_library(
     name = "stats",
     srcs = ["stats.bzl"],
-    deps = [
-        "//swift/internal:build_defs",
-    ],
+    deps = ["//swift/internal:utils"],
 )
 
 bzl_library(
-    name = "repositories",
-    srcs = ["repositories.bzl"],
+    name = "swift",
+    srcs = ["swift.bzl"],
     deps = [
-        "//swift/internal:toolchain_support",
+        "//swift/internal:providers",
+        "//swift/internal:swift_binary_test",
+        "//swift/internal:swift_c_module",
+        "//swift/internal:swift_common",
+        "//swift/internal:swift_grpc_library",
+        "//swift/internal:swift_import",
+        "//swift/internal:swift_library",
+        "//swift/internal:swift_module_alias",
+        "//swift/internal:swift_proto_library",
+        "//swift/internal:swift_usage_aspect",
     ],
 )
 

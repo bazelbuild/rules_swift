@@ -3,107 +3,362 @@ load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 licenses(["notice"])
 
 bzl_library(
-    name = "rules",
-    srcs = [
-        "swift_binary_test.bzl",
-        "swift_c_module.bzl",
-        "swift_grpc_library.bzl",
-        "swift_import.bzl",
-        "swift_library.bzl",
-        "swift_module_alias.bzl",
-        "swift_proto_library.bzl",
-        "swift_protoc_gen_aspect.bzl",
-    ],
-    visibility = [
-        "//swift:__pkg__",
-    ],
+    name = "actions",
+    srcs = ["actions.bzl"],
+    visibility = ["//visibility:public"],
     deps = [
-        ":build_defs",
-        ":swift_common",
+        ":features",
+        ":toolchain_config",
+        "@bazel_skylib//lib:partial",
+        "@bazel_skylib//lib:types",
+    ],
+)
+
+bzl_library(
+    name = "attrs",
+    srcs = ["attrs.bzl"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":providers",
         "@bazel_skylib//lib:dicts",
-        "@bazel_skylib//lib:new_sets",
+    ],
+)
+
+bzl_library(
+    name = "autolinking",
+    srcs = ["autolinking.bzl"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":actions",
+        ":toolchain_config",
+    ],
+)
+
+bzl_library(
+    name = "compiling",
+    srcs = ["compiling.bzl"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":actions",
+        ":autolinking",
+        ":debugging",
+        ":derived_files",
+        ":feature_names",
+        ":features",
+        ":providers",
+        ":toolchain_config",
+        ":utils",
+        ":vfsoverlay",
+        "@bazel_skylib//lib:collections",
         "@bazel_skylib//lib:partial",
         "@bazel_skylib//lib:paths",
-        "@bazel_skylib//rules:common_settings",
+        "@bazel_skylib//lib:types",
+    ],
+)
+
+bzl_library(
+    name = "debugging",
+    srcs = ["debugging.bzl"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":actions",
+        ":derived_files",
+        ":toolchain_config",
+    ],
+)
+
+bzl_library(
+    name = "derived_files",
+    srcs = ["derived_files.bzl"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":utils",
+        "@bazel_skylib//lib:paths",
+    ],
+)
+
+bzl_library(
+    name = "features",
+    srcs = ["features.bzl"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":feature_names",
+        "@bazel_skylib//lib:collections",
+        "@bazel_skylib//lib:new_sets",
+    ],
+)
+
+bzl_library(
+    name = "linking",
+    srcs = ["linking.bzl"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":derived_files",
+        "@bazel_skylib//lib:collections",
+        "@bazel_skylib//lib:partial",
+        "@bazel_tools//tools/build_defs/cc:action_names.bzl",
+    ],
+)
+
+bzl_library(
+    name = "module_maps",
+    srcs = ["module_maps.bzl"],
+    visibility = ["//visibility:public"],
+    deps = ["@bazel_skylib//lib:paths"],
+)
+
+bzl_library(
+    name = "proto_gen_utils",
+    srcs = ["proto_gen_utils.bzl"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":utils",
+        "@bazel_skylib//lib:paths",
+    ],
+)
+
+bzl_library(
+    name = "providers",
+    srcs = ["providers.bzl"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@bazel_skylib//lib:sets",
+        "@bazel_skylib//lib:types",
+    ],
+)
+
+bzl_library(
+    name = "swift_autoconfiguration",
+    srcs = ["swift_autoconfiguration.bzl"],
+    visibility = ["//visibility:public"],
+    deps = ["@build_bazel_rules_swift//swift/internal:feature_names"],
+)
+
+bzl_library(
+    name = "swift_c_module",
+    srcs = ["swift_c_module.bzl"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":swift_common",
+        ":utils",
+    ],
+)
+
+bzl_library(
+    name = "swift_binary_test",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":compiling",
+        ":derived_files",
+        ":feature_names",
+        ":linking",
+        ":providers",
+        ":swift_common",
+        ":utils",
+        "@bazel_skylib//lib:dicts",
+        "@bazel_skylib//lib:partial",
+    ],
+)
+
+bzl_library(
+    name = "swift_clang_module_aspect",
+    srcs = ["swift_clang_module_aspect.bzl"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":attrs",
+        ":compiling",
+        ":derived_files",
+        ":feature_names",
+        ":features",
+        ":module_maps",
+        ":providers",
+        ":utils",
     ],
 )
 
 bzl_library(
     name = "swift_common",
     srcs = ["swift_common.bzl"],
-    visibility = [
-        "//swift:__pkg__",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":attrs",
+        ":compiling",
+        ":features",
+        ":linking",
+        ":providers",
+        ":swift_clang_module_aspect",
     ],
-    deps = [":build_defs"],
 )
 
 bzl_library(
-    name = "build_defs",
-    srcs = [
-        "actions.bzl",
-        "attrs.bzl",
-        "autolinking.bzl",
-        "compiling.bzl",
-        "debugging.bzl",
-        "derived_files.bzl",
-        "feature_names.bzl",
-        "features.bzl",
-        "linking.bzl",
-        "module_maps.bzl",
-        "proto_gen_utils.bzl",
-        "providers.bzl",
-        "swift_clang_module_aspect.bzl",
-        "swift_usage_aspect.bzl",
-        "toolchain_config.bzl",
-        "utils.bzl",
-        "vfsoverlay.bzl",
-    ],
-    visibility = [
-        "//swift:__pkg__",
-    ],
+    name = "swift_grpc_library",
+    srcs = ["swift_grpc_library.bzl"],
+    visibility = ["//visibility:public"],
     deps = [
-        "@bazel_skylib//lib:collections",
+        ":compiling",
+        ":feature_names",
+        ":linking",
+        ":proto_gen_utils",
+        ":providers",
+        ":swift_common",
+        ":utils",
         "@bazel_skylib//lib:dicts",
-        "@bazel_skylib//lib:new_sets",
-        "@bazel_skylib//lib:partial",
-        "@bazel_skylib//lib:paths",
+        "@rules_proto//proto:defs",
+    ],
+)
+
+bzl_library(
+    name = "swift_import",
+    srcs = ["swift_import.bzl"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":attrs",
+        ":compiling",
+        ":providers",
+        ":swift_common",
+        ":utils",
+        "@bazel_skylib//lib:dicts",
+    ],
+)
+
+bzl_library(
+    name = "swift_library",
+    srcs = ["swift_library.bzl"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":attrs",
+        ":compiling",
+        ":feature_names",
+        ":linking",
+        ":providers",
+        ":swift_common",
+        ":utils",
+        "@bazel_skylib//lib:dicts",
         "@bazel_skylib//lib:sets",
-        "@bazel_skylib//lib:types",
         "@bazel_skylib//rules:common_settings",
-        "@bazel_tools//tools/build_defs/cc:action_names.bzl",
     ],
 )
 
 bzl_library(
-    name = "toolchain_support",
-    srcs = [
-        "swift_autoconfiguration.bzl",
-        "swift_toolchain.bzl",
-        "xcode_swift_toolchain.bzl",
-    ],
-    visibility = [
-        "//swift:__pkg__",
-    ],
+    name = "swift_module_alias",
+    srcs = ["swift_module_alias.bzl"],
+    visibility = ["//visibility:public"],
     deps = [
-        ":build_defs",
+        ":compiling",
+        ":derived_files",
+        ":linking",
+        ":providers",
+        ":swift_common",
+        ":utils",
+        "@bazel_skylib//lib:dicts",
+    ],
+)
+
+bzl_library(
+    name = "swift_proto_library",
+    srcs = ["swift_proto_library.bzl"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":providers",
+        ":swift_protoc_gen_aspect",
+        "@rules_proto//proto:defs",
+    ],
+)
+
+bzl_library(
+    name = "swift_protoc_gen_aspect",
+    srcs = ["swift_protoc_gen_aspect.bzl"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":attrs",
+        ":compiling",
+        ":feature_names",
+        ":linking",
+        ":proto_gen_utils",
+        ":providers",
+        ":swift_common",
+        ":utils",
+        "@bazel_skylib//lib:dicts",
+        "@bazel_skylib//rules:common_settings",
+        "@rules_proto//proto:defs",
+    ],
+)
+
+bzl_library(
+    name = "swift_toolchain",
+    srcs = ["swift_toolchain.bzl"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":actions",
+        ":attrs",
+        ":autolinking",
+        ":compiling",
+        ":debugging",
+        ":feature_names",
+        ":features",
+        ":providers",
+        ":toolchain_config",
+        ":utils",
+        "@bazel_skylib//lib:dicts",
+        "@bazel_skylib//lib:partial",
+        "@bazel_tools//tools/cpp:toolchain_utils.bzl",
+    ],
+)
+
+bzl_library(
+    name = "swift_usage_aspect",
+    srcs = ["swift_usage_aspect.bzl"],
+    visibility = ["//visibility:public"],
+    deps = [":providers"],
+)
+
+bzl_library(
+    name = "toolchain_config",
+    srcs = ["toolchain_config.bzl"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@bazel_skylib//lib:partial",
+        "@bazel_skylib//lib:paths",
+        "@bazel_skylib//lib:types",
+    ],
+)
+
+bzl_library(
+    name = "utils",
+    srcs = ["utils.bzl"],
+    visibility = ["//visibility:public"],
+    deps = ["@bazel_skylib//lib:paths"],
+)
+
+bzl_library(
+    name = "xcode_swift_toolchain",
+    srcs = ["xcode_swift_toolchain.bzl"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":actions",
+        ":attrs",
+        ":compiling",
+        ":feature_names",
+        ":features",
+        ":providers",
+        ":toolchain_config",
+        ":utils",
         "@bazel_skylib//lib:collections",
         "@bazel_skylib//lib:dicts",
         "@bazel_skylib//lib:partial",
         "@bazel_skylib//lib:paths",
+        "@bazel_tools//tools/cpp:toolchain_utils.bzl",
     ],
 )
 
-# Consumed by Bazel integration tests.
-filegroup(
-    name = "for_bazel_tests",
-    testonly = 1,
-    srcs = glob(["**"]) + [
-        # We should be depending on a filegroup here that represents this file
-        # and its dependencies, but it doesn't exist yet.
-        "@bazel_tools//tools/cpp:toolchain_utils.bzl",
-        "@bazel_tools//tools/build_defs/cc:action_names_test_files",
-    ],
-    visibility = [
-        "//swift:__pkg__",
-    ],
+bzl_library(
+    name = "feature_names",
+    srcs = ["feature_names.bzl"],
+    visibility = ["//visibility:public"],
+)
+
+bzl_library(
+    name = "vfsoverlay",
+    srcs = ["vfsoverlay.bzl"],
+    visibility = ["//visibility:public"],
 )

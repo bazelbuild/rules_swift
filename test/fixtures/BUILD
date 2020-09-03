@@ -7,3 +7,9 @@ bzl_library(
         "//test:__pkg__",
     ],
 )
+
+bzl_library(
+    name = "common",
+    srcs = ["common.bzl"],
+    visibility = ["//visibility:public"],
+)
