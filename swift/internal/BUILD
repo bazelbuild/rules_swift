@@ -5,7 +5,7 @@ licenses(["notice"])
 bzl_library(
     name = "actions",
     srcs = ["actions.bzl"],
-    visibility = ["//visibility:public"],
+    visibility = ["//swift:__subpackages__"],
     deps = [
         ":features",
         ":toolchain_config",
@@ -17,7 +17,7 @@ bzl_library(
 bzl_library(
     name = "attrs",
     srcs = ["attrs.bzl"],
-    visibility = ["//visibility:public"],
+    visibility = ["//swift:__subpackages__"],
     deps = [
         ":providers",
         "@bazel_skylib//lib:dicts",
@@ -27,7 +27,7 @@ bzl_library(
 bzl_library(
     name = "autolinking",
     srcs = ["autolinking.bzl"],
-    visibility = ["//visibility:public"],
+    visibility = ["//swift:__subpackages__"],
     deps = [
         ":actions",
         ":toolchain_config",
@@ -37,7 +37,7 @@ bzl_library(
 bzl_library(
     name = "compiling",
     srcs = ["compiling.bzl"],
-    visibility = ["//visibility:public"],
+    visibility = ["//swift:__subpackages__"],
     deps = [
         ":actions",
         ":autolinking",
@@ -59,7 +59,7 @@ bzl_library(
 bzl_library(
     name = "debugging",
     srcs = ["debugging.bzl"],
-    visibility = ["//visibility:public"],
+    visibility = ["//swift:__subpackages__"],
     deps = [
         ":actions",
         ":derived_files",
@@ -70,7 +70,7 @@ bzl_library(
 bzl_library(
     name = "derived_files",
     srcs = ["derived_files.bzl"],
-    visibility = ["//visibility:public"],
+    visibility = ["//swift:__subpackages__"],
     deps = [
         ":utils",
         "@bazel_skylib//lib:paths",
@@ -80,7 +80,7 @@ bzl_library(
 bzl_library(
     name = "features",
     srcs = ["features.bzl"],
-    visibility = ["//visibility:public"],
+    visibility = ["//swift:__subpackages__"],
     deps = [
         ":feature_names",
         "@bazel_skylib//lib:collections",
@@ -91,7 +91,7 @@ bzl_library(
 bzl_library(
     name = "linking",
     srcs = ["linking.bzl"],
-    visibility = ["//visibility:public"],
+    visibility = ["//swift:__subpackages__"],
     deps = [
         ":derived_files",
         "@bazel_skylib//lib:collections",
@@ -103,14 +103,14 @@ bzl_library(
 bzl_library(
     name = "module_maps",
     srcs = ["module_maps.bzl"],
-    visibility = ["//visibility:public"],
+    visibility = ["//swift:__subpackages__"],
     deps = ["@bazel_skylib//lib:paths"],
 )
 
 bzl_library(
     name = "proto_gen_utils",
     srcs = ["proto_gen_utils.bzl"],
-    visibility = ["//visibility:public"],
+    visibility = ["//swift:__subpackages__"],
     deps = [
         ":utils",
         "@bazel_skylib//lib:paths",
@@ -120,7 +120,7 @@ bzl_library(
 bzl_library(
     name = "providers",
     srcs = ["providers.bzl"],
-    visibility = ["//visibility:public"],
+    visibility = ["//swift:__subpackages__"],
     deps = [
         "@bazel_skylib//lib:sets",
         "@bazel_skylib//lib:types",
@@ -130,14 +130,14 @@ bzl_library(
 bzl_library(
     name = "swift_autoconfiguration",
     srcs = ["swift_autoconfiguration.bzl"],
-    visibility = ["//visibility:public"],
+    visibility = ["//swift:__subpackages__"],
     deps = ["@build_bazel_rules_swift//swift/internal:feature_names"],
 )
 
 bzl_library(
     name = "swift_c_module",
     srcs = ["swift_c_module.bzl"],
-    visibility = ["//visibility:public"],
+    visibility = ["//swift:__subpackages__"],
     deps = [
         ":swift_common",
         ":utils",
@@ -146,7 +146,7 @@ bzl_library(
 
 bzl_library(
     name = "swift_binary_test",
-    visibility = ["//visibility:public"],
+    visibility = ["//swift:__subpackages__"],
     deps = [
         ":compiling",
         ":derived_files",
@@ -163,7 +163,7 @@ bzl_library(
 bzl_library(
     name = "swift_clang_module_aspect",
     srcs = ["swift_clang_module_aspect.bzl"],
-    visibility = ["//visibility:public"],
+    visibility = ["//swift:__subpackages__"],
     deps = [
         ":attrs",
         ":compiling",
@@ -179,7 +179,7 @@ bzl_library(
 bzl_library(
     name = "swift_common",
     srcs = ["swift_common.bzl"],
-    visibility = ["//visibility:public"],
+    visibility = ["//swift:__subpackages__"],
     deps = [
         ":attrs",
         ":compiling",
@@ -193,7 +193,7 @@ bzl_library(
 bzl_library(
     name = "swift_grpc_library",
     srcs = ["swift_grpc_library.bzl"],
-    visibility = ["//visibility:public"],
+    visibility = ["//swift:__subpackages__"],
     deps = [
         ":compiling",
         ":feature_names",
@@ -210,7 +210,7 @@ bzl_library(
 bzl_library(
     name = "swift_import",
     srcs = ["swift_import.bzl"],
-    visibility = ["//visibility:public"],
+    visibility = ["//swift:__subpackages__"],
     deps = [
         ":attrs",
         ":compiling",
@@ -224,7 +224,7 @@ bzl_library(
 bzl_library(
     name = "swift_library",
     srcs = ["swift_library.bzl"],
-    visibility = ["//visibility:public"],
+    visibility = ["//swift:__subpackages__"],
     deps = [
         ":attrs",
         ":compiling",
@@ -242,7 +242,7 @@ bzl_library(
 bzl_library(
     name = "swift_module_alias",
     srcs = ["swift_module_alias.bzl"],
-    visibility = ["//visibility:public"],
+    visibility = ["//swift:__subpackages__"],
     deps = [
         ":compiling",
         ":derived_files",
@@ -257,7 +257,7 @@ bzl_library(
 bzl_library(
     name = "swift_proto_library",
     srcs = ["swift_proto_library.bzl"],
-    visibility = ["//visibility:public"],
+    visibility = ["//swift:__subpackages__"],
     deps = [
         ":providers",
         ":swift_protoc_gen_aspect",
@@ -268,7 +268,7 @@ bzl_library(
 bzl_library(
     name = "swift_protoc_gen_aspect",
     srcs = ["swift_protoc_gen_aspect.bzl"],
-    visibility = ["//visibility:public"],
+    visibility = ["//swift:__subpackages__"],
     deps = [
         ":attrs",
         ":compiling",
@@ -287,7 +287,7 @@ bzl_library(
 bzl_library(
     name = "swift_toolchain",
     srcs = ["swift_toolchain.bzl"],
-    visibility = ["//visibility:public"],
+    visibility = ["//swift:__subpackages__"],
     deps = [
         ":actions",
         ":attrs",
@@ -308,14 +308,14 @@ bzl_library(
 bzl_library(
     name = "swift_usage_aspect",
     srcs = ["swift_usage_aspect.bzl"],
-    visibility = ["//visibility:public"],
+    visibility = ["//swift:__subpackages__"],
     deps = [":providers"],
 )
 
 bzl_library(
     name = "toolchain_config",
     srcs = ["toolchain_config.bzl"],
-    visibility = ["//visibility:public"],
+    visibility = ["//swift:__subpackages__"],
     deps = [
         "@bazel_skylib//lib:partial",
         "@bazel_skylib//lib:paths",
@@ -326,14 +326,14 @@ bzl_library(
 bzl_library(
     name = "utils",
     srcs = ["utils.bzl"],
-    visibility = ["//visibility:public"],
+    visibility = ["//swift:__subpackages__"],
     deps = ["@bazel_skylib//lib:paths"],
 )
 
 bzl_library(
     name = "xcode_swift_toolchain",
     srcs = ["xcode_swift_toolchain.bzl"],
-    visibility = ["//visibility:public"],
+    visibility = ["//swift:__subpackages__"],
     deps = [
         ":actions",
         ":attrs",
@@ -354,13 +354,13 @@ bzl_library(
 bzl_library(
     name = "feature_names",
     srcs = ["feature_names.bzl"],
-    visibility = ["//visibility:public"],
+    visibility = ["//swift:__subpackages__"],
 )
 
 bzl_library(
     name = "vfsoverlay",
     srcs = ["vfsoverlay.bzl"],
-    visibility = ["//visibility:public"],
+    visibility = ["//swift:__subpackages__"],
 )
 
 # Consumed by Bazel integration tests.
