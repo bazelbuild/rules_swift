@@ -98,6 +98,18 @@ def swift_rules_dependencies():
 
     _maybe(
         http_archive,
+        name = "rules_proto",
+        # latest as of 2020-09-01
+        urls = [
+            "https://github.com/bazelbuild/rules_proto/archive/40298556293ae502c66579620a7ce867d5f57311.zip",
+        ],
+        sha256 = "37d32b789be90fead9ab108dbe4fe4df463d26c122dc896dc1bf134252d3c49a",
+        strip_prefix = "rules_proto-40298556293ae502c66579620a7ce867d5f57311",
+        type = "zip",
+    )
+
+    _maybe(
+        http_archive,
         name = "com_google_protobuf",
         # latest as of 2020-09-01
         urls = [
