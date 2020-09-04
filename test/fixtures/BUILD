@@ -11,5 +11,5 @@ bzl_library(
 bzl_library(
     name = "common",
     srcs = ["common.bzl"],
-    visibility = ["//visibility:public"],
+    visibility = ["//test:__pkg__"],
 )
