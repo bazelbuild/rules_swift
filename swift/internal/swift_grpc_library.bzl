@@ -30,6 +30,7 @@ load(
     ":proto_gen_utils.bzl",
     "declare_generated_files",
     "extract_generated_dir_path",
+    "proto_import_path",
     "register_module_mapping_write_action",
 )
 load(":providers.bzl", "SwiftInfo", "SwiftProtoInfo", "SwiftToolchainInfo")
@@ -39,7 +40,6 @@ load(
     "compact",
     "create_cc_info",
     "get_providers",
-    "proto_import_path",
 )
 
 def _register_grpcswift_generate_action(

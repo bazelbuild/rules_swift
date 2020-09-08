@@ -208,3 +208,17 @@ SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS = "swift.supports_private_deps"
 # numbers of `-Wl,-add_ast_path,<path>` flags to the linker do not overrun the
 # system command line limit.
 SWIFT_FEATURE_NO_EMBED_DEBUG_MODULE = "swift.no_embed_debug_module"
+
+# If enabled, the toolchain will directly generate from the raw proto files
+# and not from the DescriptorSets.
+#
+# The DescriptorSets ProtoInfo exposes don't have source info, so comments in
+# the .proto files don't get carried over to the generated Swift sources as
+# documentation comments. https://github.com/bazelbuild/bazel/issues/9337
+# is open to attempt to get that, but this provides a way to opt into forcing
+# it.
+#
+# This does come with a minor risk for cross repository and/or generated proto
+# files where the protoc command line might not be crafted correctly, so it
+# remains opt in.
+SWIFT_FEATURE_GENERATE_FROM_RAW_PROTO_FILES = "swift.generate_from_raw_proto_files"

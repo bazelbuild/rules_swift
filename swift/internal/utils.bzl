@@ -330,36 +330,3 @@ def struct_fields(s):
         # TODO(b/36412967): Remove the `to_json` and `to_proto` checks.
         if field not in ("to_json", "to_proto")
     }
-
-def _workspace_relative_path(file):
-    """Returns the path of a file relative to its workspace.
-
-    Args:
-        file: The `File` object.
-
-    Returns:
-        The path of the file relative to its workspace.
-    """
-    workspace_path = paths.join(file.root.path, file.owner.workspace_root)
-    return paths.relativize(file.path, workspace_path)
-
-def proto_import_path(f, proto_source_root):
-    """ Returns the import path of a `.proto` file given its path.
-
-    Args:
-        f: The `File` object representing the `.proto` file.
-        proto_source_root: The source root for the `.proto` file.
-
-    Returns:
-        The path the `.proto` file should be imported at.
-    """
-
-    # The simple repo case seems to say this branch is never happening as the
-    # proto_source_root seems to always be ".". So the general logic here likely
-    # needs a revisit.
-    if f.path.startswith(proto_source_root):
-        return f.path[len(proto_source_root) + 1:]
-    else:
-        # Happens before Bazel 1.0, where proto_source_root was not
-        # guaranteed to be a parent of the .proto file
-        return _workspace_relative_path(f)
