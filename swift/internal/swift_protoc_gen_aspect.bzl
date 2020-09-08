@@ -24,6 +24,7 @@ load(
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_ENABLE_TESTING",
+    "SWIFT_FEATURE_GENERATE_FROM_RAW_PROTO_FILES",
     "SWIFT_FEATURE_NO_GENERATED_HEADER",
 )
 load(":linking.bzl", "register_libraries_to_link")
@@ -31,6 +32,7 @@ load(
     ":proto_gen_utils.bzl",
     "declare_generated_files",
     "extract_generated_dir_path",
+    "proto_import_path",
     "register_module_mapping_write_action",
 )
 load(":providers.bzl", "SwiftInfo", "SwiftProtoInfo", "SwiftToolchainInfo")
@@ -40,7 +42,6 @@ load(
     "compact",
     "create_cc_info",
     "get_providers",
-    "proto_import_path",
 )
 
 # The paths of proto files bundled with the runtime. This is mainly the well
@@ -109,6 +110,7 @@ def _register_pbswift_generate_action(
         proto_source_root,
         transitive_descriptor_sets,
         module_mapping_file,
+        generate_from_proto_sources,
         mkdir_and_run,
         protoc_executable,
         protoc_plugin_executable):
@@ -127,6 +129,10 @@ def _register_pbswift_generate_action(
             target being analyzed. May be `None`, in which case no module
             mapping will be passed (the case for leaf nodes in the dependency
             graph).
+        generate_from_proto_sources: True/False for is generation should happen
+            from proto source file vs just via the DescriptorSets. The Sets
+            don't have source info, so the generated sources won't have
+            comments (https://github.com/bazelbuild/bazel/issues/9337).
         mkdir_and_run: The `File` representing the `mkdir_and_run` executable.
         protoc_executable: The `File` representing the `protoc` executable.
         protoc_plugin_executable: The `File` representing the `protoc` plugin
@@ -175,13 +181,32 @@ def _register_pbswift_generate_action(
             module_mapping_file,
             format = "--swift_opt=ProtoPathModuleMappings=%s",
         )
-    protoc_args.add("--descriptor_set_in")
-    protoc_args.add_joined(transitive_descriptor_sets, join_with = ":")
+    protoc_args.add_joined(
+        transitive_descriptor_sets,
+        join_with = ":",
+        format_joined = "--descriptor_set_in=%s",
+        omit_if_empty = True,
+    )
+
+    if generate_from_proto_sources:
+        # ProtoCompileActionBuilder.java's XPAND_TRANSITIVE_PROTO_PATH_FLAGS
+        # leaves this off also.
+        if proto_source_root != ".":
+            protoc_args.add(proto_source_root, format = "--proto_path=%s")
+
+        # Follow ProtoCompileActionBuilder.java's
+        # ExpandImportArgsFn::expandToCommandLine() logic and provide a mapping
+        # for each file to the proto path.
+        for f in direct_srcs:
+            protoc_args.add("-I%s=%s" % (proto_import_path(f, proto_source_root), f.path))
+
     protoc_args.add_all(
         [proto_import_path(f, proto_source_root) for f in direct_srcs],
     )
 
     additional_command_inputs = []
+    if generate_from_proto_sources:
+        additional_command_inputs.extend(direct_srcs)
     if module_mapping_file:
         additional_command_inputs.append(module_mapping_file)
 
@@ -298,13 +323,6 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
         target[ProtoInfo].proto_source_root,
     )
 
-    # Direct sources are passed as arguments to protoc to generate *only* the
-    # files in this target, but we need to pass the transitive sources as inputs
-    # to the generating action so that all the dependent files are available for
-    # protoc to parse.
-    # Instead of providing all those files and opening/reading them, we use
-    # protoc's support for reading descriptor sets to resolve things.
-    transitive_descriptor_sets = target[ProtoInfo].transitive_descriptor_sets
     proto_deps = [
         dep
         for dep in aspect_ctx.rule.attr.deps
@@ -334,19 +352,6 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
     support_deps = aspect_ctx.attr._proto_support
 
     if direct_srcs:
-        # Generate the Swift sources from the .proto files.
-        pbswift_files = _register_pbswift_generate_action(
-            target.label,
-            aspect_ctx.actions,
-            direct_srcs,
-            target[ProtoInfo].proto_source_root,
-            transitive_descriptor_sets,
-            transitive_module_mapping_file,
-            aspect_ctx.executable._mkdir_and_run,
-            aspect_ctx.executable._protoc,
-            aspect_ctx.executable._protoc_gen_swift,
-        )
-
         extra_features = []
 
         # This feature is not fully supported because the SwiftProtobuf library
@@ -372,6 +377,40 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             unsupported_features = aspect_ctx.disabled_features + [
                 SWIFT_FEATURE_ENABLE_TESTING,
             ],
+        )
+
+        generate_from_proto_sources = swift_common.is_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_GENERATE_FROM_RAW_PROTO_FILES,
+        )
+
+        # Only the files for direct sources should be generated, but the
+        # transitive descriptor sets are still need to be able to parse/load
+        # those descriptors.
+        if generate_from_proto_sources:
+            # Take the transitive descriptor sets from the proto_library deps,
+            # so the direct sources won't be in any descriptor sets to reduce
+            # the input to the action (and what protoc has to parse).
+            transitive_descriptor_sets = depset(transitive = [
+                dep[ProtoInfo].transitive_descriptor_sets
+                for dep in aspect_ctx.rule.attr.deps
+                if ProtoInfo in dep
+            ])
+        else:
+            transitive_descriptor_sets = target[ProtoInfo].transitive_descriptor_sets
+
+        # Generate the Swift sources from the .proto files.
+        pbswift_files = _register_pbswift_generate_action(
+            target.label,
+            aspect_ctx.actions,
+            direct_srcs,
+            target[ProtoInfo].proto_source_root,
+            transitive_descriptor_sets,
+            transitive_module_mapping_file,
+            generate_from_proto_sources,
+            aspect_ctx.executable._mkdir_and_run,
+            aspect_ctx.executable._protoc,
+            aspect_ctx.executable._protoc_gen_swift,
         )
 
         module_name = swift_common.derive_module_name(target.label)
