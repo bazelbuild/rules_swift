@@ -15,7 +15,6 @@
 """Utilities for rules/aspects that generate sources from .proto files."""
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load(":utils.bzl", "proto_import_path")
 
 def declare_generated_files(
         name,
@@ -112,6 +111,33 @@ def register_module_mapping_write_action(name, actions, module_mappings):
     )
 
     return mapping_file
+
+def proto_import_path(f, proto_source_root):
+    """ Returns the import path of a `.proto` file given its path.
+
+    Args:
+        f: The `File` object representing the `.proto` file.
+        proto_source_root: The source root for the `.proto` file.
+
+    Returns:
+        The path the `.proto` file should be imported at.
+    """
+
+    if proto_source_root:
+        # Don't want to accidentally match "foo" to "foobar", so add the slash.
+        if not proto_source_root.endswith("/"):
+            proto_source_root += "/"
+        if f.path.startswith(proto_source_root):
+            return f.path[len(proto_source_root):]
+
+    # Cross-repository proto file references is sorta a grey area. If that is
+    # needed, please see the comments in ProtoCompileActionBuilder.java's
+    # guessProtoPathUnderRoot() for some guidance of what would be needed, but
+    # the current (Q3/2020) reading says that seems to not maintain the
+    # references, so the proto file namespace is likely flat across
+    # repositories.
+    workspace_path = paths.join(f.root.path, f.owner.workspace_root)
+    return paths.relativize(f.path, workspace_path)
 
 def _generated_file_path(
         name,
