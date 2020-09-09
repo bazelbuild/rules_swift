@@ -255,8 +255,6 @@ def _create_xcode_toolchain(repository_ctx):
     Args:
       repository_ctx: The repository rule context.
     """
-    path_to_swiftc = repository_ctx.which("swiftc")
-
     feature_values = [
         # TODO: This is being enabled here, rather than in the toolchain rule
         # implementations, so that we can provide a way to optionally turn it
