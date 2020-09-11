@@ -406,7 +406,6 @@ def _swift_test_impl(ctx):
                 collect_data = True,
                 collect_default = True,
                 files = ctx.files.data + additional_test_outputs,
-                transitive_files = ctx.attr._apple_coverage_support.files,
             ),
         ),
         coverage_common.instrumented_files_info(
@@ -447,12 +446,6 @@ swift_test = rule(
     attrs = dicts.add(
         _binary_rule_attrs(stamp_default = 0),
         {
-            "_apple_coverage_support": attr.label(
-                cfg = "host",
-                default = Label(
-                    "@build_bazel_apple_support//tools:coverage_support",
-                ),
-            ),
             "_xctest_runner_template": attr.label(
                 allow_single_file = True,
                 default = Label(

@@ -63,13 +63,6 @@ load(
 swift_rules_dependencies()
 
 load(
-    "@build_bazel_apple_support//lib:repositories.bzl",
-    "apple_support_dependencies",
-)
-
-apple_support_dependencies()
-
-load(
     "@com_google_protobuf//:protobuf_deps.bzl",
     "protobuf_deps",
 )
@@ -130,7 +123,6 @@ encountered first on your `PATH`.
 We gratefully acknowledge the following external packages that rules_swift
 depends on:
 
-* [Apple Support for Bazel](https://github.com/bazelbuild/apple_support) (Google)
 * [Bazel Skylib](https://github.com/bazelbuild/bazel-skylib) (Google)
 * [JSON for Modern C++](https://github.com/nlohmann/json) (Niels Lohmann)
 * [Protocol Buffers](https://github.com/protocolbuffers/protobuf) (Google)
