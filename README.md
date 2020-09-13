@@ -63,18 +63,11 @@ load(
 swift_rules_dependencies()
 
 load(
-    "@build_bazel_apple_support//lib:repositories.bzl",
-    "apple_support_dependencies",
+    "@build_bazel_rules_swift//swift:extras.bzl",
+    "swift_rules_extra_dependencies",
 )
 
-apple_support_dependencies()
-
-load(
-    "@com_google_protobuf//:protobuf_deps.bzl",
-    "protobuf_deps",
-)
-
-protobuf_deps()
+swift_rules_extra_dependencies()
 ```
 
 The `swift_rules_dependencies` macro creates a toolchain appropriate for your
@@ -98,7 +91,7 @@ uses `clang`.
 `/Library/Developer/Toolchains` instead of Xcode's default. To do so, pass the
 following flag to Bazel:
 
-```
+```lang-none
 --define=SWIFT_CUSTOM_TOOLCHAIN=toolchain.id
 ```
 
@@ -107,7 +100,7 @@ toolchain's Info.plist file.
 
 To list the available toolchains and their bundle identifiers, you can run:
 
-```
+```command
 bazel run @build_bazel_rules_swift//tools/dump_toolchains
 ```
 
@@ -116,13 +109,13 @@ encountered first on your `PATH`.
 
 ## Future Work
 
-* Support for building and linking to shared libraries (`.dylib`/`.so`) written
+- Support for building and linking to shared libraries (`.dylib`/`.so`) written
   in Swift.
-* Interoperability with Swift Package Manager.
-* Migration to the Bazel platforms/toolchains APIs.
-* Support for multiple toolchains, and support for non-Xcode toolchains on
+- Interoperability with Swift Package Manager.
+- Migration to the Bazel platforms/toolchains APIs.
+- Support for multiple toolchains, and support for non-Xcode toolchains on
   macOS.
-* Automatically download a Linux toolchain from [swift.org](https://swift.org)
+- Automatically download a Linux toolchain from [swift.org](https://swift.org)
   if one is not already installed.
 
 ## Acknowledgments
@@ -130,10 +123,10 @@ encountered first on your `PATH`.
 We gratefully acknowledge the following external packages that rules_swift
 depends on:
 
-* [Apple Support for Bazel](https://github.com/bazelbuild/apple_support) (Google)
-* [Bazel Skylib](https://github.com/bazelbuild/bazel-skylib) (Google)
-* [JSON for Modern C++](https://github.com/nlohmann/json) (Niels Lohmann)
-* [Protocol Buffers](https://github.com/protocolbuffers/protobuf) (Google)
-* [Swift gRPC](https://github.com/grpc/grpc-swift) (Google)
-* [Swift Protobuf](https://github.com/apple/swift-protobuf) (Apple)
-* [zlib](https://www.zlib.net) (Jean-loup Gailly and Mark Adler)
+- [Apple Support for Bazel](https://github.com/bazelbuild/apple_support) (Google)
+- [Bazel Skylib](https://github.com/bazelbuild/bazel-skylib) (Google)
+- [JSON for Modern C++](https://github.com/nlohmann/json) (Niels Lohmann)
+- [Protocol Buffers](https://github.com/protocolbuffers/protobuf) (Google)
+- [Swift gRPC](https://github.com/grpc/grpc-swift) (Google)
+- [Swift Protobuf](https://github.com/apple/swift-protobuf) (Apple)
+- [zlib](https://www.zlib.net) (Jean-loup Gailly and Mark Adler)
