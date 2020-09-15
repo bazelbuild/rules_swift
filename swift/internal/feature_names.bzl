@@ -61,6 +61,11 @@ SWIFT_FEATURE_COMPILE_STATS = "swift.compile_stats"
 # builds.
 SWIFT_FEATURE_DEBUG_PREFIX_MAP = "swift.debug_prefix_map"
 
+# If enabled, coverage builds will use the `-coverage-prefix-map` feature to
+# remap the current working directory to `.`, which increases reproducibility
+# of remote builds.
+SWIFT_FEATURE_COVERAGE_PREFIX_MAP = "swift.coverage_prefix_map"
+
 # If enabled, C and Objective-C libraries that are direct or transitive
 # dependencies of a Swift library will emit explicit precompiled modules that
 # are compatible with Swift's ClangImporter and propagate them up the build

@@ -187,6 +187,12 @@ bool SwiftRunner::ProcessArgument(
     consumer("-debug-prefix-map");
     consumer(GetCurrentDirectory() + "=.");
     changed = true;
+  } else if (arg == "-Xwrapped-swift=-coverage-prefix-pwd-is-dot") {
+    // Get the actual current working directory (the workspace root), which we
+    // didn't know at analysis time.
+    consumer("-coverage-prefix-map");
+    consumer(GetCurrentDirectory() + "=.");
+    changed = true;
   } else if (arg == "-Xwrapped-swift=-ephemeral-module-cache") {
     // Create a temporary directory to hold the module cache, which will be
     // deleted after compilation is finished.

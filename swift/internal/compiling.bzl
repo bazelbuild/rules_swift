@@ -293,6 +293,19 @@ def compile_action_configs():
                 [SWIFT_FEATURE_DEBUG_PREFIX_MAP, SWIFT_FEATURE_FULL_DEBUG_INFO],
             ],
         ),
+
+        # Make paths written into coverage info workspace-relative.
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [
+                swift_toolchain_config.add_arg(
+                    "-Xwrapped-swift=-coverage-prefix-pwd-is-dot",
+                ),
+            ],
+            features = [
+                [SWIFT_FEATURE_COVERAGE_PREFIX_MAP, SWIFT_FEATURE_COVERAGE],
+            ],
+        ),
     ]
 
     #### Coverage and sanitizer instrumentation flags
