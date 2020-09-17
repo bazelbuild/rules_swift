@@ -179,6 +179,16 @@ def _module_info_for_target(
         if not aspect_ctx.rule.kind == "objc_library":
             return None, module_maps[0]
 
+        # If an `objc_library` doesn't have any headers (and doesn't specify an
+        # explicit module map), then don't generate or propagate a module map
+        # for it. Such modules define nothing and only waste space on the
+        # compilation command line and add more work for the compiler.
+        if not getattr(attr, "module_map", None) and not (
+            compilation_context.direct_headers or
+            compilation_context.direct_textual_headers
+        ):
+            return None, None
+
         module_name = getattr(attr, "module_name", None)
         if not module_name:
             module_name = derive_module_name(target.label)
