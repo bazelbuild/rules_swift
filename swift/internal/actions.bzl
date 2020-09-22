@@ -240,6 +240,7 @@ def run_toolchain_action(
     actions.run(
         arguments = [tool_executable_args, args],
         env = tool_config.env,
+        use_default_shell_env = True,
         executable = executable,
         execution_requirements = execution_requirements,
         inputs = depset(

@@ -83,6 +83,7 @@ def _register_static_library_link_action(
     actions.run(
         arguments = [args, filelist_args],
         env = env,
+        use_default_shell_env = True,
         executable = archiver_path,
         execution_requirements = execution_requirements,
         inputs = depset(

@@ -278,6 +278,7 @@ def _create_xctest_bundle(name, actions, binary):
 
     actions.run_shell(
         arguments = [args],
+        use_default_shell_env = True,
         command = (
             'mkdir -p "$1/Contents/MacOS" && ' +
             'cp "$2" "$1/Contents/MacOS"'

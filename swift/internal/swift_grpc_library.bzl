@@ -187,6 +187,7 @@ def _register_grpcswift_generate_action(
             protoc_executable,
             protoc_plugin_executable,
         ],
+        use_default_shell_env = True,
         mnemonic = "ProtocGenSwiftGRPC",
         outputs = generated_files,
         progress_message = "Generating Swift sources for {}".format(label),

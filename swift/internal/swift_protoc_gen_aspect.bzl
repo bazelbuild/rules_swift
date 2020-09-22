@@ -227,6 +227,7 @@ def _register_pbswift_generate_action(
             protoc_executable,
             protoc_plugin_executable,
         ],
+        use_default_shell_env = True,
     )
 
     return generated_files
