@@ -433,6 +433,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
                 feature_configuration = feature_configuration,
             ),
             compilation_outputs = compilation_outputs,
+            env = aspect_ctx.configuration.default_shell_env,
             is_dynamic = False,
             is_static = True,
             # Prevent conflicts with C++ protos in the same output directory,

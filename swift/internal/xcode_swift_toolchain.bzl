@@ -742,7 +742,10 @@ def _xcode_swift_toolchain_impl(ctx):
     if _is_xcode_at_least_version(xcode_config, "12.5"):
         requested_features.append(SWIFT_FEATURE_SUPPORTS_SYSTEM_MODULE_FLAG)
 
-    env = _xcode_env(platform = platform, xcode_config = xcode_config)
+    env = dicts.add(
+        ctx.configuration.default_shell_env,
+        _xcode_env(platform = platform, xcode_config = xcode_config),
+    )
     execution_requirements = xcode_config.execution_info()
     generated_header_rewriter = ctx.executable.generated_header_rewriter
 

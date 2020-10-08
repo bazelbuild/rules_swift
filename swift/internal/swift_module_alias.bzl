@@ -80,6 +80,7 @@ def _swift_module_alias_impl(ctx):
             feature_configuration = feature_configuration,
         ),
         compilation_outputs = compilation_outputs,
+        env = ctx.configuration.default_shell_env,
         is_dynamic = False,
         is_static = True,
         library_name = ctx.label.name,
