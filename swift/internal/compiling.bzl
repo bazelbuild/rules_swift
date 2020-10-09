@@ -17,6 +17,7 @@
 load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:partial.bzl", "partial")
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("@bazel_skylib//lib:sets.bzl", "sets")
 load("@bazel_skylib//lib:types.bzl", "types")
 load(
     ":actions.bzl",
@@ -960,11 +961,14 @@ def _clang_modulemap_dependency_args(module):
     Returns:
         A list of arguments to pass to `swiftc`.
     """
-    module_map = module.clang.module_map
-    if types.is_string(module_map):
-        module_map_path = module_map
+    if types.is_string(module):
+        module_map_path = module
     else:
-        module_map_path = module_map.path
+        module_map = module.clang.module_map
+        if types.is_string(module_map):
+            module_map_path = module_map
+        else:
+            module_map_path = module_map.path
 
     return [
         "-Xcc",
@@ -1004,8 +1008,11 @@ def _dependencies_clang_modulemaps_configurator(prerequisites, args):
         for module in prerequisites.transitive_modules
         if module.clang
     ]
-
-    args.add_all(modules, map_each = _clang_modulemap_dependency_args)
+    module_map_paths = sets.to_list(sets.make([
+        module.clang.module_map.path
+        for module in modules
+    ]))
+    args.add_all(module_map_paths, map_each = _clang_modulemap_dependency_args)
 
     return _collect_clang_module_inputs(
         cc_info = prerequisites.cc_info,
