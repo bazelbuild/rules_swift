@@ -318,6 +318,7 @@ def _all_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.DERIVED_FILES,
                 swift_action_names.PRECOMPILE_C_MODULE,
             ],
             configurators = [swift_toolchain_config.add_arg("-embed-bitcode")],
@@ -326,6 +327,7 @@ def _all_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.DERIVED_FILES,
                 swift_action_names.PRECOMPILE_C_MODULE,
             ],
             configurators = [

@@ -424,6 +424,7 @@ def compile_action_configs():
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.DERIVED_FILES,
                 swift_action_names.PRECOMPILE_C_MODULE,
             ],
             configurators = [
@@ -1268,15 +1269,15 @@ def compile(
         feature_name = SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION,
     ):
         all_compile_outputs = compact([
-            # The `.swiftmodule` file is explicitly listed as the first output
-            # because it will always exist and because Bazel uses it as a key for
-            # various things (such as the filename prefix for param files generated
-            # for that action). This guarantees some predictability.
             compile_outputs.swiftinterface_file,
             compile_outputs.indexstore_directory,
             compile_outputs.stats_directory,
         ]) + compile_outputs.object_files
         all_derived_outputs = compact([
+            # The `.swiftmodule` file is explicitly listed as the first output
+            # because it will always exist and because Bazel uses it as a key for
+            # various things (such as the filename prefix for param files generated
+            # for that action). This guarantees some predictability.
             compile_outputs.swiftmodule_file,
             compile_outputs.swiftdoc_file,
             compile_outputs.generated_header_file,
