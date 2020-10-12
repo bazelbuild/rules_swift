@@ -37,6 +37,10 @@ swift_action_names = struct(
     # Precompiles an explicit module for a C/Objective-C module map and its
     # headers, emitting a `.pcm` file.
     PRECOMPILE_C_MODULE = "SwiftPrecompileCModule",
+
+    # Produces files that are usually fallout of the compilation such as
+    # .swiftmodule, -Swift.h and more.
+    DERIVED_FILES = "SwiftDerivedFiles",
 )
 
 def _apply_configurator(configurator, prerequisites, args):

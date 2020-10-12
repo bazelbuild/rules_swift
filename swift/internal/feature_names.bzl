@@ -227,3 +227,8 @@ SWIFT_FEATURE_NO_EMBED_DEBUG_MODULE = "swift.no_embed_debug_module"
 # files where the protoc command line might not be crafted correctly, so it
 # remains opt in.
 SWIFT_FEATURE_GENERATE_FROM_RAW_PROTO_FILES = "swift.generate_from_raw_proto_files"
+
+# If enabled and whole module optimisation is being used, the `*.swiftdoc`,
+# `*.swiftmodule` and `*-Swift.h` are generated with a separate action
+# rather than as part of the compilation.
+SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION = "swift.split_derived_files_generation"

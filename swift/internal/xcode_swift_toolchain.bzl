@@ -287,6 +287,7 @@ def _all_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.DERIVED_FILES,
                 swift_action_names.PRECOMPILE_C_MODULE,
             ],
             configurators = [
@@ -342,6 +343,7 @@ def _all_action_configs(
             swift_toolchain_config.action_config(
                 actions = [
                     swift_action_names.COMPILE,
+                    swift_action_names.DERIVED_FILES,
                     swift_action_names.PRECOMPILE_C_MODULE,
                 ],
                 configurators = [
@@ -389,16 +391,19 @@ def _all_tool_configs(
         env = dict(env)
         env["TOOLCHAINS"] = custom_toolchain
 
+    tool_config = swift_toolchain_config.driver_tool_config(
+        driver_mode = "swiftc",
+        env = env,
+        execution_requirements = execution_requirements,
+        swift_executable = swift_executable,
+        toolchain_root = toolchain_root,
+        use_param_file = use_param_file,
+        worker_mode = "persistent",
+    )
+
     tool_configs = {
-        swift_action_names.COMPILE: swift_toolchain_config.driver_tool_config(
-            driver_mode = "swiftc",
-            env = env,
-            execution_requirements = execution_requirements,
-            swift_executable = swift_executable,
-            toolchain_root = toolchain_root,
-            use_param_file = use_param_file,
-            worker_mode = "persistent",
-        ),
+        swift_action_names.COMPILE: tool_config,
+        swift_action_names.DERIVED_FILES: tool_config,
     }
 
     # Xcode 12.0 implies Swift 5.3.
