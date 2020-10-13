@@ -1,3 +1,5 @@
+"""Tests for coverage-related command line flags under various configs."""
+
 load(
     "@build_bazel_rules_swift//test/rules:action_command_line_test.bzl",
     "make_action_command_line_test_rule",
