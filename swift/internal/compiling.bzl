@@ -32,6 +32,7 @@ load(
     "SWIFT_FEATURE_CACHEABLE_SWIFTMODULES",
     "SWIFT_FEATURE_COMPILE_STATS",
     "SWIFT_FEATURE_COVERAGE",
+    "SWIFT_FEATURE_COVERAGE_PREFIX_MAP",
     "SWIFT_FEATURE_DBG",
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
     "SWIFT_FEATURE_EMIT_C_MODULE",
@@ -291,6 +292,19 @@ def compile_action_configs():
                 [SWIFT_FEATURE_DEBUG_PREFIX_MAP, SWIFT_FEATURE_DBG],
                 [SWIFT_FEATURE_DEBUG_PREFIX_MAP, SWIFT_FEATURE_FASTBUILD],
                 [SWIFT_FEATURE_DEBUG_PREFIX_MAP, SWIFT_FEATURE_FULL_DEBUG_INFO],
+            ],
+        ),
+
+        # Make paths written into coverage info workspace-relative.
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [
+                swift_toolchain_config.add_arg(
+                    "-Xwrapped-swift=-coverage-prefix-pwd-is-dot",
+                ),
+            ],
+            features = [
+                [SWIFT_FEATURE_COVERAGE_PREFIX_MAP, SWIFT_FEATURE_COVERAGE],
             ],
         ),
     ]
