@@ -130,7 +130,7 @@ bool SwiftRunner::ProcessPossibleResponseFile(
   auto path = arg.substr(1);
   std::ifstream original_file(path);
   // If we couldn't open it, maybe it's not a file; maybe it's just some other
-  // argument that starts with "@". (Unlikely, but it's safer to check.)
+  // argument that starts with "@" such as "@loader_path/..."
   if (!original_file.good()) {
     consumer(arg);
     return false;
