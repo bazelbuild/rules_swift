@@ -602,7 +602,7 @@ def _xcode_swift_toolchain_impl(ctx):
         requested_features.append(SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION)
         requested_features.append(SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS)
 
-    # Xcode 11.4 implies Swift 5.1.
+    # Xcode 11.4 implies Swift 5.2.
     if _is_xcode_at_least_version(xcode_config, "11.4"):
         requested_features.append(SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES)
 
