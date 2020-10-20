@@ -96,10 +96,7 @@ def compile_action_configs():
     action_configs = [
         # Emit object file(s).
         swift_toolchain_config.action_config(
-            actions = [
-                swift_action_names.COMPILE,
-                swift_action_names.DERIVED_FILES,
-            ],
+            actions = [swift_action_names.COMPILE],
             configurators = [
                 swift_toolchain_config.add_arg("-emit-object"),
             ],
@@ -107,10 +104,7 @@ def compile_action_configs():
 
         # Add the single object file or object file map, whichever is needed.
         swift_toolchain_config.action_config(
-            actions = [
-                swift_action_names.COMPILE,
-                swift_action_names.DERIVED_FILES,
-            ],
+            actions = [swift_action_names.COMPILE],
             configurators = [_output_object_or_file_map_configurator],
         ),
         swift_toolchain_config.action_config(
