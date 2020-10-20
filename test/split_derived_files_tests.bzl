@@ -9,14 +9,8 @@ load(
     "make_provider_test_rule",
 )
 
-# Default outputs both .a and .swiftmodule
-# Split outputs 2 actions one with .a one with .swiftmodule
-# Split WMO works the same as split w/o WMO
-
 default_no_split_test = make_action_command_line_test_rule()
-
 default_no_split_provider_test = make_provider_test_rule()
-
 split_swiftmodule_test = make_action_command_line_test_rule(
     config_settings = {
         "//command_line_option:features": [
@@ -24,7 +18,6 @@ split_swiftmodule_test = make_action_command_line_test_rule(
         ],
     },
 )
-
 split_swiftmodule_provider_test = make_provider_test_rule(
     config_settings = {
         "//command_line_option:features": [
@@ -32,7 +25,6 @@ split_swiftmodule_provider_test = make_provider_test_rule(
         ],
     },
 )
-
 split_swiftmodule_wmo_test = make_action_command_line_test_rule(
     config_settings = {
         "//command_line_option:swiftcopt": [
@@ -43,8 +35,7 @@ split_swiftmodule_wmo_test = make_action_command_line_test_rule(
         ],
     },
 )
-
-split_swiftmodule_wmo_provider_test = make_action_command_line_test_rule(
+split_swiftmodule_wmo_provider_test = make_provider_test_rule(
     config_settings = {
         "//command_line_option:swiftcopt": [
             "-whole-module-optimization",
@@ -166,6 +157,28 @@ def split_derived_files_test_suite(name = "split_derived_files"):
         not_expected_argv = [
             "-emit-object",
         ],
+        tags = [name],
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+    )
+
+    split_swiftmodule_wmo_provider_test(
+        name = "{}_split_wmo_provider".format(name),
+        expected_files = [
+            "test_fixtures_debug_settings_simple.swiftmodule",
+        ],
+        field = "direct_modules.swift.swiftmodule",
+        provider = "SwiftInfo",
+        tags = [name],
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+    )
+
+    split_swiftmodule_wmo_provider_test(
+        name = "{}_split_wmo_provider_ccinfo".format(name),
+        expected_files = [
+            "libsimple.a",
+        ],
+        field = "linking_context.libraries_to_link.pic_static_library!",
+        provider = "CcInfo",
         tags = [name],
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
