@@ -34,6 +34,7 @@ load(
     "SWIFT_FEATURE_BUNDLED_XCTESTS",
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
+    "SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS",
     "SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION",
@@ -287,6 +288,7 @@ def _all_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.DERIVE_FILES,
                 swift_action_names.PRECOMPILE_C_MODULE,
             ],
             configurators = [
@@ -317,6 +319,7 @@ def _all_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.DERIVE_FILES,
                 swift_action_names.PRECOMPILE_C_MODULE,
             ],
             configurators = [swift_toolchain_config.add_arg("-embed-bitcode")],
@@ -325,6 +328,7 @@ def _all_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.DERIVE_FILES,
                 swift_action_names.PRECOMPILE_C_MODULE,
             ],
             configurators = [
@@ -342,6 +346,7 @@ def _all_action_configs(
             swift_toolchain_config.action_config(
                 actions = [
                     swift_action_names.COMPILE,
+                    swift_action_names.DERIVE_FILES,
                     swift_action_names.PRECOMPILE_C_MODULE,
                 ],
                 configurators = [
@@ -389,16 +394,19 @@ def _all_tool_configs(
         env = dict(env)
         env["TOOLCHAINS"] = custom_toolchain
 
+    tool_config = swift_toolchain_config.driver_tool_config(
+        driver_mode = "swiftc",
+        env = env,
+        execution_requirements = execution_requirements,
+        swift_executable = swift_executable,
+        toolchain_root = toolchain_root,
+        use_param_file = use_param_file,
+        worker_mode = "persistent",
+    )
+
     tool_configs = {
-        swift_action_names.COMPILE: swift_toolchain_config.driver_tool_config(
-            driver_mode = "swiftc",
-            env = env,
-            execution_requirements = execution_requirements,
-            swift_executable = swift_executable,
-            toolchain_root = toolchain_root,
-            use_param_file = use_param_file,
-            worker_mode = "persistent",
-        ),
+        swift_action_names.COMPILE: tool_config,
+        swift_action_names.DERIVE_FILES: tool_config,
     }
 
     # Xcode 12.0 implies Swift 5.3.
@@ -593,6 +601,10 @@ def _xcode_swift_toolchain_impl(ctx):
     if _is_xcode_at_least_version(xcode_config, "11.0"):
         requested_features.append(SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION)
         requested_features.append(SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS)
+
+    # Xcode 11.4 implies Swift 5.2.
+    if _is_xcode_at_least_version(xcode_config, "11.4"):
+        requested_features.append(SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES)
 
     command_line_copts = _command_line_objc_copts(
         ctx.var["COMPILATION_MODE"],
