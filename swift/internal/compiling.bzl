@@ -96,7 +96,10 @@ def compile_action_configs():
     action_configs = [
         # Emit object file(s).
         swift_toolchain_config.action_config(
-            actions = [swift_action_names.COMPILE],
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVED_FILES
+            ],
             configurators = [
                 swift_toolchain_config.add_arg("-emit-object"),
             ],
@@ -104,7 +107,10 @@ def compile_action_configs():
 
         # Add the single object file or object file map, whichever is needed.
         swift_toolchain_config.action_config(
-            actions = [swift_action_names.COMPILE],
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVED_FILES
+            ],
             configurators = [_output_object_or_file_map_configurator],
         ),
         swift_toolchain_config.action_config(
@@ -134,7 +140,10 @@ def compile_action_configs():
 
         # Configure the path to the emitted .swiftmodule file.
         swift_toolchain_config.action_config(
-            actions = [swift_action_names.COMPILE],
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVED_FILES
+            ],
             configurators = [_emit_module_path_configurator],
             not_features = [SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION],
         ),
@@ -159,7 +168,10 @@ def compile_action_configs():
             ],
         ),
         swift_toolchain_config.action_config(
-            actions = [swift_action_names.COMPILE],
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVED_FILES
+            ],
             configurators = [_emit_module_interface_path_configurator],
             features = [
                 SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION,
@@ -169,7 +181,10 @@ def compile_action_configs():
 
         # Configure the path to the emitted *-Swift.h file.
         swift_toolchain_config.action_config(
-            actions = [swift_action_names.COMPILE],
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVED_FILES
+            ],
             configurators = [_emit_objc_header_path_configurator],
             not_features = [
                 [SWIFT_FEATURE_NO_GENERATED_HEADER],
@@ -185,7 +200,10 @@ def compile_action_configs():
         # Configure the location where compiler performance statistics are
         # dumped.
         swift_toolchain_config.action_config(
-            actions = [swift_action_names.COMPILE],
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVED_FILES
+            ],
             configurators = [_stats_output_dir_configurator],
             features = [SWIFT_FEATURE_COMPILE_STATS],
         ),
@@ -225,14 +243,20 @@ def compile_action_configs():
         # `-O` unless the `swift.opt_uses_osize` feature is enabled, then use
         # `-Osize`.
         swift_toolchain_config.action_config(
-            actions = [swift_action_names.COMPILE],
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVED_FILES
+            ],
             configurators = [
                 swift_toolchain_config.add_arg("-Onone"),
             ],
             features = [[SWIFT_FEATURE_DBG], [SWIFT_FEATURE_FASTBUILD]],
         ),
         swift_toolchain_config.action_config(
-            actions = [swift_action_names.COMPILE],
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVED_FILES
+            ],
             configurators = [
                 swift_toolchain_config.add_arg("-O"),
             ],
@@ -240,7 +264,10 @@ def compile_action_configs():
             not_features = [SWIFT_FEATURE_OPT_USES_OSIZE],
         ),
         swift_toolchain_config.action_config(
-            actions = [swift_action_names.COMPILE],
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVED_FILES
+            ],
             configurators = [
                 swift_toolchain_config.add_arg("-Osize"),
             ],
@@ -263,7 +290,10 @@ def compile_action_configs():
         # Enable or disable serialization of debugging options into
         # swiftmodules.
         swift_toolchain_config.action_config(
-            actions = [swift_action_names.COMPILE],
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVED_FILES
+            ],
             configurators = [
                 swift_toolchain_config.add_arg(
                     "-Xfrontend",
@@ -273,7 +303,10 @@ def compile_action_configs():
             features = [SWIFT_FEATURE_CACHEABLE_SWIFTMODULES],
         ),
         swift_toolchain_config.action_config(
-            actions = [swift_action_names.COMPILE],
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVED_FILES
+            ],
             configurators = [
                 swift_toolchain_config.add_arg(
                     "-Xfrontend",
@@ -303,12 +336,18 @@ def compile_action_configs():
         # `dsymutil` produces spurious warnings about symbols in the debug map
         # when run on DI emitted by `-gline-tables-only`.
         swift_toolchain_config.action_config(
-            actions = [swift_action_names.COMPILE],
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVED_FILES
+            ],
             configurators = [swift_toolchain_config.add_arg("-g")],
             features = [[SWIFT_FEATURE_DBG], [SWIFT_FEATURE_FULL_DEBUG_INFO]],
         ),
         swift_toolchain_config.action_config(
-            actions = [swift_action_names.COMPILE],
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVED_FILES
+            ],
             configurators = [
                 swift_toolchain_config.add_arg("-gline-tables-only"),
             ],
@@ -318,7 +357,10 @@ def compile_action_configs():
 
         # Make paths written into debug info workspace-relative.
         swift_toolchain_config.action_config(
-            actions = [swift_action_names.COMPILE],
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVED_FILES
+            ],
             configurators = [
                 swift_toolchain_config.add_arg(
                     "-Xwrapped-swift=-debug-prefix-pwd-is-dot",
@@ -352,7 +394,10 @@ def compile_action_configs():
     # supporting them either.
     action_configs += [
         swift_toolchain_config.action_config(
-            actions = [swift_action_names.COMPILE],
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVED_FILES
+            ],
             configurators = [
                 swift_toolchain_config.add_arg("-profile-generate"),
                 swift_toolchain_config.add_arg("-profile-coverage-mapping"),
@@ -360,14 +405,20 @@ def compile_action_configs():
             features = [SWIFT_FEATURE_COVERAGE],
         ),
         swift_toolchain_config.action_config(
-            actions = [swift_action_names.COMPILE],
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVED_FILES
+            ],
             configurators = [
                 swift_toolchain_config.add_arg("-sanitize=address"),
             ],
             features = ["asan"],
         ),
         swift_toolchain_config.action_config(
-            actions = [swift_action_names.COMPILE],
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVED_FILES
+            ],
             configurators = [
                 swift_toolchain_config.add_arg("-sanitize=thread"),
             ],
@@ -640,7 +691,10 @@ def compile_action_configs():
 
         # Configure index-while-building.
         swift_toolchain_config.action_config(
-            actions = [swift_action_names.COMPILE],
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVED_FILES
+            ],
             configurators = [_index_while_building_configurator],
             features = [SWIFT_FEATURE_INDEX_WHILE_BUILDING],
         ),
@@ -657,7 +711,10 @@ def compile_action_configs():
 
         # Disable auto-linking for prebuilt static frameworks.
         swift_toolchain_config.action_config(
-            actions = [swift_action_names.COMPILE],
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVED_FILES
+            ],
             configurators = [_static_frameworks_disable_autolink_configurator],
         ),
     ]
