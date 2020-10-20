@@ -52,13 +52,13 @@ load(
     "SWIFT_FEATURE_OPT",
     "SWIFT_FEATURE_OPT_USES_OSIZE",
     "SWIFT_FEATURE_OPT_USES_WMO",
+    "SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION",
     "SWIFT_FEATURE_STRICT_MODULES",
     "SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_SYSTEM_MODULE",
     "SWIFT_FEATURE_USE_C_MODULES",
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
     "SWIFT_FEATURE_VFSOVERLAY",
-    "SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION",
 )
 load(":features.bzl", "are_all_features_enabled", "is_feature_enabled")
 load(":providers.bzl", "SwiftInfo", "create_swift_info")
@@ -98,7 +98,7 @@ def compile_action_configs():
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
-                swift_action_names.DERIVED_FILES
+                swift_action_names.DERIVED_FILES,
             ],
             configurators = [
                 swift_toolchain_config.add_arg("-emit-object"),
@@ -109,7 +109,7 @@ def compile_action_configs():
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
-                swift_action_names.DERIVED_FILES
+                swift_action_names.DERIVED_FILES,
             ],
             configurators = [_output_object_or_file_map_configurator],
         ),
@@ -142,12 +142,11 @@ def compile_action_configs():
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
-                swift_action_names.DERIVED_FILES
+                swift_action_names.DERIVED_FILES,
             ],
             configurators = [_emit_module_path_configurator],
             not_features = [SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION],
         ),
-
         swift_toolchain_config.action_config(
             actions = [swift_action_names.DERIVED_FILES],
             configurators = [_emit_module_path_configurator],
@@ -170,7 +169,7 @@ def compile_action_configs():
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
-                swift_action_names.DERIVED_FILES
+                swift_action_names.DERIVED_FILES,
             ],
             configurators = [_emit_module_interface_path_configurator],
             features = [
@@ -183,7 +182,7 @@ def compile_action_configs():
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
-                swift_action_names.DERIVED_FILES
+                swift_action_names.DERIVED_FILES,
             ],
             configurators = [_emit_objc_header_path_configurator],
             not_features = [
@@ -202,7 +201,7 @@ def compile_action_configs():
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
-                swift_action_names.DERIVED_FILES
+                swift_action_names.DERIVED_FILES,
             ],
             configurators = [_stats_output_dir_configurator],
             features = [SWIFT_FEATURE_COMPILE_STATS],
@@ -221,7 +220,7 @@ def compile_action_configs():
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
-                swift_action_names.DERIVED_FILES
+                swift_action_names.DERIVED_FILES,
             ],
             configurators = [
                 swift_toolchain_config.add_arg("-DDEBUG"),
@@ -231,7 +230,7 @@ def compile_action_configs():
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
-                swift_action_names.DERIVED_FILES
+                swift_action_names.DERIVED_FILES,
             ],
             configurators = [
                 swift_toolchain_config.add_arg("-DNDEBUG"),
@@ -245,7 +244,7 @@ def compile_action_configs():
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
-                swift_action_names.DERIVED_FILES
+                swift_action_names.DERIVED_FILES,
             ],
             configurators = [
                 swift_toolchain_config.add_arg("-Onone"),
@@ -255,7 +254,7 @@ def compile_action_configs():
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
-                swift_action_names.DERIVED_FILES
+                swift_action_names.DERIVED_FILES,
             ],
             configurators = [
                 swift_toolchain_config.add_arg("-O"),
@@ -266,7 +265,7 @@ def compile_action_configs():
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
-                swift_action_names.DERIVED_FILES
+                swift_action_names.DERIVED_FILES,
             ],
             configurators = [
                 swift_toolchain_config.add_arg("-Osize"),
@@ -279,7 +278,7 @@ def compile_action_configs():
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
-                swift_action_names.DERIVED_FILES
+                swift_action_names.DERIVED_FILES,
             ],
             configurators = [
                 swift_toolchain_config.add_arg("-whole-module-optimization"),
@@ -292,7 +291,7 @@ def compile_action_configs():
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
-                swift_action_names.DERIVED_FILES
+                swift_action_names.DERIVED_FILES,
             ],
             configurators = [
                 swift_toolchain_config.add_arg(
@@ -305,7 +304,7 @@ def compile_action_configs():
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
-                swift_action_names.DERIVED_FILES
+                swift_action_names.DERIVED_FILES,
             ],
             configurators = [
                 swift_toolchain_config.add_arg(
@@ -323,7 +322,7 @@ def compile_action_configs():
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
-                swift_action_names.DERIVED_FILES
+                swift_action_names.DERIVED_FILES,
             ],
             configurators = [
                 swift_toolchain_config.add_arg("-enable-testing"),
@@ -338,7 +337,7 @@ def compile_action_configs():
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
-                swift_action_names.DERIVED_FILES
+                swift_action_names.DERIVED_FILES,
             ],
             configurators = [swift_toolchain_config.add_arg("-g")],
             features = [[SWIFT_FEATURE_DBG], [SWIFT_FEATURE_FULL_DEBUG_INFO]],
@@ -346,7 +345,7 @@ def compile_action_configs():
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
-                swift_action_names.DERIVED_FILES
+                swift_action_names.DERIVED_FILES,
             ],
             configurators = [
                 swift_toolchain_config.add_arg("-gline-tables-only"),
@@ -359,7 +358,7 @@ def compile_action_configs():
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
-                swift_action_names.DERIVED_FILES
+                swift_action_names.DERIVED_FILES,
             ],
             configurators = [
                 swift_toolchain_config.add_arg(
@@ -377,7 +376,7 @@ def compile_action_configs():
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
-                swift_action_names.DERIVED_FILES
+                swift_action_names.DERIVED_FILES,
             ],
             configurators = [
                 swift_toolchain_config.add_arg(
@@ -399,7 +398,7 @@ def compile_action_configs():
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
-                swift_action_names.DERIVED_FILES
+                swift_action_names.DERIVED_FILES,
             ],
             configurators = [
                 swift_toolchain_config.add_arg("-profile-generate"),
@@ -410,7 +409,7 @@ def compile_action_configs():
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
-                swift_action_names.DERIVED_FILES
+                swift_action_names.DERIVED_FILES,
             ],
             configurators = [
                 swift_toolchain_config.add_arg("-sanitize=address"),
@@ -420,7 +419,7 @@ def compile_action_configs():
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
-                swift_action_names.DERIVED_FILES
+                swift_action_names.DERIVED_FILES,
             ],
             configurators = [
                 swift_toolchain_config.add_arg("-sanitize=thread"),
@@ -454,7 +453,7 @@ def compile_action_configs():
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
-                swift_action_names.DERIVED_FILES
+                swift_action_names.DERIVED_FILES,
             ],
             configurators = [_global_module_cache_configurator],
             features = [
@@ -465,7 +464,7 @@ def compile_action_configs():
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
-                swift_action_names.DERIVED_FILES
+                swift_action_names.DERIVED_FILES,
             ],
             configurators = [
                 swift_toolchain_config.add_arg(
@@ -696,7 +695,7 @@ def compile_action_configs():
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
-                swift_action_names.DERIVED_FILES
+                swift_action_names.DERIVED_FILES,
             ],
             configurators = [_index_while_building_configurator],
             features = [SWIFT_FEATURE_INDEX_WHILE_BUILDING],
@@ -716,7 +715,7 @@ def compile_action_configs():
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
-                swift_action_names.DERIVED_FILES
+                swift_action_names.DERIVED_FILES,
             ],
             configurators = [_static_frameworks_disable_autolink_configurator],
         ),
@@ -1444,7 +1443,6 @@ def compile(
             ),
             swift_toolchain = swift_toolchain,
         )
-
 
     run_toolchain_action(
         actions = actions,
