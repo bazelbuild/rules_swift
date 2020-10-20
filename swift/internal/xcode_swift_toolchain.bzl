@@ -287,7 +287,7 @@ def _all_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
-                swift_action_names.DERIVED_FILES,
+                swift_action_names.DERIVE_FILES,
                 swift_action_names.PRECOMPILE_C_MODULE,
             ],
             configurators = [
@@ -318,7 +318,7 @@ def _all_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
-                swift_action_names.DERIVED_FILES,
+                swift_action_names.DERIVE_FILES,
                 swift_action_names.PRECOMPILE_C_MODULE,
             ],
             configurators = [swift_toolchain_config.add_arg("-embed-bitcode")],
@@ -327,7 +327,7 @@ def _all_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
-                swift_action_names.DERIVED_FILES,
+                swift_action_names.DERIVE_FILES,
                 swift_action_names.PRECOMPILE_C_MODULE,
             ],
             configurators = [
@@ -345,7 +345,7 @@ def _all_action_configs(
             swift_toolchain_config.action_config(
                 actions = [
                     swift_action_names.COMPILE,
-                    swift_action_names.DERIVED_FILES,
+                    swift_action_names.DERIVE_FILES,
                     swift_action_names.PRECOMPILE_C_MODULE,
                 ],
                 configurators = [
@@ -405,7 +405,7 @@ def _all_tool_configs(
 
     tool_configs = {
         swift_action_names.COMPILE: tool_config,
-        swift_action_names.DERIVED_FILES: tool_config,
+        swift_action_names.DERIVE_FILES: tool_config,
     }
 
     # Xcode 12.0 implies Swift 5.3.

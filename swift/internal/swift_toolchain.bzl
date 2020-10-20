@@ -77,7 +77,7 @@ def _all_tool_configs(
             additional_tools = additional_tools,
         ),
         swift_action_names.COMPILE: compile_tool_config,
-        swift_action_names.DERIVED_FILES: compile_tool_config,
+        swift_action_names.DERIVE_FILES: compile_tool_config,
         swift_action_names.MODULEWRAP: _swift_driver_tool_config(
             # This must come first after the driver name.
             args = ["-modulewrap"],

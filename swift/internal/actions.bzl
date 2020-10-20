@@ -40,7 +40,7 @@ swift_action_names = struct(
 
     # Produces files that are usually fallout of the compilation such as
     # .swiftmodule, -Swift.h and more.
-    DERIVED_FILES = "SwiftDerivedFiles",
+    DERIVE_FILES = "SwiftDeriveFiles",
 )
 
 def _apply_configurator(configurator, prerequisites, args):

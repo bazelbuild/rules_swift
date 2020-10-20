@@ -112,7 +112,7 @@ def split_derived_files_test_suite(name = "split_derived_files"):
         expected_argv = [
             "-emit-module-path",
         ],
-        mnemonic = "SwiftDerivedFiles",
+        mnemonic = "SwiftDeriveFiles",
         not_expected_argv = [
             "-emit-object",
         ],
@@ -162,7 +162,7 @@ def split_derived_files_test_suite(name = "split_derived_files"):
             "-emit-module-path",
             "-whole-module-optimization",
         ],
-        mnemonic = "SwiftDerivedFiles",
+        mnemonic = "SwiftDeriveFiles",
         not_expected_argv = [
             "-emit-object",
         ],
