@@ -693,10 +693,7 @@ def compile_action_configs():
 
         # Configure index-while-building.
         swift_toolchain_config.action_config(
-            actions = [
-                swift_action_names.COMPILE,
-                swift_action_names.DERIVE_FILES,
-            ],
+            actions = [swift_action_names.COMPILE],
             configurators = [_index_while_building_configurator],
             features = [SWIFT_FEATURE_INDEX_WHILE_BUILDING],
         ),

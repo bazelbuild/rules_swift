@@ -56,6 +56,14 @@ split_swiftmodule_skip_function_bodies_test = make_action_command_line_test_rule
         ],
     },
 )
+split_swiftmodule_indexing_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:features": [
+            "swift.index_while_building",
+            "swift.split_derived_files_generation",
+        ],
+    },
+)
 
 def split_derived_files_test_suite(name = "split_derived_files"):
     """Test suite for split derived files options.
@@ -215,6 +223,34 @@ def split_derived_files_test_suite(name = "split_derived_files"):
         mnemonic = "SwiftDeriveFiles",
         not_expected_argv = [
             "-emit-object",
+        ],
+        tags = [name],
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+    )
+
+    split_swiftmodule_indexing_test(
+        name = "{}_object_only_indexing".format(name),
+        expected_argv = [
+            "-emit-object",
+            "-index-store-path",
+        ],
+        mnemonic = "SwiftCompile",
+        not_expected_argv = [
+            "-emit-module-path",
+        ],
+        tags = [name],
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+    )
+
+    split_swiftmodule_indexing_test(
+        name = "{}_swiftmodule_only_indexing".format(name),
+        expected_argv = [
+            "-emit-module-path",
+        ],
+        mnemonic = "SwiftDeriveFiles",
+        not_expected_argv = [
+            "-emit-object",
+            "-index-store-path",
         ],
         tags = [name],
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
