@@ -375,7 +375,10 @@ def compile_action_configs():
 
         # Make paths written into coverage info workspace-relative.
         swift_toolchain_config.action_config(
-            actions = [swift_action_names.COMPILE],
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVED_FILES
+            ],
             configurators = [
                 swift_toolchain_config.add_arg(
                     "-Xwrapped-swift=-coverage-prefix-pwd-is-dot",
