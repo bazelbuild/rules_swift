@@ -134,10 +134,7 @@ def compile_action_configs():
 
         # Configure the path to the emitted .swiftmodule file.
         swift_toolchain_config.action_config(
-            actions = [
-                swift_action_names.COMPILE,
-                swift_action_names.DERIVE_FILES,
-            ],
+            actions = [swift_action_names.COMPILE],
             configurators = [_emit_module_path_configurator],
             not_features = [SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION],
         ),
@@ -174,10 +171,7 @@ def compile_action_configs():
 
         # Configure the path to the emitted *-Swift.h file.
         swift_toolchain_config.action_config(
-            actions = [
-                swift_action_names.COMPILE,
-                swift_action_names.DERIVE_FILES,
-            ],
+            actions = [swift_action_names.COMPILE],
             configurators = [_emit_objc_header_path_configurator],
             not_features = [
                 [SWIFT_FEATURE_NO_GENERATED_HEADER],
