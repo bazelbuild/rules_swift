@@ -785,7 +785,7 @@ def _output_object_or_file_map_configurator(prerequisites, args):
 def _output_swiftmodule_or_file_map_configurator(prerequisites, args):
     """Adds the output file map or single object file to the command line."""
     return _output_or_file_map(
-        output_file_map = prerequisites.output_file_map,
+        output_file_map = prerequisites.derived_files_output_file_map,
         outputs = [prerequisites.swiftmodule_file],
         args = args,
     )
@@ -1737,7 +1737,13 @@ def _declare_compile_outputs(
         )]
         other_outputs = []
         output_file_map = None
+        derived_files_output_file_map = None
     else:
+        split_derived_file_generation = is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION,
+        )
+
         # Otherwise, we need to create an output map that lists the individual
         # object files so that we can pass them all to the archive action.
         output_info = _declare_multiple_outputs_and_write_output_file_map(
@@ -1745,10 +1751,12 @@ def _declare_compile_outputs(
             emits_partial_modules = output_nature.emits_partial_modules,
             srcs = srcs,
             target_name = target_name,
+            split_derived_file_generation = split_derived_file_generation,
         )
         object_files = output_info.object_files
         other_outputs = output_info.other_outputs
         output_file_map = output_info.output_file_map
+        derived_files_output_file_map = output_info.derived_files_output_file_map
 
     # Configure index-while-building if requested. IDEs and other indexing tools
     # can enable this feature on the command line during a build and then access
@@ -1774,6 +1782,7 @@ def _declare_compile_outputs(
         indexstore_directory = indexstore_directory,
         object_files = object_files,
         output_file_map = output_file_map,
+        derived_files_output_file_map = derived_files_output_file_map,
         stats_directory = stats_directory,
         swiftdoc_file = swiftdoc_file,
         swiftinterface_file = swiftinterface_file,
@@ -1785,7 +1794,8 @@ def _declare_multiple_outputs_and_write_output_file_map(
         actions,
         emits_partial_modules,
         srcs,
-        target_name):
+        target_name,
+        split_derived_file_generation):
     """Declares low-level outputs and writes the output map for a compilation.
 
     Args:
@@ -1796,6 +1806,8 @@ def _declare_multiple_outputs_and_write_output_file_map(
         srcs: The list of source files that will be compiled.
         target_name: The name (excluding package path) of the target being
             built.
+        split_derived_file_generation: Whether objects and modules are produced
+            by separate actions.
 
     Returns:
         A `struct` with the following fields:
@@ -1809,15 +1821,28 @@ def _declare_multiple_outputs_and_write_output_file_map(
         *   `output_file_map`: A `File` that represents the output file map that
             was written and that should be passed as an input to the compilation
             action via the `-output-file-map` flag.
+        *   `derived_files_output_file_map`: A `File` that represents the
+            output file map that should be passed to derived file generation
+            actions instead of the default `output_file_map` that is used for
+            producing objects only.
     """
     output_map_file = derived_files.swiftc_output_file_map(
         actions = actions,
         target_name = target_name,
     )
 
+    if split_derived_file_generation:
+        derived_files_output_map_file = derived_files.swiftc_derived_output_file_map(
+            actions = actions,
+            target_name = target_name,
+        )
+    else:
+        derived_files_output_map_file = None
+
     # The output map data, which is keyed by source path and will be written to
-    # `output_map_file`.
+    # `output_map_file` and `derived_files_output_map_file`.
     output_map = {}
+    derived_files_output_map = {}
 
     # Object files that will be used to build the archive.
     output_objs = []
@@ -1848,7 +1873,11 @@ def _declare_multiple_outputs_and_write_output_file_map(
                 src = src,
             )
             other_outputs.append(partial_module)
-            src_output_map["swiftmodule"] = partial_module.path
+
+            if split_derived_file_generation:
+                derived_files_output_map[src.path] = {"swiftmodule": partial_module.path}
+            else:
+                src_output_map["swiftmodule"] = partial_module.path
 
         output_map[src.path] = struct(**src_output_map)
 
@@ -1857,10 +1886,17 @@ def _declare_multiple_outputs_and_write_output_file_map(
         output = output_map_file,
     )
 
+    if split_derived_file_generation:
+        actions.write(
+            content = struct(**derived_files_output_map).to_json(),
+            output = derived_files_output_map_file,
+        )
+
     return struct(
         object_files = output_objs,
         other_outputs = other_outputs,
         output_file_map = output_map_file,
+        derived_files_output_file_map = derived_files_output_map_file,
     )
 
 def _declare_validated_generated_header(actions, generated_header_name):
