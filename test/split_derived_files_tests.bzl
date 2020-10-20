@@ -45,6 +45,17 @@ split_swiftmodule_wmo_provider_test = make_provider_test_rule(
         ],
     },
 )
+split_swiftmodule_skip_function_bodies_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:swiftcopt": [
+            "-whole-module-optimization",
+        ],
+        "//command_line_option:features": [
+            "swift.split_derived_files_generation",
+            "swift.enable_skip_function_bodies",
+        ],
+    },
+)
 
 def split_derived_files_test_suite(name = "split_derived_files"):
     """Test suite for split derived files options.
@@ -179,6 +190,32 @@ def split_derived_files_test_suite(name = "split_derived_files"):
         ],
         field = "linking_context.libraries_to_link.pic_static_library!",
         provider = "CcInfo",
+        tags = [name],
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+    )
+
+    split_swiftmodule_skip_function_bodies_test(
+        name = "{}_no_skip_function_bodies".format(name),
+        expected_argv = [
+            "-emit-object",
+        ],
+        mnemonic = "SwiftCompile",
+        not_expected_argv = [
+            "-experimental-skip-non-inlinable-function-bodies",
+        ],
+        tags = [name],
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+    )
+
+    split_swiftmodule_skip_function_bodies_test(
+        name = "{}_skip_function_bodies".format(name),
+        expected_argv = [
+            "-experimental-skip-non-inlinable-function-bodies",
+        ],
+        mnemonic = "SwiftDeriveFiles",
+        not_expected_argv = [
+            "-emit-object",
+        ],
         tags = [name],
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )

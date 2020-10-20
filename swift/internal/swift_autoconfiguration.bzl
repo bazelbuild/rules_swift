@@ -28,6 +28,7 @@ load(
     "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
+    "SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES",
     "SWIFT_FEATURE_IMPLICIT_MODULES",
     "SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS",
     "SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS",
@@ -73,6 +74,15 @@ def _check_enable_batch_mode(repository_ctx, swiftc_path, temp_dir):
         swiftc_path,
         "-version",
         "-enable-batch-mode",
+    )
+
+def _check_skip_function_bodies(repository_ctx, swiftc_path, temp_dir):
+    """Returns True if `swiftc` supports skip function bodies."""
+    return _swift_succeeds(
+        repository_ctx,
+        swiftc_path,
+        "-version",
+        "-experimental-skip-non-inlinable-function-bodies",
     )
 
 def _check_debug_prefix_map(repository_ctx, swiftc_path, temp_dir):
@@ -189,6 +199,7 @@ _FEATURE_CHECKS = {
     SWIFT_FEATURE_ENABLE_BATCH_MODE: _check_enable_batch_mode,
     SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS: _check_supports_private_deps,
     SWIFT_FEATURE_USE_RESPONSE_FILES: _check_use_response_files,
+    SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES: _check_skip_function_bodies,
 }
 
 def _create_linux_toolchain(repository_ctx):

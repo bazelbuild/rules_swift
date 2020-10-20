@@ -39,6 +39,7 @@ load(
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
+    "SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES",
     "SWIFT_FEATURE_ENABLE_TESTING",
     "SWIFT_FEATURE_FASTBUILD",
     "SWIFT_FEATURE_FULL_DEBUG_INFO",
@@ -677,6 +678,17 @@ def compile_action_configs():
                 swift_action_names.PRECOMPILE_C_MODULE,
             ],
             configurators = [_module_name_configurator],
+        ),
+
+        # Pass extra flags for swiftmodule only compilations
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.DERIVE_FILES],
+            configurators = [
+                swift_toolchain_config.add_arg(
+                    "-experimental-skip-non-inlinable-function-bodies",
+                ),
+            ],
+            features = [SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES],
         ),
 
         # Configure index-while-building.

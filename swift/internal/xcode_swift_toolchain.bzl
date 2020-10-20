@@ -34,6 +34,7 @@ load(
     "SWIFT_FEATURE_BUNDLED_XCTESTS",
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
+    "SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS",
     "SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION",
@@ -600,6 +601,10 @@ def _xcode_swift_toolchain_impl(ctx):
     if _is_xcode_at_least_version(xcode_config, "11.0"):
         requested_features.append(SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION)
         requested_features.append(SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS)
+
+    # Xcode 11.4 implies Swift 5.1.
+    if _is_xcode_at_least_version(xcode_config, "11.4"):
+        requested_features.append(SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES)
 
     command_line_copts = _command_line_objc_copts(
         ctx.var["COMPILATION_MODE"],

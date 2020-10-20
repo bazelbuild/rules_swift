@@ -232,3 +232,7 @@ SWIFT_FEATURE_GENERATE_FROM_RAW_PROTO_FILES = "swift.generate_from_raw_proto_fil
 # `*.swiftmodule` and `*-Swift.h` are generated with a separate action
 # rather than as part of the compilation.
 SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION = "swift.split_derived_files_generation"
+
+# If enabled the skip function bodies frontend flag is passed when using derived
+# files generation. This requires Swift 5.2
+SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES = "swift.enable_skip_function_bodies"
