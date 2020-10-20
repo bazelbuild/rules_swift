@@ -1317,10 +1317,13 @@ def compile(
         target_name = target_name,
         user_compile_flags = copts + swift_toolchain.command_line_copts,
     )
-    if is_feature_enabled(
+
+    split_derived_file_generation = is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION,
-    ):
+    )
+
+    if split_derived_file_generation:
         all_compile_outputs = compact([
             compile_outputs.swiftinterface_file,
             compile_outputs.indexstore_directory,
@@ -1422,10 +1425,7 @@ def compile(
         **struct_fields(compile_outputs)
     )
 
-    if is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION,
-    ):
+    if split_derived_file_generation:
         run_toolchain_action(
             actions = actions,
             action_name = swift_action_names.DERIVED_FILES,
