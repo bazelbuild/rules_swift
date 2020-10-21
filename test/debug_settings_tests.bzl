@@ -218,6 +218,7 @@ def debug_settings_test_suite(name = "debug_settings"):
         not_expected_argv = [
             "-Xfrontend -serialize-debugging-options",
         ],
+        mnemonic = "SwiftCompile",
         tags = [name],
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
