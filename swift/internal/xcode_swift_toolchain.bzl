@@ -32,6 +32,8 @@ load(
     "SWIFT_FEATURE_BITCODE_EMBEDDED",
     "SWIFT_FEATURE_BITCODE_EMBEDDED_MARKERS",
     "SWIFT_FEATURE_BUNDLED_XCTESTS",
+    "SWIFT_FEATURE_COVERAGE",
+    "SWIFT_FEATURE_COVERAGE_PREFIX_MAP",
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
     "SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES",
@@ -40,6 +42,7 @@ load(
     "SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS",
     "SWIFT_FEATURE_USE_RESPONSE_FILES",
+    "SWIFT_REMAP_XCODE_PATH",
 )
 load(":features.bzl", "features_for_build_modes")
 load(":toolchain_config.bzl", "swift_toolchain_config")
@@ -333,6 +336,42 @@ def _all_action_configs(
                 swift_toolchain_config.add_arg("-embed-bitcode-marker"),
             ],
             features = [SWIFT_FEATURE_BITCODE_EMBEDDED_MARKERS],
+        ),
+
+        # Xcode path remapping
+        swift_toolchain_config.action_config(
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVE_FILES,
+            ],
+            configurators = [
+                swift_toolchain_config.add_arg(
+                    "-debug-prefix-map",
+                    "__BAZEL_XCODE_DEVELOPER_DIR__=DEVELOPER_DIR",
+                ),
+            ],
+            features = [
+                [SWIFT_REMAP_XCODE_PATH, SWIFT_FEATURE_DEBUG_PREFIX_MAP],
+            ],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVE_FILES,
+            ],
+            configurators = [
+                swift_toolchain_config.add_arg(
+                    "-coverage-prefix-map",
+                    "__BAZEL_XCODE_DEVELOPER_DIR__=DEVELOPER_DIR",
+                ),
+            ],
+            features = [
+                [
+                    SWIFT_REMAP_XCODE_PATH,
+                    SWIFT_FEATURE_COVERAGE_PREFIX_MAP,
+                    SWIFT_FEATURE_COVERAGE,
+                ],
+            ],
         ),
     ]
 
