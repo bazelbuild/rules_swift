@@ -274,9 +274,12 @@ def split_derived_files_test_suite(name = "split_derived_files"):
 
     split_swiftmodule_bitcode_test(
         name = "{}_bitcode_compile".format(name),
-        expected_argv = [
-            "-embed-bitcode",
-        ],
+        expected_argv = select({
+            "//test:linux": [],
+            "//conditions:default": [
+                "-embed-bitcode",
+            ],
+        }),
         mnemonic = "SwiftCompile",
         tags = [name],
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
@@ -294,9 +297,12 @@ def split_derived_files_test_suite(name = "split_derived_files"):
 
     split_swiftmodule_bitcode_markers_test(
         name = "{}_bitcode_markers_compile".format(name),
-        expected_argv = [
-            "-embed-bitcode-marker",
-        ],
+        expected_argv = select({
+            "//test:linux": [],
+            "//conditions:default": [
+                "-embed-bitcode-marker",
+            ],
+        }),
         mnemonic = "SwiftCompile",
         tags = [name],
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
