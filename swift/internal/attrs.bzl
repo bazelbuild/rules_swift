@@ -41,6 +41,9 @@ If the Swift toolchain supports implementation-only imports (`private_deps` on
 indirect (transitive) dependents.
 """,
         ),
+        # Deprecated, but Starlark rules do not inherit `licenses` by default
+        # (see b/169635467).
+        "licenses": attr.license(),  # buildifier: disable=attr-license
     }
 
 def swift_compilation_attrs(additional_deps_aspects = []):
