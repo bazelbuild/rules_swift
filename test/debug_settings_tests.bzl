@@ -90,6 +90,16 @@ cacheable_opt_action_command_line_test = make_action_command_line_test_rule(
     config_settings = CACHEABLE_OPT_CONFIG_SETTINGS,
 )
 
+xcode_remap_command_line_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:compilation_mode": "dbg",
+        "//command_line_option:features": [
+            "swift.debug_prefix_map",
+            "swift.remap_xcode_path",
+        ],
+    },
+)
+
 def debug_settings_test_suite(name = "debug_settings"):
     """Test suite for serializing debugging options.
 
@@ -208,6 +218,20 @@ def debug_settings_test_suite(name = "debug_settings"):
         not_expected_argv = [
             "-Xfrontend -serialize-debugging-options",
         ],
+        mnemonic = "SwiftCompile",
+        tags = [name],
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+    )
+
+    xcode_remap_command_line_test(
+        name = "{}_remap_xcode_path".format(name),
+        expected_argv = select({
+            "//test:linux": [],
+            "//conditions:default": [
+                "-debug-prefix-map",
+                "__BAZEL_XCODE_DEVELOPER_DIR__=DEVELOPER_DIR",
+            ],
+        }),
         mnemonic = "SwiftCompile",
         tags = [name],
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",

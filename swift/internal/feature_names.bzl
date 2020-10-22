@@ -236,3 +236,7 @@ SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION = "swift.split_derived_files_genera
 # If enabled the skip function bodies frontend flag is passed when using derived
 # files generation. This requires Swift 5.2
 SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES = "swift.skip_function_bodies_for_derived_files"
+
+# If enabled remap the absolute path to Xcode in debug info. When used with
+# swift.coverage_prefix_map also remap the path in coverage data.
+SWIFT_FEATURE_REMAP_XCODE_PATH = "swift.remap_xcode_path"
