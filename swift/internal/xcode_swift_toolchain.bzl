@@ -39,10 +39,10 @@ load(
     "SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS",
+    "SWIFT_FEATURE_REMAP_XCODE_PATH",
     "SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS",
     "SWIFT_FEATURE_USE_RESPONSE_FILES",
-    "SWIFT_REMAP_XCODE_PATH",
 )
 load(":features.bzl", "features_for_build_modes")
 load(":toolchain_config.bzl", "swift_toolchain_config")
@@ -351,7 +351,7 @@ def _all_action_configs(
                 ),
             ],
             features = [
-                [SWIFT_REMAP_XCODE_PATH, SWIFT_FEATURE_DEBUG_PREFIX_MAP],
+                [SWIFT_FEATURE_REMAP_XCODE_PATH, SWIFT_FEATURE_DEBUG_PREFIX_MAP],
             ],
         ),
         swift_toolchain_config.action_config(
@@ -367,7 +367,7 @@ def _all_action_configs(
             ],
             features = [
                 [
-                    SWIFT_REMAP_XCODE_PATH,
+                    SWIFT_FEATURE_REMAP_XCODE_PATH,
                     SWIFT_FEATURE_COVERAGE_PREFIX_MAP,
                     SWIFT_FEATURE_COVERAGE,
                 ],

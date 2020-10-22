@@ -239,4 +239,4 @@ SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES = "swift.skip_function_bodies_for_deri
 
 # If enabled remap the absolute path to Xcode in debug info. When used with
 # swift.coverage_prefix_map also remap the path in coverage data.
-SWIFT_REMAP_XCODE_PATH = "swift.remap_xcode_path"
+SWIFT_FEATURE_REMAP_XCODE_PATH = "swift.remap_xcode_path"
