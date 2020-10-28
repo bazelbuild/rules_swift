@@ -65,13 +65,13 @@ def coverage_settings_test_suite(name = "coverage_settings"):
     coverage_xcode_prefix_map_test(
         name = "{}_xcode_prefix_map".format(name),
         tags = [name],
-        expected_argv = select({
-            "//test:linux": [],
-            "//conditions:default": [
-                "-coverage-prefix-map",
-                "__BAZEL_XCODE_DEVELOPER_DIR__=DEVELOPER_DIR",
-            ],
-        }),
+        expected_argv = [
+            "-coverage-prefix-map",
+            "__BAZEL_XCODE_DEVELOPER_DIR__=DEVELOPER_DIR",
+        ],
+        target_compatible_with = [
+            "@bazel_tools//platforms:osx",
+        ],
         mnemonic = "SwiftCompile",
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
