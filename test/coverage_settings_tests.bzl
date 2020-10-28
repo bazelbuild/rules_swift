@@ -70,7 +70,7 @@ def coverage_settings_test_suite(name = "coverage_settings"):
             "__BAZEL_XCODE_DEVELOPER_DIR__=DEVELOPER_DIR",
         ],
         target_compatible_with = [
-            "@bazel_tools//platforms:osx",
+            "@platforms//os:macos",
         ],
         mnemonic = "SwiftCompile",
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
