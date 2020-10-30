@@ -90,6 +90,7 @@ bzl_library(
         "@bazel_skylib//lib:dicts",
         "@bazel_skylib//lib:partial",
         "@bazel_skylib//lib:paths",
+        "@bazel_skylib//rules:common_settings",
     ],
 )
 
