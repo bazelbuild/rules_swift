@@ -325,7 +325,7 @@ def swift_toolchain_driver_attrs():
     return {
         "swift_executable": attr.label(
             allow_single_file = True,
-            cfg = "host",
+            cfg = "exec",
             doc = """\
 A replacement Swift driver executable.
 
@@ -337,7 +337,7 @@ that it is invoked in the correct mode (i.e., `swift`, `swiftc`,
         ),
         "_default_swift_executable": attr.label(
             allow_files = True,
-            cfg = "host",
+            cfg = "exec",
             default = Label(
                 "@build_bazel_rules_swift//swift:default_swift_executable",
             ),
