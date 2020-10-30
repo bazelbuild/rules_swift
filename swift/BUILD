@@ -55,6 +55,14 @@ bool_setting(
     build_setting_default = False,
 )
 
+# Configuration setting for forcing generation of Apple targets.
+# NOTE: this is only intended for use with transitions that want to force
+# building of an Apple target when building for Linux.
+bool_setting(
+    name = "force_apple_target",
+    build_setting_default = False,
+)
+
 # Allows a user to override the default Swift driver during a build, if the
 # toolchain is using the default.
 label_flag(
