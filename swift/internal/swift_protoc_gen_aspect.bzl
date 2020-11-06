@@ -428,7 +428,8 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             target_name = target.label.name,
         )
 
-        library_to_link = register_libraries_to_link(
+        linker_input = register_libraries_to_link(
+            owning_label = aspect_ctx.label,
             actions = aspect_ctx.actions,
             alwayslink = False,
             cc_feature_configuration = swift_common.cc_feature_configuration(
@@ -442,6 +443,8 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             library_name = "{}.swift".format(target.label.name),
             objects = compilation_outputs.object_files,
             swift_toolchain = swift_toolchain,
+            additional_inputs = compilation_outputs.linker_inputs,
+            user_link_flags = compilation_outputs.linker_flags,
         )
 
         # It's bad practice to attach providers you don't own to other targets,
@@ -477,9 +480,9 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
                 objc_info_args["header"] = depset([
                     compilation_outputs.generated_header,
                 ])
-            if library_to_link.pic_static_library:
+            if linker_input.libraries[0].pic_static_library:
                 objc_info_args["library"] = depset(
-                    [library_to_link.pic_static_library],
+                    [linker_input.libraries[0].pic_static_library],
                     order = "topological",
                 )
             if compilation_outputs.linker_flags:
@@ -516,7 +519,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
                     cc_infos = cc_infos,
                     compilation_outputs = compilation_outputs,
                     includes = includes,
-                    libraries_to_link = [library_to_link],
+                    linker_inputs = [linker_input],
                 ),
                 objc_info = objc_info,
             ),
