@@ -94,16 +94,21 @@ def _register_static_library_link_action(
         progress_message = "Linking {}".format(output.short_path),
     )
 
-def register_libraries_to_link(
+def create_linker_input(
+        *,
         actions,
         alwayslink,
         cc_feature_configuration,
+        compilation_outputs,
         is_dynamic,
         is_static,
         library_name,
         objects,
-        swift_toolchain):
-    """Declares the requested libraries and registers actions to link them.
+        owner,
+        swift_toolchain,
+        additional_inputs = [],
+        user_link_flags = []):
+    """Creates a linker input for a library to link and additional inputs/flags.
 
     Args:
         actions: The object used to register actions.
@@ -112,17 +117,26 @@ def register_libraries_to_link(
             argument is ignored if `is_static` is False.
         cc_feature_configuration: The C++ feature configuration to use when
             constructing the action.
+        compilation_outputs: The compilation outputs from a Swift compile
+            action, as returned by `swift_common.compile`, or None.
         is_dynamic: If True, declare and link a dynamic library.
         is_static: If True, declare and link a static library.
         library_name: The basename (without extension) of the libraries to
             declare.
         objects: A list of `File`s denoting object (`.o`) files that will be
             linked.
+        owner: The `Label` of the target that owns this linker input.
         swift_toolchain: The Swift toolchain provider to use when constructing
             the action.
+        additional_inputs: A list of extra `File` inputs passed to the linking
+            action.
+        user_link_flags: A list of extra flags to pass to the linking command.
 
     Returns:
-        A `LibraryToLink` object containing the libraries that were created.
+        A tuple containing two elements:
+
+        1.  A `LinkerInput` object containing the library that was created.
+        2.  The single `LibraryToLink` object that is inside the linker input.
     """
     dynamic_library = None
     if is_dynamic:
@@ -145,7 +159,7 @@ def register_libraries_to_link(
     else:
         static_library = None
 
-    return cc_common.create_library_to_link(
+    library_to_link = cc_common.create_library_to_link(
         actions = actions,
         alwayslink = alwayslink,
         cc_toolchain = swift_toolchain.cc_toolchain_info,
@@ -153,6 +167,18 @@ def register_libraries_to_link(
         pic_static_library = static_library,
         dynamic_library = dynamic_library,
     )
+    linker_input = cc_common.create_linker_input(
+        owner = owner,
+        libraries = depset([library_to_link]),
+        additional_inputs = depset(
+            compilation_outputs.linker_inputs + additional_inputs,
+        ),
+        user_link_flags = depset(
+            compilation_outputs.linker_flags + user_link_flags,
+        ),
+    )
+
+    return linker_input, library_to_link
 
 def register_link_binary_action(
         actions,
@@ -164,6 +190,7 @@ def register_link_binary_action(
         name,
         objects,
         output_type,
+        owner,
         stamp,
         swift_toolchain,
         user_link_flags):
@@ -186,6 +213,7 @@ def register_link_binary_action(
         objects: A list of object (.o) files that will be passed to the linker.
         output_type: A string indicating the output type; "executable" or
             "dynamic_library".
+        owner: The `Label` of the target that owns this linker input.
         stamp: A tri-state value (-1, 0, or 1) that specifies whether link
             stamping is enabled. See `cc_common.link` for details about the
             behavior of this argument.
@@ -231,7 +259,12 @@ def register_link_binary_action(
 
             linking_contexts.append(
                 cc_common.create_linking_context(
-                    user_link_flags = dep_link_flags,
+                    linker_inputs = depset([
+                        cc_common.create_linker_input(
+                            owner = owner,
+                            user_link_flags = depset(dep_link_flags),
+                        ),
+                    ]),
                 ),
             )
 

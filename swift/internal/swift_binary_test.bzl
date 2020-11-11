@@ -246,6 +246,7 @@ def _swift_linking_rule_impl(
         name = ctx.label.name,
         objects = objects_to_link,
         output_type = "executable",
+        owner = ctx.label,
         stamp = ctx.attr.stamp,
         swift_toolchain = swift_toolchain,
         user_link_flags = user_link_flags,
