@@ -112,7 +112,7 @@ def private_deps_test_suite():
             # dependencies, which we need to ignore.
             "*",
         ],
-        field = "linking_context.libraries_to_link.static_library!",
+        field = "linking_context.linker_inputs.libraries.static_library!",
         provider = "CcInfo",
         tags = [name],
         target_under_test = "@build_bazel_rules_swift//test/fixtures/private_deps:client_cc_deps",
