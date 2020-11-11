@@ -72,8 +72,7 @@ def _swift_module_alias_impl(ctx):
         target_name = ctx.label.name,
     )
 
-    linker_input = register_libraries_to_link(
-        owning_label = ctx.label,
+    library_to_link = register_libraries_to_link(
         actions = ctx.actions,
         alwayslink = False,
         cc_feature_configuration = swift_common.cc_feature_configuration(
@@ -84,7 +83,6 @@ def _swift_module_alias_impl(ctx):
         library_name = ctx.label.name,
         objects = compilation_outputs.object_files,
         swift_toolchain = swift_toolchain,
-        additional_inputs = compilation_outputs.linker_inputs,
     )
 
     providers = [
@@ -92,8 +90,8 @@ def _swift_module_alias_impl(ctx):
             files = depset(compact([
                 compilation_outputs.swiftdoc,
                 compilation_outputs.swiftmodule,
-                linker_input.libraries[0].dynamic_library,
-                linker_input.libraries[0].pic_static_library,
+                library_to_link.dynamic_library,
+                library_to_link.pic_static_library,
             ])),
         ),
         OutputGroupInfo(**output_groups_from_compilation_outputs(
@@ -107,7 +105,7 @@ def _swift_module_alias_impl(ctx):
             cc_infos = get_providers(deps, CcInfo),
             compilation_outputs = compilation_outputs,
             includes = [ctx.bin_dir.path],
-            linker_inputs = [linker_input],
+            libraries_to_link = [library_to_link],
         ),
         swift_common.create_swift_info(
             modules = [
@@ -132,7 +130,7 @@ def _swift_module_alias_impl(ctx):
             link_inputs = compilation_outputs.linker_inputs,
             linkopts = compilation_outputs.linker_flags,
             module_map = compilation_outputs.generated_module_map,
-            static_archives = compact([linker_input.libraries[0].pic_static_library]),
+            static_archives = compact([library_to_link.pic_static_library]),
             swiftmodules = [compilation_outputs.swiftmodule],
             objc_header = compilation_outputs.generated_header,
         ))

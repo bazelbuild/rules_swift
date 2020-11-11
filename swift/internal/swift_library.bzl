@@ -179,8 +179,7 @@ def _swift_library_impl(ctx):
     else:
         clang_module = None
 
-    linker_input = register_libraries_to_link(
-        owning_label = ctx.label,
+    library_to_link = register_libraries_to_link(
         actions = ctx.actions,
         alwayslink = ctx.attr.alwayslink,
         cc_feature_configuration = swift_common.cc_feature_configuration(
@@ -191,8 +190,6 @@ def _swift_library_impl(ctx):
         library_name = ctx.label.name,
         objects = compilation_outputs.object_files,
         swift_toolchain = swift_toolchain,
-        user_link_flags = linkopts,
-        additional_inputs = compilation_outputs.linker_inputs,
     )
 
     direct_output_files = compact([
@@ -200,7 +197,7 @@ def _swift_library_impl(ctx):
         compilation_outputs.swiftdoc,
         compilation_outputs.swiftinterface,
         compilation_outputs.swiftmodule,
-        linker_input.libraries[0].pic_static_library,
+        library_to_link.pic_static_library,
     ])
 
     providers = [
@@ -216,12 +213,14 @@ def _swift_library_impl(ctx):
             compilation_outputs = compilation_outputs,
         )),
         create_cc_info(
+            additional_inputs = additional_inputs,
             cc_infos = get_providers(deps, CcInfo),
             compilation_outputs = compilation_outputs,
             defines = ctx.attr.defines,
             includes = [ctx.bin_dir.path],
-            linker_inputs = [linker_input],
+            libraries_to_link = [library_to_link],
             private_cc_infos = get_providers(private_deps, CcInfo),
+            user_link_flags = linkopts,
         ),
         coverage_common.instrumented_files_info(
             ctx,
@@ -262,7 +261,7 @@ def _swift_library_impl(ctx):
             link_inputs = compilation_outputs.linker_inputs + additional_inputs,
             linkopts = compilation_outputs.linker_flags + linkopts,
             module_map = compilation_outputs.generated_module_map,
-            static_archives = compact([linker_input.libraries[0].pic_static_library]),
+            static_archives = compact([library_to_link.pic_static_library]),
             swiftmodules = [compilation_outputs.swiftmodule],
             objc_header = compilation_outputs.generated_header,
         ))
