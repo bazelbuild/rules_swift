@@ -41,25 +41,20 @@ def collect_cc_libraries(
     """
     libraries = []
 
-    # TODO(https://github.com/bazelbuild/bazel/issues/8118): Remove once flag is
-    # flipped.
-    libraries_to_link = cc_info.linking_context.libraries_to_link
-    if hasattr(libraries_to_link, "to_list"):
-        libraries_to_link = libraries_to_link.to_list()
-
-    for library in libraries_to_link:
-        if include_pic_static:
-            if library.pic_static_library:
-                libraries.append(library.pic_static_library)
-            elif library.static_library:
+    for linker_input in cc_info.linking_context.linker_inputs.to_list():
+        for library in linker_input.libraries:
+            if include_pic_static:
+                if library.pic_static_library:
+                    libraries.append(library.pic_static_library)
+                elif library.static_library:
+                    libraries.append(library.static_library)
+            elif include_static and library.static_library:
                 libraries.append(library.static_library)
-        elif include_static and library.static_library:
-            libraries.append(library.static_library)
 
-        if include_dynamic and library.dynamic_library:
-            libraries.append(library.dynamic_library)
-        if include_interface and library.interface_library:
-            libraries.append(library.interface_library)
+            if include_dynamic and library.dynamic_library:
+                libraries.append(library.dynamic_library)
+            if include_interface and library.interface_library:
+                libraries.append(library.interface_library)
 
     return libraries
 
@@ -74,19 +69,16 @@ def compact(sequence):
     return [item for item in sequence if item != None]
 
 def create_cc_info(
-        additional_inputs = [],
+        *,
         cc_infos = [],
         compilation_outputs = None,
         defines = [],
         includes = [],
-        libraries_to_link = [],
-        private_cc_infos = [],
-        user_link_flags = []):
+        linker_inputs = [],
+        private_cc_infos = []):
     """Creates a `CcInfo` provider from Swift compilation info and deps.
 
     Args:
-        additional_inputs: A list of additional files that should be passed as
-            inputs to the final link action.
         cc_infos: A list of `CcInfo` providers from public dependencies, whose
             compilation and linking contexts should both be merged into the new
             provider.
@@ -96,32 +88,25 @@ def create_cc_info(
             context.
         includes: The list of include paths to insert into the compilation
             context.
-        libraries_to_link: A list of `LibraryToLink` objects that represent the
-            libraries that should be linked into the final binary.
+        linker_inputs: A list of `LinkerInput` objects that represent the
+            libraries that should be linked into the final binary as well as any
+            additional inputs and flags that should be passed to the linker.
         private_cc_infos: A list of `CcInfo` providers from private
             (implementation-only) dependencies, whose linking contexts should be
             merged into the new provider but whose compilation contexts should
             be excluded.
-        user_link_flags: A list of flags that should be passed to the final link
-            action.
 
     Returns:
         A new `CcInfo`.
     """
-    all_additional_inputs = list(additional_inputs)
-    all_user_link_flags = list(user_link_flags)
     all_headers = []
     if compilation_outputs:
-        all_additional_inputs.extend(compilation_outputs.linker_inputs)
-        all_user_link_flags.extend(compilation_outputs.linker_flags)
         all_headers = compact([compilation_outputs.generated_header])
 
     local_cc_infos = [
         CcInfo(
             linking_context = cc_common.create_linking_context(
-                additional_inputs = all_additional_inputs,
-                libraries_to_link = libraries_to_link,
-                user_link_flags = all_user_link_flags,
+                linker_inputs = depset(linker_inputs),
             ),
             compilation_context = cc_common.create_compilation_context(
                 defines = depset(defines),
