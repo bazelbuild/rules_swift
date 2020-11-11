@@ -111,7 +111,6 @@ def create_linker_input(
     """Creates a linker input for a library to link and additional inputs/flags.
 
     Args:
-        owning_label: Label executing rule (i.e., ctx.label).
         actions: The object used to register actions.
         alwayslink: If True, create a static library that should be
             always-linked (having a `.lo` extension instead of `.a`). This
