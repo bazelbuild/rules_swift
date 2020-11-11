@@ -95,7 +95,6 @@ def _register_static_library_link_action(
     )
 
 def register_libraries_to_link(
-        owning_label,
         actions,
         alwayslink,
         cc_feature_configuration,
@@ -103,13 +102,10 @@ def register_libraries_to_link(
         is_static,
         library_name,
         objects,
-        swift_toolchain,
-        user_link_flags,
-        additional_inputs):
+        swift_toolchain):
     """Declares the requested libraries and registers actions to link them.
 
     Args:
-        owning_label: Label executing rule (i.e., ctx.label).
         actions: The object used to register actions.
         alwayslink: If True, create a static library that should be
             always-linked (having a `.lo` extension instead of `.a`). This
@@ -124,11 +120,9 @@ def register_libraries_to_link(
             linked.
         swift_toolchain: The Swift toolchain provider to use when constructing
             the action.
-        user_link_flags: Extra link flags to be passed with the library.
-        additional_inputs: Extra inputs for a link action involving the library.
 
     Returns:
-        A `LinkerInput` object containing the libraries that were created.
+        A `LibraryToLink` object containing the libraries that were created.
     """
     dynamic_library = None
     if is_dynamic:
@@ -151,24 +145,16 @@ def register_libraries_to_link(
     else:
         static_library = None
 
-    return cc_common.create_linker_input(
-        owner = owning_label,
-        libraries = depset(direct = [
-            cc_common.create_library_to_link(
-                actions = actions,
-                alwayslink = alwayslink,
-                cc_toolchain = swift_toolchain.cc_toolchain_info,
-                feature_configuration = cc_feature_configuration,
-                pic_static_library = static_library,
-                dynamic_library = dynamic_library,
-            ),
-        ]),
-        additional_inputs = depset(direct = additional_inputs),
-        user_link_flags = depset(direct = user_link_flags),
+    return cc_common.create_library_to_link(
+        actions = actions,
+        alwayslink = alwayslink,
+        cc_toolchain = swift_toolchain.cc_toolchain_info,
+        feature_configuration = cc_feature_configuration,
+        pic_static_library = static_library,
+        dynamic_library = dynamic_library,
     )
 
 def register_link_binary_action(
-        owning_label,
         actions,
         additional_inputs,
         additional_linking_contexts,
@@ -184,7 +170,6 @@ def register_link_binary_action(
     """Registers an action that invokes the linker to produce a binary.
 
     Args:
-        owning_label: Label of the rule creating the link action.
         actions: The object used to register actions.
         additional_inputs: A list of additional inputs to the link action,
             such as those used in `$(location ...)` substitution, linker
@@ -246,12 +231,7 @@ def register_link_binary_action(
 
             linking_contexts.append(
                 cc_common.create_linking_context(
-                    linker_inputs = depset(direct = [
-                        cc_common.create_linker_input(
-                            owner = owning_label,
-                            user_link_flags = depset(direct = dep_link_flags),
-                        ),
-                    ])
+                    user_link_flags = dep_link_flags,
                 ),
             )
 
