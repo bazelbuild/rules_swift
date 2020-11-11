@@ -85,14 +85,7 @@ def _evaluate_field(env, source, field):
                 )
                 return _EVALUATE_FIELD_FAILED
 
-            expanded = []
-            for item in source:
-                item = _normalize_collection(item)
-                if types.is_list(item):
-                    expanded.extend(item)
-                else:
-                    expanded.append(item)
-            source = [getattr(item, component, None) for item in expanded]
+            source = [getattr(item, component, None) for item in source]
             if filter_nones:
                 source = [item for item in source if item != None]
         else:

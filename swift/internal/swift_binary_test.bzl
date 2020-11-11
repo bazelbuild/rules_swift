@@ -237,7 +237,6 @@ def _swift_linking_rule_impl(
     user_link_flags.extend(ctx.fragments.cpp.linkopts)
 
     linking_outputs = register_link_binary_action(
-        owning_label = ctx.label,
         actions = ctx.actions,
         additional_inputs = additional_inputs_to_linker,
         additional_linking_contexts = additional_linking_contexts,
