@@ -21,7 +21,7 @@ load(
     "output_groups_from_compilation_outputs",
 )
 load(":derived_files.bzl", "derived_files")
-load(":linking.bzl", "register_libraries_to_link")
+load(":linking.bzl", "create_linker_input")
 load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
 load(":swift_common.bzl", "swift_common")
 load(":utils.bzl", "compact", "create_cc_info", "get_providers")
@@ -72,17 +72,18 @@ def _swift_module_alias_impl(ctx):
         target_name = ctx.label.name,
     )
 
-    linker_input = register_libraries_to_link(
-        owning_label = ctx.label,
+    linker_input, library_to_link = create_linker_input(
         actions = ctx.actions,
         alwayslink = False,
         cc_feature_configuration = swift_common.cc_feature_configuration(
             feature_configuration = feature_configuration,
         ),
+        compilation_outputs = compilation_outputs,
         is_dynamic = False,
         is_static = True,
         library_name = ctx.label.name,
         objects = compilation_outputs.object_files,
+        owner = ctx.label,
         swift_toolchain = swift_toolchain,
         additional_inputs = compilation_outputs.linker_inputs,
     )

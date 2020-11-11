@@ -38,19 +38,18 @@ def _swift_import_impl(ctx):
         unsupported_features = ctx.disabled_features,
     )
 
-    linker_inputs = [
-        cc_common.create_linker_input(
-            libraries = depset(direct = [
-                cc_common.create_library_to_link(
-                    actions = ctx.actions,
-                    cc_toolchain = cc_toolchain,
-                    feature_configuration = cc_feature_configuration,
-                    static_library = archive,
-                )
-                for archive in archives
-            ]),
-        ),
-    ]
+    linker_input = cc_common.create_linker_input(
+        owner = ctx.label,
+        libraries = depset([
+            cc_common.create_library_to_link(
+                actions = ctx.actions,
+                cc_toolchain = cc_toolchain,
+                feature_configuration = cc_feature_configuration,
+                static_library = archive,
+            )
+            for archive in archives
+        ]),
+    )
 
     providers = [
         DefaultInfo(
@@ -63,7 +62,7 @@ def _swift_import_impl(ctx):
         ),
         create_cc_info(
             cc_infos = get_providers(deps, CcInfo),
-            linker_inputs = linker_inputs,
+            linker_inputs = [linker_input],
         ),
         # Propagate an `Objc` provider so that Apple-specific rules like
         # apple_binary` will link the imported library properly. Typically we'd

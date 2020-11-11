@@ -28,7 +28,7 @@ load(
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS",
 )
-load(":linking.bzl", "register_libraries_to_link")
+load(":linking.bzl", "create_linker_input")
 load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
 load(":swift_common.bzl", "swift_common")
 load(
@@ -179,20 +179,21 @@ def _swift_library_impl(ctx):
     else:
         clang_module = None
 
-    linker_input = register_libraries_to_link(
-        owning_label = ctx.label,
+    linker_input, library_to_link = create_linker_input(
         actions = ctx.actions,
+        additional_inputs = additional_inputs,
         alwayslink = ctx.attr.alwayslink,
         cc_feature_configuration = swift_common.cc_feature_configuration(
             feature_configuration = feature_configuration,
         ),
+        compilation_outputs = compilation_outputs,
         is_dynamic = False,
         is_static = True,
         library_name = ctx.label.name,
         objects = compilation_outputs.object_files,
+        owner = ctx.label,
         swift_toolchain = swift_toolchain,
         user_link_flags = linkopts,
-        additional_inputs = compilation_outputs.linker_inputs,
     )
 
     direct_output_files = compact([

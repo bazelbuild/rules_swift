@@ -41,8 +41,8 @@ def collect_cc_libraries(
     """
     libraries = []
 
-    for li in cc_info.linking_context.linker_inputs.to_list():
-        for library in li.libraries:
+    for linker_input in cc_info.linking_context.linker_inputs.to_list():
+        for library in linker_input.libraries:
             if include_pic_static:
                 if library.pic_static_library:
                     libraries.append(library.pic_static_library)
@@ -69,6 +69,7 @@ def compact(sequence):
     return [item for item in sequence if item != None]
 
 def create_cc_info(
+        *,
         cc_infos = [],
         compilation_outputs = None,
         defines = [],
@@ -88,7 +89,8 @@ def create_cc_info(
         includes: The list of include paths to insert into the compilation
             context.
         linker_inputs: A list of `LinkerInput` objects that represent the
-            libraries that should be linked into the final binary.
+            libraries that should be linked into the final binary as well as any
+            additional inputs and flags that should be passed to the linker.
         private_cc_infos: A list of `CcInfo` providers from private
             (implementation-only) dependencies, whose linking contexts should be
             merged into the new provider but whose compilation contexts should
@@ -104,7 +106,7 @@ def create_cc_info(
     local_cc_infos = [
         CcInfo(
             linking_context = cc_common.create_linking_context(
-                linker_inputs = depset(direct = linker_inputs),
+                linker_inputs = depset(linker_inputs),
             ),
             compilation_context = cc_common.create_compilation_context(
                 defines = depset(defines),

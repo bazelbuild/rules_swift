@@ -27,7 +27,7 @@ load(
     "SWIFT_FEATURE_GENERATE_FROM_RAW_PROTO_FILES",
     "SWIFT_FEATURE_NO_GENERATED_HEADER",
 )
-load(":linking.bzl", "register_libraries_to_link")
+load(":linking.bzl", "create_linker_input")
 load(
     ":proto_gen_utils.bzl",
     "declare_generated_files",
@@ -293,17 +293,18 @@ def _swift_grpc_library_impl(ctx):
         target_name = ctx.label.name,
     )
 
-    linker_input = register_libraries_to_link(
-        owning_label = ctx.label,
+    linker_input, library_to_link = create_linker_input(
         actions = ctx.actions,
         alwayslink = False,
         cc_feature_configuration = swift_common.cc_feature_configuration(
             feature_configuration = feature_configuration,
         ),
+        compilation_outputs = compilation_outputs,
         is_dynamic = False,
         is_static = True,
         library_name = ctx.label.name,
         objects = compilation_outputs.object_files,
+        owner = ctx.label,
         swift_toolchain = swift_toolchain,
         additional_inputs = compilation_outputs.linker_inputs,
         user_link_flags = compilation_outputs.linker_flags,

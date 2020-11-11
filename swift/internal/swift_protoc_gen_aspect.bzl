@@ -27,7 +27,7 @@ load(
     "SWIFT_FEATURE_GENERATE_FROM_RAW_PROTO_FILES",
     "SWIFT_FEATURE_NO_GENERATED_HEADER",
 )
-load(":linking.bzl", "register_libraries_to_link")
+load(":linking.bzl", "create_linker_input")
 load(
     ":proto_gen_utils.bzl",
     "declare_generated_files",
@@ -428,13 +428,13 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             target_name = target.label.name,
         )
 
-        linker_input = register_libraries_to_link(
-            owning_label = aspect_ctx.label,
+        linker_input, library_to_link = create_linker_input(
             actions = aspect_ctx.actions,
             alwayslink = False,
             cc_feature_configuration = swift_common.cc_feature_configuration(
                 feature_configuration = feature_configuration,
             ),
+            compilation_outputs = compilation_outputs,
             is_dynamic = False,
             is_static = True,
             # Prevent conflicts with C++ protos in the same output directory,
@@ -442,6 +442,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             # `lib{name}.swift.a` instead.
             library_name = "{}.swift".format(target.label.name),
             objects = compilation_outputs.object_files,
+            owner = target.label,
             swift_toolchain = swift_toolchain,
             additional_inputs = compilation_outputs.linker_inputs,
             user_link_flags = compilation_outputs.linker_flags,
