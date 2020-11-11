@@ -258,6 +258,19 @@ def _swiftinterface(actions, module_name):
     """
     return actions.declare_file("{}.swiftinterface".format(module_name))
 
+def _swiftsourceinfo(actions, module_name):
+    """Declares a file for the Swift sourceinfo created by a compilation rule.
+
+    Args:
+        actions: The context's actions object.
+        module_name: The name of the module being built.
+
+    Returns:
+        The declared `File`.
+    """
+    return actions.declare_file("{}.swiftsourceinfo".format(module_name))
+
+
 def _swiftmodule(actions, module_name):
     """Declares a file for the Swift module created by a compilation rule.
 
@@ -330,6 +343,7 @@ derived_files = struct(
     swiftc_output_file_map = _swiftc_output_file_map,
     swiftdoc = _swiftdoc,
     swiftinterface = _swiftinterface,
+    swiftsourceinfo = _swiftsourceinfo,
     swiftmodule = _swiftmodule,
     vfsoverlay = _vfsoverlay,
     whole_module_object_file = _whole_module_object_file,

@@ -281,8 +281,8 @@ def create_module(*, name, clang = None, is_system = False, swift = None):
             implicit module builds to succeed.
         swift: A value returned by `swift_common.create_swift_module` that
             contains artifacts related to Swift modules, such as the
-            `.swiftmodule`, `.swiftdoc`, and/or `.swiftinterface` files emitted
-            by the compiler. This may be `None` if the module is a pure
+            `.swiftmodule`, `.swiftdoc`, `.swiftinterface`, and/or `swiftsourceinfo`
+            files emitted by the compiler. This may be `None` if the module is a pure
             C/Objective-C module.
 
     Returns:
@@ -353,7 +353,8 @@ def create_swift_module(
         swiftdoc,
         swiftmodule,
         defines = [],
-        swiftinterface = None):
+        swiftinterface = None,
+        swiftsourceinfo = None,):
     """Creates a value representing a Swift module use as a Swift dependency.
 
     Args:
@@ -364,15 +365,18 @@ def create_swift_module(
             that depend on this module. If omitted, the empty list will be used.
         swiftinterface: The `.swiftinterface` file emitted by the compiler for
             this module. May be `None` if no module interface file was emitted.
+        swiftsourceinfo: The `.swiftsourceinfo` file emitted by the compiler for
+            this module. May be `None` if no module sourceinfo file was emitted.
 
     Returns:
-        A `struct` containing the `defines`, `swiftdoc`, `swiftmodule`, and
-        `swiftinterface` fields provided as arguments.
+        A `struct` containing the `defines`, `swiftdoc`, `swiftmodule`,
+        `swiftinterface`, and `swiftsourceinfo` fields provided as arguments.
     """
     return struct(
         defines = defines,
         swiftdoc = swiftdoc,
         swiftinterface = swiftinterface,
+        swiftsourceinfo = swiftsourceinfo,
         swiftmodule = swiftmodule,
     )
 

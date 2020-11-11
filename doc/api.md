@@ -145,6 +145,10 @@ A `struct` containing the following fields:
       will be None.
   *   `swiftmodule`: The `.swiftmodule` file that was produced by the
       compiler.
+  *   `swiftsourceinfo`: The `.swiftsourceinfo` file that was produced by
+      the compiler. If no sourceinfo file was produced (because the
+      toolchain does not support them or it was not requested), this field
+      will be None.
 
 
 <a id="#swift_common.configure_features"></a>
@@ -307,7 +311,7 @@ the set of transitive module names that are propagated by dependencies
 | <a id="swift_common.create_module-name"></a>name |  The name of the module.   |  none |
 | <a id="swift_common.create_module-clang"></a>clang |  A value returned by <code>swift_common.create_clang_module</code> that contains artifacts related to Clang modules, such as a module map or precompiled module. This may be <code>None</code> if the module is a pure Swift module with no generated Objective-C interface.   |  <code>None</code> |
 | <a id="swift_common.create_module-is_system"></a>is_system |  Indicates whether the module is a system module. The default value is <code>False</code>. System modules differ slightly from non-system modules in the way that they are passed to the compiler. For example, non-system modules have their Clang module maps passed to the compiler in both implicit and explicit module builds. System modules, on the other hand, do not have their module maps passed to the compiler in implicit module builds because there is currently no way to indicate that modules declared in a file passed via <code>-fmodule-map-file</code> should be treated as system modules even if they aren't declared with the <code>[system]</code> attribute, and some system modules may not build cleanly with respect to warnings otherwise. Therefore, it is assumed that any module with <code>is_system == True</code> must be able to be found using import search paths in order for implicit module builds to succeed.   |  <code>False</code> |
-| <a id="swift_common.create_module-swift"></a>swift |  A value returned by <code>swift_common.create_swift_module</code> that contains artifacts related to Swift modules, such as the <code>.swiftmodule</code>, <code>.swiftdoc</code>, and/or <code>.swiftinterface</code> files emitted by the compiler. This may be <code>None</code> if the module is a pure C/Objective-C module.   |  <code>None</code> |
+| <a id="swift_common.create_module-swift"></a>swift |  A value returned by <code>swift_common.create_swift_module</code> that contains artifacts related to Swift modules, such as the <code>.swiftmodule</code>, <code>.swiftdoc</code>, <code>.swiftinterface</code>, and/or <code>.swiftsourceinfo</code> files emitted by the compiler. This may be <code>None</code> if the module is a pure C/Objective-C module.   |  <code>None</code> |
 
 **RETURNS**
 
@@ -407,7 +411,7 @@ A provider whose type/layout is an implementation detail and should not
 ## swift_common.create_swift_module
 
 <pre>
-swift_common.create_swift_module(<a href="#swift_common.create_swift_module-swiftdoc">swiftdoc</a>, <a href="#swift_common.create_swift_module-swiftmodule">swiftmodule</a>, <a href="#swift_common.create_swift_module-defines">defines</a>, <a href="#swift_common.create_swift_module-swiftinterface">swiftinterface</a>)
+swift_common.create_swift_module(<a href="#swift_common.create_swift_module-swiftdoc">swiftdoc</a>, <a href="#swift_common.create_swift_module-swiftmodule">swiftmodule</a>, <a href="#swift_common.create_swift_module-defines">defines</a>, <a href="#swift_common.create_swift_module-swiftinterface">swiftinterface</a>, <a href="#swift_common.create_swift_module.swiftsourceinfo">swiftsourceinfo</a>=None)
 </pre>
 
 Creates a value representing a Swift module use as a Swift dependency.
@@ -421,6 +425,7 @@ Creates a value representing a Swift module use as a Swift dependency.
 | <a id="swift_common.create_swift_module-swiftmodule"></a>swiftmodule |  The <code>.swiftmodule</code> file emitted by the compiler for this module.   |  none |
 | <a id="swift_common.create_swift_module-defines"></a>defines |  A list of defines that will be provided as <code>copts</code> to targets that depend on this module. If omitted, the empty list will be used.   |  <code>[]</code> |
 | <a id="swift_common.create_swift_module-swiftinterface"></a>swiftinterface |  The <code>.swiftinterface</code> file emitted by the compiler for this module. May be <code>None</code> if no module interface file was emitted.   |  <code>None</code> |
+| <a id="swift_common.create_swift_module-swiftsourceinfo"></a>swiftsourceinfo |  The <code>.swiftsourceinfo</code> file emitted by the compiler for this module. May be <code>None</code> if no module sourceinfo file was emitted.   |  <code>None</code> |
 
 **RETURNS**
 

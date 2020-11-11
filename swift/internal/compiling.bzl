@@ -1706,6 +1706,10 @@ def compile(
             the compiler. If no interface file was produced (because the
             toolchain does not support them or it was not requested), this field
             will be None.
+        *   `swiftsourceinfo`: The `.swiftsourceinfo` file that was produced by
+            the compiler. If no sourceinfo file was produced (because the
+            toolchain does not support them or it was not requested), this field
+            will be None.
         *   `swiftmodule`: The `.swiftmodule` file that was produced by the
             compiler.
     """
@@ -1750,6 +1754,7 @@ def compile(
             # for that action). This guarantees some predictability.
             compile_outputs.swiftmodule_file,
             compile_outputs.swiftdoc_file,
+            compile_outputs.swiftsourceinfo_file,
             compile_outputs.generated_header_file,
         ]) + other_outputs
     else:
@@ -1761,6 +1766,7 @@ def compile(
             compile_outputs.swiftmodule_file,
             compile_outputs.swiftdoc_file,
             compile_outputs.swiftinterface_file,
+            compile_outputs.swiftsourceinfo_file,
             compile_outputs.generated_header_file,
             compile_outputs.indexstore_directory,
         ]) + compile_outputs.object_files + other_outputs
@@ -1945,6 +1951,7 @@ def compile(
             swiftdoc = compile_outputs.swiftdoc_file,
             swiftinterface = compile_outputs.swiftinterface_file,
             swiftmodule = compile_outputs.swiftmodule_file,
+            swiftsourceinfo = compile_outputs.swiftsourceinfo_file,
         ),
     )
 
@@ -2191,6 +2198,10 @@ def _declare_compile_outputs(
         actions = actions,
         module_name = module_name,
     )
+    swiftsourceinfo_file = derived_files.swiftsourceinfo(
+        actions = actions,
+        module_name = module_name,
+    )
 
     if are_all_features_enabled(
         feature_configuration = feature_configuration,
@@ -2323,6 +2334,7 @@ def _declare_compile_outputs(
         output_file_map = output_file_map,
         swiftdoc_file = swiftdoc_file,
         swiftinterface_file = swiftinterface_file,
+        swiftsourceinfo_file = swiftsourceinfo_file,
         swiftmodule_file = swiftmodule_file,
     )
     return compile_outputs, other_outputs
