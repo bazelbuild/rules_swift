@@ -111,12 +111,11 @@ def swift_rules_dependencies():
     _maybe(
         http_archive,
         name = "com_google_protobuf",
-        # latest as of 2020-09-01
         urls = [
-            "https://github.com/protocolbuffers/protobuf/archive/v3.13.0.zip",
+            "https://github.com/protocolbuffers/protobuf/archive/v3.14.0.zip",
         ],
-        sha256 = "1c744a6a1f2c901e68c5521bc275e22bdc66256eeb605c2781923365b7087e5f",
-        strip_prefix = "protobuf-3.13.0",
+        sha256 = "bf0e5070b4b99240183b29df78155eee335885e53a8af8683964579c214ad301",
+        strip_prefix = "protobuf-3.14.0",
         type = "zip",
     )
 
