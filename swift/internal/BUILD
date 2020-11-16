@@ -31,9 +31,7 @@ bzl_library(
 bzl_library(
     name = "swift_common",
     srcs = ["swift_common.bzl"],
-    visibility = [
-        "//swift:__pkg__",
-    ],
+    visibility = ["//swift:__pkg__"],
     deps = [":build_defs"],
 )
 
@@ -58,9 +56,7 @@ bzl_library(
         "utils.bzl",
         "vfsoverlay.bzl",
     ],
-    visibility = [
-        "//swift:__pkg__",
-    ],
+    visibility = ["//swift:__pkg__"],
     deps = [
         "@bazel_skylib//lib:collections",
         "@bazel_skylib//lib:dicts",
