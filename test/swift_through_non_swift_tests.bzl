@@ -34,7 +34,7 @@ def swift_through_non_swift_test_suite(name = "swift_through_non_swift"):
             "test_fixtures_swift_through_non_swift_lower.swiftmodule",
             "test_fixtures_swift_through_non_swift_upper.swiftmodule",
         ],
-        field = "transitive_swiftmodules",
+        field = "transitive_modules.swift!.swiftmodule",
         provider = "SwiftInfo",
         tags = [name],
         target_under_test = "@build_bazel_rules_swift//test/fixtures/swift_through_non_swift:upper",

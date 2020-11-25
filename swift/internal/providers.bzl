@@ -15,7 +15,6 @@
 """Defines Starlark providers that propagated by the Swift BUILD rules."""
 
 load("@bazel_skylib//lib:sets.bzl", "sets")
-load("@bazel_skylib//lib:types.bzl", "types")
 
 SwiftInfo = provider(
     doc = """\
@@ -34,18 +33,6 @@ library that directly propagated this provider.
         "direct_modules": """\
 `List` of values returned from `swift_common.create_module`. The modules (both
 Swift and C/Objective-C) emitted by the library that propagated this provider.
-""",
-        "direct_swiftdocs": """\
-`List` of `File`s. The Swift documentation (`.swiftdoc`) files for the library
-that directly propagated this provider.
-
-This field is deprecated; use `direct_modules` instead.
-""",
-        "direct_swiftmodules": """\
-`List` of `File`s. The Swift modules (`.swiftmodule`) for the library that
-directly propagated this provider.
-
-This field is deprecated; use `direct_modules` instead.
 """,
         "module_name": """\
 `String`. The name of the Swift module represented by the target that directly
@@ -72,36 +59,10 @@ propagated this provider and all of its dependencies.
 `Depset` of `File`s. The transitive generated header files that can be used by
 Objective-C sources to interop with the transitive Swift libraries.
 """,
-        "transitive_modulemaps": """\
-`Depset` of `File`s. The transitive module map files that will be passed to
-Clang using the `-fmodule-map-file` option.
-
-This field is deprecated; use `transitive_modules` instead.
-""",
         "transitive_modules": """\
 `Depset` of values returned from `swift_common.create_module`. The transitive
 modules (both Swift and C/Objective-C) emitted by the library that propagated
 this provider and all of its dependencies.
-""",
-        "transitive_swiftdocs": """\
-`Depset` of `File`s. The transitive Swift documentation (`.swiftdoc`) files
-emitted by the library that propagated this provider and all of its
-dependencies.
-
-This field is deprecated; use `transitive_modules` instead.
-""",
-        "transitive_swiftinterfaces": """\
-`Depset` of `File`s. The transitive Swift interface (`.swiftinterface`) files
-emitted by the library that propagated this provider and all of its
-dependencies.
-
-This field is deprecated; use `transitive_modules` instead.
-""",
-        "transitive_swiftmodules": """\
-`Depset` of `File`s. The transitive Swift modules (`.swiftmodule`) emitted by
-the library that propagated this provider and all of its dependencies.
-
-This field is deprecated; use `transitive_modules` instead.
 """,
     },
 )
@@ -269,9 +230,8 @@ def create_module(name, *, clang = None, swift = None):
         A `struct` containing the `name`, `clang`, and `swift` fields provided
         as arguments.
     """
-
-    # TODO(b/149999519): Once Swift module artifacts have migrated to this API,
-    # fail if both `clang` and `swift` are `None`.
+    if clang == None and swift == None:
+        fail("Must provide atleast a clang or swift module.")
     return struct(
         clang = clang,
         name = name,
@@ -374,13 +334,8 @@ def create_swift_info(
         A new `SwiftInfo` provider with the given values.
     """
 
-    # TODO(b/149999519): Remove the legacy direct/transitive fields and this
-    # transitional code.
     defines_set = sets.make()
     generated_headers = []
-    swiftdocs = []
-    swiftinterfaces = []
-    swiftmodules = []
     for module in modules:
         swift_module = module.swift
         if not swift_module:
@@ -391,12 +346,6 @@ def create_swift_info(
                 defines_set,
                 sets.make(swift_module.defines),
             )
-        if swift_module.swiftdoc:
-            swiftdocs.append(swift_module.swiftdoc)
-        if swift_module.swiftinterface:
-            swiftinterfaces.append(swift_module.swiftinterface)
-        if swift_module.swiftmodule:
-            swiftmodules.append(swift_module.swiftmodule)
 
         # If this is both a Swift and a Clang module, then the header in its
         # compilation context is its Swift generated header.
@@ -408,8 +357,7 @@ def create_swift_info(
 
     defines = sets.to_list(defines_set)
 
-    # TODO(b/149999519): Remove the legacy `module_name` field and this
-    # transitional code.
+    # TODO(b/149999519): Remove the legacy `module_name`.
     if not module_name and len(modules) == 1:
         # Populate the module name based on the single module provided, if there
         # was one, and if the legacy `module_name` parameter wasn't already
@@ -418,30 +366,17 @@ def create_swift_info(
 
     transitive_defines = []
     transitive_generated_headers = []
-    transitive_modulemaps = []
     transitive_modules = []
-    transitive_swiftdocs = []
-    transitive_swiftinterfaces = []
-    transitive_swiftmodules = []
     for swift_info in swift_infos:
         transitive_defines.append(swift_info.transitive_defines)
         transitive_generated_headers.append(
             swift_info.transitive_generated_headers,
         )
-        transitive_modulemaps.append(swift_info.transitive_modulemaps)
         transitive_modules.append(swift_info.transitive_modules)
-        transitive_swiftdocs.append(swift_info.transitive_swiftdocs)
-        transitive_swiftinterfaces.append(swift_info.transitive_swiftinterfaces)
-        transitive_swiftmodules.append(swift_info.transitive_swiftmodules)
 
-    # TODO(b/149999519): Remove `transitive_modulemaps`,
-    # `(direct|transitive)_swift*` fields, `module_name`, and `swift_version`
-    # after Tulsi is migrated.
     return SwiftInfo(
         direct_defines = defines,
         direct_modules = modules,
-        direct_swiftdocs = swiftdocs,
-        direct_swiftmodules = swiftmodules,
         module_name = module_name,
         swift_version = swift_version,
         transitive_defines = depset(defines, transitive = transitive_defines),
@@ -449,25 +384,5 @@ def create_swift_info(
             generated_headers,
             transitive = transitive_generated_headers,
         ),
-        transitive_modulemaps = depset(
-            [
-                m.clang.module_map
-                for m in modules
-                if m.clang and not types.is_string(m.clang.module_map)
-            ],
-            transitive = transitive_modulemaps,
-        ),
         transitive_modules = depset(modules, transitive = transitive_modules),
-        transitive_swiftdocs = depset(
-            swiftdocs,
-            transitive = transitive_swiftdocs,
-        ),
-        transitive_swiftinterfaces = depset(
-            swiftinterfaces,
-            transitive = transitive_swiftinterfaces,
-        ),
-        transitive_swiftmodules = depset(
-            swiftmodules,
-            transitive = transitive_swiftmodules,
-        ),
     )
