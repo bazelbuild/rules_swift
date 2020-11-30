@@ -55,10 +55,6 @@ arguments passed to specific compilation actions.
 `Depset` of `string`s. The transitive `defines` specified for the library that
 propagated this provider and all of its dependencies.
 """,
-        "transitive_generated_headers": """\
-`Depset` of `File`s. The transitive generated header files that can be used by
-Objective-C sources to interop with the transitive Swift libraries.
-""",
         "transitive_modules": """\
 `Depset` of values returned from `swift_common.create_module`. The transitive
 modules (both Swift and C/Objective-C) emitted by the library that propagated
@@ -331,7 +327,6 @@ def create_swift_info(
     """
 
     defines_set = sets.make()
-    generated_headers = []
     for module in modules:
         swift_module = module.swift
         if not swift_module:
@@ -341,14 +336,6 @@ def create_swift_info(
             defines_set = sets.union(
                 defines_set,
                 sets.make(swift_module.defines),
-            )
-
-        # If this is both a Swift and a Clang module, then the header in its
-        # compilation context is its Swift generated header.
-        clang_module = module.clang
-        if clang_module:
-            generated_headers.extend(
-                clang_module.compilation_context.headers.to_list(),
             )
 
     defines = sets.to_list(defines_set)
@@ -361,13 +348,9 @@ def create_swift_info(
         module_name = modules[0].name
 
     transitive_defines = []
-    transitive_generated_headers = []
     transitive_modules = []
     for swift_info in swift_infos:
         transitive_defines.append(swift_info.transitive_defines)
-        transitive_generated_headers.append(
-            swift_info.transitive_generated_headers,
-        )
         transitive_modules.append(swift_info.transitive_modules)
 
     return SwiftInfo(
@@ -376,9 +359,5 @@ def create_swift_info(
         module_name = module_name,
         swift_version = swift_version,
         transitive_defines = depset(defines, transitive = transitive_defines),
-        transitive_generated_headers = depset(
-            generated_headers,
-            transitive = transitive_generated_headers,
-        ),
         transitive_modules = depset(modules, transitive = transitive_modules),
     )
