@@ -73,18 +73,6 @@ def generated_header_test_suite(name = "generated_header"):
         target_under_test = "@build_bazel_rules_swift//test/fixtures/generated_header:auto_header",
     )
 
-    # Verify that the generated header is propagated in `SwiftInfo`.
-    generate_header_and_module_map_provider_test(
-        name = "{}_automatically_named_header_is_propagated".format(name),
-        expected_files = [
-            "test/fixtures/generated_header/auto_header-Swift.h",
-        ],
-        field = "transitive_generated_headers",
-        provider = "SwiftInfo",
-        tags = [name],
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/generated_header:auto_header",
-    )
-
     # Verify that the generated module map is propagated in `apple_common.Objc`.
     # TODO(b/148604334): Enable this when it analyzes correctly on all platforms.
     # generate_header_and_module_map_provider_test(
