@@ -99,12 +99,6 @@ SWIFT_FEATURE_ENABLE_TESTING = "swift.enable_testing"
 # warnings otherwise.
 SWIFT_FEATURE_FULL_DEBUG_INFO = "swift.full_debug_info"
 
-# If enabled, ClangImporter will perform implicit search for module maps and
-# compile modules in the implicit module cache for any that were not provided
-# explicitly on the command line. Otherwise, all modules must be provided
-# explicitly.
-SWIFT_FEATURE_IMPLICIT_MODULES = "swift.implicit_modules"
-
 # If enabled, the compilation action for a target will produce an index store.
 SWIFT_FEATURE_INDEX_WHILE_BUILDING = "swift.index_while_building"
 

@@ -29,7 +29,6 @@ load(
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
     "SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES",
-    "SWIFT_FEATURE_IMPLICIT_MODULES",
     "SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS",
     "SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS",
     "SWIFT_FEATURE_USE_RESPONSE_FILES",
@@ -221,12 +220,6 @@ def _create_linux_toolchain(repository_ctx):
     feature_values = _compute_feature_values(repository_ctx, path_to_swiftc)
     version_file = _write_swift_version(repository_ctx, path_to_swiftc)
 
-    # TODO: This is being enabled here, rather than in the toolchain rule
-    # implementations, so that we can provide a way to optionally turn it off
-    # later when we have a way to model modules from outside Bazel workspaces
-    # (i.e., from the Swift toolchain) as explicit modules.
-    feature_values.append(SWIFT_FEATURE_IMPLICIT_MODULES)
-
     # TODO: This should be removed so that private headers can be used with
     # explicit modules, but the build targets for CgRPC need to be cleaned up
     # first because they contain C++ code.
@@ -267,12 +260,6 @@ def _create_xcode_toolchain(repository_ctx):
       repository_ctx: The repository rule context.
     """
     feature_values = [
-        # TODO: This is being enabled here, rather than in the toolchain rule
-        # implementations, so that we can provide a way to optionally turn it
-        # off later when we have a way to model modules from outside Bazel
-        # workspaces (i.e., from the Swift toolchain and Xcode SDKs) as explicit
-        # modules.
-        SWIFT_FEATURE_IMPLICIT_MODULES,
         # TODO: This should be removed so that private headers can be used with
         # explicit modules, but the build targets for CgRPC need to be cleaned
         # up first because they contain C++ code.
