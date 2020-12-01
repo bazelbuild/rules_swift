@@ -41,7 +41,6 @@ load(
     "SWIFT_FEATURE_ENABLE_TESTING",
     "SWIFT_FEATURE_FASTBUILD",
     "SWIFT_FEATURE_FULL_DEBUG_INFO",
-    "SWIFT_FEATURE_IMPLICIT_MODULES",
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
     "SWIFT_FEATURE_MINIMAL_DEPS",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
@@ -350,10 +349,8 @@ def compile_action_configs():
         swift_toolchain_config.action_config(
             actions = [swift_action_names.COMPILE],
             configurators = [_global_module_cache_configurator],
-            features = [
-                SWIFT_FEATURE_IMPLICIT_MODULES,
-                SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE,
-            ],
+            features = [SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE],
+            not_features = [SWIFT_FEATURE_USE_C_MODULES],
         ),
         swift_toolchain_config.action_config(
             actions = [swift_action_names.COMPILE],
@@ -362,8 +359,10 @@ def compile_action_configs():
                     "-Xwrapped-swift=-ephemeral-module-cache",
                 ),
             ],
-            features = [SWIFT_FEATURE_IMPLICIT_MODULES],
-            not_features = [SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE],
+            not_features = [
+                [SWIFT_FEATURE_USE_C_MODULES],
+                [SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE],
+            ],
         ),
         swift_toolchain_config.action_config(
             actions = [
