@@ -36,6 +36,7 @@ def _binary_rule_attrs(stamp_default):
     return dicts.add(
         swift_common.compilation_attrs(
             additional_deps_aspects = [swift_common.swift_clang_module_aspect],
+            requires_srcs = False,
         ),
         {
             "linkopts": attr.string_list(
