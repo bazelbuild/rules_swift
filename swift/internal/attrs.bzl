@@ -46,7 +46,9 @@ indirect (transitive) dependents.
         "licenses": attr.license(),  # buildifier: disable=attr-license
     }
 
-def swift_compilation_attrs(additional_deps_aspects = []):
+def swift_compilation_attrs(
+        additional_deps_aspects = [],
+        requires_srcs = True):
     """Returns an attribute dictionary for rules that compile Swift code.
 
     The returned dictionary contains the subset of attributes that are shared by
@@ -79,6 +81,8 @@ def swift_compilation_attrs(additional_deps_aspects = []):
             by the individual rules to avoid potential circular dependencies
             between the API and the aspects; the API loaded the aspects
             directly, then those aspects would not be able to load the API.
+        requires_srcs: Indicates whether the `srcs` attribute should be marked
+            as mandatory and non-empty. Defaults to `True`.
 
     Returns:
         A new attribute dictionary that can be added to the attributes of a
@@ -92,11 +96,13 @@ def swift_compilation_attrs(additional_deps_aspects = []):
         swift_toolchain_attrs(),
         {
             "srcs": attr.label_list(
-                flags = ["DIRECT_COMPILE_TIME_INPUT"],
+                allow_empty = not requires_srcs,
                 allow_files = ["swift"],
                 doc = """\
 A list of `.swift` source files that will be compiled into the library.
 """,
+                flags = ["DIRECT_COMPILE_TIME_INPUT"],
+                mandatory = requires_srcs,
             ),
             "copts": attr.string_list(
                 doc = """\
@@ -189,7 +195,9 @@ Linux), those dependencies will be **ignored.**
         **kwargs
     )
 
-def swift_library_rule_attrs(additional_deps_aspects = []):
+def swift_library_rule_attrs(
+        additional_deps_aspects = [],
+        requires_srcs = True):
     """Returns an attribute dictionary for `swift_library`-like rules.
 
     The returned dictionary contains the same attributes that are defined by the
@@ -224,6 +232,8 @@ def swift_library_rule_attrs(additional_deps_aspects = []):
             by the individual rules to avoid potential circular dependencies
             between the API and the aspects; the API loaded the aspects
             directly, then those aspects would not be able to load the API.
+        requires_srcs: Indicates whether the `srcs` attribute should be marked
+            as mandatory and non-empty. Defaults to `True`.
 
     Returns:
         A new attribute dictionary that can be added to the attributes of a
@@ -232,6 +242,7 @@ def swift_library_rule_attrs(additional_deps_aspects = []):
     return dicts.add(
         swift_compilation_attrs(
             additional_deps_aspects = additional_deps_aspects,
+            requires_srcs = requires_srcs,
         ),
         swift_config_attrs(),
         {
