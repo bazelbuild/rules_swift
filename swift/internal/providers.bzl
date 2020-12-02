@@ -346,6 +346,8 @@ def create_swift_info(
         # was one, and if the legacy `module_name` parameter wasn't already
         # given.
         module_name = modules[0].name
+    elif module_name and modules and module_name != modules[0].name:
+        fail("Explicit module name should be the first provided module.")
 
     transitive_defines = []
     transitive_modules = []
