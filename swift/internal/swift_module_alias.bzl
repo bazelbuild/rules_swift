@@ -29,10 +29,17 @@ load(":utils.bzl", "compact", "create_cc_info", "get_providers")
 def _swift_module_alias_impl(ctx):
     deps = ctx.attr.deps
     module_mapping = {
-        dep[SwiftInfo].module_name: dep.label
+        module.name: dep.label
         for dep in deps
-        if dep[SwiftInfo].module_name
+        for module in dep[SwiftInfo].direct_modules
     }
+
+    # TODO(b/149999519): remove the support for SwiftInfo.module_name that
+    # didn't have any direct_modules.
+    for dep in deps:
+        swift_info = dep[SwiftInfo]
+        if not swift_info.direct_modules and swift_info.module_name:
+            module_mapping[swift_info.module_name] = dep.label
 
     module_name = ctx.attr.module_name
     if not module_name:
