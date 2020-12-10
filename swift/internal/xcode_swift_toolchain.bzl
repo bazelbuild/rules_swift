@@ -47,7 +47,7 @@ load(
 load(":features.bzl", "features_for_build_modes")
 load(":toolchain_config.bzl", "swift_toolchain_config")
 load(":providers.bzl", "SwiftToolchainInfo")
-load(":utils.bzl", "get_swift_executable_for_toolchain")
+load(":utils.bzl", "compact", "get_swift_executable_for_toolchain")
 
 def _swift_developer_lib_dir(platform_framework_dir):
     """Returns the directory containing extra Swift developer libraries.
@@ -115,6 +115,47 @@ def _command_line_objc_copts(compilation_mode, objc_fragment):
         [copt for copt in clang_copts if copt != "-g"],
     )
 
+def _platform_developer_framework_dir(apple_toolchain, apple_fragment):
+    """Returns the Developer framework directory for the platform.
+
+    Args:
+        apple_fragment: The `apple` configuration fragment.
+        apple_toolchain: The `apple_common.apple_toolchain()` object.
+
+    Returns:
+        The path to the Developer framework directory for the platform if one
+        exists, otherwise `None`.
+    """
+    platform_type = apple_fragment.single_arch_platform.platform_type
+    if platform_type == apple_common.platform_type.watchos:
+        return None
+
+    # All platforms except watchOS have a `Developer/Library/Frameworks`
+    # directory in their platform root.
+    return apple_toolchain.platform_developer_framework_dir(apple_fragment)
+
+def _sdk_developer_framework_dir(apple_toolchain, apple_fragment):
+    """Returns the Developer framework directory for the SDK.
+
+    Args:
+        apple_fragment: The `apple` configuration fragment.
+        apple_toolchain: The `apple_common.apple_toolchain()` object.
+
+    Returns:
+        The path to the Developer framework directory for the SDK if one
+        exists, otherwise `None`.
+    """
+    platform_type = apple_fragment.single_arch_platform.platform_type
+    if platform_type in (
+        apple_common.platform_type.macos,
+        apple_common.platform_type.watchos,
+    ):
+        return None
+
+    # All platforms except macOS and watchOS have a
+    # `Developer/Library/Frameworks` directory in their SDK root.
+    return paths.join(apple_toolchain.sdk_dir(), "Developer/Library/Frameworks")
+
 def _default_linker_opts(
         apple_fragment,
         apple_toolchain,
@@ -143,7 +184,12 @@ def _default_linker_opts(
         The command line options to pass to `clang` to link against the desired
         variant of the Swift runtime libraries.
     """
-    platform_framework_dir = apple_toolchain.platform_developer_framework_dir(
+    platform_developer_framework_dir = _platform_developer_framework_dir(
+        apple_toolchain,
+        apple_fragment,
+    )
+    sdk_developer_framework_dir = _sdk_developer_framework_dir(
+        apple_toolchain,
         apple_fragment,
     )
     linkopts = []
@@ -189,28 +235,41 @@ def _default_linker_opts(
     if uses_runtime_in_os and platform == apple_common.platform.macos:
         linkopts.append("-Wl,-rpath,{}".format(swift_lib_dir))
 
-    linkopts.extend([
-        "-F{}".format(platform_framework_dir),
-        "-L{}".format(swift_lib_dir),
-        # TODO(b/112000244): These should get added by the C++ Starlark API, but
-        # we're using the "c++-link-executable" action right now instead of
-        # "objc-executable" because the latter requires additional variables not
-        # provided by cc_common. Figure out how to handle this correctly.
-        "-ObjC",
-        "-Wl,-objc_abi_version,2",
-    ])
+    linkopts.extend(
+        [
+            "-F{}".format(path)
+            for path in compact([
+                platform_developer_framework_dir,
+                sdk_developer_framework_dir,
+            ])
+        ] + [
+            "-L{}".format(swift_lib_dir),
+            # TODO(b/112000244): These should get added by the C++ Starlark API,
+            # but we're using the "c++-link-executable" action right now instead
+            # of "objc-executable" because the latter requires additional
+            # variables not provided by cc_common. Figure out how to handle this
+            # correctly.
+            "-ObjC",
+            "-Wl,-objc_abi_version,2",
+        ],
+    )
 
     use_system_swift_libs = _is_xcode_at_least_version(xcode_config, "11.0")
     if use_system_swift_libs:
         linkopts.append("-L/usr/lib/swift")
 
-    # XCTest.framework only lives in the Xcode bundle (its platform framework
-    # directory), so test binaries need to have that directory explicitly added
-    # to their rpaths.
-    if is_test:
+    # Frameworks in the platform's developer frameworks directory (like XCTest,
+    # but also StoreKitTest on macOS) contain the actual binary for that
+    # framework, not a .tbd file that says where to find it on simulator/device.
+    # So, we need to explicitly add that to test binaries' rpaths. We also need
+    # to add the linker path to the directory containing the dylib with Swift
+    # extensions for the XCTest module.
+    if is_test and platform_developer_framework_dir:
         linkopts.extend([
-            "-Wl,-rpath,{}".format(platform_framework_dir),
-            "-L{}".format(_swift_developer_lib_dir(platform_framework_dir)),
+            "-Wl,-rpath,{}".format(platform_developer_framework_dir),
+            "-L{}".format(
+                _swift_developer_lib_dir(platform_developer_framework_dir),
+            ),
         ])
 
     return linkopts
@@ -280,14 +339,21 @@ def _all_action_configs(
     Returns:
         The action configurations for the Swift toolchain.
     """
-    developer_dir = apple_toolchain.developer_dir()
-    platform_framework_dir = (
-        apple_toolchain.platform_developer_framework_dir(apple_fragment)
+    platform_developer_framework_dir = _platform_developer_framework_dir(
+        apple_toolchain,
+        apple_fragment,
     )
-    sdk_dir = apple_toolchain.sdk_dir()
+    sdk_developer_framework_dir = _sdk_developer_framework_dir(
+        apple_toolchain,
+        apple_fragment,
+    )
+    developer_framework_dirs = compact([
+        platform_developer_framework_dir,
+        sdk_developer_framework_dir,
+    ])
 
+    # Basic compilation flags (target triple and toolchain search paths).
     action_configs = [
-        # Basic compilation flags (target triple and toolchain search paths).
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
@@ -296,15 +362,13 @@ def _all_action_configs(
             ],
             configurators = [
                 swift_toolchain_config.add_arg("-target", target_triple),
-                swift_toolchain_config.add_arg("-sdk", sdk_dir),
                 swift_toolchain_config.add_arg(
-                    platform_framework_dir,
-                    format = "-F%s",
+                    "-sdk",
+                    apple_toolchain.sdk_dir(),
                 ),
-                swift_toolchain_config.add_arg(
-                    _swift_developer_lib_dir(platform_framework_dir),
-                    format = "-I%s",
-                ),
+            ] + [
+                swift_toolchain_config.add_arg(framework_dir, format = "-F%s")
+                for framework_dir in developer_framework_dirs
             ],
         ),
         swift_toolchain_config.action_config(
@@ -312,12 +376,36 @@ def _all_action_configs(
             configurators = [
                 swift_toolchain_config.add_arg(
                     "-Xcc",
-                    platform_framework_dir,
+                    framework_dir,
                     format = "-F%s",
-                ),
+                )
+                for framework_dir in developer_framework_dirs
             ],
         ),
+    ]
 
+    # The platform developer framework directory contains XCTest.swiftmodule
+    # with Swift extensions to XCTest, so it needs to be added to the search
+    # path on platforms where it exists.
+    if platform_developer_framework_dir:
+        action_configs.append(
+            swift_toolchain_config.action_config(
+                actions = [
+                    swift_action_names.COMPILE,
+                    swift_action_names.PRECOMPILE_C_MODULE,
+                ],
+                configurators = [
+                    swift_toolchain_config.add_arg(
+                        _swift_developer_lib_dir(
+                            platform_developer_framework_dir,
+                        ),
+                        format = "-I%s",
+                    ),
+                ],
+            ),
+        )
+
+    action_configs.extend([
         # Bitcode-related flags.
         swift_toolchain_config.action_config(
             actions = [
@@ -373,7 +461,7 @@ def _all_action_configs(
                 ],
             ],
         ),
-    ]
+    ])
 
     if needs_resource_directory:
         # If the user is using a custom driver but not a complete custom
@@ -389,7 +477,7 @@ def _all_action_configs(
                 configurators = [
                     partial.make(
                         _resource_directory_configurator,
-                        developer_dir,
+                        apple_toolchain.developer_dir(),
                     ),
                 ],
             ),
