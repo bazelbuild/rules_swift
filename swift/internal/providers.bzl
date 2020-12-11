@@ -198,7 +198,7 @@ provider.
     },
 )
 
-def create_module(name, *, clang = None, swift = None):
+def create_module(*, name, clang = None, swift = None):
     """Creates a value containing Clang/Swift module artifacts of a dependency.
 
     At least one of the `clang` and `swift` arguments must not be `None`. It is
