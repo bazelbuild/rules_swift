@@ -297,7 +297,6 @@ def create_swift_module(
 
 def create_swift_info(
         *,
-        module_name = None,
         modules = [],
         swift_infos = [],
         swift_version = None):
@@ -314,8 +313,6 @@ def create_swift_info(
     true Swift module; it is merely a "collector" for other dependencies.
 
     Args:
-        module_name: This argument is deprecated. The module name(s) should be
-            specified in the values passed to the `modules` argument.
         modules: A list of values (as returned by `swift_common.create_module`)
             that represent Clang and/or Swift module artifacts that are direct
             outputs of the target being built.
@@ -344,15 +341,6 @@ def create_swift_info(
 
     defines = sets.to_list(defines_set)
 
-    # TODO(b/149999519): Remove the legacy `module_name`.
-    if not module_name and len(modules) == 1:
-        # Populate the module name based on the single module provided, if there
-        # was one, and if the legacy `module_name` parameter wasn't already
-        # given.
-        module_name = modules[0].name
-    elif module_name and modules and module_name != modules[0].name:
-        fail("Explicit module name should be the first provided module.")
-
     transitive_defines = []
     transitive_modules = []
     for swift_info in swift_infos:
@@ -362,7 +350,8 @@ def create_swift_info(
     return SwiftInfo(
         direct_defines = defines,
         direct_modules = modules,
-        module_name = module_name,
+        # TODO(b/149999519): Remove the legacy `module_name`.
+        module_name = modules[0].name if len(modules) == 1 else None,
         swift_version = swift_version,
         transitive_defines = depset(defines, transitive = transitive_defines),
         transitive_modules = depset(modules, transitive = transitive_modules),
