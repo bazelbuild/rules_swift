@@ -14,7 +14,6 @@
 
 """Helper functions for working with Bazel features."""
 
-load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load(
     ":feature_names.bzl",
@@ -60,9 +59,10 @@ def configure_features(
     Args:
         ctx: The rule context.
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain
-            being used to build. The C++ toolchain associated with the Swift
-            toolchain is used to create the underlying C++ feature
-            configuration.
+            being used to build. This is used to determine features that are
+            enabled by default or unsupported by the toolchain, and the C++
+            toolchain associated with the Swift toolchain is used to create the
+            underlying C++ feature configuration.
         requested_features: The list of features to be enabled. This is
             typically obtained using the `ctx.features` field in a rule
             implementation function.
@@ -72,45 +72,37 @@ def configure_features(
 
     Returns:
         An opaque value representing the feature configuration that can be
-        passed to other `swift_common` functions.
+        passed to other `swift_common` functions. Note that the structure of
+        this value should otherwise not be relied on or inspected directly.
     """
 
     # The features to enable for a particular rule/target are the ones requested
     # by the toolchain, plus the ones requested by the target itself, *minus*
-    # any that are explicitly disabled on the target itself.
-    requested_features_set = sets.make(swift_toolchain.requested_features)
-    requested_features_set = sets.union(
-        requested_features_set,
+    # any that are explicitly disabled on the target or the toolchain.
+    requestable_features_set = sets.make(swift_toolchain.requested_features)
+    requestable_features_set = sets.union(
+        requestable_features_set,
         sets.make(requested_features),
     )
-    requested_features_set = sets.difference(
-        requested_features_set,
+    requestable_features_set = sets.difference(
+        requestable_features_set,
         sets.make(unsupported_features),
     )
-    all_requested_features = sets.to_list(requested_features_set)
-
-    all_unsupported_features = collections.uniq(
-        swift_toolchain.unsupported_features + unsupported_features,
+    requestable_features_set = sets.difference(
+        requestable_features_set,
+        sets.make(swift_toolchain.unsupported_features),
     )
-
-    # Verify the consistency of Swift features requested vs. those that are not
-    # supported by the toolchain. We don't need to do this for C++ features
-    # because `cc_common.configure_features` handles verifying those.
-    for feature in requested_features:
-        if feature.startswith("swift.") and feature in all_unsupported_features:
-            fail("Feature '{}' was requested, ".format(feature) +
-                 "but it is not supported by the current toolchain or rule.")
+    requestable_features = sets.to_list(requestable_features_set)
 
     cc_feature_configuration = cc_common.configure_features(
         ctx = ctx,
         cc_toolchain = swift_toolchain.cc_toolchain_info,
-        requested_features = all_requested_features,
-        unsupported_features = all_unsupported_features,
+        requested_features = requestable_features,
+        unsupported_features = unsupported_features,
     )
     return struct(
-        cc_feature_configuration = cc_feature_configuration,
-        requested_features = all_requested_features,
-        unsupported_features = all_unsupported_features,
+        _cc_feature_configuration = cc_feature_configuration,
+        _enabled_features = requestable_features,
     )
 
 def features_for_build_modes(ctx, objc_fragment = None):
@@ -150,7 +142,7 @@ def get_cc_feature_configuration(feature_configuration):
         [`cc_common.configure_features`](https://docs.bazel.build/versions/master/skylark/lib/cc_common.html#configure_features)
         for more information).
     """
-    return feature_configuration.cc_feature_configuration
+    return feature_configuration._cc_feature_configuration
 
 def is_feature_enabled(feature_configuration, feature_name):
     """Returns `True` if the feature is enabled in the feature configuration.
@@ -168,7 +160,7 @@ def is_feature_enabled(feature_configuration, feature_name):
         `True` if the given feature is enabled in the feature configuration.
     """
     if feature_name.startswith("swift."):
-        return feature_name in feature_configuration.requested_features
+        return feature_name in feature_configuration._enabled_features
     else:
         return cc_common.is_enabled(
             feature_configuration = get_cc_feature_configuration(
