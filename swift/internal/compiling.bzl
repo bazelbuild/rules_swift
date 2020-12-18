@@ -792,14 +792,14 @@ def _collect_clang_module_inputs(
     )
 
 def _clang_modulemap_dependency_args(module):
-    """Returns `swiftc` arguments for the module map of a Clang module.
+    """Returns a `swiftc` argument for the module map of a Clang module.
 
     Args:
         module: A struct containing information about the module, as defined by
             `swift_common.create_module`.
 
     Returns:
-        A list of arguments to pass to `swiftc`.
+        The argument to pass to `swiftc` (without the `-Xcc` prefix).
     """
     module_map = module.clang.module_map
     if types.is_string(module_map):
@@ -807,35 +807,34 @@ def _clang_modulemap_dependency_args(module):
     else:
         module_map_path = module_map.path
 
-    return [
-        "-Xcc",
-        "-fmodule-map-file={}".format(module_map_path),
-    ]
+    return "-fmodule-map-file={}".format(module_map_path)
 
 def _clang_module_dependency_args(module):
     """Returns `swiftc` arguments for a precompiled Clang module, if possible.
 
-    If no precompiled module was emitted for this module, then this function
-    falls back to the textual module map.
+    If a precompiled module is present for this module, then flags for both it
+    and the module map are returned (the latter is required in order to map
+    headers to mdules in some scenarios, since the precompiled modules are
+    passed by name). If no precompiled module is present for this module, then
+    this function falls back to the textual module map alone.
 
     Args:
         module: A struct containing information about the module, as defined by
             `swift_common.create_module`.
 
     Returns:
-        A list of arguments to pass to `swiftc`.
+        A list of arguments to pass to `swiftc` (without the `-Xcc` prefix).
     """
     args = []
     if module.clang.precompiled_module:
-        args.extend([
-            "-Xcc",
+        args.append(
             "-fmodule-file={}={}".format(
                 module.name,
                 module.clang.precompiled_module.path,
             ),
-        ])
+        )
     if module.clang.module_map:
-        args.extend(_clang_modulemap_dependency_args(module))
+        args.append(_clang_modulemap_dependency_args(module))
     return args
 
 def _dependencies_clang_modulemaps_configurator(prerequisites, args):
@@ -846,7 +845,15 @@ def _dependencies_clang_modulemaps_configurator(prerequisites, args):
         if module.clang
     ]
 
-    args.add_all(modules, map_each = _clang_modulemap_dependency_args)
+    # Uniquify the arguments because different modules might be defined in the
+    # same module map file, so it only needs to be present once on the command
+    # line.
+    args.add_all(
+        modules,
+        before_each = "-Xcc",
+        map_each = _clang_modulemap_dependency_args,
+        uniquify = True,
+    )
 
     return _collect_clang_module_inputs(
         cc_info = prerequisites.cc_info,
@@ -864,7 +871,15 @@ def _dependencies_clang_modules_configurator(prerequisites, args):
         if module.clang
     ]
 
-    args.add_all(modules, map_each = _clang_module_dependency_args)
+    # Uniquify the arguments because different modules might be defined in the
+    # same module map file, so it only needs to be present once on the command
+    # line.
+    args.add_all(
+        modules,
+        before_each = "-Xcc",
+        map_each = _clang_module_dependency_args,
+        uniquify = True,
+    )
 
     return _collect_clang_module_inputs(
         cc_info = prerequisites.cc_info,
