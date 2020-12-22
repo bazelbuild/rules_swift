@@ -384,7 +384,9 @@ on the `swift_grpc_library` implementing the service.
 The kind of definitions that should be generated:
 
 *   `"client"` to generate client definitions.
+
 *   `"client_stubs"` to generate client test stubs.
+
 *   `"server"` to generate server definitions.
 """,
             ),
