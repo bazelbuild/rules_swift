@@ -177,6 +177,7 @@ Allowed kinds of dependencies are:
 
 *   `swift_c_module`, `swift_import` and `swift_library` (or anything
     propagating `SwiftInfo`)
+
 *   `cc_library` (or anything propagating `CcInfo`)
 
 Additionally, on platforms that support Objective-C interop, `objc_library`
