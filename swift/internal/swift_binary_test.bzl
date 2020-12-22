@@ -67,8 +67,10 @@ into the binary. Possible values are:
 * `stamp = 1`: Stamp the build information into the binary. Stamped binaries are
   only rebuilt when their dependencies change. Use this if there are tests that
   depend on the build information.
+
 * `stamp = 0`: Always replace build information by constant values. This gives
   good build result caching.
+
 * `stamp = -1`: Embedding of build information is controlled by the
   `--[no]stamp` flag.
 """,

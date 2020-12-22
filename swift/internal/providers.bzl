@@ -107,6 +107,7 @@ The partial should be called with two arguments:
 
 *   `is_static`: A `Boolean` value indicating whether to link against the static
     or dynamic runtime libraries.
+
 *   `is_test`: A `Boolean` value indicating whether the target being linked is a
     test target.
 """,
@@ -153,6 +154,7 @@ compiles).
 
 *   `env`: A `dict` of environment variables to be set when running tests
     that were built with this toolchain.
+
 *   `execution_requirements`: A `dict` of execution requirements for tests
     that were built with this toolchain.
 
