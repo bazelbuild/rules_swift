@@ -213,7 +213,7 @@ def compile_action_configs():
             configurators = [
                 swift_toolchain_config.add_arg("-DDEBUG"),
             ],
-            features = [[SWIFT_FEATURE_DBG], [SWIFT_FEATURE_FASTBUILD]],
+            features = [[SWIFT_FEATURE_DBG]],
         ),
         swift_toolchain_config.action_config(
             actions = [
