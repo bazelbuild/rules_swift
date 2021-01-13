@@ -28,14 +28,6 @@ has reasonable defaults for any fields not explicitly set.
 `List` of values returned from `swift_common.create_module`. The modules (both
 Swift and C/Objective-C) emitted by the library that propagated this provider.
 """,
-        "swift_version": """\
-`String`. The version of the Swift language that was used when compiling the
-propagating target; that is, the value passed via the `-swift-version` compiler
-flag. This will be `None` if the flag was not set.
-
-This field is deprecated; the Swift version should be obtained by inspecting the
-arguments passed to specific compilation actions.
-""",
         "transitive_modules": """\
 `Depset` of values returned from `swift_common.create_module`. The transitive
 modules (both Swift and C/Objective-C) emitted by the library that propagated
@@ -277,8 +269,7 @@ def create_swift_module(
 def create_swift_info(
         *,
         modules = [],
-        swift_infos = [],
-        swift_version = None):
+        swift_infos = []):
     """Creates a new `SwiftInfo` provider with the given values.
 
     This function is recommended instead of directly creating a `SwiftInfo`
@@ -298,9 +289,6 @@ def create_swift_info(
         swift_infos: A list of `SwiftInfo` providers from dependencies, whose
             transitive fields should be merged into the new one. If omitted, no
             transitive data is collected.
-        swift_version: A string containing the value of the `-swift-version`
-            flag used when compiling this target, or `None` (the default) if it
-            was not set or is not relevant.
 
     Returns:
         A new `SwiftInfo` provider with the given values.
@@ -310,6 +298,5 @@ def create_swift_info(
 
     return SwiftInfo(
         direct_modules = modules,
-        swift_version = swift_version,
         transitive_modules = depset(modules, transitive = transitive_modules),
     )
