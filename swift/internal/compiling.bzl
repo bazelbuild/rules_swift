@@ -2056,28 +2056,6 @@ def _register_post_compile_actions(
         linker_inputs = linker_inputs,
     )
 
-def find_swift_version_copt_value(copts):
-    """Returns the value of the `-swift-version` argument, if found.
-
-    Args:
-        copts: The list of copts to be scanned.
-
-    Returns:
-        The value of the `-swift-version` argument, or None if it was not found
-        in the copt list.
-    """
-
-    # Note that the argument can occur multiple times, and the last one wins.
-    last_swift_version = None
-
-    count = len(copts)
-    for i in range(count):
-        copt = copts[i]
-        if copt == "-swift-version" and i + 1 < count:
-            last_swift_version = copts[i + 1]
-
-    return last_swift_version
-
 def new_objc_provider(
         deps,
         link_inputs,

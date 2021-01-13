@@ -17,7 +17,6 @@
 load(":attrs.bzl", "swift_deps_attr")
 load(
     ":compiling.bzl",
-    "find_swift_version_copt_value",
     "new_objc_provider",
     "output_groups_from_compilation_outputs",
     "swift_library_output_map",
@@ -246,7 +245,6 @@ def _swift_library_impl(ctx):
             # Note that private_deps are explicitly omitted here; they should
             # not propagate.
             swift_infos = get_providers(deps, SwiftInfo),
-            swift_version = find_swift_version_copt_value(copts),
         ),
     ]
 
