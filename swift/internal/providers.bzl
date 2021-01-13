@@ -14,8 +14,6 @@
 
 """Defines Starlark providers that propagated by the Swift BUILD rules."""
 
-load("@bazel_skylib//lib:sets.bzl", "sets")
-
 SwiftInfo = provider(
     doc = """\
 Contains information about the compiled artifacts of a Swift module.
@@ -26,10 +24,6 @@ directly, consider using the `swift_common.create_swift_info` function, which
 has reasonable defaults for any fields not explicitly set.
 """,
     fields = {
-        "direct_defines": """\
-`List` of `string`s. The values specified by the `defines` attribute of the
-library that directly propagated this provider.
-""",
         "direct_modules": """\
 `List` of values returned from `swift_common.create_module`. The modules (both
 Swift and C/Objective-C) emitted by the library that propagated this provider.
@@ -41,10 +35,6 @@ flag. This will be `None` if the flag was not set.
 
 This field is deprecated; the Swift version should be obtained by inspecting the
 arguments passed to specific compilation actions.
-""",
-        "transitive_defines": """\
-`Depset` of `string`s. The transitive `defines` specified for the library that
-propagated this provider and all of its dependencies.
 """,
         "transitive_modules": """\
 `Depset` of values returned from `swift_common.create_module`. The transitive
@@ -320,30 +310,10 @@ def create_swift_info(
         A new `SwiftInfo` provider with the given values.
     """
 
-    defines_set = sets.make()
-    for module in modules:
-        swift_module = module.swift
-        if not swift_module:
-            continue
-
-        if swift_module.defines:
-            defines_set = sets.union(
-                defines_set,
-                sets.make(swift_module.defines),
-            )
-
-    defines = sets.to_list(defines_set)
-
-    transitive_defines = []
-    transitive_modules = []
-    for swift_info in swift_infos:
-        transitive_defines.append(swift_info.transitive_defines)
-        transitive_modules.append(swift_info.transitive_modules)
+    transitive_modules = [x.transitive_modules for x in swift_infos]
 
     return SwiftInfo(
-        direct_defines = defines,
         direct_modules = modules,
         swift_version = swift_version,
-        transitive_defines = depset(defines, transitive = transitive_defines),
         transitive_modules = depset(modules, transitive = transitive_modules),
     )

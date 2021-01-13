@@ -17,6 +17,7 @@
 load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:partial.bzl", "partial")
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("@bazel_skylib//lib:sets.bzl", "sets")
 load("@bazel_skylib//lib:types.bzl", "types")
 load(
     ":actions.bzl",
@@ -1177,7 +1178,6 @@ def _conditional_compilation_flag_configurator(prerequisites, args):
     all_defines = depset(
         prerequisites.defines,
         transitive = [
-            prerequisites.transitive_defines,
             # Take any Swift-compatible defines from Objective-C dependencies
             # and define them for Swift.
             prerequisites.cc_info.compilation_context.defines,
@@ -1396,15 +1396,22 @@ def compile(
         merged_providers.swift_info.transitive_modules.to_list()
     )
 
+    transitive_swiftmodules = []
+    defines_set = sets.make(defines)
+    for module in transitive_modules:
+        swift_module = module.swift
+        if not swift_module:
+            continue
+        transitive_swiftmodules.append(swift_module.swiftmodule)
+        if swift_module.defines:
+            defines_set = sets.union(
+                defines_set,
+                sets.make(swift_module.defines),
+            )
+
     # We need this when generating the VFS overlay file and also when
     # configuring inputs for the compile action, so it's best to precompute it
     # here.
-    transitive_swiftmodules = [
-        module.swift.swiftmodule
-        for module in transitive_modules
-        if module.swift
-    ]
-
     if is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_VFSOVERLAY,
@@ -1426,7 +1433,7 @@ def compile(
         additional_inputs = additional_inputs,
         bin_dir = bin_dir,
         cc_info = merged_providers.cc_info,
-        defines = defines,
+        defines = sets.to_list(defines_set),
         genfiles_dir = genfiles_dir,
         is_swift = True,
         module_name = module_name,
@@ -1435,7 +1442,6 @@ def compile(
         ),
         objc_info = merged_providers.objc_info,
         source_files = srcs,
-        transitive_defines = merged_providers.swift_info.transitive_defines,
         transitive_modules = transitive_modules,
         transitive_swiftmodules = transitive_swiftmodules,
         user_compile_flags = copts + swift_toolchain.command_line_copts,
