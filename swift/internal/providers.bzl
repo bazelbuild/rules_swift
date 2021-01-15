@@ -195,7 +195,7 @@ provider.
     },
 )
 
-def create_module(*, name, clang = None, swift = None):
+def create_module(*, name, clang = None, is_system = False, swift = None):
     """Creates a value containing Clang/Swift module artifacts of a dependency.
 
     At least one of the `clang` and `swift` arguments must not be `None`. It is
@@ -209,6 +209,20 @@ def create_module(*, name, clang = None, swift = None):
             contains artifacts related to Clang modules, such as a module map or
             precompiled module. This may be `None` if the module is a pure Swift
             module with no generated Objective-C interface.
+        is_system: Indicates whether the module is a system module. The default
+            value is `False`. System modules differ slightly from non-system
+            modules in the way that they are passed to the compiler. For
+            example, non-system modules have their Clang module maps passed to
+            the compiler in both implicit and explicit module builds. System
+            modules, on the other hand, do not have their module maps passed to
+            the compiler in implicit module builds because there is currently no
+            way to indicate that modules declared in a file passed via
+            `-fmodule-map-file` should be treated as system modules even if they
+            aren't declared with the `[system]` attribute, and some system
+            modules may not build cleanly with respect to warnings otherwise.
+            Therefore, it is assumed that any module with `is_system == True`
+            must be able to be found using import search paths in order for
+            implicit module builds to succeed.
         swift: A value returned by `swift_common.create_swift_module` that
             contains artifacts related to Swift modules, such as the
             `.swiftmodule`, `.swiftdoc`, and/or `.swiftinterface` files emitted
@@ -216,13 +230,14 @@ def create_module(*, name, clang = None, swift = None):
             C/Objective-C module.
 
     Returns:
-        A `struct` containing the `name`, `clang`, and `swift` fields provided
-        as arguments.
+        A `struct` containing the `name`, `clang`, `is_system`, and `swift`
+        fields provided as arguments.
     """
     if clang == None and swift == None:
-        fail("Must provide atleast a clang or swift module.")
+        fail("Must provide at least a clang or swift module.")
     return struct(
         clang = clang,
+        is_system = is_system,
         name = name,
         swift = swift,
     )
