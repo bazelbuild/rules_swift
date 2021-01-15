@@ -778,7 +778,7 @@ def _collect_clang_module_inputs(
         # Add the module map, which we use for both implicit and explicit module
         # builds. For implicit module builds, we don't worry about the headers
         # above because we collect the full transitive header set below.
-        if not types.is_string(module_map):
+        if not module.is_system and not types.is_string(module_map):
             module_inputs.append(module_map)
 
     # If we prefer textual module maps and headers for the build, fall back to
@@ -792,30 +792,36 @@ def _collect_clang_module_inputs(
         transitive_inputs = header_depsets,
     )
 
-def _clang_modulemap_dependency_args(module):
+def _clang_modulemap_dependency_args(module, ignore_system = True):
     """Returns a `swiftc` argument for the module map of a Clang module.
 
     Args:
         module: A struct containing information about the module, as defined by
             `swift_common.create_module`.
+        ignore_system: If `True` and the module is a system module, no flag
+            should be returned. Defaults to `True`.
 
     Returns:
-        The argument to pass to `swiftc` (without the `-Xcc` prefix).
+        A list of arguments, possibly empty, to pass to `swiftc` (without the
+        `-Xcc` prefix).
     """
+    if module.is_system and ignore_system:
+        return []
+
     module_map = module.clang.module_map
     if types.is_string(module_map):
         module_map_path = module_map
     else:
         module_map_path = module_map.path
 
-    return "-fmodule-map-file={}".format(module_map_path)
+    return ["-fmodule-map-file={}".format(module_map_path)]
 
 def _clang_module_dependency_args(module):
     """Returns `swiftc` arguments for a precompiled Clang module, if possible.
 
     If a precompiled module is present for this module, then flags for both it
     and the module map are returned (the latter is required in order to map
-    headers to mdules in some scenarios, since the precompiled modules are
+    headers to modules in some scenarios, since the precompiled modules are
     passed by name). If no precompiled module is present for this module, then
     this function falls back to the textual module map alone.
 
@@ -824,19 +830,22 @@ def _clang_module_dependency_args(module):
             `swift_common.create_module`.
 
     Returns:
-        A list of arguments to pass to `swiftc` (without the `-Xcc` prefix).
+        A list of arguments, possibly empty, to pass to `swiftc` (without the
+        `-Xcc` prefix).
     """
-    args = []
     if module.clang.precompiled_module:
-        args.append(
+        # If we're consuming an explicit module, we must also provide the
+        # textual module map, whether or not it's a system module.
+        return [
             "-fmodule-file={}={}".format(
                 module.name,
                 module.clang.precompiled_module.path,
             ),
-        )
-    if module.clang.module_map:
-        args.append(_clang_modulemap_dependency_args(module))
-    return args
+        ] + _clang_modulemap_dependency_args(module, ignore_system = False)
+    else:
+        # If we have no explicit module, then only include module maps for
+        # non-system modules.
+        return _clang_modulemap_dependency_args(module)
 
 def _dependencies_clang_modulemaps_configurator(prerequisites, args):
     """Configures Clang module maps from dependencies."""
