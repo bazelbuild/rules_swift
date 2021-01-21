@@ -338,19 +338,30 @@ def _handle_cc_target(
         module_name = derive_module_name(target.label)
         precompiled_module = None
 
-    return [create_swift_info(
-        modules = [
-            create_module(
-                name = module_name,
-                clang = create_clang_module(
-                    compilation_context = compilation_context,
-                    module_map = module_map_file,
-                    precompiled_module = precompiled_module,
+    providers = [
+        create_swift_info(
+            modules = [
+                create_module(
+                    name = module_name,
+                    clang = create_clang_module(
+                        compilation_context = compilation_context,
+                        module_map = module_map_file,
+                        precompiled_module = precompiled_module,
+                    ),
                 ),
+            ],
+            swift_infos = swift_infos,
+        ),
+    ]
+
+    if precompiled_module:
+        providers.append(
+            OutputGroupInfo(
+                swift_explicit_module = depset([precompiled_module]),
             ),
-        ],
-        swift_infos = swift_infos,
-    )]
+        )
+
+    return providers
 
 def _swift_clang_module_aspect_impl(target, aspect_ctx):
     # Do nothing if the target already propagates `SwiftInfo`.
