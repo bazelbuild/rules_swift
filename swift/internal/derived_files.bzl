@@ -108,7 +108,11 @@ def _intermediate_object_file(actions, target_name, src):
     )
 
 def _module_map(actions, target_name):
-    """Declares the module map for the generated header of a target.
+    """Declares the module map for a target.
+
+    These module maps are used when generating a Swift-compatible module map for
+    a C/Objective-C target, and also when generating the module map for the
+    generated header of a Swift target.
 
     Args:
         actions: The context's actions object.
@@ -117,9 +121,7 @@ def _module_map(actions, target_name):
     Returns:
         The declared `File`.
     """
-    return actions.declare_file(
-        "{}.modulemaps/module.modulemap".format(target_name),
-    )
+    return actions.declare_file("{}.swift.modulemap".format(target_name))
 
 def _modulewrap_object(actions, target_name):
     """Declares the object file used to wrap Swift modules for ELF binaries.
