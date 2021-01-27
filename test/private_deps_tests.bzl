@@ -94,8 +94,8 @@ def private_deps_test_suite(name = "private_deps"):
     private_deps_provider_test(
         name = "{}_client_cc_deps_modulemaps".format(name),
         expected_files = [
-            "/test/fixtures/private_deps/public_cc.modulemaps/module.modulemap",
-            "-/test/fixtures/private_deps/private_cc.modulemaps/module.modulemap",
+            "/test/fixtures/private_deps/public_cc.swift.modulemap",
+            "-/test/fixtures/private_deps/private_cc.swift.modulemap",
         ],
         field = "transitive_modules.clang!.module_map",
         provider = "SwiftInfo",
