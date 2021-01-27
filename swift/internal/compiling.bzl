@@ -925,48 +925,67 @@ def _collect_clang_module_inputs(
         `swift_toolchain_config.config_result`) that contains the input
         artifacts for the action.
     """
-    module_inputs = []
-    header_depsets = []
+    direct_inputs = []
+    transitive_inputs = []
 
-    # Swift compiles (not Clang module compiles) that prefer precompiled modules
-    # do not need the full set of transitive headers.
-    if cc_info and not (is_swift and prefer_precompiled_modules):
-        header_depsets.append(cc_info.compilation_context.headers)
+    if cc_info:
+        # The headers stored in the `cc_info` argument's compilation context
+        # differ depending on the kind of action we're invoking:
+        if (is_swift and not prefer_precompiled_modules) or not is_swift:
+            # If this is a `SwiftCompile` with explicit modules disabled, the
+            # `headers` field is an already-computed set of the transitive
+            # headers of all the deps. (For an explicit module build, we skip it
+            # and will more selectively pick subsets for any individual modules
+            # that need to fallback to implicit modules in the loop below).
+            #
+            # If this is a `SwiftPrecompileCModule`, then by definition we're
+            # only here in a build with explicit modules enabled. We should only
+            # need the direct headers of the module being compiled and its
+            # direct dependencies (the latter because Clang needs them present
+            # on the file system to map them to the module that contains them.)
+            # However, we may also need some of the transitive headers, if the
+            # module has dependencies that aren't recognized as modules (e.g.,
+            # `cc_library` targets without the `swift_module` tag) and the
+            # module's headers include those. This will likely over-estimate the
+            # needed inputs, but we can't do better without include scanning in
+            # Starlark.
+            transitive_inputs.append(cc_info.compilation_context.headers)
+
+    # Some rules still use the `umbrella_header` field to propagate a header
+    # that they don't also include in `CcInfo.compilation_context.headers`, so
+    # we also need to pull this in for the time being.
+    if not prefer_precompiled_modules and objc_info:
+        transitive_inputs.append(objc_info.umbrella_header)
 
     for module in modules:
         clang_module = module.clang
-        module_map = clang_module.module_map
-        if prefer_precompiled_modules:
-            # If the build prefers precompiled modules, use the .pcm if it
-            # exists; otherwise, use the textual module map and the headers for
-            # that module (because we only want to propagate the headers that
-            # are required, not the full transitive set).
-            precompiled_module = clang_module.precompiled_module
-            if precompiled_module:
-                module_inputs.append(precompiled_module)
-            else:
-                module_inputs.extend(
-                    clang_module.compilation_context.direct_headers,
-                )
-                module_inputs.extend(
-                    clang_module.compilation_context.direct_textual_headers,
-                )
 
         # Add the module map, which we use for both implicit and explicit module
-        # builds. For implicit module builds, we don't worry about the headers
-        # above because we collect the full transitive header set below.
+        # builds.
+        module_map = clang_module.module_map
         if not module.is_system and not types.is_string(module_map):
-            module_inputs.append(module_map)
+            direct_inputs.append(module_map)
 
-    # If we prefer textual module maps and headers for the build, fall back to
-    # using the full set of transitive headers.
-    if not prefer_precompiled_modules:
-        if objc_info:
-            header_depsets.append(objc_info.umbrella_header)
+        if prefer_precompiled_modules:
+            precompiled_module = clang_module.precompiled_module
+            if precompiled_module:
+                # For builds preferring explicit modules, use it if we have it
+                # and don't include any headers as inputs.
+                direct_inputs.append(precompiled_module)
+            else:
+                # If we don't have an explicit module, we need the transitive
+                # headers from the compilation context associated with the
+                # module. This will likely overestimate the headers that will
+                # actually be used in the action, but until we can use include
+                # scanning from Starlark, we can't compute a more precise input
+                # set.
+                transitive_inputs.append(
+                    clang_module.compilation_context.headers,
+                )
 
     return swift_toolchain_config.config_result(
-        inputs = module_inputs,
-        transitive_inputs = header_depsets,
+        inputs = direct_inputs,
+        transitive_inputs = transitive_inputs,
     )
 
 def _clang_modulemap_dependency_args(module, ignore_system = True):
