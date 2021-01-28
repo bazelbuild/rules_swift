@@ -115,6 +115,13 @@ def _header_path(header_file, module_map_file, workspace_relative):
     if workspace_relative:
         return header_file.path
 
+    # Minor optimization for the generated Objective-C header of a Swift module,
+    # which will be in the same directory as the module map file -- we can just
+    # use the header's basename instead of the elaborate relative path
+    # computation below.
+    if header_file.dirname == module_map_file.dirname:
+        return header_file.basename
+
     # Otherwise, since the module map is generated, we need to get the full path
     # to it rather than just its short path (that is, the path starting with
     # bazel-out/). Then, we can simply walk up the same number of parent
