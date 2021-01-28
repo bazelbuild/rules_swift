@@ -62,6 +62,7 @@ load(
     "SWIFT_FEATURE_VFSOVERLAY",
 )
 load(":features.bzl", "are_all_features_enabled", "is_feature_enabled")
+load(":module_maps.bzl", "write_module_map")
 load(":providers.bzl", "SwiftInfo", "create_swift_info")
 load(":toolchain_config.bzl", "swift_toolchain_config")
 load(
@@ -1774,11 +1775,11 @@ def _declare_compile_outputs(
             actions = actions,
             target_name = target_name,
         )
-        _write_objc_header_module_map(
+        write_module_map(
             actions = actions,
+            module_map_file = generated_module_map,
             module_name = module_name,
-            objc_header = generated_header,
-            output = generated_module_map,
+            public_headers = [generated_header],
         )
     else:
         generated_module_map = None
@@ -2242,29 +2243,6 @@ def swift_library_output_map(name, alwayslink):
     return {
         "archive": "lib{}.{}".format(name, extension),
     }
-
-def _write_objc_header_module_map(
-        actions,
-        module_name,
-        objc_header,
-        output):
-    """Writes a module map for a generated Swift header to a file.
-
-    Args:
-        actions: The context's actions object.
-        module_name: The name of the Swift module.
-        objc_header: The `File` representing the generated header.
-        output: The `File` to which the module map should be written.
-    """
-    actions.write(
-        content = ('module "{module_name}" {{\n' +
-                   '  header "../{header_name}"\n' +
-                   "}}\n").format(
-            header_name = objc_header.basename,
-            module_name = module_name,
-        ),
-        output = output,
-    )
 
 def _index_store_path_overridden(copts):
     """Checks if index_while_building must be disabled.
