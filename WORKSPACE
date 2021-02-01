@@ -8,18 +8,11 @@ load(
 swift_rules_dependencies()
 
 load(
-    "@build_bazel_apple_support//lib:repositories.bzl",
-    "apple_support_dependencies",
+    "@build_bazel_rules_swift//swift:extras.bzl",
+    "swift_rules_extra_dependencies",
 )
 
-apple_support_dependencies()
-
-load(
-    "@com_google_protobuf//:protobuf_deps.bzl",
-    "protobuf_deps",
-)
-
-protobuf_deps()
+swift_rules_extra_dependencies()
 
 load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
 
