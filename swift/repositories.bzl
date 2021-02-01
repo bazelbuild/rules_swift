@@ -99,23 +99,12 @@ def swift_rules_dependencies():
     _maybe(
         http_archive,
         name = "rules_proto",
-        # latest as of 2020-09-01
+        # latest as of 2021-01-27
         urls = [
-            "https://github.com/bazelbuild/rules_proto/archive/40298556293ae502c66579620a7ce867d5f57311.zip",
+            "https://github.com/bazelbuild/rules_proto/archive/a0761ed101b939e19d83b2da5f59034bffc19c12.zip",
         ],
-        sha256 = "37d32b789be90fead9ab108dbe4fe4df463d26c122dc896dc1bf134252d3c49a",
-        strip_prefix = "rules_proto-40298556293ae502c66579620a7ce867d5f57311",
-        type = "zip",
-    )
-
-    _maybe(
-        http_archive,
-        name = "com_google_protobuf",
-        urls = [
-            "https://github.com/protocolbuffers/protobuf/archive/v3.14.0.zip",
-        ],
-        sha256 = "bf0e5070b4b99240183b29df78155eee335885e53a8af8683964579c214ad301",
-        strip_prefix = "protobuf-3.14.0",
+        sha256 = "32c9deb114c9e2d6ea3afd48a4d203d775b60a01876186d1ad52d752a8be439f",
+        strip_prefix = "rules_proto-a0761ed101b939e19d83b2da5f59034bffc19c12",
         type = "zip",
     )
 
