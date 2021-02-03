@@ -237,3 +237,13 @@ SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES = "swift.skip_function_bodies_for_deri
 # If enabled remap the absolute path to Xcode in debug info. When used with
 # swift.coverage_prefix_map also remap the path in coverage data.
 SWIFT_FEATURE_REMAP_XCODE_PATH = "swift.remap_xcode_path"
+
+# A private feature that is set by the toolchain if a flag enabling WMO was
+# passed on the command line using `--swiftcopt`. Users should never manually
+# enable, disable, or query this feature.
+SWIFT_FEATURE__WMO_IN_SWIFTCOPTS = "swift._wmo_in_swiftcopts"
+
+# A private feature that is set by the toolchain if the flags `-num-threads 1`
+# were passed on the command line using `--swiftcopt`. Users should never
+# manually enable, disable, or query this feature.
+SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS = "swift._num_threads_1_in_swiftcopts"

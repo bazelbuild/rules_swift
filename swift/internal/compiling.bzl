@@ -61,6 +61,8 @@ load(
     "SWIFT_FEATURE_USE_C_MODULES",
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
     "SWIFT_FEATURE_VFSOVERLAY",
+    "SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS",
+    "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
 )
 load(":features.bzl", "are_all_features_enabled", "is_feature_enabled")
 load(":module_maps.bzl", "write_module_map")
@@ -85,11 +87,31 @@ _SWIFTMODULES_VFS_ROOT = "/__build_bazel_rules_swift/swiftmodules"
 # when an API to obtain this is available.
 _DEFAULT_WMO_THREAD_COUNT = 12
 
-def compile_action_configs():
+# Swift command line flags that enable whole module optimization. (This
+# dictionary is used as a set for quick lookup; the values are irrelevant.)
+_WMO_FLAGS = {
+    "-wmo": True,
+    "-whole-module-optimization": True,
+    "-force-single-frontend-invocation": True,
+}
+
+def compile_action_configs(
+        *,
+        additional_objc_copts = [],
+        additional_swiftc_copts = []):
     """Returns the list of action configs needed to perform Swift compilation.
 
     Toolchains must add these to their own list of action configs so that
     compilation actions will be correctly configured.
+
+    Args:
+        additional_objc_copts: An optional list of additional Objective-C
+            compiler flags that should be passed (preceded by `-Xcc`) to Swift
+            compile actions *and* Swift explicit module precompile actions after
+            any other toolchain- or user-provided flags.
+        additional_swiftc_copts: An optional list of additional Swift compiler
+            flags that should be passed to Swift compile actions only after any
+            other toolchain- or user-provided flags.
 
     Returns:
         The list of action configs needed to perform compilation.
@@ -274,7 +296,10 @@ def compile_action_configs():
             configurators = [
                 swift_toolchain_config.add_arg("-whole-module-optimization"),
             ],
-            features = [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_WMO],
+            features = [
+                [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_WMO],
+                [SWIFT_FEATURE__WMO_IN_SWIFTCOPTS],
+            ],
         ),
 
         # Enable or disable serialization of debugging options into
@@ -656,10 +681,14 @@ def compile_action_configs():
             ],
             configurators = [_batch_mode_configurator],
             features = [SWIFT_FEATURE_ENABLE_BATCH_MODE],
-            not_features = [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_WMO],
+            not_features = [
+                [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_WMO],
+                [SWIFT_FEATURE__WMO_IN_SWIFTCOPTS],
+            ],
         ),
 
-        # Set the number of threads to use for WMO.
+        # Set the number of threads to use for WMO. (We can skip this if we know
+        # we'll already be applying `-num-threads` via `--swiftcopt` flags.)
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
@@ -673,7 +702,11 @@ def compile_action_configs():
                     False,
                 ),
             ],
-            features = [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_WMO],
+            features = [
+                [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_WMO],
+                [SWIFT_FEATURE__WMO_IN_SWIFTCOPTS],
+            ],
+            not_features = [SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS],
         ),
         swift_toolchain_config.action_config(
             actions = [
@@ -688,7 +721,10 @@ def compile_action_configs():
                     True,
                 ),
             ],
-            not_features = [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_WMO],
+            not_features = [
+                [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_WMO],
+                [SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS],
+            ],
         ),
 
         # Set the module name.
@@ -751,10 +787,12 @@ def compile_action_configs():
         ),
     ]
 
-    # NOTE: The position of this action config in the list is important, because
-    # it places user compile flags after flags added by the rules, allowing
-    # `copts` attributes and `--swiftcopt` flag values to override flags set by
-    # the rule implementations as a last resort.
+    # NOTE: The positions of these action configs in the list are important,
+    # because it places the `copts` attribute ("user compile flags") after flags
+    # added by the rules, and then the "additional objc" and "additional swift"
+    # flags follow those, which are `--objccopt` and `--swiftcopt` flags from
+    # the command line that should override even the flags specified in the
+    # `copts` attribute.
     action_configs.append(
         swift_toolchain_config.action_config(
             actions = [
@@ -764,6 +802,40 @@ def compile_action_configs():
             configurators = [_user_compile_flags_configurator],
         ),
     )
+    if additional_objc_copts:
+        action_configs.append(
+            swift_toolchain_config.action_config(
+                actions = [
+                    swift_action_names.COMPILE,
+                    swift_action_names.PRECOMPILE_C_MODULE,
+                ],
+                configurators = [
+                    # TODO(#568): Switch to using lambda when the minimum
+                    # supported Bazel version by rules_swift supports it.
+                    partial.make(
+                        _additional_objc_copts_configurator,
+                        additional_objc_copts,
+                    ),
+                ],
+            ),
+        )
+    if additional_swiftc_copts:
+        action_configs.append(
+            swift_toolchain_config.action_config(
+                # TODO(allevato): Determine if there are any uses of
+                # `-Xcc`-prefixed flags that need to be added to explicit module
+                # actions, or if we should advise against/forbid that.
+                actions = [swift_action_names.COMPILE],
+                configurators = [
+                    # TODO(#568): Switch to using lambda when the minimum
+                    # supported Bazel version by rules_swift supports it.
+                    partial.make(
+                        _additional_swift_copts_configurator,
+                        additional_swiftc_copts,
+                    ),
+                ],
+            ),
+        )
 
     action_configs.append(
         swift_toolchain_config.action_config(
@@ -1222,9 +1294,34 @@ def _is_wmo_manually_requested(user_compile_flags):
     Returns:
         True if WMO is enabled in the given list of flags.
     """
-    return ("-wmo" in user_compile_flags or
-            "-whole-module-optimization" in user_compile_flags or
-            "-force-single-frontend-invocation" in user_compile_flags)
+    for copt in user_compile_flags:
+        if copt in _WMO_FLAGS:
+            return True
+    return False
+
+def features_from_swiftcopts(swiftcopts):
+    """Returns a list of features to enable based on `--swiftcopt` flags.
+
+    Since `--swiftcopt` flags are hooked into the action configuration when the
+    toolchain is configured, it's not possible for individual actions to query
+    them easily if those flags may determine the nature of outputs (for example,
+    single- vs. multi-threaded WMO). The toolchain can call this function to map
+    those flags to private features that can be queried instead.
+
+    Args:
+        swiftcopts: The list of command line flags that were passed using
+            `--swiftcopt`.
+
+    Returns:
+        A list (possibly empty) of strings denoting feature names that should be
+        enabled on the toolchain.
+    """
+    features = []
+    if _is_wmo_manually_requested(user_compile_flags = swiftcopts):
+        features.append(SWIFT_FEATURE__WMO_IN_SWIFTCOPTS)
+    if _find_num_threads_flag_value(user_compile_flags = swiftcopts) == 1:
+        features.append(SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS)
+    return features
 
 def _index_while_building_configurator(prerequisites, args):
     """Adds flags for index-store generation to the command line."""
@@ -1258,6 +1355,19 @@ def _additional_inputs_configurator(prerequisites, args):
     return swift_toolchain_config.config_result(
         inputs = prerequisites.additional_inputs,
     )
+
+def _additional_objc_copts_configurator(additional_objc_copts, prerequisites, args):
+    """Adds additional Objective-C compiler flags to the command line."""
+    _unused = [prerequisites]
+    args.add_all(
+        additional_objc_copts,
+        before_each = "-Xcc",
+    )
+
+def _additional_swift_copts_configurator(additional_swiftc_copts, prerequisites, args):
+    """Adds additional Swift compiler flags to the command line."""
+    _unused = [prerequisites]
+    args.add_all(additional_swiftc_copts)
 
 def derive_module_name(*args):
     """Returns a derived module name from the given build label.
@@ -1393,7 +1503,7 @@ def compile(
         module_name = module_name,
         srcs = srcs,
         target_name = target_name,
-        user_compile_flags = copts + swift_toolchain.command_line_copts,
+        user_compile_flags = copts,
     )
 
     split_derived_file_generation = is_feature_enabled(
@@ -1502,7 +1612,7 @@ def compile(
         source_files = srcs,
         transitive_modules = transitive_modules,
         transitive_swiftmodules = transitive_swiftmodules,
-        user_compile_flags = copts + swift_toolchain.command_line_copts,
+        user_compile_flags = copts,
         vfsoverlay_file = vfsoverlay_file,
         vfsoverlay_search_path = _SWIFTMODULES_VFS_ROOT,
         # Merge the compile outputs into the prerequisites.
@@ -1799,12 +1909,8 @@ def _declare_compile_outputs(
 
     # Now, declare outputs like object files for which there may be one or many,
     # depending on the compilation mode.
-    is_wmo_implied_by_features = are_all_features_enabled(
-        feature_configuration = feature_configuration,
-        feature_names = [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_WMO],
-    )
     output_nature = _emitted_output_nature(
-        is_wmo_implied_by_features = is_wmo_implied_by_features,
+        feature_configuration = feature_configuration,
         user_compile_flags = user_compile_flags,
     )
 
@@ -2315,7 +2421,32 @@ def _disable_autolink_framework_copts(framework_name):
         ],
     )
 
-def _emitted_output_nature(is_wmo_implied_by_features, user_compile_flags):
+def _find_num_threads_flag_value(user_compile_flags):
+    """Finds the value of the `-num-threads` flag.
+
+    This function looks for both forms of the flag (`-num-threads X` and
+    `-num-threads=X`) and returns the corresponding value if found. If the flag
+    is present multiple times, the last value is the one returned.
+
+    Args:
+        user_compile_flags: The options passed into the compile action.
+
+    Returns:
+        The numeric value of the `-num-threads` flag if found, otherwise `None`.
+    """
+    num_threads = None
+    saw_space_separated_num_threads = False
+    for copt in user_compile_flags:
+        if saw_space_separated_num_threads:
+            saw_space_separated_num_threads = False
+            num_threads = _safe_int(copt)
+        elif copt == "-num-threads":
+            saw_space_separated_num_threads = True
+        elif copt.startswith("-num-threads="):
+            num_threads = _safe_int(copt.split("=")[1])
+    return num_threads
+
+def _emitted_output_nature(feature_configuration, user_compile_flags):
     """Returns information about the nature of emitted compilation outputs.
 
     The compiler emits a single object if it is invoked with whole-module
@@ -2325,8 +2456,8 @@ def _emitted_output_nature(is_wmo_implied_by_features, user_compile_flags):
     thread count,_ so we have to treat that case separately.
 
     Args:
-        is_wmo_implied_by_features: Whether WMO is implied by features set in
-            the feature configuration.
+        feature_configuration: The feature configuration for the current
+            compilation.
         user_compile_flags: The options passed into the compile action.
 
     Returns:
@@ -2340,35 +2471,28 @@ def _emitted_output_nature(is_wmo_implied_by_features, user_compile_flags):
             compilation action with the given flags.
     """
     is_wmo = (
-        is_wmo_implied_by_features or
+        is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE__WMO_IN_SWIFTCOPTS,
+        ) or
+        are_all_features_enabled(
+            feature_configuration = feature_configuration,
+            feature_names = [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_WMO],
+        ) or
         _is_wmo_manually_requested(user_compile_flags)
     )
 
-    saw_space_separated_num_threads = False
-
-    # If WMO is enabled, the action config will automatically add
-    # `-num-threads 12` to the command line. We need to stage that as our
-    # initial default here to ensure that we return the right value if the user
-    # compile flags don't otherwise override it.
-    #
-    # 0 is the only option that makes swift emit a single object file, anything
-    # greater and it uses that number of threads to emit multiple objects
-    num_threads = _DEFAULT_WMO_THREAD_COUNT if is_wmo else 0
-
-    for copt in user_compile_flags:
-        if saw_space_separated_num_threads:
-            saw_space_separated_num_threads = False
-            num_threads = _safe_int(copt)
-        elif copt == "-num-threads":
-            saw_space_separated_num_threads = True
-        elif copt.startswith("-num-threads="):
-            num_threads = _safe_int(copt.split("=")[1])
-
-    if num_threads == None or num_threads < 0:
-        fail("The value of '-num-threads' must be a positive integer.")
+    # We check the feature first because that implies that `-num-threads 1` was
+    # present in `--swiftcopt`, which overrides all other flags (like the user
+    # compile flags, which come from the target's `copts`). Only fallback to
+    # checking the flags if the feature is disabled.
+    is_single_threaded = is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS,
+    ) or _find_num_threads_flag_value(user_compile_flags) == 1
 
     return struct(
-        emits_multiple_objects = not (is_wmo and num_threads == 0),
+        emits_multiple_objects = not (is_wmo and is_single_threaded),
         emits_partial_modules = not is_wmo,
     )
 
