@@ -135,7 +135,17 @@ def _apply_action_configs(
                     prerequisites,
                     args,
                 )
-                if action_inputs:
+
+                # If we create an action configurator from a lambda that calls
+                # `Args.add*`, the result will be the `Args` objects (rather
+                # than `None`) because those methods return the same `Args`
+                # object for chaining. We can guard against this (and possibly
+                # other errors) by checking that the value is a struct. If it
+                # is, then it's not `None` and it probably came from the
+                # provider used by `swift_toolchain_config.config_result`. If
+                # it's some other kind of struct, then we'll error out trying to
+                # access the fields.
+                if type(action_inputs) == "struct":
                     inputs.extend(action_inputs.inputs)
                     transitive_inputs.extend(action_inputs.transitive_inputs)
 
