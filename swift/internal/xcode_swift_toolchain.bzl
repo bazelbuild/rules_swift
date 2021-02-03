@@ -19,14 +19,13 @@ toolchain package. If you are looking for rules to build Swift code using this
 toolchain, see `swift.bzl`.
 """
 
-load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:partial.bzl", "partial")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
 load(":actions.bzl", "swift_action_names")
 load(":attrs.bzl", "swift_toolchain_driver_attrs")
-load(":compiling.bzl", "compile_action_configs")
+load(":compiling.bzl", "compile_action_configs", "features_from_swiftcopts")
 load(
     ":feature_names.bzl",
     "SWIFT_FEATURE_BITCODE_EMBEDDED",
@@ -105,11 +104,7 @@ def _command_line_objc_copts(compilation_mode, objc_fragment):
             ]
 
     clang_copts = objc_fragment.copts + legacy_copts
-
-    return collections.before_each(
-        "-Xcc",
-        [copt for copt in clang_copts if copt != "-g"],
-    )
+    return [copt for copt in clang_copts if copt != "-g"]
 
 def _platform_developer_framework_dir(apple_toolchain, apple_fragment):
     """Returns the Developer framework directory for the platform.
@@ -319,6 +314,8 @@ def _resource_directory_configurator(developer_dir, prerequisites, args):
     )
 
 def _all_action_configs(
+        additional_objc_copts,
+        additional_swiftc_copts,
         apple_fragment,
         apple_toolchain,
         needs_resource_directory,
@@ -326,6 +323,11 @@ def _all_action_configs(
     """Returns the action configurations for the Swift toolchain.
 
     Args:
+        additional_objc_copts: Additional Objective-C compiler flags obtained
+            from the `objc` configuration fragment (and legacy flags that were
+            previously passed directly by Bazel).
+        additional_swiftc_copts: Additional Swift compiler flags obtained from
+            the `swift` configuration fragment.
         apple_fragment: The `apple` configuration fragment.
         apple_toolchain: The `apple_common.apple_toolchain()` object.
         needs_resource_directory: If True, the toolchain needs the resource
@@ -441,7 +443,10 @@ def _all_action_configs(
             ),
         )
 
-    action_configs.extend(compile_action_configs())
+    action_configs.extend(compile_action_configs(
+        additional_objc_copts = additional_objc_copts,
+        additional_swiftc_copts = additional_swiftc_copts,
+    ))
     return action_configs
 
 def _all_tool_configs(
@@ -654,7 +659,7 @@ def _xcode_swift_toolchain_impl(ctx):
     requested_features = features_for_build_modes(
         ctx,
         objc_fragment = ctx.fragments.objc,
-    )
+    ) + features_from_swiftcopts(swiftcopts = ctx.fragments.swift.copts())
     requested_features.extend(ctx.features)
     requested_features.append(SWIFT_FEATURE_BUNDLED_XCTESTS)
     requested_features.extend(
@@ -682,11 +687,6 @@ def _xcode_swift_toolchain_impl(ctx):
         requested_features.append(SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION)
         requested_features.append(SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS)
 
-    command_line_copts = _command_line_objc_copts(
-        ctx.var["COMPILATION_MODE"],
-        ctx.fragments.objc,
-    ) + ctx.fragments.swift.copts()
-
     env = _xcode_env(platform = platform, xcode_config = xcode_config)
     execution_requirements = _xcode_execution_requirements(
         xcode_config = xcode_config,
@@ -702,6 +702,11 @@ def _xcode_swift_toolchain_impl(ctx):
         xcode_config = xcode_config,
     )
     all_action_configs = _all_action_configs(
+        additional_objc_copts = _command_line_objc_copts(
+            ctx.var["COMPILATION_MODE"],
+            ctx.fragments.objc,
+        ),
+        additional_swiftc_copts = ctx.fragments.swift.copts(),
         apple_fragment = apple_fragment,
         apple_toolchain = apple_toolchain,
         needs_resource_directory = swift_executable or toolchain_root,
@@ -720,7 +725,6 @@ def _xcode_swift_toolchain_impl(ctx):
             action_configs = all_action_configs,
             all_files = depset(all_files),
             cc_toolchain_info = cc_toolchain,
-            command_line_copts = command_line_copts,
             cpu = cpu,
             linker_opts_producer = linker_opts_producer,
             object_format = "macho",

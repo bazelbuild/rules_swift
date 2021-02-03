@@ -25,7 +25,7 @@ load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
 load(":actions.bzl", "swift_action_names")
 load(":attrs.bzl", "swift_toolchain_driver_attrs")
 load(":autolinking.bzl", "autolink_extract_action_configs")
-load(":compiling.bzl", "compile_action_configs")
+load(":compiling.bzl", "compile_action_configs", "features_from_swiftcopts")
 load(":debugging.bzl", "modulewrap_action_configs")
 load(
     ":feature_names.bzl",
@@ -86,14 +86,20 @@ def _all_tool_configs(
         ),
     }
 
-def _all_action_configs():
+def _all_action_configs(additional_swiftc_copts):
     """Returns the action configurations for the Swift toolchain.
+
+    Args:
+        additional_swiftc_copts: Additional Swift compiler flags obtained from
+            the `swift` configuration fragment.
 
     Returns:
         A list of action configurations for the toolchain.
     """
     return (
-        compile_action_configs() +
+        compile_action_configs(
+            additional_swift_copts = additional_swiftc_copts,
+        ) +
         modulewrap_action_configs() +
         autolink_extract_action_configs()
     )
@@ -170,7 +176,10 @@ def _swift_toolchain_impl(ctx):
 
     # Combine build mode features, autoconfigured features, and required
     # features.
-    requested_features = features_for_build_modes(ctx)
+    requested_features = (
+        features_for_build_modes(ctx) +
+        features_from_swiftcopts(swiftcopts = ctx.fragments.swift.copts())
+    )
     requested_features.extend([
         SWIFT_FEATURE_NO_GENERATED_HEADER,
         SWIFT_FEATURE_NO_GENERATED_MODULE_MAP,
@@ -191,7 +200,9 @@ def _swift_toolchain_impl(ctx):
         use_param_file = SWIFT_FEATURE_USE_RESPONSE_FILES in ctx.features,
         additional_tools = [ctx.file.version_file],
     )
-    all_action_configs = _all_action_configs()
+    all_action_configs = _all_action_configs(
+        additional_swiftc_copts = ctx.fragments.swift.copts(),
+    )
 
     # TODO(allevato): Move some of the remaining hardcoded values, like object
     # format and Obj-C interop support, to attributes so that we can remove the
@@ -201,7 +212,6 @@ def _swift_toolchain_impl(ctx):
             action_configs = all_action_configs,
             all_files = depset(all_files),
             cc_toolchain_info = cc_toolchain,
-            command_line_copts = ctx.fragments.swift.copts(),
             cpu = ctx.attr.arch,
             linker_opts_producer = linker_opts_producer,
             object_format = "elf",

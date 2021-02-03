@@ -70,13 +70,6 @@ using this toolchain.
 The `cc_common.CcToolchainInfo` provider from the Bazel C++ toolchain that this
 Swift toolchain depends on.
 """,
-        "command_line_copts": """\
-`List` of `strings`. Flags that were passed to Bazel using the `--swiftcopt`
-command line flag. These flags have the highest precedence; they are added to
-compilation command lines after the toolchain default flags
-(`SwiftToolchainInfo.swiftc_copts`) and after flags specified in the `copts`
-attributes of Swift targets.
-""",
         "cpu": """\
 `String`. The CPU architecture that the toolchain is targeting.
 """,
