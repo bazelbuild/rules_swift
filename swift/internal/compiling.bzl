@@ -1039,8 +1039,10 @@ def _collect_clang_module_inputs(
 
     # Some rules still use the `umbrella_header` field to propagate a header
     # that they don't also include in `CcInfo.compilation_context.headers`, so
-    # we also need to pull this in for the time being.
-    if not prefer_precompiled_modules and objc_info:
+    # we also need to pull these in for the time being.
+    # TODO(b/142867898): This can be removed once the Swift rules start
+    # generating its own module map for these targets.
+    if objc_info:
         transitive_inputs.append(objc_info.umbrella_header)
 
     for module in modules:
