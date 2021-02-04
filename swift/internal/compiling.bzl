@@ -2424,9 +2424,9 @@ def _disable_autolink_framework_copts(framework_name):
 def _find_num_threads_flag_value(user_compile_flags):
     """Finds the value of the `-num-threads` flag.
 
-    This function looks for both forms of the flag (`-num-threads X` and
-    `-num-threads=X`) and returns the corresponding value if found. If the flag
-    is present multiple times, the last value is the one returned.
+    This function looks for the `-num-threads` flag and returns the
+    corresponding value if found. If the flag is present multiple times, the
+    last value is the one returned.
 
     Args:
         user_compile_flags: The options passed into the compile action.
@@ -2435,15 +2435,13 @@ def _find_num_threads_flag_value(user_compile_flags):
         The numeric value of the `-num-threads` flag if found, otherwise `None`.
     """
     num_threads = None
-    saw_space_separated_num_threads = False
+    saw_num_threads = False
     for copt in user_compile_flags:
-        if saw_space_separated_num_threads:
-            saw_space_separated_num_threads = False
+        if saw_num_threads:
+            saw_num_threads = False
             num_threads = _safe_int(copt)
         elif copt == "-num-threads":
-            saw_space_separated_num_threads = True
-        elif copt.startswith("-num-threads="):
-            num_threads = _safe_int(copt.split("=")[1])
+            saw_num_threads = True
     return num_threads
 
 def _emitted_output_nature(feature_configuration, user_compile_flags):
