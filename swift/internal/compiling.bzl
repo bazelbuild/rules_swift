@@ -1780,6 +1780,7 @@ def _declare_compile_outputs(
             module_map_file = generated_module_map,
             module_name = module_name,
             public_headers = [generated_header],
+            reexports_all = False,
         )
     else:
         generated_module_map = None

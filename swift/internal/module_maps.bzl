@@ -25,6 +25,7 @@ def write_module_map(
         public_textual_headers = [],
         private_headers = [],
         private_textual_headers = [],
+        reexports_all = True,
         workspace_relative = False):
     """Writes the content of the module map to a file.
 
@@ -42,12 +43,16 @@ def write_module_map(
             headers of the target whose module map is being written.
         private_textual_headers: The `list` of `File`s representing the private
             textual headers of the target whose module map is being written.
+        reexports_all: A Boolean value indicating whether to re-export all of
+            the modules that were imported via the headers.
         workspace_relative: A Boolean value indicating whether the header paths
             written in the module map file should be relative to the workspace
             or relative to the module map file.
     """
     content = 'module "{}" {{\n'.format(module_name)
-    content += "    export *\n\n"
+
+    if reexports_all:
+        content += "    export *\n\n"
 
     content += "".join([
         '    header "{}"\n'.format(_header_path(
