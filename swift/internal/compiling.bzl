@@ -717,6 +717,18 @@ def compile_action_configs():
             configurators = [_index_while_building_configurator],
             features = [SWIFT_FEATURE_INDEX_WHILE_BUILDING],
         ),
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [
+                swift_toolchain_config.add_arg(
+                    "-index-ignore-system-modules",
+                ),
+            ],
+            features = [
+                SWIFT_FEATURE_INDEX_WHILE_BUILDING,
+                SWIFT_FEATURE_DISABLE_SYSTEM_INDEX,
+            ],
+        ),
 
         # User-defined conditional compilation flags (defined for Swift; those
         # passed directly to ClangImporter are handled above).
