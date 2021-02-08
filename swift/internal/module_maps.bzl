@@ -21,6 +21,7 @@ def write_module_map(
         module_map_file,
         module_name,
         dependent_module_names = [],
+        exported_module_ids = [],
         public_headers = [],
         public_textual_headers = [],
         private_headers = [],
@@ -34,6 +35,14 @@ def write_module_map(
         module_name: The name of the module being generated.
         dependent_module_names: A `list` of names of Clang modules that are
             direct dependencies of the target whose module map is being written.
+        exported_module_ids: A `list` of Clang wildcard module identifiers that
+            will be re-exported as part of the API of the module being written.
+            The values in this list should match `wildcard-module-id` as
+            described by
+            https://clang.llvm.org/docs/Modules.html#export-declaration. Common
+            values include the empty list to re-export nothing (except the
+            module's own API), or `["*"]` to re-export all modules that were
+            imported by the header files in the module.
         public_headers: The `list` of `File`s representing the public modular
             headers of the target whose module map is being written.
         public_textual_headers: The `list` of `File`s representing the public
@@ -47,7 +56,12 @@ def write_module_map(
             or relative to the module map file.
     """
     content = 'module "{}" {{\n'.format(module_name)
-    content += "    export *\n\n"
+    if exported_module_ids:
+        content += "".join([
+            "    export {}\n".format(module_id)
+            for module_id in exported_module_ids
+        ])
+        content += "\n"
 
     content += "".join([
         '    header "{}"\n'.format(_header_path(
