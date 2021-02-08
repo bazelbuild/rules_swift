@@ -131,6 +131,7 @@ def _generate_module_map(
     write_module_map(
         actions = actions,
         dependent_module_names = dependent_module_names,
+        exported_module_ids = ["*"],
         module_map_file = module_map_file,
         module_name = module_name,
         private_headers = private_headers,
