@@ -129,6 +129,44 @@ def compile_action_configs():
                     "-Xcc",
                     "-fmodules-embed-all-files",
                 ),
+                swift_toolchain_config.add_arg("-Xcc", "-Xclang"),
+                swift_toolchain_config.add_arg(
+                    "-Xcc",
+                    "-remove-preceeding-explicit-module-build-incompatible-options",
+                ),
+                swift_toolchain_config.add_arg("-Xcc", "-Xclang"),
+                swift_toolchain_config.add_arg(
+                    "-Xcc",
+                    "-fmodule-format=obj",
+                ),
+                swift_toolchain_config.add_arg(
+                    "-Xcc",
+                    "-fapinotes-modules",
+                ),
+                swift_toolchain_config.add_arg(
+                    "-Xcc",
+                    "-iapinotes-modules",
+                ),
+                swift_toolchain_config.add_arg(
+                    "-Xcc",
+                    (
+                        "{developer_dir}/Toolchains/{toolchain}.xctoolchain/" +
+                        "usr/lib/swift/apinotes"
+                    ).format(
+                        developer_dir = apple_common.apple_toolchain().developer_dir(),
+                        toolchain = "XcodeDefault",
+                    ),
+                ),
+                swift_toolchain_config.add_arg(
+                    "-Xcc",
+                    # TODO: Correctly determine this
+                    "-fapinotes-swift-version=5",
+                ),
+                swift_toolchain_config.add_arg("-Xcc", "-Xclang"),
+                swift_toolchain_config.add_arg(
+                    "-Xcc",
+                    "'<swift-imported-modules>'",
+                ),
             ],
         ),
 
@@ -523,8 +561,14 @@ def compile_action_configs():
         # library wants to import that Swift library's generated header and
         # build itself as an explicit module.
         swift_toolchain_config.action_config(
-            actions = [swift_action_names.PRECOMPILE_C_MODULE],
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.COMPILE_FROM_INTERFACE,
+                swift_action_names.DERIVE_FILES,
+                swift_action_names.PRECOMPILE_C_MODULE,
+            ],
             configurators = [
+                # TODO: If Swift 5.3: `-disable-implicit-swift-modules`
                 swift_toolchain_config.add_arg(
                     "-Xcc",
                     "-fno-implicit-modules",
@@ -574,6 +618,20 @@ def compile_action_configs():
                     "-Xcc",
                     "-Wno-nullability-declspec",
                 ),
+                swift_toolchain_config.add_arg("-Xcc", "-Xclang"),
+                swift_toolchain_config.add_arg(
+                    "-Xcc",
+                    "-emit-module",
+                ),
+                swift_toolchain_config.add_arg("-Xcc", "-Xclang"),
+                swift_toolchain_config.add_arg(
+                    "-Xcc",
+                    "-fsystem-module",
+                ),
+                # swift_toolchain_config.add_arg(
+                #     "-Xcc",
+                #     "-Wno-nullability-completeness",
+                # ),
             ],
             features = [SWIFT_FEATURE_SYSTEM_MODULE],
         ),
@@ -608,6 +666,7 @@ def compile_action_configs():
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                # TODO: swift_action_names.COMPILE_FROM_INTERFACE ?
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.PRECOMPILE_C_MODULE,
             ],
@@ -621,6 +680,7 @@ def compile_action_configs():
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                # TODO: swift_action_names.COMPILE_FROM_INTERFACE ?
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.PRECOMPILE_C_MODULE,
             ],
@@ -735,6 +795,7 @@ def compile_action_configs():
 
         # Pass extra flags for swiftmodule only compilations
         swift_toolchain_config.action_config(
+            # TODO: swift_action_names.COMPILE_FROM_INTERFACE ?
             actions = [swift_action_names.DERIVE_FILES],
             configurators = [
                 swift_toolchain_config.add_arg(
@@ -794,6 +855,7 @@ def compile_action_configs():
                 swift_action_names.COMPILE,
                 swift_action_names.COMPILE_FROM_INTERFACE,
                 swift_action_names.DERIVE_FILES,
+                # swift_action_names.PRECOMPILE_C_MODULE,
             ],
             configurators = [_user_compile_flags_configurator],
         ),
