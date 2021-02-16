@@ -265,7 +265,7 @@ def _swiftmodule(actions, module_name):
 def _vfsoverlay(actions, target_name):
     """Declares a file for the VFS overlay for a compilation action.
 
-    The VFS overlay is YAML-formatted file that allows us to place the
+    The VFS overlay is a YAML-formatted file that allows us to place the
     `.swiftmodule` files for all dependencies into a single virtual search
     path, independent of the actual file system layout.
 
@@ -277,6 +277,18 @@ def _vfsoverlay(actions, target_name):
         The declared `File`.
     """
     return actions.declare_file("{}.vfsoverlay.yaml".format(target_name))
+
+def _explicit_swiftmodule_map(actions, target_name):
+    """Declares a file for the explicit swiftmodule map for a compilation action.
+
+    Args:
+        actions: The context's actions object.
+        target_name: The name of the target being built.
+
+    Returns:
+        The declared `File`.
+    """
+    return actions.declare_file("{}.dependencies.json".format(target_name))
 
 def _whole_module_object_file(actions, target_name):
     """Declares a file for object files created with whole module optimization.
@@ -322,6 +334,7 @@ derived_files = struct(
     autolink_flags = _autolink_flags,
     default_generated_header = _default_generated_header,
     executable = _executable,
+    explicit_swiftmodule_map = _explicit_swiftmodule_map,
     indexstore_directory = _indexstore_directory,
     intermediate_object_file = _intermediate_object_file,
     module_map = _module_map,

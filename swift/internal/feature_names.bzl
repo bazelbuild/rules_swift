@@ -80,6 +80,8 @@ SWIFT_FEATURE_STRICT_MODULES = "swift.strict_modules"
 # If enabled, the C or Objective-C target should be compiled as a system module.
 SWIFT_FEATURE_SYSTEM_MODULE = "swift.system_module"
 
+SWIFT_FEATURE_EXPLICIT_SWIFTMODULES = "swift.explicit_swiftmodules"
+
 # If enabled, Swift compilation actions will use batch mode by passing
 # `-enable-batch-mode` to `swiftc`. This is a new compilation mode as of
 # Swift 4.2 that is intended to speed up non-incremental non-WMO builds by
