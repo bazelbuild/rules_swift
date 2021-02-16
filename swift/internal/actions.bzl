@@ -30,6 +30,9 @@ swift_action_names = struct(
     # object files.
     COMPILE = "SwiftCompile",
 
+    # Compiles a single `.swiftinterface` into a `.swiftmodule`.
+    COMPILE_FROM_INTERFACE = "SwiftCompileFromInterface",
+
     # Wraps a `.swiftmodule` in a `.o` file on ELF platforms so that it can be
     # linked into a binary for debugging.
     MODULEWRAP = "SwiftModuleWrap",

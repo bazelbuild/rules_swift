@@ -77,6 +77,16 @@ def _all_tool_configs(
             additional_tools = additional_tools,
         ),
         swift_action_names.COMPILE: compile_tool_config,
+        swift_action_names.COMPILE_FROM_INTERFACE: _swift_driver_tool_config(
+            # This must come first after the driver name.
+            args = ["-frontend", "-compile-module-from-interface"],
+            driver_mode = "swiftc",
+            swift_executable = swift_executable,
+            toolchain_root = toolchain_root,
+            use_param_file = use_param_file,
+            worker_mode = "persistent",
+            additional_tools = additional_tools,
+        ),
         swift_action_names.DERIVE_FILES: compile_tool_config,
         swift_action_names.MODULEWRAP: _swift_driver_tool_config(
             # This must come first after the driver name.
