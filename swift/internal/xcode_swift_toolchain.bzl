@@ -362,6 +362,7 @@ def _all_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_FROM_INTERFACE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.PRECOMPILE_C_MODULE,
                 swift_action_names.DUMP_AST,
@@ -376,6 +377,15 @@ def _all_action_configs(
                 swift_toolchain_config.add_arg(framework_dir, format = "-F%s")
                 for framework_dir in developer_framework_dirs
             ],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [
+                swift_action_names.COMPILE_FROM_INTERFACE,
+            ],
+            configurators = [
+                swift_toolchain_config.add_arg("-Xcc", "-target"),
+                swift_toolchain_config.add_arg("-Xcc", target_triple),
+            ]
         ),
         swift_toolchain_config.action_config(
             actions = [swift_action_names.PRECOMPILE_C_MODULE],
@@ -553,6 +563,22 @@ def _all_tool_configs(
         swift_action_names.DERIVE_FILES: tool_config,
         swift_action_names.DUMP_AST: tool_config,
     }
+
+    # Xcode 11.4 implies Swift 5.2.
+    if _is_xcode_at_least_version(xcode_config, "11.4"):
+        tool_configs[swift_action_names.COMPILE_FROM_INTERFACE] = (
+            swift_toolchain_config.driver_tool_config(
+                # This must come first after the driver name.
+                args = ["-frontend", "-compile-module-from-interface"],
+                driver_mode = "swiftc",
+                env = env,
+                execution_requirements = execution_requirements,
+                swift_executable = swift_executable,
+                toolchain_root = toolchain_root,
+                use_param_file = use_param_file,
+                worker_mode = "persistent",
+            )
+        )
 
     # Xcode 12.0 implies Swift 5.3.
     if _is_xcode_at_least_version(xcode_config, "12.0"):

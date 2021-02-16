@@ -155,7 +155,10 @@ def compile_action_configs(
             configurators = [_output_object_or_file_map_configurator],
         ),
         swift_toolchain_config.action_config(
-            actions = [swift_action_names.DERIVE_FILES],
+            actions = [
+                swift_action_names.COMPILE_FROM_INTERFACE,
+                swift_action_names.DERIVE_FILES,
+            ],
             configurators = [_output_swiftmodule_or_file_map_configurator],
         ),
 
@@ -218,6 +221,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_FROM_INTERFACE,
                 swift_action_names.DERIVE_FILES,
             ],
             configurators = [
@@ -340,6 +344,13 @@ def compile_action_configs(
             ],
             features = [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_OSIZE],
         ),
+        # TODO: Make work with above
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE_FROM_INTERFACE],
+            configurators = [
+                swift_toolchain_config.add_arg("-O"),
+            ],
+        ),
 
         # If the `swift.opt_uses_wmo` feature is enabled, opt builds should also
         # automatically imply whole-module optimization.
@@ -365,6 +376,7 @@ def compile_action_configs(
                 swift_action_names.DERIVE_FILES,
             ],
             configurators = [
+                # TODO: convert to add_frontend_arg
                 swift_toolchain_config.add_arg(
                     "-Xfrontend",
                     "-no-serialize-debugging-options",
@@ -378,6 +390,7 @@ def compile_action_configs(
                 swift_action_names.DERIVE_FILES,
             ],
             configurators = [
+                # TODO: convert to add_frontend_arg
                 swift_toolchain_config.add_arg(
                     "-Xfrontend",
                     "-serialize-debugging-options",
@@ -393,6 +406,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                # TODO: swift_action_names.COMPILE_FROM_INTERFACE ?
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.DUMP_AST,
             ],
@@ -409,6 +423,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                # TODO: swift_action_names.COMPILE_FROM_INTERFACE ?
                 swift_action_names.DERIVE_FILES,
             ],
             configurators = [swift_toolchain_config.add_arg("-g")],
@@ -417,6 +432,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                # TODO: swift_action_names.COMPILE_FROM_INTERFACE ?
                 swift_action_names.DERIVE_FILES,
             ],
             configurators = [
@@ -430,6 +446,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_FROM_INTERFACE,
                 swift_action_names.DERIVE_FILES,
             ],
             configurators = [
@@ -448,6 +465,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_FROM_INTERFACE,
                 swift_action_names.DERIVE_FILES,
             ],
             configurators = [
@@ -470,6 +488,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                # TODO: swift_action_names.COMPILE_FROM_INTERFACE ?
                 swift_action_names.DERIVE_FILES,
             ],
             configurators = [
@@ -481,6 +500,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                # TODO: swift_action_names.COMPILE_FROM_INTERFACE ?
                 swift_action_names.DERIVE_FILES,
             ],
             configurators = [
@@ -491,6 +511,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                # TODO: swift_action_names.COMPILE_FROM_INTERFACE ?
                 swift_action_names.DERIVE_FILES,
             ],
             configurators = [
@@ -515,6 +536,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_FROM_INTERFACE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.PRECOMPILE_C_MODULE,
                 swift_action_names.DUMP_AST,
@@ -534,6 +556,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                # TODO: swift_action_names.COMPILE_FROM_INTERFACE ?
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.DUMP_AST,
             ],
@@ -560,6 +583,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                # TODO: swift_action_names.COMPILE_FROM_INTERFACE ?
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.DUMP_AST,
             ],
@@ -591,6 +615,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_FROM_INTERFACE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.PRECOMPILE_C_MODULE,
                 swift_action_names.DUMP_AST,
@@ -684,6 +709,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_FROM_INTERFACE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.DUMP_AST,
             ],
@@ -693,6 +719,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_FROM_INTERFACE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.DUMP_AST,
             ],
@@ -745,6 +772,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_FROM_INTERFACE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.PRECOMPILE_C_MODULE,
                 swift_action_names.DUMP_AST,
@@ -755,6 +783,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_FROM_INTERFACE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.PRECOMPILE_C_MODULE,
                 swift_action_names.DUMP_AST,
@@ -775,6 +804,7 @@ def compile_action_configs(
                 swift_action_names.PRECOMPILE_C_MODULE,
             ],
             configurators = [
+                # TODO: convert to add_frontend_arg
                 swift_toolchain_config.add_arg(
                     "-Xfrontend",
                     "-color-diagnostics",
@@ -846,6 +876,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_FROM_INTERFACE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.PRECOMPILE_C_MODULE,
                 swift_action_names.DUMP_AST,
@@ -906,6 +937,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                # TODO: swift_action_names.COMPILE_FROM_INTERFACE ?
                 swift_action_names.DERIVE_FILES,
             ],
             configurators = [_static_frameworks_disable_autolink_configurator],
@@ -922,6 +954,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_FROM_INTERFACE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.DUMP_AST,
             ],
@@ -973,6 +1006,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_FROM_INTERFACE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.PRECOMPILE_C_MODULE,
                 swift_action_names.DUMP_AST,
@@ -986,6 +1020,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                # TODO: swift_action_names.COMPILE_FROM_INTERFACE ?
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.DUMP_AST,
             ],
@@ -1408,8 +1443,8 @@ def _dependencies_swiftmodules_vfsoverlay_configurator(prerequisites, args):
 
     # Bug: `swiftc` doesn't pass its `-vfsoverlay` arg to the frontend.
     # Workaround: Pass `-vfsoverlay` directly via `-Xfrontend`.
-    args.add(
-        "-Xfrontend",
+    prerequisites.add_frontend_arg(
+        args.add,
         "-vfsoverlay{}".format(prerequisites.vfsoverlay_file.path),
     )
     args.add("-I{}".format(prerequisites.vfsoverlay_search_path))
@@ -1851,6 +1886,7 @@ def compile(
         vfsoverlay_file = None
 
     prerequisites = struct(
+        add_frontend_arg = _wrapped_frontend_arg,
         additional_inputs = additional_inputs,
         bin_dir = bin_dir,
         cc_info = merged_providers.cc_info,
@@ -1991,6 +2027,159 @@ def compile(
     )
 
     return module_context, cc_compilation_outputs, other_compilation_outputs
+
+def compile_from_interface(
+        *,
+        actions,
+        feature_configuration,
+        module_name,
+        swiftinterface,
+        swift_toolchain,
+        target_name,
+        additional_inputs = [],
+        bin_dir = None,
+        copts = [],
+        defines = [],
+        deps = [],
+        genfiles_dir = None):
+    """Compiles a Swift module from a swiftinterface file.
+
+    Args:
+        actions: The context's `actions` object.
+        feature_configuration: A feature configuration obtained from
+            `swift_common.configure_features`.
+        module_name: The name of the Swift module being compiled. This must be
+            present and valid; use `swift_common.derive_module_name` to generate
+            a default from the target's label if needed.
+        swiftinterface: The swiftinterface to compile.
+        swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
+        target_name: The name of the target for which the code is being
+            compiled, which is used to determine unique file paths for the
+            outputs.
+        additional_inputs: A list of `File`s representing additional input files
+            that need to be passed to the Swift compile action because they are
+            referenced by compiler flags.
+        bin_dir: The Bazel `*-bin` directory root. If provided, its path is used
+            to store the cache for modules precompiled by Swift's ClangImporter,
+            and it is added to ClangImporter's header search paths for
+            compatibility with Bazel's C++ and Objective-C rules which support
+            includes of generated headers from that location.
+        copts: A list of compiler flags that apply to the target being built.
+            These flags, along with those from Bazel's Swift configuration
+            fragment (i.e., `--swiftcopt` command line flags) are scanned to
+            determine whether whole module optimization is being requested,
+            which affects the nature of the output files.
+        defines: Symbols that should be defined by passing `-D` to the compiler.
+        deps: Dependencies of the target being compiled. These targets must
+            propagate one of the following providers: `CcInfo`, `SwiftInfo`, or
+            `apple_common.Objc`.
+        genfiles_dir: The Bazel `*-genfiles` directory root. If provided, its
+            path is added to ClangImporter's header search paths for
+            compatibility with Bazel's C++ and Objective-C rules which support
+            inclusions of generated headers from that location.
+
+    Returns:
+        The `.swiftmodule` file that was produced by the compiler.
+    """
+    srcs = [swiftinterface]
+
+    swiftmodule_file = derived_files.swiftmodule(
+        actions = actions,
+        module_name = module_name,
+    )
+
+    # Merge the providers from our dependencies so that we have one each for
+    # `SwiftInfo`, `CcInfo`, and `apple_common.Objc`. Then we can pass these
+    # into the action prerequisites so that configurators have easy access to
+    # the full set of values and inputs through a single accessor.
+    all_deps = deps + get_implicit_deps(
+        feature_configuration = feature_configuration,
+        swift_toolchain = swift_toolchain,
+    )
+    merged_providers = _merge_targets_providers(
+        supports_objc_interop = swift_toolchain.supports_objc_interop,
+        targets = all_deps,
+    )
+
+    # Flattening this `depset` is necessary because we need to extract the
+    # module maps or precompiled modules out of structured values and do so
+    # conditionally. This should not lead to poor performance because the
+    # flattening happens only once as the action is being registered, rather
+    # than the same `depset` being flattened and re-merged multiple times up
+    # the build graph.
+    transitive_modules = (
+        merged_providers.swift_info.transitive_modules.to_list()
+    )
+
+    transitive_swiftmodules = []
+    defines_set = sets.make(defines)
+    for module in transitive_modules:
+        swift_module = module.swift
+        if not swift_module:
+            continue
+        transitive_swiftmodules.append(swift_module.swiftmodule)
+        if swift_module.defines:
+            defines_set = sets.union(
+                defines_set,
+                sets.make(swift_module.defines),
+            )
+
+    # We need this when generating the VFS overlay file and also when
+    # configuring inputs for the compile action, so it's best to precompute it
+    # here.
+    if is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_VFSOVERLAY,
+    ):
+        vfsoverlay_file = derived_files.vfsoverlay(
+            actions = actions,
+            target_name = target_name,
+        )
+        write_vfsoverlay(
+            actions = actions,
+            swiftmodules = transitive_swiftmodules,
+            vfsoverlay_file = vfsoverlay_file,
+            virtual_swiftmodule_root = _SWIFTMODULES_VFS_ROOT,
+        )
+    else:
+        vfsoverlay_file = None
+
+    prerequisites = struct(
+        add_frontend_arg = _raw_frontend_arg,
+        additional_inputs = additional_inputs,
+        bin_dir = bin_dir,
+        cc_info = merged_providers.cc_info,
+        defines = sets.to_list(defines_set),
+        genfiles_dir = genfiles_dir,
+        is_swift = True,
+        module_name = module_name,
+        objc_include_paths_workaround = (
+            merged_providers.objc_include_paths_workaround
+        ),
+        objc_info = merged_providers.objc_info,
+        output_file_map = None,
+        source_files = srcs,
+        swiftmodule_file = swiftmodule_file,
+        transitive_modules = transitive_modules,
+        transitive_swiftmodules = transitive_swiftmodules,
+        user_compile_flags = copts,
+        vfsoverlay_file = vfsoverlay_file,
+        vfsoverlay_search_path = _SWIFTMODULES_VFS_ROOT,
+    )
+
+    run_toolchain_action(
+        actions = actions,
+        action_name = swift_action_names.COMPILE_FROM_INTERFACE,
+        feature_configuration = feature_configuration,
+        outputs = [swiftmodule_file],
+        prerequisites = prerequisites,
+        progress_message = (
+            "Compiling Swift module {} from swiftinterface".format(module_name)
+        ),
+        swift_toolchain = swift_toolchain,
+    )
+
+    return swiftmodule_file
 
 def precompile_clang_module(
         *,
@@ -2149,6 +2338,7 @@ def _precompile_clang_module(
         transitive_modules = []
 
     prerequisites = struct(
+        add_frontend_arg = _wrapped_frontend_arg,
         bin_dir = bin_dir,
         cc_info = CcInfo(compilation_context = cc_compilation_context),
         genfiles_dir = genfiles_dir,
@@ -2791,6 +2981,8 @@ def _disable_autolink_framework_copts(framework_name):
         The list of `swiftc` flags needed to disable autolinking for the given
         framework.
     """
+
+    # TODO: convert to add_frontend_arg
     return collections.before_each(
         "-Xfrontend",
         [
@@ -2909,3 +3101,9 @@ def _safe_int(s):
         if s[i] < "0" or s[i] > "9":
             return None
     return int(s)
+
+def _raw_frontend_arg(add_method, value):
+    add_method(value)
+
+def _wrapped_frontend_arg(add_method, value):
+    add_method("-Xfrontend", value)
