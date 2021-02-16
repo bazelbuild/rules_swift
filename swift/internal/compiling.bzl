@@ -43,6 +43,7 @@ load(
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES",
     "SWIFT_FEATURE_ENABLE_TESTING",
+    "SWIFT_FEATURE_EXPLICIT_SWIFTMODULES",
     "SWIFT_FEATURE_FASTBUILD",
     "SWIFT_FEATURE_FULL_DEBUG_INFO",
     "SWIFT_FEATURE_GLOBAL_MODULE_CACHE_USES_TMPDIR",
@@ -83,6 +84,7 @@ load(
     "get_providers",
     "struct_fields",
 )
+load(":explicit_swiftmodules.bzl", "write_explicit_swiftmodule_map")
 load(":vfsoverlay.bzl", "write_vfsoverlay")
 
 # VFS root where all .swiftmodule files will be placed when
@@ -682,13 +684,12 @@ def compile_action_configs(
         # build itself as an explicit module.
         swift_toolchain_config.action_config(
             actions = [
-                swift_action_names.COMPILE,
+                # swift_action_names.COMPILE, #
                 swift_action_names.COMPILE_FROM_INTERFACE,
-                swift_action_names.DERIVE_FILES,
+                # swift_action_names.DERIVE_FILES, #
                 swift_action_names.PRECOMPILE_C_MODULE,
             ],
             configurators = [
-                # TODO: If Swift 5.3: `-disable-implicit-swift-modules`
                 swift_toolchain_config.add_arg(
                     "-Xcc",
                     "-fno-implicit-modules",
@@ -701,6 +702,17 @@ def compile_action_configs(
             configurators = [_c_layering_check_configurator],
             features = [SWIFT_FEATURE_LAYERING_CHECK],
             not_features = [SWIFT_FEATURE_SYSTEM_MODULE],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.PRECOMPILE_C_MODULE],
+            configurators = [
+                # TODO: If Swift 5.3: `-disable-implicit-swift-modules`
+                swift_toolchain_config.add_arg(
+                    "-Xfrontend",
+                    "-disable-implicit-swift-modules",
+                ),
+            ],
+            features = [SWIFT_FEATURE_USE_C_MODULES],
         ),
         swift_toolchain_config.action_config(
             actions = [swift_action_names.PRECOMPILE_C_MODULE],
@@ -758,7 +770,10 @@ def compile_action_configs(
                 swift_action_names.DUMP_AST,
             ],
             configurators = [_dependencies_swiftmodules_configurator],
-            not_features = [SWIFT_FEATURE_VFSOVERLAY],
+            not_features = [
+                [SWIFT_FEATURE_VFSOVERLAY],
+                [SWIFT_FEATURE_EXPLICIT_SWIFTMODULES],
+            ],
         ),
         swift_toolchain_config.action_config(
             actions = [
@@ -771,6 +786,18 @@ def compile_action_configs(
                 _dependencies_swiftmodules_vfsoverlay_configurator,
             ],
             features = [SWIFT_FEATURE_VFSOVERLAY],
+            not_features = [SWIFT_FEATURE_EXPLICIT_SWIFTMODULES],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.COMPILE_FROM_INTERFACE,
+                swift_action_names.DERIVE_FILES,
+            ],
+            configurators = [
+                _dependencies_explicit_swiftmodules_configurator,
+            ],
+            features = [SWIFT_FEATURE_EXPLICIT_SWIFTMODULES],
         ),
     ])
 
@@ -1501,6 +1528,30 @@ def _dependencies_swiftmodules_vfsoverlay_configurator(prerequisites, args):
         inputs = swiftmodules + [prerequisites.vfsoverlay_file],
     )
 
+def _dependencies_explicit_swiftmodules_configurator(prerequisites, args):
+    """Provides a single `.swiftmodule` search path using an explicit swiftmodule map."""
+    swiftmodules = prerequisites.transitive_swiftmodules
+
+    prerequisites.add_frontend_arg(
+        args.add,
+        "-disable-implicit-swift-modules",
+    )
+
+    # Bug: `swiftc` doesn't pass its `-vfsoverlay` arg to the frontend.
+    # Workaround: Pass `-vfsoverlay` directly via `-Xfrontend`.
+    prerequisites.add_frontend_arg(
+        args.add,
+        "-explicit-swift-module-map-file",
+    )
+    prerequisites.add_frontend_arg(
+        args.add,
+        prerequisites.explicit_swiftmodule_map_file.path,
+    )
+
+    return swift_toolchain_config.config_result(
+        inputs = swiftmodules + [prerequisites.explicit_swiftmodule_map_file],
+    )
+
 def _module_name_configurator(prerequisites, args):
     """Adds the module name flag to the command line."""
     args.add("-module-name", prerequisites.module_name)
@@ -1913,10 +1964,15 @@ def compile(
                 sets.make(swift_module.defines),
             )
 
+    use_explicit_swiftmodules = is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_EXPLICIT_SWIFTMODULES,
+    )
+
     # We need this when generating the VFS overlay file and also when
     # configuring inputs for the compile action, so it's best to precompute it
     # here.
-    if is_feature_enabled(
+    if not use_explicit_swiftmodules and is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_VFSOVERLAY,
     ):
@@ -1933,6 +1989,22 @@ def compile(
     else:
         vfsoverlay_file = None
 
+    # We need this when generating the explicit swiftmodule map file and also
+    # when configuring inputs for the compile action, so it's best to
+    # precompute it here.
+    if use_explicit_swiftmodules:
+        explicit_swiftmodule_map_file = derived_files.explicit_swiftmodule_map(
+            actions = actions,
+            target_name = target_name,
+        )
+        write_explicit_swiftmodule_map(
+            actions = actions,
+            swiftmodules = transitive_swiftmodules,
+            explicit_swiftmodule_map_file = explicit_swiftmodule_map_file,
+        )
+    else:
+        explicit_swiftmodule_map_file = None
+
     prerequisites = struct(
         add_frontend_arg = _wrapped_frontend_arg,
         additional_inputs = additional_inputs,
@@ -1940,6 +2012,7 @@ def compile(
         cc_info = merged_providers.cc_info,
         defines = sets.to_list(defines_set),
         genfiles_dir = genfiles_dir,
+        explicit_swiftmodule_map_file = explicit_swiftmodule_map_file,
         is_swift = True,
         module_name = module_name,
         objc_include_paths_workaround = (
@@ -2172,10 +2245,15 @@ def compile_from_interface(
                 sets.make(swift_module.defines),
             )
 
+    use_explicit_swiftmodules = is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_EXPLICIT_SWIFTMODULES,
+    )
+
     # We need this when generating the VFS overlay file and also when
     # configuring inputs for the compile action, so it's best to precompute it
     # here.
-    if is_feature_enabled(
+    if not use_explicit_swiftmodules and is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_VFSOVERLAY,
     ):
@@ -2192,12 +2270,29 @@ def compile_from_interface(
     else:
         vfsoverlay_file = None
 
+    # We need this when generating the explicit swiftmodule map file and also
+    # when configuring inputs for the compile action, so it's best to
+    # precompute it here.
+    if use_explicit_swiftmodules:
+        explicit_swiftmodule_map_file = derived_files.explicit_swiftmodule_map(
+            actions = actions,
+            target_name = target_name,
+        )
+        write_explicit_swiftmodule_map(
+            actions = actions,
+            swiftmodules = transitive_swiftmodules,
+            explicit_swiftmodule_map_file = explicit_swiftmodule_map_file,
+        )
+    else:
+        explicit_swiftmodule_map_file = None
+
     prerequisites = struct(
         add_frontend_arg = _raw_frontend_arg,
         additional_inputs = additional_inputs,
         bin_dir = bin_dir,
         cc_info = merged_providers.cc_info,
         defines = sets.to_list(defines_set),
+        explicit_swiftmodule_map_file = explicit_swiftmodule_map_file,
         genfiles_dir = genfiles_dir,
         is_swift = True,
         module_name = module_name,
