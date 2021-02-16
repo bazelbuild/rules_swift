@@ -1,1 +1,4 @@
+# Since there's no way to set the deployment version for swift_{binary,test},
+# this forces all targets' minimum macOS to Catalina until Bazel CI has
+# upgraded their Mac machines to Big Sur.
 build --macos_minimum_os=10.15
