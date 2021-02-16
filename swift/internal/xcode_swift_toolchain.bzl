@@ -108,6 +108,12 @@ def _command_line_objc_copts(compilation_mode, objc_fragment):
                 "-Wno-extra",
             ]
 
+    if compilation_mode == "dbg":
+        legacy_copts = [
+            "-O0",
+            "-DDEBUG=1",
+        ]
+
     clang_copts = objc_fragment.copts + legacy_copts
 
     return collections.before_each(
