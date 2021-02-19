@@ -73,6 +73,13 @@ Swift toolchain depends on.
         "cpu": """\
 `String`. The CPU architecture that the toolchain is targeting.
 """,
+        "generated_header_module_implicit_deps": """\
+`List` of `Target`s. Targets whose `SwiftInfo` providers should be treated as
+compile-time inputs to actions that precompile the explicit module for the
+generated Objective-C header of a Swift module. This is used to provide modular
+dependencies for the fixed inclusions (Darwin, Foundation) that are
+unconditionally emitted in those files.
+""",
         "linker_opts_producer": """\
 Skylib `partial`. A partial function that returns the flags that should be
 passed to Clang to link a binary or test target with the Swift runtime

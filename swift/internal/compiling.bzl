@@ -1230,7 +1230,8 @@ def compile(
         defines = [],
         deps = [],
         generated_header_name = None,
-        genfiles_dir = None):
+        genfiles_dir = None,
+        private_deps = []):
     """Compiles a Swift module.
 
     Args:
@@ -1259,9 +1260,11 @@ def compile(
             determine whether whole module optimization is being requested,
             which affects the nature of the output files.
         defines: Symbols that should be defined by passing `-D` to the compiler.
-        deps: Dependencies of the target being compiled. These targets must
-            propagate one of the following providers: `CcInfo`, `SwiftInfo`, or
-            `apple_common.Objc`.
+        deps: Non-private dependencies of the target being compiled. These
+            targets are used as dependencies of both the Swift module being
+            compiled and the Clang module for the generated header. These
+            targets must propagate one of the following providers: `CcInfo`,
+            `SwiftInfo`, or `apple_common.Objc`.
         generated_header_name: The name of the Objective-C generated header that
             should be generated for this module. If omitted, the name
             `${target_name}-Swift.h` will be used.
@@ -1269,6 +1272,11 @@ def compile(
             path is added to ClangImporter's header search paths for
             compatibility with Bazel's C++ and Objective-C rules which support
             inclusions of generated headers from that location.
+        private_deps: Private (implementation-only) dependencies of the target
+            being compiled. These are only used as dependencies of the Swift
+            module, not of the Clang module for the generated header. These
+            targets must propagate one of the following providers: `CcInfo`,
+            `SwiftInfo`, or `apple_common.Objc`.
 
     Returns:
         A `struct` containing the following fields:
@@ -1293,6 +1301,9 @@ def compile(
             never None.
         *   `object_files`: A list of `.o` files that were produced by the
             compiler.
+        *   `precompiled_module`: A `File` representing the explicit module
+            (`.pcm`) of the Clang module for the generated header, or `None` if
+            no explicit module was generated.
         *   `stats_directory`: A `File` representing the directory that contains
             the timing statistics emitted by the compiler. If no stats were
             requested, this field will be None.
@@ -1304,10 +1315,14 @@ def compile(
         *   `swiftmodule`: The `.swiftmodule` file that was produced by the
             compiler.
     """
+    generated_module_deps = (
+        deps + swift_toolchain.generated_header_module_implicit_deps
+    )
     compile_outputs, other_outputs = _declare_compile_outputs(
         actions = actions,
-        generated_header_name = generated_header_name,
         feature_configuration = feature_configuration,
+        generated_header_name = generated_header_name,
+        generated_module_deps = generated_module_deps,
         module_name = module_name,
         srcs = srcs,
         target_name = target_name,
@@ -1330,13 +1345,12 @@ def compile(
     # `SwiftInfo`, `CcInfo`, and `apple_common.Objc`. Then we can pass these
     # into the action prerequisites so that configurators have easy access to
     # the full set of values and inputs through a single accessor.
-    all_deps = deps + get_implicit_deps(
-        feature_configuration = feature_configuration,
-        swift_toolchain = swift_toolchain,
-    )
     merged_providers = _merge_targets_providers(
         supports_objc_interop = swift_toolchain.supports_objc_interop,
-        targets = all_deps,
+        targets = deps + private_deps + get_implicit_deps(
+            feature_configuration = feature_configuration,
+            swift_toolchain = swift_toolchain,
+        ),
     )
 
     # Flattening this `depset` is necessary because we need to extract the
@@ -1410,11 +1424,41 @@ def compile(
         feature_configuration = feature_configuration,
         outputs = all_compile_outputs,
         prerequisites = prerequisites,
-        progress_message = (
-            "Compiling Swift module {}".format(module_name)
-        ),
+        progress_message = "Compiling Swift module {}".format(module_name),
         swift_toolchain = swift_toolchain,
     )
+
+    # If a header and module map were generated for this Swift module, attempt
+    # to precompile the explicit module for that header as well.
+    if not is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_NO_GENERATED_HEADER,
+    ) and not is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_NO_GENERATED_MODULE_MAP,
+    ):
+        precompiled_module = precompile_clang_module(
+            actions = actions,
+            bin_dir = bin_dir,
+            cc_compilation_context = cc_common.create_compilation_context(
+                headers = depset([compile_outputs.generated_header_file]),
+            ),
+            feature_configuration = feature_configuration,
+            genfiles_dir = genfiles_dir,
+            module_map_file = compile_outputs.generated_module_map_file,
+            module_name = module_name,
+            swift_info = create_swift_info(
+                swift_infos = [
+                    dep[SwiftInfo]
+                    for dep in generated_module_deps
+                    if SwiftInfo in dep
+                ],
+            ),
+            swift_toolchain = swift_toolchain,
+            target_name = target_name,
+        )
+    else:
+        precompiled_module = None
 
     # As part of the full compilation flow, register additional post-compile
     # actions that toolchains may conditionally support for their target
@@ -1438,6 +1482,7 @@ def compile(
             compile_outputs.object_files +
             post_compile_results.additional_object_files
         ),
+        precompiled_module = precompiled_module,
         stats_directory = compile_outputs.stats_directory,
         swiftdoc = compile_outputs.swiftdoc_file,
         swiftinterface = compile_outputs.swiftinterface_file,
@@ -1566,9 +1611,11 @@ def get_implicit_deps(feature_configuration, swift_toolchain):
     return deps
 
 def _declare_compile_outputs(
+        *,
         actions,
-        generated_header_name,
         feature_configuration,
+        generated_header_name,
+        generated_module_deps,
         module_name,
         srcs,
         target_name,
@@ -1577,10 +1624,12 @@ def _declare_compile_outputs(
 
     Args:
         actions: The object used to register actions.
-        generated_header_name: The desired name of the generated header for this
-            module, or `None` to use `${target_name}-Swift.h`.
         feature_configuration: A feature configuration obtained from
             `swift_common.configure_features`.
+        generated_header_name: The desired name of the generated header for this
+            module, or `None` to use `${target_name}-Swift.h`.
+        generated_module_deps: Dependencies of the module for the generated
+            header of the target being compiled.
         module_name: The name of the Swift module being compiled.
         srcs: The list of source files that will be compiled.
         target_name: The name (excluding package path) of the target being
@@ -1666,12 +1715,24 @@ def _declare_compile_outputs(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_NO_GENERATED_MODULE_MAP,
     ):
+        # Collect the names of Clang modules that the module being built
+        # directly depends on.
+        dependent_module_names = sets.make()
+        for dep in generated_module_deps:
+            if SwiftInfo in dep:
+                for module in dep[SwiftInfo].direct_modules:
+                    if module.clang:
+                        sets.insert(dependent_module_names, module.name)
+
         generated_module_map = derived_files.module_map(
             actions = actions,
             target_name = target_name,
         )
         write_module_map(
             actions = actions,
+            dependent_module_names = sorted(
+                sets.to_list(dependent_module_names),
+            ),
             module_map_file = generated_module_map,
             module_name = module_name,
             public_headers = [generated_header],

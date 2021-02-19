@@ -213,6 +213,7 @@ def _swift_toolchain_impl(ctx):
             all_files = depset(all_files),
             cc_toolchain_info = cc_toolchain,
             cpu = ctx.attr.arch,
+            generated_header_module_implicit_deps = [],
             linker_opts_producer = linker_opts_producer,
             object_format = "elf",
             optional_implicit_deps = [],
