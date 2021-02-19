@@ -153,27 +153,26 @@ def _swift_library_impl(ctx):
         bin_dir = ctx.bin_dir,
         copts = _maybe_parse_as_library_copts(srcs) + copts,
         defines = ctx.attr.defines,
-        deps = deps + private_deps,
+        deps = deps,
         feature_configuration = feature_configuration,
         generated_header_name = ctx.attr.generated_header_name,
         genfiles_dir = ctx.genfiles_dir,
         module_name = module_name,
+        private_deps = private_deps,
         srcs = srcs,
         swift_toolchain = swift_toolchain,
         target_name = ctx.label.name,
     )
 
-    # If a module map was created for the generated header, propagate it as a
-    # Clang module so that it is passed as a module input to upstream
-    # compilation actions.
+    # If a module was created for the generated header, propagate it as well so
+    # that it is passed as a module input to upstream compilation actions.
     if compilation_outputs.generated_module_map:
         clang_module = swift_common.create_clang_module(
             compilation_context = cc_common.create_compilation_context(
                 headers = depset([compilation_outputs.generated_header]),
             ),
             module_map = compilation_outputs.generated_module_map,
-            # TODO(b/142867898): Precompile the module and place it here.
-            precompiled_module = None,
+            precompiled_module = compilation_outputs.precompiled_module,
         )
     else:
         clang_module = None
@@ -197,6 +196,7 @@ def _swift_library_impl(ctx):
 
     direct_output_files = compact([
         compilation_outputs.generated_header,
+        compilation_outputs.precompiled_module,
         compilation_outputs.swiftdoc,
         compilation_outputs.swiftinterface,
         compilation_outputs.swiftmodule,
