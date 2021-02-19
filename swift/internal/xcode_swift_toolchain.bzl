@@ -781,6 +781,9 @@ def _xcode_swift_toolchain_impl(ctx):
             all_files = depset(all_files),
             cc_toolchain_info = cc_toolchain,
             cpu = cpu,
+            generated_header_module_implicit_deps = (
+                ctx.attr.generated_header_module_implicit_deps
+            ),
             linker_opts_producer = linker_opts_producer,
             linker_supports_filelist = True,
             object_format = "macho",
@@ -805,6 +808,14 @@ xcode_swift_toolchain = rule(
     attrs = dicts.add(
         swift_toolchain_driver_attrs(),
         {
+            "generated_header_module_implicit_deps": attr.label_list(
+                doc = """\
+Targets whose `SwiftInfo` providers should be treated as compile-time inputs to
+actions that precompile the explicit module for the generated Objective-C header
+of a Swift module.
+""",
+                providers = [[SwiftInfo]],
+            ),
             "optional_implicit_deps": attr.label_list(
                 allow_files = True,
                 doc = """\
