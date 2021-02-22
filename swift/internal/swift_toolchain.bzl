@@ -101,7 +101,7 @@ def _all_action_configs(additional_swiftc_copts):
     """
     return (
         compile_action_configs(
-            additional_swift_copts = additional_swiftc_copts,
+            additional_swiftc_copts = additional_swiftc_copts,
         ) +
         modulewrap_action_configs() +
         autolink_extract_action_configs()
