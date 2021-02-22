@@ -830,7 +830,7 @@ def compile_action_configs(
                     # TODO(#568): Switch to using lambda when the minimum
                     # supported Bazel version by rules_swift supports it.
                     partial.make(
-                        _additional_swift_copts_configurator,
+                        _additional_swiftc_copts_configurator,
                         additional_swiftc_copts,
                     ),
                 ],
@@ -1364,7 +1364,7 @@ def _additional_objc_copts_configurator(additional_objc_copts, prerequisites, ar
         before_each = "-Xcc",
     )
 
-def _additional_swift_copts_configurator(additional_swiftc_copts, prerequisites, args):
+def _additional_swiftc_copts_configurator(additional_swiftc_copts, prerequisites, args):
     """Adds additional Swift compiler flags to the command line."""
     _unused = [prerequisites]
     args.add_all(additional_swiftc_copts)
