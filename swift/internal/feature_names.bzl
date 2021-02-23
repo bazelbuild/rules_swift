@@ -243,7 +243,7 @@ SWIFT_FEATURE_REMAP_XCODE_PATH = "swift.remap_xcode_path"
 # enable, disable, or query this feature.
 SWIFT_FEATURE__WMO_IN_SWIFTCOPTS = "swift._wmo_in_swiftcopts"
 
-# A private feature that is set by the toolchain if the flags `-num-threads 1`
+# A private feature that is set by the toolchain if the flags `-num-threads 0`
 # were passed on the command line using `--swiftcopt`. Users should never
 # manually enable, disable, or query this feature.
-SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS = "swift._num_threads_1_in_swiftcopts"
+SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS = "swift._num_threads_0_in_swiftcopts"

@@ -61,7 +61,7 @@ load(
     "SWIFT_FEATURE_USE_C_MODULES",
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
     "SWIFT_FEATURE_VFSOVERLAY",
-    "SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS",
+    "SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
 )
 load(":features.bzl", "are_all_features_enabled", "is_feature_enabled")
@@ -706,7 +706,7 @@ def compile_action_configs(
                 [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_WMO],
                 [SWIFT_FEATURE__WMO_IN_SWIFTCOPTS],
             ],
-            not_features = [SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS],
+            not_features = [SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS],
         ),
         swift_toolchain_config.action_config(
             actions = [
@@ -723,7 +723,7 @@ def compile_action_configs(
             ],
             not_features = [
                 [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_WMO],
-                [SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS],
+                [SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS],
             ],
         ),
 
@@ -1319,8 +1319,8 @@ def features_from_swiftcopts(swiftcopts):
     features = []
     if _is_wmo_manually_requested(user_compile_flags = swiftcopts):
         features.append(SWIFT_FEATURE__WMO_IN_SWIFTCOPTS)
-    if _find_num_threads_flag_value(user_compile_flags = swiftcopts) == 1:
-        features.append(SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS)
+    if _find_num_threads_flag_value(user_compile_flags = swiftcopts) == 0:
+        features.append(SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS)
     return features
 
 def _index_while_building_configurator(prerequisites, args):
@@ -2482,14 +2482,14 @@ def _emitted_output_nature(feature_configuration, user_compile_flags):
         _is_wmo_manually_requested(user_compile_flags)
     )
 
-    # We check the feature first because that implies that `-num-threads 1` was
+    # We check the feature first because that implies that `-num-threads 0` was
     # present in `--swiftcopt`, which overrides all other flags (like the user
     # compile flags, which come from the target's `copts`). Only fallback to
     # checking the flags if the feature is disabled.
     is_single_threaded = is_feature_enabled(
         feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS,
-    ) or _find_num_threads_flag_value(user_compile_flags) == 1
+        feature_name = SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS,
+    ) or _find_num_threads_flag_value(user_compile_flags) == 0
 
     return struct(
         emits_multiple_objects = not (is_wmo and is_single_threaded),
