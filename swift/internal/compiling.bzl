@@ -880,6 +880,7 @@ def _tmpdir_module_cache_configurator(prerequisites, args):
             "-module-cache-path",
             paths.join(
                 "/private/tmp/__build_bazel_rules_swift",
+                "__ENGFLOW_EXECUTOR_ID__",
                 prerequisites.bin_dir.path,
                 "_swift_module_cache",
                 # The path needs to be for the "hash" directory when using

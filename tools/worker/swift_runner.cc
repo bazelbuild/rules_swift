@@ -110,9 +110,16 @@ SwiftRunner::SwiftRunner(const std::vector<std::string> &args,
   std::string developer_dir = GetMandatoryEnvVar("DEVELOPER_DIR");
   std::string sdk_root = GetMandatoryEnvVar("SDKROOT");
 
+  // Allow executor-based paths
+  char *executor_id = getenv("ENGFLOW_EXECUTOR_ID");
+  if (executor_id == nullptr) {
+    executor_id = (char *)"local";
+  }
+
   bazel_placeholder_substitutions_ = {
       {"__BAZEL_XCODE_DEVELOPER_DIR__", developer_dir},
       {"__BAZEL_XCODE_SDKROOT__", sdk_root},
+      {"__ENGFLOW_EXECUTOR_ID__", executor_id},
   };
 #else
   // We don't have these placeholder strings on non-Apple platforms.
