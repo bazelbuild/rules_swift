@@ -448,7 +448,7 @@ def compile_action_configs():
             ],
             configurators = [_global_module_cache_configurator],
             features = [SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE],
-            not_features = [SWIFT_FEATURE_USE_C_MODULES],
+            # not_features = [SWIFT_FEATURE_USE_C_MODULES],
         ),
         swift_toolchain_config.action_config(
             actions = [
@@ -461,67 +461,67 @@ def compile_action_configs():
                 ),
             ],
             not_features = [
-                [SWIFT_FEATURE_USE_C_MODULES],
+                # [SWIFT_FEATURE_USE_C_MODULES],
                 [SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE],
             ],
         ),
-        # When using C modules, disable the implicit search for module map files
-        # because all of them, including system dependencies, will be provided
-        # explicitly.
-        swift_toolchain_config.action_config(
-            actions = [
-                swift_action_names.COMPILE,
-                swift_action_names.DERIVE_FILES,
-                swift_action_names.PRECOMPILE_C_MODULE,
-            ],
-            configurators = [
-                swift_toolchain_config.add_arg(
-                    "-Xcc",
-                    "-fno-implicit-module-maps",
-                ),
-            ],
-            features = [SWIFT_FEATURE_USE_C_MODULES],
-        ),
-        # Do not allow implicit modules to be used at all when emitting an
-        # explicit C/Objective-C module. Consider the case of two modules A and
-        # B, where A depends on B. If B does not emit an explicit module, then
-        # when A is compiled it would contain a hardcoded reference to B via its
-        # path in the implicit module cache. Thus, A would not be movable; some
-        # library importing A would try to resolve B at that path, which may no
-        # longer exist when the upstream library is built.
-        #
-        # This implies that for a C/Objective-C library to build as an explicit
-        # module, all of its dependencies must as well. On the other hand, a
-        # Swift library can be compiled with some of its Objective-C
-        # dependencies still using implicit modules, as long as no Objective-C
-        # library wants to import that Swift library's generated header and
-        # build itself as an explicit module.
-        swift_toolchain_config.action_config(
-            actions = [swift_action_names.PRECOMPILE_C_MODULE],
-            configurators = [
-                swift_toolchain_config.add_arg(
-                    "-Xcc",
-                    "-fno-implicit-modules",
-                ),
-            ],
-            features = [SWIFT_FEATURE_USE_C_MODULES],
-        ),
-        swift_toolchain_config.action_config(
-            actions = [swift_action_names.PRECOMPILE_C_MODULE],
-            configurators = [
-                # Enforce `use` declarations for user modules since we generate
-                # those, but not for system modules since they typically do not
-                # have the proper `use` decls.
-                swift_toolchain_config.add_arg(
-                    "-Xcc",
-                    "-fmodules-decluse",
-                ),
-            ],
-            not_features = [
-                [SWIFT_FEATURE_STRICT_MODULES],
-                [SWIFT_FEATURE_SYSTEM_MODULE],
-            ],
-        ),
+        # # When using C modules, disable the implicit search for module map files
+        # # because all of them, including system dependencies, will be provided
+        # # explicitly.
+        # swift_toolchain_config.action_config(
+        #     actions = [
+        #         # swift_action_names.COMPILE,
+        #         # swift_action_names.DERIVE_FILES,
+        #         swift_action_names.PRECOMPILE_C_MODULE,
+        #     ],
+        #     configurators = [
+        #         swift_toolchain_config.add_arg(
+        #             "-Xcc",
+        #             "-fno-implicit-module-maps",
+        #         ),
+        #     ],
+        #     features = [SWIFT_FEATURE_USE_C_MODULES],
+        # ),
+        # # Do not allow implicit modules to be used at all when emitting an
+        # # explicit C/Objective-C module. Consider the case of two modules A and
+        # # B, where A depends on B. If B does not emit an explicit module, then
+        # # when A is compiled it would contain a hardcoded reference to B via its
+        # # path in the implicit module cache. Thus, A would not be movable; some
+        # # library importing A would try to resolve B at that path, which may no
+        # # longer exist when the upstream library is built.
+        # #
+        # # This implies that for a C/Objective-C library to build as an explicit
+        # # module, all of its dependencies must as well. On the other hand, a
+        # # Swift library can be compiled with some of its Objective-C
+        # # dependencies still using implicit modules, as long as no Objective-C
+        # # library wants to import that Swift library's generated header and
+        # # build itself as an explicit module.
+        # swift_toolchain_config.action_config(
+        #     actions = [swift_action_names.PRECOMPILE_C_MODULE],
+        #     configurators = [
+        #         swift_toolchain_config.add_arg(
+        #             "-Xcc",
+        #             "-fno-implicit-modules",
+        #         ),
+        #     ],
+        #     features = [SWIFT_FEATURE_USE_C_MODULES],
+        # ),
+        # swift_toolchain_config.action_config(
+        #     actions = [swift_action_names.PRECOMPILE_C_MODULE],
+        #     configurators = [
+        #         # Enforce `use` declarations for user modules since we generate
+        #         # those, but not for system modules since they typically do not
+        #         # have the proper `use` decls.
+        #         swift_toolchain_config.add_arg(
+        #             "-Xcc",
+        #             "-fmodules-decluse",
+        #         ),
+        #     ],
+        #     not_features = [
+        #         [SWIFT_FEATURE_STRICT_MODULES],
+        #         [SWIFT_FEATURE_SYSTEM_MODULE],
+        #     ],
+        # ),
         swift_toolchain_config.action_config(
             actions = [swift_action_names.PRECOMPILE_C_MODULE],
             configurators = [

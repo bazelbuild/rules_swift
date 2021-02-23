@@ -178,7 +178,11 @@ def _module_info_for_target(
         # later as an indicator that we shouldn't try to compile an explicit
         # module.
         if not aspect_ctx.rule.kind == "objc_library":
-            return None, module_maps[0]
+            module_name = _tagged_target_module_name(
+                label = target.label,
+                tags = attr.tags,
+            )
+            return module_name, module_maps[0]
 
         # If an `objc_library` doesn't have any headers (and doesn't specify an
         # explicit module map), then don't generate or propagate a module map
