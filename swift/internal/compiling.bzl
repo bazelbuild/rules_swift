@@ -45,6 +45,7 @@ load(
     "SWIFT_FEATURE_ENABLE_TESTING",
     "SWIFT_FEATURE_FASTBUILD",
     "SWIFT_FEATURE_FULL_DEBUG_INFO",
+    "SWIFT_FEATURE_GLOBAL_MODULE_CACHE_USES_TMPDIR",
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
     "SWIFT_FEATURE_MINIMAL_DEPS",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
@@ -448,6 +449,21 @@ def compile_action_configs():
             ],
             configurators = [_global_module_cache_configurator],
             features = [SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE],
+            not_features = [
+                [SWIFT_FEATURE_USE_C_MODULES],
+                [SWIFT_FEATURE_GLOBAL_MODULE_CACHE_USES_TMPDIR],
+            ],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVE_FILES,
+            ],
+            configurators = [_tmpdir_module_cache_configurator],
+            features = [
+                SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE,
+                SWIFT_FEATURE_GLOBAL_MODULE_CACHE_USES_TMPDIR
+            ],
             # not_features = [SWIFT_FEATURE_USE_C_MODULES],
         ),
         swift_toolchain_config.action_config(
@@ -849,6 +865,27 @@ def _global_module_cache_configurator(prerequisites, args):
         args.add(
             "-module-cache-path",
             paths.join(prerequisites.bin_dir.path, "_swift_module_cache"),
+        )
+
+def _tmpdir_module_cache_configurator(prerequisites, args):
+    """Adds flags to enable a stable tmp directory module cache."""
+
+    # If bin_dir is not provided, then we don't pass any special flags to
+    # the compiler, letting it decide where the cache should live. This is
+    # usually somewhere in the system temporary directory.
+    if prerequisites.bin_dir:
+        args.add("-Xcc", "-Xclang")
+        args.add("-Xcc", "-fdisable-module-hash")
+        args.add(
+            "-module-cache-path",
+            paths.join(
+                "/private/tmp/__build_bazel_rules_swift",
+                prerequisites.bin_dir.path,
+                "_swift_module_cache",
+                # The path needs to be for the "hash" directory when using
+                # `-fdisable-module-hash`.
+                "NO_HASH",
+            ),
         )
 
 def _batch_mode_configurator(prerequisites, args):

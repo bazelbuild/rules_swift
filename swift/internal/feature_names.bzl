@@ -158,6 +158,29 @@ SWIFT_FEATURE_USE_C_MODULES = "swift.use_c_modules"
 # crashes.
 SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE = "swift.use_global_module_cache"
 
+# If enabled, and Swift compilation actions will use the shared Clang module
+# cache path written to
+# `/private/tmp/__build_bazel_rules_swift/BIN_DIR/_swift_module_cache`. This
+# makes the embedded Clang module breadcrumbs deterministic between Bazel
+# instances, because they are always embedded as absolute paths. Note that the
+# use of this cache is non-hermetic--the cached modules are not wiped between
+# builds, and won't be cleaned when invoking `bazel clean`; the user is
+# responsible for manually cleaning them.
+#
+# Since the source path of modulemaps might be different for the same module,
+# (i.e. multiple checkouts of the same repository, or remote execution)
+# `-fdisable-module-hash` is passed as well. If multiple builds happen at the
+# same time, and different pcm's are generated, this can result in inconsistent
+# builds.
+#
+# Additionally, this can be used as a workaround for a bug in the Swift
+# compiler that causes the module breadcrumbs to be embedded even though the
+# `-no-clang-module-breadcrumbs` flag is passed
+# (https://bugs.swift.org/browse/SR-13275).
+#
+# This feature requires `swift.use_global_module_cache` to be enabled.
+SWIFT_FEATURE_GLOBAL_MODULE_CACHE_USES_TMPDIR = "swift.global_module_cache_uses_tmpdir"
+
 # If enabled, actions invoking the Swift driver or frontend may write argument
 # lists into response files (i.e., "@args.txt") to avoid passing command lines
 # that exceed the system limit. Toolchains typically set this automatically if
