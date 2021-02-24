@@ -14,28 +14,31 @@
 
 """Logic for using explicit swiftmodules."""
 
-load("@bazel_skylib//lib:paths.bzl", "paths")
+load("@bazel_skylib//lib:types.bzl", "types")
 
 def write_explicit_swiftmodule_map(
         actions,
-        swiftmodules,
+        modules,
         explicit_swiftmodule_map_file):
     """Generates an explicit swiftmodule map and writes it to a file.
 
     Args:
         actions: The object used to register actions.
-        swiftmodules: The `list` of `.swiftmodule` files to include in the map.
+        modules: The `list` of modules, as returned by
+            `swift_common.create_module()` for each swiftmodule to include in
+            the map.
         explicit_swiftmodule_map_file: A `File` representing the map to be
             written.
     """
     swiftmodules_map = [
         {
-            "moduleName": paths.split_extension(swiftmodule.basename)[0],
-            "modulePath": swiftmodule.path,
+            "moduleName": module.name,
+            # Path can be a string when referencing a system module
+            "modulePath": module.swift.swiftmodule if types.is_string(module.swift.swiftmodule) else module.swift.swiftmodule.path,
             # TODO: set correctly
             "isFramework": False,
         }
-        for swiftmodule in swiftmodules
+        for module in modules
     ]
 
     actions.write(
