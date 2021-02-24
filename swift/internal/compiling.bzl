@@ -131,44 +131,58 @@ def compile_action_configs():
                     "-Xcc",
                     "-fmodules-embed-all-files",
                 ),
+                # swift_toolchain_config.add_arg(
+                #     "-Xcc",
+                #     "-fmodules",
+                # ),
+                # swift_toolchain_config.add_arg("-Xcc", "-Xclang"),
+                # swift_toolchain_config.add_arg(
+                #     "-Xcc",
+                #     "-fmodule-feature",
+                # ),
+                # swift_toolchain_config.add_arg("-Xcc", "-Xclang"),
+                # swift_toolchain_config.add_arg(
+                #     "-Xcc",
+                #     "swift",
+                # ),
                 swift_toolchain_config.add_arg("-Xcc", "-Xclang"),
                 swift_toolchain_config.add_arg(
                     "-Xcc",
                     "-remove-preceeding-explicit-module-build-incompatible-options",
                 ),
-                swift_toolchain_config.add_arg("-Xcc", "-Xclang"),
-                swift_toolchain_config.add_arg(
-                    "-Xcc",
-                    "-fmodule-format=obj",
-                ),
-                swift_toolchain_config.add_arg(
-                    "-Xcc",
-                    "-fapinotes-modules",
-                ),
-                swift_toolchain_config.add_arg(
-                    "-Xcc",
-                    "-iapinotes-modules",
-                ),
-                swift_toolchain_config.add_arg(
-                    "-Xcc",
-                    (
-                        "{developer_dir}/Toolchains/{toolchain}.xctoolchain/" +
-                        "usr/lib/swift/apinotes"
-                    ).format(
-                        developer_dir = apple_common.apple_toolchain().developer_dir(),
-                        toolchain = "XcodeDefault",
-                    ),
-                ),
-                swift_toolchain_config.add_arg(
-                    "-Xcc",
-                    # TODO: Correctly determine this
-                    "-fapinotes-swift-version=5",
-                ),
-                swift_toolchain_config.add_arg("-Xcc", "-Xclang"),
-                swift_toolchain_config.add_arg(
-                    "-Xcc",
-                    "'<swift-imported-modules>'",
-                ),
+                # swift_toolchain_config.add_arg("-Xcc", "-Xclang"),
+                # swift_toolchain_config.add_arg(
+                #     "-Xcc",
+                #     "-fmodule-format=obj",
+                # ),
+                # swift_toolchain_config.add_arg(
+                #     "-Xcc",
+                #     "-fapinotes-modules",
+                # ),
+                # swift_toolchain_config.add_arg(
+                #     "-Xcc",
+                #     "-iapinotes-modules",
+                # ),
+                # swift_toolchain_config.add_arg(
+                #     "-Xcc",
+                #     (
+                #         "{developer_dir}/Toolchains/{toolchain}.xctoolchain/" +
+                #         "usr/lib/swift/apinotes"
+                #     ).format(
+                #         developer_dir = apple_common.apple_toolchain().developer_dir(),
+                #         toolchain = "XcodeDefault",
+                #     ),
+                # ),
+                # swift_toolchain_config.add_arg(
+                #     "-Xcc",
+                #     # TODO: Correctly determine this
+                #     "-fapinotes-swift-version=5",
+                # ),
+                # swift_toolchain_config.add_arg("-Xcc", "-Xclang"),
+                # swift_toolchain_config.add_arg(
+                #     "-Xcc",
+                #     "'<swift-imported-modules>'",
+                # ),
             ],
         ),
 
@@ -1293,15 +1307,15 @@ def _dependencies_swiftmodules_vfsoverlay_configurator(prerequisites, args):
 
 def _dependencies_explicit_swiftmodules_configurator(prerequisites, args):
     """Provides a single `.swiftmodule` search path using an explicit swiftmodule map."""
-    swiftmodules = prerequisites.transitive_swiftmodules
-
     prerequisites.add_frontend_arg(
         args.add,
         "-disable-implicit-swift-modules",
     )
 
-    # Bug: `swiftc` doesn't pass its `-vfsoverlay` arg to the frontend.
-    # Workaround: Pass `-vfsoverlay` directly via `-Xfrontend`.
+    # Bug: `swiftc` doesn't pass its `-explicit-swift-module-map-file` arg to
+    # the frontend.
+    # Workaround: Pass `-explicit-swift-module-map-file` directly via
+    # `-Xfrontend`.
     prerequisites.add_frontend_arg(
         args.add,
         "-explicit-swift-module-map-file",
@@ -1312,12 +1326,25 @@ def _dependencies_explicit_swiftmodules_configurator(prerequisites, args):
     )
 
     return swift_toolchain_config.config_result(
-        inputs = swiftmodules + [prerequisites.explicit_swiftmodule_map_file],
+        # Only add source files to the input file set if they are not strings (for
+        # example, the module map of a system framework will be passed in as a file
+        # path relative to the SDK root, not as a `File` object).
+        inputs = [
+            swiftmodule
+            for swiftmodule in prerequisites.transitive_swiftmodules
+            if not types.is_string(swiftmodule)
+        ] + [prerequisites.explicit_swiftmodule_map_file],
     )
 
 def _module_name_configurator(prerequisites, args):
     """Adds the module name flag to the command line."""
     args.add("-module-name", prerequisites.module_name)
+
+    args.add("-Xcc", "-Xclang")
+    args.add(
+        "-Xcc",
+        "-fmodule-name={}".format(prerequisites.module_name),
+    )
 
 def _stats_output_dir_configurator(prerequisites, args):
     """Adds the compile stats output directory path to the command line."""
@@ -1604,12 +1631,14 @@ def compile(
     )
 
     transitive_swiftmodules = []
+    transitive_swift_modules = []
     defines_set = sets.make(defines)
     for module in transitive_modules:
         swift_module = module.swift
         if not swift_module:
             continue
         transitive_swiftmodules.append(swift_module.swiftmodule)
+        transitive_swift_modules.append(module)
         if swift_module.defines:
             defines_set = sets.union(
                 defines_set,
@@ -1651,7 +1680,7 @@ def compile(
         )
         write_explicit_swiftmodule_map(
             actions = actions,
-            swiftmodules = transitive_swiftmodules,
+            modules = transitive_swift_modules,
             explicit_swiftmodule_map_file = explicit_swiftmodule_map_file,
         )
     else:
@@ -1818,12 +1847,14 @@ def compile_from_interface(
     )
 
     transitive_swiftmodules = []
+    transitive_swift_modules = []
     defines_set = sets.make(defines)
     for module in transitive_modules:
         swift_module = module.swift
         if not swift_module:
             continue
         transitive_swiftmodules.append(swift_module.swiftmodule)
+        transitive_swift_modules.append(module)
         if swift_module.defines:
             defines_set = sets.union(
                 defines_set,
@@ -1848,7 +1879,7 @@ def compile_from_interface(
         )
         write_vfsoverlay(
             actions = actions,
-            swiftmodules = transitive_swiftmodules,
+            modules = transitive_swift_modules,
             vfsoverlay_file = vfsoverlay_file,
             virtual_swiftmodule_root = _SWIFTMODULES_VFS_ROOT,
         )
