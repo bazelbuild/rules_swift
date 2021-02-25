@@ -14,17 +14,20 @@
 
 """Logic for generating VFS overlay files."""
 
+load("@bazel_skylib//lib:types.bzl", "types")
+
 def write_vfsoverlay(
         actions,
-        swiftmodules,
+        modules,
         vfsoverlay_file,
         virtual_swiftmodule_root):
     """Generates a VFS overlay and writes it to a file.
 
     Args:
         actions: The object used to register actions.
-        swiftmodules: The `list` of `.swiftmodule` files to include in the
-             VFS overlay.
+        modules: The `list` of modules, as returned by
+            `swift_common.create_module()` for each swiftmodule to include in
+            the VFS overlay.
         vfsoverlay_file: A `File` representing the VFS overlay to be written.
         virtual_swiftmodule_root: The rooted path fragment representing the
              directory in the VFS where all `.swiftmodule` files will be placed.
@@ -32,10 +35,10 @@ def write_vfsoverlay(
     virtual_swiftmodules = [
         {
             "type": "file",
-            "name": swiftmodule.basename,
-            "external-contents": swiftmodule.path,
+            "name": "{}.swiftmodule".format(module.name),
+            "external-contents": module.swift.swiftmodule if types.is_string(module.swift.swiftmodule) else module.swift.swiftmodule.path,
         }
-        for swiftmodule in swiftmodules
+        for module in modules
     ]
 
     # These explicit settings ensure that the VFS actually improves search
