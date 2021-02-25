@@ -126,11 +126,11 @@ def compile_action_configs():
             actions = [swift_action_names.PRECOMPILE_C_MODULE],
             configurators = [
                 swift_toolchain_config.add_arg("-emit-pcm"),
-                swift_toolchain_config.add_arg("-Xcc", "-Xclang"),
-                swift_toolchain_config.add_arg(
-                    "-Xcc",
-                    "-fmodules-embed-all-files",
-                ),
+                # swift_toolchain_config.add_arg("-Xcc", "-Xclang"),
+                # swift_toolchain_config.add_arg(
+                #     "-Xcc",
+                #     "-fmodules-embed-all-files",
+                # ),
                 # swift_toolchain_config.add_arg(
                 #     "-Xcc",
                 #     "-fmodules",
@@ -145,11 +145,11 @@ def compile_action_configs():
                 #     "-Xcc",
                 #     "swift",
                 # ),
-                swift_toolchain_config.add_arg("-Xcc", "-Xclang"),
-                swift_toolchain_config.add_arg(
-                    "-Xcc",
-                    "-remove-preceeding-explicit-module-build-incompatible-options",
-                ),
+                # swift_toolchain_config.add_arg("-Xcc", "-Xclang"),
+                # swift_toolchain_config.add_arg(
+                #     "-Xcc",
+                #     "-remove-preceeding-explicit-module-build-incompatible-options",
+                # ),
                 # swift_toolchain_config.add_arg("-Xcc", "-Xclang"),
                 # swift_toolchain_config.add_arg(
                 #     "-Xcc",
@@ -552,12 +552,24 @@ def compile_action_configs():
                 swift_action_names.COMPILE,
                 swift_action_names.COMPILE_FROM_INTERFACE,
                 swift_action_names.DERIVE_FILES,
-                swift_action_names.PRECOMPILE_C_MODULE,
+                # swift_action_names.PRECOMPILE_C_MODULE,
             ],
             configurators = [
                 swift_toolchain_config.add_arg(
                     "-Xcc",
                     "-fno-implicit-module-maps",
+                ),
+            ],
+            features = [SWIFT_FEATURE_USE_C_MODULES],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [
+                swift_action_names.PRECOMPILE_C_MODULE,
+            ],
+            configurators = [
+                swift_toolchain_config.add_arg(
+                    "-Xcc",
+                    "-fimplicit-module-maps",
                 ),
             ],
             features = [SWIFT_FEATURE_USE_C_MODULES],
@@ -600,7 +612,7 @@ def compile_action_configs():
                     "-disable-implicit-swift-modules",
                 ),
             ],
-            features = [SWIFT_FEATURE_USE_C_MODULES],
+            features = [SWIFT_FEATURE_EXPLICIT_SWIFTMODULES],
         ),
         swift_toolchain_config.action_config(
             actions = [swift_action_names.PRECOMPILE_C_MODULE],
@@ -1322,7 +1334,14 @@ def _dependencies_swiftmodules_vfsoverlay_configurator(prerequisites, args):
     args.add("-I{}".format(prerequisites.vfsoverlay_search_path))
 
     return swift_toolchain_config.config_result(
-        inputs = swiftmodules + [prerequisites.vfsoverlay_file],
+        # Only add swiftmodules to the input file set if they are not strings
+        # (for example, the swiftmodule of a system framework will be passed in
+        # as a file path relative to the SDK root, not as a `File` object).
+        inputs = [
+            swiftmodule
+            for swiftmodule in prerequisites.transitive_swiftmodules
+            if not types.is_string(swiftmodule)
+        ] + [prerequisites.vfsoverlay_file],
     )
 
 def _dependencies_explicit_swiftmodules_configurator(prerequisites, args):
@@ -1346,9 +1365,9 @@ def _dependencies_explicit_swiftmodules_configurator(prerequisites, args):
     )
 
     return swift_toolchain_config.config_result(
-        # Only add source files to the input file set if they are not strings (for
-        # example, the module map of a system framework will be passed in as a file
-        # path relative to the SDK root, not as a `File` object).
+        # Only add swiftmodules to the input file set if they are not strings
+        # (for example, the swiftmodule of a system framework will be passed in
+        # as a file path relative to the SDK root, not as a `File` object).
         inputs = [
             swiftmodule
             for swiftmodule in prerequisites.transitive_swiftmodules
@@ -1360,11 +1379,12 @@ def _module_name_configurator(prerequisites, args):
     """Adds the module name flag to the command line."""
     args.add("-module-name", prerequisites.module_name)
 
-    args.add("-Xcc", "-Xclang")
-    args.add(
-        "-Xcc",
-        "-fmodule-name={}".format(prerequisites.module_name),
-    )
+    # # Adding this breaks Darwin.swiftmodule compiling
+    # args.add("-Xcc", "-Xclang")
+    # args.add(
+    #     "-Xcc",
+    #     "-fmodule-name={}".format(prerequisites.module_name),
+    # )
 
 def _stats_output_dir_configurator(prerequisites, args):
     """Adds the compile stats output directory path to the command line."""
@@ -1683,7 +1703,7 @@ def compile(
         )
         write_vfsoverlay(
             actions = actions,
-            swiftmodules = transitive_swiftmodules,
+            modules = transitive_swift_modules,
             vfsoverlay_file = vfsoverlay_file,
             virtual_swiftmodule_root = _SWIFTMODULES_VFS_ROOT,
         )
@@ -1916,7 +1936,7 @@ def compile_from_interface(
         )
         write_explicit_swiftmodule_map(
             actions = actions,
-            swiftmodules = transitive_swiftmodules,
+            modules = transitive_swift_modules,
             explicit_swiftmodule_map_file = explicit_swiftmodule_map_file,
         )
     else:
