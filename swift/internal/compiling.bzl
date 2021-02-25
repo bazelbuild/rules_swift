@@ -611,6 +611,14 @@ def compile_action_configs(
             configurators = [_framework_search_paths_configurator],
         ),
     )
+    action_configs.append(
+        swift_toolchain_config.action_config(
+            actions = [
+                swift_action_names.PRECOMPILE_C_MODULE,
+            ],
+            configurators = [_pcm_additional_framework_search_paths_configurator],
+        ),
+    )
 
     #### Other ClangImporter flags
     action_configs.extend([
@@ -1187,6 +1195,18 @@ def _framework_search_paths_configurator(prerequisites, args):
     """Add search paths for prebuilt frameworks to the command line."""
     args.add_all(
         prerequisites.cc_info.compilation_context.framework_includes,
+        format_each = "-F%s",
+    )
+
+def _pcm_additional_framework_search_paths_configurator(prerequisites, args):
+    """Add search paths for prebuilt frameworks to the command line for pcms.
+
+    This is needed since swiftc doesn't pass the framework search paths to
+    clang, causing issues with framework style imports in headers.
+    """
+    args.add_all(
+        prerequisites.cc_info.compilation_context.framework_includes,
+        before_each = "-Xcc",
         format_each = "-F%s",
     )
 
