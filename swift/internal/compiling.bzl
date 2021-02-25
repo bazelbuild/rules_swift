@@ -37,6 +37,7 @@ load(
     "SWIFT_FEATURE_DBG",
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
     "SWIFT_FEATURE_DISABLE_SYSTEM_INDEX",
+    "SWIFT_FEATURE_EMBED_CLANG_MODULE_BREADCRUMBS",
     "SWIFT_FEATURE_EMIT_C_MODULE",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
@@ -149,6 +150,18 @@ def compile_action_configs(
                     "-fmodules-embed-all-files",
                 ),
             ],
+        ),
+
+        # Don't embed Clang module breadcrumbs in debug info.
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [
+                swift_toolchain_config.add_arg(
+                    "-Xfrontend",
+                    "-no-clang-module-breadcrumbs",
+                ),
+            ],
+            not_features = [SWIFT_FEATURE_EMBED_CLANG_MODULE_BREADCRUMBS],
         ),
 
         # Add the output precompiled module file path to the command line.

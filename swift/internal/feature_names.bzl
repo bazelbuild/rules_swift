@@ -211,6 +211,13 @@ SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS = "swift.supports_private_deps"
 # system command line limit.
 SWIFT_FEATURE_NO_EMBED_DEBUG_MODULE = "swift.no_embed_debug_module"
 
+# If enabled, embed absolute paths to the dependent pcm files in the debug
+# info. This is used as a fallback path for LLDB to reconstruct Clang types
+# from DWARF, when it wasn't able to import a dependent Clang module from
+# source. This feature is disabled by default to make the compilation outputs
+# more cacheable.
+SWIFT_FEATURE_EMBED_CLANG_MODULE_BREADCRUMBS = "swift.embed_clang_module_breadcrumbs"
+
 # If enabled, the toolchain will directly generate from the raw proto files
 # and not from the DescriptorSets.
 #
