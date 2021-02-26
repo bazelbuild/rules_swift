@@ -151,6 +151,17 @@ def compile_action_configs(
             ],
         ),
 
+        # Don't embed Clang module breadcrumbs in debug info.
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [
+                swift_toolchain_config.add_arg(
+                    "-Xfrontend",
+                    "-no-clang-module-breadcrumbs",
+                ),
+            ],
+        ),
+
         # Add the output precompiled module file path to the command line.
         swift_toolchain_config.action_config(
             actions = [swift_action_names.PRECOMPILE_C_MODULE],
