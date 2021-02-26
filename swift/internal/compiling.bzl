@@ -37,7 +37,6 @@ load(
     "SWIFT_FEATURE_DBG",
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
     "SWIFT_FEATURE_DISABLE_SYSTEM_INDEX",
-    "SWIFT_FEATURE_EMBED_CLANG_MODULE_BREADCRUMBS",
     "SWIFT_FEATURE_EMIT_C_MODULE",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
@@ -161,7 +160,6 @@ def compile_action_configs(
                     "-no-clang-module-breadcrumbs",
                 ),
             ],
-            not_features = [SWIFT_FEATURE_EMBED_CLANG_MODULE_BREADCRUMBS],
         ),
 
         # Add the output precompiled module file path to the command line.
