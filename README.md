@@ -107,6 +107,11 @@ bazel run @build_bazel_rules_swift//tools/dump_toolchains
 **Linux hosts:** At this time, Bazel uses whichever `swift` executable is
 encountered first on your `PATH`.
 
+## Supporting remote builds
+
+To make remote builds work correctly with debugging and general
+reproducibility see [this doc](doc/debuggable_remote_swift.md)
+
 ## Future Work
 
 - Support for building and linking to shared libraries (`.dylib`/`.so`) written
