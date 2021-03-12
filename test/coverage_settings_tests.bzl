@@ -69,9 +69,7 @@ def coverage_settings_test_suite(name = "coverage_settings"):
             "-coverage-prefix-map",
             "__BAZEL_XCODE_DEVELOPER_DIR__=DEVELOPER_DIR",
         ],
-        target_compatible_with = [
-            "@platforms//os:macos",
-        ],
+        target_compatible_with = ["@platforms//os:macos"],
         mnemonic = "SwiftCompile",
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
