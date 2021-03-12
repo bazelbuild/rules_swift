@@ -25,7 +25,6 @@ load(
     ":feature_names.bzl",
     "SWIFT_FEATURE_ENABLE_TESTING",
     "SWIFT_FEATURE_GENERATE_FROM_RAW_PROTO_FILES",
-    "SWIFT_FEATURE_NO_GENERATED_HEADER",
 )
 load(":linking.bzl", "create_linker_input")
 load(
@@ -214,7 +213,7 @@ def _swift_grpc_library_impl(ctx):
 
     feature_configuration = swift_common.configure_features(
         ctx = ctx,
-        requested_features = ctx.features + [SWIFT_FEATURE_NO_GENERATED_HEADER],
+        requested_features = ctx.features,
         swift_toolchain = swift_toolchain,
         unsupported_features = unsupported_features,
     )
