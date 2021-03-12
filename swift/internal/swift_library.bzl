@@ -150,6 +150,20 @@ def _swift_library_impl(ctx):
         deps = ctx.attr.deps
         private_deps = []
 
+    if ctx.attr.generates_header:
+        generated_header_name = (
+            ctx.attr.generated_header_name or
+            "{}-Swift.h".format(ctx.label.name)
+        )
+    elif not ctx.attr.generated_header_name:
+        generated_header_name = None
+    else:
+        fail(
+            "'generated_header_name' may only be provided when " +
+            "'generates_header' is True.",
+            attr = "generated_header_name",
+        )
+
     compilation_outputs = swift_common.compile(
         actions = ctx.actions,
         additional_inputs = additional_inputs,
@@ -158,7 +172,7 @@ def _swift_library_impl(ctx):
         defines = ctx.attr.defines,
         deps = deps,
         feature_configuration = feature_configuration,
-        generated_header_name = ctx.attr.generated_header_name,
+        generated_header_name = generated_header_name,
         genfiles_dir = ctx.genfiles_dir,
         module_name = module_name,
         private_deps = private_deps,

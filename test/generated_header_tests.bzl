@@ -16,44 +16,15 @@
 
 load(
     "@build_bazel_rules_swift//test/rules:analysis_failure_test.bzl",
-    "make_analysis_failure_test_rule",
+    "analysis_failure_test",
 )
 load(
     "@build_bazel_rules_swift//test/rules:provider_test.bzl",
-    "make_provider_test_rule",
-)
-
-# A configuration that forces header and module map generation, regardless of
-# the toolchain's default feature set.
-GENERATE_HEADER_AND_MODULE_MAP_CONFIG_SETTINGS = {
-    "//command_line_option:features": [
-        "-swift.no_generated_header",
-        "-swift.no_generated_module_map",
-    ],
-}
-
-# A configuration that disables header (and therefore module map) generation,
-# regardless of the toolchain's default feature set.
-NO_GENERATE_HEADER_CONFIG_SETTINGS = {
-    "//command_line_option:features": [
-        "swift.no_generated_header",
-    ],
-}
-
-generate_header_and_module_map_provider_test = make_provider_test_rule(
-    config_settings = GENERATE_HEADER_AND_MODULE_MAP_CONFIG_SETTINGS,
-)
-
-generate_header_and_module_map_failure_test = make_analysis_failure_test_rule(
-    config_settings = GENERATE_HEADER_AND_MODULE_MAP_CONFIG_SETTINGS,
-)
-
-no_generate_header_provider_test = make_provider_test_rule(
-    config_settings = NO_GENERATE_HEADER_CONFIG_SETTINGS,
+    "provider_test",
 )
 
 def generated_header_test_suite(name = "generated_header"):
-    """Test suite for `swift_library.generated_header`.
+    """Test suite for `swift_library` generated headers.
 
     Args:
         name: The name prefix for all the nested tests
@@ -61,7 +32,7 @@ def generated_header_test_suite(name = "generated_header"):
 
     # Verify that the generated header by default gets an automatically
     # generated name and is an output of the rule.
-    generate_header_and_module_map_provider_test(
+    provider_test(
         name = "{}_automatically_named_header_is_rule_output".format(name),
         expected_files = [
             "test/fixtures/generated_header/auto_header-Swift.h",
@@ -73,22 +44,23 @@ def generated_header_test_suite(name = "generated_header"):
         target_under_test = "@build_bazel_rules_swift//test/fixtures/generated_header:auto_header",
     )
 
-    # Verify that the generated module map is propagated in `apple_common.Objc`.
-    # TODO(b/148604334): Enable this when it analyzes correctly on all platforms.
-    # generate_header_and_module_map_provider_test(
-    #     name = "{}_automatically_named_header_modulemap_is_propagated".format(name),
-    #     expected_files = [
-    #         "test/fixtures/generated_header/auto_header.modulemaps/module.modulemap",
-    #     ],
-    #     field = "direct_module_maps",
-    #     provider = "apple_common.Objc",
-    #     tags = [name],
-    #     target_under_test = "@build_bazel_rules_swift//test/fixtures/generated_header:auto_header",
-    # )
+    # Verify that no generated header is created if the target doesn't request
+    # it.
+    provider_test(
+        name = "{}_no_header".format(name),
+        expected_files = [
+            "-test/fixtures/generated_header/no_header-Swift.h",
+            "*",
+        ],
+        field = "files",
+        provider = "DefaultInfo",
+        tags = [name],
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/generated_header:no_header",
+    )
 
     # Verify that the explicit generated header is an output of the rule and
     # that the automatically named one is *not*.
-    generate_header_and_module_map_provider_test(
+    provider_test(
         name = "{}_explicit_header".format(name),
         expected_files = [
             "test/fixtures/generated_header/SomeOtherName.h",
@@ -102,7 +74,7 @@ def generated_header_test_suite(name = "generated_header"):
     )
 
     # Verify that the build fails to analyze if an invalid extension is used.
-    generate_header_and_module_map_failure_test(
+    analysis_failure_test(
         name = "{}_invalid_extension".format(name),
         expected_message = "The generated header for a Swift module must have a '.h' extension",
         tags = [name],
@@ -110,7 +82,7 @@ def generated_header_test_suite(name = "generated_header"):
     )
 
     # Verify that the build analyzes if a path separator is used.
-    generate_header_and_module_map_provider_test(
+    provider_test(
         name = "{}_valid_path_separator".format(name),
         expected_files = [
             "test/fixtures/generated_header/Valid/Separator.h",
@@ -122,33 +94,13 @@ def generated_header_test_suite(name = "generated_header"):
         target_under_test = "@build_bazel_rules_swift//test/fixtures/generated_header:valid_path_separator",
     )
 
-    # Verify that the header is not generated if the feature
-    # `swift.no_generated_header` set, when using an automatically named header.
-    no_generate_header_provider_test(
-        name = "{}_no_header".format(name),
-        expected_files = [
-            "-test/fixtures/generated_header/auto_header-Swift.h",
-            "*",
-        ],
-        field = "files",
-        provider = "DefaultInfo",
+    # Verify that the build fails if `generated_header_name` is set when
+    # `generates_header` is False.
+    analysis_failure_test(
+        name = "{}_fails_when_name_provided_but_generates_header_is_false".format(name),
+        expected_message = "'generated_header_name' may only be provided when 'generates_header' is True",
         tags = [name],
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/generated_header:auto_header",
-    )
-
-    # Verify that the header is not generated if the feature
-    # `swift.no_generated_header` set, even when specifying an explicit header
-    # name.
-    no_generate_header_provider_test(
-        name = "{}_no_explicit_header".format(name),
-        expected_files = [
-            "-test/fixtures/generated_header/SomeOtherName.h",
-            "*",
-        ],
-        field = "files",
-        provider = "DefaultInfo",
-        tags = [name],
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/generated_header:explicit_header",
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/generated_header:invalid_attribute_combination",
     )
 
     native.test_suite(
