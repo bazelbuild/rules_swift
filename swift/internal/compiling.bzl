@@ -49,7 +49,6 @@ load(
     "SWIFT_FEATURE_MINIMAL_DEPS",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_NO_EMBED_DEBUG_MODULE",
-    "SWIFT_FEATURE_NO_GENERATED_HEADER",
     "SWIFT_FEATURE_NO_GENERATED_MODULE_MAP",
     "SWIFT_FEATURE_OPT",
     "SWIFT_FEATURE_OPT_USES_OSIZE",
@@ -210,14 +209,12 @@ def compile_action_configs(
             actions = [swift_action_names.COMPILE],
             configurators = [_emit_objc_header_path_configurator],
             not_features = [
-                [SWIFT_FEATURE_NO_GENERATED_HEADER],
-                [SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION],
+                SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION,
             ],
         ),
         swift_toolchain_config.action_config(
             actions = [swift_action_names.DERIVE_FILES],
             configurators = [_emit_objc_header_path_configurator],
-            not_features = [SWIFT_FEATURE_NO_GENERATED_HEADER],
         ),
 
         # Configure the location where compiler performance statistics are
@@ -928,7 +925,8 @@ def _emit_module_interface_path_configurator(prerequisites, args):
 
 def _emit_objc_header_path_configurator(prerequisites, args):
     """Adds the generated header output path to the command line."""
-    args.add("-emit-objc-header-path", prerequisites.generated_header_file)
+    if prerequisites.generated_header_file:
+        args.add("-emit-objc-header-path", prerequisites.generated_header_file)
 
 def _global_module_cache_configurator(prerequisites, args):
     """Adds flags to enable the global module cache."""
@@ -1491,8 +1489,8 @@ def compile(
             targets must propagate one of the following providers: `CcInfo`,
             `SwiftInfo`, or `apple_common.Objc`.
         generated_header_name: The name of the Objective-C generated header that
-            should be generated for this module. If omitted, the name
-            `${target_name}-Swift.h` will be used.
+            should be generated for this module. If omitted, no header will be
+            generated.
         genfiles_dir: The Bazel `*-genfiles` directory root. If provided, its
             path is added to ClangImporter's header search paths for
             compatibility with Bazel's C++ and Objective-C rules which support
@@ -1691,10 +1689,7 @@ def compile(
 
     # If a header and module map were generated for this Swift module, attempt
     # to precompile the explicit module for that header as well.
-    if not is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_NO_GENERATED_HEADER,
-    ) and not is_feature_enabled(
+    if generated_header_name and not is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_NO_GENERATED_MODULE_MAP,
     ):
@@ -1888,7 +1883,7 @@ def _declare_compile_outputs(
         feature_configuration: A feature configuration obtained from
             `swift_common.configure_features`.
         generated_header_name: The desired name of the generated header for this
-            module, or `None` to use `${target_name}-Swift.h`.
+            module, or `None` if no header should be generated.
         generated_module_deps: Dependencies of the module for the generated
             header of the target being compiled.
         module_name: The name of the Swift module being compiled.
@@ -1945,22 +1940,13 @@ def _declare_compile_outputs(
     else:
         stats_directory = None
 
-    # If supported, generate the Swift header for this library so that it can be
+    # If requested, generate the Swift header for this library so that it can be
     # included by Objective-C code that depends on it.
-    if not is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_NO_GENERATED_HEADER,
-    ):
-        if generated_header_name:
-            generated_header = _declare_validated_generated_header(
-                actions = actions,
-                generated_header_name = generated_header_name,
-            )
-        else:
-            generated_header = derived_files.default_generated_header(
-                actions = actions,
-                target_name = target_name,
-            )
+    if generated_header_name:
+        generated_header = _declare_validated_generated_header(
+            actions = actions,
+            generated_header_name = generated_header_name,
+        )
     else:
         generated_header = None
 
