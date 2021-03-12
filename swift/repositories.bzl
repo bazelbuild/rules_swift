@@ -51,9 +51,9 @@ def swift_rules_dependencies():
         http_archive,
         name = "build_bazel_apple_support",
         urls = [
-            "https://github.com/bazelbuild/apple_support/releases/download/0.9.1/apple_support.0.9.1.tar.gz",
+            "https://github.com/bazelbuild/apple_support/releases/download/0.9.2/apple_support.0.9.2.tar.gz",
         ],
-        sha256 = "02ac04ff0a0de1e891a1fa8839cc6a5957e3c4a80856545aa35a786d15aad108",
+        sha256 = "a1926bbc5bbb86d596ee1e9c307e22c9a0305053e46057cf186d015b09b3c5f2",
     )
 
     _maybe(
