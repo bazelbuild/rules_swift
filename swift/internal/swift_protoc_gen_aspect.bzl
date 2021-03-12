@@ -24,7 +24,6 @@ load(
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_ENABLE_TESTING",
     "SWIFT_FEATURE_GENERATE_FROM_RAW_PROTO_FILES",
-    "SWIFT_FEATURE_NO_GENERATED_HEADER",
 )
 load(":linking.bzl", "create_linker_input")
 load(
@@ -369,9 +368,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
         # compile action.
         feature_configuration = swift_common.configure_features(
             ctx = aspect_ctx,
-            requested_features = aspect_ctx.features + extra_features + [
-                SWIFT_FEATURE_NO_GENERATED_HEADER,
-            ],
+            requested_features = aspect_ctx.features + extra_features,
             swift_toolchain = swift_toolchain,
             unsupported_features = aspect_ctx.disabled_features + [
                 SWIFT_FEATURE_ENABLE_TESTING,

@@ -29,18 +29,6 @@ def _autolink_flags(actions, target_name):
     """
     return actions.declare_file("{}.autolink".format(target_name))
 
-def _default_generated_header(actions, target_name):
-    """Declares the automatically-named generated header for a Swift target.
-
-    Args:
-        actions: The context's actions object.
-        target_name: The name of the target being built.
-
-    Returns:
-        The declared `File`.
-    """
-    return actions.declare_file("{}-Swift.h".format(target_name))
-
 def _executable(actions, target_name):
     """Declares a file for the executable created by a binary or test rule.
 
@@ -320,7 +308,6 @@ def _xctest_runner_script(actions, target_name):
 
 derived_files = struct(
     autolink_flags = _autolink_flags,
-    default_generated_header = _default_generated_header,
     executable = _executable,
     indexstore_directory = _indexstore_directory,
     intermediate_object_file = _intermediate_object_file,

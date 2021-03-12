@@ -118,14 +118,9 @@ SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS = (
     "swift.module_map_no_private_headers"
 )
 
-# If enabled, the compilation action for a library target will not generate an
-# Objective-C header for the module. This feature also implies
-# `swift.no_generated_module_map`.
-SWIFT_FEATURE_NO_GENERATED_HEADER = "swift.no_generated_header"
-
 # If enabled, the compilation action for a library target will not generate a
 # module map for the Objective-C generated header. This feature is ignored if
-# `swift.no_generated_header` is not present.
+# the target is not generating a header.
 SWIFT_FEATURE_NO_GENERATED_MODULE_MAP = "swift.no_generated_module_map"
 
 # If enabled, builds using the "opt" compilation mode will invoke `swiftc` with
