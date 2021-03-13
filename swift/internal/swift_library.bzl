@@ -103,6 +103,7 @@ def _swift_library_impl(ctx):
     copts = expand_locations(ctx, ctx.attr.copts, ctx.attr.swiftc_inputs)
     copts = expand_make_variables(ctx, copts, "copts")
     linkopts = expand_locations(ctx, ctx.attr.linkopts, ctx.attr.swiftc_inputs)
+    linkopts = expand_make_variables(ctx, linkopts, "linkopts")
     srcs = ctx.files.srcs
 
     extra_features = []

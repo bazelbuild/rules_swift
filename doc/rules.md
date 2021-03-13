@@ -63,7 +63,7 @@ please use one of the platform-specific application rules in
     <tr id="swift_binary.deps">
       <td><code>deps</code></td>
       <td>
-        <p><code>List of <a hef="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>A list of targets that are dependencies of the target being built, which will be
+        <p><code>List of <a href="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>A list of targets that are dependencies of the target being built, which will be
 linked into that target.</p>
 <p>If the Swift toolchain supports implementation-only imports (<code>private_deps</code> on
 <code>swift_library</code>), then targets in <code>deps</code> are treated as regular
@@ -83,12 +83,12 @@ Linux), those dependencies will be <strong>ignored.</strong></p></td>
     <tr id="swift_binary.srcs">
       <td><code>srcs</code></td>
       <td>
-        <p><code>List of <a hef="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>A list of <code>.swift</code> source files that will be compiled into the library.</p></td>
+        <p><code>List of <a href="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>A list of <code>.swift</code> source files that will be compiled into the library.</p></td>
     </tr>
     <tr id="swift_binary.data">
       <td><code>data</code></td>
       <td>
-        <p><code>List of <a hef="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>The list of files needed by this target at runtime.</p>
+        <p><code>List of <a href="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>The list of files needed by this target at runtime.</p>
 <p>Files and targets named in the <code>data</code> attribute will appear in the <code>*.runfiles</code>
 area of this target, if it has one. This may include data files needed by a
 binary or library, or other programs needed by it.</p></td>
@@ -152,7 +152,7 @@ good build result caching.</li>
     <tr id="swift_binary.swiftc_inputs">
       <td><code>swiftc_inputs</code></td>
       <td>
-        <p><code>List of <a hef="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>Additional files that are referenced using <code>$(location ...)</code> in attributes that
+        <p><code>List of <a href="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>Additional files that are referenced using <code>$(location ...)</code> in attributes that
 support location expansion.</p></td>
     </tr>
   </tbody>
@@ -214,7 +214,7 @@ any C++ declarations.
     <tr id="swift_c_module.deps">
       <td><code>deps</code></td>
       <td>
-        <p><code>List of <a hef="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; required</code></p><p>A list of C targets (or anything propagating <code>CcInfo</code>) that are dependencies of
+        <p><code>List of <a href="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; required</code></p><p>A list of C targets (or anything propagating <code>CcInfo</code>) that are dependencies of
 this target and whose headers may be referenced by the module map.</p></td>
     </tr>
     <tr id="swift_c_module.module_map">
@@ -330,14 +330,14 @@ swift_grpc_library(
     <tr id="swift_grpc_library.deps">
       <td><code>deps</code></td>
       <td>
-        <p><code>List of <a hef="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>Exactly one <code>swift_proto_library</code> or <code>swift_grpc_library</code> target that contains
+        <p><code>List of <a href="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>Exactly one <code>swift_proto_library</code> or <code>swift_grpc_library</code> target that contains
 the Swift protos used by the services being generated. Test stubs should depend
 on the <code>swift_grpc_library</code> implementing the service.</p></td>
     </tr>
     <tr id="swift_grpc_library.srcs">
       <td><code>srcs</code></td>
       <td>
-        <p><code>List of <a hef="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>Exactly one <code>proto_library</code> target that defines the services being generated.</p></td>
+        <p><code>List of <a href="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>Exactly one <code>proto_library</code> target that defines the services being generated.</p></td>
     </tr>
     <tr id="swift_grpc_library.flavor">
       <td><code>flavor</code></td>
@@ -381,7 +381,7 @@ Allows for the use of precompiled Swift modules as dependencies in other
     <tr id="swift_import.deps">
       <td><code>deps</code></td>
       <td>
-        <p><code>List of <a hef="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>A list of targets that are dependencies of the target being built, which will be
+        <p><code>List of <a href="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>A list of targets that are dependencies of the target being built, which will be
 linked into that target.</p>
 <p>If the Swift toolchain supports implementation-only imports (<code>private_deps</code> on
 <code>swift_library</code>), then targets in <code>deps</code> are treated as regular
@@ -401,7 +401,7 @@ Linux), those dependencies will be <strong>ignored.</strong></p></td>
     <tr id="swift_import.data">
       <td><code>data</code></td>
       <td>
-        <p><code>List of <a hef="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>The list of files needed by this target at runtime.</p>
+        <p><code>List of <a href="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>The list of files needed by this target at runtime.</p>
 <p>Files and targets named in the <code>data</code> attribute will appear in the <code>*.runfiles</code>
 area of this target, if it has one. This may include data files needed by a
 binary or library, or other programs needed by it.</p></td>
@@ -409,7 +409,7 @@ binary or library, or other programs needed by it.</p></td>
     <tr id="swift_import.archives">
       <td><code>archives</code></td>
       <td>
-        <p><code>List of <a hef="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; required</code></p><p>The list of <code>.a</code> files provided to Swift targets that depend on this target.</p></td>
+        <p><code>List of <a href="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; required</code></p><p>The list of <code>.a</code> files provided to Swift targets that depend on this target.</p></td>
     </tr>
     <tr id="swift_import.module_name">
       <td><code>module_name</code></td>
@@ -458,7 +458,7 @@ Compiles and links Swift code into a static library and Swift module.
     <tr id="swift_library.deps">
       <td><code>deps</code></td>
       <td>
-        <p><code>List of <a hef="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>A list of targets that are dependencies of the target being built, which will be
+        <p><code>List of <a href="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>A list of targets that are dependencies of the target being built, which will be
 linked into that target.</p>
 <p>If the Swift toolchain supports implementation-only imports (<code>private_deps</code> on
 <code>swift_library</code>), then targets in <code>deps</code> are treated as regular
@@ -478,12 +478,12 @@ Linux), those dependencies will be <strong>ignored.</strong></p></td>
     <tr id="swift_library.srcs">
       <td><code>srcs</code></td>
       <td>
-        <p><code>List of <a hef="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>A list of <code>.swift</code> source files that will be compiled into the library.</p></td>
+        <p><code>List of <a href="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>A list of <code>.swift</code> source files that will be compiled into the library.</p></td>
     </tr>
     <tr id="swift_library.data">
       <td><code>data</code></td>
       <td>
-        <p><code>List of <a hef="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>The list of files needed by this target at runtime.</p>
+        <p><code>List of <a href="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>The list of files needed by this target at runtime.</p>
 <p>Files and targets named in the <code>data</code> attribute will appear in the <code>*.runfiles</code>
 area of this target, if it has one. This may include data files needed by a
 binary or library, or other programs needed by it.</p></td>
@@ -503,7 +503,7 @@ conformance.</p></td>
       <td><code>copts</code></td>
       <td>
         <p><code>List of strings; optional</code></p><p>Additional compiler options that should be passed to <code>swiftc</code>. These strings are
-subject to <code>$(location ...)</code> expansion.</p></td>
+subject to <code>$(location ...)</code> and <code><a href="https://docs.bazel.build/versions/master/be/make-variables.html">make var</a></code> expansion.</p></td>
     </tr>
     <tr id="swift_library.defines">
       <td><code>defines</code></td>
@@ -533,6 +533,7 @@ or if the target has the <code>swift.no_generated_header</code> feature enabled.
       <td>
         <p><code>List of strings; optional</code></p><p>Additional linker options that should be passed to the linker for the binary
 that depends on this target. These strings are subject to <code>$(location ...)</code>
+and <code><a href="https://docs.bazel.build/versions/master/be/make-variables.html">make var</a></code> expansion.</p></td>
 expansion.</p></td>
     </tr>
     <tr id="swift_library.module_name">
@@ -546,7 +547,7 @@ non-identifier characters with underscores.</p></td>
     <tr id="swift_library.private_deps">
       <td><code>private_deps</code></td>
       <td>
-        <p><code>List of <a hef="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>A list of targets that are implementation-only dependencies of the target being
+        <p><code>List of <a href="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>A list of targets that are implementation-only dependencies of the target being
 built. Libraries/linker flags from these dependencies will be propagated to
 dependent for linking, but artifacts/flags required for compilation (such as
 .swiftmodule files, C headers, and search paths) will not be propagated.</p>
@@ -564,7 +565,7 @@ Linux), those dependencies will be <strong>ignored.</strong></p></td>
     <tr id="swift_library.swiftc_inputs">
       <td><code>swiftc_inputs</code></td>
       <td>
-        <p><code>List of <a hef="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>Additional files that are referenced using <code>$(location ...)</code> in attributes that
+        <p><code>List of <a href="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>Additional files that are referenced using <code>$(location ...)</code> in attributes that
 support location expansion.</p></td>
     </tr>
   </tbody>
@@ -614,7 +615,7 @@ symbol is defined; it is not repeated by the alias module.)
     <tr id="swift_module_alias.deps">
       <td><code>deps</code></td>
       <td>
-        <p><code>List of <a hef="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>A list of targets that are dependencies of the target being built, which will be
+        <p><code>List of <a href="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>A list of targets that are dependencies of the target being built, which will be
 linked into that target. Allowed kinds are <code>swift_import</code> and <code>swift_library</code>
 (or anything else propagating <code>SwiftInfo</code>).</p></td>
     </tr>
@@ -730,7 +731,7 @@ prevents unused modules from being loaded by `swiftc`.
     <tr id="swift_proto_library.deps">
       <td><code>deps</code></td>
       <td>
-        <p><code>List of <a hef="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>Exactly one <code>proto_library</code> target (or any target that propagates a <code>proto</code>
+        <p><code>List of <a href="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>Exactly one <code>proto_library</code> target (or any target that propagates a <code>proto</code>
 provider) from which the Swift library should be generated.</p></td>
     </tr>
   </tbody>
@@ -795,7 +796,7 @@ to your BUILD file's `package()` declaration instead of the individual targets.
     <tr id="swift_test.deps">
       <td><code>deps</code></td>
       <td>
-        <p><code>List of <a hef="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>A list of targets that are dependencies of the target being built, which will be
+        <p><code>List of <a href="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>A list of targets that are dependencies of the target being built, which will be
 linked into that target.</p>
 <p>If the Swift toolchain supports implementation-only imports (<code>private_deps</code> on
 <code>swift_library</code>), then targets in <code>deps</code> are treated as regular
@@ -815,12 +816,12 @@ Linux), those dependencies will be <strong>ignored.</strong></p></td>
     <tr id="swift_test.srcs">
       <td><code>srcs</code></td>
       <td>
-        <p><code>List of <a hef="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>A list of <code>.swift</code> source files that will be compiled into the library.</p></td>
+        <p><code>List of <a href="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>A list of <code>.swift</code> source files that will be compiled into the library.</p></td>
     </tr>
     <tr id="swift_test.data">
       <td><code>data</code></td>
       <td>
-        <p><code>List of <a hef="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>The list of files needed by this target at runtime.</p>
+        <p><code>List of <a href="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>The list of files needed by this target at runtime.</p>
 <p>Files and targets named in the <code>data</code> attribute will appear in the <code>*.runfiles</code>
 area of this target, if it has one. This may include data files needed by a
 binary or library, or other programs needed by it.</p></td>
@@ -884,7 +885,7 @@ good build result caching.</li>
     <tr id="swift_test.swiftc_inputs">
       <td><code>swiftc_inputs</code></td>
       <td>
-        <p><code>List of <a hef="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>Additional files that are referenced using <code>$(location ...)</code> in attributes that
+        <p><code>List of <a href="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>Additional files that are referenced using <code>$(location ...)</code> in attributes that
 support location expansion.</p></td>
     </tr>
   </tbody>
