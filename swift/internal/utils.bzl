@@ -142,6 +142,25 @@ def expand_locations(ctx, values, targets = []):
     """
     return [ctx.expand_location(value, targets) for value in values]
 
+def expand_make_variables(ctx, values, attribute_name):
+    """Expands all references to Make variables in each of the given values.
+
+    Args:
+        ctx: The rule context.
+        values: A list of strings, which may contain Make variable placeholders.
+        attribute_name: The attribute name string that will be presented in
+            console when an error occurs.
+
+    Returns:
+        A list of strings with Make variables placeholders filled in.
+    """
+    expanded = []
+
+    for value in values:
+        expanded.append(ctx.expand_make_variables(attribute_name, value, {}))
+
+    return expanded
+
 def get_swift_executable_for_toolchain(ctx):
     """Returns the Swift driver executable that the toolchain should use.
 
