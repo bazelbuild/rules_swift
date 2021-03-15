@@ -503,7 +503,7 @@ conformance.</p></td>
       <td><code>copts</code></td>
       <td>
         <p><code>List of strings; optional</code></p><p>Additional compiler options that should be passed to <code>swiftc</code>. These strings are
-subject to <code>$(location ...)</code> and <code><a href="https://docs.bazel.build/versions/master/be/make-variables.html">make var</a></code> expansion.</p></td>
+subject to <code>$(location ...)</code> and <code><a href="https://docs.bazel.build/versions/master/be/make-variables.html">"Make" variable</a></code> expansion.</p></td>
     </tr>
     <tr id="swift_library.defines">
       <td><code>defines</code></td>
@@ -533,7 +533,7 @@ or if the target has the <code>swift.no_generated_header</code> feature enabled.
       <td>
         <p><code>List of strings; optional</code></p><p>Additional linker options that should be passed to the linker for the binary
 that depends on this target. These strings are subject to <code>$(location ...)</code>
-and <code><a href="https://docs.bazel.build/versions/master/be/make-variables.html">make var</a></code> expansion.</p></td>
+and <code><a href="https://docs.bazel.build/versions/master/be/make-variables.html">"Make" variable</a></code> expansion.</p></td>
 expansion.</p></td>
     </tr>
     <tr id="swift_library.module_name">

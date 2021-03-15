@@ -104,7 +104,7 @@ A list of `.swift` source files that will be compiled into the library.
             "copts": attr.string_list(
                 doc = """\
 Additional compiler options that should be passed to `swiftc`. These strings are
-subject to `$(location ...)` and `make var` expansion.
+subject to `$(location ...)` and "Make" variable expansion.
 """,
             ),
             "defines": attr.string_list(
@@ -248,7 +248,7 @@ def swift_library_rule_attrs(
                 doc = """\
 Additional linker options that should be passed to the linker for the binary
 that depends on this target. These strings are subject to `$(location ...)`
-and `make var` expansion.
+and "Make" variable expansion.
 """,
             ),
             "alwayslink": attr.bool(

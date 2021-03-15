@@ -154,12 +154,10 @@ def expand_make_variables(ctx, values, attribute_name):
     Returns:
         A list of strings with Make variables placeholders filled in.
     """
-    expanded = []
-
-    for value in values:
-        expanded.append(ctx.expand_make_variables(attribute_name, value, {}))
-
-    return expanded
+    return [
+        ctx.expand_make_variables(attribute_name, value, {})
+        for value in values
+    ]
 
 def get_swift_executable_for_toolchain(ctx):
     """Returns the Swift driver executable that the toolchain should use.
