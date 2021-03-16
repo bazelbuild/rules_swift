@@ -35,6 +35,7 @@ load(
     "compact",
     "create_cc_info",
     "expand_locations",
+    "expand_make_variables",
     "get_providers",
 )
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
@@ -100,7 +101,9 @@ def _swift_library_impl(ctx):
     # These can't use additional_inputs since expand_locations needs targets,
     # not files.
     copts = expand_locations(ctx, ctx.attr.copts, ctx.attr.swiftc_inputs)
+    copts = expand_make_variables(ctx, copts, "copts")
     linkopts = expand_locations(ctx, ctx.attr.linkopts, ctx.attr.swiftc_inputs)
+    linkopts = expand_make_variables(ctx, linkopts, "linkopts")
     srcs = ctx.files.srcs
 
     extra_features = []
