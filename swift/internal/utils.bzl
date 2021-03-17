@@ -126,7 +126,10 @@ def create_cc_info(
             linking_context = full_private_cc_info.linking_context,
         ))
 
-    return cc_common.merge_cc_infos(cc_infos = local_cc_infos + cc_infos)
+    return cc_common.merge_cc_infos(
+        cc_infos = cc_infos,
+        direct_cc_infos = local_cc_infos,
+    )
 
 def expand_locations(ctx, values, targets = []):
     """Expands the `$(location)` placeholders in each of the given values.
