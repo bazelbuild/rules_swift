@@ -186,18 +186,6 @@ def _static_archive(actions, alwayslink, link_name):
     extension = "lo" if alwayslink else "a"
     return actions.declare_file("lib{}.{}".format(link_name, extension))
 
-def _stats_directory(actions, target_name):
-    """Declares a directory that will contain timing statistics for a compile.
-
-    Args:
-        actions: The context's actions object.
-        target_name: The name of the target being built.
-
-    Returns:
-        The declared `File`.
-    """
-    return actions.declare_directory("{}.compile-stats".format(target_name))
-
 def _swiftc_output_file_map(actions, target_name):
     """Declares a file for the output file map for a compilation action.
 
@@ -317,7 +305,6 @@ derived_files = struct(
     precompiled_module = _precompiled_module,
     reexport_modules_src = _reexport_modules_src,
     static_archive = _static_archive,
-    stats_directory = _stats_directory,
     swiftc_output_file_map = _swiftc_output_file_map,
     swiftdoc = _swiftdoc,
     swiftinterface = _swiftinterface,
