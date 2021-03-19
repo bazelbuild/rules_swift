@@ -16,14 +16,6 @@ bzl_library(
 )
 
 bzl_library(
-    name = "stats",
-    srcs = ["stats.bzl"],
-    deps = [
-        "//swift/internal:build_defs",
-    ],
-)
-
-bzl_library(
     name = "repositories",
     srcs = ["repositories.bzl"],
     deps = [

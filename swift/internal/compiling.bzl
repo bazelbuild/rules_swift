@@ -31,7 +31,6 @@ load(":derived_files.bzl", "derived_files")
 load(
     ":feature_names.bzl",
     "SWIFT_FEATURE_CACHEABLE_SWIFTMODULES",
-    "SWIFT_FEATURE_COMPILE_STATS",
     "SWIFT_FEATURE_COVERAGE",
     "SWIFT_FEATURE_DBG",
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
@@ -176,14 +175,6 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [swift_action_names.COMPILE],
             configurators = [_emit_objc_header_path_configurator],
-        ),
-
-        # Configure the location where compiler performance statistics are
-        # dumped.
-        swift_toolchain_config.action_config(
-            actions = [swift_action_names.COMPILE],
-            configurators = [_stats_output_dir_configurator],
-            features = [SWIFT_FEATURE_COMPILE_STATS],
         ),
     ]
 
@@ -1062,10 +1053,6 @@ def _module_name_configurator(prerequisites, args):
     """Adds the module name flag to the command line."""
     args.add("-module-name", prerequisites.module_name)
 
-def _stats_output_dir_configurator(prerequisites, args):
-    """Adds the compile stats output directory path to the command line."""
-    args.add("-stats-output-dir", prerequisites.stats_directory.path)
-
 def _source_files_configurator(prerequisites, args):
     """Adds source files to the command line and required inputs."""
     args.add_all(prerequisites.source_files)
@@ -1303,9 +1290,6 @@ def compile(
         *   `precompiled_module`: A `File` representing the explicit module
             (`.pcm`) of the Clang module for the generated header, or `None` if
             no explicit module was generated.
-        *   `stats_directory`: A `File` representing the directory that contains
-            the timing statistics emitted by the compiler. If no stats were
-            requested, this field will be None.
         *   `swiftdoc`: The `.swiftdoc` file that was produced by the compiler.
         *   `swiftinterface`: The `.swiftinterface` file that was produced by
             the compiler. If no interface file was produced (because the
@@ -1337,7 +1321,6 @@ def compile(
         compile_outputs.swiftinterface_file,
         compile_outputs.generated_header_file,
         compile_outputs.indexstore_directory,
-        compile_outputs.stats_directory,
     ]) + compile_outputs.object_files + other_outputs
 
     # Merge the providers from our dependencies so that we have one each for
@@ -1479,7 +1462,6 @@ def compile(
             post_compile_results.additional_object_files
         ),
         precompiled_module = precompiled_module,
-        stats_directory = compile_outputs.stats_directory,
         swiftdoc = compile_outputs.swiftdoc_file,
         swiftinterface = compile_outputs.swiftinterface_file,
         swiftmodule = compile_outputs.swiftmodule_file,
@@ -1669,17 +1651,6 @@ def _declare_compile_outputs(
     else:
         swiftinterface_file = None
 
-    if is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_COMPILE_STATS,
-    ):
-        stats_directory = derived_files.stats_directory(
-            actions = actions,
-            target_name = target_name,
-        )
-    else:
-        stats_directory = None
-
     # If requested, generate the Swift header for this library so that it can be
     # included by Objective-C code that depends on it.
     if generated_header_name:
@@ -1781,7 +1752,6 @@ def _declare_compile_outputs(
         indexstore_directory = indexstore_directory,
         object_files = object_files,
         output_file_map = output_file_map,
-        stats_directory = stats_directory,
         swiftdoc_file = swiftdoc_file,
         swiftinterface_file = swiftinterface_file,
         swiftmodule_file = swiftmodule_file,
@@ -2145,11 +2115,6 @@ def output_groups_from_compilation_outputs(compilation_outputs):
     if compilation_outputs.indexstore:
         output_groups["swift_index_store"] = depset([
             compilation_outputs.indexstore,
-        ])
-
-    if compilation_outputs.stats_directory:
-        output_groups["swift_compile_stats_direct"] = depset([
-            compilation_outputs.stats_directory,
         ])
 
     if compilation_outputs.swiftinterface:
