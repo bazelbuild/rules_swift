@@ -587,31 +587,6 @@ def _xcode_env(xcode_config, platform):
         apple_common.target_apple_env(xcode_config, platform),
     )
 
-def _xcode_execution_requirements(xcode_config):
-    """Returns execution requirements for actions involving Xcode.
-
-    Args:
-        xcode_config: The Xcode configuration object.
-
-    Returns:
-        A dictionary of execution requirements to be passed when registering
-        actions.
-    """
-
-    # All Swift actions should be executed on Darwin, even if Bazel is running
-    # on a non-Darwin host.
-    # TODO(steinman): Replace this with xcode_config.execution_info once it is
-    # available.
-    execution_requirements = {"requires-darwin": ""}
-    if xcode_config:
-        if xcode_config.availability() == "remote":
-            execution_requirements["no-local"] = "1"
-        elif xcode_config.availability() == "local":
-            execution_requirements["no-remote"] = "1"
-        execution_requirements["supports-xcode-requirements-set"] = "1"
-
-    return execution_requirements
-
 def _xcode_swift_toolchain_impl(ctx):
     apple_fragment = ctx.fragments.apple
     apple_toolchain = apple_common.apple_toolchain()
@@ -688,9 +663,7 @@ def _xcode_swift_toolchain_impl(ctx):
         requested_features.append(SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS)
 
     env = _xcode_env(platform = platform, xcode_config = xcode_config)
-    execution_requirements = _xcode_execution_requirements(
-        xcode_config = xcode_config,
-    )
+    execution_requirements = xcode_config.execution_info()
 
     all_tool_configs = _all_tool_configs(
         custom_toolchain = custom_toolchain,
