@@ -33,7 +33,6 @@ cc_library(
         "//third_party/bazel_protos:worker_protocol_cc_proto",
         "//tools/common:file_system",
         "//tools/common:path_utils",
-        "//tools/common:string_utils",
         "//tools/common:temp_file",
         "@com_github_nlohmann_json//:json",
         "@com_google_protobuf//:protobuf",
@@ -54,9 +53,9 @@ cc_library(
     srcs = ["swift_runner.cc"],
     hdrs = ["swift_runner.h"],
     deps = [
+        "//tools/common:bazel_substitutions",
         "//tools/common:file_system",
         "//tools/common:process",
-        "//tools/common:string_utils",
         "//tools/common:temp_file",
     ],
 )

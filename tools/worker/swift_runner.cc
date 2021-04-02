@@ -16,25 +16,12 @@
 
 #include <fstream>
 
+#include "tools/common/bazel_substitutions.h"
 #include "tools/common/file_system.h"
 #include "tools/common/process.h"
-#include "tools/common/string_utils.h"
 #include "tools/common/temp_file.h"
 
 namespace {
-
-#if __APPLE__
-// Returns the requested environment variable in the current process's
-// environment. Aborts if this variable is unset.
-static std::string GetMandatoryEnvVar(const std::string &var_name) {
-  char *env_value = getenv(var_name.c_str());
-  if (env_value == nullptr) {
-    std::cerr << "Error: " << var_name << " not set.\n";
-    abort();
-  }
-  return env_value;
-}
-#endif
 
 // Creates a temporary file and writes the given arguments to it, one per line.
 static std::unique_ptr<TempFile> WriteResponseFile(
@@ -104,19 +91,6 @@ static std::string Unescape(const std::string &arg) {
 SwiftRunner::SwiftRunner(const std::vector<std::string> &args,
                          bool force_response_file)
     : force_response_file_(force_response_file) {
-#if __APPLE__
-  // On Apple platforms, replace the magic Bazel placeholders with the path
-  // in the corresponding environment variable.
-  std::string developer_dir = GetMandatoryEnvVar("DEVELOPER_DIR");
-  std::string sdk_root = GetMandatoryEnvVar("SDKROOT");
-
-  bazel_placeholder_substitutions_ = {
-      {"__BAZEL_XCODE_DEVELOPER_DIR__", developer_dir},
-      {"__BAZEL_XCODE_SDKROOT__", sdk_root},
-  };
-#else
-  // We don't have these placeholder strings on non-Apple platforms.
-#endif
   args_ = ProcessArguments(args);
 }
 
@@ -212,7 +186,7 @@ bool SwiftRunner::ProcessArgument(
     // Bazel doesn't quote arguments in multi-line params files, so we need to
     // ensure that our defensive quoting kicks in if an argument contains a
     // space, even if no other changes would have been made.
-    changed = MakeSubstitutions(&new_arg, bazel_placeholder_substitutions_) ||
+    changed = bazel_placeholder_substitutions_.Apply(new_arg) ||
               new_arg.find_first_of(' ') != std::string::npos;
     consumer(new_arg);
   }

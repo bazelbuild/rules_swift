@@ -25,7 +25,6 @@
 
 #include "tools/common/file_system.h"
 #include "tools/common/path_utils.h"
-#include "tools/common/string_utils.h"
 #include "tools/common/temp_file.h"
 #include "tools/worker/output_file_map.h"
 #include "tools/worker/swift_runner.h"
