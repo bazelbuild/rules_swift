@@ -1,9 +1,7 @@
 load("@rules_cc//cc:defs.bzl", "cc_library")
 
 package(
-    default_visibility = [
-        "//tools/worker:__pkg__",
-    ],
+    default_visibility = ["//tools/worker:__pkg__"],
 )
 
 licenses(["notice"])
