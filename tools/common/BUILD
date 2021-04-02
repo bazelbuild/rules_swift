@@ -7,6 +7,12 @@ package(
 licenses(["notice"])
 
 cc_library(
+    name = "bazel_substitutions",
+    srcs = ["bazel_substitutions.cc"],
+    hdrs = ["bazel_substitutions.h"],
+)
+
+cc_library(
     name = "file_system",
     srcs = ["file_system.cc"],
     hdrs = ["file_system.h"],
@@ -28,12 +34,6 @@ cc_library(
     deps = [
         ":path_utils",
     ],
-)
-
-cc_library(
-    name = "string_utils",
-    srcs = ["string_utils.cc"],
-    hdrs = ["string_utils.h"],
 )
 
 cc_library(
