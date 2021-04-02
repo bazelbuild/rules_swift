@@ -1,7 +1,5 @@
 package(
-    default_visibility = [
-        "//tools/worker:__pkg__",
-    ],
+    default_visibility = ["//tools/worker:__pkg__"],
 )
 
 licenses(["notice"])
