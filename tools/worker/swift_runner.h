@@ -22,6 +22,7 @@
 #include <string>
 #include <vector>
 
+#include "tools/common/bazel_substitutions.h"
 #include "tools/common/temp_file.h"
 
 // Handles spawning the Swift compiler driver, making any required substitutions
@@ -106,7 +107,8 @@ class SwiftRunner {
 
   // A mapping of Bazel placeholder strings to the actual paths that should be
   // substituted for them. Supports Xcode resolution on Apple OSes.
-  std::map<std::string, std::string> bazel_placeholder_substitutions_;
+  bazel_rules_swift::BazelPlaceholderSubstitutions
+      bazel_placeholder_substitutions_;
 
   // The arguments, post-substitution, passed to the spawner.
   std::vector<std::string> args_;
