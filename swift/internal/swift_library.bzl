@@ -123,10 +123,6 @@ def _swift_library_impl(ctx):
         unsupported_features = ctx.disabled_features,
     )
 
-    implicit_deps = swift_common.get_implicit_deps(
-        feature_configuration = feature_configuration,
-        swift_toolchain = swift_toolchain,
-    )
     if swift_common.is_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS,
@@ -137,8 +133,8 @@ def _swift_library_impl(ctx):
         # deps in "deps", either, so we need to make sure not to pass them in to
         # `_check_deps_are_disjoint`.
         deps = ctx.attr.deps
-        private_deps = ctx.attr.private_deps + implicit_deps
-        _check_deps_are_disjoint(ctx.label, deps, ctx.attr.private_deps)
+        private_deps = ctx.attr.private_deps
+        _check_deps_are_disjoint(ctx.label, deps, private_deps)
     elif ctx.attr.private_deps:
         fail(
             ("In target '{}', 'private_deps' cannot be used because this " +
@@ -220,6 +216,7 @@ def _swift_library_impl(ctx):
         library_to_link.pic_static_library,
     ])
 
+    implicit_deps_providers = swift_toolchain.implicit_deps_providers
     providers = [
         DefaultInfo(
             files = depset(direct_output_files),
@@ -238,7 +235,10 @@ def _swift_library_impl(ctx):
             defines = ctx.attr.defines,
             includes = [ctx.bin_dir.path],
             linker_inputs = [linker_input],
-            private_cc_infos = get_providers(private_deps, CcInfo),
+            private_cc_infos = (
+                get_providers(private_deps, CcInfo) +
+                implicit_deps_providers.cc_infos
+            ),
         ),
         coverage_common.instrumented_files_info(
             ctx,
@@ -281,6 +281,7 @@ def _swift_library_impl(ctx):
             static_archives = compact([library_to_link.pic_static_library]),
             swiftmodules = [compilation_outputs.swiftmodule],
             objc_header = compilation_outputs.generated_header,
+            objc_providers = implicit_deps_providers.objc_infos,
         ))
 
     return providers
