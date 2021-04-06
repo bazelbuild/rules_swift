@@ -277,9 +277,7 @@ False.
                 mandatory = False,
             ),
             "generates_header": attr.bool(
-                # TODO(b/182493307): Make the default False after migrating all
-                # targets to explicitly specify it when needed.
-                default = True,
+                default = False,
                 doc = """\
 If True, an Objective-C header will be generated for this target, in the same
 build package where the target is defined. By default, the name of the header is
