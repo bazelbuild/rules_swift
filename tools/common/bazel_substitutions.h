@@ -15,6 +15,7 @@
 #ifndef BUILD_BAZEL_RULES_SWIFT_TOOLS_COMMON_BAZEL_SUBSTITUTIONS_H_
 #define BUILD_BAZEL_RULES_SWIFT_TOOLS_COMMON_BAZEL_SUBSTITUTIONS_H_
 
+#include <functional>
 #include <map>
 #include <string>
 
@@ -37,15 +38,6 @@ class BazelPlaceholderSubstitutions {
   // Applies any necessary substitutions to `arg` and returns true if this
   // caused the string to change.
   bool Apply(std::string &arg);
-
-  // The placeholder string used by Bazel that should be replaced by
-  // `DEVELOPER_DIR` at runtime.
-  static constexpr const char kBazelXcodeDeveloperDir[] =
-      "__BAZEL_XCODE_DEVELOPER_DIR__";
-
-  // The placeholder string used by Bazel that should be replaced by `SDKROOT`
-  // at runtime.
-  static constexpr const char kBazelXcodeSdkRoot[] = "__BAZEL_XCODE_SDKROOT__";
 
  private:
   // A resolver for a Bazel placeholder string that retrieves and caches the
