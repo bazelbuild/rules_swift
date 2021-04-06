@@ -14,6 +14,7 @@
 
 """Common utility definitions used by various BUILD rules."""
 
+load(":providers.bzl", "SwiftInfo")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 
 def collect_cc_libraries(
@@ -57,6 +58,42 @@ def collect_cc_libraries(
                 libraries.append(library.interface_library)
 
     return libraries
+
+def collect_implicit_deps_providers(targets):
+    """Returns a struct with important providers from a list of implicit deps.
+
+    Note that the relationship between each provider in the list and the target
+    it originated from is no longer retained.
+
+    Args:
+        targets: A list (possibly empty) of `Target`s.
+
+    Returns:
+        A `struct` containing three fields:
+
+        *   `cc_infos`: The merged `CcInfo` provider from the given targets.
+        *   `objc_infos`: The merged `apple_common.Objc` provider from the given
+            targets.
+        *   `swift_infos`: The merged `SwiftInfo` provider from the given
+            targets.
+    """
+    cc_infos = []
+    objc_infos = []
+    swift_infos = []
+
+    for target in targets:
+        if CcInfo in target:
+            cc_infos.append(target[CcInfo])
+        if apple_common.Objc in target:
+            objc_infos.append(target[apple_common.Objc])
+        if SwiftInfo in target:
+            swift_infos.append(target[SwiftInfo])
+
+    return struct(
+        cc_infos = cc_infos,
+        objc_infos = objc_infos,
+        swift_infos = swift_infos,
+    )
 
 def compact(sequence):
     """Returns a copy of the sequence with any `None` items removed.

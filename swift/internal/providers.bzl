@@ -73,12 +73,38 @@ Swift toolchain depends on.
         "cpu": """\
 `String`. The CPU architecture that the toolchain is targeting.
 """,
-        "generated_header_module_implicit_deps": """\
-`List` of `Target`s. Targets whose `SwiftInfo` providers should be treated as
-compile-time inputs to actions that precompile the explicit module for the
-generated Objective-C header of a Swift module. This is used to provide modular
-dependencies for the fixed inclusions (Darwin, Foundation) that are
-unconditionally emitted in those files.
+        "generated_header_module_implicit_deps_providers": """\
+A `struct` with the following fields, which are providers from targets that
+should be treated as compile-time inputs to actions that precompile the explicit
+module for the generated Objective-C header of a Swift module:
+
+*   `cc_infos`: A list of `CcInfo` providers from targets specified as the
+    toolchain's implicit dependencies.
+*   `objc_infos`: A list of `apple_common.Objc` providers from targets specified
+    as the toolchain's implicit dependencies.
+*   `swift_infos`: A list of `SwiftInfo` providers from targets specified as the
+    toolchain's implicit dependencies.
+
+This is used to provide modular dependencies for the fixed inclusions (Darwin,
+Foundation) that are unconditionally emitted in those files.
+
+For ease of use, this field is never `None`; it will always be a valid `struct`
+containing the fields described above, even if those lists are empty.
+""",
+        "implicit_deps_providers": """\
+A `struct` with the following fields, which represent providers from targets
+that should be added as implicit dependencies of any Swift compilation or
+linking target (but not to precompiled explicit C/Objective-C modules):
+
+*   `cc_infos`: A list of `CcInfo` providers from targets specified as the
+    toolchain's implicit dependencies.
+*   `objc_infos`: A list of `apple_common.Objc` providers from targets specified
+    as the toolchain's implicit dependencies.
+*   `swift_infos`: A list of `SwiftInfo` providers from targets specified as the
+    toolchain's implicit dependencies.
+
+For ease of use, this field is never `None`; it will always be a valid `struct`
+containing the fields described above, even if those lists are empty.
 """,
         "linker_opts_producer": """\
 Skylib `partial`. A partial function that returns the flags that should be
@@ -101,11 +127,6 @@ files passed to it via a file list.
 `String`. The object file format of the platform that the toolchain is
 targeting. The currently supported values are `"elf"` and `"macho"`.
 """,
-        "optional_implicit_deps": """\
-`List` of `Target`s. Library targets that should be added as implicit
-dependencies of any `swift_library`, `swift_binary`, or `swift_test` target that
-does not have the feature `swift.minimal_deps` applied.
-""",
         "requested_features": """\
 `List` of `string`s. Features that should be implicitly enabled by default for
 targets built using this toolchain, unless overridden by the user by listing
@@ -115,11 +136,6 @@ their negation in the `features` attribute of a target/package or in the
 These features determine various compilation and debugging behaviors of the
 Swift build rules, and they are also passed to the C++ APIs used when linking
 (so features defined in CROSSTOOL may be used here).
-""",
-        "required_implicit_deps": """\
-`List` of `Target`s. Library targets that should be unconditionally added as
-implicit dependencies of any `swift_library`, `swift_binary`, or `swift_test`
-target.
 """,
         "root_dir": """\
 `String`. The workspace-relative root directory of the toolchain.
@@ -287,6 +303,7 @@ def create_swift_module(
 
 def create_swift_info(
         *,
+        direct_swift_infos = [],
         modules = [],
         swift_infos = []):
     """Creates a new `SwiftInfo` provider with the given values.
@@ -297,25 +314,38 @@ def create_swift_info(
     are set consistently.
 
     This function can also be used to do a simple merge of `SwiftInfo`
-    providers, by leaving all of the arguments except for `swift_infos` as their
-    empty defaults. In that case, the returned provider will not represent a
-    true Swift module; it is merely a "collector" for other dependencies.
+    providers, by leaving the `modules` argument unspecified. In that case, the
+    returned provider will not represent a true Swift module; it is merely a
+    "collector" for other dependencies.
 
     Args:
+        direct_swift_infos: A list of `SwiftInfo` providers from dependencies
+            whose direct modules should be treated as direct modules in the
+            resulting provider, in addition to their transitive modules being
+            merged.
         modules: A list of values (as returned by `swift_common.create_module`)
             that represent Clang and/or Swift module artifacts that are direct
             outputs of the target being built.
-        swift_infos: A list of `SwiftInfo` providers from dependencies, whose
-            transitive fields should be merged into the new one. If omitted, no
-            transitive data is collected.
+        swift_infos: A list of `SwiftInfo` providers from dependencies whose
+            transitive modules should be merged into the resulting provider.
 
     Returns:
         A new `SwiftInfo` provider with the given values.
     """
 
-    transitive_modules = [x.transitive_modules for x in swift_infos]
+    direct_modules = modules + [
+        provider.modules
+        for provider in direct_swift_infos
+    ]
+    transitive_modules = [
+        provider.transitive_modules
+        for provider in direct_swift_infos + swift_infos
+    ]
 
     return SwiftInfo(
-        direct_modules = modules,
-        transitive_modules = depset(modules, transitive = transitive_modules),
+        direct_modules = direct_modules,
+        transitive_modules = depset(
+            direct_modules,
+            transitive = transitive_modules,
+        ),
     )

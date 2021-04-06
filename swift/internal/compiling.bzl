@@ -46,7 +46,6 @@ load(
     "SWIFT_FEATURE_FASTBUILD",
     "SWIFT_FEATURE_FULL_DEBUG_INFO",
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
-    "SWIFT_FEATURE_MINIMAL_DEPS",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_NO_EMBED_DEBUG_MODULE",
     "SWIFT_FEATURE_NO_GENERATED_MODULE_MAP",
@@ -1538,16 +1537,26 @@ def compile(
         *   `swiftmodule`: The `.swiftmodule` file that was produced by the
             compiler.
     """
-    generated_module_deps = (
-        deps + swift_toolchain.generated_header_module_implicit_deps
+
+    # Collect the `SwiftInfo` providers that represent the dependencies of the
+    # Objective-C generated header module -- this includes the dependencies of
+    # the Swift module, plus any additional dependencies that the toolchain says
+    # are required for all generated header modules. These are used immediately
+    # below to write the module map for the header's module (to provide the
+    # `use` declarations), and later in this function when precompiling the
+    # module.
+    generated_module_deps_swift_infos = (
+        get_providers(deps, SwiftInfo) +
+        swift_toolchain.generated_header_module_implicit_deps_providers.swift_infos
     )
+
     compile_outputs, other_outputs = _declare_compile_outputs(
+        srcs = srcs,
         actions = actions,
         feature_configuration = feature_configuration,
         generated_header_name = generated_header_name,
-        generated_module_deps = generated_module_deps,
+        generated_module_deps_swift_infos = generated_module_deps_swift_infos,
         module_name = module_name,
-        srcs = srcs,
         target_name = target_name,
         user_compile_flags = copts,
     )
@@ -1592,11 +1601,9 @@ def compile(
     # into the action prerequisites so that configurators have easy access to
     # the full set of values and inputs through a single accessor.
     merged_providers = _merge_targets_providers(
+        implicit_deps_providers = swift_toolchain.implicit_deps_providers,
         supports_objc_interop = swift_toolchain.supports_objc_interop,
-        targets = deps + private_deps + get_implicit_deps(
-            feature_configuration = feature_configuration,
-            swift_toolchain = swift_toolchain,
-        ),
+        targets = deps + private_deps,
     )
 
     # Flattening this `depset` is necessary because we need to extract the
@@ -1704,11 +1711,7 @@ def compile(
             module_map_file = compile_outputs.generated_module_map_file,
             module_name = module_name,
             swift_info = create_swift_info(
-                swift_infos = [
-                    dep[SwiftInfo]
-                    for dep in generated_module_deps
-                    if SwiftInfo in dep
-                ],
+                swift_infos = generated_module_deps_swift_infos,
             ),
             swift_toolchain = swift_toolchain,
             target_name = target_name,
@@ -1846,32 +1849,12 @@ def precompile_clang_module(
 
     return precompiled_module
 
-def get_implicit_deps(feature_configuration, swift_toolchain):
-    """Gets the list of implicit dependencies from the toolchain.
-
-    Args:
-        feature_configuration: The feature configuration, which determines
-            whether optional implicit dependencies are included.
-        swift_toolchain: The Swift toolchain.
-
-    Returns:
-        A list of targets that should be treated as implicit dependencies of
-        the toolchain under the given feature configuration.
-    """
-    deps = list(swift_toolchain.required_implicit_deps)
-    if not is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_MINIMAL_DEPS,
-    ):
-        deps.extend(swift_toolchain.optional_implicit_deps)
-    return deps
-
 def _declare_compile_outputs(
         *,
         actions,
         feature_configuration,
         generated_header_name,
-        generated_module_deps,
+        generated_module_deps_swift_infos,
         module_name,
         srcs,
         target_name,
@@ -1884,8 +1867,9 @@ def _declare_compile_outputs(
             `swift_common.configure_features`.
         generated_header_name: The desired name of the generated header for this
             module, or `None` if no header should be generated.
-        generated_module_deps: Dependencies of the module for the generated
-            header of the target being compiled.
+        generated_module_deps_swift_infos: `SwiftInfo` providers from
+            dependencies of the module for the generated header of the target
+            being compiled.
         module_name: The name of the Swift module being compiled.
         srcs: The list of source files that will be compiled.
         target_name: The name (excluding package path) of the target being
@@ -1965,11 +1949,10 @@ def _declare_compile_outputs(
         # Collect the names of Clang modules that the module being built
         # directly depends on.
         dependent_module_names = sets.make()
-        for dep in generated_module_deps:
-            if SwiftInfo in dep:
-                for module in dep[SwiftInfo].direct_modules:
-                    if module.clang:
-                        sets.insert(dependent_module_names, module.name)
+        for swift_info in generated_module_deps_swift_infos:
+            for module in swift_info.direct_modules:
+                if module.clang:
+                    sets.insert(dependent_module_names, module.name)
 
         generated_module_map = derived_files.module_map(
             actions = actions,
@@ -2151,7 +2134,10 @@ def _declare_validated_generated_header(actions, generated_header_name):
 
     return actions.declare_file(generated_header_name)
 
-def _merge_targets_providers(supports_objc_interop, targets):
+def _merge_targets_providers(
+        implicit_deps_providers,
+        supports_objc_interop,
+        targets):
     """Merges the compilation-related providers for the given targets.
 
     This function merges the `CcInfo`, `SwiftInfo`, and `apple_common.Objc`
@@ -2161,6 +2147,8 @@ def _merge_targets_providers(supports_objc_interop, targets):
     their data.
 
     Args:
+        implicit_deps_providers: The implicit deps providers `struct` from the
+            Swift toolchain.
         supports_objc_interop: `True` if the current toolchain supports
             Objective-C interop and the `apple_common.Objc` providers should
             also be used to determine compilation flags and inputs. If `False`,
@@ -2178,9 +2166,9 @@ def _merge_targets_providers(supports_objc_interop, targets):
         *   `objc_info`: The merged `apple_common.Objc` provider of the targets.
         *   `swift_info`: The merged `SwiftInfo` provider of the targets.
     """
-    cc_infos = []
-    objc_infos = []
-    swift_infos = []
+    cc_infos = list(implicit_deps_providers.cc_infos)
+    objc_infos = list(implicit_deps_providers.objc_infos)
+    swift_infos = list(implicit_deps_providers.swift_infos)
 
     # TODO(b/146575101): This is only being used to preserve the current
     # behavior of strict Objective-C include paths being propagated one more
@@ -2301,7 +2289,8 @@ def new_objc_provider(
         module_map,
         static_archives,
         swiftmodules,
-        objc_header = None):
+        objc_header = None,
+        objc_providers = []):
     """Creates an `apple_common.Objc` provider for a Swift target.
 
     Args:
@@ -2321,15 +2310,17 @@ def new_objc_provider(
             `None`, no headers will be propagated. This header is only needed
             for Swift code that defines classes that should be exposed to
             Objective-C.
+        objc_providers: Additional `apple_common.Objc` providers from transitive
+            dependencies not provided by the `deps` argument.
 
     Returns:
         An `apple_common.Objc` provider that should be returned by the calling
         rule.
     """
-    objc_providers = get_providers(deps, apple_common.Objc)
+    all_objc_providers = get_providers(deps, apple_common.Objc) + objc_providers
     objc_provider_args = {
         "link_inputs": depset(direct = swiftmodules + link_inputs),
-        "providers": objc_providers,
+        "providers": all_objc_providers,
         "uses_swift": True,
     }
 
@@ -2369,7 +2360,7 @@ def new_objc_provider(
     # direct deps' Objective-C module maps to dependents, because those Swift
     # modules still need to see them. We need to construct a new transitive objc
     # provider to get the correct strict propagation behavior.
-    transitive_objc_provider_args = {"providers": objc_providers}
+    transitive_objc_provider_args = {"providers": all_objc_providers}
     if module_map:
         transitive_objc_provider_args["module_map"] = depset(
             direct = [module_map],
