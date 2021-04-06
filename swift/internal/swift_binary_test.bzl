@@ -217,13 +217,10 @@ def _swift_linking_rule_impl(
     )
     user_link_flags.extend(toolchain_linker_flags)
 
-    # Collect the dependencies of the target being linked as well as the
-    # toolchain's implicit dependencies (depending on the current feature
-    # configuration).
-    deps_to_link = ctx.attr.deps + swift_common.get_implicit_deps(
-        feature_configuration = feature_configuration,
-        swift_toolchain = swift_toolchain,
-    )
+    # Collect linking contexts from any of the toolchain's implicit
+    # dependencies.
+    for cc_info in swift_toolchain.implicit_deps_providers.cc_infos:
+        additional_linking_contexts.append(cc_info.linking_context)
 
     # If a custom malloc implementation has been provided, pass that to the
     # linker as well.
@@ -244,7 +241,7 @@ def _swift_linking_rule_impl(
         additional_inputs = additional_inputs_to_linker,
         additional_linking_contexts = additional_linking_contexts,
         cc_feature_configuration = cc_feature_configuration,
-        deps = deps_to_link,
+        deps = ctx.attr.deps,
         grep_includes = ctx.file._grep_includes,
         name = ctx.label.name,
         objects = objects_to_link,

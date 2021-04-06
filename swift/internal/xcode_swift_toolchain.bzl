@@ -42,7 +42,12 @@ load(
 load(":features.bzl", "features_for_build_modes")
 load(":toolchain_config.bzl", "swift_toolchain_config")
 load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
-load(":utils.bzl", "compact", "get_swift_executable_for_toolchain")
+load(
+    ":utils.bzl",
+    "collect_implicit_deps_providers",
+    "compact",
+    "get_swift_executable_for_toolchain",
+)
 
 def _swift_developer_lib_dir(platform_framework_dir):
     """Returns the directory containing extra Swift developer libraries.
@@ -699,14 +704,17 @@ def _xcode_swift_toolchain_impl(ctx):
             all_files = depset(all_files),
             cc_toolchain_info = cc_toolchain,
             cpu = cpu,
-            generated_header_module_implicit_deps = (
-                ctx.attr.generated_header_module_implicit_deps
+            generated_header_module_implicit_deps_providers = (
+                collect_implicit_deps_providers(
+                    ctx.attr.generated_header_module_implicit_deps,
+                )
+            ),
+            implicit_deps_providers = collect_implicit_deps_providers(
+                ctx.attr.implicit_deps,
             ),
             linker_opts_producer = linker_opts_producer,
             object_format = "macho",
-            optional_implicit_deps = ctx.attr.optional_implicit_deps,
             requested_features = requested_features,
-            required_implicit_deps = ctx.attr.required_implicit_deps,
             supports_objc_interop = True,
             swift_worker = ctx.executable._worker,
             system_name = "darwin",
@@ -733,22 +741,16 @@ of a Swift module.
 """,
                 providers = [[SwiftInfo]],
             ),
-            "optional_implicit_deps": attr.label_list(
-                allow_files = True,
-                doc = """\
-A list of labels to library targets that should be added as implicit
-dependencies of any Swift compilation or linking target that does not have the
-`swift.minimal_deps` feature applied.
-""",
-                providers = [[CcInfo], [SwiftInfo]],
-            ),
-            "required_implicit_deps": attr.label_list(
+            "implicit_deps": attr.label_list(
                 allow_files = True,
                 doc = """\
 A list of labels to library targets that should be unconditionally added as
 implicit dependencies of any Swift compilation or linking target.
 """,
-                providers = [[CcInfo], [SwiftInfo]],
+                providers = [
+                    [CcInfo],
+                    [SwiftInfo],
+                ],
             ),
             "_cc_toolchain": attr.label(
                 default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),

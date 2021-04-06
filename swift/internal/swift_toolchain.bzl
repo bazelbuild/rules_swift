@@ -36,7 +36,11 @@ load(
 load(":features.bzl", "features_for_build_modes")
 load(":providers.bzl", "SwiftToolchainInfo")
 load(":toolchain_config.bzl", "swift_toolchain_config")
-load(":utils.bzl", "get_swift_executable_for_toolchain")
+load(
+    ":utils.bzl",
+    "collect_implicit_deps_providers",
+    "get_swift_executable_for_toolchain",
+)
 
 def _all_tool_configs(
         swift_executable,
@@ -209,12 +213,15 @@ def _swift_toolchain_impl(ctx):
             all_files = depset(all_files),
             cc_toolchain_info = cc_toolchain,
             cpu = ctx.attr.arch,
-            generated_header_module_implicit_deps = [],
+            generated_header_module_implicit_deps_providers = (
+                collect_implicit_deps_providers([])
+            ),
+            implicit_deps_providers = (
+                collect_implicit_deps_providers([])
+            ),
             linker_opts_producer = linker_opts_producer,
             object_format = "elf",
-            optional_implicit_deps = [],
             requested_features = requested_features,
-            required_implicit_deps = [],
             root_dir = toolchain_root,
             supports_objc_interop = False,
             swift_worker = ctx.executable._worker,
