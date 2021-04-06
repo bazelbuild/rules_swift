@@ -33,7 +33,6 @@ load(
     ":compiling.bzl",
     "compile",
     "derive_module_name",
-    "get_implicit_deps",
     "precompile_clang_module",
 )
 load(
@@ -64,7 +63,6 @@ swift_common = struct(
     create_swift_info = create_swift_info,
     create_swift_module = create_swift_module,
     derive_module_name = derive_module_name,
-    get_implicit_deps = get_implicit_deps,
     is_enabled = is_feature_enabled,
     library_rule_attrs = swift_library_rule_attrs,
     precompile_clang_module = precompile_clang_module,
