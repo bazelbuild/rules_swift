@@ -22,6 +22,15 @@
 namespace bazel_rules_swift {
 namespace {
 
+// The placeholder string used by Bazel that should be replaced by
+// `DEVELOPER_DIR` at runtime.
+static const char kBazelXcodeDeveloperDir[] =
+    "__BAZEL_XCODE_DEVELOPER_DIR__";
+
+// The placeholder string used by Bazel that should be replaced by `SDKROOT`
+// at runtime.
+static const char kBazelXcodeSdkRoot[] = "__BAZEL_XCODE_SDKROOT__";
+
 // Returns the value of the given environment variable, or the empty string if
 // it wasn't set.
 std::string GetEnvironmentVariable(const char *name) {
@@ -62,8 +71,8 @@ bool BazelPlaceholderSubstitutions::Apply(std::string &arg) {
   bool changed = false;
 
   // Replace placeholders in the string with their actual values.
-  for (auto &[placeholder, env_var] : placeholder_resolvers_) {
-    changed |= FindAndReplace(placeholder, env_var, arg);
+  for (auto& pair : placeholder_resolvers_) {
+    changed |= FindAndReplace(pair.first, pair.second, arg);
   }
 
   return changed;
