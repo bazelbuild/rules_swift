@@ -51,8 +51,8 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 http_archive(
     name = "build_bazel_rules_swift",
-    sha256 = "be80375680b2553a8b318ffd02ce916a7e1d9060ccad3e7c50f543caafb86fed",
-    url = "https://github.com/bazelbuild/rules_swift/releases/download/0.19.0/rules_swift.0.19.0.tar.gz",
+    sha256 = "a525d254b0323380b7abe7cbbe03534167f0fcb45f44f7d16cdd4d7d057b8f8d",
+    url = "https://github.com/bazelbuild/rules_swift/releases/download/0.20.0/rules_swift.0.20.0.tar.gz",
 )
 
 load(
