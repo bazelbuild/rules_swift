@@ -128,15 +128,28 @@ def _generate_module_map(
         actions = actions,
         target_name = target.label.name,
     )
+
+    # Sort dependent module names and the headers to ensure a deterministic
+    # order in the output file, in the event the compilation context would ever
+    # change this on us. For files, use the execution path as the sorting key.
+    def _path_sorting_key(file):
+        return file.path
+
     write_module_map(
         actions = actions,
-        dependent_module_names = dependent_module_names,
+        dependent_module_names = sorted(dependent_module_names),
         exported_module_ids = ["*"],
         module_map_file = module_map_file,
         module_name = module_name,
-        private_headers = private_headers,
-        public_headers = compilation_context.direct_public_headers,
-        public_textual_headers = compilation_context.direct_textual_headers,
+        private_headers = sorted(private_headers, key = _path_sorting_key),
+        public_headers = sorted(
+            compilation_context.direct_public_headers,
+            key = _path_sorting_key,
+        ),
+        public_textual_headers = sorted(
+            compilation_context.direct_textual_headers,
+            key = _path_sorting_key,
+        ),
         workspace_relative = workspace_relative,
     )
     return module_map_file
