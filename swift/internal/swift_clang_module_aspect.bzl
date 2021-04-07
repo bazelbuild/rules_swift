@@ -47,6 +47,86 @@ _SINGLE_TARGET_ASPECT_ATTRS = [
     "_jre_lib",
 ]
 
+_SwiftInteropInfo = provider(
+    doc = """\
+Contains minimal information required for the `swift_clang_module_aspect` to
+generate a module map and/or precompiled module for a target so that it can
+expose C/Objective-C APIs to Swift.
+""",
+    fields = {
+        "additional_swift_infos": """\
+A list of additional `SwiftInfo` providers from dependencies that aren't
+reachable via the `deps` attribute of the rule propagating this provider, but
+which should be treated as dependencies of the C/Objective-C module.
+""",
+        "module_map": """\
+A `File` representing an existing module map that should be used to represent
+the module, or `None` if the module map should be generated based on the headers
+in the target's compilation context.
+""",
+        "module_name": """\
+A string denoting the name of the module, or `None` if the name should be
+derived automatically from the target label.
+""",
+    },
+)
+
+def create_swift_interop_info(
+        *,
+        additional_swift_infos = [],
+        module_map = None,
+        module_name = None):
+    """Returns a provider that lets a target expose C/Objective-C APIs to Swift.
+
+    The provider returned by this function allows custom build rules written in
+    Starlark to be uninvolved with much of the low-level machinery involved in
+    making a Swift-compatible module. Such a target should propagate a `CcInfo`
+    provider whose compilation context contains the headers that it wants to
+    make into a module, and then also propagate the provider returned from this
+    function.
+
+    The simplest usage is for the custom rule to simply return
+    `swift_common.create_swift_interop_info()` without any arguments; this
+    tells `swift_clang_module_aspect` to derive the module name from the target
+    label and create a module map using the headers from the compilation
+    context.
+
+    If the custom rule has reason to provide its own module name or module map,
+    then it can do so using the `module_name` and `module_map` arguments.
+
+    The `swift_clang_module_aspect` automatically traverses the `deps` attribute
+    of even custom rules, so those rules don't need to do anything extra to
+    collect those dependencies. However, if a custom rule has dependencies in
+    other attributes (such as a runtime library specified as the default value
+    of a private attribute), it should pass the `SwiftInfo` provider from that
+    target into this function via the `additional_swift_infos` argument.
+
+    Args:
+        additional_swift_infos: A list of additional `SwiftInfo` providers from
+            dependencies that aren't reachable via the `deps` attribute of the
+            rule propagating this provider, but which should be treated as
+            dependencies of the C/Objective-C module.
+        module_map: A `File` representing an existing module map that should be
+            used to represent the module, or `None` if the module map should be
+            generated based on the headers in the target's compilation context.
+            If this argument is provided, then `module_name` must also be
+            provided.
+        module_name: A string denoting the name of the module, or `None` if the
+            name should be derived automatically from the target label.
+
+    Returns:
+        A provider whose type/layout is an implementation detail and should not
+        be relied upon.
+    """
+    if module_map and not module_name:
+        fail("'module_name' must be specified when 'module_map' is specified.")
+
+    return _SwiftInteropInfo(
+        additional_swift_infos = additional_swift_infos,
+        module_map = module_map,
+        module_name = module_name,
+    )
+
 def _tagged_target_module_name(label, tags):
     """Returns the module name of a `swift_module`-tagged target.
 
@@ -146,17 +226,21 @@ def _module_info_for_target(
         aspect_ctx,
         compilation_context,
         dependent_module_names,
-        feature_configuration):
+        feature_configuration,
+        module_name):
     """Returns the module name and module map for the target.
 
     Args:
-        aspect_ctx: The aspect context.
         target: The target for which the module map is being generated.
+        aspect_ctx: The aspect context.
         compilation_context: The C++ compilation context that provides the
             headers for the module.
         dependent_module_names: A `list` of names of Clang modules that are
             direct dependencies of the target whose module map is being written.
         feature_configuration: A Swift feature configuration.
+        module_name: The module name to prefer (if we're generating a module map
+            from `_SwiftInteropInfo`), or None to derive it from other
+            properties of the target.
 
     Returns:
         A tuple containing the module name (a string) and module map file (a
@@ -164,7 +248,7 @@ def _module_info_for_target(
     """
     attr = aspect_ctx.rule.attr
 
-    if apple_common.Objc in target:
+    if not module_name and apple_common.Objc in target:
         # TODO(b/142867898): For `objc_library`, stop using the module map from
         # the Objc provider and generate our own. (For imported frameworks,
         # continue using the module map included with it.)
@@ -220,14 +304,25 @@ def _module_info_for_target(
         )
         return module_name, module_map_file
 
-    # For all other targets, there is no mechanism to provide a custom
-    # module map, and we only generate one if the target is tagged.
-    module_name = _tagged_target_module_name(
-        label = target.label,
-        tags = attr.tags,
-    )
-    if not module_name:
+    # If a target doesn't have any headers (and if we're on this code path, it
+    # didn't provide an explicit module map), then don't generate a module map
+    # for it. Such modules define nothing and only waste space on the
+    # compilation command line and add more work for the compiler.
+    if not (
+        compilation_context.direct_headers or
+        compilation_context.direct_textual_headers
+    ):
         return None, None
+
+    if not module_name:
+        # For all other targets, there is no mechanism to provide a custom
+        # module map, and we only generate one if the target is tagged.
+        module_name = _tagged_target_module_name(
+            label = target.label,
+            tags = attr.tags,
+        )
+        if not module_name:
+            return None, None
 
     module_map_file = _generate_module_map(
         actions = aspect_ctx.actions,
@@ -239,20 +334,30 @@ def _module_info_for_target(
     )
     return module_name, module_map_file
 
-def _handle_cc_target(
+def _handle_module(
         aspect_ctx,
+        compilation_context,
         feature_configuration,
+        module_map_file,
+        module_name,
         swift_infos,
         swift_toolchain,
         target):
-    """Processes a C++ target that is a dependency of a Swift target.
+    """Processes a C/Objective-C target that is a dependency of a Swift target.
 
     Args:
         aspect_ctx: The aspect's context.
+        compilation_context: The `CcCompilationContext` containing the target's
+            headers.
         feature_configuration: The current feature configuration.
+        module_map_file: The `.modulemap` file that defines the module, or None
+            if it should be inferred from other properties of the target (for
+            legacy support).
+        module_name: The name of the module, or None if it should be inferred
+            from other properties of the target (for legacy support).
         swift_infos: The `SwiftInfo` providers of the current target's
             dependencies, which should be merged into the `SwiftInfo` provider
-            created and returned for this C++ target.
+            created and returned for this target.
         swift_toolchain: The Swift toolchain being used to build this target.
         target: The C++ target to which the aspect is currently being applied.
 
@@ -260,13 +365,6 @@ def _handle_cc_target(
         A list of providers that should be returned by the aspect.
     """
     attr = aspect_ctx.rule.attr
-
-    # TODO(b/142867898): Only check `CcInfo` once all rules correctly propagate
-    # it.
-    if CcInfo in target:
-        compilation_context = target[CcInfo].compilation_context
-    else:
-        compilation_context = None
 
     if swift_infos:
         merged_swift_info = create_swift_info(swift_infos = swift_infos)
@@ -281,13 +379,18 @@ def _handle_cc_target(
             if module.clang:
                 dependent_module_names.append(module.name)
 
-    module_name, module_map_file = _module_info_for_target(
-        target = target,
-        aspect_ctx = aspect_ctx,
-        compilation_context = compilation_context,
-        dependent_module_names = dependent_module_names,
-        feature_configuration = feature_configuration,
-    )
+    # If we weren't passed a module map (i.e., from a `_SwiftInteropInfo`
+    # provider), infer it and the module name based on properties of the rule to
+    # support legacy rules.
+    if not module_map_file:
+        module_name, module_map_file = _module_info_for_target(
+            target = target,
+            aspect_ctx = aspect_ctx,
+            compilation_context = compilation_context,
+            dependent_module_names = dependent_module_names,
+            feature_configuration = feature_configuration,
+            module_name = module_name,
+        )
 
     if not module_map_file:
         if merged_swift_info:
@@ -389,12 +492,31 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx):
         unsupported_features = aspect_ctx.disabled_features,
     )
 
-    # TODO(b/142867898): Only check `CcInfo` once all native rules correctly
-    # propagate both.
-    if apple_common.Objc in target or CcInfo in target:
-        return _handle_cc_target(
+    if CcInfo in target:
+        compilation_context = target[CcInfo].compilation_context
+    else:
+        compilation_context = None
+
+    if _SwiftInteropInfo in target:
+        interop_info = target[_SwiftInteropInfo]
+        swift_infos.extend(interop_info.additional_swift_infos)
+        module_map_file = interop_info.module_map
+        module_name = interop_info.module_name
+    else:
+        module_map_file = None
+        module_name = None
+
+    if (
+        _SwiftInteropInfo in target or
+        apple_common.Objc in target or
+        CcInfo in target
+    ):
+        return _handle_module(
             aspect_ctx = aspect_ctx,
+            compilation_context = compilation_context,
             feature_configuration = feature_configuration,
+            module_map_file = module_map_file,
+            module_name = module_name,
             swift_infos = swift_infos,
             swift_toolchain = swift_toolchain,
             target = target,
