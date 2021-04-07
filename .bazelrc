@@ -2,3 +2,7 @@
 # this forces all targets' minimum macOS to Catalina until Bazel CI has
 # upgraded their Mac machines to Big Sur.
 build --macos_minimum_os=10.15
+
+# Make sure no warnings slip into the C++ tools we vendor
+build --copt=-Werror
+build --host_copt=-Werror
