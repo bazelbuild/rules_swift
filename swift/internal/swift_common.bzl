@@ -49,7 +49,11 @@ load(
     "create_swift_info",
     "create_swift_module",
 )
-load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
+load(
+    ":swift_clang_module_aspect.bzl",
+    "create_swift_interop_info",
+    "swift_clang_module_aspect",
+)
 
 # The exported `swift_common` module, which defines the public API for directly
 # invoking actions that compile Swift code from other rules.
@@ -61,6 +65,7 @@ swift_common = struct(
     create_clang_module = create_clang_module,
     create_module = create_module,
     create_swift_info = create_swift_info,
+    create_swift_interop_info = create_swift_interop_info,
     create_swift_module = create_swift_module,
     derive_module_name = derive_module_name,
     is_enabled = is_feature_enabled,
