@@ -35,6 +35,10 @@ load(
     _swift_c_module = "swift_c_module",
 )
 load(
+    "@build_bazel_rules_swift//swift/internal:swift_clang_module_aspect.bzl",
+    _swift_clang_module_aspect = "swift_clang_module_aspect",
+)
+load(
     "@build_bazel_rules_swift//swift/internal:swift_common.bzl",
     _swift_common = "swift_common",
 )
@@ -83,4 +87,5 @@ swift_module_alias = _swift_module_alias
 swift_proto_library = _swift_proto_library
 
 # Re-export public aspects.
+swift_clang_module_aspect = _swift_clang_module_aspect
 swift_usage_aspect = _swift_usage_aspect

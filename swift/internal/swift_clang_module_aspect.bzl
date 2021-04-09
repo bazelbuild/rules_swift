@@ -560,10 +560,10 @@ depends on an `objc_library` that depends on a `swift_library`).
 It also manages module map generation for `cc_library` targets that have the
 `swift_module` tag. This tag may take one of two forms:
 
-    *   `swift_module`: By itself, this indicates that the target is compatible
-        with Swift and should be given a module name that is derived from its
-        target label.
-    *   `swift_module=name`: The module should be given the name `name`.
+*   `swift_module`: By itself, this indicates that the target is compatible
+    with Swift and should be given a module name that is derived from its
+    target label.
+*   `swift_module=name`: The module should be given the name `name`.
 
 Note that the public headers of such `cc_library` targets must be parsable as C,
 since Swift does not support C++ interop at this time.
