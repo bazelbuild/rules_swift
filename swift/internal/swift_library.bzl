@@ -29,6 +29,7 @@ load(
 )
 load(":linking.bzl", "create_linker_input")
 load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
+load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 load(":swift_common.bzl", "swift_common")
 load(
     ":utils.bzl",
@@ -289,11 +290,11 @@ def _swift_library_impl(ctx):
 swift_library = rule(
     attrs = dicts.add(
         swift_common.library_rule_attrs(additional_deps_aspects = [
-            swift_common.swift_clang_module_aspect,
+            swift_clang_module_aspect,
         ]),
         {
             "private_deps": swift_deps_attr(
-                aspects = [swift_common.swift_clang_module_aspect],
+                aspects = [swift_clang_module_aspect],
                 doc = """\
 A list of targets that are implementation-only dependencies of the target being
 built. Libraries/linker flags from these dependencies will be propagated to
