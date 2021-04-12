@@ -1162,14 +1162,44 @@ def _additional_inputs_configurator(prerequisites, args):
         inputs = prerequisites.additional_inputs,
     )
 
+def _module_name_safe(string):
+    """Returns a transformation of `string` that is safe for module names."""
+    result = ""
+    saw_non_identifier_char = False
+    for ch in string.elems():
+        if ch.isalnum() or ch == "_":
+            # If we're seeing an identifier character after a sequence of
+            # non-identifier characters, append an underscore and reset our
+            # tracking state before appending the identifier character.
+            if saw_non_identifier_char:
+                result += "_"
+                saw_non_identifier_char = False
+            result += ch
+        elif result:
+            # Only track this if `result` has content; this ensures that we
+            # (intentionally) drop leading non-identifier characters instead of
+            # adding a leading underscore.
+            saw_non_identifier_char = True
+
+    return result
+
 def derive_module_name(*args):
     """Returns a derived module name from the given build label.
 
     For targets whose module name is not explicitly specified, the module name
-    is computed by creating an underscore-delimited string from the components
-    of the label, replacing any non-identifier characters also with underscores.
+    is computed using the following algorithm:
 
-    This mapping is not intended to be reversible.
+    *   The package and name components of the label are considered separately.
+        All _interior_ sequences of non-identifier characters (anything other
+        than `a-z`, `A-Z`, `0-9`, and `_`) are replaced by a single underscore
+        (`_`). Any leading or trailing non-identifier characters are dropped.
+    *   If the package component is non-empty after the above transformation,
+        it is joined with the transformed name component using an underscore.
+        Otherwise, the transformed name is used by itself.
+    *   If this would result in a string that begins with a digit (`0-9`), an
+        underscore is prepended to make it identifier-safe.
+
+    This mapping is intended to be fairly predictable, but not reversible.
 
     Args:
         *args: Either a single argument of type `Label`, or two arguments of
@@ -1194,12 +1224,15 @@ def derive_module_name(*args):
         fail("derive_module_name may only be called with a single argument " +
              "of type 'Label' or two arguments of type 'str'.")
 
-    package_part = (package.lstrip("//").replace("/", "_").replace("-", "_")
-        .replace(".", "_"))
-    name_part = name.replace("-", "_")
+    package_part = _module_name_safe(package.lstrip("//"))
+    name_part = _module_name_safe(name)
     if package_part:
-        return package_part + "_" + name_part
-    return name_part
+        module_name = package_part + "_" + name_part
+    else:
+        module_name = name_part
+    if module_name[0].isdigit():
+        module_name = "_" + module_name
+    return module_name
 
 def compile(
         *,
