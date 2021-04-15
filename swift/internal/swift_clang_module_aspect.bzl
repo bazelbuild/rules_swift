@@ -49,16 +49,10 @@ _SINGLE_TARGET_ASPECT_ATTRS = [
 
 _SwiftInteropInfo = provider(
     doc = """\
-Contains minimal information required for the `swift_clang_module_aspect` to
-generate a module map and/or precompiled module for a target so that it can
-expose C/Objective-C APIs to Swift.
+Contains minimal information required to allow `swift_clang_module_aspect` to
+manage the creation of a `SwiftInfo` provider for a C/Objective-C target.
 """,
     fields = {
-        "additional_swift_infos": """\
-A list of additional `SwiftInfo` providers from dependencies that aren't
-reachable via the `deps` attribute of the rule propagating this provider, but
-which should be treated as dependencies of the C/Objective-C module.
-""",
         "module_map": """\
 A `File` representing an existing module map that should be used to represent
 the module, or `None` if the module map should be generated based on the headers
@@ -68,14 +62,38 @@ in the target's compilation context.
 A string denoting the name of the module, or `None` if the name should be
 derived automatically from the target label.
 """,
+        "requested_features": """\
+A list of features that should be enabled for the target, in addition to those
+supplied in the `features` attribute, unless the feature is otherwise marked as
+unsupported (either on the target or by the toolchain). This allows the rule
+implementation to supply an additional set of fixed features that should always
+be enabled when the aspect processes that target; for example, a rule can
+request that `swift.emit_c_module` always be enabled for its targets even if it
+is not explicitly enabled in the toolchain or on the target directly.
+""",
+        "swift_infos": """\
+A list of `SwiftInfo` providers from dependencies of the target, which will be
+merged with the new `SwiftInfo` created by the aspect.
+""",
+        "unsupported_features": """\
+A list of features that should be disabled for the target, in addition to those
+supplied as negations in the `features` attribute. This allows the rule
+implementation to supply an additional set of fixed features that should always
+be disabled when the aspect processes that target; for example, a rule that
+processes frameworks with headers that do not follow strict layering can request
+that `swift.strict_module` always be disabled for its targets even if it is
+enabled by default in the toolchain.
+""",
     },
 )
 
 def create_swift_interop_info(
         *,
-        additional_swift_infos = [],
         module_map = None,
-        module_name = None):
+        module_name = None,
+        requested_features = [],
+        swift_infos = [],
+        unsupported_features = []):
     """Returns a provider that lets a target expose C/Objective-C APIs to Swift.
 
     The provider returned by this function allows custom build rules written in
@@ -85,34 +103,54 @@ def create_swift_interop_info(
     make into a module, and then also propagate the provider returned from this
     function.
 
-    The simplest usage is for the custom rule to simply return
-    `swift_common.create_swift_interop_info()` without any arguments; this
-    tells `swift_clang_module_aspect` to derive the module name from the target
-    label and create a module map using the headers from the compilation
-    context.
+    The simplest usage is for a custom rule to call
+    `swift_common.create_swift_interop_info` passing it only the list of
+    `SwiftInfo` providers from its dependencies; this tells
+    `swift_clang_module_aspect` to derive the module name from the target label
+    and create a module map using the headers from the compilation context.
 
     If the custom rule has reason to provide its own module name or module map,
     then it can do so using the `module_name` and `module_map` arguments.
 
-    The `swift_clang_module_aspect` automatically traverses the `deps` attribute
-    of even custom rules, so those rules don't need to do anything extra to
-    collect those dependencies. However, if a custom rule has dependencies in
-    other attributes (such as a runtime library specified as the default value
-    of a private attribute), it should pass the `SwiftInfo` provider from that
-    target into this function via the `additional_swift_infos` argument.
+    When a rule returns this provider, it must provide the full set of
+    `SwiftInfo` providers from dependencies that will be merged with the one
+    that `swift_clang_module_aspect` creates for the target itself; the aspect
+    will not do so automatically. This allows the rule to not only add extra
+    dependencies (such as support libraries from implicit attributes) but also
+    exclude dependencies if necessary.
 
     Args:
-        additional_swift_infos: A list of additional `SwiftInfo` providers from
-            dependencies that aren't reachable via the `deps` attribute of the
-            rule propagating this provider, but which should be treated as
-            dependencies of the C/Objective-C module.
         module_map: A `File` representing an existing module map that should be
-            used to represent the module, or `None` if the module map should be
-            generated based on the headers in the target's compilation context.
-            If this argument is provided, then `module_name` must also be
-            provided.
-        module_name: A string denoting the name of the module, or `None` if the
-            name should be derived automatically from the target label.
+            used to represent the module, or `None` (the default) if the module
+            map should be generated based on the headers in the target's
+            compilation context. If this argument is provided, then
+            `module_name` must also be provided.
+        module_name: A string denoting the name of the module, or `None` (the
+            default) if the name should be derived automatically from the target
+            label.
+        requested_features: A list of features (empty by default) that should be
+            requested for the target, which are added to those supplied in the
+            `features` attribute of the target. These features will be enabled
+            unless they are otherwise marked as unsupported (either on the
+            target or by the toolchain). This allows the rule implementation to
+            have additional control over features that should be supported by
+            default for all instances of that rule as if it were creating the
+            feature configuration itself; for example, a rule can request that
+            `swift.emit_c_module` always be enabled for its targets even if it
+            is not explicitly enabled in the toolchain or on the target
+            directly.
+        swift_infos: A list of `SwiftInfo` providers from dependencies, which
+            will be merged with the new `SwiftInfo` created by the aspect.
+        unsupported_features: A list of features (empty by default) that should
+            be considered unsupported for the target, which are added to those
+            supplied as negations in the `features` attribute. This allows the
+            rule implementation to have additional control over features that
+            should be disabled by default for all instances of that rule as if
+            it were creating the feature configuration itself; for example, a
+            rule that processes frameworks with headers that do not follow
+            strict layering can request that `swift.strict_module` always be
+            disabled for its targets even if it is enabled by default in the
+            toolchain.
 
     Returns:
         A provider whose type/layout is an implementation detail and should not
@@ -122,9 +160,11 @@ def create_swift_interop_info(
         fail("'module_name' must be specified when 'module_map' is specified.")
 
     return _SwiftInteropInfo(
-        additional_swift_infos = additional_swift_infos,
         module_map = module_map,
         module_name = module_name,
+        requested_features = requested_features,
+        swift_infos = swift_infos,
+        unsupported_features = unsupported_features,
     )
 
 def _tagged_target_module_name(label, tags):
@@ -472,39 +512,46 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx):
     if SwiftInfo in target:
         return []
 
-    # Collect `SwiftInfo` providers from dependencies, based on the attributes
-    # that this aspect traverses.
-    attr = aspect_ctx.rule.attr
-    deps = []
-    for attr_name in _MULTIPLE_TARGET_ASPECT_ATTRS:
-        deps.extend(getattr(attr, attr_name, []))
-    for attr_name in _SINGLE_TARGET_ASPECT_ATTRS:
-        dep = getattr(attr, attr_name, None)
-        if dep:
-            deps.append(dep)
-    swift_infos = get_providers(deps, SwiftInfo)
-
-    swift_toolchain = aspect_ctx.attr._toolchain_for_aspect[SwiftToolchainInfo]
-    feature_configuration = configure_features(
-        ctx = aspect_ctx,
-        requested_features = aspect_ctx.features,
-        swift_toolchain = swift_toolchain,
-        unsupported_features = aspect_ctx.disabled_features,
-    )
-
     if CcInfo in target:
         compilation_context = target[CcInfo].compilation_context
     else:
         compilation_context = None
 
+    requested_features = aspect_ctx.features
+    unsupported_features = aspect_ctx.disabled_features
+
     if _SwiftInteropInfo in target:
         interop_info = target[_SwiftInteropInfo]
-        swift_infos.extend(interop_info.additional_swift_infos)
         module_map_file = interop_info.module_map
-        module_name = interop_info.module_name
+        module_name = (
+            interop_info.module_name or derive_module_name(target.label)
+        )
+        swift_infos = interop_info.swift_infos
+        requested_features.extend(interop_info.requested_features)
+        unsupported_features.extend(interop_info.unsupported_features)
     else:
         module_map_file = None
         module_name = None
+
+        # Collect `SwiftInfo` providers from dependencies, based on the
+        # attributes that this aspect traverses.
+        deps = []
+        attr = aspect_ctx.rule.attr
+        for attr_name in _MULTIPLE_TARGET_ASPECT_ATTRS:
+            deps.extend(getattr(attr, attr_name, []))
+        for attr_name in _SINGLE_TARGET_ASPECT_ATTRS:
+            dep = getattr(attr, attr_name, None)
+            if dep:
+                deps.append(dep)
+        swift_infos = get_providers(deps, SwiftInfo)
+
+    swift_toolchain = aspect_ctx.attr._toolchain_for_aspect[SwiftToolchainInfo]
+    feature_configuration = configure_features(
+        ctx = aspect_ctx,
+        requested_features = requested_features,
+        swift_toolchain = swift_toolchain,
+        unsupported_features = unsupported_features,
+    )
 
     if (
         _SwiftInteropInfo in target or
