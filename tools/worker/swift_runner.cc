@@ -86,6 +86,17 @@ static std::string Unescape(const std::string &arg) {
   return result;
 }
 
+// If `str` starts with `prefix`, `str` is mutated to remove `prefix` and the
+// function returns true. Otherwise, `str` is left unmodified and the function
+// returns `false`.
+static bool StripPrefix(const std::string &prefix, std::string &str) {
+  if (str.find(prefix) != 0) {
+    return false;
+  }
+  str.erase(0, prefix.size());
+  return true;
+}
+
 }  // namespace
 
 SwiftRunner::SwiftRunner(const std::vector<std::string> &args,
@@ -96,6 +107,28 @@ SwiftRunner::SwiftRunner(const std::vector<std::string> &args,
 
 int SwiftRunner::Run(std::ostream *stderr_stream, bool stdout_to_stderr) {
   int exit_code = RunSubProcess(args_, stderr_stream, stdout_to_stderr);
+  if (exit_code != 0) {
+    return exit_code;
+  }
+
+  if (!generated_header_rewriter_path_.empty()) {
+#if __APPLE__
+    // Skip the `xcrun` argument that's added when running on Apple platforms.
+    int initial_args_to_skip = 1;
+#else
+    int initial_args_to_skip = 0;
+#endif
+
+    std::vector<std::string> rewriter_args;
+    rewriter_args.reserve(args_.size() + 2 - initial_args_to_skip);
+    rewriter_args.push_back(generated_header_rewriter_path_);
+    rewriter_args.push_back("--");
+    rewriter_args.insert(rewriter_args.end(),
+                         args_.begin() + initial_args_to_skip, args_.end());
+
+    exit_code = RunSubProcess(rewriter_args, stderr_stream, stdout_to_stderr);
+  }
+
   return exit_code;
 }
 
@@ -155,34 +188,43 @@ bool SwiftRunner::ProcessArgument(
 
   if (arg[0] == '@') {
     changed = ProcessPossibleResponseFile(arg, consumer);
-  } else if (arg == "-Xwrapped-swift=-debug-prefix-pwd-is-dot") {
-    // Get the actual current working directory (the workspace root), which we
-    // didn't know at analysis time.
-    consumer("-debug-prefix-map");
-    consumer(GetCurrentDirectory() + "=.");
-    changed = true;
-  } else if (arg == "-Xwrapped-swift=-ephemeral-module-cache") {
-    // Create a temporary directory to hold the module cache, which will be
-    // deleted after compilation is finished.
-    auto module_cache_dir = TempDirectory::Create("swift_module_cache.XXXXXX");
-    consumer("-module-cache-path");
-    consumer(module_cache_dir->GetPath());
-    temp_directories_.push_back(std::move(module_cache_dir));
-    changed = true;
-  } else if (arg.find("-Xwrapped-swift=") == 0) {
-    // TODO(allevato): Report that an unknown wrapper arg was found and give the
-    // caller a way to exit gracefully.
-    changed = true;
   } else {
-    // Apply any other text substitutions needed in the argument (i.e., for
-    // Apple toolchains).
-    auto new_arg = arg;
-    // Bazel doesn't quote arguments in multi-line params files, so we need to
-    // ensure that our defensive quoting kicks in if an argument contains a
-    // space, even if no other changes would have been made.
-    changed = bazel_placeholder_substitutions_.Apply(new_arg) ||
-              new_arg.find_first_of(' ') != std::string::npos;
-    consumer(new_arg);
+    std::string new_arg = arg;
+    if (StripPrefix("-Xwrapped-swift=", new_arg)) {
+      if (new_arg == "-debug-prefix-pwd-is-dot") {
+        // Get the actual current working directory (the workspace root), which
+        // we didn't know at analysis time.
+        consumer("-debug-prefix-map");
+        consumer(GetCurrentDirectory() + "=.");
+        changed = true;
+      } else if (new_arg == "-ephemeral-module-cache") {
+        // Create a temporary directory to hold the module cache, which will be
+        // deleted after compilation is finished.
+        auto module_cache_dir =
+            TempDirectory::Create("swift_module_cache.XXXXXX");
+        consumer("-module-cache-path");
+        consumer(module_cache_dir->GetPath());
+        temp_directories_.push_back(std::move(module_cache_dir));
+        changed = true;
+      } else if (StripPrefix("-generated-header-rewriter=", new_arg)) {
+        generated_header_rewriter_path_ = new_arg;
+        changed = true;
+      } else {
+        // TODO(allevato): Report that an unknown wrapper arg was found and give
+        // the caller a way to exit gracefully.
+        changed = true;
+      }
+    } else {
+      // Apply any other text substitutions needed in the argument (i.e., for
+      // Apple toolchains).
+      //
+      // Bazel doesn't quote arguments in multi-line params files, so we need to
+      // ensure that our defensive quoting kicks in if an argument contains a
+      // space, even if no other changes would have been made.
+      changed = bazel_placeholder_substitutions_.Apply(new_arg) ||
+                new_arg.find_first_of(' ') != std::string::npos;
+      consumer(new_arg);
+    }
   }
 
   return changed;

@@ -115,6 +115,11 @@ SWIFT_FEATURE_OPT_USES_WMO = "swift.opt_uses_wmo"
 # the `-Osize` flag instead of `-O`.
 SWIFT_FEATURE_OPT_USES_OSIZE = "swift.opt_uses_osize"
 
+# If enabled, and if the toolchain specifies a generated header rewriting tool,
+# that tool will be invoked after compilation to rewrite the generated header in
+# place.
+SWIFT_FEATURE_REWRITE_GENERATED_HEADER = "swift.rewrite_generated_header"
+
 # If enabled, Swift compiler invocations will use precompiled modules from
 # dependencies instead of module maps and headers, if those dependencies provide
 # them.
