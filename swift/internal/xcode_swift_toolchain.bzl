@@ -327,6 +327,7 @@ def _all_action_configs(
         additional_swiftc_copts,
         apple_fragment,
         apple_toolchain,
+        generated_header_rewriter,
         needs_resource_directory,
         target_triple):
     """Returns the action configurations for the Swift toolchain.
@@ -339,6 +340,9 @@ def _all_action_configs(
             the `swift` configuration fragment.
         apple_fragment: The `apple` configuration fragment.
         apple_toolchain: The `apple_common.apple_toolchain()` object.
+        generated_header_rewriter: An executable that will be invoked after
+            compilation to rewrite the generated header, or None if this is not
+            desired.
         needs_resource_directory: If True, the toolchain needs the resource
             directory passed explicitly to the compiler.
         target_triple: The target triple.
@@ -494,6 +498,7 @@ def _all_action_configs(
     action_configs.extend(compile_action_configs(
         additional_objc_copts = additional_objc_copts,
         additional_swiftc_copts = additional_swiftc_copts,
+        generated_header_rewriter = generated_header_rewriter,
     ))
     return action_configs
 
@@ -501,6 +506,7 @@ def _all_tool_configs(
         custom_toolchain,
         env,
         execution_requirements,
+        generated_header_rewriter,
         swift_executable,
         toolchain_root,
         use_param_file,
@@ -512,6 +518,9 @@ def _all_tool_configs(
             one was requested.
         env: The environment variables to set when launching tools.
         execution_requirements: The execution requirements for tools.
+        generated_header_rewriter: An executable that will be invoked after
+            compilation to rewrite the generated header, or None if this is not
+            desired.
         swift_executable: A custom Swift driver executable to be used during the
             build, if provided.
         toolchain_root: The root directory of the toolchain, if provided.
@@ -530,7 +539,12 @@ def _all_tool_configs(
         env = dict(env)
         env["TOOLCHAINS"] = custom_toolchain
 
+    additional_compile_tools = []
+    if generated_header_rewriter:
+        additional_compile_tools.append(generated_header_rewriter)
+
     tool_config = swift_toolchain_config.driver_tool_config(
+        additional_tools = additional_compile_tools,
         driver_mode = "swiftc",
         env = env,
         execution_requirements = execution_requirements,
@@ -724,11 +738,13 @@ def _xcode_swift_toolchain_impl(ctx):
 
     env = _xcode_env(platform = platform, xcode_config = xcode_config)
     execution_requirements = xcode_config.execution_info()
+    generated_header_rewriter = ctx.executable.generated_header_rewriter
 
     all_tool_configs = _all_tool_configs(
         custom_toolchain = custom_toolchain,
         env = env,
         execution_requirements = execution_requirements,
+        generated_header_rewriter = generated_header_rewriter,
         swift_executable = swift_executable,
         toolchain_root = toolchain_root,
         use_param_file = use_param_file,
@@ -742,6 +758,7 @@ def _xcode_swift_toolchain_impl(ctx):
         additional_swiftc_copts = ctx.fragments.swift.copts(),
         apple_fragment = apple_fragment,
         apple_toolchain = apple_toolchain,
+        generated_header_rewriter = generated_header_rewriter,
         needs_resource_directory = swift_executable or toolchain_root,
         target_triple = target,
     )
@@ -796,6 +813,20 @@ actions that precompile the explicit module for the generated Objective-C header
 of a Swift module.
 """,
                 providers = [[SwiftInfo]],
+            ),
+            "generated_header_rewriter": attr.label(
+                allow_files = True,
+                cfg = "host",
+                doc = """\
+If present, an executable that will be invoked after compilation to rewrite the
+generated header.
+
+This tool is expected to have a command line interface such that the Swift
+compiler invocation is passed to it following a `"--"` argument, and any
+arguments preceding the `"--"` can be defined by the tool itself (however, at
+this time the worker does not support passing additional flags to the tool).
+""",
+                executable = True,
             ),
             "implicit_deps": attr.label_list(
                 allow_files = True,
