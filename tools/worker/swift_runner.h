@@ -124,6 +124,10 @@ class SwiftRunner {
   // Arguments will be unconditionally written into a response file and passed
   // to the tool that way.
   bool force_response_file_;
+
+  // The path to the generated header rewriter tool, if one is being used for
+  // this compilation.
+  std::string generated_header_rewriter_path_;
 };
 
 #endif  // BUILD_BAZEL_RULES_SWIFT_TOOLS_WORKER_SWIFT_RUNNER_H_
