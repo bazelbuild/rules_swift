@@ -652,7 +652,7 @@ def _xcode_swift_toolchain_impl(ctx):
     # version.
     requested_features = features_for_build_modes(
         ctx,
-        objc_fragment = ctx.fragments.objc,
+        cpp_fragment = ctx.fragments.cpp,
     ) + features_from_swiftcopts(swiftcopts = ctx.fragments.swift.copts())
     requested_features.extend(ctx.features)
     requested_features.append(SWIFT_FEATURE_BUNDLED_XCTESTS)
@@ -813,6 +813,7 @@ for incremental compilation using a persistent mode.
     doc = "Represents a Swift compiler toolchain provided by Xcode.",
     fragments = [
         "apple",
+        "cpp",
         "objc",
         "swift",
     ],
