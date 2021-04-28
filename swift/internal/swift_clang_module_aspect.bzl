@@ -471,6 +471,14 @@ def _handle_module(
                         compilation_context = dep[CcInfo].compilation_context,
                     ),
                 )
+            if apple_common.Objc in dep:
+                target_and_deps_cc_infos.append(
+                    CcInfo(
+                        compilation_context = cc_common.create_compilation_context(
+                            includes = dep[apple_common.Objc].strict_include,
+                        ),
+                    ),
+                )
 
         compilation_context_to_compile = cc_common.merge_cc_infos(
             direct_cc_infos = target_and_deps_cc_infos,
