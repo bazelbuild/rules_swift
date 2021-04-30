@@ -271,8 +271,7 @@ a `.h` extension and cannot contain any path separators.
 If this attribute is not specified, then the default behavior is to name the
 header `${target_name}-Swift.h`.
 
-This attribute is ignored if the toolchain does not support generating headers
-or if the target has the `swift.no_generated_header` feature enabled.
+This attribute is ignored if the toolchain does not support generating headers.
 """,
                 mandatory = False,
             ),
