@@ -1,8 +1,9 @@
-# BUILD Rule Reference
+<!-- Generated with Stardoc, Do Not Edit! -->
 
-<!-- Generated file, do not edit directly. -->
+BUILD rules to define Swift libraries and executable binaries.
 
-
+This file is the public interface that users should import to use the Swift
+rules. Do not import definitions from the `internal` subdirectory directly.
 
 To use the Swift build rules in your BUILD files, load them from
 `@build_bazel_rules_swift//swift:swift.bzl`.
@@ -23,13 +24,14 @@ On this page:
   * [swift_module_alias](#swift_module_alias)
   * [swift_proto_library](#swift_proto_library)
   * [swift_test](#swift_test)
-<a name="swift_binary"></a>
+
+<a id="#swift_binary"></a>
+
 ## swift_binary
 
-<pre style="white-space: normal">
-swift_binary(<a href="#swift_binary.name">name</a>, <a href="#swift_binary.deps">deps</a>, <a href="#swift_binary.srcs">srcs</a>, <a href="#swift_binary.data">data</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.compatible_with">compatible_with</a>, <a href="#swift_binary.copts">copts</a>, <a href="#swift_binary.defines">defines</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.deprecation">deprecation</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.distribs">distribs</a>,
-<a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.features">features</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.licenses">licenses</a>, <a href="#swift_binary.linkopts">linkopts</a>, <a href="#swift_binary.malloc">malloc</a>, <a href="#swift_binary.module_name">module_name</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.restricted_to">restricted_to</a>, <a href="#swift_binary.stamp">stamp</a>, <a href="#swift_binary.swiftc_inputs">swiftc_inputs</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.tags">tags</a>,
-<a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.testonly">testonly</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.visibility">visibility</a>)
+<pre>
+swift_binary(<a href="#swift_binary-name">name</a>, <a href="#swift_binary-copts">copts</a>, <a href="#swift_binary-data">data</a>, <a href="#swift_binary-defines">defines</a>, <a href="#swift_binary-deps">deps</a>, <a href="#swift_binary-linkopts">linkopts</a>, <a href="#swift_binary-malloc">malloc</a>, <a href="#swift_binary-module_name">module_name</a>, <a href="#swift_binary-srcs">srcs</a>, <a href="#swift_binary-stamp">stamp</a>,
+             <a href="#swift_binary-swiftc_inputs">swiftc_inputs</a>)
 </pre>
 
 Compiles and links Swift code into an executable binary.
@@ -46,125 +48,31 @@ please use one of the platform-specific application rules in
 [rules_apple](https://github.com/bazelbuild/rules_apple) instead of
 `swift_binary`.
 
-<a name="swift_binary.attributes"></a>
-### Attributes
 
-<table class="params-table">
-  <colgroup>
-    <col class="col-param" />
-    <col class="col-description" />
-  </colgroup>
-  <tbody>
-    <tr id="swift_binary.name">
-      <td><code>name</code></td>
-      <td>
-        <p><code><a href="https://docs.bazel.build/versions/master/build-ref.html#name">Name</a>; required</code></p><p>A unique name for this target.</p></td>
-    </tr>
-    <tr id="swift_binary.deps">
-      <td><code>deps</code></td>
-      <td>
-        <p><code>List of <a href="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>A list of targets that are dependencies of the target being built, which will be
-linked into that target.</p>
-<p>If the Swift toolchain supports implementation-only imports (<code>private_deps</code> on
-<code>swift_library</code>), then targets in <code>deps</code> are treated as regular
-(non-implementation-only) imports that are propagated both to their direct and
-indirect (transitive) dependents.</p>
-<p>Allowed kinds of dependencies are:</p>
-<ul>
-<li><code>swift_c_module</code>, <code>swift_import</code> and <code>swift_library</code> (or anything
-propagating <code>SwiftInfo</code>)</li>
-<li><code>cc_library</code> (or anything propagating <code>CcInfo</code>)</li>
-</ul>
-<p>Additionally, on platforms that support Objective-C interop, <code>objc_library</code>
-targets (or anything propagating the <code>apple_common.Objc</code> provider) are allowed
-as dependencies. On platforms that do not support Objective-C interop (such as
-Linux), those dependencies will be <strong>ignored.</strong></p></td>
-    </tr>
-    <tr id="swift_binary.srcs">
-      <td><code>srcs</code></td>
-      <td>
-        <p><code>List of <a href="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>A list of <code>.swift</code> source files that will be compiled into the library.</p></td>
-    </tr>
-    <tr id="swift_binary.data">
-      <td><code>data</code></td>
-      <td>
-        <p><code>List of <a href="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>The list of files needed by this target at runtime.</p>
-<p>Files and targets named in the <code>data</code> attribute will appear in the <code>*.runfiles</code>
-area of this target, if it has one. This may include data files needed by a
-binary or library, or other programs needed by it.</p></td>
-    </tr>
-    <tr id="swift_binary.copts">
-      <td><code>copts</code></td>
-      <td>
-        <p><code>List of strings; optional</code></p><p>Additional compiler options that should be passed to <code>swiftc</code>. These strings are
-subject to <code>$(location ...)</code> expansion.</p></td>
-    </tr>
-    <tr id="swift_binary.defines">
-      <td><code>defines</code></td>
-      <td>
-        <p><code>List of strings; optional</code></p><p>A list of defines to add to the compilation command line.</p>
-<p>Note that unlike C-family languages, Swift defines do not have values; they are
-simply identifiers that are either defined or undefined. So strings in this list
-should be simple identifiers, <strong>not</strong> <code>name=value</code> pairs.</p>
-<p>Each string is prepended with <code>-D</code> and added to the command line. Unlike
-<code>copts</code>, these flags are added for the target and every target that depends on
-it, so use this attribute with caution. It is preferred that you add defines
-directly to <code>copts</code>, only using this feature in the rare case that a library
-needs to propagate a symbol up to those that depend on it.</p></td>
-    </tr>
-    <tr id="swift_binary.linkopts">
-      <td><code>linkopts</code></td>
-      <td>
-        <p><code>List of strings; optional</code></p><p>Additional linker options that should be passed to <code>clang</code>. These strings are
-subject to <code>$(location ...)</code> expansion.</p></td>
-    </tr>
-    <tr id="swift_binary.malloc">
-      <td><code>malloc</code></td>
-      <td>
-        <p><code><a href="https://docs.bazel.build/versions/master/build-ref.html#labels">Label</a>; optional; default is @bazel_tools//tools/cpp:malloc</code></p><p>Override the default dependency on <code>malloc</code>.</p>
-<p>By default, Swift binaries are linked against <code>@bazel_tools//tools/cpp:malloc"</code>,
-which is an empty library and the resulting binary will use libc's <code>malloc</code>.
-This label must refer to a <code>cc_library</code> rule.</p></td>
-    </tr>
-    <tr id="swift_binary.module_name">
-      <td><code>module_name</code></td>
-      <td>
-        <p><code>String; optional</code></p><p>The name of the Swift module being built.</p>
-<p>If left unspecified, the module name will be computed based on the target's
-build label, by stripping the leading <code>//</code> and replacing <code>/</code>, <code>:</code>, and other
-non-identifier characters with underscores.</p></td>
-    </tr>
-    <tr id="swift_binary.stamp">
-      <td><code>stamp</code></td>
-      <td>
-        <p><code>Integer; optional; default is -1</code></p><p>Enable or disable link stamping; that is, whether to encode build information
-into the binary. Possible values are:</p>
-<ul>
-<li><code>stamp = 1</code>: Stamp the build information into the binary. Stamped binaries are
-only rebuilt when their dependencies change. Use this if there are tests that
-depend on the build information.</li>
-<li><code>stamp = 0</code>: Always replace build information by constant values. This gives
-good build result caching.</li>
-<li><code>stamp = -1</code>: Embedding of build information is controlled by the
-<code>--[no]stamp</code> flag.</li>
-</ul></td>
-    </tr>
-    <tr id="swift_binary.swiftc_inputs">
-      <td><code>swiftc_inputs</code></td>
-      <td>
-        <p><code>List of <a href="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>Additional files that are referenced using <code>$(location ...)</code> in attributes that
-support location expansion.</p></td>
-    </tr>
-  </tbody>
-</table>
+**ATTRIBUTES**
 
 
-<a name="swift_c_module"></a>
+| Name  | Description | Type | Mandatory | Default |
+| :------------- | :------------- | :------------- | :------------- | :------------- |
+| <a id="swift_binary-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/docs/build-ref.html#name">Name</a> | required |  |
+| <a id="swift_binary-copts"></a>copts |  Additional compiler options that should be passed to <code>swiftc</code>. These strings are subject to <code>$(location ...)</code> and ["Make" variable](https://docs.bazel.build/versions/master/be/make-variables.html) expansion.   | List of strings | optional | [] |
+| <a id="swift_binary-data"></a>data |  The list of files needed by this target at runtime.<br><br>Files and targets named in the <code>data</code> attribute will appear in the <code>*.runfiles</code> area of this target, if it has one. This may include data files needed by a binary or library, or other programs needed by it.   | <a href="https://bazel.build/docs/build-ref.html#labels">List of labels</a> | optional | [] |
+| <a id="swift_binary-defines"></a>defines |  A list of defines to add to the compilation command line.<br><br>Note that unlike C-family languages, Swift defines do not have values; they are simply identifiers that are either defined or undefined. So strings in this list should be simple identifiers, **not** <code>name=value</code> pairs.<br><br>Each string is prepended with <code>-D</code> and added to the command line. Unlike <code>copts</code>, these flags are added for the target and every target that depends on it, so use this attribute with caution. It is preferred that you add defines directly to <code>copts</code>, only using this feature in the rare case that a library needs to propagate a symbol up to those that depend on it.   | List of strings | optional | [] |
+| <a id="swift_binary-deps"></a>deps |  A list of targets that are dependencies of the target being built, which will be linked into that target.<br><br>If the Swift toolchain supports implementation-only imports (<code>private_deps</code> on <code>swift_library</code>), then targets in <code>deps</code> are treated as regular (non-implementation-only) imports that are propagated both to their direct and indirect (transitive) dependents.<br><br>Allowed kinds of dependencies are:<br><br>*   <code>swift_c_module</code>, <code>swift_import</code> and <code>swift_library</code> (or anything     propagating <code>SwiftInfo</code>)<br><br>*   <code>cc_library</code> (or anything propagating <code>CcInfo</code>)<br><br>Additionally, on platforms that support Objective-C interop, <code>objc_library</code> targets (or anything propagating the <code>apple_common.Objc</code> provider) are allowed as dependencies. On platforms that do not support Objective-C interop (such as Linux), those dependencies will be **ignored.**   | <a href="https://bazel.build/docs/build-ref.html#labels">List of labels</a> | optional | [] |
+| <a id="swift_binary-linkopts"></a>linkopts |  Additional linker options that should be passed to <code>clang</code>. These strings are subject to <code>$(location ...)</code> expansion.   | List of strings | optional | [] |
+| <a id="swift_binary-malloc"></a>malloc |  Override the default dependency on <code>malloc</code>.<br><br>By default, Swift binaries are linked against <code>@bazel_tools//tools/cpp:malloc"</code>, which is an empty library and the resulting binary will use libc's <code>malloc</code>. This label must refer to a <code>cc_library</code> rule.   | <a href="https://bazel.build/docs/build-ref.html#labels">Label</a> | optional | @bazel_tools//tools/cpp:malloc |
+| <a id="swift_binary-module_name"></a>module_name |  The name of the Swift module being built.<br><br>If left unspecified, the module name will be computed based on the target's build label, by stripping the leading <code>//</code> and replacing <code>/</code>, <code>:</code>, and other non-identifier characters with underscores.   | String | optional | "" |
+| <a id="swift_binary-srcs"></a>srcs |  A list of <code>.swift</code> source files that will be compiled into the library.   | <a href="https://bazel.build/docs/build-ref.html#labels">List of labels</a> | optional | [] |
+| <a id="swift_binary-stamp"></a>stamp |  Enable or disable link stamping; that is, whether to encode build information into the binary. Possible values are:<br><br>* <code>stamp = 1</code>: Stamp the build information into the binary. Stamped binaries are   only rebuilt when their dependencies change. Use this if there are tests that   depend on the build information.<br><br>* <code>stamp = 0</code>: Always replace build information by constant values. This gives   good build result caching.<br><br>* <code>stamp = -1</code>: Embedding of build information is controlled by the   <code>--[no]stamp</code> flag.   | Integer | optional | -1 |
+| <a id="swift_binary-swiftc_inputs"></a>swiftc_inputs |  Additional files that are referenced using <code>$(location ...)</code> in attributes that support location expansion.   | <a href="https://bazel.build/docs/build-ref.html#labels">List of labels</a> | optional | [] |
+
+
+<a id="#swift_c_module"></a>
+
 ## swift_c_module
 
-<pre style="white-space: normal">
-swift_c_module(<a href="#swift_c_module.name">name</a>, <a href="#swift_c_module.deps">deps</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.compatible_with">compatible_with</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.deprecation">deprecation</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.distribs">distribs</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.features">features</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.licenses">licenses</a>, <a href="#swift_c_module.module_map">module_map</a>,
-<a href="#swift_c_module.module_name">module_name</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.restricted_to">restricted_to</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.tags">tags</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.testonly">testonly</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.visibility">visibility</a>)
+<pre>
+swift_c_module(<a href="#swift_c_module-name">name</a>, <a href="#swift_c_module-deps">deps</a>, <a href="#swift_c_module-module_map">module_map</a>, <a href="#swift_c_module-module_name">module_name</a>)
 </pre>
 
 Wraps one or more C targets in a new module map that allows it to be imported
@@ -197,55 +105,24 @@ referenced by a module map that is imported into Swift must have only C features
 visible, often by using preprocessor conditions like `#if __cplusplus` to hide
 any C++ declarations.
 
-<a name="swift_c_module.attributes"></a>
-### Attributes
 
-<table class="params-table">
-  <colgroup>
-    <col class="col-param" />
-    <col class="col-description" />
-  </colgroup>
-  <tbody>
-    <tr id="swift_c_module.name">
-      <td><code>name</code></td>
-      <td>
-        <p><code><a href="https://docs.bazel.build/versions/master/build-ref.html#name">Name</a>; required</code></p><p>A unique name for this target.</p></td>
-    </tr>
-    <tr id="swift_c_module.deps">
-      <td><code>deps</code></td>
-      <td>
-        <p><code>List of <a href="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; required</code></p><p>A list of C targets (or anything propagating <code>CcInfo</code>) that are dependencies of
-this target and whose headers may be referenced by the module map.</p></td>
-    </tr>
-    <tr id="swift_c_module.module_map">
-      <td><code>module_map</code></td>
-      <td>
-        <p><code><a href="https://docs.bazel.build/versions/master/build-ref.html#labels">Label</a>; required</code></p><p>The module map file that should be loaded to import the C library dependency
-into Swift.</p></td>
-    </tr>
-    <tr id="swift_c_module.module_name">
-      <td><code>module_name</code></td>
-      <td>
-        <p><code>String; required</code></p><p>The name of the top-level module in the module map that this target represents.</p>
-<p>A single <code>module.modulemap</code> file can define multiple top-level modules. When
-building with implicit modules, the presence of that module map allows any of
-the modules defined in it to be imported. When building explicit modules,
-however, there is a one-to-one correspondence between top-level modules and
-BUILD targets and the module name must be known without reading the module map
-file, so it must be provided directly. Therefore, one may have multiple
-<code>swift_c_module</code> targets that reference the same <code>module.modulemap</code> file but
-with different module names and headers.</p></td>
-    </tr>
-  </tbody>
-</table>
+**ATTRIBUTES**
 
 
-<a name="swift_grpc_library"></a>
+| Name  | Description | Type | Mandatory | Default |
+| :------------- | :------------- | :------------- | :------------- | :------------- |
+| <a id="swift_c_module-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/docs/build-ref.html#name">Name</a> | required |  |
+| <a id="swift_c_module-deps"></a>deps |  A list of C targets (or anything propagating <code>CcInfo</code>) that are dependencies of this target and whose headers may be referenced by the module map.   | <a href="https://bazel.build/docs/build-ref.html#labels">List of labels</a> | required |  |
+| <a id="swift_c_module-module_map"></a>module_map |  The module map file that should be loaded to import the C library dependency into Swift.   | <a href="https://bazel.build/docs/build-ref.html#labels">Label</a> | required |  |
+| <a id="swift_c_module-module_name"></a>module_name |  The name of the top-level module in the module map that this target represents.<br><br>A single <code>module.modulemap</code> file can define multiple top-level modules. When building with implicit modules, the presence of that module map allows any of the modules defined in it to be imported. When building explicit modules, however, there is a one-to-one correspondence between top-level modules and BUILD targets and the module name must be known without reading the module map file, so it must be provided directly. Therefore, one may have multiple <code>swift_c_module</code> targets that reference the same <code>module.modulemap</code> file but with different module names and headers.   | String | required |  |
+
+
+<a id="#swift_grpc_library"></a>
+
 ## swift_grpc_library
 
-<pre style="white-space: normal">
-swift_grpc_library(<a href="#swift_grpc_library.name">name</a>, <a href="#swift_grpc_library.deps">deps</a>, <a href="#swift_grpc_library.srcs">srcs</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.compatible_with">compatible_with</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.deprecation">deprecation</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.distribs">distribs</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.features">features</a>, <a href="#swift_grpc_library.flavor">flavor</a>,
-<a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.licenses">licenses</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.restricted_to">restricted_to</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.tags">tags</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.testonly">testonly</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.visibility">visibility</a>)
+<pre>
+swift_grpc_library(<a href="#swift_grpc_library-name">name</a>, <a href="#swift_grpc_library-deps">deps</a>, <a href="#swift_grpc_library-flavor">flavor</a>, <a href="#swift_grpc_library-srcs">srcs</a>)
 </pre>
 
 Generates a Swift library from gRPC services defined in protocol buffer sources.
@@ -313,271 +190,82 @@ swift_grpc_library(
 )
 ```
 
-<a name="swift_grpc_library.attributes"></a>
-### Attributes
 
-<table class="params-table">
-  <colgroup>
-    <col class="col-param" />
-    <col class="col-description" />
-  </colgroup>
-  <tbody>
-    <tr id="swift_grpc_library.name">
-      <td><code>name</code></td>
-      <td>
-        <p><code><a href="https://docs.bazel.build/versions/master/build-ref.html#name">Name</a>; required</code></p><p>A unique name for this target.</p></td>
-    </tr>
-    <tr id="swift_grpc_library.deps">
-      <td><code>deps</code></td>
-      <td>
-        <p><code>List of <a href="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>Exactly one <code>swift_proto_library</code> or <code>swift_grpc_library</code> target that contains
-the Swift protos used by the services being generated. Test stubs should depend
-on the <code>swift_grpc_library</code> implementing the service.</p></td>
-    </tr>
-    <tr id="swift_grpc_library.srcs">
-      <td><code>srcs</code></td>
-      <td>
-        <p><code>List of <a href="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>Exactly one <code>proto_library</code> target that defines the services being generated.</p></td>
-    </tr>
-    <tr id="swift_grpc_library.flavor">
-      <td><code>flavor</code></td>
-      <td>
-        <p><code>String; required; valid values are ['client', 'client_stubs', 'server']</code></p><p>The kind of definitions that should be generated:</p>
-<ul>
-<li><code>"client"</code> to generate client definitions.</li>
-<li><code>"client_stubs"</code> to generate client test stubs.</li>
-<li><code>"server"</code> to generate server definitions.</li>
-</ul></td>
-    </tr>
-  </tbody>
-</table>
+**ATTRIBUTES**
 
 
-<a name="swift_import"></a>
+| Name  | Description | Type | Mandatory | Default |
+| :------------- | :------------- | :------------- | :------------- | :------------- |
+| <a id="swift_grpc_library-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/docs/build-ref.html#name">Name</a> | required |  |
+| <a id="swift_grpc_library-deps"></a>deps |  Exactly one <code>swift_proto_library</code> or <code>swift_grpc_library</code> target that contains the Swift protos used by the services being generated. Test stubs should depend on the <code>swift_grpc_library</code> implementing the service.   | <a href="https://bazel.build/docs/build-ref.html#labels">List of labels</a> | optional | [] |
+| <a id="swift_grpc_library-flavor"></a>flavor |  The kind of definitions that should be generated:<br><br>*   <code>"client"</code> to generate client definitions.<br><br>*   <code>"client_stubs"</code> to generate client test stubs.<br><br>*   <code>"server"</code> to generate server definitions.   | String | required |  |
+| <a id="swift_grpc_library-srcs"></a>srcs |  Exactly one <code>proto_library</code> target that defines the services being generated.   | <a href="https://bazel.build/docs/build-ref.html#labels">List of labels</a> | optional | [] |
+
+
+<a id="#swift_import"></a>
+
 ## swift_import
 
-<pre style="white-space: normal">
-swift_import(<a href="#swift_import.name">name</a>, <a href="#swift_import.deps">deps</a>, <a href="#swift_import.data">data</a>, <a href="#swift_import.archives">archives</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.compatible_with">compatible_with</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.deprecation">deprecation</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.distribs">distribs</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.features">features</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.licenses">licenses</a>,
-<a href="#swift_import.module_name">module_name</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.restricted_to">restricted_to</a>, <a href="#swift_import.swiftdoc">swiftdoc</a>, <a href="#swift_import.swiftmodule">swiftmodule</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.tags">tags</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.testonly">testonly</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.visibility">visibility</a>)
+<pre>
+swift_import(<a href="#swift_import-name">name</a>, <a href="#swift_import-archives">archives</a>, <a href="#swift_import-data">data</a>, <a href="#swift_import-deps">deps</a>, <a href="#swift_import-module_name">module_name</a>, <a href="#swift_import-swiftdoc">swiftdoc</a>, <a href="#swift_import-swiftmodule">swiftmodule</a>)
 </pre>
 
 Allows for the use of precompiled Swift modules as dependencies in other
 `swift_library` and `swift_binary` targets.
 
-<a name="swift_import.attributes"></a>
-### Attributes
 
-<table class="params-table">
-  <colgroup>
-    <col class="col-param" />
-    <col class="col-description" />
-  </colgroup>
-  <tbody>
-    <tr id="swift_import.name">
-      <td><code>name</code></td>
-      <td>
-        <p><code><a href="https://docs.bazel.build/versions/master/build-ref.html#name">Name</a>; required</code></p><p>A unique name for this target.</p></td>
-    </tr>
-    <tr id="swift_import.deps">
-      <td><code>deps</code></td>
-      <td>
-        <p><code>List of <a href="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>A list of targets that are dependencies of the target being built, which will be
-linked into that target.</p>
-<p>If the Swift toolchain supports implementation-only imports (<code>private_deps</code> on
-<code>swift_library</code>), then targets in <code>deps</code> are treated as regular
-(non-implementation-only) imports that are propagated both to their direct and
-indirect (transitive) dependents.</p>
-<p>Allowed kinds of dependencies are:</p>
-<ul>
-<li><code>swift_c_module</code>, <code>swift_import</code> and <code>swift_library</code> (or anything
-propagating <code>SwiftInfo</code>)</li>
-<li><code>cc_library</code> (or anything propagating <code>CcInfo</code>)</li>
-</ul>
-<p>Additionally, on platforms that support Objective-C interop, <code>objc_library</code>
-targets (or anything propagating the <code>apple_common.Objc</code> provider) are allowed
-as dependencies. On platforms that do not support Objective-C interop (such as
-Linux), those dependencies will be <strong>ignored.</strong></p></td>
-    </tr>
-    <tr id="swift_import.data">
-      <td><code>data</code></td>
-      <td>
-        <p><code>List of <a href="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>The list of files needed by this target at runtime.</p>
-<p>Files and targets named in the <code>data</code> attribute will appear in the <code>*.runfiles</code>
-area of this target, if it has one. This may include data files needed by a
-binary or library, or other programs needed by it.</p></td>
-    </tr>
-    <tr id="swift_import.archives">
-      <td><code>archives</code></td>
-      <td>
-        <p><code>List of <a href="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; required</code></p><p>The list of <code>.a</code> files provided to Swift targets that depend on this target.</p></td>
-    </tr>
-    <tr id="swift_import.module_name">
-      <td><code>module_name</code></td>
-      <td>
-        <p><code>String; required</code></p><p>The name of the module represented by this target.</p></td>
-    </tr>
-    <tr id="swift_import.swiftdoc">
-      <td><code>swiftdoc</code></td>
-      <td>
-        <p><code><a href="https://docs.bazel.build/versions/master/build-ref.html#labels">Label</a>; optional</code></p><p>The <code>.swiftdoc</code> file provided to Swift targets that depend on this target.</p></td>
-    </tr>
-    <tr id="swift_import.swiftmodule">
-      <td><code>swiftmodule</code></td>
-      <td>
-        <p><code><a href="https://docs.bazel.build/versions/master/build-ref.html#labels">Label</a>; required</code></p><p>The <code>.swiftmodule</code> file provided to Swift targets that depend on this target.</p></td>
-    </tr>
-  </tbody>
-</table>
+**ATTRIBUTES**
 
 
-<a name="swift_library"></a>
+| Name  | Description | Type | Mandatory | Default |
+| :------------- | :------------- | :------------- | :------------- | :------------- |
+| <a id="swift_import-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/docs/build-ref.html#name">Name</a> | required |  |
+| <a id="swift_import-archives"></a>archives |  The list of <code>.a</code> files provided to Swift targets that depend on this target.   | <a href="https://bazel.build/docs/build-ref.html#labels">List of labels</a> | required |  |
+| <a id="swift_import-data"></a>data |  The list of files needed by this target at runtime.<br><br>Files and targets named in the <code>data</code> attribute will appear in the <code>*.runfiles</code> area of this target, if it has one. This may include data files needed by a binary or library, or other programs needed by it.   | <a href="https://bazel.build/docs/build-ref.html#labels">List of labels</a> | optional | [] |
+| <a id="swift_import-deps"></a>deps |  A list of targets that are dependencies of the target being built, which will be linked into that target.<br><br>If the Swift toolchain supports implementation-only imports (<code>private_deps</code> on <code>swift_library</code>), then targets in <code>deps</code> are treated as regular (non-implementation-only) imports that are propagated both to their direct and indirect (transitive) dependents.<br><br>Allowed kinds of dependencies are:<br><br>*   <code>swift_c_module</code>, <code>swift_import</code> and <code>swift_library</code> (or anything     propagating <code>SwiftInfo</code>)<br><br>*   <code>cc_library</code> (or anything propagating <code>CcInfo</code>)<br><br>Additionally, on platforms that support Objective-C interop, <code>objc_library</code> targets (or anything propagating the <code>apple_common.Objc</code> provider) are allowed as dependencies. On platforms that do not support Objective-C interop (such as Linux), those dependencies will be **ignored.**   | <a href="https://bazel.build/docs/build-ref.html#labels">List of labels</a> | optional | [] |
+| <a id="swift_import-module_name"></a>module_name |  The name of the module represented by this target.   | String | required |  |
+| <a id="swift_import-swiftdoc"></a>swiftdoc |  The <code>.swiftdoc</code> file provided to Swift targets that depend on this target.   | <a href="https://bazel.build/docs/build-ref.html#labels">Label</a> | optional | None |
+| <a id="swift_import-swiftmodule"></a>swiftmodule |  The <code>.swiftmodule</code> file provided to Swift targets that depend on this target.   | <a href="https://bazel.build/docs/build-ref.html#labels">Label</a> | required |  |
+
+
+<a id="#swift_library"></a>
+
 ## swift_library
 
-<pre style="white-space: normal">
-swift_library(<a href="#swift_library.name">name</a>, <a href="#swift_library.deps">deps</a>, <a href="#swift_library.srcs">srcs</a>, <a href="#swift_library.data">data</a>, <a href="#swift_library.alwayslink">alwayslink</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.compatible_with">compatible_with</a>, <a href="#swift_library.copts">copts</a>, <a href="#swift_library.defines">defines</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.deprecation">deprecation</a>,
-<a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.distribs">distribs</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.features">features</a>, <a href="#swift_library.generated_header_name">generated_header_name</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.licenses">licenses</a>, <a href="#swift_library.linkopts">linkopts</a>, <a href="#swift_library.module_name">module_name</a>, <a href="#swift_library.private_deps">private_deps</a>,
-<a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.restricted_to">restricted_to</a>, <a href="#swift_library.swiftc_inputs">swiftc_inputs</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.tags">tags</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.testonly">testonly</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.visibility">visibility</a>)
+<pre>
+swift_library(<a href="#swift_library-name">name</a>, <a href="#swift_library-alwayslink">alwayslink</a>, <a href="#swift_library-copts">copts</a>, <a href="#swift_library-data">data</a>, <a href="#swift_library-defines">defines</a>, <a href="#swift_library-deps">deps</a>, <a href="#swift_library-generated_header_name">generated_header_name</a>, <a href="#swift_library-generates_header">generates_header</a>,
+              <a href="#swift_library-linkopts">linkopts</a>, <a href="#swift_library-module_name">module_name</a>, <a href="#swift_library-private_deps">private_deps</a>, <a href="#swift_library-srcs">srcs</a>, <a href="#swift_library-swiftc_inputs">swiftc_inputs</a>)
 </pre>
 
 Compiles and links Swift code into a static library and Swift module.
 
-<a name="swift_library.attributes"></a>
-### Attributes
 
-<table class="params-table">
-  <colgroup>
-    <col class="col-param" />
-    <col class="col-description" />
-  </colgroup>
-  <tbody>
-    <tr id="swift_library.name">
-      <td><code>name</code></td>
-      <td>
-        <p><code><a href="https://docs.bazel.build/versions/master/build-ref.html#name">Name</a>; required</code></p><p>A unique name for this target.</p></td>
-    </tr>
-    <tr id="swift_library.deps">
-      <td><code>deps</code></td>
-      <td>
-        <p><code>List of <a href="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>A list of targets that are dependencies of the target being built, which will be
-linked into that target.</p>
-<p>If the Swift toolchain supports implementation-only imports (<code>private_deps</code> on
-<code>swift_library</code>), then targets in <code>deps</code> are treated as regular
-(non-implementation-only) imports that are propagated both to their direct and
-indirect (transitive) dependents.</p>
-<p>Allowed kinds of dependencies are:</p>
-<ul>
-<li><code>swift_c_module</code>, <code>swift_import</code> and <code>swift_library</code> (or anything
-propagating <code>SwiftInfo</code>)</li>
-<li><code>cc_library</code> (or anything propagating <code>CcInfo</code>)</li>
-</ul>
-<p>Additionally, on platforms that support Objective-C interop, <code>objc_library</code>
-targets (or anything propagating the <code>apple_common.Objc</code> provider) are allowed
-as dependencies. On platforms that do not support Objective-C interop (such as
-Linux), those dependencies will be <strong>ignored.</strong></p></td>
-    </tr>
-    <tr id="swift_library.srcs">
-      <td><code>srcs</code></td>
-      <td>
-        <p><code>List of <a href="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>A list of <code>.swift</code> source files that will be compiled into the library.</p></td>
-    </tr>
-    <tr id="swift_library.data">
-      <td><code>data</code></td>
-      <td>
-        <p><code>List of <a href="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>The list of files needed by this target at runtime.</p>
-<p>Files and targets named in the <code>data</code> attribute will appear in the <code>*.runfiles</code>
-area of this target, if it has one. This may include data files needed by a
-binary or library, or other programs needed by it.</p></td>
-    </tr>
-    <tr id="swift_library.alwayslink">
-      <td><code>alwayslink</code></td>
-      <td>
-        <p><code>Boolean; optional; default is False</code></p><p>If true, any binary that depends (directly or indirectly) on this Swift module
-will link in all the object files for the files listed in <code>srcs</code>, even if some
-contain no symbols referenced by the binary. This is useful if your code isn't
-explicitly called by code in the binary; for example, if you rely on runtime
-checks for protocol conformances added in extensions in the library but do not
-directly reference any other symbols in the object file that adds that
-conformance.</p></td>
-    </tr>
-    <tr id="swift_library.copts">
-      <td><code>copts</code></td>
-      <td>
-        <p><code>List of strings; optional</code></p><p>Additional compiler options that should be passed to <code>swiftc</code>. These strings are
-subject to <code>$(location ...)</code> and <code><a href="https://docs.bazel.build/versions/master/be/make-variables.html">"Make" variable</a></code> expansion.</p></td>
-    </tr>
-    <tr id="swift_library.defines">
-      <td><code>defines</code></td>
-      <td>
-        <p><code>List of strings; optional</code></p><p>A list of defines to add to the compilation command line.</p>
-<p>Note that unlike C-family languages, Swift defines do not have values; they are
-simply identifiers that are either defined or undefined. So strings in this list
-should be simple identifiers, <strong>not</strong> <code>name=value</code> pairs.</p>
-<p>Each string is prepended with <code>-D</code> and added to the command line. Unlike
-<code>copts</code>, these flags are added for the target and every target that depends on
-it, so use this attribute with caution. It is preferred that you add defines
-directly to <code>copts</code>, only using this feature in the rare case that a library
-needs to propagate a symbol up to those that depend on it.</p></td>
-    </tr>
-    <tr id="swift_library.generated_header_name">
-      <td><code>generated_header_name</code></td>
-      <td>
-        <p><code>String; optional</code></p><p>The name of the generated Objective-C interface header. This name must end with
-a <code>.h</code> extension and cannot contain any path separators.</p>
-<p>If this attribute is not specified, then the default behavior is to name the
-header <code>${target_name}-Swift.h</code>.</p>
-<p>This attribute is ignored if the toolchain does not support generating headers
-or if the target has the <code>swift.no_generated_header</code> feature enabled.</p></td>
-    </tr>
-    <tr id="swift_library.linkopts">
-      <td><code>linkopts</code></td>
-      <td>
-        <p><code>List of strings; optional</code></p><p>Additional linker options that should be passed to the linker for the binary
-that depends on this target. These strings are subject to <code>$(location ...)</code>
-and <code><a href="https://docs.bazel.build/versions/master/be/make-variables.html">"Make" variable</a></code> expansion.</p></td>
-expansion.</p></td>
-    </tr>
-    <tr id="swift_library.module_name">
-      <td><code>module_name</code></td>
-      <td>
-        <p><code>String; optional</code></p><p>The name of the Swift module being built.</p>
-<p>If left unspecified, the module name will be computed based on the target's
-build label, by stripping the leading <code>//</code> and replacing <code>/</code>, <code>:</code>, and other
-non-identifier characters with underscores.</p></td>
-    </tr>
-    <tr id="swift_library.private_deps">
-      <td><code>private_deps</code></td>
-      <td>
-        <p><code>List of <a href="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>A list of targets that are implementation-only dependencies of the target being
-built. Libraries/linker flags from these dependencies will be propagated to
-dependent for linking, but artifacts/flags required for compilation (such as
-.swiftmodule files, C headers, and search paths) will not be propagated.</p>
-<p>Allowed kinds of dependencies are:</p>
-<ul>
-<li><code>swift_c_module</code>, <code>swift_import</code> and <code>swift_library</code> (or anything
-propagating <code>SwiftInfo</code>)</li>
-<li><code>cc_library</code> (or anything propagating <code>CcInfo</code>)</li>
-</ul>
-<p>Additionally, on platforms that support Objective-C interop, <code>objc_library</code>
-targets (or anything propagating the <code>apple_common.Objc</code> provider) are allowed
-as dependencies. On platforms that do not support Objective-C interop (such as
-Linux), those dependencies will be <strong>ignored.</strong></p></td>
-    </tr>
-    <tr id="swift_library.swiftc_inputs">
-      <td><code>swiftc_inputs</code></td>
-      <td>
-        <p><code>List of <a href="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>Additional files that are referenced using <code>$(location ...)</code> in attributes that
-support location expansion.</p></td>
-    </tr>
-  </tbody>
-</table>
+**ATTRIBUTES**
 
 
-<a name="swift_module_alias"></a>
+| Name  | Description | Type | Mandatory | Default |
+| :------------- | :------------- | :------------- | :------------- | :------------- |
+| <a id="swift_library-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/docs/build-ref.html#name">Name</a> | required |  |
+| <a id="swift_library-alwayslink"></a>alwayslink |  If true, any binary that depends (directly or indirectly) on this Swift module will link in all the object files for the files listed in <code>srcs</code>, even if some contain no symbols referenced by the binary. This is useful if your code isn't explicitly called by code in the binary; for example, if you rely on runtime checks for protocol conformances added in extensions in the library but do not directly reference any other symbols in the object file that adds that conformance.   | Boolean | optional | False |
+| <a id="swift_library-copts"></a>copts |  Additional compiler options that should be passed to <code>swiftc</code>. These strings are subject to <code>$(location ...)</code> and ["Make" variable](https://docs.bazel.build/versions/master/be/make-variables.html) expansion.   | List of strings | optional | [] |
+| <a id="swift_library-data"></a>data |  The list of files needed by this target at runtime.<br><br>Files and targets named in the <code>data</code> attribute will appear in the <code>*.runfiles</code> area of this target, if it has one. This may include data files needed by a binary or library, or other programs needed by it.   | <a href="https://bazel.build/docs/build-ref.html#labels">List of labels</a> | optional | [] |
+| <a id="swift_library-defines"></a>defines |  A list of defines to add to the compilation command line.<br><br>Note that unlike C-family languages, Swift defines do not have values; they are simply identifiers that are either defined or undefined. So strings in this list should be simple identifiers, **not** <code>name=value</code> pairs.<br><br>Each string is prepended with <code>-D</code> and added to the command line. Unlike <code>copts</code>, these flags are added for the target and every target that depends on it, so use this attribute with caution. It is preferred that you add defines directly to <code>copts</code>, only using this feature in the rare case that a library needs to propagate a symbol up to those that depend on it.   | List of strings | optional | [] |
+| <a id="swift_library-deps"></a>deps |  A list of targets that are dependencies of the target being built, which will be linked into that target.<br><br>If the Swift toolchain supports implementation-only imports (<code>private_deps</code> on <code>swift_library</code>), then targets in <code>deps</code> are treated as regular (non-implementation-only) imports that are propagated both to their direct and indirect (transitive) dependents.<br><br>Allowed kinds of dependencies are:<br><br>*   <code>swift_c_module</code>, <code>swift_import</code> and <code>swift_library</code> (or anything     propagating <code>SwiftInfo</code>)<br><br>*   <code>cc_library</code> (or anything propagating <code>CcInfo</code>)<br><br>Additionally, on platforms that support Objective-C interop, <code>objc_library</code> targets (or anything propagating the <code>apple_common.Objc</code> provider) are allowed as dependencies. On platforms that do not support Objective-C interop (such as Linux), those dependencies will be **ignored.**   | <a href="https://bazel.build/docs/build-ref.html#labels">List of labels</a> | optional | [] |
+| <a id="swift_library-generated_header_name"></a>generated_header_name |  The name of the generated Objective-C interface header. This name must end with a <code>.h</code> extension and cannot contain any path separators.<br><br>If this attribute is not specified, then the default behavior is to name the header <code>${target_name}-Swift.h</code>.<br><br>This attribute is ignored if the toolchain does not support generating headers or if the target has the <code>swift.no_generated_header</code> feature enabled.   | String | optional | "" |
+| <a id="swift_library-generates_header"></a>generates_header |  If True, an Objective-C header will be generated for this target, in the same build package where the target is defined. By default, the name of the header is <code>${target_name}-Swift.h</code>; this can be changed using the <code>generated_header_name</code> attribute.<br><br>Targets should only set this attribute to True if they export Objective-C APIs. A header generated for a target that does not export Objective-C APIs will be effectively empty (except for a large amount of prologue and epilogue code) and this is generally wasteful because the extra file needs to be propagated in the build graph and, when explicit modules are enabled, extra actions must be executed to compile the Objective-C module for the generated header.   | Boolean | optional | False |
+| <a id="swift_library-linkopts"></a>linkopts |  Additional linker options that should be passed to the linker for the binary that depends on this target. These strings are subject to <code>$(location ...)</code> and ["Make" variable](https://docs.bazel.build/versions/master/be/make-variables.html) expansion.   | List of strings | optional | [] |
+| <a id="swift_library-module_name"></a>module_name |  The name of the Swift module being built.<br><br>If left unspecified, the module name will be computed based on the target's build label, by stripping the leading <code>//</code> and replacing <code>/</code>, <code>:</code>, and other non-identifier characters with underscores.   | String | optional | "" |
+| <a id="swift_library-private_deps"></a>private_deps |  A list of targets that are implementation-only dependencies of the target being built. Libraries/linker flags from these dependencies will be propagated to dependent for linking, but artifacts/flags required for compilation (such as .swiftmodule files, C headers, and search paths) will not be propagated.<br><br>Allowed kinds of dependencies are:<br><br>*   <code>swift_c_module</code>, <code>swift_import</code> and <code>swift_library</code> (or anything     propagating <code>SwiftInfo</code>)<br><br>*   <code>cc_library</code> (or anything propagating <code>CcInfo</code>)<br><br>Additionally, on platforms that support Objective-C interop, <code>objc_library</code> targets (or anything propagating the <code>apple_common.Objc</code> provider) are allowed as dependencies. On platforms that do not support Objective-C interop (such as Linux), those dependencies will be **ignored.**   | <a href="https://bazel.build/docs/build-ref.html#labels">List of labels</a> | optional | [] |
+| <a id="swift_library-srcs"></a>srcs |  A list of <code>.swift</code> source files that will be compiled into the library.   | <a href="https://bazel.build/docs/build-ref.html#labels">List of labels</a> | required |  |
+| <a id="swift_library-swiftc_inputs"></a>swiftc_inputs |  Additional files that are referenced using <code>$(location ...)</code> in attributes that support location expansion.   | <a href="https://bazel.build/docs/build-ref.html#labels">List of labels</a> | optional | [] |
+
+
+<a id="#swift_module_alias"></a>
+
 ## swift_module_alias
 
-<pre style="white-space: normal">
-swift_module_alias(<a href="#swift_module_alias.name">name</a>, <a href="#swift_module_alias.deps">deps</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.compatible_with">compatible_with</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.deprecation">deprecation</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.distribs">distribs</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.features">features</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.licenses">licenses</a>,
-<a href="#swift_module_alias.module_name">module_name</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.restricted_to">restricted_to</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.tags">tags</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.testonly">testonly</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.visibility">visibility</a>)
+<pre>
+swift_module_alias(<a href="#swift_module_alias-name">name</a>, <a href="#swift_module_alias-deps">deps</a>, <a href="#swift_module_alias-module_name">module_name</a>)
 </pre>
 
 Creates a Swift module that re-exports other modules.
@@ -598,45 +286,23 @@ symbol is defined; it is not repeated by the alias module.)
 > `deps` in the new module. You depend on undocumented features at your own
 > risk, as they may change in a future version of Swift.
 
-<a name="swift_module_alias.attributes"></a>
-### Attributes
 
-<table class="params-table">
-  <colgroup>
-    <col class="col-param" />
-    <col class="col-description" />
-  </colgroup>
-  <tbody>
-    <tr id="swift_module_alias.name">
-      <td><code>name</code></td>
-      <td>
-        <p><code><a href="https://docs.bazel.build/versions/master/build-ref.html#name">Name</a>; required</code></p><p>A unique name for this target.</p></td>
-    </tr>
-    <tr id="swift_module_alias.deps">
-      <td><code>deps</code></td>
-      <td>
-        <p><code>List of <a href="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>A list of targets that are dependencies of the target being built, which will be
-linked into that target. Allowed kinds are <code>swift_import</code> and <code>swift_library</code>
-(or anything else propagating <code>SwiftInfo</code>).</p></td>
-    </tr>
-    <tr id="swift_module_alias.module_name">
-      <td><code>module_name</code></td>
-      <td>
-        <p><code>String; optional</code></p><p>The name of the Swift module being built.</p>
-<p>If left unspecified, the module name will be computed based on the target's
-build label, by stripping the leading <code>//</code> and replacing <code>/</code>, <code>:</code>, and other
-non-identifier characters with underscores.</p></td>
-    </tr>
-  </tbody>
-</table>
+**ATTRIBUTES**
 
 
-<a name="swift_proto_library"></a>
+| Name  | Description | Type | Mandatory | Default |
+| :------------- | :------------- | :------------- | :------------- | :------------- |
+| <a id="swift_module_alias-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/docs/build-ref.html#name">Name</a> | required |  |
+| <a id="swift_module_alias-deps"></a>deps |  A list of targets that are dependencies of the target being built, which will be linked into that target. Allowed kinds are <code>swift_import</code> and <code>swift_library</code> (or anything else propagating <code>SwiftInfo</code>).   | <a href="https://bazel.build/docs/build-ref.html#labels">List of labels</a> | optional | [] |
+| <a id="swift_module_alias-module_name"></a>module_name |  The name of the Swift module being built.<br><br>If left unspecified, the module name will be computed based on the target's build label, by stripping the leading <code>//</code> and replacing <code>/</code>, <code>:</code>, and other non-identifier characters with underscores.   | String | optional | "" |
+
+
+<a id="#swift_proto_library"></a>
+
 ## swift_proto_library
 
-<pre style="white-space: normal">
-swift_proto_library(<a href="#swift_proto_library.name">name</a>, <a href="#swift_proto_library.deps">deps</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.compatible_with">compatible_with</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.deprecation">deprecation</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.distribs">distribs</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.features">features</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.licenses">licenses</a>,
-<a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.restricted_to">restricted_to</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.tags">tags</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.testonly">testonly</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.visibility">visibility</a>)
+<pre>
+swift_proto_library(<a href="#swift_proto_library-name">name</a>, <a href="#swift_proto_library-deps">deps</a>)
 </pre>
 
 Generates a Swift library from protocol buffer sources.
@@ -714,37 +380,23 @@ has `deps` that aren't needed. Removing those along with the `import`
 statement(s) will speed up downstream Swift compilation actions, because it
 prevents unused modules from being loaded by `swiftc`.
 
-<a name="swift_proto_library.attributes"></a>
-### Attributes
 
-<table class="params-table">
-  <colgroup>
-    <col class="col-param" />
-    <col class="col-description" />
-  </colgroup>
-  <tbody>
-    <tr id="swift_proto_library.name">
-      <td><code>name</code></td>
-      <td>
-        <p><code><a href="https://docs.bazel.build/versions/master/build-ref.html#name">Name</a>; required</code></p><p>A unique name for this target.</p></td>
-    </tr>
-    <tr id="swift_proto_library.deps">
-      <td><code>deps</code></td>
-      <td>
-        <p><code>List of <a href="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>Exactly one <code>proto_library</code> target (or any target that propagates a <code>proto</code>
-provider) from which the Swift library should be generated.</p></td>
-    </tr>
-  </tbody>
-</table>
+**ATTRIBUTES**
 
 
-<a name="swift_test"></a>
+| Name  | Description | Type | Mandatory | Default |
+| :------------- | :------------- | :------------- | :------------- | :------------- |
+| <a id="swift_proto_library-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/docs/build-ref.html#name">Name</a> | required |  |
+| <a id="swift_proto_library-deps"></a>deps |  Exactly one <code>proto_library</code> target (or any target that propagates a <code>proto</code> provider) from which the Swift library should be generated.   | <a href="https://bazel.build/docs/build-ref.html#labels">List of labels</a> | optional | [] |
+
+
+<a id="#swift_test"></a>
+
 ## swift_test
 
-<pre style="white-space: normal">
-swift_test(<a href="#swift_test.name">name</a>, <a href="#swift_test.deps">deps</a>, <a href="#swift_test.srcs">srcs</a>, <a href="#swift_test.data">data</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#test.args">args</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.compatible_with">compatible_with</a>, <a href="#swift_test.copts">copts</a>, <a href="#swift_test.defines">defines</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.deprecation">deprecation</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.distribs">distribs</a>,
-<a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.features">features</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#test.flaky">flaky</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.licenses">licenses</a>, <a href="#swift_test.linkopts">linkopts</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#test.local">local</a>, <a href="#swift_test.malloc">malloc</a>, <a href="#swift_test.module_name">module_name</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.restricted_to">restricted_to</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#test.shardcount">shardcount</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#test.size">size</a>,
-<a href="#swift_test.stamp">stamp</a>, <a href="#swift_test.swiftc_inputs">swiftc_inputs</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.tags">tags</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.testonly">testonly</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#test.timeout">timeout</a>, <a href="https://docs.bazel.build/versions/master/be/common-definitions.html#common.visibility">visibility</a>)
+<pre>
+swift_test(<a href="#swift_test-name">name</a>, <a href="#swift_test-copts">copts</a>, <a href="#swift_test-data">data</a>, <a href="#swift_test-defines">defines</a>, <a href="#swift_test-deps">deps</a>, <a href="#swift_test-linkopts">linkopts</a>, <a href="#swift_test-malloc">malloc</a>, <a href="#swift_test-module_name">module_name</a>, <a href="#swift_test-srcs">srcs</a>, <a href="#swift_test-stamp">stamp</a>,
+           <a href="#swift_test-swiftc_inputs">swiftc_inputs</a>)
 </pre>
 
 Compiles and links Swift code into an executable test target.
@@ -779,115 +431,22 @@ swift_test(
 You can also disable this feature for all the tests in a package by applying it
 to your BUILD file's `package()` declaration instead of the individual targets.
 
-<a name="swift_test.attributes"></a>
-### Attributes
 
-<table class="params-table">
-  <colgroup>
-    <col class="col-param" />
-    <col class="col-description" />
-  </colgroup>
-  <tbody>
-    <tr id="swift_test.name">
-      <td><code>name</code></td>
-      <td>
-        <p><code><a href="https://docs.bazel.build/versions/master/build-ref.html#name">Name</a>; required</code></p><p>A unique name for this target.</p></td>
-    </tr>
-    <tr id="swift_test.deps">
-      <td><code>deps</code></td>
-      <td>
-        <p><code>List of <a href="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>A list of targets that are dependencies of the target being built, which will be
-linked into that target.</p>
-<p>If the Swift toolchain supports implementation-only imports (<code>private_deps</code> on
-<code>swift_library</code>), then targets in <code>deps</code> are treated as regular
-(non-implementation-only) imports that are propagated both to their direct and
-indirect (transitive) dependents.</p>
-<p>Allowed kinds of dependencies are:</p>
-<ul>
-<li><code>swift_c_module</code>, <code>swift_import</code> and <code>swift_library</code> (or anything
-propagating <code>SwiftInfo</code>)</li>
-<li><code>cc_library</code> (or anything propagating <code>CcInfo</code>)</li>
-</ul>
-<p>Additionally, on platforms that support Objective-C interop, <code>objc_library</code>
-targets (or anything propagating the <code>apple_common.Objc</code> provider) are allowed
-as dependencies. On platforms that do not support Objective-C interop (such as
-Linux), those dependencies will be <strong>ignored.</strong></p></td>
-    </tr>
-    <tr id="swift_test.srcs">
-      <td><code>srcs</code></td>
-      <td>
-        <p><code>List of <a href="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>A list of <code>.swift</code> source files that will be compiled into the library.</p></td>
-    </tr>
-    <tr id="swift_test.data">
-      <td><code>data</code></td>
-      <td>
-        <p><code>List of <a href="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>The list of files needed by this target at runtime.</p>
-<p>Files and targets named in the <code>data</code> attribute will appear in the <code>*.runfiles</code>
-area of this target, if it has one. This may include data files needed by a
-binary or library, or other programs needed by it.</p></td>
-    </tr>
-    <tr id="swift_test.copts">
-      <td><code>copts</code></td>
-      <td>
-        <p><code>List of strings; optional</code></p><p>Additional compiler options that should be passed to <code>swiftc</code>. These strings are
-subject to <code>$(location ...)</code> expansion.</p></td>
-    </tr>
-    <tr id="swift_test.defines">
-      <td><code>defines</code></td>
-      <td>
-        <p><code>List of strings; optional</code></p><p>A list of defines to add to the compilation command line.</p>
-<p>Note that unlike C-family languages, Swift defines do not have values; they are
-simply identifiers that are either defined or undefined. So strings in this list
-should be simple identifiers, <strong>not</strong> <code>name=value</code> pairs.</p>
-<p>Each string is prepended with <code>-D</code> and added to the command line. Unlike
-<code>copts</code>, these flags are added for the target and every target that depends on
-it, so use this attribute with caution. It is preferred that you add defines
-directly to <code>copts</code>, only using this feature in the rare case that a library
-needs to propagate a symbol up to those that depend on it.</p></td>
-    </tr>
-    <tr id="swift_test.linkopts">
-      <td><code>linkopts</code></td>
-      <td>
-        <p><code>List of strings; optional</code></p><p>Additional linker options that should be passed to <code>clang</code>. These strings are
-subject to <code>$(location ...)</code> expansion.</p></td>
-    </tr>
-    <tr id="swift_test.malloc">
-      <td><code>malloc</code></td>
-      <td>
-        <p><code><a href="https://docs.bazel.build/versions/master/build-ref.html#labels">Label</a>; optional; default is @bazel_tools//tools/cpp:malloc</code></p><p>Override the default dependency on <code>malloc</code>.</p>
-<p>By default, Swift binaries are linked against <code>@bazel_tools//tools/cpp:malloc"</code>,
-which is an empty library and the resulting binary will use libc's <code>malloc</code>.
-This label must refer to a <code>cc_library</code> rule.</p></td>
-    </tr>
-    <tr id="swift_test.module_name">
-      <td><code>module_name</code></td>
-      <td>
-        <p><code>String; optional</code></p><p>The name of the Swift module being built.</p>
-<p>If left unspecified, the module name will be computed based on the target's
-build label, by stripping the leading <code>//</code> and replacing <code>/</code>, <code>:</code>, and other
-non-identifier characters with underscores.</p></td>
-    </tr>
-    <tr id="swift_test.stamp">
-      <td><code>stamp</code></td>
-      <td>
-        <p><code>Integer; optional; default is 0</code></p><p>Enable or disable link stamping; that is, whether to encode build information
-into the binary. Possible values are:</p>
-<ul>
-<li><code>stamp = 1</code>: Stamp the build information into the binary. Stamped binaries are
-only rebuilt when their dependencies change. Use this if there are tests that
-depend on the build information.</li>
-<li><code>stamp = 0</code>: Always replace build information by constant values. This gives
-good build result caching.</li>
-<li><code>stamp = -1</code>: Embedding of build information is controlled by the
-<code>--[no]stamp</code> flag.</li>
-</ul></td>
-    </tr>
-    <tr id="swift_test.swiftc_inputs">
-      <td><code>swiftc_inputs</code></td>
-      <td>
-        <p><code>List of <a href="https://docs.bazel.build/versions/master/build-ref.html#labels">labels</a>; optional</code></p><p>Additional files that are referenced using <code>$(location ...)</code> in attributes that
-support location expansion.</p></td>
-    </tr>
-  </tbody>
-</table>
+**ATTRIBUTES**
+
+
+| Name  | Description | Type | Mandatory | Default |
+| :------------- | :------------- | :------------- | :------------- | :------------- |
+| <a id="swift_test-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/docs/build-ref.html#name">Name</a> | required |  |
+| <a id="swift_test-copts"></a>copts |  Additional compiler options that should be passed to <code>swiftc</code>. These strings are subject to <code>$(location ...)</code> and ["Make" variable](https://docs.bazel.build/versions/master/be/make-variables.html) expansion.   | List of strings | optional | [] |
+| <a id="swift_test-data"></a>data |  The list of files needed by this target at runtime.<br><br>Files and targets named in the <code>data</code> attribute will appear in the <code>*.runfiles</code> area of this target, if it has one. This may include data files needed by a binary or library, or other programs needed by it.   | <a href="https://bazel.build/docs/build-ref.html#labels">List of labels</a> | optional | [] |
+| <a id="swift_test-defines"></a>defines |  A list of defines to add to the compilation command line.<br><br>Note that unlike C-family languages, Swift defines do not have values; they are simply identifiers that are either defined or undefined. So strings in this list should be simple identifiers, **not** <code>name=value</code> pairs.<br><br>Each string is prepended with <code>-D</code> and added to the command line. Unlike <code>copts</code>, these flags are added for the target and every target that depends on it, so use this attribute with caution. It is preferred that you add defines directly to <code>copts</code>, only using this feature in the rare case that a library needs to propagate a symbol up to those that depend on it.   | List of strings | optional | [] |
+| <a id="swift_test-deps"></a>deps |  A list of targets that are dependencies of the target being built, which will be linked into that target.<br><br>If the Swift toolchain supports implementation-only imports (<code>private_deps</code> on <code>swift_library</code>), then targets in <code>deps</code> are treated as regular (non-implementation-only) imports that are propagated both to their direct and indirect (transitive) dependents.<br><br>Allowed kinds of dependencies are:<br><br>*   <code>swift_c_module</code>, <code>swift_import</code> and <code>swift_library</code> (or anything     propagating <code>SwiftInfo</code>)<br><br>*   <code>cc_library</code> (or anything propagating <code>CcInfo</code>)<br><br>Additionally, on platforms that support Objective-C interop, <code>objc_library</code> targets (or anything propagating the <code>apple_common.Objc</code> provider) are allowed as dependencies. On platforms that do not support Objective-C interop (such as Linux), those dependencies will be **ignored.**   | <a href="https://bazel.build/docs/build-ref.html#labels">List of labels</a> | optional | [] |
+| <a id="swift_test-linkopts"></a>linkopts |  Additional linker options that should be passed to <code>clang</code>. These strings are subject to <code>$(location ...)</code> expansion.   | List of strings | optional | [] |
+| <a id="swift_test-malloc"></a>malloc |  Override the default dependency on <code>malloc</code>.<br><br>By default, Swift binaries are linked against <code>@bazel_tools//tools/cpp:malloc"</code>, which is an empty library and the resulting binary will use libc's <code>malloc</code>. This label must refer to a <code>cc_library</code> rule.   | <a href="https://bazel.build/docs/build-ref.html#labels">Label</a> | optional | @bazel_tools//tools/cpp:malloc |
+| <a id="swift_test-module_name"></a>module_name |  The name of the Swift module being built.<br><br>If left unspecified, the module name will be computed based on the target's build label, by stripping the leading <code>//</code> and replacing <code>/</code>, <code>:</code>, and other non-identifier characters with underscores.   | String | optional | "" |
+| <a id="swift_test-srcs"></a>srcs |  A list of <code>.swift</code> source files that will be compiled into the library.   | <a href="https://bazel.build/docs/build-ref.html#labels">List of labels</a> | optional | [] |
+| <a id="swift_test-stamp"></a>stamp |  Enable or disable link stamping; that is, whether to encode build information into the binary. Possible values are:<br><br>* <code>stamp = 1</code>: Stamp the build information into the binary. Stamped binaries are   only rebuilt when their dependencies change. Use this if there are tests that   depend on the build information.<br><br>* <code>stamp = 0</code>: Always replace build information by constant values. This gives   good build result caching.<br><br>* <code>stamp = -1</code>: Embedding of build information is controlled by the   <code>--[no]stamp</code> flag.   | Integer | optional | 0 |
+| <a id="swift_test-swiftc_inputs"></a>swiftc_inputs |  Additional files that are referenced using <code>$(location ...)</code> in attributes that support location expansion.   | <a href="https://bazel.build/docs/build-ref.html#labels">List of labels</a> | optional | [] |
+
 

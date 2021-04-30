@@ -104,7 +104,7 @@ A list of `.swift` source files that will be compiled into the library.
             "copts": attr.string_list(
                 doc = """\
 Additional compiler options that should be passed to `swiftc`. These strings are
-subject to `$(location ...)` and "Make" variable expansion.
+subject to `$(location ...)` and ["Make" variable](https://docs.bazel.build/versions/master/be/make-variables.html) expansion.
 """,
             ),
             "defines": attr.string_list(
@@ -248,7 +248,7 @@ def swift_library_rule_attrs(
                 doc = """\
 Additional linker options that should be passed to the linker for the binary
 that depends on this target. These strings are subject to `$(location ...)`
-and "Make" variable expansion.
+and ["Make" variable](https://docs.bazel.build/versions/master/be/make-variables.html) expansion.
 """,
             ),
             "alwayslink": attr.bool(
@@ -271,8 +271,8 @@ a `.h` extension and cannot contain any path separators.
 If this attribute is not specified, then the default behavior is to name the
 header `${target_name}-Swift.h`.
 
-It is an error to specify a value for this attribute when `generates_header` is
-False.
+This attribute is ignored if the toolchain does not support generating headers
+or if the target has the `swift.no_generated_header` feature enabled.
 """,
                 mandatory = False,
             ),
