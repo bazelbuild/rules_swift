@@ -13,9 +13,16 @@ _RULES_SYMBOLS = [
     "swift_test",
 ]
 
+_PROVIDERS_SYMBOLS = [
+    "SwiftInfo",
+    "SwiftToolchainInfo",
+    "SwiftProtoInfo",
+    "SwiftUsageInfo",
+]
+
 write_file(
-    name = "gen_header",
-    out = "header.vm",
+    name = "rules_header",
+    out = "rules_header.vm",
     content = [
         "<!-- Generated with Stardoc, Do Not Edit! -->",
         "",
@@ -27,19 +34,54 @@ write_file(
     ],
 )
 
+write_file(
+    name = "providers_header",
+    out = "providers_header.vm",
+    content = [
+        "<!-- Generated with Stardoc, Do Not Edit! -->",
+        "",
+        "The providers described below are propagated and required by various Swift",
+        "build rules. Clients interested in writing custom rules that interface",
+        "with the rules in this package should use these providers to communicate",
+        "with the Swift build rules as needed.",
+        "",
+        "On this page:",
+        "",
+    ] + ["  * [{0}](#{0})".format(r) for r in _PROVIDERS_SYMBOLS] + [
+        "",
+    ],
+)
+
 stardoc(
-    name = "doc",
-    out = "swift.md",
-    header_template = ":header.vm",
+    name = "rules_doc",
+    out = "rules.md_",
+    header_template = ":rules_header.vm",
     input = "//swift:swift.bzl",
     symbol_names = _RULES_SYMBOLS,
     deps = ["//swift"],
 )
 
+stardoc(
+    name = "providers_doc",
+    out = "providers.md_",
+    header_template = ":providers_header.vm",
+    input = "//swift:swift.bzl",
+    symbol_names = _PROVIDERS_SYMBOLS,
+    deps = ["//swift"],
+)
+
 # To make this test pass, run
-# bazel build doc:all && cp bazel-bin/doc/swift.md doc/rules.md
+# bazel build doc:all && cp bazel-bin/doc/rules.md_ doc/rules.md
 diff_test(
-    name = "test",
-    file1 = "swift.md",
+    name = "test_rules",
+    file1 = "rules.md_",
     file2 = "rules.md",
+)
+
+# To make this test pass, run
+# bazel build doc:all && cp bazel-bin/doc/providers.md_ doc/providers.md
+diff_test(
+    name = "test_providers",
+    file1 = "providers.md_",
+    file2 = "providers.md",
 )
