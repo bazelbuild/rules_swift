@@ -16,6 +16,15 @@
 
 This file is the public interface that users should import to use the Swift
 rules. Do not import definitions from the `internal` subdirectory directly.
+
+To use the Swift build rules in your BUILD files, load them from
+`@build_bazel_rules_swift//swift:swift.bzl`.
+
+For example:
+
+```build
+load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
+```
 """
 
 load(

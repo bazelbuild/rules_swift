@@ -1,0 +1,45 @@
+load("@bazel_skylib//rules:write_file.bzl", "write_file")
+load("@bazel_skylib//rules:diff_test.bzl", "diff_test")
+load("@io_bazel_stardoc//stardoc:stardoc.bzl", "stardoc")
+
+_RULES_SYMBOLS = [
+    "swift_binary",
+    "swift_c_module",
+    "swift_grpc_library",
+    "swift_import",
+    "swift_library",
+    "swift_module_alias",
+    "swift_proto_library",
+    "swift_test",
+]
+
+write_file(
+    name = "gen_header",
+    out = "header.vm",
+    content = [
+        "<!-- Generated with Stardoc, Do Not Edit! -->",
+        "",
+        "${moduleDocstring}",
+        "On this page:",
+        "",
+    ] + ["  * [{0}](#{0})".format(r) for r in _RULES_SYMBOLS] + [
+        "",
+    ],
+)
+
+stardoc(
+    name = "doc",
+    out = "swift.md",
+    header_template = ":header.vm",
+    input = "//swift:swift.bzl",
+    symbol_names = _RULES_SYMBOLS,
+    deps = ["//swift"],
+)
+
+# To make this test pass, run
+# bazel build doc:all && cp bazel-bin/doc/swift.md doc/rules.md
+diff_test(
+    name = "test",
+    file1 = "swift.md",
+    file2 = "rules.md",
+)
