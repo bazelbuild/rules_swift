@@ -61,7 +61,7 @@ SWIFT_FEATURE_EMIT_C_MODULE = "swift.emit_c_module"
 # If enabled, when compiling an explicit C or Objectve-C module, every header
 # included by the module being compiled must belong to one of the modules listed
 # in its dependencies. This is ignored for system modules.
-SWIFT_FEATURE_STRICT_MODULES = "swift.strict_modules"
+SWIFT_FEATURE_LAYERING_CHECK = "swift.layering_check"
 
 # If enabled, the C or Objective-C target should be compiled as a system module.
 SWIFT_FEATURE_SYSTEM_MODULE = "swift.system_module"
