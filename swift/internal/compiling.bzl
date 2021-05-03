@@ -45,6 +45,7 @@ load(
     "SWIFT_FEATURE_FASTBUILD",
     "SWIFT_FEATURE_FULL_DEBUG_INFO",
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
+    "SWIFT_FEATURE_LAYERING_CHECK",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_NO_EMBED_DEBUG_MODULE",
     "SWIFT_FEATURE_NO_GENERATED_MODULE_MAP",
@@ -52,7 +53,6 @@ load(
     "SWIFT_FEATURE_OPT_USES_OSIZE",
     "SWIFT_FEATURE_OPT_USES_WMO",
     "SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION",
-    "SWIFT_FEATURE_STRICT_MODULES",
     "SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_SYSTEM_MODULE",
     "SWIFT_FEATURE_USE_C_MODULES",
@@ -562,7 +562,7 @@ def compile_action_configs(
                 ),
             ],
             not_features = [
-                [SWIFT_FEATURE_STRICT_MODULES],
+                [SWIFT_FEATURE_LAYERING_CHECK],
                 [SWIFT_FEATURE_SYSTEM_MODULE],
             ],
         ),
@@ -574,7 +574,7 @@ def compile_action_configs(
                     "-fmodules-strict-decluse",
                 ),
             ],
-            features = [SWIFT_FEATURE_STRICT_MODULES],
+            features = [SWIFT_FEATURE_LAYERING_CHECK],
             not_features = [SWIFT_FEATURE_SYSTEM_MODULE],
         ),
         swift_toolchain_config.action_config(
