@@ -1,5 +1,9 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("@bazel_skylib//rules:common_settings.bzl", "bool_setting")
+load(
+    "//swift/internal:build_settings.bzl",
+    "per_module_swiftcopt_flag",
+)
 
 package(default_visibility = ["//visibility:public"])
 
@@ -41,6 +45,13 @@ filegroup(
     visibility = [
         "//:__pkg__",
     ],
+)
+
+# User settable flag that specifies additional Swift copts on a per-swiftmodule basis.
+per_module_swiftcopt_flag(
+    name = "per_module_swiftcopt",
+    build_setting_default = "",
+    visibility = ["//visibility:public"],
 )
 
 # Configuration setting for enabling the generation of swiftinterface files.
