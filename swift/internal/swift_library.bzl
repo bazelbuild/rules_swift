@@ -16,6 +16,11 @@
 
 load(":attrs.bzl", "swift_deps_attr")
 load(
+    ":build_settings.bzl",
+    "PerModuleSwiftCoptSettingInfo",
+    "additional_per_module_swiftcopts",
+)
+load(
     ":compiling.bzl",
     "new_objc_provider",
     "output_groups_from_compilation_outputs",
@@ -106,6 +111,12 @@ def _swift_library_impl(ctx):
     linkopts = expand_locations(ctx, ctx.attr.linkopts, ctx.attr.swiftc_inputs)
     linkopts = expand_make_variables(ctx, linkopts, "linkopts")
     srcs = ctx.files.srcs
+
+    module_copts = additional_per_module_swiftcopts(
+        ctx.label,
+        ctx.attr._per_module_swiftcopt[PerModuleSwiftCoptSettingInfo],
+    )
+    copts.extend(module_copts)
 
     extra_features = []
     if ctx.attr._config_emit_swiftinterface[BuildSettingInfo].value:
