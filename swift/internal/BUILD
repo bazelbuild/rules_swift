@@ -19,6 +19,7 @@ bzl_library(
     ],
     deps = [
         ":build_defs",
+        ":build_settings",
         ":swift_common",
         "@bazel_skylib//lib:dicts",
         "@bazel_skylib//lib:new_sets",
@@ -88,6 +89,11 @@ bzl_library(
         "@bazel_skylib//lib:paths",
         "@bazel_skylib//rules:common_settings",
     ],
+)
+
+bzl_library(
+    name = "build_settings",
+    srcs = ["build_settings.bzl"],
 )
 
 # Consumed by Bazel integration tests.

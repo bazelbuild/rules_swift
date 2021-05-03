@@ -155,6 +155,9 @@ def swift_config_attrs():
         "_config_emit_swiftinterface": attr.label(
             default = "@build_bazel_rules_swift//swift:emit_swiftinterface",
         ),
+        "_per_module_swiftcopt": attr.label(
+            default = "@build_bazel_rules_swift//swift:per_module_swiftcopt",
+        ),
     }
 
 def swift_deps_attr(doc, **kwargs):
