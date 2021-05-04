@@ -474,6 +474,21 @@ def compile_action_configs(
     ]
 
     #### Flags controlling how Swift/Clang modular inputs are processed
+
+    def c_layering_check_configurator(prerequisites, args, *, strict):
+        # We do not enforce layering checks for the Objective-C header generated
+        # by Swift, because we don't have predictable control over the imports
+        # that it generates. Due to modular re-exports (which are especially
+        # common among system frameworks), it may generate an import declaration
+        # for a particular symbol from a different module than the Swift code
+        # imported it from.
+        if not prerequisites.is_swift_generated_header:
+            args.add(
+                "-Xcc",
+                "-fmodules-strict-decluse" if strict else "-fmodules-decluse",
+            )
+        return None
+
     action_configs += [
         # Treat paths in .modulemap files as workspace-relative, not modulemap-
         # relative.
@@ -578,12 +593,10 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [swift_action_names.PRECOMPILE_C_MODULE],
             configurators = [
-                # Enforce `use` declarations for user modules since we generate
-                # those, but not for system modules since they typically do not
-                # have the proper `use` decls.
-                swift_toolchain_config.add_arg(
-                    "-Xcc",
-                    "-fmodules-decluse",
+                lambda prerequisites, args: c_layering_check_configurator(
+                    prerequisites,
+                    args,
+                    strict = False,
                 ),
             ],
             not_features = [
@@ -594,9 +607,10 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [swift_action_names.PRECOMPILE_C_MODULE],
             configurators = [
-                swift_toolchain_config.add_arg(
-                    "-Xcc",
-                    "-fmodules-strict-decluse",
+                lambda prerequisites, args: c_layering_check_configurator(
+                    prerequisites,
+                    args,
+                    strict = True,
                 ),
             ],
             features = [SWIFT_FEATURE_LAYERING_CHECK],
@@ -1799,12 +1813,13 @@ def compile(
                 deps = deps,
             )
         )
-        precompiled_module = precompile_clang_module(
+        precompiled_module = _precompile_clang_module(
             actions = actions,
             bin_dir = bin_dir,
             cc_compilation_context = compilation_context_to_compile,
             feature_configuration = feature_configuration,
             genfiles_dir = genfiles_dir,
+            is_swift_generated_header = True,
             module_map_file = compile_outputs.generated_module_map_file,
             module_name = module_name,
             swift_info = create_swift_info(
@@ -1895,6 +1910,74 @@ def precompile_clang_module(
         A `File` representing the precompiled module (`.pcm`) file, or `None` if
         the toolchain or target does not support precompiled modules.
     """
+    return _precompile_clang_module(
+        actions = actions,
+        bin_dir = bin_dir,
+        cc_compilation_context = cc_compilation_context,
+        feature_configuration = feature_configuration,
+        genfiles_dir = genfiles_dir,
+        is_swift_generated_header = False,
+        module_map_file = module_map_file,
+        module_name = module_name,
+        swift_info = swift_info,
+        swift_toolchain = swift_toolchain,
+        target_name = target_name,
+    )
+
+def _precompile_clang_module(
+        *,
+        actions,
+        cc_compilation_context,
+        feature_configuration,
+        is_swift_generated_header,
+        module_map_file,
+        module_name,
+        swift_toolchain,
+        target_name,
+        bin_dir = None,
+        genfiles_dir = None,
+        swift_info = None):
+    """Precompiles an explicit Clang module that is compatible with Swift.
+
+    Args:
+        actions: The context's `actions` object.
+        cc_compilation_context: A `CcCompilationContext` that contains headers
+            and other information needed to compile this module. This
+            compilation context should contain all headers required to compile
+            the module, which includes the headers for the module itself *and*
+            any others that must be present on the file system/in the sandbox
+            for compilation to succeed. The latter typically refers to the set
+            of headers of the direct dependencies of the module being compiled,
+            which Clang needs to be physically present before it detects that
+            they belong to one of the precompiled module dependencies.
+        feature_configuration: A feature configuration obtained from
+            `swift_common.configure_features`.
+        is_swift_generated_header: If True, the action is compiling the
+            Objective-C header generated by the Swift compiler for a module.
+        module_map_file: A textual module map file that defines the Clang module
+            to be compiled.
+        module_name: The name of the top-level module in the module map that
+            will be compiled.
+        swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
+        target_name: The name of the target for which the code is being
+            compiled, which is used to determine unique file paths for the
+            outputs.
+        bin_dir: The Bazel `*-bin` directory root. If provided, its path is used
+            to store the cache for modules precompiled by Swift's ClangImporter,
+            and it is added to ClangImporter's header search paths for
+            compatibility with Bazel's C++ and Objective-C rules which support
+            includes of generated headers from that location.
+        genfiles_dir: The Bazel `*-genfiles` directory root. If provided, its
+            path is added to ClangImporter's header search paths for
+            compatibility with Bazel's C++ and Objective-C rules which support
+            inclusions of generated headers from that location.
+        swift_info: A `SwiftInfo` provider that contains dependencies required
+            to compile this module.
+
+    Returns:
+        A `File` representing the precompiled module (`.pcm`) file, or `None` if
+        the toolchain or target does not support precompiled modules.
+    """
 
     # Exit early if the toolchain does not support precompiled modules or if the
     # feature configuration for the target being built does not want a module to
@@ -1925,6 +2008,7 @@ def precompile_clang_module(
         cc_info = CcInfo(compilation_context = cc_compilation_context),
         genfiles_dir = genfiles_dir,
         is_swift = False,
+        is_swift_generated_header = is_swift_generated_header,
         module_name = module_name,
         objc_include_paths_workaround = depset(),
         objc_info = apple_common.new_objc_provider(),
