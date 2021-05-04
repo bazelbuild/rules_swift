@@ -24,6 +24,8 @@ Please refer to the
 [release notes](https://github.com/bazelbuild/rules_swift/releases) for a given
 release to see which version of Bazel it is compatible with.
 
+
+
 ## Quick Setup
 
 ### 1. Install Swift
