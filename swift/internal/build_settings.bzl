@@ -41,8 +41,7 @@ def additional_per_module_swiftcopts(label, provider):
 def _per_module_swiftcopt_flag_impl(ctx):
     # Each item in this list should of the form
     # "<target label>=<comma separated copts>".
-    # TODO: Remove extra list once allow_multiple is enabled
-    module_and_copts_list = [ctx.build_setting_value]
+    module_and_copts_list = ctx.build_setting_value
     value = dict()
     for item in module_and_copts_list:
         if not item:
@@ -73,7 +72,7 @@ def _per_module_swiftcopt_flag_impl(ctx):
 per_module_swiftcopt_flag = rule(
     build_setting = config.string(
         flag = True,
-        # allow_multiple = True,  # TODO: Enable once bazel supports it
+        allow_multiple = True,
     ),
     # TODO(b/186869451): Support adding swiftcopts by module name in addition
     # to the target label.
