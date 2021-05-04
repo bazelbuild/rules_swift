@@ -32,11 +32,3 @@ bzl_library(
         "//test/rules:starlark_tests_bzls",
     ],
 )
-
-# TODO: Remove once https://github.com/bazelbuild/bazel/pull/10945 lands
-config_setting(
-    name = "linux",
-    constraint_values = [
-        "@bazel_tools//platforms:linux",
-    ],
-)
