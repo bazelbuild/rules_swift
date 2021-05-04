@@ -14,6 +14,19 @@
 
 """Logic for generating Clang module map files."""
 
+# TODO: Once bazel supports nested functions unify it with upstream
+def _add_headers(*, headers, kind, content, relative_to_dir, back_to_root_path):
+    # Each header is added to the `Args` object as a tuple along with
+    # `relative_to_dir` and `back_to_root_path`. This gives the mapping
+    # function the information it needs to relativize the header paths even
+    # when they're expanded from a tree artifact (and thus not known at
+    # analysis time).
+    content.add_all(
+        [(file, relative_to_dir, back_to_root_path) for file in headers],
+        format_each = '    {} "%s"'.format(kind),
+        map_each = _header_info_mapper,
+    )
+
 def write_module_map(
         actions,
         module_map_file,
@@ -74,24 +87,15 @@ def write_module_map(
     content.add_all(exported_module_ids, format_each = "    export %s")
     content.add("")
 
-    def _add_headers(*, headers, kind):
-        # Each header is added to the `Args` object as a tuple along with
-        # `relative_to_dir` and `back_to_root_path`. This gives the mapping
-        # function the information it needs to relativize the header paths even
-        # when they're expanded from a tree artifact (and thus not known at
-        # analysis time).
-        content.add_all(
-            [(file, relative_to_dir, back_to_root_path) for file in headers],
-            format_each = '    {} "%s"'.format(kind),
-            map_each = _header_info_mapper,
-        )
-
-    _add_headers(headers = public_headers, kind = "header")
-    _add_headers(headers = private_headers, kind = "private header")
-    _add_headers(headers = public_textual_headers, kind = "textual header")
+    _add_headers(headers = public_headers, kind = "header", content = content, relative_to_dir = relative_to_dir, back_to_root_path = back_to_root_path)
+    _add_headers(headers = private_headers, kind = "private header", content = content, relative_to_dir = relative_to_dir, back_to_root_path = back_to_root_path)
+    _add_headers(headers = public_textual_headers, kind = "textual header", content = content, relative_to_dir = relative_to_dir, back_to_root_path = back_to_root_path)
     _add_headers(
         headers = private_textual_headers,
         kind = "private textual header",
+        content = content,
+        relative_to_dir = relative_to_dir,
+        back_to_root_path = back_to_root_path,
     )
     content.add("")
 
