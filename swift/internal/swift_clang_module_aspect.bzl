@@ -205,13 +205,6 @@ def _tagged_target_module_name(label, tags):
             _, _, module_name = tag.partition("=")
     return module_name
 
-# TODO: Once bazel supports nested functions unify this with upstream
-# Sort dependent module names and the headers to ensure a deterministic
-# order in the output file, in the event the compilation context would ever
-# change this on us. For files, use the execution path as the sorting key.
-def _path_sorting_key(file):
-    return file.path
-
 def _generate_module_map(
         actions,
         compilation_context,
@@ -255,6 +248,12 @@ def _generate_module_map(
         actions = actions,
         target_name = target.label.name,
     )
+
+    # Sort dependent module names and the headers to ensure a deterministic
+    # order in the output file, in the event the compilation context would ever
+    # change this on us. For files, use the execution path as the sorting key.
+    def _path_sorting_key(file):
+        return file.path
 
     write_module_map(
         actions = actions,
