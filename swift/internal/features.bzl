@@ -105,7 +105,7 @@ def configure_features(
         _enabled_features = requestable_features,
     )
 
-def features_for_build_modes(ctx, cpp_fragment = None):
+def features_for_build_modes(ctx, objc_fragment = None, cpp_fragment = None):
     """Returns a list of Swift toolchain features for current build modes.
 
     This function explicitly breaks the "don't pass `ctx` as an argument"
@@ -114,6 +114,7 @@ def features_for_build_modes(ctx, cpp_fragment = None):
 
     Args:
         ctx: The current rule context.
+        objc_fragment: The Objective-C configuration fragment, if available.
         cpp_fragment: The Cpp configuration fragment, if available.
 
     Returns:
@@ -126,7 +127,13 @@ def features_for_build_modes(ctx, cpp_fragment = None):
         features.append(SWIFT_FEATURE_COVERAGE)
     if compilation_mode in ("dbg", "fastbuild"):
         features.append(SWIFT_FEATURE_ENABLE_TESTING)
-    if cpp_fragment and cpp_fragment.apple_generate_dsym:
+
+    # TODO: Remove getattr once bazel is released with this change
+    if cpp_fragment and getattr(cpp_fragment, "apple_generate_dsym", False):
+        features.append(SWIFT_FEATURE_FULL_DEBUG_INFO)
+
+    # TODO: Remove the objc_fragment usage once bazel is released with the C++ change
+    if objc_fragment and getattr(objc_fragment, "generate_dsym", False):
         features.append(SWIFT_FEATURE_FULL_DEBUG_INFO)
     return features
 
