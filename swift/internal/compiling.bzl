@@ -51,7 +51,6 @@ load(
     "SWIFT_FEATURE_OPT",
     "SWIFT_FEATURE_OPT_USES_OSIZE",
     "SWIFT_FEATURE_OPT_USES_WMO",
-    "SWIFT_FEATURE_REWRITE_GENERATED_HEADER",
     "SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION",
     "SWIFT_FEATURE_STRICT_MODULES",
     "SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION",
@@ -221,24 +220,25 @@ def compile_action_configs(
         ),
     ]
 
-    if generated_header_rewriter:
-        # Only add the generated header rewriter to the command line only if the
-        # toolchain provides one, the relevant feature is requested, and the
-        # particular compilation action is generating a header.
-        def generated_header_rewriter_configurator(prerequisites, args):
-            if prerequisites.generated_header_file:
-                args.add(
-                    generated_header_rewriter,
-                    format = "-Xwrapped-swift=-generated-header-rewriter=%s",
-                )
+    # TODO: Enable once bazel supports nested functions
+    # if generated_header_rewriter:
+    #     # Only add the generated header rewriter to the command line only if the
+    #     # toolchain provides one, the relevant feature is requested, and the
+    #     # particular compilation action is generating a header.
+    #     def generated_header_rewriter_configurator(prerequisites, args):
+    #         if prerequisites.generated_header_file:
+    #             args.add(
+    #                 generated_header_rewriter,
+    #                 format = "-Xwrapped-swift=-generated-header-rewriter=%s",
+    #             )
 
-        action_configs.append(
-            swift_toolchain_config.action_config(
-                actions = [swift_action_names.COMPILE],
-                configurators = [generated_header_rewriter_configurator],
-                features = [SWIFT_FEATURE_REWRITE_GENERATED_HEADER],
-            ),
-        )
+    #     action_configs.append(
+    #         swift_toolchain_config.action_config(
+    #             actions = [swift_action_names.COMPILE],
+    #             configurators = [generated_header_rewriter_configurator],
+    #             features = [SWIFT_FEATURE_REWRITE_GENERATED_HEADER],
+    #         ),
+    #     )
 
     #### Compilation-mode-related flags
     #
