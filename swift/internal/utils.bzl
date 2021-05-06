@@ -168,6 +168,51 @@ def create_cc_info(
         direct_cc_infos = local_cc_infos,
     )
 
+def compilation_context_for_explicit_module_compilation(
+        compilation_contexts,
+        deps):
+    """Returns a compilation context suitable for compiling an explicit module.
+
+    Args:
+        compilation_contexts: `CcCompilationContext`s that provide information
+            about headers and include paths for the target being compiled.
+        deps: Direct dependencies of the target being compiled.
+
+    Returns:
+        A `CcCompilationContext` containing information needed when compiling an
+        explicit module, such as the headers and search paths of direct
+        dependencies (since Clang needs to find those on the file system in
+        order to map them to a module).
+    """
+    cc_infos = [
+        CcInfo(compilation_context = compilation_context)
+        for compilation_context in compilation_contexts
+    ]
+
+    for dep in deps:
+        if CcInfo in dep:
+            # TODO(b/179692096): We only need to propagate the information from
+            # the compilation contexts, but we can't merge those directly; we
+            # can only merge `CcInfo` objects. So we "unwrap" the compilation
+            # context from each provider and then "rewrap" it in a new provider
+            # that lacks the linking context so that our merge operation does
+            # less work.
+            cc_infos.append(
+                CcInfo(compilation_context = dep[CcInfo].compilation_context),
+            )
+        if apple_common.Objc in dep:
+            cc_infos.append(
+                CcInfo(
+                    compilation_context = cc_common.create_compilation_context(
+                        includes = dep[apple_common.Objc].strict_include,
+                    ),
+                ),
+            )
+
+    return cc_common.merge_cc_infos(
+        direct_cc_infos = cc_infos,
+    ).compilation_context
+
 def expand_locations(ctx, values, targets = []):
     """Expands the `$(location)` placeholders in each of the given values.
 
