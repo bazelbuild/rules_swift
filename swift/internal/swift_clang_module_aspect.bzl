@@ -33,7 +33,11 @@ load(
     "create_module",
     "create_swift_info",
 )
-load(":utils.bzl", "get_providers")
+load(
+    ":utils.bzl",
+    "compilation_context_for_explicit_module_compilation",
+    "get_providers",
+)
 
 _MULTIPLE_TARGET_ASPECT_ATTRS = [
     "deps",
@@ -457,34 +461,12 @@ def _handle_module(
     # a framework import rule. For now, we won't support compiling those as
     # explicit modules; fix this.
     if module_name:
-        # We only need to propagate the information from the compilation
-        # contexts, but we can't merge those directly; we can only merge
-        # `CcInfo` objects. So we "unwrap" the compilation context from each
-        # provider and then "rewrap" it in a new provider that lacks the linking
-        # context so that our merge operation does less work.
-        target_and_deps_cc_infos = [
-            CcInfo(compilation_context = compilation_context),
-        ]
-        for dep in getattr(attr, "deps", []):
-            if CcInfo in dep:
-                target_and_deps_cc_infos.append(
-                    CcInfo(
-                        compilation_context = dep[CcInfo].compilation_context,
-                    ),
-                )
-            if apple_common.Objc in dep:
-                target_and_deps_cc_infos.append(
-                    CcInfo(
-                        compilation_context = cc_common.create_compilation_context(
-                            includes = dep[apple_common.Objc].strict_include,
-                        ),
-                    ),
-                )
-
-        compilation_context_to_compile = cc_common.merge_cc_infos(
-            direct_cc_infos = target_and_deps_cc_infos,
-        ).compilation_context
-
+        compilation_context_to_compile = (
+            compilation_context_for_explicit_module_compilation(
+                compilation_contexts = [compilation_context],
+                deps = getattr(attr, "deps", []),
+            )
+        )
         precompiled_module = precompile_clang_module(
             actions = aspect_ctx.actions,
             bin_dir = aspect_ctx.bin_dir,
