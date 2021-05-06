@@ -66,6 +66,7 @@ load(
     ":utils.bzl",
     "collect_cc_libraries",
     "compact",
+    "compilation_context_for_explicit_module_compilation",
     "get_providers",
     "struct_fields",
 )
@@ -1494,12 +1495,18 @@ def compile(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_NO_GENERATED_MODULE_MAP,
     ):
+        compilation_context_to_compile = (
+            compilation_context_for_explicit_module_compilation(
+                compilation_contexts = [cc_common.create_compilation_context(
+                    headers = depset([compile_outputs.generated_header_file]),
+                )],
+                deps = deps,
+            )
+        )
         precompiled_module = _precompile_clang_module(
             actions = actions,
             bin_dir = bin_dir,
-            cc_compilation_context = cc_common.create_compilation_context(
-                headers = depset([compile_outputs.generated_header_file]),
-            ),
+            cc_compilation_context = compilation_context_to_compile,
             feature_configuration = feature_configuration,
             genfiles_dir = genfiles_dir,
             is_swift_generated_header = True,
