@@ -55,6 +55,7 @@ load(
     "SWIFT_FEATURE_OPT_USES_WMO",
     "SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION",
     "SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION",
+    "SWIFT_FEATURE_SUPPORTS_SYSTEM_MODULE_FLAG",
     "SWIFT_FEATURE_SYSTEM_MODULE",
     "SWIFT_FEATURE_USE_C_MODULES",
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
@@ -604,13 +605,14 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [swift_action_names.PRECOMPILE_C_MODULE],
             configurators = [
-                # TODO(b/165649949): ClangImporter doesn't currently handle the
-                # IsSystem bit correctly for the input file, which causes the
-                # module map to be treated as a user input. To work around this
-                # for now, we disable all diagnostics when compiling the
-                # explicit module for system modules, since they're not useful
-                # anyway; this is "close enough" to compiling it as a system
-                # module for the purposes of avoiding noise in the build logs.
+                # Before Swift 5.4, ClangImporter doesn't currently handle the
+                # IsSystem bit correctly for the input file and ignores the
+                # `-fsystem-module` flag, which causes the module map to be
+                # treated as a user input. We can work around this by disabling
+                # diagnostics for system modules. However, this also disables
+                # behavior in ClangImporter that causes system APIs that use
+                # `UInt` to be imported to use `Int` instead. The only solution
+                # here is to use Xcode 12.5 or higher.
                 swift_toolchain_config.add_arg("-Xcc", "-w"),
                 swift_toolchain_config.add_arg(
                     "-Xcc",
@@ -618,6 +620,18 @@ def compile_action_configs(
                 ),
             ],
             features = [SWIFT_FEATURE_SYSTEM_MODULE],
+            not_features = [SWIFT_FEATURE_SUPPORTS_SYSTEM_MODULE_FLAG],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.PRECOMPILE_C_MODULE],
+            configurators = [
+                swift_toolchain_config.add_arg("-Xcc", "-Xclang"),
+                swift_toolchain_config.add_arg("-Xcc", "-fsystem-module"),
+            ],
+            features = [
+                SWIFT_FEATURE_SUPPORTS_SYSTEM_MODULE_FLAG,
+                SWIFT_FEATURE_SYSTEM_MODULE,
+            ],
         ),
     ]
 
