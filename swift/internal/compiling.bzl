@@ -506,7 +506,7 @@ def compile_action_configs(
             configurators = [_tmpdir_module_cache_configurator],
             features = [
                 SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE,
-                SWIFT_FEATURE_GLOBAL_MODULE_CACHE_USES_TMPDIR
+                SWIFT_FEATURE_GLOBAL_MODULE_CACHE_USES_TMPDIR,
             ],
             not_features = [SWIFT_FEATURE_USE_C_MODULES],
         ),
