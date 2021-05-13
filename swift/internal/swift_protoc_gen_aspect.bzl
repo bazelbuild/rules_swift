@@ -423,6 +423,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             srcs = pbswift_files,
             swift_toolchain = swift_toolchain,
             target_name = target.label.name,
+            workspace_name = aspect_ctx.workspace_name,
         )
 
         linker_input, library_to_link = create_linker_input(

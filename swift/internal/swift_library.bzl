@@ -187,6 +187,7 @@ def _swift_library_impl(ctx):
         srcs = srcs,
         swift_toolchain = swift_toolchain,
         target_name = ctx.label.name,
+        workspace_name = ctx.workspace_name,
     )
 
     # If a module was created for the generated header, propagate it as well so
