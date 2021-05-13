@@ -62,20 +62,20 @@ def module_cache_settings_test_suite(name = "module_cache_settings"):
         ],
         not_expected_argv = [
             "-Xwrapped-swift=-ephemeral-module-cache",
-            "/private/tmp/__build_bazel_rules_swift/swift_module_cache/build_bazel_rules_swift",
+            "/tmp/__build_bazel_rules_swift/swift_module_cache/build_bazel_rules_swift",
         ],
         mnemonic = "SwiftCompile",
         tags = [name],
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
 
-    # Verify that a pre-defined shared module cache path in `/private/tmp` is
+    # Verify that a pre-defined shared module cache path in `/tmp` is
     # passed to swiftc.
     global_module_cache_uses_tmpdir_action_command_line_test(
         name = "{}_tmpdir_module_cache_build".format(name),
         expected_argv = [
             "-module-cache-path",
-            "/private/tmp/__build_bazel_rules_swift/swift_module_cache/build_bazel_rules_swift",
+            "/tmp/__build_bazel_rules_swift/swift_module_cache/build_bazel_rules_swift",
         ],
         not_expected_argv = [
             "-Xwrapped-swift=-ephemeral-module-cache",
@@ -90,7 +90,7 @@ def module_cache_settings_test_suite(name = "module_cache_settings"):
     incorrect_global_module_cache_uses_tmpdir_action_command_line_test(
         name = "{}_incorrect_tmpdir_module_cache_build".format(name),
         not_expected_argv = [
-            "/private/tmp/__build_bazel_rules_swift/swift_module_cache/build_bazel_rules_swift",
+            "/tmp/__build_bazel_rules_swift/swift_module_cache/build_bazel_rules_swift",
         ],
         mnemonic = "SwiftCompile",
         tags = [name],
