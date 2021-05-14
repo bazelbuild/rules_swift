@@ -2200,7 +2200,6 @@ def new_objc_provider(
     objc_provider_args = {
         "link_inputs": depset(direct = swiftmodules + link_inputs),
         "providers": all_objc_providers,
-        "uses_swift": True,
     }
 
     # The link action registered by `apple_binary` only looks at `Objc`
