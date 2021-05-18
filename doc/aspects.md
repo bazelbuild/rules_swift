@@ -1,8 +1,5 @@
+<!-- Generated with Stardoc, Do Not Edit! -->
 # Aspects
-
-<!-- Generated file, do not edit directly. -->
-
-
 
 The aspects described below are used within the build rule implementations.
 Clients interested in writing custom rules that interface with the rules/provides
@@ -12,11 +9,12 @@ On this page:
 
   * [swift_usage_aspect](#swift_usage_aspect)
 
-<a name="swift_usage_aspect"></a>
+<a id="#swift_usage_aspect"></a>
+
 ## swift_usage_aspect
 
-<pre style="white-space: normal">
-swift_usage_aspect()
+<pre>
+swift_usage_aspect(<a href="#swift_usage_aspect-name">name</a>)
 </pre>
 
 Collects information about how Swift is used in a dependency tree.
@@ -39,4 +37,21 @@ We use an aspect (as opposed to propagating this information through normal
 providers returned by `swift_library`) because the information is needed if
 Swift is used _anywhere_ in a dependency graph, even as dependencies of other
 language rules that wouldn't know how to propagate the Swift-specific providers.
+
+
+**ASPECT ATTRIBUTES**
+
+
+| Name | Type |
+| :------------- | :------------- |
+| deps| String |
+
+
+**ATTRIBUTES**
+
+
+| Name  | Description | Type | Mandatory | Default |
+| :------------- | :------------- | :------------- | :------------- | :------------- |
+| <a id="swift_usage_aspect-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/docs/build-ref.html#name">Name</a> | required |   |
+
 
