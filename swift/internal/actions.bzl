@@ -41,6 +41,9 @@ swift_action_names = struct(
     # Produces files that are usually fallout of the compilation such as
     # .swiftmodule, -Swift.h and more.
     DERIVE_FILES = "SwiftDeriveFiles",
+
+    # Produces an AST file for each swift source file in a module.
+    DUMP_AST = "SwiftDumpAST",
 )
 
 def _apply_configurator(configurator, prerequisites, args):

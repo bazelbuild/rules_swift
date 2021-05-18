@@ -364,6 +364,7 @@ def _all_action_configs(
                 swift_action_names.COMPILE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.PRECOMPILE_C_MODULE,
+                swift_action_names.DUMP_AST,
             ],
             configurators = [
                 swift_toolchain_config.add_arg("-target", target_triple),
@@ -399,6 +400,7 @@ def _all_action_configs(
                     swift_action_names.COMPILE,
                     swift_action_names.DERIVE_FILES,
                     swift_action_names.PRECOMPILE_C_MODULE,
+                    swift_action_names.DUMP_AST,
                 ],
                 configurators = [
                     swift_toolchain_config.add_arg(
@@ -479,6 +481,7 @@ def _all_action_configs(
                     swift_action_names.COMPILE,
                     swift_action_names.DERIVE_FILES,
                     swift_action_names.PRECOMPILE_C_MODULE,
+                    swift_action_names.DUMP_AST,
                 ],
                 configurators = [
                     partial.make(
@@ -548,6 +551,7 @@ def _all_tool_configs(
     tool_configs = {
         swift_action_names.COMPILE: tool_config,
         swift_action_names.DERIVE_FILES: tool_config,
+        swift_action_names.DUMP_AST: tool_config,
     }
 
     # Xcode 12.0 implies Swift 5.3.

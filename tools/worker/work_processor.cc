@@ -70,6 +70,7 @@ void WorkProcessor::ProcessWorkRequest(
   OutputFileMap output_file_map;
   std::string output_file_map_path;
   bool is_wmo = false;
+  bool is_dump_ast = false;
 
   std::string prev_arg;
   for (auto arg : request.arguments()) {
@@ -78,11 +79,18 @@ void WorkProcessor::ProcessWorkRequest(
     // necessary later.
     if (arg == "-output-file-map") {
       arg.clear();
+    } else if (arg == "-dump-ast") {
+      is_dump_ast = true;
     } else if (prev_arg == "-output-file-map") {
       output_file_map_path = arg;
       arg.clear();
     } else if (ArgumentEnablesWMO(arg)) {
-      is_wmo = true;
+      if (is_dump_ast) {
+        // WMO compilation doesn't work with -dump-ast
+        arg.clear();
+      } else {
+        is_wmo = true;
+      }
     }
 
     if (!arg.empty()) {
@@ -93,7 +101,7 @@ void WorkProcessor::ProcessWorkRequest(
   }
 
   if (!output_file_map_path.empty()) {
-    if (!is_wmo) {
+    if (!is_wmo && !is_dump_ast) {
       output_file_map.ReadFromPath(output_file_map_path);
 
       // Rewrite the output file map to use the incremental storage area and
