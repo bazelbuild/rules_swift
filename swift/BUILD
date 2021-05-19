@@ -10,11 +10,16 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])
 
 bzl_library(
+    name = "bazel_tools_bzl",
+    srcs = ["@bazel_tools//tools:bzl_srcs"],
+)
+
+bzl_library(
     name = "repositories",
     srcs = ["repositories.bzl"],
     deps = [
+        ":bazel_tools_bzl",
         "//swift/internal:swift_autoconfiguration",
-        "@bazel_tools//tools/build_defs/repo:http.bzl",
     ],
 )
 
