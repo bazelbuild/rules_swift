@@ -98,6 +98,7 @@ write_file(
         "# Workspace Setup",
     ],
 )
+
 [
     stardoc(
         name = file + "_doc",
