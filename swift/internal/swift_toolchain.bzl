@@ -34,7 +34,7 @@ load(
     "SWIFT_FEATURE_USE_RESPONSE_FILES",
 )
 load(":features.bzl", "features_for_build_modes")
-load(":providers.bzl", "SwiftToolchainInfo")
+load(":providers.bzl", "SwiftFeatureAllowlistInfo", "SwiftToolchainInfo")
 load(":toolchain_config.bzl", "swift_toolchain_config")
 load(
     ":utils.bzl",
@@ -216,6 +216,10 @@ def _swift_toolchain_impl(ctx):
             all_files = depset(all_files),
             cc_toolchain_info = cc_toolchain,
             cpu = ctx.attr.arch,
+            feature_allowlists = [
+                target[SwiftFeatureAllowlistInfo]
+                for target in ctx.attr.feature_allowlists
+            ],
             generated_header_module_implicit_deps_providers = (
                 collect_implicit_deps_providers([])
             ),
@@ -253,6 +257,13 @@ This name should match the name used in the toolchain's directory layout for
 architecture-specific content, such as "x86_64" in "lib/swift/linux/x86_64".
 """,
                 mandatory = True,
+            ),
+            "feature_allowlists": attr.label_list(
+                doc = """\
+A list of `swift_feature_allowlist` targets that allow or prohibit packages from
+requesting or disabling features.
+""",
+                providers = [[SwiftFeatureAllowlistInfo]],
             ),
             "os": attr.string(
                 doc = """\

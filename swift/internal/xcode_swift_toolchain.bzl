@@ -45,7 +45,12 @@ load(
 )
 load(":features.bzl", "features_for_build_modes")
 load(":toolchain_config.bzl", "swift_toolchain_config")
-load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
+load(
+    ":providers.bzl",
+    "SwiftFeatureAllowlistInfo",
+    "SwiftInfo",
+    "SwiftToolchainInfo",
+)
 load(
     ":utils.bzl",
     "collect_implicit_deps_providers",
@@ -772,6 +777,10 @@ def _xcode_swift_toolchain_impl(ctx):
             all_files = depset(all_files),
             cc_toolchain_info = cc_toolchain,
             cpu = cpu,
+            feature_allowlists = [
+                target[SwiftFeatureAllowlistInfo]
+                for target in ctx.attr.feature_allowlists
+            ],
             generated_header_module_implicit_deps_providers = (
                 collect_implicit_deps_providers(
                     ctx.attr.generated_header_module_implicit_deps,
@@ -802,6 +811,13 @@ xcode_swift_toolchain = rule(
     attrs = dicts.add(
         swift_toolchain_driver_attrs(),
         {
+            "feature_allowlists": attr.label_list(
+                doc = """\
+A list of `swift_feature_allowlist` targets that allow or prohibit packages from
+requesting or disabling features.
+""",
+                providers = [[SwiftFeatureAllowlistInfo]],
+            ),
             "generated_header_module_implicit_deps": attr.label_list(
                 doc = """\
 Targets whose `SwiftInfo` providers should be treated as compile-time inputs to
