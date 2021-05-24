@@ -14,6 +14,47 @@
 
 """Defines Starlark providers that propagated by the Swift BUILD rules."""
 
+SwiftAllowlistPackageInfo = provider(
+    doc = "Describes a package match in an allowlist.",
+    fields = {
+        "excluded": """\
+A Boolean value indicating whether the packages described by this value are
+exclusions rather than inclusions.
+""",
+        "match_subpackages": """\
+A Boolean value indicating whether subpackages of `package` should also be
+matched.
+""",
+        "package": """\
+A string indicating the name of the package to match, in the form
+`//path/to/package`, or `@repository//path/to/package` if an explicit repository
+name was given.
+""",
+    },
+)
+
+SwiftFeatureAllowlistInfo = provider(
+    doc = """\
+Describes a set of features and the packages that are allowed to request or
+disable them.
+""",
+    fields = {
+        "allowlist_label": """\
+A string containing the label of the `swift_feature_allowlist` target that
+created this provider.
+""",
+        "managed_features": """\
+A list of strings representing feature names or their negations that packages in
+the `packages` list are allowed to explicitly request or disable.
+""",
+        "packages": """\
+A list of `SwiftAllowlistPackageInfo` values describing packages (possibly
+recursive) whose targets are allowed to request or disable a feature managed by
+this allowlist.
+""",
+    },
+)
+
 SwiftInfo = provider(
     doc = """\
 Contains information about the compiled artifacts of a Swift module.
@@ -72,6 +113,10 @@ Swift toolchain depends on.
 """,
         "cpu": """\
 `String`. The CPU architecture that the toolchain is targeting.
+""",
+        "feature_allowlists": """\
+A list of `SwiftFeatureAllowlistInfo` providers that allow or prohibit packages
+from requesting or disabling features.
 """,
         "generated_header_module_implicit_deps_providers": """\
 A `struct` with the following fields, which are providers from targets that
