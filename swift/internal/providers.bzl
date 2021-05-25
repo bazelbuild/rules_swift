@@ -111,6 +111,21 @@ using this toolchain.
 The `cc_common.CcToolchainInfo` provider from the Bazel C++ toolchain that this
 Swift toolchain depends on.
 """,
+        "clang_implicit_deps_providers": """\
+A `struct` with the following fields, which represent providers from targets
+that should be added as implicit dependencies of any precompiled explicit
+C/Objective-C modules:
+
+*   `cc_infos`: A list of `CcInfo` providers from targets specified as the
+    toolchain's implicit dependencies.
+*   `objc_infos`: A list of `apple_common.Objc` providers from targets specified
+    as the toolchain's implicit dependencies.
+*   `swift_infos`: A list of `SwiftInfo` providers from targets specified as the
+    toolchain's implicit dependencies.
+
+For ease of use, this field is never `None`; it will always be a valid `struct`
+containing the fields described above, even if those lists are empty.
+""",
         "cpu": """\
 `String`. The CPU architecture that the toolchain is targeting.
 """,
