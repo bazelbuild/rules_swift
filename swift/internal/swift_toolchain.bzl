@@ -215,6 +215,9 @@ def _swift_toolchain_impl(ctx):
             action_configs = all_action_configs,
             all_files = depset(all_files),
             cc_toolchain_info = cc_toolchain,
+            clang_implicit_deps_providers = (
+                collect_implicit_deps_providers([])
+            ),
             cpu = ctx.attr.arch,
             feature_allowlists = [
                 target[SwiftFeatureAllowlistInfo]
