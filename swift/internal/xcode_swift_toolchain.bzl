@@ -730,6 +730,9 @@ def _xcode_swift_toolchain_impl(ctx):
             action_configs = all_action_configs,
             all_files = depset(all_files),
             cc_toolchain_info = cc_toolchain,
+            clang_implicit_deps_providers = collect_implicit_deps_providers(
+                ctx.attr.clang_implicit_deps,
+            ),
             cpu = cpu,
             feature_allowlists = [
                 target[SwiftFeatureAllowlistInfo]
@@ -764,6 +767,22 @@ xcode_swift_toolchain = rule(
     attrs = dicts.add(
         swift_toolchain_driver_attrs(),
         {
+            "clang_implicit_deps": attr.label_list(
+                doc = """\
+A list of labels to library targets that should be unconditionally added as
+implicit dependencies of any explicit C/Objective-C module compiled by the Swift
+toolchain.
+
+Despite being C/Objective-C modules, the targets specified by this attribute
+must propagate the `SwiftInfo` provider because the Swift build rules use that
+provider to look up Clang module requirements. In particular, the targets must
+propagate the provider in their rule implementation themselves and not rely on
+the implicit traversal performed by `swift_clang_module_aspect`; the latter is
+not possible as it would create a dependency cycle between the toolchain and the
+implicit dependencies.
+""",
+                providers = [[SwiftInfo]],
+            ),
             "feature_allowlists": attr.label_list(
                 doc = """\
 A list of `swift_feature_allowlist` targets that allow or prohibit packages from

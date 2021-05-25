@@ -1526,9 +1526,7 @@ def compile(
             is_swift_generated_header = True,
             module_map_file = compile_outputs.generated_module_map_file,
             module_name = module_name,
-            swift_info = create_swift_info(
-                swift_infos = generated_module_deps_swift_infos,
-            ),
+            swift_infos = generated_module_deps_swift_infos,
             swift_toolchain = swift_toolchain,
             target_name = target_name,
         )
@@ -1574,7 +1572,7 @@ def precompile_clang_module(
         target_name,
         bin_dir = None,
         genfiles_dir = None,
-        swift_info = None):
+        swift_infos = []):
     """Precompiles an explicit Clang module that is compatible with Swift.
 
     Args:
@@ -1607,8 +1605,8 @@ def precompile_clang_module(
             path is added to ClangImporter's header search paths for
             compatibility with Bazel's C++ and Objective-C rules which support
             inclusions of generated headers from that location.
-        swift_info: A `SwiftInfo` provider that contains dependencies required
-            to compile this module.
+        swift_infos: A list of `SwiftInfo` providers representing dependencies
+            required to compile this module.
 
     Returns:
         A `File` representing the precompiled module (`.pcm`) file, or `None` if
@@ -1623,7 +1621,7 @@ def precompile_clang_module(
         is_swift_generated_header = False,
         module_map_file = module_map_file,
         module_name = module_name,
-        swift_info = swift_info,
+        swift_infos = swift_infos,
         swift_toolchain = swift_toolchain,
         target_name = target_name,
     )
@@ -1640,7 +1638,7 @@ def _precompile_clang_module(
         target_name,
         bin_dir = None,
         genfiles_dir = None,
-        swift_info = None):
+        swift_infos = []):
     """Precompiles an explicit Clang module that is compatible with Swift.
 
     Args:
@@ -1675,8 +1673,8 @@ def _precompile_clang_module(
             path is added to ClangImporter's header search paths for
             compatibility with Bazel's C++ and Objective-C rules which support
             inclusions of generated headers from that location.
-        swift_info: A `SwiftInfo` provider that contains dependencies required
-            to compile this module.
+        swift_infos: A list of `SwiftInfo` providers representing dependencies
+            required to compile this module.
 
     Returns:
         A `File` representing the precompiled module (`.pcm`) file, or `None` if
@@ -1702,8 +1700,20 @@ def _precompile_clang_module(
         target_name = target_name,
     )
 
-    if swift_info:
-        transitive_modules = swift_info.transitive_modules.to_list()
+    if not is_swift_generated_header:
+        implicit_swift_infos = (
+            swift_toolchain.clang_implicit_deps_providers.swift_infos
+        )
+    else:
+        implicit_swift_infos = []
+
+    if not is_swift_generated_header and implicit_swift_infos:
+        swift_infos = list(swift_infos)
+        swift_infos.extend(implicit_swift_infos)
+
+    if swift_infos:
+        merged_swift_info = create_swift_info(swift_infos = swift_infos)
+        transitive_modules = merged_swift_info.transitive_modules.to_list()
     else:
         transitive_modules = []
 

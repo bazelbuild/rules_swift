@@ -423,15 +423,14 @@ def _handle_module(
     """
     attr = aspect_ctx.rule.attr
 
-    if swift_infos:
-        merged_swift_info = create_swift_info(swift_infos = swift_infos)
-    else:
-        merged_swift_info = None
+    all_swift_infos = (
+        swift_infos + swift_toolchain.clang_implicit_deps_providers.swift_infos
+    )
 
     # Collect the names of Clang modules that the module being built directly
     # depends on.
     dependent_module_names = []
-    for swift_info in swift_infos:
+    for swift_info in all_swift_infos:
         for module in swift_info.direct_modules:
             if module.clang:
                 dependent_module_names.append(module.name)
@@ -450,8 +449,8 @@ def _handle_module(
         )
 
     if not module_map_file:
-        if merged_swift_info:
-            return [merged_swift_info]
+        if all_swift_infos:
+            return [create_swift_info(swift_infos = swift_infos)]
         else:
             return []
 
@@ -474,7 +473,7 @@ def _handle_module(
             genfiles_dir = aspect_ctx.genfiles_dir,
             module_map_file = module_map_file,
             module_name = module_name,
-            swift_info = merged_swift_info,
+            swift_infos = swift_infos,
             swift_toolchain = swift_toolchain,
             target_name = target.label.name,
         )
