@@ -472,6 +472,19 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [swift_action_names.PRECOMPILE_C_MODULE],
             configurators = [
+                # `-Xclang -emit-module` ought to be unnecessary if `-emit-pcm`
+                # is present because ClangImporter configures the invocation to
+                # use the `GenerateModule` action. However, it does so *after*
+                # creating the invocation by parsing the command line via a
+                # helper shared by `-emit-pcm` and other operations, so the
+                # changing of the action to `GenerateModule` occurs too late;
+                # the argument parser doesn't know that this will be the
+                # intended action and it emits a spurious diagnostic:
+                # "'-fsystem-module' only allowed with '-emit-module'". So, for
+                # system modules we'll pass `-emit-module` as well; it gets rid
+                # of the diagnostic and doesn't appear to cause other issues.
+                swift_toolchain_config.add_arg("-Xcc", "-Xclang"),
+                swift_toolchain_config.add_arg("-Xcc", "-emit-module"),
                 swift_toolchain_config.add_arg("-Xcc", "-Xclang"),
                 swift_toolchain_config.add_arg("-Xcc", "-fsystem-module"),
             ],
