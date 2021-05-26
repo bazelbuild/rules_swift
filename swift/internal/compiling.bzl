@@ -722,17 +722,32 @@ def compile_action_configs(
     ])
 
     #### Search paths for framework dependencies
-    action_configs.append(
+    action_configs.extend([
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
                 swift_action_names.DERIVE_FILES,
-                swift_action_names.PRECOMPILE_C_MODULE,
                 swift_action_names.DUMP_AST,
             ],
-            configurators = [_framework_search_paths_configurator],
+            configurators = [
+                lambda prereqs, args: _framework_search_paths_configurator(
+                    prereqs,
+                    args,
+                    is_swift = True,
+                ),
+            ],
         ),
-    )
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.PRECOMPILE_C_MODULE],
+            configurators = [
+                lambda prereqs, args: _framework_search_paths_configurator(
+                    prereqs,
+                    args,
+                    is_swift = False,
+                ),
+            ],
+        ),
+    ])
 
     #### Other ClangImporter flags
     action_configs.extend([
@@ -1352,11 +1367,23 @@ def _dependencies_clang_modules_configurator(prerequisites, args):
         prefer_precompiled_modules = True,
     )
 
-def _framework_search_paths_configurator(prerequisites, args):
+def _framework_search_paths_configurator(prerequisites, args, is_swift):
     """Add search paths for prebuilt frameworks to the command line."""
+
+    # Swift doesn't automatically propagate its `-F` flag to ClangImporter, so
+    # we add it manually with `-Xcc` below (for both regular compilations, in
+    # case they're using implicit modules, and Clang module compilations). We
+    # don't need to add regular `-F` if this is a Clang module compilation,
+    # though, since it won't be used.
+    if is_swift:
+        args.add_all(
+            prerequisites.cc_info.compilation_context.framework_includes,
+            format_each = "-F%s",
+        )
     args.add_all(
         prerequisites.cc_info.compilation_context.framework_includes,
         format_each = "-F%s",
+        before_each = "-Xcc",
     )
 
 def _static_frameworks_disable_autolink_configurator(prerequisites, args):
