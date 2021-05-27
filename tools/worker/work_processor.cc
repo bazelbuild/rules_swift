@@ -145,4 +145,5 @@ void WorkProcessor::ProcessWorkRequest(
 
   response->set_exit_code(exit_code);
   response->set_output(stderr_stream.str());
+  response->set_request_id(request.request_id());
 }
