@@ -52,6 +52,10 @@ load(
     _swift_common = "swift_common",
 )
 load(
+    "@build_bazel_rules_swift//swift/internal:swift_feature_allowlist.bzl",
+    _swift_feature_allowlist = "swift_feature_allowlist",
+)
+load(
     "@build_bazel_rules_swift//swift/internal:swift_grpc_library.bzl",
     _swift_grpc_library = "swift_grpc_library",
 )
@@ -88,12 +92,13 @@ swift_common = _swift_common
 # Re-export rules.
 swift_binary = _swift_binary
 swift_c_module = _swift_c_module
+swift_feature_allowlist = _swift_feature_allowlist
 swift_grpc_library = _swift_grpc_library
 swift_import = _swift_import
 swift_library = _swift_library
-swift_test = _swift_test
 swift_module_alias = _swift_module_alias
 swift_proto_library = _swift_proto_library
+swift_test = _swift_test
 
 # Re-export public aspects.
 swift_clang_module_aspect = _swift_clang_module_aspect
