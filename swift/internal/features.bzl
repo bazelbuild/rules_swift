@@ -75,6 +75,13 @@ def configure_features(
         passed to other `swift_common` functions. Note that the structure of
         this value should otherwise not be relied on or inspected directly.
     """
+    if swift_toolchain.feature_allowlists:
+        _check_allowlists(
+            allowlists = swift_toolchain.feature_allowlists,
+            label = ctx.label,
+            requested_features = requested_features,
+            unsupported_features = unsupported_features,
+        )
 
     # The features to enable for a particular rule/target are the ones requested
     # by the toolchain, plus the ones requested by the target itself, *minus*
@@ -175,3 +182,98 @@ def is_feature_enabled(feature_configuration, feature_name):
             ),
             feature_name = feature_name,
         )
+
+def _check_allowlists(
+        *,
+        allowlists,
+        label,
+        requested_features,
+        unsupported_features):
+    """Checks the toolchain's allowlists to verify the requested features.
+
+    If any of the features requested to be enabled or disabled is not allowed in
+    the target's package by one of the allowlists, the build will fail with an
+    error message indicating the feature and the allowlist that denied it.
+
+    Args:
+        allowlists: A list of `SwiftFeatureAllowlistInfo` providers that will be
+            checked.
+        label: The label of the target being checked against the allowlist.
+        requested_features: The list of features to be enabled. This is
+            typically obtained using the `ctx.features` field in a rule
+            implementation function.
+        unsupported_features: The list of features that are unsupported by the
+            current rule. This is typically obtained using the
+            `ctx.disabled_features` field in a rule implementation function.
+    """
+    features_to_check = list(requested_features)
+    features_to_check.extend(
+        ["-{}".format(feature) for feature in unsupported_features],
+    )
+
+    for allowlist in allowlists:
+        for feature_string in features_to_check:
+            if not _is_feature_allowed_in_package(
+                allowlist = allowlist,
+                feature = feature_string,
+                package = label.package,
+                workspace_name = label.workspace_name,
+            ):
+                fail((
+                    "Feature '{feature}' is not allowed to be set by the " +
+                    "target '{target}'; see the allowlist at '{allowlist}' " +
+                    "for more information."
+                ).format(
+                    allowlist = allowlist.allowlist_label,
+                    feature = feature_string,
+                    target = str(label),
+                ))
+
+def _is_feature_allowed_in_package(
+        allowlist,
+        feature,
+        package,
+        workspace_name = None):
+    """Returns a value indicating whether a feature is allowed in a package.
+
+    Args:
+        allowlist: The `SwiftFeatureAllowlistInfo` provider that contains the
+            allowlist.
+        feature: The name of the feature (or its negation) being checked.
+        package: The package part of the label being checked for access (e.g.,
+            the value of `ctx.label.package`).
+        workspace_name: The workspace name part of the label being checked for
+            access (e.g., the value of `ctx.label.workspace_name`).
+
+    Returns:
+        True if the feature is allowed to be used in the package, or False if it
+        is not.
+    """
+
+    # Any feature not managed by the allowlist is allowed by default.
+    if feature not in allowlist.managed_features:
+        return True
+
+    if workspace_name:
+        package_spec = "@{}//{}".format(workspace_name, package)
+    else:
+        package_spec = "//{}".format(package)
+
+    is_allowed = False
+    for package_info in allowlist.packages:
+        if package_info.match_subpackages:
+            is_match = (
+                package_spec == package_info.package or
+                package_spec.startswith(package_info.package + "/")
+            )
+        else:
+            is_match = package_spec == package_info.package
+
+        # Package exclusions always take precedence over package inclusions, so
+        # if we have an exclusion match, return false immediately.
+        if package_info.excluded and is_match:
+            return False
+        else:
+            is_allowed = True
+
+    return is_allowed

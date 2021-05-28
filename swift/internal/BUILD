@@ -145,6 +145,15 @@ bzl_library(
 )
 
 bzl_library(
+    name = "swift_feature_allowlist",
+    srcs = ["swift_feature_allowlist.bzl"],
+    visibility = ["//swift:__subpackages__"],
+    deps = [
+        ":providers",
+    ],
+)
+
+bzl_library(
     name = "swift_binary_test",
     srcs = ["swift_binary_test.bzl"],
     visibility = ["//swift:__subpackages__"],
