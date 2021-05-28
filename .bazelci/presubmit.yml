@@ -25,6 +25,7 @@ x_defaults:
     test_flags: *linux_flags
     test_targets:
       - "--"
+      - "//doc/..."
       - "//examples/..."
       - "//test/..."
       - "-//examples/apple/..."

@@ -199,6 +199,7 @@ def _swift_linking_rule_impl(
             srcs = srcs,
             swift_toolchain = swift_toolchain,
             target_name = ctx.label.name,
+            workspace_name = ctx.workspace_name,
         )
         user_link_flags.extend(compilation_outputs.linker_flags)
         objects_to_link.extend(compilation_outputs.object_files)

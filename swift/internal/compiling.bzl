@@ -44,6 +44,7 @@ load(
     "SWIFT_FEATURE_ENABLE_TESTING",
     "SWIFT_FEATURE_FASTBUILD",
     "SWIFT_FEATURE_FULL_DEBUG_INFO",
+    "SWIFT_FEATURE_GLOBAL_MODULE_CACHE_USES_TMPDIR",
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
     "SWIFT_FEATURE_LAYERING_CHECK",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
@@ -461,6 +462,13 @@ def compile_action_configs(
             ],
             features = ["tsan"],
         ),
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [
+                swift_toolchain_config.add_arg("-sanitize=undefined"),
+            ],
+            features = ["ubsan"],
+        ),
     ]
 
     #### Flags controlling how Swift/Clang modular inputs are processed
@@ -492,6 +500,21 @@ def compile_action_configs(
             ],
             configurators = [_global_module_cache_configurator],
             features = [SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE],
+            not_features = [
+                [SWIFT_FEATURE_USE_C_MODULES],
+                [SWIFT_FEATURE_GLOBAL_MODULE_CACHE_USES_TMPDIR],
+            ],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVE_FILES,
+            ],
+            configurators = [_tmpdir_module_cache_configurator],
+            features = [
+                SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE,
+                SWIFT_FEATURE_GLOBAL_MODULE_CACHE_USES_TMPDIR,
+            ],
             not_features = [SWIFT_FEATURE_USE_C_MODULES],
         ),
         swift_toolchain_config.action_config(
@@ -950,6 +973,18 @@ def _global_module_cache_configurator(prerequisites, args):
             "-module-cache-path",
             paths.join(prerequisites.bin_dir.path, "_swift_module_cache"),
         )
+
+def _tmpdir_module_cache_configurator(prerequisites, args):
+    """Adds flags to enable a stable tmp directory module cache."""
+
+    args.add(
+        "-module-cache-path",
+        paths.join(
+            "/tmp/__build_bazel_rules_swift",
+            "swift_module_cache",
+            prerequisites.workspace_name,
+        ),
+    )
 
 def _batch_mode_configurator(prerequisites, args):
     """Adds flags to enable batch compilation mode."""
@@ -1487,6 +1522,7 @@ def compile(
         srcs,
         swift_toolchain,
         target_name,
+        workspace_name,
         additional_inputs = [],
         bin_dir = None,
         copts = [],
@@ -1509,6 +1545,9 @@ def compile(
         target_name: The name of the target for which the code is being
             compiled, which is used to determine unique file paths for the
             outputs.
+        workspace_name: The name of the workspace for which the code is being
+             compiled, which is used to determine unique file paths for some
+             outputs.
         additional_inputs: A list of `File`s representing additional input files
             that need to be passed to the Swift compile action because they are
             referenced by compiler flags.
@@ -1703,6 +1742,7 @@ def compile(
         user_compile_flags = copts,
         vfsoverlay_file = vfsoverlay_file,
         vfsoverlay_search_path = _SWIFTMODULES_VFS_ROOT,
+        workspace_name = workspace_name,
         # Merge the compile outputs into the prerequisites.
         **struct_fields(compile_outputs)
     )
@@ -2344,7 +2384,6 @@ def new_objc_provider(
     objc_provider_args = {
         "link_inputs": depset(direct = swiftmodules + link_inputs),
         "providers": all_objc_providers,
-        "uses_swift": True,
     }
 
     # The link action registered by `apple_binary` only looks at `Objc`

@@ -70,6 +70,7 @@ def _swift_module_alias_impl(ctx):
         srcs = [reexport_src],
         swift_toolchain = swift_toolchain,
         target_name = ctx.label.name,
+        workspace_name = ctx.workspace_name,
     )
 
     linker_input, library_to_link = create_linker_input(

@@ -1,0 +1,14 @@
+diff stardoc/templates/markdown_tables/func.vm stardoc/templates/markdown_tables/func.vm
+index e53e639..1b7bd7a 100644
+--- stardoc/templates/markdown_tables/func.vm
++++ stardoc/templates/markdown_tables/func.vm
+@@ -18,3 +18,9 @@ ${funcInfo.docString}
+ | <a id="${funcInfo.functionName}-${param.name}"></a>$param.name | #if(!$param.docString.isEmpty()) ${util.markdownCellFormat($param.docString)} #else <p align="center"> - </p> #end  | #if(!$param.getDefaultValue().isEmpty()) <code>$param.getDefaultValue()</code> #else none #end|
+ #end
+ #end
++
++#if (!$funcInfo.return.docString.isEmpty())
++**RETURNS**
++
++${funcInfo.return.docString}
++#end

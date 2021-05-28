@@ -2,23 +2,61 @@ load("@bazel_skylib//rules:write_file.bzl", "write_file")
 load("@bazel_skylib//rules:diff_test.bzl", "diff_test")
 load("@io_bazel_stardoc//stardoc:stardoc.bzl", "stardoc")
 
-_RULES_SYMBOLS = [
-    "swift_binary",
-    "swift_c_module",
-    "swift_grpc_library",
-    "swift_import",
-    "swift_library",
-    "swift_module_alias",
-    "swift_proto_library",
-    "swift_test",
-]
+_DOC_SRCS = {
+    "api": [
+        "swift_common",
+    ],
+    "aspects": [
+        "swift_usage_aspect",
+    ],
+    "providers": [
+        "SwiftInfo",
+        "SwiftToolchainInfo",
+        "SwiftProtoInfo",
+        "SwiftUsageInfo",
+    ],
+    "rules": [
+        "swift_binary",
+        "swift_c_module",
+        "swift_grpc_library",
+        "swift_import",
+        "swift_library",
+        "swift_module_alias",
+        "swift_proto_library",
+        "swift_test",
+    ],
+}
 
-_PROVIDERS_SYMBOLS = [
-    "SwiftInfo",
-    "SwiftToolchainInfo",
-    "SwiftProtoInfo",
-    "SwiftUsageInfo",
-]
+write_file(
+    name = "api_header",
+    out = "api_header.vm",
+    content = [
+        "<!-- Generated with Stardoc, Do Not Edit! -->",
+        "# Build API",
+        "",
+        "The `swift_common` module provides API access to the behavior implemented",
+        "by the Swift build rules, so that other custom rules can invoke Swift",
+        "compilation and/or linking as part of their implementation.",
+    ],
+)
+
+write_file(
+    name = "aspects_header",
+    out = "aspects_header.vm",
+    content = [
+        "<!-- Generated with Stardoc, Do Not Edit! -->",
+        "# Aspects",
+        "",
+        "The aspects described below are used within the build rule implementations.",
+        "Clients interested in writing custom rules that interface with the rules/provides",
+        "in this package might needs them to provide some of the same information.",
+        "",
+        "On this page:",
+        "",
+    ] + ["  * [{0}](#{0})".format(r) for r in _DOC_SRCS["aspects"]] + [
+        "",
+    ],
+)
 
 write_file(
     name = "rules_header",
@@ -29,7 +67,7 @@ write_file(
         "${moduleDocstring}",
         "On this page:",
         "",
-    ] + ["  * [{0}](#{0})".format(r) for r in _RULES_SYMBOLS] + [
+    ] + ["  * [{0}](#{0})".format(r) for r in _DOC_SRCS["rules"]] + [
         "",
     ],
 )
@@ -47,41 +85,70 @@ write_file(
         "",
         "On this page:",
         "",
-    ] + ["  * [{0}](#{0})".format(r) for r in _PROVIDERS_SYMBOLS] + [
+    ] + ["  * [{0}](#{0})".format(r) for r in _DOC_SRCS["providers"]] + [
         "",
     ],
 )
 
-stardoc(
-    name = "rules_doc",
-    out = "rules.md_",
-    header_template = ":rules_header.vm",
-    input = "//swift:swift.bzl",
-    symbol_names = _RULES_SYMBOLS,
-    deps = ["//swift"],
+write_file(
+    name = "setup_header",
+    out = "setup_header.vm",
+    content = [
+        "<!-- Generated with Stardoc, Do Not Edit! -->",
+        "# Workspace Setup",
+    ],
 )
+
+[
+    stardoc(
+        name = file + "_doc",
+        out = file + ".md_",
+        header_template = file + "_header.vm",
+        input = "//swift:swift.bzl",
+        symbol_names = symbols,
+        deps = ["//swift"],
+    )
+    for [
+        file,
+        symbols,
+    ] in _DOC_SRCS.items()
+]
 
 stardoc(
-    name = "providers_doc",
-    out = "providers.md_",
-    header_template = ":providers_header.vm",
-    input = "//swift:swift.bzl",
-    symbol_names = _PROVIDERS_SYMBOLS,
-    deps = ["//swift"],
+    name = "setup_doc",
+    out = "setup.md_",
+    header_template = "setup_header.vm",
+    input = "//swift:repositories.bzl",
+    deps = ["//swift:repositories"],
 )
 
-# To make this test pass, run
-# bazel build doc:all && cp bazel-bin/doc/rules.md_ doc/rules.md
-diff_test(
-    name = "test_rules",
-    file1 = "rules.md_",
-    file2 = "rules.md",
+# To make these tests pass, run
+# bazel run //doc:update
+[
+    diff_test(
+        name = "test_" + file,
+        file1 = file + ".md_",
+        file2 = file + ".md",
+    )
+    for file in _DOC_SRCS.keys() + ["setup"]
+]
+
+write_file(
+    name = "gen_update",
+    out = "update.sh",
+    content = [
+        "#!/usr/bin/env bash",
+        "cd $BUILD_WORKSPACE_DIRECTORY",
+    ] + [
+        "cp -fv bazel-bin/doc/{0}.md_ doc/{0}.md".format(
+            file,
+        )
+        for file in _DOC_SRCS.keys() + ["setup"]
+    ],
 )
 
-# To make this test pass, run
-# bazel build doc:all && cp bazel-bin/doc/providers.md_ doc/providers.md
-diff_test(
-    name = "test_providers",
-    file1 = "providers.md_",
-    file2 = "providers.md",
+sh_binary(
+    name = "update",
+    srcs = ["update.sh"],
+    data = [file + ".md_" for file in _DOC_SRCS.keys()],
 )
