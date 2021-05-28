@@ -15,10 +15,6 @@
 """Tests for `ast_file`."""
 
 load(
-    "@build_bazel_rules_swift//test/rules:analysis_failure_test.bzl",
-    "analysis_failure_test",
-)
-load(
     "@build_bazel_rules_swift//test/rules:provider_test.bzl",
     "provider_test",
 )
