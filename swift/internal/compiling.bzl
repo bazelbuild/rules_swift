@@ -462,6 +462,13 @@ def compile_action_configs(
             ],
             features = ["tsan"],
         ),
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [
+                swift_toolchain_config.add_arg("-sanitize=undefined"),
+            ],
+            features = ["ubsan"],
+        ),
     ]
 
     #### Flags controlling how Swift/Clang modular inputs are processed
