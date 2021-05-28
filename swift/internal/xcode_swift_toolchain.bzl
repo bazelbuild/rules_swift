@@ -732,11 +732,6 @@ def _xcode_swift_toolchain_impl(ctx):
     if _is_xcode_at_least_version(xcode_config, "11.4"):
         requested_features.append(SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES)
 
-    command_line_copts = _command_line_objc_copts(
-        ctx.var["COMPILATION_MODE"],
-        ctx.fragments.objc,
-    ) + ctx.fragments.swift.copts()
-
     env = _xcode_env(platform = platform, xcode_config = xcode_config)
     execution_requirements = xcode_config.execution_info()
     generated_header_rewriter = ctx.executable.generated_header_rewriter
