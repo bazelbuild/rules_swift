@@ -475,7 +475,7 @@ A new attribute dictionary that can be added to the attributes of a
 <pre>
 swift_common.precompile_clang_module(<a href="#swift_common.precompile_clang_module-actions">actions</a>, <a href="#swift_common.precompile_clang_module-cc_compilation_context">cc_compilation_context</a>, <a href="#swift_common.precompile_clang_module-feature_configuration">feature_configuration</a>,
                                      <a href="#swift_common.precompile_clang_module-module_map_file">module_map_file</a>, <a href="#swift_common.precompile_clang_module-module_name">module_name</a>, <a href="#swift_common.precompile_clang_module-swift_toolchain">swift_toolchain</a>, <a href="#swift_common.precompile_clang_module-target_name">target_name</a>,
-                                     <a href="#swift_common.precompile_clang_module-bin_dir">bin_dir</a>, <a href="#swift_common.precompile_clang_module-genfiles_dir">genfiles_dir</a>, <a href="#swift_common.precompile_clang_module-swift_info">swift_info</a>)
+                                     <a href="#swift_common.precompile_clang_module-bin_dir">bin_dir</a>, <a href="#swift_common.precompile_clang_module-genfiles_dir">genfiles_dir</a>, <a href="#swift_common.precompile_clang_module-swift_infos">swift_infos</a>)
 </pre>
 
 Precompiles an explicit Clang module that is compatible with Swift.
@@ -494,7 +494,7 @@ Precompiles an explicit Clang module that is compatible with Swift.
 | <a id="swift_common.precompile_clang_module-target_name"></a>target_name |  The name of the target for which the code is being compiled, which is used to determine unique file paths for the outputs.   |  none |
 | <a id="swift_common.precompile_clang_module-bin_dir"></a>bin_dir |  The Bazel <code>*-bin</code> directory root. If provided, its path is used to store the cache for modules precompiled by Swift's ClangImporter, and it is added to ClangImporter's header search paths for compatibility with Bazel's C++ and Objective-C rules which support includes of generated headers from that location.   |  <code>None</code> |
 | <a id="swift_common.precompile_clang_module-genfiles_dir"></a>genfiles_dir |  The Bazel <code>*-genfiles</code> directory root. If provided, its path is added to ClangImporter's header search paths for compatibility with Bazel's C++ and Objective-C rules which support inclusions of generated headers from that location.   |  <code>None</code> |
-| <a id="swift_common.precompile_clang_module-swift_info"></a>swift_info |  A <code>SwiftInfo</code> provider that contains dependencies required to compile this module.   |  <code>None</code> |
+| <a id="swift_common.precompile_clang_module-swift_infos"></a>swift_infos |  A list of <code>SwiftInfo</code> providers representing dependencies required to compile this module.   |  <code>[]</code> |
 
 **RETURNS**
 
