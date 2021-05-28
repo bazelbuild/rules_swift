@@ -475,19 +475,20 @@ def compile_action_configs(
 
     #### Flags controlling how Swift/Clang modular inputs are processed
 
-    def c_layering_check_configurator(prerequisites, args, *, strict):
-        # We do not enforce layering checks for the Objective-C header generated
-        # by Swift, because we don't have predictable control over the imports
-        # that it generates. Due to modular re-exports (which are especially
-        # common among system frameworks), it may generate an import declaration
-        # for a particular symbol from a different module than the Swift code
-        # imported it from.
-        if not prerequisites.is_swift_generated_header:
-            args.add(
-                "-Xcc",
-                "-fmodules-strict-decluse" if strict else "-fmodules-decluse",
-            )
-        return None
+    # TODO: Enable once bazel supports lambdas
+    # def c_layering_check_configurator(prerequisites, args, *, strict):
+    #     # We do not enforce layering checks for the Objective-C header generated
+    #     # by Swift, because we don't have predictable control over the imports
+    #     # that it generates. Due to modular re-exports (which are especially
+    #     # common among system frameworks), it may generate an import declaration
+    #     # for a particular symbol from a different module than the Swift code
+    #     # imported it from.
+    #     if not prerequisites.is_swift_generated_header:
+    #         args.add(
+    #             "-Xcc",
+    #             "-fmodules-strict-decluse" if strict else "-fmodules-decluse",
+    #         )
+    #     return None
 
     action_configs += [
         # Treat paths in .modulemap files as workspace-relative, not modulemap-
@@ -593,11 +594,12 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [swift_action_names.PRECOMPILE_C_MODULE],
             configurators = [
-                lambda prerequisites, args: c_layering_check_configurator(
-                    prerequisites,
-                    args,
-                    strict = False,
-                ),
+                # TODO: Enable once bazel supports lambdas
+                # lambda prerequisites, args: c_layering_check_configurator(
+                #     prerequisites,
+                #     args,
+                #     strict = False,
+                # ),
             ],
             not_features = [
                 [SWIFT_FEATURE_LAYERING_CHECK],
@@ -607,11 +609,12 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [swift_action_names.PRECOMPILE_C_MODULE],
             configurators = [
-                lambda prerequisites, args: c_layering_check_configurator(
-                    prerequisites,
-                    args,
-                    strict = True,
-                ),
+                # TODO: Enable once bazel supports lambdas
+                # lambda prerequisites, args: c_layering_check_configurator(
+                #     prerequisites,
+                #     args,
+                #     strict = True,
+                # ),
             ],
             features = [SWIFT_FEATURE_LAYERING_CHECK],
             not_features = [SWIFT_FEATURE_SYSTEM_MODULE],
