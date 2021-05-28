@@ -18,6 +18,7 @@ On this page:
 
   * [swift_binary](#swift_binary)
   * [swift_c_module](#swift_c_module)
+  * [swift_feature_allowlist](#swift_feature_allowlist)
   * [swift_grpc_library](#swift_grpc_library)
   * [swift_import](#swift_import)
   * [swift_library](#swift_library)
@@ -115,6 +116,37 @@ any C++ declarations.
 | <a id="swift_c_module-deps"></a>deps |  A list of C targets (or anything propagating <code>CcInfo</code>) that are dependencies of this target and whose headers may be referenced by the module map.   | <a href="https://bazel.build/docs/build-ref.html#labels">List of labels</a> | required |  |
 | <a id="swift_c_module-module_map"></a>module_map |  The module map file that should be loaded to import the C library dependency into Swift.   | <a href="https://bazel.build/docs/build-ref.html#labels">Label</a> | required |  |
 | <a id="swift_c_module-module_name"></a>module_name |  The name of the top-level module in the module map that this target represents.<br><br>A single <code>module.modulemap</code> file can define multiple top-level modules. When building with implicit modules, the presence of that module map allows any of the modules defined in it to be imported. When building explicit modules, however, there is a one-to-one correspondence between top-level modules and BUILD targets and the module name must be known without reading the module map file, so it must be provided directly. Therefore, one may have multiple <code>swift_c_module</code> targets that reference the same <code>module.modulemap</code> file but with different module names and headers.   | String | required |  |
+
+
+<a id="#swift_feature_allowlist"></a>
+
+## swift_feature_allowlist
+
+<pre>
+swift_feature_allowlist(<a href="#swift_feature_allowlist-name">name</a>, <a href="#swift_feature_allowlist-managed_features">managed_features</a>, <a href="#swift_feature_allowlist-packages">packages</a>)
+</pre>
+
+Limits the ability to request or disable certain features to a set of packages
+(and possibly subpackages) in the workspace.
+
+A Swift toolchain target can reference any number (zero or more) of
+`swift_feature_allowlist` targets. The features managed by these allowlists may
+overlap. For some package _P_, a feature is allowed to be used by targets in
+that package if _P_ matches the `packages` patterns in *all* of the allowlists
+that manage that feature.
+
+A feature that is not managed by any allowlist is allowed to be used by any
+package.
+
+
+**ATTRIBUTES**
+
+
+| Name  | Description | Type | Mandatory | Default |
+| :------------- | :------------- | :------------- | :------------- | :------------- |
+| <a id="swift_feature_allowlist-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/docs/build-ref.html#name">Name</a> | required |  |
+| <a id="swift_feature_allowlist-managed_features"></a>managed_features |  A list of feature strings that are permitted to be specified by the targets in the packages matched by the <code>packages</code> attribute. This list may include both feature names and/or negations (a name with a leading <code>-</code>); a regular feature name means that the targets in the matching packages may explicitly request that the feature be enabled, and a negated feature means that the target may explicitly request that the feature be disabled.<br><br>For example, <code>managed_features = ["foo", "-bar"]</code> means that targets in the allowlist's packages may request that feature <code>"foo"</code> be enabled and that feature <code>"bar"</code> be disabled.   | List of strings | optional | [] |
+| <a id="swift_feature_allowlist-packages"></a>packages |  A list of strings representing packages (possibly recursive) whose targets are allowed to enable/disable the features in <code>managed_features</code>. Each package pattern is written in the syntax used by the <code>package_group</code> function:<br><br>*   <code>//foo/bar</code>: Targets in the package <code>//foo/bar</code> but not in subpackages. *   <code>//foo/bar/...</code>: Targets in the package <code>//foo/bar</code> and any of its     subpackages. *   A leading <code>-</code> excludes packages that would otherwise have been included by     the patterns in the list.<br><br>Exclusions always take priority over inclusions; order in the list is irrelevant.   | List of strings | required |  |
 
 
 <a id="#swift_grpc_library"></a>

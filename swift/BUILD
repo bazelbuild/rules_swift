@@ -31,6 +31,7 @@ bzl_library(
         "//swift/internal:swift_binary_test",
         "//swift/internal:swift_c_module",
         "//swift/internal:swift_common",
+        "//swift/internal:swift_feature_allowlist",
         "//swift/internal:swift_grpc_library",
         "//swift/internal:swift_import",
         "//swift/internal:swift_library",
