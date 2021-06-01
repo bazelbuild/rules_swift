@@ -184,34 +184,21 @@ def compilation_context_for_explicit_module_compilation(
         dependencies (since Clang needs to find those on the file system in
         order to map them to a module).
     """
-    cc_infos = [
-        CcInfo(compilation_context = compilation_context)
-        for compilation_context in compilation_contexts
-    ]
+    all_compilation_contexts = list(compilation_contexts)
 
     for dep in deps:
         if CcInfo in dep:
-            # TODO(b/179692096): We only need to propagate the information from
-            # the compilation contexts, but we can't merge those directly; we
-            # can only merge `CcInfo` objects. So we "unwrap" the compilation
-            # context from each provider and then "rewrap" it in a new provider
-            # that lacks the linking context so that our merge operation does
-            # less work.
-            cc_infos.append(
-                CcInfo(compilation_context = dep[CcInfo].compilation_context),
-            )
+            all_compilation_contexts.append(dep[CcInfo].compilation_context)
         if apple_common.Objc in dep:
-            cc_infos.append(
-                CcInfo(
-                    compilation_context = cc_common.create_compilation_context(
-                        includes = dep[apple_common.Objc].strict_include,
-                    ),
+            all_compilation_contexts.append(
+                cc_common.create_compilation_context(
+                    includes = dep[apple_common.Objc].strict_include,
                 ),
             )
 
-    return cc_common.merge_cc_infos(
-        direct_cc_infos = cc_infos,
-    ).compilation_context
+    return cc_common.merge_compilation_contexts(
+        compilation_contexts = all_compilation_contexts,
+    )
 
 def expand_locations(ctx, values, targets = []):
     """Expands the `$(location)` placeholders in each of the given values.
