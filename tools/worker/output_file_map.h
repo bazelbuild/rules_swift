@@ -39,6 +39,14 @@ class OutputFileMap {
     return incremental_outputs_;
   }
 
+  // A map containing expected output files that will be generated in the
+  // non-incremental storage area, but need to be copied back at the start of
+  // the next compile. The key is the original object path; the corresponding
+  // value is its location in the incremental storage area.
+  const std::map<std::string, std::string> incremental_inputs() const {
+    return incremental_inputs_;
+  }
+
   // Reads the output file map from the JSON file at the given path, and updates
   // it to support incremental builds.
   void ReadFromPath(const std::string &path);
@@ -53,6 +61,7 @@ class OutputFileMap {
 
   nlohmann::json json_;
   std::map<std::string, std::string> incremental_outputs_;
+  std::map<std::string, std::string> incremental_inputs_;
 };
 
 #endif  // BUILD_BAZEL_RULES_SWIFT_TOOLS_WORKER_OUTPUT_FILE_MAP_H_

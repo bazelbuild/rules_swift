@@ -22,6 +22,7 @@
 
 #ifdef __APPLE__
 #include <copyfile.h>
+#include <removefile.h>
 #else
 #include <fcntl.h>
 #include <sys/sendfile.h>
@@ -35,6 +36,14 @@ std::string GetCurrentDirectory() {
   std::string cwd(buffer);
   free(buffer);
   return cwd;
+}
+
+bool FileExists(const std::string &path) {
+  return access(path.c_str(), 0) == 0;
+}
+
+bool RemoveFile(const std::string &path) {
+  return removefile(path.c_str(), nullptr, 0);
 }
 
 bool CopyFile(const std::string &src, const std::string &dest) {
