@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "tools/worker/work_processor.h"
-
 #include <google/protobuf/text_format.h>
 #include <sys/stat.h>
 
@@ -28,6 +26,7 @@
 #include "tools/common/temp_file.h"
 #include "tools/worker/output_file_map.h"
 #include "tools/worker/swift_runner.h"
+#include "tools/worker/work_processor.h"
 
 namespace {
 
@@ -36,6 +35,15 @@ namespace {
 static bool ArgumentEnablesWMO(const std::string &arg) {
   return arg == "-wmo" || arg == "-whole-module-optimization" ||
          arg == "-force-single-frontend-invocation";
+}
+
+static void FinalizeWorkRequest(const blaze::worker::WorkRequest &request,
+                                blaze::worker::WorkResponse *response,
+                                int exit_code,
+                                const std::ostringstream &output) {
+  response->set_exit_code(exit_code);
+  response->set_output(output.str());
+  response->set_request_id(request.request_id());
 }
 
 };  // end namespace
@@ -111,6 +119,8 @@ void WorkProcessor::ProcessWorkRequest(
   processed_args.push_back("@" + params_file->GetPath());
   params_file_stream.close();
 
+  std::ostringstream stderr_stream;
+
   if (!is_wmo) {
     for (const auto &expected_object_pair :
          output_file_map.incremental_outputs()) {
@@ -119,15 +129,30 @@ void WorkProcessor::ProcessWorkRequest(
       // incremental storage area.
       auto dir_path = Dirname(expected_object_pair.second);
       if (!MakeDirs(dir_path, S_IRWXU)) {
-        std::cerr << "Could not create directory " << dir_path << " (errno "
-                  << errno << ")\n";
+        stderr_stream << "swift_worker: Could not create directory " << dir_path
+                      << " (errno " << errno << ")\n";
+        FinalizeWorkRequest(request, response, EXIT_FAILURE, stderr_stream);
+      }
+    }
+
+    // Copy some input files from the incremental storage area to the locations
+    // where Bazel will generate them.
+    for (const auto &expected_object_pair :
+         output_file_map.incremental_inputs()) {
+      if (FileExists(expected_object_pair.second)) {
+        if (!CopyFile(expected_object_pair.second,
+                      expected_object_pair.first)) {
+          stderr_stream << "swift_worker: Could not copy "
+                        << expected_object_pair.second << " to "
+                        << expected_object_pair.first << " (errno " << errno
+                        << ")\n";
+          FinalizeWorkRequest(request, response, EXIT_FAILURE, stderr_stream);
+        }
       }
     }
   }
 
-  std::ostringstream stderr_stream;
   SwiftRunner swift_runner(processed_args, /*force_response_file=*/true);
-
   int exit_code = swift_runner.Run(&stderr_stream, /*stdout_to_stderr=*/true);
 
   if (!is_wmo) {
@@ -136,14 +161,34 @@ void WorkProcessor::ProcessWorkRequest(
     for (const auto &expected_object_pair :
          output_file_map.incremental_outputs()) {
       if (!CopyFile(expected_object_pair.second, expected_object_pair.first)) {
-        std::cerr << "Could not copy " << expected_object_pair.second << " to "
-                  << expected_object_pair.first << " (errno " << errno << ")\n";
-        exit_code = EXIT_FAILURE;
+        stderr_stream << "swift_worker: Could not copy "
+                      << expected_object_pair.second << " to "
+                      << expected_object_pair.first << " (errno " << errno
+                      << ")\n";
+        FinalizeWorkRequest(request, response, EXIT_FAILURE, stderr_stream);
       }
     }
-  }
 
-  response->set_exit_code(exit_code);
-  response->set_output(stderr_stream.str());
-  response->set_request_id(request.request_id());
+    // Copy the replaced input files back to the incremental storage for the
+    // next run.
+    for (const auto &expected_object_pair :
+         output_file_map.incremental_inputs()) {
+      if (FileExists(expected_object_pair.first)) {
+        if (FileExists(expected_object_pair.second)) {
+          // CopyFile fails if the file already exists
+          RemoveFile(expected_object_pair.second);
+        }
+        if (!CopyFile(expected_object_pair.first,
+                      expected_object_pair.second)) {
+          stderr_stream << "swift_worker: Could not copy "
+                        << expected_object_pair.first << " to "
+                        << expected_object_pair.second << " (errno " << errno
+                        << ")\n";
+          FinalizeWorkRequest(request, response, EXIT_FAILURE, stderr_stream);
+        }
+      }
+    }
+
+    FinalizeWorkRequest(request, response, exit_code, stderr_stream);
+  }
 }

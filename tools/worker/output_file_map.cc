@@ -57,6 +57,7 @@ void OutputFileMap::WriteToPath(const std::string &path) {
 void OutputFileMap::UpdateForIncremental(const std::string &path) {
   nlohmann::json new_output_file_map;
   std::map<std::string, std::string> incremental_outputs;
+  std::map<std::string, std::string> incremental_inputs;
 
   // The empty string key is used to represent outputs that are for the whole
   // module, rather than for a particular source file.
@@ -111,6 +112,15 @@ void OutputFileMap::UpdateForIncremental(const std::string &path) {
     new_output_file_map[src] = src_map;
   }
 
+  auto swiftmodule_path = ReplaceExtension(path, ".swiftmodule", /*all_extensions=*/true);
+  auto copied_swiftmodule_path = MakeIncrementalOutputPath(swiftmodule_path);
+  incremental_inputs[swiftmodule_path] = copied_swiftmodule_path;
+
+  auto swiftdoc_path = ReplaceExtension(path, ".swiftdoc", /*all_extensions=*/true);
+  auto copied_swiftdoc_path = MakeIncrementalOutputPath(swiftdoc_path);
+  incremental_inputs[swiftdoc_path] = copied_swiftdoc_path;
+
   json_ = new_output_file_map;
   incremental_outputs_ = incremental_outputs;
+  incremental_inputs_ = incremental_inputs;
 }
