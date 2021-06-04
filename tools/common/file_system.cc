@@ -43,7 +43,13 @@ bool FileExists(const std::string &path) {
 }
 
 bool RemoveFile(const std::string &path) {
+#ifdef __APPLE__
   return removefile(path.c_str(), nullptr, 0);
+#elif __unix__
+  return remove(path.c_str());
+#else
+#error Only macOS and Unix are supported at this time.
+#endif
 }
 
 bool CopyFile(const std::string &src, const std::string &dest) {
