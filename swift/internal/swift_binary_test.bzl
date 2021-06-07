@@ -15,7 +15,6 @@
 """Implementation of the `swift_binary` and `swift_test` rules."""
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load("@bazel_skylib//lib:partial.bzl", "partial")
 load(":compiling.bzl", "output_groups_from_compilation_outputs")
 load(":derived_files.bzl", "derived_files")
 load(":feature_names.bzl", "SWIFT_FEATURE_BUNDLED_XCTESTS")
@@ -208,16 +207,6 @@ def _swift_linking_rule_impl(
         output_groups = output_groups_from_compilation_outputs(
             compilation_outputs = compilation_outputs,
         )
-
-    # Retrieve any additional linker flags required by the Swift toolchain.
-    # TODO(b/70228246): Also support mostly-static and fully-dynamic modes,
-    # here and for the C++ toolchain args below.
-    toolchain_linker_flags = partial.call(
-        swift_toolchain.linker_opts_producer,
-        is_static = True,
-        is_test = is_test,
-    )
-    user_link_flags.extend(toolchain_linker_flags)
 
     # Collect linking contexts from any of the toolchain's implicit
     # dependencies.
