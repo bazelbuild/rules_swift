@@ -176,33 +176,35 @@ def _sdk_developer_framework_dir(apple_toolchain, apple_fragment, xcode_config):
 
     return paths.join(apple_toolchain.sdk_dir(), "Developer/Library/Frameworks")
 
-def _default_linker_opts(
+def _swift_linkopts_providers(
         apple_fragment,
         apple_toolchain,
         platform,
         target,
-        xcode_config,
-        is_static,
-        is_test):
-    """Returns options that should be passed by default to `clang` when linking.
+        toolchain_label,
+        xcode_config):
+    """Returns providers containing flags that should be passed to the linker.
 
-    This function is wrapped in a `partial` that will be propagated as part of
-    the toolchain provider. The first five arguments are pre-bound; the
-    `is_static` and `is_test` arguments are expected to be passed by the caller.
+    The providers returned by this function will be used as implicit
+    dependencies of the toolchain to ensure that any binary containing Swift code
+    will link to the standard libraries correctly.
 
     Args:
         apple_fragment: The `apple` configuration fragment.
         apple_toolchain: The `apple_common.apple_toolchain()` object.
         platform: The `apple_platform` value describing the target platform.
         target: The target triple.
+        toolchain_label: The label of the Swift toolchain that will act as the
+            owner of the linker input propagating the flags.
         xcode_config: The Xcode configuration.
-        is_static: `True` to link against the static version of the Swift
-            runtime, or `False` to link against dynamic/shared libraries.
-        is_test: `True` if the target being linked is a test target.
 
     Returns:
-        The command line options to pass to `clang` to link against the desired
-        variant of the Swift runtime libraries.
+        A `struct` containing the following fields:
+
+        *   `cc_info`: A `CcInfo` provider that will provide linker flags to
+            binaries that depend on Swift targets.
+        *   `objc_info`: An `apple_common.Objc` provider that will provide
+            linker flags to binaries that depend on Swift targets.
     """
     platform_developer_framework_dir = _platform_developer_framework_dir(
         apple_toolchain,
@@ -241,14 +243,26 @@ def _default_linker_opts(
 
     # Add the linker path to the directory containing the dylib with Swift
     # extensions for the XCTest module.
-    if is_test and platform_developer_framework_dir:
+    if platform_developer_framework_dir:
         linkopts.extend([
             "-L{}".format(
                 _swift_developer_lib_dir(platform_developer_framework_dir),
             ),
         ])
 
-    return linkopts
+    return struct(
+        cc_info = CcInfo(
+            linking_context = cc_common.create_linking_context(
+                linker_inputs = depset([
+                    cc_common.create_linker_input(
+                        owner = toolchain_label,
+                        user_link_flags = depset(linkopts),
+                    ),
+                ]),
+            ),
+        ),
+        objc_info = apple_common.new_objc_provider(linkopt = depset(linkopts)),
+    )
 
 def _features_for_bitcode_mode(bitcode_mode):
     """Gets the list of features to enable for the selected Bitcode mode.
@@ -631,12 +645,12 @@ def _xcode_swift_toolchain_impl(ctx):
     )
     target = _swift_apple_target_triple(cpu, platform, target_os_version)
 
-    linker_opts_producer = partial.make(
-        _default_linker_opts,
+    swift_linkopts_providers = _swift_linkopts_providers(
         apple_fragment,
         apple_toolchain,
         platform,
         target,
+        ctx.label,
         xcode_config,
     )
 
@@ -749,8 +763,9 @@ def _xcode_swift_toolchain_impl(ctx):
             ),
             implicit_deps_providers = collect_implicit_deps_providers(
                 ctx.attr.implicit_deps,
+                additional_cc_infos = [swift_linkopts_providers.cc_info],
+                additional_objc_infos = [swift_linkopts_providers.objc_info],
             ),
-            linker_opts_producer = linker_opts_producer,
             linker_supports_filelist = True,
             object_format = "macho",
             requested_features = requested_features,

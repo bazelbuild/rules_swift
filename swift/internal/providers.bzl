@@ -166,19 +166,6 @@ linking target (but not to precompiled explicit C/Objective-C modules):
 For ease of use, this field is never `None`; it will always be a valid `struct`
 containing the fields described above, even if those lists are empty.
 """,
-        "linker_opts_producer": """\
-Skylib `partial`. A partial function that returns the flags that should be
-passed to Clang to link a binary or test target with the Swift runtime
-libraries.
-
-The partial should be called with two arguments:
-
-*   `is_static`: A `Boolean` value indicating whether to link against the static
-    or dynamic runtime libraries.
-
-*   `is_test`: A `Boolean` value indicating whether the target being linked is a
-    test target.
-""",
         "linker_supports_filelist": """\
 `Boolean`. Indicates whether or not the toolchain's linker supports the input
 files passed to it via a file list.
