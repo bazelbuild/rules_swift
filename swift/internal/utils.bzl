@@ -59,7 +59,10 @@ def collect_cc_libraries(
 
     return libraries
 
-def collect_implicit_deps_providers(targets):
+def collect_implicit_deps_providers(
+        targets,
+        additional_cc_infos = [],
+        additional_objc_infos = []):
     """Returns a struct with important providers from a list of implicit deps.
 
     Note that the relationship between each provider in the list and the target
@@ -67,6 +70,10 @@ def collect_implicit_deps_providers(targets):
 
     Args:
         targets: A list (possibly empty) of `Target`s.
+        additional_cc_infos: A `list` of additional `CcInfo` providers that
+            should be included in the returned value.
+        additional_objc_infos: A `list` of additional `apple_common.Objc`
+            providers that should be included in the returned value.
 
     Returns:
         A `struct` containing three fields:
@@ -90,8 +97,8 @@ def collect_implicit_deps_providers(targets):
             swift_infos.append(target[SwiftInfo])
 
     return struct(
-        cc_infos = cc_infos,
-        objc_infos = objc_infos,
+        cc_infos = cc_infos + additional_cc_infos,
+        objc_infos = objc_infos + additional_objc_infos,
         swift_infos = swift_infos,
     )
 

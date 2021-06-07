@@ -20,7 +20,6 @@ toolchain, see `swift.bzl`.
 """
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load("@bazel_skylib//lib:partial.bzl", "partial")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
 load(":actions.bzl", "swift_action_names")
 load(":attrs.bzl", "swift_toolchain_driver_attrs")
@@ -107,18 +106,17 @@ def _all_action_configs(additional_swiftc_copts):
         autolink_extract_action_configs()
     )
 
-def _default_linker_opts(
+def _swift_linkopts_cc_info(
         cc_toolchain,
         cpu,
         os,
-        toolchain_root,
-        is_static,
-        is_test):
-    """Returns options that should be passed by default to `clang` when linking.
+        toolchain_label,
+        toolchain_root):
+    """Returns a `CcInfo` containing flags that should be passed to the linker.
 
-    This function is wrapped in a `partial` that will be propagated as part of
-    the toolchain provider. The first three arguments are pre-bound; the
-    `is_static` and `is_test` arguments are expected to be passed by the caller.
+    The provider returned by this function will be used as an implicit
+    dependency of the toolchain to ensure that any binary containing Swift code
+    will link to the standard libraries correctly.
 
     Args:
         cc_toolchain: The cpp toolchain from which the `ld` executable is
@@ -126,17 +124,14 @@ def _default_linker_opts(
         cpu: The CPU architecture, which is used as part of the library path.
         os: The operating system name, which is used as part of the library
             path.
+        toolchain_label: The label of the Swift toolchain that will act as the
+            owner of the linker input propagating the flags.
         toolchain_root: The toolchain's root directory.
-        is_static: `True` to link against the static version of the Swift
-            runtime, or `False` to link against dynamic/shared libraries.
-        is_test: `True` if the target being linked is a test target.
 
     Returns:
-        The command line options to pass to `clang` to link against the desired
-        variant of the Swift runtime libraries.
+        A `CcInfo` provider that will provide linker flags to binaries that
+        depend on Swift targets.
     """
-
-    _ignore = is_test
 
     # TODO(#8): Support statically linking the Swift runtime.
     platform_lib_dir = "{toolchain_root}/lib/swift/{os}".format(
@@ -158,22 +153,29 @@ def _default_linker_opts(
         "-lrt",
         "-ldl",
         runtime_object_path,
+        "-static-libgcc",
     ]
 
-    if is_static:
-        linkopts.append("-static-libgcc")
-
-    return linkopts
+    return CcInfo(
+        linking_context = cc_common.create_linking_context(
+            linker_inputs = depset([
+                cc_common.create_linker_input(
+                    owner = toolchain_label,
+                    user_link_flags = depset(linkopts),
+                ),
+            ]),
+        ),
+    )
 
 def _swift_toolchain_impl(ctx):
     toolchain_root = ctx.attr.root
     cc_toolchain = find_cpp_toolchain(ctx)
 
-    linker_opts_producer = partial.make(
-        _default_linker_opts,
+    swift_linkopts_cc_info = _swift_linkopts_cc_info(
         cc_toolchain,
         ctx.attr.arch,
         ctx.attr.os,
+        ctx.label,
         toolchain_root,
     )
 
@@ -223,10 +225,10 @@ def _swift_toolchain_impl(ctx):
             generated_header_module_implicit_deps_providers = (
                 collect_implicit_deps_providers([])
             ),
-            implicit_deps_providers = (
-                collect_implicit_deps_providers([])
+            implicit_deps_providers = collect_implicit_deps_providers(
+                [],
+                additional_cc_infos = [swift_linkopts_cc_info],
             ),
-            linker_opts_producer = linker_opts_producer,
             object_format = "elf",
             requested_features = requested_features,
             root_dir = toolchain_root,
