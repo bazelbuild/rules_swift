@@ -132,6 +132,7 @@ void WorkProcessor::ProcessWorkRequest(
         stderr_stream << "swift_worker: Could not create directory " << dir_path
                       << " (errno " << errno << ")\n";
         FinalizeWorkRequest(request, response, EXIT_FAILURE, stderr_stream);
+        return;
       }
     }
 
@@ -147,6 +148,7 @@ void WorkProcessor::ProcessWorkRequest(
                         << expected_object_pair.first << " (errno " << errno
                         << ")\n";
           FinalizeWorkRequest(request, response, EXIT_FAILURE, stderr_stream);
+          return;
         }
       }
     }
@@ -166,6 +168,7 @@ void WorkProcessor::ProcessWorkRequest(
                       << expected_object_pair.first << " (errno " << errno
                       << ")\n";
         FinalizeWorkRequest(request, response, EXIT_FAILURE, stderr_stream);
+        return;
       }
     }
 
@@ -185,6 +188,7 @@ void WorkProcessor::ProcessWorkRequest(
                         << expected_object_pair.second << " (errno " << errno
                         << ")\n";
           FinalizeWorkRequest(request, response, EXIT_FAILURE, stderr_stream);
+          return;
         }
       }
     }
