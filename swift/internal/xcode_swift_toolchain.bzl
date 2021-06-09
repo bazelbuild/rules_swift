@@ -237,15 +237,10 @@ def _swift_linkopts_providers(
         "-Wl,-objc_abi_version,2",
     ]
 
-    # Frameworks in the platform's developer frameworks directory (like XCTest,
-    # but also StoreKitTest on macOS) contain the actual binary for that
-    # framework, not a .tbd file that says where to find it on simulator/device.
-    # So, we need to explicitly add that to test binaries' rpaths. We also need
-    # to add the linker path to the directory containing the dylib with Swift
+    # Add the linker path to the directory containing the dylib with Swift
     # extensions for the XCTest module.
     if platform_developer_framework_dir:
         linkopts.extend([
-            "-Wl,-rpath,{}".format(platform_developer_framework_dir),
             "-L{}".format(
                 _swift_developer_lib_dir(platform_developer_framework_dir),
             ),
