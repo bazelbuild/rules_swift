@@ -58,6 +58,7 @@ load(
     "SWIFT_FEATURE_SUPPORTS_SYSTEM_MODULE_FLAG",
     "SWIFT_FEATURE_SYSTEM_MODULE",
     "SWIFT_FEATURE_USE_C_MODULES",
+    "SWIFT_FEATURE_USE_GLOBAL_INDEX_STORE",
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
     "SWIFT_FEATURE_VFSOVERLAY",
     "SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS",
@@ -805,6 +806,14 @@ def compile_action_configs(
             ],
             features = [SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES],
         ),
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [_global_index_store_configurator],
+            features = [
+                SWIFT_FEATURE_INDEX_WHILE_BUILDING,
+                SWIFT_FEATURE_USE_GLOBAL_INDEX_STORE,
+            ],
+        ),
 
         # Configure index-while-building.
         swift_toolchain_config.action_config(
@@ -1418,6 +1427,12 @@ def _index_while_building_configurator(prerequisites, args):
     """Adds flags for index-store generation to the command line."""
     if not _index_store_path_overridden(prerequisites.user_compile_flags):
         args.add("-index-store-path", prerequisites.indexstore_directory.path)
+
+def _global_index_store_configurator(prerequisites, args):
+    """Adds flags for index-store generation to the command line."""
+    out_dir = prerequisites.indexstore_directory.dirname.split("/")[0]
+    path = out_dir + "/_global_index_store"
+    args.add("-Xwrapped-swift=-global-index-store-import-path=" + path)
 
 def _conditional_compilation_flag_configurator(prerequisites, args):
     """Adds (non-Clang) conditional compilation flags to the command line."""

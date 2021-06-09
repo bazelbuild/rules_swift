@@ -99,10 +99,14 @@ SWIFT_FEATURE_ENABLE_TESTING = "swift.enable_testing"
 SWIFT_FEATURE_FULL_DEBUG_INFO = "swift.full_debug_info"
 
 # If enabled, the compilation action for a target will produce an index store.
+# https://docs.google.com/document/d/1cH2sTpgSnJZCkZtJl1aY-rzy4uGPcrI-6RrUpdATO2Q/
 SWIFT_FEATURE_INDEX_WHILE_BUILDING = "swift.index_while_building"
 
 # If enabled the compilation action will not produce indexes for system modules.
 SWIFT_FEATURE_DISABLE_SYSTEM_INDEX = "swift.disable_system_index"
+
+# Index while building - using a global index store cache
+SWIFT_FEATURE_USE_GLOBAL_INDEX_STORE = "swift.use_global_index_store"
 
 # If enabled, compilation actions and module map generation will assume that the
 # header paths in module maps are relative to the current working directory
