@@ -97,8 +97,14 @@ class SwiftRunner {
   //
   // This method has file system side effects, creating temporary files and
   // directories as needed for a particular substitution.
-  bool ProcessArgument(const std::string &arg,
+  template <typename Iterator>
+  bool ProcessArgument(Iterator &itr, const std::string &arg,
                        std::function<void(const std::string &)> consumer);
+
+  // Parses arguments to ivars and returns a vector of strings from the iterator.
+  // This method doesn't actually mutate any of the arguments.
+  template <typename Iterator>
+  std::vector<std::string> ParseArguments(Iterator itr);
 
   // Applies substitutions to the given command line arguments, returning the
   // results in a new vector.
@@ -128,6 +134,18 @@ class SwiftRunner {
   // The path to the generated header rewriter tool, if one is being used for
   // this compilation.
   std::string generated_header_rewriter_path_;
+
+  // The path of the output map file
+  std::string output_file_map_path_;
+
+  // The index store path argument passed to the runner
+  std::string index_store_path_;
+
+  // The path of the global index store  when using
+  // swift.use_global_index_store. When set, this is passed to `swiftc` as the
+  // `-index-store-path`. After running `swiftc` `index-import` copies relevant
+  // index outputs into the `index_store_path` to integrate outputs with Bazel.
+  std::string global_index_store_import_path_;
 };
 
 #endif  // BUILD_BAZEL_RULES_SWIFT_TOOLS_WORKER_SWIFT_RUNNER_H_

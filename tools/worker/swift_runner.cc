@@ -20,6 +20,7 @@
 #include "tools/common/file_system.h"
 #include "tools/common/process.h"
 #include "tools/common/temp_file.h"
+#include "tools/worker/output_file_map.h"
 
 namespace {
 
@@ -129,13 +130,87 @@ int SwiftRunner::Run(std::ostream *stderr_stream, bool stdout_to_stderr) {
     exit_code = RunSubProcess(rewriter_args, stderr_stream, stdout_to_stderr);
   }
 
+  auto enable_global_index_store = global_index_store_import_path_ != "";
+  if (enable_global_index_store) {
+    OutputFileMap output_file_map;
+    output_file_map.ReadFromPath(output_file_map_path_);
+
+    auto outputs = output_file_map.incremental_outputs();
+    std::map<std::string, std::string>::iterator it;
+
+    std::vector<std::string> ii_args;
+// The index-import runfile path is passed as a define
+#if defined(INDEX_IMPORT_PATH)
+    ii_args.push_back(INDEX_IMPORT_PATH);
+#else
+    // Logical error
+    std::cerr << "Incorrectly compiled work_processor.cc";
+    exit_code = EXIT_FAILURE;
+    return exit_code;
+#endif
+
+    for (it = outputs.begin(); it != outputs.end(); it++) {
+      // Need the actual output paths of the compiler - not bazel
+      auto output_path = it->first;
+      auto file_type = output_path.substr(output_path.find_last_of(".") + 1);
+      if (file_type == "o") {
+        ii_args.push_back("-import-output-file");
+        ii_args.push_back(output_path);
+      }
+    }
+
+    auto exec_root = GetCurrentDirectory();
+    // Copy back from the global index store to bazel's index store
+    ii_args.push_back(exec_root + "/" + global_index_store_import_path_);
+    ii_args.push_back(exec_root + "/" + index_store_path_);
+    exit_code =
+        RunSubProcess(ii_args, stderr_stream, /*stdout_to_stderr=*/true);
+  }
   return exit_code;
 }
+
+// Marker for end of iteration
+class StreamIteratorEnd {};
+
+// Basic iterator over an ifstream
+class StreamIterator {
+ public:
+  StreamIterator(std::ifstream &file) : file_{file} { next(); }
+
+  const std::string &operator*() const { return str_; }
+
+  StreamIterator &operator++() {
+    next();
+    return *this;
+  }
+
+  bool operator!=(StreamIteratorEnd) const { return !!file_; }
+
+ private:
+  void next() { std::getline(file_, str_); }
+
+  std::ifstream &file_;
+  std::string str_;
+};
+
+class ArgsFile {
+ public:
+  ArgsFile(std::ifstream &file) : file_(file) {}
+
+  StreamIterator begin() { return StreamIterator{file_}; }
+
+  StreamIteratorEnd end() { return StreamIteratorEnd{}; }
+
+ private:
+  std::ifstream &file_;
+};
 
 bool SwiftRunner::ProcessPossibleResponseFile(
     const std::string &arg, std::function<void(const std::string &)> consumer) {
   auto path = arg.substr(1);
   std::ifstream original_file(path);
+  ArgsFile args_file(original_file);
+
   // If we couldn't open it, maybe it's not a file; maybe it's just some other
   // argument that starts with "@" such as "@loader_path/..."
   if (!original_file.good()) {
@@ -143,15 +218,17 @@ bool SwiftRunner::ProcessPossibleResponseFile(
     return false;
   }
 
+  // Read the file to a vector to prevent double I/O
+  auto args = ParseArguments(args_file);
+
   // If we're forcing response files, process and send the arguments from this
   // file directly to the consumer; they'll all get written to the same response
   // file at the end of processing all the arguments.
   if (force_response_file_) {
-    std::string arg_from_file;
-    while (std::getline(original_file, arg_from_file)) {
+    for (auto it = args.begin(); it != args.end(); ++it) {
       // Arguments in response files might be quoted/escaped, so we need to
       // unescape them ourselves.
-      ProcessArgument(Unescape(arg_from_file), consumer);
+      ProcessArgument(it, Unescape(*it), consumer);
     }
     return true;
   }
@@ -161,12 +238,10 @@ bool SwiftRunner::ProcessPossibleResponseFile(
   bool changed = false;
   std::string arg_from_file;
   std::vector<std::string> new_args;
-
-  while (std::getline(original_file, arg_from_file)) {
-    changed |=
-        ProcessArgument(arg_from_file, [&](const std::string &processed_arg) {
-          new_args.push_back(processed_arg);
-        });
+  for (auto it = args.begin(); it != args.end(); ++it) {
+    changed |= ProcessArgument(it, *it, [&](const std::string &processed_arg) {
+      new_args.push_back(processed_arg);
+    });
   }
 
   if (changed) {
@@ -182,10 +257,11 @@ bool SwiftRunner::ProcessPossibleResponseFile(
   return changed;
 }
 
+template <typename Iterator>
 bool SwiftRunner::ProcessArgument(
-    const std::string &arg, std::function<void(const std::string &)> consumer) {
+    Iterator &itr, const std::string &arg,
+    std::function<void(const std::string &)> consumer) {
   bool changed = false;
-
   if (arg[0] == '@') {
     changed = ProcessPossibleResponseFile(arg, consumer);
   } else {
@@ -198,8 +274,8 @@ bool SwiftRunner::ProcessArgument(
         consumer(GetCurrentDirectory() + "=.");
         changed = true;
       } else if (new_arg == "-coverage-prefix-pwd-is-dot") {
-        // Get the actual current working directory (the workspace root), which we
-        // didn't know at analysis time.
+        // Get the actual current working directory (the workspace root), which
+        // we didn't know at analysis time.
         consumer("-coverage-prefix-map");
         consumer(GetCurrentDirectory() + "=.");
         changed = true;
@@ -213,7 +289,8 @@ bool SwiftRunner::ProcessArgument(
         temp_directories_.push_back(std::move(module_cache_dir));
         changed = true;
       } else if (StripPrefix("-generated-header-rewriter=", new_arg)) {
-        generated_header_rewriter_path_ = new_arg;
+        changed = true;
+      } else if (StripPrefix("-global-index-store-import-path=", new_arg)) {
         changed = true;
       } else {
         // TODO(allevato): Report that an unknown wrapper arg was found and give
@@ -221,6 +298,28 @@ bool SwiftRunner::ProcessArgument(
         changed = true;
       }
     } else {
+      // Process default arguments
+      if (arg == "-index-store-path") {
+        consumer("-index-store-path");
+        ++itr;
+
+        // If there was a global index store set, pass that to swiftc.
+        // Otherwise, pass the users. We later copy index data onto the users.
+        if (global_index_store_import_path_ != "") {
+          new_arg = global_index_store_import_path_;
+        } else {
+          new_arg = index_store_path_;
+        }
+        changed = true;
+      } else if (arg == "-output-file-map") {
+        // Save the output file map to the value proceeding
+        // `-output-file-map`
+        consumer("-output-file-map");
+        ++itr;
+        new_arg = output_file_map_path_;
+        changed = true;
+      }
+
       // Apply any other text substitutions needed in the argument (i.e., for
       // Apple toolchains).
       //
@@ -236,6 +335,36 @@ bool SwiftRunner::ProcessArgument(
   return changed;
 }
 
+template <typename Iterator>
+std::vector<std::string> SwiftRunner::ParseArguments(Iterator itr) {
+  std::vector<std::string> out_args;
+  for (auto it = itr.begin(); it != itr.end(); ++it) {
+    auto arg = *it;
+    out_args.push_back(arg);
+
+    if (StripPrefix("-Xwrapped-swift=", arg)) {
+      if (StripPrefix("-global-index-store-import-path=", arg)) {
+        global_index_store_import_path_ = arg;
+      } else if (StripPrefix("-generated-header-rewriter=", arg)) {
+        generated_header_rewriter_path_ = arg;
+      }
+    } else {
+      if (arg == "-output-file-map") {
+        ++it;
+        arg = *it;
+        output_file_map_path_ = arg;
+        out_args.push_back(arg);
+      } else if (arg == "-index-store-path") {
+        ++it;
+        arg = *it;
+        index_store_path_ = arg;
+        out_args.push_back(arg);
+      }
+    }
+  }
+  return out_args;
+}
+
 std::vector<std::string> SwiftRunner::ProcessArguments(
     const std::vector<std::string> &args) {
   std::vector<std::string> new_args;
@@ -248,16 +377,19 @@ std::vector<std::string> SwiftRunner::ProcessArguments(
 #endif
 
   // The tool is assumed to be the first argument. Push it directly.
-  auto it = args.begin();
+  auto parsed_args = ParseArguments(args);
+
+  auto it = parsed_args.begin();
   new_args.push_back(*it++);
 
   // If we're forcing response files, push the remaining processed args onto a
   // different vector that we write out below. If not, push them directly onto
   // the vector being returned.
   auto &args_destination = force_response_file_ ? response_file_args : new_args;
-  while (it != args.end()) {
-    ProcessArgument(
-        *it, [&](const std::string &arg) { args_destination.push_back(arg); });
+  while (it != parsed_args.end()) {
+    ProcessArgument(it, *it, [&](const std::string &arg) {
+      args_destination.push_back(arg);
+    });
     ++it;
   }
 
