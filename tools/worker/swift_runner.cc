@@ -15,6 +15,7 @@
 #include "tools/worker/swift_runner.h"
 
 #include <fstream>
+#include <thread>
 
 #include "tools/common/bazel_substitutions.h"
 #include "tools/common/file_system.h"
@@ -102,7 +103,7 @@ static bool StripPrefix(const std::string &prefix, std::string &str) {
 
 SwiftRunner::SwiftRunner(const std::vector<std::string> &args,
                          bool force_response_file)
-    : force_response_file_(force_response_file) {
+    : force_response_file_(force_response_file), use_host_num_threads_(false) {
   args_ = ProcessArguments(args);
 }
 
@@ -318,6 +319,14 @@ bool SwiftRunner::ProcessArgument(
         ++itr;
         new_arg = output_file_map_path_;
         changed = true;
+      } else if (use_host_num_threads_ && arg == "-num-threads") {
+        consumer("-num-threads");
+
+        // If we're using the number of threads on the host, set this value to
+        // the NumCPU.
+        ++itr;
+        new_arg = std::to_string(std::thread::hardware_concurrency());
+        changed = true;
       }
 
       // Apply any other text substitutions needed in the argument (i.e., for
@@ -347,6 +356,8 @@ std::vector<std::string> SwiftRunner::ParseArguments(Iterator itr) {
         global_index_store_import_path_ = arg;
       } else if (StripPrefix("-generated-header-rewriter=", arg)) {
         generated_header_rewriter_path_ = arg;
+      } else if (StripPrefix("-use-host-num-threads", arg)) {
+        use_host_num_threads_ = true;
       }
     } else {
       if (arg == "-output-file-map") {

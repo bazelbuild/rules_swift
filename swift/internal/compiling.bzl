@@ -60,6 +60,7 @@ load(
     "SWIFT_FEATURE_USE_C_MODULES",
     "SWIFT_FEATURE_USE_GLOBAL_INDEX_STORE",
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
+    "SWIFT_FEATURE_USE_HOST_NUM_THREADS",
     "SWIFT_FEATURE_VFSOVERLAY",
     "SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
@@ -772,6 +773,16 @@ def compile_action_configs(
                 swift_action_names.COMPILE,
                 swift_action_names.DERIVE_FILES,
             ],
+            configurators = [_wmo_host_thread_count_configurator],
+            features = [
+                [SWIFT_FEATURE_USE_HOST_NUM_THREADS, SWIFT_FEATURE__WMO_IN_SWIFTCOPTS],
+            ],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVE_FILES,
+            ],
             configurators = [
                 partial.make(
                     _wmo_thread_count_configurator,
@@ -1384,6 +1395,11 @@ def _wmo_thread_count_configurator(should_check_flags, prerequisites, args):
     ):
         # Force threaded mode for WMO builds.
         args.add("-num-threads", str(_DEFAULT_WMO_THREAD_COUNT))
+
+def _wmo_host_thread_count_configurator(prerequisites, args):
+    """Sets num-threads to number of threads on the host.
+    """
+    args.add("-Xwrapped-swift=-use-host-num-threads")
 
 def _is_wmo_manually_requested(user_compile_flags):
     """Returns `True` if a WMO flag is in the given list of compiler flags.
