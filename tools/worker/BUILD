@@ -18,12 +18,18 @@ config_setting(
     },
 )
 
+# Internal hinge for index while building V2 feature
+config_setting(
+    name = "use_global_index_store",
+    values = {
+        "features": "swift.use_global_index_store",
+    },
+)
+
 cc_library(
     name = "compile_with_worker",
     srcs = [
         "compile_with_worker.cc",
-        "output_file_map.cc",
-        "output_file_map.h",
         "work_processor.cc",
         "work_processor.h",
     ],
@@ -34,7 +40,6 @@ cc_library(
         "//tools/common:file_system",
         "//tools/common:path_utils",
         "//tools/common:temp_file",
-        "@com_github_nlohmann_json//:json",
         "@com_google_protobuf//:protobuf",
     ],
 )
@@ -50,13 +55,30 @@ cc_library(
 
 cc_library(
     name = "swift_runner",
-    srcs = ["swift_runner.cc"],
+    srcs = [
+        "output_file_map.cc",
+        "output_file_map.h",
+        "swift_runner.cc",
+    ],
     hdrs = ["swift_runner.h"],
+    copts = select({
+        ":use_global_index_store": [
+            "-DINDEX_IMPORT_PATH=\\\"$(rootpath @build_bazel_rules_swift_index_import//:index_import)\\\"",
+        ],
+        "//conditions:default": [],
+    }),
+    data = select({
+        ":use_global_index_store": [
+            "@build_bazel_rules_swift_index_import//:index_import",
+        ],
+        "//conditions:default": [],
+    }),
     deps = [
         "//tools/common:bazel_substitutions",
         "//tools/common:file_system",
         "//tools/common:process",
         "//tools/common:temp_file",
+        "@com_github_nlohmann_json//:json",
     ],
 )
 
