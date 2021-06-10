@@ -101,8 +101,8 @@ bool MakeDirs(const std::string &path, int mode) {
   if (stat(path.c_str(), &dir_stats) == 0) {
     // Return true if the directory already exists.
     if (!S_ISDIR(dir_stats.st_mode)) {
-      std::cerr << "error: path exists and isn't a directory (" << path.c_str()
-                << ") \n";
+      std::cerr << "error: path exists and isn't a directory "
+                << strerror(errno) << " (" << path.c_str() << ") \n";
       return false;
     } else {
       return true;
@@ -118,19 +118,26 @@ bool MakeDirs(const std::string &path, int mode) {
   int mkdir_ret = mkdir(path.c_str(), mode);
   if (mkdir_ret == 0) {
     return true;
-  } else if (mkdir_ret == EEXIST) {
-    int chmod_ret = chmod(path.c_str(), S_IRWXU);
-    if (chmod_ret == 0) {
-      return true;
-    }
-    std::cerr << "error:" << strerror(errno) << ":" << path.c_str() << "\n";
-    return false;
   }
 
-  // If we can access the directory assume it's valid
-  if (access(path.c_str(), F_OK) == 0) {
-    return true;
+  // Save the mkdir errno for better reporting
+  int mkdir_errno = errno;
+
+  // Deal with a race condition when 2 `MakeDirs` are running at the same time:
+  // one `mkdir` invocation will fail in each recursive call at different
+  // points. Don't recurse here to avoid an infinite loop in failure cases
+  if (errno == EEXIST && stat(path.c_str(), &dir_stats) == 0) {
+    if (!S_ISDIR(dir_stats.st_mode)) {
+      std::cerr << "error: path exists and isn't a directory "
+                << strerror(errno) << " (" << path.c_str() << ") \n";
+      return false;
+    } else {
+      // Return true if the directory already exists.
+      return true;
+    }
   }
-  std::cerr << "error:" << strerror(errno) << ":" << path.c_str() << "\n";
+
+  std::cerr << "error:" << strerror(mkdir_errno) << " (" << path.c_str()
+            << ") \n";
   return false;
 }
