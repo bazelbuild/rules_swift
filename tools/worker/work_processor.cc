@@ -129,8 +129,10 @@ void WorkProcessor::ProcessWorkRequest(
       // incremental storage area.
       auto dir_path = Dirname(expected_object_pair.second);
       if (!MakeDirs(dir_path, S_IRWXU)) {
-        stderr_stream << "swift_worker: Could not create directory  " << dir_path << " (errno "
+        stderr_stream << "swift_worker: Could not create directory " << dir_path << " (errno "
                   << errno << ")\n";
+      } else {
+        stderr_stream << "swift_worker: created " << dir_path << "\n";
       }
     }
 
