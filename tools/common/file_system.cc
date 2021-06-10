@@ -18,6 +18,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <iostream>
 #include <string>
 
 #ifdef __APPLE__
@@ -99,7 +100,13 @@ bool MakeDirs(const std::string &path, int mode) {
   struct stat dir_stats;
   if (stat(path.c_str(), &dir_stats) == 0) {
     // Return true if the directory already exists.
-    return S_ISDIR(dir_stats.st_mode);
+    if (!S_ISDIR(dir_stats.st_mode)) {
+      std::cerr << "error: path exists and isn't a directory (" << path.c_str()
+                << ") \n";
+      return false;
+    } else {
+      return true;
+    }
   }
 
   // Recurse to create the parent directory.
@@ -108,5 +115,22 @@ bool MakeDirs(const std::string &path, int mode) {
   }
 
   // Create the directory that was requested.
-  return mkdir(path.c_str(), mode) == 0;
+  int mkdir_ret = mkdir(path.c_str(), mode);
+  if (mkdir_ret == 0) {
+    return true;
+  } else if (mkdir_ret == EEXIST) {
+    int chmod_ret = chmod(path.c_str(), S_IRWXU);
+    if (chmod_ret == 0) {
+      return true;
+    }
+    std::cerr << "error:" << strerror(errno) << ":" << path.c_str() << "\n";
+    return false;
+  }
+
+  // If we can access the directory assume it's valid
+  if (access(path.c_str(), F_OK) == 0) {
+    return true;
+  }
+  std::cerr << "error:" << strerror(errno) << ":" << path.c_str() << "\n";
+  return false;
 }
