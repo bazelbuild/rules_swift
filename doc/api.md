@@ -502,36 +502,6 @@ A `File` representing the precompiled module (`.pcm`) file, or `None` if
   the toolchain or target does not support precompiled modules.
 
 
-<a id="#swift_common.swift_runtime_linkopts"></a>
-
-## swift_common.swift_runtime_linkopts
-
-<pre>
-swift_common.swift_runtime_linkopts(<a href="#swift_common.swift_runtime_linkopts-is_static">is_static</a>, <a href="#swift_common.swift_runtime_linkopts-toolchain">toolchain</a>, <a href="#swift_common.swift_runtime_linkopts-is_test">is_test</a>)
-</pre>
-
-Returns the flags that should be passed when linking a Swift binary.
-
-This function provides the appropriate linker arguments to callers who need
-to link a binary using something other than `swift_binary` (for example, an
-application bundle containing a universal `apple_binary`).
-
-
-**PARAMETERS**
-
-
-| Name  | Description | Default Value |
-| :------------- | :------------- | :------------- |
-| <a id="swift_common.swift_runtime_linkopts-is_static"></a>is_static |  A <code>Boolean</code> value indicating whether the binary should be linked against the static (rather than the dynamic) Swift runtime libraries.   |  none |
-| <a id="swift_common.swift_runtime_linkopts-toolchain"></a>toolchain |  The <code>SwiftToolchainInfo</code> provider of the toolchain whose linker options are desired.   |  none |
-| <a id="swift_common.swift_runtime_linkopts-is_test"></a>is_test |  A <code>Boolean</code> value indicating whether the target being linked is a test target.   |  <code>False</code> |
-
-**RETURNS**
-
-A `list` of command line flags that should be passed when linking a
-  binary against the Swift runtime libraries.
-
-
 <a id="#swift_common.toolchain_attrs"></a>
 
 ## swift_common.toolchain_attrs
