@@ -20,6 +20,7 @@
 
 #include <iostream>
 #include <string>
+#include <string.h>
 
 #ifdef __APPLE__
 #include <copyfile.h>
