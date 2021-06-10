@@ -93,9 +93,6 @@ SWIFT_FEATURE_ENABLE_TESTING = "swift.enable_testing"
 # warnings otherwise.
 SWIFT_FEATURE_FULL_DEBUG_INFO = "swift.full_debug_info"
 
-# If enabled, the compilation action for a target will produce an index store.
-SWIFT_FEATURE_INDEX_WHILE_BUILDING = "swift.index_while_building"
-
 # If enabled, compilation actions and module map generation will assume that the
 # header paths in module maps are relative to the current working directory
 # (i.e., the workspace root); if disabled, header paths in module maps are
