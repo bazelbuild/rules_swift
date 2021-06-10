@@ -121,7 +121,7 @@ bool MakeDirs(const std::string &path, int mode) {
     return true;
   }
 
-  // Save the mkdir errno for better reporting
+  // Save the mkdir errno for better reporting.
   int mkdir_errno = errno;
 
   // Deal with a race condition when 2 `MakeDirs` are running at the same time:
