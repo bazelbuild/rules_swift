@@ -14,6 +14,7 @@
 
 #include "tools/common/file_system.h"
 
+#include <errno.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -108,5 +109,13 @@ bool MakeDirs(const std::string &path, int mode) {
   }
 
   // Create the directory that was requested.
-  return mkdir(path.c_str(), mode) == 0;
+  if (mkdir(path.c_str(), mode) != 0) {
+    if (errno == EEXIST && stat(path.c_str(), &dir_stats) == 0) {
+      // Return true if the directory already exists.
+      return S_ISDIR(dir_stats.st_mode);
+    } else {
+      return false;
+    }
+  }
+  return true;
 }
