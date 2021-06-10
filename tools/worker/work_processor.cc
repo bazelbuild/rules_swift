@@ -132,7 +132,7 @@ void WorkProcessor::ProcessWorkRequest(
         stderr_stream << "swift_worker:   Could not create directory " << dir_path << " (errno "
                   << errno << ")\n";
       } else {
-        stderr_stream << "swift_worker:   created " << dir_path << "\n";
+        stderr_stream << "swift_worker:    created " << dir_path << "\n";
       }
     }
 
