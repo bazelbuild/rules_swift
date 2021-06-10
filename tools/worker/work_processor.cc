@@ -190,7 +190,7 @@ void WorkProcessor::ProcessWorkRequest(
         }
       }
     }
-
-    FinalizeWorkRequest(request, response, exit_code, stderr_stream);
   }
+
+  FinalizeWorkRequest(request, response, exit_code, stderr_stream);
 }
