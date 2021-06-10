@@ -125,7 +125,7 @@ bool MakeDirs(const std::string &path, int mode) {
 
   // Deal with a race condition when 2 `MakeDirs` are running at the same time:
   // one `mkdir` invocation will fail in each recursive call at different
-  // points. Don't recurse here to avoid an infinite loop in failure cases
+  // points. Don't recurse here to avoid an infinite loop in failure cases.
   if (errno == EEXIST && stat(path.c_str(), &dir_stats) == 0) {
     if (!S_ISDIR(dir_stats.st_mode)) {
       std::cerr << "error: path exists and isn't a directory "
