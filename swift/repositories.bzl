@@ -114,7 +114,7 @@ def swift_rules_dependencies():
     _maybe(
         http_archive,
         name = "build_bazel_rules_swift_index_import",
-        build_file = "@build_bazel_rules_swift//third_party/build_bazel_rules_swift_index_import/BUILD.overlay",
+        build_file = "@build_bazel_rules_swift//third_party:build_bazel_rules_swift_index_import/BUILD.overlay",
         canonical_id = "index-import-5.3.2.6",
         urls = ["https://github.com/MobileNativeFoundation/index-import/releases/download/5.3.2.6/index-import.zip"],
         sha256 = "61a58363f56c5fd84d4ebebe0d9b5dd90c74ae170405a7b9018e8cf698e679de",
