@@ -11,6 +11,7 @@ filegroup(
     srcs = [
         "WORKSPACE",
         "//swift:for_bazel_tests",
+        "//third_party:for_bazel_tests",
         "//tools:for_bazel_tests",
     ],
 )
