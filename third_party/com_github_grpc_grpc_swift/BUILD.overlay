@@ -49,7 +49,7 @@ cc_library(
     tags = ["swift_module=CgRPC"],
     deps = [
         ":BoringSSL",
-        "@zlib//:zlib",
+        "@zlib",
     ],
 )
 
