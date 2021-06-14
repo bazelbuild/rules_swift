@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "tools/worker/work_processor.h"
+
 #include <google/protobuf/text_format.h>
 #include <sys/stat.h>
 
@@ -26,7 +28,6 @@
 #include "tools/common/temp_file.h"
 #include "tools/worker/output_file_map.h"
 #include "tools/worker/swift_runner.h"
-#include "tools/worker/work_processor.h"
 
 namespace {
 
