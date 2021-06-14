@@ -31,13 +31,6 @@
 
 namespace {
 
-// Returns true if the given command line argument enables whole-module
-// optimization in the compiler.
-static bool ArgumentEnablesWMO(const std::string &arg) {
-  return arg == "-wmo" || arg == "-whole-module-optimization" ||
-         arg == "-force-single-frontend-invocation";
-}
-
 static void FinalizeWorkRequest(const blaze::worker::WorkRequest &request,
                                 blaze::worker::WorkResponse *response,
                                 int exit_code,
@@ -85,12 +78,7 @@ void WorkProcessor::ProcessWorkRequest(
       output_file_map_path = arg;
       arg.clear();
     } else if (ArgumentEnablesWMO(arg)) {
-      if (is_dump_ast) {
-        // WMO compilation doesn't work with -dump-ast
-        arg.clear();
-      } else {
-        is_wmo = true;
-      }
+      is_wmo = true;
     }
 
     if (!arg.empty()) {
@@ -100,8 +88,10 @@ void WorkProcessor::ProcessWorkRequest(
     prev_arg = original_arg;
   }
 
+  bool is_incremental = !is_wmo && !is_dump_ast;
+
   if (!output_file_map_path.empty()) {
-    if (!is_wmo && !is_dump_ast) {
+    if (is_incremental) {
       output_file_map.ReadFromPath(output_file_map_path);
 
       // Rewrite the output file map to use the incremental storage area and
@@ -118,8 +108,8 @@ void WorkProcessor::ProcessWorkRequest(
       // there's no reason to pass it when it's a no-op.
       params_file_stream << "-incremental\n";
     } else {
-      // If WMO is forcing us out of incremental mode, just put the original
-      // output file map back so the outputs end up where they should.
+      // If WMO or -dump-ast is forcing us out of incremental mode, just put the
+      // original output file map back so the outputs end up where they should.
       params_file_stream << "-output-file-map\n";
       params_file_stream << output_file_map_path << '\n';
     }
@@ -130,7 +120,7 @@ void WorkProcessor::ProcessWorkRequest(
 
   std::ostringstream stderr_stream;
 
-  if (!is_wmo) {
+  if (is_incremental) {
     for (const auto &expected_object_pair :
          output_file_map.incremental_outputs()) {
       // Bazel creates the intermediate directories for the files declared at
@@ -166,7 +156,7 @@ void WorkProcessor::ProcessWorkRequest(
   SwiftRunner swift_runner(processed_args, /*force_response_file=*/true);
   int exit_code = swift_runner.Run(&stderr_stream, /*stdout_to_stderr=*/true);
 
-  if (!is_wmo) {
+  if (is_incremental) {
     // Copy the output files from the incremental storage area back to the
     // locations where Bazel declared the files.
     for (const auto &expected_object_pair :
