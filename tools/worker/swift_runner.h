@@ -146,6 +146,9 @@ class SwiftRunner {
   // `-index-store-path`. After running `swiftc` `index-import` copies relevant
   // index outputs into the `index_store_path` to integrate outputs with Bazel.
   std::string global_index_store_import_path_;
+
+  // If the worker should set num-threads to number of threads on the host.
+  bool use_host_num_threads_;
 };
 
 #endif  // BUILD_BAZEL_RULES_SWIFT_TOOLS_WORKER_SWIFT_RUNNER_H_

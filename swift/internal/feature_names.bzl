@@ -266,3 +266,6 @@ SWIFT_FEATURE__WMO_IN_SWIFTCOPTS = "swift._wmo_in_swiftcopts"
 # were passed on the command line using `--swiftcopt`. Users should never
 # manually enable, disable, or query this feature.
 SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS = "swift._num_threads_0_in_swiftcopts"
+
+# If enabled, it passes the number of threads that the host has
+SWIFT_FEATURE_USE_HOST_NUM_THREADS = "swift.use_host_num_threads"
