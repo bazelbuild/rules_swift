@@ -112,11 +112,13 @@ void OutputFileMap::UpdateForIncremental(const std::string &path) {
     new_output_file_map[src] = src_map;
   }
 
-  auto swiftmodule_path = ReplaceExtension(path, ".swiftmodule", /*all_extensions=*/true);
+  auto swiftmodule_path =
+      ReplaceExtension(path, ".swiftmodule", /*all_extensions=*/true);
   auto copied_swiftmodule_path = MakeIncrementalOutputPath(swiftmodule_path);
   incremental_inputs[swiftmodule_path] = copied_swiftmodule_path;
 
-  auto swiftdoc_path = ReplaceExtension(path, ".swiftdoc", /*all_extensions=*/true);
+  auto swiftdoc_path =
+      ReplaceExtension(path, ".swiftdoc", /*all_extensions=*/true);
   auto copied_swiftdoc_path = MakeIncrementalOutputPath(swiftdoc_path);
   incremental_inputs[swiftdoc_path] = copied_swiftdoc_path;
 

@@ -14,13 +14,13 @@
 
 #include "tools/common/file_system.h"
 
+#include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 
 #include <iostream>
 #include <string>
-#include <string.h>
 
 #ifdef __APPLE__
 #include <copyfile.h>

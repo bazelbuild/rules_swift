@@ -24,8 +24,7 @@ namespace {
 
 // The placeholder string used by Bazel that should be replaced by
 // `DEVELOPER_DIR` at runtime.
-static const char kBazelXcodeDeveloperDir[] =
-    "__BAZEL_XCODE_DEVELOPER_DIR__";
+static const char kBazelXcodeDeveloperDir[] = "__BAZEL_XCODE_DEVELOPER_DIR__";
 
 // The placeholder string used by Bazel that should be replaced by `SDKROOT`
 // at runtime.
@@ -62,8 +61,7 @@ BazelPlaceholderSubstitutions::BazelPlaceholderSubstitutions(
   placeholder_resolvers_ = {
       {kBazelXcodeDeveloperDir,
        PlaceholderResolver([=]() { return developer_dir; })},
-      {kBazelXcodeSdkRoot,
-       PlaceholderResolver([=]() { return sdk_root; })},
+      {kBazelXcodeSdkRoot, PlaceholderResolver([=]() { return sdk_root; })},
   };
 }
 
@@ -71,7 +69,7 @@ bool BazelPlaceholderSubstitutions::Apply(std::string &arg) {
   bool changed = false;
 
   // Replace placeholders in the string with their actual values.
-  for (auto& pair : placeholder_resolvers_) {
+  for (auto &pair : placeholder_resolvers_) {
     changed |= FindAndReplace(pair.first, pair.second, arg);
   }
 
