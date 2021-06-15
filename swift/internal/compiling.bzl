@@ -1903,6 +1903,7 @@ def compile(
     )
 
     return struct(
+        ast_files = compile_outputs.ast_files,
         generated_header = compile_outputs.generated_header_file,
         generated_module_map = compile_outputs.generated_module_map_file,
         indexstore = compile_outputs.indexstore_directory,
@@ -1916,7 +1917,6 @@ def compile(
         swiftdoc = compile_outputs.swiftdoc_file,
         swiftinterface = compile_outputs.swiftinterface_file,
         swiftmodule = compile_outputs.swiftmodule_file,
-        ast_files = compile_outputs.ast_files,
     )
 
 def precompile_clang_module(
@@ -2323,6 +2323,7 @@ def _declare_multiple_outputs_and_write_output_file_map(
     # action outputs although they are not processed further.
     other_outputs = []
 
+    # AST files that are available in the swift_ast_file output group
     ast_files = []
 
     for src in srcs:
@@ -2365,8 +2366,8 @@ def _declare_multiple_outputs_and_write_output_file_map(
     )
 
     return struct(
-        object_files = output_objs,
         ast_files = ast_files,
+        object_files = output_objs,
         other_outputs = other_outputs,
         output_file_map = output_map_file,
     )
@@ -2643,6 +2644,11 @@ def output_groups_from_compilation_outputs(compilation_outputs):
     """
     output_groups = {}
 
+    if compilation_outputs.ast_files:
+        output_groups["swift_ast_file"] = depset(
+            compilation_outputs.ast_files,
+        )
+
     if compilation_outputs.indexstore:
         output_groups["swift_index_store"] = depset([
             compilation_outputs.indexstore,
@@ -2662,11 +2668,6 @@ def output_groups_from_compilation_outputs(compilation_outputs):
         output_groups["swiftmodule"] = depset([
             compilation_outputs.swiftmodule,
         ])
-
-    if compilation_outputs.ast_files:
-        output_groups["swift_ast_file"] = depset(
-            compilation_outputs.ast_files,
-        )
 
     return output_groups
 
