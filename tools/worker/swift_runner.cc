@@ -327,7 +327,7 @@ bool SwiftRunner::ProcessArgument(
       } else if (is_dump_ast_ && ArgumentEnablesWMO(arg)) {
         // WMO is invalid for -dump-ast,
         // so omit the argument that enables WMO
-        changed = true;
+        return true;  // return to avoid consuming the arg
       }
 
       // Apply any other text substitutions needed in the argument (i.e., for
