@@ -22,6 +22,11 @@
 #include "tools/common/temp_file.h"
 #include "tools/worker/output_file_map.h"
 
+bool ArgumentEnablesWMO(const std::string &arg) {
+  return arg == "-wmo" || arg == "-whole-module-optimization" ||
+         arg == "-force-single-frontend-invocation";
+}
+
 namespace {
 
 // Creates a temporary file and writes the given arguments to it, one per line.
@@ -108,6 +113,7 @@ SwiftRunner::SwiftRunner(const std::vector<std::string> &args,
 
 int SwiftRunner::Run(std::ostream *stderr_stream, bool stdout_to_stderr) {
   int exit_code = RunSubProcess(args_, stderr_stream, stdout_to_stderr);
+
   if (exit_code != 0) {
     return exit_code;
   }
@@ -318,14 +324,18 @@ bool SwiftRunner::ProcessArgument(
         ++itr;
         new_arg = output_file_map_path_;
         changed = true;
+      } else if (is_dump_ast_ && ArgumentEnablesWMO(arg)) {
+        // WMO is invalid for -dump-ast,
+        // so omit the argument that enables WMO
+        changed = true;
       }
 
       // Apply any other text substitutions needed in the argument (i.e., for
       // Apple toolchains).
       //
-      // Bazel doesn't quote arguments in multi-line params files, so we need to
-      // ensure that our defensive quoting kicks in if an argument contains a
-      // space, even if no other changes would have been made.
+      // Bazel doesn't quote arguments in multi-line params files, so we need
+      // to ensure that our defensive quoting kicks in if an argument contains
+      // a space, even if no other changes would have been made.
       changed = bazel_placeholder_substitutions_.Apply(new_arg) ||
                 new_arg.find_first_of(' ') != std::string::npos;
       consumer(new_arg);
@@ -359,6 +369,8 @@ std::vector<std::string> SwiftRunner::ParseArguments(Iterator itr) {
         arg = *it;
         index_store_path_ = arg;
         out_args.push_back(arg);
+      } else if (arg == "-dump-ast") {
+        is_dump_ast_ = true;
       }
     }
   }

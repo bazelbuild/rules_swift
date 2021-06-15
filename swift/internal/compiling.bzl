@@ -142,6 +142,19 @@ def compile_action_configs(
             configurators = [_output_swiftmodule_or_file_map_configurator],
         ),
 
+        # Dump ast files
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.DUMP_AST],
+            configurators = [
+                swift_toolchain_config.add_arg("-dump-ast"),
+                swift_toolchain_config.add_arg("-suppress-warnings"),
+            ],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.DUMP_AST],
+            configurators = [_output_ast_path_or_file_map_configurator],
+        ),
+
         # Emit precompiled Clang modules, and embed all files that were read
         # during compilation into the PCM.
         swift_toolchain_config.action_config(
@@ -257,6 +270,7 @@ def compile_action_configs(
             actions = [
                 swift_action_names.COMPILE,
                 swift_action_names.DERIVE_FILES,
+                swift_action_names.DUMP_AST,
             ],
             configurators = [
                 swift_toolchain_config.add_arg("-DDEBUG"),
@@ -267,6 +281,7 @@ def compile_action_configs(
             actions = [
                 swift_action_names.COMPILE,
                 swift_action_names.DERIVE_FILES,
+                swift_action_names.DUMP_AST,
             ],
             configurators = [
                 swift_toolchain_config.add_arg("-DNDEBUG"),
@@ -362,6 +377,7 @@ def compile_action_configs(
             actions = [
                 swift_action_names.COMPILE,
                 swift_action_names.DERIVE_FILES,
+                swift_action_names.DUMP_AST,
             ],
             configurators = [
                 swift_toolchain_config.add_arg("-enable-testing"),
@@ -484,6 +500,7 @@ def compile_action_configs(
                 swift_action_names.COMPILE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.PRECOMPILE_C_MODULE,
+                swift_action_names.DUMP_AST,
             ],
             configurators = [
                 swift_toolchain_config.add_arg("-Xcc", "-Xclang"),
@@ -501,6 +518,7 @@ def compile_action_configs(
             actions = [
                 swift_action_names.COMPILE,
                 swift_action_names.DERIVE_FILES,
+                swift_action_names.DUMP_AST,
             ],
             configurators = [_global_module_cache_configurator],
             features = [SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE],
@@ -513,6 +531,7 @@ def compile_action_configs(
             actions = [
                 swift_action_names.COMPILE,
                 swift_action_names.DERIVE_FILES,
+                swift_action_names.DUMP_AST,
             ],
             configurators = [_tmpdir_module_cache_configurator],
             features = [
@@ -525,6 +544,7 @@ def compile_action_configs(
             actions = [
                 swift_action_names.COMPILE,
                 swift_action_names.DERIVE_FILES,
+                swift_action_names.DUMP_AST,
             ],
             configurators = [
                 swift_toolchain_config.add_arg(
@@ -544,6 +564,7 @@ def compile_action_configs(
                 swift_action_names.COMPILE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.PRECOMPILE_C_MODULE,
+                swift_action_names.DUMP_AST,
             ],
             configurators = [
                 swift_toolchain_config.add_arg(
@@ -635,6 +656,7 @@ def compile_action_configs(
             actions = [
                 swift_action_names.COMPILE,
                 swift_action_names.DERIVE_FILES,
+                swift_action_names.DUMP_AST,
             ],
             configurators = [_dependencies_swiftmodules_configurator],
             not_features = [SWIFT_FEATURE_VFSOVERLAY],
@@ -643,6 +665,7 @@ def compile_action_configs(
             actions = [
                 swift_action_names.COMPILE,
                 swift_action_names.DERIVE_FILES,
+                swift_action_names.DUMP_AST,
             ],
             configurators = [
                 _dependencies_swiftmodules_vfsoverlay_configurator,
@@ -658,6 +681,7 @@ def compile_action_configs(
                 swift_action_names.COMPILE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.PRECOMPILE_C_MODULE,
+                swift_action_names.DUMP_AST,
             ],
             configurators = [_framework_search_paths_configurator],
         ),
@@ -679,6 +703,7 @@ def compile_action_configs(
                 swift_action_names.COMPILE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.PRECOMPILE_C_MODULE,
+                swift_action_names.DUMP_AST,
             ],
             configurators = [
                 _clang_search_paths_configurator,
@@ -693,6 +718,7 @@ def compile_action_configs(
                 swift_action_names.COMPILE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.PRECOMPILE_C_MODULE,
+                swift_action_names.DUMP_AST,
             ],
             configurators = [_dependencies_clang_modules_configurator],
             features = [SWIFT_FEATURE_USE_C_MODULES],
@@ -702,6 +728,7 @@ def compile_action_configs(
                 swift_action_names.COMPILE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.PRECOMPILE_C_MODULE,
+                swift_action_names.DUMP_AST,
             ],
             configurators = [_dependencies_clang_modulemaps_configurator],
             not_features = [SWIFT_FEATURE_USE_C_MODULES],
@@ -792,6 +819,7 @@ def compile_action_configs(
                 swift_action_names.COMPILE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.PRECOMPILE_C_MODULE,
+                swift_action_names.DUMP_AST,
             ],
             configurators = [_module_name_configurator],
         ),
@@ -840,6 +868,7 @@ def compile_action_configs(
             actions = [
                 swift_action_names.COMPILE,
                 swift_action_names.DERIVE_FILES,
+                swift_action_names.DUMP_AST,
             ],
             configurators = [_conditional_compilation_flag_configurator],
         ),
@@ -865,6 +894,7 @@ def compile_action_configs(
             actions = [
                 swift_action_names.COMPILE,
                 swift_action_names.DERIVE_FILES,
+                swift_action_names.DUMP_AST,
             ],
             configurators = [_user_compile_flags_configurator],
         ),
@@ -875,6 +905,7 @@ def compile_action_configs(
                 actions = [
                     swift_action_names.COMPILE,
                     swift_action_names.PRECOMPILE_C_MODULE,
+                    swift_action_names.DUMP_AST,
                 ],
                 configurators = [
                     # TODO(#568): Switch to using lambda when the minimum
@@ -910,6 +941,7 @@ def compile_action_configs(
                 swift_action_names.COMPILE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.PRECOMPILE_C_MODULE,
+                swift_action_names.DUMP_AST,
             ],
             configurators = [_source_files_configurator],
         ),
@@ -921,6 +953,7 @@ def compile_action_configs(
             actions = [
                 swift_action_names.COMPILE,
                 swift_action_names.DERIVE_FILES,
+                swift_action_names.DUMP_AST,
             ],
             configurators = [_additional_inputs_configurator],
         ),
@@ -959,6 +992,14 @@ def _output_swiftmodule_or_file_map_configurator(prerequisites, args):
     return _output_or_file_map(
         output_file_map = prerequisites.output_file_map,
         outputs = [prerequisites.swiftmodule_file],
+        args = args,
+    )
+
+def _output_ast_path_or_file_map_configurator(prerequisites, args):
+    """Adds the output file map or single AST file to the command line."""
+    return _output_or_file_map(
+        output_file_map = prerequisites.output_file_map,
+        outputs = prerequisites.ast_files,
         args = args,
     )
 
@@ -1803,6 +1844,22 @@ def compile(
         swift_toolchain = swift_toolchain,
     )
 
+    # Dump AST has to run in its own action because `-dump-ast` is incompatible
+    # with emitting dependency files, which compile/derive files use when
+    # compiling via the worker.
+    # Given usage of AST files is expected to be limited compared to other
+    # compile outputs, moving generation off of the critical path is likely
+    # a reasonable tradeoff for the additional action.
+    run_toolchain_action(
+        actions = actions,
+        action_name = swift_action_names.DUMP_AST,
+        feature_configuration = feature_configuration,
+        outputs = compile_outputs.ast_files,
+        prerequisites = prerequisites,
+        progress_message = "Dumping Swift AST for {}".format(module_name),
+        swift_toolchain = swift_toolchain,
+    )
+
     # If a header and module map were generated for this Swift module, attempt
     # to precompile the explicit module for that header as well.
     if generated_header_name and not is_feature_enabled(
@@ -1846,6 +1903,7 @@ def compile(
     )
 
     return struct(
+        ast_files = compile_outputs.ast_files,
         generated_header = compile_outputs.generated_header_file,
         generated_module_map = compile_outputs.generated_module_map_file,
         indexstore = compile_outputs.indexstore_directory,
@@ -2168,6 +2226,11 @@ def _declare_compile_outputs(
             actions = actions,
             target_name = target_name,
         )]
+        ast_files = [derived_files.ast(
+            actions = actions,
+            target_name = target_name,
+            src = srcs[0],
+        )]
         other_outputs = []
         output_file_map = None
     else:
@@ -2180,6 +2243,7 @@ def _declare_compile_outputs(
             target_name = target_name,
         )
         object_files = output_info.object_files
+        ast_files = output_info.ast_files
         other_outputs = output_info.other_outputs
         output_file_map = output_info.output_file_map
 
@@ -2202,6 +2266,7 @@ def _declare_compile_outputs(
         indexstore_directory = None
 
     compile_outputs = struct(
+        ast_files = ast_files,
         generated_header_file = generated_header,
         generated_module_map_file = generated_module_map,
         indexstore_directory = indexstore_directory,
@@ -2258,6 +2323,9 @@ def _declare_multiple_outputs_and_write_output_file_map(
     # action outputs although they are not processed further.
     other_outputs = []
 
+    # AST files that are available in the swift_ast_file output group
+    ast_files = []
+
     for src in srcs:
         src_output_map = {}
 
@@ -2269,6 +2337,14 @@ def _declare_multiple_outputs_and_write_output_file_map(
         )
         output_objs.append(obj)
         src_output_map["object"] = obj.path
+
+        ast = derived_files.ast(
+            actions = actions,
+            target_name = target_name,
+            src = src,
+        )
+        ast_files.append(ast)
+        src_output_map["ast-dump"] = ast.path
 
         # Multi-threaded WMO compiles still produce a single .swiftmodule file,
         # despite producing multiple object files, so we have to check
@@ -2290,6 +2366,7 @@ def _declare_multiple_outputs_and_write_output_file_map(
     )
 
     return struct(
+        ast_files = ast_files,
         object_files = output_objs,
         other_outputs = other_outputs,
         output_file_map = output_map_file,
@@ -2566,6 +2643,11 @@ def output_groups_from_compilation_outputs(compilation_outputs):
         `OutputGroupInfo` constructor.
     """
     output_groups = {}
+
+    if compilation_outputs.ast_files:
+        output_groups["swift_ast_file"] = depset(
+            compilation_outputs.ast_files,
+        )
 
     if compilation_outputs.indexstore:
         output_groups["swift_index_store"] = depset([
