@@ -89,6 +89,7 @@ def _all_tool_configs(
             worker_mode = "wrap",
             additional_tools = additional_tools,
         ),
+        swift_action_names.DUMP_AST: compile_tool_config,
     }
 
 def _all_action_configs(additional_swiftc_copts):

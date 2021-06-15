@@ -150,6 +150,8 @@ def _lookup_provider_by_name(env, target, provider_name):
         provider = CcInfo
     elif provider_name == "DefaultInfo":
         provider = DefaultInfo
+    elif provider_name == "OutputGroupInfo":
+        provider = OutputGroupInfo
     elif provider_name == "SwiftInfo":
         provider = SwiftInfo
     elif provider_name == "apple_common.Objc":
@@ -411,6 +413,7 @@ Currently, only the following providers are recognized:
 
 *   `CcInfo`
 *   `DefaultInfo`
+*   `OutputGroupInfo`
 *   `SwiftInfo`
 *   `apple_common.Objc`
 """,

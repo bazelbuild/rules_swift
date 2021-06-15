@@ -17,6 +17,22 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load(":utils.bzl", "owner_relative_path")
 
+def _ast(actions, target_name, src):
+    """Declares a file for an ast file during compilation.
+
+    Args:
+        actions: The context's actions object.
+        target_name: The name of the target being built.
+        src: A `File` representing the source file being compiled.
+
+    Returns:
+        The declared `File` where the given src's AST will be dumped to.
+    """
+    dirname, basename = _intermediate_frontend_file_path(target_name, src)
+    return actions.declare_file(
+        paths.join(dirname, "{}.ast".format(basename)),
+    )
+
 def _autolink_flags(actions, target_name):
     """Declares the response file into which autolink flags will be extracted.
 
@@ -295,6 +311,7 @@ def _xctest_runner_script(actions, target_name):
     return actions.declare_file("{}.test-runner.sh".format(target_name))
 
 derived_files = struct(
+    ast = _ast,
     autolink_flags = _autolink_flags,
     executable = _executable,
     indexstore_directory = _indexstore_directory,

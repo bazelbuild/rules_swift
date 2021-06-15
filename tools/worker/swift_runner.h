@@ -25,6 +25,10 @@
 #include "tools/common/bazel_substitutions.h"
 #include "tools/common/temp_file.h"
 
+// Returns true if the given command line argument enables whole-module
+// optimization in the compiler.
+extern bool ArgumentEnablesWMO(const std::string &arg);
+
 // Handles spawning the Swift compiler driver, making any required substitutions
 // of the command line arguments (for example, Bazel's magic Xcode placeholder
 // strings).
@@ -130,6 +134,10 @@ class SwiftRunner {
   // Arguments will be unconditionally written into a response file and passed
   // to the tool that way.
   bool force_response_file_;
+
+  // Whether the invocation is being used to dump ast files.
+  // This is used to avoid implicitly adding incompatible flags.
+  bool is_dump_ast_;
 
   // The path to the generated header rewriter tool, if one is being used for
   // this compilation.
