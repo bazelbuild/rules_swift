@@ -101,8 +101,8 @@ class SwiftRunner {
   bool ProcessArgument(Iterator &itr, const std::string &arg,
                        std::function<void(const std::string &)> consumer);
 
-  // Parses arguments to ivars and returns a vector of strings from the iterator.
-  // This method doesn't actually mutate any of the arguments.
+  // Parses arguments to ivars and returns a vector of strings from the
+  // iterator. This method doesn't actually mutate any of the arguments.
   template <typename Iterator>
   std::vector<std::string> ParseArguments(Iterator itr);
 
