@@ -93,6 +93,7 @@ def _swift_module_alias_impl(ctx):
             files = depset(compact([
                 compilation_outputs.swiftdoc,
                 compilation_outputs.swiftmodule,
+                compilation_outputs.swiftinterface,
                 library_to_link.dynamic_library,
                 library_to_link.pic_static_library,
             ])),
@@ -117,6 +118,7 @@ def _swift_module_alias_impl(ctx):
                     swift = swift_common.create_swift_module(
                         swiftdoc = compilation_outputs.swiftdoc,
                         swiftmodule = compilation_outputs.swiftmodule,
+                        swiftinterface = compilation_outputs.swiftinterface,
                     ),
                 ),
             ],
