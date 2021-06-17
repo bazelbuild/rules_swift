@@ -17,7 +17,7 @@
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 load(":attrs.bzl", "swift_config_attrs")
-load(":compiling.bzl", "output_groups_from_compilation_outputs")
+load(":compiling.bzl", "new_objc_provider", "output_groups_from_module_context")
 load(
     ":feature_names.bzl",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
@@ -25,7 +25,6 @@ load(
     "SWIFT_FEATURE_ENABLE_TESTING",
     "SWIFT_FEATURE_GENERATE_FROM_RAW_PROTO_FILES",
 )
-load(":linking.bzl", "create_linker_input")
 load(
     ":proto_gen_utils.bzl",
     "declare_generated_files",
@@ -35,12 +34,7 @@ load(
 )
 load(":providers.bzl", "SwiftInfo", "SwiftProtoInfo", "SwiftToolchainInfo")
 load(":swift_common.bzl", "swift_common")
-load(
-    ":utils.bzl",
-    "compact",
-    "create_cc_info",
-    "get_providers",
-)
+load(":utils.bzl", "get_providers")
 
 # The paths of proto files bundled with the runtime. This is mainly the well
 # known type protos, but also includes descriptor.proto to make generation of
@@ -411,7 +405,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
 
         module_name = swift_common.derive_module_name(target.label)
 
-        compilation_outputs = swift_common.compile(
+        module_context, compilation_outputs = swift_common.compile(
             actions = aspect_ctx.actions,
             bin_dir = aspect_ctx.bin_dir,
             copts = ["-parse-as-library"],
@@ -424,22 +418,24 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             target_name = target.label.name,
         )
 
-        linker_input, library_to_link = create_linker_input(
-            actions = aspect_ctx.actions,
-            alwayslink = False,
-            cc_feature_configuration = swift_common.cc_feature_configuration(
+        linking_context, linking_output = (
+            swift_common.create_linking_context_from_compilation_outputs(
+                actions = aspect_ctx.actions,
+                compilation_outputs = compilation_outputs,
                 feature_configuration = feature_configuration,
-            ),
-            compilation_outputs = compilation_outputs,
-            is_dynamic = False,
-            is_static = True,
-            # Prevent conflicts with C++ protos in the same output directory,
-            # which use the `lib{name}.a` pattern. This will produce
-            # `lib{name}.swift.a` instead.
-            library_name = "{}.swift".format(target.label.name),
-            objects = compilation_outputs.object_files,
-            owner = target.label,
-            swift_toolchain = swift_toolchain,
+                label = target.label,
+                linking_contexts = [
+                    dep[CcInfo].linking_context
+                    for dep in proto_deps + support_deps
+                    if CcInfo in dep
+                ],
+                module_context = module_context,
+                # Prevent conflicts with C++ protos in the same output
+                # directory, which use the `lib{name}.a` pattern. This will
+                # produce `lib{name}.swift.a` instead.
+                name = "{}.swift".format(target.label.name),
+                swift_toolchain = swift_toolchain,
+            )
         )
 
         # It's bad practice to attach providers you don't own to other targets,
@@ -455,7 +451,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
         # `SwiftProtoCcInfo`. Finally, the `swift_proto_library` rule will
         # extract the `CcInfo` from the `SwiftProtoCcInfo` of its single
         # dependency and propagate that safely up the tree.
-        cc_infos = (
+        transitive_cc_infos = (
             get_providers(proto_deps, SwiftProtoCcInfo, _extract_cc_info) +
             get_providers(support_deps, CcInfo)
         )
@@ -470,64 +466,40 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
                 _extract_objc_info,
             ) + get_providers(support_deps, apple_common.Objc)
 
-            objc_info_args = {}
-            if compilation_outputs.generated_header:
-                objc_info_args["header"] = depset([
-                    compilation_outputs.generated_header,
-                ])
-            if library_to_link.pic_static_library:
-                objc_info_args["library"] = depset(
-                    [library_to_link.pic_static_library],
-                    order = "topological",
-                )
-            if compilation_outputs.linker_flags:
-                objc_info_args["linkopt"] = depset(
-                    compilation_outputs.linker_flags,
-                )
-            if compilation_outputs.generated_module_map:
-                objc_info_args["module_map"] = depset([
-                    compilation_outputs.generated_module_map,
-                ])
-
-            linker_inputs = compilation_outputs.linker_inputs + compact([
-                compilation_outputs.swiftmodule,
-            ])
-            if linker_inputs:
-                objc_info_args["link_inputs"] = depset(linker_inputs)
-
-            includes = [aspect_ctx.bin_dir.path]
-            objc_info = apple_common.new_objc_provider(
-                providers = objc_infos,
-                **objc_info_args
+            objc_info = new_objc_provider(
+                additional_objc_infos = (
+                    objc_infos +
+                    swift_toolchain.implicit_deps_providers.objc_infos
+                ),
+                # We pass an empty list here because we already extracted the
+                # `Objc` providers from `SwiftProtoCcInfo` above.
+                deps = [],
+                feature_configuration = feature_configuration,
+                module_context = module_context,
+                libraries_to_link = [linking_output.library_to_link],
             )
         else:
             includes = None
             objc_info = None
 
+        cc_info = CcInfo(
+            compilation_context = module_context.clang.compilation_context,
+            linking_context = linking_context,
+        )
+
         providers = [
-            OutputGroupInfo(**output_groups_from_compilation_outputs(
-                compilation_outputs = compilation_outputs,
+            OutputGroupInfo(**output_groups_from_module_context(
+                module_context = module_context,
             )),
             SwiftProtoCcInfo(
-                cc_info = create_cc_info(
-                    cc_infos = cc_infos,
-                    compilation_outputs = compilation_outputs,
-                    includes = includes,
-                    linker_inputs = [linker_input],
+                cc_info = cc_common.merge_cc_infos(
+                    direct_cc_infos = [cc_info],
+                    cc_infos = transitive_cc_infos,
                 ),
                 objc_info = objc_info,
             ),
             swift_common.create_swift_info(
-                modules = [
-                    swift_common.create_module(
-                        name = module_name,
-                        swift = swift_common.create_swift_module(
-                            swiftdoc = compilation_outputs.swiftdoc,
-                            swiftmodule = compilation_outputs.swiftmodule,
-                            swiftinterface = compilation_outputs.swiftinterface,
-                        ),
-                    ),
-                ],
+                modules = [module_context],
                 swift_infos = get_providers(
                     proto_deps + support_deps,
                     SwiftInfo,
@@ -543,15 +515,13 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
         pbswift_files = []
 
         if swift_toolchain.supports_objc_interop:
-            objc_providers = get_providers(
-                proto_deps,
-                SwiftProtoCcInfo,
-                _extract_objc_info,
+            objc_info = apple_common.new_objc_provider(
+                providers = get_providers(
+                    proto_deps,
+                    SwiftProtoCcInfo,
+                    _extract_objc_info,
+                ),
             )
-            objc_provider = apple_common.new_objc_provider(
-                providers = objc_providers,
-            )
-            objc_info = objc_provider
         else:
             objc_info = None
 

@@ -15,7 +15,7 @@
 """Implementation of the `swift_binary` and `swift_test` rules."""
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load(":compiling.bzl", "output_groups_from_compilation_outputs")
+load(":compiling.bzl", "output_groups_from_module_context")
 load(":derived_files.bzl", "derived_files")
 load(":feature_names.bzl", "SWIFT_FEATURE_BUNDLED_XCTESTS")
 load(":linking.bzl", "register_link_binary_action")
@@ -170,9 +170,6 @@ def _swift_linking_rule_impl(
     cc_feature_configuration = swift_common.cc_feature_configuration(
         feature_configuration = feature_configuration,
     )
-    compilation_outputs = None
-    objects_to_link = []
-    output_groups = {}
     srcs = ctx.files.srcs
     user_link_flags = list(linkopts)
 
@@ -185,7 +182,7 @@ def _swift_linking_rule_impl(
 
         copts = expand_locations(ctx, ctx.attr.copts, ctx.attr.swiftc_inputs)
 
-        compilation_outputs = swift_common.compile(
+        module_context, compilation_outputs = swift_common.compile(
             actions = ctx.actions,
             additional_inputs = additional_inputs,
             bin_dir = ctx.bin_dir,
@@ -199,13 +196,13 @@ def _swift_linking_rule_impl(
             swift_toolchain = swift_toolchain,
             target_name = ctx.label.name,
         )
-        user_link_flags.extend(compilation_outputs.linker_flags)
-        objects_to_link.extend(compilation_outputs.object_files)
-        additional_inputs_to_linker.extend(compilation_outputs.linker_inputs)
-
-        output_groups = output_groups_from_compilation_outputs(
-            compilation_outputs = compilation_outputs,
+        output_groups = output_groups_from_module_context(
+            module_context = module_context,
         )
+    else:
+        module_context = None
+        compilation_outputs = cc_common.create_compilation_outputs()
+        output_groups = {}
 
     # Collect linking contexts from any of the toolchain's implicit
     # dependencies.
@@ -231,10 +228,10 @@ def _swift_linking_rule_impl(
         additional_inputs = additional_inputs_to_linker,
         additional_linking_contexts = additional_linking_contexts,
         cc_feature_configuration = cc_feature_configuration,
+        compilation_outputs = compilation_outputs,
         deps = ctx.attr.deps,
         grep_includes = ctx.file._grep_includes,
         name = ctx.label.name,
-        objects = objects_to_link,
         output_type = "executable",
         owner = ctx.label,
         stamp = ctx.attr.stamp,

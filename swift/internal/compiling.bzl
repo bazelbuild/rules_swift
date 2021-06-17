@@ -25,8 +25,7 @@ load(
     "run_toolchain_action",
     "swift_action_names",
 )
-load(":autolinking.bzl", "register_autolink_extract_action")
-load(":debugging.bzl", "ensure_swiftmodule_is_embedded")
+load(":debugging.bzl", "should_embed_swiftmodule_for_debugging")
 load(":derived_files.bzl", "derived_files")
 load(
     ":feature_names.bzl",
@@ -43,7 +42,6 @@ load(
     "SWIFT_FEATURE_FULL_DEBUG_INFO",
     "SWIFT_FEATURE_LAYERING_CHECK",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
-    "SWIFT_FEATURE_NO_EMBED_DEBUG_MODULE",
     "SWIFT_FEATURE_NO_GENERATED_MODULE_MAP",
     "SWIFT_FEATURE_OPT",
     "SWIFT_FEATURE_OPT_USES_OSIZE",
@@ -60,11 +58,17 @@ load(
 )
 load(":features.bzl", "are_all_features_enabled", "is_feature_enabled")
 load(":module_maps.bzl", "write_module_map")
-load(":providers.bzl", "SwiftInfo", "create_swift_info")
+load(
+    ":providers.bzl",
+    "SwiftInfo",
+    "create_clang_module",
+    "create_module",
+    "create_swift_info",
+    "create_swift_module",
+)
 load(":toolchain_config.bzl", "swift_toolchain_config")
 load(
     ":utils.bzl",
-    "collect_cc_libraries",
     "compact",
     "compilation_context_for_explicit_module_compilation",
     "get_providers",
@@ -906,7 +910,7 @@ def _collect_clang_module_inputs(
         # Add the module map, which we use for both implicit and explicit module
         # builds.
         module_map = clang_module.module_map
-        if not module.is_system and not types.is_string(module_map):
+        if not module.is_system and type(module_map) == "File":
             direct_inputs.append(module_map)
 
         if prefer_precompiled_modules:
@@ -944,14 +948,15 @@ def _clang_modulemap_dependency_args(module, ignore_system = True):
         A list of arguments, possibly empty, to pass to `swiftc` (without the
         `-Xcc` prefix).
     """
-    if module.is_system and ignore_system:
+    module_map = module.clang.module_map
+
+    if (module.is_system and ignore_system) or not module_map:
         return []
 
-    module_map = module.clang.module_map
-    if types.is_string(module_map):
-        module_map_path = module_map
-    else:
+    if type(module_map) == "File":
         module_map_path = module_map.path
+    else:
+        module_map_path = module_map
 
     return ["-fmodule-map-file={}".format(module_map_path)]
 
@@ -1530,32 +1535,49 @@ def compile(
     else:
         precompiled_module = None
 
-    # As part of the full compilation flow, register additional post-compile
-    # actions that toolchains may conditionally support for their target
-    # platform, like module-wrap or autolink-extract.
-    post_compile_results = _register_post_compile_actions(
-        actions = actions,
-        compile_outputs = compile_outputs,
-        feature_configuration = feature_configuration,
-        module_name = module_name,
-        swift_toolchain = swift_toolchain,
-        target_name = target_name,
+    if compile_outputs.generated_header_file:
+        module_headers = [compile_outputs.generated_header_file]
+    else:
+        module_headers = []
+
+    if defines or module_headers:
+        direct_cc_infos = [
+            CcInfo(compilation_context = cc_common.create_compilation_context(
+                defines = depset(defines),
+                headers = depset(module_headers),
+                includes = depset([bin_dir.path]),
+            )),
+        ]
+    else:
+        direct_cc_infos = []
+
+    compilation_context = cc_common.merge_cc_infos(
+        cc_infos = [dep[CcInfo] for dep in deps if CcInfo in dep],
+        direct_cc_infos = direct_cc_infos,
+    ).compilation_context
+
+    module_context = create_module(
+        name = module_name,
+        clang = create_clang_module(
+            compilation_context = compilation_context,
+            module_map = compile_outputs.generated_module_map_file,
+            precompiled_module = precompiled_module,
+        ),
+        is_system = False,
+        swift = create_swift_module(
+            defines = defines,
+            swiftdoc = compile_outputs.swiftdoc_file,
+            swiftinterface = compile_outputs.swiftinterface_file,
+            swiftmodule = compile_outputs.swiftmodule_file,
+        ),
     )
 
-    return struct(
-        generated_header = compile_outputs.generated_header_file,
-        generated_module_map = compile_outputs.generated_module_map_file,
-        linker_flags = post_compile_results.linker_flags,
-        linker_inputs = post_compile_results.linker_inputs,
-        object_files = (
-            compile_outputs.object_files +
-            post_compile_results.additional_object_files
-        ),
-        precompiled_module = precompiled_module,
-        swiftdoc = compile_outputs.swiftdoc_file,
-        swiftinterface = compile_outputs.swiftinterface_file,
-        swiftmodule = compile_outputs.swiftmodule_file,
+    compilation_outputs = cc_common.create_compilation_outputs(
+        objects = depset(compile_outputs.object_files),
+        pic_objects = depset(compile_outputs.object_files),
     )
+
+    return module_context, compilation_outputs
 
 def precompile_clang_module(
         *,
@@ -2063,186 +2085,104 @@ def _merge_targets_providers(
         swift_info = create_swift_info(swift_infos = swift_infos),
     )
 
-def _register_post_compile_actions(
-        actions,
-        compile_outputs,
-        feature_configuration,
-        module_name,
-        swift_toolchain,
-        target_name):
-    """Register additional post-compile actions used by some toolchains.
-
-    Args:
-        actions: The context's `actions` object.
-        compile_outputs: The result of an earlier call to
-            `_declare_compile_outputs`.
-        feature_configuration: A feature configuration obtained from
-            `swift_common.configure_features`.
-        module_name: The name of the Swift module being compiled. This must be
-            present and valid; use `swift_common.derive_module_name` to generate
-            a default from the target's label if needed.
-        swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
-        target_name: The name of the target for which the code is being
-            compiled, which is used to determine unique file paths for the
-            outputs.
-
-    Returns:
-        A `struct` with the following fields:
-
-        *   `additional_object_files`: A `list` of additional object files that
-            were produced as outputs of the post-compile actions and should be
-            linked into a binary.
-        *   `linker_flags`: A `list` of flags that should be propagated up to
-            the linker invocation of any binary that depends on the target this
-            was compiled for.
-        *   `linker_inputs`: A `list` of `File`s referenced by `linker_flags`.
-    """
-    additional_object_files = []
-
-    # Ensure that the .swiftmodule file is embedded in the final library or
-    # binary for debugging purposes.
-    linker_flags = []
-    linker_inputs = []
-    should_embed_swiftmodule_for_debugging = (
-        _is_debugging(feature_configuration = feature_configuration) and
-        not is_feature_enabled(
-            feature_configuration = feature_configuration,
-            feature_name = SWIFT_FEATURE_NO_EMBED_DEBUG_MODULE,
-        )
-    )
-    if should_embed_swiftmodule_for_debugging:
-        module_embed_results = ensure_swiftmodule_is_embedded(
-            actions = actions,
-            feature_configuration = feature_configuration,
-            swiftmodule = compile_outputs.swiftmodule_file,
-            swift_toolchain = swift_toolchain,
-            target_name = target_name,
-        )
-        linker_flags.extend(module_embed_results.linker_flags)
-        linker_inputs.extend(module_embed_results.linker_inputs)
-        additional_object_files.extend(module_embed_results.objects_to_link)
-
-    # Invoke an autolink-extract action for toolchains that require it.
-    if is_action_enabled(
-        action_name = swift_action_names.AUTOLINK_EXTRACT,
-        swift_toolchain = swift_toolchain,
-    ):
-        autolink_file = derived_files.autolink_flags(
-            actions = actions,
-            target_name = target_name,
-        )
-        register_autolink_extract_action(
-            actions = actions,
-            autolink_file = autolink_file,
-            feature_configuration = feature_configuration,
-            module_name = module_name,
-            object_files = compile_outputs.object_files,
-            swift_toolchain = swift_toolchain,
-        )
-        linker_flags.append("@{}".format(autolink_file.path))
-        linker_inputs.append(autolink_file)
-
-    return struct(
-        additional_object_files = additional_object_files,
-        linker_flags = linker_flags,
-        linker_inputs = linker_inputs,
-    )
-
 def new_objc_provider(
+        *,
+        additional_link_inputs = [],
+        additional_objc_infos = [],
         deps,
-        link_inputs,
-        linkopts,
-        module_map,
-        static_archives,
-        swiftmodules,
-        objc_header = None,
-        objc_providers = []):
+        feature_configuration,
+        libraries_to_link,
+        module_context,
+        user_link_flags = []):
     """Creates an `apple_common.Objc` provider for a Swift target.
 
     Args:
+        additional_link_inputs: Additional linker input files that should be
+            propagated to dependents.
+        additional_objc_infos: Additional `apple_common.Objc` providers from
+            transitive dependencies not provided by the `deps` argument.
         deps: The dependencies of the target being built, whose `Objc` providers
             will be passed to the new one in order to propagate the correct
             transitive fields.
-        link_inputs: Additional linker input files that should be propagated to
-            dependents.
-        linkopts: Linker options that should be propagated to dependents.
-        module_map: The module map generated for the Swift target's Objective-C
-            header, if any.
-        static_archives: A list (typically of one element) of the static
-            archives (`.a` files) containing the target's compiled code.
-        swiftmodules: A list (typically of one element) of the `.swiftmodule`
-            files for the compiled target.
-        objc_header: The generated Objective-C header for the Swift target. If
-            `None`, no headers will be propagated. This header is only needed
-            for Swift code that defines classes that should be exposed to
-            Objective-C.
-        objc_providers: Additional `apple_common.Objc` providers from transitive
-            dependencies not provided by the `deps` argument.
+        feature_configuration: The Swift feature configuration.
+        libraries_to_link: A list (typically of one element) of the
+            `LibraryToLink` objects from which the static archives (`.a` files)
+            containing the target's compiled code will be retrieved.
+        module_context: The module context as returned by
+            `swift_common.compile`.
+        user_link_flags: Linker options that should be propagated to dependents.
 
     Returns:
         An `apple_common.Objc` provider that should be returned by the calling
         rule.
     """
-    all_objc_providers = get_providers(deps, apple_common.Objc) + objc_providers
-    objc_provider_args = {
-        "link_inputs": depset(direct = swiftmodules + link_inputs),
-        "providers": all_objc_providers,
-    }
 
-    # The link action registered by `apple_binary` only looks at `Objc`
-    # providers, not `CcInfo`, for libraries to link. Until that rule is
-    # migrated over, we need to collect libraries from `CcInfo` (which will
-    # include Swift and C++) and put them into the new `Objc` provider.
+    # The link action registered by `apple_common.link_multi_arch_binary` only
+    # looks at `Objc` providers, not `CcInfo`, for libraries to link.
+    # Dependencies from an `objc_library` to a `cc_library` are handled as a
+    # special case, but other `cc_library` dependencies (such as `swift_library`
+    # to `cc_library`) would be lost since they do not receive the same
+    # treatment. Until those special cases are resolved via the unification of
+    # the Obj-C and C++ rules, we need to collect libraries from `CcInfo` and
+    # put them into the new `Objc` provider.
     transitive_cc_libs = []
     for cc_info in get_providers(deps, CcInfo):
-        static_libs = collect_cc_libraries(
-            cc_info = cc_info,
-            include_static = True,
-        )
+        static_libs = []
+        for linker_input in cc_info.linking_context.linker_inputs.to_list():
+            for library_to_link in linker_input.libraries:
+                library = library_to_link.static_library
+                if library:
+                    static_libs.append(library)
         transitive_cc_libs.append(depset(static_libs, order = "topological"))
-    objc_provider_args["library"] = depset(
-        static_archives,
-        transitive = transitive_cc_libs,
-        order = "topological",
+
+    direct_libraries = []
+    force_load_libraries = []
+
+    for library_to_link in libraries_to_link:
+        library = library_to_link.static_library
+        if library:
+            direct_libraries.append(library)
+        if library_to_link.alwayslink:
+            force_load_libraries.append(library)
+
+    if feature_configuration and should_embed_swiftmodule_for_debugging(
+        feature_configuration = feature_configuration,
+        module_context = module_context,
+    ):
+        module_file = module_context.swift.swiftmodule
+        debug_link_flags = ["-Wl,-add_ast_path,{}".format(module_file.path)]
+        debug_link_inputs = [module_file]
+    else:
+        debug_link_flags = []
+        debug_link_inputs = []
+
+    return apple_common.new_objc_provider(
+        force_load_library = depset(
+            force_load_libraries,
+            order = "topological",
+        ),
+        header = depset(
+            module_context.clang.compilation_context.direct_headers,
+        ),
+        library = depset(
+            direct_libraries,
+            transitive = transitive_cc_libs,
+            order = "topological",
+        ),
+        link_inputs = depset(additional_link_inputs + debug_link_inputs),
+        linkopt = depset(user_link_flags + debug_link_flags),
+        providers = get_providers(
+            deps,
+            apple_common.Objc,
+        ) + additional_objc_infos,
     )
 
-    if objc_header:
-        objc_provider_args["header"] = depset(direct = [objc_header])
-    if linkopts:
-        objc_provider_args["linkopt"] = depset(direct = linkopts, order = "topological")
-
-    force_loaded_libraries = [
-        archive
-        for archive in static_archives
-        if archive.basename.endswith(".lo")
-    ]
-    if force_loaded_libraries:
-        objc_provider_args["force_load_library"] = depset(
-            direct = force_loaded_libraries,
-        )
-
-    # In addition to the generated header's module map, we must re-propagate the
-    # direct deps' Objective-C module maps to dependents, because those Swift
-    # modules still need to see them. We need to construct a new transitive objc
-    # provider to get the correct strict propagation behavior.
-    transitive_objc_provider_args = {"providers": all_objc_providers}
-    if module_map:
-        transitive_objc_provider_args["module_map"] = depset(
-            direct = [module_map],
-        )
-
-    transitive_objc = apple_common.new_objc_provider(
-        **transitive_objc_provider_args
-    )
-    objc_provider_args["module_map"] = transitive_objc.module_map
-
-    return apple_common.new_objc_provider(**objc_provider_args)
-
-def output_groups_from_compilation_outputs(compilation_outputs):
-    """Returns a dictionary of output groups from Swift compilation outputs.
+def output_groups_from_module_context(module_context):
+    """Returns a dictionary of output groups from a Swift module context.
 
     Args:
-        compilation_outputs: The result of calling `swift_common.compile`.
+        module_context: The value in the first element of the tuple returned by
+            `swift_common.compile`.
 
     Returns:
         A `dict` whose keys are the names of output groups and values are
@@ -2251,14 +2191,17 @@ def output_groups_from_compilation_outputs(compilation_outputs):
     """
     output_groups = {}
 
-    if compilation_outputs.swiftinterface:
-        output_groups["swiftinterface"] = depset([
-            compilation_outputs.swiftinterface,
-        ])
+    if module_context.swift:
+        swift_module = module_context.swift
+
+        if swift_module.swiftinterface:
+            output_groups["swiftinterface"] = depset([
+                swift_module.swiftinterface,
+            ])
 
     return output_groups
 
-def swift_library_output_map(name, alwayslink):
+def swift_library_output_map(name):
     """Returns the dictionary of implicit outputs for a `swift_library`.
 
     This function is used to specify the `outputs` of the `swift_library` rule;
@@ -2267,16 +2210,12 @@ def swift_library_output_map(name, alwayslink):
 
     Args:
         name: The name of the target being built.
-        alwayslink: Indicates whether the object files in the library should
-            always be always be linked into any binaries that depend on it, even
-            if some contain no symbols referenced by the binary.
 
     Returns:
         The implicit outputs dictionary for a `swift_library`.
     """
-    extension = "lo" if alwayslink else "a"
     return {
-        "archive": "lib{}.{}".format(name, extension),
+        "archive": "lib{}.a".format(name),
     }
 
 def _swift_module_search_path_map_fn(module):
@@ -2430,26 +2369,3 @@ def _safe_int(s):
         if s[i] < "0" or s[i] > "9":
             return None
     return int(s)
-
-def _is_debugging(feature_configuration):
-    """Returns `True` if the current compilation mode produces debug info.
-
-    We replicate the behavior of the C++ build rules for Swift, which are
-    described here:
-    https://docs.bazel.build/versions/master/user-manual.html#flag--compilation_mode
-
-    Args:
-        feature_configuration: The feature configuration.
-
-    Returns:
-        `True` if the current compilation mode produces debug info.
-    """
-    return (
-        is_feature_enabled(
-            feature_configuration = feature_configuration,
-            feature_name = SWIFT_FEATURE_DBG,
-        ) or is_feature_enabled(
-            feature_configuration = feature_configuration,
-            feature_name = SWIFT_FEATURE_FASTBUILD,
-        )
-    )

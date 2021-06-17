@@ -94,7 +94,7 @@ def private_deps_test_suite():
             "/test/fixtures/private_deps/public_cc.swift.modulemap",
             "-/test/fixtures/private_deps/private_cc.swift.modulemap",
         ],
-        field = "transitive_modules.clang!.module_map",
+        field = "transitive_modules.clang!.module_map!",
         provider = "SwiftInfo",
         tags = [name],
         target_under_test = "@build_bazel_rules_swift//test/fixtures/private_deps:client_cc_deps",

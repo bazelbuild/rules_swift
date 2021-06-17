@@ -23,7 +23,7 @@ load(
 load(
     ":compiling.bzl",
     "new_objc_provider",
-    "output_groups_from_compilation_outputs",
+    "output_groups_from_module_context",
     "swift_library_output_map",
 )
 load(
@@ -32,14 +32,12 @@ load(
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS",
 )
-load(":linking.bzl", "create_linker_input")
 load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
 load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 load(":swift_common.bzl", "swift_common")
 load(
     ":utils.bzl",
     "compact",
-    "create_cc_info",
     "expand_locations",
     "get_providers",
 )
@@ -169,7 +167,7 @@ def _swift_library_impl(ctx):
             attr = "generated_header_name",
         )
 
-    compilation_outputs = swift_common.compile(
+    module_context, compilation_outputs = swift_common.compile(
         actions = ctx.actions,
         additional_inputs = additional_inputs,
         bin_dir = ctx.bin_dir,
@@ -186,43 +184,42 @@ def _swift_library_impl(ctx):
         target_name = ctx.label.name,
     )
 
-    # If a module was created for the generated header, propagate it as well so
-    # that it is passed as a module input to upstream compilation actions.
-    if compilation_outputs.generated_module_map:
-        clang_module = swift_common.create_clang_module(
-            compilation_context = cc_common.create_compilation_context(
-                headers = depset([compilation_outputs.generated_header]),
-            ),
-            module_map = compilation_outputs.generated_module_map,
-            precompiled_module = compilation_outputs.precompiled_module,
-        )
-    else:
-        clang_module = None
-
-    linker_input, library_to_link = create_linker_input(
-        actions = ctx.actions,
-        additional_inputs = additional_inputs,
-        alwayslink = ctx.attr.alwayslink,
-        cc_feature_configuration = swift_common.cc_feature_configuration(
+    linking_context, linking_output = (
+        swift_common.create_linking_context_from_compilation_outputs(
+            actions = ctx.actions,
+            additional_inputs = additional_inputs,
+            alwayslink = ctx.attr.alwayslink,
+            compilation_outputs = compilation_outputs,
             feature_configuration = feature_configuration,
-        ),
-        compilation_outputs = compilation_outputs,
-        is_dynamic = False,
-        is_static = True,
-        library_name = ctx.label.name,
-        objects = compilation_outputs.object_files,
-        owner = ctx.label,
-        swift_toolchain = swift_toolchain,
-        user_link_flags = linkopts,
+            label = ctx.label,
+            linking_contexts = [
+                dep[CcInfo].linking_context
+                for dep in deps + private_deps
+                if CcInfo in dep
+            ],
+            module_context = module_context,
+            swift_toolchain = swift_toolchain,
+            user_link_flags = linkopts,
+        )
     )
 
+    # Include the generated header (if any) as a rule output, so that a user
+    # building the target can see its path and view it easily.
+    generated_header_file = None
+    if generated_header_name:
+        for file in module_context.clang.compilation_context.direct_headers:
+            if file.basename == generated_header_name:
+                generated_header_file = file
+                break
+
     direct_output_files = compact([
-        compilation_outputs.generated_header,
-        compilation_outputs.precompiled_module,
-        compilation_outputs.swiftdoc,
-        compilation_outputs.swiftinterface,
-        compilation_outputs.swiftmodule,
-        library_to_link.pic_static_library,
+        generated_header_file,
+        module_context.clang.precompiled_module,
+        module_context.swift.swiftdoc,
+        module_context.swift.swiftinterface,
+        module_context.swift.swiftmodule,
+        linking_output.library_to_link.static_library,
+        linking_output.library_to_link.pic_static_library,
     ])
 
     implicit_deps_providers = swift_toolchain.implicit_deps_providers
@@ -235,19 +232,12 @@ def _swift_library_impl(ctx):
                 files = ctx.files.data,
             ),
         ),
-        OutputGroupInfo(**output_groups_from_compilation_outputs(
-            compilation_outputs = compilation_outputs,
+        OutputGroupInfo(**output_groups_from_module_context(
+            module_context = module_context,
         )),
-        create_cc_info(
-            cc_infos = get_providers(deps, CcInfo),
-            compilation_outputs = compilation_outputs,
-            defines = ctx.attr.defines,
-            includes = [ctx.bin_dir.path],
-            linker_inputs = [linker_input],
-            private_cc_infos = (
-                get_providers(private_deps, CcInfo) +
-                implicit_deps_providers.cc_infos
-            ),
+        CcInfo(
+            compilation_context = module_context.clang.compilation_context,
+            linking_context = linking_context,
         ),
         coverage_common.instrumented_files_info(
             ctx,
@@ -256,18 +246,7 @@ def _swift_library_impl(ctx):
             source_attributes = ["srcs"],
         ),
         swift_common.create_swift_info(
-            modules = [
-                swift_common.create_module(
-                    name = module_name,
-                    clang = clang_module,
-                    swift = swift_common.create_swift_module(
-                        defines = ctx.attr.defines,
-                        swiftdoc = compilation_outputs.swiftdoc,
-                        swiftinterface = compilation_outputs.swiftinterface,
-                        swiftmodule = compilation_outputs.swiftmodule,
-                    ),
-                ),
-            ],
+            modules = [module_context],
             # Note that private_deps are explicitly omitted here; they should
             # not propagate.
             swift_infos = get_providers(deps, SwiftInfo),
@@ -279,18 +258,17 @@ def _swift_library_impl(ctx):
     # targets.
     if swift_toolchain.supports_objc_interop:
         providers.append(new_objc_provider(
+            additional_link_inputs = additional_inputs,
+            additional_objc_infos = implicit_deps_providers.objc_infos,
             # We must include private_deps here because some of the information
             # propagated here is related to linking.
             # TODO(allevato): This means we can't yet completely avoid
             # propagating headers/module maps from impl-only Obj-C dependencies.
             deps = deps + private_deps,
-            link_inputs = compilation_outputs.linker_inputs + additional_inputs,
-            linkopts = compilation_outputs.linker_flags + linkopts,
-            module_map = compilation_outputs.generated_module_map,
-            static_archives = compact([library_to_link.pic_static_library]),
-            swiftmodules = [compilation_outputs.swiftmodule],
-            objc_header = compilation_outputs.generated_header,
-            objc_providers = implicit_deps_providers.objc_infos,
+            feature_configuration = feature_configuration,
+            module_context = module_context,
+            libraries_to_link = [linking_output.library_to_link],
+            user_link_flags = linkopts,
         ))
 
     return providers
