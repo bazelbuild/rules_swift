@@ -41,6 +41,7 @@ load(
     "get_cc_feature_configuration",
     "is_feature_enabled",
 )
+load(":linking.bzl", "create_linking_context_from_compilation_outputs")
 load(
     ":providers.bzl",
     "create_clang_module",
@@ -58,6 +59,7 @@ swift_common = struct(
     compile = compile,
     configure_features = configure_features,
     create_clang_module = create_clang_module,
+    create_linking_context_from_compilation_outputs = create_linking_context_from_compilation_outputs,
     create_module = create_module,
     create_swift_info = create_swift_info,
     create_swift_interop_info = create_swift_interop_info,

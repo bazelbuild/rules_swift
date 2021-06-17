@@ -17,48 +17,6 @@
 load(":providers.bzl", "SwiftInfo")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 
-def collect_cc_libraries(
-        cc_info,
-        include_dynamic = False,
-        include_interface = False,
-        include_pic_static = False,
-        include_static = False):
-    """Returns a list of libraries referenced in the given `CcInfo` provider.
-
-    Args:
-        cc_info: The `CcInfo` provider whose libraries should be returned.
-        include_dynamic: True if dynamic libraries should be included in the
-            list.
-        include_interface: True if interface libraries should be included in the
-            list.
-        include_pic_static: True if PIC static libraries should be included in
-            the list. If there is no PIC library, the non-PIC library will be
-            used instead.
-        include_static: True if non-PIC static libraries should be included in
-            the list.
-
-    Returns:
-        The list of libraries built or depended on by the given provier.
-    """
-    libraries = []
-
-    for linker_input in cc_info.linking_context.linker_inputs.to_list():
-        for library in linker_input.libraries:
-            if include_pic_static:
-                if library.pic_static_library:
-                    libraries.append(library.pic_static_library)
-                elif library.static_library:
-                    libraries.append(library.static_library)
-            elif include_static and library.static_library:
-                libraries.append(library.static_library)
-
-            if include_dynamic and library.dynamic_library:
-                libraries.append(library.dynamic_library)
-            if include_interface and library.interface_library:
-                libraries.append(library.interface_library)
-
-    return libraries
-
 def collect_implicit_deps_providers(
         targets,
         additional_cc_infos = [],
@@ -111,69 +69,6 @@ def compact(sequence):
     Returns: A copy of the sequence with any `None` items removed.
     """
     return [item for item in sequence if item != None]
-
-def create_cc_info(
-        *,
-        cc_infos = [],
-        compilation_outputs = None,
-        defines = [],
-        includes = [],
-        linker_inputs = [],
-        private_cc_infos = []):
-    """Creates a `CcInfo` provider from Swift compilation info and deps.
-
-    Args:
-        cc_infos: A list of `CcInfo` providers from public dependencies, whose
-            compilation and linking contexts should both be merged into the new
-            provider.
-        compilation_outputs: The compilation outputs from a Swift compile
-            action, as returned by `swift_common.compile`, or None.
-        defines: The list of compiler defines to insert into the compilation
-            context.
-        includes: The list of include paths to insert into the compilation
-            context.
-        linker_inputs: A list of `LinkerInput` objects that represent the
-            libraries that should be linked into the final binary as well as any
-            additional inputs and flags that should be passed to the linker.
-        private_cc_infos: A list of `CcInfo` providers from private
-            (implementation-only) dependencies, whose linking contexts should be
-            merged into the new provider but whose compilation contexts should
-            be excluded.
-
-    Returns:
-        A new `CcInfo`.
-    """
-    all_headers = []
-    if compilation_outputs:
-        all_headers = compact([compilation_outputs.generated_header])
-
-    local_cc_infos = [
-        CcInfo(
-            linking_context = cc_common.create_linking_context(
-                linker_inputs = depset(linker_inputs),
-            ),
-            compilation_context = cc_common.create_compilation_context(
-                defines = depset(defines),
-                headers = depset(all_headers),
-                includes = depset(includes),
-            ),
-        ),
-    ]
-
-    if private_cc_infos:
-        # Merge the private deps' CcInfos, but discard the compilation context
-        # and only propagate the linking context.
-        full_private_cc_info = cc_common.merge_cc_infos(
-            cc_infos = private_cc_infos,
-        )
-        local_cc_infos.append(CcInfo(
-            linking_context = full_private_cc_info.linking_context,
-        ))
-
-    return cc_common.merge_cc_infos(
-        cc_infos = cc_infos,
-        direct_cc_infos = local_cc_infos,
-    )
 
 def compilation_context_for_explicit_module_compilation(
         compilation_contexts,
