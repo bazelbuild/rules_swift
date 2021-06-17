@@ -15,11 +15,7 @@
 """A Swift library rule that generates gRPC services defined in protos."""
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load(
-    ":compiling.bzl",
-    "new_objc_provider",
-    "output_groups_from_module_context",
-)
+load(":compiling.bzl", "new_objc_provider")
 load(
     ":feature_names.bzl",
     "SWIFT_FEATURE_ENABLE_TESTING",
@@ -310,9 +306,6 @@ def _swift_grpc_library_impl(ctx):
                 linking_output.library_to_link.static_library,
             ])),
         ),
-        OutputGroupInfo(**output_groups_from_module_context(
-            module_context = module_context,
-        )),
         CcInfo(
             compilation_context = module_context.clang.compilation_context,
             linking_context = linking_context,

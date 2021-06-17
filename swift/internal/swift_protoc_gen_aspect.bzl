@@ -17,7 +17,7 @@
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 load(":attrs.bzl", "swift_config_attrs")
-load(":compiling.bzl", "new_objc_provider", "output_groups_from_module_context")
+load(":compiling.bzl", "new_objc_provider")
 load(
     ":feature_names.bzl",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
@@ -488,9 +488,6 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
         )
 
         providers = [
-            OutputGroupInfo(**output_groups_from_module_context(
-                module_context = module_context,
-            )),
             SwiftProtoCcInfo(
                 cc_info = cc_common.merge_cc_infos(
                     direct_cc_infos = [cc_info],

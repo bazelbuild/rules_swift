@@ -15,7 +15,7 @@
 """Implementation of the `swift_module_alias` rule."""
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load(":compiling.bzl", "new_objc_provider", "output_groups_from_module_context")
+load(":compiling.bzl", "new_objc_provider")
 load(":derived_files.bzl", "derived_files")
 load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
 load(":swift_common.bzl", "swift_common")
@@ -93,9 +93,6 @@ def _swift_module_alias_impl(ctx):
                 linking_output.library_to_link.static_library,
             ])),
         ),
-        OutputGroupInfo(**output_groups_from_module_context(
-            module_context = module_context,
-        )),
         coverage_common.instrumented_files_info(
             ctx,
             dependency_attributes = ["deps"],
