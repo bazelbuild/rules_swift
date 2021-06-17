@@ -16,11 +16,7 @@
 
 load("@rules_proto//proto:defs.bzl", "ProtoInfo")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load(
-    ":compiling.bzl",
-    "new_objc_provider",
-    "output_groups_from_module_context",
-)
+load(":compiling.bzl", "new_objc_provider")
 load(
     ":feature_names.bzl",
     "SWIFT_FEATURE_ENABLE_TESTING",
@@ -312,10 +308,6 @@ def _swift_grpc_library_impl(ctx):
                 linking_output.library_to_link.static_library,
             ])),
         ),
-        OutputGroupInfo(**output_groups_from_module_context(
-            module_context = module_context,
-            other_compilation_outputs = other_compilation_outputs,
-        )),
         CcInfo(
             compilation_context = module_context.clang.compilation_context,
             linking_context = linking_context,
