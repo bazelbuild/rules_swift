@@ -19,7 +19,7 @@ load(":attrs.bzl", "swift_common_rule_attrs")
 load(":compiling.bzl", "new_objc_provider")
 load(":providers.bzl", "SwiftInfo")
 load(":swift_common.bzl", "swift_common")
-load(":utils.bzl", "compact", "create_cc_info", "get_providers")
+load(":utils.bzl", "compact", "get_providers")
 
 def _swift_import_impl(ctx):
     archives = ctx.files.archives
@@ -38,17 +38,37 @@ def _swift_import_impl(ctx):
         unsupported_features = ctx.disabled_features,
     )
 
+    libraries_to_link = [
+        cc_common.create_library_to_link(
+            actions = ctx.actions,
+            cc_toolchain = cc_toolchain,
+            feature_configuration = cc_feature_configuration,
+            static_library = archive,
+        )
+        for archive in archives
+    ]
     linker_input = cc_common.create_linker_input(
         owner = ctx.label,
-        libraries = depset([
-            cc_common.create_library_to_link(
-                actions = ctx.actions,
-                cc_toolchain = cc_toolchain,
-                feature_configuration = cc_feature_configuration,
-                static_library = archive,
-            )
-            for archive in archives
-        ]),
+        libraries = depset(libraries_to_link),
+    )
+    linking_context = cc_common.create_linking_context(
+        linker_inputs = depset([linker_input]),
+    )
+    cc_info = cc_common.merge_cc_infos(
+        direct_cc_infos = [CcInfo(linking_context = linking_context)],
+        cc_infos = [dep[CcInfo] for dep in deps if CcInfo in dep],
+    )
+
+    module_context = swift_common.create_module(
+        name = ctx.attr.module_name,
+        clang = swift_common.create_clang_module(
+            compilation_context = cc_info.compilation_context,
+            module_map = None,
+        ),
+        swift = swift_common.create_swift_module(
+            swiftdoc = swiftdoc,
+            swiftmodule = swiftmodule,
+        ),
     )
 
     providers = [
@@ -60,10 +80,7 @@ def _swift_import_impl(ctx):
                 files = ctx.files.data,
             ),
         ),
-        create_cc_info(
-            cc_infos = get_providers(deps, CcInfo),
-            linker_inputs = [linker_input],
-        ),
+        cc_info,
         # Propagate an `Objc` provider so that Apple-specific rules like
         # apple_binary` will link the imported library properly. Typically we'd
         # want to only propagate this if the toolchain reports that it supports
@@ -72,23 +89,12 @@ def _swift_import_impl(ctx):
         # ignored on non-Apple platforms anyway.
         new_objc_provider(
             deps = deps,
-            link_inputs = [],
-            linkopts = [],
-            module_map = None,
-            objc_header = None,
-            static_archives = archives,
-            swiftmodules = [swiftmodule],
+            feature_configuration = None,
+            libraries_to_link = libraries_to_link,
+            module_context = module_context,
         ),
         swift_common.create_swift_info(
-            modules = [
-                swift_common.create_module(
-                    name = ctx.attr.module_name,
-                    swift = swift_common.create_swift_module(
-                        swiftdoc = swiftdoc,
-                        swiftmodule = swiftmodule,
-                    ),
-                ),
-            ],
+            modules = [module_context],
             swift_infos = get_providers(deps, SwiftInfo),
         ),
     ]
