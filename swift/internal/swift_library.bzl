@@ -252,6 +252,7 @@ def _swift_library_impl(ctx):
         providers.append(new_objc_provider(
             additional_link_inputs = additional_inputs,
             additional_objc_infos = implicit_deps_providers.objc_infos,
+            alwayslink = ctx.attr.alwayslink,
             # We must include private_deps here because some of the information
             # propagated here is related to linking.
             # TODO(allevato): This means we can't yet completely avoid
