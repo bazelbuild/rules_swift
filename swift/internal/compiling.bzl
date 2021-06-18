@@ -2517,6 +2517,7 @@ def new_objc_provider(
         *,
         additional_link_inputs = [],
         additional_objc_infos = [],
+        alwayslink = False,
         deps,
         feature_configuration,
         libraries_to_link,
@@ -2529,6 +2530,9 @@ def new_objc_provider(
             propagated to dependents.
         additional_objc_infos: Additional `apple_common.Objc` providers from
             transitive dependencies not provided by the `deps` argument.
+        alwayslink: If True, any binary that depends on the providers returned
+            by this function will link in all of the library's object files,
+            even if some contain no symbols referenced by the binary.
         deps: The dependencies of the target being built, whose `Objc` providers
             will be passed to the new one in order to propagate the correct
             transitive fields.
@@ -2570,7 +2574,7 @@ def new_objc_provider(
         library = library_to_link.static_library
         if library:
             direct_libraries.append(library)
-        if library_to_link.alwayslink:
+        if alwayslink:
             force_load_libraries.append(library)
 
     if feature_configuration and should_embed_swiftmodule_for_debugging(
