@@ -247,7 +247,7 @@ def _swift_linking_rule_impl(
 
     return linking_outputs.executable, providers
 
-def _create_xctest_bundle(name, actions, binary):
+def _create_xctest_bundle(name, actions, binary, xctest_bundle_creator):
     """Creates an `.xctest` bundle that contains the given binary.
 
     Args:
@@ -268,12 +268,10 @@ def _create_xctest_bundle(name, actions, binary):
     args.add(xctest_bundle.path)
     args.add(binary)
 
-    actions.run_shell(
+    actions.run(
         arguments = [args],
-        command = (
-            'mkdir -p "$1/Contents/MacOS" && ' +
-            'cp "$2" "$1/Contents/MacOS"'
-        ),
+        executable = xctest_bundle_creator,
+        tools = [xctest_bundle_creator],
         inputs = [binary],
         mnemonic = "SwiftCreateTestBundle",
         outputs = [xctest_bundle],
@@ -372,6 +370,7 @@ def _swift_test_impl(ctx):
             name = ctx.label.name,
             actions = ctx.actions,
             binary = binary,
+            xctest_bundle_creator = ctx.executable._xctest_bundle_creator,
         )
         xctest_runner = _create_xctest_runner(
             name = ctx.label.name,
@@ -450,6 +449,13 @@ swift_test = rule(
                 default = Label(
                     "@build_bazel_rules_swift//tools/xctest_runner:xctest_runner_template",
                 ),
+            ),
+            "_xctest_bundle_creator": attr.label(
+                cfg = "host",
+                default = Label(
+                    "@build_bazel_rules_swift//tools/xctest_bundle_creator",
+                ),
+                executable = True,
             ),
         },
     ),
