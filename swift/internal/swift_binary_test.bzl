@@ -255,6 +255,7 @@ def _create_xctest_bundle(name, actions, binary, xctest_bundle_creator):
             basename of the bundle (followed by the .xctest bundle extension).
         actions: The context's actions object.
         binary: The binary that will be copied into the test bundle.
+        xctest_bundle_creator: The script to create the test bundle.
 
     Returns:
         A `File` (tree artifact) representing the `.xctest` bundle.
