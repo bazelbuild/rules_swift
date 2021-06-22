@@ -15,7 +15,7 @@ rpaths=$(otool -l "$copied_binary" \
 
 for rpath in $rpaths
 do
-  if [[ $rpath == @* ]]; then
+  if [[ $rpath == @loader_path/* || $rpath == @executable_path/* ]]; then
     prefix="${rpath%%/*}"
     suffix="${rpath#*/}"
     xcrun install_name_tool -rpath "$rpath" "$prefix/../../../$suffix" "$copied_binary"
