@@ -14,13 +14,11 @@
 
 #include "tools/worker/compile_with_worker.h"
 
-#include <google/protobuf/io/zero_copy_stream_impl.h>
-#include <google/protobuf/util/delimited_message_util.h>
 #include <unistd.h>
 
 #include <iostream>
+#include <nlohmann/json.hpp>
 
-#include "third_party/bazel_protos/worker_protocol.pb.h"
 #include "tools/worker/work_processor.h"
 
 // How Swift Incremental Compilation Works
@@ -76,40 +74,35 @@
 // it can find them as well.
 
 int CompileWithWorker(const std::vector<std::string> &args) {
-  // Set up the input and output streams used to communicate with Bazel over
-  // stdin and stdout.
-  google::protobuf::io::FileInputStream file_input_stream(STDIN_FILENO);
-  file_input_stream.SetCloseOnDelete(false);
-  google::protobuf::io::FileOutputStream file_output_stream(STDOUT_FILENO);
-  file_output_stream.SetCloseOnDelete(false);
-
   // Pass the "universal arguments" to the Swift work processor. They will be
   // rewritten to replace any placeholders if necessary, and then passed at the
   // beginning of any process invocation. Note that these arguments include the
   // tool itself (i.e., "swiftc").
   WorkProcessor swift_worker(args);
+  int offset = 0;
 
   while (true) {
-    blaze::worker::WorkRequest request;
-    if (!google::protobuf::util::ParseDelimitedFromZeroCopyStream(
-            &request, &file_input_stream, nullptr)) {
-      std::cerr << "Could not read WorkRequest from stdin. Killing worker "
-                << "process.\n";
-      return 254;
+    std::string line;
+    int result;
+    do {
+      char buffer[1024];
+      lseek(STDIN_FILENO, offset, SEEK_SET);
+      result = read(STDIN_FILENO, buffer, 1024);
+      buffer[result] = '\0';
+      offset += result;
+      line.append(buffer);
+    } while (result == 1024);
+
+    if (line == "") {
+      continue;
     }
 
-    blaze::worker::WorkResponse response;
+    auto request_json = nlohmann::json::parse(line);
+    WorkRequest request(request_json.value("requestId", 0),
+                        request_json["arguments"]);
+    WorkResponse response;
     swift_worker.ProcessWorkRequest(request, &response);
-
-    if (!google::protobuf::util::SerializeDelimitedToZeroCopyStream(
-            response, &file_output_stream)) {
-      std::cerr << "Could not write WorkResponse to stdout. Killing worker "
-                << "process.\n";
-      return 254;
-    }
-    // Flush stdout after writing to ensure that Bazel doesn't hang waiting for
-    // the response due to buffering.
-    file_output_stream.Flush();
+    std::cout << response.to_json().dump() << std::flush;
   }
 
   return 0;

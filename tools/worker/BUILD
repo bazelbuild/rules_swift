@@ -32,6 +32,7 @@ cc_library(
     name = "compile_with_worker",
     srcs = [
         "compile_with_worker.cc",
+        "models.h",
         "work_processor.cc",
         "work_processor.h",
     ],
@@ -46,9 +47,8 @@ cc_library(
     }),
     deps = [
         ":swift_runner",
-        "//third_party/bazel_protos:worker_protocol_cc_proto",
         "//tools/common:temp_file",
-        "@com_google_protobuf//:protobuf",
+        "@com_github_nlohmann_json//:json",
     ],
 )
 
