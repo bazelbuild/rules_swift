@@ -6,7 +6,9 @@ This repository contains rules for [Bazel](https://bazel.build) that can be
 used to build Swift libraries, tests, and executables for macOS and Linux.
 
 To build applications for all of Apple's platforms (macOS, iOS, tvOS, and
-watchOS), they can be combined with the
+watchOS), they can be combine
+
+d with the
 [Apple Rules](https://github.com/bazelbuild/rules_apple).
 
 If you run into any problems with these rules, please
