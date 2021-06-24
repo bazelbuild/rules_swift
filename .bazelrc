@@ -1,6 +1,8 @@
 # https://github.com/bazelbuild/stardoc/issues/112
 common --incompatible_allow_tags_propagation
 
+build --experimental_worker_allow_json_protocol
+
 # Since there's no way to set the deployment version for swift_{binary,test},
 # this forces all targets' minimum macOS to Catalina until Bazel CI has
 # upgraded their Mac machines to Big Sur.
