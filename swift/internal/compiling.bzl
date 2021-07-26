@@ -63,6 +63,7 @@ load(
     "SWIFT_FEATURE_VFSOVERLAY",
     "SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
+    "SWIFT_FEATURE_EMIT_BC",
 )
 load(":features.bzl", "are_all_features_enabled", "is_feature_enabled")
 load(":module_maps.bzl", "write_module_map")
@@ -130,6 +131,16 @@ def compile_action_configs(
             configurators = [
                 swift_toolchain_config.add_arg("-emit-object"),
             ],
+            not_features = [SWIFT_FEATURE_EMIT_BC],
+        ),
+
+        # Emit llvm bc file(s).
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [
+                swift_toolchain_config.add_arg("-emit-bc"),
+            ],
+            features = [SWIFT_FEATURE_EMIT_BC],
         ),
 
         # Add the single object file or object file map, whichever is needed.
@@ -2218,6 +2229,13 @@ def _declare_compile_outputs(
         user_compile_flags = user_compile_flags,
     )
 
+    # If enabled the compiler will emit LLVM BC files instead of Mach-O object
+    # files.
+    emits_bc = is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_EMIT_BC,
+    )
+
     if not output_nature.emits_multiple_objects:
         # If we're emitting a single object, we don't use an object map; we just
         # declare the output file that the compiler will generate and there are
@@ -2239,6 +2257,7 @@ def _declare_compile_outputs(
         output_info = _declare_multiple_outputs_and_write_output_file_map(
             actions = actions,
             emits_partial_modules = output_nature.emits_partial_modules,
+            emits_bc = emits_bc,
             srcs = srcs,
             target_name = target_name,
         )
@@ -2281,6 +2300,7 @@ def _declare_compile_outputs(
 def _declare_multiple_outputs_and_write_output_file_map(
         actions,
         emits_partial_modules,
+        emits_bc,
         srcs,
         target_name):
     """Declares low-level outputs and writes the output map for a compilation.
@@ -2329,14 +2349,24 @@ def _declare_multiple_outputs_and_write_output_file_map(
     for src in srcs:
         src_output_map = {}
 
-        # Declare the object file (there is one per source file).
-        obj = derived_files.intermediate_object_file(
-            actions = actions,
-            target_name = target_name,
-            src = src,
-        )
-        output_objs.append(obj)
-        src_output_map["object"] = obj.path
+        if emits_bc:
+            # Declare the llvm bc file (there is one per source file).
+            obj = derived_files.intermediate_bc_file(
+                actions = actions,
+                target_name = target_name,
+                src = src,
+            )
+            output_objs.append(obj)
+            src_output_map["llvm-bc"] = obj.path
+        else:
+            # Declare the object file (there is one per source file).
+            obj = derived_files.intermediate_object_file(
+                actions = actions,
+                target_name = target_name,
+                src = src,
+            )
+            output_objs.append(obj)
+            src_output_map["object"] = obj.path
 
         ast = derived_files.ast(
             actions = actions,

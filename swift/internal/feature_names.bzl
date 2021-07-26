@@ -257,6 +257,10 @@ SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES = "swift.skip_function_bodies_for_deri
 # swift.coverage_prefix_map also remap the path in coverage data.
 SWIFT_FEATURE_REMAP_XCODE_PATH = "swift.remap_xcode_path"
 
+# If enabled the compiler will produce an LLVM Bitcode BC file instead of an
+# Mach-O object file using -emit-bc instead of -emit-object.
+SWIFT_FEATURE_EMIT_BC = "swift.emit_bc"
+
 # A private feature that is set by the toolchain if a flag enabling WMO was
 # passed on the command line using `--swiftcopt`. Users should never manually
 # enable, disable, or query this feature.
