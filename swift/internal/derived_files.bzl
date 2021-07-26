@@ -69,6 +69,22 @@ def _indexstore_directory(actions, target_name):
     """
     return actions.declare_directory("{}.indexstore".format(target_name))
 
+def _intermediate_bc_file(actions, target_name, src):
+    """Declares a file for an intermediate llvm bc file during compilation.
+
+    Args:
+        actions: The context's actions object.
+        target_name: The name of the target being built.
+        src: A `File` representing the source file being compiled.
+
+    Returns:
+        The declared `File`.
+    """
+    dirname, basename = _intermediate_frontend_file_path(target_name, src)
+    return actions.declare_file(
+        paths.join(dirname, "{}.bc".format(basename)),
+    )
+
 def _intermediate_frontend_file_path(target_name, src):
     """Returns the path to the directory for intermediate compile outputs.
 
@@ -315,6 +331,7 @@ derived_files = struct(
     autolink_flags = _autolink_flags,
     executable = _executable,
     indexstore_directory = _indexstore_directory,
+    intermediate_bc_file = _intermediate_bc_file,
     intermediate_object_file = _intermediate_object_file,
     module_map = _module_map,
     modulewrap_object = _modulewrap_object,

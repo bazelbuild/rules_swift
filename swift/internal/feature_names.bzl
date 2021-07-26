@@ -211,6 +211,10 @@ SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION = "swift.supports_library_evolution"
 # feature is a noop.
 SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION = "swift.enable_library_evolution"
 
+# If enabled the compiler will produce an LLVM Bitcode BC file instead of an
+# Mach-O object file using -emit-bc instead of -emit-object.
+SWIFT_FEATURE_EMIT_BC = "swift.emit_bc"
+
 # If enabled, requests the swiftinterface file to be built on the swiftc
 # invocation. If the `SWIFT_FEATURES_SUPPORTS_LIBRARY_EVOLUTION` feature is not
 # enabled, this feature is a noop.

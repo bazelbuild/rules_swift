@@ -36,6 +36,7 @@ load(
     "SWIFT_FEATURE_DBG",
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
     "SWIFT_FEATURE_DISABLE_SYSTEM_INDEX",
+    "SWIFT_FEATURE_EMIT_BC",
     "SWIFT_FEATURE_EMIT_C_MODULE",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
@@ -130,6 +131,16 @@ def compile_action_configs(
             configurators = [
                 swift_toolchain_config.add_arg("-emit-object"),
             ],
+            not_features = [SWIFT_FEATURE_EMIT_BC],
+        ),
+
+        # Emit llvm bc file(s).
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [
+                swift_toolchain_config.add_arg("-emit-bc"),
+            ],
+            features = [SWIFT_FEATURE_EMIT_BC],
         ),
 
         # Add the single object file or object file map, whichever is needed.
@@ -2218,6 +2229,13 @@ def _declare_compile_outputs(
         user_compile_flags = user_compile_flags,
     )
 
+    # If enabled the compiler will emit LLVM BC files instead of Mach-O object
+    # files.
+    emits_bc = is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_EMIT_BC,
+    )
+
     if not output_nature.emits_multiple_objects:
         # If we're emitting a single object, we don't use an object map; we just
         # declare the output file that the compiler will generate and there are
@@ -2238,6 +2256,7 @@ def _declare_compile_outputs(
         # object files so that we can pass them all to the archive action.
         output_info = _declare_multiple_outputs_and_write_output_file_map(
             actions = actions,
+            emits_bc = emits_bc,
             emits_partial_modules = output_nature.emits_partial_modules,
             srcs = srcs,
             target_name = target_name,
@@ -2280,6 +2299,7 @@ def _declare_compile_outputs(
 
 def _declare_multiple_outputs_and_write_output_file_map(
         actions,
+        emits_bc,
         emits_partial_modules,
         srcs,
         target_name):
@@ -2287,6 +2307,8 @@ def _declare_multiple_outputs_and_write_output_file_map(
 
     Args:
         actions: The object used to register actions.
+        emits_bc: If `True` the compiler will generate LLVM BC files instead of
+            object files.
         emits_partial_modules: `True` if the compilation action is expected to
             emit partial `.swiftmodule` files (i.e., one `.swiftmodule` file per
             source file, as in a non-WMO compilation).
@@ -2329,14 +2351,24 @@ def _declare_multiple_outputs_and_write_output_file_map(
     for src in srcs:
         src_output_map = {}
 
-        # Declare the object file (there is one per source file).
-        obj = derived_files.intermediate_object_file(
-            actions = actions,
-            target_name = target_name,
-            src = src,
-        )
-        output_objs.append(obj)
-        src_output_map["object"] = obj.path
+        if emits_bc:
+            # Declare the llvm bc file (there is one per source file).
+            obj = derived_files.intermediate_bc_file(
+                actions = actions,
+                target_name = target_name,
+                src = src,
+            )
+            output_objs.append(obj)
+            src_output_map["llvm-bc"] = obj.path
+        else:
+            # Declare the object file (there is one per source file).
+            obj = derived_files.intermediate_object_file(
+                actions = actions,
+                target_name = target_name,
+                src = src,
+            )
+            output_objs.append(obj)
+            src_output_map["object"] = obj.path
 
         ast = derived_files.ast(
             actions = actions,
