@@ -211,6 +211,10 @@ SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION = "swift.supports_library_evolution"
 # feature is a noop.
 SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION = "swift.enable_library_evolution"
 
+# If enabled the compiler will produce an LLVM Bitcode BC file instead of an
+# Mach-O object file using -emit-bc instead of -emit-object.
+SWIFT_FEATURE_EMIT_BC = "swift.emit_bc"
+
 # If enabled, requests the swiftinterface file to be built on the swiftc
 # invocation. If the `SWIFT_FEATURES_SUPPORTS_LIBRARY_EVOLUTION` feature is not
 # enabled, this feature is a noop.
@@ -256,10 +260,6 @@ SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES = "swift.skip_function_bodies_for_deri
 # If enabled remap the absolute path to Xcode in debug info. When used with
 # swift.coverage_prefix_map also remap the path in coverage data.
 SWIFT_FEATURE_REMAP_XCODE_PATH = "swift.remap_xcode_path"
-
-# If enabled the compiler will produce an LLVM Bitcode BC file instead of an
-# Mach-O object file using -emit-bc instead of -emit-object.
-SWIFT_FEATURE_EMIT_BC = "swift.emit_bc"
 
 # A private feature that is set by the toolchain if a flag enabling WMO was
 # passed on the command line using `--swiftcopt`. Users should never manually
