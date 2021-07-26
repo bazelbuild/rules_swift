@@ -2256,8 +2256,8 @@ def _declare_compile_outputs(
         # object files so that we can pass them all to the archive action.
         output_info = _declare_multiple_outputs_and_write_output_file_map(
             actions = actions,
-            emits_partial_modules = output_nature.emits_partial_modules,
             emits_bc = emits_bc,
+            emits_partial_modules = output_nature.emits_partial_modules,
             srcs = srcs,
             target_name = target_name,
         )
@@ -2299,19 +2299,19 @@ def _declare_compile_outputs(
 
 def _declare_multiple_outputs_and_write_output_file_map(
         actions,
-        emits_partial_modules,
         emits_bc,
+        emits_partial_modules,
         srcs,
         target_name):
     """Declares low-level outputs and writes the output map for a compilation.
 
     Args:
         actions: The object used to register actions.
+        emits_bc: If `True` the compiler will generate LLVM BC files instead of
+            object files.
         emits_partial_modules: `True` if the compilation action is expected to
             emit partial `.swiftmodule` files (i.e., one `.swiftmodule` file per
             source file, as in a non-WMO compilation).
-        emits_bc: If `True` the compiler will generate LLVM BC files instead of
-            object files.
         srcs: The list of source files that will be compiled.
         target_name: The name (excluding package path) of the target being
             built.
