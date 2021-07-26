@@ -36,6 +36,7 @@ load(
     "SWIFT_FEATURE_DBG",
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
     "SWIFT_FEATURE_DISABLE_SYSTEM_INDEX",
+    "SWIFT_FEATURE_EMIT_BC",
     "SWIFT_FEATURE_EMIT_C_MODULE",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
@@ -63,7 +64,6 @@ load(
     "SWIFT_FEATURE_VFSOVERLAY",
     "SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
-    "SWIFT_FEATURE_EMIT_BC",
 )
 load(":features.bzl", "are_all_features_enabled", "is_feature_enabled")
 load(":module_maps.bzl", "write_module_map")
@@ -2310,6 +2310,8 @@ def _declare_multiple_outputs_and_write_output_file_map(
         emits_partial_modules: `True` if the compilation action is expected to
             emit partial `.swiftmodule` files (i.e., one `.swiftmodule` file per
             source file, as in a non-WMO compilation).
+        emits_bc: If `True` the compiler will generate LLVM BC files instead of
+            object files.
         srcs: The list of source files that will be compiled.
         target_name: The name (excluding package path) of the target being
             built.
