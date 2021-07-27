@@ -25,6 +25,7 @@ On this page:
   * [universal_swift_compiler_plugin](#universal_swift_compiler_plugin)
   * [swift_feature_allowlist](#swift_feature_allowlist)
   * [swift_import](#swift_import)
+  * [swift_interop_hint](#swift_interop_hint)
   * [swift_library](#swift_library)
   * [swift_library_group](#swift_library_group)
   * [swift_module_alias](#swift_module_alias)
@@ -467,6 +468,86 @@ the `.private.swiftinterface` files are required in order to build any code that
 | <a id="swift_import-swiftdoc"></a>swiftdoc |  The `.swiftdoc` file provided to Swift targets that depend on this target.   | <a href="https://bazel.build/concepts/labels">Label</a> | optional |  `None`  |
 | <a id="swift_import-swiftinterface"></a>swiftinterface |  The `.swiftinterface` file that defines the module interface for this target. The interface files are ignored if `swiftmodule` is specified.   | <a href="https://bazel.build/concepts/labels">Label</a> | optional |  `None`  |
 | <a id="swift_import-swiftmodule"></a>swiftmodule |  The `.swiftmodule` file provided to Swift targets that depend on this target.   | <a href="https://bazel.build/concepts/labels">Label</a> | optional |  `None`  |
+
+
+<a id="swift_interop_hint"></a>
+
+## swift_interop_hint
+
+<pre>
+swift_interop_hint(<a href="#swift_interop_hint-name">name</a>, <a href="#swift_interop_hint-module_name">module_name</a>)
+</pre>
+
+Defines an aspect hint that associates non-Swift BUILD targets with additional
+information required for them to be imported by Swift.
+
+> [!NOTE]
+> Bazel 6 users must set the `--experimental_enable_aspect_hints` flag to utilize
+> this rule. In addition, downstream consumers of rules that utilize this rule
+> must also set the flag. The flag is enabled by default in Bazel 7.
+
+Some build rules, such as `objc_library`, support interoperability with Swift
+simply by depending on them; a module map is generated automatically. This is
+for convenience, because the common case is that most `objc_library` targets
+contain code that is compatible (i.e., capable of being imported) by Swift.
+
+For other rules, like `cc_library`, additional information must be provided to
+indicate that a particular target is compatible with Swift. This is done using
+the `aspect_hints` attribute and the `swift_interop_hint` rule.
+
+#### Using the automatically derived module name (recommended)
+
+If you want to import a non-Swift, non-Objective-C target into Swift using the
+module name that is automatically derived from the BUILD label, there is no need
+to declare an instance of `swift_interop_hint`. A canonical one that requests
+module name derivation has been provided in
+`@build_bazel_rules_swift//swift:auto_module`. Simply add it to the `aspect_hints` of
+the target you wish to import:
+
+```build
+# //my/project/BUILD
+cc_library(
+    name = "somelib",
+    srcs = ["somelib.c"],
+    hdrs = ["somelib.h"],
+    aspect_hints = ["@build_bazel_rules_swift//swift:auto_module"],
+)
+```
+
+When this `cc_library` is a dependency of a Swift target, a module map will be
+generated for it. In this case, the module's name would be `my_project_somelib`.
+
+#### Using an explicit module name
+
+If you need to provide an explicit name for the module (for example, if it is
+part of a third-party library that expects to be imported with a specific name),
+then you can declare your own `swift_interop_hint` target to define the name:
+
+```build
+# //my/project/BUILD
+cc_library(
+    name = "somelib",
+    srcs = ["somelib.c"],
+    hdrs = ["somelib.h"],
+    aspect_hints = [":somelib_swift_interop"],
+)
+
+swift_interop_hint(
+    name = "somelib_swift_interop",
+    module_name = "CSomeLib",
+)
+```
+
+When this `cc_library` is a dependency of a Swift target, a module map will be
+generated for it with the module name `CSomeLib`.
+
+**ATTRIBUTES**
+
+
+| Name  | Description | Type | Mandatory | Default |
+| :------------- | :------------- | :------------- | :------------- | :------------- |
+| <a id="swift_interop_hint-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
+| <a id="swift_interop_hint-module_name"></a>module_name |  The name that will be used to import the hinted module into Swift.<br><br>If left unspecified, the module name will be computed based on the hinted target's build label, by stripping the leading `//` and replacing `/`, `:`, and other non-identifier characters with underscores.   | String | optional |  `""`  |
 
 
 <a id="swift_library"></a>

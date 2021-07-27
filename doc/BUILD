@@ -26,6 +26,7 @@ _DOC_SRCS = {
         "universal_swift_compiler_plugin",
         "swift_feature_allowlist",
         "swift_import",
+        "swift_interop_hint",
         "swift_library",
         "swift_library_group",
         "swift_module_alias",

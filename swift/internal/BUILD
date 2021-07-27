@@ -211,6 +211,13 @@ bzl_library(
 )
 
 bzl_library(
+    name = "swift_interop_hint",
+    srcs = ["swift_interop_hint.bzl"],
+    visibility = ["//swift:__subpackages__"],
+    deps = [":swift_common"],
+)
+
+bzl_library(
     name = "swift_library",
     srcs = ["swift_library.bzl"],
     visibility = ["//swift:__subpackages__"],

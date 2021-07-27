@@ -586,6 +586,61 @@ def _compilation_context_for_target(target):
 
     return compilation_context
 
+def _find_swift_interop_info(target, aspect_ctx):
+    """Finds a `_SwiftInteropInfo` provider associated with the target.
+
+    This function first looks at the target itself to determine if it propagated
+    a `_SwiftInteropInfo` provider directly (that is, its rule implementation
+    function called `swift_common.create_swift_interop_info`). If it did not,
+    then the target's `aspect_hints` attribute is checked for a reference to a
+    target that propagates `_SwiftInteropInfo` (such as `swift_interop_hint`).
+
+    It is an error if `aspect_hints` contains two or more targets that propagate
+    `_SwiftInteropInfo`, or if the target directly propagates the provider and
+    there is also any target in `aspect_hints` that propagates it.
+
+    Args:
+        target: The target to which the aspect is currently being applied.
+        aspect_ctx: The aspect's context.
+
+    Returns:
+        The `_SwiftInteropInfo` associated with the target, if found; otherwise,
+        None.
+    """
+    interop_target = None
+    interop_from_rule = False
+
+    if _SwiftInteropInfo in target:
+        interop_target = target
+        interop_from_rule = True
+
+    # We don't break this loop early when we find a matching hint, because we
+    # want to give an error message if there are two aspect hints that provide
+    # `_SwiftInteropInfo` (or if both the rule and an aspect hint do).
+    for hint in aspect_ctx.rule.attr.aspect_hints:
+        if _SwiftInteropInfo in hint:
+            if interop_target:
+                if interop_from_rule:
+                    fail(("Conflicting Swift interop info from the target " +
+                          "'{target}' ({rule} rule) and the aspect hint " +
+                          "'{hint}'. Only one is allowed.").format(
+                        hint = str(hint.label),
+                        target = str(target.label),
+                        rule = aspect_ctx.rule.kind,
+                    ))
+                else:
+                    fail(("Conflicting Swift interop info from aspect hints " +
+                          "'{hint1}' and '{hint2}'. Only one is " +
+                          "allowed.").format(
+                        hint1 = str(interop_target.label),
+                        hint2 = str(hint.label),
+                    ))
+            interop_target = hint
+
+    if interop_target:
+        return interop_target[_SwiftInteropInfo]
+    return None
+
 def _swift_clang_module_aspect_impl(target, aspect_ctx):
     # Do nothing if the target already propagates `SwiftInfo`.
     if SwiftInfo in target:
@@ -594,8 +649,8 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx):
     requested_features = aspect_ctx.features
     unsupported_features = aspect_ctx.disabled_features
 
-    if _SwiftInteropInfo in target:
-        interop_info = target[_SwiftInteropInfo]
+    interop_info = _find_swift_interop_info(target, aspect_ctx)
+    if interop_info:
         module_map_file = interop_info.module_map
         module_name = (
             interop_info.module_name or derive_module_name(target.label)

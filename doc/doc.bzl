@@ -60,6 +60,7 @@ load(
     _swift_compiler_plugin = "swift_compiler_plugin",
     _swift_feature_allowlist = "swift_feature_allowlist",
     _swift_import = "swift_import",
+    _swift_interop_hint = "swift_interop_hint",
     _swift_library = "swift_library",
     _swift_library_group = "swift_library_group",
     _swift_module_alias = "swift_module_alias",
@@ -95,6 +96,7 @@ swift_compiler_plugin = _swift_compiler_plugin
 universal_swift_compiler_plugin = _universal_swift_compiler_plugin
 swift_feature_allowlist = _swift_feature_allowlist
 swift_import = _swift_import
+swift_interop_hint = _swift_interop_hint
 swift_library = _swift_library
 swift_library_group = _swift_library_group
 swift_module_alias = _swift_module_alias

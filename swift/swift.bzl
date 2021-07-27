@@ -75,6 +75,10 @@ load(
     _swift_import = "swift_import",
 )
 load(
+    "@build_bazel_rules_swift//swift/internal:swift_interop_hint.bzl",
+    _swift_interop_hint = "swift_interop_hint",
+)
+load(
     "@build_bazel_rules_swift//swift/internal:swift_library.bzl",
     _swift_library = "swift_library",
 )
@@ -112,6 +116,7 @@ swift_compiler_plugin = _swift_compiler_plugin
 universal_swift_compiler_plugin = _universal_swift_compiler_plugin
 swift_feature_allowlist = _swift_feature_allowlist
 swift_import = _swift_import
+swift_interop_hint = _swift_interop_hint
 swift_library = _swift_library
 swift_library_group = _swift_library_group
 swift_module_alias = _swift_module_alias
