@@ -4,6 +4,7 @@ load(
     "//swift/internal:build_settings.bzl",
     "per_module_swiftcopt_flag",
 )
+load(":swift.bzl", "swift_interop_hint")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -52,6 +53,14 @@ filegroup(
     visibility = [
         "//:__pkg__",
     ],
+)
+
+# An aspect hint that enables module map generation for a non-Swift,
+# non-Objective-C target, deriving the module name automatically based on the
+# hinted target's label.
+swift_interop_hint(
+    name = "auto_module",
+    visibility = ["//visibility:public"],
 )
 
 # User settable flag that specifies additional Swift copts on a per-swiftmodule basis.
