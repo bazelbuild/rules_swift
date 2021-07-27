@@ -10,6 +10,7 @@ bzl_library(
         "swift_feature_allowlist.bzl",
         "swift_grpc_library.bzl",
         "swift_import.bzl",
+        "swift_interop_hint.bzl",
         "swift_library.bzl",
         "swift_module_alias.bzl",
         "swift_proto_library.bzl",

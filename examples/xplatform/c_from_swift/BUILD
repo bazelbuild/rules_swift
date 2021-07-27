@@ -1,4 +1,9 @@
-load("//swift:swift.bzl", "swift_binary", "swift_library")
+load(
+    "//swift:swift.bzl",
+    "swift_binary",
+    "swift_interop_hint",
+    "swift_library",
+)
 
 licenses(["notice"])
 
@@ -9,13 +14,21 @@ cc_library(
     hdrs = ["counter.h"],
 )
 
-# 2. ...but Swift can't import C++ yet, so we implement a wrapper API in C.
+# 2. ...but Swift can't import C++ yet, so we implement a wrapper API in C. Use
+# the `swift_interop_hint` rule to enable module map generation and provide the
+# module name for these headers, since `cc_library` doesn't do enable this by
+# default.
 cc_library(
     name = "c_counter",
     srcs = ["c_counter.cc"],
     hdrs = ["c_counter.h"],
-    tags = ["swift_module=CCounter"],
+    aspect_hints = [":c_counter_swift_hint"],
     deps = [":counter"],
+)
+
+swift_interop_hint(
+    name = "c_counter_swift_hint",
+    module_name = "CCounter",
 )
 
 # 3. The Swift library then depends on the `cc_library`. This causes a

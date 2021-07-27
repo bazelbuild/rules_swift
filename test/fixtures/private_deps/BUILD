@@ -43,6 +43,7 @@ swift_library(
 cc_library(
     name = "private_cc",
     hdrs = ["private.h"],
+    aspect_hints = ["//swift:auto_module"],
     features = [
         # A bit hacky, but by claiming we don't support PIC, we can get the
         # output libraries in `libraries_to_link.static_library` instead of
@@ -51,18 +52,19 @@ cc_library(
         "-pic",
         "-supports_pic",
     ],
-    tags = FIXTURE_TAGS + ["swift_module"],
+    tags = FIXTURE_TAGS,
 )
 
 cc_library(
     name = "public_cc",
     hdrs = ["public.h"],
+    aspect_hints = ["//swift:auto_module"],
     features = [
         # See the comment in the target above.
         "-pic",
         "-supports_pic",
     ],
-    tags = FIXTURE_TAGS + ["swift_module"],
+    tags = FIXTURE_TAGS,
 )
 
 swift_library(
