@@ -475,7 +475,7 @@ the `.private.swiftinterface` files are required in order to build any code that
 ## swift_interop_hint
 
 <pre>
-swift_interop_hint(<a href="#swift_interop_hint-name">name</a>, <a href="#swift_interop_hint-module_name">module_name</a>)
+swift_interop_hint(<a href="#swift_interop_hint-name">name</a>, <a href="#swift_interop_hint-module_map">module_map</a>, <a href="#swift_interop_hint-module_name">module_name</a>)
 </pre>
 
 Defines an aspect hint that associates non-Swift BUILD targets with additional
@@ -541,12 +541,39 @@ swift_interop_hint(
 When this `cc_library` is a dependency of a Swift target, a module map will be
 generated for it with the module name `CSomeLib`.
 
+#### Using a custom module map
+
+In rare cases, the automatically generated module map may not be suitable. For
+example, a Swift module may depend on a C module that defines specific
+submodules, and this is not handled by the Swift build rules. In this case, you
+can provide the module map file using the `module_map` attribute.
+
+When setting the `module_map` attribute, `module_name` must also be set to the
+name of the desired top-level module; it cannot be omitted.
+
+```build
+# //my/project/BUILD
+cc_library(
+    name = "somelib",
+    srcs = ["somelib.c"],
+    hdrs = ["somelib.h"],
+    aspect_hints = [":somelib_swift_interop"],
+)
+
+swift_interop_hint(
+    name = "somelib_swift_interop",
+    module_map = "module.modulemap",
+    module_name = "CSomeLib",
+)
+```
+
 **ATTRIBUTES**
 
 
 | Name  | Description | Type | Mandatory | Default |
 | :------------- | :------------- | :------------- | :------------- | :------------- |
 | <a id="swift_interop_hint-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
+| <a id="swift_interop_hint-module_map"></a>module_map |  An optional custom `.modulemap` file that defines the Clang module for the headers in the target to which this hint is applied.<br><br>If this attribute is omitted, a module map will be automatically generated based on the headers in the hinted target.<br><br>If this attribute is provided, then `module_name` must also be provided and match the name of the desired top-level module in the `.modulemap` file. (A single `.modulemap` file may define multiple top-level modules.)   | <a href="https://bazel.build/concepts/labels">Label</a> | optional |  `None`  |
 | <a id="swift_interop_hint-module_name"></a>module_name |  The name that will be used to import the hinted module into Swift.<br><br>If left unspecified, the module name will be computed based on the hinted target's build label, by stripping the leading `//` and replacing `/`, `:`, and other non-identifier characters with underscores.   | String | optional |  `""`  |
 
 

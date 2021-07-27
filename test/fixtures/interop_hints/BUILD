@@ -1,0 +1,82 @@
+load(
+    "//swift:swift.bzl",
+    "swift_interop_hint",
+    "swift_library",
+)
+load("//test/fixtures:common.bzl", "FIXTURE_TAGS")
+
+package(
+    default_visibility = ["//test:__subpackages__"],
+)
+
+licenses(["notice"])
+
+swift_library(
+    name = "import_module_name_swift",
+    srcs = ["ImportModuleName.swift"],
+    tags = FIXTURE_TAGS,
+    deps = [":cc_lib_custom_module_name"],
+)
+
+cc_library(
+    name = "cc_lib_custom_module_name",
+    hdrs = [
+        "header1.h",
+        "header2.h",
+    ],
+    aspect_hints = [":cc_lib_custom_module_name_hint"],
+    tags = FIXTURE_TAGS,
+)
+
+swift_interop_hint(
+    name = "cc_lib_custom_module_name_hint",
+    module_name = "ModuleName",
+    tags = FIXTURE_TAGS,
+)
+
+swift_library(
+    name = "import_submodule_swift",
+    srcs = ["ImportSubmodule.swift"],
+    tags = FIXTURE_TAGS,
+    deps = [":cc_lib_submodule"],
+)
+
+cc_library(
+    name = "cc_lib_submodule",
+    hdrs = [
+        "header1.h",
+        "header2.h",
+    ],
+    aspect_hints = [":cc_lib_submodule_hint"],
+    tags = FIXTURE_TAGS,
+)
+
+swift_interop_hint(
+    name = "cc_lib_submodule_hint",
+    module_map = "module.modulemap",
+    module_name = "TopModule",
+    tags = FIXTURE_TAGS,
+)
+
+swift_library(
+    name = "invalid_swift",
+    srcs = ["ImportSubmodule.swift"],
+    tags = FIXTURE_TAGS,
+    deps = [":cc_lib_invalid"],
+)
+
+cc_library(
+    name = "cc_lib_invalid",
+    hdrs = [
+        "header1.h",
+        "header2.h",
+    ],
+    aspect_hints = [":cc_lib_invalid_hint"],
+    tags = FIXTURE_TAGS,
+)
+
+swift_interop_hint(
+    name = "cc_lib_invalid_hint",
+    module_map = "module.modulemap",
+    tags = FIXTURE_TAGS,
+)

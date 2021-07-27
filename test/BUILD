@@ -8,6 +8,7 @@ load(":explicit_modules_test.bzl", "explicit_modules_test_suite")
 load(":features_tests.bzl", "features_test_suite")
 load(":generated_header_tests.bzl", "generated_header_test_suite")
 load(":imported_framework_tests.bzl", "imported_framework_test_suite")
+load(":interop_hints_tests.bzl", "interop_hints_test_suite")
 load(":mainattr_tests.bzl", "mainattr_test_suite")
 load(":module_cache_settings_tests.bzl", "module_cache_settings_test_suite")
 load(":module_interface_tests.bzl", "module_interface_test_suite")
@@ -43,6 +44,8 @@ module_cache_settings_test_suite(name = "module_cache_settings")
 output_file_map_test_suite(name = "output_file_map")
 
 module_interface_test_suite(name = "module_interface")
+
+interop_hints_test_suite()
 
 private_deps_test_suite(name = "private_deps")
 
