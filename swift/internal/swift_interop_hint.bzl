@@ -17,16 +17,30 @@
 load(":swift_common.bzl", "swift_common")
 
 def _swift_interop_hint_impl(ctx):
-    # TODO(b/194733180): For now, this rule only supports interop via an
-    # auto-derived module name or an explicit module name, but still using the
-    # auto-generated module name. Add support for manual module maps and other
-    # features, like APINotes, later.
+    # TODO(b/194733180): Take advantage of the richer API to add support for
+    # other features, like APINotes, later.
     return swift_common.create_swift_interop_info(
+        module_map = ctx.file.module_map,
         module_name = ctx.attr.module_name,
     )
 
 swift_interop_hint = rule(
     attrs = {
+        "module_map": attr.label(
+            allow_single_file = True,
+            doc = """\
+An optional custom `.modulemap` file that defines the Clang module for the
+headers in the target to which this hint is applied.
+
+If this attribute is omitted, a module map will be automatically generated based
+on the headers in the hinted target.
+
+If this attribute is provided, then `module_name` must also be provided and
+match the name of the desired top-level module in the `.modulemap` file. (A
+single `.modulemap` file may define multiple top-level modules.)
+""",
+            mandatory = False,
+        ),
         "module_name": attr.string(
             doc = """\
 The name that will be used to import the hinted module into Swift.
@@ -96,6 +110,32 @@ swift_interop_hint(
 
 When this `cc_library` is a dependency of a Swift target, a module map will be
 generated for it with the module name `CSomeLib`.
+
+#### Using a custom module map
+
+In rare cases, the automatically generated module map may not be suitable. For
+example, a Swift module may depend on a C module that defines specific
+submodules, and this is not handled by the Swift build rules. In this case, you
+can provide the module map file using the `module_map` attribute.
+
+When setting the `module_map` attribute, `module_name` must also be set to the
+name of the desired top-level module; it cannot be omitted.
+
+```build
+# //my/project/BUILD
+cc_library(
+    name = "somelib",
+    srcs = ["somelib.c"],
+    hdrs = ["somelib.h"],
+    aspect_hints = [":somelib_swift_interop"],
+)
+
+swift_interop_hint(
+    name = "somelib_swift_interop",
+    module_map = "module.modulemap",
+    module_name = "CSomeLib",
+)
+```
 """,
     implementation = _swift_interop_hint_impl,
 )
