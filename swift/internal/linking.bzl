@@ -15,10 +15,6 @@
 """Implementation of linking logic for Swift."""
 
 load("@bazel_skylib//lib:collections.bzl", "collections")
-load(
-    "@bazel_tools//tools/build_defs/cc:action_names.bzl",
-    "CPP_LINK_STATIC_LIBRARY_ACTION_NAME",
-)
 load(":actions.bzl", "is_action_enabled", "swift_action_names")
 load(":autolinking.bzl", "register_autolink_extract_action")
 load(
@@ -162,70 +158,6 @@ def create_linking_context_from_compilation_outputs(
         disallow_static_libraries = False,
         disallow_dynamic_library = True,
         grep_includes = None,
-    )
-
-def _register_static_library_link_action(
-        actions,
-        cc_feature_configuration,
-        objects,
-        output,
-        swift_toolchain):
-    """Registers an action that creates a static library.
-
-    Args:
-        actions: The object used to register actions.
-        cc_feature_configuration: The C++ feature configuration to use when
-            constructing the action.
-        objects: A list of `File`s denoting object (`.o`) files that will be
-            linked.
-        output: A `File` to which the output library will be written.
-        swift_toolchain: The Swift toolchain provider to use when constructing
-            the action.
-    """
-    archiver_path = cc_common.get_tool_for_action(
-        action_name = CPP_LINK_STATIC_LIBRARY_ACTION_NAME,
-        feature_configuration = cc_feature_configuration,
-    )
-    archiver_variables = cc_common.create_link_variables(
-        cc_toolchain = swift_toolchain.cc_toolchain_info,
-        feature_configuration = cc_feature_configuration,
-        is_using_linker = False,
-        output_file = output.path,
-    )
-
-    command_line = cc_common.get_memory_inefficient_command_line(
-        action_name = CPP_LINK_STATIC_LIBRARY_ACTION_NAME,
-        feature_configuration = cc_feature_configuration,
-        variables = archiver_variables,
-    )
-    args = actions.args()
-    args.add_all(command_line)
-    args.add_all(objects)
-
-    env = cc_common.get_environment_variables(
-        action_name = CPP_LINK_STATIC_LIBRARY_ACTION_NAME,
-        feature_configuration = cc_feature_configuration,
-        variables = archiver_variables,
-    )
-
-    execution_requirements_list = cc_common.get_execution_requirements(
-        action_name = CPP_LINK_STATIC_LIBRARY_ACTION_NAME,
-        feature_configuration = cc_feature_configuration,
-    )
-    execution_requirements = {req: "1" for req in execution_requirements_list}
-
-    actions.run(
-        arguments = [args],
-        env = env,
-        executable = archiver_path,
-        execution_requirements = execution_requirements,
-        inputs = depset(
-            direct = objects,
-            transitive = [swift_toolchain.cc_toolchain_info.all_files],
-        ),
-        mnemonic = "SwiftArchive",
-        outputs = [output],
-        progress_message = "Linking {}".format(output.short_path),
     )
 
 def register_link_binary_action(
