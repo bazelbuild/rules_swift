@@ -23,8 +23,8 @@ cc_library(
     name = "c_counter",
     srcs = ["c_counter.cc"],
     hdrs = ["c_counter.h"],
-    linkstatic = True,
     aspect_hints = [":c_counter_swift_hint"],
+    linkstatic = True,
     deps = [":counter"],
 )
 
