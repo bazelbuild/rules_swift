@@ -6,7 +6,6 @@ bzl_library(
     name = "rules",
     srcs = [
         "swift_binary_test.bzl",
-        "swift_c_module.bzl",
         "swift_feature_allowlist.bzl",
         "swift_grpc_library.bzl",
         "swift_import.bzl",
