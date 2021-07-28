@@ -54,7 +54,6 @@ load(
     _deprecated_swift_grpc_library = "deprecated_swift_grpc_library",
     _deprecated_swift_proto_library = "deprecated_swift_proto_library",
     _swift_binary = "swift_binary",
-    _swift_c_module = "swift_c_module",
     # api
     _swift_common = "swift_common",
     _swift_compiler_plugin = "swift_compiler_plugin",
@@ -91,7 +90,6 @@ SwiftUsageInfo = _SwiftUsageInfo
 deprecated_swift_grpc_library = _deprecated_swift_grpc_library
 deprecated_swift_proto_library = _deprecated_swift_proto_library
 swift_binary = _swift_binary
-swift_c_module = _swift_c_module
 swift_compiler_plugin = _swift_compiler_plugin
 universal_swift_compiler_plugin = _universal_swift_compiler_plugin
 swift_feature_allowlist = _swift_feature_allowlist

@@ -21,7 +21,6 @@ _DOC_SRCS = {
     ],
     "rules": [
         "swift_binary",
-        "swift_c_module",
         "swift_compiler_plugin",
         "universal_swift_compiler_plugin",
         "swift_feature_allowlist",
