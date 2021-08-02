@@ -1,6 +1,7 @@
 load(
     "@build_bazel_rules_swift//swift:swift.bzl",
     "swift_binary",
+    "swift_interop_hint",
     "swift_library",
 )
 
@@ -44,13 +45,18 @@ cc_library(
         "Sources/CgRPC/third_party/nanopb/**/*.c",
     ]) + ["Sources/CgRPC/shim/internal.h"],
     hdrs = ["Sources/CgRPC/shim/cgrpc.h"],
+    aspect_hints = [":CgRPC_swift_hint"],
     copts = ["-DPB_NO_PACKED_STRUCTS=1"],
     includes = ["Sources/CgRPC/include"],
-    tags = ["swift_module=CgRPC"],
     deps = [
         ":BoringSSL",
         "@zlib",
     ],
+)
+
+swift_interop_hint(
+    name = "CgRPC_swift_hint",
+    module_name = "CgRPC",
 )
 
 swift_binary(
