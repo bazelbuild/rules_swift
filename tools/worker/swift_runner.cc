@@ -107,8 +107,7 @@ static bool StripPrefix(const std::string &prefix, std::string &str) {
 
 SwiftRunner::SwiftRunner(const std::vector<std::string> &args,
                          bool force_response_file)
-    : force_response_file_(force_response_file) {
-  is_dump_ast_ = false;
+    : force_response_file_(force_response_file), is_dump_ast_(false) {
   args_ = ProcessArguments(args);
 }
 
