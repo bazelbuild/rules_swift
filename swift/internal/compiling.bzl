@@ -1224,9 +1224,9 @@ def _collect_clang_module_inputs(
             # on the file system to map them to the module that contains them.)
             # However, we may also need some of the transitive headers, if the
             # module has dependencies that aren't recognized as modules (e.g.,
-            # `cc_library` targets without the `swift_module` tag) and the
-            # module's headers include those. This will likely over-estimate the
-            # needed inputs, but we can't do better without include scanning in
+            # `cc_library` targets without an aspect hint) and the module's
+            # headers include those. This will likely over-estimate the needed
+            # inputs, but we can't do better without include scanning in
             # Starlark.
             transitive_inputs.append(cc_compilation_context.headers)
 

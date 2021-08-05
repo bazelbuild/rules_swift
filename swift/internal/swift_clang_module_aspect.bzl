@@ -166,44 +166,6 @@ def create_swift_interop_info(
         unsupported_features = unsupported_features,
     )
 
-def _tagged_target_module_name(label, tags):
-    """Returns the module name of a `swift_module`-tagged target.
-
-    The `swift_module` tag may take one of two forms:
-
-    *   `swift_module`: By itself, this indicates that the target is compatible
-        with Swift and should be given a module name that is derived from its
-        target label.
-    *   `swift_module=name`: The module should be given the name `name`.
-
-    If the `swift_module` tag is not present, no module name is used or
-    computed.
-
-    Since tags are unprocessed strings, nothing prevents the `swift_module` tag
-    from being listed multiple times on the same target with different values.
-    For this reason, the aspect uses the _last_ occurrence that it finds in the
-    list.
-
-    Args:
-        label: The target label from which a module name should be derived, if
-            necessary.
-        tags: The list of tags from the `cc_library` target to which the aspect
-            is being applied.
-
-    Returns:
-        If the `swift_module` tag was present, then the return value is the
-        explicit name if it was of the form `swift_module=name`, or the
-        label-derived name if the tag was not followed by a name. Otherwise, if
-        the tag is not present, `None` is returned.
-    """
-    module_name = None
-    for tag in tags:
-        if tag == "swift_module":
-            module_name = derive_module_name(label)
-        elif tag.startswith("swift_module="):
-            _, _, module_name = tag.partition("=")
-    return module_name
-
 def _generate_module_map(
         actions,
         compilation_context,
@@ -732,16 +694,12 @@ artifacts, and so that Swift module artifacts are not lost when passing through
 a non-Swift target in the build graph (for example, a `swift_library` that
 depends on an `objc_library` that depends on a `swift_library`).
 
-It also manages module map generation for `cc_library` targets that have the
-`swift_module` tag. This tag may take one of two forms:
-
-*   `swift_module`: By itself, this indicates that the target is compatible
-    with Swift and should be given a module name that is derived from its
-    target label.
-*   `swift_module=name`: The module should be given the name `name`.
-
-Note that the public headers of such `cc_library` targets must be parsable as C,
-since Swift does not support C++ interop at this time.
+It also manages module map generation for targets that call
+`swift_common.create_swift_interop_info` and do not provide their own module
+map, and for targets that use the `swift_interop_hint` aspect hint. Note that if
+one of these approaches is used to interop with a target such as a `cc_library`,
+the headers must be parsable as C, since Swift does not support C++ interop at
+this time.
 
 Most users will not need to interact directly with this aspect, since it is
 automatically applied to the `deps` attribute of all `swift_binary`,
