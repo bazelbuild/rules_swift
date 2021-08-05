@@ -54,7 +54,6 @@ bzl_library(
         "//swift/deprecated_proto:deprecated_swift_proto_library",
         "//swift/internal:providers",
         "//swift/internal:swift_binary_test_rules",
-        "//swift/internal:swift_c_module",
         "//swift/internal:swift_common",
         "//swift/internal:swift_feature_allowlist",
         "//swift/internal:swift_import",
