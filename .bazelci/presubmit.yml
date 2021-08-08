@@ -17,6 +17,7 @@ x_defaults:
       # On Linux, we look for Swift toolchain binaries on the path. We may be
       # able to change this when we start auto-downloading toolchains (see
       # https://github.com/bazelbuild/rules_swift/issues/4).
+      - "--repo_env=PATH"
       - "--action_env=PATH"
     build_targets:
       - "--"
