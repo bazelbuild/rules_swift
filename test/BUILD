@@ -38,3 +38,8 @@ bzl_library(
         "//test/rules:starlark_tests_bzls",
     ],
 )
+
+sh_test(
+    name = "foo",
+    srcs = ["foo.sh"],
+)
