@@ -212,6 +212,8 @@ def _create_linux_toolchain(repository_ctx):
              "requires that the driver used is clang. Please set `CC=clang` " +
              "in your environment before invoking Bazel.")
 
+    print(repository.execute(["echo", "$PATH"]))
+
     path_to_swiftc = repository_ctx.which("swiftc")
     if not path_to_swiftc:
         fail("No 'swiftc' executable found in $PATH")
