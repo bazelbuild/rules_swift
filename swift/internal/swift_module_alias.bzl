@@ -54,7 +54,7 @@ def _swift_module_alias_impl(ctx):
         unsupported_features = ctx.disabled_features,
     )
 
-    module_context, compilation_outputs = swift_common.compile(
+    module_context, compilation_outputs, other_compilation_outputs = swift_common.compile(
         actions = ctx.actions,
         bin_dir = ctx.bin_dir,
         copts = ["-parse-as-library"],
@@ -96,6 +96,7 @@ def _swift_module_alias_impl(ctx):
         ),
         OutputGroupInfo(**output_groups_from_module_context(
             module_context = module_context,
+            other_compilation_outputs = other_compilation_outputs,
         )),
         coverage_common.instrumented_files_info(
             ctx,

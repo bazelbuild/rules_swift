@@ -406,7 +406,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
 
         module_name = swift_common.derive_module_name(target.label)
 
-        module_context, compilation_outputs = swift_common.compile(
+        module_context, cc_compilation_outputs, other_compilation_outputs = swift_common.compile(
             actions = aspect_ctx.actions,
             bin_dir = aspect_ctx.bin_dir,
             copts = ["-parse-as-library"],
@@ -423,7 +423,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
         linking_context, linking_output = (
             swift_common.create_linking_context_from_compilation_outputs(
                 actions = aspect_ctx.actions,
-                compilation_outputs = compilation_outputs,
+                compilation_outputs = cc_compilation_outputs,
                 feature_configuration = feature_configuration,
                 label = target.label,
                 linking_contexts = [
@@ -492,6 +492,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
         providers = [
             OutputGroupInfo(**output_groups_from_module_context(
                 module_context = module_context,
+                other_compilation_outputs = other_compilation_outputs,
             )),
             SwiftProtoCcInfo(
                 cc_info = cc_common.merge_cc_infos(

@@ -273,7 +273,7 @@ def _swift_grpc_library_impl(ctx):
 
     module_name = swift_common.derive_module_name(ctx.label)
 
-    module_context, compilation_outputs = swift_common.compile(
+    module_context, cc_compilation_outputs, other_compilation_outputs = swift_common.compile(
         actions = ctx.actions,
         bin_dir = ctx.bin_dir,
         copts = ["-parse-as-library"],
@@ -290,7 +290,7 @@ def _swift_grpc_library_impl(ctx):
     linking_context, linking_output = (
         swift_common.create_linking_context_from_compilation_outputs(
             actions = ctx.actions,
-            compilation_outputs = compilation_outputs,
+            compilation_outputs = cc_compilation_outputs,
             feature_configuration = feature_configuration,
             label = ctx.label,
             linking_contexts = [
@@ -314,6 +314,7 @@ def _swift_grpc_library_impl(ctx):
         ),
         OutputGroupInfo(**output_groups_from_module_context(
             module_context = module_context,
+            other_compilation_outputs = other_compilation_outputs,
         )),
         CcInfo(
             compilation_context = module_context.clang.compilation_context,
