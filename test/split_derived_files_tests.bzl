@@ -114,7 +114,7 @@ def split_derived_files_test_suite(name = "split_derived_files"):
         expected_files = [
             "libsimple.a",
         ],
-        field = "linking_context.linker_inputs.libraries.pic_static_library!",
+        field = "linking_context.linker_inputs.libraries.static_library!",
         provider = "CcInfo",
         tags = [name],
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
@@ -162,7 +162,7 @@ def split_derived_files_test_suite(name = "split_derived_files"):
         expected_files = [
             "libsimple.a",
         ],
-        field = "linking_context.linker_inputs.libraries.pic_static_library!",
+        field = "linking_context.linker_inputs.libraries.static_library!",
         provider = "CcInfo",
         tags = [name],
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
@@ -212,7 +212,7 @@ def split_derived_files_test_suite(name = "split_derived_files"):
         expected_files = [
             "libsimple.a",
         ],
-        field = "linking_context.linker_inputs.libraries.pic_static_library!",
+        field = "linking_context.linker_inputs.libraries.static_library!",
         provider = "CcInfo",
         tags = [name],
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",

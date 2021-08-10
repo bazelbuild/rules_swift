@@ -1937,20 +1937,23 @@ def compile(
         is_system = False,
         swift = create_swift_module(
             defines = defines,
-            swift_ast_file = compile_outputs.ast_files,
-            swift_index_store = compile_outputs.indexstore_directory,
             swiftdoc = compile_outputs.swiftdoc_file,
             swiftinterface = compile_outputs.swiftinterface_file,
             swiftmodule = compile_outputs.swiftmodule_file,
         ),
     )
 
-    compilation_outputs = cc_common.create_compilation_outputs(
+    cc_compilation_outputs = cc_common.create_compilation_outputs(
         objects = depset(compile_outputs.object_files),
         pic_objects = depset(compile_outputs.object_files),
     )
 
-    return module_context, compilation_outputs
+    other_compilation_outputs = struct(
+        ast_files = compile_outputs.ast_files,
+        indexstore = compile_outputs.indexstore_directory,
+    )
+
+    return module_context, cc_compilation_outputs, other_compilation_outputs
 
 def precompile_clang_module(
         *,
@@ -2602,12 +2605,14 @@ def new_objc_provider(
         ) + additional_objc_infos,
     )
 
-def output_groups_from_module_context(module_context):
+def output_groups_from_module_context(*, module_context, other_compilation_outputs):
     """Returns a dictionary of output groups from a Swift module context.
 
     Args:
         module_context: The value in the first element of the tuple returned by
             `swift_common.compile`.
+        other_compilation_outputs: The value in the third element of the tuple
+            returned by `swift_common.compile`.
 
     Returns:
         A `dict` whose keys are the names of output groups and values are
@@ -2619,19 +2624,19 @@ def output_groups_from_module_context(module_context):
     if module_context.swift:
         swift_module = module_context.swift
 
-        if swift_module.ast_files:
+        if other_compilation_outputs.ast_files:
             output_groups["swift_ast_file"] = depset(
-                compilation_outputs.ast_files,
+                other_compilation_outputs.ast_files,
             )
 
-        if swift_module.indexstore:
+        if other_compilation_outputs.indexstore:
             output_groups["swift_index_store"] = depset([
-                compilation_outputs.indexstore,
+                other_compilation_outputs.indexstore,
             ])
 
         if swift_module.swiftdoc:
             output_groups["swiftdoc"] = depset([
-                compilation_outputs.swiftdoc,
+                swift_module.swiftdoc,
             ])
 
         if swift_module.swiftinterface:
