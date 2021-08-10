@@ -170,7 +170,7 @@ def _swift_library_impl(ctx):
             attr = "generated_header_name",
         )
 
-    module_context, compilation_outputs = swift_common.compile(
+    module_context, cc_compilation_outputs, other_compilation_outputs = swift_common.compile(
         actions = ctx.actions,
         additional_inputs = additional_inputs,
         bin_dir = ctx.bin_dir,
@@ -193,7 +193,7 @@ def _swift_library_impl(ctx):
             actions = ctx.actions,
             additional_inputs = additional_inputs,
             alwayslink = ctx.attr.alwayslink,
-            compilation_outputs = compilation_outputs,
+            compilation_outputs = cc_compilation_outputs,
             feature_configuration = feature_configuration,
             label = ctx.label,
             linking_contexts = [
@@ -212,7 +212,7 @@ def _swift_library_impl(ctx):
     generated_header_file = None
     if generated_header_name:
         for file in module_context.clang.compilation_context.direct_headers:
-            if file.basename == generated_header_name:
+            if file.short_path.endswith(generated_header_name):
                 generated_header_file = file
                 break
 
@@ -238,6 +238,7 @@ def _swift_library_impl(ctx):
         ),
         OutputGroupInfo(**output_groups_from_module_context(
             module_context = module_context,
+            other_compilation_outputs = other_compilation_outputs,
         )),
         CcInfo(
             compilation_context = module_context.clang.compilation_context,
