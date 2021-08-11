@@ -2605,6 +2605,32 @@ def new_objc_provider(
         ) + additional_objc_infos,
     )
 
+def output_groups_from_other_compilation_outputs(*, other_compilation_outputs):
+    """Returns a dictionary of output groups from a Swift module context.
+
+    Args:
+        other_compilation_outputs: The value in the third element of the tuple
+            returned by `swift_common.compile`.
+
+    Returns:
+        A `dict` whose keys are the names of output groups and values are
+        `depset`s of `File`s, which can be splatted as keyword arguments to the
+        `OutputGroupInfo` constructor.
+    """
+    output_groups = {}
+
+    if other_compilation_outputs.ast_files:
+        output_groups["swift_ast_file"] = depset(
+            other_compilation_outputs.ast_files,
+        )
+
+    if other_compilation_outputs.indexstore:
+        output_groups["swift_index_store"] = depset([
+            other_compilation_outputs.indexstore,
+        ])
+
+    return output_groups
+
 def swift_library_output_map(name):
     """Returns the dictionary of implicit outputs for a `swift_library`.
 
