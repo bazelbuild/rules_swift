@@ -13,18 +13,18 @@ x_defaults:
     platform: ubuntu1804
     environment:
       CC: clang
+      SWIFT_HOME: "$HOME/swift-5.4.2"
+      PATH: "$PATH:$SWIFT_HOME/usr/bin"
     build_flags: &linux_flags
       # On Linux, we look for Swift toolchain binaries on the path. We may be
       # able to change this when we start auto-downloading toolchains (see
       # https://github.com/bazelbuild/rules_swift/issues/4).
       - "--action_env=PATH"
     build_targets:
-      - "--"
       - "//examples/..."
       - "-//examples/apple/..."
     test_flags: *linux_flags
     test_targets:
-      - "--"
       - "//doc/..."
       - "//examples/..."
       - "//test/..."
@@ -53,20 +53,31 @@ tasks:
   ubuntu1804_latest:
     name: "Latest Bazel"
     bazel: latest
+    shell_commands:
+      - "echo --- Downloading and extracting Swift 5.4.2 to $SWIFT_HOME"
+      - "mkdir $SWIFT_HOME"
+      - "curl https://mirror.bazel.build/swift.org/builds/swift-5.4.2-release/ubuntu1804/swift-5.4.2-RELEASE/swift-5.4.2-RELEASE-ubuntu18.04.tar.gz | tar xvz --strip-components=1 -C $SWIFT_HOME"
     <<: *linux_common
 
   ubuntu1804_last_green:
     name: "Last Green Bazel"
     bazel: last_green
+    shell_commands:
+      - "echo --- Downloading and extracting Swift 5.4.2 to $SWIFT_HOME"
+      - "mkdir $SWIFT_HOME"
+      - "curl https://mirror.bazel.build/swift.org/builds/swift-5.4.2-release/ubuntu1804/swift-5.4.2-RELEASE/swift-5.4.2-RELEASE-ubuntu18.04.tar.gz | tar xvz --strip-components=1 -C $SWIFT_HOME"
     <<: *linux_common
 
   ubuntu1804_latest_head_deps:
     name: "Latest Bazel with Head Deps"
     bazel: latest
     shell_commands:
-    # Update the WORKSPACE to use head versions of some deps to ensure nothing
-    # has landed on them breaking this project.
-    - .bazelci/update_workspace_to_deps_heads.sh
+      - "echo --- Downloading and extracting Swift 5.4.2 to $SWIFT_HOME"
+      - "mkdir $SWIFT_HOME"
+      - "curl https://mirror.bazel.build/swift.org/builds/swift-5.4.2-release/ubuntu1804/swift-5.4.2-RELEASE/swift-5.4.2-RELEASE-ubuntu18.04.tar.gz | tar xvz --strip-components=1 -C $SWIFT_HOME"
+      # Update the WORKSPACE to use head versions of some deps to ensure nothing
+      # has landed on them breaking this project.
+      - .bazelci/update_workspace_to_deps_heads.sh
     <<: *linux_common
 
 buildifier: latest
