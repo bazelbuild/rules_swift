@@ -20,7 +20,12 @@ load(
     "PerModuleSwiftCoptSettingInfo",
     "additional_per_module_swiftcopts",
 )
-load(":compiling.bzl", "new_objc_provider", "swift_library_output_map")
+load(
+    ":compiling.bzl",
+    "new_objc_provider",
+    "output_groups_from_other_compilation_outputs",
+    "swift_library_output_map",
+)
 load(
     ":feature_names.bzl",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
@@ -231,6 +236,9 @@ def _swift_library_impl(ctx):
                 files = ctx.files.data,
             ),
         ),
+        OutputGroupInfo(**output_groups_from_other_compilation_outputs(
+            other_compilation_outputs = other_compilation_outputs,
+        )),
         CcInfo(
             compilation_context = module_context.clang.compilation_context,
             linking_context = linking_context,

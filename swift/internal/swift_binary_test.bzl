@@ -15,6 +15,7 @@
 """Implementation of the `swift_binary` and `swift_test` rules."""
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
+load(":compiling.bzl", "output_groups_from_other_compilation_outputs")
 load(":derived_files.bzl", "derived_files")
 load(":feature_names.bzl", "SWIFT_FEATURE_BUNDLED_XCTESTS")
 load(":linking.bzl", "register_link_binary_action")
@@ -159,10 +160,11 @@ def _swift_linking_rule_impl(
             linker.
 
     Returns:
-        A tuple with two elements: the `CcCompilationOutputs` containing the
+        A tuple with three elements: the `CcCompilationOutputs` containing the
         object files that were compiled for the sources in the binary/test
-        target (if any), and the `LinkingOutputs` containing the executable
-        binary that was linked.
+        target (if any), the `LinkingOutputs` containing the executable
+        binary that was linked, and a list of providers to be propagated by the
+        target being built.
     """
     additional_inputs = ctx.files.swiftc_inputs
     additional_inputs_to_linker = list(additional_inputs)
@@ -196,6 +198,9 @@ def _swift_linking_rule_impl(
             swift_toolchain = swift_toolchain,
             target_name = ctx.label.name,
             workspace_name = ctx.workspace_name,
+        )
+        output_groups = output_groups_from_other_compilation_outputs(
+            other_compilation_outputs = other_compilation_outputs,
         )
     else:
         module_context = None
@@ -237,7 +242,9 @@ def _swift_linking_rule_impl(
         user_link_flags = user_link_flags,
     )
 
-    return compilation_outputs, linking_outputs
+    providers = [OutputGroupInfo(**output_groups)]
+
+    return cc_compilation_outputs, linking_outputs, providers
 
 def _create_xctest_bundle(name, actions, binary):
     """Creates an `.xctest` bundle that contains the given binary.
@@ -313,14 +320,14 @@ def _swift_binary_impl(ctx):
         requested_features = ["static_linking_mode"],
     )
 
-    _, linking_outputs = _swift_linking_rule_impl(
+    _, linking_outputs, providers = _swift_linking_rule_impl(
         ctx,
         feature_configuration = feature_configuration,
         is_test = False,
         swift_toolchain = swift_toolchain,
     )
 
-    return [
+    return providers + [
         DefaultInfo(
             executable = linking_outputs.executable,
             runfiles = ctx.runfiles(
@@ -348,7 +355,7 @@ def _swift_test_impl(ctx):
     # Mach-O type `MH_BUNDLE` instead of `MH_EXECUTE`.
     linkopts = ["-Wl,-bundle"] if is_bundled else []
 
-    _, linking_outputs = _swift_linking_rule_impl(
+    _, linking_outputs, providers = _swift_linking_rule_impl(
         ctx,
         feature_configuration = feature_configuration,
         is_test = True,
@@ -382,7 +389,7 @@ def _swift_test_impl(ctx):
         {"TEST_BINARIES_FOR_LLVM_COV": linking_outputs.executable.short_path},
     )
 
-    return [
+    return providers + [
         DefaultInfo(
             executable = executable,
             files = depset(direct = [executable] + additional_test_outputs),
