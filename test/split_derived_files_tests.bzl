@@ -117,6 +117,19 @@ def split_derived_files_test_suite(name = "split_derived_files"):
         field = "linking_context.linker_inputs.libraries.static_library!",
         provider = "CcInfo",
         tags = [name],
+        target_compatible_with = ["@platforms//os:macos"],
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+    )
+
+    default_no_split_provider_test(
+        name = "{}_default_no_split_provider_ccinfo_linux".format(name),
+        expected_files = [
+            "libsimple.a",
+        ],
+        field = "linking_context.linker_inputs.libraries.pic_static_library!",
+        provider = "CcInfo",
+        tags = [name],
+        target_compatible_with = ["@platforms//os:linux"],
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
 
@@ -165,6 +178,19 @@ def split_derived_files_test_suite(name = "split_derived_files"):
         field = "linking_context.linker_inputs.libraries.static_library!",
         provider = "CcInfo",
         tags = [name],
+        target_compatible_with = ["@platforms//os:macos"],
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+    )
+
+    split_swiftmodule_provider_test(
+        name = "{}_split_provider_ccinfo_linux".format(name),
+        expected_files = [
+            "libsimple.a",
+        ],
+        field = "linking_context.linker_inputs.libraries.pic_static_library!",
+        provider = "CcInfo",
+        tags = [name],
+        target_compatible_with = ["@platforms//os:linux"],
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
 
@@ -215,6 +241,19 @@ def split_derived_files_test_suite(name = "split_derived_files"):
         field = "linking_context.linker_inputs.libraries.static_library!",
         provider = "CcInfo",
         tags = [name],
+        target_compatible_with = ["@platforms//os:macos"],
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+    )
+
+    split_swiftmodule_wmo_provider_test(
+        name = "{}_split_wmo_provider_ccinfo_linux".format(name),
+        expected_files = [
+            "libsimple.a",
+        ],
+        field = "linking_context.linker_inputs.libraries.pic_static_library!",
+        provider = "CcInfo",
+        tags = [name],
+        target_compatible_with = ["@platforms//os:linux"],
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
 
