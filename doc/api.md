@@ -206,6 +206,52 @@ A `struct` containing the `compilation_context`, `module_map`, and
   `precompiled_module` fields provided as arguments.
 
 
+<a id="#swift_common.create_linking_context_from_compilation_outputs"></a>
+
+## swift_common.create_linking_context_from_compilation_outputs
+
+<pre>
+swift_common.create_linking_context_from_compilation_outputs(<a href="#swift_common.create_linking_context_from_compilation_outputs-actions">actions</a>, <a href="#swift_common.create_linking_context_from_compilation_outputs-additional_inputs">additional_inputs</a>, <a href="#swift_common.create_linking_context_from_compilation_outputs-alwayslink">alwayslink</a>,
+                                                             <a href="#swift_common.create_linking_context_from_compilation_outputs-compilation_outputs">compilation_outputs</a>,
+                                                             <a href="#swift_common.create_linking_context_from_compilation_outputs-feature_configuration">feature_configuration</a>, <a href="#swift_common.create_linking_context_from_compilation_outputs-label">label</a>,
+                                                             <a href="#swift_common.create_linking_context_from_compilation_outputs-linking_contexts">linking_contexts</a>, <a href="#swift_common.create_linking_context_from_compilation_outputs-module_context">module_context</a>, <a href="#swift_common.create_linking_context_from_compilation_outputs-name">name</a>,
+                                                             <a href="#swift_common.create_linking_context_from_compilation_outputs-swift_toolchain">swift_toolchain</a>, <a href="#swift_common.create_linking_context_from_compilation_outputs-user_link_flags">user_link_flags</a>)
+</pre>
+
+Creates a linking context from the outputs of a Swift compilation.
+
+On some platforms, this function will spawn additional post-compile actions
+for the module in order to add their outputs to the linking context. For
+example, if the toolchain that requires a "module-wrap" invocation to embed
+the `.swiftmodule` into an object file for debugging purposes, or if it
+extracts auto-linking information from the object files to generate a linker
+command line parameters file, those actions will be created here.
+
+
+**PARAMETERS**
+
+
+| Name  | Description | Default Value |
+| :------------- | :------------- | :------------- |
+| <a id="swift_common.create_linking_context_from_compilation_outputs-actions"></a>actions |  The context's <code>actions</code> object.   |  none |
+| <a id="swift_common.create_linking_context_from_compilation_outputs-additional_inputs"></a>additional_inputs |  A <code>list</code> of <code>File</code>s containing any additional files that are referenced by <code>user_link_flags</code> and therefore need to be propagated up to the linker.   |  <code>[]</code> |
+| <a id="swift_common.create_linking_context_from_compilation_outputs-alwayslink"></a>alwayslink |  If True, any binary that depends on the providers returned by this function will link in all of the library's object files, even if some contain no symbols referenced by the binary.   |  <code>False</code> |
+| <a id="swift_common.create_linking_context_from_compilation_outputs-compilation_outputs"></a>compilation_outputs |  A <code>CcCompilationOutputs</code> value containing the object files to link. Typically, this is the second tuple element in the value returned by <code>swift_common.compile</code>.   |  none |
+| <a id="swift_common.create_linking_context_from_compilation_outputs-feature_configuration"></a>feature_configuration |  A feature configuration obtained from <code>swift_common.configure_features</code>.   |  none |
+| <a id="swift_common.create_linking_context_from_compilation_outputs-label"></a>label |  The <code>Label</code> of the target being built. This is used as the owner of the linker inputs created for post-compile actions (if any), and the label's name component also determines the name of the artifact unless it is overridden by the <code>name</code> argument.   |  none |
+| <a id="swift_common.create_linking_context_from_compilation_outputs-linking_contexts"></a>linking_contexts |  A <code>list</code> of <code>CcLinkingContext</code>s containing libraries from dependencies.   |  <code>[]</code> |
+| <a id="swift_common.create_linking_context_from_compilation_outputs-module_context"></a>module_context |  The module context returned by <code>swift_common.compile</code> containing information about the Swift module that was compiled. Typically, this is the first tuple element in the value returned by <code>swift_common.compile</code>.   |  none |
+| <a id="swift_common.create_linking_context_from_compilation_outputs-name"></a>name |  A string that is used to derive the name of the library or libraries linked by this function. If this is not provided or is a falsy value, the name component of the <code>label</code> argument is used.   |  <code>None</code> |
+| <a id="swift_common.create_linking_context_from_compilation_outputs-swift_toolchain"></a>swift_toolchain |  The <code>SwiftToolchainInfo</code> provider of the toolchain.   |  none |
+| <a id="swift_common.create_linking_context_from_compilation_outputs-user_link_flags"></a>user_link_flags |  A <code>list</code> of strings containing additional flags that will be passed to the linker for any binary that links with the returned linking context.   |  <code>[]</code> |
+
+**RETURNS**
+
+A tuple of `(CcLinkingContext, CcLinkingOutputs)` containing the linking
+  context to be propagated by the caller's `CcInfo` provider and the
+  artifact representing the library that was linked, respectively.
+
+
 <a id="#swift_common.create_module"></a>
 
 ## swift_common.create_module
