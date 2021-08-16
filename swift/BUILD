@@ -63,6 +63,14 @@ swift_interop_hint(
     visibility = ["//visibility:public"],
 )
 
+# An aspect hint that suppresses generation of a module for a non-Swift target
+# that would otherwise generate one by default, like an `objc_library`.
+swift_interop_hint(
+    name = "no_module",
+    suppressed = True,
+    visibility = ["//visibility:public"],
+)
+
 # User settable flag that specifies additional Swift copts on a per-swiftmodule basis.
 per_module_swiftcopt_flag(
     name = "per_module_swiftcopt",

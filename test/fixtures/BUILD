@@ -4,6 +4,7 @@ bzl_library(
     name = "starlark_tests_bzls",
     srcs = glob(["*.bzl"]),
     visibility = ["//test:__pkg__"],
+    deps = ["//swift"],
 )
 
 bzl_library(
