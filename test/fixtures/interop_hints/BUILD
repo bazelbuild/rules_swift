@@ -3,7 +3,11 @@ load(
     "swift_interop_hint",
     "swift_library",
 )
-load("//test/fixtures:common.bzl", "FIXTURE_TAGS")
+load(
+    "//test/fixtures:common.bzl",
+    "FIXTURE_TAGS",
+    "forward_swift_info_from_swift_clang_module_aspect",
+)
 
 package(
     default_visibility = ["//test:__subpackages__"],
@@ -78,5 +82,42 @@ cc_library(
 swift_interop_hint(
     name = "cc_lib_invalid_hint",
     module_map = "module.modulemap",
+    tags = FIXTURE_TAGS,
+)
+
+forward_swift_info_from_swift_clang_module_aspect(
+    name = "objc_library_suppressed",
+    tags = FIXTURE_TAGS,
+    target = ":objc_library_suppressed_lib",
+    target_compatible_with = ["@platforms//os:macos"],
+)
+
+objc_library(
+    name = "objc_library_suppressed_lib",
+    hdrs = ["header1.h"],
+    aspect_hints = ["//swift:no_module"],
+    tags = FIXTURE_TAGS,
+    target_compatible_with = ["@platforms//os:macos"],
+)
+
+forward_swift_info_from_swift_clang_module_aspect(
+    name = "objc_library_with_swift_dep_suppressed",
+    tags = FIXTURE_TAGS,
+    target = ":objc_library_with_swift_dep_suppressed_lib",
+    target_compatible_with = ["@platforms//os:macos"],
+)
+
+objc_library(
+    name = "objc_library_with_swift_dep_suppressed_lib",
+    hdrs = ["header1.h"],
+    aspect_hints = ["//swift:no_module"],
+    tags = FIXTURE_TAGS,
+    target_compatible_with = ["@platforms//os:macos"],
+    deps = [":empty_lib"],
+)
+
+swift_library(
+    name = "empty_lib",
+    srcs = ["Empty.swift"],
     tags = FIXTURE_TAGS,
 )

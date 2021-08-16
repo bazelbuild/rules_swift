@@ -70,6 +70,10 @@ be enabled when the aspect processes that target; for example, a rule can
 request that `swift.emit_c_module` always be enabled for its targets even if it
 is not explicitly enabled in the toolchain or on the target directly.
 """,
+        "suppressed": """\
+A `bool` indicating whether the module that the aspect would create for the
+target should instead be suppressed.
+""",
         "swift_infos": """\
 A list of `SwiftInfo` providers from dependencies of the target, which will be
 merged with the new `SwiftInfo` created by the aspect.
@@ -91,6 +95,7 @@ def create_swift_interop_info(
         module_map = None,
         module_name = None,
         requested_features = [],
+        suppressed = False,
         swift_infos = [],
         unsupported_features = []):
     """Returns a provider that lets a target expose C/Objective-C APIs to Swift.
@@ -138,6 +143,8 @@ def create_swift_interop_info(
             `swift.emit_c_module` always be enabled for its targets even if it
             is not explicitly enabled in the toolchain or on the target
             directly.
+        suppressed: A `bool` indicating whether the module that the aspect would
+            create for the target should instead be suppressed.
         swift_infos: A list of `SwiftInfo` providers from dependencies, which
             will be merged with the new `SwiftInfo` created by the aspect.
         unsupported_features: A list of features (empty by default) that should
@@ -162,6 +169,7 @@ def create_swift_interop_info(
         module_map = module_map,
         module_name = module_name,
         requested_features = requested_features,
+        suppressed = suppressed,
         swift_infos = swift_infos,
         unsupported_features = unsupported_features,
     )
@@ -641,6 +649,11 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx):
 
     interop_info, swift_infos = _find_swift_interop_info(target, aspect_ctx)
     if interop_info:
+        # If the module should be suppressed, return immediately and propagate
+        # nothing (not even transitive dependencies).
+        if interop_info.suppressed:
+            return []
+
         module_map_file = interop_info.module_map
         module_name = (
             interop_info.module_name or derive_module_name(target.label)

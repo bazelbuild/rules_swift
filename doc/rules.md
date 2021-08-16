@@ -424,7 +424,7 @@ the `.private.swiftinterface` files are required in order to build any code that
 ## swift_interop_hint
 
 <pre>
-swift_interop_hint(<a href="#swift_interop_hint-name">name</a>, <a href="#swift_interop_hint-module_map">module_map</a>, <a href="#swift_interop_hint-module_name">module_name</a>)
+swift_interop_hint(<a href="#swift_interop_hint-name">name</a>, <a href="#swift_interop_hint-module_map">module_map</a>, <a href="#swift_interop_hint-module_name">module_name</a>, <a href="#swift_interop_hint-suppressed">suppressed</a>)
 </pre>
 
 Defines an aspect hint that associates non-Swift BUILD targets with additional
@@ -516,6 +516,39 @@ swift_interop_hint(
 )
 ```
 
+#### Suppressing a module
+
+As mentioned above, `objc_library` and other Objective-C targets generate
+modules by default, without an explicit hint, for convenience. In some
+situations, this behavior may not be desirable. For example, an `objc_library`
+might contain only Objective-C++ code in its headers that would not be possible
+to import into Swift at all.
+
+When building with implicit modules, this is not typically an issue because the
+module map would only be used if Swift code tried to import it (although it does
+create useless actions and compiler inputs during the build). When building with
+explicit modules, however, Bazel needs to know which targets represent modules
+that it can compile and which do not.
+
+In these cases, there is no need to declare an instance of `swift_interop_hint`.
+A canonical one that suppresses module generation has been provided in
+`@build_bazel_rules_swift//swift:no_module`. Simply add it to the `aspect_hints` of
+the target whose module you wish to suppress:
+
+```build
+# //my/project/BUILD
+objc_library(
+    name = "somelib",
+    srcs = ["somelib.mm"],
+    hdrs = ["somelib.h"],
+    aspect_hints = ["@build_bazel_rules_swift//swift:no_module"],
+)
+```
+
+When this `objc_library` is a dependency of a Swift target, no module map or
+explicit module will be generated for it, nor will any Swift information from
+its transitive dependencies be propagated.
+
 **ATTRIBUTES**
 
 
@@ -524,6 +557,7 @@ swift_interop_hint(
 | <a id="swift_interop_hint-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
 | <a id="swift_interop_hint-module_map"></a>module_map |  An optional custom `.modulemap` file that defines the Clang module for the headers in the target to which this hint is applied.<br><br>If this attribute is omitted, a module map will be automatically generated based on the headers in the hinted target.<br><br>If this attribute is provided, then `module_name` must also be provided and match the name of the desired top-level module in the `.modulemap` file. (A single `.modulemap` file may define multiple top-level modules.)   | <a href="https://bazel.build/concepts/labels">Label</a> | optional |  `None`  |
 | <a id="swift_interop_hint-module_name"></a>module_name |  The name that will be used to import the hinted module into Swift.<br><br>If left unspecified, the module name will be computed based on the hinted target's build label, by stripping the leading `//` and replacing `/`, `:`, and other non-identifier characters with underscores.   | String | optional |  `""`  |
+| <a id="swift_interop_hint-suppressed"></a>suppressed |  If `True`, the hinted target should suppress any module that it would otherwise generate.   | Boolean | optional |  `False`  |
 
 
 <a id="swift_library"></a>
