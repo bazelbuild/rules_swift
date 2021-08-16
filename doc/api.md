@@ -191,12 +191,32 @@ swift_common.create_clang_module(<a href="#swift_common.create_clang_module-comp
 
 Creates a value representing a Clang module used as a Swift dependency.
 
+Note: The `compilation_context` argument of this function is primarily
+intended to communicate information *to* the Swift build rules, not to
+retrieve information *back out.* In most cases, it is better to depend on
+the `CcInfo` provider propagated by a Swift target to collect transitive
+C/Objective-C compilation information about that target. This is because the
+context used when compiling the module itself may not be the same as the
+context desired when depending on it. (For example, `apple_common.Objc`
+supports "strict include paths" which are only propagated to direct
+dependents.)
+
+One valid exception to the guidance above is retrieving the generated header
+associated with a specific Swift module. Since the `CcInfo` provider
+propagated by the library will have already merged them transitively (or,
+in the case of a hypothetical custom rule that propagates multiple direct
+modules, the `direct_public_headers` of the `CcInfo` would also have them
+merged), it is acceptable to read the headers from the compilation context
+of the module struct itself in order to associate them with the module that
+generated them.
+
+
 **PARAMETERS**
 
 
 | Name  | Description | Default Value |
 | :------------- | :------------- | :------------- |
-| <a id="swift_common.create_clang_module-compilation_context"></a>compilation_context |  A <code>CcCompilationContext</code> that contains the header files, include paths, and other context necessary to compile targets that depend on this module (if using the text module map instead of the precompiled module).   |  none |
+| <a id="swift_common.create_clang_module-compilation_context"></a>compilation_context |  A <code>CcCompilationContext</code> that contains the header files and other context (such as include paths, preprocessor defines, and so forth) needed to compile this module as an explicit module.   |  none |
 | <a id="swift_common.create_clang_module-module_map"></a>module_map |  The text module map file that defines this module. This argument may be specified as a <code>File</code> or as a <code>string</code>; in the latter case, it is assumed to be the path to a file that cannot be provided as an action input because it is outside the workspace (for example, the module map for a module from an Xcode SDK).   |  none |
 | <a id="swift_common.create_clang_module-precompiled_module"></a>precompiled_module |  A <code>File</code> representing the precompiled module (<code>.pcm</code> file) if one was emitted for the module. This may be <code>None</code> if no explicit module was built for the module; in that case, targets that depend on the module will fall back to the text module map and headers.   |  <code>None</code> |
 
