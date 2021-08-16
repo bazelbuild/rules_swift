@@ -14,9 +14,34 @@
 
 """Common build definitions used by test fixtures."""
 
+load(
+    "@build_bazel_rules_swift//swift:swift.bzl",
+    "SwiftInfo",
+    "swift_clang_module_aspect",
+)
+
 # Common tags that prevent the test fixtures from actually being built (i.e.,
 # their actions executed) when running `bazel test` to do analysis testing.
 FIXTURE_TAGS = [
     "manual",
     "notap",
 ]
+
+def _forward_swift_info_from_swift_clang_module_aspect_impl(ctx):
+    if SwiftInfo in ctx.attr.target:
+        return [ctx.attr.target[SwiftInfo]]
+    return []
+
+forward_swift_info_from_swift_clang_module_aspect = rule(
+    attrs = {
+        "target": attr.label(
+            aspects = [swift_clang_module_aspect],
+            mandatory = True,
+        ),
+    },
+    doc = """\
+Applies `swift_clang_module_aspect` to the given target and forwards the
+`SwiftInfo` provider that it attaches to the target, if any.
+""",
+    implementation = _forward_swift_info_from_swift_clang_module_aspect_impl,
+)

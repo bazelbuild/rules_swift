@@ -22,6 +22,7 @@ def _swift_interop_hint_impl(ctx):
     return swift_common.create_swift_interop_info(
         module_map = ctx.file.module_map,
         module_name = ctx.attr.module_name,
+        suppressed = ctx.attr.suppressed,
     )
 
 swift_interop_hint = rule(
@@ -48,6 +49,14 @@ The name that will be used to import the hinted module into Swift.
 If left unspecified, the module name will be computed based on the hinted
 target's build label, by stripping the leading `//` and replacing `/`, `:`, and
 other non-identifier characters with underscores.
+""",
+            mandatory = False,
+        ),
+        "suppressed": attr.bool(
+            default = False,
+            doc = """\
+If `True`, the hinted target should suppress any module that it would otherwise
+generate.
 """,
             mandatory = False,
         ),
@@ -141,6 +150,39 @@ swift_interop_hint(
     module_name = "CSomeLib",
 )
 ```
+
+#### Suppressing a module
+
+As mentioned above, `objc_library` and other Objective-C targets generate
+modules by default, without an explicit hint, for convenience. In some
+situations, this behavior may not be desirable. For example, an `objc_library`
+might contain only Objective-C++ code in its headers that would not be possible
+to import into Swift at all.
+
+When building with implicit modules, this is not typically an issue because the
+module map would only be used if Swift code tried to import it (although it does
+create useless actions and compiler inputs during the build). When building with
+explicit modules, however, Bazel needs to know which targets represent modules
+that it can compile and which do not.
+
+In these cases, there is no need to declare an instance of `swift_interop_hint`.
+A canonical one that suppresses module generation has been provided in
+`@build_bazel_rules_swift//swift:no_module`. Simply add it to the `aspect_hints` of
+the target whose module you wish to suppress:
+
+```build
+# //my/project/BUILD
+objc_library(
+    name = "somelib",
+    srcs = ["somelib.mm"],
+    hdrs = ["somelib.h"],
+    aspect_hints = ["@build_bazel_rules_swift//swift:no_module"],
+)
+```
+
+When this `objc_library` is a dependency of a Swift target, no module map or
+explicit module will be generated for it, nor will any Swift information from
+its transitive dependencies be propagated.
 """,
     implementation = _swift_interop_hint_impl,
 )
