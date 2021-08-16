@@ -239,10 +239,21 @@ provider.
 def create_module(*, name, clang = None, is_system = False, swift = None):
     """Creates a value containing Clang/Swift module artifacts of a dependency.
 
-    At least one of the `clang` and `swift` arguments must not be `None`. It is
-    valid for both to be present; this is the case for most Swift modules, which
-    provide both Swift module artifacts as well as a generated header/module map
-    for Objective-C targets to depend on.
+    It is possible for both `clang` and `swift` to be present; this is the case
+    for Swift modules that generate an Objective-C header, where the Swift
+    module artifacts are propagated in the `swift` context and the generated
+    header and module map are propagated in the `clang` context.
+
+    Though rare, it is also permitted for both the `clang` and `swift` arguments
+    to be `None`. One example of how this can be used is to model system
+    dependencies (like Apple SDK frameworks) that are implicitly available as
+    part of a non-hermetic SDK (Xcode) but do not propagate any artifacts of
+    their own. This would only apply in a build using implicit modules, however;
+    when using explicit modules, one would propagate the module artifacts
+    explicitly. But allowing for the empty case keeps the build graph consistent
+    if switching between the two modes is necessary, since it will not change
+    the set of transitive module names that are propagated by dependencies
+    (which other build rules may want to depend on for their own analysis).
 
     Args:
         name: The name of the module.
@@ -274,8 +285,6 @@ def create_module(*, name, clang = None, is_system = False, swift = None):
         A `struct` containing the `name`, `clang`, `is_system`, and `swift`
         fields provided as arguments.
     """
-    if clang == None and swift == None:
-        fail("Must provide at least a clang or swift module.")
     return struct(
         clang = clang,
         is_system = is_system,
