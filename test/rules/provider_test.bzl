@@ -160,11 +160,6 @@ def _lookup_provider_by_name(env, target, provider_name):
 
     if provider in target:
         return target[provider]
-
-    unittest.fail(
-        env,
-        "Target '{}' did not provide '{}'.".format(target.label, provider_name),
-    )
     return None
 
 def _field_access_description(target, provider, field):
@@ -322,12 +317,41 @@ def _provider_test_impl(ctx):
     if types.is_list(target_under_test):
         target_under_test = target_under_test[0]
 
-    provider_name = ctx.attr.provider
-    provider = _lookup_provider_by_name(env, target_under_test, provider_name)
-    if not provider:
+    provider_name = ctx.attr.does_not_propagate_provider
+    if provider_name:
+        provider = _lookup_provider_by_name(
+            env,
+            target_under_test,
+            provider_name,
+        )
+        if provider:
+            unittest.fail(
+                env,
+                "Expected {} to not propagate '{}', but it did: {}".format(
+                    target_under_test.label,
+                    provider_name,
+                    provider,
+                ),
+            )
         return analysistest.end(env)
 
+    provider_name = ctx.attr.provider
     field = ctx.attr.field
+    if not provider_name or not field:
+        fail("Either 'does_not_propagate_provider' must be specified, or " +
+             "both 'provider' and 'field' must be specified.")
+
+    provider = _lookup_provider_by_name(env, target_under_test, provider_name)
+    if not provider:
+        unittest.fail(
+            env,
+            "Target '{}' did not provide '{}'.".format(
+                target_under_test.label,
+                provider_name,
+            ),
+        )
+        return analysistest.end(env)
+
     actual = _evaluate_field(env, provider, field)
     if actual == _EVALUATE_FIELD_FAILED:
         return analysistest.end(env)
@@ -363,6 +387,20 @@ def make_provider_test_rule(config_settings = {}):
     return analysistest.make(
         _provider_test_impl,
         attrs = {
+            "does_not_propagate_provider": attr.string(
+                mandatory = False,
+                doc = """\
+The name of a provider that is expected to not be propagated by the target under
+test.
+
+Currently, only the following providers are recognized:
+
+*   `CcInfo`
+*   `DefaultInfo`
+*   `SwiftInfo`
+*   `apple_common.Objc`
+""",
+            ),
             "expected_files": attr.string_list(
                 mandatory = False,
                 doc = """\
@@ -384,7 +422,7 @@ configuration details, such as output directories for generated files.
 """,
             ),
             "field": attr.string(
-                mandatory = True,
+                mandatory = False,
                 doc = """\
 The field name or dotted field path of the provider that should be tested.
 
@@ -398,7 +436,7 @@ the next component.
 """,
             ),
             "provider": attr.string(
-                mandatory = True,
+                mandatory = False,
                 doc = """\
 The name of the provider expected to be propagated by the target under test, and
 on which the field will be checked.

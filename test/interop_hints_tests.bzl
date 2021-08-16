@@ -63,6 +63,24 @@ def interop_hints_test_suite():
         target_under_test = "@build_bazel_rules_swift//test/fixtures/interop_hints:invalid_swift",
     )
 
+    # Verify that an `objc_library` hinted to suppress its module does not
+    # propagate a `SwiftInfo` provider at all.
+    provider_test(
+        name = "{}_objc_library_module_suppressed".format(name),
+        does_not_propagate_provider = "SwiftInfo",
+        tags = [name],
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/interop_hints:objc_library_suppressed",
+    )
+
+    # Verify that an `objc_library` hinted to suppress its module does not
+    # propagate a `SwiftInfo` provider even if it has Swift dependencies.
+    provider_test(
+        name = "{}_objc_library_module_with_swift_dep_suppressed".format(name),
+        does_not_propagate_provider = "SwiftInfo",
+        tags = [name],
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/interop_hints:objc_library_with_swift_dep_suppressed",
+    )
+
     native.test_suite(
         name = name,
         tags = [name],
