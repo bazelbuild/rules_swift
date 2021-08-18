@@ -33,8 +33,7 @@ x_defaults:
 tasks:
   macos_latest:
     name: "Latest Bazel"
-    # TODO: Revert this to "latest" once 4.2.0 is released.
-    bazel: 4.2.0rc4
+    bazel: latest
     <<: *mac_common
 
   macos_last_green:
@@ -44,8 +43,7 @@ tasks:
 
   macos_latest_head_deps:
     name: "Latest Bazel with Head Deps"
-    # TODO: Revert this to "latest" once 4.2.0 is released.
-    bazel: 4.2.0rc4
+    bazel: latest
     shell_commands:
     # Update the WORKSPACE to use head versions of some deps to ensure nothing
     # has landed on them breaking this project.
@@ -54,8 +52,7 @@ tasks:
 
   ubuntu1804_latest:
     name: "Latest Bazel"
-    # TODO: Revert this to "latest" once 4.2.0 is released.
-    bazel: 4.2.0rc4
+    bazel: latest
     shell_commands:
       - "echo --- Downloading and extracting Swift 5.4.2 to $SWIFT_HOME"
       - "mkdir $SWIFT_HOME"
@@ -73,8 +70,7 @@ tasks:
 
   ubuntu1804_latest_head_deps:
     name: "Latest Bazel with Head Deps"
-    # TODO: Revert this to "latest" once 4.2.0 is released.
-    bazel: 4.2.0rc4
+    bazel: latest
     shell_commands:
       - "echo --- Downloading and extracting Swift 5.4.2 to $SWIFT_HOME"
       - "mkdir $SWIFT_HOME"
