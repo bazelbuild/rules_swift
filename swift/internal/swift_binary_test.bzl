@@ -15,7 +15,6 @@
 """Implementation of the `swift_binary` and `swift_test` rules."""
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load(":actions.bzl", "is_action_enabled", "swift_action_names")
 load(":compiling.bzl", "output_groups_from_other_compilation_outputs")
 load(":derived_files.bzl", "derived_files")
 load(":feature_names.bzl", "SWIFT_FEATURE_BUNDLED_XCTESTS")
@@ -204,24 +203,21 @@ def _swift_linking_rule_impl(
             other_compilation_outputs = other_compilation_outputs,
         )
 
-        if is_action_enabled(
-            action_name = swift_action_names.AUTOLINK_EXTRACT,
+        linking_context, _ = swift_common.create_linking_context_from_compilation_outputs(
+            actions = ctx.actions,
+            alwayslink = True,
+            compilation_outputs = cc_compilation_outputs,
+            feature_configuration = feature_configuration,
+            label = ctx.label,
+            linking_contexts = [
+                dep[CcInfo].linking_context
+                for dep in ctx.attr.deps
+                if CcInfo in dep
+            ],
+            module_context = module_context,
             swift_toolchain = swift_toolchain,
-        ):
-            linking_context, _ = swift_common.create_linking_context_from_compilation_outputs(
-                actions = ctx.actions,
-                compilation_outputs = cc_compilation_outputs,
-                feature_configuration = feature_configuration,
-                label = ctx.label,
-                linking_contexts = [
-                    dep[CcInfo].linking_context
-                    for dep in ctx.attr.deps
-                    if CcInfo in dep
-                ],
-                module_context = module_context,
-                swift_toolchain = swift_toolchain,
-            )
-            additional_linking_contexts.append(linking_context)
+        )
+        additional_linking_contexts.append(linking_context)
     else:
         module_context = None
         cc_compilation_outputs = cc_common.create_compilation_outputs()
@@ -251,7 +247,8 @@ def _swift_linking_rule_impl(
         additional_inputs = additional_inputs_to_linker,
         additional_linking_contexts = additional_linking_contexts,
         cc_feature_configuration = cc_feature_configuration,
-        compilation_outputs = cc_compilation_outputs,
+        # This is already collected from `linking_context`.
+        compilation_outputs = None,
         deps = ctx.attr.deps,
         grep_includes = ctx.file._grep_includes,
         name = ctx.label.name,
