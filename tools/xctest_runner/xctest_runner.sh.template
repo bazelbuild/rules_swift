@@ -21,8 +21,10 @@ set -eu
 # because the test binary is an `MH_BUNDLE` that needs to be loaded dynamically
 # and runtime reflection is used to locate the test methods.
 
+# Foo.xctest/Contents/MacOS/Foo -> Foo.xctest
+bundle_path="$(dirname "$(dirname "$(dirname "%executable%")")")"
 # TODO(allevato): Support Bazel's --test_filter.
-exec xcrun xctest -XCTest All "%bundle%"
+exec xcrun xctest -XCTest All "$bundle_path"
 
 # We should never make it here unless `exec` failed.
 exit 2
