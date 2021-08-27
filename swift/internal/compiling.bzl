@@ -919,6 +919,7 @@ def compile_action_configs(
             swift_toolchain_config.action_config(
                 actions = [
                     swift_action_names.COMPILE,
+                    swift_action_names.DERIVE_FILES,
                     swift_action_names.PRECOMPILE_C_MODULE,
                     swift_action_names.DUMP_AST,
                 ],
@@ -938,7 +939,11 @@ def compile_action_configs(
                 # TODO(allevato): Determine if there are any uses of
                 # `-Xcc`-prefixed flags that need to be added to explicit module
                 # actions, or if we should advise against/forbid that.
-                actions = [swift_action_names.COMPILE],
+                actions = [
+                    swift_action_names.COMPILE,
+                    swift_action_names.DERIVE_FILES,
+                    swift_action_names.DUMP_AST,
+                ],
                 configurators = [
                     # TODO(#568): Switch to using lambda when the minimum
                     # supported Bazel version by rules_swift supports it.
