@@ -80,6 +80,19 @@ split_swiftmodule_bitcode_markers_test = make_action_command_line_test_rule(
         ],
     },
 )
+split_swiftmodule_copts_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:swiftcopt": [
+            "-DHELLO",
+        ],
+        "//command_line_option:objccopt": [
+            "-DWORLD=1",
+        ],
+        "//command_line_option:features": [
+            "swift.split_derived_files_generation",
+        ],
+    },
+)
 
 def split_derived_files_test_suite(name = "split_derived_files"):
     """Test suite for split derived files options.
@@ -344,6 +357,30 @@ def split_derived_files_test_suite(name = "split_derived_files"):
         not_expected_argv = [
             "-embed-bitcode-marker",
         ],
+        mnemonic = "SwiftDeriveFiles",
+        tags = [name],
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+    )
+
+    split_swiftmodule_copts_test(
+        name = "{}_copts_compile",
+        expected_argv = [
+            "-DHELLO",
+            "-Xcc -DWORLD=1",
+        ],
+        target_compatible_with = ["@platforms//os:macos"],
+        mnemonic = "SwiftCompile",
+        tags = [name],
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+    )
+
+    split_swiftmodule_copts_test(
+        name = "{}_copts_derive_files",
+        expected_argv = [
+            "-DHELLO",
+            "-Xcc -DWORLD=1",
+        ],
+        target_compatible_with = ["@platforms//os:macos"],
         mnemonic = "SwiftDeriveFiles",
         tags = [name],
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
