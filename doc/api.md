@@ -146,9 +146,8 @@ A `struct` containing the following fields:
   *   `swiftmodule`: The `.swiftmodule` file that was produced by the
       compiler.
   *   `swiftsourceinfo`: The `.swiftsourceinfo` file that was produced by
-      the compiler. If no sourceinfo file was produced (because the
-      toolchain does not support them or it was not requested), this field
-      will be None.
+      the compiler. If no source info file was produced (because the
+      toolchain does not support them), this field will be None.
 
 
 <a id="#swift_common.configure_features"></a>
@@ -411,7 +410,7 @@ A provider whose type/layout is an implementation detail and should not
 ## swift_common.create_swift_module
 
 <pre>
-swift_common.create_swift_module(<a href="#swift_common.create_swift_module-swiftdoc">swiftdoc</a>, <a href="#swift_common.create_swift_module-swiftmodule">swiftmodule</a>, <a href="#swift_common.create_swift_module-defines">defines</a>, <a href="#swift_common.create_swift_module-swiftinterface">swiftinterface</a>, <a href="#swift_common.create_swift_module.swiftsourceinfo">swiftsourceinfo</a>=None)
+swift_common.create_swift_module(<a href="#swift_common.create_swift_module-swiftdoc">swiftdoc</a>, <a href="#swift_common.create_swift_module-swiftmodule">swiftmodule</a>, <a href="#swift_common.create_swift_module-defines">defines</a>, <a href="#swift_common.create_swift_module-swiftinterface">swiftinterface</a>=None, <a href="#swift_common.create_swift_module.swiftsourceinfo">swiftsourceinfo</a>=None)
 </pre>
 
 Creates a value representing a Swift module use as a Swift dependency.
@@ -429,8 +428,8 @@ Creates a value representing a Swift module use as a Swift dependency.
 
 **RETURNS**
 
-A `struct` containing the `defines`, `swiftdoc`, `swiftmodule`, and
-  `swiftinterface` fields provided as arguments.
+A `struct` containing the `defines`, `swiftdoc`, `swiftmodule`,
+  `swiftinterface`, and `swiftsourceinfo` fields provided as arguments.
 
 
 <a id="#swift_common.derive_module_name"></a>

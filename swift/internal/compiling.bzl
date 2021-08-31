@@ -1707,9 +1707,8 @@ def compile(
             toolchain does not support them or it was not requested), this field
             will be None.
         *   `swiftsourceinfo`: The `.swiftsourceinfo` file that was produced by
-            the compiler. If no sourceinfo file was produced (because the
-            toolchain does not support them or it was not requested), this field
-            will be None.
+            the compiler. If no source info file was produced (because the
+            toolchain does not support them), this field will be None.
         *   `swiftmodule`: The `.swiftmodule` file that was produced by the
             compiler.
     """
