@@ -354,7 +354,7 @@ def create_swift_module(
         swiftmodule,
         defines = [],
         swiftinterface = None,
-        swiftsourceinfo = None,):
+        swiftsourceinfo = None):
     """Creates a value representing a Swift module use as a Swift dependency.
 
     Args:

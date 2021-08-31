@@ -270,7 +270,6 @@ def _swiftsourceinfo(actions, module_name):
     """
     return actions.declare_file("{}.swiftsourceinfo".format(module_name))
 
-
 def _swiftmodule(actions, module_name):
     """Declares a file for the Swift module created by a compilation rule.
 
