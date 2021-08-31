@@ -14,17 +14,54 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -eu
+set -euo pipefail
 
 # This test script is used as the executable output of a `swift_test` rule when
 # building macOS targets (unless the "swift.bundled_tests" feature is disabled)
 # because the test binary is an `MH_BUNDLE` that needs to be loaded dynamically
 # and runtime reflection is used to locate the test methods.
 
+tmp_dir=$(mktemp -d)
+trap 'rm -rf "$tmp_dir"' EXIT
+readonly profraw="$tmp_dir/coverage.profraw"
+
 # Foo.xctest/Contents/MacOS/Foo -> Foo.xctest
 bundle_path="$(dirname "$(dirname "$(dirname "%executable%")")")"
-# TODO(allevato): Support Bazel's --test_filter.
-exec xcrun xctest -XCTest All "$bundle_path"
 
-# We should never make it here unless `exec` failed.
-exit 2
+exit_status=0
+# TODO(allevato): Support Bazel's --test_filter.
+LLVM_PROFILE_FILE="$profraw" xcrun xctest -XCTest All "$bundle_path" || exit_status=$?
+
+if [[ "$exit_status" -ne 0 ]]; then
+  exit "$exit_status"
+fi
+
+if [[ "${COVERAGE:-}" -ne 1 ]]; then
+  # Normal tests run without coverage
+  exit 0
+fi
+
+readonly profdata="$tmp_dir/coverage.profdata"
+xcrun llvm-profdata merge "$profraw" --output "$profdata"
+
+readonly error_file="$tmp_dir/llvm-cov-error.txt"
+llvm_cov_status=0
+xcrun llvm-cov \
+  export \
+  -format lcov \
+  -instr-profile "$profdata" \
+  -ignore-filename-regex='.*external/.+' \
+  -path-equivalence="$ROOT",. \
+  "%executable%" \
+  @"$COVERAGE_MANIFEST" \
+  > "$COVERAGE_OUTPUT_FILE" \
+  2> "$error_file" \
+  || llvm_cov_status=$?
+
+# Error ourselves if lcov outputs warnings, such as if we misconfigure
+# something and the file path of one of the covered files doesn't exist
+if [[ -s "$error_file" || "$llvm_cov_status" -ne 0 ]]; then
+  echo "error: while exporting coverage report" >&2
+  cat "$error_file" >&2
+  exit 1
+fi
