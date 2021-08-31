@@ -143,11 +143,11 @@ A `struct` containing the following fields:
       the compiler. If no interface file was produced (because the
       toolchain does not support them or it was not requested), this field
       will be None.
+  *   `swiftmodule`: The `.swiftmodule` file that was produced by the
+      compiler.
   *   `swiftsourceinfo`: The `.swiftsourceinfo` file that was produced by
       the compiler. If no source info file was produced (because the
       toolchain does not support them), this field will be None.
-  *   `swiftmodule`: The `.swiftmodule` file that was produced by the
-      compiler.
 
 
 <a id="#swift_common.configure_features"></a>
