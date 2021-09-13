@@ -290,7 +290,7 @@ def _swiftsourceinfo(actions, module_name):
     """
     return actions.declare_file("{}.swiftsourceinfo".format(module_name))
 
-def _vfsoverlay(actions, target_name):
+def _vfsoverlay(actions, target_name, suffix = ""):
     """Declares a file for the VFS overlay for a compilation action.
 
     The VFS overlay is YAML-formatted file that allows us to place the
@@ -300,11 +300,12 @@ def _vfsoverlay(actions, target_name):
     Args:
         actions: The context's actions object.
         target_name: The name of the target being built.
+        suffix: Extra content to add to the generated file's name
 
     Returns:
         The declared `File`.
     """
-    return actions.declare_file("{}.vfsoverlay.yaml".format(target_name))
+    return actions.declare_file("{}{}.vfsoverlay.yaml".format(target_name, suffix))
 
 def _whole_module_object_file(actions, target_name):
     """Declares a file for object files created with whole module optimization.

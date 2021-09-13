@@ -220,6 +220,11 @@ SWIFT_FEATURE_USE_MODULE_WRAP = "swift.use_module_wrap"
 # when access to those paths involves traversing a networked file system.
 SWIFT_FEATURE_VFSOVERLAY = "swift.vfsoverlay"
 
+# If enabled, Swift compilation access will accept source files through a
+# virtual file system. This exists to workaround SR-15123 and will be removed
+# once that is fixed.
+SWIFT_FEATURE_SOURCES_VFSOVERLAY = "swift._sources_vfsoverlay"
+
 # If enabled, builds using the "dbg" compilation mode will explicitly disable
 # swiftc from producing swiftmodules containing embedded file paths, which are
 # inherently non-portable across machines.

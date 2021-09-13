@@ -62,3 +62,50 @@ def write_vfsoverlay(
         content = vfsoverlay_yaml,
         output = vfsoverlay_file,
     )
+
+def write_sources_vfsoverlay(
+        actions,
+        srcs,
+        vfsoverlay_file,
+        virtual_swiftmodule_root):
+    """Generates a VFS overlay for the given source files.
+
+    Args:
+        actions: The object used to register actions.
+        srcs: The `list` of `.swift` files to include in the VFS overlay.
+        vfsoverlay_file: A `File` representing the VFS overlay to be written.
+        virtual_swiftmodule_root: The rooted path fragment representing the
+             directory in the VFS where all `.swift` files will be placed.
+    """
+    virtual_swiftmodules = [
+        {
+            "type": "file",
+            "name": src.path,
+            "external-contents": src.path,
+        }
+        for src in srcs
+    ]
+
+    # These explicit settings ensure that the VFS actually improves search
+    # performance.
+    vfsoverlay_object = {
+        "version": 0,
+        "case-sensitive": True,
+        "fallthrough": False,
+        "use-external-names": True,
+        "roots": [
+            {
+                "type": "directory",
+                "name": virtual_swiftmodule_root,
+                "contents": virtual_swiftmodules,
+            },
+        ],
+    }
+
+    # The YAML specification defines it has a superset of JSON, so it is safe to
+    # use the built-in `to_json` function here.
+    vfsoverlay_yaml = struct(**vfsoverlay_object).to_json()
+    actions.write(
+        content = vfsoverlay_yaml,
+        output = vfsoverlay_file,
+    )

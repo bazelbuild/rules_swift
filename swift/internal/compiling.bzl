@@ -56,6 +56,7 @@ load(
     "SWIFT_FEATURE_OPT_USES_OSIZE",
     "SWIFT_FEATURE_OPT_USES_WMO",
     "SWIFT_FEATURE_REWRITE_GENERATED_HEADER",
+    "SWIFT_FEATURE_SOURCES_VFSOVERLAY",
     "SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION",
     "SWIFT_FEATURE_SUPPORTS_BARE_SLASH_REGEX",
     "SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION",
@@ -93,7 +94,7 @@ load(
     "get_providers",
     "struct_fields",
 )
-load(":vfsoverlay.bzl", "write_vfsoverlay")
+load(":vfsoverlay.bzl", "write_sources_vfsoverlay", "write_vfsoverlay")
 load(
     ":developer_dirs.bzl",
     "developer_dirs_linkopts",
@@ -104,6 +105,7 @@ load(
 # VFS root where all .swiftmodule files will be placed when
 # SWIFT_FEATURE_VFSOVERLAY is enabled.
 _SWIFTMODULES_VFS_ROOT = "/__build_bazel_rules_swift/swiftmodules"
+_SOURCES_VFS_ROOT = "/__build_bazel_rules_swift/sources"
 
 # The number of threads to use for WMO builds, using the same number of cores
 # that is on a Mac Pro for historical reasons.
@@ -602,11 +604,52 @@ def compile_action_configs(
             ],
             configurators = [
                 swift_toolchain_config.add_arg(
+                    "-debug-prefix-map",
+                    "{}=.".format(_SOURCES_VFS_ROOT),
+                ),
+            ],
+            features = [
+                [SWIFT_FEATURE_SOURCES_VFSOVERLAY, SWIFT_FEATURE_VFSOVERLAY, SWIFT_FEATURE_DEBUG_PREFIX_MAP, SWIFT_FEATURE_DBG],
+                [SWIFT_FEATURE_SOURCES_VFSOVERLAY, SWIFT_FEATURE_VFSOVERLAY, SWIFT_FEATURE_DEBUG_PREFIX_MAP, SWIFT_FEATURE_FASTBUILD],
+                [SWIFT_FEATURE_SOURCES_VFSOVERLAY, SWIFT_FEATURE_VFSOVERLAY, SWIFT_FEATURE_DEBUG_PREFIX_MAP, SWIFT_FEATURE_FULL_DEBUG_INFO],
+            ],
+        ),
+
+        # Make paths written into coverage info workspace-relative.
+        swift_toolchain_config.action_config(
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVE_FILES,
+            ],
+            configurators = [
+                swift_toolchain_config.add_arg(
                     "-Xwrapped-swift=-coverage-prefix-pwd-is-dot",
                 ),
             ],
             features = [
                 [SWIFT_FEATURE_COVERAGE_PREFIX_MAP, SWIFT_FEATURE_COVERAGE],
+            ],
+        ),
+
+        # Make paths written into coverage info workspace-relative.
+        swift_toolchain_config.action_config(
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVE_FILES,
+            ],
+            configurators = [
+                swift_toolchain_config.add_arg(
+                    "-coverage-prefix-map",
+                    "{}=.".format(_SOURCES_VFS_ROOT),
+                ),
+            ],
+            features = [
+                [
+                    SWIFT_FEATURE_COVERAGE,
+                    SWIFT_FEATURE_COVERAGE_PREFIX_MAP,
+                    SWIFT_FEATURE_SOURCES_VFSOVERLAY,
+                    SWIFT_FEATURE_VFSOVERLAY,
+                ],
             ],
         ),
     ]
@@ -1134,7 +1177,7 @@ def compile_action_configs(
             ),
         )
 
-    action_configs.append(
+    action_configs.extend([
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
@@ -1143,8 +1186,25 @@ def compile_action_configs(
                 swift_action_names.DUMP_AST,
             ],
             configurators = [_source_files_configurator],
+            not_features = [
+                SWIFT_FEATURE_SOURCES_VFSOVERLAY,
+                SWIFT_FEATURE_VFSOVERLAY,
+            ],
         ),
-    )
+        swift_toolchain_config.action_config(
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVE_FILES,
+                swift_action_names.PRECOMPILE_C_MODULE,
+                swift_action_names.DUMP_AST,
+            ],
+            configurators = [_vfs_source_files_configurator],
+            features = [
+                SWIFT_FEATURE_SOURCES_VFSOVERLAY,
+                SWIFT_FEATURE_VFSOVERLAY,
+            ],
+        ),
+    ])
 
     # Add additional input files to the sandbox (does not modify flags).
     action_configs.append(
@@ -1611,6 +1671,28 @@ def _module_name_configurator(prerequisites, args):
     """Adds the module name flag to the command line."""
     args.add("-module-name", prerequisites.module_name)
 
+def _vfs_source_files_configurator(prerequisites, args):
+    """Adds source files to the command line via a vfs overlay."""
+    args.add_all(
+        prerequisites.source_files,
+        format_each = "{}/%s".format(prerequisites.sources_vfsoverlay_search_path),
+    )
+
+    # Only add source files to the input file set if they are not strings (for
+    # example, the module map of a system framework will be passed in as a file
+    # path relative to the SDK root, not as a `File` object).
+    args.add(
+        "-vfsoverlay{}".format(prerequisites.sources_vfsoverlay_file.path),
+    )
+
+    return swift_toolchain_config.config_result(
+        inputs = [
+            source_file
+            for source_file in prerequisites.source_files
+            if not types.is_string(source_file)
+        ] + [prerequisites.sources_vfsoverlay_file],
+    )
+
 def _source_files_configurator(prerequisites, args):
     """Adds source files to the command line and required inputs."""
     args.add_all(prerequisites.source_files)
@@ -2068,6 +2150,24 @@ def compile(
     else:
         vfsoverlay_file = None
 
+    if is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_SOURCES_VFSOVERLAY,
+    ):
+        sources_vfsoverlay_file = derived_files.vfsoverlay(
+            actions = actions,
+            target_name = target_name,
+            suffix = ".srcs",
+        )
+        write_sources_vfsoverlay(
+            actions = actions,
+            vfsoverlay_file = sources_vfsoverlay_file,
+            srcs = srcs,
+            virtual_swiftmodule_root = _SOURCES_VFS_ROOT,
+        )
+    else:
+        sources_vfsoverlay_file = None
+
     prerequisites = struct(
         additional_inputs = additional_inputs,
         bin_dir = feature_configuration._bin_dir,
@@ -2088,6 +2188,8 @@ def compile(
         user_compile_flags = copts,
         vfsoverlay_file = vfsoverlay_file,
         vfsoverlay_search_path = _SWIFTMODULES_VFS_ROOT,
+        sources_vfsoverlay_file = sources_vfsoverlay_file,
+        sources_vfsoverlay_search_path = _SOURCES_VFS_ROOT,
         workspace_name = workspace_name,
         # Merge the compile outputs into the prerequisites.
         **struct_fields(compile_outputs)
@@ -2766,6 +2868,7 @@ def _declare_multiple_outputs_and_write_output_file_map(
         ast_files.append(ast)
         src_output_map["ast-dump"] = ast.path
         output_map[src.path] = struct(**src_output_map)
+        output_map[_SOURCES_VFS_ROOT + "/" + src.path] = struct(**src_output_map)
 
     actions.write(
         content = struct(**output_map).to_json(),
