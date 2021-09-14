@@ -29,6 +29,7 @@ load(":debugging.bzl", "should_embed_swiftmodule_for_debugging")
 load(":derived_files.bzl", "derived_files")
 load(
     ":feature_names.bzl",
+    "SWIFT_FEATURE_BITCODE_EMBEDDED",
     "SWIFT_FEATURE_CACHEABLE_SWIFTMODULES",
     "SWIFT_FEATURE_COVERAGE",
     "SWIFT_FEATURE_COVERAGE_PREFIX_MAP",
@@ -2266,6 +2267,12 @@ def _declare_compile_outputs(
         feature_name = SWIFT_FEATURE_EMIT_BC,
     )
 
+    # If enabled the compiler will embed LLVM BC in the object files.
+    embeds_bc = is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_BITCODE_EMBEDDED,
+    )
+
     if not output_nature.emits_multiple_objects:
         # If we're emitting a single object, we don't use an object map; we just
         # declare the output file that the compiler will generate and there are
@@ -2286,6 +2293,7 @@ def _declare_compile_outputs(
         # object files so that we can pass them all to the archive action.
         output_info = _declare_multiple_outputs_and_write_output_file_map(
             actions = actions,
+            embeds_bc = embeds_bc,
             emits_bc = emits_bc,
             emits_partial_modules = output_nature.emits_partial_modules,
             srcs = srcs,
@@ -2329,6 +2337,7 @@ def _declare_compile_outputs(
 
 def _declare_multiple_outputs_and_write_output_file_map(
         actions,
+        embeds_bc,
         emits_bc,
         emits_partial_modules,
         srcs,
@@ -2337,6 +2346,8 @@ def _declare_multiple_outputs_and_write_output_file_map(
 
     Args:
         actions: The object used to register actions.
+        embeds_bc: If `True` the compiler will embed LLVM BC in the object
+            files.
         emits_bc: If `True` the compiler will generate LLVM BC files instead of
             object files.
         emits_partial_modules: `True` if the compilation action is expected to
@@ -2381,16 +2392,17 @@ def _declare_multiple_outputs_and_write_output_file_map(
     for src in srcs:
         src_output_map = {}
 
-        if emits_bc:
+        if embeds_bc or emits_bc:
             # Declare the llvm bc file (there is one per source file).
             obj = derived_files.intermediate_bc_file(
                 actions = actions,
                 target_name = target_name,
                 src = src,
             )
-            output_objs.append(obj)
+            (output_objs if emits_bc else other_outputs).append(obj)
             src_output_map["llvm-bc"] = obj.path
-        else:
+
+        if not emits_bc:
             # Declare the object file (there is one per source file).
             obj = derived_files.intermediate_object_file(
                 actions = actions,
