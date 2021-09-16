@@ -403,6 +403,17 @@ def _module_info_for_target(
     attr = aspect_ctx.rule.attr
     module_map_file = None
 
+    # TODO: Remove once we cherry-pick the `swift_interop_hint` rule
+    if not module_name and aspect_ctx.rule.kind == "cc_library":
+        # For all other targets, there is no mechanism to provide a custom
+        # module map, and we only generate one if the target is tagged.
+        module_name = _tagged_target_module_name(
+            label = target.label,
+            tags = attr.tags,
+        )
+        if not module_name:
+            return None, None
+
     if not module_name:
         if apple_common.Objc not in target:
             return None, None
