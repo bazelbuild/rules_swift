@@ -9,6 +9,7 @@ To build applications for all of Apple's platforms (macOS, iOS, tvOS, and
 watchOS), they can be combined with the
 [Apple Rules](https://github.com/bazelbuild/rules_apple).
 
+
 If you run into any problems with these rules, please
 [file an issue!](https://github.com/bazelbuild/rules_swift/issues/new)
 
