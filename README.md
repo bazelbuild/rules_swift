@@ -3,7 +3,9 @@
 [![Build status](https://badge.buildkite.com/d562b11425e192a8f6ba9c43715bc8364985bccf54e4b9194a.svg?branch=master)](https://buildkite.com/bazel/rules-swift-swift)
 
 This repository contains rules for [Bazel](https://bazel.build) that can be
-used to build Swift libraries, tests, and executables for macOS and Linux.
+used to build Swift libraries
+
+, tests, and executables for macOS and Linux.
 
 To build applications for all of Apple's platforms (macOS, iOS, tvOS, and
 watchOS), they can be combined with the
