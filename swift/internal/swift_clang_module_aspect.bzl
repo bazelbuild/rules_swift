@@ -52,6 +52,11 @@ Contains minimal information required to allow `swift_clang_module_aspect` to
 manage the creation of a `SwiftInfo` provider for a C/Objective-C target.
 """,
     fields = {
+        "exclude_headers": """\
+A `list` of `File`s representing headers that should be excluded from the
+module, if a module map is being automatically generated based on the headers in
+the target's compilation context.
+""",
         "module_map": """\
 A `File` representing an existing module map that should be used to represent
 the module, or `None` if the module map should be generated based on the headers
@@ -92,6 +97,7 @@ enabled by default in the toolchain.
 
 def create_swift_interop_info(
         *,
+        exclude_headers = [],
         module_map = None,
         module_name = None,
         requested_features = [],
@@ -124,6 +130,8 @@ def create_swift_interop_info(
     exclude dependencies if necessary.
 
     Args:
+        exclude_headers: A `list` of `File`s representing headers that should be
+            excluded from the module if the module map is generated.
         module_map: A `File` representing an existing module map that should be
             used to represent the module, or `None` (the default) if the module
             map should be generated based on the headers in the target's
@@ -162,10 +170,16 @@ def create_swift_interop_info(
         A provider whose type/layout is an implementation detail and should not
         be relied upon.
     """
-    if module_map and not module_name:
-        fail("'module_name' must be specified when 'module_map' is specified.")
+    if module_map:
+        if not module_name:
+            fail("'module_name' must be specified when 'module_map' is " +
+                 "specified.")
+        if exclude_headers:
+            fail("'exclude_headers' may not be specified when 'module_map' " +
+                 "is specified.")
 
     return _SwiftInteropInfo(
+        exclude_headers = exclude_headers,
         module_map = module_map,
         module_name = module_name,
         requested_features = requested_features,
@@ -178,6 +192,7 @@ def _generate_module_map(
         actions,
         compilation_context,
         dependent_module_names,
+        exclude_headers,
         feature_configuration,
         module_name,
         target,
@@ -190,6 +205,8 @@ def _generate_module_map(
             headers for the module.
         dependent_module_names: A `list` of names of Clang modules that are
             direct dependencies of the target whose module map is being written.
+        exclude_headers: A `list` of `File`s representing header files to
+            exclude, if any, if we are generating the module map.
         feature_configuration: A Swift feature configuration.
         module_name: The name of the module.
         target: The target for which the module map is being generated.
@@ -231,6 +248,7 @@ def _generate_module_map(
     write_module_map(
         actions = actions,
         dependent_module_names = sorted(dependent_module_names),
+        exclude_headers = sorted(exclude_headers, key = _path_sorting_key),
         exported_module_ids = ["*"],
         module_map_file = module_map_file,
         module_name = module_name,
@@ -323,6 +341,7 @@ def _module_info_for_target(
         aspect_ctx,
         compilation_context,
         dependent_module_names,
+        exclude_headers,
         feature_configuration,
         module_name,
         umbrella_header):
@@ -335,6 +354,8 @@ def _module_info_for_target(
             headers for the module.
         dependent_module_names: A `list` of names of Clang modules that are
             direct dependencies of the target whose module map is being written.
+        exclude_headers: A `list` of `File`s representing header files to
+            exclude, if any, if we are generating the module map.
         feature_configuration: A Swift feature configuration.
         module_name: The module name to prefer (if we're generating a module map
             from `_SwiftInteropInfo`), or None to derive it from other
@@ -387,6 +408,7 @@ def _module_info_for_target(
             actions = aspect_ctx.actions,
             compilation_context = compilation_context,
             dependent_module_names = dependent_module_names,
+            exclude_headers = exclude_headers,
             feature_configuration = feature_configuration,
             module_name = module_name,
             target = target,
@@ -398,6 +420,7 @@ def _module_info_for_target(
 def _handle_module(
         aspect_ctx,
         compilation_context,
+        exclude_headers,
         feature_configuration,
         module_map_file,
         module_name,
@@ -410,6 +433,8 @@ def _handle_module(
         aspect_ctx: The aspect's context.
         compilation_context: The `CcCompilationContext` containing the target's
             headers.
+        exclude_headers: A `list` of `File`s representing header files to
+            exclude, if any, if we are generating the module map.
         feature_configuration: The current feature configuration.
         module_map_file: The `.modulemap` file that defines the module, or None
             if it should be inferred from other properties of the target (for
@@ -455,6 +480,7 @@ def _handle_module(
             aspect_ctx = aspect_ctx,
             compilation_context = compilation_context,
             dependent_module_names = dependent_module_names,
+            exclude_headers = exclude_headers,
             feature_configuration = feature_configuration,
             module_name = module_name,
             umbrella_header = umbrella_header,
@@ -657,6 +683,7 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx):
         if interop_info.suppressed:
             return []
 
+        exclude_headers = interop_info.exclude_headers
         module_map_file = interop_info.module_map
         module_name = (
             interop_info.module_name or derive_module_name(target.label)
@@ -665,6 +692,7 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx):
         requested_features.extend(interop_info.requested_features)
         unsupported_features.extend(interop_info.unsupported_features)
     else:
+        exclude_headers = []
         module_map_file = None
         module_name = None
 
@@ -680,6 +708,7 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx):
         return _handle_module(
             aspect_ctx = aspect_ctx,
             compilation_context = _compilation_context_for_target(target),
+            exclude_headers = exclude_headers,
             feature_configuration = feature_configuration,
             module_map_file = module_map_file,
             module_name = module_name,
