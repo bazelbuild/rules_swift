@@ -421,8 +421,8 @@ A new `SwiftInfo` provider with the given values.
 ## swift_common.create_swift_interop_info
 
 <pre>
-swift_common.create_swift_interop_info(<a href="#swift_common.create_swift_interop_info-module_map">module_map</a>, <a href="#swift_common.create_swift_interop_info-module_name">module_name</a>, <a href="#swift_common.create_swift_interop_info-requested_features">requested_features</a>, <a href="#swift_common.create_swift_interop_info-suppressed">suppressed</a>,
-                                       <a href="#swift_common.create_swift_interop_info-swift_infos">swift_infos</a>, <a href="#swift_common.create_swift_interop_info-unsupported_features">unsupported_features</a>)
+swift_common.create_swift_interop_info(<a href="#swift_common.create_swift_interop_info-exclude_headers">exclude_headers</a>, <a href="#swift_common.create_swift_interop_info-module_map">module_map</a>, <a href="#swift_common.create_swift_interop_info-module_name">module_name</a>, <a href="#swift_common.create_swift_interop_info-requested_features">requested_features</a>,
+                                       <a href="#swift_common.create_swift_interop_info-suppressed">suppressed</a>, <a href="#swift_common.create_swift_interop_info-swift_infos">swift_infos</a>, <a href="#swift_common.create_swift_interop_info-unsupported_features">unsupported_features</a>)
 </pre>
 
 Returns a provider that lets a target expose C/Objective-C APIs to Swift.
@@ -456,6 +456,7 @@ exclude dependencies if necessary.
 
 | Name  | Description | Default Value |
 | :------------- | :------------- | :------------- |
+| <a id="swift_common.create_swift_interop_info-exclude_headers"></a>exclude_headers |  A `list` of `File`s representing headers that should be excluded from the module if the module map is generated.   |  `[]` |
 | <a id="swift_common.create_swift_interop_info-module_map"></a>module_map |  A `File` representing an existing module map that should be used to represent the module, or `None` (the default) if the module map should be generated based on the headers in the target's compilation context. If this argument is provided, then `module_name` must also be provided.   |  `None` |
 | <a id="swift_common.create_swift_interop_info-module_name"></a>module_name |  A string denoting the name of the module, or `None` (the default) if the name should be derived automatically from the target label.   |  `None` |
 | <a id="swift_common.create_swift_interop_info-requested_features"></a>requested_features |  A list of features (empty by default) that should be requested for the target, which are added to those supplied in the `features` attribute of the target. These features will be enabled unless they are otherwise marked as unsupported (either on the target or by the toolchain). This allows the rule implementation to have additional control over features that should be supported by default for all instances of that rule as if it were creating the feature configuration itself; for example, a rule can request that `swift.emit_c_module` always be enabled for its targets even if it is not explicitly enabled in the toolchain or on the target directly.   |  `[]` |

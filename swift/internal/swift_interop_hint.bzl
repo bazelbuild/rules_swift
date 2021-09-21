@@ -20,6 +20,7 @@ def _swift_interop_hint_impl(ctx):
     # TODO(b/194733180): Take advantage of the richer API to add support for
     # other features, like APINotes, later.
     return swift_common.create_swift_interop_info(
+        exclude_headers = ctx.files.exclude_hdrs,
         module_map = ctx.file.module_map,
         module_name = ctx.attr.module_name,
         suppressed = ctx.attr.suppressed,
@@ -27,6 +28,21 @@ def _swift_interop_hint_impl(ctx):
 
 swift_interop_hint = rule(
     attrs = {
+        "exclude_hdrs": attr.label_list(
+            allow_files = True,
+            doc = """\
+A list of header files that should be excluded from the Clang module generated
+for the target to which this hint is applied. This allows a target to exclude
+a subset of a library's headers specifically from the Swift module map without
+removing them from the library completely, which can be useful if some headers
+are not Swift-compatible but are still needed by other sources in the library or
+by non-Swift dependents.
+
+This attribute may only be specified if a custom `module_map` is not provided.
+Setting both attributes is an error.
+""",
+            mandatory = False,
+        ),
         "module_map": attr.label(
             allow_single_file = True,
             doc = """\
