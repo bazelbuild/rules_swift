@@ -424,7 +424,7 @@ the `.private.swiftinterface` files are required in order to build any code that
 ## swift_interop_hint
 
 <pre>
-swift_interop_hint(<a href="#swift_interop_hint-name">name</a>, <a href="#swift_interop_hint-module_map">module_map</a>, <a href="#swift_interop_hint-module_name">module_name</a>, <a href="#swift_interop_hint-suppressed">suppressed</a>)
+swift_interop_hint(<a href="#swift_interop_hint-name">name</a>, <a href="#swift_interop_hint-exclude_hdrs">exclude_hdrs</a>, <a href="#swift_interop_hint-module_map">module_map</a>, <a href="#swift_interop_hint-module_name">module_name</a>, <a href="#swift_interop_hint-suppressed">suppressed</a>)
 </pre>
 
 Defines an aspect hint that associates non-Swift BUILD targets with additional
@@ -555,6 +555,7 @@ its transitive dependencies be propagated.
 | Name  | Description | Type | Mandatory | Default |
 | :------------- | :------------- | :------------- | :------------- | :------------- |
 | <a id="swift_interop_hint-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
+| <a id="swift_interop_hint-exclude_hdrs"></a>exclude_hdrs |  A list of header files that should be excluded from the Clang module generated for the target to which this hint is applied. This allows a target to exclude a subset of a library's headers specifically from the Swift module map without removing them from the library completely, which can be useful if some headers are not Swift-compatible but are still needed by other sources in the library or by non-Swift dependents.<br><br>This attribute may only be specified if a custom `module_map` is not provided. Setting both attributes is an error.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 | <a id="swift_interop_hint-module_map"></a>module_map |  An optional custom `.modulemap` file that defines the Clang module for the headers in the target to which this hint is applied.<br><br>If this attribute is omitted, a module map will be automatically generated based on the headers in the hinted target.<br><br>If this attribute is provided, then `module_name` must also be provided and match the name of the desired top-level module in the `.modulemap` file. (A single `.modulemap` file may define multiple top-level modules.)   | <a href="https://bazel.build/concepts/labels">Label</a> | optional |  `None`  |
 | <a id="swift_interop_hint-module_name"></a>module_name |  The name that will be used to import the hinted module into Swift.<br><br>If left unspecified, the module name will be computed based on the hinted target's build label, by stripping the leading `//` and replacing `/`, `:`, and other non-identifier characters with underscores.   | String | optional |  `""`  |
 | <a id="swift_interop_hint-suppressed"></a>suppressed |  If `True`, the hinted target should suppress any module that it would otherwise generate.   | Boolean | optional |  `False`  |
