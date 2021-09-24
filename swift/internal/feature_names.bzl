@@ -177,6 +177,11 @@ SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE = "swift.use_global_module_cache"
 # This feature requires `swift.use_global_module_cache` to be enabled.
 SWIFT_FEATURE_GLOBAL_MODULE_CACHE_USES_TMPDIR = "swift.global_module_cache_uses_tmpdir"
 
+# If enabled, actions invoking the Swift driver will use the legacy driver
+# instead of the new driver (https://github.com/apple/swift-driver) that
+# launched in Xcode 13/Swift 5.5.
+SWIFT_FEATURE_USE_OLD_DRIVER = "swift.use_old_driver"
+
 # If enabled, actions invoking the Swift driver or frontend may write argument
 # lists into response files (i.e., "@args.txt") to avoid passing command lines
 # that exceed the system limit. Toolchains typically set this automatically if
