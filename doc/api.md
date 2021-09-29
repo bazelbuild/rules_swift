@@ -407,7 +407,7 @@ A provider whose type/layout is an implementation detail and should not
 ## swift_common.create_swift_module
 
 <pre>
-swift_common.create_swift_module(<a href="#swift_common.create_swift_module-swiftdoc">swiftdoc</a>, <a href="#swift_common.create_swift_module-swiftmodule">swiftmodule</a>, <a href="#swift_common.create_swift_module-defines">defines</a>, <a href="#swift_common.create_swift_module-swiftinterface">swiftinterface</a>)
+swift_common.create_swift_module(<a href="#swift_common.create_swift_module-swiftdoc">swiftdoc</a>, <a href="#swift_common.create_swift_module-swiftmodule">swiftmodule</a>, <a href="#swift_common.create_swift_module-defines">defines</a>, <a href="#swift_common.create_swift_module-swiftsourceinfo">swiftsourceinfo</a>, <a href="#swift_common.create_swift_module-swiftinterface">swiftinterface</a>)
 </pre>
 
 Creates a value representing a Swift module use as a Swift dependency.
@@ -420,6 +420,7 @@ Creates a value representing a Swift module use as a Swift dependency.
 | <a id="swift_common.create_swift_module-swiftdoc"></a>swiftdoc |  The <code>.swiftdoc</code> file emitted by the compiler for this module.   |  none |
 | <a id="swift_common.create_swift_module-swiftmodule"></a>swiftmodule |  The <code>.swiftmodule</code> file emitted by the compiler for this module.   |  none |
 | <a id="swift_common.create_swift_module-defines"></a>defines |  A list of defines that will be provided as <code>copts</code> to targets that depend on this module. If omitted, the empty list will be used.   |  <code>[]</code> |
+| <a id="swift_common.create_swift_module-swiftsourceinfo"></a>swiftsourceinfo |  The <code>.swiftsourceinfo</code> file emitted by the compiler for this module. May be <code>None</code> if no source info file was emitted.   |  <code>None</code> |
 | <a id="swift_common.create_swift_module-swiftinterface"></a>swiftinterface |  The <code>.swiftinterface</code> file emitted by the compiler for this module. May be <code>None</code> if no module interface file was emitted.   |  <code>None</code> |
 
 **RETURNS**

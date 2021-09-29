@@ -353,6 +353,7 @@ def create_swift_module(
         swiftdoc,
         swiftmodule,
         defines = [],
+        swiftsourceinfo = None,
         swiftinterface = None):
     """Creates a value representing a Swift module use as a Swift dependency.
 
@@ -362,6 +363,8 @@ def create_swift_module(
             module.
         defines: A list of defines that will be provided as `copts` to targets
             that depend on this module. If omitted, the empty list will be used.
+        swiftsourceinfo: The `.swiftsourceinfo` file emitted by the compiler for
+            this module. May be `None` if no source info file was emitted.
         swiftinterface: The `.swiftinterface` file emitted by the compiler for
             this module. May be `None` if no module interface file was emitted.
 
@@ -374,6 +377,7 @@ def create_swift_module(
         swiftdoc = swiftdoc,
         swiftinterface = swiftinterface,
         swiftmodule = swiftmodule,
+        swiftsourceinfo = swiftsourceinfo,
     )
 
 def create_swift_info(
