@@ -270,6 +270,18 @@ def _swiftmodule(actions, module_name):
     """
     return actions.declare_file("{}.swiftmodule".format(module_name))
 
+def _swiftsourceinfo(actions, module_name):
+    """Declares a file for the Swift sourceinfo created by a compilation rule.
+
+    Args:
+        actions: The context's actions object.
+        module_name: The name of the module being built.
+
+    Returns:
+        The declared `File`.
+    """
+    return actions.declare_file("{}.swiftsourceinfo".format(module_name))
+
 def _vfsoverlay(actions, target_name):
     """Declares a file for the VFS overlay for a compilation action.
 
@@ -331,6 +343,7 @@ derived_files = struct(
     swiftdoc = _swiftdoc,
     swiftinterface = _swiftinterface,
     swiftmodule = _swiftmodule,
+    swiftsourceinfo = _swiftsourceinfo,
     vfsoverlay = _vfsoverlay,
     whole_module_object_file = _whole_module_object_file,
     xctest_runner_script = _xctest_runner_script,

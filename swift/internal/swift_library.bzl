@@ -222,6 +222,7 @@ def _swift_library_impl(ctx):
         module_context.swift.swiftdoc,
         module_context.swift.swiftinterface,
         module_context.swift.swiftmodule,
+        module_context.swift.swiftsourceinfo,
         linking_output.library_to_link.static_library,
         linking_output.library_to_link.pic_static_library,
     ])
