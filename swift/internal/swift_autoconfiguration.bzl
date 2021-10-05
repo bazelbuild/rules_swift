@@ -207,7 +207,8 @@ def _create_linux_toolchain(repository_ctx):
     Args:
       repository_ctx: The repository rule context.
     """
-    if "clang" not in repository_ctx.os.environ.get("CC"):
+    cc = repository_ctx.os.environ.get("CC") or ""
+    if "clang" not in cc:
         fail("ERROR: rules_swift uses Bazel's CROSSTOOL to link, but Swift " +
              "requires that the driver used is clang. Please set `CC=clang` " +
              "in your environment before invoking Bazel.")
