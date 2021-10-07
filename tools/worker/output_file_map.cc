@@ -90,7 +90,7 @@ void OutputFileMap::UpdateForIncremental(const std::string &path) {
         auto swiftdeps_path = ReplaceExtension(new_path, ".swiftdeps");
         src_map["swift-dependencies"] = swiftdeps_path;
       } else if (kind == "swiftdoc" || kind == "swiftinterface" ||
-                 kind == "swiftmodule") {
+                 kind == "swiftmodule" || kind == "swiftsourceinfo") {
         // Module/interface outputs should be moved to the incremental storage
         // area without additional processing.
         auto new_path = MakeIncrementalOutputPath(path);
