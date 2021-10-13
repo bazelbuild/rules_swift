@@ -122,6 +122,11 @@ void OutputFileMap::UpdateForIncremental(const std::string &path) {
   auto copied_swiftdoc_path = MakeIncrementalOutputPath(swiftdoc_path);
   incremental_inputs[swiftdoc_path] = copied_swiftdoc_path;
 
+  auto swiftsourceinfo_path =
+      ReplaceExtension(path, ".swiftsourceinfo", /*all_extensions=*/true);
+  auto copied_swiftsourceinfo_path = MakeIncrementalOutputPath(swiftsourceinfo_path);
+  incremental_inputs[swiftsourceinfo_path] = copied_swiftsourceinfo_path;
+
   json_ = new_output_file_map;
   incremental_outputs_ = incremental_outputs;
   incremental_inputs_ = incremental_inputs;
