@@ -234,6 +234,24 @@ def _swiftc_output_file_map(actions, target_name):
     """
     return actions.declare_file("{}.output_file_map.json".format(target_name))
 
+def _swiftc_derived_output_file_map(actions, target_name):
+    """Declares a file for the output file map for a swiftmodule only action.
+
+    This JSON-formatted output map file allows us to supply our own paths and
+    filenames for the intermediate artifacts produced by multiple frontend
+    invocations, rather than using the temporary defaults.
+
+    Args:
+        actions: The context's actions object.
+        target_name: The name of the target being built.
+
+    Returns:
+        The declared `File`.
+    """
+    return actions.declare_file(
+        "{}.derived_output_file_map.json".format(target_name),
+    )
+
 def _swiftdoc(actions, module_name):
     """Declares a file for the Swift doc file created by a compilation rule.
 
@@ -340,6 +358,7 @@ derived_files = struct(
     reexport_modules_src = _reexport_modules_src,
     static_archive = _static_archive,
     swiftc_output_file_map = _swiftc_output_file_map,
+    swiftc_derived_output_file_map = _swiftc_derived_output_file_map,
     swiftdoc = _swiftdoc,
     swiftinterface = _swiftinterface,
     swiftmodule = _swiftmodule,
