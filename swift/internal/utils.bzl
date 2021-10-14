@@ -274,6 +274,44 @@ def owner_relative_path(file):
     else:
         return paths.relativize(file.short_path, package)
 
+def resolve_optional_tool(ctx, *, target):
+    """Resolves a tool and returns a `struct` describing its inputs.
+
+    This function uses `ctx.resolve_tools` which allows an executable and any of
+    its required runfiles to be propagated correctly across the target boundary.
+
+    Args:
+        ctx: The rule or aspect context.
+        target: The `Target` representing the tool whose inputs should be
+            resolved. This may be `None`, in which case the returned `struct`
+            will be valid but its fields will be appropriately empty.
+
+    Returns:
+        A `struct` containing three fields:
+
+        *   `executable`: The `File` representing the tool's executable (or
+            `None` if `target` was `None`).
+        *   `input_manifests`: A list of input manifests that should be passed
+            as `tool_input_manifests` when configuring the tool in the
+            toolchain (or the empty list if `target` was `None`.)
+        *   `inputs`: A `depset` of `File`s that should be passed as
+            `tool_inputs` when configuring the tool in the toolchain (or the
+            empty `depset` if `target` was `None`.)
+    """
+    if target:
+        executable = target[DefaultInfo].files_to_run.executable
+        inputs, input_manifests = ctx.resolve_tools(tools = [target])
+    else:
+        executable = None
+        input_manifests = []
+        inputs = depset()
+
+    return struct(
+        executable = executable,
+        input_manifests = input_manifests,
+        inputs = inputs,
+    )
+
 def struct_fields(s):
     """Returns a dictionary containing the fields in the struct `s`.
 

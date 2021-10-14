@@ -53,6 +53,7 @@ load(
     "collect_implicit_deps_providers",
     "compact",
     "get_swift_executable_for_toolchain",
+    "resolve_optional_tool",
 )
 
 def _swift_developer_lib_dir(platform_framework_dir):
@@ -449,7 +450,7 @@ def _all_action_configs(
     action_configs.extend(compile_action_configs(
         additional_objc_copts = additional_objc_copts,
         additional_swiftc_copts = additional_swiftc_copts,
-        generated_header_rewriter = generated_header_rewriter,
+        generated_header_rewriter = generated_header_rewriter.executable,
     ))
     return action_configs
 
@@ -468,9 +469,9 @@ def _all_tool_configs(
             one was requested.
         env: The environment variables to set when launching tools.
         execution_requirements: The execution requirements for tools.
-        generated_header_rewriter: An executable that will be invoked after
-            compilation to rewrite the generated header, or None if this is not
-            desired.
+        generated_header_rewriter: A `struct` returned by
+            `resolve_optional_tool` that represents an executable that will be
+            invoked after compilation to rewrite the generated header.
         swift_executable: A custom Swift driver executable to be used during the
             build, if provided.
         toolchain_root: The root directory of the toolchain, if provided.
@@ -487,17 +488,14 @@ def _all_tool_configs(
         env = dict(env)
         env["TOOLCHAINS"] = custom_toolchain
 
-    additional_compile_tools = []
-    if generated_header_rewriter:
-        additional_compile_tools.append(generated_header_rewriter)
-
     tool_configs = {
         swift_action_names.COMPILE: swift_toolchain_config.driver_tool_config(
-            additional_tools = additional_compile_tools,
             driver_mode = "swiftc",
             env = env,
             execution_requirements = execution_requirements,
             swift_executable = swift_executable,
+            tool_input_manifests = generated_header_rewriter.input_manifests,
+            tool_inputs = generated_header_rewriter.inputs,
             toolchain_root = toolchain_root,
             use_param_file = True,
             worker_mode = "persistent",
@@ -655,7 +653,10 @@ def _xcode_swift_toolchain_impl(ctx):
 
     env = _xcode_env(platform = platform, xcode_config = xcode_config)
     execution_requirements = xcode_config.execution_info()
-    generated_header_rewriter = ctx.executable.generated_header_rewriter
+    generated_header_rewriter = resolve_optional_tool(
+        ctx,
+        target = ctx.attr.generated_header_rewriter,
+    )
 
     all_tool_configs = _all_tool_configs(
         custom_toolchain = custom_toolchain,
