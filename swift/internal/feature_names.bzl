@@ -316,8 +316,13 @@ SWIFT_FEATURE_GENERATE_PATH_TO_UNDERSCORES_FROM_PROTO_FILES = "swift.generate_pa
 SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION = "swift.split_derived_files_generation"
 
 # If enabled the skip function bodies frontend flag is passed when using derived
-# files generation. This requires Swift 5.2
+# files generation. This requires Swift 5.2.
 SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES = "swift.skip_function_bodies_for_derived_files"
+
+# If enabled the skip function bodies without types frontend flag is passed when
+# using derived files generation. This takes precedence over
+# swift.skip_function_bodies_for_derived_files. This requires Swift 5.4.
+SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES_WITHOUT_TYPES = "swift.skip_function_bodies_without_types_for_derived_files"
 
 # If enabled remap the absolute path to Xcode in debug info. When used with
 # swift.coverage_prefix_map also remap the path in coverage data.

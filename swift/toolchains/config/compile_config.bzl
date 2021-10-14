@@ -55,6 +55,7 @@ load(
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES",
+    "SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES_WITHOUT_TYPES",
     "SWIFT_FEATURE_ENABLE_TESTING",
     "SWIFT_FEATURE_ENABLE_V6",
     "SWIFT_FEATURE_FASTBUILD",
@@ -1119,6 +1120,14 @@ def compile_action_configs(
                 add_arg("-experimental-skip-non-inlinable-function-bodies"),
             ],
             features = [SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES],
+            not_features = [SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES_WITHOUT_TYPES],
+        ),
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_DERIVE_FILES],
+            configurators = [
+                add_arg("-experimental-skip-non-inlinable-function-bodies-without-types"),
+            ],
+            features = [SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES_WITHOUT_TYPES],
         ),
 
         # Configure index-while-building.
