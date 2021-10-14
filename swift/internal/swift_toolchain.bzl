@@ -61,22 +61,24 @@ def _all_tool_configs(
     """
     _swift_driver_tool_config = swift_toolchain_config.driver_tool_config
 
+    tool_inputs = depset(additional_tools)
+
     compile_tool_config = _swift_driver_tool_config(
         driver_mode = "swiftc",
         swift_executable = swift_executable,
+        tool_inputs = tool_inputs,
         toolchain_root = toolchain_root,
         use_param_file = use_param_file,
         worker_mode = "persistent",
-        additional_tools = additional_tools,
     )
 
     return {
         swift_action_names.AUTOLINK_EXTRACT: _swift_driver_tool_config(
             driver_mode = "swift-autolink-extract",
             swift_executable = swift_executable,
+            tool_inputs = tool_inputs,
             toolchain_root = toolchain_root,
             worker_mode = "wrap",
-            additional_tools = additional_tools,
         ),
         swift_action_names.COMPILE: compile_tool_config,
         swift_action_names.DERIVE_FILES: compile_tool_config,
@@ -85,9 +87,9 @@ def _all_tool_configs(
             args = ["-modulewrap"],
             driver_mode = "swift",
             swift_executable = swift_executable,
+            tool_inputs = tool_inputs,
             toolchain_root = toolchain_root,
             worker_mode = "wrap",
-            additional_tools = additional_tools,
         ),
         swift_action_names.DUMP_AST: compile_tool_config,
     }
