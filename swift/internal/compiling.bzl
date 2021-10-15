@@ -807,7 +807,7 @@ def _clang_search_paths_configurator(prerequisites, args):
     """Adds Clang search paths to the command line."""
     args.add_all(
         depset(transitive = [
-            prerequisites.cc_info.compilation_context.includes,
+            prerequisites.cc_compilation_context.includes,
             # TODO(b/146575101): Replace with `objc_info.include` once this bug
             # is fixed. See `_merge_target_providers` below for more details.
             prerequisites.objc_include_paths_workaround,
@@ -836,7 +836,7 @@ def _clang_search_paths_configurator(prerequisites, args):
         depset(
             direct_quote_includes,
             transitive = [
-                prerequisites.cc_info.compilation_context.quote_includes,
+                prerequisites.cc_compilation_context.quote_includes,
             ],
         ),
         before_each = "-Xcc",
@@ -844,7 +844,7 @@ def _clang_search_paths_configurator(prerequisites, args):
     )
 
     args.add_all(
-        prerequisites.cc_info.compilation_context.system_includes,
+        prerequisites.cc_compilation_context.system_includes,
         map_each = _filter_out_unsupported_include_paths,
         before_each = "-Xcc",
         format_each = "-isystem%s",
@@ -853,12 +853,12 @@ def _clang_search_paths_configurator(prerequisites, args):
 def _dependencies_clang_defines_configurator(prerequisites, args):
     """Adds C/C++ dependencies' preprocessor defines to the command line."""
     all_clang_defines = depset(transitive = [
-        prerequisites.cc_info.compilation_context.defines,
+        prerequisites.cc_compilation_context.defines,
     ])
     args.add_all(all_clang_defines, before_each = "-Xcc", format_each = "-D%s")
 
 def _collect_clang_module_inputs(
-        cc_info,
+        cc_compilation_context,
         is_swift,
         modules,
         objc_info,
@@ -866,8 +866,9 @@ def _collect_clang_module_inputs(
     """Collects Clang module-related inputs to pass to an action.
 
     Args:
-        cc_info: The `CcInfo` provider of the target being compiled. The direct
-            headers of this provider will be collected as inputs.
+        cc_compilation_context: The `CcCompilationContext` of the target being
+            compiled. The direct headers of this provider will be collected as
+            inputs.
         is_swift: If True, this is a Swift compilation; otherwise, it is a
             Clang module compilation.
         modules: A list of module structures (as returned by
@@ -889,9 +890,9 @@ def _collect_clang_module_inputs(
     direct_inputs = []
     transitive_inputs = []
 
-    if cc_info:
-        # The headers stored in the `cc_info` argument's compilation context
-        # differ depending on the kind of action we're invoking:
+    if cc_compilation_context:
+        # The headers stored in the compilation context differ depending on the
+        # kind of action we're invoking:
         if (is_swift and not prefer_precompiled_modules) or not is_swift:
             # If this is a `SwiftCompile` with explicit modules disabled, the
             # `headers` field is an already-computed set of the transitive
@@ -910,11 +911,11 @@ def _collect_clang_module_inputs(
             # headers include those. This will likely over-estimate the needed
             # inputs, but we can't do better without include scanning in
             # Starlark.
-            transitive_inputs.append(cc_info.compilation_context.headers)
+            transitive_inputs.append(cc_compilation_context.headers)
 
     # Some rules still use the `umbrella_header` field to propagate a header
-    # that they don't also include in `CcInfo.compilation_context.headers`, so
-    # we also need to pull these in for the time being.
+    # that they don't also include in `cc_compilation_context.headers`, so we
+    # also need to pull these in for the time being.
     # TODO(b/142867898): This can be removed once the Swift rules start
     # generating its own module map for these targets.
     if objc_info:
@@ -1026,7 +1027,7 @@ def _dependencies_clang_modulemaps_configurator(prerequisites, args):
     )
 
     return _collect_clang_module_inputs(
-        cc_info = prerequisites.cc_info,
+        cc_compilation_context = prerequisites.cc_compilation_context,
         is_swift = prerequisites.is_swift,
         modules = modules,
         objc_info = prerequisites.objc_info,
@@ -1052,7 +1053,7 @@ def _dependencies_clang_modules_configurator(prerequisites, args):
     )
 
     return _collect_clang_module_inputs(
-        cc_info = prerequisites.cc_info,
+        cc_compilation_context = prerequisites.cc_compilation_context,
         is_swift = prerequisites.is_swift,
         modules = modules,
         objc_info = prerequisites.objc_info,
@@ -1069,11 +1070,11 @@ def _framework_search_paths_configurator(prerequisites, args, is_swift):
     # though, since it won't be used.
     if is_swift:
         args.add_all(
-            prerequisites.cc_info.compilation_context.framework_includes,
+            prerequisites.cc_compilation_context.framework_includes,
             format_each = "-F%s",
         )
     args.add_all(
-        prerequisites.cc_info.compilation_context.framework_includes,
+        prerequisites.cc_compilation_context.framework_includes,
         format_each = "-F%s",
         before_each = "-Xcc",
     )
@@ -1216,7 +1217,7 @@ def _conditional_compilation_flag_configurator(prerequisites, args):
         transitive = [
             # Take any Swift-compatible defines from Objective-C dependencies
             # and define them for Swift.
-            prerequisites.cc_info.compilation_context.defines,
+            prerequisites.cc_compilation_context.defines,
         ],
     )
     args.add_all(
@@ -1493,7 +1494,7 @@ def compile(
     prerequisites = struct(
         additional_inputs = additional_inputs,
         bin_dir = bin_dir,
-        cc_info = merged_providers.cc_info,
+        cc_compilation_context = merged_providers.cc_info.compilation_context,
         defines = sets.to_list(defines_set),
         genfiles_dir = genfiles_dir,
         is_swift = True,
@@ -1755,7 +1756,7 @@ def _precompile_clang_module(
 
     prerequisites = struct(
         bin_dir = bin_dir,
-        cc_info = CcInfo(compilation_context = cc_compilation_context),
+        cc_compilation_context = cc_compilation_context,
         genfiles_dir = genfiles_dir,
         is_swift = False,
         is_swift_generated_header = is_swift_generated_header,
