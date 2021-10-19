@@ -105,6 +105,11 @@ def split_derived_files_test_suite(name = "split_derived_files"):
         expected_argv = [
             "-emit-module-path",
             "-emit-object",
+            "-enable-batch-mode",
+            "simple.output_file_map.json",
+        ],
+        not_expected_argv = [
+            "simple.derived_output_file_map.json",
         ],
         mnemonic = "SwiftCompile",
         tags = [name],
@@ -150,10 +155,13 @@ def split_derived_files_test_suite(name = "split_derived_files"):
         name = "{}_object_only".format(name),
         expected_argv = [
             "-emit-object",
+            "-enable-batch-mode",
+            "simple.output_file_map.json",
         ],
         mnemonic = "SwiftCompile",
         not_expected_argv = [
             "-emit-module-path",
+            "simple.derived_output_file_map.json",
         ],
         tags = [name],
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
@@ -163,10 +171,13 @@ def split_derived_files_test_suite(name = "split_derived_files"):
         name = "{}_swiftmodule_only".format(name),
         expected_argv = [
             "-emit-module-path",
+            "-enable-batch-mode",
+            "simple.derived_output_file_map.json",
         ],
         mnemonic = "SwiftDeriveFiles",
         not_expected_argv = [
             "-emit-object",
+            "simple.output_file_map.json",
         ],
         tags = [name],
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
