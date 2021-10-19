@@ -60,6 +60,7 @@ load(
     "SWIFT_FEATURE_USE_C_MODULES",
     "SWIFT_FEATURE_USE_GLOBAL_INDEX_STORE",
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
+    "SWIFT_FEATURE_USE_PCH_OUTPUT_DIR",
     "SWIFT_FEATURE_VFSOVERLAY",
     "SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
@@ -572,6 +573,18 @@ def compile_action_configs(
                 [SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE],
             ],
         ),
+        swift_toolchain_config.action_config(
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVE_FILES,
+                swift_action_names.DUMP_AST,
+            ],
+            configurators = [_pch_output_dir_configurator],
+            features = [
+                SWIFT_FEATURE_USE_PCH_OUTPUT_DIR,
+            ],
+        ),
+
         # When using C modules, disable the implicit search for module map files
         # because all of them, including system dependencies, will be provided
         # explicitly.
@@ -1490,6 +1503,21 @@ def _index_while_building_configurator(prerequisites, args):
     """Adds flags for index-store generation to the command line."""
     if not _index_store_path_overridden(prerequisites.user_compile_flags):
         args.add("-index-store-path", prerequisites.indexstore_directory.path)
+
+def _pch_output_dir_configurator(prerequisites, args):
+    """Adds flags for pch-output-dir configuration to the command line.
+
+      This is a directory to persist automatically created precompiled bridging headers
+
+      Note: that like the global index store and module cache, we expect clang
+      to namespace these correctly per arch / os version / etc by the hash in
+      the path. However, it is also put into the bin_dir for an added layer of
+      safety.
+    """
+    args.add(
+        "-pch-output-dir",
+        paths.join(prerequisites.bin_dir.path, "_pch_output_dir"),
+    )
 
 def _global_index_store_configurator(prerequisites, args):
     """Adds flags for index-store generation to the command line."""
