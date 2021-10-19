@@ -40,10 +40,8 @@ def pch_output_dir_test_suite(name = "pch_output_dir_settings"):
         expected_argv = [
             "-pch-output-dir",
             # Starlark doesn't have support for regular expression yet, so we
-            # can't verify the whole argument here. as it has the configuration
+            # can't verify the whole argument here. It has the configuration
             # fragment baked in.
-        ],
-        not_expected_argv = [
         ],
         mnemonic = "SwiftCompile",
         tags = [name],
