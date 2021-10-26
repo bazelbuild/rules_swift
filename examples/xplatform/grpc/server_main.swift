@@ -18,7 +18,7 @@ import examples_xplatform_grpc_echo_proto
 import examples_xplatform_grpc_echo_server_services_swift
 
 /// Concrete implementation of the `EchoService` service definition.
-class EchoProvider: EchoServiceProvider {
+class EchoProvider: RulesSwift_Examples_Grpc_EchoServiceProvider {
 
   /// Called when the server receives a request for the `EchoService.Echo` method.
   ///
@@ -27,8 +27,10 @@ class EchoProvider: EchoServiceProvider {
   ///   - session: Information about the current session.
   /// - Returns: The response that will be sent back to the client.
   /// - Throws: If an error occurs while processing the request.
-  func echo(request: EchoRequest, session: EchoServiceEchoSession) throws -> EchoResponse {
-    var response = EchoResponse()
+  func echo(request: RulesSwift_Examples_Grpc_EchoRequest,
+            session: RulesSwift_Examples_Grpc_EchoServiceEchoSession
+  ) throws -> RulesSwift_Examples_Grpc_EchoResponse {
+    var response = RulesSwift_Examples_Grpc_EchoResponse()
     response.contents = "You sent: \(request.contents)"
     return response
   }
