@@ -18,10 +18,11 @@ import examples_xplatform_grpc_echo_proto
 import examples_xplatform_grpc_echo_client_services_swift
 
 // Initialize the client using the same address the server is started on.
-let client = EchoServiceServiceClient(address: "0.0.0.0:9000", secure: false)
+let client = RulesSwift_Examples_Grpc_EchoServiceServiceClient(address: "0.0.0.0:9000",
+                                                               secure: false)
 
 // Construct a request to the echo service.
-var request = EchoRequest()
+var request = RulesSwift_Examples_Grpc_EchoRequest()
 request.contents = "Hello, world!"
 let timestamp = Google_Protobuf_Timestamp(date: Date())
 request.extra = try! Google_Protobuf_Any(message: timestamp)

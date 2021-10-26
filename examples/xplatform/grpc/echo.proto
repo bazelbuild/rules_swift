@@ -14,6 +14,8 @@
 
 syntax = "proto3";
 
+package rules_swift.examples.grpc;
+
 import "google/protobuf/any.proto";
 
 service EchoService {
