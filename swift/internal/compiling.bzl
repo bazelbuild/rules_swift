@@ -59,8 +59,8 @@ load(
     "SWIFT_FEATURE_SUPPORTS_SYSTEM_MODULE_FLAG",
     "SWIFT_FEATURE_SYSTEM_MODULE",
     "SWIFT_FEATURE_USE_C_MODULES",
+    "SWIFT_FEATURE_USE_EPHEMERAL_MODULE_CACHE",
     "SWIFT_FEATURE_USE_GLOBAL_INDEX_STORE",
-    "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
     "SWIFT_FEATURE_USE_OLD_DRIVER",
     "SWIFT_FEATURE_USE_PCH_OUTPUT_DIR",
     "SWIFT_FEATURE_VFSOVERLAY",
@@ -575,10 +575,10 @@ def compile_action_configs(
                 swift_action_names.DUMP_AST,
             ],
             configurators = [_global_module_cache_configurator],
-            features = [SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE],
             not_features = [
                 [SWIFT_FEATURE_USE_C_MODULES],
                 [SWIFT_FEATURE_GLOBAL_MODULE_CACHE_USES_TMPDIR],
+                [SWIFT_FEATURE_USE_EPHEMERAL_MODULE_CACHE],
             ],
         ),
         swift_toolchain_config.action_config(
@@ -589,10 +589,12 @@ def compile_action_configs(
             ],
             configurators = [_tmpdir_module_cache_configurator],
             features = [
-                SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE,
                 SWIFT_FEATURE_GLOBAL_MODULE_CACHE_USES_TMPDIR,
             ],
-            not_features = [SWIFT_FEATURE_USE_C_MODULES],
+            not_features = [
+                [SWIFT_FEATURE_USE_C_MODULES],
+                [SWIFT_FEATURE_USE_EPHEMERAL_MODULE_CACHE],
+            ],
         ),
         swift_toolchain_config.action_config(
             actions = [
@@ -605,9 +607,11 @@ def compile_action_configs(
                     "-Xwrapped-swift=-ephemeral-module-cache",
                 ),
             ],
+            features = [
+                SWIFT_FEATURE_USE_EPHEMERAL_MODULE_CACHE,
+            ],
             not_features = [
-                [SWIFT_FEATURE_USE_C_MODULES],
-                [SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE],
+                SWIFT_FEATURE_USE_C_MODULES,
             ],
         ),
         swift_toolchain_config.action_config(

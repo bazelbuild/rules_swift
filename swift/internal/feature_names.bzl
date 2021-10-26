@@ -152,14 +152,12 @@ SWIFT_FEATURE_REWRITE_GENERATED_HEADER = "swift.rewrite_generated_header"
 # them.
 SWIFT_FEATURE_USE_C_MODULES = "swift.use_c_modules"
 
-# If enabled, Swift compilation actions will use the same global Clang module
-# cache used by Objective-C compilation actions. This is disabled by default
-# because under some circumstances Clang module cache corruption can cause the
-# Swift compiler to crash (sometimes when switching configurations or syncing a
-# repository), but disabling it also causes a noticeable build time regression
-# so it can be explicitly re-enabled by users who are not affected by those
-# crashes.
-SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE = "swift.use_global_module_cache"
+# If enabled, Swift compilation actions will use the separate Clang module
+# caches used by Objective-C compilation actions. This is disabled by default
+# because the performance improvement is so significant versus using a separate
+# module cache per Swift action. Users can enable this to avoid rare Clang
+# module cache corruption that can cause the Swift compiler to crash.
+SWIFT_FEATURE_USE_EPHEMERAL_MODULE_CACHE = "swift.use_ephemeral_module_cache"
 
 # If enabled, and Swift compilation actions will use the shared Clang module
 # cache path written to
