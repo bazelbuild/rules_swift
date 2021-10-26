@@ -112,11 +112,18 @@ encountered first on your `PATH`.
 To make remote builds work correctly with debugging and general
 reproducibility see [this doc](doc/debuggable_remote_swift.md)
 
+## Swift Package Manager Support
+
+To download, build, and reference external Swift packages as Bazel targets, check out
+[rules_spm](https://github.com/cgrindel/rules_spm).  The rules in
+[rules_spm](https://github.com/cgrindel/rules_spm) build external Swift packages with [Swift
+Package Manager](https://swift.org/package-manager/), then make the outputs available to Bazel
+rules.
+
 ## Future Work
 
 - Support for building and linking to shared libraries (`.dylib`/`.so`) written
   in Swift.
-- Interoperability with Swift Package Manager.
 - Migration to the Bazel platforms/toolchains APIs.
 - Support for multiple toolchains, and support for non-Xcode toolchains on
   macOS.
