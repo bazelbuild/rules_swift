@@ -16,7 +16,7 @@ import Foundation
 import SwiftProtobuf
 import examples_xplatform_proto_example_proto
 
-let person = Person.with {
+let person = RulesSwift_Examples_Person.with {
   $0.name = "Firstname Lastname"
   $0.age = 30
 }
@@ -24,7 +24,7 @@ let person = Person.with {
 let data = try! person.serializedData()
 print(Array(data))
 
-let server = Server.with {
+let server = RulesSwift_Examples_Server.with {
   $0.name = "My Server"
   $0.api.name = "My API"
   let option = Google_Protobuf_Option.with {
