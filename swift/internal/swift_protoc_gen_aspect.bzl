@@ -580,7 +580,7 @@ swift_protoc_gen_aspect = aspect(
         swift_config_attrs(),
         {
             "_mkdir_and_run": attr.label(
-                cfg = "host",
+                cfg = "exec",
                 default = Label(
                     "@build_bazel_rules_swift//tools/mkdir_and_run",
                 ),
@@ -593,12 +593,12 @@ swift_protoc_gen_aspect = aspect(
                 ],
             ),
             "_protoc": attr.label(
-                cfg = "host",
+                cfg = "exec",
                 default = Label("@com_google_protobuf//:protoc"),
                 executable = True,
             ),
             "_protoc_gen_swift": attr.label(
-                cfg = "host",
+                cfg = "exec",
                 default = Label("@com_github_apple_swift_protobuf//:ProtoCompilerPlugin"),
                 executable = True,
             ),
