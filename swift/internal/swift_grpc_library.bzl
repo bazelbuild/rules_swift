@@ -378,7 +378,7 @@ The kind of definitions that should be generated:
 """,
             ),
             "_mkdir_and_run": attr.label(
-                cfg = "host",
+                cfg = "exec",
                 default = Label(
                     "@build_bazel_rules_swift//tools/mkdir_and_run",
                 ),
@@ -389,14 +389,14 @@ The kind of definitions that should be generated:
                 default = [Label("@com_github_grpc_grpc_swift//:SwiftGRPC")],
             ),
             "_protoc": attr.label(
-                cfg = "host",
+                cfg = "exec",
                 default = Label(
                     "@com_google_protobuf//:protoc",
                 ),
                 executable = True,
             ),
             "_protoc_gen_swiftgrpc": attr.label(
-                cfg = "host",
+                cfg = "exec",
                 default = Label(
                     "@com_github_grpc_grpc_swift//:protoc-gen-swiftgrpc",
                 ),
