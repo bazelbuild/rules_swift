@@ -309,6 +309,5 @@ for incremental compilation using a persistent mode.
     doc = "Represents a Swift compiler toolchain.",
     fragments = ["swift"],
     toolchains = ["@bazel_tools//tools/cpp:toolchain_type"],
-    incompatible_use_toolchain_transition = True,
     implementation = _swift_toolchain_impl,
 )
