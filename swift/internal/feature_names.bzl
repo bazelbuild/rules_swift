@@ -291,6 +291,10 @@ SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES = "swift.skip_function_bodies_for_deri
 # swift.coverage_prefix_map also remap the path in coverage data.
 SWIFT_FEATURE_REMAP_XCODE_PATH = "swift.remap_xcode_path"
 
+# If enabled the built binary will statically link Swift standard libraries.
+# This requires Swift 5.3.1
+SWIFT_FEATURE_STATIC_STDLIB = "swift.static_stdlib"
+
 # A private feature that is set by the toolchain if a flag enabling WMO was
 # passed on the command line using `--swiftcopt`. Users should never manually
 # enable, disable, or query this feature.

@@ -66,6 +66,7 @@ load(
     "SWIFT_FEATURE_USE_OLD_DRIVER",
     "SWIFT_FEATURE_USE_PCH_OUTPUT_DIR",
     "SWIFT_FEATURE_VFSOVERLAY",
+    "SWIFT_FEATURE_STATIC_STDLIB",
     "SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
 )
@@ -1036,6 +1037,16 @@ def compile_action_configs(
                 swift_action_names.DUMP_AST,
             ],
             configurators = [_conditional_compilation_flag_configurator],
+        ),
+
+        # Enable the built modules to reference static Swift standard libraries.
+        swift_toolchain_config.action_config(
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVE_FILES,
+            ],
+            configurators = [swift_toolchain_config.add_arg("-static-stdlib")],
+            features = [SWIFT_FEATURE_STATIC_STDLIB],
         ),
     ]
 

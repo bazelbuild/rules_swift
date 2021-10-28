@@ -34,6 +34,7 @@ load(
     "SWIFT_FEATURE_USE_AUTOLINK_EXTRACT",
     "SWIFT_FEATURE_USE_MODULE_WRAP",
     "SWIFT_FEATURE_USE_RESPONSE_FILES",
+    "SWIFT_FEATURE_STATIC_STDLIB",
 )
 load(":features.bzl", "features_for_build_modes")
 load(
@@ -202,7 +203,8 @@ def _swift_unix_linkopts_cc_info(
         cpu,
         os,
         toolchain_label,
-        toolchain_root):
+        toolchain_root,
+        static_stdlib):
     """Returns a `CcInfo` containing flags that should be passed to the linker.
 
     The provider returned by this function will be used as an implicit
@@ -216,27 +218,43 @@ def _swift_unix_linkopts_cc_info(
         toolchain_label: The label of the Swift toolchain that will act as the
             owner of the linker input propagating the flags.
         toolchain_root: The toolchain's root directory.
+        static_stdlib: Whether to statically link Swift standard libraries.
 
     Returns:
         A `CcInfo` provider that will provide linker flags to binaries that
         depend on Swift targets.
     """
 
-    # TODO(#8): Support statically linking the Swift runtime.
-    platform_lib_dir = "{toolchain_root}/lib/swift/{os}".format(
-        os = os,
-        toolchain_root = toolchain_root,
-    )
+    if static_stdlib:
+        platform_lib_dir = "{toolchain_root}/lib/swift_static/{os}".format(
+            os = os,
+            toolchain_root = toolchain_root,
+        )
+    else:
+        platform_lib_dir = "{toolchain_root}/lib/swift/{os}".format(
+            os = os,
+            toolchain_root = toolchain_root,
+        )
+
+    linkopts = [
+        "-pie",
+        "-L{}".format(platform_lib_dir),
+        "-Wl,-rpath,{}".format(platform_lib_dir),
+    ]
+
+    # Appending generic linker args from Swift runtime.
+    if static_stdlib:
+        static_stdlib_args = "{platform_lib_dir}/static-stdlib-args.lnk".format(
+            platform_lib_dir = platform_lib_dir,
+        )
+        linkopts.append("@{}".format(static_stdlib_args))
 
     runtime_object_path = "{platform_lib_dir}/{cpu}/swiftrt.o".format(
         cpu = cpu,
         platform_lib_dir = platform_lib_dir,
     )
 
-    linkopts = [
-        "-pie",
-        "-L{}".format(platform_lib_dir),
-        "-Wl,-rpath,{}".format(platform_lib_dir),
+    linkopts += [
         "-lm",
         "-lstdc++",
         "-lrt",
@@ -273,6 +291,7 @@ def _swift_toolchain_impl(ctx):
             ctx.attr.os,
             ctx.label,
             toolchain_root,
+            SWIFT_FEATURE_STATIC_STDLIB in ctx.features,
         )
 
     # Combine build mode features, autoconfigured features, and required

@@ -81,6 +81,7 @@ void WorkProcessor::ProcessWorkRequest(
   std::string output_file_map_path;
   std::string emit_module_path;
   bool is_wmo = false;
+  bool is_static_stdlib = false;
   bool is_dump_ast = false;
 
   std::string prev_arg;
@@ -97,6 +98,8 @@ void WorkProcessor::ProcessWorkRequest(
       arg.clear();
     } else if (prev_arg == "-emit-module-path") {
       emit_module_path = arg;
+    } else if (arg == "-static-stdlib") {
+      is_static_stdlib = true;
     } else if (ArgumentEnablesWMO(arg)) {
       is_wmo = true;
     }
@@ -108,7 +111,7 @@ void WorkProcessor::ProcessWorkRequest(
     prev_arg = original_arg;
   }
 
-  bool is_incremental = !is_wmo && !is_dump_ast;
+  bool is_incremental = !is_wmo && !is_dump_ast && !is_static_stdlib;
 
   if (!output_file_map_path.empty()) {
     if (is_incremental) {
