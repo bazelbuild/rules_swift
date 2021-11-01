@@ -102,11 +102,6 @@ that use the toolchain.
         "action_configs": """\
 This field is an internal implementation detail of the build rules.
 """,
-        "all_files": """\
-A `depset` of `File`s containing all the Swift toolchain files (tools,
-libraries, and other resource files) so they can be passed as `tools` to actions
-using this toolchain.
-""",
         "cc_toolchain_info": """\
 The `cc_common.CcToolchainInfo` provider from the Bazel C++ toolchain that this
 Swift toolchain depends on.
@@ -125,9 +120,6 @@ C/Objective-C modules:
 
 For ease of use, this field is never `None`; it will always be a valid `struct`
 containing the fields described above, even if those lists are empty.
-""",
-        "cpu": """\
-`String`. The CPU architecture that the toolchain is targeting.
 """,
         "feature_allowlists": """\
 A list of `SwiftFeatureAllowlistInfo` providers that allow or prohibit packages
@@ -166,10 +158,6 @@ linking target (but not to precompiled explicit C/Objective-C modules):
 For ease of use, this field is never `None`; it will always be a valid `struct`
 containing the fields described above, even if those lists are empty.
 """,
-        "object_format": """\
-`String`. The object file format of the platform that the toolchain is
-targeting. The currently supported values are `"elf"` and `"macho"`.
-""",
         "requested_features": """\
 `List` of `string`s. Features that should be implicitly enabled by default for
 targets built using this toolchain, unless overridden by the user by listing
@@ -190,9 +178,6 @@ Swift build rules, and they are also passed to the C++ APIs used when linking
 `File`. The executable representing the worker executable used to invoke the
 compiler and other Swift tools (for both incremental and non-incremental
 compiles).
-""",
-        "system_name": """\
-`String`. The name of the operating system that the toolchain is targeting.
 """,
         "test_configuration": """\
 `Struct` containing two fields:
