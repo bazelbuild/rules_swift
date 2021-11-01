@@ -1756,7 +1756,6 @@ def compile(
     # the full set of values and inputs through a single accessor.
     merged_providers = _merge_targets_providers(
         implicit_deps_providers = swift_toolchain.implicit_deps_providers,
-        supports_objc_interop = swift_toolchain.supports_objc_interop,
         targets = deps + private_deps,
     )
 
@@ -2531,10 +2530,7 @@ def _declare_validated_generated_header(actions, generated_header_name):
 
     return actions.declare_file(generated_header_name)
 
-def _merge_targets_providers(
-        implicit_deps_providers,
-        supports_objc_interop,
-        targets):
+def _merge_targets_providers(implicit_deps_providers, targets):
     """Merges the compilation-related providers for the given targets.
 
     This function merges the `CcInfo`, `SwiftInfo`, and `apple_common.Objc`
@@ -2546,10 +2542,6 @@ def _merge_targets_providers(
     Args:
         implicit_deps_providers: The implicit deps providers `struct` from the
             Swift toolchain.
-        supports_objc_interop: `True` if the current toolchain supports
-            Objective-C interop and the `apple_common.Objc` providers should
-            also be used to determine compilation flags and inputs. If `False`,
-            any `apple_common.Objc` providers in the targets will be ignored.
         targets: The targets whose providers should be merged.
 
     Returns:
@@ -2578,8 +2570,7 @@ def _merge_targets_providers(
             cc_infos.append(target[CcInfo])
         if SwiftInfo in target:
             swift_infos.append(target[SwiftInfo])
-
-        if apple_common.Objc in target and supports_objc_interop:
+        if apple_common.Objc in target:
             objc_infos.append(target[apple_common.Objc])
             objc_include_paths_workaround_depsets.append(
                 target[apple_common.Objc].strict_include,
@@ -2655,8 +2646,8 @@ def new_objc_provider(
         library = library_to_link.static_library
         if library:
             direct_libraries.append(library)
-        if alwayslink:
-            force_load_libraries.append(library)
+            if alwayslink:
+                force_load_libraries.append(library)
 
     if feature_configuration and should_embed_swiftmodule_for_debugging(
         feature_configuration = feature_configuration,
