@@ -171,9 +171,6 @@ Swift build rules, and they are also passed to the C++ APIs used when linking
         "root_dir": """\
 `String`. The workspace-relative root directory of the toolchain.
 """,
-        "supports_objc_interop": """\
-`Boolean`. Indicates whether or not the toolchain supports Objective-C interop.
-""",
         "swift_worker": """\
 `File`. The executable representing the worker executable used to invoke the
 compiler and other Swift tools (for both incremental and non-incremental

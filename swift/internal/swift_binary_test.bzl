@@ -337,11 +337,10 @@ def _swift_test_impl(ctx):
         requested_features = ["static_linking_mode"],
     )
 
-    is_bundled = (swift_toolchain.supports_objc_interop and
-                  swift_common.is_enabled(
-                      feature_configuration = feature_configuration,
-                      feature_name = SWIFT_FEATURE_BUNDLED_XCTESTS,
-                  ))
+    is_bundled = swift_common.is_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_BUNDLED_XCTESTS,
+    )
 
     # If we need to run the test in an .xctest bundle, the binary must have
     # Mach-O type `MH_BUNDLE` instead of `MH_EXECUTE`.

@@ -703,7 +703,6 @@ def _xcode_swift_toolchain_impl(ctx):
                 additional_objc_infos = [swift_linkopts_providers.objc_info],
             ),
             requested_features = requested_features,
-            supports_objc_interop = True,
             swift_worker = ctx.executable._worker,
             test_configuration = struct(
                 env = env,
