@@ -195,10 +195,7 @@ def _swift_toolchain_impl(ctx):
     # Swift.org toolchains assume everything is just available on the PATH so we
     # we don't pass any files unless we have a custom driver executable in the
     # workspace.
-    all_files = []
     swift_executable = get_swift_executable_for_toolchain(ctx)
-    if swift_executable:
-        all_files.append(swift_executable)
 
     all_tool_configs = _all_tool_configs(
         swift_executable = swift_executable,
@@ -216,12 +213,10 @@ def _swift_toolchain_impl(ctx):
     return [
         SwiftToolchainInfo(
             action_configs = all_action_configs,
-            all_files = depset(all_files),
             cc_toolchain_info = cc_toolchain,
             clang_implicit_deps_providers = (
                 collect_implicit_deps_providers([])
             ),
-            cpu = ctx.attr.arch,
             feature_allowlists = [
                 target[SwiftFeatureAllowlistInfo]
                 for target in ctx.attr.feature_allowlists
@@ -234,12 +229,10 @@ def _swift_toolchain_impl(ctx):
                 additional_cc_infos = [swift_linkopts_cc_info],
             ),
             linker_supports_filelist = False,
-            object_format = "elf",
             requested_features = requested_features,
             root_dir = toolchain_root,
             supports_objc_interop = False,
             swift_worker = ctx.executable._worker,
-            system_name = ctx.attr.os,
             test_configuration = struct(
                 env = {},
                 execution_requirements = {},

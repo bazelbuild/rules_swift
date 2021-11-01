@@ -14,7 +14,12 @@
 
 """Functions relating to debugging support during compilation and linking."""
 
-load(":actions.bzl", "run_toolchain_action", "swift_action_names")
+load(
+    ":actions.bzl",
+    "is_action_enabled",
+    "run_toolchain_action",
+    "swift_action_names",
+)
 load(":derived_files.bzl", "derived_files")
 load(
     ":feature_names.bzl",
@@ -49,7 +54,10 @@ def ensure_swiftmodule_is_embedded(
         propagated to the linker to embed the `.swiftmodule` as debugging
         information in the binary.
     """
-    if swift_toolchain.object_format == "elf":
+    if is_action_enabled(
+        action_name = swift_action_names.MODULEWRAP,
+        swift_toolchain = swift_toolchain,
+    ):
         # For ELF-format binaries, we need to invoke a Swift modulewrap action
         # to wrap the .swiftmodule file in a .o file that gets propagated to the
         # linker.
@@ -73,18 +81,15 @@ def ensure_swiftmodule_is_embedded(
             user_link_flags = depset([modulewrap_obj.path]),
         )
 
-    if swift_toolchain.object_format == "macho":
-        return cc_common.create_linker_input(
-            owner = label,
-            user_link_flags = depset([
-                "-Wl,-add_ast_path,{}".format(swiftmodule.path),
-            ]),
-            additional_inputs = depset([swiftmodule]),
-        )
-
-    fail("Internal error: Unexpected object format '{}'.".format(
-        swift_toolchain.object_format,
-    ))
+    # If module-wrapping is not enabled for the toolchain, assume that we can
+    # use the `-add_ast_path` linker flag.
+    return cc_common.create_linker_input(
+        owner = label,
+        user_link_flags = depset([
+            "-Wl,-add_ast_path,{}".format(swiftmodule.path),
+        ]),
+        additional_inputs = depset([swiftmodule]),
+    )
 
 def modulewrap_action_configs():
     """Returns the list of action configs needed to perform module wrapping.

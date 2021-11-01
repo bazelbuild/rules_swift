@@ -739,22 +739,13 @@ def _xcode_swift_toolchain_impl(ctx):
         xcode_config = xcode_config,
     )
 
-    # Xcode toolchains don't pass any files explicitly here because they're
-    # just available as part of the Xcode bundle, unless we're being asked to
-    # use a custom driver executable.
-    all_files = []
-    if swift_executable:
-        all_files.append(swift_executable)
-
     return [
         SwiftToolchainInfo(
             action_configs = all_action_configs,
-            all_files = depset(all_files),
             cc_toolchain_info = cc_toolchain,
             clang_implicit_deps_providers = collect_implicit_deps_providers(
                 ctx.attr.clang_implicit_deps,
             ),
-            cpu = cpu,
             feature_allowlists = [
                 target[SwiftFeatureAllowlistInfo]
                 for target in ctx.attr.feature_allowlists
@@ -770,11 +761,9 @@ def _xcode_swift_toolchain_impl(ctx):
                 additional_objc_infos = [swift_linkopts_providers.objc_info],
             ),
             linker_supports_filelist = True,
-            object_format = "macho",
             requested_features = requested_features,
             supports_objc_interop = True,
             swift_worker = ctx.executable._worker,
-            system_name = "darwin",
             test_configuration = struct(
                 env = env,
                 execution_requirements = execution_requirements,
