@@ -233,7 +233,6 @@ def _swift_toolchain_impl(ctx):
             linker_supports_filelist = False,
             requested_features = requested_features,
             root_dir = toolchain_root,
-            supports_objc_interop = False,
             swift_worker = ctx.executable._worker,
             test_configuration = struct(
                 env = {},
