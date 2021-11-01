@@ -269,7 +269,7 @@ def _features_for_bitcode_mode(bitcode_mode):
     """Gets the list of features to enable for the selected Bitcode mode.
 
     Args:
-        bitcode_mode: The `bitcode_mode` value from the Apple configuration
+        bitcode_mode: The `bitcode_mode` value from the C++ configuration
             fragment.
 
     Returns:
@@ -635,6 +635,7 @@ def _xcode_env(xcode_config, platform):
 
 def _xcode_swift_toolchain_impl(ctx):
     apple_fragment = ctx.fragments.apple
+    cpp_fragment = ctx.fragments.cpp
     apple_toolchain = apple_common.apple_toolchain()
     cc_toolchain = find_cpp_toolchain(ctx)
 
@@ -679,11 +680,11 @@ def _xcode_swift_toolchain_impl(ctx):
     # version.
     requested_features = features_for_build_modes(
         ctx,
-        cpp_fragment = ctx.fragments.cpp,
+        cpp_fragment = cpp_fragment,
     ) + features_from_swiftcopts(swiftcopts = ctx.fragments.swift.copts())
     requested_features.extend(ctx.features)
     requested_features.extend(
-        _features_for_bitcode_mode(apple_fragment.bitcode_mode),
+        _features_for_bitcode_mode(cpp_fragment.apple_bitcode_mode),
     )
     requested_features.extend([
         SWIFT_FEATURE_BUNDLED_XCTESTS,
