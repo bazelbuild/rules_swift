@@ -92,7 +92,7 @@ into the binary. Possible values are:
             # TODO(b/119082664): Used internally only.
             "_grep_includes": attr.label(
                 allow_single_file = True,
-                cfg = "host",
+                cfg = "exec",
                 default = Label("@bazel_tools//tools/cpp:grep-includes"),
                 executable = True,
             ),
@@ -431,7 +431,7 @@ swift_test = rule(
         _binary_rule_attrs(stamp_default = 0),
         {
             "_apple_coverage_support": attr.label(
-                cfg = "host",
+                cfg = "exec",
                 default = Label(
                     "@build_bazel_apple_support//tools:coverage_support",
                 ),
