@@ -107,6 +107,7 @@ write_file(
         header_template = file + "_header.vm",
         input = "//swift:swift.bzl",
         symbol_names = symbols,
+        tags = ["no-sandbox"],  # https://github.com/bazelbuild/stardoc/issues/112
         deps = ["//swift"],
     )
     for [
