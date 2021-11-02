@@ -581,7 +581,7 @@ def _all_tool_configs(
                 execution_requirements = execution_requirements,
                 swift_executable = swift_executable,
                 toolchain_root = toolchain_root,
-                use_param_file = use_param_file,
+                use_param_file = True,
                 worker_mode = "persistent",
             )
         )

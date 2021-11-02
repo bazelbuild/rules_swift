@@ -2262,13 +2262,9 @@ def compile_from_interface(
     # `SwiftInfo`, `CcInfo`, and `apple_common.Objc`. Then we can pass these
     # into the action prerequisites so that configurators have easy access to
     # the full set of values and inputs through a single accessor.
-    all_deps = deps + get_implicit_deps(
-        feature_configuration = feature_configuration,
-        swift_toolchain = swift_toolchain,
-    )
     merged_providers = _merge_targets_providers(
         supports_objc_interop = swift_toolchain.supports_objc_interop,
-        targets = all_deps,
+        targets = deps,
     )
 
     # Flattening this `depset` is necessary because we need to extract the
