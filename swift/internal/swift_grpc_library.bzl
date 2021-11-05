@@ -47,6 +47,7 @@ def _register_grpcswift_generate_action(
         generate_from_proto_sources,
         mkdir_and_run,
         protoc_executable,
+        protoc_plugin_name,
         protoc_plugin_executable,
         flavor,
         extra_module_imports):
@@ -109,31 +110,32 @@ def _register_grpcswift_generate_action(
 
     protoc_args.add(
         protoc_plugin_executable,
-        format = "--plugin=protoc-gen-swiftgrpc=%s",
+        format = "--plugin=protoc-gen-{}=%s".format(protoc_plugin_name),
     )
-    protoc_args.add(generated_dir_path, format = "--swiftgrpc_out=%s")
-    protoc_args.add("--swiftgrpc_opt=Visibility=Public")
+
+    protoc_args.add(generated_dir_path, format = "--{}_out=%s".format(protoc_plugin_name))
+    protoc_args.add("--{}_opt=Visibility=Public".format(protoc_plugin_name))
     if flavor == "client":
-        protoc_args.add("--swiftgrpc_opt=Client=true")
-        protoc_args.add("--swiftgrpc_opt=Server=false")
+        protoc_args.add("--{}_opt=Client=true".format(protoc_plugin_name))
+        protoc_args.add("--{}_opt=Server=false".format(protoc_plugin_name))
     elif flavor == "client_stubs":
-        protoc_args.add("--swiftgrpc_opt=Client=true")
-        protoc_args.add("--swiftgrpc_opt=Server=false")
-        protoc_args.add("--swiftgrpc_opt=TestStubs=true")
-        protoc_args.add("--swiftgrpc_opt=Implementations=false")
+        protoc_args.add("--{}_opt=Client=true".format(protoc_plugin_name))
+        protoc_args.add("--{}_opt=Server=false".format(protoc_plugin_name))
+        protoc_args.add("--{}_opt=TestStubs=true".format(protoc_plugin_name))
+        protoc_args.add("--{}_opt=Implementations=false".format(protoc_plugin_name))
     elif flavor == "server":
-        protoc_args.add("--swiftgrpc_opt=Client=false")
-        protoc_args.add("--swiftgrpc_opt=Server=true")
+        protoc_args.add("--{}_opt=Client=false".format(protoc_plugin_name))
+        protoc_args.add("--{}_opt=Server=true".format(protoc_plugin_name))
     else:
         fail("Unsupported swift_grpc_library flavor", attr = "flavor")
     protoc_args.add_all(
         extra_module_imports,
-        format_each = "--swiftgrpc_opt=ExtraModuleImports=%s",
+        format_each = "--{}_opt=ExtraModuleImports=%s".format(protoc_plugin_name),
     )
     if module_mapping_file:
         protoc_args.add(
             module_mapping_file,
-            format = "--swiftgrpc_opt=ProtoPathModuleMappings=%s",
+            format = "--{}_opt=ProtoPathModuleMappings=%s".format(protoc_plugin_name),
         )
 
     protoc_args.add_joined(
@@ -260,6 +262,7 @@ def _swift_grpc_library_impl(ctx):
         generate_from_proto_sources,
         ctx.executable._mkdir_and_run,
         ctx.executable._protoc,
+        ctx.attr.protoc_plugin_name,
         ctx.executable._protoc_gen_swiftgrpc,
         ctx.attr.flavor,
         extra_module_imports,
@@ -375,6 +378,17 @@ The kind of definitions that should be generated:
 *   `"client_stubs"` to generate client test stubs.
 
 *   `"server"` to generate server definitions.
+""",
+            ),
+            "protoc_plugin_name": attr.string(
+                values = ["grpc-swift", "swiftgrpc"],
+                default = "swiftgrpc",
+                doc = """\
+The swift-grpc gRPC protoc plugin to use:
+
+*   `"grpc-swift"` to generate SwiftNIO-based clients.
+
+*   `"swiftgrpc"` to generate gRPC C library-based clients.
 """,
             ),
             "_mkdir_and_run": attr.label(
