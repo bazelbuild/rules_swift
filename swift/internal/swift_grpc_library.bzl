@@ -128,8 +128,14 @@ def _register_grpcswift_generate_action(
     elif flavor == "client_stubs":
         protoc_args.add("--{}_opt=Client=true".format(protoc_plugin_name))
         protoc_args.add("--{}_opt=Server=false".format(protoc_plugin_name))
-        protoc_args.add("--{}_opt=TestStubs=true".format(protoc_plugin_name))
-        protoc_args.add("--{}_opt=Implementations=false".format(protoc_plugin_name))
+
+        if protoc_plugin_name == "swiftgrpc":
+            protoc_args.add("--swiftgrpc_opt=TestStubs=true")
+            protoc_args.add("--swiftgrpc_opt=Implementations=false")
+        elif protoc_plugin_name == "grpc-swift":
+            protoc_args.add("--grpc-swift_opt=ClientStubs=true")
+        else:
+            fail("Unsupported swift_grpc_library protoc_plugin_name", attr = "protoc_plugin_name")
     elif flavor == "server":
         protoc_args.add("--{}_opt=Client=false".format(protoc_plugin_name))
         protoc_args.add("--{}_opt=Server=true".format(protoc_plugin_name))
