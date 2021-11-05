@@ -84,6 +84,15 @@ def swift_rules_dependencies():
         type = "zip",
         build_file = "@build_bazel_rules_swift//third_party:com_github_grpc_grpc_swift/BUILD.overlay",
     )
+    _maybe(
+        http_archive,
+        name = "com_github_grpc_grpc_swift_swiftnio",
+        urls = ["https://github.com/grpc/grpc-swift/archive/1.5.0.zip"],
+        sha256 = "573b12ca8f5c6848c503300df8d0a667d729d1457b925f5278f01497d90a9b30",
+        strip_prefix = "grpc-swift-1.5.0/",
+        type = "zip",
+        build_file = "@build_bazel_rules_swift//third_party:com_github_grpc_grpc_swift_swiftnio/BUILD.overlay",
+    )
 
     _maybe(
         http_archive,

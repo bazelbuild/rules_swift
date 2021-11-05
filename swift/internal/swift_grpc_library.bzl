@@ -48,7 +48,8 @@ def _register_grpcswift_generate_action(
         mkdir_and_run,
         protoc_executable,
         protoc_plugin_name,
-        protoc_plugin_executable,
+        protoc_gen_swiftgrpc,
+        protoc_gen_grpc_swift,
         flavor,
         extra_module_imports):
     """Registers actions to generate `.grpc.swift` files from `.proto` files.
@@ -108,6 +109,12 @@ def _register_grpcswift_generate_action(
     protoc_args.set_param_file_format("multiline")
     protoc_args.use_param_file("@%s")
 
+    if protoc_plugin_name == "swiftgrpc":
+        protoc_plugin_executable = protoc_gen_swiftgrpc
+    elif protoc_plugin_name == "grpc-swift":
+        protoc_plugin_executable = protoc_gen_grpc_swift
+    else:
+        fail("Unrecognized protoc_plugin", attr = "protoc_plugin")
     protoc_args.add(
         protoc_plugin_executable,
         format = "--plugin=protoc-gen-{}=%s".format(protoc_plugin_name),
@@ -264,6 +271,7 @@ def _swift_grpc_library_impl(ctx):
         ctx.executable._protoc,
         ctx.attr.protoc_plugin_name,
         ctx.executable._protoc_gen_swiftgrpc,
+        ctx.executable._protoc_gen_grpc_swift,
         ctx.attr.flavor,
         extra_module_imports,
     )
@@ -413,6 +421,13 @@ The swift-grpc gRPC protoc plugin to use:
                 cfg = "exec",
                 default = Label(
                     "@com_github_grpc_grpc_swift//:protoc-gen-swiftgrpc",
+                ),
+                executable = True,
+            ),
+            "_protoc_gen_grpc_swift": attr.label(
+                cfg = "exec",
+                default = Label(
+                    "@com_github_grpc_grpc_swift_swiftnio//:protoc-gen-grpc-swift",
                 ),
                 executable = True,
             ),

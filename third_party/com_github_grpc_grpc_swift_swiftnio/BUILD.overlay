@@ -1,0 +1,13 @@
+load("@build_bazel_rules_swift//swift:swift.bzl", "swift_binary")
+
+swift_binary(
+    name = "protoc-gen-grpc-swift",
+    srcs = glob([
+        "Sources/protoc-gen-grpc-swift/*.swift",
+    ]),
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_apple_swift_protobuf//:SwiftProtobuf",
+        "@com_github_apple_swift_protobuf//:SwiftProtobufPluginLibrary",
+    ],
+)
