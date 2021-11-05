@@ -1,0 +1,27 @@
+load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+swift_library(
+    name = "NIOHPACK",
+    srcs = glob([
+        "Sources/NIOHPACK/*.swift",
+    ]),
+    deps = [
+        "@com_github_apple_swift_nio//:NIOCore",
+        "@com_github_apple_swift_nio//:NIOHTTP1",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+swift_library(
+    name = "NIOHTTP2",
+    srcs = glob([
+        "Sources/NIOHTTP2/**/*.swift",
+    ]),
+    deps = [
+        ":NIOHPACK",
+        "@com_github_apple_swift_nio//:NIOCore",
+        "@com_github_apple_swift_nio//:NIOTLS",
+    ],
+    visibility = ["//visibility:public"],
+)

@@ -408,7 +408,10 @@ The swift-grpc gRPC protoc plugin to use:
             ),
             # TODO(b/63389580): Migrate to proto_lang_toolchain.
             "_proto_support": attr.label_list(
-                default = [Label("@com_github_grpc_grpc_swift//:SwiftGRPC")],
+                default = [
+                    Label("@com_github_grpc_grpc_swift//:SwiftGRPC"),
+                    Label("@com_github_grpc_grpc_swift_swiftnio//:GRPC"),
+                ],
             ),
             "_protoc": attr.label(
                 cfg = "exec",

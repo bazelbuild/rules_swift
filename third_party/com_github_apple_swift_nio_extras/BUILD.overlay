@@ -1,0 +1,155 @@
+load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+swift_library(
+    name = "NIOExtras",
+    srcs = glob([
+        "Sources/NIOExtras/*.swift",
+    ]),
+    deps = [
+        "@com_github_apple_swift_nio//:NIOCore",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# swift_library(
+#     name = "NIO",
+#     srcs = glob([
+#         "Sources/NIO/*.swift",
+#     ]),
+#     deps = [
+#         ":NIOCore",
+#         ":NIOEmbedded",
+#         ":NIOPosix",
+#     ],
+#     visibility = ["//visibility:public"],
+# )
+
+# swift_library(
+#     name = "NIOCore",
+#     srcs = glob([
+#         "Sources/NIOCore/*.swift",
+#     ]),
+#     deps = [
+#         ":NIOConcurrencyHelpers",
+#     ],
+#     visibility = ["//visibility:public"],
+# )
+
+# swift_library(
+#     name = "NIOEmbedded",
+#     srcs = glob([
+#         "Sources/NIOEmbedded/*.swift",
+#     ]),
+#     deps = [
+#         ":CNIOAtomics",
+#         ":_NIODataStructures",
+#     ],
+#     visibility = ["//visibility:public"],
+# )
+
+# swift_library(
+#     name = "NIOConcurrencyHelpers",
+#     srcs = glob([
+#         "Sources/NIOConcurrencyHelpers/*.swift",
+#     ]),
+#     deps = [
+#         ":CNIOAtomics",
+#     ],
+# )
+
+# cc_library(
+#     name = "CNIOAtomics",
+#     srcs = glob([
+#         "Sources/CNIOAtomics/src/*.c",
+#         "Sources/CNIOAtomics/src/*.h",
+#     ]),
+#     hdrs = glob([
+#         "Sources/CNIOAtomics/include/*.h",
+#     ]),
+#     includes = ["Sources/CNIOAtomics/include"],
+#     tags = ["swift_module=CNIOAtomics"],
+# )
+
+# swift_library(
+#     name = "NIOHTTP1",
+#     srcs = glob([
+#         "Sources/NIOHTTP1/*.swift",
+#     ]),
+#     deps = [
+#         ":NIOCore",
+#         ":CNIOHTTPParser",
+#     ],
+#     visibility = ["//visibility:public"],
+# )
+
+# cc_library(
+#     name = "CNIOHTTPParser",
+#     srcs = [
+#         "Sources/CNIOHTTPParser/c_nio_http_parser.c",
+#     ],
+#     hdrs = glob([
+#         "Sources/CNIOHTTPParser/include/*.h",
+#     ]),
+#     includes = ["Sources/CNIOHTTPParser/include"],
+#     tags = ["swift_module=CNIOHTTPParser"],
+# )
+
+# swift_library(
+#     name = "NIOTLS",
+#     srcs = glob([
+#         "Sources/NIOTLS/*.swift",
+#     ]),
+#     deps = [
+#         ":NIOCore",
+#     ],
+#     visibility = ["//visibility:public"],
+# )
+
+# swift_library(
+#     name = "NIOFoundationCompat",
+#     srcs = glob([
+#         "Sources/NIOFoundationCompat/*.swift",
+#     ]),
+#     deps = [
+#         ":NIOCore",
+#     ],
+#     visibility = ["//visibility:public"],
+# )
+
+# swift_library(
+#     name = "NIOPosix",
+#     srcs = glob([
+#         "Sources/NIOPosix/*.swift",
+#     ]),
+#     deps = [
+#         ":NIOCore",
+#         ":CNIODarwin",
+#         ":_NIODataStructures",
+#     ],
+#     visibility = ["//visibility:public"],
+# )
+
+# cc_library(
+#     name = "CNIODarwin",
+#     srcs = [
+#         "Sources/CNIODarwin/shim.c",
+#     ],
+#     hdrs = [
+#         "Sources/CNIODarwin/include/CNIODarwin.h",
+#     ],
+#     includes = ["Sources/CNIODarwin/include"],
+#     tags = ["swift_module=CNIODarwin"],
+# )
+
+# swift_library(
+#     name = "_NIODataStructures",
+#     srcs = glob([
+#         "Sources/_NIODataStructures/*.swift",
+#     ]),
+#     deps = [
+#         # ":NIOCore",
+#         # ":CNIODarwin",
+#     ],
+#     visibility = ["//visibility:public"],
+# )
