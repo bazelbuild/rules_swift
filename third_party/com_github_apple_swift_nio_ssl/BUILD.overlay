@@ -10,6 +10,7 @@ swift_library(
         ":CNIOBoringSSL",
         ":CNIOBoringSSLShims",
         "@com_github_apple_swift_nio//:NIOCore",
+        "@com_github_apple_swift_nio//:NIOTLS",
     ],
     visibility = ["//visibility:public"],
 )
