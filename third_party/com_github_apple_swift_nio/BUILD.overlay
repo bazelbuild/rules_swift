@@ -140,9 +140,5 @@ swift_library(
     srcs = glob([
         "Sources/_NIODataStructures/*.swift",
     ]),
-    deps = [
-        # ":NIOCore",
-        # ":CNIODarwin",
-    ],
     visibility = ["//visibility:public"],
 )
