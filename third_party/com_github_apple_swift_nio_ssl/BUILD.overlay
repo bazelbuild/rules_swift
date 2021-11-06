@@ -22,7 +22,10 @@ cc_library(
         "Sources/CNIOBoringSSL/ssl/*.cc",
     ]),
     hdrs = glob([
+        "Sources/CNIOBoringSSL/crypto/**/*.h",
+        "Sources/CNIOBoringSSL/ssl/**/*.h",
         "Sources/CNIOBoringSSL/include/*.h",
+        "Sources/CNIOBoringSSL/third_party/fiat/curve25519_64.h",
     ]),
     includes = ["Sources/CNIOBoringSSL/include"],
     tags = ["swift_module=CNIOBoringSSL"],
@@ -36,6 +39,9 @@ cc_library(
     hdrs = glob([
         "Sources/CNIOBoringSSLShims/include/*.h",
     ]),
+    deps = [
+        ":CNIOBoringSSL",
+    ],
     includes = ["Sources/CNIOBoringSSLShims/include"],
     tags = ["swift_module=CNIOBoringSSLShims"],
 )
