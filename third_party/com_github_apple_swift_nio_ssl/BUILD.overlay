@@ -18,27 +18,24 @@ swift_library(
 cc_library(
     name = "CNIOBoringSSL",
     srcs = glob([
-        "Sources/CNIOBoringSSL/**/*.c",
-        "Sources/CNIOBoringSSL/**/*.h",
+        "Sources/CNIOBoringSSL/crypto/**/*.c",
+        "Sources/CNIOBoringSSL/crypto/**/*.h",
+        "Sources/CNIOBoringSSL/ssl/**/*.cc",
+        "Sources/CNIOBoringSSL/ssl/**/*.h",
+        "Sources/CNIOBoringSSL/third_party/**/*.c",
+        "Sources/CNIOBoringSSL/third_party/**/*.h",
+        "Sources/CNIOBoringSSL/**/*.S",
     ]),
-    hdrs = glob([
-        "Sources/CNIOBoringSSL/include/*.h",
-    ]),
-    includes = ["Sources/CNIOBoringSSL/include"],
+    hdrs = glob(["Sources/CNIOBoringSSL/include/*.h"]),
     tags = ["swift_module=CNIOBoringSSL"],
+    includes = ["Sources/CNIOBoringSSL/include"],
 )
 
 cc_library(
     name = "CNIOBoringSSLShims",
-    srcs = glob([
-        "Sources/CNIOBoringSSLShims/shims.c",
-    ]),
-    hdrs = glob([
-        "Sources/CNIOBoringSSLShims/include/*.h",
-    ]),
-    deps = [
-        ":CNIOBoringSSL",
-    ],
-    includes = ["Sources/CNIOBoringSSLShims/include"],
+    srcs = ["Sources/CNIOBoringSSLShims/shims.c"],
+    hdrs = glob(["Sources/CNIOBoringSSLShims/include/*.h"]),
+    deps = [":CNIOBoringSSL"],
     tags = ["swift_module=CNIOBoringSSLShims"],
+    includes = ["Sources/CNIOBoringSSLShims/include"],
 )
