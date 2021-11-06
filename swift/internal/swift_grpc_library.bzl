@@ -286,7 +286,13 @@ def _swift_grpc_library_impl(ctx):
     # .swiftmodule as outputs. In addition to the other proto deps, we also pass
     # support libraries like the SwiftProtobuf runtime as deps to the compile
     # action.
-    compile_deps = deps + ctx.attr._proto_support
+    if ctx.attr.protoc_plugin_name == "swiftgrpc":
+        proto_support = ctx.attr._protoc_gen_swiftgrpc_support
+    elif ctx.attr.protoc_plugin_name == "grpc-swift":
+        proto_support = ctx.attr._protoc_gen_grpc_swift_support
+    else:
+        fail("Unsupported swift_grpc_library flavor", attr = "flavor")
+    compile_deps = deps + proto_support
 
     module_name = swift_common.derive_module_name(ctx.label)
 
@@ -412,13 +418,6 @@ The swift-grpc gRPC protoc plugin to use:
                 ),
                 executable = True,
             ),
-            # TODO(b/63389580): Migrate to proto_lang_toolchain.
-            "_proto_support": attr.label_list(
-                default = [
-                    Label("@com_github_grpc_grpc_swift//:SwiftGRPC"),
-                    Label("@com_github_grpc_grpc_swift_swiftnio//:GRPC"),
-                ],
-            ),
             "_protoc": attr.label(
                 cfg = "exec",
                 default = Label(
@@ -433,12 +432,23 @@ The swift-grpc gRPC protoc plugin to use:
                 ),
                 executable = True,
             ),
+            # TODO(b/63389580): Migrate to proto_lang_toolchain.
+            "_protoc_gen_swiftgrpc_support": attr.label_list(
+                default = [
+                    Label("@com_github_grpc_grpc_swift//:SwiftGRPC"),
+                ],
+            ),
             "_protoc_gen_grpc_swift": attr.label(
                 cfg = "exec",
                 default = Label(
                     "@com_github_grpc_grpc_swift_swiftnio//:protoc-gen-grpc-swift",
                 ),
                 executable = True,
+            ),
+            "_protoc_gen_grpc_swift_support": attr.label_list(
+                default = [
+                    Label("@com_github_grpc_grpc_swift_swiftnio//:GRPC"),
+                ],
             ),
         },
     ),
