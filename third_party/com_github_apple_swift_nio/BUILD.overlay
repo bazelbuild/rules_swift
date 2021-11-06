@@ -128,6 +128,9 @@ cc_library(
     hdrs = [
         "Sources/CNIODarwin/include/CNIODarwin.h",
     ],
+    copts = [
+        "-D=__APPLE_USE_RFC_3542",
+    ],
     includes = ["Sources/CNIODarwin/include"],
     tags = ["swift_module=CNIODarwin"],
 )
