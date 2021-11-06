@@ -264,6 +264,17 @@ def _swift_grpc_library_impl(ctx):
     if ctx.attr.flavor == "client_stubs":
         extra_module_imports.append(swift_common.derive_module_name(deps[0].label))
 
+    # grpc-swift depends on SwiftProtobuf to determine which modules need to be imported
+    # into the generated .grpc.swift file for the generated .gRPC.swift file
+    #
+    # SwiftProtobuf explicitly disallows the current .proto file's module name
+    # but when generating the .grpc.swift and .pb.swift files to different locations
+    # one MUST import the current .proto file's module name
+    if ctx.attr.protoc_plugin_name == "grpc-swift":
+        proto_module_name = deps[0][SwiftInfo].direct_modules[0].name
+        extra_module_imports.append(proto_module_name)
+
+
     # Generate the Swift sources from the .proto files.
     generated_files = _register_grpcswift_generate_action(
         ctx.label,
