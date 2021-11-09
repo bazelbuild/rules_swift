@@ -275,6 +275,7 @@ def _swift_library_impl(ctx):
             module_context = module_context,
             libraries_to_link = [linking_output.library_to_link],
             user_link_flags = linkopts,
+            module_map = depset([module_context.clang.module_map]) if module_context.clang.module_map else depset([])
         ))
 
     return providers

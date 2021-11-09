@@ -2611,6 +2611,7 @@ def new_objc_provider(
         feature_configuration,
         libraries_to_link,
         module_context,
+        module_map,
         user_link_flags = []):
     """Creates an `apple_common.Objc` provider for a Swift target.
 
@@ -2685,6 +2686,7 @@ def new_objc_provider(
         header = depset(
             module_context.clang.compilation_context.direct_headers,
         ),
+        module_map = module_map,
         library = depset(
             direct_libraries,
             transitive = transitive_cc_libs,
