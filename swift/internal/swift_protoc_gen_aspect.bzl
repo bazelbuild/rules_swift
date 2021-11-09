@@ -478,6 +478,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
                 deps = [],
                 feature_configuration = feature_configuration,
                 module_context = module_context,
+                module_map = = depset([module_context.clang.module_map]) if module_context.clang.module_map else depset([]),
                 libraries_to_link = [linking_output.library_to_link],
             )
         else:
