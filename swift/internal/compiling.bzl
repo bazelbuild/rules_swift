@@ -2686,7 +2686,6 @@ def new_objc_provider(
         header = depset(
             module_context.clang.compilation_context.direct_headers,
         ),
-        module_map = module_map,
         library = depset(
             direct_libraries,
             transitive = transitive_cc_libs,
@@ -2694,6 +2693,7 @@ def new_objc_provider(
         ),
         link_inputs = depset(additional_link_inputs + debug_link_inputs),
         linkopt = depset(user_link_flags + debug_link_flags),
+        module_map = module_map,
         providers = get_providers(
             deps,
             apple_common.Objc,
