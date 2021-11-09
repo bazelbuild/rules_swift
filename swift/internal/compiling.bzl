@@ -1849,7 +1849,7 @@ def compile(
         )
     else:
         vfsoverlay_file = None
-    
+
     # force generated_module_map_file to be included on swiftc_input so the generated file will be guarantee to be place on bazel-out
     _additional_inputs = []
     _additional_inputs.extend(additional_inputs)
