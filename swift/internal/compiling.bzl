@@ -1849,9 +1849,15 @@ def compile(
         )
     else:
         vfsoverlay_file = None
+    
+    # force generated_module_map_file to be included on swiftc_input so the generated file will be guarantee to be place on bazel-out
+    _additional_inputs = []
+    _additional_inputs.extend(additional_inputs)
+    if compile_outputs.generated_module_map_file:
+        _additional_inputs.append(compile_outputs.generated_module_map_file)
 
     prerequisites = struct(
-        additional_inputs = additional_inputs,
+        additional_inputs = _additional_inputs,
         bin_dir = bin_dir,
         cc_info = merged_providers.cc_info,
         defines = sets.to_list(defines_set),
