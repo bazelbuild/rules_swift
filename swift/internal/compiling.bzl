@@ -57,7 +57,12 @@ load(
     "SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
 )
-load(":features.bzl", "are_all_features_enabled", "is_feature_enabled")
+load(
+    ":features.bzl",
+    "are_all_features_enabled",
+    "get_cc_feature_configuration",
+    "is_feature_enabled",
+)
 load(":module_maps.bzl", "write_module_map")
 load(
     ":providers.bzl",
@@ -1552,31 +1557,18 @@ def compile(
     else:
         precompiled_module = None
 
-    if compile_outputs.generated_header_file:
-        module_headers = [compile_outputs.generated_header_file]
-    else:
-        module_headers = []
-
-    if defines or module_headers:
-        direct_cc_infos = [
-            CcInfo(compilation_context = cc_common.create_compilation_context(
-                defines = depset(defines),
-                headers = depset(module_headers),
-                includes = depset([bin_dir.path]),
-            )),
-        ]
-    else:
-        direct_cc_infos = []
-
-    compilation_context = cc_common.merge_cc_infos(
-        cc_infos = [dep[CcInfo] for dep in deps if CcInfo in dep],
-        direct_cc_infos = direct_cc_infos,
-    ).compilation_context
-
     module_context = create_module(
         name = module_name,
         clang = create_clang_module(
-            compilation_context = compilation_context,
+            compilation_context = _create_cc_compilation_context(
+                actions = actions,
+                defines = defines,
+                deps = deps,
+                feature_configuration = feature_configuration,
+                public_hdrs = compact([compile_outputs.generated_header_file]),
+                swift_toolchain = swift_toolchain,
+                target_name = target_name,
+            ),
             module_map = compile_outputs.generated_module_map_file,
             precompiled_module = precompiled_module,
         ),
@@ -1778,6 +1770,86 @@ def _precompile_clang_module(
     )
 
     return precompiled_module
+
+def _create_cc_compilation_context(
+        *,
+        actions,
+        defines,
+        deps,
+        feature_configuration,
+        public_hdrs,
+        swift_toolchain,
+        target_name):
+    """Creates a `CcCompilationContext` to propagate for a Swift module.
+
+    The returned compilation context contains the generated Objective-C header
+    for the module (if any), along with any preprocessor defines based on
+    compilation settings passed to the Swift compilation.
+
+    Args:
+        actions: The context's `actions` object.
+        defines: Symbols that should be defined by passing `-D` to the compiler.
+        deps: Non-private dependencies of the target being compiled. These
+            targets are used as dependencies of both the Swift module being
+            compiled and the Clang module for the generated header. These
+            targets must propagate one of the following providers: `CcInfo`,
+            `SwiftInfo`, or `apple_common.Objc`.
+        feature_configuration: A feature configuration obtained from
+            `swift_common.configure_features`.
+        public_hdrs: Public headers that should be propagated by the new
+            compilation context (for example, the module's generated header).
+        swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
+        target_name: The name of the target for which the code is being
+            compiled, which is used to determine unique file paths for the
+            outputs.
+
+    Returns:
+        The `CcCompilationContext` that should be propagated by the calling
+        target.
+    """
+
+    # If we are propagating headers, call `cc_common.compile` to get the
+    # compilation context instead of creating it directly. This gives the
+    # C++/Objective-C logic in Bazel an opportunity to register its own actions
+    # relevant to the headers, like creating a layering check module map.
+    # Without this, Swift targets won't be treated as `use`d modules when
+    # generating the layering check module map for an `objc_library`, and those
+    # layering checks will fail when the Objective-C code tries to import the
+    # `swift_library`'s headers.
+    if public_hdrs:
+        compilation_context, _ = cc_common.compile(
+            actions = actions,
+            cc_toolchain = swift_toolchain.cc_toolchain_info,
+            compilation_contexts = [
+                dep[CcInfo].compilation_context
+                for dep in deps
+                if CcInfo in dep
+            ],
+            defines = defines,
+            feature_configuration = get_cc_feature_configuration(
+                feature_configuration = feature_configuration,
+            ),
+            name = target_name,
+            public_hdrs = public_hdrs,
+        )
+        return compilation_context
+
+    # If there were no headers, create the compilation context manually. This
+    # avoids having Bazel create an action that results in an empty module map
+    # that won't contribute meaningfully to layering checks anyway.
+    if defines:
+        direct_cc_infos = [
+            CcInfo(compilation_context = cc_common.create_compilation_context(
+                defines = depset(defines),
+            )),
+        ]
+    else:
+        direct_cc_infos = []
+
+    return cc_common.merge_cc_infos(
+        cc_infos = [dep[CcInfo] for dep in deps if CcInfo in dep],
+        direct_cc_infos = direct_cc_infos,
+    ).compilation_context
 
 def _declare_compile_outputs(
         *,

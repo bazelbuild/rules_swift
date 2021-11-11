@@ -75,6 +75,20 @@ def configure_features(
         passed to other `swift_common` functions. Note that the structure of
         this value should otherwise not be relied on or inspected directly.
     """
+
+    # Always disable these two features so that any `cc_common` APIs called by
+    # `swift_common` APIs don't cause certain actions to be created (for
+    # example, when using `cc_common.compile` to create the compilation context
+    # for a generated header).
+    unsupported_features = list(unsupported_features)
+    unsupported_features.extend([
+        # Avoid making the `grep_includes` tool a requirement of Swift
+        # compilation APIs/rules that generate a header.
+        "cc_include_scanning",
+        # Don't register parse-header actions for generated headers.
+        "parse_headers",
+    ])
+
     if swift_toolchain.feature_allowlists:
         _check_allowlists(
             allowlists = swift_toolchain.feature_allowlists,
