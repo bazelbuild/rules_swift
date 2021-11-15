@@ -84,7 +84,7 @@ A new attribute dictionary that can be added to the attributes of a
 
 <pre>
 swift_common.compile(<a href="#swift_common.compile-actions">actions</a>, <a href="#swift_common.compile-feature_configuration">feature_configuration</a>, <a href="#swift_common.compile-module_name">module_name</a>, <a href="#swift_common.compile-srcs">srcs</a>, <a href="#swift_common.compile-swift_toolchain">swift_toolchain</a>,
-                     <a href="#swift_common.compile-target_name">target_name</a>, <a href="#swift_common.compile-workspace_name">workspace_name</a>, <a href="#swift_common.compile-additional_inputs">additional_inputs</a>, <a href="#swift_common.compile-bin_dir">bin_dir</a>, <a href="#swift_common.compile-copts">copts</a>, <a href="#swift_common.compile-defines">defines</a>, <a href="#swift_common.compile-deps">deps</a>,
+                     <a href="#swift_common.compile-target_label">target_label</a>, <a href="#swift_common.compile-workspace_name">workspace_name</a>, <a href="#swift_common.compile-additional_inputs">additional_inputs</a>, <a href="#swift_common.compile-bin_dir">bin_dir</a>, <a href="#swift_common.compile-copts">copts</a>, <a href="#swift_common.compile-defines">defines</a>, <a href="#swift_common.compile-deps">deps</a>,
                      <a href="#swift_common.compile-generated_header_name">generated_header_name</a>, <a href="#swift_common.compile-genfiles_dir">genfiles_dir</a>, <a href="#swift_common.compile-private_deps">private_deps</a>)
 </pre>
 
@@ -100,7 +100,7 @@ Compiles a Swift module.
 | <a id="swift_common.compile-module_name"></a>module_name |  The name of the Swift module being compiled. This must be present and valid; use <code>swift_common.derive_module_name</code> to generate a default from the target's label if needed.   |  none |
 | <a id="swift_common.compile-srcs"></a>srcs |  The Swift source files to compile.   |  none |
 | <a id="swift_common.compile-swift_toolchain"></a>swift_toolchain |  The <code>SwiftToolchainInfo</code> provider of the toolchain.   |  none |
-| <a id="swift_common.compile-target_name"></a>target_name |  The name of the target for which the code is being compiled, which is used to determine unique file paths for the outputs.   |  none |
+| <a id="swift_common.compile-target_label"></a>target_label |  The label of the target for which the code is being compiled, which is used to determine unique file paths for the outputs.   |  none |
 | <a id="swift_common.compile-workspace_name"></a>workspace_name |  The name of the workspace for which the code is being compiled, which is used to determine unique file paths for some outputs.   |  none |
 | <a id="swift_common.compile-additional_inputs"></a>additional_inputs |  A list of <code>File</code>s representing additional input files that need to be passed to the Swift compile action because they are referenced by compiler flags.   |  <code>[]</code> |
 | <a id="swift_common.compile-bin_dir"></a>bin_dir |  The Bazel <code>*-bin</code> directory root. If provided, its path is used to store the cache for modules precompiled by Swift's ClangImporter, and it is added to ClangImporter's header search paths for compatibility with Bazel's C++ and Objective-C rules which support includes of generated headers from that location.   |  <code>None</code> |

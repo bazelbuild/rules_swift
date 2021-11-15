@@ -19,7 +19,7 @@ load(":attrs.bzl", "swift_common_rule_attrs")
 load(":compiling.bzl", "new_objc_provider")
 load(":providers.bzl", "SwiftInfo")
 load(":swift_common.bzl", "swift_common")
-load(":utils.bzl", "compact", "get_providers")
+load(":utils.bzl", "compact", "get_providers", "quote_includes_from_label")
 
 def _swift_import_impl(ctx):
     archives = ctx.files.archives
@@ -38,6 +38,9 @@ def _swift_import_impl(ctx):
         unsupported_features = ctx.disabled_features,
     )
 
+    compilation_context = cc_common.create_compilation_context(
+        quote_includes = quote_includes_from_label(ctx.label, ctx.bin_dir),
+    )
     libraries_to_link = [
         cc_common.create_library_to_link(
             actions = ctx.actions,
@@ -55,7 +58,12 @@ def _swift_import_impl(ctx):
         linker_inputs = depset([linker_input]),
     )
     cc_info = cc_common.merge_cc_infos(
-        direct_cc_infos = [CcInfo(linking_context = linking_context)],
+        direct_cc_infos = [
+            CcInfo(
+                compilation_context = compilation_context,
+                linking_context = linking_context,
+            ),
+        ],
         cc_infos = [dep[CcInfo] for dep in deps if CcInfo in dep],
     )
 

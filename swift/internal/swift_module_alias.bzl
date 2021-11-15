@@ -64,7 +64,7 @@ def _swift_module_alias_impl(ctx):
         module_name = module_name,
         srcs = [reexport_src],
         swift_toolchain = swift_toolchain,
-        target_name = ctx.label.name,
+        target_label = ctx.label,
         workspace_name = ctx.workspace_name,
     )
 

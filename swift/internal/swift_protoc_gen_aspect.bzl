@@ -416,7 +416,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             module_name = module_name,
             srcs = pbswift_files,
             swift_toolchain = swift_toolchain,
-            target_name = target.label.name,
+            target_label = target.label,
             workspace_name = aspect_ctx.workspace_name,
         )
 
@@ -481,7 +481,6 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
                 libraries_to_link = [linking_output.library_to_link],
             )
         else:
-            includes = None
             objc_info = None
 
         cc_info = CcInfo(
