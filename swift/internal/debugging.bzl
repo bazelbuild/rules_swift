@@ -191,8 +191,6 @@ def _register_modulewrap_action(
         feature_configuration = feature_configuration,
         outputs = [object],
         prerequisites = prerequisites,
-        progress_message = (
-            "Wrapping {} for debugging".format(swiftmodule.short_path)
-        ),
+        progress_message = "Wrapping Swift module %{label} for debugging",
         swift_toolchain = swift_toolchain,
     )

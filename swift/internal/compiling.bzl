@@ -1880,9 +1880,7 @@ def compile(
             feature_configuration = feature_configuration,
             outputs = all_derived_outputs,
             prerequisites = prerequisites,
-            progress_message = (
-                "Generating derived files for Swift module {}".format(module_name)
-            ),
+            progress_message = "Generating derived files for Swift module %{label}",
             swift_toolchain = swift_toolchain,
         )
 
@@ -1892,7 +1890,7 @@ def compile(
         feature_configuration = feature_configuration,
         outputs = all_compile_outputs,
         prerequisites = prerequisites,
-        progress_message = "Compiling Swift module {}".format(module_name),
+        progress_message = "Compiling Swift module %{label}",
         swift_toolchain = swift_toolchain,
     )
 
@@ -1908,7 +1906,7 @@ def compile(
         feature_configuration = feature_configuration,
         outputs = compile_outputs.ast_files,
         prerequisites = prerequisites,
-        progress_message = "Dumping Swift AST for {}".format(module_name),
+        progress_message = "Dumping Swift AST for %{label}",
         swift_toolchain = swift_toolchain,
     )
 
@@ -2168,7 +2166,7 @@ def _precompile_clang_module(
         feature_configuration = feature_configuration,
         outputs = [precompiled_module],
         prerequisites = prerequisites,
-        progress_message = "Precompiling C module {}".format(module_name),
+        progress_message = "Precompiling C module %{label}",
         swift_toolchain = swift_toolchain,
     )
 
