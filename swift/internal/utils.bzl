@@ -70,6 +70,14 @@ def compact(sequence):
     """
     return [item for item in sequence if item != None]
 
+def quote_includes_from_label(label, bin_dir):
+    if not label.workspace_root:
+        return depset([bin_dir.path])
+    return depset([
+        label.workspace_root,
+        paths.join(bin_dir.path, label.workspace_root),
+    ])
+
 def compilation_context_for_explicit_module_compilation(
         compilation_contexts,
         deps):

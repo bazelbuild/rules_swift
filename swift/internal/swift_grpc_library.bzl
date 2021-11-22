@@ -283,7 +283,7 @@ def _swift_grpc_library_impl(ctx):
         module_name = module_name,
         srcs = generated_files,
         swift_toolchain = swift_toolchain,
-        target_name = ctx.label.name,
+        target_label = ctx.label,
         workspace_name = ctx.workspace_name,
     )
 

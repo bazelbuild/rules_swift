@@ -41,6 +41,7 @@ load(
     "expand_locations",
     "expand_make_variables",
     "get_providers",
+    "quote_includes_from_label"
 )
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:sets.bzl", "sets")
@@ -184,7 +185,7 @@ def _swift_library_impl(ctx):
         private_deps = private_deps,
         srcs = srcs,
         swift_toolchain = swift_toolchain,
-        target_name = ctx.label.name,
+        target_label = ctx.label,
         workspace_name = ctx.workspace_name,
     )
 

@@ -82,6 +82,7 @@ load(
     "compilation_context_for_explicit_module_compilation",
     "get_providers",
     "struct_fields",
+    "quote_includes_from_label",
 )
 load(":vfsoverlay.bzl", "write_vfsoverlay")
 
@@ -1645,7 +1646,7 @@ def compile(
         module_name,
         srcs,
         swift_toolchain,
-        target_name,
+        target_label,
         workspace_name,
         additional_inputs = [],
         bin_dir = None,
@@ -1666,7 +1667,7 @@ def compile(
             a default from the target's label if needed.
         srcs: The Swift source files to compile.
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
-        target_name: The name of the target for which the code is being
+        target_label: The label of the target for which the code is being
             compiled, which is used to determine unique file paths for the
             outputs.
         workspace_name: The name of the workspace for which the code is being
@@ -1758,7 +1759,7 @@ def compile(
         generated_header_name = generated_header_name,
         generated_module_deps_swift_infos = generated_module_deps_swift_infos,
         module_name = module_name,
-        target_name = target_name,
+        target_name = target_label.name,
         user_compile_flags = copts,
     )
 
@@ -1839,7 +1840,7 @@ def compile(
     ):
         vfsoverlay_file = derived_files.vfsoverlay(
             actions = actions,
-            target_name = target_name,
+            target_name = target_label.name,
         )
         write_vfsoverlay(
             actions = actions,
@@ -1922,6 +1923,7 @@ def compile(
             compilation_context_for_explicit_module_compilation(
                 compilation_contexts = [cc_common.create_compilation_context(
                     headers = depset([compile_outputs.generated_header_file]),
+
                 )],
                 deps = deps,
             )
@@ -1937,7 +1939,7 @@ def compile(
             module_name = module_name,
             swift_infos = generated_module_deps_swift_infos,
             swift_toolchain = swift_toolchain,
-            target_name = target_name,
+            target_name = target_label.name,
         )
     else:
         precompiled_module = None
@@ -1952,7 +1954,7 @@ def compile(
             CcInfo(compilation_context = cc_common.create_compilation_context(
                 defines = depset(defines),
                 headers = depset(module_headers),
-                includes = depset([bin_dir.path]),
+                quote_includes = quote_includes_from_label(target_label, bin_dir),
             )),
         ]
     else:

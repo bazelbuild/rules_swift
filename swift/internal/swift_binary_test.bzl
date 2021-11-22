@@ -198,7 +198,7 @@ def _swift_linking_rule_impl(
             module_name = module_name,
             srcs = srcs,
             swift_toolchain = swift_toolchain,
-            target_name = ctx.label.name,
+            target_label = ctx.label,
             workspace_name = ctx.workspace_name,
         )
         output_groups = output_groups_from_other_compilation_outputs(
