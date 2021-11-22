@@ -518,10 +518,8 @@ def _handle_module(
     )
     precompiled_module = precompile_clang_module(
         actions = aspect_ctx.actions,
-        bin_dir = aspect_ctx.bin_dir,
         cc_compilation_context = compilation_context_to_compile,
         feature_configuration = feature_configuration,
-        genfiles_dir = aspect_ctx.genfiles_dir,
         module_map_file = module_map_file,
         module_name = module_name,
         swift_infos = swift_infos,
