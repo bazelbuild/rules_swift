@@ -83,9 +83,9 @@ A new attribute dictionary that can be added to the attributes of a
 ## swift_common.compile
 
 <pre>
-swift_common.compile(<a href="#swift_common.compile-actions">actions</a>, <a href="#swift_common.compile-feature_configuration">feature_configuration</a>, <a href="#swift_common.compile-module_name">module_name</a>, <a href="#swift_common.compile-srcs">srcs</a>, <a href="#swift_common.compile-swift_toolchain">swift_toolchain</a>,
-                     <a href="#swift_common.compile-target_name">target_name</a>, <a href="#swift_common.compile-workspace_name">workspace_name</a>, <a href="#swift_common.compile-additional_inputs">additional_inputs</a>, <a href="#swift_common.compile-bin_dir">bin_dir</a>, <a href="#swift_common.compile-copts">copts</a>, <a href="#swift_common.compile-defines">defines</a>, <a href="#swift_common.compile-deps">deps</a>,
-                     <a href="#swift_common.compile-generated_header_name">generated_header_name</a>, <a href="#swift_common.compile-genfiles_dir">genfiles_dir</a>, <a href="#swift_common.compile-private_deps">private_deps</a>)
+swift_common.compile(<a href="#swift_common.compile-actions">actions</a>, <a href="#swift_common.compile-additional_inputs">additional_inputs</a>, <a href="#swift_common.compile-copts">copts</a>, <a href="#swift_common.compile-defines">defines</a>, <a href="#swift_common.compile-deps">deps</a>, <a href="#swift_common.compile-feature_configuration">feature_configuration</a>,
+                     <a href="#swift_common.compile-generated_header_name">generated_header_name</a>, <a href="#swift_common.compile-module_name">module_name</a>, <a href="#swift_common.compile-private_deps">private_deps</a>, <a href="#swift_common.compile-srcs">srcs</a>, <a href="#swift_common.compile-swift_toolchain">swift_toolchain</a>,
+                     <a href="#swift_common.compile-target_name">target_name</a>, <a href="#swift_common.compile-workspace_name">workspace_name</a>)
 </pre>
 
 Compiles a Swift module.
@@ -96,55 +96,37 @@ Compiles a Swift module.
 | Name  | Description | Default Value |
 | :------------- | :------------- | :------------- |
 | <a id="swift_common.compile-actions"></a>actions |  The context's <code>actions</code> object.   |  none |
+| <a id="swift_common.compile-additional_inputs"></a>additional_inputs |  A list of <code>File</code>s representing additional input files that need to be passed to the Swift compile action because they are referenced by compiler flags.   |  <code>[]</code> |
+| <a id="swift_common.compile-copts"></a>copts |  A list of compiler flags that apply to the target being built. These flags, along with those from Bazel's Swift configuration fragment (i.e., <code>--swiftcopt</code> command line flags) are scanned to determine whether whole module optimization is being requested, which affects the nature of the output files.   |  <code>[]</code> |
+| <a id="swift_common.compile-defines"></a>defines |  Symbols that should be defined by passing <code>-D</code> to the compiler.   |  <code>[]</code> |
+| <a id="swift_common.compile-deps"></a>deps |  Non-private dependencies of the target being compiled. These targets are used as dependencies of both the Swift module being compiled and the Clang module for the generated header. These targets must propagate one of the following providers: <code>CcInfo</code>, <code>SwiftInfo</code>, or <code>apple_common.Objc</code>.   |  <code>[]</code> |
 | <a id="swift_common.compile-feature_configuration"></a>feature_configuration |  A feature configuration obtained from <code>swift_common.configure_features</code>.   |  none |
+| <a id="swift_common.compile-generated_header_name"></a>generated_header_name |  The name of the Objective-C generated header that should be generated for this module. If omitted, no header will be generated.   |  <code>None</code> |
 | <a id="swift_common.compile-module_name"></a>module_name |  The name of the Swift module being compiled. This must be present and valid; use <code>swift_common.derive_module_name</code> to generate a default from the target's label if needed.   |  none |
+| <a id="swift_common.compile-private_deps"></a>private_deps |  Private (implementation-only) dependencies of the target being compiled. These are only used as dependencies of the Swift module, not of the Clang module for the generated header. These targets must propagate one of the following providers: <code>CcInfo</code>, <code>SwiftInfo</code>, or <code>apple_common.Objc</code>.   |  <code>[]</code> |
 | <a id="swift_common.compile-srcs"></a>srcs |  The Swift source files to compile.   |  none |
 | <a id="swift_common.compile-swift_toolchain"></a>swift_toolchain |  The <code>SwiftToolchainInfo</code> provider of the toolchain.   |  none |
 | <a id="swift_common.compile-target_name"></a>target_name |  The name of the target for which the code is being compiled, which is used to determine unique file paths for the outputs.   |  none |
 | <a id="swift_common.compile-workspace_name"></a>workspace_name |  The name of the workspace for which the code is being compiled, which is used to determine unique file paths for some outputs.   |  none |
-| <a id="swift_common.compile-additional_inputs"></a>additional_inputs |  A list of <code>File</code>s representing additional input files that need to be passed to the Swift compile action because they are referenced by compiler flags.   |  <code>[]</code> |
-| <a id="swift_common.compile-bin_dir"></a>bin_dir |  The Bazel <code>*-bin</code> directory root. If provided, its path is used to store the cache for modules precompiled by Swift's ClangImporter, and it is added to ClangImporter's header search paths for compatibility with Bazel's C++ and Objective-C rules which support includes of generated headers from that location.   |  <code>None</code> |
-| <a id="swift_common.compile-copts"></a>copts |  A list of compiler flags that apply to the target being built. These flags, along with those from Bazel's Swift configuration fragment (i.e., <code>--swiftcopt</code> command line flags) are scanned to determine whether whole module optimization is being requested, which affects the nature of the output files.   |  <code>[]</code> |
-| <a id="swift_common.compile-defines"></a>defines |  Symbols that should be defined by passing <code>-D</code> to the compiler.   |  <code>[]</code> |
-| <a id="swift_common.compile-deps"></a>deps |  Non-private dependencies of the target being compiled. These targets are used as dependencies of both the Swift module being compiled and the Clang module for the generated header. These targets must propagate one of the following providers: <code>CcInfo</code>, <code>SwiftInfo</code>, or <code>apple_common.Objc</code>.   |  <code>[]</code> |
-| <a id="swift_common.compile-generated_header_name"></a>generated_header_name |  The name of the Objective-C generated header that should be generated for this module. If omitted, no header will be generated.   |  <code>None</code> |
-| <a id="swift_common.compile-genfiles_dir"></a>genfiles_dir |  The Bazel <code>*-genfiles</code> directory root. If provided, its path is added to ClangImporter's header search paths for compatibility with Bazel's C++ and Objective-C rules which support inclusions of generated headers from that location.   |  <code>None</code> |
-| <a id="swift_common.compile-private_deps"></a>private_deps |  Private (implementation-only) dependencies of the target being compiled. These are only used as dependencies of the Swift module, not of the Clang module for the generated header. These targets must propagate one of the following providers: <code>CcInfo</code>, <code>SwiftInfo</code>, or <code>apple_common.Objc</code>.   |  <code>[]</code> |
 
 **RETURNS**
 
-A `struct` containing the following fields:
+A tuple containing three elements:
 
-  *   `generated_header`: A `File` representing the Objective-C header
-      that was generated for the compiled module. If no header was
-      generated, this field will be None.
-  *   `generated_header_module_map`: A `File` representing the module map
-      that was generated to correspond to the generated Objective-C
-      header. If no module map was generated, this field will be None.
-  *   `indexstore`: A `File` representing the directory that contains the
-      index store data generated by the compiler if index-while-building
-      is enabled. May be None if no indexing was requested.
-  *   `linker_flags`: A list of strings representing additional flags that
-      should be passed to the linker when linking these objects into a
-      binary. If there are none, this field will always be an empty list,
-      never None.
-  *   `linker_inputs`: A list of `File`s representing additional input
-      files (such as those referenced in `linker_flags`) that need to be
-      available to the link action when linking these objects into a
-      binary. If there are none, this field will always be an empty list,
-      never None.
-  *   `object_files`: A list of `.o` files that were produced by the
-      compiler.
-  *   `precompiled_module`: A `File` representing the explicit module
-      (`.pcm`) of the Clang module for the generated header, or `None` if
-      no explicit module was generated.
-  *   `swiftdoc`: The `.swiftdoc` file that was produced by the compiler.
-  *   `swiftinterface`: The `.swiftinterface` file that was produced by
-      the compiler. If no interface file was produced (because the
-      toolchain does not support them or it was not requested), this field
-      will be None.
-  *   `swiftmodule`: The `.swiftmodule` file that was produced by the
-      compiler.
+  1.  A Swift module context (as returned by `swift_common.create_module`)
+      that contains the Swift (and potentially C/Objective-C) compilation
+      prerequisites of the compiled module. This should typically be
+      propagated by a `SwiftInfo` provider of the calling rule.
+  2.  A `CcCompilationOutputs` object (as returned by
+      `cc_common.create_compilation_outputs`) that contains the compiled
+      object files.
+  3.  A struct containing:
+      *   `ast_files`: A list of `File`s output from the `DUMP_AST`
+          action.
+      *   `indexstore`: A `File` representing the directory that contains
+          the index store data generated by the compiler if
+          index-while-building is enabled. May be None if no indexing was
+          requested.
 
 
 <a id="#swift_common.configure_features"></a>
@@ -553,7 +535,7 @@ A new attribute dictionary that can be added to the attributes of a
 <pre>
 swift_common.precompile_clang_module(<a href="#swift_common.precompile_clang_module-actions">actions</a>, <a href="#swift_common.precompile_clang_module-cc_compilation_context">cc_compilation_context</a>, <a href="#swift_common.precompile_clang_module-feature_configuration">feature_configuration</a>,
                                      <a href="#swift_common.precompile_clang_module-module_map_file">module_map_file</a>, <a href="#swift_common.precompile_clang_module-module_name">module_name</a>, <a href="#swift_common.precompile_clang_module-swift_toolchain">swift_toolchain</a>, <a href="#swift_common.precompile_clang_module-target_name">target_name</a>,
-                                     <a href="#swift_common.precompile_clang_module-bin_dir">bin_dir</a>, <a href="#swift_common.precompile_clang_module-genfiles_dir">genfiles_dir</a>, <a href="#swift_common.precompile_clang_module-swift_infos">swift_infos</a>)
+                                     <a href="#swift_common.precompile_clang_module-swift_infos">swift_infos</a>)
 </pre>
 
 Precompiles an explicit Clang module that is compatible with Swift.
@@ -570,8 +552,6 @@ Precompiles an explicit Clang module that is compatible with Swift.
 | <a id="swift_common.precompile_clang_module-module_name"></a>module_name |  The name of the top-level module in the module map that will be compiled.   |  none |
 | <a id="swift_common.precompile_clang_module-swift_toolchain"></a>swift_toolchain |  The <code>SwiftToolchainInfo</code> provider of the toolchain.   |  none |
 | <a id="swift_common.precompile_clang_module-target_name"></a>target_name |  The name of the target for which the code is being compiled, which is used to determine unique file paths for the outputs.   |  none |
-| <a id="swift_common.precompile_clang_module-bin_dir"></a>bin_dir |  The Bazel <code>*-bin</code> directory root. If provided, its path is used to store the cache for modules precompiled by Swift's ClangImporter, and it is added to ClangImporter's header search paths for compatibility with Bazel's C++ and Objective-C rules which support includes of generated headers from that location.   |  <code>None</code> |
-| <a id="swift_common.precompile_clang_module-genfiles_dir"></a>genfiles_dir |  The Bazel <code>*-genfiles</code> directory root. If provided, its path is added to ClangImporter's header search paths for compatibility with Bazel's C++ and Objective-C rules which support inclusions of generated headers from that location.   |  <code>None</code> |
 | <a id="swift_common.precompile_clang_module-swift_infos"></a>swift_infos |  A list of <code>SwiftInfo</code> providers representing dependencies required to compile this module.   |  <code>[]</code> |
 
 **RETURNS**
