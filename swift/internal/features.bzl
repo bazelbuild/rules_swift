@@ -124,6 +124,16 @@ def configure_features(
     return struct(
         _cc_feature_configuration = cc_feature_configuration,
         _enabled_features = requestable_features,
+        # This is naughty, but APIs like `cc_common.compile` do far worse and
+        # "cheat" by accessing the full rule context through a back-reference in
+        # the `Actions` object so they can get access to the `-bin` and
+        # `-genfiles` roots, among other values. Since the feature configuration
+        # is a required argument of all action-registering APIs, and the context
+        # is a required argument when creating it, we'll take that opportunity
+        # to stash any context-dependent values that we want to access in the
+        # other APIs, so they don't have to be passed manually by the callers.
+        _bin_dir = ctx.bin_dir,
+        _genfiles_dir = ctx.genfiles_dir,
     )
 
 def features_for_build_modes(ctx, cpp_fragment = None):

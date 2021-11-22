@@ -56,11 +56,9 @@ def _swift_module_alias_impl(ctx):
 
     module_context, compilation_outputs = swift_common.compile(
         actions = ctx.actions,
-        bin_dir = ctx.bin_dir,
         copts = ["-parse-as-library"],
         deps = deps,
         feature_configuration = feature_configuration,
-        genfiles_dir = ctx.genfiles_dir,
         module_name = module_name,
         srcs = [reexport_src],
         swift_toolchain = swift_toolchain,

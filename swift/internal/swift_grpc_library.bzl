@@ -270,11 +270,9 @@ def _swift_grpc_library_impl(ctx):
 
     module_context, compilation_outputs = swift_common.compile(
         actions = ctx.actions,
-        bin_dir = ctx.bin_dir,
         copts = ["-parse-as-library"],
         deps = compile_deps,
         feature_configuration = feature_configuration,
-        genfiles_dir = ctx.genfiles_dir,
         module_name = module_name,
         srcs = generated_files,
         swift_toolchain = swift_toolchain,

@@ -185,12 +185,10 @@ def _swift_linking_rule_impl(
         module_context, compilation_outputs = swift_common.compile(
             actions = ctx.actions,
             additional_inputs = additional_inputs,
-            bin_dir = ctx.bin_dir,
             copts = copts,
             defines = ctx.attr.defines,
             deps = ctx.attr.deps,
             feature_configuration = feature_configuration,
-            genfiles_dir = ctx.genfiles_dir,
             module_name = module_name,
             srcs = srcs,
             swift_toolchain = swift_toolchain,
