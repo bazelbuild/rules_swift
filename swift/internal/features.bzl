@@ -269,11 +269,12 @@ def _is_feature_allowed_in_package(
         else:
             is_match = package_spec == package_info.package
 
-        # Package exclusions always take precedence over package inclusions, so
-        # if we have an exclusion match, return false immediately.
-        if package_info.excluded and is_match:
-            return False
-        else:
-            is_allowed = True
+        if is_match:
+            # Package exclusions always take precedence over package inclusions,
+            # so if we have an exclusion match, return false immediately.
+            if package_info.excluded:
+                return False
+            else:
+                is_allowed = True
 
     return is_allowed
