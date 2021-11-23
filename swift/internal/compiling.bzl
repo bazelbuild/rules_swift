@@ -14,7 +14,6 @@
 
 """Implementation of compilation logic for Swift."""
 
-load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:partial.bzl", "partial")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:sets.bzl", "sets")
@@ -676,12 +675,6 @@ def compile_action_configs(
             actions = [swift_action_names.COMPILE],
             configurators = [_conditional_compilation_flag_configurator],
         ),
-
-        # Disable auto-linking for prebuilt static frameworks.
-        swift_toolchain_config.action_config(
-            actions = [swift_action_names.COMPILE],
-            configurators = [_static_frameworks_disable_autolink_configurator],
-        ),
     ]
 
     # NOTE: The positions of these action configs in the list are important,
@@ -1082,27 +1075,6 @@ def _framework_search_paths_configurator(prerequisites, args, is_swift):
         prerequisites.cc_compilation_context.framework_includes,
         format_each = "-F%s",
         before_each = "-Xcc",
-    )
-
-def _static_frameworks_disable_autolink_configurator(prerequisites, args):
-    """Add flags to disable auto-linking for static prebuilt frameworks.
-
-    This disables the `LC_LINKER_OPTION` load commands for auto-linking when
-    importing a static framework. This is needed to correctly deduplicate static
-    frameworks from being linked into test binaries when it is also linked into
-    the application binary.
-    """
-
-    # TODO(b/143301479): This can be removed if we can disable auto-linking
-    # universally in the linker invocation. For Clang, we already pass
-    # `-fno-autolink`, but Swift doesn't have a similar option (to stop emitting
-    # `LC_LINKER_OPTION` load commands unconditionally). However, ld64 has an
-    # undocumented `-ignore_auto_link` flag that we could use. In either case,
-    # though, this would likely also disable auto-linking for system frameworks,
-    # so we would need to model those as explicit dependencies first.
-    args.add_all(
-        prerequisites.objc_info.static_framework_names,
-        map_each = _disable_autolink_framework_copts,
     )
 
 def _dependencies_swiftmodules_configurator(prerequisites, args):
@@ -2250,24 +2222,6 @@ def _swift_module_search_path_map_fn(module):
 def _filter_out_unsupported_include_paths(path):
     """Stub for a filter function only used internally."""
     return path
-
-def _disable_autolink_framework_copts(framework_name):
-    """A `map_each` helper that disables autolinking for the given framework.
-
-    Args:
-        framework_name: The name of the framework.
-
-    Returns:
-        The list of `swiftc` flags needed to disable autolinking for the given
-        framework.
-    """
-    return collections.before_each(
-        "-Xfrontend",
-        [
-            "-disable-autolink-framework",
-            framework_name,
-        ],
-    )
 
 def _find_num_threads_flag_value(user_compile_flags):
     """Finds the value of the `-num-threads` flag.
