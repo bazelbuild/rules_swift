@@ -956,11 +956,9 @@ def compile_action_configs(
                     swift_action_names.DUMP_AST,
                 ],
                 configurators = [
-                    # TODO(#568): Switch to using lambda when the minimum
-                    # supported Bazel version by rules_swift supports it.
-                    partial.make(
-                        _additional_objc_copts_configurator,
+                    lambda _, args: args.add_all(
                         additional_objc_copts,
+                        before_each = "-Xcc",
                     ),
                 ],
             ),
@@ -977,12 +975,7 @@ def compile_action_configs(
                     swift_action_names.DUMP_AST,
                 ],
                 configurators = [
-                    # TODO(#568): Switch to using lambda when the minimum
-                    # supported Bazel version by rules_swift supports it.
-                    partial.make(
-                        _additional_swiftc_copts_configurator,
-                        additional_swiftc_copts,
-                    ),
+                    lambda _, args: args.add_all(additional_swiftc_copts),
                 ],
             ),
         )
@@ -1570,19 +1563,6 @@ def _additional_inputs_configurator(prerequisites, args):
     return swift_toolchain_config.config_result(
         inputs = prerequisites.additional_inputs,
     )
-
-def _additional_objc_copts_configurator(additional_objc_copts, prerequisites, args):
-    """Adds additional Objective-C compiler flags to the command line."""
-    _unused = [prerequisites]
-    args.add_all(
-        additional_objc_copts,
-        before_each = "-Xcc",
-    )
-
-def _additional_swiftc_copts_configurator(additional_swiftc_copts, prerequisites, args):
-    """Adds additional Swift compiler flags to the command line."""
-    _unused = [prerequisites]
-    args.add_all(additional_swiftc_copts)
 
 def _module_name_safe(string):
     """Returns a transformation of `string` that is safe for module names."""
