@@ -182,7 +182,7 @@ def _register_grpcswift_generate_action(
         ],
         mnemonic = "ProtocGenSwiftGRPC",
         outputs = generated_files,
-        progress_message = "Generating Swift sources for {}".format(label),
+        progress_message = "Generating Swift sources for %{label}",
     )
 
     return generated_files
