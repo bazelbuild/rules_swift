@@ -214,7 +214,7 @@ def _register_pbswift_generate_action(
         ),
         mnemonic = "ProtocGenSwift",
         outputs = generated_files,
-        progress_message = "Generating Swift sources for {}".format(label),
+        progress_message = "Generating Swift sources for %{label}",
         tools = [
             mkdir_and_run,
             protoc_executable,

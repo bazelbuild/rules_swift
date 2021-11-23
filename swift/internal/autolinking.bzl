@@ -83,8 +83,6 @@ def register_autolink_extract_action(
         feature_configuration = feature_configuration,
         outputs = [autolink_file],
         prerequisites = prerequisites,
-        progress_message = (
-            "Extracting autolink data for Swift module {}".format(module_name)
-        ),
+        progress_message = "Extracting autolink data for Swift module %{label}",
         swift_toolchain = swift_toolchain,
     )
