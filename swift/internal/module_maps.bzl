@@ -14,19 +14,9 @@
 
 """Logic for generating Clang module map files."""
 
-# TODO: Once bazel supports nested functions unify it with upstream
-def _add_headers(*, headers, kind, content, relative_to_dir, back_to_root_path):
-    # Each header is added to the `Args` object as a tuple along with
-    # `relative_to_dir` and `back_to_root_path`. This gives the mapping
-    # function the information it needs to relativize the header paths even
-    # when they're expanded from a tree artifact (and thus not known at
-    # analysis time).
-    content.add_all(
-        [(file, relative_to_dir, back_to_root_path) for file in headers],
-        format_each = '    {} "%s"'.format(kind),
-        map_each = _header_info_mapper,
-    )
-
+# TODO(#723): Remove these disables once https://github.com/bazelbuild/buildtools/issues/926 is fixed
+# buildifier: disable=return-value
+# buildifier: disable=function-docstring-return
 def write_module_map(
         actions,
         module_map_file,
@@ -91,18 +81,33 @@ def write_module_map(
     content.add_all(exported_module_ids, format_each = "    export %s")
     content.add("")
 
+    def _relativized_header_paths(file_or_dir, directory_expander):
+        return [
+            _header_path(
+                header_file = file,
+                relative_to_dir = relative_to_dir,
+                back_to_root_path = back_to_root_path,
+            )
+            for file in directory_expander.expand(file_or_dir)
+        ]
+
+    def _add_headers(*, headers, kind):
+        content.add_all(
+            headers,
+            allow_closure = True,
+            format_each = '    {} "%s"'.format(kind),
+            map_each = _relativized_header_paths,
+        )
+
     if umbrella_header:
-        _add_headers(headers = [umbrella_header], kind = "umbrella header", content = content, relative_to_dir = relative_to_dir, back_to_root_path = back_to_root_path)
+        _add_headers(headers = [umbrella_header], kind = "umbrella header")
     else:
-        _add_headers(headers = public_headers, kind = "header", content = content, relative_to_dir = relative_to_dir, back_to_root_path = back_to_root_path)
-        _add_headers(headers = private_headers, kind = "private header", content = content, relative_to_dir = relative_to_dir, back_to_root_path = back_to_root_path)
-        _add_headers(headers = public_textual_headers, kind = "textual header", content = content, relative_to_dir = relative_to_dir, back_to_root_path = back_to_root_path)
+        _add_headers(headers = public_headers, kind = "header")
+        _add_headers(headers = private_headers, kind = "private header")
+        _add_headers(headers = public_textual_headers, kind = "textual header")
         _add_headers(
             headers = private_textual_headers,
             kind = "private textual header",
-            content = content,
-            relative_to_dir = relative_to_dir,
-            back_to_root_path = back_to_root_path,
         )
 
     content.add("")
@@ -115,32 +120,6 @@ def write_module_map(
         content = content,
         output = module_map_file,
     )
-
-def _header_info_mapper(header_info, directory_expander):
-    """Maps header info passed to the `Args` object to a list of header paths.
-
-    Args:
-        header_info: A tuple containing three elements: a `File` representing a
-            header (or a directory containing headers), the path to the
-            directory that should be used to relativize the header paths, and
-            the path string consisting of repeated `../` segments that should be
-            used to return from the module map's directory to the workspace
-            root. The latter two elements will be `None` if the headers should
-            be written workspace-relative).
-        directory_expander: The object used to expand tree artifacts into the
-            list of files in that directory.
-
-    Returns:
-        A list of file paths as they should be written into the module map file.
-    """
-    return [
-        _header_path(
-            header_file = file,
-            relative_to_dir = header_info[1],
-            back_to_root_path = header_info[2],
-        )
-        for file in directory_expander.expand(header_info[0])
-    ]
 
 def _header_path(header_file, relative_to_dir, back_to_root_path):
     """Returns the path to a header file to be written in the module map.
