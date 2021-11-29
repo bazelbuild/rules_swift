@@ -14,6 +14,7 @@
 
 """Propagates unified `SwiftInfo` providers for C/Objective-C targets."""
 
+load("@bazel_skylib//lib:sets.bzl", "sets")
 load(":attrs.bzl", "swift_toolchain_attrs")
 load(":compiling.bzl", "derive_module_name", "precompile_clang_module")
 load(":derived_files.bzl", "derived_files")
@@ -188,7 +189,42 @@ def create_swift_interop_info(
         unsupported_features = unsupported_features,
     )
 
+def _compute_all_excluded_headers(*, exclude_headers, target):
+    """Returns the full set of headers to exclude for a target.
+
+    This function specifically handles the `cc_library` logic around the
+    `include_prefix` and `strip_include_prefix` attributes, which cause Bazel to
+    create a virtual header (symlink) for every public header in the target. For
+    the generated module map to be created, we must exclude both the actual
+    header file and the symlink.
+
+    Args:
+        exclude_headers: A list of `File`s representing headers that should be
+            excluded from the module.
+        target: The target to which the aspect is being applied.
+
+    Returns:
+        A list containing the complete set of headers that should be excluded,
+        including any virtual header symlinks that match a real header in the
+        excluded headers list passed into the function.
+    """
+    exclude_headers_set = sets.make(exclude_headers)
+    virtual_exclude_headers = []
+
+    for action in target.actions:
+        if action.mnemonic != "Symlink":
+            continue
+
+        original_header = action.inputs.to_list()[0]
+        virtual_header = action.outputs.to_list()[0]
+
+        if sets.contains(exclude_headers_set, original_header):
+            virtual_exclude_headers.append(virtual_header)
+
+    return exclude_headers + virtual_exclude_headers
+
 def _generate_module_map(
+        *,
         actions,
         compilation_context,
         dependent_module_names,
@@ -234,16 +270,31 @@ def _generate_module_map(
     else:
         private_headers = compilation_context.direct_private_headers
 
-    module_map_file = derived_files.module_map(
-        actions = actions,
-        target_name = target.label.name,
-    )
-
     # Sort dependent module names and the headers to ensure a deterministic
     # order in the output file, in the event the compilation context would ever
     # change this on us. For files, use the execution path as the sorting key.
     def _path_sorting_key(file):
         return file.path
+
+    public_headers = sorted(
+        compilation_context.direct_public_headers,
+        key = _path_sorting_key,
+    )
+
+    module_map_file = derived_files.module_map(
+        actions = actions,
+        target_name = target.label.name,
+    )
+
+    if exclude_headers:
+        # If we're excluding headers from the module map, make sure to pick up
+        # any virtual header symlinks that might be created, for example, by a
+        # `cc_library` using the `include_prefix` and/or `strip_include_prefix`
+        # attributes.
+        exclude_headers = _compute_all_excluded_headers(
+            exclude_headers = exclude_headers,
+            target = target,
+        )
 
     write_module_map(
         actions = actions,
@@ -253,10 +304,7 @@ def _generate_module_map(
         module_map_file = module_map_file,
         module_name = module_name,
         private_headers = sorted(private_headers, key = _path_sorting_key),
-        public_headers = sorted(
-            compilation_context.direct_public_headers,
-            key = _path_sorting_key,
-        ),
+        public_headers = public_headers,
         public_textual_headers = sorted(
             compilation_context.direct_textual_headers,
             key = _path_sorting_key,
