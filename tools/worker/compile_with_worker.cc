@@ -79,20 +79,7 @@ int CompileWithWorker(const std::vector<std::string> &args) {
   // beginning of any process invocation. Note that these arguments include the
   // tool itself (i.e., "swiftc").
   WorkProcessor swift_worker(args);
-  int offset = 0;
-
-  while (true) {
-    std::string line;
-    int result;
-    do {
-      char buffer[1024];
-      lseek(STDIN_FILENO, offset, SEEK_SET);
-      result = read(STDIN_FILENO, buffer, 1024);
-      buffer[result] = '\0';
-      offset += result;
-      line.append(buffer);
-    } while (result == 1024);
-
+  for (std::string line; std::getline(std::cin, line);) {
     if (line == "") {
       continue;
     }
