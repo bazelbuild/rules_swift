@@ -72,6 +72,10 @@ load(
     _swift_module_alias = "swift_module_alias",
 )
 load(
+    "@build_bazel_rules_swift//swift/internal:swift_package_configuration.bzl",
+    _swift_package_configuration = "swift_package_configuration",
+)
+load(
     "@build_bazel_rules_swift//swift/internal:swift_proto_library.bzl",
     _swift_proto_library = "swift_proto_library",
 )
@@ -97,6 +101,7 @@ swift_grpc_library = _swift_grpc_library
 swift_import = _swift_import
 swift_library = _swift_library
 swift_module_alias = _swift_module_alias
+swift_package_configuration = _swift_package_configuration
 swift_proto_library = _swift_proto_library
 swift_test = _swift_test
 

@@ -14,29 +14,13 @@
 
 """Defines Starlark providers that propagated by the Swift BUILD rules."""
 
-SwiftAllowlistPackageInfo = provider(
-    doc = "Describes a package match in an allowlist.",
-    fields = {
-        "excluded": """\
-A Boolean value indicating whether the packages described by this value are
-exclusions rather than inclusions.
-""",
-        "match_subpackages": """\
-A Boolean value indicating whether subpackages of `package` should also be
-matched.
-""",
-        "package": """\
-A string indicating the name of the package to match, in the form
-`//path/to/package`, or `@repository//path/to/package` if an explicit repository
-name was given.
-""",
-    },
-)
-
 SwiftFeatureAllowlistInfo = provider(
     doc = """\
 Describes a set of features and the packages that are allowed to request or
 disable them.
+
+This provider is an internal implementation detail of the rules; users should
+not rely on it or assume that its structure is stable.
 """,
     fields = {
         "allowlist_label": """\
@@ -47,10 +31,10 @@ created this provider.
 A list of strings representing feature names or their negations that packages in
 the `packages` list are allowed to explicitly request or disable.
 """,
-        "packages": """\
-A list of `SwiftAllowlistPackageInfo` values describing packages (possibly
-recursive) whose targets are allowed to request or disable a feature managed by
-this allowlist.
+        "package_specs": """\
+A list of `struct` values representing package specifications that indicate
+which packages (possibly recursive) can request or disable a feature managed by
+the allowlist.
 """,
     },
 )
@@ -73,6 +57,30 @@ Swift and C/Objective-C) emitted by the library that propagated this provider.
 `Depset` of values returned from `swift_common.create_module`. The transitive
 modules (both Swift and C/Objective-C) emitted by the library that propagated
 this provider and all of its dependencies.
+""",
+    },
+)
+
+SwiftPackageConfigurationInfo = provider(
+    doc = """\
+Describes a compiler configuration that is applied by default to targets in a
+specific set of packages.
+
+This provider is an internal implementation detail of the rules; users should
+not rely on it or assume that its structure is stable.
+""",
+    fields = {
+        "disabled_features": """\
+`List` of strings. Features that will be disabled by default on targets in the
+packages listed in this package configuration.
+""",
+        "enabled_features": """\
+`List` of strings. Features that will be enabled by default on targets in the
+packages listed in this package configuration.
+""",
+        "package_specs": """\
+A list of `struct` values representing package specifications that indicate
+the set of packages (possibly recursive) to which this configuration is applied.
 """,
     },
 )
@@ -161,6 +169,11 @@ containing the fields described above, even if those lists are empty.
         "linker_supports_filelist": """\
 `Boolean`. Indicates whether or not the toolchain's linker supports the input
 files passed to it via a file list.
+""",
+        "package_configurations": """\
+A list of `SwiftPackageConfigurationInfo` providers that specify additional
+compilation configuration options that are applied to targets on a per-package
+basis.
 """,
         "requested_features": """\
 `List` of `string`s. Features that should be implicitly enabled by default for
