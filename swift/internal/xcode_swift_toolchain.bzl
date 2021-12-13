@@ -50,6 +50,7 @@ load(
     ":providers.bzl",
     "SwiftFeatureAllowlistInfo",
     "SwiftInfo",
+    "SwiftPackageConfigurationInfo",
     "SwiftToolchainInfo",
 )
 load(
@@ -763,6 +764,10 @@ def _xcode_swift_toolchain_impl(ctx):
                 additional_objc_infos = [swift_linkopts_providers.objc_info],
             ),
             linker_supports_filelist = True,
+            package_configurations = [
+                target[SwiftPackageConfigurationInfo]
+                for target in ctx.attr.package_configurations
+            ],
             requested_features = requested_features,
             swift_worker = ctx.executable._worker,
             test_configuration = struct(
@@ -836,6 +841,13 @@ implicit dependencies of any Swift compilation or linking target.
                     [CcInfo],
                     [SwiftInfo],
                 ],
+            ),
+            "package_configurations": attr.label_list(
+                doc = """\
+A list of `swift_package_configuration` targets that specify additional compiler
+configuration options that are applied to targets on a per-package basis.
+""",
+                providers = [[SwiftPackageConfigurationInfo]],
             ),
             "_cc_toolchain": attr.label(
                 default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),

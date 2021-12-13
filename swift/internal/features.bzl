@@ -21,6 +21,7 @@ load(
     "SWIFT_FEATURE_ENABLE_TESTING",
     "SWIFT_FEATURE_FULL_DEBUG_INFO",
 )
+load(":package_specs.bzl", "label_matches_package_specs")
 
 def are_all_features_enabled(feature_configuration, feature_names):
     """Returns `True` if all features are enabled in the feature configuration.
@@ -97,33 +98,21 @@ def configure_features(
             unsupported_features = unsupported_features,
         )
 
-    # The features to enable for a particular rule/target are the ones requested
-    # by the toolchain, plus the ones requested by the target itself, *minus*
-    # any that are explicitly disabled on the target or the toolchain.
-    requestable_features_set = sets.make(swift_toolchain.requested_features)
-    requestable_features_set = sets.union(
-        requestable_features_set,
-        sets.make(requested_features),
+    all_requestable_features, all_unsupported_features = _compute_features(
+        label = ctx.label,
+        requested_features = requested_features,
+        swift_toolchain = swift_toolchain,
+        unsupported_features = unsupported_features,
     )
-    requestable_features_set = sets.difference(
-        requestable_features_set,
-        sets.make(unsupported_features),
-    )
-    requestable_features_set = sets.difference(
-        requestable_features_set,
-        sets.make(swift_toolchain.unsupported_features),
-    )
-    requestable_features = sets.to_list(requestable_features_set)
-
     cc_feature_configuration = cc_common.configure_features(
         ctx = ctx,
         cc_toolchain = swift_toolchain.cc_toolchain_info,
-        requested_features = requestable_features,
-        unsupported_features = unsupported_features,
+        requested_features = all_requestable_features,
+        unsupported_features = all_unsupported_features,
     )
     return struct(
         _cc_feature_configuration = cc_feature_configuration,
-        _enabled_features = requestable_features,
+        _enabled_features = all_requestable_features,
         # This is naughty, but APIs like `cc_common.compile` do far worse and
         # "cheat" by accessing the full rule context through a back-reference in
         # the `Actions` object so they can get access to the `-bin` and
@@ -230,11 +219,13 @@ def _check_allowlists(
 
     for allowlist in allowlists:
         for feature_string in features_to_check:
-            if not _is_feature_allowed_in_package(
-                allowlist = allowlist,
-                feature = feature_string,
-                package = label.package,
-                workspace_name = label.workspace_name,
+            # Any feature not managed by the allowlist is allowed by default.
+            if feature_string not in allowlist.managed_features:
+                continue
+
+            if not label_matches_package_specs(
+                label = label,
+                package_specs = allowlist.package_specs,
             ):
                 fail((
                     "Feature '{feature}' is not allowed to be set by the " +
@@ -246,52 +237,76 @@ def _check_allowlists(
                     target = str(label),
                 ))
 
-def _is_feature_allowed_in_package(
-        allowlist,
-        feature,
-        package,
-        workspace_name = None):
-    """Returns a value indicating whether a feature is allowed in a package.
+def _compute_features(
+        *,
+        label,
+        requested_features,
+        swift_toolchain,
+        unsupported_features):
+    """Computes the features to enable/disable for a target.
 
     Args:
-        allowlist: The `SwiftFeatureAllowlistInfo` provider that contains the
-            allowlist.
-        feature: The name of the feature (or its negation) being checked.
-        package: The package part of the label being checked for access (e.g.,
-            the value of `ctx.label.package`).
-        workspace_name: The workspace name part of the label being checked for
-            access (e.g., the value of `ctx.label.workspace_name`).
+        label: The label of the target whose features are being configured.
+        requested_features: The list of features requested by the rule/aspect
+            configuration (i.e., the features specified in positive form by the
+            `features` attribute of the target, the `package()` rule in the
+            package, and the `--features` command line option).
+        swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain
+            being used to build.
+        unsupported_features: The list of features unsupported by the
+            rule/aspect configuration (i.e., the features specified in negative
+            form by the `features` attribute of the target, the `package()` rule
+            in the package, and the `--features` command line option).
 
     Returns:
-        True if the feature is allowed to be used in the package, or False if it
-        is not.
+        A tuple containing two elements:
+
+        1.  The list of features that should be enabled for the target.
+        2.  The list of features that should be disabled for the target.
     """
 
-    # Any feature not managed by the allowlist is allowed by default.
-    if feature not in allowlist.managed_features:
-        return True
+    # The features to enable for a particular rule/target are the ones requested
+    # by the toolchain, plus the ones requested by any matching package
+    # configurations, plus the ones requested by the target itself; *minus*
+    # any that are explicitly disabled on the toolchain, the matching package
+    # configurations, or the target itself.
+    requested_features_set = sets.make(swift_toolchain.requested_features)
+    unsupported_features_set = sets.make(swift_toolchain.unsupported_features)
 
-    if workspace_name:
-        package_spec = "@{}//{}".format(workspace_name, package)
-    else:
-        package_spec = "//{}".format(package)
+    for package_configuration in swift_toolchain.package_configurations:
+        if label_matches_package_specs(
+            label = label,
+            package_specs = package_configuration.package_specs,
+        ):
+            if package_configuration.enabled_features:
+                requested_features_set = sets.union(
+                    requested_features_set,
+                    sets.make(package_configuration.enabled_features),
+                )
+            if package_configuration.disabled_features:
+                unsupported_features_set = sets.union(
+                    unsupported_features_set,
+                    sets.make(package_configuration.disabled_features),
+                )
 
-    is_allowed = False
-    for package_info in allowlist.packages:
-        if package_info.match_subpackages:
-            is_match = (
-                package_spec == package_info.package or
-                package_spec.startswith(package_info.package + "/")
-            )
-        else:
-            is_match = package_spec == package_info.package
+    if requested_features:
+        requested_features_set = sets.union(
+            requested_features_set,
+            sets.make(requested_features),
+        )
+    if unsupported_features:
+        unsupported_features_set = sets.union(
+            unsupported_features_set,
+            sets.make(unsupported_features),
+        )
 
-        if is_match:
-            # Package exclusions always take precedence over package inclusions,
-            # so if we have an exclusion match, return false immediately.
-            if package_info.excluded:
-                return False
-            else:
-                is_allowed = True
-
-    return is_allowed
+    # If the same feature is present in both sets, being unsupported takes
+    # priority, so remove any of those from the requested set.
+    requestable_features_set = sets.difference(
+        requested_features_set,
+        unsupported_features_set,
+    )
+    return (
+        sets.to_list(requestable_features_set),
+        sets.to_list(unsupported_features_set),
+    )
