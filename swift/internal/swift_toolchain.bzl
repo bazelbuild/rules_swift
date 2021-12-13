@@ -33,7 +33,12 @@ load(
     "SWIFT_FEATURE_USE_RESPONSE_FILES",
 )
 load(":features.bzl", "features_for_build_modes")
-load(":providers.bzl", "SwiftFeatureAllowlistInfo", "SwiftToolchainInfo")
+load(
+    ":providers.bzl",
+    "SwiftFeatureAllowlistInfo",
+    "SwiftPackageConfigurationInfo",
+    "SwiftToolchainInfo",
+)
 load(":toolchain_config.bzl", "swift_toolchain_config")
 load(
     ":utils.bzl",
@@ -226,6 +231,10 @@ def _swift_toolchain_impl(ctx):
                 [],
                 additional_cc_infos = [swift_linkopts_cc_info],
             ),
+            package_configurations = [
+                target[SwiftPackageConfigurationInfo]
+                for target in ctx.attr.package_configurations
+            ],
             requested_features = requested_features,
             root_dir = toolchain_root,
             swift_worker = ctx.executable._worker,
@@ -268,6 +277,13 @@ This name should match the name used in the toolchain's directory layout for
 platform-specific content, such as "linux" in "lib/swift/linux".
 """,
                 mandatory = True,
+            ),
+            "package_configurations": attr.label_list(
+                doc = """\
+A list of `swift_package_configuration` targets that specify additional compiler
+configuration options that are applied to targets on a per-package basis.
+""",
+                providers = [[SwiftPackageConfigurationInfo]],
             ),
             "root": attr.string(
                 mandatory = True,

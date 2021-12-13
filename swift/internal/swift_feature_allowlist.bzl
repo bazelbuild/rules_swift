@@ -14,45 +14,17 @@
 
 """Support for restricting access to features based on an allowlist."""
 
-load(":providers.bzl", "SwiftAllowlistPackageInfo", "SwiftFeatureAllowlistInfo")
-
-def _parse_allowlist_package(package_spec):
-    """Parses an allowlist package specification from a string.
-
-    Args:
-        package_spec: A string that represents a possibly recursive package
-            specification, with an optional exclusion marker in front.
-
-    Returns:
-        An instance of `SwiftAllowlistPackageInfo` containing the parsed
-        information from the package specification.
-    """
-    if package_spec.startswith("-"):
-        excluded = True
-        package_spec = package_spec[1:]
-    else:
-        excluded = False
-
-    if package_spec.endswith("/..."):
-        match_subpackages = True
-        package_spec = package_spec[:-4]
-    else:
-        match_subpackages = False
-
-    return SwiftAllowlistPackageInfo(
-        excluded = excluded,
-        match_subpackages = match_subpackages,
-        package = package_spec,
-    )
+load(":package_specs.bzl", "parse_package_specs")
+load(":providers.bzl", "SwiftFeatureAllowlistInfo")
 
 def _swift_feature_allowlist_impl(ctx):
     return [SwiftFeatureAllowlistInfo(
         allowlist_label = str(ctx.label),
         managed_features = ctx.attr.managed_features,
-        packages = [
-            _parse_allowlist_package(package_spec)
-            for package_spec in ctx.attr.packages
-        ],
+        package_specs = parse_package_specs(
+            package_specs = ctx.attr.packages,
+            workspace_name = ctx.label.workspace_name,
+        ),
     )]
 
 swift_feature_allowlist = rule(
