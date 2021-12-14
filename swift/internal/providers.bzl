@@ -408,8 +408,9 @@ def create_swift_info(
     """
 
     direct_modules = modules + [
-        provider.modules
+        module
         for provider in direct_swift_infos
+        for module in provider.direct_modules
     ]
     transitive_modules = [
         provider.transitive_modules
