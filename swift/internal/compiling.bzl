@@ -1566,6 +1566,7 @@ def _collect_clang_module_inputs(
             # inputs, but we can't do better without include scanning in
             # Starlark.
             transitive_inputs.append(cc_compilation_context.headers)
+            transitive_inputs.append(depset(cc_compilation_context.direct_textual_headers))
 
     # Some rules still use the `umbrella_header` field to propagate a header
     # that they don't also include in `cc_compilation_context.headers`, so we
