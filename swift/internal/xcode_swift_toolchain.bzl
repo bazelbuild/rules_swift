@@ -758,7 +758,7 @@ def _xcode_swift_toolchain_impl(ctx):
                 )
             ),
             implicit_deps_providers = collect_implicit_deps_providers(
-                ctx.attr.implicit_deps,
+                ctx.attr.implicit_deps + ctx.attr.clang_implicit_deps,
                 additional_cc_infos = [swift_linkopts_providers.cc_info],
                 additional_objc_infos = [swift_linkopts_providers.objc_info],
             ),
@@ -784,7 +784,8 @@ xcode_swift_toolchain = rule(
                 doc = """\
 A list of labels to library targets that should be unconditionally added as
 implicit dependencies of any explicit C/Objective-C module compiled by the Swift
-toolchain.
+toolchain and also as implicit dependencies of any Swift modules compiled by
+the Swift toolchain.
 
 Despite being C/Objective-C modules, the targets specified by this attribute
 must propagate the `SwiftInfo` provider because the Swift build rules use that

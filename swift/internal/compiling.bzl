@@ -2046,6 +2046,12 @@ def _precompile_clang_module(
         implicit_swift_infos = (
             swift_toolchain.clang_implicit_deps_providers.swift_infos
         )
+        cc_compilation_context = cc_common.merge_cc_infos(
+            cc_infos = swift_toolchain.clang_implicit_deps_providers.cc_infos,
+            direct_cc_infos = [
+                CcInfo(compilation_context = cc_compilation_context),
+            ],
+        ).compilation_context
     else:
         implicit_swift_infos = []
 
