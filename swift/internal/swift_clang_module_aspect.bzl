@@ -237,6 +237,7 @@ def _compute_all_excluded_headers(*, exclude_headers, target):
 def _generate_module_map(
         *,
         actions,
+        aspect_ctx,
         compilation_context,
         dependent_module_names,
         exclude_headers,
@@ -247,6 +248,7 @@ def _generate_module_map(
 
     Args:
         actions: The object used to register actions.
+        aspect_ctx: The aspect context.
         compilation_context: The C++ compilation context that provides the
             headers for the module.
         dependent_module_names: A `list` of names of Clang modules that are
@@ -283,10 +285,26 @@ def _generate_module_map(
     def _path_sorting_key(file):
         return file.path
 
-    public_headers = sorted(
-        compilation_context.direct_public_headers,
-        key = _path_sorting_key,
-    )
+    # The headers in a `cc_inc_library` are actually symlinks to headers in its
+    # `deps`. This interferes with layering because the `cc_inc_library` won't
+    # depend directly on the libraries containing headers that the symlinked
+    # headers include. Generating the module map with the symlinks as textual
+    # headers instead of modular headers fixes this.
+    if aspect_ctx.rule.kind == "cc_inc_library":
+        public_headers = []
+        textual_headers = sorted(
+            compilation_context.direct_public_headers,
+            key = _path_sorting_key,
+        )
+    else:
+        public_headers = sorted(
+            compilation_context.direct_public_headers,
+            key = _path_sorting_key,
+        )
+        textual_headers = sorted(
+            compilation_context.direct_textual_headers,
+            key = _path_sorting_key,
+        )
 
     module_map_file = derived_files.module_map(
         actions = actions,
@@ -312,10 +330,7 @@ def _generate_module_map(
         module_name = module_name,
         private_headers = sorted(private_headers, key = _path_sorting_key),
         public_headers = public_headers,
-        public_textual_headers = sorted(
-            compilation_context.direct_textual_headers,
-            key = _path_sorting_key,
-        ),
+        public_textual_headers = textual_headers,
         workspace_relative = workspace_relative,
     )
     return module_map_file
@@ -477,6 +492,7 @@ def _module_info_for_target(
     if not module_map_file:
         module_map_file = _generate_module_map(
             actions = aspect_ctx.actions,
+            aspect_ctx = aspect_ctx,
             compilation_context = compilation_context,
             dependent_module_names = dependent_module_names,
             exclude_headers = exclude_headers,
