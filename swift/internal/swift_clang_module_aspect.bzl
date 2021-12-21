@@ -375,10 +375,7 @@ def _j2objc_compilation_context(target):
     which is tied to Bazel's built-in module map generation. Since there's not a
     direct umbrella header field in `ObjcProvider`, we scan the target's actions
     to find the one that writes it out. Then, we return it and a new compilation
-    context with the direct headers from the `ObjcProvider`, since the generated
-    headers are not accessible via `CcInfo`--Java targets to which the J2ObjC
-    aspect are applied do not propagate `CcInfo` directly, but a native Bazel
-    provider that wraps the `CcInfo`, and we have no access to it from Starlark.
+    context with the direct headers from the `CcInfo` of the J2ObjC aspect.
 
     Args:
         target: The target to which the aspect is being applied.
@@ -393,6 +390,7 @@ def _j2objc_compilation_context(target):
             continue
 
         umbrella_header = action.outputs.to_list()[0]
+        headers = target[CcInfo].compilation_context.direct_headers
 
         if JavaInfo not in target:
             # This is not a `java_library`, but a `proto_library` processed by J2ObjC. We need to
@@ -400,28 +398,30 @@ def _j2objc_compilation_context(target):
             # logic like we do for `java_library` targets below.
             return cc_common.create_compilation_context(
                 headers = depset([umbrella_header]),
-                direct_textual_headers = target[apple_common.Objc].direct_headers,
+                direct_textual_headers = headers,
             )
 
-        # Use the path of the first generated header to determine the base directory that
-        # J2ObjC wrote its generated header files to.
-        header_path = target[apple_common.Objc].direct_headers[0].path
+        include_paths = sets.make()
+        for header in headers:
+            header_path = header.path
 
-        if "/_j2objc/src_jar_files/" in header_path:
-            # When source jars are used the headers are generated within a tree artifact.
-            # We can use the path to the tree artifact as the include search path.
-            include_path = header_path
-        else:
-            # J2ObjC generates headers within <bin_dir>/<package>/_j2objc/<target>/.
-            # Compute that path to use as the include search path.
-            header_path_components = header_path.split("/")
-            j2objc_index = header_path_components.index("_j2objc")
-            include_path = "/".join(header_path_components[:j2objc_index + 2])
+            if "/_j2objc/src_jar_files/" in header_path:
+                # When source jars are used the headers are generated within a tree artifact.
+                # We can use the path to the tree artifact as the include search path.
+                include_path = header_path
+            else:
+                # J2ObjC generates headers within <bin_dir>/<package>/_j2objc/<target>/.
+                # Compute that path to use as the include search path.
+                header_path_components = header_path.split("/")
+                j2objc_index = header_path_components.index("_j2objc")
+                include_path = "/".join(header_path_components[:j2objc_index + 2])
+
+            sets.insert(include_paths, include_path)
 
         return cc_common.create_compilation_context(
             headers = depset([umbrella_header]),
-            direct_textual_headers = target[apple_common.Objc].direct_headers,
-            includes = depset([include_path]),
+            direct_textual_headers = headers,
+            includes = depset(sets.to_list(include_paths)),
         )
 
     return None
