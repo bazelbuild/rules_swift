@@ -8,17 +8,17 @@ load(":swift_through_non_swift_tests.bzl", "swift_through_non_swift_test_suite")
 
 licenses(["notice"])
 
-cc_library_test_suite()
+cc_library_test_suite(name = "cc_library")
 
-debug_settings_test_suite()
+debug_settings_test_suite(name = "debug_settings")
 
-generated_header_test_suite()
+generated_header_test_suite(name = "generated_header")
 
-interop_hints_test_suite()
+interop_hints_test_suite(name = "interop_hints")
 
-private_deps_test_suite()
+private_deps_test_suite(name = "private_deps")
 
-swift_through_non_swift_test_suite()
+swift_through_non_swift_test_suite(name = "swift_through_non_swift")
 
 test_suite(
     name = "all_tests",

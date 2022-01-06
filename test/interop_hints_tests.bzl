@@ -23,9 +23,12 @@ load(
     "provider_test",
 )
 
-def interop_hints_test_suite():
-    """Test suite for `swift_interop_hint`."""
-    name = "interop_hints"
+def interop_hints_test_suite(name):
+    """Test suite for `swift_interop_hint`.
+
+    Args:
+      name: the base name to be used in things created by this macro
+    """
 
     # Verify that a hint with only a custom module name causes the `cc_library`
     # to propagate a `SwiftInfo` info with the expected auto-generated module

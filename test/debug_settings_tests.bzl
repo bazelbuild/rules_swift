@@ -78,9 +78,12 @@ opt_action_command_line_test = make_action_command_line_test_rule(
     config_settings = OPT_CONFIG_SETTINGS,
 )
 
-def debug_settings_test_suite():
-    """Test suite for serializing debugging options."""
-    name = "debug_settings"
+def debug_settings_test_suite(name):
+    """Test suite for serializing debugging options.
+
+    Args:
+      name: the base name to be used in things created by this macro
+    """
 
     # Verify that `-c dbg` builds serialize debugging options, remap paths, and
     # have other appropriate debug flags.
