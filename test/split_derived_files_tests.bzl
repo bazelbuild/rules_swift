@@ -94,11 +94,11 @@ split_swiftmodule_copts_test = make_action_command_line_test_rule(
     },
 )
 
-def split_derived_files_test_suite(name = "split_derived_files"):
+def split_derived_files_test_suite(name):
     """Test suite for split derived files options.
 
     Args:
-        name: The name prefix for all the nested tests
+      name: the base name to be used in things created by this macro
     """
     default_no_split_test(
         name = "{}_default_no_split_args".format(name),

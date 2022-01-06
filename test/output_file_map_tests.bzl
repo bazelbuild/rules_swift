@@ -39,11 +39,11 @@ output_file_map_embed_bitcode_wmo_test = make_output_file_map_test_rule(
     },
 )
 
-def output_file_map_test_suite(name = "output_file_map"):
+def output_file_map_test_suite(name):
     """Test suite for `swift_library` generating output file maps.
 
     Args:
-        name: The name prefix for all the nested tests
+      name: the base name to be used in things created by this macro
     """
 
     output_file_map_test(
