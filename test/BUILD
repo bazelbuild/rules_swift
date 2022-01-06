@@ -12,25 +12,25 @@ load(":pch_output_dir_tests.bzl", "pch_output_dir_test_suite")
 
 licenses(["notice"])
 
-ast_file_test_suite()
+ast_file_test_suite(name = "ast_file")
 
-coverage_settings_test_suite()
+coverage_settings_test_suite(name = "coverage_settings")
 
-debug_settings_test_suite()
+debug_settings_test_suite(name = "debug_settings")
 
-generated_header_test_suite()
+generated_header_test_suite(name = "generated_header")
 
-module_cache_settings_test_suite()
+module_cache_settings_test_suite(name = "module_cache_settings")
 
-output_file_map_test_suite()
+output_file_map_test_suite(name = "output_file_map")
 
-private_deps_test_suite()
+private_deps_test_suite(name = "private_deps")
 
-swift_through_non_swift_test_suite()
+swift_through_non_swift_test_suite(name = "swift_through_non_swift")
 
-split_derived_files_test_suite()
+split_derived_files_test_suite(name = "split_derived_files")
 
-pch_output_dir_test_suite()
+pch_output_dir_test_suite(name = "pch_output_dir_settings")
 
 test_suite(
     name = "all_tests",

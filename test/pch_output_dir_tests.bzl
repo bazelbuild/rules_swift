@@ -27,11 +27,11 @@ pch_output_dir_action_command_line_test = make_action_command_line_test_rule(
     },
 )
 
-def pch_output_dir_test_suite(name = "pch_output_dir_settings"):
+def pch_output_dir_test_suite(name):
     """Test suite for pch output dir options.
 
     Args:
-        name: The name prefix for all the nested tests
+      name: the base name to be used in things created by this macro
     """
 
     # Verify that a pch dir is passed

@@ -44,11 +44,11 @@ incorrect_global_module_cache_uses_tmpdir_action_command_line_test = make_action
     },
 )
 
-def module_cache_settings_test_suite(name = "module_cache_settings"):
+def module_cache_settings_test_suite(name):
     """Test suite for module cache options.
 
     Args:
-        name: The name prefix for all the nested tests
+      name: the base name to be used in things created by this macro
     """
 
     # Verify that a global module cache path is passed to swiftc.

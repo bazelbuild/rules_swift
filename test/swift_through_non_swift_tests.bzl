@@ -19,11 +19,11 @@ load(
     "provider_test",
 )
 
-def swift_through_non_swift_test_suite(name = "swift_through_non_swift"):
+def swift_through_non_swift_test_suite(name):
     """Test suite for propagation of `SwiftInfo` through non-Swift targets.
 
     Args:
-        name: The name prefix for all the nested tests
+      name: the base name to be used in things created by this macro
     """
 
     # The lower swiftmodule should get propagated through the `objc_library` (by
