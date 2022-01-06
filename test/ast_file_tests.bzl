@@ -19,11 +19,11 @@ load(
     "provider_test",
 )
 
-def ast_file_test_suite(name = "ast_file"):
+def ast_file_test_suite(name):
     """Test suite for `swift_library` dumping ast files.
 
     Args:
-        name: The name prefix for all the nested tests
+      name: the base name to be used in things created by this macro
     """
 
     provider_test(

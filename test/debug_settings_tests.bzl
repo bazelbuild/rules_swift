@@ -100,11 +100,11 @@ xcode_remap_command_line_test = make_action_command_line_test_rule(
     },
 )
 
-def debug_settings_test_suite(name = "debug_settings"):
+def debug_settings_test_suite(name):
     """Test suite for serializing debugging options.
 
     Args:
-        name: The name prefix for all the nested tests
+      name: the base name to be used in things created by this macro
     """
 
     # Verify that `-c dbg` builds serialize debugging options, remap paths, and

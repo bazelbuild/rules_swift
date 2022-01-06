@@ -30,11 +30,11 @@ coverage_xcode_prefix_map_test = make_action_command_line_test_rule(
     },
 )
 
-def coverage_settings_test_suite(name = "coverage_settings"):
+def coverage_settings_test_suite(name):
     """Test suite for coverage options.
 
     Args:
-        name: The name prefix for all the nested tests
+      name: the base name to be used in things created by this macro
     """
     default_coverage_test(
         name = "{}_default_coverage".format(name),

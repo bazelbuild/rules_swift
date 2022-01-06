@@ -23,11 +23,11 @@ load(
     "provider_test",
 )
 
-def generated_header_test_suite(name = "generated_header"):
+def generated_header_test_suite(name):
     """Test suite for `swift_library` generated headers.
 
     Args:
-        name: The name prefix for all the nested tests
+      name: the base name to be used in things created by this macro
     """
 
     # Verify that the generated header by default gets an automatically
