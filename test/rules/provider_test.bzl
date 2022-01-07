@@ -31,7 +31,10 @@ load(
 #
 # A `provider` is used here because it is a simple way of getting a known unique
 # object from Bazel that cannot be equal to any other object.
-_EVALUATE_FIELD_FAILED = provider()
+_EVALUATE_FIELD_FAILED = provider(
+    doc = "Sentinel value, not otherwise used.",
+    fields = {},
+)
 
 def _evaluate_field(env, source, field):
     """Evaluates a field or field path on an object and returns its value.
