@@ -173,11 +173,16 @@ int RunSubProcess(const std::vector<std::string> &args,
       return wait_status;
     }
 
-    int exit_status = WEXITSTATUS(status);
-    if (exit_status != 0) {
-      return exit_status;
+    if (WIFEXITED(status)) {
+      return WEXITSTATUS(status);
     }
-    return 0;
+
+    if (WIFSIGNALED(status)) {
+      return WTERMSIG(status);
+    }
+
+    // Unhandled case, if we hit this we should handle it above.
+    return 42;
   } else {
     std::cerr << "Error forking process '" << args[0] << "'. "
               << strerror(status) << "\n";
