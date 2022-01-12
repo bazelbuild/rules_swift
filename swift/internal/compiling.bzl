@@ -2671,9 +2671,6 @@ def new_objc_provider(
             force_load_libraries,
             order = "topological",
         ),
-        header = depset(
-            module_context.clang.compilation_context.direct_headers,
-        ),
         library = depset(
             direct_libraries,
             transitive = transitive_cc_libs,
