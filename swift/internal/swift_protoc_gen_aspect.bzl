@@ -449,10 +449,11 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
         # `SwiftProtoCcInfo`. Finally, the `swift_proto_library` rule will
         # extract the `CcInfo` from the `SwiftProtoCcInfo` of its single
         # dependency and propagate that safely up the tree.
-        transitive_cc_infos = (
-            get_providers(proto_deps, SwiftProtoCcInfo, _extract_cc_info) +
-            get_providers(support_deps, CcInfo)
-        )
+        transitive_cc_infos = get_providers(
+            proto_deps,
+            SwiftProtoCcInfo,
+            lambda proto_cc_info: proto_cc_info.cc_info,
+        ) + get_providers(support_deps, CcInfo)
 
         # Propagate an `apple_common.Objc` provider with linking info about the
         # library so that linking with Apple Starlark APIs/rules works
@@ -462,7 +463,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
         objc_infos = get_providers(
             proto_deps,
             SwiftProtoCcInfo,
-            _extract_objc_info,
+            lambda proto_cc_info: proto_cc_info.objc_info,
         ) + get_providers(support_deps, apple_common.Objc)
 
         objc_info = new_objc_provider(
@@ -511,7 +512,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             providers = get_providers(
                 proto_deps,
                 SwiftProtoCcInfo,
-                _extract_objc_info,
+                lambda proto_cc_info: proto_cc_info.objc_info,
             ),
         )
 
@@ -521,7 +522,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
                     cc_infos = get_providers(
                         proto_deps,
                         SwiftProtoCcInfo,
-                        _extract_cc_info,
+                        lambda proto_cc_info: proto_cc_info.cc_info,
                     ),
                 ),
                 objc_info = objc_info,
@@ -538,28 +539,6 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
     ))
 
     return providers
-
-def _extract_cc_info(proto_cc_info):
-    """A map function to extract the `CcInfo` from a `SwiftProtoCcInfo`.
-
-    Args:
-        proto_cc_info: A `SwiftProtoCcInfo` provider.
-
-    Returns:
-        The `CcInfo` nested inside the `SwiftProtoCcInfo`.
-    """
-    return proto_cc_info.cc_info
-
-def _extract_objc_info(proto_cc_info):
-    """A map function to extract the `Objc` provider from a `SwiftProtoCcInfo`.
-
-    Args:
-        proto_cc_info: A `SwiftProtoCcInfo` provider.
-
-    Returns:
-        The `ObjcInfo` nested inside the `SwiftProtoCcInfo`.
-    """
-    return proto_cc_info.objc_info
 
 swift_protoc_gen_aspect = aspect(
     attr_aspects = ["deps"],
