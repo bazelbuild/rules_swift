@@ -107,6 +107,13 @@ SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS = (
     "swift.module_map_no_private_headers"
 )
 
+# When code is compiled with ASAN enabled, a reference to a versioned symbol is
+# emitted that ensures that the object files are linked to a version of the ASAN
+# runtime library that is known to be compatible. If this feature is enabled,
+# the versioned symbol reference will be omitted, allowing the object files to
+# link to any version of the ASAN runtime library.
+SWIFT_FEATURE_NO_ASAN_VERSION_CHECK = "swift.no_asan_version_check"
+
 # If enabled, the compilation action for a library target will not generate a
 # module map for the Objective-C generated header. This feature is ignored if
 # the target is not generating a header.

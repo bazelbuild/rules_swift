@@ -41,6 +41,7 @@ load(
     "SWIFT_FEATURE_FULL_DEBUG_INFO",
     "SWIFT_FEATURE_LAYERING_CHECK",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
+    "SWIFT_FEATURE_NO_ASAN_VERSION_CHECK",
     "SWIFT_FEATURE_NO_GENERATED_MODULE_MAP",
     "SWIFT_FEATURE_OPT",
     "SWIFT_FEATURE_OPT_USES_OSIZE",
@@ -376,6 +377,19 @@ def compile_action_configs(
                 swift_toolchain_config.add_arg("-sanitize=address"),
             ],
             features = ["asan"],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [
+                swift_toolchain_config.add_arg(
+                    "-Xllvm",
+                    "-asan-guard-against-version-mismatch=0",
+                ),
+            ],
+            features = [
+                "asan",
+                SWIFT_FEATURE_NO_ASAN_VERSION_CHECK,
+            ],
         ),
         swift_toolchain_config.action_config(
             actions = [swift_action_names.COMPILE],
