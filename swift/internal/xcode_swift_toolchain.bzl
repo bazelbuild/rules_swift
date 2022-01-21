@@ -535,6 +535,8 @@ def _all_tool_configs(
         env = dict(env)
         env["TOOLCHAINS"] = custom_toolchain
 
+    env["SWIFT_AVOID_WARNING_USING_OLD_DRIVER"] = "1"
+
     tool_config = swift_toolchain_config.driver_tool_config(
         driver_mode = "swiftc",
         env = env,
