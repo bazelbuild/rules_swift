@@ -1,5 +1,5 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
-load("@bazel_skylib//rules:common_settings.bzl", "bool_setting")
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag", "bool_setting")
 load(
     "//swift/internal:build_settings.bzl",
     "per_module_swiftcopt_flag",
@@ -64,6 +64,18 @@ per_module_swiftcopt_flag(
 bool_setting(
     name = "emit_swiftinterface",
     build_setting_default = False,
+)
+
+bool_flag(
+    name = "universal_tools",
+    build_setting_default = False,
+)
+
+config_setting(
+    name = "universal_tools_config",
+    flag_values = {
+        "@build_bazel_rules_swift//swift:universal_tools": "true",
+    },
 )
 
 # Configuration setting for forcing generation of Apple targets.

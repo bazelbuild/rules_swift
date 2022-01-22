@@ -1,4 +1,5 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
+load("@build_bazel_apple_support//rules:universal_binary.bzl", "universal_binary")
 
 licenses(["notice"])
 
@@ -96,6 +97,21 @@ cc_binary(
             ":compile_with_worker",
         ],
     }),
+)
+
+universal_binary(
+    name = "universal_worker",
+    binary = ":worker",
+    visibility = ["//visibility:public"],
+)
+
+alias(
+    name = "worker_wrapper",
+    actual = select({
+        "//swift:universal_tools_config": ":universal_worker",
+        "//conditions:default": ":worker",
+    }),
+    visibility = ["//visibility:public"],
 )
 
 # Consumed by Bazel integration tests.
