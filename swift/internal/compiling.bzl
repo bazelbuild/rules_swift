@@ -454,6 +454,7 @@ def compile_action_configs(
             actions = [
                 swift_action_names.COMPILE,
                 swift_action_names.DERIVE_FILES,
+                swift_action_names.PRECOMPILE_C_MODULE,
             ],
             configurators = [
                 swift_toolchain_config.add_arg(
