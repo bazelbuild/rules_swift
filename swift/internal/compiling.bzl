@@ -343,7 +343,10 @@ def compile_action_configs(
 
         # Make paths written into debug info workspace-relative.
         swift_toolchain_config.action_config(
-            actions = [swift_action_names.COMPILE],
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.PRECOMPILE_C_MODULE,
+            ],
             configurators = [
                 swift_toolchain_config.add_arg(
                     "-Xwrapped-swift=-debug-prefix-pwd-is-dot",
