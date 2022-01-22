@@ -19,7 +19,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <iostream>
 #include <string>
 
 #ifdef __APPLE__
@@ -101,13 +100,7 @@ bool MakeDirs(const std::string &path, int mode) {
   struct stat dir_stats;
   if (stat(path.c_str(), &dir_stats) == 0) {
     // Return true if the directory already exists.
-    if (!S_ISDIR(dir_stats.st_mode)) {
-      std::cerr << "error: path exists and isn't a directory "
-                << strerror(errno) << " (" << path.c_str() << ") \n";
-      return false;
-    } else {
-      return true;
-    }
+    return S_ISDIR(dir_stats.st_mode);
   }
 
   // Recurse to create the parent directory.
@@ -116,29 +109,5 @@ bool MakeDirs(const std::string &path, int mode) {
   }
 
   // Create the directory that was requested.
-  int mkdir_ret = mkdir(path.c_str(), mode);
-  if (mkdir_ret == 0) {
-    return true;
-  }
-
-  // Save the mkdir errno for better reporting.
-  int mkdir_errno = errno;
-
-  // Deal with a race condition when 2 `MakeDirs` are running at the same time:
-  // one `mkdir` invocation will fail in each recursive call at different
-  // points. Don't recurse here to avoid an infinite loop in failure cases.
-  if (errno == EEXIST && stat(path.c_str(), &dir_stats) == 0) {
-    if (!S_ISDIR(dir_stats.st_mode)) {
-      std::cerr << "error: path exists and isn't a directory "
-                << strerror(errno) << " (" << path.c_str() << ") \n";
-      return false;
-    } else {
-      // Return true if the directory already exists.
-      return true;
-    }
-  }
-
-  std::cerr << "error:" << strerror(mkdir_errno) << " (" << path.c_str()
-            << ") \n";
-  return false;
+  return mkdir(path.c_str(), mode) == 0;
 }
