@@ -24,7 +24,6 @@ load(
     "run_toolchain_action",
     "swift_action_names",
 )
-load(":debugging.bzl", "should_embed_swiftmodule_for_debugging")
 load(":derived_files.bzl", "derived_files")
 load(
     ":feature_names.bzl",
@@ -97,7 +96,6 @@ load(
 load(":vfsoverlay.bzl", "write_vfsoverlay")
 load(
     ":developer_dirs.bzl",
-    "developer_dirs_linkopts",
     "platform_developer_framework_dir",
     "swift_developer_lib_dir",
 )
@@ -2875,108 +2873,6 @@ def _merge_targets_providers(implicit_deps_providers, targets):
         ),
         objc_info = apple_common.new_objc_provider(providers = objc_infos),
         swift_info = create_swift_info(swift_infos = swift_infos),
-    )
-
-def new_objc_provider(
-        *,
-        additional_link_inputs = [],
-        additional_objc_infos = [],
-        alwayslink = False,
-        deps,
-        feature_configuration,
-        is_test,
-        libraries_to_link,
-        module_context,
-        user_link_flags = [],
-        swift_toolchain):
-    """Creates an `apple_common.Objc` provider for a Swift target.
-
-    Args:
-        additional_link_inputs: Additional linker input files that should be
-            propagated to dependents.
-        additional_objc_infos: Additional `apple_common.Objc` providers from
-            transitive dependencies not provided by the `deps` argument.
-        alwayslink: If True, any binary that depends on the providers returned
-            by this function will link in all of the library's object files,
-            even if some contain no symbols referenced by the binary.
-        deps: The dependencies of the target being built, whose `Objc` providers
-            will be passed to the new one in order to propagate the correct
-            transitive fields.
-        feature_configuration: The Swift feature configuration.
-        is_test: Represents if the `testonly` value of the context.
-        libraries_to_link: A list (typically of one element) of the
-            `LibraryToLink` objects from which the static archives (`.a` files)
-            containing the target's compiled code will be retrieved.
-        module_context: The module context as returned by
-            `swift_common.compile`.
-        user_link_flags: Linker options that should be propagated to dependents.
-        swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
-
-    Returns:
-        An `apple_common.Objc` provider that should be returned by the calling
-        rule.
-    """
-
-    # The link action registered by `apple_common.link_multi_arch_binary` only
-    # looks at `Objc` providers, not `CcInfo`, for libraries to link.
-    # Dependencies from an `objc_library` to a `cc_library` are handled as a
-    # special case, but other `cc_library` dependencies (such as `swift_library`
-    # to `cc_library`) would be lost since they do not receive the same
-    # treatment. Until those special cases are resolved via the unification of
-    # the Obj-C and C++ rules, we need to collect libraries from `CcInfo` and
-    # put them into the new `Objc` provider.
-    transitive_cc_libs = []
-    for cc_info in get_providers(deps, CcInfo):
-        static_libs = []
-        for linker_input in cc_info.linking_context.linker_inputs.to_list():
-            for library_to_link in linker_input.libraries:
-                library = library_to_link.static_library
-                if library:
-                    static_libs.append(library)
-        transitive_cc_libs.append(depset(static_libs, order = "topological"))
-
-    direct_libraries = []
-    force_load_libraries = []
-
-    for library_to_link in libraries_to_link:
-        library = library_to_link.static_library
-        if library:
-            direct_libraries.append(library)
-            if alwayslink:
-                force_load_libraries.append(library)
-
-    if feature_configuration and should_embed_swiftmodule_for_debugging(
-        feature_configuration = feature_configuration,
-        module_context = module_context,
-    ):
-        module_file = module_context.swift.swiftmodule
-        debug_link_flags = ["-Wl,-add_ast_path,{}".format(module_file.path)]
-        debug_link_inputs = [module_file]
-    else:
-        debug_link_flags = []
-        debug_link_inputs = []
-
-    if is_test:
-        developer_paths_linkopts = developer_dirs_linkopts(swift_toolchain.developer_dirs)
-    else:
-        developer_paths_linkopts = []
-
-    return apple_common.new_objc_provider(
-        force_load_library = depset(
-            force_load_libraries,
-            order = "topological",
-        ),
-        library = depset(
-            direct_libraries,
-            transitive = transitive_cc_libs,
-            order = "topological",
-        ),
-        link_inputs = depset(additional_link_inputs + debug_link_inputs),
-        linkopt = depset(user_link_flags + debug_link_flags + developer_paths_linkopts),
-        providers = get_providers(
-            deps,
-            apple_common.Objc,
-        ) + additional_objc_infos,
     )
 
 def output_groups_from_other_compilation_outputs(*, other_compilation_outputs):

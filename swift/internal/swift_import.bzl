@@ -16,8 +16,8 @@
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(":attrs.bzl", "swift_common_rule_attrs", "swift_toolchain_attrs")
-load(":compiling.bzl", "new_objc_provider")
 load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
+load(":linking.bzl", "new_objc_provider")
 load(":swift_common.bzl", "swift_common")
 load(":utils.bzl", "compact", "get_providers")
 

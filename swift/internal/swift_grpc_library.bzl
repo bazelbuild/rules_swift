@@ -18,7 +18,6 @@ load("@rules_proto//proto:defs.bzl", "ProtoInfo")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(
     ":compiling.bzl",
-    "new_objc_provider",
     "output_groups_from_other_compilation_outputs",
 )
 load(
@@ -26,6 +25,7 @@ load(
     "SWIFT_FEATURE_ENABLE_TESTING",
     "SWIFT_FEATURE_GENERATE_FROM_RAW_PROTO_FILES",
 )
+load(":linking.bzl", "new_objc_provider")
 load(
     ":proto_gen_utils.bzl",
     "declare_generated_files",
