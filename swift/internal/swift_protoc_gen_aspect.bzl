@@ -18,7 +18,7 @@ load("@rules_proto//proto:defs.bzl", "ProtoInfo")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 load(":attrs.bzl", "swift_config_attrs")
-load(":compiling.bzl", "new_objc_provider", "output_groups_from_other_compilation_outputs")
+load(":compiling.bzl", "output_groups_from_other_compilation_outputs")
 load(
     ":feature_names.bzl",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
@@ -26,6 +26,7 @@ load(
     "SWIFT_FEATURE_ENABLE_TESTING",
     "SWIFT_FEATURE_GENERATE_FROM_RAW_PROTO_FILES",
 )
+load(":linking.bzl", "new_objc_provider")
 load(
     ":proto_gen_utils.bzl",
     "declare_generated_files",

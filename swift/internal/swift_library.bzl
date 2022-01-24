@@ -22,7 +22,6 @@ load(
 )
 load(
     ":compiling.bzl",
-    "new_objc_provider",
     "output_groups_from_other_compilation_outputs",
     "swift_library_output_map",
 )
@@ -32,6 +31,7 @@ load(
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS",
 )
+load(":linking.bzl", "new_objc_provider")
 load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
 load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 load(":swift_common.bzl", "swift_common")
