@@ -20,13 +20,14 @@ load(
     "PerModuleSwiftCoptSettingInfo",
     "additional_per_module_swiftcopts",
 )
-load(":compiling.bzl", "new_objc_provider", "swift_library_output_map")
+load(":compiling.bzl", "swift_library_output_map")
 load(
     ":feature_names.bzl",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS",
 )
+load(":linking.bzl", "new_objc_provider")
 load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
 load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 load(":swift_common.bzl", "swift_common")
