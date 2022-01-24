@@ -504,7 +504,6 @@ def _module_info_for_target(
 
 def _handle_module(
         aspect_ctx,
-        compilation_context,
         exclude_headers,
         feature_configuration,
         module_map_file,
@@ -517,8 +516,6 @@ def _handle_module(
 
     Args:
         aspect_ctx: The aspect's context.
-        compilation_context: The `CcCompilationContext` containing the target's
-            headers.
         exclude_headers: A `list` of `File`s representing header files to
             exclude, if any, if we are generating the module map.
         feature_configuration: The current feature configuration.
@@ -544,6 +541,11 @@ def _handle_module(
     all_swift_infos = (
         direct_swift_infos + swift_infos + swift_toolchain.clang_implicit_deps_providers.swift_infos
     )
+
+    if CcInfo in target:
+        compilation_context = target[CcInfo].compilation_context
+    else:
+        compilation_context = None
 
     # Collect the names of Clang modules that the module being built directly
     # depends on.
@@ -583,9 +585,24 @@ def _handle_module(
         else:
             return []
 
+    compilation_contexts_to_merge_for_compilation = [compilation_context]
+
+    # Fold the `strict_includes` from `apple_common.Objc` into the Clang module
+    # descriptor in `SwiftInfo` so that the `Objc` provider doesn't have to be
+    # passed as a separate input to Swift build APIs.
+    if apple_common.Objc in target:
+        strict_includes = target[apple_common.Objc].strict_include
+        compilation_contexts_to_merge_for_compilation.append(
+            cc_common.create_compilation_context(includes = strict_includes),
+        )
+    else:
+        strict_includes = None
+
     compilation_context_to_compile = (
         compilation_context_for_explicit_module_compilation(
-            compilation_contexts = [compilation_context],
+            compilation_contexts = (
+                compilation_contexts_to_merge_for_compilation
+            ),
             deps = [
                 target
                 for attr_name in _MULTIPLE_TARGET_ASPECT_ATTRS
@@ -618,6 +635,7 @@ def _handle_module(
                         compilation_context = compilation_context,
                         module_map = module_map_file,
                         precompiled_module = precompiled_module,
+                        strict_includes = strict_includes,
                     ),
                 ),
             ],
@@ -837,7 +855,6 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx):
     if interop_info or apple_common.Objc in target or CcInfo in target:
         return _handle_module(
             aspect_ctx = aspect_ctx,
-            compilation_context = _compilation_context_for_target(target),
             exclude_headers = exclude_headers,
             feature_configuration = feature_configuration,
             module_map_file = module_map_file,
