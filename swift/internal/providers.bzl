@@ -295,27 +295,9 @@ def create_clang_module(
         *,
         compilation_context,
         module_map,
-        precompiled_module = None):
+        precompiled_module = None,
+        strict_includes = None):
     """Creates a value representing a Clang module used as a Swift dependency.
-
-    Note: The `compilation_context` argument of this function is primarily
-    intended to communicate information *to* the Swift build rules, not to
-    retrieve information *back out.* In most cases, it is better to depend on
-    the `CcInfo` provider propagated by a Swift target to collect transitive
-    C/Objective-C compilation information about that target. This is because the
-    context used when compiling the module itself may not be the same as the
-    context desired when depending on it. (For example, `apple_common.Objc`
-    supports "strict include paths" which are only propagated to direct
-    dependents.)
-
-    One valid exception to the guidance above is retrieving the generated header
-    associated with a specific Swift module. Since the `CcInfo` provider
-    propagated by the library will have already merged them transitively (or,
-    in the case of a hypothetical custom rule that propagates multiple direct
-    modules, the `direct_public_headers` of the `CcInfo` would also have them
-    merged), it is acceptable to read the headers from the compilation context
-    of the module struct itself in order to associate them with the module that
-    generated them.
 
     Args:
         compilation_context: A `CcCompilationContext` that contains the header
@@ -332,15 +314,23 @@ def create_clang_module(
             explicit module was built for the module; in that case, targets that
             depend on the module will fall back to the text module map and
             headers.
+        strict_includes: A `depset` of strings representing additional Clang
+            include paths that should be passed to the compiler when this module
+            is a _direct_ dependency of the module being compiled. May be
+            `None`. **This field only exists to support a specific legacy use
+            case and should otherwise not be used, as it is fundamentally
+            incompatible with Swift's import model.**
 
     Returns:
-        A `struct` containing the `compilation_context`, `module_map`, and
-        `precompiled_module` fields provided as arguments.
+        A `struct` containing the `compilation_context`, `module_map`,
+        `precompiled_module`, and `strict_includes` fields provided as
+        arguments.
     """
     return struct(
         compilation_context = compilation_context,
         module_map = module_map,
         precompiled_module = precompiled_module,
+        strict_includes = strict_includes,
     )
 
 def create_swift_module(
