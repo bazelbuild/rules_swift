@@ -633,14 +633,45 @@ def _xcode_env(xcode_config, platform):
         apple_common.target_apple_env(xcode_config, platform),
     )
 
+# TODO: Revisit ctx.fragments.apple.single_arch_cpu to see if it returns the
+# correct cpu for the exec platform.
+def _single_arch_cpu(cc_toolchain, platform):
+    """Returns the single effective architecture for the current configuration.
+
+    Args:
+        cc_toolchain: The C++ toolchain from which linking flags and other
+            tools needed by the Swift toolchain (such as `clang`) will be
+            retrieved.
+        platform: The `apple_platform` value describing the target platform
+            being built.
+
+    Returns:
+        A single architecture without the platform name (e.g. `x86_64`).
+    """
+    cpu = cc_toolchain.cpu
+    platform_type = str(platform.platform_type)
+    if platform_type == "ios":
+        if cpu.startswith("ios_sim_"):
+            return cpu[len("ios_sim_"):]
+        else:
+            return cpu[len("ios_"):]
+    if platform_type == "watchos":
+        return cpu[len("watchos_"):]
+    if platform_type == "tvos":
+        return cpu[len("tvos_"):]
+    if platform_type == "macos":
+        return cpu[len("darwin_"):]
+
+    fail("ERROR: Unhandled platform type {}".format(platform_type))
+
 def _xcode_swift_toolchain_impl(ctx):
     apple_fragment = ctx.fragments.apple
     cpp_fragment = ctx.fragments.cpp
     apple_toolchain = apple_common.apple_toolchain()
     cc_toolchain = find_cpp_toolchain(ctx)
 
-    cpu = apple_fragment.single_arch_cpu
     platform = apple_fragment.single_arch_platform
+    cpu = _single_arch_cpu(cc_toolchain, platform)
     xcode_config = ctx.attr._xcode_config[apple_common.XcodeVersionConfig]
 
     target_os_version = xcode_config.minimum_os_for_platform_type(
