@@ -633,13 +633,44 @@ def _xcode_env(xcode_config, platform):
         apple_common.target_apple_env(xcode_config, platform),
     )
 
+# TODO(https://github.com/bazelbuild/bazel/issues/14291): Use the value from
+# ctx.fragments.apple.single_arch_cpu
+def _single_arch_cpu(cc_toolchain):
+    """Returns the single effective architecture for the current configuration.
+
+    Args:
+        cc_toolchain: The C++ toolchain from which linking flags and other
+            tools needed by the Swift toolchain (such as `clang`) will be
+            retrieved.
+
+    Returns:
+        A single architecture without the platform name (e.g. `x86_64`).
+    """
+    cpu = cc_toolchain.cpu
+    if cpu.startswith("ios_sim_"):
+        return cpu[len("ios_sim_"):]
+    if cpu.startswith("ios_"):
+        return cpu[len("ios_"):]
+    if cpu.startswith("watchos_"):
+        return cpu[len("watchos_"):]
+    if cpu.startswith("tvos_"):
+        return cpu[len("tvos_"):]
+    if cpu.startswith("darwin_"):
+        return cpu[len("darwin_"):]
+
+    # Legacy cpu name
+    if cpu == "darwin":
+        return "x86_64"
+
+    fail("ERROR: Unhandled cpu type {}".format(cpu))
+
 def _xcode_swift_toolchain_impl(ctx):
     apple_fragment = ctx.fragments.apple
     cpp_fragment = ctx.fragments.cpp
     apple_toolchain = apple_common.apple_toolchain()
     cc_toolchain = find_cpp_toolchain(ctx)
 
-    cpu = apple_fragment.single_arch_cpu
+    cpu = _single_arch_cpu(cc_toolchain)
     platform = apple_fragment.single_arch_platform
     xcode_config = ctx.attr._xcode_config[apple_common.XcodeVersionConfig]
 
