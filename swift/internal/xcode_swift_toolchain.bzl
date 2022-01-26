@@ -848,7 +848,7 @@ toolchain (such as `clang`) will be retrieved.
                 cfg = "exec",
                 allow_files = True,
                 default = Label(
-                    "@build_bazel_rules_swift//tools/worker",
+                    "@build_bazel_rules_swift//tools/worker:worker_wrapper",
                 ),
                 doc = """\
 An executable that wraps Swift compiler invocations and also provides support
