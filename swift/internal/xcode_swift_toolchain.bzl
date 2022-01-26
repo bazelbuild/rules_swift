@@ -639,7 +639,13 @@ def _xcode_swift_toolchain_impl(ctx):
     apple_toolchain = apple_common.apple_toolchain()
     cc_toolchain = find_cpp_toolchain(ctx)
 
-    cpu = apple_fragment.single_arch_cpu
+    # TODO(https://github.com/bazelbuild/bazel/issues/14291): Always use the
+    # value from ctx.fragments.apple.single_arch_cpu
+    if cc_toolchain.cpu.startswith("darwin_"):
+        cpu = cc_toolchain.cpu[len("darwin_"):]
+    else:
+        cpu = apple_fragment.single_arch_cpu
+
     platform = apple_fragment.single_arch_platform
     xcode_config = ctx.attr._xcode_config[apple_common.XcodeVersionConfig]
 
