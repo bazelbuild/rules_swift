@@ -566,7 +566,7 @@ swift_protoc_gen_aspect = aspect(
             ),
             "_protoc": attr.label(
                 cfg = "exec",
-                default = Label("//tools/protoc_wrapper"),
+                default = Label("@com_google_protobuf//:protoc"),
                 executable = True,
             ),
             "_protoc_gen_swift": attr.label(

@@ -1,0 +1,35 @@
+diff --git a/proto/private/BUILD.release b/proto/private/BUILD.release
+index 4c2a43f..eb6bff7 100644
+--- a/proto/private/BUILD.release
++++ b/proto/private/BUILD.release
+@@ -1,8 +1,29 @@
++load(
++    "@build_bazel_apple_support//rules:universal_binary.bzl",
++    "universal_binary",
++)
+ load("@rules_proto//proto:defs.bzl", "proto_lang_toolchain")
+ 
+-# Use precompiled binaries where possible.
++# This has to be named `protoc` because native rules refer to
++# `@com_google_protobuf//:protoc` in their implementation.
+ alias(
+     name = "protoc",
++    actual = select({
++        "@build_bazel_rules_swift//swift:universal_tools_config": ":universal_protoc",
++        "//conditions:default": ":single_arch_protoc",
++    }),
++    visibility = ["//visibility:public"],
++)
++
++universal_binary(
++    name = "universal_protoc",
++    binary = ":single_arch_protoc",
++    visibility = ["//visibility:public"],
++)
++
++# Use precompiled binaries where possible.
++alias(
++    name = "single_arch_protoc",
+     actual = select({
+         ":linux-aarch64": "@com_google_protobuf_protoc_linux_aarch64//:protoc",
+         ":linux-ppc": "@com_google_protobuf_protoc_linux_ppc//:protoc",
