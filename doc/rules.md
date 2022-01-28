@@ -23,6 +23,7 @@ On this page:
   * [swift_import](#swift_import)
   * [swift_library](#swift_library)
   * [swift_module_alias](#swift_module_alias)
+  * [swift_package_configuration](#swift_package_configuration)
   * [swift_proto_library](#swift_proto_library)
   * [swift_test](#swift_test)
 
@@ -327,6 +328,32 @@ symbol is defined; it is not repeated by the alias module.)
 | <a id="swift_module_alias-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/docs/build-ref.html#name">Name</a> | required |  |
 | <a id="swift_module_alias-deps"></a>deps |  A list of targets that are dependencies of the target being built, which will be linked into that target. Allowed kinds are <code>swift_import</code> and <code>swift_library</code> (or anything else propagating <code>SwiftInfo</code>).   | <a href="https://bazel.build/docs/build-ref.html#labels">List of labels</a> | optional | [] |
 | <a id="swift_module_alias-module_name"></a>module_name |  The name of the Swift module being built.<br><br>If left unspecified, the module name will be computed based on the target's build label, by stripping the leading <code>//</code> and replacing <code>/</code>, <code>:</code>, and other non-identifier characters with underscores.   | String | optional | "" |
+
+
+<a id="#swift_package_configuration"></a>
+
+## swift_package_configuration
+
+<pre>
+swift_package_configuration(<a href="#swift_package_configuration-name">name</a>, <a href="#swift_package_configuration-configured_features">configured_features</a>, <a href="#swift_package_configuration-packages">packages</a>)
+</pre>
+
+A compilation configuration to apply to the Swift targets in a set of packages.
+
+A Swift toolchain target can reference any number (zero or more) of
+`swift_package_configuration` targets. When the compilation action for a target
+is being configured, those package configurations will be applied if the
+target's label is included by the package specifications in the configuration.
+
+
+**ATTRIBUTES**
+
+
+| Name  | Description | Type | Mandatory | Default |
+| :------------- | :------------- | :------------- | :------------- | :------------- |
+| <a id="swift_package_configuration-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/docs/build-ref.html#name">Name</a> | required |  |
+| <a id="swift_package_configuration-configured_features"></a>configured_features |  A list of feature strings that will be applied by default to targets in the packages matched by the <code>packages</code> attribute, as if they had been specified by the <code>package(features = ...)</code> rule in the BUILD file.<br><br>This list may include both feature names and/or negations (a name with a leading <code>-</code>); a regular feature name means that the targets in the matching packages will have the feature enabled, and a negated feature means that the target will have the feature disabled.<br><br>For example, <code>configured_features = ["foo", "-bar"]</code> means that targets in the configuration's packages will have the feature <code>"foo"</code> enabled by default and the feature <code>"bar"</code> disabled by default.   | List of strings | optional | [] |
+| <a id="swift_package_configuration-packages"></a>packages |  A list of strings representing packages (possibly recursive) whose targets will have this package configuration applied. Each package pattern is written in the syntax used by the <code>package_group</code> function:<br><br>*   <code>//foo/bar</code>: Targets in the package <code>//foo/bar</code> but not in subpackages. *   <code>//foo/bar/...</code>: Targets in the package <code>//foo/bar</code> and any of its     subpackages. *   A leading <code>-</code> excludes packages that would otherwise have been included by     the patterns in the list.<br><br>Exclusions always take priority over inclusions; order in the list is irrelevant.   | List of strings | required |  |
 
 
 <a id="#swift_proto_library"></a>
