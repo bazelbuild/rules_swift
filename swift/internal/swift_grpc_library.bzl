@@ -389,7 +389,7 @@ The kind of definitions that should be generated:
             "_protoc": attr.label(
                 cfg = "exec",
                 default = Label(
-                    "//tools/protoc_wrapper",
+                    "@com_google_protobuf//:protoc",
                 ),
                 executable = True,
             ),
