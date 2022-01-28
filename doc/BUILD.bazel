@@ -23,6 +23,7 @@ _DOC_SRCS = {
         "swift_import",
         "swift_library",
         "swift_module_alias",
+        "swift_package_configuration",
         "swift_proto_library",
         "swift_test",
     ],
