@@ -104,7 +104,7 @@ def swift_rules_dependencies():
             "https://github.com/bazelbuild/rules_proto/archive/11bf7c25e666dd7ddacbcd4d4c4a9de7a25175f8.zip",
         ],
         patch_args = ["-p1"],
-        patches = ["//third_party/rules_proto:rules_proto.patch"],
+        patches = ["@build_bazel_rules_swift//third_party/rules_proto:rules_proto.patch"],
         sha256 = "810d02d1c016bea9743161f42323e59000c0690e4bf18d94e4f44e361b48645b",
         strip_prefix = "rules_proto-11bf7c25e666dd7ddacbcd4d4c4a9de7a25175f8",
         type = "zip",
