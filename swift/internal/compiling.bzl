@@ -156,6 +156,20 @@ def compile_action_configs(
             configurators = [_output_object_or_file_map_configurator],
         ),
 
+        # Don't embed Clang module breadcrumbs in debug info.
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [
+                swift_toolchain_config.add_arg(
+                    "-Xfrontend",
+                    "-no-clang-module-breadcrumbs",
+                ),
+            ],
+            features = [
+                SWIFT_FEATURE_CACHEABLE_SWIFTMODULES,
+            ],
+        ),
+
         # Emit precompiled Clang modules, and embed all files that were read
         # during compilation into the PCM.
         swift_toolchain_config.action_config(
