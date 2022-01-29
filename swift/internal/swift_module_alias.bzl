@@ -19,7 +19,7 @@ load(":derived_files.bzl", "derived_files")
 load(":linking.bzl", "new_objc_provider")
 load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
 load(":swift_common.bzl", "swift_common")
-load(":utils.bzl", "compact", "get_providers")
+load(":utils.bzl", "compact", "get_compilation_contexts", "get_providers")
 
 def _swift_module_alias_impl(ctx):
     deps = ctx.attr.deps
@@ -54,13 +54,16 @@ def _swift_module_alias_impl(ctx):
         unsupported_features = ctx.disabled_features,
     )
 
+    swift_infos = get_providers(deps, SwiftInfo)
+
     module_context, compilation_outputs = swift_common.compile(
         actions = ctx.actions,
+        compilation_contexts = get_compilation_contexts(ctx.attr.deps),
         copts = ["-parse-as-library"],
-        deps = deps,
         feature_configuration = feature_configuration,
         module_name = module_name,
         srcs = [reexport_src],
+        swift_infos = swift_infos,
         swift_toolchain = swift_toolchain,
         target_name = ctx.label.name,
     )
@@ -101,7 +104,7 @@ def _swift_module_alias_impl(ctx):
         ),
         swift_common.create_swift_info(
             modules = [module_context],
-            swift_infos = get_providers(deps, SwiftInfo),
+            swift_infos = swift_infos,
         ),
     ]
 

@@ -30,7 +30,7 @@ load(
 )
 load(":providers.bzl", "SwiftInfo", "SwiftProtoInfo", "SwiftToolchainInfo")
 load(":swift_common.bzl", "swift_common")
-load(":utils.bzl", "compact", "get_providers")
+load(":utils.bzl", "compact", "get_compilation_contexts", "get_providers")
 
 def _register_grpcswift_generate_action(
         label,
@@ -242,7 +242,9 @@ def _swift_grpc_library_impl(ctx):
 
     extra_module_imports = []
     if ctx.attr.flavor == "client_stubs":
-        extra_module_imports.append(swift_common.derive_module_name(deps[0].label))
+        extra_module_imports.append(
+            swift_common.derive_module_name(deps[0].label),
+        )
 
     # Generate the Swift sources from the .proto files.
     generated_files = _register_grpcswift_generate_action(
@@ -265,16 +267,18 @@ def _swift_grpc_library_impl(ctx):
     # support libraries like the SwiftProtobuf runtime as deps to the compile
     # action.
     compile_deps = deps + ctx.attr._proto_support
+    compile_deps_swift_infos = get_providers(compile_deps, SwiftInfo)
 
     module_name = swift_common.derive_module_name(ctx.label)
 
     module_context, compilation_outputs = swift_common.compile(
         actions = ctx.actions,
+        compilation_contexts = get_compilation_contexts(ctx.attr.deps),
         copts = ["-parse-as-library"],
-        deps = compile_deps,
         feature_configuration = feature_configuration,
         module_name = module_name,
         srcs = generated_files,
+        swift_infos = compile_deps_swift_infos,
         swift_toolchain = swift_toolchain,
         target_name = ctx.label.name,
     )
@@ -311,7 +315,7 @@ def _swift_grpc_library_impl(ctx):
         deps[0][SwiftProtoInfo],
         swift_common.create_swift_info(
             modules = [module_context],
-            swift_infos = get_providers(compile_deps, SwiftInfo),
+            swift_infos = compile_deps_swift_infos,
         ),
     ]
 

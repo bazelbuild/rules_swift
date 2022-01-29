@@ -36,7 +36,11 @@ load(
     "create_module",
     "create_swift_info",
 )
-load(":utils.bzl", "compilation_context_for_explicit_module_compilation")
+load(
+    ":utils.bzl",
+    "compilation_context_for_explicit_module_compilation",
+    "merge_compilation_contexts",
+)
 
 _MULTIPLE_TARGET_ASPECT_ATTRS = [
     "deps",
@@ -599,20 +603,34 @@ def _handle_module(
     else:
         strict_includes = None
 
+    # For each dependency, prefer the information from the original `CcInfo` if
+    # we have it. If we don't, use the `SwiftInfo`-wrapped compilation context
+    # instead.
+    additional_swift_infos = []
+    for attr_name in _MULTIPLE_TARGET_ASPECT_ATTRS:
+        for dep in getattr(attr, attr_name, []):
+            if CcInfo in dep:
+                compilation_contexts_to_merge_for_compilation.append(
+                    dep[CcInfo].compilation_context,
+                )
+            elif SwiftInfo in dep:
+                additional_swift_infos.append(dep[SwiftInfo])
+    for attr_name in _SINGLE_TARGET_ASPECT_ATTRS:
+        if hasattr(attr, attr_name):
+            dep = getattr(attr, attr_name)
+            if CcInfo in dep:
+                compilation_contexts_to_merge_for_compilation.append(
+                    dep[CcInfo].compilation_context,
+                )
+            elif SwiftInfo in dep:
+                additional_swift_infos.append(dep[SwiftInfo])
+
     compilation_context_to_compile = (
         compilation_context_for_explicit_module_compilation(
             compilation_contexts = (
                 compilation_contexts_to_merge_for_compilation
             ),
-            deps = [
-                target
-                for attr_name in _MULTIPLE_TARGET_ASPECT_ATTRS
-                for target in getattr(attr, attr_name, [])
-            ] + [
-                getattr(attr, attr_name)
-                for attr_name in _SINGLE_TARGET_ASPECT_ATTRS
-                if hasattr(attr, attr_name)
-            ],
+            swift_infos = additional_swift_infos,
         )
     )
 
@@ -803,8 +821,8 @@ def _compilation_context_for_target(target):
     if apple_common.Objc in target:
         strict_includes = target[apple_common.Objc].strict_include
         if strict_includes:
-            compilation_context = cc_common.merge_compilation_contexts(
-                compilation_contexts = [
+            compilation_context = merge_compilation_contexts(
+                direct_compilation_contexts = [
                     compilation_context,
                     cc_common.create_compilation_context(
                         includes = strict_includes,

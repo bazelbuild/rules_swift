@@ -34,7 +34,7 @@ load(
 )
 load(":providers.bzl", "SwiftInfo", "SwiftProtoInfo", "SwiftToolchainInfo")
 load(":swift_common.bzl", "swift_common")
-load(":utils.bzl", "get_providers")
+load(":utils.bzl", "get_compilation_contexts", "get_providers")
 
 # The paths of proto files bundled with the runtime. This is mainly the well
 # known type protos, but also includes descriptor.proto to make generation of
@@ -320,6 +320,8 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
         for dep in aspect_ctx.rule.attr.deps
         if SwiftProtoInfo in dep
     ]
+    proto_compilation_contexts = get_compilation_contexts(proto_deps)
+    proto_swift_infos = get_providers(proto_deps, SwiftInfo)
 
     minimal_module_mappings = []
     if direct_srcs:
@@ -342,6 +344,8 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
     )
 
     support_deps = aspect_ctx.attr._proto_support
+    support_compilation_contexts = get_compilation_contexts(support_deps)
+    support_swift_infos = get_providers(support_deps, SwiftInfo)
 
     if direct_srcs:
         extra_features = []
@@ -407,11 +411,14 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
 
         module_context, compilation_outputs = swift_common.compile(
             actions = aspect_ctx.actions,
+            compilation_contexts = (
+                proto_compilation_contexts + support_compilation_contexts
+            ),
             copts = ["-parse-as-library"],
-            deps = proto_deps + support_deps,
             feature_configuration = feature_configuration,
             module_name = module_name,
             srcs = pbswift_files,
+            swift_infos = proto_swift_infos + support_swift_infos,
             swift_toolchain = swift_toolchain,
             target_name = target.label.name,
         )
@@ -494,10 +501,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             ),
             swift_common.create_swift_info(
                 modules = [module_context],
-                swift_infos = get_providers(
-                    proto_deps + support_deps,
-                    SwiftInfo,
-                ),
+                swift_infos = proto_swift_infos + support_swift_infos,
             ),
         ]
     else:
@@ -528,7 +532,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
                 objc_info = objc_info,
             ),
             swift_common.create_swift_info(
-                swift_infos = get_providers(proto_deps, SwiftInfo),
+                swift_infos = proto_swift_infos,
             ),
         ]
 

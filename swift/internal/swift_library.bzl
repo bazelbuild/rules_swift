@@ -35,6 +35,7 @@ load(
     ":utils.bzl",
     "compact",
     "expand_locations",
+    "get_compilation_contexts",
     "get_providers",
 )
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
@@ -149,6 +150,9 @@ def _swift_library_impl(ctx):
         deps = ctx.attr.deps
         private_deps = []
 
+    swift_infos = get_providers(deps, SwiftInfo)
+    private_swift_infos = get_providers(private_deps, SwiftInfo)
+
     if ctx.attr.generates_header:
         generated_header_name = (
             ctx.attr.generated_header_name or
@@ -166,14 +170,15 @@ def _swift_library_impl(ctx):
     module_context, compilation_outputs = swift_common.compile(
         actions = ctx.actions,
         additional_inputs = additional_inputs,
+        compilation_contexts = get_compilation_contexts(ctx.attr.deps),
         copts = _maybe_parse_as_library_copts(srcs) + copts,
         defines = ctx.attr.defines,
-        deps = deps,
         feature_configuration = feature_configuration,
         generated_header_name = generated_header_name,
         module_name = module_name,
-        private_deps = private_deps,
+        private_swift_infos = private_swift_infos,
         srcs = srcs,
+        swift_infos = swift_infos,
         swift_toolchain = swift_toolchain,
         target_name = ctx.label.name,
     )
@@ -241,7 +246,7 @@ def _swift_library_impl(ctx):
             modules = [module_context],
             # Note that private_deps are explicitly omitted here; they should
             # not propagate.
-            swift_infos = get_providers(deps, SwiftInfo),
+            swift_infos = swift_infos,
         ),
     ]
 

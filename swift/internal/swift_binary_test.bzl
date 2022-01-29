@@ -18,10 +18,15 @@ load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(":derived_files.bzl", "derived_files")
 load(":feature_names.bzl", "SWIFT_FEATURE_BUNDLED_XCTESTS")
 load(":linking.bzl", "register_link_binary_action")
-load(":providers.bzl", "SwiftToolchainInfo")
+load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
 load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 load(":swift_common.bzl", "swift_common")
-load(":utils.bzl", "expand_locations")
+load(
+    ":utils.bzl",
+    "expand_locations",
+    "get_compilation_contexts",
+    "get_providers",
+)
 
 def _binary_rule_attrs(stamp_default):
     """Returns attributes common to both `swift_binary` and `swift_test`.
@@ -185,12 +190,13 @@ def _swift_linking_rule_impl(
         module_context, compilation_outputs = swift_common.compile(
             actions = ctx.actions,
             additional_inputs = additional_inputs,
+            compilation_contexts = get_compilation_contexts(ctx.attr.deps),
             copts = copts,
             defines = ctx.attr.defines,
-            deps = ctx.attr.deps,
             feature_configuration = feature_configuration,
             module_name = module_name,
             srcs = srcs,
+            swift_infos = get_providers(ctx.attr.deps, SwiftInfo),
             swift_toolchain = swift_toolchain,
             target_name = ctx.label.name,
         )

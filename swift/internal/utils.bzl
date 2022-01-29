@@ -72,13 +72,14 @@ def compact(sequence):
 
 def compilation_context_for_explicit_module_compilation(
         compilation_contexts,
-        deps):
+        swift_infos):
     """Returns a compilation context suitable for compiling an explicit module.
 
     Args:
         compilation_contexts: `CcCompilationContext`s that provide information
             about headers and include paths for the target being compiled.
-        deps: Direct dependencies of the target being compiled.
+        swift_infos: `SwiftInfo` providers propagated by direct dependencies of
+            the target being compiled.
 
     Returns:
         A `CcCompilationContext` containing information needed when compiling an
@@ -88,31 +89,23 @@ def compilation_context_for_explicit_module_compilation(
     """
     all_compilation_contexts = list(compilation_contexts)
 
-    for dep in deps:
-        if CcInfo in dep:
-            all_compilation_contexts.append(dep[CcInfo].compilation_context)
-        elif SwiftInfo in dep:
-            # TODO(b/151667396): Remove j2objc-specific knowledge.
-            # J2ObjC doesn't expose `CcInfo` directly on the `java_library`
-            # targets it processes, but we can find the compilation context that
-            # was synthesized by `swift_clang_module_aspect` within the
-            # `SwiftInfo` provider.
-            for module in dep[SwiftInfo].direct_modules:
-                clang = module.clang
-                if not clang:
-                    continue
+    for swift_info in swift_infos:
+        for module in swift_info.direct_modules:
+            clang = module.clang
+            if not clang:
+                continue
 
-                if clang.compilation_context:
-                    all_compilation_contexts.append(clang.compilation_context)
-                if clang.strict_includes:
-                    all_compilation_contexts.append(
-                        cc_common.create_compilation_context(
-                            includes = clang.strict_includes,
-                        ),
-                    )
+            if clang.compilation_context:
+                all_compilation_contexts.append(clang.compilation_context)
+            if clang.strict_includes:
+                all_compilation_contexts.append(
+                    cc_common.create_compilation_context(
+                        includes = clang.strict_includes,
+                    ),
+                )
 
-    return cc_common.merge_compilation_contexts(
-        compilation_contexts = all_compilation_contexts,
+    return merge_compilation_contexts(
+        direct_compilation_contexts = all_compilation_contexts,
     )
 
 def expand_locations(ctx, values, targets = []):
@@ -128,6 +121,25 @@ def expand_locations(ctx, values, targets = []):
         A list of strings with any `$(location)` placeholders filled in.
     """
     return [ctx.expand_location(value, targets) for value in values]
+
+def get_compilation_contexts(targets):
+    """Returns the `CcCompilationContext` for each target in the given list.
+
+    As with `get_providers`, it is not an error if a target in the list does not
+    propagate `CcInfo`; those targets are simply ignored.
+
+    Args:
+        targets: A list of targets.
+
+    Returns:
+        Any `CcCompilationContext`s found in `CcInfo` providers among the
+        targets in the list.
+    """
+    return get_providers(
+        targets,
+        CcInfo,
+        lambda cc_info: cc_info.compilation_context,
+    )
 
 def get_swift_executable_for_toolchain(ctx):
     """Returns the Swift driver executable that the toolchain should use.
@@ -217,6 +229,48 @@ def get_providers(targets, provider, map_fn = None):
             if provider in target
         ]
     return [target[provider] for target in targets if provider in target]
+
+def merge_compilation_contexts(
+        direct_compilation_contexts = [],
+        transitive_compilation_contexts = []):
+    """Merges lists of direct and/or transitive compilation contexts.
+
+    The `cc_common.merge_compilation_contexts` function only supports merging
+    compilation contexts as direct contexts. To support merging contexts
+    transitively, they must be wrapped in `CcInfo` providers. This helper
+    function supports both cases, choosing the fast path (not wrapping) if no
+    contexts are being merged transitively.
+
+    Args:
+        direct_compilation_contexts: A list of `CcCompilationContext`s whose
+            direct fields (e.g., direct headers) should be preserved in the
+            result.
+        transitive_compilation_contexts: A list of `CcCompilationContext`s whose
+            direct fields (e.g., direct headers) should not be preserved in the
+            result. Headers in these providers will only be available in the
+            transitive `headers` field.
+
+    Returns:
+        The merged `CcCompilationContext`.
+    """
+    if not transitive_compilation_contexts:
+        # Fast path: Everything can be merged with the direct API.
+        return cc_common.merge_compilation_contexts(
+            compilation_contexts = direct_compilation_contexts,
+        )
+
+    # Slow path: We must wrap each compilation context in a `CcInfo` provider to
+    # get the correct direct vs. transitive behavior.
+    return cc_common.merge_cc_infos(
+        direct_cc_infos = [
+            CcInfo(compilation_context = compilation_context)
+            for compilation_context in direct_compilation_contexts
+        ],
+        cc_infos = [
+            CcInfo(compilation_context = compilation_context)
+            for compilation_context in transitive_compilation_contexts
+        ],
+    ).compilation_context
 
 def merge_runfiles(all_runfiles):
     """Merges a list of `runfiles` objects.
