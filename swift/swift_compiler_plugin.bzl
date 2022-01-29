@@ -41,6 +41,7 @@ load(
 load(
     "@build_bazel_rules_swift//swift/internal:providers.bzl",
     "SwiftCompilerPluginInfo",
+    "SwiftInfo",
     "SwiftToolchainInfo",
 )
 load(
@@ -83,6 +84,7 @@ def _swift_compiler_plugin_impl(ctx):
     module_context, cc_compilation_outputs, other_compilation_outputs = swift_common.compile(
         actions = ctx.actions,
         additional_inputs = ctx.files.swiftc_inputs,
+        cc_infos = get_providers(deps, CcInfo),
         copts = expand_locations(
             ctx,
             ctx.attr.copts,
@@ -100,13 +102,14 @@ def _swift_compiler_plugin_impl(ctx):
             entry_point_function_name,
         ],
         defines = ctx.attr.defines,
-        deps = deps,
         feature_configuration = feature_configuration,
         include_dev_srch_paths = ctx.attr.testonly,
         module_name = module_name,
+        objc_infos = get_providers(deps, apple_common.Objc),
         package_name = ctx.attr.package_name,
         plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),
         srcs = srcs,
+        swift_infos = get_providers(deps, SwiftInfo),
         swift_toolchain = swift_toolchain,
         target_name = ctx.label.name,
         workspace_name = ctx.workspace_name,

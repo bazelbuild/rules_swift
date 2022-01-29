@@ -55,15 +55,19 @@ def _swift_module_alias_impl(ctx):
         unsupported_features = ctx.disabled_features,
     )
 
+    swift_infos = get_providers(deps, SwiftInfo)
+
     module_context, compilation_outputs, other_compilation_outputs = swift_common.compile(
         actions = ctx.actions,
+        cc_infos = get_providers(ctx.attr.deps, CcInfo),
         copts = ["-parse-as-library"],
-        deps = deps,
         feature_configuration = feature_configuration,
         include_dev_srch_paths = ctx.attr.testonly,
         module_name = module_name,
+        objc_infos = get_providers(ctx.attr.deps, apple_common.Objc),
         package_name = None,
         srcs = [reexport_src],
+        swift_infos = swift_infos,
         swift_toolchain = swift_toolchain,
         target_name = ctx.label.name,
         workspace_name = ctx.workspace_name,
@@ -110,7 +114,7 @@ def _swift_module_alias_impl(ctx):
         ),
         swift_common.create_swift_info(
             modules = [module_context],
-            swift_infos = get_providers(deps, SwiftInfo),
+            swift_infos = swift_infos,
         ),
     ]
 
