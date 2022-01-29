@@ -101,7 +101,6 @@ load(
 load(":module_maps.bzl", "write_module_map")
 load(
     ":providers.bzl",
-    "SwiftInfo",
     "create_clang_module",
     "create_module",
     "create_swift_info",
@@ -112,7 +111,6 @@ load(
     ":utils.bzl",
     "compact",
     "compilation_context_for_explicit_module_compilation",
-    "get_providers",
     "merge_compilation_contexts",
     "struct_fields",
 )
@@ -1565,18 +1563,16 @@ def _dependencies_clang_defines_configurator(prerequisites, args):
     args.add_all(all_clang_defines, before_each = "-Xcc", format_each = "-D%s")
 
 def _collect_clang_module_inputs(
-        cc_compilation_context,
-        is_swift,
+        explicit_module_compilation_context,
         modules,
         prefer_precompiled_modules):
     """Collects Clang module-related inputs to pass to an action.
 
     Args:
-        cc_compilation_context: The `CcCompilationContext` of the target being
-            compiled. The direct headers of this provider will be collected as
-            inputs.
-        is_swift: If True, this is a Swift compilation; otherwise, it is a
-            Clang module compilation.
+        explicit_module_compilation_context: The `CcCompilationContext` of the
+            target being compiled, if the inputs are being collected for an
+            explicit module compilation action. This parameter should be `None`
+            if inputs are being collected for Swift compilation.
         modules: A list of module structures (as returned by
             `swift_common.create_module`). The precompiled Clang modules or the
             textual module maps and headers of these modules (depending on the
@@ -1594,7 +1590,7 @@ def _collect_clang_module_inputs(
     direct_inputs = []
     transitive_inputs = []
 
-    if cc_compilation_context and not is_swift:
+    if explicit_module_compilation_context:
         # This is a `SwiftPrecompileCModule` action, so by definition we're
         # only here in a build with explicit modules enabled. We should only
         # need the direct headers of the module being compiled and its
@@ -1606,9 +1602,9 @@ def _collect_clang_module_inputs(
         # headers include those. This will likely over-estimate the needed
         # inputs, but we can't do better without include scanning in
         # Starlark.
-        transitive_inputs.append(cc_compilation_context.headers)
+        transitive_inputs.append(explicit_module_compilation_context.headers)
         transitive_inputs.append(
-            depset(cc_compilation_context.direct_textual_headers),
+            depset(explicit_module_compilation_context.direct_textual_headers),
         )
 
     for module in modules:
@@ -1718,9 +1714,13 @@ def _dependencies_clang_modulemaps_configurator(prerequisites, args):
         uniquify = True,
     )
 
+    if prerequisites.is_swift:
+        compilation_context = None
+    else:
+        compilation_context = prerequisites.cc_compilation_context
+
     return _collect_clang_module_inputs(
-        cc_compilation_context = prerequisites.cc_compilation_context,
-        is_swift = prerequisites.is_swift,
+        explicit_module_compilation_context = compilation_context,
         modules = modules,
         prefer_precompiled_modules = False,
     )
@@ -1743,9 +1743,13 @@ def _dependencies_clang_modules_configurator(prerequisites, args):
         uniquify = True,
     )
 
+    if prerequisites.is_swift:
+        compilation_context = None
+    else:
+        compilation_context = prerequisites.cc_compilation_context
+
     return _collect_clang_module_inputs(
-        cc_compilation_context = prerequisites.cc_compilation_context,
-        is_swift = prerequisites.is_swift,
+        explicit_module_compilation_context = compilation_context,
         modules = modules,
         prefer_precompiled_modules = True,
     )
@@ -2021,6 +2025,7 @@ def _conditional_compilation_flag_configurator(prerequisites, args):
         all_defines,
         map_each = _exclude_swift_incompatible_define,
         format_each = "-D%s",
+        uniquify = True,
     )
 
 def _constant_value_extraction_configurator(prerequisites, args):
@@ -2328,19 +2333,21 @@ def compile(
         *,
         actions,
         additional_inputs = [],
+        cc_infos,
         copts = [],
         defines = [],
-        deps = [],
         extra_swift_infos = [],
         feature_configuration,
         generated_header_name = None,
         is_test = None,
         include_dev_srch_paths = None,
         module_name,
+        objc_infos,
         package_name,
         plugins = [],
-        private_deps = [],
+        private_swift_infos = [],
         srcs,
+        swift_infos,
         swift_toolchain,
         target_name,
         workspace_name):
@@ -2351,16 +2358,16 @@ def compile(
         additional_inputs: A list of `File`s representing additional input files
             that need to be passed to the Swift compile action because they are
             referenced by compiler flags.
+        cc_infos: A list of `CcInfo` providers that represent C/Objective-C
+            requirements of the target being compiled, such as Swift-compatible
+            preprocessor defines, header search paths, and so forth. These are
+            typically retrieved from a target's dependencies.
         copts: A list of compiler flags that apply to the target being built.
             These flags, along with those from Bazel's Swift configuration
             fragment (i.e., `--swiftcopt` command line flags) are scanned to
             determine whether whole module optimization is being requested,
             which affects the nature of the output files.
         defines: Symbols that should be defined by passing `-D` to the compiler.
-        deps: Non-private dependencies of the target being compiled. These
-            targets are used as dependencies of both the Swift module being
-            compiled and the Clang module for the generated header. These
-            targets must propagate `CcInfo` or `SwiftInfo`.
         extra_swift_infos: Extra `SwiftInfo` providers that aren't contained
             by the `deps` of the target being compiled but are required for
             compilation.
@@ -2377,15 +2384,24 @@ def compile(
         module_name: The name of the Swift module being compiled. This must be
             present and valid; use `swift_common.derive_module_name` to generate
             a default from the target's label if needed.
+        objc_infos: A list of `apple_common.ObjC` providers that represent
+            C/Objective-C requirements of the target being compiled, such as
+            Swift-compatible preprocessor defines, header search paths, and so
+            forth. These are typically retrieved from a target's dependencies.
         package_name: The semantic package of the name of the Swift module
             being compiled.
         plugins: A list of `SwiftCompilerPluginInfo` providers that represent
             plugins that should be loaded by the compiler.
-        private_deps: Private (implementation-only) dependencies of the target
-            being compiled. These are only used as dependencies of the Swift
-            module, not of the Clang module for the generated header. These
-            targets must propagate `CcInfo` or `SwiftInfo`.
+        private_swift_infos: A list of `SwiftInfo` providers from private
+            (implementation-only) dependencies of the target being compiled. The
+            modules defined by these providers are used as dependencies of the
+            Swift module being compiled but not of the Clang module for the
+            generated header.
         srcs: The Swift source files to compile.
+        swift_infos: A list of `SwiftInfo` providers from non-private
+            dependencies of the target being compiled. The modules defined by
+            these providers are used as dependencies of both the Swift module
+            being compiled and the Clang module for the generated header.
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
         target_name: The name of the target for which the code is being
             compiled, which is used to determine unique file paths for the
@@ -2400,7 +2416,9 @@ def compile(
         1.  A Swift module context (as returned by `swift_common.create_module`)
             that contains the Swift (and potentially C/Objective-C) compilation
             prerequisites of the compiled module. This should typically be
-            propagated by a `SwiftInfo` provider of the calling rule.
+            propagated by a `SwiftInfo` provider of the calling rule, and the
+            `CcCompilationContext` inside the Clang module substructure should
+            be propagated by the `CcInfo` provider of the calling rule.
         2.  A `CcCompilationOutputs` object (as returned by
             `cc_common.create_compilation_outputs`) that contains the compiled
             object files.
@@ -2428,7 +2446,7 @@ def compile(
     # `use` declarations), and later in this function when precompiling the
     # module.
     generated_module_deps_swift_infos = (
-        get_providers(deps, SwiftInfo) +
+        swift_infos +
         swift_toolchain.generated_header_module_implicit_deps_providers.swift_infos
     )
 
@@ -2509,13 +2527,28 @@ def compile(
             all_compile_outputs.append(compile_outputs.swiftsourceinfo_file)
         all_derived_outputs = []
 
-    # Merge the providers from our dependencies so that we have one each for
-    # `SwiftInfo` and `CcInfo`. Then we can pass these into the action
-    # prerequisites so that configurators have easy access to the full set of
-    # values and inputs through a single accessor.
-    merged_providers = _merge_targets_providers(
-        implicit_deps_providers = swift_toolchain.implicit_deps_providers,
-        targets = deps + private_deps,
+    # In `upstream` they call `merge_compilation_contexts` on passed in
+    # `compilation_contexts` instead of merging `CcInfo`s. This is because
+    # they don't need the merged linking context to disable framework
+    # autolinking. If we ever remove our need for `-disable-autolink-framework`,
+    # we should change this to match `upstream`. Same for `apple_common.Objc`.
+    compilation_contexts = [
+        cc_info.compilation_context
+        for cc_info in cc_infos
+    ]
+    merged_cc_info = cc_common.merge_cc_infos(
+        cc_infos = cc_infos + swift_toolchain.implicit_deps_providers.cc_infos,
+    )
+    merged_objc_info = apple_common.new_objc_provider(
+        providers = objc_infos + swift_toolchain.implicit_deps_providers.objc_infos,
+    )
+
+    merged_swift_info = create_swift_info(
+        swift_infos = (
+            swift_infos +
+            private_swift_infos +
+            swift_toolchain.implicit_deps_providers.swift_infos
+        ),
     )
 
     # Flattening this `depset` is necessary because we need to extract the
@@ -2524,9 +2557,7 @@ def compile(
     # flattening happens only once as the action is being registered, rather
     # than the same `depset` being flattened and re-merged multiple times up
     # the build graph.
-    transitive_modules = (
-        merged_providers.swift_info.transitive_modules.to_list()
-    )
+    transitive_modules = merged_swift_info.transitive_modules.to_list()
     for info in extra_swift_infos:
         transitive_modules.extend(info.transitive_modules.to_list())
 
@@ -2612,9 +2643,9 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
     prerequisites = struct(
         additional_inputs = additional_inputs,
         bin_dir = feature_configuration._bin_dir,
-        cc_compilation_context = merged_providers.cc_info.compilation_context,
+        cc_compilation_context = merged_cc_info.compilation_context,
         const_protocols_to_gather_file = const_protocols_to_gather_file,
-        cc_linking_context = merged_providers.cc_info.linking_context,
+        cc_linking_context = merged_cc_info.linking_context,
         defines = sets.to_list(defines_set),
         explicit_swift_module_map_file = explicit_swift_module_map_file,
         developer_dirs = swift_toolchain.developer_dirs,
@@ -2623,7 +2654,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         is_swift = True,
         module_name = module_name,
         package_name = package_name,
-        objc_info = merged_providers.objc_info,
+        objc_info = merged_objc_info,
         plugins = depset(used_plugins),
         source_files = srcs,
         transitive_modules = transitive_modules,
@@ -2681,10 +2712,15 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
     ):
         compilation_context_to_compile = (
             compilation_context_for_explicit_module_compilation(
-                compilation_contexts = [cc_common.create_compilation_context(
-                    headers = depset([compile_outputs.generated_header_file]),
-                )],
-                deps = deps,
+                compilation_contexts = [
+                    cc_common.create_compilation_context(
+                        headers = depset([
+                            compile_outputs.generated_header_file,
+                        ]),
+                    ),
+                    merged_cc_info.compilation_context,
+                ],
+                swift_infos = swift_infos,
             )
         )
         precompiled_module = _precompile_clang_module(
@@ -2726,11 +2762,12 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         clang = create_clang_module(
             compilation_context = _create_cc_compilation_context(
                 actions = actions,
+                compilation_contexts = compilation_contexts,
                 defines = defines,
-                deps = deps,
                 feature_configuration = feature_configuration,
                 includes = includes,
                 public_hdrs = public_hdrs,
+                swift_infos = swift_infos,
                 swift_toolchain = swift_toolchain,
                 target_name = target_name,
             ),
@@ -2888,12 +2925,13 @@ def _precompile_clang_module(
         implicit_swift_infos = (
             swift_toolchain.clang_implicit_deps_providers.swift_infos
         )
-        cc_compilation_context = cc_common.merge_cc_infos(
-            cc_infos = swift_toolchain.clang_implicit_deps_providers.cc_infos,
-            direct_cc_infos = [
-                CcInfo(compilation_context = cc_compilation_context),
+        cc_compilation_context = merge_compilation_contexts(
+            direct_compilation_contexts = [cc_compilation_context],
+            transitive_compilation_contexts = [
+                cc_info.compilation_context
+                for cc_info in swift_toolchain.clang_implicit_deps_providers.cc_infos
             ],
-        ).compilation_context
+        )
     else:
         implicit_swift_infos = []
 
@@ -2937,11 +2975,12 @@ def _precompile_clang_module(
 def _create_cc_compilation_context(
         *,
         actions,
+        compilation_contexts,
         defines,
-        deps,
         feature_configuration,
         includes,
         public_hdrs,
+        swift_infos,
         swift_toolchain,
         target_name):
     """Creates a `CcCompilationContext` to propagate for a Swift module.
@@ -2952,17 +2991,22 @@ def _create_cc_compilation_context(
 
     Args:
         actions: The context's `actions` object.
+        compilation_contexts: A list of `CcCompilationContext`s that represent
+            C/Objective-C requirements of the target being compiled, such as
+            Swift-compatible preprocessor defines, header search paths, and so
+            forth. These are typically retrieved from the `CcInfo` providers of
+            a target's dependencies.
         defines: Symbols that should be defined by passing `-D` to the compiler.
-        deps: Non-private dependencies of the target being compiled. These
-            targets are used as dependencies of both the Swift module being
-            compiled and the Clang module for the generated header. These
-            targets must propagate `CcInfo` or `SwiftInfo`.
         feature_configuration: A feature configuration obtained from
             `swift_common.configure_features`.
         includes: Include paths that should be propagated by the new compilation
             context.
         public_hdrs: Public headers that should be propagated by the new
             compilation context (for example, the module's generated header).
+        swift_infos: `SwiftInfo` providers propagated by non-private
+            dependencies of the target being compiled. The modules represented
+            by these providers are used as dependencies of both the Swift module
+            being compiled and the Clang module for the generated header.
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
         target_name: The name of the target for which the code is being
             compiled, which is used to determine unique file paths for the
@@ -2985,11 +3029,7 @@ def _create_cc_compilation_context(
         compilation_context, _ = cc_common.compile(
             actions = actions,
             cc_toolchain = swift_toolchain.cc_toolchain_info,
-            compilation_contexts = [
-                dep[CcInfo].compilation_context
-                for dep in deps
-                if CcInfo in dep
-            ],
+            compilation_contexts = compilation_contexts,
             defines = defines,
             feature_configuration = get_cc_feature_configuration(
                 feature_configuration = feature_configuration,
@@ -3004,18 +3044,16 @@ def _create_cc_compilation_context(
     # avoids having Bazel create an action that results in an empty module map
     # that won't contribute meaningfully to layering checks anyway.
     if defines:
-        direct_cc_infos = [
-            CcInfo(compilation_context = cc_common.create_compilation_context(
-                defines = depset(defines),
-            )),
+        direct_compilation_contexts = [
+            cc_common.create_compilation_context(defines = depset(defines)),
         ]
     else:
-        direct_cc_infos = []
+        direct_compilation_contexts = []
 
-    return cc_common.merge_cc_infos(
-        cc_infos = [dep[CcInfo] for dep in deps if CcInfo in dep],
-        direct_cc_infos = direct_cc_infos,
-    ).compilation_context
+    return merge_compilation_contexts(
+        direct_compilation_contexts = direct_compilation_contexts,
+        transitive_compilation_contexts = compilation_contexts,
+    )
 
 def _declare_compile_outputs(
         *,
@@ -3439,44 +3477,6 @@ def _declare_multiple_outputs_and_write_output_file_map(
         other_outputs = other_outputs,
         output_file_map = output_map_file,
         derived_files_output_file_map = derived_files_output_map_file,
-    )
-
-def _merge_targets_providers(implicit_deps_providers, targets):
-    """Merges the compilation-related providers for the given targets.
-
-    This function merges the `CcInfo` and `SwiftInfo` providers from the given
-    targets into a single provider for each. These providers are then meant to
-    be passed as prerequisites to compilation actions so that configurators can
-    populate command lines and inputs based on their data.
-
-    Args:
-        implicit_deps_providers: The implicit deps providers `struct` from the
-            Swift toolchain.
-        targets: The targets whose providers should be merged.
-
-    Returns:
-        A `struct` containing the following fields:
-
-        *   `cc_info`: The merged `CcInfo` provider of the targets.
-        *   `objc_info`: The merged `apple_common.Objc` provider of the targets.
-        *   `swift_info`: The merged `SwiftInfo` provider of the targets.
-    """
-    cc_infos = list(implicit_deps_providers.cc_infos)
-    objc_infos = list(implicit_deps_providers.objc_infos)
-    swift_infos = list(implicit_deps_providers.swift_infos)
-
-    for target in targets:
-        if CcInfo in target:
-            cc_infos.append(target[CcInfo])
-        if SwiftInfo in target:
-            swift_infos.append(target[SwiftInfo])
-        if apple_common.Objc in target:
-            objc_infos.append(target[apple_common.Objc])
-
-    return struct(
-        cc_info = cc_common.merge_cc_infos(cc_infos = cc_infos),
-        objc_info = apple_common.new_objc_provider(providers = objc_infos),
-        swift_info = create_swift_info(swift_infos = swift_infos),
     )
 
 def output_groups_from_other_compilation_outputs(*, other_compilation_outputs):

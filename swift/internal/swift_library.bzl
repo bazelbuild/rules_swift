@@ -164,6 +164,9 @@ def _swift_library_impl(ctx):
         deps = ctx.attr.deps
         private_deps = []
 
+    swift_infos = get_providers(deps, SwiftInfo)
+    private_swift_infos = get_providers(private_deps, SwiftInfo)
+
     if ctx.attr.generates_header:
         generated_header_name = (
             ctx.attr.generated_header_name or
@@ -183,17 +186,19 @@ def _swift_library_impl(ctx):
     module_context, cc_compilation_outputs, other_compilation_outputs = swift_common.compile(
         actions = ctx.actions,
         additional_inputs = additional_inputs,
+        cc_infos = get_providers(ctx.attr.deps, CcInfo),
         copts = _maybe_parse_as_library_copts(srcs) + copts,
         defines = ctx.attr.defines,
-        deps = deps,
         feature_configuration = feature_configuration,
         generated_header_name = generated_header_name,
         include_dev_srch_paths = include_dev_srch_paths,
         module_name = module_name,
+        objc_infos = get_providers(ctx.attr.deps, apple_common.Objc),
         package_name = ctx.attr.package_name,
         plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),
-        private_deps = private_deps,
+        private_swift_infos = private_swift_infos,
         srcs = srcs,
+        swift_infos = swift_infos,
         swift_toolchain = swift_toolchain,
         target_name = ctx.label.name,
         workspace_name = ctx.workspace_name,
@@ -267,7 +272,7 @@ def _swift_library_impl(ctx):
             modules = [module_context],
             # Note that private_deps are explicitly omitted here; they should
             # not propagate.
-            swift_infos = get_providers(deps, SwiftInfo),
+            swift_infos = swift_infos,
         ),
     ]
 

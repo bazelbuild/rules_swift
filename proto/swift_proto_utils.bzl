@@ -49,7 +49,7 @@ load(
 )
 
 def proto_path(proto_src, proto_info):
-    """Derives the string used to import the proto. 
+    """Derives the string used to import the proto.
 
     This is the proto source path within its repository,
     adjusted by `import_prefix` and `strip_import_prefix`.
@@ -270,14 +270,16 @@ def compile_swift_protos_for_target(
     include_dev_srch_paths = include_developer_search_paths(attr)
     module_context, cc_compilation_outputs, other_compilation_outputs = swift_common.compile(
         actions = ctx.actions,
+        cc_infos = get_providers(compiler_deps, CcInfo),
         copts = ["-parse-as-library"],
-        deps = compiler_deps,
         feature_configuration = feature_configuration,
         include_dev_srch_paths = include_dev_srch_paths,
         module_name = module_name,
+        objc_infos = get_providers(compiler_deps, apple_common.Objc),
         package_name = None,
         srcs = generated_swift_srcs,
         swift_toolchain = swift_toolchain,
+        swift_infos = get_providers(compiler_deps, SwiftInfo),
         target_name = target_label.name,
         workspace_name = ctx.workspace_name,
     )
