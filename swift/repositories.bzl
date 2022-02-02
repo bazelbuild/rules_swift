@@ -68,20 +68,18 @@ def swift_rules_dependencies():
     _maybe(
         http_archive,
         name = "com_github_apple_swift_protobuf",
-        urls = ["https://github.com/apple/swift-protobuf/archive/1.12.0.zip"],
-        sha256 = "a9c1c14d81df690ed4c15bfb3c0aab0cb7a3f198ee95620561b89b1da7b76a9f",
+        urls = ["https://github.com/apple/swift-protobuf/archive/1.12.0.tar.gz"],
+        sha256 = "f50dae44d998b49c271bf9288f2e1ff564bb950d8f276b43dce2a82079b22e25",
         strip_prefix = "swift-protobuf-1.12.0/",
-        type = "zip",
         build_file = "@build_bazel_rules_swift//third_party:com_github_apple_swift_protobuf/BUILD.overlay",
     )
 
     _maybe(
         http_archive,
         name = "com_github_grpc_grpc_swift",
-        urls = ["https://github.com/grpc/grpc-swift/archive/0.9.0.zip"],
-        sha256 = "b9818134f497df073cb49e0df59bfeea801291230d6fc048fdc6aa76e453a3cb",
+        urls = ["https://github.com/grpc/grpc-swift/archive/0.9.0.tar.gz"],
+        sha256 = "bcaaa8c44c0d29902bf4a5c6df593286338659ffa0110cc11a0fd8fcb890feb7",
         strip_prefix = "grpc-swift-0.9.0/",
-        type = "zip",
         build_file = "@build_bazel_rules_swift//third_party:com_github_grpc_grpc_swift/BUILD.overlay",
     )
 
@@ -101,13 +99,12 @@ def swift_rules_dependencies():
         name = "rules_proto",
         # latest as of 2021-11-16
         urls = [
-            "https://github.com/bazelbuild/rules_proto/archive/11bf7c25e666dd7ddacbcd4d4c4a9de7a25175f8.zip",
+            "https://github.com/bazelbuild/rules_proto/archive/11bf7c25e666dd7ddacbcd4d4c4a9de7a25175f8.tar.gz",
         ],
         patch_args = ["-p1"],
         patches = ["@build_bazel_rules_swift//third_party/rules_proto:rules_proto.patch"],
-        sha256 = "810d02d1c016bea9743161f42323e59000c0690e4bf18d94e4f44e361b48645b",
+        sha256 = "20b240eba17a36be4b0b22635aca63053913d5c1ee36e16be36499d167a2f533",
         strip_prefix = "rules_proto-11bf7c25e666dd7ddacbcd4d4c4a9de7a25175f8",
-        type = "zip",
     )
 
     # It relies on `index-import` to import indexes into Bazel's remote
