@@ -14,10 +14,10 @@
 
 """A rule that generates a Swift library from protocol buffer sources."""
 
-load(":providers.bzl", "SwiftInfo", "SwiftProtoInfo")
+load(":providers.bzl", "SwiftProtoInfo")
 load(
     ":swift_protoc_gen_aspect.bzl",
-    "SwiftProtoCcInfo",
+    "SwiftProtoCompilationInfo",
     "swift_protoc_gen_aspect",
 )
 
@@ -29,9 +29,9 @@ def _swift_proto_library_impl(ctx):
         )
 
     dep = ctx.attr.deps[0]
-    proto_cc_info = dep[SwiftProtoCcInfo]
-    cc_info = proto_cc_info.cc_info
-    swift_info = dep[SwiftInfo]
+    proto_compile_info = dep[SwiftProtoCompilationInfo]
+    cc_info = proto_compile_info.cc_info
+    swift_info = proto_compile_info.swift_info
     swift_proto_info = dep[SwiftProtoInfo]
 
     providers = [
@@ -62,8 +62,8 @@ def _swift_proto_library_impl(ctx):
 
     # Propagate a nested apple_common.Objc provider if present so that
     # apple_binary targets link correctly.
-    if proto_cc_info.objc_info:
-        providers.append(proto_cc_info.objc_info)
+    if proto_compile_info.objc_info:
+        providers.append(proto_compile_info.objc_info)
 
     return providers
 

@@ -34,7 +34,7 @@ load(
 )
 load(":providers.bzl", "SwiftInfo", "SwiftProtoInfo", "SwiftToolchainInfo")
 load(":swift_common.bzl", "swift_common")
-load(":utils.bzl", "get_compilation_contexts", "get_providers")
+load(":utils.bzl", "get_compilation_contexts")
 
 # The paths of proto files bundled with the runtime. This is mainly the well
 # known type protos, but also includes descriptor.proto to make generation of
@@ -58,22 +58,25 @@ _RUNTIME_BUNDLED_PROTO_FILES = [
     "google/protobuf/wrappers.proto",
 ]
 
-SwiftProtoCcInfo = provider(
+SwiftProtoCompilationInfo = provider(
     doc = """\
-Wraps a `CcInfo` provider added to a `proto_library` by the Swift proto aspect.
+Wraps compilation related providers added to a `proto_library` by the aspect.
 
 This is necessary because `proto_library` targets already propagate a `CcInfo`
-provider for C++ protos, so the Swift proto aspect cannot directly attach its
-own. (It's also not good practice to attach providers that you don't own to
-arbitrary targets, because you don't know how those targets might change in the
-future.) The `swift_proto_library` rule will pick up this provider and return
-the underlying `CcInfo` provider as its own.
+provider for C++ protos; but `swift_proto_library` also wants to attach Swift
+related providers, some other languages that also provide Swift interop might
+also needs to provide Swift providers for their langauges to interop. So the
+Swift proto aspect wraps all the providers it use in this provider to "hide"
+them from other langauges, and then `swift_proto_library` extracts all the
+nested providers and returns them as its providers since that is where these
+specific apis are exposed in the build graph.
 
 This provider is an implementation detail not meant to be used by clients.
 """,
     fields = {
         "cc_info": "The underlying `CcInfo` provider.",
         "objc_info": "The underlying `apple_common.Objc` provider.",
+        "swift_info": "The underlying `SwiftInfo` provider.",
     },
 )
 
@@ -315,13 +318,15 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
         target[ProtoInfo].proto_source_root,
     )
 
-    proto_deps = [
-        dep
-        for dep in aspect_ctx.rule.attr.deps
-        if SwiftProtoInfo in dep
-    ]
-    proto_compilation_contexts = get_compilation_contexts(proto_deps)
-    proto_swift_infos = get_providers(proto_deps, SwiftInfo)
+    proto_deps = aspect_ctx.rule.attr.deps
+    transitive_cc_infos = []
+    transitive_objc_infos = []
+    transitive_swift_infos = []
+    for p in proto_deps:
+        compilation_info = p[SwiftProtoCompilationInfo]
+        transitive_cc_infos.append(compilation_info.cc_info)
+        transitive_objc_infos.append(compilation_info.objc_info)
+        transitive_swift_infos.append(compilation_info.swift_info)
 
     minimal_module_mappings = []
     if direct_srcs:
@@ -342,10 +347,6 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
         aspect_ctx.actions,
         minimal_module_mappings,
     )
-
-    support_deps = aspect_ctx.attr._proto_support
-    support_compilation_contexts = get_compilation_contexts(support_deps)
-    support_swift_infos = get_providers(support_deps, SwiftInfo)
 
     if direct_srcs:
         extra_features = []
@@ -387,8 +388,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             # the input to the action (and what protoc has to parse).
             transitive_descriptor_sets = depset(transitive = [
                 dep[ProtoInfo].transitive_descriptor_sets
-                for dep in aspect_ctx.rule.attr.deps
-                if ProtoInfo in dep
+                for dep in proto_deps
             ])
         else:
             transitive_descriptor_sets = target[ProtoInfo].transitive_descriptor_sets
@@ -409,16 +409,23 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
 
         module_name = swift_common.derive_module_name(target.label)
 
+        support_deps = aspect_ctx.attr._proto_support
+        for p in support_deps:
+            if CcInfo in p:
+                transitive_cc_infos.append(p[CcInfo])
+            if SwiftInfo in p:
+                transitive_swift_infos.append(p[SwiftInfo])
+            if apple_common.Objc in p:
+                transitive_objc_infos.append(p[apple_common.Objc])
+
         module_context, compilation_outputs = swift_common.compile(
             actions = aspect_ctx.actions,
-            compilation_contexts = (
-                proto_compilation_contexts + support_compilation_contexts
-            ),
+            compilation_contexts = get_compilation_contexts(support_deps),
             copts = ["-parse-as-library"],
             feature_configuration = feature_configuration,
             module_name = module_name,
             srcs = pbswift_files,
-            swift_infos = proto_swift_infos + support_swift_infos,
+            swift_infos = transitive_swift_infos,
             swift_toolchain = swift_toolchain,
             target_name = target.label.name,
         )
@@ -429,11 +436,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
                 compilation_outputs = compilation_outputs,
                 feature_configuration = feature_configuration,
                 label = target.label,
-                linking_contexts = [
-                    dep[CcInfo].linking_context
-                    for dep in proto_deps + support_deps
-                    if CcInfo in dep
-                ],
+                linking_contexts = [x.linking_context for x in transitive_cc_infos],
                 module_context = module_context,
                 # Prevent conflicts with C++ protos in the same output
                 # directory, which use the `lib{name}.a` pattern. This will
@@ -443,43 +446,18 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             )
         )
 
-        # It's bad practice to attach providers you don't own to other targets,
-        # because you can't control how those targets might change in the future
-        # (e.g., it could introduce a collision). This means we can't propagate
-        # a `CcInfo` from this aspect nor do we want to merge the `CcInfo`
-        # providers from the target's deps. Instead, the aspect returns a
-        # `SwiftProtoCcInfo` provider that wraps the `CcInfo` containing the
-        # Swift linking info. Then, for any subgraph of `proto_library` targets,
-        # we can merge the extracted `CcInfo` providers with the regular
-        # `CcInfo` providers of the support libraries (which are regular
-        # `swift_library` targets), and wrap that *back* into a
-        # `SwiftProtoCcInfo`. Finally, the `swift_proto_library` rule will
-        # extract the `CcInfo` from the `SwiftProtoCcInfo` of its single
-        # dependency and propagate that safely up the tree.
-        transitive_cc_infos = get_providers(
-            proto_deps,
-            SwiftProtoCcInfo,
-            lambda proto_cc_info: proto_cc_info.cc_info,
-        ) + get_providers(support_deps, CcInfo)
-
         # Propagate an `apple_common.Objc` provider with linking info about the
         # library so that linking with Apple Starlark APIs/rules works
         # correctly.
         # TODO(b/171413861): This can be removed when the Obj-C rules are
         # migrated to use `CcLinkingContext`.
-        objc_infos = get_providers(
-            proto_deps,
-            SwiftProtoCcInfo,
-            lambda proto_cc_info: proto_cc_info.objc_info,
-        ) + get_providers(support_deps, apple_common.Objc)
-
         objc_info = new_objc_provider(
             additional_objc_infos = (
-                objc_infos +
+                transitive_objc_infos +
                 swift_toolchain.implicit_deps_providers.objc_infos
             ),
             # We pass an empty list here because we already extracted the
-            # `Objc` providers from `SwiftProtoCcInfo` above.
+            # `Objc` providers from `SwiftProtoCompilationInfo` above.
             deps = [],
             feature_configuration = feature_configuration,
             module_context = module_context,
@@ -492,16 +470,13 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
         )
 
         providers = [
-            SwiftProtoCcInfo(
-                cc_info = cc_common.merge_cc_infos(
-                    direct_cc_infos = [cc_info],
-                    cc_infos = transitive_cc_infos,
-                ),
+            SwiftProtoCompilationInfo(
+                cc_info = cc_info,
                 objc_info = objc_info,
-            ),
-            swift_common.create_swift_info(
-                modules = [module_context],
-                swift_infos = proto_swift_infos + support_swift_infos,
+                swift_info = swift_common.create_swift_info(
+                    modules = [module_context],
+                    swift_infos = transitive_swift_infos,
+                ),
             ),
         ]
     else:
@@ -512,27 +487,17 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
         # already been pulled in by a `proto_library` that had srcs.
         pbswift_files = []
 
-        objc_info = apple_common.new_objc_provider(
-            providers = get_providers(
-                proto_deps,
-                SwiftProtoCcInfo,
-                lambda proto_cc_info: proto_cc_info.objc_info,
-            ),
-        )
-
         providers = [
-            SwiftProtoCcInfo(
+            SwiftProtoCompilationInfo(
                 cc_info = cc_common.merge_cc_infos(
-                    cc_infos = get_providers(
-                        proto_deps,
-                        SwiftProtoCcInfo,
-                        lambda proto_cc_info: proto_cc_info.cc_info,
-                    ),
+                    cc_infos = transitive_cc_infos,
                 ),
-                objc_info = objc_info,
-            ),
-            swift_common.create_swift_info(
-                swift_infos = proto_swift_infos,
+                objc_info = apple_common.new_objc_provider(
+                    providers = transitive_objc_infos,
+                ),
+                swift_info = swift_common.create_swift_info(
+                    swift_infos = transitive_swift_infos,
+                ),
             ),
         ]
 
