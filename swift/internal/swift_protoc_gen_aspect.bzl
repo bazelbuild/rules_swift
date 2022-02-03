@@ -27,8 +27,7 @@ load(
 load(":linking.bzl", "new_objc_provider")
 load(
     ":proto_gen_utils.bzl",
-    "declare_generated_files",
-    "extract_generated_dir_path",
+    "declare_generated_files_as_siblings",
     "proto_import_path",
     "register_module_mapping_write_action",
 )
@@ -106,9 +105,9 @@ def _register_pbswift_generate_action(
         transitive_descriptor_sets,
         module_mapping_file,
         generate_from_proto_sources,
-        mkdir_and_run,
         protoc_executable,
-        protoc_plugin_executable):
+        protoc_plugin_executable,
+        bin_dir):
     """Registers actions that generate `.pb.swift` files from `.proto` files.
 
     Args:
@@ -128,34 +127,20 @@ def _register_pbswift_generate_action(
             from proto source file vs just via the DescriptorSets. The Sets
             don't have source info, so the generated sources won't have
             comments (https://github.com/bazelbuild/bazel/issues/9337).
-        mkdir_and_run: The `File` representing the `mkdir_and_run` executable.
         protoc_executable: The `File` representing the `protoc` executable.
         protoc_plugin_executable: The `File` representing the `protoc` plugin
             executable.
+        bin_dir: ctx.bin_dir.path value.
 
     Returns:
         A list of generated `.pb.swift` files corresponding to the `.proto`
         sources.
     """
-    generated_files = declare_generated_files(
-        label.name,
+    generated_files = declare_generated_files_as_siblings(
         actions,
         "pb",
-        proto_source_root,
         direct_srcs,
     )
-    generated_dir_path = extract_generated_dir_path(
-        label.name,
-        "pb",
-        proto_source_root,
-        generated_files,
-    )
-
-    mkdir_args = actions.args()
-    mkdir_args.add(generated_dir_path)
-
-    protoc_executable_args = actions.args()
-    protoc_executable_args.add(protoc_executable)
 
     protoc_args = actions.args()
 
@@ -168,7 +153,7 @@ def _register_pbswift_generate_action(
         protoc_plugin_executable,
         format = "--plugin=protoc-gen-swift=%s",
     )
-    protoc_args.add(generated_dir_path, format = "--swift_out=%s")
+    protoc_args.add(bin_dir, format = "--swift_out=%s")
     protoc_args.add("--swift_opt=FileNaming=FullPath")
     protoc_args.add("--swift_opt=Visibility=Public")
     if module_mapping_file:
@@ -208,8 +193,8 @@ def _register_pbswift_generate_action(
     # TODO(b/23975430): This should be a simple `actions.run_shell`, but until
     # the cited bug is fixed, we have to use the wrapper script.
     actions.run(
-        arguments = [mkdir_args, protoc_executable_args, protoc_args],
-        executable = mkdir_and_run,
+        arguments = [protoc_args],
+        executable = protoc_executable,
         inputs = depset(
             direct = additional_command_inputs,
             transitive = [transitive_descriptor_sets],
@@ -218,7 +203,6 @@ def _register_pbswift_generate_action(
         outputs = generated_files,
         progress_message = "Generating Swift sources for {}".format(label),
         tools = [
-            mkdir_and_run,
             protoc_executable,
             protoc_plugin_executable,
         ],
@@ -402,9 +386,9 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             transitive_descriptor_sets,
             transitive_module_mapping_file,
             generate_from_proto_sources,
-            aspect_ctx.executable._mkdir_and_run,
             aspect_ctx.executable._protoc,
             aspect_ctx.executable._protoc_gen_swift,
+            aspect_ctx.bin_dir.path,
         )
 
         module_name = swift_common.derive_module_name(target.label)
@@ -515,13 +499,6 @@ swift_protoc_gen_aspect = aspect(
         swift_common.toolchain_attrs(),
         swift_config_attrs(),
         {
-            "_mkdir_and_run": attr.label(
-                cfg = "exec",
-                default = Label(
-                    "@build_bazel_rules_swift//tools/mkdir_and_run",
-                ),
-                executable = True,
-            ),
             # TODO(b/63389580): Migrate to proto_lang_toolchain.
             "_proto_support": attr.label_list(
                 default = [

@@ -16,13 +16,16 @@
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 
-def declare_generated_files(
+def declare_generated_files_in_subdir(
         name,
         actions,
         extension_fragment,
         proto_source_root,
         proto_srcs):
     """Declares generated `.swift` files from a list of `.proto` files.
+
+    The generated files will recreate their directory structure nested under a
+    single directory.
 
     Args:
         name: The name of the target currently being analyzed.
@@ -35,10 +38,14 @@ def declare_generated_files(
         proto_srcs: A list of `.proto` files.
 
     Returns:
-        A list of files that map one-to-one to `proto_srcs` but with
-        `.{extension_fragment}.swift` extensions instead of `.proto`.
+        A tuple with two items:
+          1. A string with the repository-relative path to the directory where
+             the `.swift` files are being generated.
+          2. A list of files that map one-to-one to `proto_srcs` but with
+             `.{extension_fragment}.swift` extensions instead of `.proto`.
+
     """
-    return [
+    generated_files = [
         actions.declare_file(
             _generated_file_path(
                 name,
@@ -50,42 +57,41 @@ def declare_generated_files(
         for f in proto_srcs
     ]
 
-def extract_generated_dir_path(
-        name,
-        extension_fragment,
-        proto_source_root,
-        generated_files):
-    """Extracts the full path to the directory where files are generated.
-
-    This dance is required because we cannot get the full (repository-relative)
-    path to the directory that we need to pass to `protoc` unless we either
-    create the directory as a tree artifact or extract it from a file within
-    that directory. We cannot do the former because we also want to declare
-    individual outputs for the files we generate, and we can't declare a
-    directory that has the same prefix as any of the files we generate. So, we
-    assume we have at least one file and we extract the path from it.
-
-    Args:
-        name: The name of the target currently being analyzed.
-        extension_fragment: An extension fragment that precedes `.swift` on the
-            end of the generated files. In other words, the file `foo.proto`
-            will generate a file named `foo.{extension_fragment}.swift`.
-        proto_source_root: the source root for the `.proto` files
-            `generated_files` are generated from.
-        generated_files: A list of generated `.swift` files, one of which will
-            be used to extract the directory path.
-
-    Returns:
-        The repository-relative path to the directory where the `.swift` files
-        are being generated.
-    """
-    if not generated_files:
-        return None
-
     first_path = generated_files[0].path
     dir_name = _generated_file_path(name, extension_fragment, proto_source_root)
     offset = first_path.find(dir_name)
-    return first_path[:offset + len(dir_name)]
+    generation_dir = first_path[:offset + len(dir_name)]
+
+    return generation_dir, generated_files
+
+def declare_generated_files_as_siblings(
+        actions,
+        extension_fragment,
+        proto_srcs):
+    """Declares generated `.swift` files from a list of `.proto` files.
+
+    The generated files will be "siblings" of the files they generate from.
+
+    Args:
+        actions: The context's actions object.
+        extension_fragment: An extension fragment that precedes `.swift` on the
+            end of the generated files. In other words, the file `foo.proto`
+            will generate a file named `foo.{extension_fragment}.swift`.
+        proto_srcs: A list of `.proto` files.
+
+    Returns:
+        A list of files that map one-to-one to `proto_srcs` but with
+        `.{extension_fragment}.swift` extensions instead of `.proto`.
+
+    """
+    ext = ".{}.swift".format(extension_fragment)
+    return [
+        actions.declare_file(
+            paths.replace_extension(f.basename, ext),
+            sibling = f,
+        )
+        for f in proto_srcs
+    ]
 
 def register_module_mapping_write_action(name, actions, module_mappings):
     """Registers an action that generates a module mapping for a proto library.

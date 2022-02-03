@@ -23,8 +23,7 @@ load(
 load(":linking.bzl", "new_objc_provider")
 load(
     ":proto_gen_utils.bzl",
-    "declare_generated_files",
-    "extract_generated_dir_path",
+    "declare_generated_files_in_subdir",
     "proto_import_path",
     "register_module_mapping_write_action",
 )
@@ -75,18 +74,17 @@ def _register_grpcswift_generate_action(
         A list of generated `.grpc.swift` files corresponding to the `.proto`
         sources.
     """
-    generated_files = declare_generated_files(
+
+    # Subdirectory-based generation is a requirement swift-grpc, as the
+    # generation needs to support server, client, or stubs modes, but the
+    # current generation always names the files they same to they can't be
+    # generated "near" the .proto files like `swift_proto_library` does.
+    generated_dir_path, generated_files = declare_generated_files_in_subdir(
         label.name,
         actions,
         "grpc",
         proto_source_root,
         direct_srcs,
-    )
-    generated_dir_path = extract_generated_dir_path(
-        label.name,
-        "grpc",
-        proto_source_root,
-        generated_files,
     )
 
     mkdir_args = actions.args()
