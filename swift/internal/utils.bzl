@@ -254,6 +254,10 @@ def merge_compilation_contexts(
         The merged `CcCompilationContext`.
     """
     if not transitive_compilation_contexts:
+        # Fastest path: nothing to do but use the one direct.
+        if len(direct_compilation_contexts) == 1:
+            return direct_compilation_contexts[0]
+
         # Fast path: Everything can be merged with the direct API.
         return cc_common.merge_compilation_contexts(
             compilation_contexts = direct_compilation_contexts,
