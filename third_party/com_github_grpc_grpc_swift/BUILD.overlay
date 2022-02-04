@@ -1,4 +1,3 @@
-
 load(
     "@build_bazel_apple_support//rules:universal_binary.bzl",
     "universal_binary",
