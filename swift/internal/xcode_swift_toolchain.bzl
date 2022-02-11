@@ -36,6 +36,7 @@ load(
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
     "SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES",
+    "SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES_WITHOUT_TYPES",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS",
     "SWIFT_FEATURE_REMAP_XCODE_PATH",
@@ -718,6 +719,7 @@ def _xcode_swift_toolchain_impl(ctx):
 
     # Xcode 12.5 implies Swift 5.4.
     if _is_xcode_at_least_version(xcode_config, "12.5"):
+        requested_features.append(SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES_WITHOUT_TYPES)
         requested_features.append(SWIFT_FEATURE_SUPPORTS_SYSTEM_MODULE_FLAG)
 
     env = _xcode_env(platform = platform, xcode_config = xcode_config)
