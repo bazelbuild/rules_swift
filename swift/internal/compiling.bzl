@@ -1549,14 +1549,13 @@ def _conditional_compilation_flag_configurator(prerequisites, args):
         format_each = "-D%s",
     )
 
-def _additional_inputs_configurator(prerequisites, args):
+def _additional_inputs_configurator(prerequisites, _args):
     """Propagates additional input files to the action.
 
     This configurator does not add any flags to the command line, but ensures
     that any additional input files requested by the caller of the action are
     available in the sandbox.
     """
-    _unused = [args]
     return swift_toolchain_config.config_result(
         inputs = prerequisites.additional_inputs,
     )

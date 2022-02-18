@@ -66,7 +66,7 @@ def _swift_succeeds(repository_ctx, swiftc_path, *args):
     swift_result = repository_ctx.execute([swiftc_path] + list(args))
     return swift_result.return_code == 0
 
-def _check_enable_batch_mode(repository_ctx, swiftc_path, temp_dir):
+def _check_enable_batch_mode(repository_ctx, swiftc_path, _temp_dir):
     """Returns True if `swiftc` supports batch mode."""
     return _swift_succeeds(
         repository_ctx,
@@ -75,7 +75,7 @@ def _check_enable_batch_mode(repository_ctx, swiftc_path, temp_dir):
         "-enable-batch-mode",
     )
 
-def _check_skip_function_bodies(repository_ctx, swiftc_path, temp_dir):
+def _check_skip_function_bodies(repository_ctx, swiftc_path, _temp_dir):
     """Returns True if `swiftc` supports skip function bodies."""
     return _swift_succeeds(
         repository_ctx,
@@ -84,7 +84,7 @@ def _check_skip_function_bodies(repository_ctx, swiftc_path, temp_dir):
         "-experimental-skip-non-inlinable-function-bodies",
     )
 
-def _check_debug_prefix_map(repository_ctx, swiftc_path, temp_dir):
+def _check_debug_prefix_map(repository_ctx, swiftc_path, _temp_dir):
     """Returns True if `swiftc` supports debug prefix mapping."""
     return _swift_succeeds(
         repository_ctx,
