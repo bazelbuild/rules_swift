@@ -154,7 +154,7 @@ def _action_config(
 def _add_arg_impl(
         arg_name_or_value,
         value,
-        prerequisites,
+        _prerequisites,
         args,
         format = None):
     """Implementation function for the `add_arg` convenience configurator.
@@ -164,12 +164,11 @@ def _add_arg_impl(
             at partial creation time.
         value: The `value` passed to `Args.add`. Bound at partial creation
             time.
-        prerequisites: Unused by this function.
+        _prerequisites: Unused by this function.
         args: The `Args` object to which flags will be added.
         format: The `format` passed to `Args.add`. Bound at partial creation
             time.
     """
-    _unused = [prerequisites]
 
     # `Args.add` doesn't permit the `value` argument to be `None`, only
     # "unbound", so we have to check for this and not pass it *at all* if it
