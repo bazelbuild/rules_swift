@@ -51,7 +51,6 @@ def register_autolink_extract_action(
         actions,
         autolink_file,
         feature_configuration,
-        module_name,
         object_files,
         swift_toolchain):
     """Extracts autolink information from Swift `.o` files.
@@ -67,8 +66,6 @@ def register_autolink_extract_action(
         autolink_file: A `File` into which the autolink information will be
             written.
         feature_configuration: The Swift feature configuration.
-        module_name: The name of the module to which the `.o` files belong (used
-            when generating the progress message).
         object_files: The list of object files whose autolink information will
             be extracted.
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.

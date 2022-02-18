@@ -182,7 +182,6 @@ def _swift_linkopts_providers(
         apple_fragment,
         apple_toolchain,
         platform,
-        target,
         toolchain_label,
         xcode_config):
     """Returns providers containing flags that should be passed to the linker.
@@ -195,7 +194,6 @@ def _swift_linkopts_providers(
         apple_fragment: The `apple` configuration fragment.
         apple_toolchain: The `apple_common.apple_toolchain()` object.
         platform: The `apple_platform` value describing the target platform.
-        target: The target triple.
         toolchain_label: The label of the Swift toolchain that will act as the
             owner of the linker input propagating the flags.
         xcode_config: The Xcode configuration.
@@ -289,7 +287,7 @@ def _features_for_bitcode_mode(bitcode_mode):
              bitcode_mode_string,
          ))
 
-def _resource_directory_configurator(developer_dir, prerequisites, args):
+def _resource_directory_configurator(developer_dir, _prerequisites, args):
     """Configures compiler flags about the toolchain's resource directory.
 
     We must pass a resource directory explicitly if the build rules are invoked
@@ -299,7 +297,7 @@ def _resource_directory_configurator(developer_dir, prerequisites, args):
     Args:
         developer_dir: The path to Xcode's Developer directory. This argument is
             pre-bound in the partial.
-        prerequisites: The value returned by
+        _prerequisites: The value returned by
             `swift_common.action_prerequisites`.
         args: The `Args` object to which flags will be added.
     """
@@ -661,7 +659,6 @@ def _xcode_swift_toolchain_impl(ctx):
         apple_fragment,
         apple_toolchain,
         platform,
-        target,
         ctx.label,
         xcode_config,
     )

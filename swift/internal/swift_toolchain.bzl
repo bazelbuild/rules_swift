@@ -118,7 +118,6 @@ def _all_action_configs(additional_swiftc_copts):
     )
 
 def _swift_linkopts_cc_info(
-        cc_toolchain,
         cpu,
         os,
         toolchain_label,
@@ -130,8 +129,6 @@ def _swift_linkopts_cc_info(
     will link to the standard libraries correctly.
 
     Args:
-        cc_toolchain: The cpp toolchain from which the `ld` executable is
-            determined.
         cpu: The CPU architecture, which is used as part of the library path.
         os: The operating system name, which is used as part of the library
             path.
@@ -183,7 +180,6 @@ def _swift_toolchain_impl(ctx):
     cc_toolchain = find_cpp_toolchain(ctx)
 
     swift_linkopts_cc_info = _swift_linkopts_cc_info(
-        cc_toolchain,
         ctx.attr.arch,
         ctx.attr.os,
         ctx.label,
