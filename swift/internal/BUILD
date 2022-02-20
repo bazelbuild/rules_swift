@@ -324,6 +324,12 @@ bzl_library(
 )
 
 bzl_library(
+    name = "target_triples",
+    srcs = ["target_triples.bzl"],
+    visibility = ["//swift:__subpackages__"],
+)
+
+bzl_library(
     name = "toolchain_config",
     srcs = ["toolchain_config.bzl"],
     visibility = ["//swift:__subpackages__"],
@@ -352,6 +358,7 @@ bzl_library(
         ":feature_names",
         ":features",
         ":providers",
+        ":target_triples",
         ":toolchain_config",
         ":utils",
         "@bazel_skylib//lib:collections",
