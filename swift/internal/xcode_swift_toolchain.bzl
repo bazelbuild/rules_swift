@@ -304,7 +304,7 @@ def _features_for_bitcode_mode(bitcode_mode):
              bitcode_mode_string,
          ))
 
-def _resource_directory_configurator(developer_dir, prerequisites, args):
+def _resource_directory_configurator(developer_dir, _prerequisites, args):
     """Configures compiler flags about the toolchain's resource directory.
 
     We must pass a resource directory explicitly if the build rules are invoked
@@ -314,7 +314,7 @@ def _resource_directory_configurator(developer_dir, prerequisites, args):
     Args:
         developer_dir: The path to Xcode's Developer directory. This argument is
             pre-bound in the partial.
-        prerequisites: The value returned by
+        _prerequisites: The value returned by
             `swift_common.action_prerequisites`.
         args: The `Args` object to which flags will be added.
     """
