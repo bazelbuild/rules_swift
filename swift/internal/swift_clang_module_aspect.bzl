@@ -36,7 +36,10 @@ load(
     "create_module",
     "create_swift_info",
 )
-load(":utils.bzl", "compilation_context_for_explicit_module_compilation")
+load(
+    ":utils.bzl",
+    "compilation_context_for_explicit_module_compilation",
+)
 
 _MULTIPLE_TARGET_ASPECT_ATTRS = [
     "deps",
@@ -472,7 +475,6 @@ def _module_info_for_target(
     ):
         return None, None
 
-    attr = aspect_ctx.rule.attr
     module_map_file = None
 
     if not module_name:
@@ -652,40 +654,6 @@ def _handle_module(
         )
 
     return providers
-
-def _compilation_context_for_target(target):
-    """Gets the compilation context to use when compiling this target's module.
-
-    This function also handles the special case of a target that propagates an
-    `apple_common.Objc` provider in addition to its `CcInfo` provider, where the
-    former contains strict include paths that must also be added when compiling
-    the module.
-
-    Args:
-        target: The target to which the aspect is being applied.
-
-    Returns:
-        A `CcCompilationContext` that contains the headers of the target being
-        compiled.
-    """
-    if CcInfo not in target:
-        return None
-
-    compilation_context = target[CcInfo].compilation_context
-
-    if apple_common.Objc in target:
-        strict_includes = target[apple_common.Objc].strict_include
-        if strict_includes:
-            compilation_context = cc_common.merge_compilation_contexts(
-                compilation_contexts = [
-                    compilation_context,
-                    cc_common.create_compilation_context(
-                        includes = strict_includes,
-                    ),
-                ],
-            )
-
-    return compilation_context
 
 def _collect_swift_infos_from_deps(aspect_ctx):
     """Collect `SwiftInfo` providers from dependencies.
