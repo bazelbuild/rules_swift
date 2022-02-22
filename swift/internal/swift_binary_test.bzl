@@ -147,7 +147,6 @@ def _configure_features_for_binary(
 def _swift_linking_rule_impl(
         ctx,
         feature_configuration,
-        is_test,
         swift_toolchain,
         linkopts = []):
     """The shared implementation function for `swift_{binary,test}`.
@@ -156,8 +155,6 @@ def _swift_linking_rule_impl(
         ctx: The rule context.
         feature_configuration: A feature configuration obtained from
             `swift_common.configure_features`.
-        is_test: A `Boolean` value indicating whether the binary is a test
-            target.
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain
             being used to build the target.
         linkopts: Additional rule-specific flags that should be passed to the
@@ -317,7 +314,6 @@ def _swift_binary_impl(ctx):
     _, linking_outputs = _swift_linking_rule_impl(
         ctx,
         feature_configuration = feature_configuration,
-        is_test = False,
         swift_toolchain = swift_toolchain,
     )
 
@@ -351,7 +347,6 @@ def _swift_test_impl(ctx):
     _, linking_outputs = _swift_linking_rule_impl(
         ctx,
         feature_configuration = feature_configuration,
-        is_test = True,
         linkopts = linkopts,
         swift_toolchain = swift_toolchain,
     )
