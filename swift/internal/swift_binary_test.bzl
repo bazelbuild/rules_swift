@@ -187,7 +187,7 @@ def _swift_linking_rule_impl(
 
         copts = expand_locations(ctx, ctx.attr.copts, ctx.attr.swiftc_inputs)
 
-        module_context, compilation_outputs = swift_common.compile(
+        _, compilation_outputs = swift_common.compile(
             actions = ctx.actions,
             additional_inputs = additional_inputs,
             compilation_contexts = get_compilation_contexts(ctx.attr.deps),
@@ -201,9 +201,7 @@ def _swift_linking_rule_impl(
             target_name = ctx.label.name,
         )
     else:
-        module_context = None
         compilation_outputs = cc_common.create_compilation_outputs()
-        output_groups = {}
 
     # Collect linking contexts from any of the toolchain's implicit
     # dependencies.
