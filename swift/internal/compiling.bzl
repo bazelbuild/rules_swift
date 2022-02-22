@@ -2767,7 +2767,6 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
                 feature_configuration = feature_configuration,
                 includes = includes,
                 public_hdrs = public_hdrs,
-                swift_infos = swift_infos,
                 swift_toolchain = swift_toolchain,
                 target_name = target_name,
             ),
@@ -2980,7 +2979,6 @@ def _create_cc_compilation_context(
         feature_configuration,
         includes,
         public_hdrs,
-        swift_infos,
         swift_toolchain,
         target_name):
     """Creates a `CcCompilationContext` to propagate for a Swift module.
@@ -3003,10 +3001,6 @@ def _create_cc_compilation_context(
             context.
         public_hdrs: Public headers that should be propagated by the new
             compilation context (for example, the module's generated header).
-        swift_infos: `SwiftInfo` providers propagated by non-private
-            dependencies of the target being compiled. The modules represented
-            by these providers are used as dependencies of both the Swift module
-            being compiled and the Clang module for the generated header.
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
         target_name: The name of the target for which the code is being
             compiled, which is used to determine unique file paths for the
