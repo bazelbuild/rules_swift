@@ -39,7 +39,6 @@ load(
 load(
     ":utils.bzl",
     "compilation_context_for_explicit_module_compilation",
-    "merge_compilation_contexts",
 )
 
 _MULTIPLE_TARGET_ASPECT_ATTRS = [
@@ -476,7 +475,6 @@ def _module_info_for_target(
     ):
         return None, None
 
-    attr = aspect_ctx.rule.attr
     module_map_file = None
 
     if not module_name:
@@ -797,40 +795,6 @@ def _find_swift_interop_info(target, aspect_ctx):
     if interop_target:
         return interop_target[_SwiftInteropInfo], default_direct_swift_infos, default_swift_infos
     return None, default_direct_swift_infos, default_swift_infos
-
-def _compilation_context_for_target(target):
-    """Gets the compilation context to use when compiling this target's module.
-
-    This function also handles the special case of a target that propagates an
-    `apple_common.Objc` provider in addition to its `CcInfo` provider, where the
-    former contains strict include paths that must also be added when compiling
-    the module.
-
-    Args:
-        target: The target to which the aspect is being applied.
-
-    Returns:
-        A `CcCompilationContext` that contains the headers of the target being
-        compiled.
-    """
-    if CcInfo not in target:
-        return None
-
-    compilation_context = target[CcInfo].compilation_context
-
-    if apple_common.Objc in target:
-        strict_includes = target[apple_common.Objc].strict_include
-        if strict_includes:
-            compilation_context = merge_compilation_contexts(
-                direct_compilation_contexts = [
-                    compilation_context,
-                    cc_common.create_compilation_context(
-                        includes = strict_includes,
-                    ),
-                ],
-            )
-
-    return compilation_context
 
 def _swift_clang_module_aspect_impl(target, aspect_ctx):
     # Do nothing if the target already propagates `SwiftInfo`.
