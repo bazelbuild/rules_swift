@@ -431,6 +431,7 @@ bzl_library(
         ":output_groups",
         ":providers",
         ":swift_common",
+        ":swift_symbol_graph_aspect",
         ":utils",
         "@bazel_skylib//lib:dicts",
     ],
