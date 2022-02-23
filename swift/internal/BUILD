@@ -6,6 +6,7 @@ bzl_library(
     name = "rules",
     srcs = [
         "swift_binary_test.bzl",
+        "swift_extract_symbol_graph.bzl",
         "swift_feature_allowlist.bzl",
         "swift_grpc_library.bzl",
         "swift_import.bzl",
@@ -55,7 +56,9 @@ bzl_library(
         "proto_gen_utils.bzl",
         "providers.bzl",
         "swift_clang_module_aspect.bzl",
+        "swift_symbol_graph_aspect.bzl",
         "swift_usage_aspect.bzl",
+        "symbol_graph_extracting.bzl",
         "target_triples.bzl",
         "toolchain_config.bzl",
         "utils.bzl",

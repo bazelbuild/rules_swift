@@ -22,6 +22,7 @@ load(
     "@build_bazel_rules_swift//swift/internal:providers.bzl",
     _SwiftInfo = "SwiftInfo",
     _SwiftProtoInfo = "SwiftProtoInfo",
+    _SwiftSymbolGraphInfo = "SwiftSymbolGraphInfo",
     _SwiftToolchainInfo = "SwiftToolchainInfo",
     _SwiftUsageInfo = "SwiftUsageInfo",
 )
@@ -37,6 +38,10 @@ load(
 load(
     "@build_bazel_rules_swift//swift/internal:swift_common.bzl",
     _swift_common = "swift_common",
+)
+load(
+    "@build_bazel_rules_swift//swift/internal:swift_extract_symbol_graph.bzl",
+    _swift_extract_symbol_graph = "swift_extract_symbol_graph",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:swift_feature_allowlist.bzl",
@@ -71,6 +76,10 @@ load(
     _swift_proto_library = "swift_proto_library",
 )
 load(
+    "@build_bazel_rules_swift//swift/internal:swift_symbol_graph_aspect.bzl",
+    _swift_symbol_graph_aspect = "swift_symbol_graph_aspect",
+)
+load(
     "@build_bazel_rules_swift//swift/internal:swift_usage_aspect.bzl",
     _swift_usage_aspect = "swift_usage_aspect",
 )
@@ -78,6 +87,7 @@ load(
 # Re-export providers.
 SwiftInfo = _SwiftInfo
 SwiftProtoInfo = _SwiftProtoInfo
+SwiftSymbolGraphInfo = _SwiftSymbolGraphInfo
 SwiftToolchainInfo = _SwiftToolchainInfo
 SwiftUsageInfo = _SwiftUsageInfo
 
@@ -85,6 +95,7 @@ SwiftUsageInfo = _SwiftUsageInfo
 swift_common = _swift_common
 
 # Re-export rules.
+swift_extract_symbol_graph = _swift_extract_symbol_graph
 swift_binary = _swift_binary
 swift_feature_allowlist = _swift_feature_allowlist
 swift_grpc_library = _swift_grpc_library
@@ -98,4 +109,5 @@ swift_test = _swift_test
 
 # Re-export public aspects.
 swift_clang_module_aspect = _swift_clang_module_aspect
+swift_symbol_graph_aspect = _swift_symbol_graph_aspect
 swift_usage_aspect = _swift_usage_aspect

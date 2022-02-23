@@ -37,6 +37,11 @@ swift_action_names = struct(
     # Precompiles an explicit module for a C/Objective-C module map and its
     # headers, emitting a `.pcm` file.
     PRECOMPILE_C_MODULE = "SwiftPrecompileCModule",
+
+    # Extracts a JSON-formatted symbol graph from a module, which can be used as
+    # an input to documentation generating tools like `docc` or analyzed with
+    # other tooling.
+    SYMBOL_GRAPH_EXTRACT = "SwiftSymbolGraphExtract",
 )
 
 def _apply_configurator(configurator, prerequisites, args):

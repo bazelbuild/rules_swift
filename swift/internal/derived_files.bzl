@@ -238,6 +238,18 @@ def _swiftsourceinfo(actions, module_name):
     """
     return actions.declare_file("{}.swiftsourceinfo".format(module_name))
 
+def _symbol_graph_directory(actions, target_name):
+    """Declares a directory for symbol graphs extracted from a Swift module.
+
+    Args:
+        actions: The context's actions object.
+        target_name: The name of the target being built.
+
+    Returns:
+        The declared `File`.
+    """
+    return actions.declare_directory("{}.symbolgraphs".format(target_name))
+
 def _vfsoverlay(actions, target_name):
     """Declares a file for the VFS overlay for a compilation action.
 
@@ -309,6 +321,7 @@ derived_files = struct(
     swiftinterface = _swiftinterface,
     swiftmodule = _swiftmodule,
     swiftsourceinfo = _swiftsourceinfo,
+    symbol_graph_directory = _symbol_graph_directory,
     vfsoverlay = _vfsoverlay,
     whole_module_object_file = _whole_module_object_file,
     xctest_bundle = _xctest_bundle,

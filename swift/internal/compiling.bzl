@@ -424,6 +424,7 @@ def compile_action_configs(
             actions = [
                 swift_action_names.COMPILE,
                 swift_action_names.PRECOMPILE_C_MODULE,
+                swift_action_names.SYMBOL_GRAPH_EXTRACT,
             ],
             configurators = [
                 swift_toolchain_config.add_arg("-Xcc", "-Xclang"),
@@ -438,13 +439,17 @@ def compile_action_configs(
         # Configure how implicit modules are handled--either using the module
         # cache, or disabled completely when using explicit modules.
         swift_toolchain_config.action_config(
-            actions = [swift_action_names.COMPILE],
+            actions = [
+                swift_action_names.COMPILE,
+            ],
             configurators = [_global_module_cache_configurator],
             features = [SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE],
             not_features = [SWIFT_FEATURE_USE_C_MODULES],
         ),
         swift_toolchain_config.action_config(
-            actions = [swift_action_names.COMPILE],
+            actions = [
+                swift_action_names.COMPILE,
+            ],
             configurators = [
                 swift_toolchain_config.add_arg(
                     "-Xwrapped-swift=-ephemeral-module-cache",
@@ -462,6 +467,7 @@ def compile_action_configs(
             actions = [
                 swift_action_names.COMPILE,
                 swift_action_names.PRECOMPILE_C_MODULE,
+                swift_action_names.SYMBOL_GRAPH_EXTRACT,
             ],
             configurators = [
                 swift_toolchain_config.add_arg(
@@ -550,7 +556,10 @@ def compile_action_configs(
     #### Search paths for Swift module dependencies
     action_configs.extend([
         swift_toolchain_config.action_config(
-            actions = [swift_action_names.COMPILE],
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.SYMBOL_GRAPH_EXTRACT,
+            ],
             configurators = [_dependencies_swiftmodules_configurator],
             not_features = [SWIFT_FEATURE_VFSOVERLAY],
         ),
@@ -566,7 +575,10 @@ def compile_action_configs(
     #### Search paths for framework dependencies
     action_configs.extend([
         swift_toolchain_config.action_config(
-            actions = [swift_action_names.COMPILE],
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.SYMBOL_GRAPH_EXTRACT,
+            ],
             configurators = [
                 lambda prereqs, args: _framework_search_paths_configurator(
                     prereqs,
@@ -594,6 +606,7 @@ def compile_action_configs(
             actions = [
                 swift_action_names.COMPILE,
                 swift_action_names.PRECOMPILE_C_MODULE,
+                swift_action_names.SYMBOL_GRAPH_EXTRACT,
             ],
             configurators = [
                 _clang_search_paths_configurator,
@@ -607,6 +620,7 @@ def compile_action_configs(
             actions = [
                 swift_action_names.COMPILE,
                 swift_action_names.PRECOMPILE_C_MODULE,
+                swift_action_names.SYMBOL_GRAPH_EXTRACT,
             ],
             configurators = [_dependencies_clang_modules_configurator],
             features = [SWIFT_FEATURE_USE_C_MODULES],
@@ -615,6 +629,7 @@ def compile_action_configs(
             actions = [
                 swift_action_names.COMPILE,
                 swift_action_names.PRECOMPILE_C_MODULE,
+                swift_action_names.SYMBOL_GRAPH_EXTRACT,
             ],
             configurators = [_dependencies_clang_modulemaps_configurator],
             not_features = [SWIFT_FEATURE_USE_C_MODULES],
@@ -694,6 +709,7 @@ def compile_action_configs(
             actions = [
                 swift_action_names.COMPILE,
                 swift_action_names.PRECOMPILE_C_MODULE,
+                swift_action_names.SYMBOL_GRAPH_EXTRACT,
             ],
             configurators = [_module_name_configurator],
         ),
