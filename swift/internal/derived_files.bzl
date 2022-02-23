@@ -68,18 +68,6 @@ def _indexstore_directory(actions, target_name):
     """
     return actions.declare_directory("{}.indexstore".format(target_name))
 
-def _symbol_graph_directory(actions, target_name):
-    """Declares a directory in which the compiler's symbol graph will be written.
-
-    Args:
-        actions: The context's actions object.
-        target_name: The name of the target being built.
-
-    Returns:
-        The declared `File`.
-    """
-    return actions.declare_directory("{}.symbolgraph".format(target_name))
-
 def _intermediate_bc_file(actions, target_name, src):
     """Declares a file for an intermediate llvm bc file during compilation.
 
@@ -372,6 +360,18 @@ def _swiftsourceinfo(actions, add_target_name_to_output_path, target_name, modul
         target_name,
         "{}.swiftsourceinfo".format(module_name),
     )
+
+def _symbol_graph_directory(actions, target_name):
+    """Declares a directory for symbol graphs extracted from a Swift module.
+
+    Args:
+        actions: The context's actions object.
+        target_name: The name of the target being built.
+
+    Returns:
+        The declared `File`.
+    """
+    return actions.declare_directory("{}.symbolgraphs".format(target_name))
 
 def _vfsoverlay(actions, target_name):
     """Declares a file for the VFS overlay for a compilation action.
