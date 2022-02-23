@@ -24,8 +24,9 @@ load(
     "SWIFT_FEATURE_BUNDLED_XCTESTS",
 )
 load(":linking.bzl", "binary_rule_attrs", "configure_features_for_binary", "register_link_binary_action")
-load(":providers.bzl", "SwiftCompilerPluginInfo", "SwiftToolchainInfo")
+load(":providers.bzl", "SwiftCompilerPluginInfo", "SwiftSymbolGraphInfo", "SwiftToolchainInfo")
 load(":swift_common.bzl", "swift_common")
+load(":swift_symbol_graph_aspect.bzl", "test_discovery_symbol_graph_aspect")
 load(":utils.bzl", "expand_locations", "get_providers", "include_developer_search_paths")
 
 def _maybe_parse_as_library_copts(srcs):
@@ -51,6 +52,7 @@ def _swift_linking_rule_impl(
         ctx,
         binary_path,
         feature_configuration,
+        srcs,
         swift_toolchain,
         additional_linking_contexts = [],
         extra_link_deps = [],
@@ -63,6 +65,7 @@ def _swift_linking_rule_impl(
         binary_path: The path to output the linked binary to.
         feature_configuration: A feature configuration obtained from
             `swift_common.configure_features`.
+        srcs: The Swift sources to be compiled into the binary.
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain
             being used to build the target.
         additional_linking_contexts: Additional linking contexts that provide
@@ -88,7 +91,6 @@ def _swift_linking_rule_impl(
     cc_feature_configuration = swift_common.cc_feature_configuration(
         feature_configuration = feature_configuration,
     )
-    srcs = ctx.files.srcs
     user_link_flags = list(linkopts)
 
     # If the rule has sources, compile those first and collect the outputs to
@@ -251,6 +253,7 @@ def _swift_binary_impl(ctx):
         ctx,
         binary_path = derived_files.path(ctx, add_target_name_to_output_path, ctx.label.name),
         feature_configuration = feature_configuration,
+        srcs = ctx.files.srcs,
         swift_toolchain = swift_toolchain,
     )
 
@@ -264,6 +267,79 @@ def _swift_binary_impl(ctx):
             ),
         ),
     ]
+
+def _generate_test_discovery_srcs(*, actions, deps, name, test_discoverer):
+    """Generate Swift sources to run discovered XCTest-style tests.
+
+    Args:
+        actions: The context's actions object.
+        deps: The list of direct dependencies of the test target.
+        name: The name of the target being built, which will be used to derive
+            the basename of the directory containing the generated files.
+        test_discoverer: The executable `File` representing the test discoverer
+            tool that will be spawned to generate the test runner sources.
+
+    Returns:
+        A list of `File`s representing generated `.swift` source files that
+        should be compiled as part of the test target.
+    """
+    inputs = []
+    outputs = []
+    args = actions.args()
+
+    # For each direct dependency/module that we have a symbol graph for (i.e.,
+    # every testonly dependency), declare a `.swift` source file where the
+    # discovery tool will generate an extension that lists the test entries for
+    # the classes/methods found in that module.
+    for dep in deps:
+        if SwiftSymbolGraphInfo not in dep:
+            continue
+
+        symbol_graph_info = dep[SwiftSymbolGraphInfo]
+
+        for symbol_graph in symbol_graph_info.direct_symbol_graphs:
+            output_file = actions.declare_file(
+                "{target}_test_discovery_srcs/{module}.entries.swift".format(
+                    module = symbol_graph.module_name,
+                    target = name,
+                ),
+            )
+            outputs.append(output_file)
+            args.add(
+                "--module-output",
+                "{module}={path}".format(
+                    module = symbol_graph.module_name,
+                    path = output_file.path,
+                ),
+            )
+
+        for symbol_graph in (
+            symbol_graph_info.transitive_symbol_graphs.to_list()
+        ):
+            inputs.append(symbol_graph.symbol_graph_dir)
+
+    # Also declare a single `main.swift` file where the discovery tool will
+    # generate the main runner.
+    main_file = actions.declare_file(
+        "{target}_test_discovery_srcs/main.swift".format(target = name),
+    )
+    outputs.append(main_file)
+    args.add("--main-output", main_file)
+
+    # The discovery tool expects symbol graph directories as its inputs (it
+    # iterates over their contents), so we must not expand directories here.
+    args.add_all(inputs, expand_directories = False, uniquify = True)
+
+    actions.run(
+        arguments = [args],
+        executable = test_discoverer,
+        inputs = inputs,
+        mnemonic = "SwiftTestDiscovery",
+        outputs = outputs,
+        progress_message = "Discovering tests for %{label}",
+    )
+
+    return outputs
 
 def _swift_test_impl(ctx):
     swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
@@ -309,6 +385,22 @@ def _swift_test_impl(ctx):
             extra_swift_infos.append(plugin_info.swift_info)
             additional_linking_contexts.append(plugin_info.cc_info.linking_context)
 
+    srcs = ctx.files.srcs
+
+    # If no sources were provided and we're not using `.xctest` bundling, assume
+    # that we need to discover tests using symbol graphs.
+    # TODO(b/220945250): This supports SPM-style tests where each test target
+    # (a separate module) maps to its own `swift_library`. We'll need to modify
+    # this approach if we want to support test discovery for simple `swift_test`
+    # targets that just write XCTest-style tests in the `srcs` directly.
+    if not srcs and not is_bundled:
+        srcs = _generate_test_discovery_srcs(
+            actions = ctx.actions,
+            deps = ctx.attr.deps,
+            name = ctx.label.name,
+            test_discoverer = ctx.executable._test_discoverer,
+        )
+
     _, linking_outputs, providers = _swift_linking_rule_impl(
         ctx,
         additional_linking_contexts = additional_linking_contexts,
@@ -317,6 +409,7 @@ def _swift_test_impl(ctx):
         extra_link_deps = extra_link_deps,
         feature_configuration = feature_configuration,
         linkopts = linkopts,
+        srcs = srcs,
         swift_toolchain = swift_toolchain,
     )
 
@@ -394,6 +487,7 @@ please use one of the platform-specific application rules in
 swift_test = rule(
     attrs = dicts.add(
         binary_rule_attrs(
+            additional_deps_aspects = [test_discovery_symbol_graph_aspect],
             additional_deps_providers = [[SwiftCompilerPluginInfo]],
             stamp_default = 0,
         ),
@@ -413,6 +507,13 @@ swift_test = rule(
                 default = Label(
                     "@build_bazel_rules_swift//swift/internal:swizzle_absolute_xcttestsourcelocation",
                 ),
+            ),
+            "_test_discoverer": attr.label(
+                cfg = "exec",
+                default = Label(
+                    "@build_bazel_rules_swift//tools/test_discoverer",
+                ),
+                executable = True,
             ),
             "_xctest_runner_template": attr.label(
                 allow_single_file = True,

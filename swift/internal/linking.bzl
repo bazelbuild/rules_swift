@@ -51,11 +51,14 @@ _OBJC_PROVIDER_LINKING = hasattr(apple_common.new_objc_provider(), "linkopt")
 
 def binary_rule_attrs(
         *,
+        additional_deps_aspects = [],
         additional_deps_providers = [],
         stamp_default):
     """Returns attributes common to both `swift_binary` and `swift_test`.
 
     Args:
+        additional_deps_aspects: A list of additional aspects that should be
+            applied to the `deps` attribute of the rule.
         additional_deps_providers: A list of lists representing additional
             providers that should be allowed by the `deps` attribute of the
             rule.
@@ -66,7 +69,9 @@ def binary_rule_attrs(
     """
     return dicts.add(
         swift_compilation_attrs(
-            additional_deps_aspects = [swift_clang_module_aspect],
+            additional_deps_aspects = [
+                swift_clang_module_aspect,
+            ] + additional_deps_aspects,
             additional_deps_providers = additional_deps_providers,
             requires_srcs = False,
         ),
