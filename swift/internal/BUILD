@@ -192,6 +192,45 @@ bzl_library(
         ":linking",
         ":providers",
         ":swift_clang_module_aspect",
+        ":symbol_graph_extracting",
+    ],
+)
+
+bzl_library(
+    name = "swift_symbol_graph_aspect",
+    srcs = ["swift_symbol_graph_aspect.bzl"],
+    visibility = ["//swift:__subpackages__"],
+    deps = [
+        ":attrs",
+        ":derived_files",
+        ":features",
+        ":providers",
+        ":symbol_graph_extracting",
+        ":utils",
+        "@bazel_skylib//lib:dicts",
+    ],
+)
+
+bzl_library(
+    name = "swift_extract_symbol_graph",
+    srcs = ["swift_extract_symbol_graph.bzl"],
+    visibility = ["//swift:__subpackages__"],
+    deps = [
+        ":derived_files",
+        ":providers",
+        ":swift_symbol_graph_aspect",
+    ],
+)
+
+bzl_library(
+    name = "symbol_graph_extracting",
+    srcs = ["symbol_graph_extracting.bzl"],
+    visibility = ["//swift:__subpackages__"],
+    deps = [
+        ":actions",
+        ":providers",
+        ":toolchain_config",
+        ":utils",
     ],
 )
 
@@ -336,6 +375,7 @@ bzl_library(
         ":feature_names",
         ":features",
         ":providers",
+        ":symbol_graph_extracting",
         ":toolchain_config",
         ":utils",
         "@bazel_skylib//lib:collections",
