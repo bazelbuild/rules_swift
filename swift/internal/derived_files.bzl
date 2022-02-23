@@ -110,25 +110,7 @@ def _indexstore_directory(actions, add_target_name_to_output_path, target_name):
         "{}.indexstore".format(target_name),
     )
 
-def _symbol_graph_directory(actions, add_target_name_to_output_path, target_name):
-    """Declares a directory in which the compiler's symbol graph will be written.
-
-    Args:
-        actions: The context's actions object.
-        add_target_name_to_output_path: Add target_name in output path. More info at SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT description.
-        target_name: The name of the target being built.
-
-    Returns:
-        The declared `File`.
-    """
-    return _declare_directory(
-        actions,
-        add_target_name_to_output_path,
-        target_name,
-        "{}.symbolgraph".format(target_name),
-    )
-
-def _intermediate_bc_file(actions, add_target_name_to_output_path, target_name, src):
+def _intermediate_bc_file(actions, target_name, src):
     """Declares a file for an intermediate llvm bc file during compilation.
 
     Args:
@@ -456,7 +438,19 @@ def _swiftsourceinfo(actions, add_target_name_to_output_path, target_name, modul
         "{}.swiftsourceinfo".format(module_name),
     )
 
-def _vfsoverlay(actions, add_target_name_to_output_path, target_name):
+def _symbol_graph_directory(actions, target_name):
+    """Declares a directory for symbol graphs extracted from a Swift module.
+
+    Args:
+        actions: The context's actions object.
+        target_name: The name of the target being built.
+
+    Returns:
+        The declared `File`.
+    """
+    return actions.declare_directory("{}.symbolgraphs".format(target_name))
+
+def _vfsoverlay(actions, target_name):
     """Declares a file for the VFS overlay for a compilation action.
 
     The VFS overlay is YAML-formatted file that allows us to place the
