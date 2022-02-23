@@ -52,6 +52,7 @@ load(
     "create_swift_module",
 )
 load(":swift_clang_module_aspect.bzl", "create_swift_interop_info")
+load(":symbol_graph_extracting.bzl", "extract_symbol_graph")
 
 # The exported `swift_common` module, which defines the public API for directly
 # invoking actions that compile Swift code from other rules.
@@ -69,6 +70,7 @@ swift_common = struct(
     create_swift_interop_info = create_swift_interop_info,
     create_swift_module = create_swift_module,
     derive_module_name = derive_module_name,
+    extract_symbol_graph = extract_symbol_graph,
     is_enabled = is_feature_enabled,
     library_rule_attrs = swift_library_rule_attrs,
     precompile_clang_module = precompile_clang_module,

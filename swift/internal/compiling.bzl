@@ -177,8 +177,8 @@ def compile_action_configs(
                 swift_action_names.COMPILE,
                 swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
-                swift_action_names.PRECOMPILE_C_MODULE,
                 swift_action_names.DUMP_AST,
+                swift_action_names.PRECOMPILE_C_MODULE,
             ],
             configurators = [
                 swift_toolchain_config.add_arg("-disallow-use-new-driver"),
@@ -194,8 +194,8 @@ def compile_action_configs(
                     swift_action_names.COMPILE,
                     swift_action_names.COMPILE_MODULE_INTERFACE,
                     swift_action_names.DERIVE_FILES,
-                    swift_action_names.PRECOMPILE_C_MODULE,
                     swift_action_names.DUMP_AST,
+                    swift_action_names.PRECOMPILE_C_MODULE,
                 ],
                 configurators = [
                     swift_toolchain_config.add_arg(
@@ -213,8 +213,8 @@ def compile_action_configs(
                         swift_action_names.COMPILE,
                         swift_action_names.COMPILE_MODULE_INTERFACE,
                         swift_action_names.DERIVE_FILES,
-                        swift_action_names.PRECOMPILE_C_MODULE,
                         swift_action_names.DUMP_AST,
+                        swift_action_names.PRECOMPILE_C_MODULE,
                     ],
                     configurators = [
                         swift_toolchain_config.add_arg(
@@ -233,8 +233,8 @@ def compile_action_configs(
                             swift_action_names.COMPILE,
                             swift_action_names.COMPILE_MODULE_INTERFACE,
                             swift_action_names.DERIVE_FILES,
-                            swift_action_names.PRECOMPILE_C_MODULE,
                             swift_action_names.DUMP_AST,
+                            swift_action_names.PRECOMPILE_C_MODULE,
                         ],
                         configurators = [
                             swift_toolchain_config.add_arg(
@@ -608,6 +608,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.PRECOMPILE_C_MODULE,
+                swift_action_names.SYMBOL_GRAPH_EXTRACT,
             ],
             configurators = [_pcm_developer_framework_paths_configurator],
         ),
@@ -778,8 +779,9 @@ def compile_action_configs(
                 swift_action_names.COMPILE,
                 swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
-                swift_action_names.PRECOMPILE_C_MODULE,
                 swift_action_names.DUMP_AST,
+                swift_action_names.PRECOMPILE_C_MODULE,
+                swift_action_names.SYMBOL_GRAPH_EXTRACT,
             ],
             configurators = [
                 swift_toolchain_config.add_arg("-Xcc", "-Xclang"),
@@ -877,8 +879,9 @@ def compile_action_configs(
                 swift_action_names.COMPILE,
                 swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
-                swift_action_names.PRECOMPILE_C_MODULE,
                 swift_action_names.DUMP_AST,
+                swift_action_names.PRECOMPILE_C_MODULE,
+                swift_action_names.SYMBOL_GRAPH_EXTRACT,
             ],
             configurators = [
                 swift_toolchain_config.add_arg(
@@ -894,7 +897,7 @@ def compile_action_configs(
                 swift_action_names.COMPILE,
                 swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.PRECOMPILE_C_MODULE,
-                # swift_action_names.SYMBOL_GRAPH_EXTRACT, # TODO: Enable once supported
+                swift_action_names.SYMBOL_GRAPH_EXTRACT,
             ],
             configurators = [
                 swift_toolchain_config.add_arg(
@@ -964,6 +967,7 @@ def compile_action_configs(
                 swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.DUMP_AST,
+                swift_action_names.SYMBOL_GRAPH_EXTRACT,
             ],
             configurators = [_dependencies_swiftmodules_configurator],
             not_features = [
@@ -1044,6 +1048,7 @@ def compile_action_configs(
                 swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.DUMP_AST,
+                swift_action_names.SYMBOL_GRAPH_EXTRACT,
             ],
             configurators = [
                 lambda prereqs, args: _framework_search_paths_configurator(
@@ -1073,8 +1078,9 @@ def compile_action_configs(
                 swift_action_names.COMPILE,
                 swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
-                swift_action_names.PRECOMPILE_C_MODULE,
                 swift_action_names.DUMP_AST,
+                swift_action_names.PRECOMPILE_C_MODULE,
+                swift_action_names.SYMBOL_GRAPH_EXTRACT,
             ],
             configurators = [
                 _clang_search_paths_configurator,
@@ -1089,8 +1095,9 @@ def compile_action_configs(
                 swift_action_names.COMPILE,
                 swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
-                swift_action_names.PRECOMPILE_C_MODULE,
                 swift_action_names.DUMP_AST,
+                swift_action_names.PRECOMPILE_C_MODULE,
+                swift_action_names.SYMBOL_GRAPH_EXTRACT,
             ],
             configurators = [_dependencies_clang_modules_configurator],
             features = [SWIFT_FEATURE_USE_C_MODULES],
@@ -1100,8 +1107,9 @@ def compile_action_configs(
                 swift_action_names.COMPILE,
                 swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
-                swift_action_names.PRECOMPILE_C_MODULE,
                 swift_action_names.DUMP_AST,
+                swift_action_names.PRECOMPILE_C_MODULE,
+                swift_action_names.SYMBOL_GRAPH_EXTRACT,
             ],
             configurators = [_dependencies_clang_modulemaps_configurator],
             not_features = [SWIFT_FEATURE_USE_C_MODULES],
@@ -1199,8 +1207,9 @@ def compile_action_configs(
             actions = [
                 swift_action_names.COMPILE,
                 swift_action_names.DERIVE_FILES,
-                swift_action_names.PRECOMPILE_C_MODULE,
                 swift_action_names.DUMP_AST,
+                swift_action_names.PRECOMPILE_C_MODULE,
+                swift_action_names.SYMBOL_GRAPH_EXTRACT,
             ],
             configurators = [_module_name_configurator],
         ),
@@ -1209,8 +1218,8 @@ def compile_action_configs(
             actions = [
                 swift_action_names.COMPILE,
                 swift_action_names.DERIVE_FILES,
-                swift_action_names.PRECOMPILE_C_MODULE,
                 swift_action_names.DUMP_AST,
+                swift_action_names.PRECOMPILE_C_MODULE,
             ],
             configurators = [_package_name_configurator],
         ),
@@ -1295,8 +1304,8 @@ def compile_action_configs(
                     swift_action_names.COMPILE,
                     swift_action_names.COMPILE_MODULE_INTERFACE,
                     swift_action_names.DERIVE_FILES,
-                    swift_action_names.PRECOMPILE_C_MODULE,
                     swift_action_names.DUMP_AST,
+                    swift_action_names.PRECOMPILE_C_MODULE,
                 ],
                 configurators = [
                     lambda _, args: args.add_all(
@@ -1330,8 +1339,8 @@ def compile_action_configs(
                 swift_action_names.COMPILE,
                 swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
-                swift_action_names.PRECOMPILE_C_MODULE,
                 swift_action_names.DUMP_AST,
+                swift_action_names.PRECOMPILE_C_MODULE,
             ],
             configurators = [_source_files_configurator],
         ),
