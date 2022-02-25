@@ -1163,7 +1163,6 @@ def _clang_search_paths_configurator(prerequisites, args):
 
     args.add_all(
         prerequisites.cc_compilation_context.system_includes,
-        map_each = _filter_out_unsupported_include_paths,
         before_each = "-Xcc",
         format_each = "-isystem%s",
     )
@@ -2776,10 +2775,6 @@ def _swift_module_search_path_map_fn(module):
         return module.swift.swiftmodule.dirname
     else:
         return None
-
-def _filter_out_unsupported_include_paths(path):
-    """Stub for a filter function only used internally."""
-    return path
 
 def _find_num_threads_flag_value(user_compile_flags):
     """Finds the value of the `-num-threads` flag.
