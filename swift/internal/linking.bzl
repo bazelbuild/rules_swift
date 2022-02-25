@@ -41,7 +41,6 @@ load(
     "get_cc_feature_configuration",
     "is_feature_enabled",
 )
-load(":providers.bzl", "SwiftToolchainInfo")
 load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 load(":utils.bzl", "get_providers")
 
@@ -130,8 +129,10 @@ into the binary. Possible values are:
     )
 
 def configure_features_for_binary(
+        *,
         ctx,
         requested_features = [],
+        swift_toolchain,
         unsupported_features = []):
     """Creates and returns the feature configuration for binary linking.
 
@@ -140,20 +141,18 @@ def configure_features_for_binary(
 
     Args:
         ctx: The rule context.
-        requested_features: Additional features that are requested for a
-            particular rule/target.
-        unsupported_features: Additional features that are unsupported for a
-            particular rule/target.
+        requested_features: Features that are requested for the target.
+        swift_toolchain: The Swift toolchain provider.
+        unsupported_features: Features that are unsupported for the target.
 
     Returns:
         The `FeatureConfiguration` that was created.
     """
-    swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
+    requested_features = list(requested_features)
+    unsupported_features = list(unsupported_features)
 
-    # Combine the features from the rule context with those passed into this
-    # function.
-    requested_features = ctx.features + requested_features
-    unsupported_features = ctx.disabled_features + unsupported_features
+    # Require static linking for now.
+    requested_features.append("static_linking_mode")
 
     # Enable LLVM coverage in CROSSTOOL if this is a coverage build. Note that
     # we explicitly enable LLVM format and disable GCC format because the former
@@ -607,6 +606,13 @@ def register_link_binary_action(
             )
 
     linking_contexts.extend(additional_linking_contexts)
+
+    # Collect linking contexts from any of the toolchain's implicit
+    # dependencies.
+    linking_contexts.extend([
+        cc_info.linking_context
+        for cc_info in swift_toolchain.implicit_deps_providers.cc_infos
+    ])
 
     return cc_common.link(
         actions = actions,

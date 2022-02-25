@@ -19,13 +19,13 @@ load(":derived_files.bzl", "derived_files")
 load(":env_expansion.bzl", "expanded_env")
 load(
     ":feature_names.bzl",
-    "SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT",
     "SWIFT_FEATURE_BUNDLED_XCTESTS",
 )
 load(
     ":linking.bzl",
     "binary_rule_attrs",
     "configure_features_for_binary",
+    "malloc_linking_context",
     "register_link_binary_action",
 )
 load(":output_groups.bzl", "supplemental_compilation_output_groups")
@@ -64,163 +64,6 @@ def _maybe_parse_as_library_copts(srcs):
                            srcs[0].basename != "main.swift"
     return ["-parse-as-library"] if use_parse_as_library else []
 
-def _swift_linking_rule_impl(
-        ctx,
-        binary_path,
-        feature_configuration,
-        srcs,
-        swift_toolchain,
-        additional_linking_contexts = [],
-        extra_link_deps = [],
-        extra_swift_infos = [],
-        linkopts = []):
-    """The shared implementation function for `swift_{binary,test}`.
-
-    Args:
-        ctx: The rule context.
-        binary_path: The path to output the linked binary to.
-        feature_configuration: A feature configuration obtained from
-            `swift_common.configure_features`.
-        srcs: The Swift sources to be compiled into the binary.
-        swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain
-            being used to build the target.
-        additional_linking_contexts: Additional linking contexts that provide
-            libraries or flags that should be linked into the executable.
-        extra_link_deps: Additional dependencies that should be linked into the
-            binary.
-        extra_swift_infos: Extra `SwiftInfo` providers that aren't contained
-            by the `deps` of the target being compiled but are required for
-            compilation.
-        linkopts: Additional rule-specific flags that should be passed to the
-            linker.
-
-    Returns:
-        A tuple with three elements: the `CcCompilationOutputs` containing the
-        object files that were compiled for the sources in the binary/test
-        target (if any), the `LinkingOutputs` containing the executable
-        binary that was linked, and a list of providers to be propagated by the
-        target being built.
-    """
-    additional_inputs = ctx.files.swiftc_inputs
-    additional_inputs_to_linker = list(additional_inputs)
-    additional_linking_contexts = list(additional_linking_contexts)
-    cc_feature_configuration = swift_common.cc_feature_configuration(
-        feature_configuration = feature_configuration,
-    )
-    user_link_flags = list(linkopts)
-
-    # If the rule has sources, compile those first and collect the outputs to
-    # be passed to the linker.
-    if srcs:
-        module_name = ctx.attr.module_name
-        if not module_name:
-            module_name = swift_common.derive_module_name(ctx.label)
-
-        copts = expand_locations(ctx, ctx.attr.copts, ctx.attr.swiftc_inputs) + \
-                _maybe_parse_as_library_copts(srcs)
-
-        include_dev_srch_paths = include_developer_search_paths(ctx.attr)
-
-        module_context, cc_compilation_outputs, supplemental_outputs = swift_common.compile(
-            actions = ctx.actions,
-            additional_inputs = additional_inputs,
-            cc_infos = get_providers(ctx.attr.deps, CcInfo),
-            copts = copts,
-            defines = ctx.attr.defines,
-            extra_swift_infos = extra_swift_infos,
-            feature_configuration = feature_configuration,
-            include_dev_srch_paths = include_dev_srch_paths,
-            module_name = module_name,
-            objc_infos = get_providers(ctx.attr.deps, apple_common.Objc),
-            package_name = ctx.attr.package_name,
-            plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),
-            srcs = srcs,
-            swift_infos = get_providers(ctx.attr.deps, SwiftInfo),
-            swift_toolchain = swift_toolchain,
-            target_name = ctx.label.name,
-            workspace_name = ctx.workspace_name,
-        )
-        output_groups = supplemental_compilation_output_groups(
-            supplemental_outputs,
-        )
-
-        linking_context, _ = swift_common.create_linking_context_from_compilation_outputs(
-            actions = ctx.actions,
-            alwayslink = True,
-            compilation_outputs = cc_compilation_outputs,
-            feature_configuration = feature_configuration,
-            include_dev_srch_paths = include_dev_srch_paths,
-            label = ctx.label,
-            linking_contexts = [
-                dep[CcInfo].linking_context
-                for dep in ctx.attr.deps
-                if CcInfo in dep
-            ],
-            module_context = module_context,
-            swift_toolchain = swift_toolchain,
-        )
-        additional_linking_contexts.append(linking_context)
-    else:
-        module_context = None
-        cc_compilation_outputs = cc_common.create_compilation_outputs()
-        output_groups = {}
-
-    # Collect linking contexts from any of the toolchain's implicit
-    # dependencies.
-    for cc_info in swift_toolchain.implicit_deps_providers.cc_infos:
-        additional_linking_contexts.append(cc_info.linking_context)
-
-    # If a custom malloc implementation has been provided, pass that to the
-    # linker as well.
-    malloc = ctx.attr._custom_malloc or ctx.attr.malloc
-    additional_linking_contexts.append(malloc[CcInfo].linking_context)
-
-    # Finally, consider linker flags in the `linkopts` attribute and the
-    # `--linkopt` command line flag last, so they get highest priority.
-    user_link_flags.extend(expand_locations(
-        ctx,
-        ctx.attr.linkopts,
-        ctx.attr.swiftc_inputs,
-    ))
-    user_link_flags.extend(ctx.fragments.cpp.linkopts)
-
-    linking_outputs = register_link_binary_action(
-        actions = ctx.actions,
-        additional_inputs = additional_inputs_to_linker,
-        additional_linking_contexts = additional_linking_contexts,
-        cc_feature_configuration = cc_feature_configuration,
-        # This is already collected from `linking_context`.
-        compilation_outputs = None,
-        deps = ctx.attr.deps + extra_link_deps,
-        name = binary_path,
-        output_type = "executable",
-        owner = ctx.label,
-        stamp = ctx.attr.stamp,
-        swift_toolchain = swift_toolchain,
-        user_link_flags = user_link_flags,
-    )
-
-    if module_context:
-        modules = [
-            swift_common.create_module(
-                name = module_context.name,
-                compilation_context = module_context.compilation_context,
-                # The rest of the fields are intentionally ommited, as we only
-                # want to expose the compilation_context
-            ),
-        ]
-    else:
-        modules = []
-
-    providers = [
-        OutputGroupInfo(**output_groups),
-        swift_common.create_swift_info(
-            modules = modules,
-        ),
-    ]
-
-    return cc_compilation_outputs, linking_outputs, providers
-
 def _create_xctest_runner(name, actions, executable, xctest_runner_template):
     """Creates a script that will launch `xctest` with the given test bundle.
 
@@ -252,37 +95,6 @@ def _create_xctest_runner(name, actions, executable, xctest_runner_template):
     )
 
     return xctest_runner
-
-def _swift_binary_impl(ctx):
-    swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
-    feature_configuration = configure_features_for_binary(
-        ctx = ctx,
-        requested_features = ["static_linking_mode"],
-    )
-
-    add_target_name_to_output_path = swift_common.is_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT,
-    )
-
-    _, linking_outputs, providers = _swift_linking_rule_impl(
-        ctx,
-        binary_path = derived_files.path(ctx, add_target_name_to_output_path, ctx.label.name),
-        feature_configuration = feature_configuration,
-        srcs = ctx.files.srcs,
-        swift_toolchain = swift_toolchain,
-    )
-
-    return providers + [
-        DefaultInfo(
-            executable = linking_outputs.executable,
-            runfiles = ctx.runfiles(
-                collect_data = True,
-                collect_default = True,
-                files = ctx.files.data,
-            ),
-        ),
-    ]
 
 def _generate_test_discovery_srcs(*, actions, deps, name, test_discoverer):
     """Generate Swift sources to run discovered XCTest-style tests.
@@ -359,9 +171,12 @@ def _generate_test_discovery_srcs(*, actions, deps, name, test_discoverer):
 
 def _swift_test_impl(ctx):
     swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
+
     feature_configuration = configure_features_for_binary(
         ctx = ctx,
-        requested_features = ["static_linking_mode"],
+        requested_features = ctx.features,
+        swift_toolchain = swift_toolchain,
+        unsupported_features = ctx.disabled_features,
     )
 
     is_bundled = swift_common.is_enabled(
@@ -371,9 +186,7 @@ def _swift_test_impl(ctx):
 
     # If we need to run the test in an .xctest bundle, the binary must have
     # Mach-O type `MH_BUNDLE` instead of `MH_EXECUTE`.
-    linkopts = ["-Wl,-bundle"] if is_bundled else []
-    xctest_bundle_binary = "{0}.xctest/Contents/MacOS/{0}".format(ctx.label.name)
-    binary_path = xctest_bundle_binary if is_bundled else ctx.label.name
+    extra_linkopts = ["-Wl,-bundle"] if is_bundled else []
 
     # `swift_common.is_enabled` isn't used, as it requires the prefix of the
     # feature to start with `swift.`
@@ -412,16 +225,88 @@ def _swift_test_impl(ctx):
             test_discoverer = ctx.executable._test_discoverer,
         )
 
-    _, linking_outputs, providers = _swift_linking_rule_impl(
-        ctx,
-        additional_linking_contexts = additional_linking_contexts,
-        binary_path = binary_path,
-        extra_swift_infos = extra_swift_infos,
-        extra_link_deps = extra_link_deps,
+    module_contexts = []
+    all_supplemental_outputs = []
+
+    if srcs:
+        module_name = ctx.attr.module_name
+        if not module_name:
+            module_name = swift_common.derive_module_name(ctx.label)
+
+        include_dev_srch_paths = include_developer_search_paths(ctx.attr)
+
+        module_context, cc_compilation_outputs, supplemental_outputs = swift_common.compile(
+            actions = ctx.actions,
+            additional_inputs = ctx.files.swiftc_inputs,
+            cc_infos = get_providers(ctx.attr.deps, CcInfo),
+            copts = expand_locations(
+                ctx,
+                ctx.attr.copts,
+                ctx.attr.swiftc_inputs,
+            ) + _maybe_parse_as_library_copts(srcs),
+            defines = ctx.attr.defines,
+            extra_swift_infos = extra_swift_infos,
+            feature_configuration = feature_configuration,
+            include_dev_srch_paths = include_dev_srch_paths,
+            module_name = module_name,
+            objc_infos = get_providers(ctx.attr.deps, apple_common.Objc),
+            package_name = ctx.attr.package_name,
+            plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),
+            srcs = srcs,
+            swift_infos = get_providers(ctx.attr.deps, SwiftInfo),
+            swift_toolchain = swift_toolchain,
+            target_name = ctx.label.name,
+            workspace_name = ctx.workspace_name,
+        )
+        module_contexts.append(module_context)
+        all_supplemental_outputs.append(supplemental_outputs)
+
+        # Unlike `upstream`, we create a linking_context in order to support
+        # `autolink-extract`. See `a1395155c6a27d76aab5e1a93455259a0ac10b2f` and
+        # `93219a3b21390f212f5fd013e8db3654fd09814c`.
+        linking_context, _ = swift_common.create_linking_context_from_compilation_outputs(
+            actions = ctx.actions,
+            alwayslink = True,
+            compilation_outputs = cc_compilation_outputs,
+            feature_configuration = feature_configuration,
+            include_dev_srch_paths = include_dev_srch_paths,
+            label = ctx.label,
+            linking_contexts = [
+                dep[CcInfo].linking_context
+                for dep in ctx.attr.deps
+                if CcInfo in dep
+            ],
+            module_context = module_context,
+            swift_toolchain = swift_toolchain,
+        )
+        additional_linking_contexts.append(linking_context)
+    else:
+        cc_compilation_outputs = cc_common.create_compilation_outputs()
+
+    additional_linking_contexts.append(malloc_linking_context(ctx))
+
+    cc_feature_configuration = swift_common.cc_feature_configuration(
         feature_configuration = feature_configuration,
-        linkopts = linkopts,
-        srcs = srcs,
+    )
+
+    linking_outputs = register_link_binary_action(
+        actions = ctx.actions,
+        additional_inputs = ctx.files.swiftc_inputs,
+        additional_linking_contexts = additional_linking_contexts,
+        cc_feature_configuration = cc_feature_configuration,
+        # This is already collected from `linking_context`.
+        compilation_outputs = None,
+        deps = ctx.attr.deps + extra_link_deps,
+        name = "{0}.xctest/Contents/MacOS/{0}".format(ctx.label.name) if is_bundled else ctx.label.name,
+        output_type = "executable",
+        owner = ctx.label,
+        stamp = ctx.attr.stamp,
         swift_toolchain = swift_toolchain,
+        user_link_flags = expand_locations(
+            ctx,
+            ctx.attr.linkopts,
+            ctx.attr.swiftc_inputs,
+        ) + extra_linkopts + ctx.fragments.cpp.linkopts,
     )
 
     # If the tests are to be bundled, create the bundle and the test runner
@@ -446,7 +331,7 @@ def _swift_test_impl(ctx):
         expanded_env.get_expanded_env(ctx, {}),
     )
 
-    return providers + [
+    return [
         DefaultInfo(
             executable = executable,
             files = depset(direct = [executable] + additional_test_outputs),
@@ -457,42 +342,33 @@ def _swift_test_impl(ctx):
                 transitive_files = ctx.attr._apple_coverage_support.files,
             ),
         ),
+        OutputGroupInfo(
+            **supplemental_compilation_output_groups(
+                *all_supplemental_outputs
+            )
+        ),
         coverage_common.instrumented_files_info(
             ctx,
             dependency_attributes = ["deps"],
             extensions = ["swift"],
             source_attributes = ["srcs"],
         ),
+        swift_common.create_swift_info(
+            modules = [
+                swift_common.create_module(
+                    name = module_context.name,
+                    compilation_context = module_context.compilation_context,
+                    # The rest of the fields are intentionally ommited, as we
+                    # only want to expose the compilation_context
+                )
+                for module_context in module_contexts
+            ],
+        ),
         testing.ExecutionInfo(
             swift_toolchain.test_configuration.execution_requirements,
         ),
         testing.TestEnvironment(test_environment),
     ]
-
-swift_binary = rule(
-    attrs = binary_rule_attrs(
-        additional_deps_providers = [[SwiftCompilerPluginInfo]],
-        stamp_default = -1,
-    ),
-    doc = """\
-Compiles and links Swift code into an executable binary.
-
-On Linux, this rule produces an executable binary for the desired target
-architecture.
-
-On Apple platforms, this rule produces a _single-architecture_ binary; it does
-not produce fat binaries. As such, this rule is mainly useful for creating Swift
-tools intended to run on the local build machine.
-
-If you want to create a multi-architecture binary or a bundled application,
-please use one of the platform-specific application rules in
-[rules_apple](https://github.com/bazelbuild/rules_apple) instead of
-`swift_binary`.
-""",
-    executable = True,
-    fragments = ["cpp"],
-    implementation = _swift_binary_impl,
-)
 
 swift_test = rule(
     attrs = dicts.add(
