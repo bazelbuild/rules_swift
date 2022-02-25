@@ -419,8 +419,23 @@ filegroup(
 )
 
 bzl_library(
-    name = "swift_binary_test_rules",
-    srcs = ["swift_binary_test_rules.bzl"],
+    name = "swift_binary",
+    srcs = ["swift_binary.bzl"],
+    visibility = ["//swift:__subpackages__"],
+    deps = [
+        ":compiling",
+        ":derived_files",
+        ":feature_names",
+        ":linking",
+        ":providers",
+        ":swift_common",
+        ":utils",
+    ],
+)
+
+bzl_library(
+    name = "swift_test",
+    srcs = ["swift_test.bzl"],
     visibility = ["//swift:__subpackages__"],
     deps = [
         ":compiling",
