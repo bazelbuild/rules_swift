@@ -20,14 +20,6 @@ bzl_library(
     ],
 )
 
-bzl_library(
-    name = "repositories",
-    srcs = ["repositories.bzl"],
-    deps = [
-        "//swift/internal:toolchain_support",
-    ],
-)
-
 # Consumed by Bazel integration tests.
 filegroup(
     name = "for_bazel_tests",
