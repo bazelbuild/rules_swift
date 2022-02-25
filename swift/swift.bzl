@@ -27,9 +27,8 @@ load(
     _SwiftUsageInfo = "SwiftUsageInfo",
 )
 load(
-    "@build_bazel_rules_swift//swift/internal:swift_binary_test.bzl",
+    "@build_bazel_rules_swift//swift/internal:swift_binary.bzl",
     _swift_binary = "swift_binary",
-    _swift_test = "swift_test",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:swift_clang_module_aspect.bzl",
@@ -80,6 +79,10 @@ load(
     _swift_symbol_graph_aspect = "swift_symbol_graph_aspect",
 )
 load(
+    "@build_bazel_rules_swift//swift/internal:swift_test.bzl",
+    _swift_test = "swift_test",
+)
+load(
     "@build_bazel_rules_swift//swift/internal:swift_usage_aspect.bzl",
     _swift_usage_aspect = "swift_usage_aspect",
 )
@@ -95,8 +98,8 @@ SwiftUsageInfo = _SwiftUsageInfo
 swift_common = _swift_common
 
 # Re-export rules.
-swift_extract_symbol_graph = _swift_extract_symbol_graph
 swift_binary = _swift_binary
+swift_extract_symbol_graph = _swift_extract_symbol_graph
 swift_feature_allowlist = _swift_feature_allowlist
 swift_grpc_library = _swift_grpc_library
 swift_import = _swift_import

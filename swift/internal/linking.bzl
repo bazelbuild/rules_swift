@@ -15,7 +15,9 @@
 """Implementation of linking logic for Swift."""
 
 load("@bazel_skylib//lib:collections.bzl", "collections")
+load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(":actions.bzl", "is_action_enabled", "swift_action_names")
+load(":attrs.bzl", "swift_compilation_attrs")
 load(":autolinking.bzl", "register_autolink_extract_action")
 load(
     ":debugging.bzl",
@@ -23,8 +25,131 @@ load(
     "should_embed_swiftmodule_for_debugging",
 )
 load(":derived_files.bzl", "derived_files")
-load(":features.bzl", "get_cc_feature_configuration")
+load(":features.bzl", "configure_features", "get_cc_feature_configuration")
+load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 load(":utils.bzl", "get_providers")
+
+_MALLOC_DOCSTRING = """\
+Override the default dependency on `malloc`.
+
+By default, Swift binaries are linked against `@bazel_tools//tools/cpp:malloc"`,
+which is an empty library and the resulting binary will use libc's `malloc`.
+This label must refer to a `cc_library` rule.
+"""
+
+def binary_rule_attrs(*, additional_deps_aspects = [], stamp_default):
+    """Returns attributes common to both `swift_binary` and `swift_test`.
+
+    Args:
+        additional_deps_aspects: A list of additional aspects that should be
+            applied to the `deps` attribute of the rule.
+        stamp_default: The default value of the `stamp` attribute.
+
+    Returns:
+        A `dict` of attributes for a binary or test rule.
+    """
+    return dicts.add(
+        swift_compilation_attrs(
+            additional_deps_aspects = [
+                swift_clang_module_aspect,
+            ] + additional_deps_aspects,
+            requires_srcs = False,
+        ),
+        {
+            "linkopts": attr.string_list(
+                doc = """\
+Additional linker options that should be passed to `clang`. These strings are
+subject to `$(location ...)` expansion.
+""",
+                mandatory = False,
+            ),
+            "malloc": attr.label(
+                default = Label("@bazel_tools//tools/cpp:malloc"),
+                doc = _MALLOC_DOCSTRING,
+                mandatory = False,
+                providers = [[CcInfo]],
+            ),
+            "stamp": attr.int(
+                default = stamp_default,
+                doc = """\
+Enable or disable link stamping; that is, whether to encode build information
+into the binary. Possible values are:
+
+* `stamp = 1`: Stamp the build information into the binary. Stamped binaries are
+  only rebuilt when their dependencies change. Use this if there are tests that
+  depend on the build information.
+
+* `stamp = 0`: Always replace build information by constant values. This gives
+  good build result caching.
+
+* `stamp = -1`: Embedding of build information is controlled by the
+  `--[no]stamp` flag.
+""",
+                mandatory = False,
+            ),
+            # Do not add references; temporary attribute for C++ toolchain
+            # Starlark migration.
+            "_cc_toolchain": attr.label(
+                default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
+            ),
+            # A late-bound attribute denoting the value of the `--custom_malloc`
+            # command line flag (or None if the flag is not provided).
+            "_custom_malloc": attr.label(
+                default = configuration_field(
+                    fragment = "cpp",
+                    name = "custom_malloc",
+                ),
+                providers = [[CcInfo]],
+            ),
+            # TODO(b/119082664): Used internally only.
+            "_grep_includes": attr.label(
+                allow_single_file = True,
+                cfg = "exec",
+                default = Label("@bazel_tools//tools/cpp:grep-includes"),
+                executable = True,
+            ),
+        },
+    )
+
+def configure_features_for_binary(
+        *,
+        ctx,
+        requested_features = [],
+        swift_toolchain,
+        unsupported_features = []):
+    """Creates and returns the feature configuration for binary linking.
+
+    This helper automatically handles common features for all Swift
+    binary-creating targets, like code coverage.
+
+    Args:
+        ctx: The rule context.
+        requested_features: Features that are requested for the target.
+        swift_toolchain: The Swift toolchain provider.
+        unsupported_features: Features that are unsupported for the target.
+
+    Returns:
+        The `FeatureConfiguration` that was created.
+    """
+    requested_features = list(requested_features)
+    unsupported_features = list(unsupported_features)
+
+    # Require static linking for now.
+    requested_features.append("static_linking_mode")
+
+    # Enable LLVM coverage in CROSSTOOL if this is a coverage build. Note that
+    # we explicitly enable LLVM format and disable GCC format because the former
+    # is the only one that Swift supports.
+    if ctx.configuration.coverage_enabled:
+        requested_features.append("llvm_coverage_map_format")
+        unsupported_features.append("gcc_coverage_map_format")
+
+    return configure_features(
+        ctx = ctx,
+        requested_features = requested_features,
+        swift_toolchain = swift_toolchain,
+        unsupported_features = unsupported_features,
+    )
 
 def create_linking_context_from_compilation_outputs(
         *,
@@ -160,6 +285,19 @@ def create_linking_context_from_compilation_outputs(
         disallow_dynamic_library = True,
         grep_includes = None,
     )
+
+def malloc_linking_context(ctx):
+    """Returns the linking context to use for the malloc implementation.
+
+    Args:
+        ctx: The rule context.
+
+    Returns:
+        The `CcLinkingContext` that contains the library to link for the malloc
+        implementation.
+    """
+    malloc = ctx.attr._custom_malloc or ctx.attr.malloc
+    return malloc[CcInfo].linking_context
 
 def new_objc_provider(
         *,
@@ -345,13 +483,20 @@ def register_link_binary_action(
 
     linking_contexts.extend(additional_linking_contexts)
 
-    _ignore = [grep_includes]  # Silence buildifier
+    # Collect linking contexts from any of the toolchain's implicit
+    # dependencies.
+    linking_contexts.extend([
+        cc_info.linking_context
+        for cc_info in swift_toolchain.implicit_deps_providers.cc_infos
+    ])
+
     return cc_common.link(
         actions = actions,
         additional_inputs = additional_inputs,
         cc_toolchain = swift_toolchain.cc_toolchain_info,
         compilation_outputs = compilation_outputs,
         feature_configuration = cc_feature_configuration,
+        grep_includes = grep_includes,
         name = name,
         user_link_flags = user_link_flags,
         linking_contexts = linking_contexts,

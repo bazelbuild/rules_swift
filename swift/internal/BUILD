@@ -5,7 +5,7 @@ licenses(["notice"])
 bzl_library(
     name = "rules",
     srcs = [
-        "swift_binary_test.bzl",
+        "swift_binary.bzl",
         "swift_extract_symbol_graph.bzl",
         "swift_feature_allowlist.bzl",
         "swift_grpc_library.bzl",
@@ -16,6 +16,7 @@ bzl_library(
         "swift_package_configuration.bzl",
         "swift_proto_library.bzl",
         "swift_protoc_gen_aspect.bzl",
+        "swift_test.bzl",
     ],
     visibility = [
         "//swift:__pkg__",
