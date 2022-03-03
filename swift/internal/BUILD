@@ -141,16 +141,6 @@ bzl_library(
 )
 
 bzl_library(
-    name = "swift_c_module",
-    srcs = ["swift_c_module.bzl"],
-    visibility = ["//swift:__subpackages__"],
-    deps = [
-        ":swift_common",
-        ":utils",
-    ],
-)
-
-bzl_library(
     name = "swift_feature_allowlist",
     srcs = ["swift_feature_allowlist.bzl"],
     visibility = ["//swift:__subpackages__"],

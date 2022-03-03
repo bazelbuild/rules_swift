@@ -337,8 +337,8 @@ A new `SwiftInfo` provider with the given values.
 ## swift_common.create_swift_interop_info
 
 <pre>
-swift_common.create_swift_interop_info(<a href="#swift_common.create_swift_interop_info-module_map">module_map</a>, <a href="#swift_common.create_swift_interop_info-module_name">module_name</a>, <a href="#swift_common.create_swift_interop_info-requested_features">requested_features</a>, <a href="#swift_common.create_swift_interop_info-swift_infos">swift_infos</a>,
-                                       <a href="#swift_common.create_swift_interop_info-unsupported_features">unsupported_features</a>)
+swift_common.create_swift_interop_info(<a href="#swift_common.create_swift_interop_info-exclude_headers">exclude_headers</a>, <a href="#swift_common.create_swift_interop_info-module_map">module_map</a>, <a href="#swift_common.create_swift_interop_info-module_name">module_name</a>, <a href="#swift_common.create_swift_interop_info-requested_features">requested_features</a>,
+                                       <a href="#swift_common.create_swift_interop_info-suppressed">suppressed</a>, <a href="#swift_common.create_swift_interop_info-swift_infos">swift_infos</a>, <a href="#swift_common.create_swift_interop_info-unsupported_features">unsupported_features</a>)
 </pre>
 
 Returns a provider that lets a target expose C/Objective-C APIs to Swift.
@@ -372,9 +372,11 @@ exclude dependencies if necessary.
 
 | Name  | Description | Default Value |
 | :------------- | :------------- | :------------- |
+| <a id="swift_common.create_swift_interop_info-exclude_headers"></a>exclude_headers |  A <code>list</code> of <code>File</code>s representing headers that should be excluded from the module if the module map is generated.   |  <code>[]</code> |
 | <a id="swift_common.create_swift_interop_info-module_map"></a>module_map |  A <code>File</code> representing an existing module map that should be used to represent the module, or <code>None</code> (the default) if the module map should be generated based on the headers in the target's compilation context. If this argument is provided, then <code>module_name</code> must also be provided.   |  <code>None</code> |
 | <a id="swift_common.create_swift_interop_info-module_name"></a>module_name |  A string denoting the name of the module, or <code>None</code> (the default) if the name should be derived automatically from the target label.   |  <code>None</code> |
 | <a id="swift_common.create_swift_interop_info-requested_features"></a>requested_features |  A list of features (empty by default) that should be requested for the target, which are added to those supplied in the <code>features</code> attribute of the target. These features will be enabled unless they are otherwise marked as unsupported (either on the target or by the toolchain). This allows the rule implementation to have additional control over features that should be supported by default for all instances of that rule as if it were creating the feature configuration itself; for example, a rule can request that <code>swift.emit_c_module</code> always be enabled for its targets even if it is not explicitly enabled in the toolchain or on the target directly.   |  <code>[]</code> |
+| <a id="swift_common.create_swift_interop_info-suppressed"></a>suppressed |  A <code>bool</code> indicating whether the module that the aspect would create for the target should instead be suppressed.   |  <code>False</code> |
 | <a id="swift_common.create_swift_interop_info-swift_infos"></a>swift_infos |  A list of <code>SwiftInfo</code> providers from dependencies, which will be merged with the new <code>SwiftInfo</code> created by the aspect.   |  <code>[]</code> |
 | <a id="swift_common.create_swift_interop_info-unsupported_features"></a>unsupported_features |  A list of features (empty by default) that should be considered unsupported for the target, which are added to those supplied as negations in the <code>features</code> attribute. This allows the rule implementation to have additional control over features that should be disabled by default for all instances of that rule as if it were creating the feature configuration itself; for example, a rule that processes frameworks with headers that do not follow strict layering can request that <code>swift.strict_module</code> always be disabled for its targets even if it is enabled by default in the toolchain.   |  <code>[]</code> |
 
