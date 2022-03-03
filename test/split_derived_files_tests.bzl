@@ -374,7 +374,7 @@ def split_derived_files_test_suite(name):
     )
 
     split_swiftmodule_copts_test(
-        name = "{}_copts_compile",
+        name = "{}_copts_compile".format(name),
         expected_argv = [
             "-DHELLO",
             "-Xcc -DWORLD=1",
@@ -386,7 +386,7 @@ def split_derived_files_test_suite(name):
     )
 
     split_swiftmodule_copts_test(
-        name = "{}_copts_derive_files",
+        name = "{}_copts_derive_files".format(name),
         expected_argv = [
             "-DHELLO",
             "-Xcc -DWORLD=1",
