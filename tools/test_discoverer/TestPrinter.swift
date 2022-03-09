@@ -37,6 +37,18 @@ private func generatedTestEntry(for method: DiscoveredTests.Method) -> String {
   }
 }
 
+/// Returns the Swift identifier that represents the generated array of test entries for the given
+/// test class.
+private func allTestsIdentifier(for testClass: DiscoveredTests.Class) -> String {
+  return "__allTests__\(testClass.name)"
+}
+
+/// Returns the Swift identifier that represents the generated function that returns the combined
+/// test entries for all the test classes in the given module.
+private func allTestsIdentifier(for module: DiscoveredTests.Module) -> String {
+  return "\(module.name)__allTests"
+}
+
 /// Prints discovered test entries and a test runner as Swift source code to be compiled in order to
 /// run the tests.
 struct TestPrinter {
@@ -76,7 +88,7 @@ struct TestPrinter {
 
         fileprivate extension \(className) {
           \(availabilityAttribute)
-          static let __allTests = [
+          static let \(allTestsIdentifier(for: testClass)) = [
 
         """
 
@@ -97,14 +109,15 @@ struct TestPrinter {
     contents += """
 
       \(availabilityAttribute)
-      func __\(moduleName)__allTests() -> [XCTestCaseEntry] {
+      func \(allTestsIdentifier(for: discoveredModule))() -> [XCTestCaseEntry] {
         return [
 
       """
 
     for className in sortedClassNames {
+      let testClass = discoveredModule.classes[className]!
       contents += """
-            testCase(\(className).__allTests),
+            testCase(\(className).\(allTestsIdentifier(for: testClass))),
 
         """
     }
@@ -132,8 +145,9 @@ struct TestPrinter {
       """
 
     for moduleName in discoveredTests.modules.keys.sorted() {
+      let module = discoveredTests.modules[moduleName]!
       contents += """
-            tests += __\(moduleName)__allTests()
+            tests += \(allTestsIdentifier(for: module))()
 
         """
     }
