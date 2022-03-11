@@ -1091,6 +1091,7 @@ def _dependencies_clang_modules_configurator(prerequisites, args):
 
     if prerequisites.is_swift:
         compilation_context = None
+
     else:
         compilation_context = prerequisites.cc_compilation_context
 
