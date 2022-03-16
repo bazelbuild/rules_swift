@@ -57,7 +57,9 @@ swift_grpc_library(
 swift_binary(
     name = "echo_server",
     srcs = ["server_main.swift"],
-    deps = [":echo_server_services_swift"],
+    deps = [
+        ":echo_server_services_swift",
+    ],
 )
 
 swift_test(
@@ -72,5 +74,7 @@ swift_test(
 swift_binary(
     name = "echo_client",
     srcs = ["client_main.swift"],
-    deps = [":echo_client_services_swift"],
+    deps = [
+        ":echo_client_services_swift",
+    ],
 )

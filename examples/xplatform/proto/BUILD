@@ -22,5 +22,7 @@ swift_proto_library(
 swift_binary(
     name = "proto",
     srcs = ["main.swift"],
-    deps = [":example_proto_swift"],
+    deps = [
+        ":example_proto_swift",
+    ],
 )
