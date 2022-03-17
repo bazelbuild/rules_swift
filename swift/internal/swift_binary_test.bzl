@@ -140,6 +140,25 @@ def _configure_features_for_binary(
         unsupported_features = unsupported_features,
     )
 
+def _maybe_parse_as_library_copts(srcs):
+    """Returns a list of compiler flags depending on `main.swift`'s presence.
+
+    Now that the `@main` attribute exists and is becoming more common, in the
+    case there is a single file not named `main.swift`, we assume that it has a
+    `@main` annotation, in which case it needs to be parsed as a library, not
+    as if it has top level code. In the case this is the wrong assumption,
+    compilation or linking will fail.
+
+    Args:
+        srcs: A list of source files to check for the presence of `main.swift`.
+
+    Returns:
+        A list of compiler flags to add to `copts`
+    """
+    use_parse_as_library = len(srcs) == 1 and \
+                           srcs[0].basename != "main.swift"
+    return ["-parse-as-library"] if use_parse_as_library else []
+
 def _swift_linking_rule_impl(
         ctx,
         binary_path,
@@ -184,7 +203,8 @@ def _swift_linking_rule_impl(
         if not module_name:
             module_name = swift_common.derive_module_name(ctx.label)
 
-        copts = expand_locations(ctx, ctx.attr.copts, ctx.attr.swiftc_inputs)
+        copts = expand_locations(ctx, ctx.attr.copts, ctx.attr.swiftc_inputs) + \
+                _maybe_parse_as_library_copts(srcs)
 
         module_context, cc_compilation_outputs, other_compilation_outputs = swift_common.compile(
             actions = ctx.actions,
