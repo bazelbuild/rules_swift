@@ -218,8 +218,6 @@ def register_link_binary_action(
         if apple_common.Objc in dep:
             objc = dep[apple_common.Objc]
 
-            static_framework_files = objc.static_framework_file.to_list()
-
             # We don't need to handle the `objc.sdk_framework` field here
             # because those values have also been put into the user link flags
             # of a CcInfo, but the others don't seem to have been.
@@ -236,9 +234,13 @@ def register_link_binary_action(
                 objc.dynamic_framework_names.to_list(),
             ))
             dep_link_flags.extend([
-                file.path
-                for file in static_framework_files
+                "-F{}".format(path)
+                for path in objc.static_framework_paths.to_list()
             ])
+            dep_link_flags.extend(collections.before_each(
+                "-framework",
+                objc.static_framework_names.to_list(),
+            ))
 
             linking_contexts.append(
                 cc_common.create_linking_context(
