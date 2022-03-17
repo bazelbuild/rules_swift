@@ -14,31 +14,35 @@
 
 #include "tools/common/path_utils.h"
 
-#include <cstring>
 #include <string>
 
-const char *Basename(const char *path) {
-  const char *base = strrchr(path, '/');
-  return base ? (base + 1) : path;
-}
+#include "absl/strings/str_cat.h"
 
-std::string Dirname(const std::string &path) {
-  auto last_slash = path.rfind('/');
-  if (last_slash == std::string::npos) {
-    return std::string();
+absl::string_view Basename(absl::string_view path) {
+  if (size_t last_slash = path.rfind('/');
+      last_slash != absl::string_view::npos) {
+    return path.substr(last_slash + 1);
   }
-  return path.substr(0, last_slash);
+  return path;
 }
 
-std::string ReplaceExtension(const std::string &path,
-                             const std::string &new_extension,
-                             bool all_extensions) {
-  auto last_slash = path.rfind('/');
+absl::string_view Dirname(absl::string_view path) {
+  if (size_t last_slash = path.rfind('/');
+      last_slash != absl::string_view::npos) {
+    return path.substr(0, last_slash);
+  }
+  return absl::string_view();
+}
 
-  std::string::size_type dot;
+std::string ReplaceExtension(absl::string_view path,
+                             absl::string_view new_extension,
+                             bool all_extensions) {
+  size_t last_slash = path.rfind('/');
+
+  absl::string_view::size_type dot;
   if (all_extensions) {
     // Find the first dot, signifying the first of all extensions.
-    if (last_slash != std::string::npos) {
+    if (last_slash != absl::string_view::npos) {
       dot = path.find('.', last_slash);
     } else {
       dot = path.find('.');
@@ -49,13 +53,13 @@ std::string ReplaceExtension(const std::string &path,
     if (dot < last_slash) {
       // If the dot was part of a previous path segment, treat it as if it
       // wasn't found (it's not an extension of the filename).
-      dot = std::string::npos;
+      dot = absl::string_view::npos;
     }
   }
 
   // If there was no dot append the extension to the path.
-  if (dot == std::string::npos) {
-    return path + new_extension;
+  if (dot == absl::string_view::npos) {
+    return absl::StrCat(path, new_extension);
   }
-  return path.substr(0, dot) + new_extension;
+  return absl::StrCat(path.substr(0, dot), new_extension);
 }

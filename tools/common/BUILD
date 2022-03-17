@@ -10,6 +10,10 @@ cc_library(
     name = "bazel_substitutions",
     srcs = ["bazel_substitutions.cc"],
     hdrs = ["bazel_substitutions.h"],
+    deps = [
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/strings",
+    ],
 )
 
 cc_library(
@@ -18,6 +22,7 @@ cc_library(
     hdrs = ["file_system.h"],
     deps = [
         ":path_utils",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -25,6 +30,7 @@ cc_library(
     name = "path_utils",
     srcs = ["path_utils.cc"],
     hdrs = ["path_utils.h"],
+    deps = ["@com_google_absl//absl/strings"],
 )
 
 cc_library(
@@ -39,6 +45,7 @@ cc_library(
 cc_library(
     name = "temp_file",
     hdrs = ["temp_file.h"],
+    deps = ["@com_google_absl//absl/strings"],
 )
 
 # Consumed by Bazel integration tests.

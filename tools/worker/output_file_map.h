@@ -15,9 +15,10 @@
 #ifndef BUILD_BAZEL_RULES_SWIFT_TOOLS_WORKER_OUTPUT_FILE_MAP_H
 #define BUILD_BAZEL_RULES_SWIFT_TOOLS_WORKER_OUTPUT_FILE_MAP_H
 
-#include <map>
 #include <string>
 
+#include "absl/container/btree_map.h"
+#include "absl/strings/string_view.h"
 #include <nlohmann/json.hpp>
 
 // Supports loading and rewriting a `swiftc` output file map to support
@@ -36,24 +37,24 @@ class OutputFileMap {
   // A map containing expected output files that will be generated in the
   // incremental storage area. The key is the original object path; the
   // corresponding value is its location in the incremental storage area.
-  const std::map<std::string, std::string> incremental_outputs() const {
+  const absl::btree_map<std::string, std::string> &incremental_outputs() const {
     return incremental_outputs_;
   }
 
   // Reads the output file map from the JSON file at the given path, and updates
   // it to support incremental builds.
-  void ReadFromPath(const std::string &path);
+  void ReadFromPath(absl::string_view path);
 
   // Writes the output file map as JSON to the file at the given path.
-  void WriteToPath(const std::string &path);
+  void WriteToPath(absl::string_view path);
 
  private:
   // Modifies the output file map's JSON structure in-place to replace file
   // paths with equivalents in the incremental storage area.
-  void UpdateForIncremental(const std::string &path);
+  void UpdateForIncremental(absl::string_view path);
 
   nlohmann::json json_;
-  std::map<std::string, std::string> incremental_outputs_;
+  absl::btree_map<std::string, std::string> incremental_outputs_;
 };
 
 #endif  // BUILD_BAZEL_RULES_SWIFT_TOOLS_WORKER_OUTPUT_FILE_MAP_H_

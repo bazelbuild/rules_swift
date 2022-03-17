@@ -25,27 +25,29 @@
 #include <memory>
 #include <string>
 
+#include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
+
 // An RAII temporary file.
 class TempFile {
  public:
   // Create a new temporary file using the given path template string (the same
   // form used by `mkstemp`). The file will automatically be deleted when the
   // object goes out of scope.
-  static std::unique_ptr<TempFile> Create(const std::string &path_template) {
-    const char *tmpDir = getenv("TMPDIR");
-    if (!tmpDir) {
-      tmpDir = "/tmp";
+  static std::unique_ptr<TempFile> Create(absl::string_view path_template) {
+    absl::string_view tmp_dir;
+    if (const char *env_value = getenv("TMPDIR")) {
+      tmp_dir = env_value;
+    } else {
+      tmp_dir = "/tmp";
     }
-    size_t size = strlen(tmpDir) + path_template.size() + 2;
-    std::unique_ptr<char[]> path(new char[size]);
-    snprintf(path.get(), size, "%s/%s", tmpDir, path_template.c_str());
-
-    if (mkstemp(path.get()) == -1) {
-      std::cerr << "Failed to create temporary file '" << path.get() << "': "
-                << strerror(errno) << "\n";
+    std::string path = absl::StrCat(tmp_dir, "/", path_template);
+    if (mkstemp(const_cast<char *>(path.c_str())) == -1) {
+      std::cerr << "Failed to create temporary file '" << path << "': "
+                << strerror(errno) << std::endl;
       return nullptr;
     }
-    return std::unique_ptr<TempFile>(new TempFile(path.get()));
+    return std::unique_ptr<TempFile>(new TempFile(path));
   }
 
   // Explicitly make TempFile non-copyable and movable.
@@ -57,10 +59,10 @@ class TempFile {
   ~TempFile() { remove(path_.c_str()); }
 
   // Gets the path to the temporary file.
-  std::string GetPath() const { return path_; }
+  absl::string_view GetPath() const { return path_; }
 
  private:
-  explicit TempFile(const std::string &path) : path_(path) {}
+  explicit TempFile(absl::string_view path) : path_(path) {}
 
   std::string path_;
 };
@@ -72,21 +74,20 @@ class TempDirectory {
   // same form used by `mkdtemp`). The file will automatically be deleted when
   // the object goes out of scope.
   static std::unique_ptr<TempDirectory> Create(
-      const std::string &path_template) {
-    const char *tmpDir = getenv("TMPDIR");
-    if (!tmpDir) {
-      tmpDir = "/tmp";
+      absl::string_view path_template) {
+    absl::string_view tmp_dir;
+    if (const char *env_value = getenv("TMPDIR")) {
+      tmp_dir = env_value;
+    } else {
+      tmp_dir = "/tmp";
     }
-    size_t size = strlen(tmpDir) + path_template.size() + 2;
-    std::unique_ptr<char[]> path(new char[size]);
-    snprintf(path.get(), size, "%s/%s", tmpDir, path_template.c_str());
-
-    if (mkdtemp(path.get()) == nullptr) {
-      std::cerr << "Failed to create temporary directory '" << path.get()
-                << "': " << strerror(errno) << "\n";
+    std::string path = absl::StrCat(tmp_dir, "/", path_template);
+    if (mkdtemp(const_cast<char *>(path.c_str())) == nullptr) {
+      std::cerr << "Failed to create temporary directory '" << path
+                << "': " << strerror(errno) << std::endl;
       return nullptr;
     }
-    return std::unique_ptr<TempDirectory>(new TempDirectory(path.get()));
+    return std::unique_ptr<TempDirectory>(new TempDirectory(path));
   }
 
   // Explicitly make TempDirectory non-copyable and movable.
@@ -122,10 +123,10 @@ class TempDirectory {
   }
 
   // Gets the path to the temporary directory.
-  std::string GetPath() const { return path_; }
+  absl::string_view GetPath() const { return path_; }
 
  private:
-  explicit TempDirectory(const std::string &path) : path_(path) {}
+  explicit TempDirectory(absl::string_view path) : path_(path) {}
 
   std::string path_;
 };

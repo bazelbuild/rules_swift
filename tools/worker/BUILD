@@ -33,6 +33,8 @@ cc_library(
         "//tools/common:path_utils",
         "//tools/common:temp_file",
         "@com_github_nlohmann_json//:json",
+        "@com_google_absl//absl/container:btree",
+        "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
     ],
 )
@@ -55,6 +57,7 @@ cc_library(
         "//tools/common:file_system",
         "//tools/common:process",
         "//tools/common:temp_file",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -71,7 +74,9 @@ cc_binary(
             ":compile_without_worker",
             ":compile_with_worker",
         ],
-    }),
+    }) + [
+        "@com_google_absl//absl/algorithm:container",
+    ],
 )
 
 # Consumed by Bazel integration tests.

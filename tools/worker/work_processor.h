@@ -15,7 +15,6 @@
 #ifndef BUILD_BAZEL_RULES_SWIFT_TOOLS_WORKER_WORK_PROCESSOR_H
 #define BUILD_BAZEL_RULES_SWIFT_TOOLS_WORKER_WORK_PROCESSOR_H
 
-#include <map>
 #include <string>
 #include <vector>
 

@@ -38,14 +38,14 @@ class PosixSpawnIORedirector {
  public:
   // Create an I/O redirector that can be used with posix_spawn to capture
   // stderr.
-  static std::unique_ptr<PosixSpawnIORedirector> Create(bool stdoutToStderr) {
+  static std::unique_ptr<PosixSpawnIORedirector> Create(bool stdout_to_stderr) {
     int stderr_pipe[2];
     if (pipe(stderr_pipe) != 0) {
       return nullptr;
     }
 
     return std::unique_ptr<PosixSpawnIORedirector>(
-        new PosixSpawnIORedirector(stderr_pipe, stdoutToStderr));
+        new PosixSpawnIORedirector(stderr_pipe, stdout_to_stderr));
   }
 
   // Explicitly make PosixSpawnIORedirector non-copyable and movable.
@@ -55,8 +55,8 @@ class PosixSpawnIORedirector {
   PosixSpawnIORedirector &operator=(PosixSpawnIORedirector &&) = default;
 
   ~PosixSpawnIORedirector() {
-    SafeClose(&stderr_pipe_[0]);
-    SafeClose(&stderr_pipe_[1]);
+    SafeClose(stderr_pipe_[0]);
+    SafeClose(stderr_pipe_[1]);
     posix_spawn_file_actions_destroy(&file_actions_);
   }
 
@@ -70,15 +70,15 @@ class PosixSpawnIORedirector {
 
   // Consumes all the data output to stderr by the subprocess and writes it to
   // the given output stream.
-  void ConsumeAllSubprocessOutput(std::ostream *stderr_stream);
+  void ConsumeAllSubprocessOutput(std::ostream &stderr_stream);
 
  private:
-  explicit PosixSpawnIORedirector(int stderr_pipe[], bool stdoutToStderr) {
+  explicit PosixSpawnIORedirector(int stderr_pipe[], bool stdout_to_stderr) {
     memcpy(stderr_pipe_, stderr_pipe, sizeof(int) * 2);
 
     posix_spawn_file_actions_init(&file_actions_);
     posix_spawn_file_actions_addclose(&file_actions_, stderr_pipe_[0]);
-    if (stdoutToStderr) {
+    if (stdout_to_stderr) {
       posix_spawn_file_actions_adddup2(&file_actions_, stderr_pipe_[1],
                                        STDOUT_FILENO);
     }
@@ -88,10 +88,10 @@ class PosixSpawnIORedirector {
   }
 
   // Closes a file descriptor only if it hasn't already been closed.
-  void SafeClose(int *fd) {
-    if (*fd >= 0) {
-      close(*fd);
-      *fd = -1;
+  void SafeClose(int &fd) {
+    if (fd >= 0) {
+      close(fd);
+      fd = -1;
     }
   }
 
@@ -100,8 +100,8 @@ class PosixSpawnIORedirector {
 };
 
 void PosixSpawnIORedirector::ConsumeAllSubprocessOutput(
-    std::ostream *stderr_stream) {
-  SafeClose(&stderr_pipe_[1]);
+    std::ostream &stderr_stream) {
+  SafeClose(stderr_pipe_[1]);
 
   char stderr_buffer[1024];
   pollfd stderr_poll = {stderr_pipe_[0], POLLIN};
@@ -113,7 +113,7 @@ void PosixSpawnIORedirector::ConsumeAllSubprocessOutput(
       if (bytes_read == 0) {
         break;
       }
-      stderr_stream->write(stderr_buffer, bytes_read);
+      stderr_stream.write(stderr_buffer, bytes_read);
     }
   }
 }
@@ -124,7 +124,7 @@ void PosixSpawnIORedirector::ConsumeAllSubprocessOutput(
 // are controlled by the lifetime of the strings in args.
 std::vector<const char *> ConvertToCArgs(const std::vector<std::string> &args) {
   std::vector<const char *> c_args;
-  c_args.push_back(Basename(args[0].c_str()));
+  c_args.push_back(Basename(args[0].c_str()).data());
   for (int i = 1; i < args.size(); i++) {
     c_args.push_back(args[i].c_str());
   }
@@ -138,12 +138,12 @@ void ExecProcess(const std::vector<std::string> &args) {
   std::vector<const char *> exec_argv = ConvertToCArgs(args);
   execv(args[0].c_str(), const_cast<char **>(exec_argv.data()));
   std::cerr << "Error executing child process.'" << args[0] << "'. "
-            << strerror(errno) << "\n";
+            << strerror(errno) << std::endl;
   abort();
 }
 
 int RunSubProcess(const std::vector<std::string> &args,
-                  std::ostream *stderr_stream, bool stdout_to_stderr) {
+                  std::ostream &stderr_stream, bool stdout_to_stderr) {
   std::vector<const char *> exec_argv = ConvertToCArgs(args);
 
   // Set up a pipe to redirect stderr from the child process so that we can
@@ -151,7 +151,8 @@ int RunSubProcess(const std::vector<std::string> &args,
   std::unique_ptr<PosixSpawnIORedirector> redirector =
       PosixSpawnIORedirector::Create(stdout_to_stderr);
   if (!redirector) {
-    (*stderr_stream) << "Error creating stderr pipe for child process.\n";
+    stderr_stream << "Error creating stderr pipe for child process."
+                  << std::endl;
     return 254;
   }
 
@@ -169,7 +170,7 @@ int RunSubProcess(const std::vector<std::string> &args,
 
     if (wait_status < 0) {
       std::cerr << "Error waiting on child process '" << args[0] << "'. "
-                << strerror(errno) << "\n";
+                << strerror(errno) << std::endl;
       return wait_status;
     }
 
@@ -184,7 +185,7 @@ int RunSubProcess(const std::vector<std::string> &args,
     return 42;
   } else {
     std::cerr << "Error forking process '" << args[0] << "'. "
-              << strerror(status) << "\n";
+              << strerror(status) << std::endl;
     return status;
   }
 }

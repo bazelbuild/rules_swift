@@ -16,16 +16,19 @@
 
 #include <cstdlib>
 #include <iostream>
-#include <map>
 #include <string>
+
+#include "absl/container/flat_hash_map.h"
+#include "absl/strings/str_replace.h"
+#include "absl/strings/string_view.h"
 
 namespace bazel_rules_swift {
 namespace {
 
 // Returns the value of the given environment variable, or the empty string if
 // it wasn't set.
-std::string GetEnvironmentVariable(const char *name) {
-  char *env_value = getenv(name);
+std::string GetEnvironmentVariable(absl::string_view name) {
+  char *env_value = getenv(name.data());
   if (env_value == nullptr) {
     return "";
   }
@@ -36,55 +39,28 @@ std::string GetEnvironmentVariable(const char *name) {
 
 BazelPlaceholderSubstitutions::BazelPlaceholderSubstitutions() {
   // When targeting Apple platforms, replace the magic Bazel placeholders with
-  // the path in the corresponding environment variable. These should be set by
-  // the build rules; only attempt to retrieve them if they're actually seen in
-  // the argument list.
-  placeholder_resolvers_ = {
-      {kBazelXcodeDeveloperDir, PlaceholderResolver([]() {
-         return GetEnvironmentVariable("DEVELOPER_DIR");
-       })},
-      {kBazelXcodeSdkRoot,
-       PlaceholderResolver([]() { return GetEnvironmentVariable("SDKROOT"); })},
-  };
+  // the path in the corresponding environment variable, which should be set by
+  // the build rules. If the variable isn't set, we don't store a substitution;
+  // if it was needed then the eventual replacement will be a no-op and the
+  // command will presumably fail later.
+  if (std::string developer_dir = GetEnvironmentVariable("DEVELOPER_DIR");
+      !developer_dir.empty()) {
+    substitutions_[kBazelXcodeDeveloperDir] = developer_dir;
+  }
+  if (std::string sdk_root = GetEnvironmentVariable("SDKROOT");
+      !sdk_root.empty()) {
+    substitutions_[kBazelXcodeSdkRoot] = sdk_root;
+  }
 }
 
 BazelPlaceholderSubstitutions::BazelPlaceholderSubstitutions(
-    const std::string &developer_dir, const std::string &sdk_root) {
-  placeholder_resolvers_ = {
-      {kBazelXcodeDeveloperDir,
-       PlaceholderResolver([=]() { return developer_dir; })},
-      {kBazelXcodeSdkRoot,
-       PlaceholderResolver([=]() { return sdk_root; })},
-  };
+    absl::string_view developer_dir, absl::string_view sdk_root) {
+  substitutions_[kBazelXcodeDeveloperDir] = std::string(developer_dir);
+  substitutions_[kBazelXcodeSdkRoot] = std::string(sdk_root);
 }
 
 bool BazelPlaceholderSubstitutions::Apply(std::string &arg) {
-  bool changed = false;
-
-  // Replace placeholders in the string with their actual values.
-  for (auto &[placeholder, env_var] : placeholder_resolvers_) {
-    changed |= FindAndReplace(placeholder, env_var, arg);
-  }
-
-  return changed;
-}
-
-bool BazelPlaceholderSubstitutions::FindAndReplace(
-    const std::string &placeholder,
-    BazelPlaceholderSubstitutions::PlaceholderResolver &resolver,
-    std::string &str) {
-  int start = 0;
-  bool changed = false;
-  while ((start = str.find(placeholder, start)) != std::string::npos) {
-    std::string resolved_value = resolver.get();
-    if (resolved_value.empty()) {
-      return false;
-    }
-    changed = true;
-    str.replace(start, placeholder.length(), resolved_value);
-    start += resolved_value.length();
-  }
-  return changed;
+  return absl::StrReplaceAll(substitutions_, &arg) > 0;
 }
 
 }  // namespace bazel_rules_swift

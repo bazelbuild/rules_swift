@@ -12,11 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <algorithm>
-#include <iostream>
 #include <string>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "tools/worker/compile_with_worker.h"
 #include "tools/worker/compile_without_worker.h"
 
@@ -28,13 +27,12 @@ int main(int argc, char *argv[]) {
   // but we don't want to rely on that). Since this "worker" tool also supports
   // a non-worker mode, we can detect the mode based on the presence of this
   // flag.
-  auto persistent_worker_it =
-      std::find(args.begin(), args.end(), "--persistent_worker");
-  if (persistent_worker_it == args.end()) {
-    return CompileWithoutWorker(args);
+  if (auto persistent_worker_flag = absl::c_find(args, "--persistent_worker");
+      persistent_worker_flag != args.end()) {
+    // Remove the special flag before starting the worker processing loop.
+    args.erase(persistent_worker_flag);
+    return CompileWithWorker(args);
   }
 
-  // Remove the special flag before starting the worker processing loop.
-  args.erase(persistent_worker_it);
-  return CompileWithWorker(args);
+  return CompileWithoutWorker(args);
 }

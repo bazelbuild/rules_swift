@@ -15,8 +15,10 @@
 #ifndef BUILD_BAZEL_RULES_SWIFT_TOOLS_COMMON_BAZEL_SUBSTITUTIONS_H_
 #define BUILD_BAZEL_RULES_SWIFT_TOOLS_COMMON_BAZEL_SUBSTITUTIONS_H_
 
-#include <map>
 #include <string>
+
+#include "absl/container/flat_hash_map.h"
+#include "absl/strings/string_view.h"
 
 namespace bazel_rules_swift {
 
@@ -26,13 +28,13 @@ namespace bazel_rules_swift {
 class BazelPlaceholderSubstitutions {
  public:
   // Initializes the substitutions by looking them up in the process's
-  // environment when they are first requested.
+  // environment.
   BazelPlaceholderSubstitutions();
 
   // Initializes the substitutions with the given fixed strings. Intended to be
   // used for testing.
-  BazelPlaceholderSubstitutions(const std::string &developer_dir,
-                                const std::string &sdk_root);
+  BazelPlaceholderSubstitutions(absl::string_view developer_dir,
+                                absl::string_view sdk_root);
 
   // Applies any necessary substitutions to `arg` and returns true if this
   // caused the string to change.
@@ -40,52 +42,18 @@ class BazelPlaceholderSubstitutions {
 
   // The placeholder string used by Bazel that should be replaced by
   // `DEVELOPER_DIR` at runtime.
-  static constexpr const char kBazelXcodeDeveloperDir[] =
+  inline static constexpr absl::string_view kBazelXcodeDeveloperDir =
       "__BAZEL_XCODE_DEVELOPER_DIR__";
 
   // The placeholder string used by Bazel that should be replaced by `SDKROOT`
   // at runtime.
-  static constexpr const char kBazelXcodeSdkRoot[] = "__BAZEL_XCODE_SDKROOT__";
+  inline static constexpr absl::string_view kBazelXcodeSdkRoot =
+      "__BAZEL_XCODE_SDKROOT__";
 
  private:
-  // A resolver for a Bazel placeholder string that retrieves and caches the
-  // value the first time it is requested.
-  class PlaceholderResolver {
-   public:
-    explicit PlaceholderResolver(std::function<std::string()> fn)
-        : function_(fn), initialized_(false) {}
-
-    // Returns the requested placeholder value, caching it for future
-    // retrievals.
-    std::string get() {
-      if (!initialized_) {
-        value_ = function_();
-        initialized_ = true;
-      }
-      return value_;
-    }
-
-   private:
-    // The function that returns the value of the placeholder, or the empty
-    // string if the placeholder should not be replaced.
-    std::function<std::string()> function_;
-
-    // Indicates whether the value of the placeholder has been requested yet and
-    // and is therefore initialized.
-    bool initialized_;
-
-    // The cached value of the placeholder if `initialized_` is true.
-    std::string value_;
-  };
-
-  // Finds and replaces all instances of `placeholder` with the value provided
-  // by `resolver`, in-place on `str`. Returns true if the string was changed.
-  bool FindAndReplace(const std::string &placeholder,
-                      PlaceholderResolver &resolver, std::string &str);
-
-  // A mapping from Bazel placeholder strings to resolvers that provide their
-  // values.
-  std::map<std::string, PlaceholderResolver> placeholder_resolvers_;
+  // A mapping from Bazel placeholder strings to the values that should be
+  // substituted for them.
+  absl::flat_hash_map<std::string, std::string> substitutions_;
 };
 
 }  // namespace bazel_rules_swift

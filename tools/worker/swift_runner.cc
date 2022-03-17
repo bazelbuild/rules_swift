@@ -16,6 +16,9 @@
 
 #include <fstream>
 
+#include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
+#include "absl/strings/strip.h"
 #include "tools/common/bazel_substitutions.h"
 #include "tools/common/file_system.h"
 #include "tools/common/process.h"
@@ -26,15 +29,16 @@ namespace {
 // Creates a temporary file and writes the given arguments to it, one per line.
 static std::unique_ptr<TempFile> WriteResponseFile(
     const std::vector<std::string> &args) {
-  auto response_file = TempFile::Create("swiftc_params.XXXXXX");
-  std::ofstream response_file_stream(response_file->GetPath());
+  std::unique_ptr<TempFile> response_file =
+      TempFile::Create("swiftc_params.XXXXXX");
+  std::ofstream response_file_stream(std::string(response_file->GetPath()));
 
-  for (const auto &arg : args) {
+  for (absl::string_view arg : args) {
     // When Clang/Swift write out a response file to communicate from driver to
     // frontend, they just quote every argument to be safe; we duplicate that
     // instead of trying to be "smarter" and only quoting when necessary.
     response_file_stream << '"';
-    for (auto ch : arg) {
+    for (char ch : arg) {
       if (ch == '"' || ch == '\\') {
         response_file_stream << '\\';
       }
@@ -48,11 +52,11 @@ static std::unique_ptr<TempFile> WriteResponseFile(
 }
 
 // Unescape and unquote an argument read from a line of a response file.
-static std::string Unescape(const std::string &arg) {
+static std::string Unescape(absl::string_view arg) {
   std::string result;
-  auto length = arg.size();
+  size_t length = arg.size();
   for (size_t i = 0; i < length; ++i) {
-    auto ch = arg[i];
+    char ch = arg[i];
 
     // If it's a backslash, consume it and append the character that follows.
     if (ch == '\\' && i + 1 < length) {
@@ -64,7 +68,7 @@ static std::string Unescape(const std::string &arg) {
     // If it's a quote, process everything up to the matching quote, unescaping
     // backslashed characters as needed.
     if (ch == '"' || ch == '\'') {
-      auto quote = ch;
+      char quote = ch;
       ++i;
       while (i != length && arg[i] != quote) {
         if (arg[i] == '\\' && i + 1 < length) {
@@ -86,17 +90,6 @@ static std::string Unescape(const std::string &arg) {
   return result;
 }
 
-// If `str` starts with `prefix`, `str` is mutated to remove `prefix` and the
-// function returns true. Otherwise, `str` is left unmodified and the function
-// returns `false`.
-static bool StripPrefix(const std::string &prefix, std::string &str) {
-  if (str.find(prefix) != 0) {
-    return false;
-  }
-  str.erase(0, prefix.size());
-  return true;
-}
-
 }  // namespace
 
 SwiftRunner::SwiftRunner(const std::vector<std::string> &args,
@@ -105,7 +98,7 @@ SwiftRunner::SwiftRunner(const std::vector<std::string> &args,
   args_ = ProcessArguments(args);
 }
 
-int SwiftRunner::Run(std::ostream *stderr_stream, bool stdout_to_stderr) {
+int SwiftRunner::Run(std::ostream &stderr_stream, bool stdout_to_stderr) {
   int exit_code = RunSubProcess(args_, stderr_stream, stdout_to_stderr);
   if (exit_code != 0) {
     return exit_code;
@@ -133,9 +126,9 @@ int SwiftRunner::Run(std::ostream *stderr_stream, bool stdout_to_stderr) {
 }
 
 bool SwiftRunner::ProcessPossibleResponseFile(
-    const std::string &arg, std::function<void(const std::string &)> consumer) {
-  auto path = arg.substr(1);
-  std::ifstream original_file(path);
+    absl::string_view arg, std::function<void(absl::string_view)> consumer) {
+  absl::string_view path = arg.substr(1);
+  std::ifstream original_file((std::string(path)));
   // If we couldn't open it, maybe it's not a file; maybe it's just some other
   // argument that starts with "@". (Unlikely, but it's safer to check.)
   if (!original_file.good()) {
@@ -163,15 +156,15 @@ bool SwiftRunner::ProcessPossibleResponseFile(
   std::vector<std::string> new_args;
 
   while (std::getline(original_file, arg_from_file)) {
-    changed |=
-        ProcessArgument(arg_from_file, [&](const std::string &processed_arg) {
-          new_args.push_back(processed_arg);
-        });
+    changed |= ProcessArgument(arg_from_file,
+                               [&new_args](absl::string_view processed_arg) {
+                                 new_args.push_back(std::string(processed_arg));
+                               });
   }
 
   if (changed) {
-    auto new_file = WriteResponseFile(new_args);
-    consumer("@" + new_file->GetPath());
+    std::unique_ptr<TempFile> new_file = WriteResponseFile(new_args);
+    consumer(absl::StrCat("@", new_file->GetPath()));
     temp_files_.push_back(std::move(new_file));
   } else {
     // If none of the arguments changed, just keep the original response file
@@ -183,50 +176,52 @@ bool SwiftRunner::ProcessPossibleResponseFile(
 }
 
 bool SwiftRunner::ProcessArgument(
-    const std::string &arg, std::function<void(const std::string &)> consumer) {
-  bool changed = false;
-
+    absl::string_view arg, std::function<void(absl::string_view)> consumer) {
   if (arg[0] == '@') {
-    changed = ProcessPossibleResponseFile(arg, consumer);
-  } else {
-    std::string new_arg = arg;
-    if (StripPrefix("-Xwrapped-swift=", new_arg)) {
-      if (new_arg == "-debug-prefix-pwd-is-dot") {
-        // Get the actual current working directory (the workspace root), which
-        // we didn't know at analysis time.
-        consumer("-debug-prefix-map");
-        consumer(GetCurrentDirectory() + "=.");
-        changed = true;
-      } else if (new_arg == "-ephemeral-module-cache") {
-        // Create a temporary directory to hold the module cache, which will be
-        // deleted after compilation is finished.
-        auto module_cache_dir =
-            TempDirectory::Create("swift_module_cache.XXXXXX");
-        consumer("-module-cache-path");
-        consumer(module_cache_dir->GetPath());
-        temp_directories_.push_back(std::move(module_cache_dir));
-        changed = true;
-      } else if (StripPrefix("-generated-header-rewriter=", new_arg)) {
-        generated_header_rewriter_path_ = new_arg;
-        changed = true;
-      } else {
-        // TODO(allevato): Report that an unknown wrapper arg was found and give
-        // the caller a way to exit gracefully.
-        changed = true;
-      }
-    } else {
-      // Apply any other text substitutions needed in the argument (i.e., for
-      // Apple toolchains).
-      //
-      // Bazel doesn't quote arguments in multi-line params files, so we need to
-      // ensure that our defensive quoting kicks in if an argument contains a
-      // space, even if no other changes would have been made.
-      changed = bazel_placeholder_substitutions_.Apply(new_arg) ||
-                new_arg.find_first_of(' ') != std::string::npos;
-      consumer(new_arg);
-    }
+    return ProcessPossibleResponseFile(arg, consumer);
   }
 
+  absl::string_view trimmed_arg = arg;
+  if (absl::ConsumePrefix(&trimmed_arg, "-Xwrapped-swift=")) {
+    if (trimmed_arg == "-debug-prefix-pwd-is-dot") {
+      // Get the actual current working directory (the workspace root), which
+      // we didn't know at analysis time.
+      consumer("-debug-prefix-map");
+      consumer(GetCurrentDirectory() + "=.");
+      return true;
+    }
+
+    if (trimmed_arg == "-ephemeral-module-cache") {
+      // Create a temporary directory to hold the module cache, which will be
+      // deleted after compilation is finished.
+      std::unique_ptr<TempDirectory> module_cache_dir =
+          TempDirectory::Create("swift_module_cache.XXXXXX");
+      consumer("-module-cache-path");
+      consumer(module_cache_dir->GetPath());
+      temp_directories_.push_back(std::move(module_cache_dir));
+      return true;
+    }
+
+    if (absl::ConsumePrefix(&trimmed_arg, "-generated-header-rewriter=")) {
+      generated_header_rewriter_path_ = std::string(trimmed_arg);
+      return true;
+    }
+
+    // TODO(allevato): Report that an unknown wrapper arg was found and give
+    // the caller a way to exit gracefully.
+    return true;
+  }
+
+  // Apply any other text substitutions needed in the argument (i.e., for
+  // Apple toolchains).
+  //
+  // Bazel doesn't quote arguments in multi-line params files, so we need to
+  // ensure that our defensive quoting kicks in if an argument contains a
+  // space, even if no other changes would have been made.
+  std::string new_arg(arg);
+  bool changed = bazel_placeholder_substitutions_.Apply(new_arg) ||
+                 absl::StrContains(new_arg, ' ');
+  consumer(new_arg);
   return changed;
 }
 
@@ -248,18 +243,20 @@ std::vector<std::string> SwiftRunner::ProcessArguments(
   // If we're forcing response files, push the remaining processed args onto a
   // different vector that we write out below. If not, push them directly onto
   // the vector being returned.
-  auto &args_destination = force_response_file_ ? response_file_args : new_args;
+  std::vector<std::string> &args_destination =
+      force_response_file_ ? response_file_args : new_args;
   while (it != args.end()) {
-    ProcessArgument(
-        *it, [&](const std::string &arg) { args_destination.push_back(arg); });
+    ProcessArgument(*it, [&args_destination](absl::string_view arg) {
+      args_destination.push_back(std::string(arg));
+    });
     ++it;
   }
 
   if (force_response_file_) {
     // Write the processed args to the response file, and push the path to that
     // file (preceded by '@') onto the arg list being returned.
-    auto new_file = WriteResponseFile(response_file_args);
-    new_args.push_back("@" + new_file->GetPath());
+    std::unique_ptr<TempFile> new_file = WriteResponseFile(response_file_args);
+    new_args.push_back(absl::StrCat("@", new_file->GetPath()));
     temp_files_.push_back(std::move(new_file));
   }
 

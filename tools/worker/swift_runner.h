@@ -17,11 +17,11 @@
 
 #include <functional>
 #include <iostream>
-#include <map>
 #include <memory>
 #include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "tools/common/bazel_substitutions.h"
 #include "tools/common/temp_file.h"
 
@@ -60,7 +60,7 @@ class SwiftRunner {
 
   // Run the Swift compiler, redirecting stderr to the specified stream. If
   // stdout_to_stderr is true, then stdout is also redirected to that stream.
-  int Run(std::ostream *stderr_stream, bool stdout_to_stderr = false);
+  int Run(std::ostream &stderr_stream, bool stdout_to_stderr = false);
 
  private:
   // Processes an argument that looks like it might be a response file (i.e., it
@@ -87,8 +87,7 @@ class SwiftRunner {
   //   written to a new response file, a response file argument pointing to that
   //   file is passed to the consumer, and the method returns true.
   bool ProcessPossibleResponseFile(
-      const std::string &arg,
-      std::function<void(const std::string &)> consumer);
+      absl::string_view arg, std::function<void(absl::string_view)> consumer);
 
   // Applies substitutions for a single argument and passes the new arguments
   // (or the original, if no substitution was needed) to the consumer. Returns
@@ -97,8 +96,8 @@ class SwiftRunner {
   //
   // This method has file system side effects, creating temporary files and
   // directories as needed for a particular substitution.
-  bool ProcessArgument(const std::string &arg,
-                       std::function<void(const std::string &)> consumer);
+  bool ProcessArgument(absl::string_view arg,
+                       std::function<void(absl::string_view)> consumer);
 
   // Applies substitutions to the given command line arguments, returning the
   // results in a new vector.

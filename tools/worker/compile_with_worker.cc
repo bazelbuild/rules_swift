@@ -94,7 +94,7 @@ int CompileWithWorker(const std::vector<std::string> &args) {
     if (!google::protobuf::util::ParseDelimitedFromZeroCopyStream(
             &request, &file_input_stream, nullptr)) {
       std::cerr << "Could not read WorkRequest from stdin. Killing worker "
-                << "process.\n";
+                << "process." << std::endl;
       return 254;
     }
 
@@ -104,7 +104,7 @@ int CompileWithWorker(const std::vector<std::string> &args) {
     if (!google::protobuf::util::SerializeDelimitedToZeroCopyStream(
             response, &file_output_stream)) {
       std::cerr << "Could not write WorkResponse to stdout. Killing worker "
-                << "process.\n";
+                << "process." << std::endl;
       return 254;
     }
     // Flush stdout after writing to ensure that Bazel doesn't hang waiting for

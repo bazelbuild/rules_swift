@@ -29,6 +29,7 @@
 #include <sys/sendfile.h>
 #endif
 
+#include "absl/strings/string_view.h"
 #include "tools/common/path_utils.h"
 
 std::string GetCurrentDirectory() {
@@ -39,11 +40,11 @@ std::string GetCurrentDirectory() {
   return cwd;
 }
 
-bool CopyFile(const std::string &src, const std::string &dest) {
+bool CopyFile(absl::string_view src, absl::string_view dest) {
 #ifdef __APPLE__
   // The `copyfile` function with `COPYFILE_ALL` mode preserves permissions and
   // modification time.
-  return copyfile(src.c_str(), dest.c_str(), nullptr,
+  return copyfile(src.data(), dest.data(), nullptr,
                   COPYFILE_ALL | COPYFILE_CLONE) == 0;
 #elif __unix__
   // On Linux, we can use `sendfile` to copy it more easily than calling
@@ -51,11 +52,11 @@ bool CopyFile(const std::string &src, const std::string &dest) {
   struct stat stat_buf;
   bool success = false;
 
-  int src_fd = open(src.c_str(), O_RDONLY);
+  int src_fd = open(src.data(), O_RDONLY);
   if (src_fd) {
     fstat(src_fd, &stat_buf);
 
-    int dest_fd = open(dest.c_str(), O_WRONLY | O_CREAT, stat_buf.st_mode);
+    int dest_fd = open(dest.data(), O_WRONLY | O_CREAT, stat_buf.st_mode);
     if (dest_fd) {
       off_t offset = 0;
       if (sendfile(dest_fd, src_fd, &offset, stat_buf.st_size) != -1) {
@@ -75,7 +76,7 @@ bool CopyFile(const std::string &src, const std::string &dest) {
 #endif
 }
 
-bool MakeDirs(const std::string &path, int mode) {
+bool MakeDirs(absl::string_view path, int mode) {
   // If we got an empty string, we've recursed past the first segment in the
   // path. Assume it exists (if it doesn't, we'll fail when we try to create a
   // directory inside it).
@@ -84,24 +85,24 @@ bool MakeDirs(const std::string &path, int mode) {
   }
 
   struct stat dir_stats;
-  if (stat(path.c_str(), &dir_stats) == 0) {
+  if (stat(path.data(), &dir_stats) == 0) {
     // Return true if the directory already exists.
     if (S_ISDIR(dir_stats.st_mode)) {
       return true;
     }
 
     std::cerr << "error: path already exists but is not a directory: "
-              << path << "\n";
+              << path << std::endl;
     return false;
   }
 
   // Recurse to create the parent directory.
-  if (!MakeDirs(Dirname(path).c_str(), mode)) {
+  if (!MakeDirs(Dirname(path), mode)) {
     return false;
   }
 
   // Create the directory that was requested.
-  if (mkdir(path.c_str(), mode) == 0) {
+  if (mkdir(path.data(), mode) == 0) {
     return true;
   }
 
@@ -109,17 +110,17 @@ bool MakeDirs(const std::string &path, int mode) {
   // calls to `MakeDirs` running at the same time with overlapping paths, so
   // check again to see if the directory exists despite the call failing. If it
   // does, that's ok.
-  if (errno == EEXIST && stat(path.c_str(), &dir_stats) == 0) {
+  if (errno == EEXIST && stat(path.data(), &dir_stats) == 0) {
     if (S_ISDIR(dir_stats.st_mode)) {
       return true;
     }
 
     std::cerr << "error: path already exists but is not a directory: "
-              << path << "\n";
+              << path << std::endl;
     return false;
   }
 
   std::cerr << "error: could not create directory: " << path
-            << " (" << strerror(errno) << ")\n";
+            << " (" << strerror(errno) << ")" << std::endl;
   return false;
 }

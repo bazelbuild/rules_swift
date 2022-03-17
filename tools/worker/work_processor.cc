@@ -17,11 +17,12 @@
 #include <sys/stat.h>
 
 #include <fstream>
-#include <map>
 #include <sstream>
 #include <string>
 
 #include <google/protobuf/text_format.h>
+#include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "tools/common/file_system.h"
 #include "tools/common/path_utils.h"
 #include "tools/common/temp_file.h"
@@ -33,7 +34,7 @@ namespace {
 
 // Returns true if the given command line argument enables whole-module
 // optimization in the compiler.
-static bool ArgumentEnablesWMO(const std::string &arg) {
+static bool ArgumentEnablesWMO(absl::string_view arg) {
   return arg == "-wmo" || arg == "-whole-module-optimization" ||
          arg == "-force-single-frontend-invocation";
 }
@@ -55,16 +56,17 @@ void WorkProcessor::ProcessWorkRequest(
   // long. Rather than try to figure out these limits (which is very
   // OS-specific and easy to get wrong), we unconditionally write the processed
   // arguments out to a params file.
-  auto params_file = TempFile::Create("swiftc_params.XXXXXX");
-  std::ofstream params_file_stream(params_file->GetPath());
+  std::unique_ptr<TempFile> params_file =
+      TempFile::Create("swiftc_params.XXXXXX");
+  std::ofstream params_file_stream(std::string(params_file->GetPath()));
 
   OutputFileMap output_file_map;
   std::string output_file_map_path;
   bool is_wmo = false;
 
   std::string prev_arg;
-  for (auto arg : request.arguments()) {
-    auto original_arg = arg;
+  for (std::string arg : request.arguments()) {
+    std::string original_arg = arg;
     // Peel off the `-output-file-map` argument, so we can rewrite it if
     // necessary later.
     if (arg == "-output-file-map") {
@@ -88,7 +90,7 @@ void WorkProcessor::ProcessWorkRequest(
     if (!is_wmo) {
       // Rewrite the output file map to use the incremental storage area and
       // pass the compiler the path to the rewritten file.
-      auto new_path =
+      std::string new_path =
           ReplaceExtension(output_file_map_path, ".incremental.json");
       output_file_map.WriteToPath(new_path);
 
@@ -107,16 +109,16 @@ void WorkProcessor::ProcessWorkRequest(
     }
   }
 
-  processed_args.push_back("@" + params_file->GetPath());
+  processed_args.push_back(absl::StrCat("@", params_file->GetPath()));
   params_file_stream.close();
 
   if (!is_wmo) {
-    for (const auto &expected_object_pair :
+    for (const auto &[unused, incremental_path] :
          output_file_map.incremental_outputs()) {
       // Bazel creates the intermediate directories for the files declared at
       // analysis time, but we need to manually create the ones for the
       // incremental storage area.
-      auto dir_path = Dirname(expected_object_pair.second);
+      absl::string_view dir_path = Dirname(incremental_path);
       if (!MakeDirs(dir_path, S_IRWXU)) {
         std::cerr << "Could not create directory " << dir_path << " (errno "
                   << errno << ")\n";
@@ -127,16 +129,16 @@ void WorkProcessor::ProcessWorkRequest(
   std::ostringstream stderr_stream;
   SwiftRunner swift_runner(processed_args, /*force_response_file=*/true);
 
-  int exit_code = swift_runner.Run(&stderr_stream, /*stdout_to_stderr=*/true);
+  int exit_code = swift_runner.Run(stderr_stream, /*stdout_to_stderr=*/true);
 
   if (!is_wmo) {
     // Copy the output files from the incremental storage area back to the
     // locations where Bazel declared the files.
-    for (const auto &expected_object_pair :
+    for (const auto &[original_path, incremental_path] :
          output_file_map.incremental_outputs()) {
-      if (!CopyFile(expected_object_pair.second, expected_object_pair.first)) {
-        std::cerr << "Could not copy " << expected_object_pair.second << " to "
-                  << expected_object_pair.first << " (errno " << errno << ")\n";
+      if (!CopyFile(incremental_path, original_path)) {
+        std::cerr << "Could not copy " << incremental_path << " to "
+                  << original_path << " (errno " << errno << ")\n";
         exit_code = EXIT_FAILURE;
       }
     }
