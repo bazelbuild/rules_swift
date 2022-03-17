@@ -2500,7 +2500,6 @@ def _declare_multiple_outputs_and_write_output_file_map(
                 target_name = target_name,
                 src = src,
             )
-            other_outputs.append(partial_module)
 
             if split_derived_file_generation:
                 derived_files_output_map[src.path] = {"swiftmodule": partial_module.path}
