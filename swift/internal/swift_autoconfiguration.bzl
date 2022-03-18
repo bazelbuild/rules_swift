@@ -32,6 +32,7 @@ load(
     "SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS",
     "SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS",
     "SWIFT_FEATURE_USE_RESPONSE_FILES",
+    "SWIFT_FEATURE__EMIT_MODULE_SEPARATELY",
 )
 
 def _scratch_file(repository_ctx, temp_dir, name, content = ""):
@@ -92,6 +93,20 @@ def _check_debug_prefix_map(repository_ctx, swiftc_path, _temp_dir):
         "-version",
         "-debug-prefix-map",
         "foo=bar",
+    )
+
+def _check_emit_module_separately(repository_ctx, swiftc_path, _temp_dir):
+    """Returns True if `swiftc` supports emitting module separately.
+
+    Note: this uses the presence of the WMO related flag to determine this,
+    since it was added in 5.6 which is the same version that switched the
+    default.
+    """
+    return _swift_succeeds(
+        repository_ctx,
+        swiftc_path,
+        "-version",
+        "-emit-module-separately-wmo",
     )
 
 def _check_supports_private_deps(repository_ctx, swiftc_path, temp_dir):
@@ -199,6 +214,7 @@ _FEATURE_CHECKS = {
     SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES: _check_skip_function_bodies,
     SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS: _check_supports_private_deps,
     SWIFT_FEATURE_USE_RESPONSE_FILES: _check_use_response_files,
+    SWIFT_FEATURE__EMIT_MODULE_SEPARATELY: _check_emit_module_separately,
 }
 
 def _create_linux_toolchain(repository_ctx):

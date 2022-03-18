@@ -43,6 +43,7 @@ load(
     "SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS",
     "SWIFT_FEATURE_SUPPORTS_SYSTEM_MODULE_FLAG",
     "SWIFT_FEATURE_USE_RESPONSE_FILES",
+    "SWIFT_FEATURE__EMIT_MODULE_SEPARATELY",
 )
 load(":features.bzl", "features_for_build_modes")
 load(":toolchain_config.bzl", "swift_toolchain_config")
@@ -716,6 +717,10 @@ def _xcode_swift_toolchain_impl(ctx):
     # Xcode 12.5 implies Swift 5.4.
     if _is_xcode_at_least_version(xcode_config, "12.5"):
         requested_features.append(SWIFT_FEATURE_SUPPORTS_SYSTEM_MODULE_FLAG)
+
+    # Xcode 13.3 implies Swift 5.6.
+    if _is_xcode_at_least_version(xcode_config, "13.3"):
+        requested_features.append(SWIFT_FEATURE__EMIT_MODULE_SEPARATELY)
 
     env = _xcode_env(platform = platform, xcode_config = xcode_config)
     execution_requirements = xcode_config.execution_info()

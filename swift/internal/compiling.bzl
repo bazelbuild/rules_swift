@@ -64,6 +64,7 @@ load(
     "SWIFT_FEATURE_USE_OLD_DRIVER",
     "SWIFT_FEATURE_USE_PCH_OUTPUT_DIR",
     "SWIFT_FEATURE_VFSOVERLAY",
+    "SWIFT_FEATURE__EMIT_MODULE_SEPARATELY",
     "SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
 )
@@ -2835,6 +2836,11 @@ def _emitted_output_nature(feature_configuration, user_compile_flags):
         _is_wmo_manually_requested(user_compile_flags)
     )
 
+    emit_module_separately = is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE__EMIT_MODULE_SEPARATELY,
+    )
+
     # We check the feature first because that implies that `-num-threads 0` was
     # present in `--swiftcopt`, which overrides all other flags (like the user
     # compile flags, which come from the target's `copts`). Only fallback to
@@ -2846,7 +2852,7 @@ def _emitted_output_nature(feature_configuration, user_compile_flags):
 
     return struct(
         emits_multiple_objects = not (is_wmo and is_single_threaded),
-        emits_partial_modules = not is_wmo,
+        emits_partial_modules = not is_wmo and not emit_module_separately,
     )
 
 def _exclude_swift_incompatible_define(define):
