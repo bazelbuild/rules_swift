@@ -155,6 +155,28 @@ def _modulewrap_object(actions, target_name):
     """
     return actions.declare_file("{}.modulewrap.o".format(target_name))
 
+def _partial_swiftmodule(actions, target_name, src):
+    """Declares a file for a partial Swift module created during compilation.
+
+    These files are produced when the compiler is invoked with multiple frontend
+    invocations (i.e., whole module optimization disabled); in that case, there
+    is a partial `.swiftmodule` file produced for each source file, which are
+    then merged by another frontend invocation to produce the single
+    `.swiftmodule` file for the entire module.
+
+    Args:
+        actions: The context's actions object.
+        target_name: The name of the target being built.
+        src: A `File` representing the source file being compiled.
+
+    Returns:
+        The declared `File`.
+    """
+    dirname, basename = _intermediate_frontend_file_path(target_name, src)
+    return actions.declare_file(
+        paths.join(dirname, "{}.partial_swiftmodule".format(basename)),
+    )
+
 def _precompiled_module(actions, target_name):
     """Declares the precompiled module for a C/Objective-C target.
 
@@ -331,6 +353,7 @@ derived_files = struct(
     intermediate_object_file = _intermediate_object_file,
     module_map = _module_map,
     modulewrap_object = _modulewrap_object,
+    partial_swiftmodule = _partial_swiftmodule,
     precompiled_module = _precompiled_module,
     reexport_modules_src = _reexport_modules_src,
     static_archive = _static_archive,

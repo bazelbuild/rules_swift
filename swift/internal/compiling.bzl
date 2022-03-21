@@ -2346,6 +2346,7 @@ def _declare_compile_outputs(
             actions = actions,
             embeds_bc = embeds_bc,
             emits_bc = emits_bc,
+            emits_partial_modules = output_nature.emits_partial_modules,
             split_derived_file_generation = split_derived_file_generation,
             srcs = srcs,
             target_name = target_name,
@@ -2393,6 +2394,7 @@ def _declare_multiple_outputs_and_write_output_file_map(
         actions,
         embeds_bc,
         emits_bc,
+        emits_partial_modules,
         split_derived_file_generation,
         srcs,
         target_name):
@@ -2404,6 +2406,9 @@ def _declare_multiple_outputs_and_write_output_file_map(
             files.
         emits_bc: If `True` the compiler will generate LLVM BC files instead of
             object files.
+        emits_partial_modules: `True` if the compilation action is expected to
+            emit partial `.swiftmodule` files (i.e., one `.swiftmodule` file per
+            source file, as in a non-WMO compilation).
         split_derived_file_generation: Whether objects and modules are produced
             by separate actions.
         srcs: The list of source files that will be compiled.
@@ -2485,6 +2490,23 @@ def _declare_multiple_outputs_and_write_output_file_map(
         )
         ast_files.append(ast)
         src_output_map["ast-dump"] = ast.path
+
+        # Multi-threaded WMO compiles still produce a single .swiftmodule file,
+        # despite producing multiple object files, so we have to check
+        # explicitly for that case.
+        if emits_partial_modules:
+            partial_module = derived_files.partial_swiftmodule(
+                actions = actions,
+                target_name = target_name,
+                src = src,
+            )
+            other_outputs.append(partial_module)
+
+            if split_derived_file_generation:
+                derived_files_output_map[src.path] = {"swiftmodule": partial_module.path}
+            else:
+                src_output_map["swiftmodule"] = partial_module.path
+
         output_map[src.path] = struct(**src_output_map)
 
     actions.write(
@@ -2797,6 +2819,9 @@ def _emitted_output_nature(feature_configuration, user_compile_flags):
         *   `emits_multiple_objects`: `True` if the Swift frontend emits an
             object file per source file, instead of a single object file for the
             whole module, in a compilation action with the given flags.
+        *   `emits_partial_modules`: `True` if the Swift frontend emits partial
+            `.swiftmodule` files for the individual source files in a
+            compilation action with the given flags.
     """
     is_wmo = (
         is_feature_enabled(
@@ -2821,6 +2846,7 @@ def _emitted_output_nature(feature_configuration, user_compile_flags):
 
     return struct(
         emits_multiple_objects = not (is_wmo and is_single_threaded),
+        emits_partial_modules = not is_wmo,
     )
 
 def _exclude_swift_incompatible_define(define):
