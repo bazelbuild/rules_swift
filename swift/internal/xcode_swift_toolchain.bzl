@@ -38,7 +38,6 @@ load(
     "SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS",
-    "SWIFT_FEATURE_NO_EMIT_MODULE_SEPARATELY",
     "SWIFT_FEATURE_REMAP_XCODE_PATH",
     "SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS",
@@ -717,10 +716,6 @@ def _xcode_swift_toolchain_impl(ctx):
     # Xcode 12.5 implies Swift 5.4.
     if _is_xcode_at_least_version(xcode_config, "12.5"):
         requested_features.append(SWIFT_FEATURE_SUPPORTS_SYSTEM_MODULE_FLAG)
-
-    # Xcode 13.3 implies Swift 5.6.
-    if _is_xcode_at_least_version(xcode_config, "13.3"):
-        requested_features.append(SWIFT_FEATURE_NO_EMIT_MODULE_SEPARATELY)
 
     env = _xcode_env(platform = platform, xcode_config = xcode_config)
     execution_requirements = xcode_config.execution_info()
