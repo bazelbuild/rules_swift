@@ -54,10 +54,11 @@ static std::string MakeIncrementalOutputPath(std::string path,
 
 };  // end namespace
 
-void OutputFileMap::ReadFromPath(const std::string &path) {
+void OutputFileMap::ReadFromPath(const std::string &path,
+                                 const std::string &emit_module_path) {
   std::ifstream stream(path);
   stream >> json_;
-  UpdateForIncremental(path);
+  UpdateForIncremental(path, emit_module_path);
 }
 
 void OutputFileMap::WriteToPath(const std::string &path) {
@@ -65,14 +66,14 @@ void OutputFileMap::WriteToPath(const std::string &path) {
   stream << json_;
 }
 
-void OutputFileMap::UpdateForIncremental(const std::string &path) {
+void OutputFileMap::UpdateForIncremental(const std::string &path,
+                                         const std::string &emit_module_path) {
   bool derived =
       path.find(".derived_output_file_map.json") != std::string::npos;
 
   nlohmann::json new_output_file_map;
   std::map<std::string, std::string> incremental_outputs;
   std::map<std::string, std::string> incremental_inputs;
-  bool emitting_module = false;
 
   // The empty string key is used to represent outputs that are for the whole
   // module, rather than for a particular source file.
@@ -113,7 +114,6 @@ void OutputFileMap::UpdateForIncremental(const std::string &path) {
         auto new_path = MakeIncrementalOutputPath(path, derived);
         src_map[kind] = new_path;
         incremental_outputs[path] = new_path;
-        emitting_module = true;
 
         if (swiftdeps_path.empty()) {
           swiftdeps_path = ReplaceExtension(new_path, ".swiftdeps");
@@ -140,21 +140,20 @@ void OutputFileMap::UpdateForIncremental(const std::string &path) {
   }
 
   // If we don't generate a swiftmodule, don't try to copy those files
-  if (emitting_module) {
-    auto swiftmodule_path =
-        ReplaceExtension(path, ".swiftmodule", /*all_extensions=*/true);
+  if (!emit_module_path.empty()) {
+    auto swiftmodule_path = emit_module_path;
     auto copied_swiftmodule_path =
         MakeIncrementalOutputPath(swiftmodule_path, derived);
     incremental_inputs[swiftmodule_path] = copied_swiftmodule_path;
 
-    auto swiftdoc_path =
-        ReplaceExtension(path, ".swiftdoc", /*all_extensions=*/true);
+    auto swiftdoc_path = ReplaceExtension(swiftmodule_path, ".swiftdoc",
+                                          /*all_extensions=*/true);
     auto copied_swiftdoc_path =
         MakeIncrementalOutputPath(swiftdoc_path, derived);
     incremental_inputs[swiftdoc_path] = copied_swiftdoc_path;
 
-    auto swiftsourceinfo_path =
-        ReplaceExtension(path, ".swiftsourceinfo", /*all_extensions=*/true);
+    auto swiftsourceinfo_path = ReplaceExtension(
+        swiftmodule_path, ".swiftsourceinfo", /*all_extensions=*/true);
     auto copied_swiftsourceinfo_path =
         MakeIncrementalOutputPath(swiftsourceinfo_path, derived);
     incremental_inputs[swiftsourceinfo_path] = copied_swiftsourceinfo_path;

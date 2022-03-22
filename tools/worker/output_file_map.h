@@ -49,7 +49,8 @@ class OutputFileMap {
 
   // Reads the output file map from the JSON file at the given path, and updates
   // it to support incremental builds.
-  void ReadFromPath(const std::string &path);
+  void ReadFromPath(const std::string &path,
+                    const std::string &emit_module_path);
 
   // Writes the output file map as JSON to the file at the given path.
   void WriteToPath(const std::string &path);
@@ -57,7 +58,8 @@ class OutputFileMap {
  private:
   // Modifies the output file map's JSON structure in-place to replace file
   // paths with equivalents in the incremental storage area.
-  void UpdateForIncremental(const std::string &path);
+  void UpdateForIncremental(const std::string &path,
+                            const std::string &emit_module_path);
 
   nlohmann::json json_;
   std::map<std::string, std::string> incremental_outputs_;

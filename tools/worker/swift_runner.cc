@@ -139,7 +139,7 @@ int SwiftRunner::Run(std::ostream *stderr_stream, bool stdout_to_stderr) {
   auto enable_global_index_store = global_index_store_import_path_ != "";
   if (enable_global_index_store) {
     OutputFileMap output_file_map;
-    output_file_map.ReadFromPath(output_file_map_path_);
+    output_file_map.ReadFromPath(output_file_map_path_, "");
 
     auto outputs = output_file_map.incremental_outputs();
     std::map<std::string, std::string>::iterator it;
