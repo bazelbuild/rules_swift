@@ -3,6 +3,7 @@ load(":ast_file_tests.bzl", "ast_file_test_suite")
 load(":coverage_settings_tests.bzl", "coverage_settings_test_suite")
 load(":debug_settings_tests.bzl", "debug_settings_test_suite")
 load(":generated_header_tests.bzl", "generated_header_test_suite")
+load(":linking_tests.bzl", "linking_test_suite")
 load(":module_cache_settings_tests.bzl", "module_cache_settings_test_suite")
 load(":output_file_map_tests.bzl", "output_file_map_test_suite")
 load(":private_deps_tests.bzl", "private_deps_test_suite")
@@ -19,6 +20,8 @@ coverage_settings_test_suite(name = "coverage_settings")
 debug_settings_test_suite(name = "debug_settings")
 
 generated_header_test_suite(name = "generated_header")
+
+linking_test_suite(name = "linking")
 
 module_cache_settings_test_suite(name = "module_cache_settings")
 

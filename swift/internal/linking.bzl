@@ -247,7 +247,7 @@ def register_link_binary_action(
                     linker_inputs = depset([
                         cc_common.create_linker_input(
                             owner = owner,
-                            user_link_flags = depset(dep_link_flags),
+                            user_link_flags = dep_link_flags,
                             additional_inputs = objc.static_framework_file,
                         ),
                     ]),
