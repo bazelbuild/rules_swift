@@ -60,11 +60,16 @@ def _create_xctest_bundle(name, actions, binary):
     args.add(xctest_bundle.path)
     args.add(binary)
 
+    # When XCTest loads this bundle, it will create an instance of this class
+    # which will register the observer that writes the XML output.
+    plist = '{ NSPrincipalClass = "BazelXMLTestObserverRegistration"; }'
+
     actions.run_shell(
         arguments = [args],
         command = (
             'mkdir -p "$1/Contents/MacOS" && ' +
-            'cp "$2" "$1/Contents/MacOS"'
+            'cp "$2" "$1/Contents/MacOS" && ' +
+            'echo \'{}\' > "$1/Contents/Info.plist"'.format(plist)
         ),
         inputs = [binary],
         mnemonic = "SwiftCreateTestBundle",
@@ -200,6 +205,7 @@ def _swift_test_impl(ctx):
 
     srcs = ctx.files.srcs
     extra_copts = []
+    extra_deps = []
 
     # If no sources were provided and we're not using `.xctest` bundling, assume
     # that we need to discover tests using symbol graphs.
@@ -217,6 +223,9 @@ def _swift_test_impl(ctx):
 
         # The generated test runner uses `@main`.
         extra_copts = ["-parse-as-library"]
+        extra_deps = [ctx.attr._test_observer]
+    elif is_bundled:
+        extra_deps = [ctx.attr._test_observer]
 
     if srcs:
         module_name = ctx.attr.module_name
@@ -226,7 +235,9 @@ def _swift_test_impl(ctx):
         _, compilation_outputs = swift_common.compile(
             actions = ctx.actions,
             additional_inputs = ctx.files.swiftc_inputs,
-            compilation_contexts = get_compilation_contexts(ctx.attr.deps),
+            compilation_contexts = get_compilation_contexts(
+                ctx.attr.deps + extra_deps,
+            ),
             copts = expand_locations(
                 ctx,
                 ctx.attr.copts,
@@ -236,7 +247,7 @@ def _swift_test_impl(ctx):
             feature_configuration = feature_configuration,
             module_name = module_name,
             srcs = srcs,
-            swift_infos = get_providers(ctx.attr.deps, SwiftInfo),
+            swift_infos = get_providers(ctx.attr.deps + extra_deps, SwiftInfo),
             swift_toolchain = swift_toolchain,
             target_name = ctx.label.name,
         )
@@ -253,7 +264,7 @@ def _swift_test_impl(ctx):
         additional_linking_contexts = [malloc_linking_context(ctx)],
         cc_feature_configuration = cc_feature_configuration,
         compilation_outputs = compilation_outputs,
-        deps = ctx.attr.deps,
+        deps = ctx.attr.deps + extra_deps,
         grep_includes = ctx.file._grep_includes,
         name = ctx.label.name,
         output_type = "executable",
@@ -335,6 +346,11 @@ swift_test = rule(
                     "@build_bazel_rules_swift//tools/test_discoverer",
                 ),
                 executable = True,
+            ),
+            "_test_observer": attr.label(
+                default = Label(
+                    "@build_bazel_rules_swift//tools/test_observer",
+                ),
             ),
             "_xctest_runner_template": attr.label(
                 allow_single_file = True,
