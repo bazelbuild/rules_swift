@@ -64,15 +64,55 @@ def _maybe_parse_as_library_copts(srcs):
                            srcs[0].basename != "main.swift"
     return ["-parse-as-library"] if use_parse_as_library else []
 
-def _create_xctest_runner(name, actions, executable, xctest_runner_template):
+def _create_xctest_bundle(name, actions, binary):
+    """Creates an `.xctest` bundle that contains the given binary.
+
+    Args:
+        name: The name of the target being built, which will be used as the
+            basename of the bundle (followed by the .xctest bundle extension).
+        actions: The context's actions object.
+        binary: The binary that will be copied into the test bundle.
+
+    Returns:
+        A `File` (tree artifact) representing the `.xctest` bundle.
+    """
+    xctest_bundle = derived_files.xctest_bundle(
+        actions = actions,
+        target_name = name,
+    )
+
+    args = actions.args()
+    args.add(xctest_bundle.path)
+    args.add(binary)
+
+    # When XCTest loads this bundle, it will create an instance of this class
+    # which will register the observer that writes the XML output.
+    plist = '{ NSPrincipalClass = "BazelXMLTestObserverRegistration"; }'
+
+    actions.run_shell(
+        arguments = [args],
+        command = (
+            'mkdir -p "$1/Contents/MacOS" && ' +
+            'cp "$2" "$1/Contents/MacOS" && ' +
+            'echo \'{}\' > "$1/Contents/Info.plist"'.format(plist)
+        ),
+        inputs = [binary],
+        mnemonic = "SwiftCreateTestBundle",
+        outputs = [xctest_bundle],
+        progress_message = "Creating test bundle for {}".format(name),
+    )
+
+    return xctest_bundle
+
+def _create_xctest_runner(name, actions, bundle, xctest_runner_template):
     """Creates a script that will launch `xctest` with the given test bundle.
 
     Args:
         name: The name of the target being built, which will be used as the
             basename of the test runner script.
         actions: The context's actions object.
-        executable: The `File` representing the executable inside the `.xctest`
-            bundle that should be executed.
+        bundle: The `File` representing the `.xctest` bundle that should be
+            executed.
         xctest_runner_template: The `File` that will be used as a template to
             generate the test runner shell script.
 
@@ -90,7 +130,7 @@ def _create_xctest_runner(name, actions, executable, xctest_runner_template):
         output = xctest_runner,
         template = xctest_runner_template,
         substitutions = {
-            "%executable%": executable.short_path,
+            "%bundle%": bundle.short_path,
         },
     )
 
@@ -297,7 +337,7 @@ def _swift_test_impl(ctx):
         # This is already collected from `linking_context`.
         compilation_outputs = None,
         deps = ctx.attr.deps + extra_link_deps,
-        name = "{0}.xctest/Contents/MacOS/{0}".format(ctx.label.name) if is_bundled else ctx.label.name,
+        name = ctx.label.name,
         output_type = "executable",
         owner = ctx.label,
         stamp = ctx.attr.stamp,
@@ -313,13 +353,18 @@ def _swift_test_impl(ctx):
     # script that launches it via `xctest`. Otherwise, just use the binary
     # itself as the executable to launch.
     if is_bundled:
+        xctest_bundle = _create_xctest_bundle(
+            name = ctx.label.name,
+            actions = ctx.actions,
+            binary = linking_outputs.executable,
+        )
         xctest_runner = _create_xctest_runner(
             name = ctx.label.name,
             actions = ctx.actions,
-            executable = linking_outputs.executable,
+            bundle = xctest_bundle,
             xctest_runner_template = ctx.file._xctest_runner_template,
         )
-        additional_test_outputs = [linking_outputs.executable]
+        additional_test_outputs = [xctest_bundle]
         executable = xctest_runner
     else:
         additional_test_outputs = []

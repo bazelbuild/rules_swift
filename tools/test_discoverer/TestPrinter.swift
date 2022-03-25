@@ -134,6 +134,7 @@ struct TestPrinter {
   /// Prints the main test runner to a Swift source file.
   func printTestRunner(toFileAt url: URL) {
     var contents = """
+      import BazelTestObservation
       import XCTest
 
       @main
@@ -153,6 +154,9 @@ struct TestPrinter {
     }
 
     contents += """
+          if let xmlObserver = BazelXMLTestObserver.default {
+            XCTestObservationCenter.shared.addTestObserver(xmlObserver)
+          }
           XCTMain(tests)
         }
       }

@@ -26,9 +26,10 @@ trap 'rm -rf "$tmp_dir"' EXIT
 readonly profraw="$tmp_dir/coverage.profraw"
 readonly testlog="$tmp_dir/test.log"
 
-# Foo.xctest/Contents/MacOS/Foo -> Foo.xctest
-executable_path="%executable%"
-bundle_path="$(dirname "$(dirname "$(dirname "$executable_path")")")"
+# some/path/Foo.xctest -> some/path/Foo.xctest/Contents/MacOS/Foo
+bundle_path="%bundle%"
+basename="${bundle_path##*/}"
+executable_path="$bundle_path/Contents/MacOS/${basename%.xctest}"
 
 sanitizer_dyld_env=""
 if output=$(otool -L "$executable_path" | grep @rpath/libclang_rt | xargs | cut -d " " -f 1); then
