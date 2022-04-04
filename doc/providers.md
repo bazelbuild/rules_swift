@@ -99,18 +99,14 @@ that use the toolchain.
 ## SwiftUsageInfo
 
 <pre>
-SwiftUsageInfo(<a href="#SwiftUsageInfo-toolchain">toolchain</a>)
+SwiftUsageInfo()
 </pre>
 
 A provider that indicates that Swift was used by a target or any target that it
-depends on, and specifically which toolchain was used.
+depends on.
 
 
 **FIELDS**
 
-
-| Name  | Description |
-| :------------- | :------------- |
-| <a id="SwiftUsageInfo-toolchain"></a>toolchain |  The Swift toolchain that was used to build the targets propagating this provider.    |
 
 
