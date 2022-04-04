@@ -14,24 +14,7 @@
 
 """An aspect that collects information about Swift usage among dependencies."""
 
-load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo", "SwiftUsageInfo")
-
-def _get_swift_toolchain(target, aspect_ctx):
-    """Gets the `SwiftToolchainInfo` used to build the given target, if any.
-
-    Args:
-        target: The target being built.
-        aspect_ctx: The aspect context.
-
-    Returns:
-        The `SwiftToolchainInfo` provider, or `None` if the target was not a
-        Swift target.
-    """
-    if SwiftInfo in target:
-        toolchain_target = getattr(aspect_ctx.rule.attr, "_toolchain", None)
-        if toolchain_target and SwiftToolchainInfo in toolchain_target:
-            return toolchain_target[SwiftToolchainInfo]
-    return None
+load(":providers.bzl", "SwiftInfo", "SwiftUsageInfo")
 
 def _swift_usage_aspect_impl(target, aspect_ctx):
     # Targets can directly propagate their own `SwiftUsageInfo` provider. In
@@ -40,11 +23,10 @@ def _swift_usage_aspect_impl(target, aspect_ctx):
     if SwiftUsageInfo in target:
         return []
 
-    # If the target itself propagates `SwiftInfo`, get the toolchain from it.
-    found_toolchain = _get_swift_toolchain(target, aspect_ctx)
-
-    if found_toolchain:
-        return [SwiftUsageInfo(toolchain = found_toolchain)]
+    # If the target propagates `SwiftInfo`, then it or something in its
+    # dependencies more than likely uses Swift.
+    if SwiftInfo in target:
+        return [SwiftUsageInfo()]
 
     # If one of the deps propagates `SwiftUsageInfo` provider, we can
     # repropagate that information. We currently make the assumption that all
@@ -68,14 +50,6 @@ provider for any target found in that attribute that uses Swift, either directly
 or deeper in its dependency tree. Conversely, if neither a target nor its
 transitive dependencies use Swift, the `SwiftUsageInfo` provider will not be
 propagated.
-
-Specifically, the aspect propagates which toolchain was used to build those
-dependencies. This information is typically always the same for any Swift
-targets built in the same configuration, but this allows upstream targets that
-may not be *strictly* Swift-related and thus don't want to depend directly on
-the Swift toolchain (such as Apple universal binary linking rules) to avoid
-doing so but still get access to information derived from the toolchain (like
-which linker flags to pass to link to the runtime).
 
 We use an aspect (as opposed to propagating this information through normal
 providers returned by `swift_library`) because the information is needed if
