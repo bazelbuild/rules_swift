@@ -11,7 +11,6 @@ On this page:
   * [SwiftToolchainInfo](#SwiftToolchainInfo)
   * [SwiftProtoCompilerInfo](#SwiftProtoCompilerInfo)
   * [SwiftProtoInfo](#SwiftProtoInfo)
-  * [SwiftUsageInfo](#SwiftUsageInfo)
 
 <a id="SwiftInfo"></a>
 
@@ -115,20 +114,5 @@ that use the toolchain.
 | <a id="SwiftToolchainInfo-test_configuration"></a>test_configuration |  `Struct` containing two fields:<br><br>*   `env`: A `dict` of environment variables to be set when running tests     that were built with this toolchain.<br><br>*   `execution_requirements`: A `dict` of execution requirements for tests     that were built with this toolchain.<br><br>This is used, for example, with Xcode-based toolchains to ensure that the `xctest` helper and coverage tools are found in the correct developer directory when running tests.    |
 | <a id="SwiftToolchainInfo-tool_configs"></a>tool_configs |  This field is an internal implementation detail of the build rules.    |
 | <a id="SwiftToolchainInfo-unsupported_features"></a>unsupported_features |  `List` of `string`s. Features that should be implicitly disabled by default for targets built using this toolchain, unless overridden by the user by listing them in the `features` attribute of a target/package or in the `--features` command line flag.<br><br>These features determine various compilation and debugging behaviors of the Swift build rules, and they are also passed to the C++ APIs used when linking (so features defined in CROSSTOOL may be used here).    |
-
-
-<a id="SwiftUsageInfo"></a>
-
-## SwiftUsageInfo
-
-<pre>
-SwiftUsageInfo()
-</pre>
-
-A provider that indicates that Swift was used by a target or any target that it
-depends on.
-
-**FIELDS**
-
 
 

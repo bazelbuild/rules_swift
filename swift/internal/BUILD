@@ -340,13 +340,6 @@ bzl_library(
 )
 
 bzl_library(
-    name = "swift_usage_aspect",
-    srcs = ["swift_usage_aspect.bzl"],
-    visibility = ["//swift:__subpackages__"],
-    deps = [":providers"],
-)
-
-bzl_library(
     name = "toolchain_config",
     srcs = ["toolchain_config.bzl"],
     visibility = ["//swift:__subpackages__"],
