@@ -509,13 +509,19 @@ def _all_tool_configs(
     Returns:
         A dictionary mapping action name to tool configuration.
     """
+    env = dict(env)
 
     # Configure the environment variables that the worker needs to fill in the
     # Bazel placeholders for SDK root and developer directory, along with the
     # custom toolchain if requested.
     if custom_toolchain:
-        env = dict(env)
         env["TOOLCHAINS"] = custom_toolchain
+
+    # Starting with Xcode 13.3 (Swift 5.6), the legacy driver prints a warning
+    # if it is used. Suppress it, since we still have to use it due to response
+    # file bugs.
+    if _is_xcode_at_least_version(xcode_config, "13.3"):
+        env["SWIFT_AVOID_WARNING_USING_OLD_DRIVER"] = "1"
 
     tool_configs = {
         swift_action_names.COMPILE: swift_toolchain_config.driver_tool_config(
