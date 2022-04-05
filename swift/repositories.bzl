@@ -89,13 +89,14 @@ def swift_rules_dependencies():
     _maybe(
         http_archive,
         name = "rules_proto",
+        # latest as of 2021-11-16
         urls = [
-            "https://github.com/bazelbuild/rules_proto/archive/refs/tags/4.0.0-3.20.0.tar.gz",
+            "https://github.com/bazelbuild/rules_proto/archive/11bf7c25e666dd7ddacbcd4d4c4a9de7a25175f8.tar.gz",
         ],
         patch_args = ["-p1"],
         patches = ["@build_bazel_rules_swift//third_party/rules_proto:rules_proto.patch"],
-        sha256 = "e017528fd1c91c5a33f15493e3a398181a9e821a804eb7ff5acdd1d2d6c2b18d",
-        strip_prefix = "rules_proto-4.0.0-3.20.0",
+        sha256 = "20b240eba17a36be4b0b22635aca63053913d5c1ee36e16be36499d167a2f533",
+        strip_prefix = "rules_proto-11bf7c25e666dd7ddacbcd4d4c4a9de7a25175f8",
     )
 
     # It relies on `index-import` to import indexes into Bazel's remote
