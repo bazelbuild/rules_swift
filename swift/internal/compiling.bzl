@@ -2266,6 +2266,7 @@ def compile_module_interface(
         objc_info = None,
         source_files = [swiftinterface_file],
         swiftmodule_file = swiftmodule_file,
+        target_label = feature_configuration._label,
         transitive_modules = transitive_modules,
         transitive_swiftmodules = transitive_swiftmodules,
         user_compile_flags = [],
@@ -2624,6 +2625,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         objc_info = merged_objc_info,
         plugins = depset(used_plugins),
         source_files = srcs,
+        target_label = feature_configuration._label,
         transitive_modules = transitive_modules,
         transitive_swiftmodules = transitive_swiftmodules,
         user_compile_flags = copts,
@@ -2921,6 +2923,7 @@ def _precompile_clang_module(
         objc_info = apple_common.new_objc_provider(),
         pcm_file = precompiled_module,
         source_files = [module_map_file],
+        target_label = feature_configuration._label,
         transitive_modules = transitive_modules,
     )
 

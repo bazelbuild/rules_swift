@@ -155,6 +155,10 @@ class SwiftRunner {
   // this compilation.
   std::string generated_header_rewriter_path_;
 
+  // The Bazel target label that spawned the worker request, which can be used
+  // in custom diagnostic messages printed by the worker.
+  std::string target_label_;
+
   // The path of the output map file
   std::string output_file_map_path_;
 

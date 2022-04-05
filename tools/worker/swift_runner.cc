@@ -325,6 +325,8 @@ bool SwiftRunner::ProcessArgument(
         changed = true;
       } else if (StripPrefix("-generated-header-rewriter=", new_arg)) {
         changed = true;
+      } else if (StripPrefix("-bazel-target-label=", new_arg)) {
+        changed = true;
       } else if (StripPrefix("-global-index-store-import-path=", new_arg)) {
         changed = true;
       } else {
@@ -386,6 +388,8 @@ std::vector<std::string> SwiftRunner::ParseArguments(Iterator itr) {
         global_index_store_import_path_ = arg;
       } else if (StripPrefix("-generated-header-rewriter=", arg)) {
         generated_header_rewriter_path_ = arg;
+      } else if (StripPrefix("-bazel-target-label=", arg)) {
+        target_label_ = arg;
       } else if (arg == "-file-prefix-pwd-is-dot") {
         file_prefix_pwd_is_dot_ = true;
       }
