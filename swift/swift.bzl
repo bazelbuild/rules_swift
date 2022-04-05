@@ -33,7 +33,6 @@ load(
     _SwiftInfo = "SwiftInfo",
     _SwiftProtoInfo = "SwiftProtoInfo",
     _SwiftToolchainInfo = "SwiftToolchainInfo",
-    _SwiftUsageInfo = "SwiftUsageInfo",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:swift_binary_test.bzl",
@@ -85,17 +84,12 @@ load(
     "@build_bazel_rules_swift//swift/internal:swift_proto_library.bzl",
     _swift_proto_library = "swift_proto_library",
 )
-load(
-    "@build_bazel_rules_swift//swift/internal:swift_usage_aspect.bzl",
-    _swift_usage_aspect = "swift_usage_aspect",
-)
 
 # Re-export providers.
 SwiftGRPCInfo = _SwiftGRPCInfo
 SwiftInfo = _SwiftInfo
 SwiftProtoInfo = _SwiftProtoInfo
 SwiftToolchainInfo = _SwiftToolchainInfo
-SwiftUsageInfo = _SwiftUsageInfo
 
 # Re-export public API module.
 swift_common = _swift_common
@@ -116,4 +110,3 @@ swift_test = _swift_test
 
 # Re-export public aspects.
 swift_clang_module_aspect = _swift_clang_module_aspect
-swift_usage_aspect = _swift_usage_aspect
