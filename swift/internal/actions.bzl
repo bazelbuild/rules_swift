@@ -18,6 +18,7 @@ load("@bazel_skylib//lib:partial.bzl", "partial")
 load("@bazel_skylib//lib:types.bzl", "types")
 load(":features.bzl", "are_all_features_enabled")
 load(":toolchain_config.bzl", "swift_toolchain_config")
+load(":utils.bzl", "struct_fields")
 
 # This is a proxy for being on bazel 7.x which has
 # --incompatible_merge_fixed_and_default_shell_env enabled by default
@@ -57,6 +58,10 @@ swift_action_names = struct(
     # Produces an AST file for each swift source file in a module.
     DUMP_AST = "SwiftDumpAST",
 )
+
+def _all_action_names():
+    """A convenience function to return all actions defined by this rule set."""
+    return struct_fields(swift_action_names).values()
 
 def _apply_configurator(configurator, prerequisites, args):
     """Calls an action configurator with the given arguments.
@@ -283,3 +288,18 @@ def run_toolchain_action(
         use_default_shell_env = USE_DEFAULT_SHELL_ENV,
         **kwargs
     )
+
+def _target_label_configurator(prerequisites, args):
+    """Adds the Bazel target label to the action command line."""
+    label = getattr(prerequisites, "target_label", None)
+    if label:
+        args.add(str(label), format = "-Xwrapped-swift=-bazel-target-label=%s")
+
+def target_label_action_configs():
+    """Returns action configs that add the target label to the command line."""
+    return [
+        swift_toolchain_config.action_config(
+            actions = _all_action_names(),
+            configurators = [_target_label_configurator],
+        ),
+    ]

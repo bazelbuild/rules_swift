@@ -25,7 +25,7 @@ load("@bazel_skylib//lib:partial.bzl", "partial")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
-load(":actions.bzl", "swift_action_names")
+load(":actions.bzl", "swift_action_names", "target_label_action_configs")
 load(":attrs.bzl", "swift_toolchain_driver_attrs")
 load(":compiling.bzl", "compile_action_configs", "features_from_swiftcopts")
 load(
@@ -422,12 +422,14 @@ def _all_action_configs(
             ),
         )
 
+    action_configs.extend(target_label_action_configs())
     action_configs.extend(compile_action_configs(
         additional_objc_copts = additional_objc_copts,
         additional_swiftc_copts = additional_swiftc_copts,
         generated_header_rewriter = generated_header_rewriter,
     ))
     action_configs.extend(symbol_graph_action_configs())
+
     return action_configs
 
 def _all_tool_configs(
