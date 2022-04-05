@@ -693,42 +693,51 @@ def _xcode_swift_toolchain_impl(ctx):
         xcode_config = xcode_config,
     )
 
-    return [
-        SwiftToolchainInfo(
-            action_configs = all_action_configs,
-            cc_toolchain_info = cc_toolchain,
-            clang_implicit_deps_providers = collect_implicit_deps_providers(
-                ctx.attr.clang_implicit_deps,
-            ),
-            feature_allowlists = [
-                target[SwiftFeatureAllowlistInfo]
-                for target in ctx.attr.feature_allowlists
-            ],
-            generated_header_module_implicit_deps_providers = (
-                collect_implicit_deps_providers(
-                    ctx.attr.generated_header_module_implicit_deps,
-                )
-            ),
-            implicit_deps_providers = collect_implicit_deps_providers(
-                ctx.attr.implicit_deps + ctx.attr.clang_implicit_deps,
-                additional_cc_infos = [swift_linkopts_providers.cc_info],
-                additional_objc_infos = [swift_linkopts_providers.objc_info],
-            ),
-            package_configurations = [
-                target[SwiftPackageConfigurationInfo]
-                for target in ctx.attr.package_configurations
-            ],
-            requested_features = requested_features,
-            swift_worker = ctx.executable._worker,
-            test_configuration = struct(
-                env = env,
-                execution_requirements = execution_requirements,
-            ),
-            tool_configs = all_tool_configs,
-            unsupported_features = ctx.disabled_features + [
-                SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD,
+    swift_toolchain_info = SwiftToolchainInfo(
+        action_configs = all_action_configs,
+        cc_toolchain_info = cc_toolchain,
+        clang_implicit_deps_providers = collect_implicit_deps_providers(
+            ctx.attr.clang_implicit_deps,
+        ),
+        feature_allowlists = [
+            target[SwiftFeatureAllowlistInfo]
+            for target in ctx.attr.feature_allowlists
+        ],
+        generated_header_module_implicit_deps_providers = (
+            collect_implicit_deps_providers(
+                ctx.attr.generated_header_module_implicit_deps,
+            )
+        ),
+        implicit_deps_providers = collect_implicit_deps_providers(
+            ctx.attr.implicit_deps + ctx.attr.clang_implicit_deps,
+            additional_cc_infos = [swift_linkopts_providers.cc_info],
+            additional_objc_infos = [
+                swift_linkopts_providers.objc_info,
             ],
         ),
+        package_configurations = [
+            target[SwiftPackageConfigurationInfo]
+            for target in ctx.attr.package_configurations
+        ],
+        requested_features = requested_features,
+        swift_worker = ctx.executable._worker,
+        test_configuration = struct(
+            env = env,
+            execution_requirements = execution_requirements,
+        ),
+        tool_configs = all_tool_configs,
+        unsupported_features = ctx.disabled_features + [
+            SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD,
+        ],
+    )
+
+    return [
+        platform_common.ToolchainInfo(
+            swift_toolchain = swift_toolchain_info,
+        ),
+        # TODO(b/205018581): Remove this legacy propagation when everything is
+        # migrated over to new-style toolchains.
+        swift_toolchain_info,
     ]
 
 xcode_swift_toolchain = rule(

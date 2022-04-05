@@ -63,6 +63,7 @@ bzl_library(
         "symbol_graph_extracting.bzl",
         "target_triples.bzl",
         "toolchain_config.bzl",
+        "toolchain_utils.bzl",
         "utils.bzl",
         "vfsoverlay.bzl",
     ],

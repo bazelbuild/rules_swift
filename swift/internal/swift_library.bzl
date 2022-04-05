@@ -28,7 +28,7 @@ load(
     "SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS",
 )
 load(":linking.bzl", "new_objc_provider")
-load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
+load(":providers.bzl", "SwiftInfo")
 load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 load(":swift_common.bzl", "swift_common")
 load(
@@ -119,7 +119,7 @@ def _swift_library_impl(ctx):
     if not module_name:
         module_name = swift_common.derive_module_name(ctx.label)
 
-    swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
+    swift_toolchain = swift_common.get_toolchain(ctx)
     feature_configuration = swift_common.configure_features(
         ctx = ctx,
         requested_features = ctx.features + extra_features,

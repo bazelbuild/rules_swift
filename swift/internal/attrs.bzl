@@ -15,7 +15,7 @@
 """Common attributes used by multiple Swift build rules."""
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
+load(":providers.bzl", "SwiftInfo")
 
 def swift_common_rule_attrs(additional_deps_aspects = []):
     return {
@@ -340,7 +340,6 @@ def swift_toolchain_attrs(toolchain_attr_name = "_toolchain"):
     return {
         toolchain_attr_name: attr.label(
             default = Label("@build_bazel_rules_swift_local_config//:toolchain"),
-            providers = [[SwiftToolchainInfo]],
         ),
     }
 

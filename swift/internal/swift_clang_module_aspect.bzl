@@ -31,11 +31,11 @@ load(":module_maps.bzl", "write_module_map")
 load(
     ":providers.bzl",
     "SwiftInfo",
-    "SwiftToolchainInfo",
     "create_clang_module",
     "create_module",
     "create_swift_info",
 )
+load(":toolchain_utils.bzl", "get_swift_toolchain")
 load(
     ":utils.bzl",
     "compilation_context_for_explicit_module_compilation",
@@ -841,7 +841,10 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx):
         ])
         unsupported_features.append(SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS)
 
-    swift_toolchain = aspect_ctx.attr._toolchain_for_aspect[SwiftToolchainInfo]
+    swift_toolchain = get_swift_toolchain(
+        aspect_ctx,
+        attr = "_toolchain_for_aspect",
+    )
     feature_configuration = configure_features(
         ctx = aspect_ctx,
         requested_features = requested_features,

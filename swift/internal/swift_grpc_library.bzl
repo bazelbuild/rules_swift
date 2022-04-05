@@ -27,7 +27,7 @@ load(
     "proto_import_path",
     "register_module_mapping_write_action",
 )
-load(":providers.bzl", "SwiftInfo", "SwiftProtoInfo", "SwiftToolchainInfo")
+load(":providers.bzl", "SwiftInfo", "SwiftProtoInfo")
 load(":swift_common.bzl", "swift_common")
 load(":utils.bzl", "compact", "get_compilation_contexts", "get_providers")
 
@@ -192,7 +192,7 @@ def _swift_grpc_library_impl(ctx):
             attr = "srcs",
         )
 
-    swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
+    swift_toolchain = swift_common.get_toolchain(ctx)
 
     unsupported_features = ctx.disabled_features
     if ctx.attr.flavor != "client_stubs":

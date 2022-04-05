@@ -21,7 +21,7 @@ load(
     "malloc_linking_context",
     "register_link_binary_action",
 )
-load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
+load(":providers.bzl", "SwiftInfo")
 load(":swift_common.bzl", "swift_common")
 load(
     ":utils.bzl",
@@ -31,7 +31,7 @@ load(
 )
 
 def _swift_binary_impl(ctx):
-    swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
+    swift_toolchain = swift_common.get_toolchain(ctx)
 
     feature_configuration = configure_features_for_binary(
         ctx = ctx,

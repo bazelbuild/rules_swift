@@ -31,7 +31,7 @@ load(
     "proto_import_path",
     "register_module_mapping_write_action",
 )
-load(":providers.bzl", "SwiftInfo", "SwiftProtoInfo", "SwiftToolchainInfo")
+load(":providers.bzl", "SwiftInfo", "SwiftProtoInfo")
 load(":swift_common.bzl", "swift_common")
 load(":utils.bzl", "get_compilation_contexts")
 
@@ -295,7 +295,7 @@ def _gather_transitive_module_mappings(targets):
     ) for module_name, file_paths in unique_mappings.items()]
 
 def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
-    swift_toolchain = aspect_ctx.attr._toolchain[SwiftToolchainInfo]
+    swift_toolchain = swift_common.get_toolchain(aspect_ctx)
 
     direct_srcs = _filter_out_well_known_types(
         target[ProtoInfo].direct_sources,
