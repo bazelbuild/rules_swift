@@ -18,7 +18,7 @@ load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(":derived_files.bzl", "derived_files")
 load(":linking.bzl", "new_objc_provider")
 load(":output_groups.bzl", "supplemental_compilation_output_groups")
-load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
+load(":providers.bzl", "SwiftInfo")
 load(":swift_common.bzl", "swift_common")
 load(":utils.bzl", "compact", "get_providers")
 
@@ -47,7 +47,7 @@ def _swift_module_alias_impl(ctx):
         output = reexport_src,
     )
 
-    swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
+    swift_toolchain = swift_common.get_toolchain(ctx)
     feature_configuration = swift_common.configure_features(
         ctx = ctx,
         requested_features = ctx.features,

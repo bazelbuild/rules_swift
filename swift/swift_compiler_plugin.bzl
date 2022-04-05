@@ -42,7 +42,6 @@ load(
     "@build_bazel_rules_swift//swift/internal:providers.bzl",
     "SwiftCompilerPluginInfo",
     "SwiftInfo",
-    "SwiftToolchainInfo",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:swift_common.bzl",
@@ -56,7 +55,7 @@ load(
 load(":module_name.bzl", "derive_swift_module_name")
 
 def _swift_compiler_plugin_impl(ctx):
-    swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
+    swift_toolchain = swift_common.get_toolchain(ctx)
 
     feature_configuration = configure_features_for_binary(
         ctx = ctx,

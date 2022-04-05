@@ -177,6 +177,7 @@ bzl_library(
         ":features",
         ":module_maps",
         ":providers",
+        ":toolchain_utils",
         ":utils",
     ],
 )
@@ -193,6 +194,7 @@ bzl_library(
         ":providers",
         ":swift_clang_module_aspect",
         ":symbol_graph_extracting",
+        ":toolchain_utils",
     ],
 )
 
@@ -206,6 +208,7 @@ bzl_library(
         ":features",
         ":providers",
         ":symbol_graph_extracting",
+        ":toolchain_utils",
         ":utils",
         "@bazel_skylib//lib:dicts",
     ],
@@ -352,6 +355,12 @@ bzl_library(
         "@bazel_skylib//lib:paths",
         "@bazel_skylib//lib:types",
     ],
+)
+
+bzl_library(
+    name = "toolchain_utils",
+    srcs = ["toolchain_utils.bzl"],
+    visibility = ["//swift:__subpackages__"],
 )
 
 bzl_library(

@@ -424,44 +424,51 @@ def _swift_toolchain_impl(ctx):
     # TODO(allevato): Move some of the remaining hardcoded values, like object
     # format and Obj-C interop support, to attributes so that we can remove the
     # assumptions that are only valid on Linux.
-    return [
-        SwiftToolchainInfo(
-            action_configs = all_action_configs,
-            cc_toolchain_info = cc_toolchain,
-            clang_implicit_deps_providers = (
-                collect_implicit_deps_providers([])
-            ),
-            developer_dirs = [],
-            entry_point_linkopts_provider = _entry_point_linkopts_provider,
-            feature_allowlists = [
-                target[SwiftFeatureAllowlistInfo]
-                for target in ctx.attr.feature_allowlists
-            ],
-            generated_header_module_implicit_deps_providers = (
-                collect_implicit_deps_providers([])
-            ),
-            implicit_deps_providers = collect_implicit_deps_providers(
-                [],
-                additional_cc_infos = [swift_linkopts_cc_info],
-            ),
-            package_configurations = [
-                target[SwiftPackageConfigurationInfo]
-                for target in ctx.attr.package_configurations
-            ],
-            requested_features = requested_features,
-            root_dir = toolchain_root,
-            swift_worker = ctx.attr._worker[DefaultInfo].files_to_run,
-            const_protocols_to_gather = ctx.file.const_protocols_to_gather,
-            test_configuration = struct(
-                env = env,
-                execution_requirements = {},
-            ),
-            tool_configs = all_tool_configs,
-            unsupported_features = ctx.disabled_features + [
-                SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD,
-                SWIFT_FEATURE_USE_GLOBAL_INDEX_STORE,
-            ],
+    swift_toolchain_info = SwiftToolchainInfo(
+        action_configs = all_action_configs,
+        cc_toolchain_info = cc_toolchain,
+        clang_implicit_deps_providers = (
+            collect_implicit_deps_providers([])
         ),
+        developer_dirs = [],
+        entry_point_linkopts_provider = _entry_point_linkopts_provider,
+        feature_allowlists = [
+            target[SwiftFeatureAllowlistInfo]
+            for target in ctx.attr.feature_allowlists
+        ],
+        generated_header_module_implicit_deps_providers = (
+            collect_implicit_deps_providers([])
+        ),
+        implicit_deps_providers = collect_implicit_deps_providers(
+            [],
+            additional_cc_infos = [swift_linkopts_cc_info],
+        ),
+        package_configurations = [
+            target[SwiftPackageConfigurationInfo]
+            for target in ctx.attr.package_configurations
+        ],
+        requested_features = requested_features,
+        root_dir = toolchain_root,
+        swift_worker = ctx.attr._worker[DefaultInfo].files_to_run,
+        const_protocols_to_gather = ctx.file.const_protocols_to_gather,
+        test_configuration = struct(
+            env = env,
+            execution_requirements = {},
+        ),
+        tool_configs = all_tool_configs,
+        unsupported_features = ctx.disabled_features + [
+            SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD,
+            SWIFT_FEATURE_USE_GLOBAL_INDEX_STORE,
+        ],
+    )
+
+    return [
+        platform_common.ToolchainInfo(
+            swift_toolchain = swift_toolchain_info,
+        ),
+        # TODO(b/205018581): Remove this legacy propagation when everything is
+        # migrated over to new-style toolchains.
+        swift_toolchain_info,
     ]
 
 swift_toolchain = rule(
