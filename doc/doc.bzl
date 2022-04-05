@@ -48,7 +48,6 @@ load(
     # providers
     _SwiftInfo = "SwiftInfo",
     _SwiftToolchainInfo = "SwiftToolchainInfo",
-    _SwiftUsageInfo = "SwiftUsageInfo",
     # rules
     _swift_binary = "swift_binary",
     # api
@@ -63,7 +62,6 @@ load(
     _swift_package_configuration = "swift_package_configuration",
     _swift_test = "swift_test",
     # aspects
-    _swift_usage_aspect = "swift_usage_aspect",
     _universal_swift_compiler_plugin = "universal_swift_compiler_plugin",
 )
 
@@ -79,10 +77,8 @@ swift_proto_library_group = _swift_proto_library_group
 
 # swift symbols
 swift_common = _swift_common
-swift_usage_aspect = _swift_usage_aspect
 SwiftInfo = _SwiftInfo
 SwiftToolchainInfo = _SwiftToolchainInfo
-SwiftUsageInfo = _SwiftUsageInfo
 swift_binary = _swift_binary
 swift_compiler_plugin = _swift_compiler_plugin
 universal_swift_compiler_plugin = _universal_swift_compiler_plugin

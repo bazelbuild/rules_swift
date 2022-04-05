@@ -64,7 +64,6 @@ bzl_library(
         "//swift/internal:swift_package_configuration",
         "//swift/internal:swift_symbol_graph_aspect",
         "//swift/internal:swift_test",
-        "//swift/internal:swift_usage_aspect",
     ],
 )
 
