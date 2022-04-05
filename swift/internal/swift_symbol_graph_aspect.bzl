@@ -18,20 +18,16 @@ load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(":attrs.bzl", "swift_toolchain_attrs")
 load(":derived_files.bzl", "derived_files")
 load(":features.bzl", "configure_features")
-load(
-    ":providers.bzl",
-    "SwiftInfo",
-    "SwiftSymbolGraphInfo",
-    "SwiftToolchainInfo",
-)
+load(":providers.bzl", "SwiftInfo", "SwiftSymbolGraphInfo")
 load(":symbol_graph_extracting.bzl", "extract_symbol_graph")
+load(":toolchain_utils.bzl", "get_swift_toolchain")
 load(":utils.bzl", "include_developer_search_paths")
 
 def _swift_symbol_graph_aspect_impl(target, aspect_ctx):
     symbol_graphs = []
 
     if SwiftInfo in target:
-        swift_toolchain = aspect_ctx.attr._toolchain[SwiftToolchainInfo]
+        swift_toolchain = get_swift_toolchain(aspect_ctx)
         feature_configuration = configure_features(
             ctx = aspect_ctx,
             swift_toolchain = swift_toolchain,

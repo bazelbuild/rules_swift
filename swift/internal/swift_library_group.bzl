@@ -16,7 +16,7 @@
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(":attrs.bzl", "swift_deps_attr", "swift_toolchain_attrs")
-load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
+load(":providers.bzl", "SwiftInfo")
 load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 load(":swift_common.bzl", "swift_common")
 load(":utils.bzl", "get_providers")
@@ -28,7 +28,7 @@ def _swift_library_group_impl(ctx):
         for dep in deps
         if CcInfo in dep
     ]
-    swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
+    swift_toolchain = swift_common.get_toolchain(ctx)
 
     return [
         DefaultInfo(),

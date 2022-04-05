@@ -34,7 +34,6 @@ load(
     "SwiftCompilerPluginInfo",
     "SwiftInfo",
     "SwiftSymbolGraphInfo",
-    "SwiftToolchainInfo",
 )
 load(":swift_common.bzl", "swift_common")
 load(":swift_symbol_graph_aspect.bzl", "test_discovery_symbol_graph_aspect")
@@ -210,7 +209,7 @@ def _generate_test_discovery_srcs(*, actions, deps, name, test_discoverer):
     return outputs
 
 def _swift_test_impl(ctx):
-    swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
+    swift_toolchain = swift_common.get_toolchain(ctx)
 
     feature_configuration = configure_features_for_binary(
         ctx = ctx,

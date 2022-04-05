@@ -561,6 +561,29 @@ Extracts the symbol graph from a Swift module.
 | <a id="swift_common.extract_symbol_graph-swift_toolchain"></a>swift_toolchain |  The `SwiftToolchainInfo` provider of the toolchain.   |  none |
 
 
+<a id="swift_common.get_toolchain"></a>
+
+## swift_common.get_toolchain
+
+<pre>
+swift_common.get_toolchain(<a href="#swift_common.get_toolchain-ctx">ctx</a>, <a href="#swift_common.get_toolchain-attr">attr</a>)
+</pre>
+
+Gets the Swift toolchain associated with the rule or aspect.
+
+**PARAMETERS**
+
+
+| Name  | Description | Default Value |
+| :------------- | :------------- | :------------- |
+| <a id="swift_common.get_toolchain-ctx"></a>ctx |  The rule or aspect context.   |  none |
+| <a id="swift_common.get_toolchain-attr"></a>attr |  The name of the attribute on the calling rule or aspect that should be used to retrieve the toolchain if it is not provided by the `toolchains` argument of the rule/aspect. Note that this is only supported for legacy/migration purposes and will be removed once migration to toolchains is complete.   |  `"_toolchain"` |
+
+**RETURNS**
+
+A `SwiftToolchainInfo` provider.
+
+
 <a id="swift_common.is_enabled"></a>
 
 ## swift_common.is_enabled

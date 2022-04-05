@@ -17,7 +17,7 @@
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(":attrs.bzl", "swift_common_rule_attrs", "swift_toolchain_attrs")
 load(":linking.bzl", "new_objc_provider")
-load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
+load(":providers.bzl", "SwiftInfo")
 load(":swift_common.bzl", "swift_common")
 load(":utils.bzl", "compact", "get_compilation_contexts", "get_providers")
 
@@ -43,7 +43,7 @@ def _swift_import_impl(ctx):
         fail("One or both of 'swiftinterface' and 'swiftmodule' must be " +
              "specified.")
 
-    swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
+    swift_toolchain = swift_common.get_toolchain(ctx)
     feature_configuration = swift_common.configure_features(
         ctx = ctx,
         swift_toolchain = swift_toolchain,

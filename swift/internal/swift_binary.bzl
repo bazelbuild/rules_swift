@@ -24,12 +24,7 @@ load(
     "register_link_binary_action",
 )
 load(":output_groups.bzl", "supplemental_compilation_output_groups")
-load(
-    ":providers.bzl",
-    "SwiftCompilerPluginInfo",
-    "SwiftInfo",
-    "SwiftToolchainInfo",
-)
+load(":providers.bzl", "SwiftCompilerPluginInfo", "SwiftInfo")
 load(":swift_common.bzl", "swift_common")
 load(
     ":utils.bzl",
@@ -58,7 +53,7 @@ def _maybe_parse_as_library_copts(srcs):
     return ["-parse-as-library"] if use_parse_as_library else []
 
 def _swift_binary_impl(ctx):
-    swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
+    swift_toolchain = swift_common.get_toolchain(ctx)
 
     feature_configuration = configure_features_for_binary(
         ctx = ctx,
