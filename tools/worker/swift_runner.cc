@@ -207,6 +207,11 @@ bool SwiftRunner::ProcessArgument(
       return true;
     }
 
+    if (absl::ConsumePrefix(&trimmed_arg, "-bazel-target-label=")) {
+      target_label_ = std::string(trimmed_arg);
+      return true;
+    }
+
     // TODO(allevato): Report that an unknown wrapper arg was found and give
     // the caller a way to exit gracefully.
     return true;

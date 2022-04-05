@@ -127,6 +127,10 @@ class SwiftRunner {
   // The path to the generated header rewriter tool, if one is being used for
   // this compilation.
   std::string generated_header_rewriter_path_;
+
+  // The Bazel target label that spawned the worker request, which can be used
+  // in custom diagnostic messages printed by the worker.
+  std::string target_label_;
 };
 
 #endif  // BUILD_BAZEL_RULES_SWIFT_TOOLS_WORKER_SWIFT_RUNNER_H_

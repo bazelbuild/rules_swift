@@ -1498,6 +1498,7 @@ def compile(
         is_swift = True,
         module_name = module_name,
         source_files = srcs,
+        target_label = feature_configuration._label,
         transitive_modules = transitive_modules,
         transitive_swiftmodules = transitive_swiftmodules,
         user_compile_flags = copts,
@@ -1730,6 +1731,7 @@ def _precompile_clang_module(
         module_name = module_name,
         pcm_file = precompiled_module,
         source_files = [module_map_file],
+        target_label = feature_configuration._label,
         transitive_modules = transitive_modules,
     )
 

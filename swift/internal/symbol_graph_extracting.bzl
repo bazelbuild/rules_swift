@@ -122,6 +122,7 @@ def extract_symbol_graph(
         minimum_access_level = minimum_access_level,
         module_name = module_name,
         output_dir = output_dir,
+        target_label = feature_configuration._label,
         transitive_modules = transitive_modules,
         transitive_swiftmodules = transitive_swiftmodules,
     )

@@ -76,6 +76,7 @@ def register_autolink_extract_action(
     prerequisites = struct(
         autolink_file = autolink_file,
         object_files = object_files,
+        target_label = feature_configuration._label,
     )
     run_toolchain_action(
         actions = actions,

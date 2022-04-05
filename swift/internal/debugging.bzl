@@ -189,6 +189,7 @@ def _register_modulewrap_action(
     prerequisites = struct(
         object_file = object,
         swiftmodule_file = swiftmodule,
+        target_label = feature_configuration._label,
     )
     run_toolchain_action(
         actions = actions,

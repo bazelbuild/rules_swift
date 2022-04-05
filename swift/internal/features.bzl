@@ -123,6 +123,10 @@ def configure_features(
         # other APIs, so they don't have to be passed manually by the callers.
         _bin_dir = ctx.bin_dir,
         _genfiles_dir = ctx.genfiles_dir,
+        # Capture the label of the calling target so that it can be passed to
+        # the worker as additional context, without requiring the user to pass
+        # it in separately.
+        _label = ctx.label,
     )
 
 def features_for_build_modes(ctx, cpp_fragment = None):
