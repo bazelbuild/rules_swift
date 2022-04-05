@@ -241,14 +241,6 @@ Swift build rules, and they are also passed to the C++ APIs used when linking
     },
 )
 
-SwiftUsageInfo = provider(
-    doc = """\
-A provider that indicates that Swift was used by a target or any target that it
-depends on.
-""",
-    fields = {},
-)
-
 def create_module(*, name, clang = None, is_system = False, swift = None):
     """Creates a value containing Clang/Swift module artifacts of a dependency.
 

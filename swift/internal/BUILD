@@ -60,7 +60,6 @@ bzl_library(
         "providers.bzl",
         "swift_clang_module_aspect.bzl",
         "swift_symbol_graph_aspect.bzl",
-        "swift_usage_aspect.bzl",
         "symbol_graph_extracting.bzl",
         "target_triples.bzl",
         "toolchain_config.bzl",
