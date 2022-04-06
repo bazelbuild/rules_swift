@@ -83,6 +83,7 @@ bzl_library(
     visibility = ["//swift:__subpackages__"],
     deps = [
         ":feature_names",
+        ":package_specs",
         "@bazel_skylib//lib:collections",
         "@bazel_skylib//lib:new_sets",
     ],
@@ -105,6 +106,11 @@ bzl_library(
     srcs = ["module_maps.bzl"],
     visibility = ["//swift:__subpackages__"],
     deps = ["@bazel_skylib//lib:paths"],
+)
+
+bzl_library(
+    name = "package_specs",
+    srcs = ["package_specs.bzl"],
 )
 
 bzl_library(
@@ -262,6 +268,16 @@ bzl_library(
         ":swift_common",
         ":utils",
         "@bazel_skylib//lib:dicts",
+    ],
+)
+
+bzl_library(
+    name = "swift_package_configuration",
+    srcs = ["swift_package_configuration.bzl"],
+    visibility = ["//swift:__subpackages__"],
+    deps = [
+        ":package_specs",
+        ":providers",
     ],
 )
 
