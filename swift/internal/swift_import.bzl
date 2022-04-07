@@ -15,7 +15,7 @@
 """Implementation of the `swift_import` rule."""
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load(":attrs.bzl", "swift_common_rule_attrs")
+load(":attrs.bzl", "swift_common_rule_attrs", "swift_toolchain_attrs")
 load(":linking.bzl", "new_objc_provider")
 load(":providers.bzl", "SwiftInfo")
 load(":swift_common.bzl", "swift_common")
@@ -27,13 +27,10 @@ def _swift_import_impl(ctx):
     swiftdoc = ctx.file.swiftdoc
     swiftmodule = ctx.file.swiftmodule
 
-    # We have to depend on the C++ toolchain directly here to create the
-    # libraries to link. Depending on the Swift toolchain causes a problematic
-    # cyclic dependency for built-from-source toolchains.
-    cc_toolchain = ctx.attr._cc_toolchain[cc_common.CcToolchainInfo]
-    cc_feature_configuration = cc_common.configure_features(
+    swift_toolchain = swift_common.get_toolchain(ctx)
+    feature_configuration = swift_common.configure_features(
         ctx = ctx,
-        cc_toolchain = cc_toolchain,
+        swift_toolchain = swift_toolchain,
         requested_features = ctx.features,
         unsupported_features = ctx.disabled_features,
     )
@@ -41,8 +38,10 @@ def _swift_import_impl(ctx):
     libraries_to_link = [
         cc_common.create_library_to_link(
             actions = ctx.actions,
-            cc_toolchain = cc_toolchain,
-            feature_configuration = cc_feature_configuration,
+            cc_toolchain = swift_toolchain.cc_toolchain_info,
+            feature_configuration = swift_common.cc_feature_configuration(
+                feature_configuration,
+            ),
             static_library = archive,
         )
         for archive in archives
@@ -104,6 +103,7 @@ def _swift_import_impl(ctx):
 swift_import = rule(
     attrs = dicts.add(
         swift_common_rule_attrs(),
+        swift_toolchain_attrs(),
         {
             "archives": attr.label_list(
                 allow_empty = False,
@@ -130,13 +130,6 @@ The `.swiftdoc` file provided to Swift targets that depend on this target.
 The `.swiftmodule` file provided to Swift targets that depend on this target.
 """,
                 mandatory = True,
-            ),
-            "_cc_toolchain": attr.label(
-                default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
-                doc = """\
-The C++ toolchain from which linking flags and other tools needed by the Swift
-toolchain (such as `clang`) will be retrieved.
-""",
             ),
         },
     ),
