@@ -14,9 +14,21 @@ bzl_library(
     name = "swift",
     srcs = ["swift.bzl"],
     deps = [
-        "//swift/internal:build_defs",
-        "//swift/internal:rules",
+        "//swift/internal:providers",
+        "//swift/internal:swift_binary",
+        "//swift/internal:swift_clang_module_aspect",
         "//swift/internal:swift_common",
+        "//swift/internal:swift_extract_symbol_graph",
+        "//swift/internal:swift_feature_allowlist",
+        "//swift/internal:swift_grpc_library",
+        "//swift/internal:swift_import",
+        "//swift/internal:swift_interop_hint",
+        "//swift/internal:swift_library",
+        "//swift/internal:swift_module_alias",
+        "//swift/internal:swift_package_configuration",
+        "//swift/internal:swift_proto_library",
+        "//swift/internal:swift_symbol_graph_aspect",
+        "//swift/internal:swift_test",
     ],
 )
 
