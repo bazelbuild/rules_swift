@@ -72,6 +72,7 @@ bzl_library(
     deps = [
         ":actions",
         ":derived_files",
+        ":feature_names",
         ":toolchain_config",
     ],
 )
@@ -113,7 +114,16 @@ bzl_library(
         "//swift:__subpackages__",
     ],
     deps = [
+        ":actions",
+        ":attrs",
+        ":autolinking",
+        ":debugging",
         ":derived_files",
+        ":developer_dirs",
+        ":feature_names",
+        ":features",
+        ":swift_clang_module_aspect",
+        ":utils",
         "@bazel_skylib//lib:collections",
         "@bazel_skylib//lib:partial",
         "@bazel_tools//tools/build_defs/cc:action_names.bzl",
