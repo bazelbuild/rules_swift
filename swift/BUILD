@@ -53,6 +53,7 @@ bzl_library(
         ":swift_compiler_plugin",
         "//swift/internal:providers",
         "//swift/internal:swift_binary",
+        "//swift/internal:swift_clang_module_aspect",
         "//swift/internal:swift_common",
         "//swift/internal:swift_extract_symbol_graph",
         "//swift/internal:swift_feature_allowlist",
