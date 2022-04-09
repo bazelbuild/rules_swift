@@ -1,4 +1,5 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+load("@io_bazel_stardoc//stardoc:stardoc.bzl", "stardoc")
 load(":ast_file_tests.bzl", "ast_file_test_suite")
 load(":bzl_test.bzl", "bzl_test")
 load(":coverage_settings_tests.bzl", "coverage_settings_test_suite")
@@ -50,21 +51,22 @@ bzl_library(
 )
 
 bzl_test(
-    name = "swift",
+    name = "swift_bzl_test",
     bzl_file = "//swift:swift.bzl",
     bzl_target = "//swift",
     symbol = "SwiftInfo",
 )
 
-# bzl_library(
-#     name = "macro_with_doc",
-#     srcs = ["macro_with_doc.bzl"],
-#     deps = ["//swift"],
-# )
+bzl_library(
+    name = "chicken",
+    srcs = ["macro_with_doc.bzl"],
+    deps = ["//swift"],
+)
 
-# stardoc(
-#     name = "macro_with_doc_stardoc",
-#     out = "macro_with_doc.md_",
-#     input = ":macro_with_doc.bzl",
-#     deps = ["//test:macro_with_doc"],
-# )
+stardoc(
+    name = "chicken_stardoc",
+    out = "chicken.md_",
+    input = ":macro_with_doc.bzl",
+    # deps = ["//test:chicken"],
+    deps = [":chicken"],
+)

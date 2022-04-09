@@ -3,10 +3,18 @@ load("@bazel_skylib//rules:write_file.bzl", "write_file")
 load("@io_bazel_stardoc//stardoc:stardoc.bzl", "stardoc")
 
 def bzl_test(name, bzl_file, bzl_target, symbol):
-    bzl_gen_file_name = name + "_bzl_file"
+    """Provides build-time assurances that `bzl_library` declarations exist and are referenced properly.
+
+    Args:
+        name:
+
+    Returns:
+    """
+    macro_name = name + "_macro"
+    macro_filename = macro_name + ".bzl"
     write_file(
-        name = bzl_gen_file_name,
-        out = name + "_generated.bzl",
+        name = macro_name,
+        out = macro_filename,
         content = [
             "load(\"{bzl_file}\", \"{symbol}\")".format(
                 bzl_file = bzl_file,
@@ -25,17 +33,22 @@ def bzl_test(name, bzl_file, bzl_target, symbol):
         ],
     )
 
-    bzl_gen_lib_name = name + "_bzl_lib"
+    macro_lib_name = macro_name + "_lib"
     bzl_library(
-        name = bzl_gen_lib_name,
-        srcs = [bzl_gen_file_name],
+        name = macro_lib_name,
+        # srcs = [macro_name],
+        srcs = [macro_filename],
         deps = [bzl_target],
     )
 
-    stardoc_name = name + "_stardoc"
+    # DEBUG BEGIN
+    print("*** CHUCK macro_filename: ", macro_filename)
+
+    # DEBUG END
     stardoc(
-        name = stardoc_name,
-        out = stardoc_name + ".md_",
-        input = bzl_gen_file_name,
-        deps = [bzl_gen_lib_name],
+        name = name,
+        out = macro_lib_name + ".md_",
+        input = macro_filename,
+        # input = ":" + macro_filename,
+        deps = [macro_lib_name],
     )
