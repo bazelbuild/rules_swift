@@ -54,17 +54,3 @@ bzl_test(
     src = "swift_bzl_macro.bzl",
     deps = ["//swift"],
 )
-
-# bzl_library(
-#     name = "chicken",
-#     srcs = ["swift_bzl_macro.bzl"],
-#     deps = ["//swift"],
-# )
-
-# stardoc(
-#     name = "chicken_stardoc",
-#     out = "chicken.md_",
-#     input = ":swift_bzl_macro.bzl",
-#     # deps = ["//test:chicken"],
-#     deps = [":chicken"],
-# )
