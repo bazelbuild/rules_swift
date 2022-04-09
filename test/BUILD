@@ -1,6 +1,6 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
-load("@io_bazel_stardoc//stardoc:stardoc.bzl", "stardoc")
 load(":ast_file_tests.bzl", "ast_file_test_suite")
+load(":bzl_test.bzl", "bzl_test")
 load(":coverage_settings_tests.bzl", "coverage_settings_test_suite")
 load(":debug_settings_tests.bzl", "debug_settings_test_suite")
 load(":generated_header_tests.bzl", "generated_header_test_suite")
@@ -49,15 +49,22 @@ bzl_library(
     ],
 )
 
-bzl_library(
-    name = "macro_with_doc",
-    srcs = ["macro_with_doc.bzl"],
-    deps = ["//swift"],
+bzl_test(
+    name = "swift",
+    bzl_file = "//swift:swift.bzl",
+    bzl_target = "//swift",
+    symbol = "SwiftInfo",
 )
 
-stardoc(
-    name = "macro_with_doc_stardoc",
-    out = "macro_with_doc.md_",
-    input = ":macro_with_doc.bzl",
-    deps = ["//test:macro_with_doc"],
-)
+# bzl_library(
+#     name = "macro_with_doc",
+#     srcs = ["macro_with_doc.bzl"],
+#     deps = ["//swift"],
+# )
+
+# stardoc(
+#     name = "macro_with_doc_stardoc",
+#     out = "macro_with_doc.md_",
+#     input = ":macro_with_doc.bzl",
+#     deps = ["//test:macro_with_doc"],
+# )
