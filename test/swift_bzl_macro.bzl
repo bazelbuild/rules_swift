@@ -11,5 +11,6 @@ def macro_with_doc(name):
     Args:
         name: A `string` value.
     """
-    print("Just using the name variable.", name)
+    if name == None:
+        return None
     return SwiftInfo
