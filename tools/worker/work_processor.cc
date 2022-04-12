@@ -14,22 +14,40 @@
 
 #include "tools/worker/work_processor.h"
 
+#if defined(__APPLE__)
+#include <copyfile.h>
+#endif
 #include <google/protobuf/text_format.h>
 #include <sys/stat.h>
 
+#include <filesystem>
 #include <fstream>
 #include <map>
 #include <nlohmann/json.hpp>
 #include <sstream>
 #include <string>
 
-#include "tools/common/file_system.h"
 #include "tools/common/path_utils.h"
 #include "tools/common/temp_file.h"
 #include "tools/worker/output_file_map.h"
 #include "tools/worker/swift_runner.h"
 
 namespace {
+
+bool copy_file(const std::filesystem::path &from,
+               const std::filesystem::path &to, std::error_code &ec) noexcept {
+#if defined(__APPLE__)
+  if (copyfile(from.string().c_str(), to.string().c_str(), nullptr,
+               COPYFILE_ALL | COPYFILE_CLONE) < 0) {
+    ec = std::error_code(errno, std::system_category());
+    return false;
+  }
+  ec = std::error_code();
+  return true;
+#else
+  return std::filesystem::copy_file(from, to, ec);
+#endif
+}
 
 static void FinalizeWorkRequest(const blaze::worker::WorkRequest &request,
                                 blaze::worker::WorkResponse *response,
@@ -130,9 +148,11 @@ void WorkProcessor::ProcessWorkRequest(
       // analysis time, but we need to manually create the ones for the
       // incremental storage area.
       auto dir_path = Dirname(expected_object_pair.second);
-      if (!MakeDirs(dir_path, S_IRWXU)) {
+      std::error_code ec;
+      std::filesystem::create_directories(dir_path, ec);
+      if (ec) {
         stderr_stream << "swift_worker: Could not create directory " << dir_path
-                      << " (errno " << errno << ")\n";
+                      << " (" << ec.message() << ")\n";
         FinalizeWorkRequest(request, response, EXIT_FAILURE, stderr_stream);
         return;
       }
@@ -142,9 +162,10 @@ void WorkProcessor::ProcessWorkRequest(
     // where Bazel will generate them.
     for (const auto &expected_object_pair :
          output_file_map.incremental_inputs()) {
-      if (FileExists(expected_object_pair.second)) {
-        if (!CopyFile(expected_object_pair.second,
-                      expected_object_pair.first)) {
+      if (std::filesystem::exists(expected_object_pair.second)) {
+        std::error_code ec;
+        copy_file(expected_object_pair.second, expected_object_pair.first, ec);
+        if (ec) {
           stderr_stream << "swift_worker: Could not copy "
                         << expected_object_pair.second << " to "
                         << expected_object_pair.first << " (errno " << errno
@@ -164,7 +185,9 @@ void WorkProcessor::ProcessWorkRequest(
     // locations where Bazel declared the files.
     for (const auto &expected_object_pair :
          output_file_map.incremental_outputs()) {
-      if (!CopyFile(expected_object_pair.second, expected_object_pair.first)) {
+      std::error_code ec;
+      copy_file(expected_object_pair.second, expected_object_pair.first, ec);
+      if (ec) {
         stderr_stream << "swift_worker: Could not copy "
                       << expected_object_pair.second << " to "
                       << expected_object_pair.first << " (errno " << errno
@@ -178,13 +201,14 @@ void WorkProcessor::ProcessWorkRequest(
     // next run.
     for (const auto &expected_object_pair :
          output_file_map.incremental_inputs()) {
-      if (FileExists(expected_object_pair.first)) {
-        if (FileExists(expected_object_pair.second)) {
+      if (std::filesystem::exists(expected_object_pair.first)) {
+        if (std::filesystem::exists(expected_object_pair.second)) {
           // CopyFile fails if the file already exists
-          RemoveFile(expected_object_pair.second);
+          std::filesystem::remove(expected_object_pair.second);
         }
-        if (!CopyFile(expected_object_pair.first,
-                      expected_object_pair.second)) {
+        std::error_code ec;
+        copy_file(expected_object_pair.first, expected_object_pair.second, ec);
+        if (ec) {
           stderr_stream << "swift_worker: Could not copy "
                         << expected_object_pair.first << " to "
                         << expected_object_pair.second << " (errno " << errno
