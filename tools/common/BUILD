@@ -13,15 +13,6 @@ cc_library(
 )
 
 cc_library(
-    name = "file_system",
-    srcs = ["file_system.cc"],
-    hdrs = ["file_system.h"],
-    deps = [
-        ":path_utils",
-    ],
-)
-
-cc_library(
     name = "path_utils",
     srcs = ["path_utils.cc"],
     hdrs = ["path_utils.h"],

@@ -14,10 +14,10 @@
 
 #include "tools/worker/swift_runner.h"
 
+#include <filesystem>
 #include <fstream>
 
 #include "tools/common/bazel_substitutions.h"
-#include "tools/common/file_system.h"
 #include "tools/common/process.h"
 #include "tools/common/temp_file.h"
 #include "tools/worker/output_file_map.h"
@@ -165,10 +165,10 @@ int SwiftRunner::Run(std::ostream *stderr_stream, bool stdout_to_stderr) {
       }
     }
 
-    auto exec_root = GetCurrentDirectory();
+    const std::filesystem::path &exec_root = std::filesystem::current_path();
     // Copy back from the global index store to bazel's index store
-    ii_args.push_back(exec_root + "/" + global_index_store_import_path_);
-    ii_args.push_back(exec_root + "/" + index_store_path_);
+    ii_args.push_back((exec_root / global_index_store_import_path_).string());
+    ii_args.push_back((exec_root / index_store_path_).string());
     exit_code =
         RunSubProcess(ii_args, stderr_stream, /*stdout_to_stderr=*/true);
   }
@@ -277,13 +277,13 @@ bool SwiftRunner::ProcessArgument(
         // Get the actual current working directory (the workspace root), which
         // we didn't know at analysis time.
         consumer("-debug-prefix-map");
-        consumer(GetCurrentDirectory() + "=.");
+        consumer(std::filesystem::current_path().string() + "=.");
         changed = true;
       } else if (new_arg == "-coverage-prefix-pwd-is-dot") {
         // Get the actual current working directory (the workspace root), which
         // we didn't know at analysis time.
         consumer("-coverage-prefix-map");
-        consumer(GetCurrentDirectory() + "=.");
+        consumer(std::filesystem::current_path().string() + "=.");
         changed = true;
       } else if (new_arg == "-ephemeral-module-cache") {
         // Create a temporary directory to hold the module cache, which will be
