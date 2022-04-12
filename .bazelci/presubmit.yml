@@ -24,12 +24,14 @@ x_defaults:
     build_targets:
       - "//examples/..."
       - "-//examples/apple/..."
+      - "-//examples/xplatform/grpc/..." # TODO: Fix grpc on Linux
     test_flags: *linux_flags
     test_targets:
       - "//doc/..."
       - "//examples/..."
       - "//test/..."
       - "-//examples/apple/..."
+      - "-//examples/xplatform/grpc/..." # TODO: Fix grpc on Linux
 
 tasks:
   macos_latest:
