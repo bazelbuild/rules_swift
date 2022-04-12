@@ -1,5 +1,6 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 load("@build_bazel_apple_support//rules:universal_binary.bzl", "universal_binary")
+load("@bazel_skylib//lib:selects.bzl", "selects")
 
 licenses(["notice"])
 
@@ -35,10 +36,17 @@ cc_library(
         "work_processor.h",
     ],
     hdrs = ["compile_with_worker.h"],
+    copts = selects.with_or({
+        ("@bazel_tools//tools/cpp:clang-cl", "@bazel_tools//tools/cpp:msvc"): [
+            "/std:c++17",
+        ],
+        "//conditions:default": [
+            "-std=c++17",
+        ],
+    }),
     deps = [
         ":swift_runner",
         "//third_party/bazel_protos:worker_protocol_cc_proto",
-        "//tools/common:file_system",
         "//tools/common:path_utils",
         "//tools/common:temp_file",
         "@com_google_protobuf//:protobuf",
@@ -67,6 +75,13 @@ cc_library(
             "-DINDEX_IMPORT_PATH=\\\"$(rootpath @build_bazel_rules_swift_index_import//:index_import)\\\"",
         ],
         "//conditions:default": [],
+    }) + selects.with_or({
+        ("@bazel_tools//tools/cpp:clang-cl", "@bazel_tools//tools/cpp:msvc"): [
+            "/std:c++17",
+        ],
+        "//conditions:default": [
+            "-std=c++17",
+        ],
     }),
     data = select({
         ":use_global_index_store": [
@@ -76,7 +91,6 @@ cc_library(
     }),
     deps = [
         "//tools/common:bazel_substitutions",
-        "//tools/common:file_system",
         "//tools/common:process",
         "//tools/common:temp_file",
         "@com_github_nlohmann_json//:json",
