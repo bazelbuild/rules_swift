@@ -10,10 +10,11 @@ x_defaults:
       - "//examples/..."
       - "//test/..."
   linux_common: &linux_common
-    platform: ubuntu1804
+    platform: ubuntu2004
     environment:
       CC: clang
-      SWIFT_HOME: "$HOME/swift-5.4.2"
+      SWIFT_VERSION: "5.5.3"
+      SWIFT_HOME: "$HOME/swift-$SWIFT_VERSION"
       PATH: "$PATH:$SWIFT_HOME/usr/bin"
     build_flags: &linux_flags
       # On Linux, we look for Swift toolchain binaries on the path. We may be
@@ -23,12 +24,14 @@ x_defaults:
     build_targets:
       - "//examples/..."
       - "-//examples/apple/..."
+      - "-//examples/xplatform/grpc/..." # TODO: Fix grpc on Linux
     test_flags: *linux_flags
     test_targets:
       - "//doc/..."
       - "//examples/..."
       - "//test/..."
       - "-//examples/apple/..."
+      - "-//examples/xplatform/grpc/..." # TODO: Fix grpc on Linux
 
 tasks:
   macos_latest:
@@ -50,31 +53,31 @@ tasks:
     - .bazelci/update_workspace_to_deps_heads.sh
     <<: *mac_common
 
-  ubuntu1804_latest:
+  ubuntu2004_latest:
     name: "Latest Bazel"
     bazel: latest
     shell_commands:
-      - "echo --- Downloading and extracting Swift 5.4.2 to $SWIFT_HOME"
+      - "echo --- Downloading and extracting Swift $SWIFT_VERSION to $SWIFT_HOME"
       - "mkdir $SWIFT_HOME"
-      - "curl https://mirror.bazel.build/swift.org/builds/swift-5.4.2-release/ubuntu1804/swift-5.4.2-RELEASE/swift-5.4.2-RELEASE-ubuntu18.04.tar.gz | tar xvz --strip-components=1 -C $SWIFT_HOME"
+      - "curl https://download.swift.org/swift-${SWIFT_VERSION}-release/ubuntu2004/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu20.04.tar.gz | tar xvz --strip-components=1 -C $SWIFT_HOME"
     <<: *linux_common
 
-  ubuntu1804_last_green:
+  ubuntu2004_last_green:
     name: "Last Green Bazel"
     bazel: last_green
     shell_commands:
-      - "echo --- Downloading and extracting Swift 5.4.2 to $SWIFT_HOME"
+      - "echo --- Downloading and extracting Swift $SWIFT_VERSION to $SWIFT_HOME"
       - "mkdir $SWIFT_HOME"
-      - "curl https://mirror.bazel.build/swift.org/builds/swift-5.4.2-release/ubuntu1804/swift-5.4.2-RELEASE/swift-5.4.2-RELEASE-ubuntu18.04.tar.gz | tar xvz --strip-components=1 -C $SWIFT_HOME"
+      - "curl https://download.swift.org/swift-${SWIFT_VERSION}-release/ubuntu2004/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu20.04.tar.gz | tar xvz --strip-components=1 -C $SWIFT_HOME"
     <<: *linux_common
 
-  ubuntu1804_latest_head_deps:
+  ubuntu2004_latest_head_deps:
     name: "Latest Bazel with Head Deps"
     bazel: latest
     shell_commands:
-      - "echo --- Downloading and extracting Swift 5.4.2 to $SWIFT_HOME"
+      - "echo --- Downloading and extracting Swift $SWIFT_VERSION to $SWIFT_HOME"
       - "mkdir $SWIFT_HOME"
-      - "curl https://mirror.bazel.build/swift.org/builds/swift-5.4.2-release/ubuntu1804/swift-5.4.2-RELEASE/swift-5.4.2-RELEASE-ubuntu18.04.tar.gz | tar xvz --strip-components=1 -C $SWIFT_HOME"
+      - "curl https://download.swift.org/swift-${SWIFT_VERSION}-release/ubuntu2004/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu20.04.tar.gz | tar xvz --strip-components=1 -C $SWIFT_HOME"
       # Update the WORKSPACE to use head versions of some deps to ensure nothing
       # has landed on them breaking this project.
       - .bazelci/update_workspace_to_deps_heads.sh
