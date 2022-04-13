@@ -18,10 +18,6 @@
 #include <string>
 #include <vector>
 
-// Turn our current process into a new process. Avoids fork overhead.
-// Never returns.
-void ExecProcess(const std::vector<std::string> &args);
-
 // Spawns a subprocess for given arguments args and waits for it to terminate.
 // The first argument is used for the executable path. If stdout_to_stderr is
 // set, then stdout is redirected to the stderr stream as well. Returns the exit
