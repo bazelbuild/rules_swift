@@ -20,12 +20,11 @@
 
 #include <cerrno>
 #include <cstring>
+#include <filesystem>
 #include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
-
-#include "tools/common/path_utils.h"
 
 extern char **environ;
 
@@ -124,7 +123,8 @@ void PosixSpawnIORedirector::ConsumeAllSubprocessOutput(
 // are controlled by the lifetime of the strings in args.
 std::vector<const char *> ConvertToCArgs(const std::vector<std::string> &args) {
   std::vector<const char *> c_args;
-  c_args.push_back(Basename(args[0].c_str()));
+  std::string filename = std::filesystem::path(args[0]).filename().string();
+  c_args.push_back(&*std::next(args[0].rbegin(), filename.length() - 1));
   for (int i = 1; i < args.size(); i++) {
     c_args.push_back(args[i].c_str());
   }

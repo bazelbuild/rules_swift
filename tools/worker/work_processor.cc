@@ -27,7 +27,6 @@
 #include <sstream>
 #include <string>
 
-#include "tools/common/path_utils.h"
 #include "tools/common/temp_file.h"
 #include "tools/worker/output_file_map.h"
 #include "tools/worker/swift_runner.h"
@@ -117,8 +116,9 @@ void WorkProcessor::ProcessWorkRequest(
 
       // Rewrite the output file map to use the incremental storage area and
       // pass the compiler the path to the rewritten file.
-      auto new_path =
-          ReplaceExtension(output_file_map_path, ".incremental.json");
+      std::string new_path = std::filesystem::path(output_file_map_path)
+                                 .replace_extension(".incremental.json")
+                                 .string();
       output_file_map.WriteToPath(new_path);
 
       params_file_stream << "-output-file-map\n";
@@ -147,7 +147,10 @@ void WorkProcessor::ProcessWorkRequest(
       // Bazel creates the intermediate directories for the files declared at
       // analysis time, but we need to manually create the ones for the
       // incremental storage area.
-      auto dir_path = Dirname(expected_object_pair.second);
+      const std::string dir_path =
+          std::filesystem::path(expected_object_pair.second)
+              .parent_path()
+              .string();
       std::error_code ec;
       std::filesystem::create_directories(dir_path, ec);
       if (ec) {

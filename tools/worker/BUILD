@@ -47,7 +47,6 @@ cc_library(
     deps = [
         ":swift_runner",
         "//third_party/bazel_protos:worker_protocol_cc_proto",
-        "//tools/common:path_utils",
         "//tools/common:temp_file",
         "@com_google_protobuf//:protobuf",
     ],
