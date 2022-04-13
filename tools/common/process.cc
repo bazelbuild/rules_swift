@@ -134,14 +134,6 @@ std::vector<const char *> ConvertToCArgs(const std::vector<std::string> &args) {
 
 }  // namespace
 
-void ExecProcess(const std::vector<std::string> &args) {
-  std::vector<const char *> exec_argv = ConvertToCArgs(args);
-  execv(args[0].c_str(), const_cast<char **>(exec_argv.data()));
-  std::cerr << "Error executing child process.'" << args[0] << "'. "
-            << strerror(errno) << "\n";
-  abort();
-}
-
 int RunSubProcess(const std::vector<std::string> &args,
                   std::ostream *stderr_stream, bool stdout_to_stderr) {
   std::vector<const char *> exec_argv = ConvertToCArgs(args);
