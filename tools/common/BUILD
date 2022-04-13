@@ -1,10 +1,6 @@
 load("@bazel_skylib//lib:selects.bzl", "selects")
 
-package(
-    default_visibility = [
-        "//tools/worker:__pkg__",
-    ],
-)
+package(default_visibility = ["//tools/worker:__pkg__"])
 
 licenses(["notice"])
 
