@@ -10,6 +10,7 @@ load(":private_deps_tests.bzl", "private_deps_test_suite")
 load(":swift_through_non_swift_tests.bzl", "swift_through_non_swift_test_suite")
 load(":split_derived_files_tests.bzl", "split_derived_files_test_suite")
 load(":pch_output_dir_tests.bzl", "pch_output_dir_test_suite")
+load(":bzl_test.bzl", "bzl_test")
 
 licenses(["notice"])
 
@@ -46,4 +47,10 @@ bzl_library(
         "//test/fixtures:starlark_tests_bzls",
         "//test/rules:starlark_tests_bzls",
     ],
+)
+
+bzl_test(
+    name = "swift_bzl_test",
+    src = "swift_bzl_macro.bzl",
+    deps = ["//swift"],
 )
