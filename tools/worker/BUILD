@@ -46,9 +46,8 @@ cc_library(
     }),
     deps = [
         ":swift_runner",
-        "//third_party/bazel_protos:worker_protocol_cc_proto",
+        ":worker_protocol",
         "//tools/common:temp_file",
-        "@com_google_protobuf//:protobuf",
     ],
 )
 
@@ -92,6 +91,23 @@ cc_library(
         "//tools/common:bazel_substitutions",
         "//tools/common:process",
         "//tools/common:temp_file",
+        "@com_github_nlohmann_json//:json",
+    ],
+)
+
+cc_library(
+    name = "worker_protocol",
+    srcs = ["worker_protocol.cc"],
+    hdrs = ["worker_protocol.h"],
+    copts = selects.with_or({
+        ("@bazel_tools//tools/cpp:clang-cl", "@bazel_tools//tools/cpp:msvc"): [
+            "/std:c++17",
+        ],
+        "//conditions:default": [
+            "-std=c++17",
+        ],
+    }),
+    deps = [
         "@com_github_nlohmann_json//:json",
     ],
 )
