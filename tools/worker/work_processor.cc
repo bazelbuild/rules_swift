@@ -17,19 +17,18 @@
 #if defined(__APPLE__)
 #include <copyfile.h>
 #endif
-#include <google/protobuf/text_format.h>
 #include <sys/stat.h>
 
 #include <filesystem>
 #include <fstream>
 #include <map>
-#include <nlohmann/json.hpp>
 #include <sstream>
 #include <string>
 
 #include "tools/common/temp_file.h"
 #include "tools/worker/output_file_map.h"
 #include "tools/worker/swift_runner.h"
+#include "tools/worker/worker_protocol.h"
 
 namespace {
 
@@ -48,13 +47,14 @@ bool copy_file(const std::filesystem::path &from,
 #endif
 }
 
-static void FinalizeWorkRequest(const blaze::worker::WorkRequest &request,
-                                blaze::worker::WorkResponse *response,
-                                int exit_code,
-                                const std::ostringstream &output) {
-  response->set_exit_code(exit_code);
-  response->set_output(output.str());
-  response->set_request_id(request.request_id());
+static void FinalizeWorkRequest(
+    const bazel_rules_swift::worker_protocol::WorkRequest &request,
+    bazel_rules_swift::worker_protocol::WorkResponse &response, int exit_code,
+    const std::ostringstream &output) {
+  response.exit_code = exit_code;
+  response.output = output.str();
+  response.request_id = request.request_id;
+  response.was_cancelled = false;
 }
 
 };  // end namespace
@@ -64,8 +64,8 @@ WorkProcessor::WorkProcessor(const std::vector<std::string> &args) {
 }
 
 void WorkProcessor::ProcessWorkRequest(
-    const blaze::worker::WorkRequest &request,
-    blaze::worker::WorkResponse *response) {
+    const bazel_rules_swift::worker_protocol::WorkRequest &request,
+    bazel_rules_swift::worker_protocol::WorkResponse &response) {
   std::vector<std::string> processed_args(universal_args_);
 
   // Bazel's worker spawning strategy reads the arguments from the params file
@@ -84,8 +84,8 @@ void WorkProcessor::ProcessWorkRequest(
   bool is_dump_ast = false;
 
   std::string prev_arg;
-  for (auto arg : request.arguments()) {
-    auto original_arg = arg;
+  for (std::string arg : request.arguments) {
+    std::string original_arg = arg;
     // Peel off the `-output-file-map` argument, so we can rewrite it if
     // necessary later.
     if (arg == "-output-file-map") {

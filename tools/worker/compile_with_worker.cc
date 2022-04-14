@@ -14,14 +14,13 @@
 
 #include "tools/worker/compile_with_worker.h"
 
-#include <google/protobuf/io/zero_copy_stream_impl.h>
-#include <google/protobuf/util/delimited_message_util.h>
 #include <unistd.h>
 
 #include <iostream>
+#include <optional>
 
-#include "third_party/bazel_protos/worker_protocol.pb.h"
 #include "tools/worker/work_processor.h"
+#include "tools/worker/worker_protocol.h"
 
 // How Swift Incremental Compilation Works
 // =======================================
@@ -76,13 +75,6 @@
 // it can find them as well.
 
 int CompileWithWorker(const std::vector<std::string> &args) {
-  // Set up the input and output streams used to communicate with Bazel over
-  // stdin and stdout.
-  google::protobuf::io::FileInputStream file_input_stream(STDIN_FILENO);
-  file_input_stream.SetCloseOnDelete(false);
-  google::protobuf::io::FileOutputStream file_output_stream(STDOUT_FILENO);
-  file_output_stream.SetCloseOnDelete(false);
-
   // Pass the "universal arguments" to the Swift work processor. They will be
   // rewritten to replace any placeholders if necessary, and then passed at the
   // beginning of any process invocation. Note that these arguments include the
@@ -90,26 +82,18 @@ int CompileWithWorker(const std::vector<std::string> &args) {
   WorkProcessor swift_worker(args);
 
   while (true) {
-    blaze::worker::WorkRequest request;
-    if (!google::protobuf::util::ParseDelimitedFromZeroCopyStream(
-            &request, &file_input_stream, nullptr)) {
+    std::optional<bazel_rules_swift::worker_protocol::WorkRequest> request =
+        bazel_rules_swift::worker_protocol::ReadWorkRequest(std::cin);
+    if (!request) {
       std::cerr << "Could not read WorkRequest from stdin. Killing worker "
                 << "process.\n";
       return 254;
     }
 
-    blaze::worker::WorkResponse response;
-    swift_worker.ProcessWorkRequest(request, &response);
+    bazel_rules_swift::worker_protocol::WorkResponse response;
+    swift_worker.ProcessWorkRequest(*request, response);
 
-    if (!google::protobuf::util::SerializeDelimitedToZeroCopyStream(
-            response, &file_output_stream)) {
-      std::cerr << "Could not write WorkResponse to stdout. Killing worker "
-                << "process.\n";
-      return 254;
-    }
-    // Flush stdout after writing to ensure that Bazel doesn't hang waiting for
-    // the response due to buffering.
-    file_output_stream.Flush();
+    bazel_rules_swift::worker_protocol::WriteWorkResponse(response, std::cout);
   }
 
   return 0;
