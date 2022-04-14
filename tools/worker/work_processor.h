@@ -18,7 +18,7 @@
 #include <string>
 #include <vector>
 
-#include "tools/worker/worker_protocol.h"
+#include "third_party/bazel_protos/worker_protocol.pb.h"
 
 // Manages persistent global state for the Swift worker and processes individual
 // work requests.
@@ -30,9 +30,8 @@ class WorkProcessor {
 
   // Processes the given work request and writes its exit code and stderr output
   // (if any) into the given response.
-  void ProcessWorkRequest(
-      const bazel_rules_swift::worker_protocol::WorkRequest &request,
-      bazel_rules_swift::worker_protocol::WorkResponse &response);
+  void ProcessWorkRequest(const blaze::worker::WorkRequest &request,
+                          blaze::worker::WorkResponse *response);
 
  private:
   std::vector<std::string> universal_args_;

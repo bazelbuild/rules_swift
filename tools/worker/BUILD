@@ -28,13 +28,14 @@ cc_library(
     hdrs = ["compile_with_worker.h"],
     deps = [
         ":swift_runner",
-        ":worker_protocol",
+        "//third_party/bazel_protos:worker_protocol_cc_proto",
         "//tools/common:file_system",
         "//tools/common:path_utils",
         "//tools/common:temp_file",
         "@com_github_nlohmann_json//:json",
         "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/strings",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 
@@ -56,16 +57,6 @@ cc_library(
         "//tools/common:file_system",
         "//tools/common:process",
         "//tools/common:temp_file",
-        "@com_google_absl//absl/strings",
-    ],
-)
-
-cc_library(
-    name = "worker_protocol",
-    srcs = ["worker_protocol.cc"],
-    hdrs = ["worker_protocol.h"],
-    deps = [
-        "@com_github_nlohmann_json//:json",
         "@com_google_absl//absl/strings",
     ],
 )
