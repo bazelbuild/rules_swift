@@ -20,7 +20,6 @@
 #include <sstream>
 #include <string>
 
-#include <google/protobuf/text_format.h>
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "tools/common/file_system.h"
@@ -28,7 +27,7 @@
 #include "tools/common/temp_file.h"
 #include "tools/worker/output_file_map.h"
 #include "tools/worker/swift_runner.h"
-#include <nlohmann/json.hpp>
+#include "tools/worker/worker_protocol.h"
 
 namespace {
 
@@ -46,8 +45,8 @@ WorkProcessor::WorkProcessor(const std::vector<std::string> &args) {
 }
 
 void WorkProcessor::ProcessWorkRequest(
-    const blaze::worker::WorkRequest &request,
-    blaze::worker::WorkResponse *response) {
+    const bazel_rules_swift::worker_protocol::WorkRequest &request,
+    bazel_rules_swift::worker_protocol::WorkResponse &response) {
   std::vector<std::string> processed_args(universal_args_);
 
   // Bazel's worker spawning strategy reads the arguments from the params file
@@ -65,7 +64,7 @@ void WorkProcessor::ProcessWorkRequest(
   bool is_wmo = false;
 
   std::string prev_arg;
-  for (std::string arg : request.arguments()) {
+  for (std::string arg : request.arguments) {
     std::string original_arg = arg;
     // Peel off the `-output-file-map` argument, so we can rewrite it if
     // necessary later.
@@ -144,7 +143,8 @@ void WorkProcessor::ProcessWorkRequest(
     }
   }
 
-  response->set_exit_code(exit_code);
-  response->set_output(stderr_stream.str());
-  response->set_request_id(request.request_id());
+  response.exit_code = exit_code;
+  response.output = stderr_stream.str();
+  response.request_id = request.request_id;
+  response.was_cancelled = false;
 }

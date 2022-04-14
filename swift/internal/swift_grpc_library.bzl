@@ -382,7 +382,7 @@ The kind of definitions that should be generated:
             "_protoc": attr.label(
                 cfg = "exec",
                 default = Label(
-                    "@com_google_protobuf//:protoc",
+                    "//net/proto2/compiler/public:protocol_compiler",
                 ),
                 executable = True,
             ),
