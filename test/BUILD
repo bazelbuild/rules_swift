@@ -31,7 +31,6 @@ bzl_library(
     name = "starlark_tests_bzls",
     srcs = glob(["*.bzl"]),
     deps = [
-        "//test/fixtures:starlark_tests_bzls",
         "//test/rules:starlark_tests_bzls",
         "@bazel_skylib//rules:build_test",
     ],
