@@ -27,6 +27,14 @@ cc_library(
 cc_library(
     name = "temp_file",
     hdrs = ["temp_file.h"],
+    copts = selects.with_or({
+        ("@bazel_tools//tools/cpp:clang-cl", "@bazel_tools//tools/cpp:msvc"): [
+            "/std:c++17",
+        ],
+        "//conditions:default": [
+            "-std=c++17",
+        ],
+    }),
 )
 
 # Consumed by Bazel integration tests.
