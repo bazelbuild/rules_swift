@@ -12,6 +12,213 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "process.h"
+
+#include <algorithm>
+#include <cassert>
+#include <iostream>
+#include <iterator>
+#include <sstream>
+#include <string>
+#include <vector>
+
+#if defined(_WIN32)
+
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+
+namespace {
+class WindowsIORedirector {
+  enum { In, Out };
+  enum { Rd, Wr };
+
+  HANDLE hIO_[2][2];
+
+  explicit WindowsIORedirector(HANDLE hIO[2][2], bool include_stdout)
+      : siStartInfo({
+            .cb = sizeof(siStartInfo),
+            .dwFlags = STARTF_USESTDHANDLES,
+            .hStdInput = INVALID_HANDLE_VALUE,
+            .hStdOutput = include_stdout ? hIO[Out][Wr] : INVALID_HANDLE_VALUE,
+            .hStdError = hIO[Out][Wr],
+        }) {
+    std::memcpy(hIO_, hIO, sizeof(hIO_));
+    assert(hIO_[In][Rd] == INVALID_HANDLE_VALUE);
+    assert(hIO_[In][Wr] == INVALID_HANDLE_VALUE);
+  }
+
+ public:
+  STARTUPINFOA siStartInfo;
+
+  WindowsIORedirector(const WindowsIORedirector &) = delete;
+  WindowsIORedirector &operator=(const WindowsIORedirector &) = delete;
+
+  WindowsIORedirector(WindowsIORedirector &&) = default;
+  WindowsIORedirector &operator=(WindowsIORedirector &&) = default;
+
+  ~WindowsIORedirector() {
+    assert(hIO_[In][Rd] == INVALID_HANDLE_VALUE);
+    assert(hIO_[In][Wr] == INVALID_HANDLE_VALUE);
+    CloseHandle(hIO_[Out][Rd]);
+    CloseHandle(hIO_[Out][Wr]);
+  }
+
+  static std::unique_ptr<WindowsIORedirector> Create(bool include_stdout,
+                                                     std::error_code &ec) {
+    HANDLE hIO[2][2] = {INVALID_HANDLE_VALUE};
+
+    SECURITY_ATTRIBUTES saAttr{
+        .nLength = sizeof(saAttr),
+        .lpSecurityDescriptor = nullptr,
+        .bInheritHandle = TRUE,
+    };
+
+    if (!CreatePipe(&hIO[Out][Rd], &hIO[Out][Wr], &saAttr, 0)) {
+      ec = std::error_code(GetLastError(), std::system_category());
+      return nullptr;
+    }
+
+    // The read handle for stdout should not be inheritted by the child.
+    if (!SetHandleInformation(hIO[Out][Rd], HANDLE_FLAG_INHERIT, FALSE)) {
+      ec = std::error_code(GetLastError(), std::system_category());
+      CloseHandle(hIO[Out][Rd]);
+      CloseHandle(hIO[Out][Wr]);
+      return nullptr;
+    }
+
+    return std::unique_ptr<WindowsIORedirector>(
+        new WindowsIORedirector(hIO, include_stdout));
+  }
+
+  void ConsumeAllSubprocessOutput(std::ostream *stderr_stream);
+};
+
+void WindowsIORedirector::ConsumeAllSubprocessOutput(
+    std::ostream *stderr_stream) {
+  CloseHandle(hIO_[Out][Wr]);
+  hIO_[Out][Wr] = INVALID_HANDLE_VALUE;
+
+  char stderr_buffer[1024];
+  DWORD dwNumberOfBytesRead;
+  while (ReadFile(hIO_[Out][Rd], stderr_buffer, sizeof(stderr_buffer),
+                  &dwNumberOfBytesRead, nullptr)) {
+    if (dwNumberOfBytesRead)
+      stderr_stream->write(stderr_buffer, dwNumberOfBytesRead);
+  }
+  if (dwNumberOfBytesRead)
+    stderr_stream->write(stderr_buffer, dwNumberOfBytesRead);
+}
+
+std::string GetCommandLine(const std::vector<std::string> &arguments) {
+  // To escape the command line, we surround the argument with quotes.
+  // However, the complication comes due to how the Windows command line
+  // parser treats backslashes (\) and quotes (").
+  //
+  // - \ is normally treated as a literal backslash
+  //      e.g. alpha\beta\gamma => alpha\beta\gamma
+  // - The sequence \" is treated as a literal "
+  //      e.g. alpha\"beta => alpha"beta
+  //
+  // But then what if we are given a path that ends with a \?
+  //
+  // Surrounding alpha\beta\ with " would be "alpha\beta\" which would be
+  // an unterminated string since it ends on a literal quote. To allow
+  // this case the parser treats:
+  //
+  //  - \\" as \ followed by the " metacharacter
+  //  - \\\" as \ followed by a literal "
+  //
+  // In general:
+  //  - 2n \ followed by " => n \ followed by the " metacharacter
+  //  - 2n + 1 \ followed by " => n \ followed by a literal "
+  auto quote = [](const std::string &argument) -> std::string {
+    if (argument.find_first_of(" \t\n\"") == std::string::npos) return argument;
+
+    std::ostringstream buffer;
+
+    buffer << '\"';
+    std::string::const_iterator cur = std::begin(argument);
+    std::string::const_iterator end = std::end(argument);
+    while (cur < end) {
+      std::string::size_type offset = std::distance(std::begin(argument), cur);
+
+      std::string::size_type start = argument.find_first_not_of('\\', offset);
+      if (start == std::string::npos) {
+        // String ends with a backslash (e.g. first\second\), escape all
+        // the backslashes then add the metacharacter ".
+        buffer << std::string(2 * (argument.length() - offset), '\\');
+        break;
+      }
+
+      std::string::size_type count = start - offset;
+      // If this is a string of \ followed by a " (e.g. first\"second).
+      // Escape the backslashes and the quote, otherwise these are just literal
+      // backslashes.
+      buffer << std::string(argument.at(start) == '\"' ? 2 * count + 1 : count,
+                            '\\')
+             << argument.at(start);
+      // Drop the backslashes and the following character.
+      std::advance(cur, count + 1);
+    }
+    buffer << '\"';
+
+    return buffer.str();
+  };
+
+  std::ostringstream quoted;
+  std::transform(std::begin(arguments), std::end(arguments),
+                 std::ostream_iterator<std::string>(quoted, " "), quote);
+  return quoted.str();
+}
+}  // namespace
+
+int RunSubProcess(const std::vector<std::string> &args,
+                  std::ostream *stderr_stream, bool stdout_to_stderr) {
+  PROCESS_INFORMATION piProcess = {0};
+  std::error_code ec;
+  std::unique_ptr<WindowsIORedirector> redirector =
+      WindowsIORedirector::Create(stdout_to_stderr, ec);
+  if (!redirector) {
+    (*stderr_stream) << "unable to create stderr pipe: " << ec.message()
+                     << '\n';
+    return 254;
+  }
+
+  if (!CreateProcessA(NULL, GetCommandLine(args).data(), nullptr, nullptr, TRUE,
+                      0, nullptr, nullptr, &redirector->siStartInfo,
+                      &piProcess)) {
+    DWORD dwLastError = GetLastError();
+    (*stderr_stream) << "unable to create process (error " << dwLastError
+                     << ")\n";
+    return dwLastError;
+  }
+  redirector->ConsumeAllSubprocessOutput(stderr_stream);
+
+  if (WaitForSingleObject(piProcess.hProcess, INFINITE) == WAIT_FAILED) {
+    DWORD dwLastError = GetLastError();
+    (*stderr_stream) << "wait for process failure (error " << dwLastError
+                     << ")\n";
+    CloseHandle(piProcess.hThread);
+    CloseHandle(piProcess.hProcess);
+    return dwLastError;
+  }
+
+  DWORD dwExitCode;
+  if (!GetExitCodeProcess(piProcess.hProcess, &dwExitCode)) {
+    DWORD dwLastError = GetLastError();
+    (*stderr_stream) << "unable to get exit code (error " << dwLastError
+                     << ")\n";
+    CloseHandle(piProcess.hThread);
+    CloseHandle(piProcess.hProcess);
+    return dwLastError;
+  }
+
+  CloseHandle(piProcess.hThread);
+  CloseHandle(piProcess.hProcess);
+  return dwExitCode;
+}
+
+#else
 #include <fcntl.h>
 #include <spawn.h>
 #include <sys/poll.h>
@@ -21,10 +228,7 @@
 #include <cerrno>
 #include <cstring>
 #include <filesystem>
-#include <iostream>
 #include <memory>
-#include <string>
-#include <vector>
 
 extern char **environ;
 
@@ -181,3 +385,4 @@ int RunSubProcess(const std::vector<std::string> &args,
     return status;
   }
 }
+#endif
