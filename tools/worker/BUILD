@@ -55,6 +55,14 @@ cc_library(
     name = "compile_without_worker",
     srcs = ["compile_without_worker.cc"],
     hdrs = ["compile_without_worker.h"],
+    copts = selects.with_or({
+        ("@bazel_tools//tools/cpp:clang-cl", "@bazel_tools//tools/cpp:msvc"): [
+            "/std:c++17",
+        ],
+        "//conditions:default": [
+            "-std=c++17",
+        ],
+    }),
     deps = [
         ":swift_runner",
     ],
