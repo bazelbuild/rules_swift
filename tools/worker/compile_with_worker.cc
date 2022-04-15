@@ -14,8 +14,6 @@
 
 #include "tools/worker/compile_with_worker.h"
 
-#include <unistd.h>
-
 #include <iostream>
 #include <optional>
 

@@ -15,8 +15,10 @@
 #ifndef BUILD_BAZEL_RULES_SWIFT_TOOLS_WORKER_WORKER_PROTOCOL_H_
 #define BUILD_BAZEL_RULES_SWIFT_TOOLS_WORKER_WORKER_PROTOCOL_H_
 
-#include <iostream>
 #include <nlohmann/json.hpp>
+
+#include <iostream>
+#include <optional>
 #include <string>
 #include <vector>
 
