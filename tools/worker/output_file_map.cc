@@ -23,6 +23,8 @@
 #include "tools/common/path_utils.h"
 #include <nlohmann/json.hpp>
 
+namespace bazel_rules_swift {
+
 namespace {
 
 // Returns the given path transformed to point to the incremental storage area.
@@ -113,3 +115,5 @@ void OutputFileMap::UpdateForIncremental(absl::string_view path) {
   json_ = new_output_file_map;
   incremental_outputs_ = incremental_outputs;
 }
+
+}  // namespace bazel_rules_swift

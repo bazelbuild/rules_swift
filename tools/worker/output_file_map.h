@@ -21,6 +21,8 @@
 #include "absl/strings/string_view.h"
 #include <nlohmann/json.hpp>
 
+namespace bazel_rules_swift {
+
 // Supports loading and rewriting a `swiftc` output file map to support
 // incremental compilation.
 //
@@ -56,5 +58,7 @@ class OutputFileMap {
   nlohmann::json json_;
   absl::btree_map<std::string, std::string> incremental_outputs_;
 };
+
+}  // namespace bazel_rules_swift
 
 #endif  // BUILD_BAZEL_RULES_SWIFT_TOOLS_WORKER_OUTPUT_FILE_MAP_H_

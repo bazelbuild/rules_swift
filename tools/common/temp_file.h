@@ -28,6 +28,8 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 
+namespace bazel_rules_swift {
+
 // An RAII temporary file.
 class TempFile {
  public:
@@ -43,8 +45,8 @@ class TempFile {
     }
     std::string path = absl::StrCat(tmp_dir, "/", path_template);
     if (mkstemp(const_cast<char *>(path.c_str())) == -1) {
-      std::cerr << "Failed to create temporary file '" << path << "': "
-                << strerror(errno) << std::endl;
+      std::cerr << "Failed to create temporary file '" << path
+                << "': " << strerror(errno) << std::endl;
       return nullptr;
     }
     return std::unique_ptr<TempFile>(new TempFile(path));
@@ -130,5 +132,7 @@ class TempDirectory {
 
   std::string path_;
 };
+
+}  // namespace bazel_rules_swift
 
 #endif  // BUILD_BAZEL_RULES_SWIFT_TOOLS_COMMON_TEMP_FILE_H

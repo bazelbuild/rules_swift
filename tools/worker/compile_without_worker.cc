@@ -20,6 +20,10 @@
 
 #include "tools/worker/swift_runner.h"
 
+namespace bazel_rules_swift {
+
 int CompileWithoutWorker(const std::vector<std::string> &args) {
   return SwiftRunner(args).Run(std::cerr, /*stdout_to_stderr=*/false);
 }
+
+}  // namespace bazel_rules_swift

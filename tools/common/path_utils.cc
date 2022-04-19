@@ -18,6 +18,8 @@
 
 #include "absl/strings/str_cat.h"
 
+namespace bazel_rules_swift {
+
 absl::string_view Basename(absl::string_view path) {
   if (size_t last_slash = path.rfind('/');
       last_slash != absl::string_view::npos) {
@@ -63,3 +65,5 @@ std::string ReplaceExtension(absl::string_view path,
   }
   return absl::StrCat(path.substr(0, dot), new_extension);
 }
+
+}  // namespace bazel_rules_swift

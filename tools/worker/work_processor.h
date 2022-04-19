@@ -20,6 +20,8 @@
 
 #include "third_party/bazel_protos/worker_protocol.pb.h"
 
+namespace bazel_rules_swift {
+
 // Manages persistent global state for the Swift worker and processes individual
 // work requests.
 class WorkProcessor {
@@ -36,5 +38,7 @@ class WorkProcessor {
  private:
   std::vector<std::string> universal_args_;
 };
+
+}  // namespace bazel_rules_swift
 
 #endif  // BUILD_BAZEL_RULES_SWIFT_TOOLS_WORKER_WORK_PROCESSOR_H

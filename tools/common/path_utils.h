@@ -19,6 +19,8 @@
 
 #include "absl/strings/string_view.h"
 
+namespace bazel_rules_swift {
+
 // Returns the base name of the given filepath. For example, given
 // "/foo/bar/baz.txt", returns "baz.txt".
 absl::string_view Basename(absl::string_view path);
@@ -34,5 +36,7 @@ absl::string_view Dirname(absl::string_view path);
 std::string ReplaceExtension(absl::string_view path,
                              absl::string_view new_extension,
                              bool all_extensions = false);
+
+}  // namespace bazel_rules_swift
 
 #endif  // BUILD_BAZEL_RULES_SWIFT_TOOLS_COMMON_PATH_UTILS_H_

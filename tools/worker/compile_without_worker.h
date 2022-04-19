@@ -18,8 +18,12 @@
 #include <string>
 #include <vector>
 
+namespace bazel_rules_swift {
+
 // Directly invokes the Swift compiler and exits, without performing any
 // worker-related processing.
 int CompileWithoutWorker(const std::vector<std::string> &args);
+
+}  // namespace bazel_rules_swift
 
 #endif  // BUILD_BAZEL_RULES_SWIFT_TOOLS_WORKER_COMPILE_WITHOUT_WORKER_H_

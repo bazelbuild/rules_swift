@@ -30,6 +30,8 @@
 #include "tools/worker/swift_runner.h"
 #include <nlohmann/json.hpp>
 
+namespace bazel_rules_swift {
+
 namespace {
 
 // Returns true if the given command line argument enables whole-module
@@ -176,3 +178,5 @@ void WorkProcessor::ProcessWorkRequest(
   response->set_output(stderr_stream.str());
   response->set_request_id(request.request_id());
 }
+
+}  // namespace bazel_rules_swift

@@ -24,6 +24,8 @@
 #include "tools/common/process.h"
 #include "tools/common/temp_file.h"
 
+namespace bazel_rules_swift {
+
 namespace {
 
 // Creates a temporary file and writes the given arguments to it, one per line.
@@ -267,3 +269,5 @@ std::vector<std::string> SwiftRunner::ProcessArguments(
 
   return new_args;
 }
+
+}  // namespace bazel_rules_swift

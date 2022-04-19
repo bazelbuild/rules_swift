@@ -34,6 +34,8 @@
 #include "tools/common/path_utils.h"
 #include "tools/common/status.h"
 
+namespace bazel_rules_swift {
+
 std::string GetCurrentDirectory() {
   // Passing null,0 causes getcwd to allocate the buffer of the correct size.
   char *buffer = getcwd(nullptr, 0);
@@ -143,3 +145,5 @@ absl::Status MakeDirs(absl::string_view path, int mode) {
 
   return MakeFailingStatus("unexpected error");
 }
+
+}  // namespace bazel_rules_swift

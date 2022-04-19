@@ -31,8 +31,8 @@ int main(int argc, char *argv[]) {
       persistent_worker_flag != args.end()) {
     // Remove the special flag before starting the worker processing loop.
     args.erase(persistent_worker_flag);
-    return CompileWithWorker(args);
+    return bazel_rules_swift::CompileWithWorker(args);
   }
 
-  return CompileWithoutWorker(args);
+  return bazel_rules_swift::CompileWithoutWorker(args);
 }

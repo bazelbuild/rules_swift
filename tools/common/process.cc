@@ -29,6 +29,8 @@
 
 extern char **environ;
 
+namespace bazel_rules_swift {
+
 namespace {
 
 // An RAII class that manages the pipes and posix_spawn state needed to redirect
@@ -189,3 +191,5 @@ int RunSubProcess(const std::vector<std::string> &args,
     return status;
   }
 }
+
+}  // namespace bazel_rules_swift

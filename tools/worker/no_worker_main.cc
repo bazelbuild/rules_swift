@@ -18,5 +18,6 @@
 #include "tools/worker/compile_without_worker.h"
 
 int main(int argc, char *argv[]) {
-  return CompileWithoutWorker(std::vector<std::string>(argv + 1, argv + argc));
+  return bazel_rules_swift::CompileWithoutWorker(
+      std::vector<std::string>(argv + 1, argv + argc));
 }

@@ -18,6 +18,8 @@
 #include <string>
 #include <vector>
 
+namespace bazel_rules_swift {
+
 // Turn our current process into a new process. Avoids fork overhead.
 // Never returns.
 void ExecProcess(const std::vector<std::string> &args);
@@ -28,5 +30,7 @@ void ExecProcess(const std::vector<std::string> &args);
 // code of the spawned process.
 int RunSubProcess(const std::vector<std::string> &args,
                   std::ostream &stderr_stream, bool stdout_to_stderr = false);
+
+}  // namespace bazel_rules_swift
 
 #endif  // BUILD_BAZEL_RULES_SWIFT_TOOLS_WRAPPERS_PROCESS_H

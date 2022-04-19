@@ -25,6 +25,8 @@
 #include "tools/common/bazel_substitutions.h"
 #include "tools/common/temp_file.h"
 
+namespace bazel_rules_swift {
+
 // Handles spawning the Swift compiler driver, making any required substitutions
 // of the command line arguments (for example, Bazel's magic Xcode placeholder
 // strings).
@@ -132,5 +134,7 @@ class SwiftRunner {
   // in custom diagnostic messages printed by the worker.
   std::string target_label_;
 };
+
+}  // namespace bazel_rules_swift
 
 #endif  // BUILD_BAZEL_RULES_SWIFT_TOOLS_WORKER_SWIFT_RUNNER_H_

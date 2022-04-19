@@ -20,6 +20,8 @@
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
 
+namespace bazel_rules_swift {
+
 // Gets the path to the current working directory.
 std::string GetCurrentDirectory();
 
@@ -29,5 +31,7 @@ absl::Status CopyFile(absl::string_view src, absl::string_view dest);
 // Creates a directory at the given path, along with any parent directories that
 // don't already exist. Returns true if successful.
 absl::Status MakeDirs(absl::string_view path, int mode);
+
+}  // namespace bazel_rules_swift
 
 #endif  // BUILD_BAZEL_RULES_SWIFT_TOOLS_COMMON_FILE_SYSTEM_H_

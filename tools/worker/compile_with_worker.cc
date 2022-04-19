@@ -75,6 +75,8 @@
 // we copy those outputs into the locations where Bazel declared them, so that
 // it can find them as well.
 
+namespace bazel_rules_swift {
+
 int CompileWithWorker(const std::vector<std::string> &args) {
   // Set up the input and output streams used to communicate with Bazel over
   // stdin and stdout.
@@ -114,3 +116,5 @@ int CompileWithWorker(const std::vector<std::string> &args) {
 
   return 0;
 }
+
+}  // namespace bazel_rules_swift
