@@ -17,16 +17,17 @@
 
 #include <string>
 
+#include "absl/status/status.h"
 #include "absl/strings/string_view.h"
 
 // Gets the path to the current working directory.
 std::string GetCurrentDirectory();
 
 // Copies the file at src to dest. Returns true if successful.
-bool CopyFile(absl::string_view src, absl::string_view dest);
+absl::Status CopyFile(absl::string_view src, absl::string_view dest);
 
 // Creates a directory at the given path, along with any parent directories that
 // don't already exist. Returns true if successful.
-bool MakeDirs(absl::string_view path, int mode);
+absl::Status MakeDirs(absl::string_view path, int mode);
 
 #endif  // BUILD_BAZEL_RULES_SWIFT_TOOLS_COMMON_FILE_SYSTEM_H_

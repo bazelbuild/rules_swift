@@ -22,6 +22,9 @@ cc_library(
     hdrs = ["file_system.h"],
     deps = [
         ":path_utils",
+        ":status",
+        "@com_google_absl//absl/cleanup",
+        "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -39,6 +42,17 @@ cc_library(
     hdrs = ["process.h"],
     deps = [
         ":path_utils",
+    ],
+)
+
+cc_library(
+    name = "status",
+    srcs = ["status.cc"],
+    hdrs = ["status.h"],
+    deps = [
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
     ],
 )
 

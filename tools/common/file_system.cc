@@ -18,8 +18,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <cerrno>
-#include <iostream>
 #include <string>
 
 #ifdef __APPLE__
@@ -29,8 +27,12 @@
 #include <sys/sendfile.h>
 #endif
 
+#include "absl/cleanup/cleanup.h"
+#include "absl/status/status.h"
 #include "absl/strings/string_view.h"
+#include "absl/strings/substitute.h"
 #include "tools/common/path_utils.h"
+#include "tools/common/status.h"
 
 std::string GetCurrentDirectory() {
   // Passing null,0 causes getcwd to allocate the buffer of the correct size.
@@ -40,70 +42,91 @@ std::string GetCurrentDirectory() {
   return cwd;
 }
 
-bool CopyFile(absl::string_view src, absl::string_view dest) {
+absl::Status CopyFile(absl::string_view src, absl::string_view dest) {
 #ifdef __APPLE__
   // The `copyfile` function with `COPYFILE_ALL` mode preserves permissions and
   // modification time.
-  return copyfile(src.data(), dest.data(), nullptr,
-                  COPYFILE_ALL | COPYFILE_CLONE) == 0;
+  if (copyfile(src.data(), dest.data(), nullptr,
+               COPYFILE_ALL | COPYFILE_CLONE) == 0) {
+    return absl::OkStatus();
+  }
+  return bazel_rules_swift::MakeStatusFromErrno(
+      absl::Substitute("Could not copy $0 to $1", src, dest));
 #elif __unix__
   // On Linux, we can use `sendfile` to copy it more easily than calling
   // `read`/`write` in a loop.
-  struct stat stat_buf;
-  bool success = false;
+  auto MakeFailingStatus = [src, dest](absl::string_view reason) {
+    return bazel_rules_swift::MakeStatusFromErrno(
+        absl::Substitute("Could not copy $0 to $1; $2", src, dest, reason));
+  };
 
   int src_fd = open(src.data(), O_RDONLY);
-  if (src_fd) {
-    fstat(src_fd, &stat_buf);
-
-    int dest_fd = open(dest.data(), O_WRONLY | O_CREAT, stat_buf.st_mode);
-    if (dest_fd) {
-      off_t offset = 0;
-      if (sendfile(dest_fd, src_fd, &offset, stat_buf.st_size) != -1) {
-        struct timespec timespecs[2] = {stat_buf.st_atim, stat_buf.st_mtim};
-        futimens(dest_fd, timespecs);
-        success = true;
-      }
-      close(dest_fd);
-    }
-    close(src_fd);
+  if (!src_fd) {
+    return MakeFailingStatus("could not open source for reading");
   }
-  return success;
+
+  absl::Cleanup src_closer = [src_fd] { close(src_fd); };
+
+  struct stat stat_buf;
+  if (fstat(src_fd, &stat_buf) == -1) {
+    return MakeFailingStatus("could not stat source file");
+  }
+
+  int dest_fd = open(dest.data(), O_WRONLY | O_CREAT, stat_buf.st_mode);
+  if (!dest_fd) {
+    return MakeFailingStatus("could not open destination for writing");
+  }
+
+  absl::Cleanup dest_closer = [dest_fd] { close(dest_fd); };
+
+  off_t offset = 0;
+  if (sendfile(dest_fd, src_fd, &offset, stat_buf.st_size) == -1) {
+    return MakeFailingStatus("could not copy file data");
+  }
+
+  struct timespec timespecs[2] = {stat_buf.st_atim, stat_buf.st_mtim};
+  if (futimens(dest_fd, timespecs) == -1) {
+    return MakeFailingStatus("could not update destination timestamps");
+  }
+
+  return absl::OkStatus();
 #else
-// TODO(allevato): If we want to support Windows in the future, we'll need to
-// use something like `CopyFileA`.
-#error Only macOS and Unix are supported at this time.
+#error Only macOS and Unix are supported.
 #endif
 }
 
-bool MakeDirs(absl::string_view path, int mode) {
+absl::Status MakeDirs(absl::string_view path, int mode) {
+  auto MakeFailingStatus = [path](absl::string_view reason) {
+    return bazel_rules_swift::MakeStatusFromErrno(
+        absl::Substitute("Could not create directory $0; $1", path, reason));
+  };
+
   // If we got an empty string, we've recursed past the first segment in the
   // path. Assume it exists (if it doesn't, we'll fail when we try to create a
   // directory inside it).
   if (path.empty()) {
-    return true;
+    return absl::OkStatus();
   }
 
   struct stat dir_stats;
   if (stat(path.data(), &dir_stats) == 0) {
     // Return true if the directory already exists.
     if (S_ISDIR(dir_stats.st_mode)) {
-      return true;
+      return absl::OkStatus();
     }
 
-    std::cerr << "error: path already exists but is not a directory: "
-              << path << std::endl;
-    return false;
+    return MakeFailingStatus("path already exists but is not a directory");
   }
 
   // Recurse to create the parent directory.
-  if (!MakeDirs(Dirname(path), mode)) {
-    return false;
+  if (absl::Status parent_status = MakeDirs(Dirname(path), mode);
+      !parent_status.ok()) {
+    return parent_status;
   }
 
   // Create the directory that was requested.
   if (mkdir(path.data(), mode) == 0) {
-    return true;
+    return absl::OkStatus();
   }
 
   // Race condition: The above call to `mkdir` could fail if there are multiple
@@ -112,15 +135,11 @@ bool MakeDirs(absl::string_view path, int mode) {
   // does, that's ok.
   if (errno == EEXIST && stat(path.data(), &dir_stats) == 0) {
     if (S_ISDIR(dir_stats.st_mode)) {
-      return true;
+      return absl::OkStatus();
     }
 
-    std::cerr << "error: path already exists but is not a directory: "
-              << path << std::endl;
-    return false;
+    return MakeFailingStatus("path already exists but is not a directory");
   }
 
-  std::cerr << "error: could not create directory: " << path
-            << " (" << strerror(errno) << ")" << std::endl;
-  return false;
+  return MakeFailingStatus("unexpected error");
 }
