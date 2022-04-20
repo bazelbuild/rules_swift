@@ -37,7 +37,7 @@ cc_library(
     ],
     hdrs = ["compile_with_worker.h"],
     copts = selects.with_or({
-        ("@bazel_tools//tools/cpp:clang-cl", "@bazel_tools//tools/cpp:msvc"): [
+        ("//tools:clang-cl", "//tools:msvc"): [
             "/std:c++17",
         ],
         "//conditions:default": [
@@ -56,7 +56,7 @@ cc_library(
     srcs = ["compile_without_worker.cc"],
     hdrs = ["compile_without_worker.h"],
     copts = selects.with_or({
-        ("@bazel_tools//tools/cpp:clang-cl", "@bazel_tools//tools/cpp:msvc"): [
+        ("//tools:clang-cl", "//tools:msvc"): [
             "/std:c++17",
         ],
         "//conditions:default": [
@@ -82,7 +82,7 @@ cc_library(
         ],
         "//conditions:default": [],
     }) + selects.with_or({
-        ("@bazel_tools//tools/cpp:clang-cl", "@bazel_tools//tools/cpp:msvc"): [
+        ("//tools:clang-cl", "//tools:msvc"): [
             "/std:c++17",
         ],
         "//conditions:default": [
@@ -108,7 +108,7 @@ cc_library(
     srcs = ["worker_protocol.cc"],
     hdrs = ["worker_protocol.h"],
     copts = selects.with_or({
-        ("@bazel_tools//tools/cpp:clang-cl", "@bazel_tools//tools/cpp:msvc"): [
+        ("//tools:clang-cl", "//tools:msvc"): [
             "/std:c++17",
         ],
         "//conditions:default": [
