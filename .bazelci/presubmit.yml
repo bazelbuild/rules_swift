@@ -32,6 +32,10 @@ x_defaults:
       - "//test/..."
       - "-//examples/apple/..."
       - "-//examples/xplatform/grpc/..." # TODO: Fix grpc on Linux
+  windows_common: &windows_common
+    platform: windows
+    build_targets:
+      - "//tools/..."
 
 tasks:
   macos_latest:
@@ -82,5 +86,10 @@ tasks:
       # has landed on them breaking this project.
       - .bazelci/update_workspace_to_deps_heads.sh
     <<: *linux_common
+
+  windows_last_green:
+    name: "Last Green Bazel"
+    bazel: last_green
+    <<: *windows_common
 
 buildifier: latest
