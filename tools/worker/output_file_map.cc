@@ -25,32 +25,21 @@
 
 namespace bazel_rules_swift {
 
-namespace {
-
-// Returns the given path transformed to point to the incremental storage area.
-// For example, "bazel-out/config/{genfiles,bin}/path" becomes
-// "bazel-out/config/{genfiles,bin}/_swift_incremental/path".
-static std::string MakeIncrementalOutputPath(absl::string_view path) {
-  std::string new_path(path);
-  size_t bin_index = new_path.find("/bin/");
-  if (bin_index != std::string::npos) {
-    new_path.replace(bin_index, 5, "/bin/_swift_incremental/");
-    return new_path;
-  }
-  size_t genfiles_index = new_path.find("/genfiles/");
-  if (genfiles_index != std::string::npos) {
-    new_path.replace(genfiles_index, 10, "/genfiles/_swift_incremental/");
-    return new_path;
-  }
-  return new_path;
+// Returns the given path with an `.incremental` extension fragment interjected
+// just before the existing extension so that the file will persist after the
+// action has completed (because Bazel will not be tracking it). For example,
+// "bazel-bin/my/package/file.o" becomes
+// "bazel-bin/my/package/file.incremental.o".
+std::string MakeIncrementalOutputPath(absl::string_view path) {
+  return ReplaceExtension(path,
+                          absl::StrCat(".incremental", GetExtension(path)));
 }
 
-};  // end namespace
-
-void OutputFileMap::ReadFromPath(absl::string_view path) {
+void OutputFileMap::ReadFromPath(absl::string_view path,
+                                 absl::string_view swiftmodule_path) {
   std::ifstream stream((std::string(path)));
   stream >> json_;
-  UpdateForIncremental(path);
+  UpdateForIncremental(path, swiftmodule_path);
 }
 
 void OutputFileMap::WriteToPath(absl::string_view path) {
@@ -58,18 +47,18 @@ void OutputFileMap::WriteToPath(absl::string_view path) {
   stream << json_;
 }
 
-void OutputFileMap::UpdateForIncremental(absl::string_view path) {
+void OutputFileMap::UpdateForIncremental(absl::string_view path,
+                                         absl::string_view swiftmodule_path) {
   nlohmann::json new_output_file_map;
-  absl::btree_map<std::string, std::string> incremental_outputs;
+  incremental_outputs_.clear();
 
   // The empty string key is used to represent outputs that are for the whole
   // module, rather than for a particular source file.
   nlohmann::json module_map;
+
   // Derive the swiftdeps file name from the .output-file-map.json name.
-  std::string new_path =
-      ReplaceExtension(path, ".swiftdeps", /*all_extensions=*/true);
-  std::string swiftdeps_path = MakeIncrementalOutputPath(new_path);
-  module_map["swift-dependencies"] = swiftdeps_path;
+  module_map["swift-dependencies"] = MakeIncrementalOutputPath(
+      ReplaceExtension(path, ".swiftdeps", /*all_extensions=*/true));
   new_output_file_map[""] = module_map;
 
   for (auto &[src, outputs] : json_.items()) {
@@ -80,27 +69,25 @@ void OutputFileMap::UpdateForIncremental(absl::string_view path) {
       auto path = path_value.get<std::string>();
 
       if (kind == "object") {
-        // If the file kind is "object", we want to update the path to point to
-        // the incremental storage area and then add a "swift-dependencies"
-        // in the same location.
-        std::string new_path = MakeIncrementalOutputPath(path);
-        src_map[kind] = new_path;
-        incremental_outputs[path] = new_path;
+        // If the file kind is "object", update the path to point to the
+        // incremental storage area.
+        std::string new_object_path = MakeIncrementalOutputPath(path);
+        src_map[kind] = new_object_path;
+        incremental_outputs_[path] = new_object_path;
 
-        std::string swiftdeps_path = ReplaceExtension(new_path, ".swiftdeps");
-        src_map["swift-dependencies"] = swiftdeps_path;
+        // Add "swiftmodule" (for the partial .swiftmodule file) and
+        // "swift-dependencies" entries in the same location.
+        src_map["swift-dependencies"] =
+            ReplaceExtension(new_object_path, ".swiftdeps");
+        src_map["swiftmodule"] =
+            ReplaceExtension(new_object_path, ".swiftmodule");
       } else if (kind == "swiftdoc" || kind == "swiftinterface" ||
-                 kind == "swiftmodule") {
-        // Module/interface outputs should be moved to the incremental storage
-        // area without additional processing.
-        std::string new_path = MakeIncrementalOutputPath(path);
-        src_map[kind] = new_path;
-        incremental_outputs[path] = new_path;
-      } else if (kind == "swift-dependencies") {
-        // If there was already a "swift-dependencies" entry present, ignore it.
-        // (This shouldn't happen because the build rules won't do this, but
-        // check just in case.)
-        std::cerr << "There was a 'swift-dependencies' entry for " << src
+                 kind == "swiftmodule" || kind == "swiftsourceinfo" ||
+                 kind == "swift-dependencies") {
+        // If any of these entries were already present, ignore them. (This
+        // shouldn't happen because the build rules won't do this, but check
+        // just in case.)
+        std::cerr << " There was a '" << kind << "' entry for " << src
                   << ", but the build rules should not have done this; "
                   << "ignoring it." << std::endl;
       } else {
@@ -113,7 +100,19 @@ void OutputFileMap::UpdateForIncremental(absl::string_view path) {
   }
 
   json_ = new_output_file_map;
-  incremental_outputs_ = incremental_outputs;
+
+  incremental_outputs_[swiftmodule_path] =
+      MakeIncrementalOutputPath(swiftmodule_path);
+
+  std::string swiftdoc_path =
+      ReplaceExtension(swiftmodule_path, ".swiftdoc", /*all_extensions=*/true);
+  incremental_outputs_[swiftdoc_path] =
+      MakeIncrementalOutputPath(swiftdoc_path);
+
+  std::string swiftsourceinfo_path = ReplaceExtension(
+      swiftmodule_path, ".swiftsourceinfo", /*all_extensions=*/true);
+  incremental_outputs_[swiftsourceinfo_path] =
+      MakeIncrementalOutputPath(swiftsourceinfo_path);
 }
 
 }  // namespace bazel_rules_swift

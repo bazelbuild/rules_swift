@@ -20,28 +20,12 @@
 
 namespace bazel_rules_swift {
 
-absl::string_view Basename(absl::string_view path) {
-  if (size_t last_slash = path.rfind('/');
-      last_slash != absl::string_view::npos) {
-    return path.substr(last_slash + 1);
-  }
-  return path;
-}
+namespace {
 
-absl::string_view Dirname(absl::string_view path) {
-  if (size_t last_slash = path.rfind('/');
-      last_slash != absl::string_view::npos) {
-    return path.substr(0, last_slash);
-  }
-  return absl::string_view();
-}
-
-std::string ReplaceExtension(absl::string_view path,
-                             absl::string_view new_extension,
-                             bool all_extensions) {
+size_t ExtensionStartPosition(absl::string_view path, bool all_extensions) {
   size_t last_slash = path.rfind('/');
+  size_t dot;
 
-  absl::string_view::size_type dot;
   if (all_extensions) {
     // Find the first dot, signifying the first of all extensions.
     if (last_slash != absl::string_view::npos) {
@@ -59,11 +43,45 @@ std::string ReplaceExtension(absl::string_view path,
     }
   }
 
-  // If there was no dot append the extension to the path.
-  if (dot == absl::string_view::npos) {
-    return absl::StrCat(path, new_extension);
+  return dot;
+}
+
+}  // namespace
+
+absl::string_view Basename(absl::string_view path) {
+  if (size_t last_slash = path.rfind('/');
+      last_slash != absl::string_view::npos) {
+    return path.substr(last_slash + 1);
   }
-  return absl::StrCat(path.substr(0, dot), new_extension);
+  return path;
+}
+
+absl::string_view Dirname(absl::string_view path) {
+  if (size_t last_slash = path.rfind('/');
+      last_slash != absl::string_view::npos) {
+    return path.substr(0, last_slash);
+  }
+  return absl::string_view();
+}
+
+absl::string_view GetExtension(absl::string_view path, bool all_extensions) {
+  if (size_t dot = ExtensionStartPosition(path, all_extensions);
+      dot != absl::string_view::npos) {
+    return path.substr(dot);
+  }
+  return "";
+}
+
+std::string ReplaceExtension(absl::string_view path,
+                             absl::string_view new_extension,
+                             bool all_extensions) {
+  if (size_t dot = ExtensionStartPosition(path, all_extensions);
+      dot != absl::string_view::npos) {
+    return absl::StrCat(path.substr(0, dot), new_extension);
+  }
+
+  // If there was no dot append the extension to the path.
+  return absl::StrCat(path, new_extension);
 }
 
 }  // namespace bazel_rules_swift

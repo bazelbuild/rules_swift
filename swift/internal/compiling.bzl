@@ -1412,7 +1412,7 @@ def compile(
         swift_toolchain.generated_header_module_implicit_deps_providers.swift_infos
     )
 
-    compile_outputs, other_outputs = _declare_compile_outputs(
+    compile_outputs = _declare_compile_outputs(
         srcs = srcs,
         actions = actions,
         feature_configuration = feature_configuration,
@@ -1432,7 +1432,7 @@ def compile(
         compile_outputs.swiftinterface_file,
         compile_outputs.swiftsourceinfo_file,
         compile_outputs.generated_header_file,
-    ]) + compile_outputs.object_files + other_outputs
+    ]) + compile_outputs.object_files
 
     merged_compilation_context = merge_compilation_contexts(
         transitive_compilation_contexts = compilation_contexts + [
@@ -1851,13 +1851,8 @@ def _declare_compile_outputs(
             will be used or not.
 
     Returns:
-        A tuple containing two elements:
-
-        *   A `struct` that should be merged into the `prerequisites` of the
-            compilation action.
-        *   A list of `File`s that represent additional inputs that are not
-            needed as configurator prerequisites nor are processed further but
-            which should also be tracked as outputs of the compilation action.
+        A `struct` that should be merged into the `prerequisites` of the
+        compilation action.
     """
 
     # First, declare "constant" outputs (outputs whose nature doesn't change
@@ -1950,22 +1945,19 @@ def _declare_compile_outputs(
             actions = actions,
             target_name = target_name,
         )]
-        other_outputs = []
         output_file_map = None
     else:
         # Otherwise, we need to create an output map that lists the individual
         # object files so that we can pass them all to the archive action.
         output_info = _declare_multiple_outputs_and_write_output_file_map(
             actions = actions,
-            emits_partial_modules = output_nature.emits_partial_modules,
             srcs = srcs,
             target_name = target_name,
         )
         object_files = output_info.object_files
-        other_outputs = output_info.other_outputs
         output_file_map = output_info.output_file_map
 
-    compile_outputs = struct(
+    return struct(
         generated_header_file = generated_header,
         generated_module_map_file = generated_module_map,
         object_files = object_files,
@@ -1975,20 +1967,15 @@ def _declare_compile_outputs(
         swiftmodule_file = swiftmodule_file,
         swiftsourceinfo_file = swiftsourceinfo_file,
     )
-    return compile_outputs, other_outputs
 
 def _declare_multiple_outputs_and_write_output_file_map(
         actions,
-        emits_partial_modules,
         srcs,
         target_name):
     """Declares low-level outputs and writes the output map for a compilation.
 
     Args:
         actions: The object used to register actions.
-        emits_partial_modules: `True` if the compilation action is expected to
-            emit partial `.swiftmodule` files (i.e., one `.swiftmodule` file per
-            source file, as in a non-WMO compilation).
         srcs: The list of source files that will be compiled.
         target_name: The name (excluding package path) of the target being
             built.
@@ -1999,9 +1986,6 @@ def _declare_multiple_outputs_and_write_output_file_map(
         *   `object_files`: A list of object files that were declared and
             recorded in the output file map, which should be tracked as outputs
             of the compilation action.
-        *   `other_outputs`: A list of additional output files that were
-            declared and recorded in the output file map, which should be
-            tracked as outputs of the compilation action.
         *   `output_file_map`: A `File` that represents the output file map that
             was written and that should be passed as an input to the compilation
             action via the `-output-file-map` flag.
@@ -2018,13 +2002,7 @@ def _declare_multiple_outputs_and_write_output_file_map(
     # Object files that will be used to build the archive.
     output_objs = []
 
-    # Additional files, such as partial Swift modules, that must be declared as
-    # action outputs although they are not processed further.
-    other_outputs = []
-
     for src in srcs:
-        src_output_map = {}
-
         # Declare the object file (there is one per source file).
         obj = derived_files.intermediate_object_file(
             actions = actions,
@@ -2032,30 +2010,15 @@ def _declare_multiple_outputs_and_write_output_file_map(
             src = src,
         )
         output_objs.append(obj)
-        src_output_map["object"] = obj.path
-
-        # Multi-threaded WMO compiles still produce a single .swiftmodule file,
-        # despite producing multiple object files, so we have to check
-        # explicitly for that case.
-        if emits_partial_modules:
-            partial_module = derived_files.partial_swiftmodule(
-                actions = actions,
-                target_name = target_name,
-                src = src,
-            )
-            other_outputs.append(partial_module)
-            src_output_map["swiftmodule"] = partial_module.path
-
-        output_map[src.path] = struct(**src_output_map)
+        output_map[src.path] = {"object": obj.path}
 
     actions.write(
-        content = struct(**output_map).to_json(),
+        content = json.encode(output_map),
         output = output_map_file,
     )
 
     return struct(
         object_files = output_objs,
-        other_outputs = other_outputs,
         output_file_map = output_map_file,
     )
 
@@ -2151,9 +2114,7 @@ def _emitted_output_nature(feature_configuration, user_compile_flags):
 
     The compiler emits a single object if it is invoked with whole-module
     optimization enabled and is single-threaded (`-num-threads` is not present
-    or is equal to 1); otherwise, it emits one object file per source file. It
-    also emits a single `.swiftmodule` file for WMO builds, _regardless of
-    thread count,_ so we have to treat that case separately.
+    or is equal to 1); otherwise, it emits one object file per source file.
 
     Args:
         feature_configuration: The feature configuration for the current
@@ -2166,9 +2127,6 @@ def _emitted_output_nature(feature_configuration, user_compile_flags):
         *   `emits_multiple_objects`: `True` if the Swift frontend emits an
             object file per source file, instead of a single object file for the
             whole module, in a compilation action with the given flags.
-        *   `emits_partial_modules`: `True` if the Swift frontend emits partial
-            `.swiftmodule` files for the individual source files in a
-            compilation action with the given flags.
     """
     is_wmo = (
         is_feature_enabled(
@@ -2191,10 +2149,7 @@ def _emitted_output_nature(feature_configuration, user_compile_flags):
         feature_name = SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS,
     ) or _find_num_threads_flag_value(user_compile_flags) == 1
 
-    return struct(
-        emits_multiple_objects = not (is_wmo and is_single_threaded),
-        emits_partial_modules = not is_wmo,
-    )
+    return struct(emits_multiple_objects = not (is_wmo and is_single_threaded))
 
 def _exclude_swift_incompatible_define(define):
     """A `map_each` helper that excludes a define if it is not Swift-compatible.

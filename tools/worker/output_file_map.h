@@ -37,15 +37,17 @@ class OutputFileMap {
   const nlohmann::json &json() const { return json_; }
 
   // A map containing expected output files that will be generated in the
-  // incremental storage area. The key is the original object path; the
-  // corresponding value is its location in the incremental storage area.
+  // incremental storage area. The key is the original file path; the
+  // corresponding value is its path in the incremental storage area.
   const absl::btree_map<std::string, std::string> &incremental_outputs() const {
     return incremental_outputs_;
   }
 
   // Reads the output file map from the JSON file at the given path, and updates
-  // it to support incremental builds.
-  void ReadFromPath(absl::string_view path);
+  // it to support incremental builds. The `.swiftmodule` path is the path where
+  // the original `.swiftmodule` output was declared by the build rules, so that
+  // it can be emitted in the incremental space and then copied back afterwards.
+  void ReadFromPath(absl::string_view path, absl::string_view swiftmodule_path);
 
   // Writes the output file map as JSON to the file at the given path.
   void WriteToPath(absl::string_view path);
@@ -53,11 +55,17 @@ class OutputFileMap {
  private:
   // Modifies the output file map's JSON structure in-place to replace file
   // paths with equivalents in the incremental storage area.
-  void UpdateForIncremental(absl::string_view path);
+  void UpdateForIncremental(absl::string_view path,
+                            absl::string_view swiftmodule_path);
 
   nlohmann::json json_;
   absl::btree_map<std::string, std::string> incremental_outputs_;
 };
+
+// Returns the given path transformed to point to the incremental storage area.
+// For example, "bazel-out/config/{genfiles,bin}/path" becomes
+// "bazel-out/config/{genfiles,bin}/_swift_incremental/path".
+std::string MakeIncrementalOutputPath(absl::string_view path);
 
 }  // namespace bazel_rules_swift
 

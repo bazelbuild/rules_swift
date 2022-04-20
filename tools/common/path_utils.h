@@ -29,6 +29,11 @@ absl::string_view Basename(absl::string_view path);
 // "/foo/bar/baz.txt", returns "/foo/bar".
 absl::string_view Dirname(absl::string_view path);
 
+// Returns the extension of the file specified by `path`. If the file has no
+// extension, the empty string is returned.
+absl::string_view GetExtension(absl::string_view path,
+                               bool all_extensions = false);
+
 // Replaces the file extension of path with new_extension. It is assumed that
 // new_extension starts with a dot if it is desired for a dot to precede the new
 // extension in the returned path. If the path does not have a file extension,

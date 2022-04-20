@@ -21,6 +21,7 @@
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 #include <google/protobuf/util/delimited_message_util.h>
 #include "third_party/bazel_protos/worker_protocol.pb.h"
+#include "tools/common/file_system.h"
 #include "tools/worker/work_processor.h"
 
 // How Swift Incremental Compilation Works
@@ -78,6 +79,9 @@
 namespace bazel_rules_swift {
 
 int CompileWithWorker(const std::vector<std::string> &args) {
+  std::cerr << "Worker process starting, CWD = " << GetCurrentDirectory()
+            << std::endl;
+
   // Set up the input and output streams used to communicate with Bazel over
   // stdin and stdout.
   google::protobuf::io::FileInputStream file_input_stream(STDIN_FILENO);

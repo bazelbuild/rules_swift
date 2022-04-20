@@ -45,11 +45,16 @@ std::string GetCurrentDirectory() {
 }
 
 absl::Status CopyFile(absl::string_view src, absl::string_view dest) {
+  // `string_view`s are not required to be null-terminated, so get explicit
+  // null-terminated strings that we can pass to the C functions below.
+  std::string null_terminated_src(src.data(), src.length());
+  std::string null_terminated_dest(dest.data(), dest.length());
+
 #ifdef __APPLE__
   // The `copyfile` function with `COPYFILE_ALL` mode preserves permissions and
   // modification time.
-  if (copyfile(src.data(), dest.data(), nullptr,
-               COPYFILE_ALL | COPYFILE_CLONE) == 0) {
+  if (copyfile(null_terminated_src.c_str(), null_terminated_dest.c_str(),
+               nullptr, COPYFILE_ALL | COPYFILE_CLONE) == 0) {
     return absl::OkStatus();
   }
   return bazel_rules_swift::MakeStatusFromErrno(
@@ -62,7 +67,7 @@ absl::Status CopyFile(absl::string_view src, absl::string_view dest) {
         absl::Substitute("Could not copy $0 to $1; $2", src, dest, reason));
   };
 
-  int src_fd = open(src.data(), O_RDONLY);
+  int src_fd = open(null_terminated_src.c_str(), O_RDONLY);
   if (!src_fd) {
     return MakeFailingStatus("could not open source for reading");
   }
@@ -74,7 +79,8 @@ absl::Status CopyFile(absl::string_view src, absl::string_view dest) {
     return MakeFailingStatus("could not stat source file");
   }
 
-  int dest_fd = open(dest.data(), O_WRONLY | O_CREAT, stat_buf.st_mode);
+  int dest_fd =
+      open(null_terminated_dest.c_str(), O_WRONLY | O_CREAT, stat_buf.st_mode);
   if (!dest_fd) {
     return MakeFailingStatus("could not open destination for writing");
   }
@@ -110,8 +116,12 @@ absl::Status MakeDirs(absl::string_view path, int mode) {
     return absl::OkStatus();
   }
 
+  // `string_view`s are not required to be null-terminated, so get an explicit
+  // null-terminated string that we can pass to the C functions below.
+  std::string null_terminated_path(path.data(), path.length());
+
   struct stat dir_stats;
-  if (stat(path.data(), &dir_stats) == 0) {
+  if (stat(null_terminated_path.c_str(), &dir_stats) == 0) {
     // Return true if the directory already exists.
     if (S_ISDIR(dir_stats.st_mode)) {
       return absl::OkStatus();
@@ -127,7 +137,7 @@ absl::Status MakeDirs(absl::string_view path, int mode) {
   }
 
   // Create the directory that was requested.
-  if (mkdir(path.data(), mode) == 0) {
+  if (mkdir(null_terminated_path.c_str(), mode) == 0) {
     return absl::OkStatus();
   }
 
@@ -135,7 +145,7 @@ absl::Status MakeDirs(absl::string_view path, int mode) {
   // calls to `MakeDirs` running at the same time with overlapping paths, so
   // check again to see if the directory exists despite the call failing. If it
   // does, that's ok.
-  if (errno == EEXIST && stat(path.data(), &dir_stats) == 0) {
+  if (errno == EEXIST && stat(null_terminated_path.c_str(), &dir_stats) == 0) {
     if (S_ISDIR(dir_stats.st_mode)) {
       return absl::OkStatus();
     }

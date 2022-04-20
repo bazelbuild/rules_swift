@@ -28,7 +28,8 @@ namespace {
 // Returns the value of the given environment variable, or the empty string if
 // it wasn't set.
 std::string GetEnvironmentVariable(absl::string_view name) {
-  char *env_value = getenv(name.data());
+  std::string null_terminated_name(name.data(), name.length());
+  char *env_value = getenv(null_terminated_name.c_str());
   if (env_value == nullptr) {
     return "";
   }

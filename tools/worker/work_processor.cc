@@ -82,6 +82,7 @@ void WorkProcessor::ProcessWorkRequest(
 
   OutputFileMap output_file_map;
   std::string output_file_map_path;
+  std::string swiftmodule_path;
   bool is_incremental = true;
 
   std::string prev_arg;
@@ -93,6 +94,13 @@ void WorkProcessor::ProcessWorkRequest(
       arg.clear();
     } else if (prev_arg == "-output-file-map") {
       output_file_map_path = arg;
+      arg.clear();
+    } else if (arg == "-emit-module-path") {
+      // Peel off the `-emit-module-path` argument, so we can rewrite it if
+      // necessary later.
+      arg.clear();
+    } else if (prev_arg == "-emit-module-path") {
+      swiftmodule_path = arg;
       arg.clear();
     } else if (ArgumentEnablesWMO(arg)) {
       // WMO disables incremental mode.
@@ -116,7 +124,7 @@ void WorkProcessor::ProcessWorkRequest(
   std::ostringstream stderr_stream;
 
   if (is_incremental) {
-    output_file_map.ReadFromPath(output_file_map_path);
+    output_file_map.ReadFromPath(output_file_map_path, swiftmodule_path);
 
     if (absl::Status status = PrepareIncrementalStorageArea(output_file_map);
         !status.ok()) {
@@ -131,8 +139,7 @@ void WorkProcessor::ProcessWorkRequest(
     } else {
       // Rewrite the output file map to use the incremental storage area and
       // pass the compiler the path to the rewritten file.
-      std::string new_path =
-          ReplaceExtension(output_file_map_path, ".incremental.json");
+      std::string new_path = MakeIncrementalOutputPath(output_file_map_path);
       output_file_map.WriteToPath(new_path);
 
       params_file_stream << "-output-file-map\n";
@@ -151,6 +158,20 @@ void WorkProcessor::ProcessWorkRequest(
     // they should.
     params_file_stream << "-output-file-map\n";
     params_file_stream << output_file_map_path << '\n';
+  }
+
+  if (!swiftmodule_path.empty()) {
+    params_file_stream << "-emit-module-path\n";
+    if (is_incremental) {
+      // If we're compiling incrementally, write the overall `.swiftmodule` file
+      // to the incremental storage space; it will be copied to the output root
+      // with the other incremental outputs.
+      params_file_stream << MakeIncrementalOutputPath(swiftmodule_path) << '\n';
+    } else {
+      // If we're not compiling incrementally, just write the `.swiftmodule`
+      // file directly to the output root.
+      params_file_stream << swiftmodule_path << '\n';
+    }
   }
 
   processed_args.push_back(absl::StrCat("@", params_file->GetPath()));
