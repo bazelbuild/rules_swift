@@ -34,17 +34,18 @@ class WindowsIORedirector {
 
   HANDLE hIO_[2][2];
 
-  explicit WindowsIORedirector(HANDLE hIO[2][2], bool include_stdout)
-      : siStartInfo({
-            .cb = sizeof(siStartInfo),
-            .dwFlags = STARTF_USESTDHANDLES,
-            .hStdInput = INVALID_HANDLE_VALUE,
-            .hStdOutput = include_stdout ? hIO[Out][Wr] : INVALID_HANDLE_VALUE,
-            .hStdError = hIO[Out][Wr],
-        }) {
+  explicit WindowsIORedirector(HANDLE hIO[2][2], bool include_stdout) {
     std::memcpy(hIO_, hIO, sizeof(hIO_));
     assert(hIO_[In][Rd] == INVALID_HANDLE_VALUE);
     assert(hIO_[In][Wr] == INVALID_HANDLE_VALUE);
+
+    ZeroMemory(&siStartInfo, sizeof(siStartInfo));
+    siStartInfo.cb = sizeof(siStartInfo);
+    siStartInfo.dwFlags = STARTF_USESTDHANDLES;
+    siStartInfo.hStdInput = INVALID_HANDLE_VALUE;
+    siStartInfo.hStdOutput =
+        include_stdout ? hIO_[Out][Wr] : INVALID_HANDLE_VALUE;
+    siStartInfo.hStdError = hIO_[Out][Wr];
   }
 
  public:
@@ -67,11 +68,11 @@ class WindowsIORedirector {
                                                      std::error_code &ec) {
     HANDLE hIO[2][2] = {INVALID_HANDLE_VALUE};
 
-    SECURITY_ATTRIBUTES saAttr{
-        .nLength = sizeof(saAttr),
-        .lpSecurityDescriptor = nullptr,
-        .bInheritHandle = TRUE,
-    };
+    SECURITY_ATTRIBUTES saAttr;
+    ZeroMemory(&saAttr, sizeof(saAttr));
+    saAttr.nLength = sizeof(saAttr);
+    saAttr.lpSecurityDescriptor = nullptr;
+    saAttr.bInheritHandle = TRUE;
 
     if (!CreatePipe(&hIO[Out][Rd], &hIO[Out][Wr], &saAttr, 0)) {
       ec = std::error_code(GetLastError(), std::system_category());
