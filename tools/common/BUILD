@@ -15,7 +15,7 @@ cc_library(
     srcs = ["process.cc"],
     hdrs = ["process.h"],
     copts = selects.with_or({
-        ("@bazel_tools//tools/cpp:clang-cl", "@bazel_tools//tools/cpp:msvc"): [
+        ("//tools:clang-cl", "//tools:msvc"): [
             "/std:c++17",
         ],
         "//conditions:default": [
@@ -28,7 +28,7 @@ cc_library(
     name = "temp_file",
     hdrs = ["temp_file.h"],
     copts = selects.with_or({
-        ("@bazel_tools//tools/cpp:clang-cl", "@bazel_tools//tools/cpp:msvc"): [
+        ("//tools:clang-cl", "//tools:msvc"): [
             "/std:c++17",
         ],
         "//conditions:default": [
