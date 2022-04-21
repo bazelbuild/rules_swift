@@ -54,7 +54,7 @@ class TempFile {
     std::string path = temporary.string();
 
 #if defined(_WIN32)
-    if (errno_t error = _mktemp_s(path.data(), path.size())) {
+    if (errno_t error = _mktemp_s(path.data(), path.size() + 1)) {
       std::cerr << "Failed to create temporary file '" << temporary
                 << "': " << strerror(error) << "\n";
       return nullptr;
