@@ -322,6 +322,7 @@ swift_toolchain(
   os = "windows",
   root = "{root}",
   version_file = "{version_file}",
+  tool_executable_suffix = ".exe",
 )
 """.format(
             feature_list = ", ".join(['"{}"'.format(feature) for feature in feature_values]),
