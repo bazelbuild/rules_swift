@@ -226,6 +226,7 @@ def _driver_tool_config(
         args = [],
         swift_executable = None,
         toolchain_root = None,
+        tool_executable_suffix = "",
         **kwargs):
     """Returns a new Swift toolchain tool configuration for the Swift driver.
 
@@ -254,6 +255,7 @@ def _driver_tool_config(
             toolchain.
         toolchain_root: The root directory of the Swift toolchain, if the
             toolchain provides it.
+        tool_executable_suffix: The suffix for executable tools.
         **kwargs: Additional arguments that will be passed unmodified to
             `swift_toolchain_config.tool_config`.
 
@@ -261,13 +263,15 @@ def _driver_tool_config(
         A new tool configuration.
     """
     if swift_executable:
-        executable = swift_executable
+        executable = swift_executable.path
         args = ["--driver-mode={}".format(driver_mode)] + args
     elif toolchain_root:
         executable = paths.join(toolchain_root, "bin", driver_mode)
     else:
         executable = driver_mode
 
+    if not executable.endswith(tool_executable_suffix):
+        executable = "{}{}".format(executable, tool_executable_suffix)
     return _tool_config(args = args, executable = executable, **kwargs)
 
 def _validate_worker_mode(worker_mode):
