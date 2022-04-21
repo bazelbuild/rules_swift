@@ -50,7 +50,8 @@ def _all_tool_configs(
         swift_executable,
         toolchain_root,
         use_param_file,
-        additional_tools):
+        additional_tools,
+        tool_executable_suffix):
     """Returns the tool configurations for the Swift toolchain.
 
     Args:
@@ -60,6 +61,8 @@ def _all_tool_configs(
         use_param_file: If True, the compile action should use a param file for
             its arguments.
         additional_tools: Any extra tool inputs to pass to each driver config
+        tool_executable_suffix: The suffix for executable tools to use (e.g.
+            `.exe` on Windows).
 
     Returns:
         A dictionary mapping action name to tool configurations.
@@ -73,6 +76,7 @@ def _all_tool_configs(
         swift_executable = swift_executable,
         tool_inputs = tool_inputs,
         toolchain_root = toolchain_root,
+        tool_executable_suffix = tool_executable_suffix,
         use_param_file = use_param_file,
         worker_mode = "persistent",
     )
@@ -83,6 +87,7 @@ def _all_tool_configs(
             swift_executable = swift_executable,
             tool_inputs = tool_inputs,
             toolchain_root = toolchain_root,
+            tool_executable_suffix = tool_executable_suffix,
             worker_mode = "wrap",
         ),
         swift_action_names.COMPILE: compile_tool_config,
@@ -94,6 +99,7 @@ def _all_tool_configs(
             swift_executable = swift_executable,
             tool_inputs = tool_inputs,
             toolchain_root = toolchain_root,
+            tool_executable_suffix = tool_executable_suffix,
             worker_mode = "wrap",
         ),
         swift_action_names.DUMP_AST: compile_tool_config,
@@ -205,6 +211,7 @@ def _swift_toolchain_impl(ctx):
         toolchain_root = toolchain_root,
         use_param_file = SWIFT_FEATURE_USE_RESPONSE_FILES in ctx.features,
         additional_tools = [ctx.file.version_file],
+        tool_executable_suffix = ctx.attr.tool_executable_suffix,
     )
     all_action_configs = _all_action_configs(
         additional_swiftc_copts = ctx.fragments.swift.copts(),
@@ -309,6 +316,13 @@ An executable that wraps Swift compiler invocations and also provides support
 for incremental compilation using a persistent mode.
 """,
                 executable = True,
+            ),
+            "tool_executable_suffix": attr.string(
+                doc = """\
+The suffix to apply to the tools when invoking them.  This is a platform
+dependent value (e.g. `.exe` on Window).
+                  """,
+                mandatory = False,
             ),
         },
     ),
