@@ -289,6 +289,47 @@ xcode_swift_toolchain(
         ),
     )
 
+def _create_windows_toolchain(repository_ctx):
+    path_to_swiftc = repository_ctx.which("swiftc.exe")
+    if not path_to_swiftc:
+        fail("No 'swiftc.exe' executable found in Path")
+
+    root = path_to_swiftc.dirname.dirname
+    feature_values = [
+        SWIFT_FEATURE_DEBUG_PREFIX_MAP,
+        SWIFT_FEATURE_ENABLE_BATCH_MODE,
+        SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES,
+        SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS,
+        SWIFT_FEATURE_USE_RESPONSE_FILES,
+        SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS,
+    ]
+
+    version_file = _write_swift_version(repository_ctx, path_to_swiftc)
+    repository_ctx.file(
+        "BUILD",
+        """
+load(
+  "@build_bazel_rules_swift//swift/internal:swift_toolchain.bzl",
+  "swift_toolchain",
+)
+
+package(default_visibility = ["//visibility:public"])
+
+swift_toolchain(
+  name = "toolchain",
+  arch = "x86_64",
+  features = [{feature_list}],
+  os = "windows",
+  root = "{root}",
+  version_file = "{version_file}",
+)
+""".format(
+            feature_list = ", ".join(['"{}"'.format(feature) for feature in feature_values]),
+            root = root,
+            version_file = version_file,
+        ),
+    )
+
 def _swift_autoconfiguration_impl(repository_ctx):
     # TODO(allevato): This is expedient and fragile. Use the
     # platforms/toolchains APIs instead to define proper toolchains, and make it
@@ -296,6 +337,8 @@ def _swift_autoconfiguration_impl(repository_ctx):
     os_name = repository_ctx.os.name.lower()
     if os_name.startswith("mac os"):
         _create_xcode_toolchain(repository_ctx)
+    elif os_name.startswith("windows"):
+        _create_windows_toolchain(repository_ctx)
     else:
         _create_linux_toolchain(repository_ctx)
 
