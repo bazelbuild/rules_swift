@@ -171,7 +171,7 @@ void WorkProcessor::ProcessWorkRequest(
         if (ec) {
           stderr_stream << "swift_worker: Could not copy "
                         << expected_object_pair.second << " to "
-                        << expected_object_pair.first << " (errno " << errno
+                        << expected_object_pair.first << " (" << ec.message()
                         << ")\n";
           FinalizeWorkRequest(request, response, EXIT_FAILURE, stderr_stream);
           return;
@@ -193,7 +193,7 @@ void WorkProcessor::ProcessWorkRequest(
       if (ec) {
         stderr_stream << "swift_worker: Could not copy "
                       << expected_object_pair.second << " to "
-                      << expected_object_pair.first << " (errno " << errno
+                      << expected_object_pair.first << " (" << ec.message()
                       << ")\n";
         FinalizeWorkRequest(request, response, EXIT_FAILURE, stderr_stream);
         return;
@@ -214,7 +214,7 @@ void WorkProcessor::ProcessWorkRequest(
         if (ec) {
           stderr_stream << "swift_worker: Could not copy "
                         << expected_object_pair.first << " to "
-                        << expected_object_pair.second << " (errno " << errno
+                        << expected_object_pair.second << " (" << ec.message()
                         << ")\n";
           FinalizeWorkRequest(request, response, EXIT_FAILURE, stderr_stream);
           return;
