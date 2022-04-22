@@ -178,7 +178,6 @@ std::string GetCommandLine(const std::vector<std::string> &arguments) {
 
 int RunSubProcess(const std::vector<std::string> &args,
                   std::ostream *stderr_stream, bool stdout_to_stderr) {
-  PROCESS_INFORMATION piProcess = {0};
   std::error_code ec;
   std::unique_ptr<WindowsIORedirector> redirector =
       WindowsIORedirector::Create(stdout_to_stderr, ec);
@@ -188,6 +187,7 @@ int RunSubProcess(const std::vector<std::string> &args,
     return 254;
   }
 
+  PROCESS_INFORMATION piProcess = {0};
   if (!CreateProcessA(NULL, GetCommandLine(args).data(), nullptr, nullptr, TRUE,
                       0, nullptr, nullptr, &redirector->siStartInfo,
                       &piProcess)) {
@@ -196,13 +196,15 @@ int RunSubProcess(const std::vector<std::string> &args,
                      << ")\n";
     return dwLastError;
   }
+
+  CloseHandle(piProcess.hThread);
+
   redirector->ConsumeAllSubprocessOutput(stderr_stream);
 
   if (WaitForSingleObject(piProcess.hProcess, INFINITE) == WAIT_FAILED) {
     DWORD dwLastError = GetLastError();
     (*stderr_stream) << "wait for process failure (error " << dwLastError
                      << ")\n";
-    CloseHandle(piProcess.hThread);
     CloseHandle(piProcess.hProcess);
     return dwLastError;
   }
@@ -212,12 +214,10 @@ int RunSubProcess(const std::vector<std::string> &args,
     DWORD dwLastError = GetLastError();
     (*stderr_stream) << "unable to get exit code (error " << dwLastError
                      << ")\n";
-    CloseHandle(piProcess.hThread);
     CloseHandle(piProcess.hProcess);
     return dwLastError;
   }
 
-  CloseHandle(piProcess.hThread);
   CloseHandle(piProcess.hProcess);
   return dwExitCode;
 }
