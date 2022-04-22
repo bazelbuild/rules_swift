@@ -23,6 +23,8 @@
 import Dispatch
 #if os(Linux)
 import Glibc
+#elseif os(Windows)
+import ucrt
 #else
 import Darwin
 #endif
