@@ -112,6 +112,10 @@ _WMO_FLAGS = {
 
 def compile_action_configs(
         *,
+        os = None,
+        arch = None,
+        sdkroot = None,
+        xctest_version = None,
         additional_objc_copts = [],
         additional_swiftc_copts = [],
         generated_header_rewriter = None):
@@ -121,6 +125,10 @@ def compile_action_configs(
     compilation actions will be correctly configured.
 
     Args:
+        os: The OS that we are bulding for.
+        arch: The architecture that we are building for.
+        sdkroot: An optional path to the SDK to build against.
+        xctest_version: The version of XCTest to build against.
         additional_objc_copts: An optional list of additional Objective-C
             compiler flags that should be passed (preceded by `-Xcc`) to Swift
             compile actions *and* Swift explicit module precompile actions after
@@ -152,6 +160,61 @@ def compile_action_configs(
             features = [SWIFT_FEATURE_USE_OLD_DRIVER],
         ),
     ]
+
+    if sdkroot:
+        action_configs.append(
+            swift_toolchain_config.action_config(
+                actions = [
+                    swift_action_names.COMPILE,
+                    swift_action_names.DERIVE_FILES,
+                    swift_action_names.PRECOMPILE_C_MODULE,
+                    swift_action_names.DUMP_AST,
+                ],
+                configurators = [
+                    swift_toolchain_config.add_arg(
+                        "-sdk",
+                        sdkroot,
+                    ),
+                ],
+            ),
+        )
+
+        if os and xctest_version:
+            action_configs.append(
+                swift_toolchain_config.action_config(
+                    actions = [
+                        swift_action_names.COMPILE,
+                        swift_action_names.DERIVE_FILES,
+                        swift_action_names.PRECOMPILE_C_MODULE,
+                        swift_action_names.DUMP_AST,
+                    ],
+                    configurators = [
+                        swift_toolchain_config.add_arg(
+                            paths.join(sdkroot, "..", "..", "Library", "XCTest-{}".format(xctest_version), "usr", "lib", "swift", os),
+                            format = "-I%s",
+                        ),
+                    ],
+                ),
+            )
+
+            # Compatibility with older builds of the Swift SDKs
+            if arch:
+                action_configs.append(
+                    swift_toolchain_config.action_config(
+                        actions = [
+                            swift_action_names.COMPILE,
+                            swift_action_names.DERIVE_FILES,
+                            swift_action_names.PRECOMPILE_C_MODULE,
+                            swift_action_names.DUMP_AST,
+                        ],
+                        configurators = [
+                            swift_toolchain_config.add_arg(
+                                paths.join(sdkroot, "..", "..", "Library", "XCTest-{}".format(xctest_version), "usr", "lib", "swift", os, arch),
+                                format = "-I%s",
+                            ),
+                        ],
+                    ),
+                )
 
     #### Flags that control compilation outputs
     action_configs += [

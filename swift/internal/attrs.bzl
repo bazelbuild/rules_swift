@@ -295,6 +295,16 @@ executed to compile the Objective-C module for the generated header.
 """,
                 mandatory = False,
             ),
+            "linkstatic": attr.bool(
+                default = True,
+                doc = """\
+If True, the Swift module will be built for static linking.  This will make all
+interfaces internal to the module that is being linked against and will inform
+the consuming module that the objects will be locally available (which may
+potentially avoid a PLT relocation).  Set to `False` to build a `.so` or `.dll`.
+""",
+                mandatory = False,
+            ),
         },
     )
 

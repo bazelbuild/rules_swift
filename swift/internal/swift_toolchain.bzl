@@ -20,6 +20,7 @@ toolchain, see `swift.bzl`.
 """
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
+load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
 load(":actions.bzl", "swift_action_names")
 load(":attrs.bzl", "swift_toolchain_driver_attrs")
@@ -30,6 +31,8 @@ load(
     ":feature_names.bzl",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_NO_GENERATED_MODULE_MAP",
+    "SWIFT_FEATURE_USE_AUTOLINK_EXTRACT",
+    "SWIFT_FEATURE_USE_MODULE_WRAP",
     "SWIFT_FEATURE_USE_RESPONSE_FILES",
 )
 load(":features.bzl", "features_for_build_modes")
@@ -47,19 +50,28 @@ load(
 )
 
 def _all_tool_configs(
+        env,
         swift_executable,
         toolchain_root,
         use_param_file,
+        use_autolink_extract,
+        use_module_wrap,
         additional_tools,
         tool_executable_suffix):
     """Returns the tool configurations for the Swift toolchain.
 
     Args:
+        env: A custom environment to execute the tools in.
         swift_executable: A custom Swift driver executable to be used during the
             build, if provided.
         toolchain_root: The root directory of the toolchain.
         use_param_file: If True, the compile action should use a param file for
             its arguments.
+        use_autolink_extract: If True, the link action should use
+            `swift-autolink-extract` to extract the complier directed linking
+            flags.
+        use_module_wrap: If True, the compile action should embed the
+            swiftmodule into the final image.
         additional_tools: Any extra tool inputs to pass to each driver config
         tool_executable_suffix: The suffix for executable tools to use (e.g.
             `.exe` on Windows).
@@ -79,20 +91,27 @@ def _all_tool_configs(
         tool_executable_suffix = tool_executable_suffix,
         use_param_file = use_param_file,
         worker_mode = "persistent",
+        env = env,
     )
 
-    return {
-        swift_action_names.AUTOLINK_EXTRACT: _swift_driver_tool_config(
+    configs = {
+        swift_action_names.COMPILE: compile_tool_config,
+        swift_action_names.DERIVE_FILES: compile_tool_config,
+        swift_action_names.DUMP_AST: compile_tool_config,
+    }
+
+    if use_autolink_extract:
+        configs[swift_action_names.AUTOLINK_EXTRACT] = _swift_driver_tool_config(
             driver_mode = "swift-autolink-extract",
             swift_executable = swift_executable,
             tool_inputs = tool_inputs,
             toolchain_root = toolchain_root,
             tool_executable_suffix = tool_executable_suffix,
             worker_mode = "wrap",
-        ),
-        swift_action_names.COMPILE: compile_tool_config,
-        swift_action_names.DERIVE_FILES: compile_tool_config,
-        swift_action_names.MODULEWRAP: _swift_driver_tool_config(
+        )
+
+    if use_module_wrap:
+        configs[swift_action_names.MODULEWRAP] = _swift_driver_tool_config(
             # This must come first after the driver name.
             args = ["-modulewrap"],
             driver_mode = "swift",
@@ -101,14 +120,17 @@ def _all_tool_configs(
             toolchain_root = toolchain_root,
             tool_executable_suffix = tool_executable_suffix,
             worker_mode = "wrap",
-        ),
-        swift_action_names.DUMP_AST: compile_tool_config,
-    }
+        )
+    return configs
 
-def _all_action_configs(additional_swiftc_copts):
+def _all_action_configs(os, arch, sdkroot, xctest_version, additional_swiftc_copts):
     """Returns the action configurations for the Swift toolchain.
 
     Args:
+        os: The OS that we are compiling for.
+        arch: The architecture we are compiling for.
+        sdkroot: The path to the SDK that we should use to build against.
+        xctest_version: The version of XCTest to use.
         additional_swiftc_copts: Additional Swift compiler flags obtained from
             the `swift` configuration fragment.
 
@@ -117,13 +139,66 @@ def _all_action_configs(additional_swiftc_copts):
     """
     return (
         compile_action_configs(
+            os = os,
+            arch = arch,
+            sdkroot = sdkroot,
+            xctest_version = xctest_version,
             additional_swiftc_copts = additional_swiftc_copts,
         ) +
         modulewrap_action_configs() +
         autolink_extract_action_configs()
     )
 
-def _swift_linkopts_cc_info(
+def _swift_windows_linkopts_cc_info(
+        arch,
+        sdkroot,
+        xctest_version,
+        toolchain_label):
+    """Returns a `CcInfo` containing flags that should be passed to the linker.
+
+    The provider returned by this function will be used as an implicit
+    dependency of the toolchain to ensure that any binary containing Swift code
+    will link to the standard libraries correctly.
+
+    Args:
+        arch: The CPU architecture, which is used as part of the library path.
+        sdkroot: The path to the root of the SDK that we are building against.
+        xctest_version: The version of XCTest that we are building against.
+        toolchain_label: The label of the Swift toolchain that will act as the
+            owner of the linker input propagating the flags.
+
+    Returns:
+        A `CcInfo` provider that will provide linker flags to binaries that
+        depend on Swift targets.
+    """
+    platform_lib_dir = "{sdkroot}/usr/lib/swift/windows/{arch}".format(
+        sdkroot = sdkroot,
+        arch = arch,
+    )
+
+    runtime_object_path = "{sdkroot}/usr/lib/swift/windows/{arch}/swiftrt.obj".format(
+        sdkroot = sdkroot,
+        arch = arch,
+    )
+
+    linkopts = [
+        "-LIBPATH:{}".format(platform_lib_dir),
+        "-LIBPATH:{}".format(paths.join(sdkroot, "..", "..", "Library", "XCTest-{}".format(xctest_version), "usr", "lib", "swift", "windows", arch)),
+        runtime_object_path,
+    ]
+
+    return CcInfo(
+        linking_context = cc_common.create_linking_context(
+            linker_inputs = depset([
+                cc_common.create_linker_input(
+                    owner = toolchain_label,
+                    user_link_flags = depset(linkopts),
+                ),
+            ]),
+        ),
+    )
+
+def _swift_unix_linkopts_cc_info(
         cpu,
         os,
         toolchain_label,
@@ -185,12 +260,20 @@ def _swift_toolchain_impl(ctx):
     toolchain_root = ctx.attr.root
     cc_toolchain = find_cpp_toolchain(ctx)
 
-    swift_linkopts_cc_info = _swift_linkopts_cc_info(
-        ctx.attr.arch,
-        ctx.attr.os,
-        ctx.label,
-        toolchain_root,
-    )
+    if ctx.attr.os == "windows":
+        swift_linkopts_cc_info = _swift_windows_linkopts_cc_info(
+            ctx.attr.arch,
+            ctx.attr.sdkroot,
+            ctx.attr.xctest_version,
+            ctx.label,
+        )
+    else:
+        swift_linkopts_cc_info = _swift_unix_linkopts_cc_info(
+            ctx.attr.arch,
+            ctx.attr.os,
+            ctx.label,
+            toolchain_root,
+        )
 
     # Combine build mode features, autoconfigured features, and required
     # features.
@@ -207,15 +290,40 @@ def _swift_toolchain_impl(ctx):
     swift_executable = get_swift_executable_for_toolchain(ctx)
 
     all_tool_configs = _all_tool_configs(
+        env = ctx.attr.env,
         swift_executable = swift_executable,
         toolchain_root = toolchain_root,
         use_param_file = SWIFT_FEATURE_USE_RESPONSE_FILES in ctx.features,
+        use_autolink_extract = SWIFT_FEATURE_USE_AUTOLINK_EXTRACT in ctx.features,
+        use_module_wrap = SWIFT_FEATURE_USE_MODULE_WRAP in ctx.features,
         additional_tools = [ctx.file.version_file],
         tool_executable_suffix = ctx.attr.tool_executable_suffix,
     )
     all_action_configs = _all_action_configs(
+        os = ctx.attr.os,
+        arch = ctx.attr.arch,
+        sdkroot = ctx.attr.sdkroot,
+        xctest_version = ctx.attr.xctest_version,
         additional_swiftc_copts = ctx.fragments.swift.copts(),
     )
+
+    if ctx.attr.os == "windows":
+        if ctx.attr.arch == "x86_64":
+            bindir = "bin64"
+        elif ctx.attr.arch == "i686":
+            bindir = "bin32"
+        elif ctx.attr.arch == "arm64":
+            bindir = "bin64a"
+        else:
+            fail("unsupported arch `{}`".format(ctx.attr.arch))
+
+        xctest = paths.normalize(paths.join(ctx.attr.sdkroot, "..", "..", "Library", "XCTest-{}".format(ctx.attr.xctest_version), "usr", bindir))
+        env = dicts.add(
+            ctx.attr.env,
+            {"Path": xctest + ";" + ctx.attr.env["Path"]},
+        )
+    else:
+        env = ctx.attr.env
 
     # TODO(allevato): Move some of the remaining hardcoded values, like object
     # format and Obj-C interop support, to attributes so that we can remove the
@@ -247,7 +355,7 @@ def _swift_toolchain_impl(ctx):
             root_dir = toolchain_root,
             swift_worker = ctx.executable._worker,
             test_configuration = struct(
-                env = {},
+                env = env,
                 execution_requirements = {},
             ),
             tool_configs = all_tool_configs,
@@ -317,11 +425,30 @@ for incremental compilation using a persistent mode.
 """,
                 executable = True,
             ),
+            "env": attr.string_dict(
+                doc = """\
+The preserved environment variables required for the toolchain to operate
+normally.
+""",
+                mandatory = False,
+            ),
+            "sdkroot": attr.string(
+                doc = """\
+The root of a SDK to be used for building the target.
+""",
+                mandatory = False,
+            ),
             "tool_executable_suffix": attr.string(
                 doc = """\
 The suffix to apply to the tools when invoking them.  This is a platform
 dependent value (e.g. `.exe` on Window).
-                  """,
+""",
+                mandatory = False,
+            ),
+            "xctest_version": attr.string(
+                doc = """\
+The version of XCTest that the toolchain packages.
+""",
                 mandatory = False,
             ),
         },

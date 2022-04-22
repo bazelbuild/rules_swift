@@ -114,6 +114,8 @@ def _swift_library_impl(ctx):
         ctx.label,
         ctx.attr._per_module_swiftcopt[PerModuleSwiftCoptSettingInfo],
     )
+    if ctx.attr.linkstatic:
+        copts.extend(["-static"])
     copts.extend(module_copts)
 
     extra_features = []

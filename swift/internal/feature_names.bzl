@@ -195,6 +195,18 @@ SWIFT_FEATURE_USE_OLD_DRIVER = "swift.use_old_driver"
 # using a sufficiently recent version of Swift (4.2 or higher).
 SWIFT_FEATURE_USE_RESPONSE_FILES = "swift.use_response_files"
 
+# If enabled, Swift linking actions will use `swift-autolink-extract` to extract
+# the linker arguments.  This is required for ELF targets.  This is used
+# internally to determine the behaviour of the actions across different
+# toolchain platforms, this is should not be set by users of the toolchain.
+SWIFT_FEATURE_USE_AUTOLINK_EXTRACT = "swift.use_autolink_extract"
+
+# If enabled, Swift will wrap the `.swiftmodule` into an object file and link it
+# into the module.  This is used internally to support the different platforms
+# which have differing behaviour for debug information handling.  This should
+# not be used by users of the toolchain.
+SWIFT_FEATURE_USE_MODULE_WRAP = "swift.use_module_wrap"
+
 # If enabled, Swift compilation actions will create a virtual file system
 # overlay containing all its dependencies' `.swiftmodule` files and use that
 # overlay as its sole search path. This improves build performance by avoiding
