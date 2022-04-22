@@ -7,6 +7,7 @@ cc_library(
     name = "counter",
     srcs = ["counter.cc"],
     hdrs = ["counter.h"],
+    linkstatic = True,
 )
 
 # 2. ...but Swift can't import C++ yet, so we implement a wrapper API in C.
@@ -14,6 +15,7 @@ cc_library(
     name = "c_counter",
     srcs = ["c_counter.cc"],
     hdrs = ["c_counter.h"],
+    linkstatic = True,
     tags = ["swift_module=CCounter"],
     deps = [":counter"],
 )
