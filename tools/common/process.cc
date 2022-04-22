@@ -66,7 +66,10 @@ class WindowsIORedirector {
 
   static std::unique_ptr<WindowsIORedirector> Create(bool include_stdout,
                                                      std::error_code &ec) {
-    HANDLE hIO[2][2] = {INVALID_HANDLE_VALUE};
+    HANDLE hIO[2][2] = {
+      {INVALID_HANDLE_VALUE, INVALID_HANDLE_VALUE},
+      {INVALID_HANDLE_VALUE, INVALID_HANDLE_VALUE},
+    };
 
     SECURITY_ATTRIBUTES saAttr;
     ZeroMemory(&saAttr, sizeof(saAttr));
