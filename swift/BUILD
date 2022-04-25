@@ -4,6 +4,7 @@ load(
     "//swift/internal:build_settings.bzl",
     "per_module_swiftcopt_flag",
 )
+load(":swift.bzl", "swift_interop_hint")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -29,11 +30,11 @@ bzl_library(
     deps = [
         "//swift/internal:providers",
         "//swift/internal:swift_binary_test",
-        "//swift/internal:swift_c_module",
         "//swift/internal:swift_common",
         "//swift/internal:swift_feature_allowlist",
         "//swift/internal:swift_grpc_library",
         "//swift/internal:swift_import",
+        "//swift/internal:swift_interop_hint",
         "//swift/internal:swift_library",
         "//swift/internal:swift_module_alias",
         "//swift/internal:swift_package_configuration",
@@ -52,6 +53,22 @@ filegroup(
     visibility = [
         "//:__pkg__",
     ],
+)
+
+# An aspect hint that enables module map generation for a non-Swift,
+# non-Objective-C target, deriving the module name automatically based on the
+# hinted target's label.
+swift_interop_hint(
+    name = "auto_module",
+    visibility = ["//visibility:public"],
+)
+
+# An aspect hint that suppresses generation of a module for a non-Swift target
+# that would otherwise generate one by default, like an `objc_library`.
+swift_interop_hint(
+    name = "no_module",
+    suppressed = True,
+    visibility = ["//visibility:public"],
 )
 
 # User settable flag that specifies additional Swift copts on a per-swiftmodule basis.

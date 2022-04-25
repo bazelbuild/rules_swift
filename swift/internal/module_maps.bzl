@@ -14,6 +14,8 @@
 
 """Logic for generating Clang module map files."""
 
+load("@bazel_skylib//lib:sets.bzl", "sets")
+
 # TODO(#723): Remove these disables once https://github.com/bazelbuild/buildtools/issues/926 is fixed
 # buildifier: disable=return-value
 # buildifier: disable=function-docstring-return
@@ -22,6 +24,7 @@ def write_module_map(
         module_map_file,
         module_name,
         dependent_module_names = [],
+        exclude_headers = [],
         exported_module_ids = [],
         public_headers = [],
         public_textual_headers = [],
@@ -37,6 +40,8 @@ def write_module_map(
         module_name: The name of the module being generated.
         dependent_module_names: A `list` of names of Clang modules that are
             direct dependencies of the target whose module map is being written.
+        exclude_headers: A `list` of `File`s representing headers that should be
+            explicitly excluded from the module being written.
         exported_module_ids: A `list` of Clang wildcard module identifiers that
             will be re-exported as part of the API of the module being written.
             The values in this list should match `wildcard-module-id` as
@@ -71,8 +76,45 @@ def write_module_map(
         relative_to_dir = module_map_file.dirname
         back_to_root_path = "../" * len(relative_to_dir.split("/"))
 
+    excluded_headers_set = sets.make(exclude_headers)
+
     content = actions.args()
     content.set_param_file_format("multiline")
+
+    def _relativized_header_path(file):
+        return _header_path(
+            header_file = file,
+            relative_to_dir = relative_to_dir,
+            back_to_root_path = back_to_root_path,
+        )
+
+    def _relativized_header_paths_with_exclusion(
+            file_or_dir,
+            directory_expander):
+        return [
+            _relativized_header_path(file)
+            for file in directory_expander.expand(file_or_dir)
+            if not sets.contains(excluded_headers_set, file)
+        ]
+
+    def _relativized_header_paths(file_or_dir, directory_expander):
+        return [
+            _relativized_header_path(file)
+            for file in directory_expander.expand(file_or_dir)
+        ]
+
+    def _add_headers(*, allow_excluded_headers = False, headers, kind):
+        if allow_excluded_headers:
+            map_each = _relativized_header_paths
+        else:
+            map_each = _relativized_header_paths_with_exclusion
+
+        content.add_all(
+            headers,
+            allow_closure = True,
+            format_each = '    {} "%s"'.format(kind),
+            map_each = map_each,
+        )
 
     content.add(module_name, format = 'module "%s" {')
 
@@ -81,24 +123,8 @@ def write_module_map(
     content.add_all(exported_module_ids, format_each = "    export %s")
     content.add("")
 
-    def _relativized_header_paths(file_or_dir, directory_expander):
-        return [
-            _header_path(
-                header_file = file,
-                relative_to_dir = relative_to_dir,
-                back_to_root_path = back_to_root_path,
-            )
-            for file in directory_expander.expand(file_or_dir)
-        ]
-
-    def _add_headers(*, headers, kind):
-        content.add_all(
-            headers,
-            allow_closure = True,
-            format_each = '    {} "%s"'.format(kind),
-            map_each = _relativized_header_paths,
-        )
-
+    # When writing these headers, honor the `exclude_headers` list (i.e., remove
+    # any headers from these lists that also appear there).
     if umbrella_header:
         _add_headers(headers = [umbrella_header], kind = "umbrella header")
     else:
@@ -109,6 +135,12 @@ def write_module_map(
             headers = private_textual_headers,
             kind = "private textual header",
         )
+
+    _add_headers(
+        allow_excluded_headers = True,
+        headers = exclude_headers,
+        kind = "exclude header",
+    )
 
     content.add("")
 

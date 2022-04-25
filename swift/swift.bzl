@@ -40,10 +40,6 @@ load(
     _swift_test = "swift_test",
 )
 load(
-    "@build_bazel_rules_swift//swift/internal:swift_c_module.bzl",
-    _swift_c_module = "swift_c_module",
-)
-load(
     "@build_bazel_rules_swift//swift/internal:swift_clang_module_aspect.bzl",
     _swift_clang_module_aspect = "swift_clang_module_aspect",
 )
@@ -62,6 +58,10 @@ load(
 load(
     "@build_bazel_rules_swift//swift/internal:swift_import.bzl",
     _swift_import = "swift_import",
+)
+load(
+    "@build_bazel_rules_swift//swift/internal:swift_interop_hint.bzl",
+    _swift_interop_hint = "swift_interop_hint",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:swift_library.bzl",
@@ -95,10 +95,10 @@ swift_common = _swift_common
 
 # Re-export rules.
 swift_binary = _swift_binary
-swift_c_module = _swift_c_module
 swift_feature_allowlist = _swift_feature_allowlist
 swift_grpc_library = _swift_grpc_library
 swift_import = _swift_import
+swift_interop_hint = _swift_interop_hint
 swift_library = _swift_library
 swift_module_alias = _swift_module_alias
 swift_package_configuration = _swift_package_configuration

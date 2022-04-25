@@ -91,12 +91,25 @@ def compilation_context_for_explicit_module_compilation(
     for dep in deps:
         if CcInfo in dep:
             all_compilation_contexts.append(dep[CcInfo].compilation_context)
-        if apple_common.Objc in dep:
-            all_compilation_contexts.append(
-                cc_common.create_compilation_context(
-                    includes = dep[apple_common.Objc].strict_include,
-                ),
-            )
+        elif SwiftInfo in dep:
+            # TODO(b/151667396): Remove j2objc-specific knowledge.
+            # J2ObjC doesn't expose `CcInfo` directly on the `java_library`
+            # targets it processes, but we can find the compilation context that
+            # was synthesized by `swift_clang_module_aspect` within the
+            # `SwiftInfo` provider.
+            for module in dep[SwiftInfo].direct_modules:
+                clang = module.clang
+                if not clang:
+                    continue
+
+                if clang.compilation_context:
+                    all_compilation_contexts.append(clang.compilation_context)
+                if clang.strict_includes:
+                    all_compilation_contexts.append(
+                        cc_common.create_compilation_context(
+                            includes = clang.strict_includes,
+                        ),
+                    )
 
     return cc_common.merge_compilation_contexts(
         compilation_contexts = all_compilation_contexts,
