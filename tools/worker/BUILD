@@ -1,6 +1,5 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 load("@build_bazel_apple_support//rules:universal_binary.bzl", "universal_binary")
-load("@bazel_skylib//lib:selects.bzl", "selects")
 
 licenses(["notice"])
 
@@ -36,8 +35,13 @@ cc_library(
         "work_processor.h",
     ],
     hdrs = ["compile_with_worker.h"],
-    copts = selects.with_or({
-        ("//tools:clang-cl", "//tools:msvc"): [
+    copts = select({
+        "//tools:clang-cl": [
+            "-Xclang",
+            "-fno-split-cold-code",
+            "/std:c++17",
+        ],
+        "//tools:msvc": [
             "/std:c++17",
         ],
         "//conditions:default": [
@@ -55,8 +59,13 @@ cc_library(
     name = "compile_without_worker",
     srcs = ["compile_without_worker.cc"],
     hdrs = ["compile_without_worker.h"],
-    copts = selects.with_or({
-        ("//tools:clang-cl", "//tools:msvc"): [
+    copts = select({
+        "//tools:clang-cl": [
+            "-Xclang",
+            "-fno-split-cold-code",
+            "/std:c++17",
+        ],
+        "//tools:msvc": [
             "/std:c++17",
         ],
         "//conditions:default": [
@@ -81,8 +90,13 @@ cc_library(
             "-DINDEX_IMPORT_PATH=\\\"$(rootpath @build_bazel_rules_swift_index_import//:index_import)\\\"",
         ],
         "//conditions:default": [],
-    }) + selects.with_or({
-        ("//tools:clang-cl", "//tools:msvc"): [
+    }) + select({
+        "//tools:clang-cl": [
+            "-Xclang",
+            "-fno-split-cold-code",
+            "/std:c++17",
+        ],
+        "//tools:msvc": [
             "/std:c++17",
         ],
         "//conditions:default": [
@@ -107,8 +121,13 @@ cc_library(
     name = "worker_protocol",
     srcs = ["worker_protocol.cc"],
     hdrs = ["worker_protocol.h"],
-    copts = selects.with_or({
-        ("//tools:clang-cl", "//tools:msvc"): [
+    copts = select({
+        "//tools:clang-cl": [
+            "-Xclang",
+            "-fno-split-cold-code",
+            "/std:c++17",
+        ],
+        "//tools:msvc": [
             "/std:c++17",
         ],
         "//conditions:default": [
