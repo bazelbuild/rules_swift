@@ -99,11 +99,11 @@ Compiles a Swift module.
 | <a id="swift_common.compile-additional_inputs"></a>additional_inputs |  A list of <code>File</code>s representing additional input files that need to be passed to the Swift compile action because they are referenced by compiler flags.   |  <code>[]</code> |
 | <a id="swift_common.compile-copts"></a>copts |  A list of compiler flags that apply to the target being built. These flags, along with those from Bazel's Swift configuration fragment (i.e., <code>--swiftcopt</code> command line flags) are scanned to determine whether whole module optimization is being requested, which affects the nature of the output files.   |  <code>[]</code> |
 | <a id="swift_common.compile-defines"></a>defines |  Symbols that should be defined by passing <code>-D</code> to the compiler.   |  <code>[]</code> |
-| <a id="swift_common.compile-deps"></a>deps |  Non-private dependencies of the target being compiled. These targets are used as dependencies of both the Swift module being compiled and the Clang module for the generated header. These targets must propagate one of the following providers: <code>CcInfo</code>, <code>SwiftInfo</code>, or <code>apple_common.Objc</code>.   |  <code>[]</code> |
+| <a id="swift_common.compile-deps"></a>deps |  Non-private dependencies of the target being compiled. These targets are used as dependencies of both the Swift module being compiled and the Clang module for the generated header. These targets must propagate <code>CcInfo</code> or <code>SwiftInfo</code>.   |  <code>[]</code> |
 | <a id="swift_common.compile-feature_configuration"></a>feature_configuration |  A feature configuration obtained from <code>swift_common.configure_features</code>.   |  none |
 | <a id="swift_common.compile-generated_header_name"></a>generated_header_name |  The name of the Objective-C generated header that should be generated for this module. If omitted, no header will be generated.   |  <code>None</code> |
 | <a id="swift_common.compile-module_name"></a>module_name |  The name of the Swift module being compiled. This must be present and valid; use <code>swift_common.derive_module_name</code> to generate a default from the target's label if needed.   |  none |
-| <a id="swift_common.compile-private_deps"></a>private_deps |  Private (implementation-only) dependencies of the target being compiled. These are only used as dependencies of the Swift module, not of the Clang module for the generated header. These targets must propagate one of the following providers: <code>CcInfo</code>, <code>SwiftInfo</code>, or <code>apple_common.Objc</code>.   |  <code>[]</code> |
+| <a id="swift_common.compile-private_deps"></a>private_deps |  Private (implementation-only) dependencies of the target being compiled. These are only used as dependencies of the Swift module, not of the Clang module for the generated header. These targets must propagate <code>CcInfo</code> or <code>SwiftInfo</code>.   |  <code>[]</code> |
 | <a id="swift_common.compile-srcs"></a>srcs |  The Swift source files to compile.   |  none |
 | <a id="swift_common.compile-swift_toolchain"></a>swift_toolchain |  The <code>SwiftToolchainInfo</code> provider of the toolchain.   |  none |
 | <a id="swift_common.compile-target_name"></a>target_name |  The name of the target for which the code is being compiled, which is used to determine unique file paths for the outputs.   |  none |
@@ -168,30 +168,11 @@ An opaque value representing the feature configuration that can be
 ## swift_common.create_clang_module
 
 <pre>
-swift_common.create_clang_module(<a href="#swift_common.create_clang_module-compilation_context">compilation_context</a>, <a href="#swift_common.create_clang_module-module_map">module_map</a>, <a href="#swift_common.create_clang_module-precompiled_module">precompiled_module</a>)
+swift_common.create_clang_module(<a href="#swift_common.create_clang_module-compilation_context">compilation_context</a>, <a href="#swift_common.create_clang_module-module_map">module_map</a>, <a href="#swift_common.create_clang_module-precompiled_module">precompiled_module</a>,
+                                 <a href="#swift_common.create_clang_module-strict_includes">strict_includes</a>)
 </pre>
 
 Creates a value representing a Clang module used as a Swift dependency.
-
-Note: The `compilation_context` argument of this function is primarily
-intended to communicate information *to* the Swift build rules, not to
-retrieve information *back out.* In most cases, it is better to depend on
-the `CcInfo` provider propagated by a Swift target to collect transitive
-C/Objective-C compilation information about that target. This is because the
-context used when compiling the module itself may not be the same as the
-context desired when depending on it. (For example, `apple_common.Objc`
-supports "strict include paths" which are only propagated to direct
-dependents.)
-
-One valid exception to the guidance above is retrieving the generated header
-associated with a specific Swift module. Since the `CcInfo` provider
-propagated by the library will have already merged them transitively (or,
-in the case of a hypothetical custom rule that propagates multiple direct
-modules, the `direct_public_headers` of the `CcInfo` would also have them
-merged), it is acceptable to read the headers from the compilation context
-of the module struct itself in order to associate them with the module that
-generated them.
-
 
 **PARAMETERS**
 
@@ -201,11 +182,13 @@ generated them.
 | <a id="swift_common.create_clang_module-compilation_context"></a>compilation_context |  A <code>CcCompilationContext</code> that contains the header files and other context (such as include paths, preprocessor defines, and so forth) needed to compile this module as an explicit module.   |  none |
 | <a id="swift_common.create_clang_module-module_map"></a>module_map |  The text module map file that defines this module. This argument may be specified as a <code>File</code> or as a <code>string</code>; in the latter case, it is assumed to be the path to a file that cannot be provided as an action input because it is outside the workspace (for example, the module map for a module from an Xcode SDK).   |  none |
 | <a id="swift_common.create_clang_module-precompiled_module"></a>precompiled_module |  A <code>File</code> representing the precompiled module (<code>.pcm</code> file) if one was emitted for the module. This may be <code>None</code> if no explicit module was built for the module; in that case, targets that depend on the module will fall back to the text module map and headers.   |  <code>None</code> |
+| <a id="swift_common.create_clang_module-strict_includes"></a>strict_includes |  A <code>depset</code> of strings representing additional Clang include paths that should be passed to the compiler when this module is a _direct_ dependency of the module being compiled. May be <code>None</code>. **This field only exists to support a specific legacy use case and should otherwise not be used, as it is fundamentally incompatible with Swift's import model.**   |  <code>None</code> |
 
 **RETURNS**
 
-A `struct` containing the `compilation_context`, `module_map`, and
-  `precompiled_module` fields provided as arguments.
+A `struct` containing the `compilation_context`, `module_map`,
+  `precompiled_module`, and `strict_includes` fields provided as
+  arguments.
 
 
 <a id="#swift_common.create_linking_context_from_compilation_outputs"></a>
