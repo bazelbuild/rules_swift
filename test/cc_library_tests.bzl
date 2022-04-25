@@ -19,9 +19,8 @@ load(
     "build_test",
 )
 
-def cc_library_test_suite():
+def cc_library_test_suite(name):
     """Test suite for interoperability with `cc_library`-specific features."""
-    name = "cc_library"
 
     # Verify that Swift can import a `cc_library` that uses `include_prefix`,
     # `strip_include_prefix`, or both.

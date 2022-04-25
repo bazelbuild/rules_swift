@@ -18,7 +18,7 @@ licenses(["notice"])
 
 ast_file_test_suite(name = "ast_file")
 
-cc_library_test_suite()
+cc_library_test_suite(name = "cc_library")
 
 coverage_settings_test_suite(name = "coverage_settings")
 
