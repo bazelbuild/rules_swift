@@ -167,6 +167,15 @@ bzl_library(
 )
 
 bzl_library(
+    name = "swift_interop_hint",
+    srcs = ["swift_interop_hint.bzl"],
+    visibility = [
+        "//swift:__pkg__",
+    ],
+    deps = [":swift_common"],
+)
+
+bzl_library(
     name = "swift_clang_module_aspect",
     srcs = ["swift_clang_module_aspect.bzl"],
     visibility = ["//swift:__subpackages__"],

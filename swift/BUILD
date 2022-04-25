@@ -34,6 +34,7 @@ bzl_library(
         "//swift/internal:swift_feature_allowlist",
         "//swift/internal:swift_grpc_library",
         "//swift/internal:swift_import",
+        "//swift/internal:swift_interop_hint",
         "//swift/internal:swift_library",
         "//swift/internal:swift_module_alias",
         "//swift/internal:swift_package_configuration",

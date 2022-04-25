@@ -7,10 +7,12 @@ package(
 
 fake_framework(
     name = "framework",
+    tags = ["manual"],
 )
 
 swift_binary(
     name = "bin",
     srcs = ["main.swift"],
+    tags = ["manual"],
     deps = [":framework"],
 )
