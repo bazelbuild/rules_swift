@@ -253,9 +253,9 @@ def _compute_features(
             package, and the `--features` command line option).
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain
             being used to build.
-        unsupported_features: The list of features unsupported by the
-            rule/aspect configuration (i.e., the features specified in negative
-            form by the `features` attribute of the target, the `package()` rule
+        unsupported_features: The list of features disabled by the rule/aspect
+            configuration (i.e., the features specified in negative form by
+            the `features` attribute of the target, the `package()` rule
             in the package, and the `--features` command line option).
 
     Returns:
@@ -265,48 +265,91 @@ def _compute_features(
         2.  The list of features that should be disabled for the target.
     """
 
-    # The features to enable for a particular rule/target are the ones requested
-    # by the toolchain, plus the ones requested by any matching package
-    # configurations, plus the ones requested by the target itself; *minus*
-    # any that are explicitly disabled on the toolchain, the matching package
-    # configurations, or the target itself.
-    requested_features_set = sets.make(swift_toolchain.requested_features)
-    unsupported_features_set = sets.make(swift_toolchain.unsupported_features)
+    # This treats the requested and disabled features as coming from different layers. The layers
+    # are applied from most general to most specific, with features requested or disabled by more
+    # specific layers overriding those from more general layers. Features that are unsupported by
+    # the toolchain are treated as the most specific layer of all.
+
+    def _make_feature_updater():
+        # Starlark doesn't support re-binding variables captured from an enclosing lexical scope
+        # so we resort to mutation to achieve the same result.
+        state = {
+            "requested_features": sets.make([]),
+            "disabled_features": sets.make([]),
+        }
+
+        def _update_features(newly_requested_features, newly_disabled_features):
+            newly_requested_features_set = sets.make(newly_requested_features)
+            newly_disabled_features_set = sets.make(newly_disabled_features)
+
+            # If a feature is both requested and disabled at the same level, it is disabled.
+            newly_requested_features_set = sets.difference(
+                newly_requested_features_set,
+                newly_disabled_features_set,
+            )
+
+            requested_features_set = state["requested_features"]
+            disabled_features_set = state["disabled_features"]
+
+            # If a feature was requested at a higher level then disabled more narrowly we must
+            # remove it from the requested feature set.
+            requested_features_set = sets.difference(
+                requested_features_set,
+                newly_disabled_features_set,
+            )
+
+            # If a feature was disabled at a higher level then requested more narrowly we must
+            # remove it from the disabled feature set.
+            disabled_features_set = sets.difference(
+                disabled_features_set,
+                newly_requested_features_set,
+            )
+
+            requested_features_set = sets.union(
+                requested_features_set,
+                newly_requested_features_set,
+            )
+            disabled_features_set = sets.union(
+                disabled_features_set,
+                newly_disabled_features_set,
+            )
+
+            state["requested_features"] = requested_features_set
+            state["disabled_features"] = disabled_features_set
+
+        def _requested_features():
+            return sets.to_list(state["requested_features"])
+
+        def _disabled_features():
+            return sets.to_list(state["disabled_features"])
+
+        return struct(
+            update_features = _update_features,
+            requested_features = _requested_features,
+            disabled_features = _disabled_features,
+        )
+
+    feature_updater = _make_feature_updater()
+
+    # Features requested by the toolchain provide the default set of features.
+    # Unsupported features are not a default, but an override, and are applied later.
+    feature_updater.update_features(swift_toolchain.requested_features, [])
 
     for package_configuration in swift_toolchain.package_configurations:
         if label_matches_package_specs(
             label = label,
             package_specs = package_configuration.package_specs,
         ):
-            if package_configuration.enabled_features:
-                requested_features_set = sets.union(
-                    requested_features_set,
-                    sets.make(package_configuration.enabled_features),
-                )
-            if package_configuration.disabled_features:
-                unsupported_features_set = sets.union(
-                    unsupported_features_set,
-                    sets.make(package_configuration.disabled_features),
-                )
+            feature_updater.update_features(
+                package_configuration.enabled_features,
+                package_configuration.disabled_features,
+            )
 
-    if requested_features:
-        requested_features_set = sets.union(
-            requested_features_set,
-            sets.make(requested_features),
-        )
-    if unsupported_features:
-        unsupported_features_set = sets.union(
-            unsupported_features_set,
-            sets.make(unsupported_features),
-        )
+    # Features specified at the target, package, or `--features` level override any from the
+    # toolchain or toolchain-level package configuration.
+    feature_updater.update_features(requested_features, unsupported_features)
 
-    # If the same feature is present in both sets, being unsupported takes
-    # priority, so remove any of those from the requested set.
-    requestable_features_set = sets.difference(
-        requested_features_set,
-        unsupported_features_set,
-    )
-    return (
-        sets.to_list(requestable_features_set),
-        sets.to_list(unsupported_features_set),
-    )
+    # Features that are unsupported by the toolchain override any requests for those features.
+    feature_updater.update_features([], swift_toolchain.unsupported_features)
+
+    return (feature_updater.requested_features(), feature_updater.disabled_features())
