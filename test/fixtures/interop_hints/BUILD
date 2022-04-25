@@ -87,7 +87,9 @@ swift_interop_hint(
 
 forward_swift_info_from_swift_clang_module_aspect(
     name = "objc_library_suppressed",
+    tags = FIXTURE_TAGS,
     target = ":objc_library_suppressed_lib",
+    target_compatible_with = ["@platforms//os:macos"],
 )
 
 objc_library(
@@ -95,11 +97,14 @@ objc_library(
     hdrs = ["header1.h"],
     aspect_hints = [":suppress_hint"],
     tags = FIXTURE_TAGS,
+    target_compatible_with = ["@platforms//os:macos"],
 )
 
 forward_swift_info_from_swift_clang_module_aspect(
     name = "objc_library_with_swift_dep_suppressed",
+    tags = FIXTURE_TAGS,
     target = ":objc_library_with_swift_dep_suppressed_lib",
+    target_compatible_with = ["@platforms//os:macos"],
 )
 
 objc_library(
@@ -107,6 +112,7 @@ objc_library(
     hdrs = ["header1.h"],
     aspect_hints = [":suppress_hint"],
     tags = FIXTURE_TAGS,
+    target_compatible_with = ["@platforms//os:macos"],
     deps = [":empty_lib"],
 )
 
