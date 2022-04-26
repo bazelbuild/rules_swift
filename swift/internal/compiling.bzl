@@ -1631,6 +1631,54 @@ def derive_module_name(*args):
         module_name = "_" + module_name
     return module_name
 
+def create_compilation_context(defines, srcs, transitive_modules):
+    """Cretes a compilation context for a Swift target.
+
+    Args:
+        defines: A list of defines
+        srcs: A list of Swift source files used to compile the target.
+        transitive_modules: A list of modules (as returned by
+            `swift_common.create_module`) from the transitive dependencies of
+            the target.
+
+    Returns:
+        A `struct` containing four fields:
+
+        *   `defines`: A sequence of defines used when compiling the target.
+            Includes the defines for the target and its transitive dependencies.
+        *   `direct_sources`: A sequence of Swift source files used to compile
+            the target.
+        *   `module_maps`: A sequence of module maps used to compile the clang
+            module for this target.
+        *   `swiftmodules`: A sequence of swiftmodules depended on by the
+            target.
+    """
+    defines_set = sets.make(defines)
+    module_maps = []
+    swiftmodules = []
+    for module in transitive_modules:
+        if (module.clang and module.clang.module_map and
+            (module.clang.precompiled_module or not module.is_system)):
+            module_maps.append(module.clang.module_map)
+
+        swift_module = module.swift
+        if not swift_module:
+            continue
+        swiftmodules.append(swift_module.swiftmodule)
+        if swift_module.defines:
+            defines_set = sets.union(
+                defines_set,
+                sets.make(swift_module.defines),
+            )
+
+    # Tuples are used instead of lists since they need to be frozen
+    return struct(
+        defines = tuple(sets.to_list(defines_set)),
+        direct_sources = tuple(srcs),
+        module_maps = tuple(module_maps),
+        swiftmodules = tuple(swiftmodules),
+    )
+
 def compile(
         *,
         actions,
@@ -1782,18 +1830,11 @@ def compile(
         merged_providers.swift_info.transitive_modules.to_list()
     )
 
-    transitive_swiftmodules = []
-    defines_set = sets.make(defines)
-    for module in transitive_modules:
-        swift_module = module.swift
-        if not swift_module:
-            continue
-        transitive_swiftmodules.append(swift_module.swiftmodule)
-        if swift_module.defines:
-            defines_set = sets.union(
-                defines_set,
-                sets.make(swift_module.defines),
-            )
+    compilation_context = create_compilation_context(
+        defines = defines,
+        srcs = srcs,
+        transitive_modules = transitive_modules,
+    )
 
     # We need this when generating the VFS overlay file and also when
     # configuring inputs for the compile action, so it's best to precompute it
@@ -1808,7 +1849,7 @@ def compile(
         )
         write_vfsoverlay(
             actions = actions,
-            swiftmodules = transitive_swiftmodules,
+            swiftmodules = compilation_context.swiftmodules,
             vfsoverlay_file = vfsoverlay_file,
             virtual_swiftmodule_root = _SWIFTMODULES_VFS_ROOT,
         )
@@ -1819,7 +1860,7 @@ def compile(
         additional_inputs = additional_inputs,
         bin_dir = feature_configuration._bin_dir,
         cc_compilation_context = merged_providers.cc_info.compilation_context,
-        defines = sets.to_list(defines_set),
+        defines = compilation_context.defines,
         genfiles_dir = feature_configuration._genfiles_dir,
         is_swift = True,
         module_name = module_name,
@@ -1829,7 +1870,7 @@ def compile(
         objc_info = merged_providers.objc_info,
         source_files = srcs,
         transitive_modules = transitive_modules,
-        transitive_swiftmodules = transitive_swiftmodules,
+        transitive_swiftmodules = compilation_context.swiftmodules,
         user_compile_flags = copts,
         vfsoverlay_file = vfsoverlay_file,
         vfsoverlay_search_path = _SWIFTMODULES_VFS_ROOT,
@@ -1918,6 +1959,7 @@ def compile(
             module_map = compile_outputs.generated_module_map_file,
             precompiled_module = precompiled_module,
         ),
+        compilation_context = compilation_context,
         is_system = False,
         swift = create_swift_module(
             defines = defines,
