@@ -235,13 +235,7 @@ provider.
     },
 )
 
-def create_module(
-        *,
-        name,
-        clang = None,
-        compilation_context = None,
-        is_system = False,
-        swift = None):
+def create_module(*, name, clang = None, is_system = False, swift = None):
     """Creates a value containing Clang/Swift module artifacts of a dependency.
 
     It is possible for both `clang` and `swift` to be present; this is the case
@@ -266,10 +260,6 @@ def create_module(
             contains artifacts related to Clang modules, such as a module map or
             precompiled module. This may be `None` if the module is a pure Swift
             module with no generated Objective-C interface.
-        compilation_context: A value returned from
-            `swift_common.create_compilation_context` that contains the
-            context needed to compile the module being built. This may be `None`
-            if the module wasn't compiled from sources.
         is_system: Indicates whether the module is a system module. The default
             value is `False`. System modules differ slightly from non-system
             modules in the way that they are passed to the compiler. For
@@ -296,7 +286,6 @@ def create_module(
     """
     return struct(
         clang = clang,
-        compilation_context = compilation_context,
         is_system = is_system,
         name = name,
         swift = swift,
