@@ -208,6 +208,39 @@ A `struct` containing the `compilation_context`, `module_map`, and
   `precompiled_module` fields provided as arguments.
 
 
+<a id="#swift_common.create_compilation_context"></a>
+
+## swift_common.create_compilation_context
+
+<pre>
+swift_common.create_compilation_context(<a href="#swift_common.create_compilation_context-defines">defines</a>, <a href="#swift_common.create_compilation_context-srcs">srcs</a>, <a href="#swift_common.create_compilation_context-transitive_modules">transitive_modules</a>)
+</pre>
+
+Cretes a compilation context for a Swift target.
+
+**PARAMETERS**
+
+
+| Name  | Description | Default Value |
+| :------------- | :------------- | :------------- |
+| <a id="swift_common.create_compilation_context-defines"></a>defines |  A list of defines   |  none |
+| <a id="swift_common.create_compilation_context-srcs"></a>srcs |  A list of Swift source files used to compile the target.   |  none |
+| <a id="swift_common.create_compilation_context-transitive_modules"></a>transitive_modules |  A list of modules (as returned by <code>swift_common.create_module</code>) from the transitive dependencies of the target.   |  none |
+
+**RETURNS**
+
+A `struct` containing four fields:
+
+  *   `defines`: A sequence of defines used when compiling the target.
+      Includes the defines for the target and its transitive dependencies.
+  *   `direct_sources`: A sequence of Swift source files used to compile
+      the target.
+  *   `module_maps`: A sequence of module maps used to compile the clang
+      module for this target.
+  *   `swiftmodules`: A sequence of swiftmodules depended on by the
+      target.
+
+
 <a id="#swift_common.create_linking_context_from_compilation_outputs"></a>
 
 ## swift_common.create_linking_context_from_compilation_outputs
@@ -259,7 +292,7 @@ A tuple of `(CcLinkingContext, CcLinkingOutputs)` containing the linking
 ## swift_common.create_module
 
 <pre>
-swift_common.create_module(<a href="#swift_common.create_module-name">name</a>, <a href="#swift_common.create_module-clang">clang</a>, <a href="#swift_common.create_module-is_system">is_system</a>, <a href="#swift_common.create_module-swift">swift</a>)
+swift_common.create_module(<a href="#swift_common.create_module-name">name</a>, <a href="#swift_common.create_module-clang">clang</a>, <a href="#swift_common.create_module-compilation_context">compilation_context</a>, <a href="#swift_common.create_module-is_system">is_system</a>, <a href="#swift_common.create_module-swift">swift</a>)
 </pre>
 
 Creates a value containing Clang/Swift module artifacts of a dependency.
@@ -288,6 +321,7 @@ the set of transitive module names that are propagated by dependencies
 | :------------- | :------------- | :------------- |
 | <a id="swift_common.create_module-name"></a>name |  The name of the module.   |  none |
 | <a id="swift_common.create_module-clang"></a>clang |  A value returned by <code>swift_common.create_clang_module</code> that contains artifacts related to Clang modules, such as a module map or precompiled module. This may be <code>None</code> if the module is a pure Swift module with no generated Objective-C interface.   |  <code>None</code> |
+| <a id="swift_common.create_module-compilation_context"></a>compilation_context |  A value returned from <code>swift_common.create_compilation_context</code> that contains the context needed to compile the module being built. This may be <code>None</code> if the module wasn't compiled from sources.   |  <code>None</code> |
 | <a id="swift_common.create_module-is_system"></a>is_system |  Indicates whether the module is a system module. The default value is <code>False</code>. System modules differ slightly from non-system modules in the way that they are passed to the compiler. For example, non-system modules have their Clang module maps passed to the compiler in both implicit and explicit module builds. System modules, on the other hand, do not have their module maps passed to the compiler in implicit module builds because there is currently no way to indicate that modules declared in a file passed via <code>-fmodule-map-file</code> should be treated as system modules even if they aren't declared with the <code>[system]</code> attribute, and some system modules may not build cleanly with respect to warnings otherwise. Therefore, it is assumed that any module with <code>is_system == True</code> must be able to be found using import search paths in order for implicit module builds to succeed.   |  <code>False</code> |
 | <a id="swift_common.create_module-swift"></a>swift |  A value returned by <code>swift_common.create_swift_module</code> that contains artifacts related to Swift modules, such as the <code>.swiftmodule</code>, <code>.swiftdoc</code>, and/or <code>.swiftinterface</code> files emitted by the compiler. This may be <code>None</code> if the module is a pure C/Objective-C module.   |  <code>None</code> |
 
