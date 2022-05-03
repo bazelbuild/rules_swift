@@ -98,6 +98,9 @@ SWIFT_FEATURE_ENABLE_TESTING = "swift.enable_testing"
 # warnings otherwise.
 SWIFT_FEATURE_FULL_DEBUG_INFO = "swift.full_debug_info"
 
+# Use CodeView debug information, which enables generation of PDBs for debugging.
+SWIFT_FEATURE_CODEVIEW_DEBUG_INFO = "swift.codeview_debug_info"
+
 # If enabled, the compilation action for a target will produce an index store.
 # https://docs.google.com/document/d/1cH2sTpgSnJZCkZtJl1aY-rzy4uGPcrI-6RrUpdATO2Q/
 SWIFT_FEATURE_INDEX_WHILE_BUILDING = "swift.index_while_building"
