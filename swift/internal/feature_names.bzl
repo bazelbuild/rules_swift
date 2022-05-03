@@ -286,3 +286,6 @@ SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS = "swift._num_threads_0_in_swiftcopts
 # A feature to enable setting pch-output-dir
 # This is a directory to persist automatically created precompiled bridging headers
 SWIFT_FEATURE_USE_PCH_OUTPUT_DIR = "swift.use_pch_output_dir"
+
+# Enable codeview format debug info for Windows when building for debug.
+SWIFT_FEATURE_CODEVIEW = "swift.codeview"
