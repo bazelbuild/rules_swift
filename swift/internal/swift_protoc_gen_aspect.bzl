@@ -106,7 +106,8 @@ def _register_pbswift_generate_action(
         generate_from_proto_sources,
         mkdir_and_run,
         protoc_executable,
-        protoc_plugin_executable):
+        protoc_plugin_executable,
+        host_path_separator):
     """Registers actions that generate `.pb.swift` files from `.proto` files.
 
     Args:
@@ -130,6 +131,8 @@ def _register_pbswift_generate_action(
         protoc_executable: The `File` representing the `protoc` executable.
         protoc_plugin_executable: The `File` representing the `protoc` plugin
             executable.
+        host_path_separator: Separator for the paths to use to join path
+            arguments.
 
     Returns:
         A list of generated `.pb.swift` files corresponding to the `.proto`
@@ -176,7 +179,7 @@ def _register_pbswift_generate_action(
         )
     protoc_args.add_joined(
         transitive_descriptor_sets,
-        join_with = ":",
+        join_with = host_path_separator,
         format_joined = "--descriptor_set_in=%s",
         omit_if_empty = True,
     )
@@ -402,6 +405,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             aspect_ctx.executable._mkdir_and_run,
             aspect_ctx.executable._protoc,
             aspect_ctx.executable._protoc_gen_swift,
+            aspect_ctx.configuration.host_path_separator,
         )
 
         module_name = swift_common.derive_module_name(target.label)
