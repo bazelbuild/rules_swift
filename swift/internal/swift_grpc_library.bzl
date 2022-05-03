@@ -49,7 +49,8 @@ def _register_grpcswift_generate_action(
         protoc_executable,
         protoc_plugin_executable,
         flavor,
-        extra_module_imports):
+        extra_module_imports,
+        host_path_separator):
     """Registers actions to generate `.grpc.swift` files from `.proto` files.
 
     Args:
@@ -75,6 +76,8 @@ def _register_grpcswift_generate_action(
             executable.
         flavor: The library flavor to generate.
         extra_module_imports: Additional modules to import.
+        host_path_separator: Separator for the paths to use to join path
+            arguments.
 
     Returns:
         A list of generated `.grpc.swift` files corresponding to the `.proto`
@@ -138,7 +141,7 @@ def _register_grpcswift_generate_action(
 
     protoc_args.add_joined(
         transitive_descriptor_sets,
-        join_with = ":",
+        join_with = host_path_separator,
         format_joined = "--descriptor_set_in=%s",
         omit_if_empty = True,
     )
@@ -263,6 +266,7 @@ def _swift_grpc_library_impl(ctx):
         ctx.executable._protoc_gen_swiftgrpc,
         ctx.attr.flavor,
         extra_module_imports,
+        ctx.configuration.host_path_separator,
     )
 
     # Compile the generated Swift sources and produce a static library and a
