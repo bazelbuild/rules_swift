@@ -30,6 +30,7 @@ load(
     ":feature_names.bzl",
     "SWIFT_FEATURE_BITCODE_EMBEDDED",
     "SWIFT_FEATURE_CACHEABLE_SWIFTMODULES",
+    "SWIFT_FEATURE_CODEVIEW_DEBUG_INFO",
     "SWIFT_FEATURE_COVERAGE",
     "SWIFT_FEATURE_COVERAGE_PREFIX_MAP",
     "SWIFT_FEATURE_DBG",
@@ -506,10 +507,28 @@ def compile_action_configs(
                 swift_action_names.DERIVE_FILES,
             ],
             configurators = [
+                swift_toolchain_config.add_arg("-g"),
+                swift_toolchain_config.add_arg("-debug-info-format=codeview"),
+            ],
+            features = [
+                [SWIFT_FEATURE_DBG, SWIFT_FEATURE_CODEVIEW_DEBUG_INFO],
+                [SWIFT_FEATURE_FASTBUILD, SWIFT_FEATURE_CODEVIEW_DEBUG_INFO],
+                [SWIFT_FEATURE_FULL_DEBUG_INFO, SWIFT_FEATURE_CODEVIEW_DEBUG_INFO],
+            ],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVE_FILES,
+            ],
+            configurators = [
                 swift_toolchain_config.add_arg("-gline-tables-only"),
             ],
             features = [SWIFT_FEATURE_FASTBUILD],
-            not_features = [SWIFT_FEATURE_FULL_DEBUG_INFO],
+            not_features = [
+                [SWIFT_FEATURE_FULL_DEBUG_INFO],
+                [SWIFT_FEATURE_CODEVIEW_DEBUG_INFO],
+            ],
         ),
 
         # Make paths written into debug info workspace-relative.
