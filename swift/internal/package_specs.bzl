@@ -45,7 +45,10 @@ def _parse_package_spec(*, package_spec, workspace_name):
         fail(("A package list may only contain absolute labels " +
               "(found '{}').").format(package_spec))
 
-    if package_spec.endswith("/..."):
+    if package_spec == "...":
+        match_subpackages = True
+        package = ""
+    elif package_spec.endswith("/..."):
         match_subpackages = True
         package = package_spec[:-4]
     else:
@@ -124,11 +127,13 @@ def _label_matches_package_spec_ignoring_exclusion(*, label, package_spec):
     workspace_name = label.workspace_name
 
     if package_spec.match_subpackages:
+        if workspace_name != package_spec.workspace_name:
+            return False
+        if not package_spec.package:
+            return True
         return (
-            workspace_name == package_spec.workspace_name and (
-                package == package_spec.package or
-                package.startswith(package_spec.package + "/")
-            )
+            package == package_spec.package or
+            package.startswith(package_spec.package + "/")
         )
     else:
         return (
