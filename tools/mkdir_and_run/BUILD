@@ -1,8 +1,17 @@
+load("@bazel_skylib//rules:native_binary.bzl", "native_binary")
+
 licenses(["notice"])
 
-sh_binary(
+native_binary(
     name = "mkdir_and_run",
-    srcs = ["mkdir_and_run.sh"],
+    src = select({
+        "@bazel_tools//src/conditions:host_windows": "mkdir_and_run.cmd",
+        "//conditions:default": "mkdir_and_run.sh",
+    }),
+    out = select({
+        "@bazel_tools//src/conditions:host_windows": "mkdir_and_run.cmd",
+        "//conditions:default": "mkdir_and_run.sh",
+    }),
     visibility = ["//visibility:public"],
 )
 
