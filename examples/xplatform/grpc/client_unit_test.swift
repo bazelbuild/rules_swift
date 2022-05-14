@@ -21,14 +21,15 @@ import examples_xplatform_grpc_echo_proto
 class ClientUnitTest {
 
   func testSynchronousCall() throws {
-    let client: RulesSwift_Examples_Grpc_EchoServiceService = {
-      let stub = RulesSwift_Examples_Grpc_EchoServiceServiceTestStub()
-      stub.echoResponses.append(RulesSwift_Examples_Grpc_EchoResponse.with { response in
+    let client: RulesSwift_Examples_Grpc_EchoServiceClientProtocol = {
+      let stub = RulesSwift_Examples_Grpc_EchoServiceTestClient()
+      stub.enqueueEchoResponse(RulesSwift_Examples_Grpc_EchoResponse.with { response in
         response.contents = "Hello"
       })
       return stub
    }()
-   let response = try client.echo(RulesSwift_Examples_Grpc_EchoRequest())
+   let call = client.echo(RulesSwift_Examples_Grpc_EchoRequest())
+   let response = try! call.response.wait()
    XCTAssertEqual(response.contents, "Hello")
   }
 }

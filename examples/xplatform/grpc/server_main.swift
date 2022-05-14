@@ -13,34 +13,48 @@
 // limitations under the License.
 
 import Dispatch
-import SwiftGRPC
+import GRPC
+import NIOCore
+import NIOPosix
 import examples_xplatform_grpc_echo_proto
 import examples_xplatform_grpc_echo_server_services_swift
 
+
 /// Concrete implementation of the `EchoService` service definition.
 class EchoProvider: RulesSwift_Examples_Grpc_EchoServiceProvider {
+  var interceptors: RulesSwift_Examples_Grpc_EchoServiceServerInterceptorFactoryProtocol?
 
   /// Called when the server receives a request for the `EchoService.Echo` method.
   ///
   /// - Parameters:
   ///   - request: The message containing the request parameters.
-  ///   - session: Information about the current session.
+  ///   - context: Information about the current session.
   /// - Returns: The response that will be sent back to the client.
-  /// - Throws: If an error occurs while processing the request.
   func echo(request: RulesSwift_Examples_Grpc_EchoRequest,
-            session: RulesSwift_Examples_Grpc_EchoServiceEchoSession
-  ) throws -> RulesSwift_Examples_Grpc_EchoResponse {
-    var response = RulesSwift_Examples_Grpc_EchoResponse()
-    response.contents = "You sent: \(request.contents)"
-    return response
+            context: StatusOnlyCallContext) -> EventLoopFuture<RulesSwift_Examples_Grpc_EchoResponse> {
+    return context.eventLoop.makeSucceededFuture(RulesSwift_Examples_Grpc_EchoResponse.with {
+      $0.contents = "You sent: \(request.contents)"
+    })
   }
 }
 
-// Initialize and start the service.
-let address = "0.0.0.0:9000"
-let server = ServiceServer(address: address, serviceProviders: [EchoProvider()])
-print("Starting server in \(address)")
-server.start()
+let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+defer {
+  try! group.syncShutdownGracefully()
+}
 
-// Park the main thread so that the server continues to run and listen for requests.
-dispatchMain()
+// Initialize and start the service.
+let server = Server.insecure(group: group)
+  .withServiceProviders([EchoProvider()])
+  .bind(host: "0.0.0.0", port: 9000)
+
+server.map {
+  $0.channel.localAddress
+}.whenSuccess { address in
+  print("server started on port \(address!.port!)")
+}
+
+// Wait on the server's `onClose` future to stop the program from exiting.
+_ = try server.flatMap {
+  $0.onClose
+}.wait()
