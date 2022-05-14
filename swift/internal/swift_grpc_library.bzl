@@ -115,15 +115,15 @@ def _register_grpcswift_generate_action(
         format = "--plugin=protoc-gen-swiftgrpc=%s",
     )
     protoc_args.add(generated_dir_path, format = "--swiftgrpc_out=%s")
+
     protoc_args.add("--swiftgrpc_opt=Visibility=Public")
     if flavor == "client":
         protoc_args.add("--swiftgrpc_opt=Client=true")
         protoc_args.add("--swiftgrpc_opt=Server=false")
     elif flavor == "client_stubs":
-        protoc_args.add("--swiftgrpc_opt=Client=true")
+        protoc_args.add("--swiftgrpc_opt=Client=false")
         protoc_args.add("--swiftgrpc_opt=Server=false")
-        protoc_args.add("--swiftgrpc_opt=TestStubs=true")
-        protoc_args.add("--swiftgrpc_opt=Implementations=false")
+        protoc_args.add("--swiftgrpc_opt=TestClient=true")
     elif flavor == "server":
         protoc_args.add("--swiftgrpc_opt=Client=false")
         protoc_args.add("--swiftgrpc_opt=Server=true")
@@ -248,8 +248,14 @@ def _swift_grpc_library_impl(ctx):
         minimal_module_mappings,
     )
 
-    extra_module_imports = []
-    if ctx.attr.flavor == "client_stubs":
+    extra_module_imports = [
+        # gRPC's generated code lives in another module but directly refers to
+        # the proto structs. This is done so that one could generate both of
+        # them in the same package, however we are not. Since we aren't
+        # explicitly add an import for the proto dependencies.
+        swift_common.derive_module_name(ctx.attr.srcs[0].label),
+    ]
+    if ctx.attr.flavor in ["client_stubs"]:
         extra_module_imports.append(swift_common.derive_module_name(deps[0].label))
 
     # Generate the Swift sources from the .proto files.
@@ -388,7 +394,7 @@ The kind of definitions that should be generated:
             ),
             # TODO(b/63389580): Migrate to proto_lang_toolchain.
             "_proto_support": attr.label_list(
-                default = [Label("@com_github_grpc_grpc_swift//:SwiftGRPC")],
+                default = [Label("@com_github_grpc_grpc_swift//:GRPC")],
             ),
             "_protoc": attr.label(
                 cfg = "exec",
@@ -400,7 +406,7 @@ The kind of definitions that should be generated:
             "_protoc_gen_swiftgrpc": attr.label(
                 cfg = "exec",
                 default = Label(
-                    "@com_github_grpc_grpc_swift//:protoc-gen-swiftgrpc_wrapper",
+                    "@com_github_grpc_grpc_swift//:protoc-gen-grpc-swift_wrapper",
                 ),
                 executable = True,
             ),
