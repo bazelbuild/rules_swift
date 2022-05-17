@@ -31,7 +31,7 @@ load(
     _swift_proto_library_group = "swift_proto_library_group",
 )
 load(
-    "//swift:swift.bzl",
+    "//swift:providers.bzl",
     _SwiftProtoCompilerInfo = "SwiftProtoCompilerInfo",
     _SwiftProtoInfo = "SwiftProtoInfo",
 )

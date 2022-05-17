@@ -1,6 +1,6 @@
 """Return the .swiftmodule file from a swift_library for testing"""
 
-load("//swift:swift.bzl", "SwiftInfo")
+load("//swift:providers.bzl", "SwiftInfo")
 
 def _impl(ctx):
     modules = ctx.attr.lib[SwiftInfo].direct_modules

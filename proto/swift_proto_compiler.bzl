@@ -28,11 +28,7 @@ load(
     "//proto:swift_proto_utils.bzl",
     "register_module_mapping_write_action",
 )
-load(
-    "//swift:swift.bzl",
-    "SwiftInfo",
-    "SwiftProtoCompilerInfo",
-)
+load("//swift:providers.bzl", "SwiftInfo", "SwiftProtoCompilerInfo")
 
 def _swift_proto_compile(label, actions, swift_proto_compiler_info, additional_compiler_info, proto_infos, module_mappings):
     """Compiles Swift source files from `ProtoInfo` providers.
@@ -315,7 +311,7 @@ For example:
         ),
         "plugin_name": attr.string(
             doc = """\
-Name of the proto compiler plugin passed to protoc. 
+Name of the proto compiler plugin passed to protoc.
 
 For example:
 

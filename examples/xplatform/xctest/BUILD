@@ -1,4 +1,4 @@
-load("//swift:swift.bzl", "swift_test")
+load("//swift:swift_test.bzl", "swift_test")
 
 licenses(["notice"])
 

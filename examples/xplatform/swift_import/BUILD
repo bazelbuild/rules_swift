@@ -1,5 +1,7 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
-load("//swift:swift.bzl", "swift_binary", "swift_import", "swift_library")
+load("//swift:swift_binary.bzl", "swift_binary")
+load("//swift:swift_import.bzl", "swift_import")
+load("//swift:swift_library.bzl", "swift_library")
 load(":get_swiftmodule.bzl", "get_swiftmodule")
 
 swift_binary(

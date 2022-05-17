@@ -6,10 +6,7 @@ load(
     "//proto:proto.bzl",
     "swift_proto_library",
 )
-load(
-    "//swift:swift.bzl",
-    "swift_binary",
-)
+load("//swift:swift_binary.bzl", "swift_binary")
 
 licenses(["notice"])
 

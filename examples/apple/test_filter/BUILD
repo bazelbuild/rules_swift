@@ -1,8 +1,5 @@
-load(
-    "//swift:swift.bzl",
-    "swift_library",
-    "swift_test",
-)
+load("//swift:swift_library.bzl", "swift_library")
+load("//swift:swift_test.bzl", "swift_test")
 
 swift_library(
     name = "test_filter_lib",

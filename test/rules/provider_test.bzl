@@ -21,7 +21,7 @@ load(
     "asserts",
     "unittest",
 )
-load("@build_bazel_rules_swift//swift:swift.bzl", "SwiftInfo")
+load("//swift:providers.bzl", "SwiftInfo")
 
 # A sentinel value returned by `_evaluate_field` when a `None` value is
 # encountered during the evaluation of a dotted path on any component other than
