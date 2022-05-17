@@ -14,24 +14,30 @@
 
 """Implementation of the `swift_binary` and `swift_test` rules."""
 
-load(":derived_files.bzl", "derived_files")
-load(":feature_names.bzl", "SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT")
+load("//swift/internal:derived_files.bzl", "derived_files")
 load(
-    ":linking.bzl",
+    "//swift/internal:feature_names.bzl",
+    "SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT",
+)
+load(
+    "//swift/internal:linking.bzl",
     "binary_rule_attrs",
     "configure_features_for_binary",
     "malloc_linking_context",
     "register_link_binary_action",
 )
-load(":output_groups.bzl", "supplemental_compilation_output_groups")
-load(":providers.bzl", "SwiftCompilerPluginInfo", "SwiftInfo")
-load(":swift_common.bzl", "swift_common")
 load(
-    ":utils.bzl",
+    "//swift/internal:output_groups.bzl",
+    "supplemental_compilation_output_groups",
+)
+load(
+    "//swift/internal:utils.bzl",
     "expand_locations",
     "get_providers",
     "include_developer_search_paths",
 )
+load(":providers.bzl", "SwiftCompilerPluginInfo", "SwiftInfo")
+load(":swift_common.bzl", "swift_common")
 
 def _maybe_parse_as_library_copts(srcs):
     """Returns a list of compiler flags depending on `main.swift`'s presence.

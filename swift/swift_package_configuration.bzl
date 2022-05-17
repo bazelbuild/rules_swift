@@ -14,7 +14,7 @@
 
 """Support for setting compiler configurations on a per-package basis."""
 
-load(":package_specs.bzl", "parse_package_specs")
+load("//swift/internal:package_specs.bzl", "parse_package_specs")
 load(":providers.bzl", "SwiftPackageConfigurationInfo")
 
 def _swift_package_configuration_impl(ctx):

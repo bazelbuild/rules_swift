@@ -16,6 +16,10 @@
 
 load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
+load(
+    "//swift:swift_clang_module_aspect.bzl",
+    "swift_clang_module_aspect",
+)
 load(":actions.bzl", "is_action_enabled", "swift_action_names")
 load(":attrs.bzl", "swift_compilation_attrs")
 load(":autolinking.bzl", "register_autolink_extract_action")
@@ -41,7 +45,6 @@ load(
     "get_cc_feature_configuration",
     "is_feature_enabled",
 )
-load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 load(":utils.bzl", "get_providers")
 
 # TODO: Remove once we drop bazel 7.x

@@ -17,17 +17,14 @@
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@build_bazel_apple_support//lib:apple_support.bzl", "apple_support")
 load("@build_bazel_apple_support//lib:lipo.bzl", "lipo")
-load("@build_bazel_apple_support//lib:transitions.bzl", "macos_universal_transition")
 load(
-    "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
-    "SWIFT_FEATURE__SUPPORTS_MACROS",
+    "@build_bazel_apple_support//lib:transitions.bzl",
+    "macos_universal_transition",
 )
+load("//swift/internal:feature_names.bzl", "SWIFT_FEATURE__SUPPORTS_MACROS")
+load("//swift/internal:features.bzl", "is_feature_enabled")
 load(
-    "@build_bazel_rules_swift//swift/internal:features.bzl",
-    "is_feature_enabled",
-)
-load(
-    "@build_bazel_rules_swift//swift/internal:linking.bzl",
+    "//swift/internal:linking.bzl",
     "binary_rule_attrs",
     "configure_features_for_binary",
     "create_linking_context_from_compilation_outputs",
@@ -35,24 +32,17 @@ load(
     "register_link_binary_action",
 )
 load(
-    "@build_bazel_rules_swift//swift/internal:output_groups.bzl",
+    "//swift/internal:output_groups.bzl",
     "supplemental_compilation_output_groups",
 )
 load(
-    "@build_bazel_rules_swift//swift/internal:providers.bzl",
-    "SwiftCompilerPluginInfo",
-    "SwiftInfo",
-)
-load(
-    "@build_bazel_rules_swift//swift/internal:swift_common.bzl",
-    "swift_common",
-)
-load(
-    "@build_bazel_rules_swift//swift/internal:utils.bzl",
+    "//swift/internal:utils.bzl",
     "expand_locations",
     "get_providers",
 )
 load(":module_name.bzl", "derive_swift_module_name")
+load(":providers.bzl", "SwiftCompilerPluginInfo", "SwiftInfo")
+load(":swift_common.bzl", "swift_common")
 
 def _swift_compiler_plugin_impl(ctx):
     swift_toolchain = swift_common.get_toolchain(ctx)

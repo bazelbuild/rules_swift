@@ -15,11 +15,11 @@
 """Implementation of the `swift_library_group` rule."""
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load(":attrs.bzl", "swift_deps_attr", "swift_toolchain_attrs")
+load("//swift/internal:attrs.bzl", "swift_deps_attr", "swift_toolchain_attrs")
+load("//swift/internal:utils.bzl", "get_providers")
 load(":providers.bzl", "SwiftInfo")
 load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 load(":swift_common.bzl", "swift_common")
-load(":utils.bzl", "get_providers")
 
 def _swift_library_group_impl(ctx):
     deps = ctx.attr.deps

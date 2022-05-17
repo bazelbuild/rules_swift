@@ -33,17 +33,15 @@ load(
     "SwiftProtoCompilerInfo",
     "swift_common",
 )
+load(
+    "//swift:swift_clang_module_aspect.bzl",
+    "swift_clang_module_aspect",
+)
 
 # buildifier: disable=bzl-visibility
 load(
     "//swift/internal:attrs.bzl",
     "swift_deps_attr",
-)
-
-# buildifier: disable=bzl-visibility
-load(
-    "//swift/internal:swift_clang_module_aspect.bzl",
-    "swift_clang_module_aspect",
 )
 
 # buildifier: disable=bzl-visibility

@@ -25,7 +25,7 @@ Skylib.
 """
 
 load(
-    "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
+    "//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_CODEVIEW_DEBUG_INFO",
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
     "SWIFT_FEATURE_EMIT_SWIFTDOC",
@@ -287,7 +287,7 @@ def _create_linux_toolchain(repository_ctx):
         "BUILD",
         """
 load(
-    "@build_bazel_rules_swift//swift/internal:swift_toolchain.bzl",
+    "@build_bazel_rules_swift//swift/toolchains:swift_toolchain.bzl",
     "swift_toolchain",
 )
 
@@ -329,7 +329,7 @@ def _create_xcode_toolchain(repository_ctx):
         "BUILD",
         """
 load(
-    "@build_bazel_rules_swift//swift/internal:xcode_swift_toolchain.bzl",
+    "@build_bazel_rules_swift//swift/toolchains:xcode_swift_toolchain.bzl",
     "xcode_swift_toolchain",
 )
 
@@ -397,7 +397,7 @@ def _create_windows_toolchain(repository_ctx):
         "BUILD",
         """
 load(
-  "@build_bazel_rules_swift//swift/internal:swift_toolchain.bzl",
+  "@build_bazel_rules_swift//swift/toolchains:swift_toolchain.bzl",
   "swift_toolchain",
 )
 

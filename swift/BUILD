@@ -5,11 +5,26 @@ load(
     "per_module_swiftcopt_flag",
     "repeatable_string_flag",
 )
-load(":swift.bzl", "swift_interop_hint")
+load(":swift_interop_hint.bzl", "swift_interop_hint")
 
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
+
+bzl_library(
+    name = "extensions",
+    srcs = ["extensions.bzl"],
+    deps = [":repositories"],
+)
+
+bzl_library(
+    name = "extras",
+    srcs = ["extras.bzl"],
+    deps = [
+        "@build_bazel_apple_support//lib:repositories",
+        "@rules_proto//proto:repositories",
+    ],
+)
 
 bzl_library(
     name = "repositories",
@@ -29,15 +44,97 @@ bzl_library(
 )
 
 bzl_library(
+    name = "providers",
+    srcs = ["providers.bzl"],
+    visibility = ["//swift:__subpackages__"],
+    deps = [
+        "@bazel_skylib//lib:sets",
+        "@bazel_skylib//lib:types",
+    ],
+)
+
+bzl_library(
+    name = "swift",
+    srcs = ["swift.bzl"],
+    deps = [
+        ":providers",
+        ":swift_binary",
+        ":swift_clang_module_aspect",
+        ":swift_common",
+        ":swift_compiler_plugin",
+        ":swift_extract_symbol_graph",
+        ":swift_feature_allowlist",
+        ":swift_import",
+        ":swift_interop_hint",
+        ":swift_library",
+        ":swift_library_group",
+        ":swift_module_alias",
+        ":swift_package_configuration",
+        ":swift_symbol_graph_aspect",
+        ":swift_test",
+    ],
+)
+
+bzl_library(
+    name = "swift_binary",
+    srcs = ["swift_binary.bzl"],
+    visibility = ["//swift:__subpackages__"],
+    deps = [
+        ":providers",
+        ":swift_common",
+        "//swift/internal:compiling",
+        "//swift/internal:derived_files",
+        "//swift/internal:feature_names",
+        "//swift/internal:linking",
+        "//swift/internal:utils",
+    ],
+)
+
+bzl_library(
+    name = "swift_clang_module_aspect",
+    srcs = ["swift_clang_module_aspect.bzl"],
+    visibility = [
+        "//proto:__subpackages__",
+        "//swift:__subpackages__",
+    ],
+    deps = [
+        ":providers",
+        "//swift/internal:attrs",
+        "//swift/internal:compiling",
+        "//swift/internal:derived_files",
+        "//swift/internal:feature_names",
+        "//swift/internal:features",
+        "//swift/internal:module_maps",
+        "//swift/internal:toolchain_utils",
+        "//swift/internal:utils",
+    ],
+)
+
+bzl_library(
+    name = "swift_common",
+    srcs = ["swift_common.bzl"],
+    visibility = ["//swift:__subpackages__"],
+    deps = [
+        "//swift/internal:attrs",
+        "//swift/internal:compiling",
+        "//swift/internal:features",
+        "//swift/internal:linking",
+        "//swift/internal:providers",
+        "//swift/internal:symbol_graph_extracting",
+        "//swift/internal:toolchain_utils",
+    ],
+)
+
+bzl_library(
     name = "swift_compiler_plugin",
     srcs = ["swift_compiler_plugin.bzl"],
     deps = [
         ":module_name",
+        ":providers",
+        ":swift_common",
         "//swift/internal:compiling",
         "//swift/internal:linking",
         "//swift/internal:output_groups",
-        "//swift/internal:providers",
-        "//swift/internal:swift_common",
         "//swift/internal:utils",
         "@bazel_skylib//lib:dicts",
         "@build_bazel_apple_support//lib:apple_support",
@@ -47,24 +144,132 @@ bzl_library(
 )
 
 bzl_library(
-    name = "swift",
-    srcs = ["swift.bzl"],
+    name = "swift_extract_symbol_graph",
+    srcs = ["swift_extract_symbol_graph.bzl"],
+    visibility = ["//swift:__subpackages__"],
     deps = [
-        ":swift_compiler_plugin",
-        "//swift/internal:providers",
-        "//swift/internal:swift_binary",
-        "//swift/internal:swift_clang_module_aspect",
-        "//swift/internal:swift_common",
-        "//swift/internal:swift_extract_symbol_graph",
-        "//swift/internal:swift_feature_allowlist",
-        "//swift/internal:swift_import",
-        "//swift/internal:swift_interop_hint",
-        "//swift/internal:swift_library",
-        "//swift/internal:swift_library_group",
-        "//swift/internal:swift_module_alias",
-        "//swift/internal:swift_package_configuration",
+        ":providers",
+        ":swift_symbol_graph_aspect",
+        "//swift/internal:derived_files",
+    ],
+)
+
+bzl_library(
+    name = "swift_feature_allowlist",
+    srcs = ["swift_feature_allowlist.bzl"],
+    visibility = ["//swift:__subpackages__"],
+    deps = [
+        ":providers",
+        "//swift/internal:package_specs",
+    ],
+)
+
+bzl_library(
+    name = "swift_import",
+    srcs = ["swift_import.bzl"],
+    visibility = ["//swift:__subpackages__"],
+    deps = [
+        ":providers",
+        ":swift_common",
+        "//swift/internal:attrs",
+        "//swift/internal:linking",
+        "//swift/internal:utils",
+        "@bazel_skylib//lib:dicts",
+    ],
+)
+
+bzl_library(
+    name = "swift_interop_hint",
+    srcs = ["swift_interop_hint.bzl"],
+    visibility = ["//swift:__subpackages__"],
+    deps = [":swift_common"],
+)
+
+bzl_library(
+    name = "swift_library",
+    srcs = ["swift_library.bzl"],
+    visibility = ["//swift:__subpackages__"],
+    deps = [
+        ":providers",
+        ":swift_clang_module_aspect",
+        ":swift_common",
+        "//swift/internal:attrs",
+        "//swift/internal:build_settings",
+        "//swift/internal:compiling",
+        "//swift/internal:feature_names",
+        "//swift/internal:linking",
+        "//swift/internal:output_groups",
+        "//swift/internal:utils",
+        "@bazel_skylib//lib:dicts",
+        "@bazel_skylib//lib:sets",
+        "@bazel_skylib//rules:common_settings",
+    ],
+)
+
+bzl_library(
+    name = "swift_library_group",
+    srcs = ["swift_library_group.bzl"],
+    visibility = ["//swift:__subpackages__"],
+    deps = [
+        ":providers",
+        ":swift_clang_module_aspect",
+        ":swift_common",
+        "//swift/internal:attrs",
+        "//swift/internal:utils",
+        "@bazel_skylib//lib:dicts",
+    ],
+)
+
+bzl_library(
+    name = "swift_module_alias",
+    srcs = ["swift_module_alias.bzl"],
+    visibility = ["//swift:__subpackages__"],
+    deps = [
+        ":providers",
+        ":swift_common",
+        "//swift/internal:derived_files",
+        "//swift/internal:linking",
+        "//swift/internal:output_groups",
+        "//swift/internal:utils",
+        "@bazel_skylib//lib:dicts",
+    ],
+)
+
+bzl_library(
+    name = "swift_package_configuration",
+    srcs = ["swift_package_configuration.bzl"],
+    visibility = ["//swift:__subpackages__"],
+    deps = [
+        ":providers",
+        "//swift/internal:package_specs",
+    ],
+)
+
+bzl_library(
+    name = "swift_symbol_graph_aspect",
+    srcs = ["swift_symbol_graph_aspect.bzl"],
+    visibility = ["//swift:__subpackages__"],
+    deps = [
         "//swift/internal:swift_symbol_graph_aspect",
-        "//swift/internal:swift_test",
+        "@bazel_skylib//lib:dicts",
+    ],
+)
+
+bzl_library(
+    name = "swift_test",
+    srcs = ["swift_test.bzl"],
+    visibility = ["//swift:__subpackages__"],
+    deps = [
+        ":providers",
+        ":swift_common",
+        "//swift/internal:derived_files",
+        "//swift/internal:env_expansion",
+        "//swift/internal:feature_names",
+        "//swift/internal:linking",
+        "//swift/internal:output_groups",
+        "//swift/internal:swift_symbol_graph_aspect",
+        "//swift/internal:utils",
+        "@bazel_skylib//lib:dicts",
     ],
 )
 
@@ -171,19 +376,4 @@ label_flag(
 filegroup(
     name = "empty",
     visibility = ["//visibility:private"],
-)
-
-bzl_library(
-    name = "extensions",
-    srcs = ["extensions.bzl"],
-    deps = [":repositories"],
-)
-
-bzl_library(
-    name = "extras",
-    srcs = ["extras.bzl"],
-    deps = [
-        "@build_bazel_apple_support//lib:repositories",
-        "@rules_proto//proto:repositories",
-    ],
 )

@@ -15,20 +15,33 @@
 """Implementation of the `swift_binary` and `swift_test` rules."""
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load(":derived_files.bzl", "derived_files")
-load(":env_expansion.bzl", "expanded_env")
+load("//swift/internal:derived_files.bzl", "derived_files")
+load("//swift/internal:env_expansion.bzl", "expanded_env")
 load(
-    ":feature_names.bzl",
+    "//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_BUNDLED_XCTESTS",
 )
 load(
-    ":linking.bzl",
+    "//swift/internal:linking.bzl",
     "binary_rule_attrs",
     "configure_features_for_binary",
     "malloc_linking_context",
     "register_link_binary_action",
 )
-load(":output_groups.bzl", "supplemental_compilation_output_groups")
+load(
+    "//swift/internal:output_groups.bzl",
+    "supplemental_compilation_output_groups",
+)
+load(
+    "//swift/internal:swift_symbol_graph_aspect.bzl",
+    "make_swift_symbol_graph_aspect",
+)
+load(
+    "//swift/internal:utils.bzl",
+    "expand_locations",
+    "get_providers",
+    "include_developer_search_paths",
+)
 load(
     ":providers.bzl",
     "SwiftCompilerPluginInfo",
@@ -36,12 +49,10 @@ load(
     "SwiftSymbolGraphInfo",
 )
 load(":swift_common.bzl", "swift_common")
-load(":swift_symbol_graph_aspect.bzl", "test_discovery_symbol_graph_aspect")
-load(
-    ":utils.bzl",
-    "expand_locations",
-    "get_providers",
-    "include_developer_search_paths",
+
+_test_discovery_symbol_graph_aspect = make_swift_symbol_graph_aspect(
+    default_minimum_access_level = "internal",
+    testonly_targets = True,
 )
 
 def _maybe_parse_as_library_copts(srcs):
@@ -417,7 +428,7 @@ def _swift_test_impl(ctx):
 swift_test = rule(
     attrs = dicts.add(
         binary_rule_attrs(
-            additional_deps_aspects = [test_discovery_symbol_graph_aspect],
+            additional_deps_aspects = [_test_discovery_symbol_graph_aspect],
             additional_deps_providers = [[SwiftCompilerPluginInfo]],
             stamp_default = 0,
         ),

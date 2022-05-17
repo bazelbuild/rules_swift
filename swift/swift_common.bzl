@@ -24,13 +24,13 @@ which exports the `swift_common` module.
 """
 
 load(
-    ":attrs.bzl",
+    "//swift/internal:attrs.bzl",
     "swift_compilation_attrs",
     "swift_library_rule_attrs",
     "swift_toolchain_attrs",
 )
 load(
-    ":compiling.bzl",
+    "//swift/internal:compiling.bzl",
     "compile",
     "compile_module_interface",
     "create_compilation_context",
@@ -38,22 +38,31 @@ load(
     "precompile_clang_module",
 )
 load(
-    ":features.bzl",
+    "//swift/internal:features.bzl",
     "configure_features",
     "get_cc_feature_configuration",
     "is_feature_enabled",
 )
-load(":linking.bzl", "create_linking_context_from_compilation_outputs")
 load(
-    ":providers.bzl",
+    "//swift/internal:linking.bzl",
+    "create_linking_context_from_compilation_outputs",
+)
+load(
+    "//swift/internal:providers.bzl",
     "create_clang_module",
     "create_module",
     "create_swift_info",
+    "create_swift_interop_info",
     "create_swift_module",
 )
-load(":swift_clang_module_aspect.bzl", "create_swift_interop_info")
-load(":symbol_graph_extracting.bzl", "extract_symbol_graph")
-load(":toolchain_utils.bzl", "get_swift_toolchain")
+load(
+    "//swift/internal:symbol_graph_extracting.bzl",
+    "extract_symbol_graph",
+)
+load(
+    "//swift/internal:toolchain_utils.bzl",
+    "get_swift_toolchain",
+)
 
 # The exported `swift_common` module, which defines the public API for directly
 # invoking actions that compile Swift code from other rules.

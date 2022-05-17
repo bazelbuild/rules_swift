@@ -14,7 +14,7 @@
 
 """Support for restricting access to features based on an allowlist."""
 
-load(":package_specs.bzl", "parse_package_specs")
+load("//swift/internal:package_specs.bzl", "parse_package_specs")
 load(":providers.bzl", "SwiftFeatureAllowlistInfo")
 
 def _swift_feature_allowlist_impl(ctx):

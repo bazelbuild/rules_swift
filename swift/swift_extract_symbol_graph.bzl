@@ -14,7 +14,7 @@
 
 """Implementation of the `swift_extract_module_graph` rule."""
 
-load(":derived_files.bzl", "derived_files")
+load("//swift/internal:derived_files.bzl", "derived_files")
 load(":providers.bzl", "SwiftInfo", "SwiftSymbolGraphInfo")
 load(":swift_symbol_graph_aspect.bzl", "swift_symbol_graph_aspect")
 
