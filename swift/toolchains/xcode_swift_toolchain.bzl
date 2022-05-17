@@ -25,11 +25,18 @@ load("@bazel_skylib//lib:partial.bzl", "partial")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
-load(":actions.bzl", "swift_action_names", "target_label_action_configs")
-load(":attrs.bzl", "swift_toolchain_driver_attrs")
-load(":compiling.bzl", "compile_action_configs", "features_from_swiftcopts")
 load(
-    ":feature_names.bzl",
+    "//swift:providers.bzl",
+    "SwiftFeatureAllowlistInfo",
+    "SwiftInfo",
+    "SwiftPackageConfigurationInfo",
+    "SwiftToolchainInfo",
+)
+load("//swift/internal:actions.bzl", "swift_action_names", "target_label_action_configs")
+load("//swift/internal:attrs.bzl", "swift_toolchain_driver_attrs")
+load("//swift/internal:compiling.bzl", "compile_action_configs", "features_from_swiftcopts")
+load(
+    "//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_BUNDLED_XCTESTS",
     "SWIFT_FEATURE_CACHEABLE_SWIFTMODULES",
     "SWIFT_FEATURE_COVERAGE",
@@ -55,19 +62,12 @@ load(
     "SWIFT_FEATURE__SUPPORTS_CONST_VALUE_EXTRACTION",
     "SWIFT_FEATURE__SUPPORTS_MACROS",
 )
-load(":features.bzl", "features_for_build_modes")
+load("//swift/internal:features.bzl", "features_for_build_modes")
+load("//swift/internal:symbol_graph_extracting.bzl", "symbol_graph_action_configs")
+load("//swift/internal:target_triples.bzl", "target_triples")
+load("//swift/internal:toolchain_config.bzl", "swift_toolchain_config")
 load(
-    ":providers.bzl",
-    "SwiftFeatureAllowlistInfo",
-    "SwiftInfo",
-    "SwiftPackageConfigurationInfo",
-    "SwiftToolchainInfo",
-)
-load(":symbol_graph_extracting.bzl", "symbol_graph_action_configs")
-load(":target_triples.bzl", "target_triples")
-load(":toolchain_config.bzl", "swift_toolchain_config")
-load(
-    ":utils.bzl",
+    "//swift/internal:utils.bzl",
     "collect_implicit_deps_providers",
     "get_swift_executable_for_toolchain",
 )

@@ -12,16 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Implementation of the `swift_symbol_graph_aspect` aspect."""
+"""Implementation of the `swift_symbol_graph_aspect` aspect.
+
+The Swift build rules contain two subtly different symbol graph extraction
+aspects; the public one (`swift_symbol_graph_extract`) meant for general usage,
+and a private one used by `swift_test` for XCTest discovery. This file contains
+the core implementation and a factory function used to create the concrete
+aspects; the public aspect is exported by the `swift_symbol_graph_aspect.bzl`
+file in the parent directory.
+"""
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load(":attrs.bzl", "swift_toolchain_attrs")
-load(":derived_files.bzl", "derived_files")
-load(":features.bzl", "configure_features")
-load(":providers.bzl", "SwiftInfo", "SwiftSymbolGraphInfo")
-load(":symbol_graph_extracting.bzl", "extract_symbol_graph")
-load(":toolchain_utils.bzl", "get_swift_toolchain")
-load(":utils.bzl", "include_developer_search_paths")
+load("//swift:providers.bzl", "SwiftInfo", "SwiftSymbolGraphInfo")
+load("//swift/internal:attrs.bzl", "swift_toolchain_attrs")
+load("//swift/internal:derived_files.bzl", "derived_files")
+load("//swift/internal:features.bzl", "configure_features")
+load("//swift/internal:symbol_graph_extracting.bzl", "extract_symbol_graph")
+load("//swift/internal:toolchain_utils.bzl", "get_swift_toolchain")
+load("//swift/internal:utils.bzl", "include_developer_search_paths")
 
 def _swift_symbol_graph_aspect_impl(target, aspect_ctx):
     symbol_graphs = []
@@ -103,7 +111,7 @@ def _testonly_symbol_graph_aspect_impl(target, aspect_ctx):
 
     return _swift_symbol_graph_aspect_impl(target, aspect_ctx)
 
-def _make_swift_symbol_graph_aspect(
+def make_swift_symbol_graph_aspect(
         *,
         default_minimum_access_level,
         doc = "",
@@ -157,28 +165,3 @@ default value is {default_value}.
         implementation = aspect_impl,
         provides = [SwiftSymbolGraphInfo],
     )
-
-# This aspect is exported as public API by `swift_common`.
-swift_symbol_graph_aspect = _make_swift_symbol_graph_aspect(
-    default_minimum_access_level = "public",
-    doc = """\
-Extracts symbol graphs from Swift modules in the build graph.
-
-This aspect propagates a `SwiftSymbolGraphInfo` provider on any target to which
-it is applied. This provider will contain the transitive module graph
-information for the target's dependencies, and if the target propagates Swift
-modules via its `SwiftInfo` provider, it will also extract and propagate their
-symbol graphs by invoking the `swift-symbolgraph-extract` tool.
-
-For an example of how to apply this to a custom rule, refer to the
-implementation of `swift_extract_symbol_graph`.
-    """,
-    testonly_targets = False,
-)
-
-# This aspect is only meant to be used by `swift_test` and should not be
-# exported by `swift_common`.
-test_discovery_symbol_graph_aspect = _make_swift_symbol_graph_aspect(
-    default_minimum_access_level = "internal",
-    testonly_targets = True,
-)

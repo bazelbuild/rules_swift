@@ -15,7 +15,7 @@
 """Common utility definitions used by various BUILD rules."""
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load(":providers.bzl", "SwiftInfo")
+load("//swift:providers.bzl", "SwiftInfo")
 
 def collect_implicit_deps_providers(
         targets,

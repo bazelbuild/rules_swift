@@ -17,33 +17,36 @@
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:sets.bzl", "sets")
 load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
-load(":attrs.bzl", "swift_deps_attr")
+load("//swift/internal:attrs.bzl", "swift_deps_attr")
 load(
-    ":build_settings.bzl",
+    "//swift/internal:build_settings.bzl",
     "PerModuleSwiftCoptSettingInfo",
     "additional_per_module_swiftcopts",
 )
-load(":compiling.bzl", "swift_library_output_map")
+load("//swift/internal:compiling.bzl", "swift_library_output_map")
 load(
-    ":feature_names.bzl",
+    "//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS",
 )
-load(":linking.bzl", "new_objc_provider")
-load(":output_groups.bzl", "supplemental_compilation_output_groups")
-load(":providers.bzl", "SwiftCompilerPluginInfo", "SwiftInfo")
-load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
-load(":swift_common.bzl", "swift_common")
+load("//swift/internal:linking.bzl", "new_objc_provider")
 load(
-    ":utils.bzl",
+    "//swift/internal:output_groups.bzl",
+    "supplemental_compilation_output_groups",
+)
+load(
+    "//swift/internal:utils.bzl",
     "compact",
     "expand_locations",
     "expand_make_variables",
     "get_providers",
     "include_developer_search_paths",
 )
+load(":providers.bzl", "SwiftCompilerPluginInfo", "SwiftInfo")
+load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
+load(":swift_common.bzl", "swift_common")
 
 def _maybe_parse_as_library_copts(srcs):
     """Returns a list of compiler flags depending on `main.swift`'s presence.

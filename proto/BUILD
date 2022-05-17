@@ -32,10 +32,10 @@ bzl_library(
     name = "swift_proto_library",
     srcs = ["swift_proto_library.bzl"],
     deps = [
+        "//swift:swift_clang_module_aspect",
         "//swift/internal:attrs",
         "//swift/internal:compiling",
         "//swift/internal:linking",
-        "//swift/internal:swift_clang_module_aspect",
         "//swift/internal:utils",
         "@bazel_skylib//lib:dicts",
         "@rules_proto//proto:defs",
