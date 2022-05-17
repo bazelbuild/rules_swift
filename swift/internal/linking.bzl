@@ -14,6 +14,10 @@
 
 """Implementation of linking logic for Swift."""
 
+load(
+    "@build_bazel_rules_swift//swift:swift_clang_module_aspect.bzl",
+    "swift_clang_module_aspect",
+)
 load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(":actions.bzl", "is_action_enabled", "swift_action_names")
@@ -26,7 +30,6 @@ load(
 )
 load(":derived_files.bzl", "derived_files")
 load(":features.bzl", "configure_features", "get_cc_feature_configuration")
-load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 load(":utils.bzl", "get_providers")
 
 _MALLOC_DOCSTRING = """\

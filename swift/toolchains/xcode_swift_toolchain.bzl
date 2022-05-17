@@ -19,15 +19,29 @@ toolchain package. If you are looking for rules to build Swift code using this
 toolchain, see `swift.bzl`.
 """
 
-load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load("@bazel_skylib//lib:partial.bzl", "partial")
-load("@bazel_skylib//lib:paths.bzl", "paths")
-load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
-load(":actions.bzl", "swift_action_names", "target_label_action_configs")
-load(":attrs.bzl", "swift_toolchain_driver_attrs")
-load(":compiling.bzl", "compile_action_configs", "features_from_swiftcopts")
 load(
-    ":feature_names.bzl",
+    "@build_bazel_rules_swift//swift:providers.bzl",
+    "SwiftFeatureAllowlistInfo",
+    "SwiftInfo",
+    "SwiftPackageConfigurationInfo",
+    "SwiftToolchainInfo",
+)
+load(
+    "@build_bazel_rules_swift//swift/internal:actions.bzl",
+    "swift_action_names",
+    "target_label_action_configs",
+)
+load(
+    "@build_bazel_rules_swift//swift/internal:attrs.bzl",
+    "swift_toolchain_driver_attrs",
+)
+load(
+    "@build_bazel_rules_swift//swift/internal:compiling.bzl",
+    "compile_action_configs",
+    "features_from_swiftcopts",
+)
+load(
+    "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_BITCODE_EMBEDDED",
     "SWIFT_FEATURE_BITCODE_EMBEDDED_MARKERS",
     "SWIFT_FEATURE_BUNDLED_XCTESTS",
@@ -39,24 +53,33 @@ load(
     "SWIFT_FEATURE_SUPPORTS_SYSTEM_MODULE_FLAG",
     "SWIFT_FEATURE_USE_RESPONSE_FILES",
 )
-load(":features.bzl", "features_for_build_modes")
-load(":symbol_graph_extracting.bzl", "symbol_graph_action_configs")
-load(":toolchain_config.bzl", "swift_toolchain_config")
 load(
-    ":providers.bzl",
-    "SwiftFeatureAllowlistInfo",
-    "SwiftInfo",
-    "SwiftPackageConfigurationInfo",
-    "SwiftToolchainInfo",
+    "@build_bazel_rules_swift//swift/internal:features.bzl",
+    "features_for_build_modes",
 )
-load(":target_triples.bzl", "target_triples")
 load(
-    ":utils.bzl",
+    "@build_bazel_rules_swift//swift/internal:symbol_graph_extracting.bzl",
+    "symbol_graph_action_configs",
+)
+load(
+    "@build_bazel_rules_swift//swift/internal:toolchain_config.bzl",
+    "swift_toolchain_config",
+)
+load(
+    "@build_bazel_rules_swift//swift/internal:target_triples.bzl",
+    "target_triples",
+)
+load(
+    "@build_bazel_rules_swift//swift/internal:utils.bzl",
     "collect_implicit_deps_providers",
     "compact",
     "get_swift_executable_for_toolchain",
     "resolve_optional_tool",
 )
+load("@bazel_skylib//lib:dicts.bzl", "dicts")
+load("@bazel_skylib//lib:partial.bzl", "partial")
+load("@bazel_skylib//lib:paths.bzl", "paths")
+load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
 
 # Maps (operating system, environment) pairs from target triples to the legacy
 # Bazel core `apple_common.platform` values, since we still use some APIs that

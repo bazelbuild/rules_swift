@@ -14,6 +14,15 @@
 
 """An aspect attached to `proto_library` targets to generate Swift artifacts."""
 
+load(
+    "@build_bazel_rules_swift//swift:providers.bzl",
+    "SwiftInfo",
+    "SwiftProtoInfo",
+)
+load(
+    "@build_bazel_rules_swift//swift:swift_common.bzl",
+    "swift_common",
+)
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 load(":attrs.bzl", "swift_config_attrs")
@@ -31,8 +40,6 @@ load(
     "proto_import_path",
     "register_module_mapping_write_action",
 )
-load(":providers.bzl", "SwiftInfo", "SwiftProtoInfo")
-load(":swift_common.bzl", "swift_common")
 load(":utils.bzl", "get_compilation_contexts")
 
 # The paths of proto files bundled with the runtime. This is mainly the well

@@ -14,31 +14,52 @@
 
 """Propagates unified `SwiftInfo` providers for C/Objective-C targets."""
 
-load("@bazel_skylib//lib:sets.bzl", "sets")
-load(":attrs.bzl", "swift_toolchain_attrs")
-load(":compiling.bzl", "derive_module_name", "precompile_clang_module")
-load(":derived_files.bzl", "derived_files")
 load(
-    ":feature_names.bzl",
+    "@build_bazel_rules_swift//swift/internal:attrs.bzl",
+    "swift_toolchain_attrs",
+)
+load(
+    "@build_bazel_rules_swift//swift/internal:compiling.bzl",
+    "derive_module_name",
+    "precompile_clang_module",
+)
+load(
+    "@build_bazel_rules_swift//swift/internal:derived_files.bzl",
+    "derived_files",
+)
+load(
+    "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_EMIT_C_MODULE",
     "SWIFT_FEATURE_LAYERING_CHECK",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_USE_C_MODULES",
 )
-load(":features.bzl", "configure_features", "is_feature_enabled")
-load(":module_maps.bzl", "write_module_map")
 load(
-    ":providers.bzl",
-    "SwiftInfo",
+    "@build_bazel_rules_swift//swift/internal:features.bzl",
+    "configure_features",
+    "is_feature_enabled",
+)
+load(
+    "@build_bazel_rules_swift//swift/internal:module_maps.bzl",
+    "write_module_map",
+)
+load(
+    "@build_bazel_rules_swift//swift/internal:providers.bzl",
+    "SwiftInteropInfo",
     "create_clang_module",
     "create_module",
     "create_swift_info",
 )
-load(":toolchain_utils.bzl", "get_swift_toolchain")
 load(
-    ":utils.bzl",
+    "@build_bazel_rules_swift//swift/internal:toolchain_utils.bzl",
+    "get_swift_toolchain",
+)
+load(
+    "@build_bazel_rules_swift//swift/internal:utils.bzl",
     "compilation_context_for_explicit_module_compilation",
 )
+load("@bazel_skylib//lib:sets.bzl", "sets")
+load(":providers.bzl", "SwiftInfo")
 
 _MULTIPLE_TARGET_ASPECT_ATTRS = [
     "deps",
@@ -59,148 +80,6 @@ _DIRECT_ASPECT_ATTRS = [
     "exports",
     "_j2objc_proto_toolchain",
 ]
-
-_SwiftInteropInfo = provider(
-    doc = """\
-Contains minimal information required to allow `swift_clang_module_aspect` to
-manage the creation of a `SwiftInfo` provider for a C/Objective-C target.
-""",
-    fields = {
-        "exclude_headers": """\
-A `list` of `File`s representing headers that should be excluded from the
-module, if a module map is being automatically generated based on the headers in
-the target's compilation context.
-""",
-        "module_map": """\
-A `File` representing an existing module map that should be used to represent
-the module, or `None` if the module map should be generated based on the headers
-in the target's compilation context.
-""",
-        "module_name": """\
-A string denoting the name of the module, or `None` if the name should be
-derived automatically from the target label.
-""",
-        "requested_features": """\
-A list of features that should be enabled for the target, in addition to those
-supplied in the `features` attribute, unless the feature is otherwise marked as
-unsupported (either on the target or by the toolchain). This allows the rule
-implementation to supply an additional set of fixed features that should always
-be enabled when the aspect processes that target; for example, a rule can
-request that `swift.emit_c_module` always be enabled for its targets even if it
-is not explicitly enabled in the toolchain or on the target directly.
-""",
-        "suppressed": """\
-A `bool` indicating whether the module that the aspect would create for the
-target should instead be suppressed.
-""",
-        "swift_infos": """\
-A list of `SwiftInfo` providers from dependencies of the target, which will be
-merged with the new `SwiftInfo` created by the aspect.
-""",
-        "unsupported_features": """\
-A list of features that should be disabled for the target, in addition to those
-supplied as negations in the `features` attribute. This allows the rule
-implementation to supply an additional set of fixed features that should always
-be disabled when the aspect processes that target; for example, a rule that
-processes frameworks with headers that do not follow strict layering can request
-that `swift.strict_module` always be disabled for its targets even if it is
-enabled by default in the toolchain.
-""",
-    },
-)
-
-def create_swift_interop_info(
-        *,
-        exclude_headers = [],
-        module_map = None,
-        module_name = None,
-        requested_features = [],
-        suppressed = False,
-        swift_infos = [],
-        unsupported_features = []):
-    """Returns a provider that lets a target expose C/Objective-C APIs to Swift.
-
-    The provider returned by this function allows custom build rules written in
-    Starlark to be uninvolved with much of the low-level machinery involved in
-    making a Swift-compatible module. Such a target should propagate a `CcInfo`
-    provider whose compilation context contains the headers that it wants to
-    make into a module, and then also propagate the provider returned from this
-    function.
-
-    The simplest usage is for a custom rule to call
-    `swift_common.create_swift_interop_info` passing it only the list of
-    `SwiftInfo` providers from its dependencies; this tells
-    `swift_clang_module_aspect` to derive the module name from the target label
-    and create a module map using the headers from the compilation context.
-
-    If the custom rule has reason to provide its own module name or module map,
-    then it can do so using the `module_name` and `module_map` arguments.
-
-    When a rule returns this provider, it must provide the full set of
-    `SwiftInfo` providers from dependencies that will be merged with the one
-    that `swift_clang_module_aspect` creates for the target itself; the aspect
-    will not do so automatically. This allows the rule to not only add extra
-    dependencies (such as support libraries from implicit attributes) but also
-    exclude dependencies if necessary.
-
-    Args:
-        exclude_headers: A `list` of `File`s representing headers that should be
-            excluded from the module if the module map is generated.
-        module_map: A `File` representing an existing module map that should be
-            used to represent the module, or `None` (the default) if the module
-            map should be generated based on the headers in the target's
-            compilation context. If this argument is provided, then
-            `module_name` must also be provided.
-        module_name: A string denoting the name of the module, or `None` (the
-            default) if the name should be derived automatically from the target
-            label.
-        requested_features: A list of features (empty by default) that should be
-            requested for the target, which are added to those supplied in the
-            `features` attribute of the target. These features will be enabled
-            unless they are otherwise marked as unsupported (either on the
-            target or by the toolchain). This allows the rule implementation to
-            have additional control over features that should be supported by
-            default for all instances of that rule as if it were creating the
-            feature configuration itself; for example, a rule can request that
-            `swift.emit_c_module` always be enabled for its targets even if it
-            is not explicitly enabled in the toolchain or on the target
-            directly.
-        suppressed: A `bool` indicating whether the module that the aspect would
-            create for the target should instead be suppressed.
-        swift_infos: A list of `SwiftInfo` providers from dependencies, which
-            will be merged with the new `SwiftInfo` created by the aspect.
-        unsupported_features: A list of features (empty by default) that should
-            be considered unsupported for the target, which are added to those
-            supplied as negations in the `features` attribute. This allows the
-            rule implementation to have additional control over features that
-            should be disabled by default for all instances of that rule as if
-            it were creating the feature configuration itself; for example, a
-            rule that processes frameworks with headers that do not follow
-            strict layering can request that `swift.strict_module` always be
-            disabled for its targets even if it is enabled by default in the
-            toolchain.
-
-    Returns:
-        A provider whose type/layout is an implementation detail and should not
-        be relied upon.
-    """
-    if module_map:
-        if not module_name:
-            fail("'module_name' must be specified when 'module_map' is " +
-                 "specified.")
-        if exclude_headers:
-            fail("'exclude_headers' may not be specified when 'module_map' " +
-                 "is specified.")
-
-    return _SwiftInteropInfo(
-        exclude_headers = exclude_headers,
-        module_map = module_map,
-        module_name = module_name,
-        requested_features = requested_features,
-        suppressed = suppressed,
-        swift_infos = swift_infos,
-        unsupported_features = unsupported_features,
-    )
 
 def _compute_all_excluded_headers(*, exclude_headers, target):
     """Returns the full set of headers to exclude for a target.
@@ -442,7 +321,7 @@ def _module_info_for_target(
             exclude, if any, if we are generating the module map.
         feature_configuration: A Swift feature configuration.
         module_name: The module name to prefer (if we're generating a module map
-            from `_SwiftInteropInfo`), or None to derive it from other
+            from `SwiftInteropInfo`), or None to derive it from other
             properties of the target.
 
     Returns:
@@ -550,7 +429,7 @@ def _handle_module(
             if module.clang:
                 dependent_module_names.append(module.name)
 
-    # If we weren't passed a module map (i.e., from a `_SwiftInteropInfo`
+    # If we weren't passed a module map (i.e., from a `SwiftInteropInfo`
     # provider), infer it and the module name based on properties of the rule to
     # support legacy rules.
     if not module_map_file:
@@ -723,16 +602,16 @@ def _collect_swift_infos_from_deps(aspect_ctx):
     return direct_swift_infos, swift_infos
 
 def _find_swift_interop_info(target, aspect_ctx):
-    """Finds a `_SwiftInteropInfo` provider associated with the target.
+    """Finds a `SwiftInteropInfo` provider associated with the target.
 
     This function first looks at the target itself to determine if it propagated
-    a `_SwiftInteropInfo` provider directly (that is, its rule implementation
+    a `SwiftInteropInfo` provider directly (that is, its rule implementation
     function called `swift_common.create_swift_interop_info`). If it did not,
     then the target's `aspect_hints` attribute is checked for a reference to a
-    target that propagates `_SwiftInteropInfo` (such as `swift_interop_hint`).
+    target that propagates `SwiftInteropInfo` (such as `swift_interop_hint`).
 
     It is an error if `aspect_hints` contains two or more targets that propagate
-    `_SwiftInteropInfo`, or if the target directly propagates the provider and
+    `SwiftInteropInfo`, or if the target directly propagates the provider and
     there is also any target in `aspect_hints` that propagates it.
 
     Args:
@@ -742,15 +621,15 @@ def _find_swift_interop_info(target, aspect_ctx):
     Returns:
         A tuple containing two elements:
 
-        -   The `_SwiftInteropInfo` associated with the target, if found;
+        -   The `SwiftInteropInfo` associated with the target, if found;
             otherwise, None.
         -   A list of additional `SwiftInfo` providers that are treated as
             direct dependencies of the target, determined by reading attributes
-            from the target if it did not provide `_SwiftInteropInfo` directly.
+            from the target if it did not provide `SwiftInteropInfo` directly.
     """
-    if _SwiftInteropInfo in target:
+    if SwiftInteropInfo in target:
         # If the target's rule implementation directly provides
-        # `_SwiftInteropInfo`, then it is that rule's responsibility to collect
+        # `SwiftInteropInfo`, then it is that rule's responsibility to collect
         # and merge `SwiftInfo` providers from relevant dependencies.
         interop_target = target
         interop_from_rule = True
@@ -758,9 +637,9 @@ def _find_swift_interop_info(target, aspect_ctx):
         default_swift_infos = []
     else:
         # If the target's rule implementation does not directly provide
-        # `_SwiftInteropInfo`, then we need to collect the `SwiftInfo` providers
+        # `SwiftInteropInfo`, then we need to collect the `SwiftInfo` providers
         # from the default dependencies and returns those. Note that if a custom
-        # rule is used as a hint and returns a `_SwiftInteropInfo` that contains
+        # rule is used as a hint and returns a `SwiftInteropInfo` that contains
         # `SwiftInfo` providers, then we would consider the providers from the
         # default dependencies and the providers from the hint; they are merged
         # after the call site of this function.
@@ -770,9 +649,9 @@ def _find_swift_interop_info(target, aspect_ctx):
 
     # We don't break this loop early when we find a matching hint, because we
     # want to give an error message if there are two aspect hints that provide
-    # `_SwiftInteropInfo` (or if both the rule and an aspect hint do).
+    # `SwiftInteropInfo` (or if both the rule and an aspect hint do).
     for hint in aspect_ctx.rule.attr.aspect_hints:
-        if _SwiftInteropInfo in hint:
+        if SwiftInteropInfo in hint:
             if interop_target:
                 if interop_from_rule:
                     fail(("Conflicting Swift interop info from the target " +
@@ -792,7 +671,7 @@ def _find_swift_interop_info(target, aspect_ctx):
             interop_target = hint
 
     if interop_target:
-        return interop_target[_SwiftInteropInfo], default_direct_swift_infos, default_swift_infos
+        return interop_target[SwiftInteropInfo], default_direct_swift_infos, default_swift_infos
     return None, default_direct_swift_infos, default_swift_infos
 
 def _swift_clang_module_aspect_impl(target, aspect_ctx):

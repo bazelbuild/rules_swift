@@ -14,73 +14,50 @@
 
 """BUILD rules to define Swift libraries and executable binaries.
 
-This file is the public interface that users should import to use the Swift
-rules. Do not import definitions from the `internal` subdirectory directly.
+**NOTE:** This file is deprecated. To avoid having Bazel do more work than
+necessary, users should import each rule/build definition they use from the
+`.bzl` file that defines it in this directory.
+
+Do not import any definitions directly from the `internal` directory; those are
+meant for build rule use only.
 """
 
 load(
-    "@build_bazel_rules_swift//swift/internal:providers.bzl",
+    ":providers.bzl",
     _SwiftInfo = "SwiftInfo",
     _SwiftProtoInfo = "SwiftProtoInfo",
     _SwiftSymbolGraphInfo = "SwiftSymbolGraphInfo",
     _SwiftToolchainInfo = "SwiftToolchainInfo",
 )
+load(":swift_binary.bzl", _swift_binary = "swift_binary")
 load(
-    "@build_bazel_rules_swift//swift/internal:swift_binary.bzl",
-    _swift_binary = "swift_binary",
-)
-load(
-    "@build_bazel_rules_swift//swift/internal:swift_clang_module_aspect.bzl",
+    ":swift_clang_module_aspect.bzl",
     _swift_clang_module_aspect = "swift_clang_module_aspect",
 )
+load(":swift_common.bzl", _swift_common = "swift_common")
 load(
-    "@build_bazel_rules_swift//swift/internal:swift_common.bzl",
-    _swift_common = "swift_common",
-)
-load(
-    "@build_bazel_rules_swift//swift/internal:swift_extract_symbol_graph.bzl",
+    ":swift_extract_symbol_graph.bzl",
     _swift_extract_symbol_graph = "swift_extract_symbol_graph",
 )
 load(
-    "@build_bazel_rules_swift//swift/internal:swift_feature_allowlist.bzl",
+    ":swift_feature_allowlist.bzl",
     _swift_feature_allowlist = "swift_feature_allowlist",
 )
+load(":swift_grpc_library.bzl", _swift_grpc_library = "swift_grpc_library")
+load(":swift_import.bzl", _swift_import = "swift_import")
+load(":swift_interop_hint.bzl", _swift_interop_hint = "swift_interop_hint")
+load(":swift_library.bzl", _swift_library = "swift_library")
+load(":swift_module_alias.bzl", _swift_module_alias = "swift_module_alias")
 load(
-    "@build_bazel_rules_swift//swift/internal:swift_grpc_library.bzl",
-    _swift_grpc_library = "swift_grpc_library",
-)
-load(
-    "@build_bazel_rules_swift//swift/internal:swift_import.bzl",
-    _swift_import = "swift_import",
-)
-load(
-    "@build_bazel_rules_swift//swift/internal:swift_interop_hint.bzl",
-    _swift_interop_hint = "swift_interop_hint",
-)
-load(
-    "@build_bazel_rules_swift//swift/internal:swift_library.bzl",
-    _swift_library = "swift_library",
-)
-load(
-    "@build_bazel_rules_swift//swift/internal:swift_module_alias.bzl",
-    _swift_module_alias = "swift_module_alias",
-)
-load(
-    "@build_bazel_rules_swift//swift/internal:swift_package_configuration.bzl",
+    ":swift_package_configuration.bzl",
     _swift_package_configuration = "swift_package_configuration",
 )
+load(":swift_proto_library.bzl", _swift_proto_library = "swift_proto_library")
 load(
-    "@build_bazel_rules_swift//swift/internal:swift_proto_library.bzl",
-    _swift_proto_library = "swift_proto_library",
-)
-load(
-    "@build_bazel_rules_swift//swift/internal:swift_symbol_graph_aspect.bzl",
+    ":swift_symbol_graph_aspect.bzl",
     _swift_symbol_graph_aspect = "swift_symbol_graph_aspect",
 )
-load(
-    "@build_bazel_rules_swift//swift/internal:swift_test.bzl",
-    _swift_test = "swift_test",
-)
+load(":swift_test.bzl", _swift_test = "swift_test")
 
 # Re-export providers.
 SwiftInfo = _SwiftInfo

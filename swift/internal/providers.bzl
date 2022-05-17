@@ -12,234 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Defines Starlark providers that propagated by the Swift BUILD rules."""
+"""Internal providers and utility functions.
 
-SwiftFeatureAllowlistInfo = provider(
-    doc = """\
-Describes a set of features and the packages that are allowed to request or
-disable them.
+Note that some of these definitions are exported via the `swift_common` module.
+*Public* providers should be defined in `swift:providers.bzl`, not in this file
+(`swift/internal:providers.bzl`).
+"""
 
-This provider is an internal implementation detail of the rules; users should
-not rely on it or assume that its structure is stable.
-""",
-    fields = {
-        "allowlist_label": """\
-A string containing the label of the `swift_feature_allowlist` target that
-created this provider.
-""",
-        "managed_features": """\
-A list of strings representing feature names or their negations that packages in
-the `packages` list are allowed to explicitly request or disable.
-""",
-        "package_specs": """\
-A list of `struct` values representing package specifications that indicate
-which packages (possibly recursive) can request or disable a feature managed by
-the allowlist.
-""",
-    },
-)
-
-SwiftInfo = provider(
-    doc = """\
-Contains information about the compiled artifacts of a Swift module.
-
-This provider contains a large number of fields and many custom rules may not
-need to set all of them. Instead of constructing a `SwiftInfo` provider
-directly, consider using the `swift_common.create_swift_info` function, which
-has reasonable defaults for any fields not explicitly set.
-""",
-    fields = {
-        "direct_modules": """\
-`List` of values returned from `swift_common.create_module`. The modules (both
-Swift and C/Objective-C) emitted by the library that propagated this provider.
-""",
-        "transitive_modules": """\
-`Depset` of values returned from `swift_common.create_module`. The transitive
-modules (both Swift and C/Objective-C) emitted by the library that propagated
-this provider and all of its dependencies.
-""",
-    },
-)
-
-SwiftPackageConfigurationInfo = provider(
-    doc = """\
-Describes a compiler configuration that is applied by default to targets in a
-specific set of packages.
-
-This provider is an internal implementation detail of the rules; users should
-not rely on it or assume that its structure is stable.
-""",
-    fields = {
-        "disabled_features": """\
-`List` of strings. Features that will be disabled by default on targets in the
-packages listed in this package configuration.
-""",
-        "enabled_features": """\
-`List` of strings. Features that will be enabled by default on targets in the
-packages listed in this package configuration.
-""",
-        "package_specs": """\
-A list of `struct` values representing package specifications that indicate
-the set of packages (possibly recursive) to which this configuration is applied.
-""",
-    },
-)
-
-SwiftProtoInfo = provider(
-    doc = "Propagates Swift-specific information about a `proto_library`.",
-    fields = {
-        "module_mappings": """\
-`Sequence` of `struct`s. Each struct contains `module_name` and
-`proto_file_paths` fields that denote the transitive mappings from `.proto`
-files to Swift modules. This allows messages that reference messages in other
-libraries to import those modules in generated code.
-""",
-        "pbswift_files": """\
-`Depset` of `File`s. The transitive Swift source files (`.pb.swift`) generated
-from the `.proto` files.
-""",
-    },
-)
-
-SwiftSymbolGraphInfo = provider(
-    doc = "Propagates extracted symbol graph files from Swift modules.",
-    fields = {
-        "direct_symbol_graphs": """\
-`List` of `struct`s representing the symbol graphs extracted from the target
-that propagated this provider. This list will be empty if propagated by a
-non-Swift target (although its `transitive_symbol_graphs` may be non-empty if it
-has Swift dependencies).
-
-Each `struct` has the following fields:
-
-*   `module_name`: A string denoting the name of the Swift module.
-*   `symbol_graph_dir`: A directory-type `File` containing one or more
-    `.symbols.json` files representing the symbol graph(s) for the module.
-""",
-        "transitive_symbol_graphs": """\
-`Depset` of `struct`s representing the symbol graphs extracted from the target
-that propagated this provider and all of its Swift dependencies. Each `struct`
-has the same fields as documented in `direct_symbol_graphs`.
-""",
-    },
-)
-
-SwiftToolchainInfo = provider(
-    doc = """
-Propagates information about a Swift toolchain to compilation and linking rules
-that use the toolchain.
-""",
-    fields = {
-        "action_configs": """\
-This field is an internal implementation detail of the build rules.
-""",
-        "cc_toolchain_info": """\
-The `cc_common.CcToolchainInfo` provider from the Bazel C++ toolchain that this
-Swift toolchain depends on.
-""",
-        "clang_implicit_deps_providers": """\
-A `struct` with the following fields, which represent providers from targets
-that should be added as implicit dependencies of any precompiled explicit
-C/Objective-C modules:
-
-*   `cc_infos`: A list of `CcInfo` providers from targets specified as the
-    toolchain's implicit dependencies.
-*   `objc_infos`: A list of `apple_common.Objc` providers from targets specified
-    as the toolchain's implicit dependencies.
-*   `swift_infos`: A list of `SwiftInfo` providers from targets specified as the
-    toolchain's implicit dependencies.
-
-For ease of use, this field is never `None`; it will always be a valid `struct`
-containing the fields described above, even if those lists are empty.
-""",
-        "feature_allowlists": """\
-A list of `SwiftFeatureAllowlistInfo` providers that allow or prohibit packages
-from requesting or disabling features.
-""",
-        "generated_header_module_implicit_deps_providers": """\
-A `struct` with the following fields, which are providers from targets that
-should be treated as compile-time inputs to actions that precompile the explicit
-module for the generated Objective-C header of a Swift module:
-
-*   `cc_infos`: A list of `CcInfo` providers from targets specified as the
-    toolchain's implicit dependencies.
-*   `objc_infos`: A list of `apple_common.Objc` providers from targets specified
-    as the toolchain's implicit dependencies.
-*   `swift_infos`: A list of `SwiftInfo` providers from targets specified as the
-    toolchain's implicit dependencies.
-
-This is used to provide modular dependencies for the fixed inclusions (Darwin,
-Foundation) that are unconditionally emitted in those files.
-
-For ease of use, this field is never `None`; it will always be a valid `struct`
-containing the fields described above, even if those lists are empty.
-""",
-        "implicit_deps_providers": """\
-A `struct` with the following fields, which represent providers from targets
-that should be added as implicit dependencies of any Swift compilation or
-linking target (but not to precompiled explicit C/Objective-C modules):
-
-*   `cc_infos`: A list of `CcInfo` providers from targets specified as the
-    toolchain's implicit dependencies.
-*   `objc_infos`: A list of `apple_common.Objc` providers from targets specified
-    as the toolchain's implicit dependencies.
-*   `swift_infos`: A list of `SwiftInfo` providers from targets specified as the
-    toolchain's implicit dependencies.
-
-For ease of use, this field is never `None`; it will always be a valid `struct`
-containing the fields described above, even if those lists are empty.
-""",
-        "package_configurations": """\
-A list of `SwiftPackageConfigurationInfo` providers that specify additional
-compilation configuration options that are applied to targets on a per-package
-basis.
-""",
-        "requested_features": """\
-`List` of `string`s. Features that should be implicitly enabled by default for
-targets built using this toolchain, unless overridden by the user by listing
-their negation in the `features` attribute of a target/package or in the
-`--features` command line flag.
-
-These features determine various compilation and debugging behaviors of the
-Swift build rules, and they are also passed to the C++ APIs used when linking
-(so features defined in CROSSTOOL may be used here).
-""",
-        "root_dir": """\
-`String`. The workspace-relative root directory of the toolchain.
-""",
-        "swift_worker": """\
-`File`. The executable representing the worker executable used to invoke the
-compiler and other Swift tools (for both incremental and non-incremental
-compiles).
-""",
-        "test_configuration": """\
-`Struct` containing two fields:
-
-*   `env`: A `dict` of environment variables to be set when running tests
-    that were built with this toolchain.
-
-*   `execution_requirements`: A `dict` of execution requirements for tests
-    that were built with this toolchain.
-
-This is used, for example, with Xcode-based toolchains to ensure that the
-`xctest` helper and coverage tools are found in the correct developer
-directory when running tests.
-""",
-        "tool_configs": """\
-This field is an internal implementation detail of the build rules.
-""",
-        "unsupported_features": """\
-`List` of `string`s. Features that should be implicitly disabled by default for
-targets built using this toolchain, unless overridden by the user by listing
-them in the `features` attribute of a target/package or in the `--features`
-command line flag.
-
-These features determine various compilation and debugging behaviors of the
-Swift build rules, and they are also passed to the C++ APIs used when linking
-(so features defined in CROSSTOOL may be used here).
-""",
-    },
-)
+load("@build_bazel_rules_swift//swift:providers.bzl", "SwiftInfo")
 
 def create_module(*, name, clang = None, is_system = False, swift = None):
     """Creates a value containing Clang/Swift module artifacts of a dependency.
@@ -419,4 +199,149 @@ def create_swift_info(
             direct_modules,
             transitive = transitive_modules,
         ),
+    )
+
+# Note that this provider appears here and not in `providers.bzl` because it is
+# not public API. It is meant to be a "write-only" provider; one that targets
+# can propagate but should not attempt to read.
+SwiftInteropInfo = provider(
+    doc = """\
+Contains minimal information required to allow `swift_clang_module_aspect` to
+manage the creation of a `SwiftInfo` provider for a C/Objective-C target.
+""",
+    fields = {
+        "exclude_headers": """\
+A `list` of `File`s representing headers that should be excluded from the
+module, if a module map is being automatically generated based on the headers in
+the target's compilation context.
+""",
+        "module_map": """\
+A `File` representing an existing module map that should be used to represent
+the module, or `None` if the module map should be generated based on the headers
+in the target's compilation context.
+""",
+        "module_name": """\
+A string denoting the name of the module, or `None` if the name should be
+derived automatically from the target label.
+""",
+        "requested_features": """\
+A list of features that should be enabled for the target, in addition to those
+supplied in the `features` attribute, unless the feature is otherwise marked as
+unsupported (either on the target or by the toolchain). This allows the rule
+implementation to supply an additional set of fixed features that should always
+be enabled when the aspect processes that target; for example, a rule can
+request that `swift.emit_c_module` always be enabled for its targets even if it
+is not explicitly enabled in the toolchain or on the target directly.
+""",
+        "suppressed": """\
+A `bool` indicating whether the module that the aspect would create for the
+target should instead be suppressed.
+""",
+        "swift_infos": """\
+A list of `SwiftInfo` providers from dependencies of the target, which will be
+merged with the new `SwiftInfo` created by the aspect.
+""",
+        "unsupported_features": """\
+A list of features that should be disabled for the target, in addition to those
+supplied as negations in the `features` attribute. This allows the rule
+implementation to supply an additional set of fixed features that should always
+be disabled when the aspect processes that target; for example, a rule that
+processes frameworks with headers that do not follow strict layering can request
+that `swift.strict_module` always be disabled for its targets even if it is
+enabled by default in the toolchain.
+""",
+    },
+)
+
+def create_swift_interop_info(
+        *,
+        exclude_headers = [],
+        module_map = None,
+        module_name = None,
+        requested_features = [],
+        suppressed = False,
+        swift_infos = [],
+        unsupported_features = []):
+    """Returns a provider that lets a target expose C/Objective-C APIs to Swift.
+
+    The provider returned by this function allows custom build rules written in
+    Starlark to be uninvolved with much of the low-level machinery involved in
+    making a Swift-compatible module. Such a target should propagate a `CcInfo`
+    provider whose compilation context contains the headers that it wants to
+    make into a module, and then also propagate the provider returned from this
+    function.
+
+    The simplest usage is for a custom rule to call
+    `swift_common.create_swift_interop_info` passing it only the list of
+    `SwiftInfo` providers from its dependencies; this tells
+    `swift_clang_module_aspect` to derive the module name from the target label
+    and create a module map using the headers from the compilation context.
+
+    If the custom rule has reason to provide its own module name or module map,
+    then it can do so using the `module_name` and `module_map` arguments.
+
+    When a rule returns this provider, it must provide the full set of
+    `SwiftInfo` providers from dependencies that will be merged with the one
+    that `swift_clang_module_aspect` creates for the target itself; the aspect
+    will not do so automatically. This allows the rule to not only add extra
+    dependencies (such as support libraries from implicit attributes) but also
+    exclude dependencies if necessary.
+
+    Args:
+        exclude_headers: A `list` of `File`s representing headers that should be
+            excluded from the module if the module map is generated.
+        module_map: A `File` representing an existing module map that should be
+            used to represent the module, or `None` (the default) if the module
+            map should be generated based on the headers in the target's
+            compilation context. If this argument is provided, then
+            `module_name` must also be provided.
+        module_name: A string denoting the name of the module, or `None` (the
+            default) if the name should be derived automatically from the target
+            label.
+        requested_features: A list of features (empty by default) that should be
+            requested for the target, which are added to those supplied in the
+            `features` attribute of the target. These features will be enabled
+            unless they are otherwise marked as unsupported (either on the
+            target or by the toolchain). This allows the rule implementation to
+            have additional control over features that should be supported by
+            default for all instances of that rule as if it were creating the
+            feature configuration itself; for example, a rule can request that
+            `swift.emit_c_module` always be enabled for its targets even if it
+            is not explicitly enabled in the toolchain or on the target
+            directly.
+        suppressed: A `bool` indicating whether the module that the aspect would
+            create for the target should instead be suppressed.
+        swift_infos: A list of `SwiftInfo` providers from dependencies, which
+            will be merged with the new `SwiftInfo` created by the aspect.
+        unsupported_features: A list of features (empty by default) that should
+            be considered unsupported for the target, which are added to those
+            supplied as negations in the `features` attribute. This allows the
+            rule implementation to have additional control over features that
+            should be disabled by default for all instances of that rule as if
+            it were creating the feature configuration itself; for example, a
+            rule that processes frameworks with headers that do not follow
+            strict layering can request that `swift.strict_module` always be
+            disabled for its targets even if it is enabled by default in the
+            toolchain.
+
+    Returns:
+        A provider whose type/layout is an implementation detail and should not
+        be relied upon.
+    """
+    if module_map:
+        if not module_name:
+            fail("'module_name' must be specified when 'module_map' is " +
+                 "specified.")
+        if exclude_headers:
+            fail("'exclude_headers' may not be specified when 'module_map' " +
+                 "is specified.")
+
+    return SwiftInteropInfo(
+        exclude_headers = exclude_headers,
+        module_map = module_map,
+        module_name = module_name,
+        requested_features = requested_features,
+        suppressed = suppressed,
+        swift_infos = swift_infos,
+        unsupported_features = unsupported_features,
     )

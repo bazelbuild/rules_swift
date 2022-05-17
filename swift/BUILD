@@ -4,43 +4,205 @@ load(
     "//swift/internal:build_settings.bzl",
     "per_module_swiftcopt_flag",
 )
-load(":swift.bzl", "swift_interop_hint")
+load(":swift_interop_hint.bzl", "swift_interop_hint")
 
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
 bzl_library(
+    name = "providers",
+    srcs = ["providers.bzl"],
+)
+
+bzl_library(
     name = "swift",
     srcs = ["swift.bzl"],
     deps = [
-        "//swift/internal:providers",
-        "//swift/internal:swift_binary",
-        "//swift/internal:swift_clang_module_aspect",
-        "//swift/internal:swift_common",
-        "//swift/internal:swift_extract_symbol_graph",
-        "//swift/internal:swift_feature_allowlist",
-        "//swift/internal:swift_grpc_library",
-        "//swift/internal:swift_import",
-        "//swift/internal:swift_interop_hint",
-        "//swift/internal:swift_library",
-        "//swift/internal:swift_module_alias",
-        "//swift/internal:swift_package_configuration",
-        "//swift/internal:swift_proto_library",
-        "//swift/internal:swift_symbol_graph_aspect",
-        "//swift/internal:swift_test",
+        ":providers",
+        ":swift_binary",
+        ":swift_clang_module_aspect",
+        ":swift_common",
+        ":swift_extract_symbol_graph",
+        ":swift_feature_allowlist",
+        ":swift_grpc_library",
+        ":swift_import",
+        ":swift_interop_hint",
+        ":swift_library",
+        ":swift_module_alias",
+        ":swift_package_configuration",
+        ":swift_proto_library",
+        ":swift_symbol_graph_aspect",
+        ":swift_test",
     ],
 )
 
-# Consumed by Bazel integration tests.
-filegroup(
-    name = "for_bazel_tests",
-    testonly = 1,
-    srcs = glob(["**"]) + [
-        "//swift/internal:for_bazel_tests",
+bzl_library(
+    name = "swift_binary",
+    srcs = ["swift_binary.bzl"],
+    deps = [
+        ":providers",
+        ":swift_common",
+        "//swift/internal:linking",
+        "//swift/internal:utils",
     ],
-    visibility = [
-        "//:__pkg__",
+)
+
+bzl_library(
+    name = "swift_clang_module_aspect",
+    srcs = ["swift_clang_module_aspect.bzl"],
+    deps = [
+        ":providers",
+        "//swift/internal:attrs",
+        "//swift/internal:compiling",
+        "//swift/internal:derived_files",
+        "//swift/internal:feature_names",
+        "//swift/internal:features",
+        "//swift/internal:module_maps",
+        "//swift/internal:providers",
+        "//swift/internal:toolchain_utils",
+        "//swift/internal:utils",
+        "@bazel_skylib//lib:sets",
+    ],
+)
+
+bzl_library(
+    name = "swift_common",
+    srcs = ["swift_common.bzl"],
+    deps = [
+        ":providers",
+        ":swift_clang_module_aspect",
+        "//swift/internal:attrs",
+        "//swift/internal:compiling",
+        "//swift/internal:features",
+        "//swift/internal:linking",
+        "//swift/internal:symbol_graph_extracting",
+        "//swift/internal:toolchain_utils",
+    ],
+)
+
+bzl_library(
+    name = "swift_extract_symbol_graph",
+    srcs = ["swift_extract_symbol_graph.bzl"],
+    deps = [
+        ":providers",
+        ":swift_symbol_graph_aspect",
+        "//swift/internal:derived_files",
+    ],
+)
+
+bzl_library(
+    name = "swift_feature_allowlist",
+    srcs = ["swift_feature_allowlist.bzl"],
+    deps = [
+        ":providers",
+        "//swift/internal:package_specs",
+    ],
+)
+
+bzl_library(
+    name = "swift_grpc_library",
+    srcs = ["swift_grpc_library.bzl"],
+    deps = [
+        ":providers",
+        ":swift_common",
+        "//swift/internal:feature_names",
+        "//swift/internal:linking",
+        "//swift/internal:proto_gen_utils",
+        "//swift/internal:utils",
+        "@bazel_skylib//lib:dicts",
+    ],
+)
+
+bzl_library(
+    name = "swift_import",
+    srcs = ["swift_import.bzl"],
+    deps = [
+        ":providers",
+        ":swift_common",
+        "//swift/internal:attrs",
+        "//swift/internal:linking",
+        "//swift/internal:utils",
+        "@bazel_skylib//lib:dicts",
+    ],
+)
+
+bzl_library(
+    name = "swift_interop_hint",
+    srcs = ["swift_interop_hint.bzl"],
+    deps = [":swift_common"],
+)
+
+bzl_library(
+    name = "swift_library",
+    srcs = ["swift_library.bzl"],
+    deps = [
+        ":providers",
+        ":swift_clang_module_aspect",
+        ":swift_common",
+        "//swift/internal:attrs",
+        "//swift/internal:build_settings",
+        "//swift/internal:compiling",
+        "//swift/internal:feature_names",
+        "//swift/internal:linking",
+        "//swift/internal:utils",
+        "@bazel_skylib//lib:dicts",
+        "@bazel_skylib//lib:sets",
+        "@bazel_skylib//rules:common_settings",
+    ],
+)
+
+bzl_library(
+    name = "swift_module_alias",
+    srcs = ["swift_module_alias.bzl"],
+    deps = [
+        ":providers",
+        ":swift_common",
+        "//swift/internal:derived_files",
+        "//swift/internal:linking",
+        "//swift/internal:utils",
+        "@bazel_skylib//lib:dicts",
+    ],
+)
+
+bzl_library(
+    name = "swift_package_configuration",
+    srcs = ["swift_package_configuration.bzl"],
+    deps = [
+        ":providers",
+        "//swift/internal:package_specs",
+    ],
+)
+
+bzl_library(
+    name = "swift_proto_library",
+    srcs = ["swift_proto_library.bzl"],
+    deps = [
+        ":providers",
+        "//swift/internal:swift_protoc_gen_aspect",
+    ],
+)
+
+bzl_library(
+    name = "swift_symbol_graph_aspect",
+    srcs = ["swift_symbol_graph_aspect.bzl"],
+    deps = [
+        "//swift/internal:swift_symbol_graph_aspect",
+    ],
+)
+
+bzl_library(
+    name = "swift_test",
+    srcs = ["swift_test.bzl"],
+    deps = [
+        ":providers",
+        ":swift_common",
+        ":swift_symbol_graph_aspect",
+        "//swift/internal:derived_files",
+        "//swift/internal:feature_names",
+        "//swift/internal:linking",
+        "//swift/internal:utils",
+        "@bazel_skylib//lib:dicts",
     ],
 )
 
@@ -93,4 +255,17 @@ label_flag(
 filegroup(
     name = "empty",
     visibility = ["//visibility:private"],
+)
+
+# Consumed by Bazel integration tests.
+filegroup(
+    name = "for_bazel_tests",
+    testonly = 1,
+    srcs = glob(["**"]) + [
+        "//swift/internal:for_bazel_tests",
+        "//swift/toolchains:for_bazel_tests",
+    ],
+    visibility = [
+        "//:__pkg__",
+    ],
 )

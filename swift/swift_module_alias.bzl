@@ -14,12 +14,23 @@
 
 """Implementation of the `swift_module_alias` rule."""
 
+load(
+    "@build_bazel_rules_swift//swift/internal:derived_files.bzl",
+    "derived_files",
+)
+load(
+    "@build_bazel_rules_swift//swift/internal:linking.bzl",
+    "new_objc_provider",
+)
+load(
+    "@build_bazel_rules_swift//swift/internal:utils.bzl",
+    "compact",
+    "get_compilation_contexts",
+    "get_providers",
+)
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load(":derived_files.bzl", "derived_files")
-load(":linking.bzl", "new_objc_provider")
 load(":providers.bzl", "SwiftInfo")
 load(":swift_common.bzl", "swift_common")
-load(":utils.bzl", "compact", "get_compilation_contexts", "get_providers")
 
 def _swift_module_alias_impl(ctx):
     deps = ctx.attr.deps

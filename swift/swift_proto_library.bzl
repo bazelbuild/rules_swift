@@ -14,12 +14,12 @@
 
 """A rule that generates a Swift library from protocol buffer sources."""
 
-load(":providers.bzl", "SwiftProtoInfo")
 load(
-    ":swift_protoc_gen_aspect.bzl",
+    "@build_bazel_rules_swift//swift/internal:swift_protoc_gen_aspect.bzl",
     "SwiftProtoCompilationInfo",
     "swift_protoc_gen_aspect",
 )
+load(":providers.bzl", "SwiftProtoInfo")
 
 def _swift_proto_library_impl(ctx):
     if len(ctx.attr.deps) != 1:

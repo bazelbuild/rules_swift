@@ -15,20 +15,20 @@
 """Implementation of the `swift_binary` and `swift_test` rules."""
 
 load(
-    ":linking.bzl",
+    "@build_bazel_rules_swift//swift/internal:linking.bzl",
     "binary_rule_attrs",
     "configure_features_for_binary",
     "malloc_linking_context",
     "register_link_binary_action",
 )
-load(":providers.bzl", "SwiftInfo")
-load(":swift_common.bzl", "swift_common")
 load(
-    ":utils.bzl",
+    "@build_bazel_rules_swift//swift/internal:utils.bzl",
     "expand_locations",
     "get_compilation_contexts",
     "get_providers",
 )
+load(":providers.bzl", "SwiftInfo")
+load(":swift_common.bzl", "swift_common")
 
 def _swift_binary_impl(ctx):
     swift_toolchain = swift_common.get_toolchain(ctx)

@@ -16,20 +16,28 @@
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(
-    ":feature_names.bzl",
+    "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_ENABLE_TESTING",
     "SWIFT_FEATURE_GENERATE_FROM_RAW_PROTO_FILES",
 )
-load(":linking.bzl", "new_objc_provider")
 load(
-    ":proto_gen_utils.bzl",
+    "@build_bazel_rules_swift//swift/internal:linking.bzl",
+    "new_objc_provider",
+)
+load(
+    "@build_bazel_rules_swift//swift/internal:proto_gen_utils.bzl",
     "declare_generated_files_in_subdir",
     "proto_import_path",
     "register_module_mapping_write_action",
 )
+load(
+    "@build_bazel_rules_swift//swift/internal:utils.bzl",
+    "compact",
+    "get_compilation_contexts",
+    "get_providers",
+)
 load(":providers.bzl", "SwiftInfo", "SwiftProtoInfo")
 load(":swift_common.bzl", "swift_common")
-load(":utils.bzl", "compact", "get_compilation_contexts", "get_providers")
 
 def _register_grpcswift_generate_action(
         label,
