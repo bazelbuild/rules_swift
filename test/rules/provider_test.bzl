@@ -14,7 +14,7 @@
 
 """Rules for testing the providers of a target under test."""
 
-load("@build_bazel_rules_swift//swift:swift.bzl", "SwiftInfo")
+load("@build_bazel_rules_swift//swift:providers.bzl", "SwiftInfo")
 load("@bazel_skylib//lib:types.bzl", "types")
 load(
     "@bazel_skylib//lib:unittest.bzl",

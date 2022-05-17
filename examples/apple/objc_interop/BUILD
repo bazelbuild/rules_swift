@@ -3,8 +3,11 @@
 # platforms.
 
 load(
-    "//swift:swift.bzl",
+    "//swift:swift_binary.bzl",
     "swift_binary",
+)
+load(
+    "//swift:swift_library.bzl",
     "swift_library",
 )
 

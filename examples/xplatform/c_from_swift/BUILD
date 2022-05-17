@@ -1,7 +1,13 @@
 load(
-    "//swift:swift.bzl",
+    "//swift:swift_binary.bzl",
     "swift_binary",
+)
+load(
+    "//swift:swift_interop_hint.bzl",
     "swift_interop_hint",
+)
+load(
+    "//swift:swift_library.bzl",
     "swift_library",
 )
 

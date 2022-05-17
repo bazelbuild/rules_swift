@@ -11,10 +11,19 @@
 #     to this service and then print the response that it received.
 
 load(
-    "//swift:swift.bzl",
+    "//swift:swift_binary.bzl",
     "swift_binary",
+)
+load(
+    "//swift:swift_grpc_library.bzl",
     "swift_grpc_library",
+)
+load(
+    "//swift:swift_proto_library.bzl",
     "swift_proto_library",
+)
+load(
+    "//swift:swift_test.bzl",
     "swift_test",
 )
 

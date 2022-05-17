@@ -6,5 +6,8 @@ bzl_library(
     visibility = [
         "//test:__pkg__",
     ],
-    deps = ["//swift"],
+    deps = [
+        "//swift:providers",
+        "//swift:swift_clang_module_aspect",
+    ],
 )

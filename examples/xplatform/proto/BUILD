@@ -1,6 +1,9 @@
 load(
-    "//swift:swift.bzl",
+    "//swift:swift_binary.bzl",
     "swift_binary",
+)
+load(
+    "//swift:swift_proto_library.bzl",
     "swift_proto_library",
 )
 
