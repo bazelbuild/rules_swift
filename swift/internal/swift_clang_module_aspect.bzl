@@ -23,7 +23,6 @@ load(
     "SWIFT_FEATURE_EMIT_C_MODULE",
     "SWIFT_FEATURE_LAYERING_CHECK",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
-    "SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS",
     "SWIFT_FEATURE_USE_C_MODULES",
 )
 load(":features.bzl", "configure_features", "is_feature_enabled")
@@ -272,15 +271,8 @@ def _generate_module_map(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD,
     )
-    exclude_private_headers = is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS,
-    )
 
-    if exclude_private_headers:
-        private_headers = []
-    else:
-        private_headers = compilation_context.direct_private_headers
+    private_headers = compilation_context.direct_private_headers
 
     # Sort dependent module names and the headers to ensure a deterministic
     # order in the output file, in the event the compilation context would ever
@@ -839,7 +831,6 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx):
             SWIFT_FEATURE_USE_C_MODULES,
             SWIFT_FEATURE_LAYERING_CHECK,
         ])
-        unsupported_features.append(SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS)
 
     swift_toolchain = get_swift_toolchain(
         aspect_ctx,
