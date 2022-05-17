@@ -46,7 +46,10 @@ bzl_library(
 bzl_library(
     name = "providers",
     srcs = ["providers.bzl"],
-    visibility = ["//swift:__subpackages__"],
+    visibility = [
+        "//swift:__subpackages__",
+        "//test:__subpackages__",
+    ],
     deps = [
         "@bazel_skylib//lib:sets",
         "@bazel_skylib//lib:types",
@@ -96,6 +99,7 @@ bzl_library(
     visibility = [
         "//proto:__subpackages__",
         "//swift:__subpackages__",
+        "//test:__subpackages__",
     ],
     deps = [
         ":providers",

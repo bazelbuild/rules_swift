@@ -1,9 +1,6 @@
-load(
-    "//swift:swift.bzl",
-    "swift_binary",
-    "swift_interop_hint",
-    "swift_library",
-)
+load("//swift:swift_binary.bzl", "swift_binary")
+load("//swift:swift_interop_hint.bzl", "swift_interop_hint")
+load("//swift:swift_library.bzl", "swift_library")
 
 licenses(["notice"])
 

@@ -1,6 +1,9 @@
 load(
-    "//swift:swift.bzl",
+    "//swift:swift_extract_symbol_graph.bzl",
     "swift_extract_symbol_graph",
+)
+load(
+    "//swift:swift_library.bzl",
     "swift_library",
 )
 load(

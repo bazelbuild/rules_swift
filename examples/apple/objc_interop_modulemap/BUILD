@@ -2,11 +2,8 @@
 # vice versa when it is linked into the existing native linking rules for Apple
 # platforms.
 
-load(
-    "//swift:swift.bzl",
-    "swift_binary",
-    "swift_library",
-)
+load("//swift:swift_binary.bzl", "swift_binary")
+load("//swift:swift_library.bzl", "swift_library")
 
 licenses(["notice"])
 

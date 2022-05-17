@@ -21,12 +21,12 @@ load(
     "paths",
 )
 load(
-    "//swift:swift.bzl",
+    "//swift:providers.bzl",
     "SwiftInfo",
     "SwiftProtoCompilerInfo",
     "SwiftProtoInfo",
-    "swift_common",
 )
+load("//swift:swift_common.bzl", "swift_common")
 
 # buildifier: disable=bzl-visibility
 load(

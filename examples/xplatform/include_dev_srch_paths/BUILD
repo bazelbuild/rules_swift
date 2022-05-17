@@ -1,4 +1,6 @@
-load("//swift:swift.bzl", "swift_library", "swift_library_group", "swift_test")
+load("//swift:swift_library.bzl", "swift_library")
+load("//swift:swift_library_group.bzl", "swift_library_group")
+load("//swift:swift_test.bzl", "swift_test")
 
 swift_library(
     name = "TestHelpers",

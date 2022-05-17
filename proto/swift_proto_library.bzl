@@ -28,15 +28,9 @@ load(
     "//proto:swift_proto_utils.bzl",
     "compile_swift_protos_for_target",
 )
-load(
-    "//swift:swift.bzl",
-    "SwiftProtoCompilerInfo",
-    "swift_common",
-)
-load(
-    "//swift:swift_clang_module_aspect.bzl",
-    "swift_clang_module_aspect",
-)
+load("//swift:providers.bzl", "SwiftProtoCompilerInfo")
+load("//swift:swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
+load("//swift:swift_common.bzl", "swift_common")
 
 # buildifier: disable=bzl-visibility
 load(

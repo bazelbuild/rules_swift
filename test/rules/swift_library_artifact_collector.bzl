@@ -18,10 +18,7 @@ This rule is used in tests to simulate "pre-built" artifacts without having to
 check them in directly.
 """
 
-load(
-    "@build_bazel_rules_swift//swift:swift.bzl",
-    "SwiftInfo",
-)
+load("//swift:providers.bzl", "SwiftInfo")
 
 def _swiftinterface_transition_impl(_settings, attr):
     return {

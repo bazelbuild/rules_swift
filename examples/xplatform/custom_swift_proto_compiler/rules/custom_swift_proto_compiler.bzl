@@ -25,10 +25,7 @@ load(
     "SwiftProtoCompilerInfo",
     "swift_proto_common",
 )
-load(
-    "//swift:swift.bzl",
-    "SwiftInfo",
-)
+load("//swift:providers.bzl", "SwiftInfo")
 
 def _custom_swift_proto_compile(label, actions, swift_proto_compiler_info, additional_compiler_info, proto_infos, module_mappings):
     """Compiles Swift source files from `ProtoInfo` providers.

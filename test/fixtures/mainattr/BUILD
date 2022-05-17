@@ -1,4 +1,4 @@
-load("//swift:swift.bzl", "swift_binary")
+load("//swift:swift_binary.bzl", "swift_binary")
 
 package(
     default_visibility = ["//test:__subpackages__"],

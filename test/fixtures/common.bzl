@@ -14,9 +14,9 @@
 
 """Common build definitions used by test fixtures."""
 
+load("@build_bazel_rules_swift//swift:providers.bzl", "SwiftInfo")
 load(
-    "@build_bazel_rules_swift//swift:swift.bzl",
-    "SwiftInfo",
+    "@build_bazel_rules_swift//swift:swift_clang_module_aspect.bzl",
     "swift_clang_module_aspect",
 )
 

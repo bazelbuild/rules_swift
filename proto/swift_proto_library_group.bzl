@@ -30,12 +30,12 @@ load(
     "compile_swift_protos_for_target",
 )
 load(
-    "//swift:swift.bzl",
+    "//swift:providers.bzl",
     "SwiftInfo",
     "SwiftProtoCompilerInfo",
     "SwiftProtoInfo",
-    "swift_common",
 )
+load("//swift:swift_common.bzl", "swift_common")
 
 # buildifier: disable=bzl-visibility
 load(
@@ -160,19 +160,19 @@ from which the Swift source files should be generated.
 Generates a collection of Swift static library from a target producing `ProtoInfo` and its dependencies.
 
 This rule is intended to facilitate migration from the deprecated swift proto library rules to the new ones.
-Unlike `swift_proto_library` which is a drop-in-replacement for `swift_library`, 
+Unlike `swift_proto_library` which is a drop-in-replacement for `swift_library`,
 this rule uses an aspect over the direct proto library dependency and its transitive dependencies,
 compiling each into a swift static library.
 
 For example, in the following targets, the `proto_library_group_swift_proto` target only depends on
 `package_2_proto` target, and this transitively depends on `package_1_proto`.
 
-When used as a dependency from a `swift_library` or `swift_binary` target, 
-two modules generated from these proto library targets are visible. 
+When used as a dependency from a `swift_library` or `swift_binary` target,
+two modules generated from these proto library targets are visible.
 
 Because these are derived from the proto library targets via an aspect, though,
 you cannot customize many of the attributes including the swift proto compiler targets or
-the module names. The module names are derived from the proto library names. 
+the module names. The module names are derived from the proto library names.
 
 In this case, the module names are:
 ```

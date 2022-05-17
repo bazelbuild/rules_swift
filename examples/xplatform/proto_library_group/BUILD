@@ -1,8 +1,5 @@
-load(
-    "//swift:swift.bzl",
-    "swift_binary",
-    "swift_test",
-)
+load("//swift:swift_binary.bzl", "swift_binary")
+load("//swift:swift_test.bzl", "swift_test")
 
 swift_binary(
     name = "echo_server",

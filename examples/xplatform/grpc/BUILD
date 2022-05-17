@@ -10,11 +10,8 @@
 # 3.  Run the `echo_client` binary in the same terminal. It will send a request
 #     to this service and then print the response that it received.
 
-load(
-    "//swift:swift.bzl",
-    "swift_binary",
-    "swift_test",
-)
+load("//swift:swift_binary.bzl", "swift_binary")
+load("//swift:swift_test.bzl", "swift_test")
 
 licenses(["notice"])
 

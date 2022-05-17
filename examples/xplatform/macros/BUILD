@@ -1,5 +1,7 @@
-load("//swift:swift.bzl", "swift_binary", "swift_library", "swift_test")
+load("//swift:swift_binary.bzl", "swift_binary")
 load("//swift:swift_compiler_plugin.bzl", "swift_compiler_plugin", "universal_swift_compiler_plugin")
+load("//swift:swift_library.bzl", "swift_library")
+load("//swift:swift_test.bzl", "swift_test")
 
 licenses(["notice"])
 
