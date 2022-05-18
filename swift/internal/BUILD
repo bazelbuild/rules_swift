@@ -128,6 +128,11 @@ bzl_library(
 )
 
 bzl_library(
+    name = "swift_interop_info",
+    srcs = ["swift_interop_info.bzl"],
+)
+
+bzl_library(
     name = "swift_protoc_gen_aspect",
     srcs = ["swift_protoc_gen_aspect.bzl"],
     deps = [

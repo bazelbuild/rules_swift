@@ -60,6 +60,7 @@ bzl_library(
         "//swift/internal:features",
         "//swift/internal:module_maps",
         "//swift/internal:providers",
+        "//swift/internal:swift_interop_info",
         "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
         "@bazel_skylib//lib:sets",
@@ -70,12 +71,12 @@ bzl_library(
     name = "swift_common",
     srcs = ["swift_common.bzl"],
     deps = [
-        ":providers",
-        ":swift_clang_module_aspect",
         "//swift/internal:attrs",
         "//swift/internal:compiling",
         "//swift/internal:features",
         "//swift/internal:linking",
+        "//swift/internal:providers",
+        "//swift/internal:swift_interop_info",
         "//swift/internal:symbol_graph_extracting",
         "//swift/internal:toolchain_utils",
     ],
@@ -130,7 +131,9 @@ bzl_library(
 bzl_library(
     name = "swift_interop_hint",
     srcs = ["swift_interop_hint.bzl"],
-    deps = [":swift_common"],
+    deps = [
+        "//swift/internal:swift_interop_info",
+    ],
 )
 
 bzl_library(

@@ -50,8 +50,11 @@ load(
     "create_clang_module",
     "create_module",
     "create_swift_info",
-    "create_swift_interop_info",
     "create_swift_module",
+)
+load(
+    "@build_bazel_rules_swift//swift/internal:swift_interop_info.bzl",
+    "create_swift_interop_info",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:symbol_graph_extracting.bzl",

@@ -14,12 +14,15 @@
 
 """Implementation of the `swift_interop_hint` rule."""
 
-load(":swift_common.bzl", "swift_common")
+load(
+    "@build_bazel_rules_swift//swift/internal:swift_interop_info.bzl",
+    "create_swift_interop_info",
+)
 
 def _swift_interop_hint_impl(ctx):
     # TODO(b/194733180): Take advantage of the richer API to add support for
     # other features, like APINotes, later.
-    return swift_common.create_swift_interop_info(
+    return create_swift_interop_info(
         exclude_headers = ctx.files.exclude_hdrs,
         module_map = ctx.file.module_map,
         module_name = ctx.attr.module_name,

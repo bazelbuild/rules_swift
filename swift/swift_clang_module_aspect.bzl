@@ -45,10 +45,13 @@ load(
 )
 load(
     "@build_bazel_rules_swift//swift/internal:providers.bzl",
-    "SwiftInteropInfo",
     "create_clang_module",
     "create_module",
     "create_swift_info",
+)
+load(
+    "@build_bazel_rules_swift//swift/internal:swift_interop_info.bzl",
+    "SwiftInteropInfo",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:toolchain_utils.bzl",
