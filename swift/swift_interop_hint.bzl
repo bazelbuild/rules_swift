@@ -14,12 +14,15 @@
 
 """Implementation of the `swift_interop_hint` rule."""
 
-load(":swift_common.bzl", "swift_common")
+load(
+    "//swift/internal:swift_interop_info.bzl",
+    "create_swift_interop_info",
+)
 
 def _swift_interop_hint_impl(ctx):
     # TODO(b/194733180): Take advantage of the richer API to add support for
     # other features, like APINotes, later.
-    return swift_common.create_swift_interop_info(
+    return create_swift_interop_info(
         exclude_headers = ctx.files.exclude_hdrs,
         module_map = ctx.file.module_map,
         module_name = ctx.attr.module_name,
@@ -81,7 +84,7 @@ generate.
 Defines an aspect hint that associates non-Swift BUILD targets with additional
 information required for them to be imported by Swift.
 
-> [!NOTE]  
+> [!NOTE]
 > Bazel 6 users must set the `--experimental_enable_aspect_hints` flag to utilize
 > this rule. In addition, downstream consumers of rules that utilize this rule
 > must also set the flag. The flag is enabled by default in Bazel 7.
