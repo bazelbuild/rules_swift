@@ -25,7 +25,6 @@ file in the parent directory.
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("//swift:providers.bzl", "SwiftInfo", "SwiftSymbolGraphInfo")
 load("//swift/internal:attrs.bzl", "swift_toolchain_attrs")
-load("//swift/internal:derived_files.bzl", "derived_files")
 load("//swift/internal:features.bzl", "configure_features")
 load("//swift/internal:symbol_graph_extracting.bzl", "extract_symbol_graph")
 load("//swift/internal:toolchain_utils.bzl", "get_swift_toolchain")
@@ -53,9 +52,8 @@ def _swift_symbol_graph_aspect_impl(target, aspect_ctx):
         minimum_access_level = aspect_ctx.attr.minimum_access_level
 
         for module in swift_info.direct_modules:
-            output_dir = derived_files.symbol_graph_directory(
-                actions = aspect_ctx.actions,
-                target_name = target.label.name,
+            output_dir = aspect_ctx.actions.declare_directory(
+                "{}.symbolgraphs".format(target.label.name),
             )
             extract_symbol_graph(
                 actions = aspect_ctx.actions,

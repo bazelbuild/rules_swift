@@ -28,7 +28,6 @@ load(
     "run_toolchain_action",
     "swift_action_names",
 )
-load(":derived_files.bzl", "derived_files")
 load(
     ":developer_dirs.bzl",
     "platform_developer_framework_dir",
@@ -110,6 +109,7 @@ load(
     "compact",
     "compilation_context_for_explicit_module_compilation",
     "merge_compilation_contexts",
+    "owner_relative_path",
     "struct_fields",
 )
 load(":vfsoverlay.bzl", "write_vfsoverlay")
@@ -2226,9 +2226,8 @@ def compile_module_interface(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_VFSOVERLAY,
     ):
-        vfsoverlay_file = derived_files.vfsoverlay(
-            actions = actions,
-            target_name = target_name,
+        vfsoverlay_file = actions.declare_file(
+            "{}.vfsoverlay.yaml".format(target_name),
         )
         write_vfsoverlay(
             actions = actions,
@@ -2551,9 +2550,8 @@ def compile(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_VFSOVERLAY,
     ):
-        vfsoverlay_file = derived_files.vfsoverlay(
-            actions = actions,
-            target_name = target_name,
+        vfsoverlay_file = actions.declare_file(
+            "{}.vfsoverlay.yaml".format(target_name),
         )
         write_vfsoverlay(
             actions = actions,
@@ -2884,9 +2882,8 @@ def _precompile_clang_module(
     ):
         return None
 
-    precompiled_module = derived_files.precompiled_module(
-        actions = actions,
-        target_name = target_name,
+    precompiled_module = actions.declare_file(
+        "{}.swift.pcm".format(target_name),
     )
 
     if not is_swift_generated_header:
@@ -3072,24 +3069,24 @@ def _declare_compile_outputs(
 
     # First, declare "constant" outputs (outputs whose nature doesn't change
     # depending on compilation mode, like WMO vs. non-WMO).
-    swiftmodule_file = derived_files.swiftmodule(
+    swiftmodule_file = _declare_target_scoped_file(
         actions = actions,
         add_target_name_to_output_path = add_target_name_to_output_path,
         target_name = target_name,
-        module_name = module_name,
+        basename = "{}.swiftmodule".format(module_name),
     )
-    swiftdoc_file = derived_files.swiftdoc(
+    swiftdoc_file = _declare_target_scoped_file(
         actions = actions,
         add_target_name_to_output_path = add_target_name_to_output_path,
         target_name = target_name,
-        module_name = module_name,
+        basename = "{}.swiftdoc".format(module_name),
     ) if include_swiftdoc else None
 
-    swiftsourceinfo_file = derived_files.swiftsourceinfo(
+    swiftsourceinfo_file = _declare_target_scoped_file(
         actions = actions,
         add_target_name_to_output_path = add_target_name_to_output_path,
         target_name = target_name,
-        module_name = module_name,
+        basename = "{}.swiftsourceinfo".format(module_name),
     ) if include_swiftsourceinfo else None
 
     if are_all_features_enabled(
@@ -3099,11 +3096,11 @@ def _declare_compile_outputs(
             SWIFT_FEATURE_EMIT_SWIFTINTERFACE,
         ],
     ):
-        swiftinterface_file = derived_files.swiftinterface(
+        swiftinterface_file = _declare_target_scoped_file(
             actions = actions,
             add_target_name_to_output_path = add_target_name_to_output_path,
             target_name = target_name,
-            module_name = module_name,
+            basename = "{}.swiftinterface".format(module_name),
         )
     else:
         swiftinterface_file = None
@@ -3115,11 +3112,11 @@ def _declare_compile_outputs(
             SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE,
         ],
     ):
-        private_swiftinterface_file = derived_files.private_swiftinterface(
+        private_swiftinterface_file = _declare_target_scoped_file(
             actions = actions,
             add_target_name_to_output_path = add_target_name_to_output_path,
             target_name = target_name,
-            module_name = module_name,
+            basename = "{}.private.swiftinterface".format(module_name),
         )
     else:
         private_swiftinterface_file = None
@@ -3127,7 +3124,7 @@ def _declare_compile_outputs(
     # If requested, generate the Swift header for this library so that it can be
     # included by Objective-C code that depends on it.
     if generated_header_name:
-        generated_header = derived_files.generated_header(
+        generated_header = _declare_validated_generated_header(
             actions = actions,
             add_target_name_to_output_path = add_target_name_to_output_path,
             target_name = target_name,
@@ -3156,9 +3153,8 @@ def _declare_compile_outputs(
                 if module.clang:
                     sets.insert(dependent_module_names, module.name)
 
-        generated_module_map = derived_files.module_map(
-            actions = actions,
-            target_name = target_name,
+        generated_module_map = actions.declare_file(
+            "{}_modulemap/_/module.modulemap".format(target_name),
         )
         write_module_map(
             actions = actions,
@@ -3202,20 +3198,16 @@ def _declare_compile_outputs(
         # If we're emitting a single object, we don't use an object map; we just
         # declare the output file that the compiler will generate and there are
         # no other partial outputs.
-        object_files = [derived_files.whole_module_object_file(
-            actions = actions,
-            target_name = target_name,
-        )]
-        ast_files = [derived_files.ast(
+        object_files = [actions.declare_file("{}.o".format(target_name))]
+        ast_files = [_declare_per_source_ast_file(
             actions = actions,
             target_name = target_name,
             src = srcs[0],
         )]
         other_outputs = []
-        const_values_files = [derived_files.swift_const_values_file(
-            actions = actions,
-            target_name = target_name,
-        )]
+        const_values_files = [
+            actions.declare_file("{}.swiftconstvalues".format(target_name)),
+        ]
         output_file_map = None
         derived_files_output_file_map = None
     else:
@@ -3253,9 +3245,8 @@ def _declare_compile_outputs(
         index_while_building and
         not _index_store_path_overridden(user_compile_flags)
     ):
-        indexstore_directory = derived_files.indexstore_directory(
-            actions = actions,
-            target_name = target_name,
+        indexstore_directory = actions.declare_directory(
+            "{}.indexstore".format(target_name),
         )
     else:
         indexstore_directory = None
@@ -3290,6 +3281,99 @@ def _declare_compile_outputs(
         swiftsourceinfo_file = swiftsourceinfo_file,
     )
     return compile_outputs, other_outputs
+
+def _intermediate_frontend_file_path(target_name, src):
+    """Returns the path to the directory for intermediate compile outputs.
+
+    This is a helper function and is not exported in the `derived_files` module.
+
+    Args:
+        target_name: The name of hte target being built.
+        src: A `File` representing the source file whose intermediate frontend
+            artifacts path should be returned.
+
+    Returns:
+        The path to the directory where intermediate artifacts for the given
+        target and source file should be stored.
+    """
+    objs_dir = "{}_objs".format(target_name)
+
+    owner_rel_path = owner_relative_path(src).replace(" ", "__SPACE__")
+    safe_name = paths.basename(owner_rel_path)
+
+    return paths.join(objs_dir, paths.dirname(owner_rel_path)), safe_name
+
+def _declare_per_source_ast_file(*, actions, target_name, src):
+    """Declares a file for an ast file during compilation.
+
+    Args:
+        actions: The context's actions object.
+        target_name: The name of the target being built.
+        src: A `File` representing the source file being compiled.
+
+    Returns:
+        The declared `File` where the given src's AST will be dumped to.
+    """
+    dirname, basename = _intermediate_frontend_file_path(target_name, src)
+    return actions.declare_file(paths.join(dirname, "{}.ast".format(basename)))
+
+def _declare_per_source_bc_file(*, actions, target_name, src):
+    """Declares a file for a per-source llvm bc file during compilation.
+
+    Args:
+        actions: The context's actions object.
+        target_name: The name of the target being built.
+        src: A `File` representing the source file being compiled.
+
+    Returns:
+        The declared `File`.
+    """
+    dirname, basename = _intermediate_frontend_file_path(target_name, src)
+    return actions.declare_file(paths.join(dirname, "{}.bc".format(basename)))
+
+def _declare_per_source_object_file(*, actions, target_name, src):
+    """Declares a file for a per-source object file during compilation.
+
+    These files are produced when the compiler is invoked with multiple frontend
+    invocations (i.e., whole module optimization disabled); in that case, there
+    is a `.o` file produced for each source file, rather than a single `.o` for
+    the entire module.
+
+    Args:
+        actions: The context's actions object.
+        target_name: The name of the target being built.
+        src: A `File` representing the source file being compiled.
+
+    Returns:
+        The declared `File`.
+    """
+    dirname, basename = _intermediate_frontend_file_path(target_name, src)
+    return actions.declare_file(paths.join(dirname, "{}.o".format(basename)))
+
+def _intermediate_per_source_swift_const_values_file(
+        *,
+        actions,
+        target_name,
+        src):
+    """Declares a file for a per-source Swift const values file during compilation.
+
+    These files are produced when the compiler is invoked with multiple frontend
+    invocations (i.e., whole module optimization disabled); in that case, there
+    is a `.swiftconstvalues` file produced for each source file, rather than a single
+    `.swiftconstvalues` for the entire module.
+
+    Args:
+        actions: The context's actions object.
+        target_name: The name of the target being built.
+        src: A `File` representing the source file being compiled.
+
+    Returns:
+        The declared `File`.
+    """
+    dirname, basename = _intermediate_frontend_file_path(target_name, src)
+    return actions.declare_file(
+        paths.join(dirname, "{}.swiftconstvalues".format(basename)),
+    )
 
 def _declare_multiple_outputs_and_write_output_file_map(
         actions,
@@ -3332,15 +3416,13 @@ def _declare_multiple_outputs_and_write_output_file_map(
             actions instead of the default `output_file_map` that is used for
             producing objects only.
     """
-    output_map_file = derived_files.swiftc_output_file_map(
-        actions = actions,
-        target_name = target_name,
+    output_map_file = actions.declare_file(
+        "{}.output_file_map.json".format(target_name),
     )
 
     if split_derived_file_generation:
-        derived_files_output_map_file = derived_files.swiftc_derived_output_file_map(
-            actions = actions,
-            target_name = target_name,
+        derived_files_output_map_file = actions.declare_file(
+            "{}.derived_output_file_map.json".format(target_name),
         )
     else:
         derived_files_output_map_file = None
@@ -3363,9 +3445,8 @@ def _declare_multiple_outputs_and_write_output_file_map(
     ast_files = []
 
     if extract_const_values and is_wmo:
-        const_values_file = derived_files.swift_const_values_file(
-            actions = actions,
-            target_name = target_name,
+        const_values_file = actions.declare_file(
+            "{}.swiftconstvalues".format(target_name),
         )
         const_values_files.append(const_values_file)
         whole_module_map["const-values"] = const_values_file.path
@@ -3374,7 +3455,7 @@ def _declare_multiple_outputs_and_write_output_file_map(
         src_output_map = {}
 
         if extract_const_values and not is_wmo:
-            const_values_file = derived_files.intermediate_swift_const_values_file(
+            const_values_file = _intermediate_per_source_swift_const_values_file(
                 actions = actions,
                 target_name = target_name,
                 src = src,
@@ -3384,7 +3465,7 @@ def _declare_multiple_outputs_and_write_output_file_map(
 
         if emits_bc:
             # Declare the llvm bc file (there is one per source file).
-            obj = derived_files.intermediate_bc_file(
+            obj = _declare_per_source_bc_file(
                 actions = actions,
                 target_name = target_name,
                 src = src,
@@ -3393,7 +3474,7 @@ def _declare_multiple_outputs_and_write_output_file_map(
             src_output_map["llvm-bc"] = obj.path
         else:
             # Declare the object file (there is one per source file).
-            obj = derived_files.intermediate_object_file(
+            obj = _declare_per_source_object_file(
                 actions = actions,
                 target_name = target_name,
                 src = src,
@@ -3401,7 +3482,7 @@ def _declare_multiple_outputs_and_write_output_file_map(
             output_objs.append(obj)
             src_output_map["object"] = obj.path
 
-        ast = derived_files.ast(
+        ast = _declare_per_source_ast_file(
             actions = actions,
             target_name = target_name,
             src = src,
@@ -3428,6 +3509,51 @@ def _declare_multiple_outputs_and_write_output_file_map(
         other_outputs = other_outputs,
         output_file_map = output_map_file,
         derived_files_output_file_map = derived_files_output_map_file,
+    )
+
+def _declare_target_scoped_file(
+        *,
+        actions,
+        add_target_name_to_output_path,
+        target_name,
+        basename):
+    if add_target_name_to_output_path:
+        return actions.declare_file(paths.join(target_name, basename))
+    else:
+        return actions.declare_file(basename)
+
+def _declare_validated_generated_header(
+        *,
+        actions,
+        add_target_name_to_output_path,
+        target_name,
+        generated_header_name):
+    """Validates and declares the explicitly named generated header.
+
+    If the file does not have a `.h` extension, the build will fail.
+
+    Args:
+        actions: The context's `actions` object.
+        add_target_name_to_output_path: Add target_name in output path. More
+        info at SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT description.
+        target_name: Executable target name.
+        generated_header_name: The desired name of the generated header.
+
+    Returns:
+        A `File` that should be used as the output for the generated header.
+    """
+    extension = paths.split_extension(generated_header_name)[1]
+    if extension != ".h":
+        fail(
+            "The generated header for a Swift module must have a '.h' " +
+            "extension (got '{}').".format(generated_header_name),
+        )
+
+    return _declare_target_scoped_file(
+        actions = actions,
+        add_target_name_to_output_path = add_target_name_to_output_path,
+        target_name = target_name,
+        basename = generated_header_name,
     )
 
 def swift_library_output_map(name):

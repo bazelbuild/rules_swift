@@ -28,7 +28,6 @@ load(
     "ensure_swiftmodule_is_embedded",
     "should_embed_swiftmodule_for_debugging",
 )
-load(":derived_files.bzl", "derived_files")
 load(
     ":developer_dirs.bzl",
     "developer_dirs_linkopts",
@@ -265,9 +264,8 @@ def create_linking_context_from_compilation_outputs(
             action_name = swift_action_names.AUTOLINK_EXTRACT,
             swift_toolchain = swift_toolchain,
         ):
-            autolink_file = derived_files.autolink_flags(
-                actions = actions,
-                target_name = label.name,
+            autolink_file = actions.declare_file(
+                "{}.autolink".format(label.name),
             )
             register_autolink_extract_action(
                 actions = actions,

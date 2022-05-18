@@ -86,10 +86,10 @@ bzl_library(
         ":providers",
         ":swift_common",
         "//swift/internal:compiling",
-        "//swift/internal:derived_files",
         "//swift/internal:feature_names",
         "//swift/internal:linking",
         "//swift/internal:utils",
+        "@bazel_skylib//lib:paths",
     ],
 )
 
@@ -105,7 +105,6 @@ bzl_library(
         ":providers",
         "//swift/internal:attrs",
         "//swift/internal:compiling",
-        "//swift/internal:derived_files",
         "//swift/internal:feature_names",
         "//swift/internal:features",
         "//swift/internal:module_maps",
@@ -156,7 +155,6 @@ bzl_library(
     deps = [
         ":providers",
         ":swift_symbol_graph_aspect",
-        "//swift/internal:derived_files",
     ],
 )
 
@@ -233,7 +231,6 @@ bzl_library(
     deps = [
         ":providers",
         ":swift_common",
-        "//swift/internal:derived_files",
         "//swift/internal:linking",
         "//swift/internal:output_groups",
         "//swift/internal:utils",
@@ -268,7 +265,6 @@ bzl_library(
     deps = [
         ":providers",
         ":swift_common",
-        "//swift/internal:derived_files",
         "//swift/internal:env_expansion",
         "//swift/internal:feature_names",
         "//swift/internal:linking",

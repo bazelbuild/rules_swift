@@ -15,7 +15,6 @@
 """Implementation of the `swift_binary` and `swift_test` rules."""
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load("//swift/internal:derived_files.bzl", "derived_files")
 load("//swift/internal:env_expansion.bzl", "expanded_env")
 load(
     "//swift/internal:feature_names.bzl",
@@ -87,10 +86,7 @@ def _create_xctest_bundle(name, actions, binary):
     Returns:
         A `File` (tree artifact) representing the `.xctest` bundle.
     """
-    xctest_bundle = derived_files.xctest_bundle(
-        actions = actions,
-        target_name = name,
-    )
+    xctest_bundle = actions.declare_directory("{}.xctest".format(name))
 
     args = actions.args()
     args.add(xctest_bundle.path)
@@ -131,10 +127,7 @@ def _create_xctest_runner(name, actions, bundle, xctest_runner_template):
         A `File` representing the shell script that will launch the test bundle
         with the `xctest` tool.
     """
-    xctest_runner = derived_files.xctest_runner_script(
-        actions = actions,
-        target_name = name,
-    )
+    xctest_runner = actions.declare_file("{}.test-runner.sh".format(name))
 
     actions.expand_template(
         is_executable = True,
