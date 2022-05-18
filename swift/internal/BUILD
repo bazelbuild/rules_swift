@@ -200,15 +200,9 @@ bzl_library(
 )
 
 bzl_library(
-    name = "symbol_graph_extracting",
-    srcs = ["symbol_graph_extracting.bzl"],
+    name = "swift_interop_info",
+    srcs = ["swift_interop_info.bzl"],
     visibility = ["//swift:__subpackages__"],
-    deps = [
-        ":actions",
-        ":providers",
-        ":toolchain_config",
-        ":utils",
-    ],
 )
 
 bzl_library(
@@ -224,6 +218,18 @@ bzl_library(
         ":toolchain_utils",
         ":utils",
         "@bazel_skylib//lib:dicts",
+    ],
+)
+
+bzl_library(
+    name = "symbol_graph_extracting",
+    srcs = ["symbol_graph_extracting.bzl"],
+    visibility = ["//swift:__subpackages__"],
+    deps = [
+        ":actions",
+        ":providers",
+        ":toolchain_config",
+        ":utils",
     ],
 )
 

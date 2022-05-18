@@ -38,10 +38,13 @@ load(
 load("//swift/internal:module_maps.bzl", "write_module_map")
 load(
     "//swift/internal:providers.bzl",
-    "SwiftInteropInfo",
     "create_clang_module",
     "create_module",
     "create_swift_info",
+)
+load(
+    "//swift/internal:swift_interop_info.bzl",
+    "SwiftInteropInfo",
 )
 load("//swift/internal:toolchain_utils.bzl", "get_swift_toolchain")
 load(
