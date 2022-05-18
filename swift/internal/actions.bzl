@@ -22,11 +22,6 @@ load(":utils.bzl", "struct_fields")
 
 # The names of actions currently supported by the Swift build rules.
 swift_action_names = struct(
-    # Extracts a linker input file containing libraries to link from a compiled
-    # object file to provide autolink functionality based on `import` directives
-    # on ELF platforms.
-    AUTOLINK_EXTRACT = "SwiftAutolinkExtract",
-
     # Compiles one or more `.swift` source files into a `.swiftmodule` and
     # object files.
     COMPILE = "SwiftCompile",

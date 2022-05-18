@@ -248,7 +248,7 @@ def _driver_tool_config(
     Args:
         driver_mode: The mode in which to invoke the Swift driver. In other
             words, this is the name of the executable of symlink that you want
-            to execute (e.g., `swift`, `swiftc`, `swift-autolink-extract`).
+            to execute (e.g., `swift`, `swiftc`).
         args: A list of arguments that are always passed to the driver.
         swift_executable: A custom Swift driver executable, if provided by the
             toolchain.

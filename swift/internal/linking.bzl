@@ -20,15 +20,12 @@ load(
 )
 load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load(":actions.bzl", "is_action_enabled", "swift_action_names")
 load(":attrs.bzl", "swift_compilation_attrs")
-load(":autolinking.bzl", "register_autolink_extract_action")
 load(
     ":debugging.bzl",
     "ensure_swiftmodule_is_embedded",
     "should_embed_swiftmodule_for_debugging",
 )
-load(":derived_files.bzl", "derived_files")
 load(":features.bzl", "configure_features", "get_cc_feature_configuration")
 load(":utils.bzl", "get_providers")
 
@@ -172,9 +169,8 @@ def create_linking_context_from_compilation_outputs(
     On some platforms, this function will spawn additional post-compile actions
     for the module in order to add their outputs to the linking context. For
     example, if the toolchain that requires a "module-wrap" invocation to embed
-    the `.swiftmodule` into an object file for debugging purposes, or if it
-    extracts auto-linking information from the object files to generate a linker
-    command line parameters file, those actions will be created here.
+    the `.swiftmodule` into an object file for debugging purposes, that action
+    will be created here.
 
     Args:
         actions: The context's `actions` object.
@@ -233,33 +229,6 @@ def create_linking_context_from_compilation_outputs(
                     label = label,
                     swiftmodule = module_context.swift.swiftmodule,
                     swift_toolchain = swift_toolchain,
-                ),
-            )
-
-        # Invoke an autolink-extract action for toolchains that require it.
-        if is_action_enabled(
-            action_name = swift_action_names.AUTOLINK_EXTRACT,
-            swift_toolchain = swift_toolchain,
-        ):
-            autolink_file = derived_files.autolink_flags(
-                actions = actions,
-                target_name = label.name,
-            )
-            register_autolink_extract_action(
-                actions = actions,
-                autolink_file = autolink_file,
-                feature_configuration = feature_configuration,
-                module_name = module_context.name,
-                object_files = compilation_outputs.objects,
-                swift_toolchain = swift_toolchain,
-            )
-            post_compile_linker_inputs.append(
-                cc_common.create_linker_input(
-                    owner = label,
-                    user_link_flags = depset(
-                        ["@{}".format(autolink_file.path)],
-                    ),
-                    additional_inputs = depset([autolink_file]),
                 ),
             )
 

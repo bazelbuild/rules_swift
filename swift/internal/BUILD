@@ -30,15 +30,6 @@ bzl_library(
 )
 
 bzl_library(
-    name = "autolinking",
-    srcs = ["autolinking.bzl"],
-    deps = [
-        ":actions",
-        ":toolchain_config",
-    ],
-)
-
-bzl_library(
     name = "build_settings",
     srcs = ["build_settings.bzl"],
 )
@@ -103,11 +94,8 @@ bzl_library(
     name = "linking",
     srcs = ["linking.bzl"],
     deps = [
-        ":actions",
         ":attrs",
-        ":autolinking",
         ":debugging",
-        ":derived_files",
         ":features",
         ":utils",
         "//swift:swift_clang_module_aspect",

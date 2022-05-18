@@ -364,8 +364,7 @@ A replacement Swift driver executable.
 
 If this is empty, the default Swift driver in the toolchain will be used.
 Otherwise, this binary will be used and `--driver-mode` will be passed to ensure
-that it is invoked in the correct mode (i.e., `swift`, `swiftc`,
-`swift-autolink-extract`, etc.).
+that it is invoked in the correct mode (i.e., `swift`, `swiftc`, etc.).
 """,
         ),
         "_default_swift_executable": attr.label(
