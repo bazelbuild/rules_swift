@@ -14,7 +14,7 @@
 
 """Implementation of the `swift_binary` and `swift_test` rules."""
 
-load("//swift/internal:derived_files.bzl", "derived_files")
+load("@bazel_skylib//lib:paths.bzl", "paths")
 load(
     "//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT",
@@ -135,6 +135,14 @@ def _swift_binary_impl(ctx):
         feature_configuration = feature_configuration,
     )
 
+    if swift_common.is_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT,
+    ):
+        name = paths.join(ctx.label.name, ctx.label.name)
+    else:
+        name = ctx.label.name
+
     linking_outputs = register_link_binary_action(
         actions = ctx.actions,
         additional_inputs = ctx.files.swiftc_inputs,
@@ -143,14 +151,7 @@ def _swift_binary_impl(ctx):
         # This is already collected from `linking_context`.
         compilation_outputs = None,
         deps = ctx.attr.deps,
-        name = derived_files.path(
-            ctx,
-            swift_common.is_enabled(
-                feature_configuration = feature_configuration,
-                feature_name = SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT,
-            ),
-            ctx.label.name,
-        ),
+        name = name,
         output_type = "executable",
         owner = ctx.label,
         stamp = ctx.attr.stamp,

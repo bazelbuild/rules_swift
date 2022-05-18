@@ -72,7 +72,6 @@ bzl_library(
         ":actions",
         ":autolinking",
         ":debugging",
-        ":derived_files",
         ":developer_dirs",
         ":explicit_module_map_file",
         ":feature_names",
@@ -94,19 +93,8 @@ bzl_library(
     visibility = ["//swift:__subpackages__"],
     deps = [
         ":actions",
-        ":derived_files",
         ":feature_names",
         ":toolchain_config",
-    ],
-)
-
-bzl_library(
-    name = "derived_files",
-    srcs = ["derived_files.bzl"],
-    visibility = ["//swift:__subpackages__"],
-    deps = [
-        ":utils",
-        "@bazel_skylib//lib:paths",
     ],
 )
 
@@ -153,7 +141,6 @@ bzl_library(
         ":attrs",
         ":autolinking",
         ":debugging",
-        ":derived_files",
         ":developer_dirs",
         ":feature_names",
         ":features",
@@ -208,7 +195,6 @@ bzl_library(
     visibility = ["//swift:__subpackages__"],
     deps = [
         ":attrs",
-        ":derived_files",
         ":features",
         ":providers",
         ":symbol_graph_extracting",

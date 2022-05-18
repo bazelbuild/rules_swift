@@ -15,7 +15,6 @@
 """Implementation of the `swift_module_alias` rule."""
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load("//swift/internal:derived_files.bzl", "derived_files")
 load("//swift/internal:linking.bzl", "new_objc_provider")
 load(
     "//swift/internal:output_groups.bzl",
@@ -38,9 +37,8 @@ def _swift_module_alias_impl(ctx):
         module_name = swift_common.derive_module_name(ctx.label)
 
     # Generate a source file that imports each of the deps using `@_exported`.
-    reexport_src = derived_files.reexport_modules_src(
-        actions = ctx.actions,
-        target_name = ctx.label.name,
+    reexport_src = ctx.actions.declare_file(
+        "{}_exports.swift".format(ctx.label.name),
     )
     ctx.actions.write(
         content = "\n".join([

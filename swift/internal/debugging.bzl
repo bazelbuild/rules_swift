@@ -20,7 +20,6 @@ load(
     "run_toolchain_action",
     "swift_action_names",
 )
-load(":derived_files.bzl", "derived_files")
 load(
     ":feature_names.bzl",
     "SWIFT_FEATURE_DBG",
@@ -61,9 +60,8 @@ def ensure_swiftmodule_is_embedded(
         # For ELF-format binaries, we need to invoke a Swift modulewrap action
         # to wrap the .swiftmodule file in a .o file that gets propagated to the
         # linker.
-        modulewrap_obj = derived_files.modulewrap_object(
-            actions,
-            target_name = label.name,
+        modulewrap_obj = actions.declare_file(
+            "{}.modulewrap.o".format(label.name),
         )
         _register_modulewrap_action(
             actions = actions,
