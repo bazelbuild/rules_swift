@@ -21,7 +21,6 @@ toolchain, see `swift.bzl`.
 
 load("@bazel_features//:features.bzl", "bazel_features")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load("@bazel_skylib//lib:partial.bzl", "partial")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
@@ -267,7 +266,7 @@ def _swift_linkopts_providers(
         objc_info = objc_info,
     )
 
-def _resource_directory_configurator(developer_dir, _prerequisites, args):
+def _make_resource_directory_configurator(developer_dir):
     """Configures compiler flags about the toolchain's resource directory.
 
     We must pass a resource directory explicitly if the build rules are invoked
@@ -275,22 +274,25 @@ def _resource_directory_configurator(developer_dir, _prerequisites, args):
     compiler doesn't try to find its resources relative to that binary.
 
     Args:
-        developer_dir: The path to Xcode's Developer directory. This argument is
-            pre-bound in the partial.
-        _prerequisites: The value returned by
-            `swift_common.action_prerequisites`.
-        args: The `Args` object to which flags will be added.
+        developer_dir: The path to Xcode's Developer directory.
+
+    Returns:
+        A function that is used to configure the toolchain's resource directory.
     """
-    args.add(
-        "-resource-dir",
-        (
-            "{developer_dir}/Toolchains/{toolchain}.xctoolchain/" +
-            "usr/lib/swift"
-        ).format(
-            developer_dir = developer_dir,
-            toolchain = "XcodeDefault",
-        ),
-    )
+
+    def _resource_directory_configurator(_prerequisites, args):
+        args.add(
+            "-resource-dir",
+            (
+                "{developer_dir}/Toolchains/{toolchain}.xctoolchain/" +
+                "usr/lib/swift"
+            ).format(
+                developer_dir = developer_dir,
+                toolchain = "XcodeDefault",
+            ),
+        )
+
+    return _resource_directory_configurator
 
 def _all_action_configs(
         additional_objc_copts,
@@ -414,8 +416,7 @@ def _all_action_configs(
                     swift_action_names.SYMBOL_GRAPH_EXTRACT,
                 ],
                 configurators = [
-                    partial.make(
-                        _resource_directory_configurator,
+                    _make_resource_directory_configurator(
                         apple_toolchain.developer_dir(),
                     ),
                 ],
