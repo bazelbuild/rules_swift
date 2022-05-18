@@ -15,7 +15,6 @@ bzl_library(
         ":features",
         ":toolchain_config",
         ":utils",
-        "@bazel_skylib//lib:partial",
         "@bazel_skylib//lib:types",
     ],
 )
@@ -47,7 +46,6 @@ bzl_library(
         ":toolchain_config",
         ":utils",
         ":vfsoverlay",
-        "@bazel_skylib//lib:partial",
         "@bazel_skylib//lib:paths",
         "@bazel_skylib//lib:sets",
         "@bazel_skylib//lib:types",
@@ -185,7 +183,6 @@ bzl_library(
     name = "toolchain_config",
     srcs = ["toolchain_config.bzl"],
     deps = [
-        "@bazel_skylib//lib:partial",
         "@bazel_skylib//lib:paths",
         "@bazel_skylib//lib:types",
     ],

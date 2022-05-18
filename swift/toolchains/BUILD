@@ -18,7 +18,6 @@ bzl_library(
         "//swift/internal:target_triples",
         "//swift/internal:toolchain_config",
         "//swift/internal:utils",
-        "@bazel_skylib//lib:partial",
         "@bazel_skylib//rules:common_settings",
     ],
 )
@@ -38,7 +37,6 @@ bzl_library(
         "//swift/internal:toolchain_config",
         "//swift/internal:utils",
         "@bazel_skylib//lib:dicts",
-        "@bazel_skylib//lib:partial",
         "@bazel_skylib//lib:paths",
     ],
 )

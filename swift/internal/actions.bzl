@@ -14,7 +14,6 @@
 
 """Functions for registering actions that invoke Swift tools."""
 
-load("@bazel_skylib//lib:partial.bzl", "partial")
 load("@bazel_skylib//lib:types.bzl", "types")
 load(":features.bzl", "are_all_features_enabled")
 load(":toolchain_config.bzl", "swift_toolchain_config")
@@ -43,28 +42,6 @@ swift_action_names = struct(
 def _all_action_names():
     """A convenience function to return all actions defined by this rule set."""
     return struct_fields(swift_action_names).values()
-
-def _apply_configurator(configurator, prerequisites, args):
-    """Calls an action configurator with the given arguments.
-
-    This function appropriately handles whether the configurator is a Skylib
-    partial or a plain function.
-
-    Args:
-        configurator: The action configurator to call.
-        prerequisites: The prerequisites struct that the configurator may use
-            to control its behavior.
-        args: The `Args` object to which the configurator will add command line
-            arguments for the tool being invoked.
-
-    Returns:
-        The `swift_toolchain_config.config_result` value, or `None`, that was
-        returned by the configurator.
-    """
-    if types.is_function(configurator):
-        return configurator(prerequisites, args)
-    else:
-        return partial.call(configurator, prerequisites, args)
 
 def _apply_action_configs(
         action_name,
@@ -131,11 +108,7 @@ def _apply_action_configs(
         # configurators.
         if should_apply_configurators:
             for configurator in action_config.configurators:
-                action_inputs = _apply_configurator(
-                    configurator,
-                    prerequisites,
-                    args,
-                )
+                action_inputs = configurator(prerequisites, args)
 
                 # If we create an action configurator from a lambda that calls
                 # `Args.add*`, the result will be the `Args` objects (rather

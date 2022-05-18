@@ -14,7 +14,6 @@
 
 """Definitions used to configure toolchains and actions."""
 
-load("@bazel_skylib//lib:partial.bzl", "partial")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:types.bzl", "types")
 
@@ -116,12 +115,12 @@ def _action_config(
     Args:
         actions: A `list` of strings denoting the names of the actions for
             which the configurators should be invoked.
-        configurators: A `list` of functions or Skylib partials that will be
-            invoked to add command line arguments and collect inputs for the
-            actions. These functions/partials take two arguments---a
-            `prerequisites` struct and an `Args` object---and return a `depset`
-            of `File`s that should be used as inputs to the action (or `None`
-            if the configurator does not add any inputs).
+        configurators: A `list` of functions or that will be invoked to add
+            command line arguments and collect inputs for the actions. These
+            functions take two arguments---a `prerequisites` struct and an
+            `Args` object---and return a either a struct via `config_result`
+            that describes that `File`s that should be used as inputs to the
+            action, or `None` if the configurator does not add any inputs.
         features: The `list` of features that must be enabled for the
             configurators to be applied to the action. This argument can take
             one of three forms: `None` (the default), in which case the
@@ -151,33 +150,6 @@ def _action_config(
         not_features = _normalize_action_config_features(not_features),
     )
 
-def _add_arg_impl(
-        arg_name_or_value,
-        value,
-        _prerequisites,
-        args,
-        format = None):
-    """Implementation function for the `add_arg` convenience configurator.
-
-    Args:
-        arg_name_or_value: The `arg_name_or_value` passed to `Args.add`. Bound
-            at partial creation time.
-        value: The `value` passed to `Args.add`. Bound at partial creation
-            time.
-        _prerequisites: Unused by this function.
-        args: The `Args` object to which flags will be added.
-        format: The `format` passed to `Args.add`. Bound at partial creation
-            time.
-    """
-
-    # `Args.add` doesn't permit the `value` argument to be `None`, only
-    # "unbound", so we have to check for this and not pass it *at all* if it
-    # wasn't specified when the partial was created.
-    if value == None:
-        args.add(arg_name_or_value, format = format)
-    else:
-        args.add(arg_name_or_value, value, format = format)
-
 def _add_arg(arg_name_or_value, value = None, format = None):
     """Returns a configurator that adds a simple argument to the command line.
 
@@ -194,11 +166,20 @@ def _add_arg(arg_name_or_value, value = None, format = None):
             by default).
 
     Returns:
-        A Skylib `partial` that can be added to the `configurators` list of an
+        A function that can be added to the `configurators` list of an
         `action_config`.
     """
-    return partial.make(
-        _add_arg_impl,
+
+    # `Args.add` doesn't permit the `value` argument to be `None`, only
+    # "unbound", so we have to check for this and not pass it *at all* if it
+    # wasn't specified when the function was created.
+    if value == None:
+        return lambda _prerequisites, args: args.add(
+            arg_name_or_value,
+            format = format,
+        )
+
+    return lambda _prerequisites, args: args.add(
         arg_name_or_value,
         value,
         format = format,

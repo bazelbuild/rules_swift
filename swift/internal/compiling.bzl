@@ -14,7 +14,6 @@
 
 """Implementation of compilation logic for Swift."""
 
-load("@bazel_skylib//lib:partial.bzl", "partial")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:sets.bzl", "sets")
 load("@bazel_skylib//lib:types.bzl", "types")
@@ -667,11 +666,10 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [swift_action_names.COMPILE],
             configurators = [
-                partial.make(
-                    _wmo_thread_count_configurator,
+                _make_wmo_thread_count_configurator(
                     # WMO is implied by features, so don't check the user
                     # compile flags.
-                    False,
+                    should_check_flags = False,
                 ),
             ],
             features = [
@@ -683,11 +681,10 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [swift_action_names.COMPILE],
             configurators = [
-                partial.make(
-                    _wmo_thread_count_configurator,
+                _make_wmo_thread_count_configurator(
                     # WMO is not implied by features, so check the user compile
                     # flags in case they enabled it there.
-                    True,
+                    should_check_flags = True,
                 ),
             ],
             not_features = [
@@ -1164,25 +1161,30 @@ def _user_compile_flags_configurator(prerequisites, args):
     """Adds user compile flags to the command line."""
     args.add_all(prerequisites.user_compile_flags)
 
-def _wmo_thread_count_configurator(should_check_flags, prerequisites, args):
+def _make_wmo_thread_count_configurator(should_check_flags):
     """Adds thread count flags for WMO compiles to the command line.
 
     Args:
         should_check_flags: If `True`, WMO wasn't enabled by a feature so the
-            user compile flags should be checked for an explicit WMO option.
-            This argument is pre-bound when the partial is created for the
-            action config. If `False`, unconditionally apply the flags, because
-            it is assumed that the configurator was triggered by feature
-            satisfaction.
-        prerequisites: The action prerequisites.
-        args: The `Args` object to which flags will be added.
+            user compile flags should be checked for an explicit WMO option. If
+            `False`, unconditionally apply the flags, because it is assumed that
+            the configurator was triggered by feature satisfaction.
+
+    Returns:
+        A function used to configure the `-num-threads` flag for WMO.
     """
-    if not should_check_flags or (
-        should_check_flags and
-        _is_wmo_manually_requested(prerequisites.user_compile_flags)
-    ):
-        # Force threaded mode for WMO builds.
+
+    def _add_num_threads(args):
         args.add("-num-threads", str(_DEFAULT_WMO_THREAD_COUNT))
+
+    if not should_check_flags:
+        return lambda _prerequisites, args: _add_num_threads(args)
+
+    def _flag_checking_wmo_thread_count_configurator(prerequisites, args):
+        if _is_wmo_manually_requested(prerequisites.user_compile_flags):
+            _add_num_threads(args)
+
+    return _flag_checking_wmo_thread_count_configurator
 
 def _is_wmo_manually_requested(user_compile_flags):
     """Returns `True` if a WMO flag is in the given list of compiler flags.
