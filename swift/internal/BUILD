@@ -27,7 +27,6 @@ bzl_library(
     deps = [
         ":features",
         ":toolchain_config",
-        "@bazel_skylib//lib:partial",
         "@bazel_skylib//lib:types",
     ],
 )
@@ -84,7 +83,6 @@ bzl_library(
         ":vfsoverlay",
         "//swift/toolchains/config:compile_module_interface_config",
         "@bazel_skylib//lib:collections",
-        "@bazel_skylib//lib:partial",
         "@bazel_skylib//lib:paths",
         "@bazel_skylib//lib:types",
     ],
@@ -162,7 +160,6 @@ bzl_library(
         ":utils",
         "//swift:swift_clang_module_aspect",
         "@bazel_skylib//lib:collections",
-        "@bazel_skylib//lib:partial",
         "@bazel_tools//tools/build_defs/cc:action_names.bzl",
     ],
 )
@@ -238,7 +235,6 @@ bzl_library(
     srcs = ["toolchain_config.bzl"],
     visibility = ["//swift:__subpackages__"],
     deps = [
-        "@bazel_skylib//lib:partial",
         "@bazel_skylib//lib:paths",
         "@bazel_skylib//lib:types",
     ],
