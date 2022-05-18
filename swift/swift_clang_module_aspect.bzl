@@ -24,10 +24,6 @@ load(
     "precompile_clang_module",
 )
 load(
-    "@build_bazel_rules_swift//swift/internal:derived_files.bzl",
-    "derived_files",
-)
-load(
     "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_EMIT_C_MODULE",
     "SWIFT_FEATURE_LAYERING_CHECK",
@@ -183,9 +179,8 @@ def _generate_module_map(
             key = _path_sorting_key,
         )
 
-    module_map_file = derived_files.module_map(
-        actions = actions,
-        target_name = target.label.name,
+    module_map_file = actions.declare_file(
+        "{}.swift.modulemap".format(target.label.name),
     )
 
     if exclude_headers:

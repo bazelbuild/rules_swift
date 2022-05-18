@@ -23,7 +23,6 @@ file in the parent directory.
 """
 
 load(":attrs.bzl", "swift_toolchain_attrs")
-load(":derived_files.bzl", "derived_files")
 load(":features.bzl", "configure_features")
 load(":symbol_graph_extracting.bzl", "extract_symbol_graph")
 load(":toolchain_utils.bzl", "get_swift_toolchain")
@@ -55,9 +54,8 @@ def _swift_symbol_graph_aspect_impl(target, aspect_ctx):
         minimum_access_level = aspect_ctx.attr.minimum_access_level
 
         for module in swift_info.direct_modules:
-            output_dir = derived_files.symbol_graph_directory(
-                actions = aspect_ctx.actions,
-                target_name = target.label.name,
+            output_dir = aspect_ctx.actions.declare_directory(
+                "{}.symbolgraphs".format(target.label.name),
             )
             extract_symbol_graph(
                 actions = aspect_ctx.actions,

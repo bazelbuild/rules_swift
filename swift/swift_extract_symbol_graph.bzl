@@ -14,19 +14,14 @@
 
 """Implementation of the `swift_extract_module_graph` rule."""
 
-load(
-    "@build_bazel_rules_swift//swift/internal:derived_files.bzl",
-    "derived_files",
-)
 load(":providers.bzl", "SwiftInfo", "SwiftSymbolGraphInfo")
 load(":swift_symbol_graph_aspect.bzl", "swift_symbol_graph_aspect")
 
 def _swift_extract_symbol_graph_impl(ctx):
     actions = ctx.actions
 
-    output_dir = derived_files.symbol_graph_directory(
-        actions = actions,
-        target_name = ctx.label.name,
+    output_dir = actions.declare_directory(
+        "{}.symbolgraphs".format(ctx.label.name),
     )
 
     args = actions.args()

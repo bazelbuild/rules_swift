@@ -23,7 +23,6 @@ load(
     "run_toolchain_action",
     "swift_action_names",
 )
-load(":derived_files.bzl", "derived_files")
 load(
     ":feature_names.bzl",
     "SWIFT_FEATURE_CACHEABLE_SWIFTMODULES",
@@ -75,6 +74,7 @@ load(
     "compact",
     "compilation_context_for_explicit_module_compilation",
     "merge_compilation_contexts",
+    "owner_relative_path",
     "struct_fields",
 )
 load(":vfsoverlay.bzl", "write_vfsoverlay")
@@ -1470,9 +1470,8 @@ def compile(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_VFSOVERLAY,
     ):
-        vfsoverlay_file = derived_files.vfsoverlay(
-            actions = actions,
-            target_name = target_name,
+        vfsoverlay_file = actions.declare_file(
+            "{}.vfsoverlay.yaml".format(target_name),
         )
         write_vfsoverlay(
             actions = actions,
@@ -1687,9 +1686,8 @@ def _precompile_clang_module(
     ):
         return None
 
-    precompiled_module = derived_files.precompiled_module(
-        actions = actions,
-        target_name = target_name,
+    precompiled_module = actions.declare_file(
+        "{}.swift.pcm".format(target_name),
     )
 
     if not is_swift_generated_header:
@@ -1851,17 +1849,12 @@ def _declare_compile_outputs(
 
     # First, declare "constant" outputs (outputs whose nature doesn't change
     # depending on compilation mode, like WMO vs. non-WMO).
-    swiftmodule_file = derived_files.swiftmodule(
-        actions = actions,
-        module_name = module_name,
+    swiftmodule_file = actions.declare_file(
+        "{}.swiftmodule".format(module_name),
     )
-    swiftdoc_file = derived_files.swiftdoc(
-        actions = actions,
-        module_name = module_name,
-    )
-    swiftsourceinfo_file = derived_files.swiftsourceinfo(
-        actions = actions,
-        module_name = module_name,
+    swiftdoc_file = actions.declare_file("{}.swiftdoc".format(module_name))
+    swiftsourceinfo_file = actions.declare_file(
+        "{}.swiftsourceinfo".format(module_name),
     )
 
     if are_all_features_enabled(
@@ -1871,9 +1864,8 @@ def _declare_compile_outputs(
             SWIFT_FEATURE_EMIT_SWIFTINTERFACE,
         ],
     ):
-        swiftinterface_file = derived_files.swiftinterface(
-            actions = actions,
-            module_name = module_name,
+        swiftinterface_file = actions.declare_file(
+            "{}.swiftinterface".format(module_name),
         )
     else:
         swiftinterface_file = None
@@ -1908,9 +1900,8 @@ def _declare_compile_outputs(
                 if module.clang:
                     sets.insert(dependent_module_names, module.name)
 
-        generated_module_map = derived_files.module_map(
-            actions = actions,
-            target_name = target_name,
+        generated_module_map = actions.declare_file(
+            "{}.swift.modulemap".format(target_name),
         )
         write_module_map(
             actions = actions,
@@ -1935,10 +1926,7 @@ def _declare_compile_outputs(
         # If we're emitting a single object, we don't use an object map; we just
         # declare the output file that the compiler will generate and there are
         # no other partial outputs.
-        object_files = [derived_files.whole_module_object_file(
-            actions = actions,
-            target_name = target_name,
-        )]
+        object_files = [actions.declare_file("{}.o".format(target_name))]
         output_file_map = None
     else:
         # Otherwise, we need to create an output map that lists the individual
@@ -1960,6 +1948,31 @@ def _declare_compile_outputs(
         swiftinterface_file = swiftinterface_file,
         swiftmodule_file = swiftmodule_file,
         swiftsourceinfo_file = swiftsourceinfo_file,
+    )
+
+def _declare_per_source_object_file(actions, target_name, src):
+    """Declares a file for a per-source object file during compilation.
+
+    These files are produced when the compiler is invoked with multiple frontend
+    invocations (i.e., whole module optimization disabled); in that case, there
+    is a `.o` file produced for each source file, rather than a single `.o` for
+    the entire module.
+
+    Args:
+        actions: The context's actions object.
+        target_name: The name of the target being built.
+        src: A `File` representing the source file being compiled.
+
+    Returns:
+        The declared `File`.
+    """
+    objs_dir = "{}_objs".format(target_name)
+    owner_rel_path = owner_relative_path(src).replace(" ", "__SPACE__")
+    basename = paths.basename(owner_rel_path)
+    dirname = paths.join(objs_dir, paths.dirname(owner_rel_path))
+
+    return actions.declare_file(
+        paths.join(dirname, "{}.o".format(basename)),
     )
 
 def _declare_multiple_outputs_and_write_output_file_map(
@@ -1984,9 +1997,8 @@ def _declare_multiple_outputs_and_write_output_file_map(
             was written and that should be passed as an input to the compilation
             action via the `-output-file-map` flag.
     """
-    output_map_file = derived_files.swiftc_output_file_map(
-        actions = actions,
-        target_name = target_name,
+    output_map_file = actions.declare_file(
+        "{}.output_file_map.json".format(target_name),
     )
 
     # The output map data, which is keyed by source path and will be written to
@@ -1998,7 +2010,7 @@ def _declare_multiple_outputs_and_write_output_file_map(
 
     for src in srcs:
         # Declare the object file (there is one per source file).
-        obj = derived_files.intermediate_object_file(
+        obj = _declare_per_source_object_file(
             actions = actions,
             target_name = target_name,
             src = src,

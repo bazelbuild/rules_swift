@@ -38,7 +38,6 @@ bzl_library(
     srcs = ["compiling.bzl"],
     deps = [
         ":actions",
-        ":derived_files",
         ":feature_names",
         ":features",
         ":module_maps",
@@ -57,19 +56,9 @@ bzl_library(
     srcs = ["debugging.bzl"],
     deps = [
         ":actions",
-        ":derived_files",
         ":feature_names",
         ":features",
         ":toolchain_config",
-    ],
-)
-
-bzl_library(
-    name = "derived_files",
-    srcs = ["derived_files.bzl"],
-    deps = [
-        ":utils",
-        "@bazel_skylib//lib:paths",
     ],
 )
 
@@ -154,7 +143,6 @@ bzl_library(
     ],
     deps = [
         ":attrs",
-        ":derived_files",
         ":features",
         ":symbol_graph_extracting",
         ":toolchain_utils",
