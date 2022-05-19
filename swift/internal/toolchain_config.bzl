@@ -42,6 +42,7 @@ _ToolConfigInfo = provider(
         "env",
         "executable",
         "execution_requirements",
+        "resource_set",
         "tools",
         "use_param_file",
         "worker_mode",
@@ -280,6 +281,7 @@ def _tool_config(
         args = [],
         env = {},
         execution_requirements = {},
+        resource_set = None,
         tools = [],
         use_param_file = False,
         worker_mode = None):
@@ -295,6 +297,8 @@ def _tool_config(
             invoking actions using this tool.
         execution_requirements: A dictionary of execution requirements that
             should be passed when creating actions with this tool.
+        resource_set: The function which build resource set (mem, cpu) for local
+            invocation of the action.
         tools: A list of additional tools to pass to spawned actions, in a
             format suitable for the `tools` argument to `ctx.actions.run`.
         use_param_file: If True, actions invoked using this tool will have their
@@ -316,6 +320,7 @@ def _tool_config(
         env = env,
         executable = executable,
         execution_requirements = execution_requirements,
+        resource_set = resource_set,
         tools = tools,
         use_param_file = use_param_file,
         worker_mode = _validate_worker_mode(worker_mode),

@@ -257,6 +257,7 @@ def run_toolchain_action(
             transitive = action_inputs.transitive_inputs,
         ),
         mnemonic = mnemonic if mnemonic else action_name,
+        resource_set = tool_config.resource_set,
         tools = tools,
         use_default_shell_env = USE_DEFAULT_SHELL_ENV,
         **kwargs
