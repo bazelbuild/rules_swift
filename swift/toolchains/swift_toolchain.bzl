@@ -68,6 +68,11 @@ load(
     "get_swift_executable_for_toolchain",
 )
 
+def _swift_compile_resource_set(_os, inputs_size):
+    # The `os` argument is unused, but the Starlark API requires both
+    # positional arguments.
+    return {"cpu": 1, "memory": 200. + inputs_size * 0.015}
+
 def _all_tool_configs(
         env,
         swift_executable,
@@ -103,6 +108,7 @@ def _all_tool_configs(
 
     compile_tool_config = _swift_driver_tool_config(
         driver_mode = "swiftc",
+        resource_set = _swift_compile_resource_set,
         swift_executable = swift_executable,
         tools = additional_tools,
         toolchain_root = toolchain_root,
