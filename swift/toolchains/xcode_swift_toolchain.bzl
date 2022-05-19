@@ -508,6 +508,11 @@ def _all_action_configs(
 
     return action_configs
 
+def _swift_compile_resource_set(_os, inputs_size):
+    # The `os` argument is unused, but the Starlark API requires both
+    # positional arguments.
+    return {"cpu": 1, "memory": 200. + inputs_size * 0.015}
+
 def _all_tool_configs(
         custom_toolchain,
         env,
@@ -553,6 +558,7 @@ def _all_tool_configs(
             driver_mode = "swiftc",
             env = env,
             execution_requirements = execution_requirements,
+            resource_set = _swift_compile_resource_set,
             swift_executable = swift_executable,
             tool_input_manifests = generated_header_rewriter.input_manifests,
             tool_inputs = generated_header_rewriter.inputs,

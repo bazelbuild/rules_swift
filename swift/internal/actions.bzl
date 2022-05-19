@@ -237,6 +237,7 @@ def run_toolchain_action(
         ),
         mnemonic = mnemonic if mnemonic else action_name,
         tools = depset(tools, transitive = [tool_config.tool_inputs]),
+        resource_set = tool_config.resource_set,
         **kwargs
     )
 

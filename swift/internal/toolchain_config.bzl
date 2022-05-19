@@ -42,6 +42,7 @@ _ToolConfigInfo = provider(
         "env",
         "executable",
         "execution_requirements",
+        "resource_set",
         "tool_input_manifests",
         "tool_inputs",
         "use_param_file",
@@ -277,6 +278,7 @@ def _tool_config(
         args = [],
         env = {},
         execution_requirements = {},
+        resource_set = None,
         tool_input_manifests = [],
         tool_inputs = depset(),
         use_param_file = False,
@@ -293,6 +295,8 @@ def _tool_config(
             invoking actions using this tool.
         execution_requirements: A dictionary of execution requirements that
             should be passed when creating actions with this tool.
+        resource_set: The function which build resource set (mem, cpu) for local
+            invocation of the action.
         tool_input_manifests: A list of input runfiles metadata for tools that
             should be passed into the `input_manifests` argument of the
             `ctx.actions.run` call that registers actions using this tool (see
@@ -320,6 +324,7 @@ def _tool_config(
         env = env,
         executable = executable,
         execution_requirements = execution_requirements,
+        resource_set = resource_set,
         tool_input_manifests = tool_input_manifests,
         tool_inputs = tool_inputs,
         use_param_file = use_param_file,
