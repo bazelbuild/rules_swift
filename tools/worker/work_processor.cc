@@ -162,10 +162,16 @@ void WorkProcessor::ProcessWorkRequest(
     }
 
     // Copy some input files from the incremental storage area to the locations
-    // where Bazel will generate them.
-    for (const auto &expected_object_pair :
-         output_file_map.incremental_inputs()) {
-      if (std::filesystem::exists(expected_object_pair.second)) {
+    // where Bazel will generate them. swiftc expects all or none of them exist
+    // otherwise the next invocation may not produce all the files.
+    auto inputs = output_file_map.incremental_inputs();
+    bool all_inputs_exist = std::all_of(
+        inputs.cbegin(), inputs.cend(), [](const auto &expected_object_pair) {
+          return std::filesystem::exists(expected_object_pair.second);
+        });
+
+    if (all_inputs_exist) {
+      for (const auto &expected_object_pair : inputs) {
         std::error_code ec;
         copy_file(expected_object_pair.second, expected_object_pair.first, ec);
         if (ec) {
