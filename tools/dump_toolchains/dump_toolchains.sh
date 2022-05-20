@@ -26,6 +26,7 @@ readonly toolchain_directories=(
   ~/Library/Developer/Toolchains
 )
 
+shopt -s nullglob
 for toolchain_directory in "${toolchain_directories[@]}"
 do
   for toolchain in "$toolchain_directory"/*.xctoolchain
