@@ -4,22 +4,6 @@ load("@bazel_skylib//lib:selects.bzl", "selects")
 
 licenses(["notice"])
 
-# Workaround for the rules_apple integration tests to force the use of a
-# "worker" that isn't actually a worker but which simply spawns `swiftc`
-# directly, because some of the worker dependencies are too complex to
-# properly mock out in the test workspace.
-#
-# This flag is incompatible with the "worker" strategy for SwiftCompile
-# actions because it doesn't actually start a processing loop. It merely
-# provides an executable with isolated dependencies that can be more easily
-# built.
-config_setting(
-    name = "no_worker",
-    define_values = {
-        "RULES_SWIFT_BUILD_DUMMY_WORKER": "1",
-    },
-)
-
 # Internal hinge for index while building V2 feature
 config_setting(
     name = "use_global_index_store",
@@ -122,18 +106,12 @@ cc_library(
 
 cc_binary(
     name = "worker",
-    srcs = select({
-        ":no_worker": ["no_worker_main.cc"],
-        "//conditions:default": ["worker_main.cc"],
-    }),
+    srcs = ["worker_main.cc"],
     visibility = ["//visibility:public"],
-    deps = select({
-        ":no_worker": [":compile_without_worker"],
-        "//conditions:default": [
-            ":compile_without_worker",
-            ":compile_with_worker",
-        ],
-    }),
+    deps = [
+        ":compile_with_worker",
+        ":compile_without_worker",
+    ],
 )
 
 universal_binary(
