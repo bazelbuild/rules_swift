@@ -20,7 +20,8 @@ load(
     "//swift:swift_clang_module_aspect.bzl",
     "swift_clang_module_aspect",
 )
-load(":actions.bzl", "is_action_enabled", "swift_action_names")
+load(":action_names.bzl", "SWIFT_ACTION_AUTOLINK_EXTRACT")
+load(":actions.bzl", "is_action_enabled")
 load(":attrs.bzl", "swift_compilation_attrs")
 load(":autolinking.bzl", "register_autolink_extract_action")
 load(
@@ -261,7 +262,7 @@ def create_linking_context_from_compilation_outputs(
 
         # Invoke an autolink-extract action for toolchains that require it.
         if is_action_enabled(
-            action_name = swift_action_names.AUTOLINK_EXTRACT,
+            action_name = SWIFT_ACTION_AUTOLINK_EXTRACT,
             swift_toolchain = swift_toolchain,
         ):
             autolink_file = actions.declare_file(

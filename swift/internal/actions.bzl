@@ -15,52 +15,12 @@
 """Functions for registering actions that invoke Swift tools."""
 
 load("@bazel_skylib//lib:types.bzl", "types")
+load("//swift/toolchains/config:action_config.bzl", "ConfigResultInfo")
 load(":features.bzl", "are_all_features_enabled")
-load(":toolchain_config.bzl", "swift_toolchain_config")
-load(":utils.bzl", "struct_fields")
 
 # This is a proxy for being on bazel 7.x which has
 # --incompatible_merge_fixed_and_default_shell_env enabled by default
 USE_DEFAULT_SHELL_ENV = not hasattr(apple_common, "apple_crosstool_transition")
-
-# The names of actions currently supported by the Swift build rules.
-swift_action_names = struct(
-    # Extracts a linker input file containing libraries to link from a compiled
-    # object file to provide autolink functionality based on `import` directives
-    # on ELF platforms.
-    AUTOLINK_EXTRACT = "SwiftAutolinkExtract",
-
-    # Compiles one or more `.swift` source files into a `.swiftmodule` and
-    # object files.
-    COMPILE = "SwiftCompile",
-
-    # Compiles a `.swiftinterface` file into a `.swiftmodule` file.
-    COMPILE_MODULE_INTERFACE = "SwiftCompileModuleInterface",
-
-    # Wraps a `.swiftmodule` in a `.o` file on ELF platforms so that it can be
-    # linked into a binary for debugging.
-    MODULEWRAP = "SwiftModuleWrap",
-
-    # Precompiles an explicit module for a C/Objective-C module map and its
-    # headers, emitting a `.pcm` file.
-    PRECOMPILE_C_MODULE = "SwiftPrecompileCModule",
-
-    # Extracts a JSON-formatted symbol graph from a module, which can be used as
-    # an input to documentation generating tools like `docc` or analyzed with
-    # other tooling.
-    SYMBOL_GRAPH_EXTRACT = "SwiftSymbolGraphExtract",
-
-    # Produces files that are usually fallout of the compilation such as
-    # .swiftmodule, -Swift.h and more.
-    DERIVE_FILES = "SwiftDeriveFiles",
-
-    # Produces an AST file for each swift source file in a module.
-    DUMP_AST = "SwiftDumpAST",
-)
-
-def _all_action_names():
-    """A convenience function to return all actions defined by this rule set."""
-    return struct_fields(swift_action_names).values()
 
 def _apply_action_configs(
         action_name,
@@ -81,9 +41,8 @@ def _apply_action_configs(
         swift_toolchain: The Swift toolchain being used to build.
 
     Returns:
-        A `swift_toolchain_config.action_inputs` value that contains the files
-        that are required inputs of the action, as determined by the
-        configurators.
+        A `ConfigResultInfo` value that contains the files that are required
+        inputs of the action, as determined by the configurators.
     """
     inputs = []
     transitive_inputs = []
@@ -135,15 +94,14 @@ def _apply_action_configs(
                 # object for chaining. We can guard against this (and possibly
                 # other errors) by checking that the value is a struct. If it
                 # is, then it's not `None` and it probably came from the
-                # provider used by `swift_toolchain_config.config_result`. If
-                # it's some other kind of struct, then we'll error out trying to
-                # access the fields.
+                # provider used by `ConfigResultInfo`. If it's some other kind
+                # of struct, then we'll error out trying to access the fields.
                 if type(action_inputs) == "struct":
                     inputs.extend(action_inputs.inputs)
                     transitive_inputs.extend(action_inputs.transitive_inputs)
 
     # Merge the action results into a single result that we return.
-    return swift_toolchain_config.config_result(
+    return ConfigResultInfo(
         inputs = inputs,
         transitive_inputs = transitive_inputs,
     )
@@ -228,9 +186,7 @@ def run_toolchain_action(
             tools.append(tool_config.executable)
     else:
         executable = tool_config.executable
-
-    if tool_config.tools:
-        tools.extend(tool_config.tools)
+    tools.extend(tool_config.additional_tools)
 
     # If the tool configuration has any required arguments, add those first.
     if tool_config.args:
@@ -262,18 +218,3 @@ def run_toolchain_action(
         use_default_shell_env = USE_DEFAULT_SHELL_ENV,
         **kwargs
     )
-
-def _target_label_configurator(prerequisites, args):
-    """Adds the Bazel target label to the action command line."""
-    label = getattr(prerequisites, "target_label", None)
-    if label:
-        args.add(str(label), format = "-Xwrapped-swift=-bazel-target-label=%s")
-
-def target_label_action_configs():
-    """Returns action configs that add the target label to the command line."""
-    return [
-        swift_toolchain_config.action_config(
-            actions = _all_action_names(),
-            configurators = [_target_label_configurator],
-        ),
-    ]

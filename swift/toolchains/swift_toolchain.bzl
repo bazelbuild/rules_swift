@@ -30,15 +30,18 @@ load(
     "SwiftPackageConfigurationInfo",
     "SwiftToolchainInfo",
 )
-load("//swift/internal:actions.bzl", "swift_action_names")
+load(
+    "//swift/internal:action_names.bzl",
+    "SWIFT_ACTION_AUTOLINK_EXTRACT",
+    "SWIFT_ACTION_COMPILE",
+    "SWIFT_ACTION_DERIVE_FILES",
+    "SWIFT_ACTION_DUMP_AST",
+    "SWIFT_ACTION_MODULEWRAP",
+    "SWIFT_ACTION_PRECOMPILE_C_MODULE",
+    "SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT",
+)
 load("//swift/internal:attrs.bzl", "swift_toolchain_driver_attrs")
 load("//swift/internal:autolinking.bzl", "autolink_extract_action_configs")
-load(
-    "//swift/internal:compiling.bzl",
-    "compile_action_configs",
-    "features_from_swiftcopts",
-)
-load("//swift/internal:debugging.bzl", "modulewrap_action_configs")
 load(
     "//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_CACHEABLE_SWIFTMODULES",
@@ -56,17 +59,32 @@ load(
     "SWIFT_FEATURE_USE_RESPONSE_FILES",
 )
 load("//swift/internal:features.bzl", "features_for_build_modes")
-load(
-    "//swift/internal:symbol_graph_extracting.bzl",
-    "symbol_graph_action_configs",
-)
 load("//swift/internal:target_triples.bzl", "target_triples")
-load("//swift/internal:toolchain_config.bzl", "swift_toolchain_config")
 load(
     "//swift/internal:utils.bzl",
     "collect_implicit_deps_providers",
     "get_swift_executable_for_toolchain",
 )
+load("//swift/internal:wmo.bzl", "features_from_swiftcopts")
+load(
+    "//swift/toolchains/config:action_config.bzl",
+    "ActionConfigInfo",
+    "add_arg",
+)
+load(
+    "//swift/toolchains/config:all_actions_config.bzl",
+    "all_actions_action_configs",
+)
+load("//swift/toolchains/config:compile_config.bzl", "compile_action_configs")
+load(
+    "//swift/toolchains/config:modulewrap_config.bzl",
+    "modulewrap_action_configs",
+)
+load(
+    "//swift/toolchains/config:symbol_graph_config.bzl",
+    "symbol_graph_action_configs",
+)
+load("//swift/toolchains/config:tool_config.bzl", "ToolConfigInfo")
 
 def _swift_compile_resource_set(_os, inputs_size):
     # The `os` argument is unused, but the Starlark API requires both
@@ -104,60 +122,54 @@ def _all_tool_configs(
     Returns:
         A dictionary mapping action name to tool configurations.
     """
-    _swift_driver_tool_config = swift_toolchain_config.driver_tool_config
 
-    compile_tool_config = _swift_driver_tool_config(
-        driver_mode = "swiftc",
+    def _driver_config(*, mode):
+        return {
+            "mode": mode,
+            "swift_executable": swift_executable,
+            "tool_executable_suffix": tool_executable_suffix,
+            "toolchain_root": toolchain_root,
+        }
+
+    compile_tool_config = ToolConfigInfo(
+        additional_tools = additional_tools,
+        driver_config = _driver_config(mode = "swiftc"),
         resource_set = _swift_compile_resource_set,
-        swift_executable = swift_executable,
-        tools = additional_tools,
-        toolchain_root = toolchain_root,
-        tool_executable_suffix = tool_executable_suffix,
         use_param_file = use_param_file,
         worker_mode = "persistent",
         env = env,
     )
 
-    swift_symbolgraph_extract_config = _swift_driver_tool_config(
-        driver_mode = "swift-symbolgraph-extract",
-        swift_executable = swift_executable,
-        tools = additional_tools,
-        toolchain_root = toolchain_root,
-        tool_executable_suffix = tool_executable_suffix,
-        use_param_file = True,
-        worker_mode = "wrap",
-        env = env,
-    )
-
-    configs = {
-        swift_action_names.COMPILE: compile_tool_config,
-        swift_action_names.DERIVE_FILES: compile_tool_config,
-        swift_action_names.DUMP_AST: compile_tool_config,
-        swift_action_names.SYMBOL_GRAPH_EXTRACT: swift_symbolgraph_extract_config,
+    tool_configs = {
+        SWIFT_ACTION_COMPILE: compile_tool_config,
+        SWIFT_ACTION_DERIVE_FILES: compile_tool_config,
+        SWIFT_ACTION_DUMP_AST: compile_tool_config,
+        SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT: ToolConfigInfo(
+            additional_tools = additional_tools,
+            driver_config = _driver_config(mode = "swift-symbolgraph-extract"),
+            use_param_file = True,
+            worker_mode = "wrap",
+            env = env,
+        ),
     }
 
     if use_autolink_extract:
-        configs[swift_action_names.AUTOLINK_EXTRACT] = _swift_driver_tool_config(
-            driver_mode = "swift-autolink-extract",
-            swift_executable = swift_executable,
-            tools = additional_tools,
-            toolchain_root = toolchain_root,
-            tool_executable_suffix = tool_executable_suffix,
+        tool_configs[SWIFT_ACTION_AUTOLINK_EXTRACT] = ToolConfigInfo(
+            additional_tools = additional_tools,
+            driver_config = _driver_config(mode = "swift-autolink-extract"),
             worker_mode = "wrap",
         )
 
     if use_module_wrap:
-        configs[swift_action_names.MODULEWRAP] = _swift_driver_tool_config(
+        tool_configs[SWIFT_ACTION_MODULEWRAP] = ToolConfigInfo(
+            additional_tools = additional_tools,
             # This must come first after the driver name.
             args = ["-modulewrap"],
-            driver_mode = "swift",
-            swift_executable = swift_executable,
-            tools = additional_tools,
-            toolchain_root = toolchain_root,
-            tool_executable_suffix = tool_executable_suffix,
+            driver_config = _driver_config(mode = "swift"),
             worker_mode = "wrap",
         )
-    return configs
+
+    return tool_configs
 
 def _all_action_configs(os, arch, target_triple, sdkroot, xctest_version, additional_swiftc_copts):
     """Returns the action configurations for the Swift toolchain.
@@ -175,33 +187,97 @@ def _all_action_configs(os, arch, target_triple, sdkroot, xctest_version, additi
         A list of action configurations for the toolchain.
     """
 
-    # Basic compilation flags (target triple).
+    # Basic compilation flags (target triple and toolchain search paths).
     action_configs = [
-        swift_toolchain_config.action_config(
+        ActionConfigInfo(
             actions = [
-                swift_action_names.SYMBOL_GRAPH_EXTRACT,
+                SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
             ],
             configurators = [
-                swift_toolchain_config.add_arg(
-                    "-target",
-                    target_triples.str(target_triple),
-                ),
+                add_arg("-target", target_triples.str(target_triple)),
             ],
         ),
     ]
+    if sdkroot:
+        action_configs = [
+            ActionConfigInfo(
+                actions = [
+                    SWIFT_ACTION_COMPILE,
+                    SWIFT_ACTION_DERIVE_FILES,
+                    SWIFT_ACTION_DUMP_AST,
+                    SWIFT_ACTION_PRECOMPILE_C_MODULE,
+                ],
+                configurators = [add_arg("-sdk", sdkroot)],
+            ),
+        ]
 
-    action_configs.extend((
+        if os and xctest_version:
+            action_configs.append(
+                ActionConfigInfo(
+                    actions = [
+                        SWIFT_ACTION_COMPILE,
+                        SWIFT_ACTION_DERIVE_FILES,
+                        SWIFT_ACTION_DUMP_AST,
+                        SWIFT_ACTION_PRECOMPILE_C_MODULE,
+                    ],
+                    configurators = [
+                        add_arg(
+                            paths.join(
+                                sdkroot,
+                                "..",
+                                "..",
+                                "Library",
+                                "XCTest-{}".format(xctest_version),
+                                "usr",
+                                "lib",
+                                "swift",
+                                os,
+                            ),
+                            format = "-I%s",
+                        ),
+                    ],
+                ),
+            )
+
+            # Compatibility with older builds of the Swift SDKs.
+            if arch:
+                action_configs.append(
+                    ActionConfigInfo(
+                        actions = [
+                            SWIFT_ACTION_COMPILE,
+                            SWIFT_ACTION_DERIVE_FILES,
+                            SWIFT_ACTION_DUMP_AST,
+                            SWIFT_ACTION_PRECOMPILE_C_MODULE,
+                        ],
+                        configurators = [
+                            add_arg(
+                                paths.join(
+                                    sdkroot,
+                                    "..",
+                                    "..",
+                                    "Library",
+                                    "XCTest-{}".format(xctest_version),
+                                    "usr",
+                                    "lib",
+                                    "swift",
+                                    os,
+                                    arch,
+                                ),
+                                format = "-I%s",
+                            ),
+                        ],
+                    ),
+                )
+
+    action_configs.extend(all_actions_action_configs())
+    action_configs.extend(
         compile_action_configs(
-            os = os,
-            arch = arch,
-            sdkroot = sdkroot,
-            xctest_version = xctest_version,
             additional_swiftc_copts = additional_swiftc_copts,
-        ) +
-        modulewrap_action_configs() +
-        autolink_extract_action_configs() +
-        symbol_graph_action_configs()
-    ))
+        ),
+    )
+    action_configs.extend(modulewrap_action_configs())
+    action_configs.extend(autolink_extract_action_configs())
+    action_configs.extend(symbol_graph_action_configs())
 
     return action_configs
 

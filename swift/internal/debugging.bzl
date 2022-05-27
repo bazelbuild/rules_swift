@@ -14,11 +14,11 @@
 
 """Functions relating to debugging support during compilation and linking."""
 
+load(":action_names.bzl", "SWIFT_ACTION_MODULEWRAP")
 load(
     ":actions.bzl",
     "is_action_enabled",
     "run_toolchain_action",
-    "swift_action_names",
 )
 load(
     ":feature_names.bzl",
@@ -27,7 +27,6 @@ load(
     "SWIFT_FEATURE_NO_EMBED_DEBUG_MODULE",
 )
 load(":features.bzl", "is_feature_enabled")
-load(":toolchain_config.bzl", "swift_toolchain_config")
 
 def ensure_swiftmodule_is_embedded(
         actions,
@@ -54,7 +53,7 @@ def ensure_swiftmodule_is_embedded(
         information in the binary.
     """
     if is_action_enabled(
-        action_name = swift_action_names.MODULEWRAP,
+        action_name = SWIFT_ACTION_MODULEWRAP,
         swift_toolchain = swift_toolchain,
     ):
         # For ELF-format binaries, we need to invoke a Swift modulewrap action
@@ -63,11 +62,20 @@ def ensure_swiftmodule_is_embedded(
         modulewrap_obj = actions.declare_file(
             "{}.modulewrap.o".format(label.name),
         )
-        _register_modulewrap_action(
+        prerequisites = struct(
+            object_file = modulewrap_obj,
+            swiftmodule_file = swiftmodule,
+            target_label = feature_configuration._label,
+        )
+        run_toolchain_action(
             actions = actions,
+            action_name = SWIFT_ACTION_MODULEWRAP,
             feature_configuration = feature_configuration,
-            object = modulewrap_obj,
-            swiftmodule = swiftmodule,
+            outputs = [modulewrap_obj],
+            prerequisites = prerequisites,
+            progress_message = (
+                "Wrapping {} for debugging".format(swiftmodule.short_path)
+            ),
             swift_toolchain = swift_toolchain,
         )
 
@@ -88,25 +96,6 @@ def ensure_swiftmodule_is_embedded(
         ]),
         additional_inputs = depset([swiftmodule]),
     )
-
-def modulewrap_action_configs():
-    """Returns the list of action configs needed to perform module wrapping.
-
-    If a toolchain supports module wrapping, it should add these to its list of
-    action configs so that those actions will be correctly configured.
-
-    Returns:
-        The list of action configs needed to perform module wrapping.
-    """
-    return [
-        swift_toolchain_config.action_config(
-            actions = [swift_action_names.MODULEWRAP],
-            configurators = [
-                _modulewrap_input_configurator,
-                _modulewrap_output_configurator,
-            ],
-        ),
-    ]
 
 def should_embed_swiftmodule_for_debugging(
         feature_configuration,
@@ -152,49 +141,4 @@ def _is_debugging(feature_configuration):
             feature_configuration = feature_configuration,
             feature_name = SWIFT_FEATURE_FASTBUILD,
         )
-    )
-
-def _modulewrap_input_configurator(prerequisites, args):
-    """Configures the inputs of the modulewrap action."""
-    swiftmodule_file = prerequisites.swiftmodule_file
-
-    args.add(swiftmodule_file)
-    return swift_toolchain_config.config_result(inputs = [swiftmodule_file])
-
-def _modulewrap_output_configurator(prerequisites, args):
-    """Configures the outputs of the modulewrap action."""
-    args.add("-o", prerequisites.object_file)
-
-def _register_modulewrap_action(
-        actions,
-        feature_configuration,
-        object,
-        swiftmodule,
-        swift_toolchain):
-    """Wraps a Swift module in a `.o` file that can be linked into a binary.
-
-    This step (invoking `swift -modulewrap`) is required for the `.swiftmodule`
-    of the main module of an executable on platforms with ELF-format object
-    files; otherwise, debuggers will not be able to see those symbols.
-
-    Args:
-        actions: The object used to register actions.
-        feature_configuration: The Swift feature configuration.
-        object: The object file that will be produced by the modulewrap task.
-        swiftmodule: The `.swiftmodule` file to be wrapped.
-        swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
-    """
-    prerequisites = struct(
-        object_file = object,
-        swiftmodule_file = swiftmodule,
-        target_label = feature_configuration._label,
-    )
-    run_toolchain_action(
-        actions = actions,
-        action_name = swift_action_names.MODULEWRAP,
-        feature_configuration = feature_configuration,
-        outputs = [object],
-        prerequisites = prerequisites,
-        progress_message = "Wrapping Swift module %{label} for debugging",
-        swift_toolchain = swift_toolchain,
     )

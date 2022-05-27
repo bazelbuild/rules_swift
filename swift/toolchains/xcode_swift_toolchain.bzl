@@ -31,9 +31,16 @@ load(
     "SwiftPackageConfigurationInfo",
     "SwiftToolchainInfo",
 )
-load("//swift/internal:actions.bzl", "swift_action_names", "target_label_action_configs")
+load(
+    "//swift/internal:action_names.bzl",
+    "SWIFT_ACTION_COMPILE",
+    "SWIFT_ACTION_COMPILE_MODULE_INTERFACE",
+    "SWIFT_ACTION_DERIVE_FILES",
+    "SWIFT_ACTION_DUMP_AST",
+    "SWIFT_ACTION_PRECOMPILE_C_MODULE",
+    "SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT",
+)
 load("//swift/internal:attrs.bzl", "swift_toolchain_driver_attrs")
-load("//swift/internal:compiling.bzl", "compile_action_configs", "features_from_swiftcopts")
 load(
     "//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_BUNDLED_XCTESTS",
@@ -62,14 +69,32 @@ load(
     "SWIFT_FEATURE__SUPPORTS_MACROS",
 )
 load("//swift/internal:features.bzl", "features_for_build_modes")
-load("//swift/internal:symbol_graph_extracting.bzl", "symbol_graph_action_configs")
 load("//swift/internal:target_triples.bzl", "target_triples")
-load("//swift/internal:toolchain_config.bzl", "swift_toolchain_config")
 load(
     "//swift/internal:utils.bzl",
     "collect_implicit_deps_providers",
     "get_swift_executable_for_toolchain",
 )
+load("//swift/internal:wmo.bzl", "wmo_features_from_swiftcopts")
+load(
+    "//swift/toolchains/config:action_config.bzl",
+    "ActionConfigInfo",
+    "add_arg",
+)
+load(
+    "//swift/toolchains/config:all_actions_config.bzl",
+    "all_actions_action_configs",
+)
+load("//swift/toolchains/config:compile_config.bzl", "compile_action_configs")
+load(
+    "//swift/toolchains/config:compile_module_interface_config.bzl",
+    "compile_module_interface_action_configs",
+)
+load(
+    "//swift/toolchains/config:symbol_graph_config.bzl",
+    "symbol_graph_action_configs",
+)
+load("//swift/toolchains/config:tool_config.bzl", "ToolConfigInfo")
 
 # TODO: Remove once we drop bazel 7.x
 _OBJC_PROVIDER_LINKING = hasattr(apple_common.new_objc_provider(), "linkopt")
@@ -323,37 +348,31 @@ def _all_action_configs(
 
     # Basic compilation flags (target triple and toolchain search paths).
     action_configs = [
-        swift_toolchain_config.action_config(
+        ActionConfigInfo(
             actions = [
-                swift_action_names.COMPILE,
-                swift_action_names.COMPILE_MODULE_INTERFACE,
-                swift_action_names.DERIVE_FILES,
-                swift_action_names.DUMP_AST,
-                swift_action_names.PRECOMPILE_C_MODULE,
-                swift_action_names.SYMBOL_GRAPH_EXTRACT,
+                SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+                SWIFT_ACTION_DERIVE_FILES,
+                SWIFT_ACTION_DUMP_AST,
+                SWIFT_ACTION_PRECOMPILE_C_MODULE,
+                SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
             ],
             configurators = [
-                swift_toolchain_config.add_arg(
-                    "-target",
-                    target_triples.str(target_triple),
-                ),
-                swift_toolchain_config.add_arg(
-                    "-sdk",
-                    apple_toolchain.sdk_dir(),
-                ),
+                add_arg("-target", target_triples.str(target_triple)),
+                add_arg("-sdk", apple_toolchain.sdk_dir()),
             ],
         ),
     ]
 
     action_configs.extend([
         # Xcode path remapping
-        swift_toolchain_config.action_config(
+        ActionConfigInfo(
             actions = [
-                swift_action_names.COMPILE,
-                swift_action_names.DERIVE_FILES,
+                SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_DERIVE_FILES,
             ],
             configurators = [
-                swift_toolchain_config.add_arg(
+                add_arg(
                     "-debug-prefix-map",
                     "__BAZEL_XCODE_DEVELOPER_DIR__=/PLACEHOLDER_DEVELOPER_DIR",
                 ),
@@ -362,14 +381,14 @@ def _all_action_configs(
                 [SWIFT_FEATURE_REMAP_XCODE_PATH, SWIFT_FEATURE_DEBUG_PREFIX_MAP],
             ],
         ),
-        swift_toolchain_config.action_config(
+        ActionConfigInfo(
             actions = [
-                swift_action_names.COMPILE,
-                swift_action_names.COMPILE_MODULE_INTERFACE,
-                swift_action_names.DERIVE_FILES,
+                SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+                SWIFT_ACTION_DERIVE_FILES,
             ],
             configurators = [
-                swift_toolchain_config.add_arg(
+                add_arg(
                     "-coverage-prefix-map",
                     "__BAZEL_XCODE_DEVELOPER_DIR__=/PLACEHOLDER_DEVELOPER_DIR",
                 ),
@@ -382,13 +401,13 @@ def _all_action_configs(
                 ],
             ],
         ),
-        swift_toolchain_config.action_config(
+        ActionConfigInfo(
             actions = [
-                swift_action_names.COMPILE,
-                swift_action_names.DERIVE_FILES,
+                SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_DERIVE_FILES,
             ],
             configurators = [
-                swift_toolchain_config.add_arg(
+                add_arg(
                     "-file-prefix-map",
                     "__BAZEL_XCODE_DEVELOPER_DIR__=/PLACEHOLDER_DEVELOPER_DIR",
                 ),
@@ -407,13 +426,13 @@ def _all_action_configs(
         # toolchain, provide the original toolchain's resources as the resource
         # directory so that modules are found correctly.
         action_configs.append(
-            swift_toolchain_config.action_config(
+            ActionConfigInfo(
                 actions = [
-                    swift_action_names.COMPILE,
-                    swift_action_names.DERIVE_FILES,
-                    swift_action_names.DUMP_AST,
-                    swift_action_names.PRECOMPILE_C_MODULE,
-                    swift_action_names.SYMBOL_GRAPH_EXTRACT,
+                    SWIFT_ACTION_COMPILE,
+                    SWIFT_ACTION_DERIVE_FILES,
+                    SWIFT_ACTION_DUMP_AST,
+                    SWIFT_ACTION_PRECOMPILE_C_MODULE,
+                    SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
                 ],
                 configurators = [
                     _make_resource_directory_configurator(
@@ -423,13 +442,14 @@ def _all_action_configs(
             ),
         )
 
-    action_configs.extend(target_label_action_configs())
+    action_configs.extend(all_actions_action_configs())
     action_configs.extend(compile_action_configs(
         additional_objc_copts = additional_objc_copts,
         additional_swiftc_copts = additional_swiftc_copts,
         generated_header_rewriter = generated_header_rewriter,
     ))
     action_configs.extend(symbol_graph_action_configs())
+    action_configs.extend(compile_module_interface_action_configs())
 
     return action_configs
 
@@ -471,51 +491,55 @@ def _all_tool_configs(
 
     env["SWIFT_AVOID_WARNING_USING_OLD_DRIVER"] = "1"
 
-    tool_config = swift_toolchain_config.driver_tool_config(
-        driver_mode = "swiftc",
+    def _driver_config(*, mode):
+        return {
+            "mode": mode,
+            "swift_executable": swift_executable,
+            "toolchain_root": toolchain_root,
+        }
+
+    tool_config = ToolConfigInfo(
+        additional_tools = (
+            [generated_header_rewriter] if generated_header_rewriter else []
+        ),
+        driver_config = _driver_config(mode = "swiftc"),
         env = env,
         execution_requirements = execution_requirements,
         resource_set = _swift_compile_resource_set,
-        swift_executable = swift_executable,
-        tools = [generated_header_rewriter] if generated_header_rewriter else [],
-        toolchain_root = toolchain_root,
         use_param_file = True,
         worker_mode = "persistent",
     )
 
     tool_configs = {
-        swift_action_names.COMPILE: tool_config,
-        swift_action_names.DERIVE_FILES: tool_config,
-        swift_action_names.DUMP_AST: tool_config,
-        swift_action_names.PRECOMPILE_C_MODULE: (
-            swift_toolchain_config.driver_tool_config(
-                driver_mode = "swiftc",
+        SWIFT_ACTION_COMPILE: tool_config,
+        SWIFT_ACTION_DERIVE_FILES: tool_config,
+        SWIFT_ACTION_DUMP_AST: tool_config,
+        SWIFT_ACTION_PRECOMPILE_C_MODULE: (
+            ToolConfigInfo(
+                driver_config = _driver_config(mode = "swiftc"),
                 env = env,
                 execution_requirements = execution_requirements,
-                swift_executable = swift_executable,
-                toolchain_root = toolchain_root,
                 use_param_file = True,
                 worker_mode = "wrap",
             )
         ),
-        swift_action_names.COMPILE_MODULE_INTERFACE: (
-            swift_toolchain_config.driver_tool_config(
-                driver_mode = "swiftc",
+        SWIFT_ACTION_COMPILE_MODULE_INTERFACE: (
+            ToolConfigInfo(
                 args = ["-frontend"],
+                driver_config = _driver_config(mode = "swiftc"),
                 env = env,
                 execution_requirements = execution_requirements,
-                swift_executable = swift_executable,
-                toolchain_root = toolchain_root,
                 use_param_file = True,
                 worker_mode = "wrap",
             )
         ),
-        swift_action_names.SYMBOL_GRAPH_EXTRACT: (
-            swift_toolchain_config.driver_tool_config(
-                driver_mode = "swift-symbolgraph-extract",
+        SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT: (
+            ToolConfigInfo(
+                driver_config = _driver_config(
+                    mode = "swift-symbolgraph-extract",
+                ),
                 env = env,
                 execution_requirements = execution_requirements,
-                swift_executable = swift_executable,
                 use_param_file = True,
                 worker_mode = "wrap",
             )
@@ -631,7 +655,7 @@ def _xcode_swift_toolchain_impl(ctx):
     requested_features = features_for_build_modes(
         ctx,
         cpp_fragment = cpp_fragment,
-    ) + features_from_swiftcopts(swiftcopts = swiftcopts)
+    ) + wmo_features_from_swiftcopts(swiftcopts = swiftcopts)
     requested_features.extend(ctx.features)
     requested_features.extend([
         SWIFT_FEATURE_BUNDLED_XCTESTS,
