@@ -21,12 +21,18 @@ cc_library(
 # Starlark libraries
 
 bzl_library(
+    name = "action_names",
+    srcs = ["action_names.bzl"],
+    visibility = ["//swift:__subpackages__"],
+)
+
+bzl_library(
     name = "actions",
     srcs = ["actions.bzl"],
     visibility = ["//swift:__subpackages__"],
     deps = [
         ":features",
-        ":toolchain_config",
+        "//swift/toolchains/config:action_config",
         "@bazel_skylib//lib:types",
     ],
 )
@@ -49,8 +55,9 @@ bzl_library(
     srcs = ["autolinking.bzl"],
     visibility = ["//swift:__subpackages__"],
     deps = [
+        ":action_names",
         ":actions",
-        ":toolchain_config",
+        "//swift/toolchains/config:action_config",
     ],
 )
 
@@ -69,20 +76,19 @@ bzl_library(
         "//swift:__subpackages__",
     ],
     deps = [
+        ":action_names",
         ":actions",
-        ":autolinking",
         ":debugging",
-        ":developer_dirs",
         ":explicit_module_map_file",
         ":feature_names",
         ":features",
+        ":module_maps",
         ":providers",
-        ":toolchain_config",
         ":utils",
         ":vfsoverlay",
-        "//swift/toolchains/config:compile_module_interface_config",
-        "@bazel_skylib//lib:collections",
+        ":wmo",
         "@bazel_skylib//lib:paths",
+        "@bazel_skylib//lib:sets",
         "@bazel_skylib//lib:types",
     ],
 )
@@ -92,9 +98,10 @@ bzl_library(
     srcs = ["debugging.bzl"],
     visibility = ["//swift:__subpackages__"],
     deps = [
+        ":action_names",
         ":actions",
         ":feature_names",
-        ":toolchain_config",
+        ":features",
     ],
 )
 
@@ -108,6 +115,12 @@ bzl_library(
 bzl_library(
     name = "env_expansion",
     srcs = ["env_expansion.bzl"],
+    visibility = ["//swift:__subpackages__"],
+)
+
+bzl_library(
+    name = "explicit_module_map_file",
+    srcs = ["explicit_module_map_file.bzl"],
     visibility = ["//swift:__subpackages__"],
 )
 
@@ -137,6 +150,7 @@ bzl_library(
         "//swift:__subpackages__",
     ],
     deps = [
+        ":action_names",
         ":actions",
         ":attrs",
         ":autolinking",
@@ -147,6 +161,7 @@ bzl_library(
         ":utils",
         "//swift:swift_clang_module_aspect",
         "@bazel_skylib//lib:collections",
+        "@bazel_skylib//lib:dicts",
         "@bazel_tools//tools/build_defs/cc:action_names.bzl",
     ],
 )
@@ -165,6 +180,12 @@ bzl_library(
         "//proto:__subpackages__",
         "//swift:__subpackages__",
     ],
+)
+
+bzl_library(
+    name = "package_specs",
+    srcs = ["package_specs.bzl"],
+    visibility = ["//swift:__subpackages__"],
 )
 
 bzl_library(
@@ -209,21 +230,17 @@ bzl_library(
     srcs = ["symbol_graph_extracting.bzl"],
     visibility = ["//swift:__subpackages__"],
     deps = [
+        ":action_names",
         ":actions",
         ":providers",
-        ":toolchain_config",
         ":utils",
     ],
 )
 
 bzl_library(
-    name = "toolchain_config",
-    srcs = ["toolchain_config.bzl"],
+    name = "target_triples",
+    srcs = ["target_triples.bzl"],
     visibility = ["//swift:__subpackages__"],
-    deps = [
-        "@bazel_skylib//lib:paths",
-        "@bazel_skylib//lib:types",
-    ],
 )
 
 bzl_library(
@@ -243,21 +260,12 @@ bzl_library(
 )
 
 bzl_library(
-    name = "explicit_module_map_file",
-    srcs = ["explicit_module_map_file.bzl"],
+    name = "wmo",
+    srcs = ["wmo.bzl"],
     visibility = ["//swift:__subpackages__"],
-)
-
-bzl_library(
-    name = "package_specs",
-    srcs = ["package_specs.bzl"],
-    visibility = ["//swift:__subpackages__"],
-)
-
-bzl_library(
-    name = "target_triples",
-    srcs = ["target_triples.bzl"],
-    visibility = ["//swift:__subpackages__"],
+    deps = [
+        ":feature_names",
+    ],
 )
 
 bzl_library(
