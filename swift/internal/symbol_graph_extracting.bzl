@@ -14,44 +14,10 @@
 
 """Functions relating to symbol graph extraction."""
 
-load(":actions.bzl", "run_toolchain_action", "swift_action_names")
+load(":action_names.bzl", "SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT")
+load(":actions.bzl", "run_toolchain_action")
 load(":providers.bzl", "create_swift_info")
-load(":toolchain_config.bzl", "swift_toolchain_config")
 load(":utils.bzl", "merge_compilation_contexts")
-
-def symbol_graph_action_configs():
-    """Returns the list of action configs needed to extract symbol graphs.
-
-    If a toolchain supports symbol graph extraction, it should add these to its
-    list of action configs so that those actions will be correctly configured.
-    (Other required configuration is provided by `compile_action_configs`.)
-
-    Returns:
-        The list of action configs needed to extract symbol graphs.
-    """
-    return [
-        swift_toolchain_config.action_config(
-            actions = [swift_action_names.SYMBOL_GRAPH_EXTRACT],
-            configurators = [
-                _symbol_graph_minimum_access_level_configurator,
-            ],
-        ),
-        swift_toolchain_config.action_config(
-            actions = [swift_action_names.SYMBOL_GRAPH_EXTRACT],
-            configurators = [
-                _symbol_graph_output_configurator,
-            ],
-        ),
-    ]
-
-def _symbol_graph_minimum_access_level_configurator(prerequisites, args):
-    """Configures the minimum access level of the symbol graph extraction."""
-    if prerequisites.minimum_access_level:
-        args.add("-minimum-access-level", prerequisites.minimum_access_level)
-
-def _symbol_graph_output_configurator(prerequisites, args):
-    """Configures the outputs of the symbol graph extract action."""
-    args.add("-output-dir", prerequisites.output_dir.path)
 
 def extract_symbol_graph(
         *,
@@ -129,7 +95,7 @@ def extract_symbol_graph(
 
     run_toolchain_action(
         actions = actions,
-        action_name = swift_action_names.SYMBOL_GRAPH_EXTRACT,
+        action_name = SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
         feature_configuration = feature_configuration,
         outputs = [output_dir],
         prerequisites = prerequisites,

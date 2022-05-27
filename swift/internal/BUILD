@@ -9,12 +9,16 @@ package(
 )
 
 bzl_library(
+    name = "action_names",
+    srcs = ["action_names.bzl"],
+)
+
+bzl_library(
     name = "actions",
     srcs = ["actions.bzl"],
     deps = [
         ":features",
-        ":toolchain_config",
-        ":utils",
+        "//swift/toolchains/config:action_config",
         "@bazel_skylib//lib:types",
     ],
 )
@@ -37,14 +41,15 @@ bzl_library(
     name = "compiling",
     srcs = ["compiling.bzl"],
     deps = [
+        ":action_names",
         ":actions",
         ":feature_names",
         ":features",
         ":module_maps",
         ":providers",
-        ":toolchain_config",
         ":utils",
         ":vfsoverlay",
+        ":wmo",
         "@bazel_skylib//lib:paths",
         "@bazel_skylib//lib:sets",
         "@bazel_skylib//lib:types",
@@ -55,10 +60,10 @@ bzl_library(
     name = "debugging",
     srcs = ["debugging.bzl"],
     deps = [
+        ":action_names",
         ":actions",
         ":feature_names",
         ":features",
-        ":toolchain_config",
     ],
 )
 
@@ -155,9 +160,9 @@ bzl_library(
     name = "symbol_graph_extracting",
     srcs = ["symbol_graph_extracting.bzl"],
     deps = [
+        ":action_names",
         ":actions",
         ":providers",
-        ":toolchain_config",
         ":utils",
     ],
 )
@@ -165,15 +170,6 @@ bzl_library(
 bzl_library(
     name = "target_triples",
     srcs = ["target_triples.bzl"],
-)
-
-bzl_library(
-    name = "toolchain_config",
-    srcs = ["toolchain_config.bzl"],
-    deps = [
-        "@bazel_skylib//lib:paths",
-        "@bazel_skylib//lib:types",
-    ],
 )
 
 bzl_library(
@@ -193,6 +189,14 @@ bzl_library(
 bzl_library(
     name = "vfsoverlay",
     srcs = ["vfsoverlay.bzl"],
+)
+
+bzl_library(
+    name = "wmo",
+    srcs = ["wmo.bzl"],
+    deps = [
+        ":feature_names",
+    ],
 )
 
 # Consumed by Bazel integration tests.

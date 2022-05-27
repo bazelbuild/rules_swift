@@ -14,34 +14,12 @@
 
 """Functions for registering actions that invoke Swift tools."""
 
+load(
+    "@build_bazel_rules_swift//swift/toolchains/config:action_config.bzl",
+    "ConfigResultInfo",
+)
 load("@bazel_skylib//lib:types.bzl", "types")
 load(":features.bzl", "are_all_features_enabled")
-load(":toolchain_config.bzl", "swift_toolchain_config")
-load(":utils.bzl", "struct_fields")
-
-# The names of actions currently supported by the Swift build rules.
-swift_action_names = struct(
-    # Compiles one or more `.swift` source files into a `.swiftmodule` and
-    # object files.
-    COMPILE = "SwiftCompile",
-
-    # Wraps a `.swiftmodule` in a `.o` file on ELF platforms so that it can be
-    # linked into a binary for debugging.
-    MODULEWRAP = "SwiftModuleWrap",
-
-    # Precompiles an explicit module for a C/Objective-C module map and its
-    # headers, emitting a `.pcm` file.
-    PRECOMPILE_C_MODULE = "SwiftPrecompileCModule",
-
-    # Extracts a JSON-formatted symbol graph from a module, which can be used as
-    # an input to documentation generating tools like `docc` or analyzed with
-    # other tooling.
-    SYMBOL_GRAPH_EXTRACT = "SwiftSymbolGraphExtract",
-)
-
-def _all_action_names():
-    """A convenience function to return all actions defined by this rule set."""
-    return struct_fields(swift_action_names).values()
 
 def _apply_action_configs(
         action_name,
@@ -62,9 +40,8 @@ def _apply_action_configs(
         swift_toolchain: The Swift toolchain being used to build.
 
     Returns:
-        A `swift_toolchain_config.action_inputs` value that contains the files
-        that are required inputs of the action, as determined by the
-        configurators.
+        A `ConfigResultInfo` value that contains the files that are required
+        inputs of the action, as determined by the configurators.
     """
     inputs = []
     transitive_inputs = []
@@ -116,15 +93,14 @@ def _apply_action_configs(
                 # object for chaining. We can guard against this (and possibly
                 # other errors) by checking that the value is a struct. If it
                 # is, then it's not `None` and it probably came from the
-                # provider used by `swift_toolchain_config.config_result`. If
-                # it's some other kind of struct, then we'll error out trying to
-                # access the fields.
+                # provider used by `ConfigResultInfo`. If it's some other kind
+                # of struct, then we'll error out trying to access the fields.
                 if type(action_inputs) == "struct":
                     inputs.extend(action_inputs.inputs)
                     transitive_inputs.extend(action_inputs.transitive_inputs)
 
     # Merge the action results into a single result that we return.
-    return swift_toolchain_config.config_result(
+    return ConfigResultInfo(
         inputs = inputs,
         transitive_inputs = transitive_inputs,
     )
@@ -240,18 +216,3 @@ def run_toolchain_action(
         resource_set = tool_config.resource_set,
         **kwargs
     )
-
-def _target_label_configurator(prerequisites, args):
-    """Adds the Bazel target label to the action command line."""
-    label = getattr(prerequisites, "target_label", None)
-    if label:
-        args.add(str(label), format = "-Xwrapped-swift=-bazel-target-label=%s")
-
-def target_label_action_configs():
-    """Returns action configs that add the target label to the command line."""
-    return [
-        swift_toolchain_config.action_config(
-            actions = _all_action_names(),
-            configurators = [_target_label_configurator],
-        ),
-    ]
