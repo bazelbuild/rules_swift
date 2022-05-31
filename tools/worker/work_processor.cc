@@ -163,7 +163,8 @@ void WorkProcessor::ProcessWorkRequest(
 
     // Copy some input files from the incremental storage area to the locations
     // where Bazel will generate them. swiftc expects all or none of them exist
-    // otherwise the next invocation may not produce all the files.
+    // otherwise the next invocation may not produce all the files. We also need
+    // to remove some files that exist in the incremental storage area.
     auto inputs = output_file_map.incremental_inputs();
     bool all_inputs_exist = std::all_of(
         inputs.cbegin(), inputs.cend(), [](const auto &expected_object_pair) {
@@ -179,6 +180,22 @@ void WorkProcessor::ProcessWorkRequest(
                         << expected_object_pair.second << " to "
                         << expected_object_pair.first << " (" << ec.message()
                         << ")\n";
+          FinalizeWorkRequest(request, response, EXIT_FAILURE, stderr_stream);
+          return;
+        }
+      }
+    } else {
+      auto cleanup_outputs = output_file_map.incremental_cleanup_outputs();
+      for (const auto &cleanup_output : cleanup_outputs) {
+        if (!std::filesystem::exists(cleanup_output)) {
+          continue;
+        }
+
+        std::error_code ec;
+        std::filesystem::remove(cleanup_output, ec);
+        if (ec) {
+          stderr_stream << "swift_worker: Could not remove " << cleanup_output
+                        <<" (" << ec.message() << ")\n";
           FinalizeWorkRequest(request, response, EXIT_FAILURE, stderr_stream);
           return;
         }
