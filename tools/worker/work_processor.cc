@@ -205,6 +205,10 @@ void WorkProcessor::ProcessWorkRequest(
 
   SwiftRunner swift_runner(processed_args, /*force_response_file=*/true);
   int exit_code = swift_runner.Run(&stderr_stream, /*stdout_to_stderr=*/true);
+  if (exit_code != 0) {
+    FinalizeWorkRequest(request, response, exit_code, stderr_stream);
+    return;
+  }
 
   if (is_incremental) {
     // Copy the output files from the incremental storage area back to the
