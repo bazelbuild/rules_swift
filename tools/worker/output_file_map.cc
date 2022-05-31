@@ -73,6 +73,7 @@ void OutputFileMap::UpdateForIncremental(const std::string &path,
   nlohmann::json new_output_file_map;
   std::map<std::string, std::string> incremental_outputs;
   std::map<std::string, std::string> incremental_inputs;
+  std::vector<std::string> incremental_cleanup_outputs;
 
   // The empty string key is used to represent outputs that are for the whole
   // module, rather than for a particular source file.
@@ -109,6 +110,8 @@ void OutputFileMap::UpdateForIncremental(const std::string &path,
                                .replace_extension(".swiftdeps")
                                .string();
         }
+
+        incremental_cleanup_outputs.push_back(swiftdeps_path);
       } else if (kind == "swiftdoc" || kind == "swiftinterface" ||
                  kind == "swiftmodule" || kind == "swiftsourceinfo") {
         // Module/interface outputs should be moved to the incremental storage
@@ -122,6 +125,8 @@ void OutputFileMap::UpdateForIncremental(const std::string &path,
                                .replace_extension(".swiftdeps")
                                .string();
         }
+
+        incremental_cleanup_outputs.push_back(swiftdeps_path);
       } else if (kind == "swift-dependencies") {
         // If there was already a "swift-dependencies" entry present, ignore it.
         // (This shouldn't happen because the build rules won't do this, but
@@ -169,4 +174,5 @@ void OutputFileMap::UpdateForIncremental(const std::string &path,
   json_ = new_output_file_map;
   incremental_outputs_ = incremental_outputs;
   incremental_inputs_ = incremental_inputs;
+  incremental_cleanup_outputs_ = incremental_cleanup_outputs;
 }
