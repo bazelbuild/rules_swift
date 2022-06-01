@@ -707,8 +707,6 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
-                swift_action_names.DERIVE_FILES,
-                swift_action_names.DUMP_AST,
             ],
             configurators = [_emit_symbol_graph_configurator],
             features = [
@@ -1625,11 +1623,6 @@ def _emit_symbol_graph_configurator(prerequisites, args):
 
       This is a directory to persist symbol graph files that can be used by
       tools such as DocC or jazzy to generate documentation.
-
-      Note: that like the global index store and module cache, we expect clang
-      to namespace these correctly per arch / os version / etc by the hash in
-      the path. However, it is also put into the bin_dir for an added layer of
-      safety.
     """
     args.add(
         "-Xfrontend",
@@ -2882,6 +2875,11 @@ def output_groups_from_other_compilation_outputs(*, other_compilation_outputs):
     if other_compilation_outputs.indexstore:
         output_groups["swift_index_store"] = depset([
             other_compilation_outputs.indexstore,
+        ])
+
+    if other_compilation_outputs.symbol_graph:
+        output_groups["swift_symbol_graph"] = depset([
+            other_compilation_outputs.symbol_graph,
         ])
 
     return output_groups
