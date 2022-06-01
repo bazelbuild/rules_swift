@@ -69,6 +69,18 @@ def _indexstore_directory(actions, target_name):
     """
     return actions.declare_directory("{}.indexstore".format(target_name))
 
+def _symbol_graph_directory(actions, target_name):
+    """Declares a directory in which the compiler's symbol graph will be written.
+
+    Args:
+        actions: The context's actions object.
+        target_name: The name of the target being built.
+
+    Returns:
+        The declared `File`.
+    """
+    return actions.declare_directory("{}.symbolgraph".format(target_name))
+
 def _intermediate_bc_file(actions, target_name, src):
     """Declares a file for an intermediate llvm bc file during compilation.
 
@@ -340,6 +352,7 @@ derived_files = struct(
     swiftinterface = _swiftinterface,
     swiftmodule = _swiftmodule,
     swiftsourceinfo = _swiftsourceinfo,
+    symbol_graph_directory = _symbol_graph_directory,
     vfsoverlay = _vfsoverlay,
     whole_module_object_file = _whole_module_object_file,
     xctest_runner_script = _xctest_runner_script,
