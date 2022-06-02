@@ -39,6 +39,7 @@ load(
     "SWIFT_FEATURE_EMIT_BC",
     "SWIFT_FEATURE_EMIT_C_MODULE",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
+    "SWIFT_FEATURE_EMIT_SYMBOL_GRAPH",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES",
@@ -701,6 +702,15 @@ def compile_action_configs(
             configurators = [_pch_output_dir_configurator],
             features = [
                 SWIFT_FEATURE_USE_PCH_OUTPUT_DIR,
+            ],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [
+                swift_action_names.COMPILE,
+            ],
+            configurators = [_emit_symbol_graph_configurator],
+            features = [
+                SWIFT_FEATURE_EMIT_SYMBOL_GRAPH,
             ],
         ),
 
@@ -1608,6 +1618,21 @@ def _pch_output_dir_configurator(prerequisites, args):
         paths.join(prerequisites.bin_dir.path, "_pch_output_dir"),
     )
 
+def _emit_symbol_graph_configurator(prerequisites, args):
+    """Adds flags for `-emit-symbol-graph` configuration to the command line.
+
+      This is a directory to persist symbol graph files that can be used by
+      tools such as DocC or jazzy to generate documentation.
+    """
+    args.add(
+        "-Xfrontend",
+        "-emit-symbol-graph",
+    )
+    args.add(
+        "-emit-symbol-graph-dir",
+        prerequisites.symbol_graph_directory.path,
+    )
+
 def _global_index_store_configurator(prerequisites, args):
     """Adds flags for index-store generation to the command line."""
     out_dir = prerequisites.indexstore_directory.dirname.split("/")[0]
@@ -1867,6 +1892,7 @@ def compile(
         all_compile_outputs = compact([
             compile_outputs.swiftinterface_file,
             compile_outputs.indexstore_directory,
+            compile_outputs.symbol_graph_directory,
         ]) + compile_outputs.object_files
         all_derived_outputs = compact([
             # The `.swiftmodule` file is explicitly listed as the first output
@@ -1890,6 +1916,7 @@ def compile(
             compile_outputs.swiftsourceinfo_file,
             compile_outputs.generated_header_file,
             compile_outputs.indexstore_directory,
+            compile_outputs.symbol_graph_directory,
         ]) + compile_outputs.object_files + other_outputs
         all_derived_outputs = []
 
@@ -2073,6 +2100,7 @@ def compile(
     other_compilation_outputs = struct(
         ast_files = compile_outputs.ast_files,
         indexstore = compile_outputs.indexstore_directory,
+        symbol_graph = compile_outputs.symbol_graph_directory,
     )
 
     return module_context, cc_compilation_outputs, other_compilation_outputs
@@ -2511,11 +2539,24 @@ def _declare_compile_outputs(
     else:
         indexstore_directory = None
 
+    emit_symbol_graph = is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_EMIT_SYMBOL_GRAPH,
+    )
+    if (emit_symbol_graph):
+        symbol_graph_directory = derived_files.symbol_graph_directory(
+            actions = actions,
+            target_name = target_name,
+        )
+    else:
+        symbol_graph_directory = None
+
     compile_outputs = struct(
         ast_files = ast_files,
         generated_header_file = generated_header,
         generated_module_map_file = generated_module_map,
         indexstore_directory = indexstore_directory,
+        symbol_graph_directory = symbol_graph_directory,
         object_files = object_files,
         output_file_map = output_file_map,
         derived_files_output_file_map = derived_files_output_file_map,
@@ -2834,6 +2875,11 @@ def output_groups_from_other_compilation_outputs(*, other_compilation_outputs):
     if other_compilation_outputs.indexstore:
         output_groups["swift_index_store"] = depset([
             other_compilation_outputs.indexstore,
+        ])
+
+    if other_compilation_outputs.symbol_graph:
+        output_groups["swift_symbol_graph"] = depset([
+            other_compilation_outputs.symbol_graph,
         ])
 
     return output_groups
