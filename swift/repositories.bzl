@@ -59,6 +59,66 @@ def swift_rules_dependencies():
 
     _maybe(
         http_archive,
+        name = "com_github_apple_swift_log",
+        urls = ["https://github.com/apple/swift-log/archive/refs/tags/1.4.2.zip"],
+        sha256 = "9fd608037153fa3944d212bb2082458343adf52bdc2b5060a319e197b77d6a82",
+        strip_prefix = "swift-log-1.4.2/",
+        type = "zip",
+        build_file="@build_bazel_rules_swift//third_party:com_github_apple_swift_log/BUILD.overlay",
+    )
+
+    _maybe(
+        http_archive,
+        name = "com_github_apple_swift_nio",
+        urls = ["https://github.com/apple/swift-nio/archive/refs/tags/2.33.0.zip"],
+        sha256 = "c9d586c0d53a49877214bd3a3c3c45986d5c1409c83dc7c6f135e47467f47963",
+        strip_prefix = "swift-nio-2.33.0/",
+        type = "zip",
+        build_file="@build_bazel_rules_swift//third_party:com_github_apple_swift_nio/BUILD.overlay",
+    )
+
+    _maybe(
+        http_archive,
+        name = "com_github_apple_swift_nio_extras",
+        urls = ["https://github.com/apple/swift-nio-extras/archive/refs/tags/1.10.2.zip"],
+        sha256 = "7efb3e5b97b596b78561838770221146ac2dd5f33f92036cb11e8e35cb14d3ce",
+        strip_prefix="swift-nio-extras-1.10.2/",
+        type="zip",
+        build_file="@build_bazel_rules_swift//third_party:com_github_apple_swift_nio_extras/BUILD.overlay",
+    )
+
+    _maybe(
+        http_archive,
+        name = "com_github_apple_swift_nio_http2",
+        urls = ["https://github.com/apple/swift-nio-http2/archive/refs/tags/1.18.4.zip"],
+        sha256 = "296447db362e6d3ad357b160c3b9f2e9ed96852039e8e5817dcc4012737cd72c",
+        strip_prefix="swift-nio-http2-1.18.4/",
+        type="zip",
+        build_file="@build_bazel_rules_swift//third_party:com_github_apple_swift_nio_http2/BUILD.overlay",
+    )
+
+    _maybe(
+        http_archive,
+        name = "com_github_apple_swift_nio_ssl",
+        urls = ["https://github.com/apple/swift-nio-ssl/archive/2.16.1.zip"],
+        sha256 = "573b1c67429a85c32878b8d3979fa58987ac850dc11db76697d7b1bf44057843",
+        strip_prefix = "swift-nio-ssl-2.16.1/",
+        type = "zip",
+        build_file = "@build_bazel_rules_swift//third_party:com_github_apple_swift_nio_ssl/BUILD.overlay",
+    )
+
+    _maybe(
+        http_archive,
+        name = "com_github_apple_swift_nio_transport_services",
+        urls = ["https://github.com/apple/swift-nio-transport-services/archive/1.11.3.zip"],
+        sha256 = "1c9036131370a82f48577342aad700ee6afb955c99d513b3f1b626bc086d7e3d",
+        strip_prefix = "swift-nio-transport-services-1.11.3/",
+        type = "zip",
+        build_file = "@build_bazel_rules_swift//third_party:com_github_apple_swift_nio_transport_services/BUILD.overlay",
+    )
+
+    _maybe(
+        http_archive,
         name = "com_github_apple_swift_protobuf",
         urls = ["https://github.com/apple/swift-protobuf/archive/1.12.0.tar.gz"],
         sha256 = "f50dae44d998b49c271bf9288f2e1ff564bb950d8f276b43dce2a82079b22e25",
@@ -73,6 +133,15 @@ def swift_rules_dependencies():
         sha256 = "bcaaa8c44c0d29902bf4a5c6df593286338659ffa0110cc11a0fd8fcb890feb7",
         strip_prefix = "grpc-swift-0.9.0/",
         build_file = "@build_bazel_rules_swift//third_party:com_github_grpc_grpc_swift/BUILD.overlay",
+    )
+    _maybe(
+        http_archive,
+        name = "com_github_grpc_grpc_swift_swiftnio",
+        urls = ["https://github.com/grpc/grpc-swift/archive/1.5.0.zip"],
+        sha256 = "573b12ca8f5c6848c503300df8d0a667d729d1457b925f5278f01497d90a9b30",
+        strip_prefix = "grpc-swift-1.5.0/",
+        type = "zip",
+        build_file = "@build_bazel_rules_swift//third_party:com_github_grpc_grpc_swift_swiftnio/BUILD.overlay",
     )
 
     _maybe(
