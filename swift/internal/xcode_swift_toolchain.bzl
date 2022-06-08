@@ -183,7 +183,8 @@ def _swift_linkopts_providers(
         apple_toolchain,
         platform,
         toolchain_label,
-        xcode_config):
+        xcode_config,
+        is_test):
     """Returns providers containing flags that should be passed to the linker.
 
     The providers returned by this function will be used as implicit
@@ -197,6 +198,7 @@ def _swift_linkopts_providers(
         toolchain_label: The label of the Swift toolchain that will act as the
             owner of the linker input propagating the flags.
         xcode_config: The Xcode configuration.
+        is_test: The value of `testonly` for the target
 
     Returns:
         A `struct` containing the following fields:
@@ -222,12 +224,16 @@ def _swift_linkopts_providers(
         platform.name_in_plist.lower(),
     )
 
-    linkopts = [
-        "-F{}".format(path)
-        for path in compact([
+    developer_framework_paths = []
+    if is_test:
+        developer_framework_paths = compact([
             platform_developer_framework_dir,
             sdk_developer_framework_dir,
         ])
+
+    linkopts = [
+        "-F{}".format(path)
+        for path in developer_framework_paths
     ] + [
         "-Wl,-rpath,/usr/lib/swift",
         "-L{}".format(swift_lib_dir),
@@ -661,6 +667,7 @@ def _xcode_swift_toolchain_impl(ctx):
         platform,
         ctx.label,
         xcode_config,
+        ctx.attr.testonly
     )
 
     # `--define=SWIFT_USE_TOOLCHAIN_ROOT=<path>` is a rapid development feature
