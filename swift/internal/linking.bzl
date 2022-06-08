@@ -22,6 +22,7 @@ load(
     "ensure_swiftmodule_is_embedded",
     "should_embed_swiftmodule_for_debugging",
 )
+load(":compiling.bzl", "developer_framework_paths", "swift_developer_lib_dir")
 load(":derived_files.bzl", "derived_files")
 load(":features.bzl", "get_cc_feature_configuration")
 
@@ -30,14 +31,17 @@ def create_linking_context_from_compilation_outputs(
         actions,
         additional_inputs = [],
         alwayslink = False,
+        apple_fragment,
         compilation_outputs,
         feature_configuration,
+        is_test,
         label,
         linking_contexts = [],
         module_context,
         name = None,
         swift_toolchain,
-        user_link_flags = []):
+        user_link_flags = [],
+        xcode_config):
     """Creates a linking context from the outputs of a Swift compilation.
 
     On some platforms, this function will spawn additional post-compile actions
@@ -142,6 +146,22 @@ def create_linking_context_from_compilation_outputs(
     if not name:
         name = label.name
 
+    if is_test:
+        swift_developer_lib_dir_path = swift_developer_lib_dir(
+            apple_common.apple_toolchain(),
+            apple_fragment,
+            xcode_config,
+        )
+        developer_paths_linkopts = [
+            "-I%s" % swift_developer_lib_dir_path,
+            "-L%s" % swift_developer_lib_dir_path,
+        ] + [
+            "-F%s" % developer_framework_path
+            for developer_framework_path in developer_framework_paths(apple_fragment, xcode_config)
+        ]
+    else:
+        developer_paths_linkopts = []
+
     return cc_common.create_linking_context_from_compilation_outputs(
         actions = actions,
         feature_configuration = get_cc_feature_configuration(
@@ -150,7 +170,7 @@ def create_linking_context_from_compilation_outputs(
         cc_toolchain = swift_toolchain.cc_toolchain_info,
         compilation_outputs = compilation_outputs,
         name = name,
-        user_link_flags = user_link_flags,
+        user_link_flags = user_link_flags + developer_paths_linkopts,
         linking_contexts = linking_contexts + extra_linking_contexts,
         alwayslink = alwayslink,
         additional_inputs = additional_inputs,

@@ -25,7 +25,7 @@ load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
 load(":actions.bzl", "swift_action_names")
 load(":attrs.bzl", "swift_toolchain_driver_attrs")
-load(":compiling.bzl", "compile_action_configs", "features_from_swiftcopts")
+load(":compiling.bzl", "compile_action_configs", "features_from_swiftcopts", "is_xcode_at_least_version")
 load(
     ":feature_names.bzl",
     "SWIFT_FEATURE_BITCODE_EMBEDDED",
@@ -60,23 +60,6 @@ load(
     "get_swift_executable_for_toolchain",
     "resolve_optional_tool",
 )
-
-def _swift_developer_lib_dir(platform_framework_dir):
-    """Returns the directory containing extra Swift developer libraries.
-
-    Args:
-        platform_framework_dir: The developer platform framework directory for
-            the current platform.
-
-    Returns:
-        The directory containing extra Swift-specific development libraries and
-        swiftmodules.
-    """
-    return paths.join(
-        paths.dirname(paths.dirname(platform_framework_dir)),
-        "usr",
-        "lib",
-    )
 
 def _command_line_objc_copts(compilation_mode, objc_fragment):
     """Returns copts that should be passed to `clang` from the `objc` fragment.
@@ -123,67 +106,10 @@ def _command_line_objc_copts(compilation_mode, objc_fragment):
     clang_copts = objc_fragment.copts + legacy_copts
     return [copt for copt in clang_copts if copt != "-g"]
 
-def _platform_developer_framework_dir(
-        apple_toolchain,
-        apple_fragment,
-        xcode_config):
-    """Returns the Developer framework directory for the platform.
-
-    Args:
-        apple_fragment: The `apple` configuration fragment.
-        apple_toolchain: The `apple_common.apple_toolchain()` object.
-        xcode_config: The Xcode configuration.
-
-    Returns:
-        The path to the Developer framework directory for the platform if one
-        exists, otherwise `None`.
-    """
-
-    # All platforms have a `Developer/Library/Frameworks` directory in their
-    # platform root, except for watchOS prior to Xcode 12.5.
-    platform_type = apple_fragment.single_arch_platform.platform_type
-    if (
-        platform_type == apple_common.platform_type.watchos and
-        not _is_xcode_at_least_version(xcode_config, "12.5")
-    ):
-        return None
-
-    return apple_toolchain.platform_developer_framework_dir(apple_fragment)
-
-def _sdk_developer_framework_dir(apple_toolchain, apple_fragment, xcode_config):
-    """Returns the Developer framework directory for the SDK.
-
-    Args:
-        apple_fragment: The `apple` configuration fragment.
-        apple_toolchain: The `apple_common.apple_toolchain()` object.
-        xcode_config: The Xcode configuration.
-
-    Returns:
-        The path to the Developer framework directory for the SDK if one
-        exists, otherwise `None`.
-    """
-
-    # All platforms have a `Developer/Library/Frameworks` directory in their SDK
-    # root except for macOS (all versions of Xcode so far), and watchOS (prior
-    # to Xcode 12.5).
-    platform_type = apple_fragment.single_arch_platform.platform_type
-    if (
-        platform_type == apple_common.platform_type.macos or
-        (
-            platform_type == apple_common.platform_type.watchos and
-            not _is_xcode_at_least_version(xcode_config, "12.5")
-        )
-    ):
-        return None
-
-    return paths.join(apple_toolchain.sdk_dir(), "Developer/Library/Frameworks")
-
 def _swift_linkopts_providers(
-        apple_fragment,
         apple_toolchain,
         platform,
-        toolchain_label,
-        xcode_config):
+        toolchain_label):
     """Returns providers containing flags that should be passed to the linker.
 
     The providers returned by this function will be used as implicit
@@ -191,12 +117,10 @@ def _swift_linkopts_providers(
     will link to the standard libraries correctly.
 
     Args:
-        apple_fragment: The `apple` configuration fragment.
         apple_toolchain: The `apple_common.apple_toolchain()` object.
         platform: The `apple_platform` value describing the target platform.
         toolchain_label: The label of the Swift toolchain that will act as the
             owner of the linker input propagating the flags.
-        xcode_config: The Xcode configuration.
 
     Returns:
         A `struct` containing the following fields:
@@ -206,16 +130,6 @@ def _swift_linkopts_providers(
         *   `objc_info`: An `apple_common.Objc` provider that will provide
             linker flags to binaries that depend on Swift targets.
     """
-    platform_developer_framework_dir = _platform_developer_framework_dir(
-        apple_toolchain,
-        apple_fragment,
-        xcode_config,
-    )
-    sdk_developer_framework_dir = _sdk_developer_framework_dir(
-        apple_toolchain,
-        apple_fragment,
-        xcode_config,
-    )
     swift_lib_dir = paths.join(
         apple_toolchain.developer_dir(),
         "Toolchains/XcodeDefault.xctoolchain/usr/lib/swift",
@@ -223,12 +137,6 @@ def _swift_linkopts_providers(
     )
 
     linkopts = [
-        "-F{}".format(path)
-        for path in compact([
-            platform_developer_framework_dir,
-            sdk_developer_framework_dir,
-        ])
-    ] + [
         "-Wl,-rpath,/usr/lib/swift",
         "-L{}".format(swift_lib_dir),
         "-L/usr/lib/swift",
@@ -240,15 +148,6 @@ def _swift_linkopts_providers(
         "-ObjC",
         "-Wl,-objc_abi_version,2",
     ]
-
-    # Add the linker path to the directory containing the dylib with Swift
-    # extensions for the XCTest module.
-    if platform_developer_framework_dir:
-        linkopts.extend([
-            "-L{}".format(
-                _swift_developer_lib_dir(platform_developer_framework_dir),
-            ),
-        ])
 
     return struct(
         cc_info = CcInfo(
@@ -342,20 +241,6 @@ def _all_action_configs(
     Returns:
         The action configurations for the Swift toolchain.
     """
-    platform_developer_framework_dir = _platform_developer_framework_dir(
-        apple_toolchain,
-        apple_fragment,
-        xcode_config,
-    )
-    sdk_developer_framework_dir = _sdk_developer_framework_dir(
-        apple_toolchain,
-        apple_fragment,
-        xcode_config,
-    )
-    developer_framework_dirs = compact([
-        platform_developer_framework_dir,
-        sdk_developer_framework_dir,
-    ])
 
     # Basic compilation flags (target triple and toolchain search paths).
     action_configs = [
@@ -372,46 +257,9 @@ def _all_action_configs(
                     "-sdk",
                     apple_toolchain.sdk_dir(),
                 ),
-            ] + [
-                swift_toolchain_config.add_arg(framework_dir, format = "-F%s")
-                for framework_dir in developer_framework_dirs
-            ],
-        ),
-        swift_toolchain_config.action_config(
-            actions = [swift_action_names.PRECOMPILE_C_MODULE],
-            configurators = [
-                swift_toolchain_config.add_arg(
-                    "-Xcc",
-                    framework_dir,
-                    format = "-F%s",
-                )
-                for framework_dir in developer_framework_dirs
             ],
         ),
     ]
-
-    # The platform developer framework directory contains XCTest.swiftmodule
-    # with Swift extensions to XCTest, so it needs to be added to the search
-    # path on platforms where it exists.
-    if platform_developer_framework_dir:
-        action_configs.append(
-            swift_toolchain_config.action_config(
-                actions = [
-                    swift_action_names.COMPILE,
-                    swift_action_names.DERIVE_FILES,
-                    swift_action_names.PRECOMPILE_C_MODULE,
-                    swift_action_names.DUMP_AST,
-                ],
-                configurators = [
-                    swift_toolchain_config.add_arg(
-                        _swift_developer_lib_dir(
-                            platform_developer_framework_dir,
-                        ),
-                        format = "-I%s",
-                    ),
-                ],
-            ),
-        )
 
     action_configs.extend([
         # Bitcode-related flags.
@@ -554,7 +402,7 @@ def _all_tool_configs(
     }
 
     # Xcode 12.0 implies Swift 5.3.
-    if _is_xcode_at_least_version(xcode_config, "12.0"):
+    if is_xcode_at_least_version(xcode_config, "12.0"):
         tool_configs[swift_action_names.PRECOMPILE_C_MODULE] = (
             swift_toolchain_config.driver_tool_config(
                 driver_mode = "swiftc",
@@ -568,27 +416,6 @@ def _all_tool_configs(
         )
 
     return tool_configs
-
-def _is_xcode_at_least_version(xcode_config, desired_version):
-    """Returns True if we are building with at least the given Xcode version.
-
-    Args:
-        xcode_config: The `apple_common.XcodeVersionConfig` provider.
-        desired_version: The minimum desired Xcode version, as a dotted version
-            string.
-
-    Returns:
-        True if the current target is being built with a version of Xcode at
-        least as high as the given version.
-    """
-    current_version = xcode_config.xcode_version()
-    if not current_version:
-        fail("Could not determine Xcode version at all. This likely means " +
-             "Xcode isn't available; if you think this is a mistake, please " +
-             "file an issue.")
-
-    desired_version_value = apple_common.dotted_version(desired_version)
-    return current_version >= desired_version_value
 
 def _swift_apple_target_triple(cpu, platform, version):
     """Returns a target triple string for an Apple platform.
@@ -656,11 +483,9 @@ def _xcode_swift_toolchain_impl(ctx):
     target = _swift_apple_target_triple(cpu, platform, target_os_version)
 
     swift_linkopts_providers = _swift_linkopts_providers(
-        apple_fragment,
         apple_toolchain,
         platform,
         ctx.label,
-        xcode_config,
     )
 
     # `--define=SWIFT_USE_TOOLCHAIN_ROOT=<path>` is a rapid development feature
@@ -705,16 +530,16 @@ def _xcode_swift_toolchain_impl(ctx):
     ])
 
     # Xcode 11.0 implies Swift 5.1.
-    if _is_xcode_at_least_version(xcode_config, "11.0"):
+    if is_xcode_at_least_version(xcode_config, "11.0"):
         requested_features.append(SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION)
         requested_features.append(SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS)
 
     # Xcode 11.4 implies Swift 5.2.
-    if _is_xcode_at_least_version(xcode_config, "11.4"):
+    if is_xcode_at_least_version(xcode_config, "11.4"):
         requested_features.append(SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES)
 
     # Xcode 12.5 implies Swift 5.4.
-    if _is_xcode_at_least_version(xcode_config, "12.5"):
+    if is_xcode_at_least_version(xcode_config, "12.5"):
         requested_features.append(SWIFT_FEATURE_SUPPORTS_SYSTEM_MODULE_FLAG)
 
     env = _xcode_env(platform = platform, xcode_config = xcode_config)
