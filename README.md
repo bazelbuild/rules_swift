@@ -130,6 +130,26 @@ rules.
 - Automatically download a Linux toolchain from [swift.org](https://swift.org)
   if one is not already installed.
 
+## Supported bazel versions
+
+rules_apple and rules_swift are often affected by changes in bazel
+itself. This means you generally need to update these rules as you
+update bazel.
+
+You can also see the supported bazel versions in the notes for each
+release on the [releases
+page](https://github.com/bazelbuild/rules_swift/releases).
+
+Besides these constraint this repo follows [semver](https://semver.org/)
+as best as we can since the 1.0.0 release.
+
+| Bazel release | Minimum supported rules version | Final supported rules version|
+|:-------------------:|:-------------------:|:-------------------------:|
+| 6.x (most recent rolling) | 0.27.0 | current |
+| 5.x | 0.25.0 | current |
+| 4.x | 0.19.0 | 0.24.0 |
+| 3.x | 0.14.0 | 0.18.0 |
+
 ## Acknowledgments
 
 We gratefully acknowledge the following external packages that rules_swift
