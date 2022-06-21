@@ -1,6 +1,10 @@
 """Simple rule to emulate apple_static_framework_import"""
 
-load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain", "use_cpp_toolchain")
+load(
+    "@bazel_tools//tools/cpp:toolchain_utils.bzl",
+    "find_cpp_toolchain",
+    "use_cpp_toolchain",
+)
 
 def _impl(ctx):
     binary1 = ctx.actions.declare_file("framework1.framework/framework1")

@@ -23,7 +23,11 @@ load("@bazel_features//:features.bzl", "bazel_features")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
-load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
+load(
+    "@bazel_tools//tools/cpp:toolchain_utils.bzl",
+    "find_cpp_toolchain",
+    "use_cpp_toolchain",
+)
 load(
     "//swift:providers.bzl",
     "SwiftFeatureAllowlistInfo",
@@ -885,6 +889,6 @@ for incremental compilation using a persistent mode.
         "cpp",
         "objc",
     ] + ([] if bazel_features.cc.swift_fragment_removed else ["swift"]),
-    toolchains = ["@bazel_tools//tools/cpp:toolchain_type"],
+    toolchains = use_cpp_toolchain(),
     implementation = _xcode_swift_toolchain_impl,
 )
