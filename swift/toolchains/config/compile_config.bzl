@@ -1640,7 +1640,14 @@ def _swift_module_search_path_map_fn(module):
         The dirname of the module's `.swiftmodule` file.
     """
     if module.swift:
-        return module.swift.swiftmodule.dirname
+        search_path = module.swift.swiftmodule.dirname
+
+        # If the dirname also ends in .swiftmodule, remove it as well so that
+        # the compiler finds the module *directory*.
+        if search_path.endswith(".swiftmodule"):
+            search_path = paths.dirname(search_path)
+
+        return search_path
     else:
         return None
 
