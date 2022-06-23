@@ -129,6 +129,10 @@ SWIFT_FEATURE_REWRITE_GENERATED_HEADER = "swift.rewrite_generated_header"
 # them.
 SWIFT_FEATURE_USE_C_MODULES = "swift.use_c_modules"
 
+# If enabled, Swift modules for dependencies will be passed to the compiler
+# using a JSON file instead of `-I` search paths.
+SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP = "swift.use_explicit_swift_module_map"
+
 # If enabled, Swift compilation actions will use the same global Clang module
 # cache used by Objective-C compilation actions. This is disabled by default
 # because under some circumstances Clang module cache corruption can cause the
@@ -148,13 +152,6 @@ SWIFT_FEATURE_USE_OLD_DRIVER = "swift.use_old_driver"
 # that exceed the system limit. Toolchains typically set this automatically if
 # using a sufficiently recent version of Swift (4.2 or higher).
 SWIFT_FEATURE_USE_RESPONSE_FILES = "swift.use_response_files"
-
-# If enabled, Swift compilation actions will create a virtual file system
-# overlay containing all its dependencies' `.swiftmodule` files and use that
-# overlay as its sole search path. This improves build performance by avoiding
-# worst-case O(N^2) search (N modules, each in its own subdirectory), especially
-# when access to those paths involves traversing a networked file system.
-SWIFT_FEATURE_VFSOVERLAY = "swift.vfsoverlay"
 
 # If enabled, builds using the "dbg" compilation mode will explicitly disable
 # swiftc from producing swiftmodules containing embedded file paths, which are

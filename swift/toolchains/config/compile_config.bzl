@@ -45,9 +45,9 @@ load(
     "SWIFT_FEATURE_SUPPORTS_SYSTEM_MODULE_FLAG",
     "SWIFT_FEATURE_SYSTEM_MODULE",
     "SWIFT_FEATURE_USE_C_MODULES",
+    "SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP",
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
     "SWIFT_FEATURE_USE_OLD_DRIVER",
-    "SWIFT_FEATURE_VFSOVERLAY",
     "SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
 )
@@ -451,22 +451,24 @@ def compile_action_configs(
         ),
     ]
 
-    #### Search paths for Swift module dependencies
+    #### Search paths/explicit module map for Swift module dependencies
     action_configs.extend([
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
-                SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
-            ],
-            configurators = [_dependencies_swiftmodules_configurator],
-            not_features = [SWIFT_FEATURE_VFSOVERLAY],
+            actions = [SWIFT_ACTION_COMPILE],
+            configurators = [_explicit_swift_module_map_configurator],
+            features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
         ),
         ActionConfigInfo(
             actions = [SWIFT_ACTION_COMPILE],
-            configurators = [
-                _dependencies_swiftmodules_vfsoverlay_configurator,
-            ],
-            features = [SWIFT_FEATURE_VFSOVERLAY],
+            configurators = [_dependencies_swiftmodules_configurator],
+            not_features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
+        ),
+
+        # swift-symbolgraph-extract doesn't yet support explicit Swift module
+        # maps.
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT],
+            configurators = [_dependencies_swiftmodules_configurator],
         ),
     ])
 
@@ -1050,20 +1052,19 @@ def _dependencies_swiftmodules_configurator(prerequisites, args):
         inputs = prerequisites.transitive_swiftmodules,
     )
 
-def _dependencies_swiftmodules_vfsoverlay_configurator(prerequisites, args):
-    """Provides a single `.swiftmodule` search path using a VFS overlay."""
-    swiftmodules = prerequisites.transitive_swiftmodules
-
-    # Bug: `swiftc` doesn't pass its `-vfsoverlay` arg to the frontend.
-    # Workaround: Pass `-vfsoverlay` directly via `-Xfrontend`.
-    args.add(
-        "-Xfrontend",
-        "-vfsoverlay{}".format(prerequisites.vfsoverlay_file.path),
+def _explicit_swift_module_map_configurator(prerequisites, args):
+    """Adds the explicit Swift module map file to the command line."""
+    args.add_all(
+        [
+            "-explicit-swift-module-map-file",
+            prerequisites.explicit_swift_module_map_file,
+        ],
+        before_each = "-Xfrontend",
     )
-    args.add("-I{}".format(prerequisites.vfsoverlay_search_path))
-
     return ConfigResultInfo(
-        inputs = swiftmodules + [prerequisites.vfsoverlay_file],
+        inputs = prerequisites.transitive_swiftmodules + [
+            prerequisites.explicit_swift_module_map_file,
+        ],
     )
 
 def _module_name_configurator(prerequisites, args):

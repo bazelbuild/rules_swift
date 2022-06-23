@@ -43,12 +43,12 @@ bzl_library(
     deps = [
         ":action_names",
         ":actions",
+        ":explicit_module_map_file",
         ":feature_names",
         ":features",
         ":module_maps",
         ":providers",
         ":utils",
-        ":vfsoverlay",
         ":wmo",
         "@bazel_skylib//lib:paths",
         "@bazel_skylib//lib:sets",
@@ -65,6 +65,11 @@ bzl_library(
         ":feature_names",
         ":features",
     ],
+)
+
+bzl_library(
+    name = "explicit_module_map_file",
+    srcs = ["explicit_module_map_file.bzl"],
 )
 
 bzl_library(
@@ -184,11 +189,6 @@ bzl_library(
         "//swift:providers",
         "@bazel_skylib//lib:paths",
     ],
-)
-
-bzl_library(
-    name = "vfsoverlay",
-    srcs = ["vfsoverlay.bzl"],
 )
 
 bzl_library(
