@@ -160,7 +160,6 @@ def create_linking_context_from_compilation_outputs(
             xcode_config,
         )
         developer_paths_linkopts = [
-            "-I%s" % swift_developer_lib_dir_path,
             "-L%s" % swift_developer_lib_dir_path,
         ] + [
             "-F%s" % developer_framework_path

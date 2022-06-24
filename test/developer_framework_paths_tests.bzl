@@ -57,7 +57,6 @@ def developer_framework_paths_test_suite(name):
         name = "{}_swift_test_build_linkopts".format(name),
         expected_argv = [
             "-F__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/MacOSX.platform/Developer/Library/Frameworks",
-            "-I__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/MacOSX.platform/Developer/usr/lib",
         ],
         mnemonic = "CppLink",
         tags = [name],
