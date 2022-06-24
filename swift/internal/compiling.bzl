@@ -489,6 +489,8 @@ def compile_action_configs(
             ],
             features = [SWIFT_FEATURE_ENABLE_TESTING],
         ),
+
+        # Set Developer Framework search paths
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
