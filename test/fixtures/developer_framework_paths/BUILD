@@ -18,9 +18,9 @@ swift_library(
 
 swift_library(
     name = "simple_testonly",
+    testonly = True,
     srcs = ["EmptyTestLibrary.swift"],
     tags = FIXTURE_TAGS,
-    testonly = True
 )
 
 swift_test(
