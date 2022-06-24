@@ -97,6 +97,12 @@ into the binary. Possible values are:
                 default = Label("@bazel_tools//tools/cpp:grep-includes"),
                 executable = True,
             ),
+            "_xcode_config": attr.label(
+                default = configuration_field(
+                    name = "xcode_config_label",
+                    fragment = "apple",
+                ),
+            ),
         },
     )
 
@@ -144,6 +150,7 @@ def _swift_linking_rule_impl(
         ctx,
         binary_path,
         feature_configuration,
+        is_test,
         swift_toolchain,
         linkopts = []):
     """The shared implementation function for `swift_{binary,test}`.
@@ -153,6 +160,7 @@ def _swift_linking_rule_impl(
         binary_path: The path to output the linked binary to.
         feature_configuration: A feature configuration obtained from
             `swift_common.configure_features`.
+        is_test: Represents if `testonly` is set on the target to be compiled.
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain
             being used to build the target.
         linkopts: Additional rule-specific flags that should be passed to the
@@ -186,15 +194,18 @@ def _swift_linking_rule_impl(
         module_context, cc_compilation_outputs, other_compilation_outputs = swift_common.compile(
             actions = ctx.actions,
             additional_inputs = additional_inputs,
+            apple_fragment = ctx.fragments.apple,
             copts = copts,
             defines = ctx.attr.defines,
             deps = ctx.attr.deps,
             feature_configuration = feature_configuration,
+            is_test = is_test,
             module_name = module_name,
             srcs = srcs,
             swift_toolchain = swift_toolchain,
             target_name = ctx.label.name,
             workspace_name = ctx.workspace_name,
+            xcode_config = ctx.attr._xcode_config,
         )
         output_groups = output_groups_from_other_compilation_outputs(
             other_compilation_outputs = other_compilation_outputs,
@@ -203,8 +214,10 @@ def _swift_linking_rule_impl(
         linking_context, _ = swift_common.create_linking_context_from_compilation_outputs(
             actions = ctx.actions,
             alwayslink = True,
+            apple_fragment = ctx.fragments.apple,
             compilation_outputs = cc_compilation_outputs,
             feature_configuration = feature_configuration,
+            is_test = is_test,
             label = ctx.label,
             linking_contexts = [
                 dep[CcInfo].linking_context
@@ -213,6 +226,7 @@ def _swift_linking_rule_impl(
             ],
             module_context = module_context,
             swift_toolchain = swift_toolchain,
+            xcode_config = ctx.attr._xcode_config,
         )
         additional_linking_contexts.append(linking_context)
     else:
@@ -303,6 +317,7 @@ def _swift_binary_impl(ctx):
         ctx,
         binary_path = ctx.label.name,
         feature_configuration = feature_configuration,
+        is_test = ctx.attr.testonly,
         swift_toolchain = swift_toolchain,
     )
 
@@ -332,6 +347,7 @@ def _swift_test_impl(ctx):
     # If we need to run the test in an .xctest bundle, the binary must have
     # Mach-O type `MH_BUNDLE` instead of `MH_EXECUTE`.
     linkopts = ["-Wl,-bundle"] if is_bundled else []
+
     xctest_bundle_binary = "{0}.xctest/Contents/MacOS/{0}".format(ctx.label.name)
     binary_path = xctest_bundle_binary if is_bundled else ctx.label.name
 
@@ -339,6 +355,7 @@ def _swift_test_impl(ctx):
         ctx,
         binary_path = binary_path,
         feature_configuration = feature_configuration,
+        is_test = True,
         linkopts = linkopts,
         swift_toolchain = swift_toolchain,
     )
@@ -405,7 +422,7 @@ please use one of the platform-specific application rules in
 `swift_binary`.
 """,
     executable = True,
-    fragments = ["cpp"],
+    fragments = ["apple", "cpp"],
     implementation = _swift_binary_impl,
 )
 
@@ -423,6 +440,12 @@ swift_test = rule(
                 allow_single_file = True,
                 default = Label(
                     "@build_bazel_rules_swift//tools/xctest_runner:xctest_runner_template",
+                ),
+            ),
+            "_xcode_config": attr.label(
+                default = configuration_field(
+                    name = "xcode_config_label",
+                    fragment = "apple",
                 ),
             ),
         },
@@ -461,7 +484,7 @@ You can also disable this feature for all the tests in a package by applying it
 to your BUILD file's `package()` declaration instead of the individual targets.
 """,
     executable = True,
-    fragments = ["cpp"],
+    fragments = ["apple", "cpp"],
     test = True,
     implementation = _swift_test_impl,
 )
