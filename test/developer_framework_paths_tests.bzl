@@ -25,7 +25,6 @@ def developer_framework_paths_test_suite(name):
         expected_argv = [
             "-F__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/MacOSX.platform/Developer/Library/Frameworks",
             "-I__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/MacOSX.platform/Developer/usr/lib",
-            "-L__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/MacOSX.platform/Developer/usr/lib",
         ],
         mnemonic = "SwiftCompile",
         tags = [name],
@@ -37,7 +36,6 @@ def developer_framework_paths_test_suite(name):
         not_expected_argv = [
             "-F__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/MacOSX.platform/Developer/Library/Frameworks",
             "-I__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/MacOSX.platform/Developer/usr/lib",
-            "-L__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/MacOSX.platform/Developer/usr/lib",
         ],
         mnemonic = "SwiftCompile",
         tags = [name],
@@ -49,7 +47,6 @@ def developer_framework_paths_test_suite(name):
         expected_argv = [
             "-F__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/MacOSX.platform/Developer/Library/Frameworks",
             "-I__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/MacOSX.platform/Developer/usr/lib",
-            "-L__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/MacOSX.platform/Developer/usr/lib",
         ],
         mnemonic = "SwiftCompile",
         tags = [name],
@@ -61,7 +58,6 @@ def developer_framework_paths_test_suite(name):
         expected_argv = [
             "-F__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/MacOSX.platform/Developer/Library/Frameworks",
             "-I__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/MacOSX.platform/Developer/usr/lib",
-            "-L__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/MacOSX.platform/Developer/usr/lib",
         ],
         mnemonic = "CppLink",
         tags = [name],

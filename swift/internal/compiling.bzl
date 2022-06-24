@@ -1155,7 +1155,10 @@ def _output_or_file_map(output_file_map, outputs, args):
     args.add("-o", outputs[0])
     return None
 
-def _add_swift_developer_linkopts(args, apple_fragment, xcode_config):
+# The platform developer framework directory contains XCTest.swiftmodule
+# with Swift extensions to XCTest, so it needs to be added to the search
+# path on platforms where it exists.
+def _add_developer_swift_imports(args, apple_fragment, xcode_config):
     platform_developer_framework = platform_developer_framework_dir(
         apple_common.apple_toolchain(),
         apple_fragment,
@@ -1168,11 +1171,7 @@ def _add_swift_developer_linkopts(args, apple_fragment, xcode_config):
             xcode_config,
         )
         args.add(swift_developer_lib_dir_path, format = "-I%s")
-        args.add(swift_developer_lib_dir_path, format = "-L%s")
 
-# The platform developer framework directory contains XCTest.swiftmodule
-# with Swift extensions to XCTest, so it needs to be added to the search
-# path on platforms where it exists.
 def _non_pcm_developer_framework_paths_configurator(prerequisites, args):
     """ Adds developer frameworks flags to the command line. """
     if prerequisites.is_test:
@@ -1183,7 +1182,7 @@ def _non_pcm_developer_framework_paths_configurator(prerequisites, args):
             ),
             format_each = "-F%s",
         )
-        _add_swift_developer_linkopts(
+        _add_developer_swift_imports(
             args,
             prerequisites.apple_fragment,
             prerequisites.xcode_config,
@@ -1201,7 +1200,7 @@ def _pcm_developer_framework_paths_configurator(prerequisites, args):
             before_each = "-Xcc",
             format_each = "-F%s",
         )
-        _add_swift_developer_linkopts(
+        _add_developer_swift_imports(
             args,
             prerequisites.apple_fragment,
             prerequisites.xcode_config,
