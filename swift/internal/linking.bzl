@@ -22,8 +22,12 @@ load(
     "ensure_swiftmodule_is_embedded",
     "should_embed_swiftmodule_for_debugging",
 )
-load(":compiling.bzl", "developer_framework_paths", "swift_developer_lib_dir")
 load(":derived_files.bzl", "derived_files")
+load(
+    ":developer_frameworks.bzl",
+    "developer_framework_paths",
+    "swift_developer_lib_dir",
+)
 load(":features.bzl", "get_cc_feature_configuration")
 
 def create_linking_context_from_compilation_outputs(

@@ -75,6 +75,12 @@ load(
     "get_cc_feature_configuration",
     "is_feature_enabled",
 )
+load(
+    "developer_frameworks.bzl",
+    "developer_framework_paths",
+    "platform_developer_framework_dir",
+    "swift_developer_lib_dir",
+)
 load(":module_maps.bzl", "write_module_map")
 load(
     ":providers.bzl",
@@ -497,13 +503,13 @@ def compile_action_configs(
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.DUMP_AST,
             ],
-            configurators = [_developer_non_pcm_framework_paths_configurator],
+            configurators = [_non_pcm_developer_framework_paths_configurator],
         ),
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.PRECOMPILE_C_MODULE,
             ],
-            configurators = [_developer_pcm_framework_paths_configurator],
+            configurators = [_pcm_developer_framework_paths_configurator],
         ),
 
         # Emit appropriate levels of debug info. On Apple platforms, requesting
@@ -1149,136 +1155,13 @@ def _output_or_file_map(output_file_map, outputs, args):
     args.add("-o", outputs[0])
     return None
 
-def swift_developer_lib_dir(
-        apple_toolchain,
-        apple_fragment,
-        xcode_config):
-    """Returns the directory containing extra Swift developer libraries.
-
-    Args:
-        apple_fragment: The `apple` configuration fragment.
-        apple_toolchain: The `apple_common.apple_toolchain()` object.
-        xcode_config: The Xcode configuration.
-
-    Returns:
-        The directory containing extra Swift-specific development libraries and
-        swiftmodules.
-    """
-
-    platform_framework_dir = _platform_developer_framework_dir(
-        apple_toolchain,
-        apple_fragment,
-        xcode_config,
-    )
-
-    return paths.join(
-        paths.dirname(paths.dirname(platform_framework_dir)),
-        "usr",
-        "lib",
-    )
-
-def _platform_developer_framework_dir(
-        apple_toolchain,
-        apple_fragment,
-        xcode_config):
-    """Returns the Developer framework directory for the platform.
-
-    Args:
-        apple_fragment: The `apple` configuration fragment.
-        apple_toolchain: The `apple_common.apple_toolchain()` object.
-        xcode_config: The Xcode configuration.
-
-    Returns:
-        The path to the Developer framework directory for the platform if one
-        exists, otherwise `None`.
-    """
-
-    # All platforms have a `Developer/Library/Frameworks` directory in their
-    # platform root, except for watchOS prior to Xcode 12.5.
-    platform_type = apple_fragment.single_arch_platform.platform_type
-    if (
-        platform_type == apple_common.platform_type.watchos and
-        not is_xcode_at_least_version(xcode_config, "12.5")
-    ):
-        return None
-
-    return apple_toolchain.platform_developer_framework_dir(apple_fragment)
-
-def _sdk_developer_framework_dir(apple_toolchain, apple_fragment, xcode_config):
-    """Returns the Developer framework directory for the SDK.
-
-    Args:
-        apple_fragment: The `apple` configuration fragment.
-        apple_toolchain: The `apple_common.apple_toolchain()` object.
-        xcode_config: The Xcode configuration.
-
-    Returns:
-        The path to the Developer framework directory for the SDK if one
-        exists, otherwise `None`.
-    """
-
-    # All platforms have a `Developer/Library/Frameworks` directory in their SDK
-    # root except for macOS (all versions of Xcode so far), and watchOS (prior
-    # to Xcode 12.5).
-    platform_type = apple_fragment.single_arch_platform.platform_type
-    if (
-        platform_type == apple_common.platform_type.macos or
-        (
-            platform_type == apple_common.platform_type.watchos and
-            not is_xcode_at_least_version(xcode_config, "12.5")
-        )
-    ):
-        return None
-
-    return paths.join(apple_toolchain.sdk_dir(), "Developer/Library/Frameworks")
-
-def is_xcode_at_least_version(xcode_config, desired_version):
-    """Returns True if we are building with at least the given Xcode version.
-
-    Args:
-        xcode_config: The `apple_common.XcodeVersionConfig` provider.
-        desired_version: The minimum desired Xcode version, as a dotted version
-            string.
-
-    Returns:
-        True if the current target is being built with a version of Xcode at
-        least as high as the given version.
-    """
-    current_version = xcode_config.xcode_version()
-    if not current_version:
-        fail("Could not determine Xcode version at all. This likely means " +
-             "Xcode isn't available; if you think this is a mistake, please " +
-             "file an issue.")
-
-    desired_version_value = apple_common.dotted_version(desired_version)
-    return current_version >= desired_version_value
-
-def developer_framework_paths(
-        apple_fragment,
-        xcode_config):
-    apple_toolchain = apple_common.apple_toolchain()
-    platform_developer_framework_dir = _platform_developer_framework_dir(
-        apple_toolchain,
-        apple_fragment,
-        xcode_config,
-    )
-    sdk_developer_framework_dir = _sdk_developer_framework_dir(
-        apple_toolchain,
-        apple_fragment,
-        xcode_config,
-    )
-    return compact([
-        platform_developer_framework_dir,
-        sdk_developer_framework_dir,
-    ])
-
 def _add_swift_developer_linkopts(args, apple_fragment, xcode_config):
-    platform_developer_framework_dir = _platform_developer_framework_dir(
+    platform_developer_framework = platform_developer_framework_dir(
         apple_common.apple_toolchain(),
         apple_fragment,
         xcode_config,
     )
-    if platform_developer_framework_dir:
+    if platform_developer_framework:
         swift_developer_lib_dir_path = swift_developer_lib_dir(
             apple_common.apple_toolchain(),
             apple_fragment,
@@ -1294,21 +1177,35 @@ def _non_pcm_developer_framework_paths_configurator(prerequisites, args):
     """ Adds developer frameworks flags to the command line. """
     if prerequisites.is_test:
         args.add_all(
-            developer_framework_paths(prerequisites.apple_fragment, prerequisites.xcode_config),
+            developer_framework_paths(
+                prerequisites.apple_fragment,
+                prerequisites.xcode_config,
+            ),
             format_each = "-F%s",
         )
-        _add_swift_developer_linkopts(args, prerequisites.apple_fragment, prerequisites.xcode_config)
+        _add_swift_developer_linkopts(
+            args,
+            prerequisites.apple_fragment,
+            prerequisites.xcode_config,
+        )
 
 # PCM version of the logic above
 def _pcm_developer_framework_paths_configurator(prerequisites, args):
     """ Adds developer frameworks flags to the command line. """
     if prerequisites.is_test:
         args.add_all(
-            developer_framework_paths(prerequisites.apple_fragment, prerequisites.xcode_config),
+            developer_framework_paths(
+                prerequisites.apple_fragment,
+                prerequisites.xcode_config,
+            ),
             before_each = "-Xcc",
             format_each = "-F%s",
         )
-        _add_swift_developer_linkopts(args, prerequisites.apple_fragment, prerequisites.xcode_config)
+        _add_swift_developer_linkopts(
+            args,
+            prerequisites.apple_fragment,
+            prerequisites.xcode_config,
+        )
 
 def _output_object_or_file_map_configurator(prerequisites, args):
     """Adds the output file map or single object file to the command line."""

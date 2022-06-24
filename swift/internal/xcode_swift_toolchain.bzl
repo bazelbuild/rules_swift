@@ -25,7 +25,7 @@ load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
 load(":actions.bzl", "swift_action_names")
 load(":attrs.bzl", "swift_toolchain_driver_attrs")
-load(":compiling.bzl", "compile_action_configs", "features_from_swiftcopts", "is_xcode_at_least_version")
+load(":compiling.bzl", "compile_action_configs", "features_from_swiftcopts")
 load(
     ":feature_names.bzl",
     "SWIFT_FEATURE_BITCODE_EMBEDDED",
@@ -57,6 +57,7 @@ load(
     ":utils.bzl",
     "collect_implicit_deps_providers",
     "get_swift_executable_for_toolchain",
+    "is_xcode_at_least_version",
     "resolve_optional_tool",
 )
 

@@ -15,20 +15,14 @@
 """Implementation of the `swift_binary` and `swift_test` rules."""
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load(
-    ":compiling.bzl",
-    "output_groups_from_other_compilation_outputs",
-)
+load(":compiling.bzl", "output_groups_from_other_compilation_outputs")
 load(":derived_files.bzl", "derived_files")
 load(":feature_names.bzl", "SWIFT_FEATURE_BUNDLED_XCTESTS")
 load(":linking.bzl", "register_link_binary_action")
 load(":providers.bzl", "SwiftToolchainInfo")
 load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 load(":swift_common.bzl", "swift_common")
-load(
-    ":utils.bzl",
-    "expand_locations",
-)
+load(":utils.bzl", "expand_locations")
 
 def _binary_rule_attrs(stamp_default):
     """Returns attributes common to both `swift_binary` and `swift_test`.
