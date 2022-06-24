@@ -1300,7 +1300,7 @@ def _non_pcm_developer_framework_paths_configurator(prerequisites, args):
         _add_swift_developer_linkopts(args, prerequisites.apple_fragment, prerequisites.xcode_config)
 
 # PCM version of the logic above
-def _developer_pcm_framework_paths_configurator(prerequisites, args):
+def _pcm_developer_framework_paths_configurator(prerequisites, args):
     """ Adds developer frameworks flags to the command line. """
     if prerequisites.is_test:
         args.add_all(
