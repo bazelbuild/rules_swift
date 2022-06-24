@@ -222,6 +222,27 @@ def get_providers(targets, provider, map_fn = None):
         ]
     return [target[provider] for target in targets if provider in target]
 
+def is_xcode_at_least_version(xcode_config, desired_version):
+    """Returns True if we are building with at least the given Xcode version.
+
+    Args:
+        xcode_config: The `apple_common.XcodeVersionConfig` provider.
+        desired_version: The minimum desired Xcode version, as a dotted version
+            string.
+
+    Returns:
+        True if the current target is being built with a version of Xcode at
+        least as high as the given version.
+    """
+    current_version = xcode_config.xcode_version()
+    if not current_version:
+        fail("Could not determine Xcode version at all. This likely means " +
+             "Xcode isn't available; if you think this is a mistake, please " +
+             "file an issue.")
+
+    desired_version_value = apple_common.dotted_version(desired_version)
+    return current_version >= desired_version_value
+
 def merge_runfiles(all_runfiles):
     """Merges a list of `runfiles` objects.
 
@@ -344,24 +365,3 @@ def struct_fields(s):
         # TODO(b/36412967): Remove the `to_json` and `to_proto` checks.
         if field not in ("to_json", "to_proto")
     }
-
-def is_xcode_at_least_version(xcode_config, desired_version):
-    """Returns True if we are building with at least the given Xcode version.
-
-    Args:
-        xcode_config: The `apple_common.XcodeVersionConfig` provider.
-        desired_version: The minimum desired Xcode version, as a dotted version
-            string.
-
-    Returns:
-        True if the current target is being built with a version of Xcode at
-        least as high as the given version.
-    """
-    current_version = xcode_config.xcode_version()
-    if not current_version:
-        fail("Could not determine Xcode version at all. This likely means " +
-             "Xcode isn't available; if you think this is a mistake, please " +
-             "file an issue.")
-
-    desired_version_value = apple_common.dotted_version(desired_version)
-    return current_version >= desired_version_value
