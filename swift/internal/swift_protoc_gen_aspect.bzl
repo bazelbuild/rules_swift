@@ -478,8 +478,6 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             lambda proto_cc_info: proto_cc_info.objc_info,
         ) + get_providers(support_deps, apple_common.Objc)
 
-        xcode_config = aspect_ctx.attr._xcode_config[apple_common.XcodeVersionConfig]
-
         objc_info = new_objc_provider(
             additional_objc_infos = (
                 objc_infos +

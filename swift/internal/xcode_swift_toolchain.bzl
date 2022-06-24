@@ -56,7 +56,6 @@ load(
 load(
     ":utils.bzl",
     "collect_implicit_deps_providers",
-    "compact",
     "get_swift_executable_for_toolchain",
     "resolve_optional_tool",
 )
@@ -214,12 +213,10 @@ def _resource_directory_configurator(developer_dir, _prerequisites, args):
 def _all_action_configs(
         additional_objc_copts,
         additional_swiftc_copts,
-        apple_fragment,
         apple_toolchain,
         generated_header_rewriter,
         needs_resource_directory,
-        target_triple,
-        xcode_config):
+        target_triple):
     """Returns the action configurations for the Swift toolchain.
 
     Args:
@@ -236,7 +233,6 @@ def _all_action_configs(
         needs_resource_directory: If True, the toolchain needs the resource
             directory passed explicitly to the compiler.
         target_triple: The target triple.
-        xcode_config: The Xcode configuration.
 
     Returns:
         The action configurations for the Swift toolchain.

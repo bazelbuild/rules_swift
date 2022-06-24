@@ -59,11 +59,13 @@ def create_linking_context_from_compilation_outputs(
         alwayslink: If True, any binary that depends on the providers returned
             by this function will link in all of the library's object files,
             even if some contain no symbols referenced by the binary.
+        apple_fragment: The `apple` configuration fragment.
         compilation_outputs: A `CcCompilationOutputs` value containing the
             object files to link. Typically, this is the second tuple element in
             the value returned by `swift_common.compile`.
         feature_configuration: A feature configuration obtained from
             `swift_common.configure_features`.
+        is_test: Represents if `testonly` is set on the target to be compiled.
         label: The `Label` of the target being built. This is used as the owner
             of the linker inputs created for post-compile actions (if any), and
             the label's name component also determines the name of the artifact
@@ -81,6 +83,7 @@ def create_linking_context_from_compilation_outputs(
         user_link_flags: A `list` of strings containing additional flags that
             will be passed to the linker for any binary that links with the
             returned linking context.
+        xcode_config: The Xcode configuration.
 
     Returns:
         A tuple of `(CcLinkingContext, CcLinkingOutputs)` containing the linking

@@ -18,7 +18,6 @@ load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(
     ":compiling.bzl",
     "output_groups_from_other_compilation_outputs",
-    "swift_developer_lib_dir",
 )
 load(":derived_files.bzl", "derived_files")
 load(":feature_names.bzl", "SWIFT_FEATURE_BUNDLED_XCTESTS")
