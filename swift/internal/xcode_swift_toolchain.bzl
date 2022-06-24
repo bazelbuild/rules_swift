@@ -559,12 +559,10 @@ def _xcode_swift_toolchain_impl(ctx):
             ctx.fragments.objc,
         ),
         additional_swiftc_copts = ctx.fragments.swift.copts(),
-        apple_fragment = apple_fragment,
         apple_toolchain = apple_toolchain,
         generated_header_rewriter = generated_header_rewriter,
         needs_resource_directory = swift_executable or toolchain_root,
         target_triple = target,
-        xcode_config = xcode_config,
     )
 
     return [
