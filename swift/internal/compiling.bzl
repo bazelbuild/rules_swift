@@ -1290,7 +1290,7 @@ def _add_swift_developer_linkopts(args, apple_fragment, xcode_config):
 # The platform developer framework directory contains XCTest.swiftmodule
 # with Swift extensions to XCTest, so it needs to be added to the search
 # path on platforms where it exists.
-def _developer_non_pcm_framework_paths_configurator(prerequisites, args):
+def _non_pcm_developer_framework_paths_configurator(prerequisites, args):
     """ Adds developer frameworks flags to the command line. """
     if prerequisites.is_test:
         args.add_all(
