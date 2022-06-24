@@ -65,7 +65,8 @@ def swift_developer_lib_dir(
 def developer_framework_paths(
         apple_fragment,
         xcode_config):
-    """Returns the developer framework paths for the given apple fragment and xcode configuration.
+    """Returns the developer framework paths for the given apple fragment and \
+    xcode configuration.
 
     Args:
         apple_fragment: The `apple` configuration fragment.
