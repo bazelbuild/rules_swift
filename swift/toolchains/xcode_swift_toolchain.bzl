@@ -130,11 +130,12 @@ def _swift_developer_lib_dir(platform_framework_dir):
         "lib",
     )
 
-def _command_line_objc_copts(compilation_mode, objc_fragment):
+def _command_line_objc_copts(compilation_mode, cpp_fragment, objc_fragment):
     """Returns copts that should be passed to `clang` from the `objc` fragment.
 
     Args:
         compilation_mode: The current compilation mode.
+        cpp_fragment: The `cpp` configuration fragment.
         objc_fragment: The `objc` configuration fragment.
 
     Returns:
@@ -172,7 +173,7 @@ def _command_line_objc_copts(compilation_mode, objc_fragment):
                 "-Wno-extra",
             ]
 
-    clang_copts = objc_fragment.copts + legacy_copts
+    clang_copts = cpp_fragment.objccopts + legacy_copts
     return [copt for copt in clang_copts if copt != "-g"]
 
 def _platform_developer_framework_dir(
@@ -716,6 +717,7 @@ def _xcode_swift_toolchain_impl(ctx):
     all_action_configs = _all_action_configs(
         additional_objc_copts = _command_line_objc_copts(
             ctx.var["COMPILATION_MODE"],
+            ctx.fragments.cpp,
             ctx.fragments.objc,
         ),
         additional_swiftc_copts = ctx.fragments.swift.copts(),
