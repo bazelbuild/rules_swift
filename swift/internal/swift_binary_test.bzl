@@ -176,6 +176,7 @@ def _swift_linking_rule_impl(
     additional_inputs = ctx.files.swiftc_inputs
     additional_inputs_to_linker = list(additional_inputs)
     additional_linking_contexts = []
+    developer_paths_linkopts = []
     cc_feature_configuration = swift_common.cc_feature_configuration(
         feature_configuration = feature_configuration,
     )
@@ -211,7 +212,7 @@ def _swift_linking_rule_impl(
             other_compilation_outputs = other_compilation_outputs,
         )
 
-        linking_context, _ = swift_common.create_linking_context_from_compilation_outputs(
+        (linking_context, _), developer_paths_linkopts = swift_common.create_linking_context_from_compilation_outputs(
             actions = ctx.actions,
             alwayslink = True,
             apple_fragment = ctx.fragments.apple,
@@ -267,7 +268,7 @@ def _swift_linking_rule_impl(
         owner = ctx.label,
         stamp = ctx.attr.stamp,
         swift_toolchain = swift_toolchain,
-        user_link_flags = user_link_flags,
+        user_link_flags = developer_paths_linkopts + user_link_flags,
     )
 
     providers = [OutputGroupInfo(**output_groups)]
