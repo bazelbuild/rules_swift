@@ -69,7 +69,7 @@ def _swift_module_alias_impl(ctx):
         xcode_config = ctx.attr._xcode_config,
     )
 
-    linking_context, linking_output = (
+    (linking_context, linking_output), developer_paths_linkopts = (
         swift_common.create_linking_context_from_compilation_outputs(
             actions = ctx.actions,
             apple_fragment = ctx.fragments.apple,
@@ -127,6 +127,7 @@ def _swift_module_alias_impl(ctx):
         feature_configuration = feature_configuration,
         module_context = module_context,
         libraries_to_link = [linking_output.library_to_link],
+        user_link_flags = developer_paths_linkopts,
     ))
 
     return providers

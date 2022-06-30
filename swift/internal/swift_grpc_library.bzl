@@ -298,7 +298,7 @@ def _swift_grpc_library_impl(ctx):
         xcode_config = ctx.attr._xcode_config,
     )
 
-    linking_context, linking_output = (
+    (linking_context, linking_output), _ = (
         swift_common.create_linking_context_from_compilation_outputs(
             actions = ctx.actions,
             apple_fragment = ctx.fragments.apple,

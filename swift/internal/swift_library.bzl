@@ -191,7 +191,9 @@ def _swift_library_impl(ctx):
         xcode_config = ctx.attr._xcode_config,
     )
 
-    linking_context, linking_output = (
+    # Grab developer_paths_linkopts used creating the linking contexts, so they can be propegated
+    # to ObjC providers as well.
+    (linking_context, linking_output), developer_paths_linkopts = (
         swift_common.create_linking_context_from_compilation_outputs(
             actions = ctx.actions,
             additional_inputs = additional_inputs,
@@ -276,7 +278,7 @@ def _swift_library_impl(ctx):
         feature_configuration = feature_configuration,
         module_context = module_context,
         libraries_to_link = [linking_output.library_to_link],
-        user_link_flags = linkopts,
+        user_link_flags = developer_paths_linkopts + linkopts,
     ))
 
     return providers

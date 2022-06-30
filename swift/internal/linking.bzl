@@ -168,6 +168,9 @@ def create_linking_context_from_compilation_outputs(
     else:
         developer_paths_linkopts = []
 
+    # The developer_paths_linkopts, derived from is_test, need to be propegated
+    # to Objc providers if they are used in this linking context.
+    # Return them in addition to the linking context and output.
     return cc_common.create_linking_context_from_compilation_outputs(
         actions = actions,
         feature_configuration = get_cc_feature_configuration(
@@ -176,14 +179,14 @@ def create_linking_context_from_compilation_outputs(
         cc_toolchain = swift_toolchain.cc_toolchain_info,
         compilation_outputs = compilation_outputs,
         name = name,
-        user_link_flags = user_link_flags + developer_paths_linkopts,
+        user_link_flags = user_link_flags,
         linking_contexts = linking_contexts + extra_linking_contexts,
         alwayslink = alwayslink,
         additional_inputs = additional_inputs,
         disallow_static_libraries = False,
         disallow_dynamic_library = True,
         grep_includes = None,
-    )
+    ), developer_paths_linkopts
 
 def register_link_binary_action(
         actions,
