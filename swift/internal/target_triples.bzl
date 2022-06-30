@@ -14,6 +14,8 @@
 
 """Utility functions to inspect and manipulate target triples."""
 
+_IOS_SIM_ARM64_MIN_OS_VERSION = apple_common.dotted_version("14.0")
+
 def _make(*, cpu, vendor, os, environment = None):
     """Creates a target triple struct from the given values.
 
@@ -103,11 +105,25 @@ def _normalize_for_swift(triple, *, unversioned = False):
     """
     os = _normalize_apple_os(triple.os, unversioned = unversioned)
     if os.startswith(("ios", "macos", "tvos", "visionos", "watchos")):
+        environment = _normalize_apple_environment(triple.environment)
+        cpu = _normalize_apple_cpu(triple.cpu)
+
+        # If the target triple is like `arm64-apple-ios<version>-simulator` and
+        # version is <14, raise the min version to 14 to match the first
+        # supported simulator version. Based on
+        # `getSwiftRuntimeCompatibilityVersionForTarget` from
+        # https://github.com/apple/swift/blob/main/lib/Basic/Platform.cpp
+        if os.startswith("ios") and cpu == "arm64" and environment == "simulator":
+            os_name, version = _split_os_version(os)
+            target_version = apple_common.dotted_version(version)
+            if target_version.compare_to(_IOS_SIM_ARM64_MIN_OS_VERSION) == -1:
+                version = "14.0"
+                os = os_name + version
         return _make(
-            cpu = _normalize_apple_cpu(triple.cpu),
+            cpu = cpu,
             vendor = "apple",
             os = os,
-            environment = _normalize_apple_environment(triple.environment),
+            environment = environment,
         )
 
     return triple
