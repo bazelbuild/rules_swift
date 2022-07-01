@@ -66,7 +66,7 @@ def _swift_module_alias_impl(ctx):
         swift_toolchain = swift_toolchain,
         target_name = ctx.label.name,
         workspace_name = ctx.workspace_name,
-        xcode_config = ctx.attr._xcode_config
+        xcode_config = ctx.attr._xcode_config,
     )
 
     linking_context, linking_output = (
@@ -84,7 +84,7 @@ def _swift_module_alias_impl(ctx):
             ],
             module_context = module_context,
             swift_toolchain = swift_toolchain,
-            xcode_config = ctx.attr._xcode_config
+            xcode_config = ctx.attr._xcode_config,
         )
     )
 
