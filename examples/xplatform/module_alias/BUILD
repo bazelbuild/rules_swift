@@ -12,6 +12,6 @@ swift_library(
 
 swift_module_alias(
     name = "main_alias",
-    deps = [":main"],
     module_name = "Main_Alias",
+    deps = [":main"],
 )
