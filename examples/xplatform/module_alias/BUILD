@@ -1,7 +1,5 @@
 load("//swift:swift.bzl", "swift_binary", "swift_library", "swift_module_alias")
 
-licenses(["notice"])
-
 swift_binary(
     name = "hello_world",
     deps = [":main_alias"],
