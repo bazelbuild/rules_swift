@@ -23,11 +23,6 @@ load(
     "should_embed_swiftmodule_for_debugging",
 )
 load(":derived_files.bzl", "derived_files")
-load(
-    ":developer_frameworks.bzl",
-    "developer_framework_paths",
-    "swift_developer_lib_dir",
-)
 load(":features.bzl", "get_cc_feature_configuration")
 
 def create_linking_context_from_compilation_outputs(
@@ -35,17 +30,14 @@ def create_linking_context_from_compilation_outputs(
         actions,
         additional_inputs = [],
         alwayslink = False,
-        apple_fragment,
         compilation_outputs,
         feature_configuration,
-        is_test,
         label,
         linking_contexts = [],
         module_context,
         name = None,
         swift_toolchain,
-        user_link_flags = [],
-        xcode_config):
+        user_link_flags = []):
     """Creates a linking context from the outputs of a Swift compilation.
 
     On some platforms, this function will spawn additional post-compile actions
@@ -63,13 +55,11 @@ def create_linking_context_from_compilation_outputs(
         alwayslink: If True, any binary that depends on the providers returned
             by this function will link in all of the library's object files,
             even if some contain no symbols referenced by the binary.
-        apple_fragment: The `apple` configuration fragment.
         compilation_outputs: A `CcCompilationOutputs` value containing the
             object files to link. Typically, this is the second tuple element in
             the value returned by `swift_common.compile`.
         feature_configuration: A feature configuration obtained from
             `swift_common.configure_features`.
-        is_test: Represents if `testonly` is set on the target to be compiled.
         label: The `Label` of the target being built. This is used as the owner
             of the linker inputs created for post-compile actions (if any), and
             the label's name component also determines the name of the artifact
@@ -87,7 +77,6 @@ def create_linking_context_from_compilation_outputs(
         user_link_flags: A `list` of strings containing additional flags that
             will be passed to the linker for any binary that links with the
             returned linking context.
-        xcode_config: The Xcode configuration.
 
     Returns:
         A tuple of `(CcLinkingContext, CcLinkingOutputs)` containing the linking
@@ -153,21 +142,6 @@ def create_linking_context_from_compilation_outputs(
     if not name:
         name = label.name
 
-    if is_test:
-        swift_developer_lib_dir_path = swift_developer_lib_dir(
-            apple_common.apple_toolchain(),
-            apple_fragment,
-            xcode_config,
-        )
-        developer_paths_linkopts = [
-            "-L%s" % swift_developer_lib_dir_path,
-        ] + [
-            "-F%s" % developer_framework_path
-            for developer_framework_path in developer_framework_paths(apple_fragment, xcode_config)
-        ]
-    else:
-        developer_paths_linkopts = []
-
     return cc_common.create_linking_context_from_compilation_outputs(
         actions = actions,
         feature_configuration = get_cc_feature_configuration(
@@ -176,7 +150,7 @@ def create_linking_context_from_compilation_outputs(
         cc_toolchain = swift_toolchain.cc_toolchain_info,
         compilation_outputs = compilation_outputs,
         name = name,
-        user_link_flags = user_link_flags + developer_paths_linkopts,
+        user_link_flags = user_link_flags,
         linking_contexts = linking_contexts + extra_linking_contexts,
         alwayslink = alwayslink,
         additional_inputs = additional_inputs,

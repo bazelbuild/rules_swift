@@ -285,26 +285,21 @@ def _swift_grpc_library_impl(ctx):
 
     module_context, cc_compilation_outputs, other_compilation_outputs = swift_common.compile(
         actions = ctx.actions,
-        apple_fragment = ctx.fragments.apple,
         copts = ["-parse-as-library"],
         deps = compile_deps,
         feature_configuration = feature_configuration,
-        is_test = ctx.attr.testonly,
         module_name = module_name,
         srcs = generated_files,
         swift_toolchain = swift_toolchain,
         target_name = ctx.label.name,
         workspace_name = ctx.workspace_name,
-        xcode_config = ctx.attr._xcode_config,
     )
 
     linking_context, linking_output = (
         swift_common.create_linking_context_from_compilation_outputs(
             actions = ctx.actions,
-            apple_fragment = ctx.fragments.apple,
             compilation_outputs = cc_compilation_outputs,
             feature_configuration = feature_configuration,
-            is_test = ctx.attr.testonly,
             label = ctx.label,
             linking_contexts = [
                 dep[CcInfo].linking_context
@@ -313,7 +308,6 @@ def _swift_grpc_library_impl(ctx):
             ],
             module_context = module_context,
             swift_toolchain = swift_toolchain,
-            xcode_config = ctx.attr._xcode_config,
         )
     )
 
@@ -416,12 +410,6 @@ The kind of definitions that should be generated:
                 ),
                 executable = True,
             ),
-            "_xcode_config": attr.label(
-                default = configuration_field(
-                    name = "xcode_config_label",
-                    fragment = "apple",
-                ),
-            ),
         },
     ),
     doc = """\
@@ -490,6 +478,6 @@ swift_grpc_library(
 )
 ```
 """,
-    fragments = ["apple", "cpp"],
+    fragments = ["cpp"],
     implementation = _swift_grpc_library_impl,
 )
