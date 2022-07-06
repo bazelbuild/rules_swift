@@ -425,13 +425,11 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             xcode_config = aspect_ctx.attr._xcode_config,
         )
 
-        (linking_context, linking_output), _ = (
+        linking_context, linking_output = (
             swift_common.create_linking_context_from_compilation_outputs(
                 actions = aspect_ctx.actions,
-                apple_fragment = aspect_ctx.fragments.apple,
                 compilation_outputs = cc_compilation_outputs,
                 feature_configuration = feature_configuration,
-                is_test = True,
                 label = target.label,
                 linking_contexts = [
                     dep[CcInfo].linking_context
@@ -444,7 +442,6 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
                 # produce `lib{name}.swift.a` instead.
                 name = "{}.swift".format(target.label.name),
                 swift_toolchain = swift_toolchain,
-                xcode_config = aspect_ctx.attr._xcode_config,
             )
         )
 
@@ -486,9 +483,12 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             # We pass an empty list here because we already extracted the
             # `Objc` providers from `SwiftProtoCcInfo` above.
             deps = [],
+            apple_fragment = aspect_ctx.fragments.apple,
+            is_test = True,
             feature_configuration = feature_configuration,
             module_context = module_context,
             libraries_to_link = [linking_output.library_to_link],
+            xcode_config = aspect_ctx.attr._xcode_config,
         )
 
         cc_info = CcInfo(

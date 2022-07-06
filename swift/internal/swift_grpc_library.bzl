@@ -298,13 +298,11 @@ def _swift_grpc_library_impl(ctx):
         xcode_config = ctx.attr._xcode_config,
     )
 
-    (linking_context, linking_output), _ = (
+    linking_context, linking_output = (
         swift_common.create_linking_context_from_compilation_outputs(
             actions = ctx.actions,
-            apple_fragment = ctx.fragments.apple,
             compilation_outputs = cc_compilation_outputs,
             feature_configuration = feature_configuration,
-            is_test = ctx.attr.testonly,
             label = ctx.label,
             linking_contexts = [
                 dep[CcInfo].linking_context
@@ -313,7 +311,6 @@ def _swift_grpc_library_impl(ctx):
             ],
             module_context = module_context,
             swift_toolchain = swift_toolchain,
-            xcode_config = ctx.attr._xcode_config,
         )
     )
 
@@ -348,6 +345,9 @@ def _swift_grpc_library_impl(ctx):
         additional_objc_infos = (
             swift_toolchain.implicit_deps_providers.objc_infos
         ),
+        is_test = ctx.attr.testonly,
+        apple_fragment = ctx.fragments.apple,
+        xcode_config = ctx.attr._xcode_config,
         deps = compile_deps,
         feature_configuration = feature_configuration,
         module_context = module_context,
