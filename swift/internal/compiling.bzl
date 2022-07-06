@@ -2843,11 +2843,14 @@ def new_objc_provider(
         additional_link_inputs = [],
         additional_objc_infos = [],
         alwayslink = False,
+        apple_fragment,
         deps,
         feature_configuration,
+        is_test,
         libraries_to_link,
         module_context,
-        user_link_flags = []):
+        user_link_flags = [],
+        xcode_config):
     """Creates an `apple_common.Objc` provider for a Swift target.
 
     Args:
@@ -2858,16 +2861,19 @@ def new_objc_provider(
         alwayslink: If True, any binary that depends on the providers returned
             by this function will link in all of the library's object files,
             even if some contain no symbols referenced by the binary.
+        apple_fragment: The `apple` configuration fragment.
         deps: The dependencies of the target being built, whose `Objc` providers
             will be passed to the new one in order to propagate the correct
             transitive fields.
         feature_configuration: The Swift feature configuration.
+        is_test: Represents if `testonly` is set on the target to be compiled.
         libraries_to_link: A list (typically of one element) of the
             `LibraryToLink` objects from which the static archives (`.a` files)
             containing the target's compiled code will be retrieved.
         module_context: The module context as returned by
             `swift_common.compile`.
         user_link_flags: Linker options that should be propagated to dependents.
+        xcode_config: The Xcode configuration.
 
     Returns:
         An `apple_common.Objc` provider that should be returned by the calling
@@ -2913,6 +2919,21 @@ def new_objc_provider(
         debug_link_flags = []
         debug_link_inputs = []
 
+    if is_test:
+        swift_developer_lib_dir_path = swift_developer_lib_dir(
+            apple_common.apple_toolchain(),
+            apple_fragment,
+            xcode_config,
+        )
+        developer_paths_linkopts = [
+            "-L%s" % swift_developer_lib_dir_path,
+        ] + [
+            "-F%s" % developer_framework_path
+            for developer_framework_path in developer_framework_paths(apple_fragment, xcode_config)
+        ]
+    else:
+        developer_paths_linkopts = []
+        
     return apple_common.new_objc_provider(
         force_load_library = depset(
             force_load_libraries,
@@ -2924,7 +2945,7 @@ def new_objc_provider(
             order = "topological",
         ),
         link_inputs = depset(additional_link_inputs + debug_link_inputs),
-        linkopt = depset(user_link_flags + debug_link_flags),
+        linkopt = depset(user_link_flags + debug_link_flags + developer_paths_linkopts),
         providers = get_providers(
             deps,
             apple_common.Objc,
