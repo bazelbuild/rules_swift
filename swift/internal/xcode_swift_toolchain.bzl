@@ -56,8 +56,8 @@ load(":target_triples.bzl", "target_triples")
 load(
     ":utils.bzl",
     "collect_implicit_deps_providers",
-    "compact",
     "get_swift_executable_for_toolchain",
+    "is_xcode_at_least_version",
     "resolve_optional_tool",
 )
 
@@ -220,7 +220,6 @@ def _swift_linkopts_providers(
         target_triple: The target triple `struct`.
         toolchain_label: The label of the Swift toolchain that will act as the
             owner of the linker input propagating the flags.
-        xcode_config: The Xcode configuration.
 
     Returns:
         A `struct` containing the following fields:
@@ -247,12 +246,6 @@ def _swift_linkopts_providers(
     )
 
     linkopts = [
-        "-F{}".format(path)
-        for path in compact([
-            platform_developer_framework_dir,
-            sdk_developer_framework_dir,
-        ])
-    ] + [
         "-Wl,-rpath,/usr/lib/swift",
         "-L{}".format(swift_lib_dir),
         "-L/usr/lib/swift",
@@ -264,15 +257,6 @@ def _swift_linkopts_providers(
         "-ObjC",
         "-Wl,-objc_abi_version,2",
     ]
-
-    # Add the linker path to the directory containing the dylib with Swift
-    # extensions for the XCTest module.
-    if platform_developer_framework_dir:
-        linkopts.extend([
-            "-L{}".format(
-                _swift_developer_lib_dir(platform_developer_framework_dir),
-            ),
-        ])
 
     return struct(
         cc_info = CcInfo(
@@ -342,8 +326,7 @@ def _all_action_configs(
         apple_toolchain,
         generated_header_rewriter,
         needs_resource_directory,
-        target_triple,
-        xcode_config):
+        target_triple):
     """Returns the action configurations for the Swift toolchain.
 
     Args:
@@ -397,46 +380,9 @@ def _all_action_configs(
                     "-sdk",
                     apple_toolchain.sdk_dir(),
                 ),
-            ] + [
-                swift_toolchain_config.add_arg(framework_dir, format = "-F%s")
-                for framework_dir in developer_framework_dirs
-            ],
-        ),
-        swift_toolchain_config.action_config(
-            actions = [swift_action_names.PRECOMPILE_C_MODULE],
-            configurators = [
-                swift_toolchain_config.add_arg(
-                    "-Xcc",
-                    framework_dir,
-                    format = "-F%s",
-                )
-                for framework_dir in developer_framework_dirs
             ],
         ),
     ]
-
-    # The platform developer framework directory contains XCTest.swiftmodule
-    # with Swift extensions to XCTest, so it needs to be added to the search
-    # path on platforms where it exists.
-    if platform_developer_framework_dir:
-        action_configs.append(
-            swift_toolchain_config.action_config(
-                actions = [
-                    swift_action_names.COMPILE,
-                    swift_action_names.DERIVE_FILES,
-                    swift_action_names.PRECOMPILE_C_MODULE,
-                    swift_action_names.DUMP_AST,
-                ],
-                configurators = [
-                    swift_toolchain_config.add_arg(
-                        _swift_developer_lib_dir(
-                            platform_developer_framework_dir,
-                        ),
-                        format = "-I%s",
-                    ),
-                ],
-            ),
-        )
 
     action_configs.extend([
         # Bitcode-related flags.
@@ -579,7 +525,7 @@ def _all_tool_configs(
     }
 
     # Xcode 12.0 implies Swift 5.3.
-    if _is_xcode_at_least_version(xcode_config, "12.0"):
+    if is_xcode_at_least_version(xcode_config, "12.0"):
         tool_configs[swift_action_names.PRECOMPILE_C_MODULE] = (
             swift_toolchain_config.driver_tool_config(
                 driver_mode = "swiftc",
@@ -692,16 +638,16 @@ def _xcode_swift_toolchain_impl(ctx):
     ])
 
     # Xcode 11.0 implies Swift 5.1.
-    if _is_xcode_at_least_version(xcode_config, "11.0"):
+    if is_xcode_at_least_version(xcode_config, "11.0"):
         requested_features.append(SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION)
         requested_features.append(SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS)
 
     # Xcode 11.4 implies Swift 5.2.
-    if _is_xcode_at_least_version(xcode_config, "11.4"):
+    if is_xcode_at_least_version(xcode_config, "11.4"):
         requested_features.append(SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES)
 
     # Xcode 12.5 implies Swift 5.4.
-    if _is_xcode_at_least_version(xcode_config, "12.5"):
+    if is_xcode_at_least_version(xcode_config, "12.5"):
         requested_features.append(SWIFT_FEATURE_SUPPORTS_SYSTEM_MODULE_FLAG)
 
     env = _xcode_env(target_triple = target_triple, xcode_config = xcode_config)
