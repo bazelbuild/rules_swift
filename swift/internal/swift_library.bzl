@@ -211,7 +211,7 @@ def _swift_library_impl(ctx):
             module_context = module_context,
             swift_toolchain = swift_toolchain,
             user_link_flags = linkopts,
-            xcode_config = ctx.attr._xcode_config,
+            xcode_config = ctx.attr._xcode_config[apple_common.XcodeVersionConfig],
         )
     )
 

@@ -2072,7 +2072,7 @@ def compile(
         vfsoverlay_file = vfsoverlay_file,
         vfsoverlay_search_path = _SWIFTMODULES_VFS_ROOT,
         workspace_name = workspace_name,
-        xcode_config = xcode_config,
+        xcode_config = xcode_config[apple_common.XcodeVersionConfig],
         # Merge the compile outputs into the prerequisites.
         **struct_fields(compile_outputs)
     )
