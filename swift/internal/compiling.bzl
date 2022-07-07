@@ -742,7 +742,7 @@ def compile_action_configs(
             actions = [
                 swift_action_names.COMPILE,
                 swift_action_names.PRECOMPILE_C_MODULE,
-                swift_action_names.SYMBOL_GRAPH_EXTRACT,
+                # swift_action_names.SYMBOL_GRAPH_EXTRACT, # TODO: Enable once supported
             ],
             configurators = [
                 swift_toolchain_config.add_arg(
