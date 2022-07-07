@@ -540,6 +540,11 @@ def compile_action_configs(
             ],
         ),
         swift_toolchain_config.action_config(
+            actions = [swift_action_names.PRECOMPILE_C_MODULE],
+            configurators = [swift_toolchain_config.add_arg("-Xcc", "-gmodules")],
+            features = [[SWIFT_FEATURE_DBG], [SWIFT_FEATURE_FULL_DEBUG_INFO]],
+        ),
+        swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
                 swift_action_names.DERIVE_FILES,
@@ -754,22 +759,13 @@ def compile_action_configs(
             ],
             features = [SWIFT_FEATURE_USE_C_MODULES],
         ),
-        # Do not allow implicit modules to be used at all when emitting an
-        # explicit C/Objective-C module. Consider the case of two modules A and
-        # B, where A depends on B. If B does not emit an explicit module, then
-        # when A is compiled it would contain a hardcoded reference to B via its
-        # path in the implicit module cache. Thus, A would not be movable; some
-        # library importing A would try to resolve B at that path, which may no
-        # longer exist when the upstream library is built.
-        #
-        # This implies that for a C/Objective-C library to build as an explicit
-        # module, all of its dependencies must as well. On the other hand, a
-        # Swift library can be compiled with some of its Objective-C
-        # dependencies still using implicit modules, as long as no Objective-C
-        # library wants to import that Swift library's generated header and
-        # build itself as an explicit module.
+        # When using C modules, disable the implicit module cache.
         swift_toolchain_config.action_config(
-            actions = [swift_action_names.PRECOMPILE_C_MODULE],
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.PRECOMPILE_C_MODULE,
+                # swift_action_names.SYMBOL_GRAPH_EXTRACT, # TODO: Enable once supported
+            ],
             configurators = [
                 swift_toolchain_config.add_arg(
                     "-Xcc",
