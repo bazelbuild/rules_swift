@@ -34,6 +34,7 @@ load(
     "SWIFT_FEATURE_ENABLE_TESTING",
     "SWIFT_FEATURE_FASTBUILD",
     "SWIFT_FEATURE_FULL_DEBUG_INFO",
+    "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
     "SWIFT_FEATURE_LAYERING_CHECK",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_NO_ASAN_VERSION_CHECK",
@@ -607,6 +608,13 @@ def compile_action_configs(
             configurators = [_module_name_configurator],
         ),
 
+        # Configure index-while-building.
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE],
+            configurators = [_index_while_building_configurator],
+            features = [SWIFT_FEATURE_INDEX_WHILE_BUILDING],
+        ),
+
         # User-defined conditional compilation flags (defined for Swift; those
         # passed directly to ClangImporter are handled above).
         ActionConfigInfo(
@@ -1070,6 +1078,11 @@ def _explicit_swift_module_map_configurator(prerequisites, args):
 def _module_name_configurator(prerequisites, args):
     """Adds the module name flag to the command line."""
     args.add("-module-name", prerequisites.module_name)
+
+def _index_while_building_configurator(prerequisites, args):
+    """Adds flags for indexstore generation to the command line."""
+    args.add("-index-ignore-system-modules")
+    args.add("-index-store-path", prerequisites.indexstore_directory.path)
 
 def _source_files_configurator(prerequisites, args):
     """Adds source files to the command line and required inputs."""

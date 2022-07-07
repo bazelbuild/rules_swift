@@ -277,7 +277,7 @@ def _swift_grpc_library_impl(ctx):
 
     module_name = swift_common.derive_module_name(ctx.label)
 
-    module_context, compilation_outputs = swift_common.compile(
+    compile_result = swift_common.compile(
         actions = ctx.actions,
         compilation_contexts = get_compilation_contexts(ctx.attr.deps),
         copts = ["-parse-as-library"],
@@ -288,6 +288,16 @@ def _swift_grpc_library_impl(ctx):
         swift_toolchain = swift_toolchain,
         target_name = ctx.label.name,
     )
+
+    module_context = compile_result.module_context
+    compilation_outputs = compile_result.compilation_outputs
+    supplemental_outputs = compile_result.supplemental_outputs
+
+    output_groups = {}
+    if supplemental_outputs.indexstore_directory:
+        output_groups["indexstore"] = depset([
+            supplemental_outputs.indexstore_directory,
+        ])
 
     linking_context, linking_output = (
         swift_common.create_linking_context_from_compilation_outputs(
@@ -323,6 +333,7 @@ def _swift_grpc_library_impl(ctx):
             modules = [module_context],
             swift_infos = compile_deps_swift_infos,
         ),
+        OutputGroupInfo(**output_groups),
     ]
 
     # Propagate an `apple_common.Objc` provider with linking info about the

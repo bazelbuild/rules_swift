@@ -58,6 +58,10 @@ SWIFT_FEATURE_DEBUG_PREFIX_MAP = "swift.debug_prefix_map"
 # graph.
 SWIFT_FEATURE_EMIT_C_MODULE = "swift.emit_c_module"
 
+# If enabled, the compilation action for a target will also produce an index
+# store among its outputs.
+SWIFT_FEATURE_INDEX_WHILE_BUILDING = "swift.index_while_building"
+
 # If enabled, when compiling an explicit C or Objectve-C module, every header
 # included by the module being compiled must belong to one of the modules listed
 # in its dependencies. This is ignored for system modules.

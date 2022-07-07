@@ -28,6 +28,7 @@ load(
     ":feature_names.bzl",
     "SWIFT_FEATURE_EMIT_C_MODULE",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
+    "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
     "SWIFT_FEATURE_NO_GENERATED_MODULE_MAP",
     "SWIFT_FEATURE_OPT",
     "SWIFT_FEATURE_OPT_USES_WMO",
@@ -189,17 +190,26 @@ def compile(
             outputs.
 
     Returns:
-        A tuple containing two elements:
+        A `struct` with the following fields:
 
-        1.  A Swift module context (as returned by `swift_common.create_module`)
-            that contains the Swift (and potentially C/Objective-C) compilation
-            prerequisites of the compiled module. This should typically be
-            propagated by a `SwiftInfo` provider of the calling rule, and the
-            `CcCompilationContext` inside the Clang module substructure should
-            be propagated by the `CcInfo` provider of the calling rule.
-        2.  A `CcCompilationOutputs` object (as returned by
-            `cc_common.create_compilation_outputs`) that contains the compiled
-            object files.
+        *   `module_context`: A Swift module context (as returned by
+            `swift_common.create_module`) that contains the Swift (and
+            potentially C/Objective-C) compilation prerequisites of the compiled
+            module. This should typically be propagated by a `SwiftInfo`
+            provider of the calling rule, and the `CcCompilationContext` inside
+            the Clang module substructure should be propagated by the `CcInfo`
+            provider of the calling rule.
+
+        *   `compilation_outputs`: A `CcCompilationOutputs` object (as returned
+            by `cc_common.create_compilation_outputs`) that contains the
+            compiled object files.
+
+        *   `supplemental_outputs`: A `struct` representing supplemental,
+            optional outputs. Its fields are:
+
+            *   `indexstore_directory`: A directory-type `File` that represents
+                the indexstore output files created when the feature
+                `swift.index_while_building` is enabled.
     """
 
     # Collect the `SwiftInfo` providers that represent the dependencies of the
@@ -234,6 +244,7 @@ def compile(
         compile_outputs.swiftinterface_file,
         compile_outputs.swiftsourceinfo_file,
         compile_outputs.generated_header_file,
+        compile_outputs.indexstore_directory,
     ]) + compile_outputs.object_files
 
     merged_compilation_context = merge_compilation_contexts(
@@ -379,7 +390,13 @@ def compile(
         pic_objects = depset(compile_outputs.object_files),
     )
 
-    return module_context, compilation_outputs
+    return struct(
+        module_context = module_context,
+        compilation_outputs = compilation_outputs,
+        supplemental_outputs = struct(
+            indexstore_directory = compile_outputs.indexstore_directory,
+        ),
+    )
 
 def precompile_clang_module(
         *,
@@ -744,9 +761,20 @@ def _declare_compile_outputs(
         object_files = output_info.object_files
         output_file_map = output_info.output_file_map
 
+    if is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_INDEX_WHILE_BUILDING,
+    ):
+        indexstore_directory = actions.declare_directory(
+            "{}.indexstore".format(target_name),
+        )
+    else:
+        indexstore_directory = None
+
     return struct(
         generated_header_file = generated_header,
         generated_module_map_file = generated_module_map,
+        indexstore_directory = indexstore_directory,
         object_files = object_files,
         output_file_map = output_file_map,
         swiftdoc_file = swiftdoc_file,

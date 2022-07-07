@@ -41,6 +41,7 @@ def _swift_binary_impl(ctx):
     )
 
     srcs = ctx.files.srcs
+    output_groups = {}
 
     # If the binary has sources, compile those first and collect the outputs to
     # be passed to the linker.
@@ -49,7 +50,7 @@ def _swift_binary_impl(ctx):
         if not module_name:
             module_name = swift_common.derive_module_name(ctx.label)
 
-        _, compilation_outputs = swift_common.compile(
+        compile_result = swift_common.compile(
             actions = ctx.actions,
             additional_inputs = ctx.files.swiftc_inputs,
             compilation_contexts = get_compilation_contexts(ctx.attr.deps),
@@ -66,6 +67,13 @@ def _swift_binary_impl(ctx):
             swift_toolchain = swift_toolchain,
             target_name = ctx.label.name,
         )
+        compilation_outputs = compile_result.compilation_outputs
+        supplemental_outputs = compile_result.supplemental_outputs
+
+        if supplemental_outputs.indexstore_directory:
+            output_groups["indexstore"] = depset([
+                supplemental_outputs.indexstore_directory,
+            ])
     else:
         compilation_outputs = cc_common.create_compilation_outputs()
 
@@ -102,6 +110,7 @@ def _swift_binary_impl(ctx):
                 files = ctx.files.data,
             ),
         ),
+        OutputGroupInfo(**output_groups),
     ]
 
 swift_binary = rule(

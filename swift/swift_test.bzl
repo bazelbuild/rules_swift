@@ -226,12 +226,14 @@ def _swift_test_impl(ctx):
     elif is_bundled:
         extra_deps = [ctx.attr._test_observer]
 
+    output_groups = {}
+
     if srcs:
         module_name = ctx.attr.module_name
         if not module_name:
             module_name = swift_common.derive_module_name(ctx.label)
 
-        _, compilation_outputs = swift_common.compile(
+        compile_result = swift_common.compile(
             actions = ctx.actions,
             additional_inputs = ctx.files.swiftc_inputs,
             compilation_contexts = get_compilation_contexts(
@@ -250,6 +252,14 @@ def _swift_test_impl(ctx):
             swift_toolchain = swift_toolchain,
             target_name = ctx.label.name,
         )
+
+        compilation_outputs = compile_result.compilation_outputs
+        supplemental_outputs = compile_result.supplemental_outputs
+
+        if supplemental_outputs.indexstore_directory:
+            output_groups["indexstore"] = depset([
+                supplemental_outputs.indexstore_directory,
+            ])
     else:
         compilation_outputs = cc_common.create_compilation_outputs()
 
@@ -314,6 +324,7 @@ def _swift_test_impl(ctx):
                 transitive_files = ctx.attr._apple_coverage_support.files,
             ),
         ),
+        OutputGroupInfo(**output_groups),
         coverage_common.instrumented_files_info(
             ctx,
             dependency_attributes = ["deps"],

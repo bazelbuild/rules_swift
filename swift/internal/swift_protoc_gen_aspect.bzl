@@ -409,7 +409,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             if apple_common.Objc in p:
                 transitive_objc_infos.append(p[apple_common.Objc])
 
-        module_context, compilation_outputs = swift_common.compile(
+        compile_result = swift_common.compile(
             actions = aspect_ctx.actions,
             compilation_contexts = get_compilation_contexts(support_deps),
             copts = ["-parse-as-library"],
@@ -420,6 +420,16 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             swift_toolchain = swift_toolchain,
             target_name = target.label.name,
         )
+
+        module_context = compile_result.module_context
+        compilation_outputs = compile_result.compilation_outputs
+        supplemental_outputs = compile_result.supplemental_outputs
+
+        output_groups = {}
+        if supplemental_outputs.indexstore_directory:
+            output_groups["indexstore"] = depset([
+                supplemental_outputs.indexstore_directory,
+            ])
 
         linking_context, linking_output = (
             swift_common.create_linking_context_from_compilation_outputs(
@@ -461,6 +471,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
         )
 
         providers = [
+            OutputGroupInfo(**output_groups),
             SwiftProtoCompilationInfo(
                 cc_info = cc_info,
                 objc_info = objc_info,
