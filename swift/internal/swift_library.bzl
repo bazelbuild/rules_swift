@@ -175,7 +175,6 @@ def _swift_library_impl(ctx):
     module_context, cc_compilation_outputs, other_compilation_outputs = swift_common.compile(
         actions = ctx.actions,
         additional_inputs = additional_inputs,
-        apple_fragment = ctx.fragments.apple,
         copts = _maybe_parse_as_library_copts(srcs) + copts,
         defines = ctx.attr.defines,
         deps = deps,
@@ -198,7 +197,6 @@ def _swift_library_impl(ctx):
             actions = ctx.actions,
             additional_inputs = additional_inputs,
             alwayslink = ctx.attr.alwayslink,
-            apple_fragment = ctx.fragments.apple,
             compilation_outputs = cc_compilation_outputs,
             feature_configuration = feature_configuration,
             is_test = ctx.attr.testonly,

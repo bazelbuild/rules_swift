@@ -195,7 +195,6 @@ def _swift_linking_rule_impl(
         module_context, cc_compilation_outputs, other_compilation_outputs = swift_common.compile(
             actions = ctx.actions,
             additional_inputs = additional_inputs,
-            apple_fragment = ctx.fragments.apple,
             copts = copts,
             defines = ctx.attr.defines,
             deps = ctx.attr.deps,
@@ -215,7 +214,6 @@ def _swift_linking_rule_impl(
         (linking_context, _), developer_paths_linkopts = swift_common.create_linking_context_from_compilation_outputs(
             actions = ctx.actions,
             alwayslink = True,
-            apple_fragment = ctx.fragments.apple,
             compilation_outputs = cc_compilation_outputs,
             feature_configuration = feature_configuration,
             is_test = is_test,
@@ -423,7 +421,7 @@ please use one of the platform-specific application rules in
 `swift_binary`.
 """,
     executable = True,
-    fragments = ["apple", "cpp"],
+    fragments = ["cpp"],
     implementation = _swift_binary_impl,
 )
 

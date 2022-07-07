@@ -90,6 +90,7 @@ load(
     "create_swift_info",
     "create_swift_module",
 )
+load(":target_triples.bzl", "target_triples")
 load(":toolchain_config.bzl", "swift_toolchain_config")
 load(
     ":utils.bzl",
@@ -1154,16 +1155,16 @@ def _output_or_file_map(output_file_map, outputs, args):
 # The platform developer framework directory contains XCTest.swiftmodule
 # with Swift extensions to XCTest, so it needs to be added to the search
 # path on platforms where it exists.
-def _add_developer_swift_imports(args, apple_fragment, xcode_config):
+def _add_developer_swift_imports(args, target_triple, xcode_config):
     platform_developer_framework = platform_developer_framework_dir(
         apple_common.apple_toolchain(),
-        apple_fragment,
+        target_triple,
         xcode_config,
     )
     if platform_developer_framework:
         swift_developer_lib_dir_path = swift_developer_lib_dir(
             apple_common.apple_toolchain(),
-            apple_fragment,
+            target_triple,
             xcode_config,
         )
         args.add(swift_developer_lib_dir_path, format = "-I%s")
@@ -1173,14 +1174,14 @@ def _non_pcm_developer_framework_paths_configurator(prerequisites, args):
     if prerequisites.is_test:
         args.add_all(
             developer_framework_paths(
-                prerequisites.apple_fragment,
+                prerequisites.target_triple,
                 prerequisites.xcode_config,
             ),
             format_each = "-F%s",
         )
         _add_developer_swift_imports(
             args,
-            prerequisites.apple_fragment,
+            prerequisites.target_triple,
             prerequisites.xcode_config,
         )
 
@@ -1859,7 +1860,6 @@ def compile(
         *,
         actions,
         additional_inputs = [],
-        apple_fragment,
         copts = [],
         defines = [],
         deps = [],
@@ -1880,7 +1880,6 @@ def compile(
         additional_inputs: A list of `File`s representing additional input files
             that need to be passed to the Swift compile action because they are
             referenced by compiler flags.
-        apple_fragment: The `apple` configuration fragment.
         copts: A list of compiler flags that apply to the target being built.
             These flags, along with those from Bazel's Swift configuration
             fragment (i.e., `--swiftcopt` command line flags) are scanned to
@@ -2047,9 +2046,12 @@ def compile(
     else:
         vfsoverlay_file = None
 
+    target_triple = target_triples.normalize_for_swift(
+        target_triples.parse(swift_toolchain.cc_toolchain_info.target_gnu_system_name),
+    )
+
     prerequisites = struct(
         additional_inputs = additional_inputs,
-        apple_fragment = apple_fragment,
         bin_dir = feature_configuration._bin_dir,
         cc_compilation_context = merged_providers.cc_info.compilation_context,
         defines = sets.to_list(defines_set),
@@ -2062,6 +2064,7 @@ def compile(
         ),
         objc_info = merged_providers.objc_info,
         source_files = srcs,
+        target_triple = target_triple,
         transitive_modules = transitive_modules,
         transitive_swiftmodules = transitive_swiftmodules,
         user_compile_flags = copts,

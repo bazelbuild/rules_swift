@@ -207,8 +207,7 @@ def _sdk_developer_framework_dir(apple_toolchain, target_triple, xcode_config):
 def _swift_linkopts_providers(
         apple_toolchain,
         target_triple,
-        toolchain_label,
-        xcode_config):
+        toolchain_label):
     """Returns providers containing flags that should be passed to the linker.
 
     The providers returned by this function will be used as implicit
@@ -596,7 +595,6 @@ def _xcode_swift_toolchain_impl(ctx):
         apple_toolchain = apple_toolchain,
         target_triple = target_triple,
         toolchain_label = ctx.label,
-        xcode_config = xcode_config,
     )
 
     # `--define=SWIFT_USE_TOOLCHAIN_ROOT=<path>` is a rapid development feature

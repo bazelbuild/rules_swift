@@ -412,7 +412,6 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
 
         module_context, cc_compilation_outputs, other_compilation_outputs = swift_common.compile(
             actions = aspect_ctx.actions,
-            apple_fragment = aspect_ctx.fragments.apple,
             copts = ["-parse-as-library"],
             deps = proto_deps + support_deps,
             feature_configuration = feature_configuration,
@@ -428,7 +427,6 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
         (linking_context, linking_output), _ = (
             swift_common.create_linking_context_from_compilation_outputs(
                 actions = aspect_ctx.actions,
-                apple_fragment = aspect_ctx.fragments.apple,
                 compilation_outputs = cc_compilation_outputs,
                 feature_configuration = feature_configuration,
                 is_test = True,

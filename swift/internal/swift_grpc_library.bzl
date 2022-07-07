@@ -285,7 +285,6 @@ def _swift_grpc_library_impl(ctx):
 
     module_context, cc_compilation_outputs, other_compilation_outputs = swift_common.compile(
         actions = ctx.actions,
-        apple_fragment = ctx.fragments.apple,
         copts = ["-parse-as-library"],
         deps = compile_deps,
         feature_configuration = feature_configuration,
@@ -301,7 +300,6 @@ def _swift_grpc_library_impl(ctx):
     (linking_context, linking_output), _ = (
         swift_common.create_linking_context_from_compilation_outputs(
             actions = ctx.actions,
-            apple_fragment = ctx.fragments.apple,
             compilation_outputs = cc_compilation_outputs,
             feature_configuration = feature_configuration,
             is_test = ctx.attr.testonly,

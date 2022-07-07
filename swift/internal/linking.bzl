@@ -14,6 +14,7 @@
 
 """Implementation of linking logic for Swift."""
 
+load(":target_triples.bzl", "target_triples")
 load("@bazel_skylib//lib:collections.bzl", "collections")
 load(":actions.bzl", "is_action_enabled", "swift_action_names")
 load(":autolinking.bzl", "register_autolink_extract_action")
@@ -35,7 +36,6 @@ def create_linking_context_from_compilation_outputs(
         actions,
         additional_inputs = [],
         alwayslink = False,
-        apple_fragment,
         compilation_outputs,
         feature_configuration,
         is_test,
@@ -63,7 +63,6 @@ def create_linking_context_from_compilation_outputs(
         alwayslink: If True, any binary that depends on the providers returned
             by this function will link in all of the library's object files,
             even if some contain no symbols referenced by the binary.
-        apple_fragment: The `apple` configuration fragment.
         compilation_outputs: A `CcCompilationOutputs` value containing the
             object files to link. Typically, this is the second tuple element in
             the value returned by `swift_common.compile`.
@@ -154,16 +153,19 @@ def create_linking_context_from_compilation_outputs(
         name = label.name
 
     if is_test:
+        target_triple = target_triples.normalize_for_swift(
+            target_triples.parse(swift_toolchain.cc_toolchain_info.target_gnu_system_name),
+        )
         swift_developer_lib_dir_path = swift_developer_lib_dir(
             apple_common.apple_toolchain(),
-            apple_fragment,
+            target_triple,
             xcode_config,
         )
         developer_paths_linkopts = [
             "-L%s" % swift_developer_lib_dir_path,
         ] + [
             "-F%s" % developer_framework_path
-            for developer_framework_path in developer_framework_paths(apple_fragment, xcode_config)
+            for developer_framework_path in developer_framework_paths(target_triple, xcode_config)
         ]
     else:
         developer_paths_linkopts = []
