@@ -212,11 +212,13 @@ def _swift_linking_rule_impl(
             other_compilation_outputs = other_compilation_outputs,
         )
 
-        linking_context, _ = swift_common.create_linking_context_from_compilation_outputs(
+        (linking_context, _), developer_paths_linkopts = swift_common.create_linking_context_from_compilation_outputs(
             actions = ctx.actions,
             alwayslink = True,
+            apple_fragment = ctx.fragments.apple,
             compilation_outputs = cc_compilation_outputs,
             feature_configuration = feature_configuration,
+            is_test = is_test,
             label = ctx.label,
             linking_contexts = [
                 dep[CcInfo].linking_context
@@ -225,6 +227,7 @@ def _swift_linking_rule_impl(
             ],
             module_context = module_context,
             swift_toolchain = swift_toolchain,
+            xcode_config = ctx.attr._xcode_config,
         )
         additional_linking_contexts.append(linking_context)
     else:
@@ -265,7 +268,7 @@ def _swift_linking_rule_impl(
         owner = ctx.label,
         stamp = ctx.attr.stamp,
         swift_toolchain = swift_toolchain,
-        user_link_flags = user_link_flags,
+        user_link_flags = developer_paths_linkopts + user_link_flags,
     )
 
     providers = [OutputGroupInfo(**output_groups)]
@@ -345,6 +348,7 @@ def _swift_test_impl(ctx):
     # If we need to run the test in an .xctest bundle, the binary must have
     # Mach-O type `MH_BUNDLE` instead of `MH_EXECUTE`.
     linkopts = ["-Wl,-bundle"] if is_bundled else []
+
     xctest_bundle_binary = "{0}.xctest/Contents/MacOS/{0}".format(ctx.label.name)
     binary_path = xctest_bundle_binary if is_bundled else ctx.label.name
 
