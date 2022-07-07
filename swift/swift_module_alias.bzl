@@ -58,7 +58,7 @@ def _swift_module_alias_impl(ctx):
 
     swift_infos = get_providers(deps, SwiftInfo)
 
-    module_context, compilation_outputs, supplemental_outputs = swift_common.compile(
+    compile_result = swift_common.compile(
         actions = ctx.actions,
         cc_infos = get_providers(ctx.attr.deps, CcInfo),
         copts = ["-parse-as-library"],
@@ -73,6 +73,10 @@ def _swift_module_alias_impl(ctx):
         target_name = ctx.label.name,
         workspace_name = ctx.workspace_name,
     )
+
+    module_context = compile_result.module_context
+    compilation_outputs = compile_result.compilation_outputs
+    supplemental_outputs = compile_result.supplemental_outputs
 
     linking_context, linking_output = (
         swift_common.create_linking_context_from_compilation_outputs(
@@ -102,9 +106,9 @@ def _swift_module_alias_impl(ctx):
                 linking_output.library_to_link.static_library,
             ])),
         ),
-        OutputGroupInfo(**supplemental_compilation_output_groups(
-            supplemental_outputs,
-        )),
+        OutputGroupInfo(
+            **supplemental_compilation_output_groups(supplemental_outputs)
+        ),
         coverage_common.instrumented_files_info(
             ctx,
             dependency_attributes = ["deps"],

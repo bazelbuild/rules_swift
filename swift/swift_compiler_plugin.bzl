@@ -70,7 +70,7 @@ def _swift_compiler_plugin_impl(ctx):
         module_name = derive_swift_module_name(ctx.label)
     entry_point_function_name = "{}_main".format(module_name)
 
-    module_context, cc_compilation_outputs, supplemental_outputs = swift_common.compile(
+    compile_result = swift_common.compile(
         actions = ctx.actions,
         additional_inputs = ctx.files.swiftc_inputs,
         cc_infos = get_providers(deps, CcInfo),
@@ -103,9 +103,9 @@ def _swift_compiler_plugin_impl(ctx):
         target_name = ctx.label.name,
         workspace_name = ctx.workspace_name,
     )
-    output_groups = supplemental_compilation_output_groups(
-        supplemental_outputs,
-    )
+    module_context = compile_result.module_context
+    compilation_outputs = compile_result.compilation_outputs
+    supplemental_outputs = compile_result.supplemental_outputs
 
     cc_feature_configuration = swift_common.cc_feature_configuration(
         feature_configuration = feature_configuration,
@@ -116,7 +116,7 @@ def _swift_compiler_plugin_impl(ctx):
         additional_inputs = ctx.files.swiftc_inputs,
         additional_linking_contexts = [malloc_linking_context(ctx)],
         cc_feature_configuration = cc_feature_configuration,
-        compilation_outputs = cc_compilation_outputs,
+        compilation_outputs = compilation_outputs,
         deps = deps,
         name = ctx.label.name,
         output_type = "executable",
@@ -141,7 +141,7 @@ def _swift_compiler_plugin_impl(ctx):
             actions = ctx.actions,
             additional_inputs = ctx.files.swiftc_inputs,
             alwayslink = True,
-            compilation_outputs = cc_compilation_outputs,
+            compilation_outputs = compilation_outputs,
             feature_configuration = feature_configuration,
             label = ctx.label,
             include_dev_srch_paths = ctx.attr.testonly,
@@ -166,7 +166,9 @@ def _swift_compiler_plugin_impl(ctx):
                 files = ctx.files.data,
             ),
         ),
-        OutputGroupInfo(**output_groups),
+        OutputGroupInfo(
+            **supplemental_compilation_output_groups(supplemental_outputs)
+        ),
         SwiftCompilerPluginInfo(
             cc_info = CcInfo(
                 compilation_context = module_context.clang.compilation_context,
