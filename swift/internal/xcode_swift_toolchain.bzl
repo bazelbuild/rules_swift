@@ -81,23 +81,6 @@ def _bazel_apple_platform(target_triple):
         target_triple.environment,
     )]
 
-def _swift_developer_lib_dir(platform_framework_dir):
-    """Returns the directory containing extra Swift developer libraries.
-
-    Args:
-        platform_framework_dir: The developer platform framework directory for
-            the current platform.
-
-    Returns:
-        The directory containing extra Swift-specific development libraries and
-        swiftmodules.
-    """
-    return paths.join(
-        paths.dirname(paths.dirname(platform_framework_dir)),
-        "usr",
-        "lib",
-    )
-
 def _command_line_objc_copts(compilation_mode, objc_fragment):
     """Returns copts that should be passed to `clang` from the `objc` fragment.
 
@@ -146,8 +129,7 @@ def _command_line_objc_copts(compilation_mode, objc_fragment):
 def _swift_linkopts_providers(
         apple_toolchain,
         target_triple,
-        toolchain_label,
-        xcode_config):
+        toolchain_label):
     """Returns providers containing flags that should be passed to the linker.
 
     The providers returned by this function will be used as implicit
@@ -489,7 +471,6 @@ def _xcode_swift_toolchain_impl(ctx):
         apple_toolchain = apple_toolchain,
         target_triple = target_triple,
         toolchain_label = ctx.label,
-        xcode_config = xcode_config,
     )
 
     # `--define=SWIFT_USE_TOOLCHAIN_ROOT=<path>` is a rapid development feature
