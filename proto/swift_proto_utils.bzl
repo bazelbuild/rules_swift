@@ -267,7 +267,7 @@ def compile_swift_protos_for_target(
 
     # Compile the generated Swift source files as a module:
     include_dev_srch_paths = include_developer_search_paths(attr)
-    module_context, cc_compilation_outputs, supplemental_outputs = swift_common.compile(
+    compile_result = swift_common.compile(
         actions = ctx.actions,
         cc_infos = get_providers(compiler_deps, CcInfo),
         copts = ["-parse-as-library"],
@@ -283,11 +283,15 @@ def compile_swift_protos_for_target(
         workspace_name = ctx.workspace_name,
     )
 
+    module_context = compile_result.module_context
+    compilation_outputs = compile_result.compilation_outputs
+    supplemental_outputs = compile_result.supplemental_outputs
+
     # Create the linking context from the compilation outputs:
     linking_context, linking_output = (
         swift_common.create_linking_context_from_compilation_outputs(
             actions = ctx.actions,
-            compilation_outputs = cc_compilation_outputs,
+            compilation_outputs = compilation_outputs,
             feature_configuration = feature_configuration,
             include_dev_srch_paths = include_dev_srch_paths,
             label = target_label,

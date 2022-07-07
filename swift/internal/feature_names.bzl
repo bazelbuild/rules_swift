@@ -65,6 +65,16 @@ SWIFT_FEATURE_FILE_PREFIX_MAP = "swift.file_prefix_map"
 # graph.
 SWIFT_FEATURE_EMIT_C_MODULE = "swift.emit_c_module"
 
+# If enabled, the compilation action for a target will produce an index store.
+# https://docs.google.com/document/d/1cH2sTpgSnJZCkZtJl1aY-rzy4uGPcrI-6RrUpdATO2Q/
+SWIFT_FEATURE_INDEX_WHILE_BUILDING = "swift.index_while_building"
+
+# If enabled the compilation action will not produce indexes for system modules.
+SWIFT_FEATURE_DISABLE_SYSTEM_INDEX = "swift.disable_system_index"
+
+# Index while building - using a global index store cache
+SWIFT_FEATURE_USE_GLOBAL_INDEX_STORE = "swift.use_global_index_store"
+
 # If enabled, when compiling an explicit C or Objectve-C module, every header
 # included by the module being compiled must belong to one of the modules listed
 # in its dependencies. This is ignored for system modules.
@@ -102,16 +112,6 @@ SWIFT_FEATURE_FULL_DEBUG_INFO = "swift.full_debug_info"
 
 # Use CodeView debug information, which enables generation of PDBs for debugging.
 SWIFT_FEATURE_CODEVIEW_DEBUG_INFO = "swift.codeview_debug_info"
-
-# If enabled, the compilation action for a target will produce an index store.
-# https://docs.google.com/document/d/1cH2sTpgSnJZCkZtJl1aY-rzy4uGPcrI-6RrUpdATO2Q/
-SWIFT_FEATURE_INDEX_WHILE_BUILDING = "swift.index_while_building"
-
-# If enabled the compilation action will not produce indexes for system modules.
-SWIFT_FEATURE_DISABLE_SYSTEM_INDEX = "swift.disable_system_index"
-
-# Index while building - using a global index store cache
-SWIFT_FEATURE_USE_GLOBAL_INDEX_STORE = "swift.use_global_index_store"
 
 # If enabled, compilation actions and module map generation will assume that the
 # header paths in module maps are relative to the current working directory

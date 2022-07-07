@@ -1736,8 +1736,7 @@ def _package_name_configurator(prerequisites, args):
 
 def _index_while_building_configurator(prerequisites, args):
     """Adds flags for indexstore generation to the command line."""
-    if not _is_index_store_path_overridden(prerequisites.user_compile_flags):
-        args.add("-index-store-path", prerequisites.indexstore_directory.path)
+    args.add("-index-store-path", prerequisites.indexstore_directory.path)
 
 def _global_index_store_configurator(prerequisites, args):
     """Adds flags for index-store generation to the command line."""
@@ -1800,24 +1799,6 @@ def _is_wmo_manually_requested(user_compile_flags):
     """
     for copt in user_compile_flags:
         if copt in _WMO_FLAGS:
-            return True
-    return False
-
-def _is_index_store_path_overridden(user_compile_flags):
-    """Returns `True` if `-index-store-path` is in the given list of compiler flags.
-
-    Index while building is disabled when the copts include a custom
-    `-index-store-path`.
-
-    Args:
-        user_compile_flags: A list of compiler flags to scan for index store
-            usage.
-
-    Returns:
-        True if `-index-store-path` is set in the given list of flags.
-    """
-    for opt in user_compile_flags:
-        if opt == "-index-store-path":
             return True
     return False
 

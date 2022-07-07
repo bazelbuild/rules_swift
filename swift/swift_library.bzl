@@ -183,7 +183,7 @@ def _swift_library_impl(ctx):
 
     include_dev_srch_paths = include_developer_search_paths(ctx.attr)
 
-    module_context, cc_compilation_outputs, supplemental_outputs = swift_common.compile(
+    compile_result = swift_common.compile(
         actions = ctx.actions,
         additional_inputs = additional_inputs,
         cc_infos = get_providers(ctx.attr.deps, CcInfo),
@@ -204,12 +204,16 @@ def _swift_library_impl(ctx):
         workspace_name = ctx.workspace_name,
     )
 
+    module_context = compile_result.module_context
+    compilation_outputs = compile_result.compilation_outputs
+    supplemental_outputs = compile_result.supplemental_outputs
+
     linking_context, linking_output = (
         swift_common.create_linking_context_from_compilation_outputs(
             actions = ctx.actions,
             additional_inputs = additional_inputs,
             alwayslink = ctx.attr.alwayslink,
-            compilation_outputs = cc_compilation_outputs,
+            compilation_outputs = compilation_outputs,
             feature_configuration = feature_configuration,
             include_dev_srch_paths = include_dev_srch_paths,
             label = ctx.label,
@@ -255,9 +259,6 @@ def _swift_library_impl(ctx):
                 files = ctx.files.data,
             ),
         ),
-        OutputGroupInfo(**supplemental_compilation_output_groups(
-            supplemental_outputs,
-        )),
         CcInfo(
             compilation_context = module_context.clang.compilation_context,
             linking_context = linking_context,
@@ -273,6 +274,9 @@ def _swift_library_impl(ctx):
             # Note that private_deps are explicitly omitted here; they should
             # not propagate.
             swift_infos = swift_infos,
+        ),
+        OutputGroupInfo(
+            **supplemental_compilation_output_groups(supplemental_outputs)
         ),
     ]
 

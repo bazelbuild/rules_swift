@@ -41,8 +41,8 @@ def supplemental_compilation_output_groups(*supplemental_outputs):
             ast_files.extend(outputs.ast_files)
         if outputs.const_values_files:
             const_values_files.extend(outputs.const_values_files)
-        if outputs.indexstore:
-            indexstore_files.append(outputs.indexstore)
+        if outputs.indexstore_directory:
+            indexstore_files.append(outputs.indexstore_directory)
         if outputs.macro_expansion_directory:
             macro_expansions_files.append(outputs.macro_expansion_directory)
 

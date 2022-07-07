@@ -69,9 +69,9 @@ def _swift_binary_impl(ctx):
     )
 
     srcs = ctx.files.srcs
+    output_groups = {}
     module_contexts = []
     additional_linking_contexts = []
-    all_supplemental_outputs = []
 
     # If the binary has sources, compile those first and collect the outputs to
     # be passed to the linker.
@@ -82,7 +82,7 @@ def _swift_binary_impl(ctx):
 
         include_dev_srch_paths = include_developer_search_paths(ctx.attr)
 
-        module_context, cc_compilation_outputs, supplemental_outputs = swift_common.compile(
+        compile_result = swift_common.compile(
             actions = ctx.actions,
             additional_inputs = ctx.files.swiftc_inputs,
             cc_infos = get_providers(ctx.attr.deps, CcInfo),
@@ -104,8 +104,13 @@ def _swift_binary_impl(ctx):
             target_name = ctx.label.name,
             workspace_name = ctx.workspace_name,
         )
+        module_context = compile_result.module_context
         module_contexts.append(module_context)
-        all_supplemental_outputs.append(supplemental_outputs)
+        compilation_outputs = compile_result.compilation_outputs
+        supplemental_outputs = compile_result.supplemental_outputs
+        output_groups = supplemental_compilation_output_groups(
+            supplemental_outputs,
+        )
 
         # Unlike `upstream`, we create a linking_context in order to support
         # `autolink-extract`. See `a1395155c6a27d76aab5e1a93455259a0ac10b2f` and
@@ -113,7 +118,7 @@ def _swift_binary_impl(ctx):
         linking_context, _ = swift_common.create_linking_context_from_compilation_outputs(
             actions = ctx.actions,
             alwayslink = True,
-            compilation_outputs = cc_compilation_outputs,
+            compilation_outputs = compilation_outputs,
             feature_configuration = feature_configuration,
             include_dev_srch_paths = include_dev_srch_paths,
             label = ctx.label,
@@ -126,8 +131,6 @@ def _swift_binary_impl(ctx):
             swift_toolchain = swift_toolchain,
         )
         additional_linking_contexts.append(linking_context)
-    else:
-        cc_compilation_outputs = cc_common.create_compilation_outputs()
 
     additional_linking_contexts.append(malloc_linking_context(ctx))
 
@@ -172,11 +175,7 @@ def _swift_binary_impl(ctx):
                 files = ctx.files.data,
             ),
         ),
-        OutputGroupInfo(
-            **supplemental_compilation_output_groups(
-                *all_supplemental_outputs
-            )
-        ),
+        OutputGroupInfo(**output_groups),
         swift_common.create_swift_info(
             modules = [
                 swift_common.create_module(
