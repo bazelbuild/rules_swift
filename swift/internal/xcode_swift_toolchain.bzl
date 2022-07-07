@@ -141,7 +141,10 @@ def _command_line_objc_copts(compilation_mode, cpp_fragment, objc_fragment):
                 "-Wno-extra",
             ]
 
-    clang_copts = cpp_fragment.objccopts + legacy_copts
+    if getattr(cpp_fragment, "objccopts", None) != None:
+        clang_copts = getattr(cpp_fragment, "objccopts") + legacy_copts
+    else:
+        clang_copts = getattr(objc_fragment, "copts", []) + legacy_copts
     return [copt for copt in clang_copts if copt != "-g"]
 
 def _platform_developer_framework_dir(
