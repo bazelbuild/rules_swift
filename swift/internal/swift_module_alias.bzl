@@ -69,11 +69,13 @@ def _swift_module_alias_impl(ctx):
         xcode_config = ctx.attr._xcode_config,
     )
 
-    linking_context, linking_output = (
+    (linking_context, linking_output), developer_paths_linkopts = (
         swift_common.create_linking_context_from_compilation_outputs(
             actions = ctx.actions,
+            apple_fragment = ctx.fragments.apple,
             compilation_outputs = compilation_outputs,
             feature_configuration = feature_configuration,
+            is_test = ctx.attr.testonly,
             label = ctx.label,
             linking_contexts = [
                 dep[CcInfo].linking_context
@@ -82,6 +84,7 @@ def _swift_module_alias_impl(ctx):
             ],
             module_context = module_context,
             swift_toolchain = swift_toolchain,
+            xcode_config = ctx.attr._xcode_config,
         )
     )
 
@@ -121,12 +124,10 @@ def _swift_module_alias_impl(ctx):
             swift_toolchain.implicit_deps_providers.objc_infos
         ),
         deps = deps,
-        is_test = ctx.attr.testonly,
-        apple_fragment = ctx.fragments.apple,
         feature_configuration = feature_configuration,
         module_context = module_context,
         libraries_to_link = [linking_output.library_to_link],
-        xcode_config = ctx.attr._xcode_config,
+        user_link_flags = developer_paths_linkopts,
     ))
 
     return providers
