@@ -27,7 +27,6 @@ x_defaults:
       - "-//examples/xplatform/grpc/..." # TODO: Fix grpc on Linux
     test_flags: *linux_flags
     test_targets:
-      - "//doc/..."
       - "//examples/..."
       - "//test/..."
       - "-//examples/apple/..."
@@ -91,5 +90,12 @@ tasks:
     name: "Last Green Bazel"
     bazel: last_green
     <<: *windows_common
+
+  doc_tests:
+    name: "Doc tests"
+    bazel: last_green
+    platform: ubuntu2004
+    test_targets:
+    - "doc/..."
 
 buildifier: latest
