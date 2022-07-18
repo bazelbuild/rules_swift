@@ -28,6 +28,7 @@ load(
     ":feature_names.bzl",
     "SWIFT_FEATURE_EMIT_C_MODULE",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
+    "SWIFT_FEATURE_HEADERS_ALWAYS_ACTION_INPUTS",
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
     "SWIFT_FEATURE_NO_GENERATED_MODULE_MAP",
     "SWIFT_FEATURE_OPT",
@@ -301,6 +302,10 @@ def compile(
 
     prerequisites = struct(
         additional_inputs = additional_inputs,
+        always_include_headers = is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_HEADERS_ALWAYS_ACTION_INPUTS,
+        ),
         bin_dir = feature_configuration._bin_dir,
         cc_compilation_context = merged_compilation_context,
         defines = sets.to_list(defines_set),

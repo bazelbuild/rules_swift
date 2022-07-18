@@ -30,6 +30,10 @@ SWIFT_FEATURE_DBG = "swift.dbg"
 SWIFT_FEATURE_FASTBUILD = "swift.fastbuild"
 SWIFT_FEATURE_OPT = "swift.opt"
 
+# If True, transitive C headers will be always be passed as inputs to Swift
+# compilation actions, even when building with explicit modules.
+SWIFT_FEATURE_HEADERS_ALWAYS_ACTION_INPUTS = "swift.headers_always_action_inputs"
+
 # These features correspond to the current Bitcode mode as specified by the
 # `apple` configuration fragment when targeting Apple platforms. At most one of
 # these will be enabled by the toolchain.

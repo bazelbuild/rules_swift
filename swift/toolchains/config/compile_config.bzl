@@ -810,12 +810,16 @@ def _dependencies_clang_defines_configurator(prerequisites, args):
     args.add_all(all_clang_defines, before_each = "-Xcc", format_each = "-D%s")
 
 def _collect_clang_module_inputs(
+        always_include_headers,
         explicit_module_compilation_context,
         modules,
         prefer_precompiled_modules):
     """Collects Clang module-related inputs to pass to an action.
 
     Args:
+        always_include_headers: If True, pass the transitive headers as inputs
+            to the compilation action, even if doing an explicit module
+            compilation.
         explicit_module_compilation_context: The `CcCompilationContext` of the
             target being compiled, if the inputs are being collected for an
             explicit module compilation action. This parameter should be `None`
@@ -864,12 +868,16 @@ def _collect_clang_module_inputs(
             direct_inputs.append(module_map)
 
         precompiled_module = clang_module.precompiled_module
+        use_precompiled_module = (
+            prefer_precompiled_modules and precompiled_module
+        )
 
-        if prefer_precompiled_modules and precompiled_module:
+        if use_precompiled_module:
             # For builds preferring explicit modules, use it if we have it
             # and don't include any headers as inputs.
             direct_inputs.append(precompiled_module)
-        else:
+
+        if not use_precompiled_module or always_include_headers:
             # If we don't have an explicit module (or we're not using it), we
             # need the transitive headers from the compilation context
             # associated with the module. This will likely overestimate the
@@ -967,6 +975,11 @@ def _dependencies_clang_modulemaps_configurator(prerequisites, args):
         compilation_context = prerequisites.cc_compilation_context
 
     return _collect_clang_module_inputs(
+        always_include_headers = getattr(
+            prerequisites,
+            "always_include_headers",
+            False,
+        ),
         explicit_module_compilation_context = compilation_context,
         modules = modules,
         prefer_precompiled_modules = False,
@@ -997,6 +1010,11 @@ def _dependencies_clang_modules_configurator(prerequisites, args):
         compilation_context = prerequisites.cc_compilation_context
 
     return _collect_clang_module_inputs(
+        always_include_headers = getattr(
+            prerequisites,
+            "always_include_headers",
+            False,
+        ),
         explicit_module_compilation_context = compilation_context,
         modules = modules,
         prefer_precompiled_modules = True,
