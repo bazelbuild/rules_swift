@@ -38,6 +38,7 @@ load(
     "SWIFT_FEATURE_EMIT_SWIFTSOURCEINFO",
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_FULL_LTO",
+    "SWIFT_FEATURE_HEADERS_ALWAYS_ACTION_INPUTS",
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
     "SWIFT_FEATURE_NO_GENERATED_MODULE_MAP",
     "SWIFT_FEATURE_OPT",
@@ -662,6 +663,10 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
 
     prerequisites = struct(
         additional_inputs = additional_inputs,
+        always_include_headers = is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_HEADERS_ALWAYS_ACTION_INPUTS,
+        ),
         bin_dir = feature_configuration._bin_dir,
         cc_compilation_context = merged_cc_info.compilation_context,
         const_protocols_to_gather_file = const_protocols_to_gather_file,
