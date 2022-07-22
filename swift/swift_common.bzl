@@ -32,6 +32,7 @@ load(
 load(
     "@build_bazel_rules_swift//swift/internal:compiling.bzl",
     "compile",
+    "compile_module_interface",
     "derive_module_name",
     "precompile_clang_module",
 )
@@ -71,6 +72,7 @@ swift_common = struct(
     cc_feature_configuration = get_cc_feature_configuration,
     compilation_attrs = swift_compilation_attrs,
     compile = compile,
+    compile_module_interface = compile_module_interface,
     configure_features = configure_features,
     create_clang_module = create_clang_module,
     create_linking_context_from_compilation_outputs = create_linking_context_from_compilation_outputs,

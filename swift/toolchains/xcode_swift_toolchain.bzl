@@ -29,6 +29,7 @@ load(
 load(
     "@build_bazel_rules_swift//swift/internal:action_names.bzl",
     "SWIFT_ACTION_COMPILE",
+    "SWIFT_ACTION_COMPILE_MODULE_INTERFACE",
     "SWIFT_ACTION_PRECOMPILE_C_MODULE",
     "SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT",
 )
@@ -80,6 +81,10 @@ load(
 load(
     "@build_bazel_rules_swift//swift/toolchains/config:compile_config.bzl",
     "compile_action_configs",
+)
+load(
+    "@build_bazel_rules_swift//swift/toolchains/config:compile_module_interface_config.bzl",
+    "compile_module_interface_action_configs",
 )
 load(
     "@build_bazel_rules_swift//swift/toolchains/config:symbol_graph_config.bzl",
@@ -416,6 +421,7 @@ def _all_action_configs(
         ActionConfigInfo(
             actions = [
                 SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
                 SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
             ],
@@ -447,6 +453,7 @@ def _all_action_configs(
             ActionConfigInfo(
                 actions = [
                     SWIFT_ACTION_COMPILE,
+                    SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                     SWIFT_ACTION_PRECOMPILE_C_MODULE,
                     SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
                 ],
@@ -466,6 +473,7 @@ def _all_action_configs(
         ActionConfigInfo(
             actions = [
                 SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
             ],
             configurators = [add_arg("-embed-bitcode")],
@@ -474,6 +482,7 @@ def _all_action_configs(
         ActionConfigInfo(
             actions = [
                 SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
             ],
             configurators = [add_arg("-embed-bitcode-marker")],
@@ -500,6 +509,28 @@ def _all_action_configs(
             ),
         )
 
+    # For `.swiftinterface` compilation actions, always pass the resource
+    # directory along with the target SDK version. These two flags together let
+    # the frontend infer the path to the prebuilt `.swiftmodule`s inside the
+    # toolchain. (This is necessary because we are invoking the frontend
+    # directly, so the driver doesn't do this for us as it normally would.)
+    action_configs.append(
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE_MODULE_INTERFACE],
+            configurators = [
+                _make_resource_directory_configurator(
+                    apple_toolchain.developer_dir(),
+                ),
+                add_arg(
+                    "-target-sdk-version",
+                    str(xcode_config.sdk_version_for_platform(
+                        _bazel_apple_platform(target_triple),
+                    )),
+                ),
+            ],
+        ),
+    )
+
     action_configs.extend(all_actions_action_configs())
     action_configs.extend(compile_action_configs(
         additional_objc_copts = additional_objc_copts,
@@ -507,6 +538,7 @@ def _all_action_configs(
         generated_header_rewriter = generated_header_rewriter.executable,
     ))
     action_configs.extend(symbol_graph_action_configs())
+    action_configs.extend(compile_module_interface_action_configs())
 
     return action_configs
 
@@ -572,6 +604,17 @@ def _all_tool_configs(
             tool_inputs = generated_header_rewriter.inputs,
             use_param_file = True,
             worker_mode = "persistent",
+        ),
+        SWIFT_ACTION_COMPILE_MODULE_INTERFACE: ToolConfigInfo(
+            driver_config = _driver_config(mode = "swiftc"),
+            args = ["-frontend"],
+            env = env,
+            execution_requirements = execution_requirements,
+            resource_set = _swift_compile_resource_set,
+            tool_input_manifests = generated_header_rewriter.input_manifests,
+            tool_inputs = generated_header_rewriter.inputs,
+            use_param_file = True,
+            worker_mode = "wrap",
         ),
     }
 

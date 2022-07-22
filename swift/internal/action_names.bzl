@@ -18,6 +18,9 @@
 # object files.
 SWIFT_ACTION_COMPILE = "SwiftCompile"
 
+# Compiles a `.swiftinterface` file into a `.swiftmodule` file.
+SWIFT_ACTION_COMPILE_MODULE_INTERFACE = "SwiftCompileModuleInterface"
+
 # Wraps a `.swiftmodule` in a `.o` file on ELF platforms so that it can be
 # linked into a binary for debugging.
 SWIFT_ACTION_MODULEWRAP = "SwiftModuleWrap"
@@ -35,6 +38,7 @@ def all_action_names():
     """A convenience function to return all actions defined by this rule set."""
     return (
         SWIFT_ACTION_COMPILE,
+        SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
         SWIFT_ACTION_MODULEWRAP,
         SWIFT_ACTION_PRECOMPILE_C_MODULE,
         SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,

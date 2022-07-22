@@ -27,6 +27,7 @@ load(
 load(
     "@build_bazel_rules_swift//swift/internal:utils.bzl",
     "compact",
+    "get_compilation_contexts",
     "get_providers",
 )
 load(":providers.bzl", "SwiftInfo")
@@ -36,9 +37,14 @@ def _swift_import_impl(ctx):
     archives = ctx.files.archives
     deps = ctx.attr.deps
     swiftdoc = ctx.file.swiftdoc
+    swiftinterface = ctx.file.swiftinterface
     swiftmodule = ctx.file.swiftmodule
 
-    swift_toolchain = swift_common.get_toolchain(ctx)
+    if not (swiftinterface or swiftmodule):
+        fail("One or both of 'swiftinterface' and 'swiftmodule' must be " +
+             "specified.")
+
+    swift_toolchain = swift_common.get_toolchain(ctx, attr = "toolchain")
     feature_configuration = swift_common.configure_features(
         ctx = ctx,
         swift_toolchain = swift_toolchain,
@@ -69,21 +75,38 @@ def _swift_import_impl(ctx):
         cc_infos = [dep[CcInfo] for dep in deps if CcInfo in dep],
     )
 
-    module_context = swift_common.create_module(
-        name = ctx.attr.module_name,
-        clang = swift_common.create_clang_module(
-            compilation_context = cc_info.compilation_context,
-            module_map = None,
-        ),
-        swift = swift_common.create_swift_module(
-            swiftdoc = swiftdoc,
-            swiftmodule = swiftmodule,
-        ),
-    )
+    swift_infos = get_providers(deps, SwiftInfo)
+
+    if swiftinterface and not swiftmodule:
+        module_context = swift_common.compile_module_interface(
+            actions = ctx.actions,
+            compilation_contexts = get_compilation_contexts(ctx.attr.deps),
+            feature_configuration = feature_configuration,
+            module_name = ctx.attr.module_name,
+            swiftinterface_file = swiftinterface,
+            swift_infos = swift_infos,
+            swift_toolchain = swift_toolchain,
+        )
+        swift_outputs = [
+            module_context.swift.swiftmodule,
+        ] + compact([module_context.swift.swiftdoc])
+    else:
+        module_context = swift_common.create_module(
+            name = ctx.attr.module_name,
+            clang = swift_common.create_clang_module(
+                compilation_context = cc_info.compilation_context,
+                module_map = None,
+            ),
+            swift = swift_common.create_swift_module(
+                swiftdoc = swiftdoc,
+                swiftmodule = swiftmodule,
+            ),
+        )
+        swift_outputs = [swiftmodule] + compact([swiftdoc])
 
     providers = [
         DefaultInfo(
-            files = depset(archives + [swiftmodule] + compact([swiftdoc])),
+            files = depset(archives + swift_outputs),
             runfiles = ctx.runfiles(
                 collect_data = True,
                 collect_default = True,
@@ -105,7 +128,7 @@ def _swift_import_impl(ctx):
         ),
         swift_common.create_swift_info(
             modules = [module_context],
-            swift_infos = get_providers(deps, SwiftInfo),
+            swift_infos = swift_infos,
         ),
     ]
 
@@ -117,12 +140,12 @@ swift_import = rule(
         swift_toolchain_attrs(),
         {
             "archives": attr.label_list(
-                allow_empty = False,
+                allow_empty = True,
                 allow_files = ["a"],
                 doc = """\
 The list of `.a` files provided to Swift targets that depend on this target.
 """,
-                mandatory = True,
+                mandatory = False,
             ),
             "module_name": attr.string(
                 doc = "The name of the module represented by this target.",
@@ -135,17 +158,24 @@ The `.swiftdoc` file provided to Swift targets that depend on this target.
 """,
                 mandatory = False,
             ),
+            "swiftinterface": attr.label(
+                allow_single_file = ["swiftinterface"],
+                doc = """\
+The `.swiftinterface` file that defines the module interface for this target.
+""",
+                mandatory = False,
+            ),
             "swiftmodule": attr.label(
                 allow_single_file = ["swiftmodule"],
                 doc = """\
 The `.swiftmodule` file provided to Swift targets that depend on this target.
 """,
-                mandatory = True,
+                mandatory = False,
             ),
         },
     ),
     doc = """\
-Allows for the use of precompiled Swift modules as dependencies in other
+Allows for the use of Swift textual module interfaces and/or precompiled Swift modules as dependencies in other
 `swift_library` and `swift_binary` targets.
 """,
     fragments = ["cpp"],

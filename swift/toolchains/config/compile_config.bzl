@@ -19,6 +19,7 @@ load("@bazel_skylib//lib:types.bzl", "types")
 load(
     "@build_bazel_rules_swift//swift/internal:action_names.bzl",
     "SWIFT_ACTION_COMPILE",
+    "SWIFT_ACTION_COMPILE_MODULE_INTERFACE",
     "SWIFT_ACTION_PRECOMPILE_C_MODULE",
     "SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT",
 )
@@ -155,7 +156,9 @@ def compile_action_configs(
 
         # Configure library evolution and the path to the .swiftinterface file.
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = [
+                SWIFT_ACTION_COMPILE,
+            ],
             configurators = [add_arg("-enable-library-evolution")],
             features = [
                 SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION,
@@ -219,18 +222,27 @@ def compile_action_configs(
         # `-O` unless the `swift.opt_uses_osize` feature is enabled, then use
         # `-Osize`.
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = [
+                SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+            ],
             configurators = [add_arg("-Onone")],
             features = [[SWIFT_FEATURE_DBG], [SWIFT_FEATURE_FASTBUILD]],
         ),
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = [
+                SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+            ],
             configurators = [add_arg("-O")],
             features = [SWIFT_FEATURE_OPT],
             not_features = [SWIFT_FEATURE_OPT_USES_OSIZE],
         ),
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = [
+                SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+            ],
             configurators = [add_arg("-Osize")],
             features = [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_OSIZE],
         ),
@@ -246,7 +258,9 @@ def compile_action_configs(
         # Enable or disable serialization of debugging options into
         # swiftmodules.
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = [
+                SWIFT_ACTION_COMPILE,
+            ],
             configurators = [
                 add_arg("-Xfrontend", "-no-serialize-debugging-options"),
             ],
@@ -254,7 +268,9 @@ def compile_action_configs(
             not_features = [SWIFT_FEATURE_OPT],
         ),
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = [
+                SWIFT_ACTION_COMPILE,
+            ],
             configurators = [
                 add_arg("-Xfrontend", "-serialize-debugging-options"),
             ],
@@ -353,6 +369,7 @@ def compile_action_configs(
         ActionConfigInfo(
             actions = [
                 SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
                 SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
             ],
@@ -366,13 +383,19 @@ def compile_action_configs(
         # Configure how implicit modules are handled--either using the module
         # cache, or disabled completely when using explicit modules.
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = [
+                SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+            ],
             configurators = [_global_module_cache_configurator],
             features = [SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE],
             not_features = [SWIFT_FEATURE_USE_C_MODULES],
         ),
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = [
+                SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+            ],
             configurators = [
                 add_arg("-Xwrapped-swift=-ephemeral-module-cache"),
             ],
@@ -387,6 +410,7 @@ def compile_action_configs(
         ActionConfigInfo(
             actions = [
                 SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
                 SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
             ],
@@ -397,6 +421,7 @@ def compile_action_configs(
         ActionConfigInfo(
             actions = [
                 SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
                 SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
             ],
@@ -460,7 +485,28 @@ def compile_action_configs(
             features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
         ),
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = [SWIFT_ACTION_COMPILE_MODULE_INTERFACE],
+            configurators = [
+                lambda prerequisites, args: _explicit_swift_module_map_configurator(
+                    prerequisites,
+                    args,
+                    is_frontend = True,
+                ),
+            ],
+            features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
+        ),
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE_MODULE_INTERFACE],
+            configurators = [
+                add_arg("-disable-implicit-swift-modules"),
+            ],
+            features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
+        ),
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+            ],
             configurators = [_dependencies_swiftmodules_configurator],
             not_features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
         ),
@@ -478,6 +524,7 @@ def compile_action_configs(
         ActionConfigInfo(
             actions = [
                 SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
             ],
             configurators = [
@@ -506,6 +553,7 @@ def compile_action_configs(
         ActionConfigInfo(
             actions = [
                 SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
                 SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
             ],
@@ -520,6 +568,7 @@ def compile_action_configs(
         ActionConfigInfo(
             actions = [
                 SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
                 SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
             ],
@@ -529,6 +578,7 @@ def compile_action_configs(
         ActionConfigInfo(
             actions = [
                 SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
                 SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
             ],
@@ -547,6 +597,12 @@ def compile_action_configs(
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
             ],
             configurators = [add_arg("-Xfrontend", "-color-diagnostics")],
+        ),
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE_MODULE_INTERFACE],
+            configurators = [
+                add_arg("-color-diagnostics"),
+            ],
         ),
 
         # Request batch mode if the compiler supports it. We only do this if the
@@ -631,7 +687,10 @@ def compile_action_configs(
     # `copts` attribute.
     action_configs.append(
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = [
+                SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+            ],
             configurators = [_user_compile_flags_configurator],
         ),
     )
@@ -640,6 +699,7 @@ def compile_action_configs(
             ActionConfigInfo(
                 actions = [
                     SWIFT_ACTION_COMPILE,
+                    SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                     SWIFT_ACTION_PRECOMPILE_C_MODULE,
                 ],
                 configurators = [
@@ -656,7 +716,10 @@ def compile_action_configs(
                 # TODO(allevato): Determine if there are any uses of
                 # `-Xcc`-prefixed flags that need to be added to explicit module
                 # actions, or if we should advise against/forbid that.
-                actions = [SWIFT_ACTION_COMPILE],
+                actions = [
+                    SWIFT_ACTION_COMPILE,
+                    SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+                ],
                 configurators = [
                     lambda _, args: args.add_all(additional_swiftc_copts),
                 ],
@@ -667,6 +730,7 @@ def compile_action_configs(
         ActionConfigInfo(
             actions = [
                 SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
             ],
             configurators = [_source_files_configurator],
@@ -1078,15 +1142,23 @@ def _dependencies_swiftmodules_configurator(prerequisites, args):
         inputs = prerequisites.transitive_swiftmodules,
     )
 
-def _explicit_swift_module_map_configurator(prerequisites, args):
+def _explicit_swift_module_map_configurator(prerequisites, args, is_frontend = False):
     """Adds the explicit Swift module map file to the command line."""
-    args.add_all(
-        [
+    if is_frontend:
+        # If we're calling frontend directly we don't need to prepend each
+        # argument with -Xfrontend. Doing so will crash the invocation.
+        args.add(
             "-explicit-swift-module-map-file",
             prerequisites.explicit_swift_module_map_file,
-        ],
-        before_each = "-Xfrontend",
-    )
+        )
+    else:
+        args.add_all(
+            [
+                "-explicit-swift-module-map-file",
+                prerequisites.explicit_swift_module_map_file,
+            ],
+            before_each = "-Xfrontend",
+        )
     return ConfigResultInfo(
         inputs = prerequisites.transitive_swiftmodules + [
             prerequisites.explicit_swift_module_map_file,
