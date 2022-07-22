@@ -770,6 +770,13 @@ def compile_action_configs(
             features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
         ),
         ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE_MODULE_INTERFACE],
+            configurators = [
+                add_arg("-disable-implicit-swift-modules"),
+            ],
+            features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
+        ),
+        ActionConfigInfo(
             actions = [
                 SWIFT_ACTION_COMPILE,
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
@@ -1733,6 +1740,8 @@ def _dependencies_swiftmodules_vfsoverlay_configurator(prerequisites, args, is_f
 def _explicit_swift_module_map_configurator(prerequisites, args, is_frontend = False):
     """Adds the explicit Swift module map file to the command line."""
     if is_frontend:
+        # If we're calling frontend directly we don't need to prepend each
+        # argument with -Xfrontend. Doing so will crash the invocation.
         args.add(
             "-explicit-swift-module-map-file",
             prerequisites.explicit_swift_module_map_file,
