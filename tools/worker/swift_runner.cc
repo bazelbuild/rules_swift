@@ -19,9 +19,9 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
-#include "tools/common/bazel_substitutions.h"
 #include "tools/common/file_system.h"
 #include "tools/common/process.h"
+#include "tools/common/swift_substitutions.h"
 #include "tools/common/temp_file.h"
 
 namespace bazel_rules_swift {
@@ -226,7 +226,7 @@ bool SwiftRunner::ProcessArgument(
   // ensure that our defensive quoting kicks in if an argument contains a
   // space, even if no other changes would have been made.
   std::string new_arg(arg);
-  bool changed = bazel_placeholder_substitutions_.Apply(new_arg) ||
+  bool changed = swift_placeholder_substitutions_.Apply(new_arg) ||
                  absl::StrContains(new_arg, ' ');
   consumer(new_arg);
   return changed;
