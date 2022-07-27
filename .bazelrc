@@ -8,3 +8,7 @@ build --macos_minimum_os=10.15
 
 # Make sure no warnings slip into the C++ tools we vendor
 build --features treat_warnings_as_errors
+
+# The default strategy is worker, which has sandboxing disabled by default,
+# which can hide issues with non-hermetic bugs.
+build --strategy=SwiftCompile=sandboxed

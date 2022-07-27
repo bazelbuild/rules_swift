@@ -33,6 +33,10 @@ x_defaults:
       - "-//examples/xplatform/grpc/..." # TODO: Fix grpc on Linux
   windows_common: &windows_common
     platform: windows
+    build_flags:
+      # Override 'sandboxed' strategy set in .bazelrc because it's not
+      # available on Windows
+      - "--strategy=SwiftCompile="
     build_targets:
       - "//tools/..."
 
