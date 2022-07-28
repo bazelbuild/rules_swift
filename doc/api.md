@@ -83,9 +83,9 @@ A new attribute dictionary that can be added to the attributes of a
 ## swift_common.compile
 
 <pre>
-swift_common.compile(<a href="#swift_common.compile-actions">actions</a>, <a href="#swift_common.compile-additional_inputs">additional_inputs</a>, <a href="#swift_common.compile-apple_fragment">apple_fragment</a>, <a href="#swift_common.compile-copts">copts</a>, <a href="#swift_common.compile-defines">defines</a>, <a href="#swift_common.compile-deps">deps</a>,
-                     <a href="#swift_common.compile-feature_configuration">feature_configuration</a>, <a href="#swift_common.compile-generated_header_name">generated_header_name</a>, <a href="#swift_common.compile-is_test">is_test</a>, <a href="#swift_common.compile-module_name">module_name</a>, <a href="#swift_common.compile-private_deps">private_deps</a>,
-                     <a href="#swift_common.compile-srcs">srcs</a>, <a href="#swift_common.compile-swift_toolchain">swift_toolchain</a>, <a href="#swift_common.compile-target_name">target_name</a>, <a href="#swift_common.compile-workspace_name">workspace_name</a>, <a href="#swift_common.compile-xcode_config">xcode_config</a>)
+swift_common.compile(<a href="#swift_common.compile-actions">actions</a>, <a href="#swift_common.compile-additional_inputs">additional_inputs</a>, <a href="#swift_common.compile-copts">copts</a>, <a href="#swift_common.compile-defines">defines</a>, <a href="#swift_common.compile-deps">deps</a>, <a href="#swift_common.compile-feature_configuration">feature_configuration</a>,
+                     <a href="#swift_common.compile-generated_header_name">generated_header_name</a>, <a href="#swift_common.compile-is_test">is_test</a>, <a href="#swift_common.compile-module_name">module_name</a>, <a href="#swift_common.compile-private_deps">private_deps</a>, <a href="#swift_common.compile-srcs">srcs</a>, <a href="#swift_common.compile-swift_toolchain">swift_toolchain</a>,
+                     <a href="#swift_common.compile-target_name">target_name</a>, <a href="#swift_common.compile-workspace_name">workspace_name</a>, <a href="#swift_common.compile-xcode_config">xcode_config</a>)
 </pre>
 
 Compiles a Swift module.
@@ -97,7 +97,6 @@ Compiles a Swift module.
 | :------------- | :------------- | :------------- |
 | <a id="swift_common.compile-actions"></a>actions |  The context's <code>actions</code> object.   |  none |
 | <a id="swift_common.compile-additional_inputs"></a>additional_inputs |  A list of <code>File</code>s representing additional input files that need to be passed to the Swift compile action because they are referenced by compiler flags.   |  <code>[]</code> |
-| <a id="swift_common.compile-apple_fragment"></a>apple_fragment |  The <code>apple</code> configuration fragment.   |  none |
 | <a id="swift_common.compile-copts"></a>copts |  A list of compiler flags that apply to the target being built. These flags, along with those from Bazel's Swift configuration fragment (i.e., <code>--swiftcopt</code> command line flags) are scanned to determine whether whole module optimization is being requested, which affects the nature of the output files.   |  <code>[]</code> |
 | <a id="swift_common.compile-defines"></a>defines |  Symbols that should be defined by passing <code>-D</code> to the compiler.   |  <code>[]</code> |
 | <a id="swift_common.compile-deps"></a>deps |  Non-private dependencies of the target being compiled. These targets are used as dependencies of both the Swift module being compiled and the Clang module for the generated header. These targets must propagate one of the following providers: <code>CcInfo</code>, <code>SwiftInfo</code>, or <code>apple_common.Objc</code>.   |  <code>[]</code> |
@@ -250,7 +249,7 @@ A `struct` containing four fields:
 
 <pre>
 swift_common.create_linking_context_from_compilation_outputs(<a href="#swift_common.create_linking_context_from_compilation_outputs-actions">actions</a>, <a href="#swift_common.create_linking_context_from_compilation_outputs-additional_inputs">additional_inputs</a>, <a href="#swift_common.create_linking_context_from_compilation_outputs-alwayslink">alwayslink</a>,
-                                                             <a href="#swift_common.create_linking_context_from_compilation_outputs-apple_fragment">apple_fragment</a>, <a href="#swift_common.create_linking_context_from_compilation_outputs-compilation_outputs">compilation_outputs</a>,
+                                                             <a href="#swift_common.create_linking_context_from_compilation_outputs-compilation_outputs">compilation_outputs</a>,
                                                              <a href="#swift_common.create_linking_context_from_compilation_outputs-feature_configuration">feature_configuration</a>, <a href="#swift_common.create_linking_context_from_compilation_outputs-is_test">is_test</a>, <a href="#swift_common.create_linking_context_from_compilation_outputs-label">label</a>,
                                                              <a href="#swift_common.create_linking_context_from_compilation_outputs-linking_contexts">linking_contexts</a>, <a href="#swift_common.create_linking_context_from_compilation_outputs-module_context">module_context</a>, <a href="#swift_common.create_linking_context_from_compilation_outputs-name">name</a>,
                                                              <a href="#swift_common.create_linking_context_from_compilation_outputs-swift_toolchain">swift_toolchain</a>, <a href="#swift_common.create_linking_context_from_compilation_outputs-user_link_flags">user_link_flags</a>,
@@ -275,7 +274,6 @@ command line parameters file, those actions will be created here.
 | <a id="swift_common.create_linking_context_from_compilation_outputs-actions"></a>actions |  The context's <code>actions</code> object.   |  none |
 | <a id="swift_common.create_linking_context_from_compilation_outputs-additional_inputs"></a>additional_inputs |  A <code>list</code> of <code>File</code>s containing any additional files that are referenced by <code>user_link_flags</code> and therefore need to be propagated up to the linker.   |  <code>[]</code> |
 | <a id="swift_common.create_linking_context_from_compilation_outputs-alwayslink"></a>alwayslink |  If True, any binary that depends on the providers returned by this function will link in all of the library's object files, even if some contain no symbols referenced by the binary.   |  <code>False</code> |
-| <a id="swift_common.create_linking_context_from_compilation_outputs-apple_fragment"></a>apple_fragment |  The <code>apple</code> configuration fragment.   |  none |
 | <a id="swift_common.create_linking_context_from_compilation_outputs-compilation_outputs"></a>compilation_outputs |  A <code>CcCompilationOutputs</code> value containing the object files to link. Typically, this is the second tuple element in the value returned by <code>swift_common.compile</code>.   |  none |
 | <a id="swift_common.create_linking_context_from_compilation_outputs-feature_configuration"></a>feature_configuration |  A feature configuration obtained from <code>swift_common.configure_features</code>.   |  none |
 | <a id="swift_common.create_linking_context_from_compilation_outputs-is_test"></a>is_test |  Represents if <code>testonly</code> is set on the target to be compiled.   |  none |
