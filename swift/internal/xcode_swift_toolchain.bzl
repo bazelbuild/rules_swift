@@ -228,16 +228,6 @@ def _swift_linkopts_providers(
         *   `objc_info`: An `apple_common.Objc` provider that will provide
             linker flags to binaries that depend on Swift targets.
     """
-    platform_developer_framework_dir = _platform_developer_framework_dir(
-        apple_toolchain,
-        target_triple,
-        xcode_config,
-    )
-    sdk_developer_framework_dir = _sdk_developer_framework_dir(
-        apple_toolchain,
-        target_triple,
-        xcode_config,
-    )
     swift_lib_dir = paths.join(
         apple_toolchain.developer_dir(),
         "Toolchains/XcodeDefault.xctoolchain/usr/lib/swift",
@@ -346,20 +336,6 @@ def _all_action_configs(
     Returns:
         The action configurations for the Swift toolchain.
     """
-    platform_developer_framework_dir = _platform_developer_framework_dir(
-        apple_toolchain,
-        target_triple,
-        xcode_config,
-    )
-    sdk_developer_framework_dir = _sdk_developer_framework_dir(
-        apple_toolchain,
-        target_triple,
-        xcode_config,
-    )
-    developer_framework_dirs = compact([
-        platform_developer_framework_dir,
-        sdk_developer_framework_dir,
-    ])
 
     # Basic compilation flags (target triple and toolchain search paths).
     action_configs = [
@@ -675,7 +651,6 @@ def _xcode_swift_toolchain_impl(ctx):
         generated_header_rewriter = generated_header_rewriter,
         needs_resource_directory = swift_executable or toolchain_root,
         target_triple = target_triple,
-        xcode_config = xcode_config,
     )
 
     return [

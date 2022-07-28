@@ -83,6 +83,7 @@ bzl_library(
     srcs = ["developer_frameworks.bzl"],
     visibility = ["//swift:__subpackages__"],
     deps = [
+        ":target_triples",
         ":utils",
         "@bazel_skylib//lib:paths",
     ],
@@ -359,6 +360,12 @@ bzl_library(
         "@bazel_skylib//lib:paths",
         "@bazel_skylib//lib:types",
     ],
+)
+
+bzl_library(
+    name = "target_triples",
+    srcs = [":target_triples.bzl"],
+    visibility = ["//swift:__subpackages__"],
 )
 
 bzl_library(
