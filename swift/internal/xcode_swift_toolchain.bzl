@@ -81,23 +81,6 @@ def _bazel_apple_platform(target_triple):
         target_triple.environment,
     )]
 
-def _swift_developer_lib_dir(platform_framework_dir):
-    """Returns the directory containing extra Swift developer libraries.
-
-    Args:
-        platform_framework_dir: The developer platform framework directory for
-            the current platform.
-
-    Returns:
-        The directory containing extra Swift-specific development libraries and
-        swiftmodules.
-    """
-    return paths.join(
-        paths.dirname(paths.dirname(platform_framework_dir)),
-        "usr",
-        "lib",
-    )
-
 def _command_line_objc_copts(compilation_mode, cpp_fragment, objc_fragment):
     """Returns copts that should be passed to `clang` from the `objc` fragment.
 
@@ -146,63 +129,6 @@ def _command_line_objc_copts(compilation_mode, cpp_fragment, objc_fragment):
     else:
         clang_copts = getattr(objc_fragment, "copts", []) + legacy_copts
     return [copt for copt in clang_copts if copt != "-g"]
-
-def _platform_developer_framework_dir(
-        apple_toolchain,
-        target_triple,
-        xcode_config):
-    """Returns the Developer framework directory for the platform.
-
-    Args:
-        apple_toolchain: The `apple_common.apple_toolchain()` object.
-        target_triple: The triple of the platform being targeted.
-        xcode_config: The Xcode configuration.
-
-    Returns:
-        The path to the Developer framework directory for the platform if one
-        exists, otherwise `None`.
-    """
-
-    # All platforms have a `Developer/Library/Frameworks` directory in their
-    # platform root, except for watchOS prior to Xcode 12.5.
-    if (
-        target_triples.unversioned_os(target_triple) == "watchos" and
-        not _is_xcode_at_least_version(xcode_config, "12.5")
-    ):
-        return None
-
-    return paths.join(
-        apple_toolchain.developer_dir(),
-        "Platforms",
-        "{}.platform".format(
-            _bazel_apple_platform(target_triple).name_in_plist,
-        ),
-        "Developer/Library/Frameworks",
-    )
-
-def _sdk_developer_framework_dir(apple_toolchain, target_triple, xcode_config):
-    """Returns the Developer framework directory for the SDK.
-
-    Args:
-        apple_toolchain: The `apple_common.apple_toolchain()` object.
-        target_triple: The triple of the platform being targeted.
-        xcode_config: The Xcode configuration.
-
-    Returns:
-        The path to the Developer framework directory for the SDK if one
-        exists, otherwise `None`.
-    """
-
-    # All platforms have a `Developer/Library/Frameworks` directory in their SDK
-    # root except for macOS (all versions of Xcode so far), and watchOS (prior
-    # to Xcode 12.5).
-    os = target_triples.unversioned_os(target_triple)
-    if (os == "macos" or
-        (os == "watchos" and
-         not _is_xcode_at_least_version(xcode_config, "12.5"))):
-        return None
-
-    return paths.join(apple_toolchain.sdk_dir(), "Developer/Library/Frameworks")
 
 def _swift_linkopts_providers(
         apple_toolchain,
@@ -331,7 +257,6 @@ def _all_action_configs(
         needs_resource_directory: If True, the toolchain needs the resource
             directory passed explicitly to the compiler.
         target_triple: The triple of the platform being targeted.
-        xcode_config: The Xcode configuration.
 
     Returns:
         The action configurations for the Swift toolchain.
