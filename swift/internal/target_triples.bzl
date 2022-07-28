@@ -130,11 +130,10 @@ def _parse(triple_string):
             it was present. This component may be `None`.
     """
     components = triple_string.split("-")
-    print(components)
     return _make(
-        cpu = components[0] if len(components) > 0 else None,
-        vendor = components[1] if len(components) > 1 else "unknown",
-        os = components[2] if len(components) > 2 else None,
+        cpu = components[0],
+        vendor = components[1],
+        os = components[2],
         environment = components[3] if len(components) > 3 else None,
     )
 
