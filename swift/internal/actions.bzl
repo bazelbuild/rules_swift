@@ -38,6 +38,11 @@ swift_action_names = struct(
     # headers, emitting a `.pcm` file.
     PRECOMPILE_C_MODULE = "SwiftPrecompileCModule",
 
+    # Extracts a JSON-formatted symbol graph from a module, which can be used as
+    # an input to documentation generating tools like `docc` or analyzed with
+    # other tooling.
+    SYMBOL_GRAPH_EXTRACT = "SwiftSymbolGraphExtract",
+
     # Produces files that are usually fallout of the compilation such as
     # .swiftmodule, -Swift.h and more.
     DERIVE_FILES = "SwiftDeriveFiles",

@@ -44,6 +44,7 @@ load(
     "SWIFT_FEATURE_USE_RESPONSE_FILES",
 )
 load(":features.bzl", "features_for_build_modes")
+load(":symbol_graph_extracting.bzl", "symbol_graph_action_configs")
 load(":toolchain_config.bzl", "swift_toolchain_config")
 load(
     ":providers.bzl",
@@ -385,8 +386,9 @@ def _all_action_configs(
             actions = [
                 swift_action_names.COMPILE,
                 swift_action_names.DERIVE_FILES,
-                swift_action_names.PRECOMPILE_C_MODULE,
                 swift_action_names.DUMP_AST,
+                swift_action_names.PRECOMPILE_C_MODULE,
+                swift_action_names.SYMBOL_GRAPH_EXTRACT,
             ],
             configurators = [
                 swift_toolchain_config.add_arg(
@@ -403,7 +405,10 @@ def _all_action_configs(
             ],
         ),
         swift_toolchain_config.action_config(
-            actions = [swift_action_names.PRECOMPILE_C_MODULE],
+            actions = [
+                swift_action_names.PRECOMPILE_C_MODULE,
+                swift_action_names.SYMBOL_GRAPH_EXTRACT,
+            ],
             configurators = [
                 swift_toolchain_config.add_arg(
                     "-Xcc",
@@ -424,8 +429,9 @@ def _all_action_configs(
                 actions = [
                     swift_action_names.COMPILE,
                     swift_action_names.DERIVE_FILES,
-                    swift_action_names.PRECOMPILE_C_MODULE,
                     swift_action_names.DUMP_AST,
+                    swift_action_names.PRECOMPILE_C_MODULE,
+                    swift_action_names.SYMBOL_GRAPH_EXTRACT,
                 ],
                 configurators = [
                     swift_toolchain_config.add_arg(
@@ -505,8 +511,9 @@ def _all_action_configs(
                 actions = [
                     swift_action_names.COMPILE,
                     swift_action_names.DERIVE_FILES,
-                    swift_action_names.PRECOMPILE_C_MODULE,
                     swift_action_names.DUMP_AST,
+                    swift_action_names.PRECOMPILE_C_MODULE,
+                    swift_action_names.SYMBOL_GRAPH_EXTRACT,
                 ],
                 configurators = [
                     partial.make(
@@ -522,6 +529,7 @@ def _all_action_configs(
         additional_swiftc_copts = additional_swiftc_copts,
         generated_header_rewriter = generated_header_rewriter.executable,
     ))
+    action_configs.extend(symbol_graph_action_configs())
     return action_configs
 
 def _all_tool_configs(
@@ -587,6 +595,19 @@ def _all_tool_configs(
                 execution_requirements = execution_requirements,
                 swift_executable = swift_executable,
                 toolchain_root = toolchain_root,
+                use_param_file = True,
+                worker_mode = "wrap",
+            )
+        )
+
+    # Xcode 13.0 implies Swift 5.5.
+    if _is_xcode_at_least_version(xcode_config, "13.0"):
+        tool_configs[swift_action_names.SYMBOL_GRAPH_EXTRACT] = (
+            swift_toolchain_config.driver_tool_config(
+                driver_mode = "swift-symbolgraph-extract",
+                env = env,
+                execution_requirements = execution_requirements,
+                swift_executable = swift_executable,
                 use_param_file = True,
                 worker_mode = "wrap",
             )

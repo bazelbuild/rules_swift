@@ -101,6 +101,29 @@ from the `.proto` files.
     },
 )
 
+SwiftSymbolGraphInfo = provider(
+    doc = "Propagates extracted symbol graph files from Swift modules.",
+    fields = {
+        "direct_symbol_graphs": """\
+`List` of `struct`s representing the symbol graphs extracted from the target
+that propagated this provider. This list will be empty if propagated by a
+non-Swift target (although its `transitive_symbol_graphs` may be non-empty if it
+has Swift dependencies).
+
+Each `struct` has the following fields:
+
+*   `module_name`: A string denoting the name of the Swift module.
+*   `symbol_graph_dir`: A directory-type `File` containing one or more
+    `.symbols.json` files representing the symbol graph(s) for the module.
+""",
+        "transitive_symbol_graphs": """\
+`Depset` of `struct`s representing the symbol graphs extracted from the target
+that propagated this provider and all of its Swift dependencies. Each `struct`
+has the same fields as documented in `direct_symbol_graphs`.
+""",
+    },
+)
+
 SwiftToolchainInfo = provider(
     doc = """
 Propagates information about a Swift toolchain to compilation and linking rules
