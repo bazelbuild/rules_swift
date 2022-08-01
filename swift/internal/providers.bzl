@@ -143,7 +143,7 @@ C/Objective-C modules:
 For ease of use, this field is never `None`; it will always be a valid `struct`
 containing the fields described above, even if those lists are empty.
 """,
-        "developer_dirs": "test",
+        "developer_dirs": "A list of `SwiftToolchainDeveloperPathInfo`.",
         "feature_allowlists": """\
 A list of `SwiftFeatureAllowlistInfo` providers that allow or prohibit packages
 from requesting or disabling features.
