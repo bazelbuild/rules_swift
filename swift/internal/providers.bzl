@@ -101,6 +101,20 @@ from the `.proto` files.
     },
 )
 
+SwiftToolchainDeveloperPath = provider(
+    doc = """\
+test
+""",
+    fields = {
+        "developer_path_label": """\
+test
+""",
+        "path": """\
+test
+""",
+    },
+)
+
 SwiftToolchainInfo = provider(
     doc = """
 Propagates information about a Swift toolchain to compilation and linking rules
@@ -129,6 +143,7 @@ C/Objective-C modules:
 For ease of use, this field is never `None`; it will always be a valid `struct`
 containing the fields described above, even if those lists are empty.
 """,
+        "developer_dirs": "test",
         "feature_allowlists": """\
 A list of `SwiftFeatureAllowlistInfo` providers that allow or prohibit packages
 from requesting or disabling features.

@@ -24,6 +24,7 @@ load(
 )
 load(":derived_files.bzl", "derived_files")
 load(":features.bzl", "get_cc_feature_configuration")
+load(":developer_dirs.bzl", "swift_developer_lib_dir", "platform_developer_framework_dir")
 
 def create_linking_context_from_compilation_outputs(
         *,
@@ -32,6 +33,7 @@ def create_linking_context_from_compilation_outputs(
         alwayslink = False,
         compilation_outputs,
         feature_configuration,
+        is_test,
         label,
         linking_contexts = [],
         module_context,
@@ -142,6 +144,19 @@ def create_linking_context_from_compilation_outputs(
     if not name:
         name = label.name
 
+    if is_test:
+        swift_developer_lib_dir_path = swift_developer_lib_dir(
+            swift_toolchain.developer_dirs
+        )
+        developer_paths_linkopts = [
+            "-L%s" % swift_developer_lib_dir_path,
+        ] + [
+            "-F%s" % developer_framework.path
+            for developer_framework in swift_toolchain.developer_dirs
+        ]
+    else:
+        developer_paths_linkopts = []
+
     return cc_common.create_linking_context_from_compilation_outputs(
         actions = actions,
         feature_configuration = get_cc_feature_configuration(
@@ -150,7 +165,7 @@ def create_linking_context_from_compilation_outputs(
         cc_toolchain = swift_toolchain.cc_toolchain_info,
         compilation_outputs = compilation_outputs,
         name = name,
-        user_link_flags = user_link_flags,
+        user_link_flags = user_link_flags + developer_paths_linkopts,
         linking_contexts = linking_contexts + extra_linking_contexts,
         alwayslink = alwayslink,
         additional_inputs = additional_inputs,

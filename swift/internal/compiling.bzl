@@ -93,6 +93,7 @@ load(
     "struct_fields",
 )
 load(":vfsoverlay.bzl", "write_vfsoverlay")
+load(":developer_dirs.bzl", "swift_developer_lib_dir", "platform_developer_framework_dir")
 
 # VFS root where all .swiftmodule files will be placed when
 # SWIFT_FEATURE_VFSOVERLAY is enabled.
@@ -488,6 +489,22 @@ def compile_action_configs(
                 swift_toolchain_config.add_arg("-enable-testing"),
             ],
             features = [SWIFT_FEATURE_ENABLE_TESTING],
+        ),
+
+        # Set Developer Framework search paths
+        swift_toolchain_config.action_config(
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVE_FILES,
+                swift_action_names.DUMP_AST,
+            ],
+            configurators = [_non_pcm_developer_framework_paths_configurator],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [
+                swift_action_names.PRECOMPILE_C_MODULE,
+            ],
+            configurators = [_pcm_developer_framework_paths_configurator],
         ),
 
         # Emit appropriate levels of debug info. On Apple platforms, requesting
@@ -1209,6 +1226,51 @@ def _c_layering_check_configurator(prerequisites, args):
         args.add("-Xcc", "-fmodules-strict-decluse")
     return None
 
+# The platform developer framework directory contains XCTest.swiftmodule
+# with Swift extensions to XCTest, so it needs to be added to the search
+# path on platforms where it exists.
+def _add_developer_swift_imports(developer_dirs, args):
+    platform_developer_framework = platform_developer_framework_dir(
+        developer_dirs
+    )
+    if platform_developer_framework:
+        swift_developer_lib_dir_path = swift_developer_lib_dir(
+            developer_dirs
+        )
+        args.add(swift_developer_lib_dir_path, format = "-I%s")
+
+def _non_pcm_developer_framework_paths_configurator(prerequisites, args):
+    """ Adds developer frameworks flags to the command line. """
+    if prerequisites.is_test:
+        args.add_all(
+            [
+                developer_dir.path
+                for developer_dir in prerequisites.developer_dirs
+            ],
+            format_each = "-F%s",
+        )
+        _add_developer_swift_imports(
+            prerequisites.developer_dirs,
+            args,
+        )
+
+# PCM version of the logic above
+def _pcm_developer_framework_paths_configurator(prerequisites, args):
+    """ Adds developer frameworks flags to the command line. """
+    if prerequisites.is_test:
+        args.add_all(
+            [
+                developer_dir.path
+                for developer_dir in prerequisites.developer_dirs
+            ],
+            before_each = "-Xcc",
+            format_each = "-F%s",
+        )
+        _add_developer_swift_imports(
+            prerequisites.developer_dirs,
+            args,
+        )
+
 def _clang_search_paths_configurator(prerequisites, args):
     """Adds Clang search paths to the command line."""
     args.add_all(
@@ -1791,6 +1853,7 @@ def compile(
         deps = [],
         feature_configuration,
         generated_header_name = None,
+        is_test,
         module_name,
         private_deps = [],
         srcs,
@@ -1973,8 +2036,10 @@ def compile(
         bin_dir = feature_configuration._bin_dir,
         cc_compilation_context = merged_providers.cc_info.compilation_context,
         defines = sets.to_list(defines_set),
+        developer_dirs = swift_toolchain.developer_dirs,
         genfiles_dir = feature_configuration._genfiles_dir,
         is_swift = True,
+        is_test = is_test,
         module_name = module_name,
         objc_include_paths_workaround = (
             merged_providers.objc_include_paths_workaround

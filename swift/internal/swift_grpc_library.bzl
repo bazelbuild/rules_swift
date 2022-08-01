@@ -288,6 +288,7 @@ def _swift_grpc_library_impl(ctx):
         copts = ["-parse-as-library"],
         deps = compile_deps,
         feature_configuration = feature_configuration,
+        is_test = ctx.attr.testonly,
         module_name = module_name,
         srcs = generated_files,
         swift_toolchain = swift_toolchain,
@@ -300,6 +301,7 @@ def _swift_grpc_library_impl(ctx):
             actions = ctx.actions,
             compilation_outputs = cc_compilation_outputs,
             feature_configuration = feature_configuration,
+            is_test = ctx.attr.testonly,
             label = ctx.label,
             linking_contexts = [
                 dep[CcInfo].linking_context
