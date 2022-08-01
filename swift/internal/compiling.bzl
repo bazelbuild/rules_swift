@@ -93,7 +93,11 @@ load(
     "struct_fields",
 )
 load(":vfsoverlay.bzl", "write_vfsoverlay")
-load(":developer_dirs.bzl", "swift_developer_lib_dir", "platform_developer_framework_dir")
+load(
+    ":developer_dirs.bzl",
+    "platform_developer_framework_dir",
+    "swift_developer_lib_dir",
+)
 
 # VFS root where all .swiftmodule files will be placed when
 # SWIFT_FEATURE_VFSOVERLAY is enabled.
@@ -1231,11 +1235,11 @@ def _c_layering_check_configurator(prerequisites, args):
 # path on platforms where it exists.
 def _add_developer_swift_imports(developer_dirs, args):
     platform_developer_framework = platform_developer_framework_dir(
-        developer_dirs
+        developer_dirs,
     )
     if platform_developer_framework:
         swift_developer_lib_dir_path = swift_developer_lib_dir(
-            developer_dirs
+            developer_dirs,
         )
         args.add(swift_developer_lib_dir_path, format = "-I%s")
 
@@ -1880,6 +1884,7 @@ def compile(
             `SwiftInfo`, or `apple_common.Objc`.
         feature_configuration: A feature configuration obtained from
             `swift_common.configure_features`.
+        is_test: Represents if the `testonly` value of the context.
         generated_header_name: The name of the Objective-C generated header that
             should be generated for this module. If omitted, no header will be
             generated.

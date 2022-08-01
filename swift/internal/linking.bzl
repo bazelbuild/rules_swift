@@ -24,7 +24,10 @@ load(
 )
 load(":derived_files.bzl", "derived_files")
 load(":features.bzl", "get_cc_feature_configuration")
-load(":developer_dirs.bzl", "swift_developer_lib_dir", "platform_developer_framework_dir")
+load(
+    ":developer_dirs.bzl",
+    "swift_developer_lib_dir"
+)
 
 def create_linking_context_from_compilation_outputs(
         *,
@@ -62,6 +65,7 @@ def create_linking_context_from_compilation_outputs(
             the value returned by `swift_common.compile`.
         feature_configuration: A feature configuration obtained from
             `swift_common.configure_features`.
+        is_test: Represents if the `testonly` value of the context.
         label: The `Label` of the target being built. This is used as the owner
             of the linker inputs created for post-compile actions (if any), and
             the label's name component also determines the name of the artifact
@@ -146,7 +150,7 @@ def create_linking_context_from_compilation_outputs(
 
     if is_test:
         swift_developer_lib_dir_path = swift_developer_lib_dir(
-            swift_toolchain.developer_dirs
+            swift_toolchain.developer_dirs,
         )
         developer_paths_linkopts = [
             "-L%s" % swift_developer_lib_dir_path,

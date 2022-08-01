@@ -1,3 +1,5 @@
+""" Functions to fetch information about developer frameworks """
+
 load("@bazel_skylib//lib:paths.bzl", "paths")
 
 def platform_developer_framework_dir(developer_dirs):
@@ -10,8 +12,7 @@ def swift_developer_lib_dir(developer_dirs):
     """Returns the directory containing extra Swift developer libraries.
 
     Args:
-        platform_framework_dir: The developer platform framework directory for
-            the current platform.
+        developer_dirs: A `list` of `SwiftToolchainDeveloperPath`s
 
     Returns:
         The directory containing extra Swift-specific development libraries and

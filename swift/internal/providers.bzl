@@ -101,16 +101,16 @@ from the `.proto` files.
     },
 )
 
-SwiftToolchainDeveloperPath = provider(
+SwiftToolchainDeveloperPathInfo = provider(
     doc = """\
-test
+Propagates information about developer framework paths.
 """,
     fields = {
         "developer_path_label": """\
-test
+A `string` representing the type of developer path.
 """,
         "path": """\
-test
+A `string` representing the path to the developer framework
 """,
     },
 )

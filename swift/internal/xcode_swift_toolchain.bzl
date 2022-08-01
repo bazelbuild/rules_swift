@@ -50,8 +50,8 @@ load(
     "SwiftFeatureAllowlistInfo",
     "SwiftInfo",
     "SwiftPackageConfigurationInfo",
+    "SwiftToolchainDeveloperPathInfo",
     "SwiftToolchainInfo",
-    "SwiftToolchainDeveloperPath",
 )
 load(":target_triples.bzl", "target_triples")
 load(
@@ -190,8 +190,7 @@ def _sdk_developer_framework_dir(apple_toolchain, target_triple, xcode_config):
 def _swift_linkopts_providers(
         apple_toolchain,
         target_triple,
-        toolchain_label,
-        xcode_config):
+        toolchain_label):
     """Returns providers containing flags that should be passed to the linker.
 
     The providers returned by this function will be used as implicit
@@ -203,7 +202,6 @@ def _swift_linkopts_providers(
         target_triple: The target triple `struct`.
         toolchain_label: The label of the Swift toolchain that will act as the
             owner of the linker input propagating the flags.
-        xcode_config: The Xcode configuration.
 
     Returns:
         A `struct` containing the following fields:
@@ -300,8 +298,7 @@ def _all_action_configs(
         apple_toolchain,
         generated_header_rewriter,
         needs_resource_directory,
-        target_triple,
-        xcode_config):
+        target_triple):
     """Returns the action configurations for the Swift toolchain.
 
     Args:
@@ -317,7 +314,6 @@ def _all_action_configs(
         needs_resource_directory: If True, the toolchain needs the resource
             directory passed explicitly to the compiler.
         target_triple: The triple of the platform being targeted.
-        xcode_config: The Xcode configuration.
 
     Returns:
         The action configurations for the Swift toolchain.
@@ -648,10 +644,10 @@ def _xcode_swift_toolchain_impl(ctx):
     )
     if platform_developer_framework_dir:
         swift_toolchain_developer_paths.append(
-            SwiftToolchainDeveloperPath(
+            SwiftToolchainDeveloperPathInfo(
                 developer_path_label = "platform",
                 path = platform_developer_framework_dir,
-            )
+            ),
         )
     sdk_developer_framework_dir = _sdk_developer_framework_dir(
         apple_toolchain,
@@ -660,10 +656,10 @@ def _xcode_swift_toolchain_impl(ctx):
     )
     if sdk_developer_framework_dir:
         swift_toolchain_developer_paths.append(
-            SwiftToolchainDeveloperPath(
+            SwiftToolchainDeveloperPathInfo(
                 developer_path_label = "sdk",
                 path = sdk_developer_framework_dir,
-            )
+            ),
         )
 
     return [
