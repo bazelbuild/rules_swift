@@ -26,7 +26,7 @@ load(":derived_files.bzl", "derived_files")
 load(":features.bzl", "get_cc_feature_configuration")
 load(
     ":developer_dirs.bzl",
-    "swift_developer_lib_dir"
+    "swift_developer_lib_dir",
 )
 
 def create_linking_context_from_compilation_outputs(
