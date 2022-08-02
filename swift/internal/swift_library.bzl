@@ -270,9 +270,11 @@ def _swift_library_impl(ctx):
         alwayslink = ctx.attr.alwayslink,
         deps = deps + private_deps,
         feature_configuration = feature_configuration,
+        is_test = ctx.attr.testonly,
         module_context = module_context,
         libraries_to_link = [linking_output.library_to_link],
         user_link_flags = linkopts,
+        swift_toolchain = swift_toolchain,
     ))
 
     return providers

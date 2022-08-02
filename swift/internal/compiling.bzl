@@ -2833,9 +2833,11 @@ def new_objc_provider(
         alwayslink = False,
         deps,
         feature_configuration,
+        is_test,
         libraries_to_link,
         module_context,
-        user_link_flags = []):
+        user_link_flags = [],
+        swift_toolchain):
     """Creates an `apple_common.Objc` provider for a Swift target.
 
     Args:
@@ -2901,6 +2903,19 @@ def new_objc_provider(
         debug_link_flags = []
         debug_link_inputs = []
 
+    if is_test:
+        swift_developer_lib_dir_path = swift_developer_lib_dir(
+            swift_toolchain.developer_dirs,
+        )
+        developer_paths_linkopts = [
+            "-L%s" % swift_developer_lib_dir_path,
+        ] + [
+            "-F%s" % developer_framework.path
+            for developer_framework in swift_toolchain.developer_dirs
+        ]
+    else:
+        developer_paths_linkopts = []
+
     return apple_common.new_objc_provider(
         force_load_library = depset(
             force_load_libraries,
@@ -2912,7 +2927,7 @@ def new_objc_provider(
             order = "topological",
         ),
         link_inputs = depset(additional_link_inputs + debug_link_inputs),
-        linkopt = depset(user_link_flags + debug_link_flags),
+        linkopt = depset(user_link_flags + debug_link_flags + developer_paths_linkopts),
         providers = get_providers(
             deps,
             apple_common.Objc,

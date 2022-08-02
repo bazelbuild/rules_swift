@@ -346,8 +346,10 @@ def _swift_grpc_library_impl(ctx):
         ),
         deps = compile_deps,
         feature_configuration = feature_configuration,
+        is_test = ctx.attr.testonly,
         module_context = module_context,
         libraries_to_link = [linking_output.library_to_link],
+        swift_toolchain = swift_toolchain,
     ))
 
     return providers

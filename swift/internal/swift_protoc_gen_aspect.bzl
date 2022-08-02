@@ -483,8 +483,10 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             # `Objc` providers from `SwiftProtoCcInfo` above.
             deps = [],
             feature_configuration = feature_configuration,
+            is_test = False,
             module_context = module_context,
             libraries_to_link = [linking_output.library_to_link],
+            swift_toolchain = swift_toolchain,
         )
 
         cc_info = CcInfo(
