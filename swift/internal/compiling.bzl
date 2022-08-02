@@ -2852,12 +2852,14 @@ def new_objc_provider(
             will be passed to the new one in order to propagate the correct
             transitive fields.
         feature_configuration: The Swift feature configuration.
+        is_test: Represents if the `testonly` value of the context.
         libraries_to_link: A list (typically of one element) of the
             `LibraryToLink` objects from which the static archives (`.a` files)
             containing the target's compiled code will be retrieved.
         module_context: The module context as returned by
             `swift_common.compile`.
         user_link_flags: Linker options that should be propagated to dependents.
+        swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
 
     Returns:
         An `apple_common.Objc` provider that should be returned by the calling
