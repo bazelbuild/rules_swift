@@ -50,7 +50,6 @@ load(
     "SwiftFeatureAllowlistInfo",
     "SwiftInfo",
     "SwiftPackageConfigurationInfo",
-    "SwiftToolchainDeveloperPathInfo",
     "SwiftToolchainInfo",
 )
 load(":target_triples.bzl", "target_triples")
@@ -642,7 +641,7 @@ def _xcode_swift_toolchain_impl(ctx):
     )
     if platform_developer_framework_dir:
         swift_toolchain_developer_paths.append(
-            SwiftToolchainDeveloperPathInfo(
+            struct(
                 developer_path_label = "platform",
                 path = platform_developer_framework_dir,
             ),
@@ -654,7 +653,7 @@ def _xcode_swift_toolchain_impl(ctx):
     )
     if sdk_developer_framework_dir:
         swift_toolchain_developer_paths.append(
-            SwiftToolchainDeveloperPathInfo(
+            struct(
                 developer_path_label = "sdk",
                 path = sdk_developer_framework_dir,
             ),

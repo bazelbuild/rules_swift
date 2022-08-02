@@ -43,6 +43,7 @@ bzl_library(
         ":autolinking",
         ":debugging",
         ":derived_files",
+        ":developer_dirs",
         ":feature_names",
         ":features",
         ":providers",
@@ -75,6 +76,13 @@ bzl_library(
         ":utils",
         "@bazel_skylib//lib:paths",
     ],
+)
+
+bzl_library(
+    name = "developer_dirs",
+    srcs = ["developer_dirs.bzl"],
+    visibility = ["//swift:__subpackages__"],
+    deps = ["@bazel_skylib//lib:paths"],
 )
 
 bzl_library(
