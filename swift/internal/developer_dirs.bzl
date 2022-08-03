@@ -12,7 +12,7 @@ def swift_developer_lib_dir(developer_dirs):
     """Returns the directory containing extra Swift developer libraries.
 
     Args:
-        developer_dirs: A `list` of `SwiftToolchainDeveloperPath`s
+        developer_dirs: A `list` of `structs`
 
     Returns:
         The directory containing extra Swift-specific development libraries and
@@ -26,3 +26,22 @@ def swift_developer_lib_dir(developer_dirs):
             "lib",
         )
     return None
+
+def developer_dirs_linkopts(developer_dirs):
+    """ Returns linkopts for the provided developer directories.
+
+    Args:
+        developer_dirs: A `list` of `structs`
+
+    Returns:
+        A `list` of linker options
+    """
+    swift_developer_lib_dir_path = swift_developer_lib_dir(
+        developer_dirs,
+    )
+    return [
+        "-L%s" % swift_developer_lib_dir_path,
+    ] + [
+        "-F%s" % developer_framework.path
+        for developer_framework in developer_dirs
+    ]

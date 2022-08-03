@@ -26,7 +26,7 @@ load(":derived_files.bzl", "derived_files")
 load(":features.bzl", "get_cc_feature_configuration")
 load(
     ":developer_dirs.bzl",
-    "swift_developer_lib_dir",
+    "developer_dirs_linkopts",
 )
 
 def create_linking_context_from_compilation_outputs(
@@ -149,15 +149,7 @@ def create_linking_context_from_compilation_outputs(
         name = label.name
 
     if is_test:
-        swift_developer_lib_dir_path = swift_developer_lib_dir(
-            swift_toolchain.developer_dirs,
-        )
-        developer_paths_linkopts = [
-            "-L%s" % swift_developer_lib_dir_path,
-        ] + [
-            "-F%s" % developer_framework.path
-            for developer_framework in swift_toolchain.developer_dirs
-        ]
+        developer_paths_linkopts = developer_dirs_linkopts(swift_toolchain.developer_dirs)
     else:
         developer_paths_linkopts = []
 

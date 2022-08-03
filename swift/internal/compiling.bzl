@@ -95,6 +95,7 @@ load(
 load(":vfsoverlay.bzl", "write_vfsoverlay")
 load(
     ":developer_dirs.bzl",
+    "developer_dirs_linkopts",
     "platform_developer_framework_dir",
     "swift_developer_lib_dir",
 )
@@ -2906,15 +2907,7 @@ def new_objc_provider(
         debug_link_inputs = []
 
     if is_test:
-        swift_developer_lib_dir_path = swift_developer_lib_dir(
-            swift_toolchain.developer_dirs,
-        )
-        developer_paths_linkopts = [
-            "-L%s" % swift_developer_lib_dir_path,
-        ] + [
-            "-F%s" % developer_framework.path
-            for developer_framework in swift_toolchain.developer_dirs
-        ]
+        developer_paths_linkopts = developer_dirs_linkopts(swift_toolchain.developer_dirs)
     else:
         developer_paths_linkopts = []
 
