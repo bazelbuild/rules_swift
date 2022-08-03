@@ -190,6 +190,7 @@ def _swift_linking_rule_impl(
             defines = ctx.attr.defines,
             deps = ctx.attr.deps,
             feature_configuration = feature_configuration,
+            is_test = ctx.attr.testonly,
             module_name = module_name,
             srcs = srcs,
             swift_toolchain = swift_toolchain,
@@ -205,6 +206,7 @@ def _swift_linking_rule_impl(
             alwayslink = True,
             compilation_outputs = cc_compilation_outputs,
             feature_configuration = feature_configuration,
+            is_test = ctx.attr.testonly,
             label = ctx.label,
             linking_contexts = [
                 dep[CcInfo].linking_context

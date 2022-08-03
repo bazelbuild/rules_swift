@@ -56,7 +56,6 @@ load(":target_triples.bzl", "target_triples")
 load(
     ":utils.bzl",
     "collect_implicit_deps_providers",
-    "compact",
     "get_swift_executable_for_toolchain",
     "resolve_optional_tool",
 )
@@ -80,23 +79,6 @@ def _bazel_apple_platform(target_triple):
         target_triples.unversioned_os(target_triple),
         target_triple.environment,
     )]
-
-def _swift_developer_lib_dir(platform_framework_dir):
-    """Returns the directory containing extra Swift developer libraries.
-
-    Args:
-        platform_framework_dir: The developer platform framework directory for
-            the current platform.
-
-    Returns:
-        The directory containing extra Swift-specific development libraries and
-        swiftmodules.
-    """
-    return paths.join(
-        paths.dirname(paths.dirname(platform_framework_dir)),
-        "usr",
-        "lib",
-    )
 
 def _command_line_objc_copts(compilation_mode, cpp_fragment, objc_fragment):
     """Returns copts that should be passed to `clang` from the `objc` fragment.
@@ -207,8 +189,7 @@ def _sdk_developer_framework_dir(apple_toolchain, target_triple, xcode_config):
 def _swift_linkopts_providers(
         apple_toolchain,
         target_triple,
-        toolchain_label,
-        xcode_config):
+        toolchain_label):
     """Returns providers containing flags that should be passed to the linker.
 
     The providers returned by this function will be used as implicit
@@ -220,7 +201,6 @@ def _swift_linkopts_providers(
         target_triple: The target triple `struct`.
         toolchain_label: The label of the Swift toolchain that will act as the
             owner of the linker input propagating the flags.
-        xcode_config: The Xcode configuration.
 
     Returns:
         A `struct` containing the following fields:
@@ -230,16 +210,6 @@ def _swift_linkopts_providers(
         *   `objc_info`: An `apple_common.Objc` provider that will provide
             linker flags to binaries that depend on Swift targets.
     """
-    platform_developer_framework_dir = _platform_developer_framework_dir(
-        apple_toolchain,
-        target_triple,
-        xcode_config,
-    )
-    sdk_developer_framework_dir = _sdk_developer_framework_dir(
-        apple_toolchain,
-        target_triple,
-        xcode_config,
-    )
     swift_lib_dir = paths.join(
         apple_toolchain.developer_dir(),
         "Toolchains/XcodeDefault.xctoolchain/usr/lib/swift",
@@ -247,12 +217,6 @@ def _swift_linkopts_providers(
     )
 
     linkopts = [
-        "-F{}".format(path)
-        for path in compact([
-            platform_developer_framework_dir,
-            sdk_developer_framework_dir,
-        ])
-    ] + [
         "-Wl,-rpath,/usr/lib/swift",
         "-L{}".format(swift_lib_dir),
         "-L/usr/lib/swift",
@@ -264,15 +228,6 @@ def _swift_linkopts_providers(
         "-ObjC",
         "-Wl,-objc_abi_version,2",
     ]
-
-    # Add the linker path to the directory containing the dylib with Swift
-    # extensions for the XCTest module.
-    if platform_developer_framework_dir:
-        linkopts.extend([
-            "-L{}".format(
-                _swift_developer_lib_dir(platform_developer_framework_dir),
-            ),
-        ])
 
     return struct(
         cc_info = CcInfo(
@@ -342,8 +297,7 @@ def _all_action_configs(
         apple_toolchain,
         generated_header_rewriter,
         needs_resource_directory,
-        target_triple,
-        xcode_config):
+        target_triple):
     """Returns the action configurations for the Swift toolchain.
 
     Args:
@@ -359,25 +313,10 @@ def _all_action_configs(
         needs_resource_directory: If True, the toolchain needs the resource
             directory passed explicitly to the compiler.
         target_triple: The triple of the platform being targeted.
-        xcode_config: The Xcode configuration.
 
     Returns:
         The action configurations for the Swift toolchain.
     """
-    platform_developer_framework_dir = _platform_developer_framework_dir(
-        apple_toolchain,
-        target_triple,
-        xcode_config,
-    )
-    sdk_developer_framework_dir = _sdk_developer_framework_dir(
-        apple_toolchain,
-        target_triple,
-        xcode_config,
-    )
-    developer_framework_dirs = compact([
-        platform_developer_framework_dir,
-        sdk_developer_framework_dir,
-    ])
 
     # Basic compilation flags (target triple and toolchain search paths).
     action_configs = [
@@ -397,46 +336,9 @@ def _all_action_configs(
                     "-sdk",
                     apple_toolchain.sdk_dir(),
                 ),
-            ] + [
-                swift_toolchain_config.add_arg(framework_dir, format = "-F%s")
-                for framework_dir in developer_framework_dirs
-            ],
-        ),
-        swift_toolchain_config.action_config(
-            actions = [swift_action_names.PRECOMPILE_C_MODULE],
-            configurators = [
-                swift_toolchain_config.add_arg(
-                    "-Xcc",
-                    framework_dir,
-                    format = "-F%s",
-                )
-                for framework_dir in developer_framework_dirs
             ],
         ),
     ]
-
-    # The platform developer framework directory contains XCTest.swiftmodule
-    # with Swift extensions to XCTest, so it needs to be added to the search
-    # path on platforms where it exists.
-    if platform_developer_framework_dir:
-        action_configs.append(
-            swift_toolchain_config.action_config(
-                actions = [
-                    swift_action_names.COMPILE,
-                    swift_action_names.DERIVE_FILES,
-                    swift_action_names.PRECOMPILE_C_MODULE,
-                    swift_action_names.DUMP_AST,
-                ],
-                configurators = [
-                    swift_toolchain_config.add_arg(
-                        _swift_developer_lib_dir(
-                            platform_developer_framework_dir,
-                        ),
-                        format = "-I%s",
-                    ),
-                ],
-            ),
-        )
 
     action_configs.extend([
         # Bitcode-related flags.
@@ -650,7 +552,6 @@ def _xcode_swift_toolchain_impl(ctx):
         apple_toolchain = apple_toolchain,
         target_triple = target_triple,
         toolchain_label = ctx.label,
-        xcode_config = xcode_config,
     )
 
     # `--define=SWIFT_USE_TOOLCHAIN_ROOT=<path>` is a rapid development feature
@@ -731,8 +632,32 @@ def _xcode_swift_toolchain_impl(ctx):
         generated_header_rewriter = generated_header_rewriter,
         needs_resource_directory = swift_executable or toolchain_root,
         target_triple = target_triple,
-        xcode_config = xcode_config,
     )
+    swift_toolchain_developer_paths = []
+    platform_developer_framework_dir = _platform_developer_framework_dir(
+        apple_toolchain,
+        target_triple,
+        xcode_config,
+    )
+    if platform_developer_framework_dir:
+        swift_toolchain_developer_paths.append(
+            struct(
+                developer_path_label = "platform",
+                path = platform_developer_framework_dir,
+            ),
+        )
+    sdk_developer_framework_dir = _sdk_developer_framework_dir(
+        apple_toolchain,
+        target_triple,
+        xcode_config,
+    )
+    if sdk_developer_framework_dir:
+        swift_toolchain_developer_paths.append(
+            struct(
+                developer_path_label = "sdk",
+                path = sdk_developer_framework_dir,
+            ),
+        )
 
     return [
         SwiftToolchainInfo(
@@ -741,6 +666,7 @@ def _xcode_swift_toolchain_impl(ctx):
             clang_implicit_deps_providers = collect_implicit_deps_providers(
                 ctx.attr.clang_implicit_deps,
             ),
+            developer_dirs = swift_toolchain_developer_paths,
             feature_allowlists = [
                 target[SwiftFeatureAllowlistInfo]
                 for target in ctx.attr.feature_allowlists

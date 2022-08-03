@@ -24,6 +24,10 @@ load(
 )
 load(":derived_files.bzl", "derived_files")
 load(":features.bzl", "get_cc_feature_configuration")
+load(
+    ":developer_dirs.bzl",
+    "developer_dirs_linkopts",
+)
 
 def create_linking_context_from_compilation_outputs(
         *,
@@ -32,6 +36,7 @@ def create_linking_context_from_compilation_outputs(
         alwayslink = False,
         compilation_outputs,
         feature_configuration,
+        is_test,
         label,
         linking_contexts = [],
         module_context,
@@ -60,6 +65,7 @@ def create_linking_context_from_compilation_outputs(
             the value returned by `swift_common.compile`.
         feature_configuration: A feature configuration obtained from
             `swift_common.configure_features`.
+        is_test: Represents if the `testonly` value of the context.
         label: The `Label` of the target being built. This is used as the owner
             of the linker inputs created for post-compile actions (if any), and
             the label's name component also determines the name of the artifact
@@ -142,6 +148,11 @@ def create_linking_context_from_compilation_outputs(
     if not name:
         name = label.name
 
+    if is_test:
+        developer_paths_linkopts = developer_dirs_linkopts(swift_toolchain.developer_dirs)
+    else:
+        developer_paths_linkopts = []
+
     return cc_common.create_linking_context_from_compilation_outputs(
         actions = actions,
         feature_configuration = get_cc_feature_configuration(
@@ -150,7 +161,7 @@ def create_linking_context_from_compilation_outputs(
         cc_toolchain = swift_toolchain.cc_toolchain_info,
         compilation_outputs = compilation_outputs,
         name = name,
-        user_link_flags = user_link_flags,
+        user_link_flags = user_link_flags + developer_paths_linkopts,
         linking_contexts = linking_contexts + extra_linking_contexts,
         alwayslink = alwayslink,
         additional_inputs = additional_inputs,

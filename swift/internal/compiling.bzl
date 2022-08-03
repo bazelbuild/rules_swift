@@ -93,6 +93,12 @@ load(
     "struct_fields",
 )
 load(":vfsoverlay.bzl", "write_vfsoverlay")
+load(
+    ":developer_dirs.bzl",
+    "developer_dirs_linkopts",
+    "platform_developer_framework_dir",
+    "swift_developer_lib_dir",
+)
 
 # VFS root where all .swiftmodule files will be placed when
 # SWIFT_FEATURE_VFSOVERLAY is enabled.
@@ -488,6 +494,22 @@ def compile_action_configs(
                 swift_toolchain_config.add_arg("-enable-testing"),
             ],
             features = [SWIFT_FEATURE_ENABLE_TESTING],
+        ),
+
+        # Set Developer Framework search paths
+        swift_toolchain_config.action_config(
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVE_FILES,
+                swift_action_names.DUMP_AST,
+            ],
+            configurators = [_non_pcm_developer_framework_paths_configurator],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [
+                swift_action_names.PRECOMPILE_C_MODULE,
+            ],
+            configurators = [_pcm_developer_framework_paths_configurator],
         ),
 
         # Emit appropriate levels of debug info. On Apple platforms, requesting
@@ -1209,6 +1231,51 @@ def _c_layering_check_configurator(prerequisites, args):
         args.add("-Xcc", "-fmodules-strict-decluse")
     return None
 
+# The platform developer framework directory contains XCTest.swiftmodule
+# with Swift extensions to XCTest, so it needs to be added to the search
+# path on platforms where it exists.
+def _add_developer_swift_imports(developer_dirs, args):
+    platform_developer_framework = platform_developer_framework_dir(
+        developer_dirs,
+    )
+    if platform_developer_framework:
+        swift_developer_lib_dir_path = swift_developer_lib_dir(
+            developer_dirs,
+        )
+        args.add(swift_developer_lib_dir_path, format = "-I%s")
+
+def _non_pcm_developer_framework_paths_configurator(prerequisites, args):
+    """ Adds developer frameworks flags to the command line. """
+    if prerequisites.is_test:
+        args.add_all(
+            [
+                developer_dir.path
+                for developer_dir in prerequisites.developer_dirs
+            ],
+            format_each = "-F%s",
+        )
+        _add_developer_swift_imports(
+            prerequisites.developer_dirs,
+            args,
+        )
+
+# PCM version of the logic above
+def _pcm_developer_framework_paths_configurator(prerequisites, args):
+    """ Adds developer frameworks flags to the command line. """
+    if prerequisites.is_test:
+        args.add_all(
+            [
+                developer_dir.path
+                for developer_dir in prerequisites.developer_dirs
+            ],
+            before_each = "-Xcc",
+            format_each = "-F%s",
+        )
+        _add_developer_swift_imports(
+            prerequisites.developer_dirs,
+            args,
+        )
+
 def _clang_search_paths_configurator(prerequisites, args):
     """Adds Clang search paths to the command line."""
     args.add_all(
@@ -1791,6 +1858,7 @@ def compile(
         deps = [],
         feature_configuration,
         generated_header_name = None,
+        is_test,
         module_name,
         private_deps = [],
         srcs,
@@ -1817,6 +1885,7 @@ def compile(
             `SwiftInfo`, or `apple_common.Objc`.
         feature_configuration: A feature configuration obtained from
             `swift_common.configure_features`.
+        is_test: Represents if the `testonly` value of the context.
         generated_header_name: The name of the Objective-C generated header that
             should be generated for this module. If omitted, no header will be
             generated.
@@ -1973,8 +2042,10 @@ def compile(
         bin_dir = feature_configuration._bin_dir,
         cc_compilation_context = merged_providers.cc_info.compilation_context,
         defines = sets.to_list(defines_set),
+        developer_dirs = swift_toolchain.developer_dirs,
         genfiles_dir = feature_configuration._genfiles_dir,
         is_swift = True,
+        is_test = is_test,
         module_name = module_name,
         objc_include_paths_workaround = (
             merged_providers.objc_include_paths_workaround
@@ -2763,9 +2834,11 @@ def new_objc_provider(
         alwayslink = False,
         deps,
         feature_configuration,
+        is_test,
         libraries_to_link,
         module_context,
-        user_link_flags = []):
+        user_link_flags = [],
+        swift_toolchain):
     """Creates an `apple_common.Objc` provider for a Swift target.
 
     Args:
@@ -2780,12 +2853,14 @@ def new_objc_provider(
             will be passed to the new one in order to propagate the correct
             transitive fields.
         feature_configuration: The Swift feature configuration.
+        is_test: Represents if the `testonly` value of the context.
         libraries_to_link: A list (typically of one element) of the
             `LibraryToLink` objects from which the static archives (`.a` files)
             containing the target's compiled code will be retrieved.
         module_context: The module context as returned by
             `swift_common.compile`.
         user_link_flags: Linker options that should be propagated to dependents.
+        swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
 
     Returns:
         An `apple_common.Objc` provider that should be returned by the calling
@@ -2831,6 +2906,11 @@ def new_objc_provider(
         debug_link_flags = []
         debug_link_inputs = []
 
+    if is_test:
+        developer_paths_linkopts = developer_dirs_linkopts(swift_toolchain.developer_dirs)
+    else:
+        developer_paths_linkopts = []
+
     return apple_common.new_objc_provider(
         force_load_library = depset(
             force_load_libraries,
@@ -2842,7 +2922,7 @@ def new_objc_provider(
             order = "topological",
         ),
         link_inputs = depset(additional_link_inputs + debug_link_inputs),
-        linkopt = depset(user_link_flags + debug_link_flags),
+        linkopt = depset(user_link_flags + debug_link_flags + developer_paths_linkopts),
         providers = get_providers(
             deps,
             apple_common.Objc,
