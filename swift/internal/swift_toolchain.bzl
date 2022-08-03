@@ -335,6 +335,7 @@ def _swift_toolchain_impl(ctx):
             clang_implicit_deps_providers = (
                 collect_implicit_deps_providers([])
             ),
+            developer_dirs = [],
             feature_allowlists = [
                 target[SwiftFeatureAllowlistInfo]
                 for target in ctx.attr.feature_allowlists
