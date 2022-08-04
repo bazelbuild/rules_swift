@@ -258,7 +258,24 @@ def _swift_linking_rule_impl(
         user_link_flags = user_link_flags,
     )
 
-    providers = [OutputGroupInfo(**output_groups)]
+    if module_context:
+        modules = [
+            swift_common.create_module(
+                name = module_context.name,
+                compilation_context = module_context.compilation_context,
+                # The rest of the fields are intentionally ommited, as we only
+                # want to expose the compilation_context
+            ),
+        ]
+    else:
+        modules = []
+
+    providers = [
+        OutputGroupInfo(**output_groups),
+        swift_common.create_swift_info(
+            modules = modules,
+        ),
+    ]
 
     return cc_compilation_outputs, linking_outputs, providers
 
