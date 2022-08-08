@@ -206,6 +206,11 @@ _FEATURE_CHECKS = {
     SWIFT_FEATURE_USE_RESPONSE_FILES: _check_use_response_files,
 }
 
+def _normalized_linux_cpu(cpu):
+    if cpu in ("amd64"):
+        return "x86_64"
+    return cpu
+
 def _create_linux_toolchain(repository_ctx):
     """Creates BUILD targets for the Swift toolchain on Linux.
 
@@ -245,13 +250,14 @@ package(default_visibility = ["//visibility:public"])
 
 swift_toolchain(
     name = "toolchain",
-    arch = "x86_64",
+    arch = "{cpu}",
     features = [{feature_list}],
     os = "linux",
     root = "{root}",
     version_file = "{version_file}",
 )
 """.format(
+            cpu = _normalized_linux_cpu(repository_ctx.os.arch),
             feature_list = ", ".join([
                 '"{}"'.format(feature)
                 for feature in feature_values
