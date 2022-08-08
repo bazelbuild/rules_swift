@@ -206,8 +206,7 @@ _FEATURE_CHECKS = {
     SWIFT_FEATURE_USE_RESPONSE_FILES: _check_use_response_files,
 }
 
-def _normalized_linux_cpu(repository_ctx):
-    cpu = repository_ctx.os.arch
+def _normalized_linux_cpu(cpu):
     if cpu in ("amd64"):
         return "x86_64"
     return cpu
@@ -258,7 +257,7 @@ swift_toolchain(
     version_file = "{version_file}",
 )
 """.format(
-            cpu = _normalized_linux_cpu(repository_ctx),
+            cpu = _normalized_linux_cpu(repository_ctx.os.arch),
             feature_list = ", ".join([
                 '"{}"'.format(feature)
                 for feature in feature_values
