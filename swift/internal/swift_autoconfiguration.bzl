@@ -245,13 +245,14 @@ package(default_visibility = ["//visibility:public"])
 
 swift_toolchain(
     name = "toolchain",
-    arch = "x86_64",
+    arch = "{cpu}",
     features = [{feature_list}],
     os = "linux",
     root = "{root}",
     version_file = "{version_file}",
 )
 """.format(
+            cpu = repository_ctx.os.arch,
             feature_list = ", ".join([
                 '"{}"'.format(feature)
                 for feature in feature_values
