@@ -748,7 +748,7 @@ def compile_action_configs(
             configurators = [_emit_symbol_graph_configurator],
             features = [
                 SWIFT_FEATURE_EMIT_SYMBOL_GRAPH,
-                SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION
+                SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION,
             ],
         ),
 
