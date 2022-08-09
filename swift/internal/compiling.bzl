@@ -739,6 +739,17 @@ def compile_action_configs(
             features = [
                 SWIFT_FEATURE_EMIT_SYMBOL_GRAPH,
             ],
+            not_features = [SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [
+                swift_action_names.DERIVE_FILES,
+            ],
+            configurators = [_emit_symbol_graph_configurator],
+            features = [
+                SWIFT_FEATURE_EMIT_SYMBOL_GRAPH,
+                SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION,
+            ],
         ),
 
         # When using C modules, disable the implicit search for module map files
