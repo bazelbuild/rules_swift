@@ -93,6 +93,21 @@ split_swiftmodule_copts_test = make_action_command_line_test_rule(
         ],
     },
 )
+split_swiftmodule_symbol_graph_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:features": [
+            "swift.emit_symbol_graph",
+            "swift.split_derived_files_generation",
+        ],
+    },
+)
+default_no_split_swiftmodule_symbol_graph_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:features": [
+            "swift.emit_symbol_graph",
+        ],
+    },
+)
 
 def split_derived_files_test_suite(name):
     """Test suite for split derived files options.
@@ -163,6 +178,39 @@ def split_derived_files_test_suite(name):
             "-emit-module-path",
             "simple.derived_output_file_map.json",
         ],
+        tags = [name],
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+    )
+
+    split_swiftmodule_symbol_graph_test(
+        name = "{}_symbol_graph_in_derive_action".format(name),
+        expected_argv = [
+            "-emit-symbol-graph",
+            "-emit-symbol-graph-dir",
+        ],
+        mnemonic = "SwiftDeriveFiles",
+        tags = [name],
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+    )
+
+    split_swiftmodule_symbol_graph_test(
+        name = "{}_no_symbol_graph_in_compile_action".format(name),
+        not_expected_argv = [
+            "-emit-symbol-graph",
+            "-emit-symbol-graph-dir",
+        ],
+        mnemonic = "SwiftCompile",
+        tags = [name],
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+    )
+
+    default_no_split_swiftmodule_symbol_graph_test(
+        name = "{}_default_no_split_symbol_graph_in_compile_action".format(name),
+        expected_argv = [
+            "-emit-symbol-graph",
+            "-emit-symbol-graph-dir",
+        ],
+        mnemonic = "SwiftCompile",
         tags = [name],
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
