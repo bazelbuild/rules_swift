@@ -47,6 +47,7 @@ bzl_library(
         "//swift/toolchains/config:tool_config",
         "@bazel_skylib//lib:dicts",
         "@bazel_skylib//lib:paths",
+        "@bazel_skylib//rules:common_settings",
     ],
 )
 
