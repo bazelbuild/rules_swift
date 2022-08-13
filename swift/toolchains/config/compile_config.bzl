@@ -595,6 +595,19 @@ def compile_action_configs(
         ),
     ]
 
+    #### FDO flags
+    action_configs.append(
+        # Support for order-file instrumentation.
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE],
+            configurators = [
+                add_arg("-sanitize=undefined"),
+                add_arg("-sanitize-coverage=func"),
+            ],
+            features = ["fdo_instrument_order_file"],
+        ),
+    )
+
     #### Flags controlling how Swift/Clang modular inputs are processed
 
     action_configs += [
