@@ -62,6 +62,11 @@ SWIFT_FEATURE_DEBUG_PREFIX_MAP = "swift.debug_prefix_map"
 # graph.
 SWIFT_FEATURE_EMIT_C_MODULE = "swift.emit_c_module"
 
+# If enabled alongside `swift.index_while_building`, the indexstore will also
+# contain records for symbols in system modules imported by the code being
+# indexed.
+SWIFT_FEATURE_INDEX_SYSTEM_MODULES = "swift.index_system_modules"
+
 # If enabled, the compilation action for a target will also produce an index
 # store among its outputs.
 SWIFT_FEATURE_INDEX_WHILE_BUILDING = "swift.index_while_building"
