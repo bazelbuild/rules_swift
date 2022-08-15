@@ -73,7 +73,9 @@ SWIFT_FEATURE_EMIT_C_MODULE = "swift.emit_c_module"
 # https://docs.google.com/document/d/1cH2sTpgSnJZCkZtJl1aY-rzy4uGPcrI-6RrUpdATO2Q/
 SWIFT_FEATURE_INDEX_WHILE_BUILDING = "swift.index_while_building"
 
-# If enabled the compilation action will not produce indexes for system modules.
+# If enabled alongside `swift.index_while_building`, the indexstore will not
+# contain records for symbols in system modules imported by the code being
+# indexed.
 SWIFT_FEATURE_DISABLE_SYSTEM_INDEX = "swift.disable_system_index"
 
 # Index while building - using a global index store cache
