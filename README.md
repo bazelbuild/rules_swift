@@ -18,12 +18,6 @@ If you run into any problems with these rules, please
 for the reference documentation for the rules and other definitions in this
 repository.
 
-## Compatibility
-
-Please refer to the
-[release notes](https://github.com/bazelbuild/rules_swift/releases) for a given
-release to see which version of Bazel it is compatible with.
-
 ## Quick Setup
 
 ### 1. Install Swift
