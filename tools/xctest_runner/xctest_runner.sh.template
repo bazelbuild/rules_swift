@@ -31,7 +31,7 @@ bundle_path="$(dirname "$(dirname "$(dirname "$executable_path")")")"
 
 sanitizer_dyld_env=""
 if output=$(otool -L "$executable_path" | grep @rpath/libclang_rt | xargs | cut -d " " -f 1); then
-  rpath=$(objdump --macho --rpaths "$executable_path" | grep usr/lib/clang | head -1)
+  rpath=$(otool -l "$executable_path" | grep -A2 LC_RPATH | grep "^\s*path" | grep usr/lib/clang | head -1 | cut -d " " -f 11)
   if [[ -z "$rpath" ]]; then
     echo "Sanitizer libraries are required but rpath could not be inferred, please file an issue" >&2
     exit 1
