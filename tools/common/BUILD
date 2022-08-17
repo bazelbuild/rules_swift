@@ -17,6 +17,14 @@ cc_library(
 )
 
 cc_library(
+    name = "color",
+    hdrs = ["color.h"],
+    deps = [
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
     name = "file_system",
     srcs = ["file_system.cc"],
     hdrs = ["file_system.h"],

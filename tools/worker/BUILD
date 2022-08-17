@@ -52,10 +52,13 @@ cc_library(
     srcs = ["swift_runner.cc"],
     hdrs = ["swift_runner.h"],
     deps = [
+        "//tools/common:color",
         "//tools/common:file_system",
+        "//tools/common:path_utils",
         "//tools/common:process",
         "//tools/common:swift_substitutions",
         "//tools/common:temp_file",
+        "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/strings",
     ],
 )

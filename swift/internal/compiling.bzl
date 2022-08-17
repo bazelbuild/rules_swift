@@ -31,6 +31,7 @@ load(
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
     "SWIFT_FEATURE_HEADERS_ALWAYS_ACTION_INPUTS",
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
+    "SWIFT_FEATURE_LAYERING_CHECK_SWIFT",
     "SWIFT_FEATURE_NO_GENERATED_MODULE_MAP",
     "SWIFT_FEATURE_OPT",
     "SWIFT_FEATURE_OPT_USES_WMO",
@@ -378,13 +379,13 @@ def compile(
             for cc_info in swift_toolchain.implicit_deps_providers.cc_infos
         ],
     )
-    merged_swift_info = create_swift_info(
-        swift_infos = (
-            swift_infos +
-            private_swift_infos +
-            swift_toolchain.implicit_deps_providers.swift_infos
-        ),
+
+    all_swift_infos = (
+        swift_infos +
+        private_swift_infos +
+        swift_toolchain.implicit_deps_providers.swift_infos
     )
+    merged_swift_info = create_swift_info(swift_infos = all_swift_infos)
 
     # Flattening this `depset` is necessary because we need to extract the
     # module maps or precompiled modules out of structured values and do so
@@ -424,6 +425,31 @@ def compile(
     else:
         explicit_swift_module_map_file = None
 
+    if is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_LAYERING_CHECK_SWIFT,
+    ):
+        # For performance, don't worry about uniquing the module names; since
+        # Bazel doesn't allow repeated `deps` the only time a duplicate might
+        # appear is if someone explicitly depends on an implicit dependency that
+        # came from the toolchain. This is relatively unlikely, and the worker
+        # will dedupe it anyway.
+        direct_module_names = []
+        for dep_swift_info in all_swift_infos:
+            for dep_module_context in dep_swift_info.direct_modules:
+                direct_module_names.append(dep_module_context.name)
+
+        deps_modules_file = actions.declare_file(
+            "{}.deps-module-mapping".format(target_name),
+        )
+        _write_deps_modules_file(
+            actions = actions,
+            deps_modules_file = deps_modules_file,
+            direct_module_names = direct_module_names,
+        )
+    else:
+        deps_modules_file = None
+
     prerequisites = struct(
         additional_inputs = additional_inputs,
         always_include_headers = is_feature_enabled(
@@ -433,6 +459,7 @@ def compile(
         bin_dir = feature_configuration._bin_dir,
         cc_compilation_context = merged_compilation_context,
         defines = sets.to_list(defines_set),
+        deps_modules_file = deps_modules_file,
         explicit_swift_module_map_file = explicit_swift_module_map_file,
         genfiles_dir = feature_configuration._genfiles_dir,
         is_swift = True,
@@ -1076,3 +1103,29 @@ def _emitted_output_nature(feature_configuration, user_compile_flags):
     ) or find_num_threads_flag_value(user_compile_flags) == 1
 
     return struct(emits_multiple_objects = not (is_wmo and is_single_threaded))
+
+def _write_deps_modules_file(
+        actions,
+        deps_modules_file,
+        direct_module_names):
+    """Writes a file containing the module names of direct dependencies.
+
+    This file is used by the Swift worker process to perform layering checks;
+    its contents are compared against the modules actually imported by the Swift
+    code.
+
+    Args:
+        actions: The object used to register actions.
+        deps_modules_file: The output file that will contain the list of
+            imported module names.
+        direct_module_names: The list of names of modules that are the direct
+            dependencies of the code being compiled.
+    """
+    deps_mapping = actions.args()
+    deps_mapping.set_param_file_format("multiline")
+    deps_mapping.add_all(direct_module_names)
+
+    actions.write(
+        content = deps_mapping,
+        output = deps_modules_file,
+    )

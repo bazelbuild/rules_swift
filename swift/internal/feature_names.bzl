@@ -76,6 +76,12 @@ SWIFT_FEATURE_INDEX_WHILE_BUILDING = "swift.index_while_building"
 # in its dependencies. This is ignored for system modules.
 SWIFT_FEATURE_LAYERING_CHECK = "swift.layering_check"
 
+# If enabled, an error will be emitted when compiling Swift code if it imports
+# any module that is not listed among the direct dependencies of the target.
+# TOOD(b/73945280): Combine this into `swift.layering_check` once everything is
+# layering-check clean.
+SWIFT_FEATURE_LAYERING_CHECK_SWIFT = "swift.layering_check_swift"
+
 # If enabled, the C or Objective-C target should be compiled as a system module.
 SWIFT_FEATURE_SYSTEM_MODULE = "swift.system_module"
 

@@ -38,6 +38,7 @@ load(
     "SWIFT_FEATURE_INDEX_SYSTEM_MODULES",
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
     "SWIFT_FEATURE_LAYERING_CHECK",
+    "SWIFT_FEATURE_LAYERING_CHECK_SWIFT",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_NO_ASAN_VERSION_CHECK",
     "SWIFT_FEATURE_OPT",
@@ -177,6 +178,13 @@ def compile_action_configs(
         ActionConfigInfo(
             actions = [SWIFT_ACTION_COMPILE],
             configurators = [_emit_objc_header_path_configurator],
+        ),
+
+        # Emit the list of imported modules for layering checks.
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE],
+            configurators = [_swift_layering_check_configurator],
+            features = [SWIFT_FEATURE_LAYERING_CHECK_SWIFT],
         ),
     ]
 
@@ -803,6 +811,17 @@ def _emit_objc_header_path_configurator(prerequisites, args):
     """Adds the generated header output path to the command line."""
     if prerequisites.generated_header_file:
         args.add("-emit-objc-header-path", prerequisites.generated_header_file)
+
+def _swift_layering_check_configurator(prerequisites, args):
+    """Adds flags for Swift layering checks to the command line."""
+    args.add(
+        "-Xwrapped-swift=-layering-check-deps-modules={}".format(
+            prerequisites.deps_modules_file.path,
+        ),
+    )
+    return ConfigResultInfo(
+        inputs = [prerequisites.deps_modules_file],
+    )
 
 def _global_module_cache_configurator(prerequisites, args):
     """Adds flags to enable the global module cache."""
