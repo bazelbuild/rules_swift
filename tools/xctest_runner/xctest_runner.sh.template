@@ -26,11 +26,36 @@ trap 'rm -rf "$tmp_dir"' EXIT
 readonly profraw="$tmp_dir/coverage.profraw"
 
 # Foo.xctest/Contents/MacOS/Foo -> Foo.xctest
-bundle_path="$(dirname "$(dirname "$(dirname "%executable%")")")"
+executable_path="%executable%"
+bundle_path="$(dirname "$(dirname "$(dirname "$executable_path")")")"
+
+sanitizer_dyld_env=""
+if output=$(otool -L "$executable_path" | grep @rpath/libclang_rt | xargs | cut -d " " -f 1); then
+  rpath=$(otool -l "$executable_path" | grep -A2 LC_RPATH | grep "^\s*path" | grep usr/lib/clang | head -1 | cut -d " " -f 11)
+  if [[ -z "$rpath" ]]; then
+    echo "Sanitizer libraries are required but rpath could not be inferred, please file an issue" >&2
+    exit 1
+  fi
+
+  for lib in $output; do
+    if [[ -n "$sanitizer_dyld_env" ]]; then
+      sanitizer_dyld_env="$sanitizer_dyld_env:"
+    fi
+    sanitizer_dyld_env="${sanitizer_dyld_env}$rpath/${lib#@rpath/}"
+  done
+fi
+
+if [[ -n "${DYLD_INSERT_LIBRARIES:-}" ]]; then
+  if [[ -n "$sanitizer_dyld_env" ]]; then
+    sanitizer_dyld_env="$sanitizer_dyld_env:"
+  fi
+  sanitizer_dyld_env="$sanitizer_dyld_env$DYLD_INSERT_LIBRARIES"
+fi
 
 exit_status=0
+xctest=$(xcrun -f xctest)
 # TODO(allevato): Support Bazel's --test_filter.
-LLVM_PROFILE_FILE="$profraw" xcrun xctest -XCTest All "$bundle_path" || exit_status=$?
+DYLD_INSERT_LIBRARIES=$sanitizer_dyld_env LLVM_PROFILE_FILE="$profraw" $xctest -XCTest All "$bundle_path" || exit_status=$?
 
 if [[ "$exit_status" -ne 0 ]]; then
   exit "$exit_status"
