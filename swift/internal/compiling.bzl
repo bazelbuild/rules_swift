@@ -290,6 +290,9 @@ def compile_action_configs(
                     "-no-clang-module-breadcrumbs",
                 ),
             ],
+            features = [
+                SWIFT_FEATURE_CACHEABLE_SWIFTMODULES,
+            ],
         ),
 
         # Add the output precompiled module file path to the command line.
