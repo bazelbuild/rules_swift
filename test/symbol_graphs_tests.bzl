@@ -19,12 +19,14 @@ load(
     "directory_test",
 )
 
-def symbol_graphs_test_suite(name):
+def symbol_graphs_test_suite(name, tags = []):
     """Test suite for extracting symbol graphs.
 
     Args:
-      name: The base name to be used in targets created by this macro.
+        name: The base name to be used in targets created by this macro.
+        tags: Additional tags to apply to each test.
     """
+    all_tags = [name] + tags
 
     # Verify that the `swift_extract_symbol_graph` rule produces a directory
     # output containing the correct files when the requested target is a leaf
@@ -37,7 +39,7 @@ def symbol_graphs_test_suite(name):
                 "SomeModule@Swift.symbols.json",
             ],
         },
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/symbol_graphs:some_module_symbol_graph",
     )
 
@@ -55,7 +57,7 @@ def symbol_graphs_test_suite(name):
                 "SomeModuleWithExtension.symbols.json",
             ],
         },
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/symbol_graphs:some_module_symbol_graph_with_extension_block_symbols",
     )
 
@@ -69,7 +71,7 @@ def symbol_graphs_test_suite(name):
                 "ImportingModule.symbols.json",
             ],
         },
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/symbol_graphs:importing_module_symbol_graph",
     )
 
@@ -84,11 +86,11 @@ def symbol_graphs_test_suite(name):
                 "SomeModule@Swift.symbols.json",
             ],
         },
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/symbol_graphs:all_symbol_graphs",
     )
 
     native.test_suite(
         name = name,
-        tags = [name],
+        tags = all_tags,
     )

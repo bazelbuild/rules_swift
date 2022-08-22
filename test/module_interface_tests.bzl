@@ -39,12 +39,14 @@ vfsoverlay_test = make_action_command_line_test_rule(
     },
 )
 
-def module_interface_test_suite(name):
+def module_interface_test_suite(name, tags = []):
     """Test suite for features that compile Swift module interfaces.
 
     Args:
         name: The base name to be used in targets created by this macro.
+        tags: Additional tags to apply to each test.
     """
+    all_tags = [name] + tags
 
     # Verify that a `swift_binary` builds properly when depending on a
     # `swift_import` target that references a `.swiftinterface` file.
@@ -53,12 +55,12 @@ def module_interface_test_suite(name):
         targets = [
             "@build_bazel_rules_swift//test/fixtures/module_interface:client",
         ],
-        tags = [name],
+        tags = all_tags,
     )
 
     explicit_swift_module_map_test(
         name = "{}_explicit_swift_module_map_test".format(name),
-        tags = [name],
+        tags = all_tags,
         expected_argv = [
             "-explicit-swift-module-map-file $(BIN_DIR)/test/fixtures/module_interface/toy_module.swift-explicit-module-map.json",
         ],
@@ -71,7 +73,7 @@ def module_interface_test_suite(name):
 
     vfsoverlay_test(
         name = "{}_vfsoverlay_test".format(name),
-        tags = [name],
+        tags = all_tags,
         expected_argv = [
             "-vfsoverlay$(BIN_DIR)/test/fixtures/module_interface/toy_module.vfsoverlay.yaml",
             "-I/__build_bazel_rules_swift/swiftmodules",
@@ -87,5 +89,5 @@ def module_interface_test_suite(name):
 
     native.test_suite(
         name = name,
-        tags = [name],
+        tags = all_tags,
     )

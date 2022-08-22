@@ -45,12 +45,14 @@ incorrect_global_module_cache_uses_tmpdir_action_command_line_test = make_action
     },
 )
 
-def module_cache_settings_test_suite(name):
+def module_cache_settings_test_suite(name, tags = []):
     """Test suite for module cache options.
 
     Args:
-      name: the base name to be used in things created by this macro
+        name: The base name to be used in things created by this macro.
+        tags: Additional tags to apply to each test.
     """
+    all_tags = [name] + tags
 
     # Verify that a global module cache path is passed to swiftc.
     use_global_module_cache_action_command_line_test(
@@ -66,7 +68,7 @@ def module_cache_settings_test_suite(name):
             "/tmp/__build_bazel_rules_swift/swift_module_cache/$(WORKSPACE_NAME)",
         ],
         mnemonic = "SwiftCompile",
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
 
@@ -82,7 +84,7 @@ def module_cache_settings_test_suite(name):
             "-Xwrapped-swift=-ephemeral-module-cache",
         ],
         mnemonic = "SwiftCompile",
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
 
@@ -94,11 +96,11 @@ def module_cache_settings_test_suite(name):
             "/tmp/__build_bazel_rules_swift/swift_module_cache/$(WORKSPACE_NAME)",
         ],
         mnemonic = "SwiftCompile",
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
 
     native.test_suite(
         name = name,
-        tags = [name],
+        tags = all_tags,
     )

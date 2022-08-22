@@ -44,7 +44,7 @@ generated_header_test_suite(name = "generated_header")
 
 imported_framework_test_suite(name = "imported_framework")
 
-interop_hints_test_suite()
+interop_hints_test_suite(name = "interop_hints")
 
 mainattr_test_suite(name = "mainattr")
 

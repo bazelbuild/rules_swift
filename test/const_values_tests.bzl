@@ -42,12 +42,14 @@ const_values_wmo_test = make_provider_test_rule(
     },
 )
 
-def const_values_test_suite(name):
+def const_values_test_suite(name, tags = []):
     """Test suite for `swift_library` producing .swiftconstvalues files.
 
     Args:
-      name: the base name to be used in things created by this macro
+        name: The base name to be used in things created by this macro.
+        tags: Additional tags to apply to each test.
     """
+    all_tags = [name] + tags
 
     provider_test(
         name = "{}_empty_const_values_single_file".format(name),
@@ -56,7 +58,7 @@ def const_values_test_suite(name):
         ],
         field = "const_values",
         provider = "OutputGroupInfo",
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
 
@@ -68,7 +70,7 @@ def const_values_test_suite(name):
         ],
         field = "const_values",
         provider = "OutputGroupInfo",
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/multiple_files",
     )
 
@@ -79,7 +81,7 @@ def const_values_test_suite(name):
         ],
         field = "const_values",
         provider = "OutputGroupInfo",
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/multiple_files",
     )
 
@@ -92,7 +94,7 @@ def const_values_test_suite(name):
             "first.swift.swiftconstvalues",
         ],
         mnemonic = "SwiftCompile",
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/basic:first",
     )
 
@@ -105,11 +107,11 @@ def const_values_test_suite(name):
             "first.swift.swiftconstvalues",
         ],
         mnemonic = "SwiftCompile",
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/basic:first",
     )
 
     native.test_suite(
         name = name,
-        tags = [name],
+        tags = all_tags,
     )
