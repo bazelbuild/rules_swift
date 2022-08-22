@@ -19,7 +19,7 @@ check them in directly.
 """
 
 load(
-    "@build_bazel_rules_swift//swift:swift.bzl",
+    "@build_bazel_rules_swift//swift:providers.bzl",
     "SwiftInfo",
 )
 

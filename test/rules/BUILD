@@ -7,7 +7,7 @@ bzl_library(
         "//test:__pkg__",
     ],
     deps = [
-        "//swift",
+        "//swift:providers",
         "@bazel_skylib//lib:collections",
         "@bazel_skylib//lib:types",
         "@bazel_skylib//lib:unittest",
