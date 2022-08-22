@@ -455,7 +455,7 @@ swift_test = rule(
             ),
             "_swizzle_absolute_xcttestsourcelocation": attr.label(
                 default = Label(
-                    "@build_bazel_apple_support//lib:swizzle_absolute_xcttestsourcelocation",
+                    "@build_bazel_rules_swift//swift/internal:swizzle_absolute_xcttestsourcelocation",
                 ),
             ),
             "_xctest_runner_template": attr.label(

@@ -404,6 +404,30 @@ bzl_library(
     srcs = ["build_settings.bzl"],
 )
 
+config_setting(
+    name = "can_swizzle_xcttestsourcelocation",
+    # Ideally this would detect building for an Apple platform
+    values = {
+        "features": "apple.swizzle_absolute_xcttestsourcelocation",
+    },
+)
+
+# Indirection needed to prevent using `objc_library` outside of macOS
+alias(
+    name = "swizzle_absolute_xcttestsourcelocation",
+    actual = select({
+        ":can_swizzle_xcttestsourcelocation": (
+            "@build_bazel_apple_support//lib:swizzle_absolute_xcttestsourcelocation"
+        ),
+        "//conditions:default": ":dummy_swizzle_absolute_xcttestsourcelocation",
+    }),
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "dummy_swizzle_absolute_xcttestsourcelocation",
+)
+
 # Consumed by Bazel integration tests.
 filegroup(
     name = "for_bazel_tests",
