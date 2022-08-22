@@ -5,12 +5,15 @@ load(
     "swift_shell_test",
 )
 
-def xctest_runner_test_suite(name):
+def xctest_runner_test_suite(name, tags = []):
     """Test suite for xctest runner.
 
     Args:
-      name: the base name to be used in things created by this macro
+        name: The base name to be used in targets created by this macro.
+        tags: Additional tags to apply to each test.
     """
+    all_tags = [name] + tags
+
     swift_shell_test(
         name = "{}_pass".format(name),
         expected_return_code = 0,
@@ -19,7 +22,7 @@ def xctest_runner_test_suite(name):
             "Test Suite 'PassingUnitTests.xctest' passed",
             "Executed 3 tests, with 0 failures",
         ],
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/xctest_runner:PassingUnitTests",
         target_compatible_with = ["@platforms//os:macos"],
     )
@@ -32,7 +35,7 @@ def xctest_runner_test_suite(name):
             "Test Suite 'FailingUnitTests.xctest' failed",
             "Executed 1 test, with 1 failure",
         ],
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/xctest_runner:FailingUnitTests",
         target_compatible_with = ["@platforms//os:macos"],
     )
@@ -44,12 +47,12 @@ def xctest_runner_test_suite(name):
             "Executed 0 tests, with 0 failures",
             "error: no tests were executed",
         ],
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/xctest_runner:EmptyUnitTests",
         target_compatible_with = ["@platforms//os:macos"],
     )
 
     native.test_suite(
         name = name,
-        tags = [name],
+        tags = all_tags,
     )

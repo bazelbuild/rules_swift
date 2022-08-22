@@ -87,12 +87,14 @@ output_file_map_full_lto_test = make_output_file_map_test_rule(
     },
 )
 
-def output_file_map_test_suite(name):
+def output_file_map_test_suite(name, tags = []):
     """Test suite for `swift_library` generating output file maps.
 
     Args:
-      name: the base name to be used in things created by this macro
+        name: The base name to be used in targets created by this macro.
+        tags: Additional tags to apply to each test.
     """
+    all_tags = [name] + tags
 
     output_file_map_test(
         name = "{}_default".format(name),
@@ -102,7 +104,7 @@ def output_file_map_test_suite(name):
         },
         file_entry = "test/fixtures/debug_settings/Empty.swift",
         output_file_map = "test/fixtures/debug_settings/simple.output_file_map.json",
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
 
@@ -115,7 +117,7 @@ def output_file_map_test_suite(name):
         },
         file_entry = "test/fixtures/debug_settings/Empty.swift",
         output_file_map = "test/fixtures/debug_settings/simple.output_file_map.json",
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
 
@@ -126,7 +128,7 @@ def output_file_map_test_suite(name):
         },
         file_entry = "test/fixtures/debug_settings/Empty.swift",
         output_file_map = "test/fixtures/debug_settings/simple.output_file_map.json",
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
 
@@ -137,7 +139,7 @@ def output_file_map_test_suite(name):
         },
         file_entry = "test/fixtures/debug_settings/Empty.swift",
         output_file_map = "test/fixtures/debug_settings/simple.output_file_map.json",
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
 
@@ -148,11 +150,11 @@ def output_file_map_test_suite(name):
         },
         file_entry = "test/fixtures/debug_settings/Empty.swift",
         output_file_map = "test/fixtures/debug_settings/simple.output_file_map.json",
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
 
     native.test_suite(
         name = name,
-        tags = [name],
+        tags = all_tags,
     )

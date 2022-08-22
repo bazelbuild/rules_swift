@@ -16,12 +16,14 @@
 
 load("@build_bazel_rules_swift//test/rules:provider_test.bzl", "provider_test")
 
-def ast_file_test_suite(name):
+def ast_file_test_suite(name, tags = []):
     """Test suite for `swift_library` dumping ast files.
 
     Args:
-      name: the base name to be used in things created by this macro
+        name: The base name to be used in targets created by this macro.
+        tags: Additional tags to apply to each test.
     """
+    all_tags = [name] + tags
 
     provider_test(
         name = "{}_with_no_deps".format(name),
@@ -30,7 +32,7 @@ def ast_file_test_suite(name):
         ],
         field = "swift_ast_file",
         provider = "OutputGroupInfo",
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/swift_through_non_swift:lower",
     )
 
@@ -41,7 +43,7 @@ def ast_file_test_suite(name):
         ],
         field = "swift_ast_file",
         provider = "OutputGroupInfo",
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/swift_through_non_swift:upper",
     )
 
@@ -52,7 +54,7 @@ def ast_file_test_suite(name):
         ],
         field = "swift_ast_file",
         provider = "OutputGroupInfo",
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/private_deps:client_swift_deps",
     )
 
@@ -63,7 +65,7 @@ def ast_file_test_suite(name):
         ],
         field = "swift_ast_file",
         provider = "OutputGroupInfo",
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/private_deps:client_cc_deps",
     )
 
@@ -75,11 +77,11 @@ def ast_file_test_suite(name):
         ],
         field = "swift_ast_file",
         provider = "OutputGroupInfo",
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/multiple_files",
     )
 
     native.test_suite(
         name = name,
-        tags = [name],
+        tags = all_tags,
     )
