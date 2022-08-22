@@ -19,12 +19,14 @@ load(
     "build_test",
 )
 
-def cc_library_test_suite(name):
+def cc_library_test_suite(name, tags = []):
     """Test suite for interoperability with `cc_library`-specific features.
 
     Args:
-      name: the base name to be used in things created by this macro
+        name: The base name to be used in targets created by this macro.
+        tags: Additional tags to apply to each test.
     """
+    all_tags = [name] + tags
 
     # Verify that Swift can import a `cc_library` that uses `include_prefix`,
     # `strip_include_prefix`, or both.
@@ -35,7 +37,7 @@ def cc_library_test_suite(name):
             "@build_bazel_rules_swift//test/fixtures/cc_library:import_prefix_only",
             "@build_bazel_rules_swift//test/fixtures/cc_library:import_strip_prefix_only",
         ],
-        tags = [name],
+        tags = all_tags,
     )
 
     # Verify that `swift_interop_hint.exclude_hdrs` correctly excludes headers
@@ -47,10 +49,10 @@ def cc_library_test_suite(name):
         targets = [
             "@build_bazel_rules_swift//test/fixtures/cc_library:import_prefix_and_strip_prefix_with_exclusion",
         ],
-        tags = [name],
+        tags = all_tags,
     )
 
     native.test_suite(
         name = name,
-        tags = [name],
+        tags = all_tags,
     )

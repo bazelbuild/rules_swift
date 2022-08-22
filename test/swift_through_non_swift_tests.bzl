@@ -19,12 +19,14 @@ load(
     "provider_test",
 )
 
-def swift_through_non_swift_test_suite(name):
+def swift_through_non_swift_test_suite(name, tags = []):
     """Test suite for propagation of `SwiftInfo` through non-Swift targets.
 
     Args:
-      name: the base name to be used in things created by this macro
+        name: The base name to be used in targets created by this macro.
+        tags: Additional tags to apply to each test.
     """
+    all_tags = [name] + tags
 
     # The lower swiftmodule should get propagated through the `objc_library` (by
     # the aspect) and up to the upper target. Make sure it wasn't dropped.
@@ -36,11 +38,11 @@ def swift_through_non_swift_test_suite(name):
         ],
         field = "transitive_modules.swift!.swiftmodule",
         provider = "SwiftInfo",
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/swift_through_non_swift:upper",
     )
 
     native.test_suite(
         name = name,
-        tags = [name],
+        tags = all_tags,
     )

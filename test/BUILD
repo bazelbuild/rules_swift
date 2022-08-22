@@ -10,21 +10,37 @@ load(":swift_through_non_swift_tests.bzl", "swift_through_non_swift_test_suite")
 
 licenses(["notice"])
 
-cc_library_test_suite(name = "cc_library")
+cc_library_test_suite(
+    name = "cc_library",
+)
 
-debug_settings_test_suite(name = "debug_settings")
+debug_settings_test_suite(
+    name = "debug_settings",
+)
 
-generated_header_test_suite(name = "generated_header")
+generated_header_test_suite(
+    name = "generated_header",
+)
 
-interop_hints_test_suite(name = "interop_hints")
+interop_hints_test_suite(
+    name = "interop_hints",
+)
 
-module_interface_test_suite(name = "module_interface")
+module_interface_test_suite(
+    name = "module_interface",
+)
 
-private_deps_test_suite(name = "private_deps")
+private_deps_test_suite(
+    name = "private_deps",
+)
 
-swift_through_non_swift_test_suite(name = "swift_through_non_swift")
+swift_through_non_swift_test_suite(
+    name = "swift_through_non_swift",
+)
 
-symbol_graphs_test_suite(name = "symbol_graphs")
+symbol_graphs_test_suite(
+    name = "symbol_graphs",
+)
 
 test_suite(
     name = "all_tests",

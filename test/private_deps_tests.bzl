@@ -27,12 +27,14 @@ private_deps_provider_test = make_provider_test_rule(
     },
 )
 
-def private_deps_test_suite(name):
+def private_deps_test_suite(name, tags = []):
     """Test suite for propagation behavior of `swift_library.private_deps`.
 
     Args:
-      name: the base name to be used in things created by this macro
+        name: The base name to be used in targets created by this macro.
+        tags: Additional tags to apply to each test.
     """
+    all_tags = [name] + tags
 
     # Each of the two leaf libraries should propagate their own modules.
     private_deps_provider_test(
@@ -42,7 +44,7 @@ def private_deps_test_suite(name):
         ],
         field = "transitive_modules.swift!.swiftmodule",
         provider = "SwiftInfo",
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/private_deps:private_swift",
     )
 
@@ -53,7 +55,7 @@ def private_deps_test_suite(name):
         ],
         field = "transitive_modules.swift!.swiftmodule",
         provider = "SwiftInfo",
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/private_deps:public_swift",
     )
 
@@ -68,7 +70,7 @@ def private_deps_test_suite(name):
         ],
         field = "transitive_modules.swift!.swiftmodule",
         provider = "SwiftInfo",
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/private_deps:client_swift_deps",
     )
 
@@ -86,7 +88,7 @@ def private_deps_test_suite(name):
         ],
         field = "compilation_context.headers",
         provider = "CcInfo",
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/private_deps:client_cc_deps",
     )
 
@@ -99,7 +101,7 @@ def private_deps_test_suite(name):
         ],
         field = "transitive_modules.clang!.module_map!",
         provider = "SwiftInfo",
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/private_deps:client_cc_deps",
     )
 
@@ -117,11 +119,11 @@ def private_deps_test_suite(name):
         ],
         field = "linking_context.linker_inputs.libraries.static_library!",
         provider = "CcInfo",
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/private_deps:client_cc_deps",
     )
 
     native.test_suite(
         name = name,
-        tags = [name],
+        tags = all_tags,
     )
