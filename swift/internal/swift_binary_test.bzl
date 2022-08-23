@@ -145,6 +145,7 @@ def _swift_linking_rule_impl(
         binary_path,
         feature_configuration,
         swift_toolchain,
+        extra_link_deps = [],
         linkopts = []):
     """The shared implementation function for `swift_{binary,test}`.
 
@@ -155,6 +156,8 @@ def _swift_linking_rule_impl(
             `swift_common.configure_features`.
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain
             being used to build the target.
+        extra_link_deps: Additional dependencies that should be linked into the
+            binary.
         linkopts: Additional rule-specific flags that should be passed to the
             linker.
 
@@ -248,7 +251,7 @@ def _swift_linking_rule_impl(
         cc_feature_configuration = cc_feature_configuration,
         # This is already collected from `linking_context`.
         compilation_outputs = None,
-        deps = ctx.attr.deps,
+        deps = ctx.attr.deps + extra_link_deps,
         grep_includes = ctx.file._grep_includes,
         name = binary_path,
         output_type = "executable",
@@ -354,9 +357,21 @@ def _swift_test_impl(ctx):
     xctest_bundle_binary = "{0}.xctest/Contents/MacOS/{0}".format(ctx.label.name)
     binary_path = xctest_bundle_binary if is_bundled else ctx.label.name
 
+    # `swift_common.is_enabled` isn't used, as it requires the prefix of the
+    # feature to start with `swift.`
+    swizzle_absolute_xcttestsourcelocation = (
+        "apple.swizzle_absolute_xcttestsourcelocation" in
+        feature_configuration._enabled_features
+    )
+
+    extra_link_deps = []
+    if swizzle_absolute_xcttestsourcelocation:
+        extra_link_deps.append(ctx.attr._swizzle_absolute_xcttestsourcelocation)
+
     _, linking_outputs, providers = _swift_linking_rule_impl(
         ctx,
         binary_path = binary_path,
+        extra_link_deps = extra_link_deps,
         feature_configuration = feature_configuration,
         linkopts = linkopts,
         swift_toolchain = swift_toolchain,
@@ -438,6 +453,11 @@ swift_test = rule(
                     "@build_bazel_apple_support//tools:coverage_support",
                 ),
             ),
+            "_swizzle_absolute_xcttestsourcelocation": attr.label(
+                default = Label(
+                    "@build_bazel_rules_swift//swift/internal:swizzle_absolute_xcttestsourcelocation",
+                ),
+            ),
             "_xctest_runner_template": attr.label(
                 allow_single_file = True,
                 default = Label(
@@ -478,6 +498,13 @@ swift_test(
 
 You can also disable this feature for all the tests in a package by applying it
 to your BUILD file's `package()` declaration instead of the individual targets.
+
+If integrating with Xcode, the relative paths in test binaries can prevent the
+Issue navigator from working for test failures. To work around this, you can
+have the paths made absolute via swizzling by enabling the
+`"apple.swizzle_absolute_xcttestsourcelocation"` feature. You'll also need to
+set the `BAZEL_WORKSPACE_DIRECTORY` environment variable in your scheme to the
+root of your workspace (i.e. `$(SRCROOT)`).
 """,
     executable = True,
     fragments = ["cpp"],
