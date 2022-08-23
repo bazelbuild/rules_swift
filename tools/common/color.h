@@ -25,6 +25,7 @@ namespace bazel_rules_swift {
 // an `ostream`.
 class Color {
  public:
+  static const Color kBold;
   static const Color kBoldRed;
   static const Color kBoldGreen;
   static const Color kBoldMagenta;
@@ -42,6 +43,7 @@ class Color {
   absl::string_view code_;
 };
 
+inline constexpr const Color Color::kBold = Color("1");
 inline constexpr const Color Color::kBoldRed = Color("1;31");
 inline constexpr const Color Color::kBoldGreen = Color("1;32");
 inline constexpr const Color Color::kBoldMagenta = Color("1;35");

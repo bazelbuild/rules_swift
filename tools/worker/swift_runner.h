@@ -101,10 +101,14 @@ class SwiftRunner {
   bool ProcessArgument(absl::string_view arg,
                        std::function<void(absl::string_view)> consumer);
 
-  // Applies substitutions to the given command line arguments, returning the
-  // results in a new vector.
-  std::vector<std::string> ProcessArguments(
-      const std::vector<std::string> &args);
+  // Applies substitutions to the given command line arguments and populates the
+  // `tool_args_` and `args_` vectors.
+  void ProcessArguments(const std::vector<std::string> &args);
+
+  // Spawns the generated header rewriter to perform any desired transformations
+  // on the Clang header emitted from a Swift compilation.
+  int PerformGeneratedHeaderRewriting(std::ostream &stderr_stream,
+                                      bool stdout_to_stderr);
 
   // Performs a layering check for the compilation, comparing the modules that
   // were imported by Swift code being compiled to the list of dependencies
@@ -116,7 +120,14 @@ class SwiftRunner {
   bazel_rules_swift::SwiftPlaceholderSubstitutions
       swift_placeholder_substitutions_;
 
-  // The arguments, post-substitution, passed to the spawner.
+  // The portion of the command line that indicates which tool should be
+  // spawned; that is, the name/path of the binary, possibly preceded by `xcrun`
+  // on Apple platforms. This part of the path should never be written into a
+  // response file.
+  std::vector<std::string> tool_args_;
+
+  // The arguments, post-substitution, passed to the spawner. This does not
+  // include the binary path, and may be written into a response file.
   std::vector<std::string> args_;
 
   // Temporary files (e.g., rewritten response files) that should be cleaned up
