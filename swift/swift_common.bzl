@@ -18,9 +18,6 @@ This module is meant to be used by custom rules that need to compile Swift code
 and cannot simply rely on writing a macro that wraps `swift_library`. For
 example, `swift_proto_library` generates Swift source code from `.proto` files
 and then needs to compile them. This module provides that lower-level interface.
-
-Do not load this file directly; instead, load the top-level `swift.bzl` file,
-which exports the `swift_common` module.
 """
 
 load(
