@@ -16,7 +16,7 @@
 
 The rules defined in this file are not intended to be used outside of the Swift
 toolchain package. If you are looking for rules to build Swift code using this
-toolchain, see `swift.bzl`.
+toolchain, see `doc/rules.md`.
 """
 
 load("@bazel_features//:features.bzl", "bazel_features")
