@@ -16,6 +16,28 @@ bzl_library(
 )
 
 bzl_library(
+    name = "swift",
+    srcs = ["swift.bzl"],
+    deps = [
+        ":providers",
+        ":swift_binary",
+        ":swift_clang_module_aspect",
+        ":swift_common",
+        ":swift_extract_symbol_graph",
+        ":swift_feature_allowlist",
+        ":swift_grpc_library",
+        ":swift_import",
+        ":swift_interop_hint",
+        ":swift_library",
+        ":swift_module_alias",
+        ":swift_package_configuration",
+        ":swift_proto_library",
+        ":swift_symbol_graph_aspect",
+        ":swift_test",
+    ],
+)
+
+bzl_library(
     name = "swift_binary",
     srcs = ["swift_binary.bzl"],
     deps = [
