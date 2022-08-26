@@ -71,6 +71,8 @@ def _swift_import_impl(ctx):
         ),
     )
 
+    swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
+
     providers = [
         DefaultInfo(
             files = depset(archives + [swiftmodule] + compact([swiftdoc])),
@@ -90,8 +92,10 @@ def _swift_import_impl(ctx):
         new_objc_provider(
             deps = deps,
             feature_configuration = None,
+            is_test = ctx.attr.testonly,
             libraries_to_link = libraries_to_link,
             module_context = module_context,
+            swift_toolchain = swift_toolchain,
         ),
         swift_common.create_swift_info(
             modules = [module_context],
