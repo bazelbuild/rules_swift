@@ -124,7 +124,7 @@ def _swift_module_alias_impl(ctx):
         is_test = ctx.attr.testonly,
         module_context = module_context,
         libraries_to_link = [linking_output.library_to_link],
-        swift_toolchain = swift_toolchain
+        swift_toolchain = swift_toolchain,
     ))
 
     return providers
