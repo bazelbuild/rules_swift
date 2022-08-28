@@ -16,13 +16,13 @@ swift_library(
 genrule(
     name = "generate_archive",
     outs = ["archive.a"],
-    cmd = "mkfile 500 $@",
+    cmd = "for i in {1..1000};do echo \"string\" >> $@;done",
 )
 
 genrule(
     name = "generate_swiftmodule",
     outs = ["archive.swiftmodule"],
-    cmd = "mkfile 500 $@",
+    cmd = "for i in {1..1000};do echo \"string\" >> $@;done",
 )
 
 swift_import(
