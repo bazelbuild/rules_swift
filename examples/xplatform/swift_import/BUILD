@@ -16,13 +16,13 @@ swift_library(
 genrule(
     name = "generate_archive",
     outs = ["archive.a"],
-    cmd = "dd if=/dev/zero of=$@ bs=200 count=24 status=none",
+    cmd = "mkfile 500 $@",
 )
 
 genrule(
     name = "generate_swiftmodule",
     outs = ["archive.swiftmodule"],
-    cmd = "dd if=/dev/zero of=$@ bs=200 count=24 status=none",
+    cmd = "mkfile 500 $@",
 )
 
 swift_import(
