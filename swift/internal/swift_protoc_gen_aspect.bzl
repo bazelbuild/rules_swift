@@ -32,6 +32,7 @@ load(
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_ENABLE_TESTING",
     "SWIFT_FEATURE_GENERATE_FROM_RAW_PROTO_FILES",
+    "SWIFT_FEATURE_LAYERING_CHECK_SWIFT",
 )
 load(":linking.bzl", "new_objc_provider")
 load(
@@ -360,6 +361,11 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             swift_toolchain = swift_toolchain,
             unsupported_features = aspect_ctx.disabled_features + [
                 SWIFT_FEATURE_ENABLE_TESTING,
+                # Layering checks interfere with `import public`, where the
+                # generator explicitly emits imports of modules that may only be
+                # transitively available. We can also save some computational
+                # effort by not doing the extra work.
+                SWIFT_FEATURE_LAYERING_CHECK_SWIFT,
             ],
         )
 

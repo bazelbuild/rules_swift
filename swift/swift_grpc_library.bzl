@@ -19,6 +19,7 @@ load(
     "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_ENABLE_TESTING",
     "SWIFT_FEATURE_GENERATE_FROM_RAW_PROTO_FILES",
+    "SWIFT_FEATURE_LAYERING_CHECK_SWIFT",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:linking.bzl",
@@ -202,7 +203,11 @@ def _swift_grpc_library_impl(ctx):
 
     swift_toolchain = swift_common.get_toolchain(ctx)
 
-    unsupported_features = ctx.disabled_features
+    unsupported_features = list(ctx.disabled_features)
+
+    # Save some computational effort by not enabling layering checks for
+    # generated code.
+    unsupported_features.append(SWIFT_FEATURE_LAYERING_CHECK_SWIFT)
     if ctx.attr.flavor != "client_stubs":
         unsupported_features.append(SWIFT_FEATURE_ENABLE_TESTING)
 
@@ -396,7 +401,10 @@ The kind of definitions that should be generated:
             ),
             # TODO(b/63389580): Migrate to proto_lang_toolchain.
             "_proto_support": attr.label_list(
-                default = [Label("@com_github_grpc_grpc_swift//:SwiftGRPC")],
+                default = [
+                    Label("@com_github_grpc_grpc_swift//:SwiftGRPC"),
+                    Label("@com_github_apple_swift_protobuf//:SwiftProtobuf"),
+                ],
             ),
             "_protoc": attr.label(
                 cfg = "exec",
