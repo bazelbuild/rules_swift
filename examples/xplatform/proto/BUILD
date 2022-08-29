@@ -27,5 +27,6 @@ swift_binary(
     srcs = ["main.swift"],
     deps = [
         ":example_proto_swift",
+        "@com_github_apple_swift_protobuf//:SwiftProtobuf",
     ],
 )

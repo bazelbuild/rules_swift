@@ -67,7 +67,9 @@ swift_binary(
     name = "echo_server",
     srcs = ["server_main.swift"],
     deps = [
+        ":echo_proto_swift",
         ":echo_server_services_swift",
+        "@com_github_grpc_grpc_swift//:SwiftGRPC",
     ],
 )
 
@@ -77,6 +79,7 @@ swift_test(
     deps = [
         ":echo_client_services_swift",
         ":echo_client_test_stubs_swift",
+        ":echo_proto_swift",
     ],
 )
 
@@ -85,5 +88,7 @@ swift_binary(
     srcs = ["client_main.swift"],
     deps = [
         ":echo_client_services_swift",
+        ":echo_proto_swift",
+        "@com_github_apple_swift_protobuf//:SwiftProtobuf",
     ],
 )
