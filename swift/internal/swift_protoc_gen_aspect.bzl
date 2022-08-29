@@ -197,8 +197,6 @@ def _register_pbswift_generate_action(
     if module_mapping_file:
         additional_command_inputs.append(module_mapping_file)
 
-    # TODO(b/23975430): This should be a simple `actions.run_shell`, but until
-    # the cited bug is fixed, we have to use the wrapper script.
     actions.run(
         arguments = [protoc_args],
         executable = protoc_executable,
