@@ -59,6 +59,7 @@ load(
 load(
     "//swift/internal:toolchain_utils.bzl",
     "get_swift_toolchain",
+    "use_swift_toolchain",
 )
 
 # The exported `swift_common` module, which defines the public API for directly
@@ -83,4 +84,5 @@ swift_common = struct(
     library_rule_attrs = swift_library_rule_attrs,
     precompile_clang_module = precompile_clang_module,
     toolchain_attrs = swift_toolchain_attrs,
+    use_toolchain = use_swift_toolchain,
 )

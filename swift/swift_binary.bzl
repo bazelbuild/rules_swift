@@ -30,6 +30,7 @@ load(
     "//swift/internal:output_groups.bzl",
     "supplemental_compilation_output_groups",
 )
+load("//swift/internal:toolchain_utils.bzl", "use_swift_toolchain")
 load(
     "//swift/internal:utils.bzl",
     "expand_locations",
@@ -212,4 +213,5 @@ please use one of the platform-specific application rules in
     executable = True,
     fragments = ["cpp"],
     implementation = _swift_binary_impl,
+    toolchains = use_swift_toolchain(),
 )

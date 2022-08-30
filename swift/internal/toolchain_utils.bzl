@@ -14,7 +14,7 @@
 
 """Helpers used to depend on and access the Swift toolchain."""
 
-SWIFT_TOOLCHAIN_TYPE = "@build_bazel_rules_swift//toolchains:toolchain_type"
+SWIFT_TOOLCHAIN_TYPE = "@build_bazel_rules_swift//toolchains:toolchain-type"
 
 def get_swift_toolchain(ctx, attr = "_toolchain"):
     """Gets the Swift toolchain associated with the rule or aspect.
@@ -41,4 +41,25 @@ def get_swift_toolchain(ctx, attr = "_toolchain"):
 
     fail("To use `swift_common.get_toolchain`, you must declare the " +
          "toolchain in your rule using " +
-         "`toolchains = [swift_common.toolchain_type()]`.")
+         "`toolchains = swift_common.use_toolchain()`.")
+
+def use_swift_toolchain():
+    """Returns a list of toolchain types needed to use the Swift toolchain.
+
+    This function returns a list so that it can be easily composed with other
+    toolchains if necessary. For example, a rule with multiple toolchain
+    dependencies could write:
+
+    ```
+    toolchains = swift_common.use_toolchain() + [other toolchains...]
+    ```
+
+    Returns:
+        A list of toolchain types that should be passed to `rule()` or
+        `aspect()`.
+    """
+
+    # TODO(b/205018581): Intentionally empty for now so that rule definitions
+    # can reference the function while still being a no-op. A future change will
+    # add the toolchain type to this list to enable toolchain resolution.
+    return []

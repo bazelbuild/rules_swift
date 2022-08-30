@@ -10,8 +10,8 @@ def _impl(ctx):
     return [DefaultInfo(files = depset([modules[0].swift.swiftmodule]))]
 
 get_swiftmodule = rule(
-    implementation = _impl,
     attrs = {
         "lib": attr.label(providers = [SwiftInfo]),
     },
+    implementation = _impl,
 )

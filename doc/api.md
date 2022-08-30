@@ -753,3 +753,29 @@ A new attribute dictionary that can be added to the attributes of a
   custom build rule to provide access to the Swift toolchain.
 
 
+<a id="swift_common.use_toolchain"></a>
+
+## swift_common.use_toolchain
+
+<pre>
+swift_common.use_toolchain()
+</pre>
+
+Returns a list of toolchain types needed to use the Swift toolchain.
+
+This function returns a list so that it can be easily composed with other
+toolchains if necessary. For example, a rule with multiple toolchain
+dependencies could write:
+
+```
+toolchains = swift_common.use_toolchain() + [other toolchains...]
+```
+
+
+
+**RETURNS**
+
+A list of toolchain types that should be passed to `rule()` or
+  `aspect()`.
+
+

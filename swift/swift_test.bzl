@@ -35,6 +35,7 @@ load(
     "//swift/internal:swift_symbol_graph_aspect.bzl",
     "make_swift_symbol_graph_aspect",
 )
+load("//swift/internal:toolchain_utils.bzl", "use_swift_toolchain")
 load(
     "//swift/internal:utils.bzl",
     "expand_locations",
@@ -519,4 +520,5 @@ bazel test //:Tests --test_filter=TestModuleName.TestClassName/testMethodName
     fragments = ["cpp"],
     test = True,
     implementation = _swift_test_impl,
+    toolchains = use_swift_toolchain(),
 )

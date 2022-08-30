@@ -246,7 +246,10 @@ bzl_library(
 bzl_library(
     name = "toolchain_utils",
     srcs = ["toolchain_utils.bzl"],
-    visibility = ["//swift:__subpackages__"],
+    visibility = [
+        "//proto:__subpackages__",
+        "//swift:__subpackages__",
+    ],
 )
 
 bzl_library(

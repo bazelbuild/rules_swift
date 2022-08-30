@@ -27,7 +27,11 @@ load("//swift:providers.bzl", "SwiftInfo", "SwiftSymbolGraphInfo")
 load("//swift/internal:attrs.bzl", "swift_toolchain_attrs")
 load("//swift/internal:features.bzl", "configure_features")
 load("//swift/internal:symbol_graph_extracting.bzl", "extract_symbol_graph")
-load("//swift/internal:toolchain_utils.bzl", "get_swift_toolchain")
+load(
+    "//swift/internal:toolchain_utils.bzl",
+    "get_swift_toolchain",
+    "use_swift_toolchain",
+)
 load("//swift/internal:utils.bzl", "include_developer_search_paths")
 
 def _swift_symbol_graph_aspect_impl(target, aspect_ctx):
@@ -186,4 +190,5 @@ default value is {default_value}.
         fragments = ["cpp"],
         implementation = aspect_impl,
         provides = [SwiftSymbolGraphInfo],
+        toolchains = use_swift_toolchain(),
     )

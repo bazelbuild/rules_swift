@@ -21,6 +21,7 @@ load(
     "swift_toolchain_attrs",
 )
 load("//swift/internal:linking.bzl", "new_objc_provider")
+load("//swift/internal:toolchain_utils.bzl", "use_swift_toolchain")
 load(
     "//swift/internal:utils.bzl",
     "compact",
@@ -148,7 +149,6 @@ def _swift_import_impl(ctx):
 
 swift_import = rule(
     attrs = dicts.add(
-        swift_toolchain_attrs(),
         swift_common_rule_attrs(),
         swift_toolchain_attrs(),
         {
@@ -207,4 +207,5 @@ the `.private.swiftinterface` files are required in order to build any code that
 """,
     fragments = ["cpp"],
     implementation = _swift_import_impl,
+    toolchains = use_swift_toolchain(),
 )
