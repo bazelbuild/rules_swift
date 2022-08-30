@@ -72,12 +72,13 @@
 // we copy those outputs into the locations where Bazel declared them, so that
 // it can find them as well.
 
-int CompileWithWorker(const std::vector<std::string> &args) {
+int CompileWithWorker(const std::vector<std::string> &args,
+                      std::string index_import_path) {
   // Pass the "universal arguments" to the Swift work processor. They will be
   // rewritten to replace any placeholders if necessary, and then passed at the
   // beginning of any process invocation. Note that these arguments include the
   // tool itself (i.e., "swiftc").
-  WorkProcessor swift_worker(args);
+  WorkProcessor swift_worker(args, index_import_path);
 
   while (true) {
     std::optional<bazel_rules_swift::worker_protocol::WorkRequest> request =
