@@ -15,9 +15,9 @@
 """Implementation of the `swift_import` rule."""
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load(":attrs.bzl", "swift_common_rule_attrs")
+load(":attrs.bzl", "swift_common_rule_attrs", "swift_toolchain_attrs")
 load(":compiling.bzl", "new_objc_provider")
-load(":providers.bzl", "SwiftInfo")
+load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
 load(":swift_common.bzl", "swift_common")
 load(":utils.bzl", "compact", "get_providers")
 
@@ -71,6 +71,8 @@ def _swift_import_impl(ctx):
         ),
     )
 
+    swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
+
     providers = [
         DefaultInfo(
             files = depset(archives + [swiftmodule] + compact([swiftdoc])),
@@ -90,8 +92,10 @@ def _swift_import_impl(ctx):
         new_objc_provider(
             deps = deps,
             feature_configuration = None,
+            is_test = ctx.attr.testonly,
             libraries_to_link = libraries_to_link,
             module_context = module_context,
+            swift_toolchain = swift_toolchain,
         ),
         swift_common.create_swift_info(
             modules = [module_context],
@@ -103,6 +107,7 @@ def _swift_import_impl(ctx):
 
 swift_import = rule(
     attrs = dicts.add(
+        swift_toolchain_attrs(),
         swift_common_rule_attrs(),
         {
             "archives": attr.label_list(

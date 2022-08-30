@@ -59,6 +59,7 @@ def _swift_module_alias_impl(ctx):
         copts = ["-parse-as-library"],
         deps = deps,
         feature_configuration = feature_configuration,
+        is_test = ctx.attr.testonly,
         module_name = module_name,
         srcs = [reexport_src],
         swift_toolchain = swift_toolchain,
@@ -71,6 +72,7 @@ def _swift_module_alias_impl(ctx):
             actions = ctx.actions,
             compilation_outputs = compilation_outputs,
             feature_configuration = feature_configuration,
+            is_test = ctx.attr.testonly,
             label = ctx.label,
             linking_contexts = [
                 dep[CcInfo].linking_context
@@ -119,8 +121,10 @@ def _swift_module_alias_impl(ctx):
         ),
         deps = deps,
         feature_configuration = feature_configuration,
+        is_test = ctx.attr.testonly,
         module_context = module_context,
         libraries_to_link = [linking_output.library_to_link],
+        swift_toolchain = swift_toolchain,
     ))
 
     return providers
