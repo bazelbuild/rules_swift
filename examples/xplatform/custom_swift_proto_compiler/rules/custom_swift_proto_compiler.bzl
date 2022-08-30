@@ -105,7 +105,6 @@ def _custom_swift_proto_compiler_impl(ctx):
     ]
 
 custom_swift_proto_compiler = rule(
-    implementation = _custom_swift_proto_compiler_impl,
     attrs = {
         "deps": attr.label_list(
             default = [],
@@ -125,4 +124,5 @@ custom_swift_proto_compiler = rule(
             cfg = "exec",
         ),
     },
+    implementation = _custom_swift_proto_compiler_impl,
 )

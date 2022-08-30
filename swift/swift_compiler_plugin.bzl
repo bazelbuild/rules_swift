@@ -35,6 +35,7 @@ load(
     "//swift/internal:output_groups.bzl",
     "supplemental_compilation_output_groups",
 )
+load("//swift/internal:toolchain_utils.bzl", "use_swift_toolchain")
 load(
     "//swift/internal:utils.bzl",
     "expand_locations",
@@ -250,6 +251,7 @@ swift_library(
     executable = True,
     fragments = ["cpp"],
     implementation = _swift_compiler_plugin_impl,
+    toolchains = use_swift_toolchain(),
 )
 
 def _universal_swift_compiler_plugin_impl(ctx):
@@ -330,9 +332,6 @@ universal_swift_compiler_plugin = rule(
             ),
         },
     ),
-    executable = True,
-    fragments = ["cpp", "apple"],
-    implementation = _universal_swift_compiler_plugin_impl,
     doc = """\
 Wraps an existing `swift_compiler_plugin` target to produce a universal binary.
 
@@ -368,4 +367,7 @@ swift_library(
 )
 ```
 """,
+    executable = True,
+    fragments = ["cpp", "apple"],
+    implementation = _universal_swift_compiler_plugin_impl,
 )

@@ -16,6 +16,7 @@
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("//swift/internal:attrs.bzl", "swift_deps_attr", "swift_toolchain_attrs")
+load("//swift/internal:toolchain_utils.bzl", "use_swift_toolchain")
 load("//swift/internal:utils.bzl", "get_providers")
 load(":providers.bzl", "SwiftInfo")
 load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
@@ -97,4 +98,5 @@ Unlike `swift_module_alias`, a new module isn't created for this target, you
 need to import the grouped libraries directly.
 """,
     implementation = _swift_library_group_impl,
+    toolchains = use_swift_toolchain(),
 )

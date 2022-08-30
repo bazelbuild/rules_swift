@@ -46,10 +46,6 @@ bzl_library(
 bzl_library(
     name = "providers",
     srcs = ["providers.bzl"],
-    visibility = [
-        "//swift:__subpackages__",
-        "//test:__subpackages__",
-    ],
     deps = [
         "@bazel_skylib//lib:sets",
         "@bazel_skylib//lib:types",
@@ -81,13 +77,13 @@ bzl_library(
 bzl_library(
     name = "swift_binary",
     srcs = ["swift_binary.bzl"],
-    visibility = ["//swift:__subpackages__"],
     deps = [
         ":providers",
         ":swift_common",
         "//swift/internal:compiling",
         "//swift/internal:feature_names",
         "//swift/internal:linking",
+        "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
         "@bazel_skylib//lib:paths",
     ],
@@ -96,11 +92,6 @@ bzl_library(
 bzl_library(
     name = "swift_clang_module_aspect",
     srcs = ["swift_clang_module_aspect.bzl"],
-    visibility = [
-        "//proto:__subpackages__",
-        "//swift:__subpackages__",
-        "//test:__subpackages__",
-    ],
     deps = [
         ":providers",
         "//swift/internal:attrs",
@@ -117,7 +108,6 @@ bzl_library(
 bzl_library(
     name = "swift_common",
     srcs = ["swift_common.bzl"],
-    visibility = ["//swift:__subpackages__"],
     deps = [
         "//swift/internal:attrs",
         "//swift/internal:compiling",
@@ -140,6 +130,7 @@ bzl_library(
         "//swift/internal:compiling",
         "//swift/internal:linking",
         "//swift/internal:output_groups",
+        "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
         "@bazel_skylib//lib:dicts",
         "@build_bazel_apple_support//lib:apple_support",
@@ -151,7 +142,6 @@ bzl_library(
 bzl_library(
     name = "swift_extract_symbol_graph",
     srcs = ["swift_extract_symbol_graph.bzl"],
-    visibility = ["//swift:__subpackages__"],
     deps = [
         ":providers",
         ":swift_symbol_graph_aspect",
@@ -161,7 +151,6 @@ bzl_library(
 bzl_library(
     name = "swift_feature_allowlist",
     srcs = ["swift_feature_allowlist.bzl"],
-    visibility = ["//swift:__subpackages__"],
     deps = [
         ":providers",
         "//swift/internal:package_specs",
@@ -171,12 +160,12 @@ bzl_library(
 bzl_library(
     name = "swift_import",
     srcs = ["swift_import.bzl"],
-    visibility = ["//swift:__subpackages__"],
     deps = [
         ":providers",
         ":swift_common",
         "//swift/internal:attrs",
         "//swift/internal:linking",
+        "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
         "@bazel_skylib//lib:dicts",
     ],
@@ -185,14 +174,12 @@ bzl_library(
 bzl_library(
     name = "swift_interop_hint",
     srcs = ["swift_interop_hint.bzl"],
-    visibility = ["//swift:__subpackages__"],
     deps = ["//swift/internal:swift_interop_info"],
 )
 
 bzl_library(
     name = "swift_library",
     srcs = ["swift_library.bzl"],
-    visibility = ["//swift:__subpackages__"],
     deps = [
         ":providers",
         ":swift_clang_module_aspect",
@@ -203,6 +190,7 @@ bzl_library(
         "//swift/internal:feature_names",
         "//swift/internal:linking",
         "//swift/internal:output_groups",
+        "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
         "@bazel_skylib//lib:dicts",
         "@bazel_skylib//lib:sets",
@@ -213,12 +201,12 @@ bzl_library(
 bzl_library(
     name = "swift_library_group",
     srcs = ["swift_library_group.bzl"],
-    visibility = ["//swift:__subpackages__"],
     deps = [
         ":providers",
         ":swift_clang_module_aspect",
         ":swift_common",
         "//swift/internal:attrs",
+        "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
         "@bazel_skylib//lib:dicts",
     ],
@@ -227,12 +215,12 @@ bzl_library(
 bzl_library(
     name = "swift_module_alias",
     srcs = ["swift_module_alias.bzl"],
-    visibility = ["//swift:__subpackages__"],
     deps = [
         ":providers",
         ":swift_common",
         "//swift/internal:linking",
         "//swift/internal:output_groups",
+        "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
         "@bazel_skylib//lib:dicts",
     ],
@@ -241,7 +229,6 @@ bzl_library(
 bzl_library(
     name = "swift_package_configuration",
     srcs = ["swift_package_configuration.bzl"],
-    visibility = ["//swift:__subpackages__"],
     deps = [
         ":providers",
         "//swift/internal:package_specs",
@@ -251,9 +238,9 @@ bzl_library(
 bzl_library(
     name = "swift_symbol_graph_aspect",
     srcs = ["swift_symbol_graph_aspect.bzl"],
-    visibility = ["//swift:__subpackages__"],
     deps = [
         "//swift/internal:swift_symbol_graph_aspect",
+        "//swift/internal:toolchain_utils",
         "@bazel_skylib//lib:dicts",
     ],
 )
@@ -261,7 +248,6 @@ bzl_library(
 bzl_library(
     name = "swift_test",
     srcs = ["swift_test.bzl"],
-    visibility = ["//swift:__subpackages__"],
     deps = [
         ":providers",
         ":swift_common",
@@ -270,6 +256,7 @@ bzl_library(
         "//swift/internal:linking",
         "//swift/internal:output_groups",
         "//swift/internal:swift_symbol_graph_aspect",
+        "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
         "@bazel_skylib//lib:dicts",
     ],
@@ -294,7 +281,6 @@ filegroup(
 repeatable_string_flag(
     name = "copt",
     build_setting_default = [],
-    visibility = ["//visibility:public"],
 )
 
 # Additional Swift compiler flags that will be applied to all `SwiftCompile`
@@ -310,7 +296,6 @@ repeatable_string_flag(
 # hinted target's label.
 swift_interop_hint(
     name = "auto_module",
-    visibility = ["//visibility:public"],
 )
 
 # An aspect hint that suppresses generation of a module for a non-Swift target
@@ -318,14 +303,12 @@ swift_interop_hint(
 swift_interop_hint(
     name = "no_module",
     suppressed = True,
-    visibility = ["//visibility:public"],
 )
 
 # User settable flag that specifies additional Swift copts on a per-swiftmodule basis.
 per_module_swiftcopt_flag(
     name = "per_module_swiftcopt",
     build_setting_default = "",
-    visibility = ["//visibility:public"],
 )
 
 # Configuration setting for enabling the generation of swiftinterface files.

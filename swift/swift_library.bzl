@@ -36,6 +36,7 @@ load(
     "//swift/internal:output_groups.bzl",
     "supplemental_compilation_output_groups",
 )
+load("//swift/internal:toolchain_utils.bzl", "use_swift_toolchain")
 load(
     "//swift/internal:utils.bzl",
     "compact",
@@ -319,7 +320,8 @@ dependent for linking, but artifacts/flags required for compilation (such as
     doc = """\
 Compiles and links Swift code into a static library and Swift module.
 """,
-    outputs = swift_library_output_map,
-    implementation = _swift_library_impl,
     fragments = ["cpp"],
+    implementation = _swift_library_impl,
+    outputs = swift_library_output_map,
+    toolchains = use_swift_toolchain(),
 )

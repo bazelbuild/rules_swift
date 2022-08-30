@@ -20,6 +20,7 @@ load(
     "//swift/internal:output_groups.bzl",
     "supplemental_compilation_output_groups",
 )
+load("//swift/internal:toolchain_utils.bzl", "use_swift_toolchain")
 load("//swift/internal:utils.bzl", "compact", "get_providers")
 load(":providers.bzl", "SwiftInfo")
 load(":swift_common.bzl", "swift_common")
@@ -185,4 +186,5 @@ symbol is defined; it is not repeated by the alias module.)
 """,
     fragments = ["cpp"],
     implementation = _swift_module_alias_impl,
+    toolchains = use_swift_toolchain(),
 )

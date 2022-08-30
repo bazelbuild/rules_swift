@@ -45,7 +45,11 @@ load(
     "//swift/internal:swift_interop_info.bzl",
     "SwiftInteropInfo",
 )
-load("//swift/internal:toolchain_utils.bzl", "get_swift_toolchain")
+load(
+    "//swift/internal:toolchain_utils.bzl",
+    "get_swift_toolchain",
+    "use_swift_toolchain",
+)
 load(
     "//swift/internal:utils.bzl",
     "compilation_context_for_explicit_module_compilation",
@@ -782,4 +786,5 @@ it propagates for its targets.
         [apple_common.Objc],
         [CcInfo],
     ],
+    toolchains = use_swift_toolchain(),
 )

@@ -24,24 +24,21 @@ load(
     "@rules_proto//proto:defs.bzl",
     "ProtoInfo",
 )
-load(
-    "//proto:swift_proto_utils.bzl",
-    "compile_swift_protos_for_target",
-)
 load("//swift:providers.bzl", "SwiftProtoCompilerInfo")
 load("//swift:swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 load("//swift:swift_common.bzl", "swift_common")
 
 # buildifier: disable=bzl-visibility
-load(
-    "//swift/internal:attrs.bzl",
-    "swift_deps_attr",
-)
+load("//swift/internal:attrs.bzl", "swift_deps_attr")
 
 # buildifier: disable=bzl-visibility
+load("//swift/internal:toolchain_utils.bzl", "use_swift_toolchain")
+
+# buildifier: disable=bzl-visibility
+load("//swift/internal:utils.bzl", "compact")
 load(
-    "//swift/internal:utils.bzl",
-    "compact",
+    ":swift_proto_utils.bzl",
+    "compile_swift_protos_for_target",
 )
 
 # Private
@@ -190,4 +187,5 @@ swift_proto_library(
 """,
     fragments = ["cpp"],
     implementation = _swift_proto_library_impl,
+    toolchains = use_swift_toolchain(),
 )

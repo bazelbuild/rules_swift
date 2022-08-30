@@ -38,10 +38,10 @@ load(
 load("//swift:swift_common.bzl", "swift_common")
 
 # buildifier: disable=bzl-visibility
-load(
-    "//swift/internal:utils.bzl",
-    "compact",
-)
+load("//swift/internal:toolchain_utils.bzl", "use_swift_toolchain")
+
+# buildifier: disable=bzl-visibility
+load("//swift/internal:utils.bzl", "compact")
 
 # _swift_proto_library_group_aspect
 
@@ -89,6 +89,7 @@ from which the Swift protos will be generated.
     """,
     fragments = ["cpp"],
     implementation = _swift_proto_library_group_aspect_impl,
+    toolchains = use_swift_toolchain(),
 )
 
 # _swift_proto_compiler_transition

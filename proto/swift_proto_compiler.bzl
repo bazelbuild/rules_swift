@@ -256,7 +256,6 @@ def _swift_proto_compiler_impl(ctx):
     ]
 
 swift_proto_compiler = rule(
-    implementation = _swift_proto_compiler_impl,
     attrs = {
         "bundled_proto_paths": attr.string_list(
             doc = """\
@@ -386,4 +385,5 @@ Each compiler target should configure this based on the suffix applied to the ge
             allow_single_file = True,
         ),
     },
+    implementation = _swift_proto_compiler_impl,
 )
