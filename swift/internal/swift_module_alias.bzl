@@ -65,6 +65,7 @@ def _swift_module_alias_impl(ctx):
         swift_toolchain = swift_toolchain,
         target_name = ctx.label.name,
         workspace_name = ctx.workspace_name,
+        is_test = False,
     )
 
     linking_context, linking_output = (
@@ -81,6 +82,7 @@ def _swift_module_alias_impl(ctx):
             ],
             module_context = module_context,
             swift_toolchain = swift_toolchain,
+            is_test = False,
         )
     )
 

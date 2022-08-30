@@ -2350,6 +2350,7 @@ def _precompile_clang_module(
         genfiles_dir = feature_configuration._genfiles_dir,
         is_swift = False,
         is_swift_generated_header = is_swift_generated_header,
+        is_test = False,
         module_name = module_name,
         objc_include_paths_workaround = depset(),
         objc_info = apple_common.new_objc_provider(),

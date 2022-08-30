@@ -55,10 +55,20 @@ tasks:
     name: "Latest Bazel with Head Deps"
     bazel: latest
     shell_commands:
-    # Update the WORKSPACE to use head versions of some deps to ensure nothing
-    # has landed on them breaking this project.
-    - .bazelci/update_workspace_to_deps_heads.sh
+      # Update the WORKSPACE to use head versions of some deps to ensure nothing
+      # has landed on them breaking this project.
+      - .bazelci/update_workspace_to_deps_heads.sh
     <<: *mac_common
+
+  macos_swift_explicit_modules:
+    name: "Latest Bazel with swift explicit modules"
+    bazel: latest
+    platform: macos
+    build_targets:
+      - "//examples/apple/swift_explicit_modules/..."
+    build_flags:
+      - "--features=swift.use_c_modules"
+      - "--features=swift.emit_c_module"
 
   ubuntu2004_latest:
     name: "Latest Bazel"
@@ -100,6 +110,6 @@ tasks:
     bazel: last_green
     platform: ubuntu2004
     test_targets:
-    - "doc/..."
+      - "doc/..."
 
 buildifier: latest
