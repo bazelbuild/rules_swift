@@ -32,6 +32,10 @@ load(
     "register_module_mapping_write_action",
 )
 load(
+    "@build_bazel_rules_swift//swift/internal:toolchain_utils.bzl",
+    "use_swift_toolchain",
+)
+load(
     "@build_bazel_rules_swift//swift/internal:utils.bzl",
     "compact",
     "get_compilation_contexts",
@@ -490,4 +494,5 @@ swift_grpc_library(
 """,
     fragments = ["cpp"],
     implementation = _swift_grpc_library_impl,
+    toolchains = use_swift_toolchain(),
 )

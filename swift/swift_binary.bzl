@@ -22,6 +22,10 @@ load(
     "register_link_binary_action",
 )
 load(
+    "@build_bazel_rules_swift//swift/internal:toolchain_utils.bzl",
+    "use_swift_toolchain",
+)
+load(
     "@build_bazel_rules_swift//swift/internal:utils.bzl",
     "expand_locations",
     "get_compilation_contexts",
@@ -133,4 +137,5 @@ please use one of the platform-specific application rules in
     executable = True,
     fragments = ["cpp"],
     implementation = _swift_binary_impl,
+    toolchains = use_swift_toolchain(),
 )

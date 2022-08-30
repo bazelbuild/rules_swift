@@ -19,6 +19,10 @@ load(
     "new_objc_provider",
 )
 load(
+    "@build_bazel_rules_swift//swift/internal:toolchain_utils.bzl",
+    "use_swift_toolchain",
+)
+load(
     "@build_bazel_rules_swift//swift/internal:utils.bzl",
     "compact",
     "get_compilation_contexts",
@@ -185,4 +189,5 @@ symbol is defined; it is not repeated by the alias module.)
 """,
     fragments = ["cpp"],
     implementation = _swift_module_alias_impl,
+    toolchains = use_swift_toolchain(),
 )

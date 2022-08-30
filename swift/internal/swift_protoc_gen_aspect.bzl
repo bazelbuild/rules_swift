@@ -41,6 +41,7 @@ load(
     "proto_import_path",
     "register_module_mapping_write_action",
 )
+load(":toolchain_utils.bzl", "use_swift_toolchain")
 load(":utils.bzl", "get_compilation_contexts")
 
 # The paths of proto files bundled with the runtime. This is mainly the well
@@ -552,4 +553,5 @@ detail of the `swift_proto_library` rule.
 """,
     fragments = ["cpp"],
     implementation = _swift_protoc_gen_aspect_impl,
+    toolchains = use_swift_toolchain(),
 )

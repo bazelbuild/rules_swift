@@ -30,6 +30,10 @@ load(
     "make_swift_symbol_graph_aspect",
 )
 load(
+    "@build_bazel_rules_swift//swift/internal:toolchain_utils.bzl",
+    "use_swift_toolchain",
+)
+load(
     "@build_bazel_rules_swift//swift/internal:utils.bzl",
     "expand_locations",
     "get_compilation_contexts",
@@ -407,4 +411,5 @@ to your BUILD file's `package()` declaration instead of the individual targets.
     fragments = ["cpp"],
     test = True,
     implementation = _swift_test_impl,
+    toolchains = use_swift_toolchain(),
 )

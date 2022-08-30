@@ -32,6 +32,10 @@ load(
 )
 load(":providers.bzl", "SwiftInfo")
 load(":swift_common.bzl", "swift_common")
+load(
+    "@build_bazel_rules_swift//swift/internal:toolchain_utils.bzl",
+    "use_swift_toolchain",
+)
 
 def _swift_import_impl(ctx):
     archives = ctx.files.archives
@@ -180,4 +184,5 @@ Allows for the use of Swift textual module interfaces and/or precompiled Swift m
 """,
     fragments = ["cpp"],
     implementation = _swift_import_impl,
+    toolchains = use_swift_toolchain(),
 )

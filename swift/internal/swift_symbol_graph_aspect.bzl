@@ -25,7 +25,7 @@ file in the parent directory.
 load(":attrs.bzl", "swift_toolchain_attrs")
 load(":features.bzl", "configure_features")
 load(":symbol_graph_extracting.bzl", "extract_symbol_graph")
-load(":toolchain_utils.bzl", "get_swift_toolchain")
+load(":toolchain_utils.bzl", "get_swift_toolchain", "use_swift_toolchain")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(
     "@build_bazel_rules_swift//swift:providers.bzl",
@@ -162,4 +162,5 @@ default value is {default_value}.
         fragments = ["cpp"],
         implementation = aspect_impl,
         provides = [SwiftSymbolGraphInfo],
+        toolchains = use_swift_toolchain(),
     )

@@ -38,6 +38,10 @@ load(
     "new_objc_provider",
 )
 load(
+    "@build_bazel_rules_swift//swift/internal:toolchain_utils.bzl",
+    "use_swift_toolchain",
+)
+load(
     "@build_bazel_rules_swift//swift/internal:utils.bzl",
     "compact",
     "expand_locations",
@@ -310,4 +314,5 @@ Compiles and links Swift code into a static library and Swift module.
     outputs = swift_library_output_map,
     implementation = _swift_library_impl,
     fragments = ["cpp"],
+    toolchains = use_swift_toolchain(),
 )

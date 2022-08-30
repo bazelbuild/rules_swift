@@ -52,6 +52,7 @@ load(
 load(
     "@build_bazel_rules_swift//swift/internal:toolchain_utils.bzl",
     "get_swift_toolchain",
+    "use_swift_toolchain",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:utils.bzl",
@@ -782,4 +783,5 @@ it propagates for its targets.
         [apple_common.Objc],
         [CcInfo],
     ],
+    toolchains = use_swift_toolchain(),
 )
