@@ -106,8 +106,10 @@ static bool StripPrefix(const std::string &prefix, std::string &str) {
 }  // namespace
 
 SwiftRunner::SwiftRunner(const std::vector<std::string> &args,
-                         bool force_response_file)
-    : force_response_file_(force_response_file), is_dump_ast_(false) {
+                         std::string index_import_path, bool force_response_file)
+    : index_import_path_(index_import_path),
+      force_response_file_(force_response_file),
+      is_dump_ast_(false) {
   args_ = ProcessArguments(args);
 }
 
@@ -138,6 +140,11 @@ int SwiftRunner::Run(std::ostream *stderr_stream, bool stdout_to_stderr) {
 
   auto enable_global_index_store = global_index_store_import_path_ != "";
   if (enable_global_index_store) {
+    if (index_import_path_.empty()) {
+      (*stderr_stream) << "Failed to find index-import path from runfiles\n";
+      return EXIT_FAILURE;
+    }
+
     OutputFileMap output_file_map;
     output_file_map.ReadFromPath(output_file_map_path_, "");
 
@@ -145,15 +152,7 @@ int SwiftRunner::Run(std::ostream *stderr_stream, bool stdout_to_stderr) {
     std::map<std::string, std::string>::iterator it;
 
     std::vector<std::string> ii_args;
-// The index-import runfile path is passed as a define
-#if defined(INDEX_IMPORT_PATH)
-    ii_args.push_back(INDEX_IMPORT_PATH);
-#else
-    // Logical error
-    std::cerr << "Incorrectly compiled work_processor.cc";
-    exit_code = EXIT_FAILURE;
-    return exit_code;
-#endif
+    ii_args.push_back(index_import_path_);
 
     for (it = outputs.begin(); it != outputs.end(); it++) {
       // Need the actual output paths of the compiler - not bazel

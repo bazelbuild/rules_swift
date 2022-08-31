@@ -20,6 +20,7 @@
 
 // Directly invokes the Swift compiler and exits, without performing any
 // worker-related processing.
-int CompileWithoutWorker(const std::vector<std::string> &args);
+int CompileWithoutWorker(const std::vector<std::string> &args,
+                         std::string index_import_path);
 
 #endif  // BUILD_BAZEL_RULES_SWIFT_TOOLS_WORKER_COMPILE_WITHOUT_WORKER_H_

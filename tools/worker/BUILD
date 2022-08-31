@@ -70,11 +70,6 @@ cc_library(
     ],
     hdrs = ["swift_runner.h"],
     copts = select({
-        ":use_global_index_store": [
-            "-DINDEX_IMPORT_PATH=\\\"$(rootpath @build_bazel_rules_swift_index_import//:index_import)\\\"",
-        ],
-        "//conditions:default": [],
-    }) + select({
         "//tools:clang-cl": [
             "-Xclang",
             "-fno-split-cold-code",
@@ -130,6 +125,7 @@ cc_binary(
     deps = [
         ":compile_with_worker",
         ":compile_without_worker",
+        "@bazel_tools//tools/cpp/runfiles",
     ],
 )
 

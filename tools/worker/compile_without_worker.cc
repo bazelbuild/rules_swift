@@ -20,6 +20,8 @@
 
 #include "tools/worker/swift_runner.h"
 
-int CompileWithoutWorker(const std::vector<std::string> &args) {
-  return SwiftRunner(args).Run(&std::cerr, /*stdout_to_stderr=*/false);
+int CompileWithoutWorker(const std::vector<std::string> &args,
+                         std::string index_import_path) {
+  return SwiftRunner(args, index_import_path)
+      .Run(&std::cerr, /*stdout_to_stderr=*/false);
 }

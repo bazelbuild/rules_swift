@@ -17,10 +17,23 @@
 #include <string>
 #include <vector>
 
+#include "tools/cpp/runfiles/runfiles.h"
 #include "tools/worker/compile_with_worker.h"
 #include "tools/worker/compile_without_worker.h"
 
+using bazel::tools::cpp::runfiles::Runfiles;
+
 int main(int argc, char *argv[]) {
+  std::string error;
+  std::unique_ptr<Runfiles> runfiles(Runfiles::Create(argv[0], &error));
+  if (runfiles == nullptr) {
+    std::cerr << error << "\n";
+    return EXIT_FAILURE;
+  }
+
+  std::string index_import_path =
+      runfiles->Rlocation("build_bazel_rules_swift_index_import/index-import");
+
   auto args = std::vector<std::string>(argv + 1, argv + argc);
 
   // When Bazel invokes a tool in persistent worker mode, it includes the flag
@@ -31,10 +44,10 @@ int main(int argc, char *argv[]) {
   auto persistent_worker_it =
       std::find(args.begin(), args.end(), "--persistent_worker");
   if (persistent_worker_it == args.end()) {
-    return CompileWithoutWorker(args);
+    return CompileWithoutWorker(args, index_import_path);
   }
 
   // Remove the special flag before starting the worker processing loop.
   args.erase(persistent_worker_it);
-  return CompileWithWorker(args);
+  return CompileWithWorker(args, index_import_path);
 }

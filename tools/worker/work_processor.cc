@@ -59,7 +59,9 @@ static void FinalizeWorkRequest(
 
 };  // end namespace
 
-WorkProcessor::WorkProcessor(const std::vector<std::string> &args) {
+WorkProcessor::WorkProcessor(const std::vector<std::string> &args,
+                             std::string index_import_path)
+    : index_import_path_(index_import_path) {
   universal_args_.insert(universal_args_.end(), args.begin(), args.end());
 }
 
@@ -195,7 +197,7 @@ void WorkProcessor::ProcessWorkRequest(
         std::filesystem::remove(cleanup_output, ec);
         if (ec) {
           stderr_stream << "swift_worker: Could not remove " << cleanup_output
-                        <<" (" << ec.message() << ")\n";
+                        << " (" << ec.message() << ")\n";
           FinalizeWorkRequest(request, response, EXIT_FAILURE, stderr_stream);
           return;
         }
@@ -203,7 +205,8 @@ void WorkProcessor::ProcessWorkRequest(
     }
   }
 
-  SwiftRunner swift_runner(processed_args, /*force_response_file=*/true);
+  SwiftRunner swift_runner(processed_args, index_import_path_,
+                           /*force_response_file=*/true);
   int exit_code = swift_runner.Run(&stderr_stream, /*stdout_to_stderr=*/true);
   if (exit_code != 0) {
     FinalizeWorkRequest(request, response, exit_code, stderr_stream);
