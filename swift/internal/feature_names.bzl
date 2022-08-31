@@ -304,3 +304,8 @@ SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS = "swift._num_threads_0_in_swiftcopts
 # A feature to enable setting pch-output-dir
 # This is a directory to persist automatically created precompiled bridging headers
 SWIFT_FEATURE_USE_PCH_OUTPUT_DIR = "swift.use_pch_output_dir"
+
+# If enabled, Swift compilation actions will pass
+# `-enable-bare-slash-regex` to `swiftc`. This is a new flag as of
+# Swift 5.7 that enables `/.../` syntax regular-expression literals.
+SWIFT_FEATURE_SUPPORTS_BARE_SLASH_REGEX = "swift.supports_bare_slash_regex"

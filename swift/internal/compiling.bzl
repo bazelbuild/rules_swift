@@ -57,6 +57,7 @@ load(
     "SWIFT_FEATURE_OPT_USES_WMO",
     "SWIFT_FEATURE_REWRITE_GENERATED_HEADER",
     "SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION",
+    "SWIFT_FEATURE_SUPPORTS_BARE_SLASH_REGEX",
     "SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_SUPPORTS_SYSTEM_MODULE_FLAG",
     "SWIFT_FEATURE_SYSTEM_MODULE",
@@ -324,6 +325,18 @@ def compile_action_configs(
             features = [
                 SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION,
                 SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION,
+            ],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVE_FILES,
+            ],
+            configurators = [
+                swift_toolchain_config.add_arg("-enable-bare-slash-regex"),
+            ],
+            features = [
+                SWIFT_FEATURE_SUPPORTS_BARE_SLASH_REGEX,
             ],
         ),
         swift_toolchain_config.action_config(
