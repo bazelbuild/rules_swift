@@ -26,7 +26,7 @@ using bazel::tools::cpp::runfiles::Runfiles;
 int main(int argc, char *argv[]) {
   std::string error;
   std::unique_ptr<Runfiles> runfiles(Runfiles::Create(argv[0], &error));
-  if (!runfiles) {
+  if (runfiles == nullptr) {
     std::cerr << error << "\n";
     return EXIT_FAILURE;
   }
