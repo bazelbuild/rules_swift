@@ -60,6 +60,7 @@ class SwiftRunner {
   // true, then the remaining arguments will be unconditionally written into a
   // response file instead of being passed on the command line.
   SwiftRunner(const std::vector<std::string> &args,
+              std::string index_import_path,
               bool force_response_file = false);
 
   // Run the Swift compiler, redirecting stderr to the specified stream. If
@@ -122,6 +123,9 @@ class SwiftRunner {
 
   // The arguments, post-substitution, passed to the spawner.
   std::vector<std::string> args_;
+
+  // The path to the index-import binary.
+  std::string index_import_path_;
 
   // Temporary files (e.g., rewritten response files) that should be cleaned up
   // after the driver has terminated.

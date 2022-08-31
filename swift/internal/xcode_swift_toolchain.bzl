@@ -687,7 +687,7 @@ def _xcode_swift_toolchain_impl(ctx):
                 for target in ctx.attr.package_configurations
             ],
             requested_features = requested_features,
-            swift_worker = ctx.executable._worker,
+            swift_worker = ctx.attr._worker[DefaultInfo].files_to_run,
             test_configuration = struct(
                 env = env,
                 execution_requirements = execution_requirements,

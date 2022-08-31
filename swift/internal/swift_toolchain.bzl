@@ -354,7 +354,7 @@ def _swift_toolchain_impl(ctx):
             ],
             requested_features = requested_features,
             root_dir = toolchain_root,
-            swift_worker = ctx.executable._worker,
+            swift_worker = ctx.attr._worker[DefaultInfo].files_to_run,
             test_configuration = struct(
                 env = env,
                 execution_requirements = {},
