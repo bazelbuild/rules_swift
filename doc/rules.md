@@ -678,41 +678,17 @@ swift_binary(
 ## swift_test
 
 <pre>
-swift_test(<a href="#swift_test-name">name</a>, <a href="#swift_test-deps">deps</a>, <a href="#swift_test-srcs">srcs</a>, <a href="#swift_test-data">data</a>, <a href="#swift_test-copts">copts</a>, <a href="#swift_test-defines">defines</a>, <a href="#swift_test-env">env</a>, <a href="#swift_test-linkopts">linkopts</a>, <a href="#swift_test-malloc">malloc</a>, <a href="#swift_test-module_name">module_name</a>, <a href="#swift_test-package_name">package_name</a>,
-           <a href="#swift_test-plugins">plugins</a>, <a href="#swift_test-stamp">stamp</a>, <a href="#swift_test-swiftc_inputs">swiftc_inputs</a>)
+swift_test(<a href="#swift_test-name">name</a>, <a href="#swift_test-deps">deps</a>, <a href="#swift_test-srcs">srcs</a>, <a href="#swift_test-data">data</a>, <a href="#swift_test-copts">copts</a>, <a href="#swift_test-defines">defines</a>, <a href="#swift_test-discover_tests">discover_tests</a>, <a href="#swift_test-env">env</a>, <a href="#swift_test-linkopts">linkopts</a>, <a href="#swift_test-malloc">malloc</a>,
+           <a href="#swift_test-module_name">module_name</a>, <a href="#swift_test-package_name">package_name</a>, <a href="#swift_test-plugins">plugins</a>, <a href="#swift_test-stamp">stamp</a>, <a href="#swift_test-swiftc_inputs">swiftc_inputs</a>)
 </pre>
 
 Compiles and links Swift code into an executable test target.
 
-The behavior of `swift_test` differs slightly for macOS targets, in order to
-provide seamless integration with Apple's XCTest framework. The output of the
-rule is still a binary, but one whose Mach-O type is `MH_BUNDLE` (a loadable
-bundle). Thus, the binary cannot be launched directly. Instead, running
-`bazel test` on the target will launch a test runner script that copies it into
-an `.xctest` bundle directory and then launches the `xctest` helper tool from
-Xcode, which uses Objective-C runtime reflection to locate the tests.
-
-On Linux, the output of a `swift_test` is a standard executable binary, because
-the implementation of XCTest on that platform currently requires authors to
-explicitly list the tests that are present and run them from their main program.
-
-Test bundling on macOS can be disabled on a per-target basis, if desired. You
-may wish to do this if you are not using XCTest, but rather a different test
-framework (or no framework at all) where the pass/fail outcome is represented as
-a zero/non-zero exit code (as is the case with other Bazel test rules like
-`cc_test`). To do so, disable the `"swift.bundled_xctests"` feature on the
-target:
-
-```python
-swift_test(
-    name = "MyTests",
-    srcs = [...],
-    features = ["-swift.bundled_xctests"],
-)
-```
-
-You can also disable this feature for all the tests in a package by applying it
-to your BUILD file's `package()` declaration instead of the individual targets.
+By default, this rule performs _test discovery_ that finds tests written with
+the `XCTest` framework and executes them automatically, without the user
+providing their own `main` entry point. See the documentation of the
+`discover_tests` attribute for more information about how this affects the rule
+output and how to control this behavior.
 
 If integrating with Xcode, the relative paths in test binaries can prevent the
 Issue navigator from working for test failures. To work around this, you can
@@ -738,6 +714,7 @@ bazel test //:Tests --test_filter=TestModuleName.TestClassName/testMethodName
 | <a id="swift_test-data"></a>data |  The list of files needed by this target at runtime.<br><br>Files and targets named in the `data` attribute will appear in the `*.runfiles` area of this target, if it has one. This may include data files needed by a binary or library, or other programs needed by it.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 | <a id="swift_test-copts"></a>copts |  Additional compiler options that should be passed to `swiftc`. These strings are subject to `$(location ...)` and ["Make" variable](https://docs.bazel.build/versions/master/be/make-variables.html) expansion.   | List of strings | optional |  `[]`  |
 | <a id="swift_test-defines"></a>defines |  A list of defines to add to the compilation command line.<br><br>Note that unlike C-family languages, Swift defines do not have values; they are simply identifiers that are either defined or undefined. So strings in this list should be simple identifiers, **not** `name=value` pairs.<br><br>Each string is prepended with `-D` and added to the command line. Unlike `copts`, these flags are added for the target and every target that depends on it, so use this attribute with caution. It is preferred that you add defines directly to `copts`, only using this feature in the rare case that a library needs to propagate a symbol up to those that depend on it.   | List of strings | optional |  `[]`  |
+| <a id="swift_test-discover_tests"></a>discover_tests |  Determines whether or not tests are automatically discovered in the binary. The default value is `True`.<br><br>If tests are discovered, then you should not provide your own `main` entry point in the `swift_test` binary; the test runtime provides the entry point for you. If you set this attribute to `False`, then you are responsible for providing your own `main`. This allows you to write tests that use a framework other than Apple's `XCTest`. The only requirement of such a test is that it terminate with a zero exit code for success or a non-zero exit code for failure.<br><br>Additionally, on Apple platforms, test discovery is handled by the Objective-C runtime and the output of a `swift_test` rule is an `.xctest` bundle that is invoked using the `xctest` tool in Xcode. If this attribute is used to disable test discovery, then the output of the `swift_test` rule will instead be a standard executable binary that is invoked directly.   | Boolean | optional |  `True`  |
 | <a id="swift_test-env"></a>env |  Dictionary of environment variables that should be set during the test execution.   | <a href="https://bazel.build/rules/lib/dict">Dictionary: String -> String</a> | optional |  `{}`  |
 | <a id="swift_test-linkopts"></a>linkopts |  Additional linker options that should be passed to `clang`. These strings are subject to `$(location ...)` expansion.   | List of strings | optional |  `[]`  |
 | <a id="swift_test-malloc"></a>malloc |  Override the default dependency on `malloc`.<br><br>By default, Swift binaries are linked against `@bazel_tools//tools/cpp:malloc"`, which is an empty library and the resulting binary will use libc's `malloc`. This label must refer to a `cc_library` rule.   | <a href="https://bazel.build/concepts/labels">Label</a> | optional |  `"@bazel_tools//tools/cpp:malloc"`  |

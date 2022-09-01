@@ -549,6 +549,7 @@ def _swift_toolchain_impl(ctx):
         test_configuration = struct(
             env = env,
             execution_requirements = {},
+            uses_xctest_bundles = False,
         ),
         tool_configs = all_tool_configs,
         unsupported_features = ctx.disabled_features + [
