@@ -27,9 +27,9 @@ public class EchoServiceProvider: Service_EchoServiceProvider {
   }
 
   public func echo(
-    request: ServiceServer.Service_EchoRequest, 
-    context: StatusOnlyCallContext) 
-    -> EventLoopFuture<ServiceServer.Service_EchoResponse> 
+    request: ServiceServer.Service_EchoRequest,
+    context: StatusOnlyCallContext)
+    -> EventLoopFuture<ServiceServer.Service_EchoResponse>
   {
     let response = ServiceServer.Service_EchoResponse.with {
       $0.contents = request.contents
@@ -97,8 +97,4 @@ class UnitTest: XCTestCase {
 
     self.wait(for: [completed], timeout: 10.0)
   }
-
-  static var allTests = [
-    ("testGetWithRealClientAndServer", testGetWithRealClientAndServer),
-  ]
 }

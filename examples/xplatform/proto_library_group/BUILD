@@ -21,7 +21,6 @@ swift_test(
     name = "echo_client_unit_test",
     srcs = [
         "client_unit_test.swift",
-        "main.swift",
     ],
     deps = [
         "//examples/xplatform/proto_library_group/service:service_client_swift_proto",

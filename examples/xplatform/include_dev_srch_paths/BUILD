@@ -32,7 +32,6 @@ swift_test(
     srcs = [
         "DemoTestHelperTest.swift",
         "String+RandomExtensionsTests.swift",
-        "main.swift",
     ],
     deps = [":Helpers"],
 )

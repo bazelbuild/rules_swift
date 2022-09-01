@@ -684,11 +684,35 @@ swift_test(<a href="#swift_test-name">name</a>, <a href="#swift_test-deps">deps<
 
 Compiles and links Swift code into an executable test target.
 
+### XCTest Test Discovery
+
 By default, this rule performs _test discovery_ that finds tests written with
 the `XCTest` framework and executes them automatically, without the user
-providing their own `main` entry point. See the documentation of the
-`discover_tests` attribute for more information about how this affects the rule
-output and how to control this behavior.
+providing their own `main` entry point.
+
+On Apple platforms, `XCTest`-style tests are automatically discovered and
+executed using the Objective-C runtime. To provide the same behavior on Linux,
+the `swift_test` rule performs its own scan for `XCTest`-style tests. In other
+words, you can write a single `swift_test` target that executes the same tests
+on either Linux or Apple platforms.
+
+There are two approaches that one can take to write a `swift_test` that supports
+test discovery:
+
+1.  **Preferred approach:** Write a `swift_test` target whose `srcs` contain
+    your tests. In this mode, only these sources will be scanned for tests;
+    direct dependencies will _not_ be scanned.
+
+2.  Write a `swift_test` target with _no_ `srcs`. In this mode, all _direct_
+    dependencies of the target will be scanned for tests; indirect dependencies
+    will _not_ be scanned. This approach is useful if you want to share tests
+    with an Apple-specific test target like `ios_unit_test`.
+
+See the documentation of the `discover_tests` attribute for more information
+about how this behavior affects the rule's outputs.
+```
+
+### Xcode Integration
 
 If integrating with Xcode, the relative paths in test binaries can prevent the
 Issue navigator from working for test failures. To work around this, you can
@@ -696,6 +720,8 @@ have the paths made absolute via swizzling by enabling the
 `"apple.swizzle_absolute_xcttestsourcelocation"` feature. You'll also need to
 set the `BUILD_WORKSPACE_DIRECTORY` environment variable in your scheme to the
 root of your workspace (i.e. `$(SRCROOT)`).
+
+### Test Filtering
 
 A subset of tests for a given target can be executed via the `--test_filter` parameter:
 
