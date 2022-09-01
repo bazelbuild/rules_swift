@@ -18,7 +18,7 @@ import examples_xplatform_grpc_echo_proto
 
 @testable import examples_xplatform_grpc_echo_client_test_stubs_swift
 
-class ClientUnitTest {
+class ClientUnitTest: XCTestCase {
 
   func testSynchronousCall() throws {
     let client: RulesSwift_Examples_Grpc_EchoServiceService = {
