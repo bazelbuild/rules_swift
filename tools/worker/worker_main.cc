@@ -24,15 +24,14 @@
 using bazel::tools::cpp::runfiles::Runfiles;
 
 int main(int argc, char *argv[]) {
-  std::string error;
-  std::unique_ptr<Runfiles> runfiles(Runfiles::Create(argv[0], &error));
-  if (runfiles == nullptr) {
-    std::cerr << error << "\n";
-    return EXIT_FAILURE;
-  }
-
-  std::string index_import_path =
+  std::string index_import_path;
+  std::unique_ptr<Runfiles> runfiles(Runfiles::Create(argv[0]));
+  if (runfiles != nullptr) {
+    // We silently ignore errors here, we will report an error later if this
+    // path is accessed
+    index_import_path =
       runfiles->Rlocation("build_bazel_rules_swift_index_import/index-import");
+  }
 
   auto args = std::vector<std::string>(argv + 1, argv + argc);
 
