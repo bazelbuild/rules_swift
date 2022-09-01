@@ -39,9 +39,4 @@ class SimpleTests: XCTestCase {
     let bindirURL: URL = try XCTUnwrap(URL(string: bindirEnvVar))
     XCTAssertTrue(bindirURL.pathComponents.count > 0)
   }
-
-  static var allTests = [
-    ("testThatWillSucceed", testThatWillSucceed),
-    ("testThatWillFailIfChanged", testThatWillFailIfChanged),
-  ]
 }

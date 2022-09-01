@@ -16,8 +16,4 @@ class StringRandomTests: XCTestCase {
         assertThat(result.count).isEqualTo(length)
         XCTAssertEqual(result.count, length)
     }
-
-    static var allTests = [
-        ("test_random", test_random),
-    ]
 }

@@ -133,6 +133,15 @@ struct TestPrinter {
 
   /// Prints the main test runner to a Swift source file.
   func printTestRunner(toFileAt url: URL) {
+    guard !discoveredTests.modules.isEmpty else {
+      // If no tests were discovered, the user likely wrote non-XCTest-style tests that pass or fail
+      // based on the exit code of the process. Generate an empty source file here, which will be
+      // harmlessly compiled as an empty module, and the user's `main` from their own sources will
+      // be used instead.
+      createTextFile(at: url, contents: "// No tests discovered; this is intentionally empty.\n")
+      return
+    }
+
     var contents = """
       import BazelTestObservation
       import XCTest

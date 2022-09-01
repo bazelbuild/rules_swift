@@ -34,6 +34,7 @@ swift_test(
     name = "test_package_name",
     package_name = "test",
     srcs = ["empty.swift"],
+    discover_tests = False,
     tags = FIXTURE_TAGS,
 )
 
