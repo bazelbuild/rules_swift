@@ -197,9 +197,17 @@ def _swift_test_impl(ctx):
         unsupported_features = ctx.disabled_features,
     )
 
-    is_bundled = swift_common.is_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_BUNDLED_XCTESTS,
+    discover_tests = ctx.attr.discover_tests
+
+    # TODO(b/220945250): Remove the `bundled_xctests` feature and use only the
+    # toolchain bit instead.
+    is_bundled = (
+        discover_tests and
+        swift_toolchain.test_configuration.uses_xctest_bundles and
+        swift_common.is_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_BUNDLED_XCTESTS,
+        )
     )
 
     # If we need to run the test in an .xctest bundle, the binary must have
@@ -216,18 +224,27 @@ def _swift_test_impl(ctx):
     # (a separate module) maps to its own `swift_library`. We'll need to modify
     # this approach if we want to support test discovery for simple `swift_test`
     # targets that just write XCTest-style tests in the `srcs` directly.
-    if not srcs and not is_bundled:
-        srcs = _generate_test_discovery_srcs(
-            actions = ctx.actions,
-            deps = ctx.attr.deps,
-            name = ctx.label.name,
-            test_discoverer = ctx.executable._test_discoverer,
-        )
+    if discover_tests:
+        if (
+            not srcs and
+            not swift_toolchain.test_configuration.uses_xctest_bundles
+        ):
+            srcs = _generate_test_discovery_srcs(
+                actions = ctx.actions,
+                deps = ctx.attr.deps,
+                name = ctx.label.name,
+                test_discoverer = ctx.executable._test_discoverer,
+            )
 
-        # The generated test runner uses `@main`.
-        extra_copts = ["-parse-as-library"]
-        extra_deps = [ctx.attr._test_observer]
-    elif is_bundled:
+            # Discovered tests don't need an entry point; on Apple platforms,
+            # the binary is compiled as a bundle, and on non-Apple platforms,
+            # the generated sources above use `@main`.
+            # TODO(b/220945250): This should be moved out of this branch of the
+            # conditional, but it would break some tests that are already
+            # depending on this and need to be fixed.
+            extra_copts = ["-parse-as-library"]
+
+        # Inject the test observer that prints the xUnit-style output for Bazel.
         extra_deps = [ctx.attr._test_observer]
 
     output_groups = {}
@@ -348,6 +365,27 @@ swift_test = rule(
             stamp_default = 0,
         ),
         {
+            "discover_tests": attr.bool(
+                default = True,
+                doc = """\
+Determines whether or not tests are automatically discovered in the binary. The
+default value is `True`.
+
+If tests are discovered, then you should not provide your own `main` entry point
+in the `swift_test` binary; the test runtime provides the entry point for you.
+If you set this attribute to `False`, then you are responsible for providing
+your own `main`. This allows you to write tests that use a framework other than
+Apple's `XCTest`. The only requirement of such a test is that it terminate with
+a zero exit code for success or a non-zero exit code for failure.
+
+Additionally, on Apple platforms, test discovery is handled by the Objective-C
+runtime and the output of a `swift_test` rule is an `.xctest` bundle that is
+invoked using the `xctest` tool in Xcode. If this attribute is used to disable
+test discovery, then the output of the `swift_test` rule will instead be a
+standard executable binary that is invoked directly.
+""",
+                mandatory = False,
+            ),
             "_apple_coverage_support": attr.label(
                 cfg = "exec",
                 default = Label(
@@ -377,35 +415,11 @@ swift_test = rule(
     doc = """\
 Compiles and links Swift code into an executable test target.
 
-The behavior of `swift_test` differs slightly for macOS targets, in order to
-provide seamless integration with Apple's XCTest framework. The output of the
-rule is still a binary, but one whose Mach-O type is `MH_BUNDLE` (a loadable
-bundle). Thus, the binary cannot be launched directly. Instead, running
-`bazel test` on the target will launch a test runner script that copies it into
-an `.xctest` bundle directory and then launches the `xctest` helper tool from
-Xcode, which uses Objective-C runtime reflection to locate the tests.
-
-On Linux, the output of a `swift_test` is a standard executable binary, because
-the implementation of XCTest on that platform currently requires authors to
-explicitly list the tests that are present and run them from their main program.
-
-Test bundling on macOS can be disabled on a per-target basis, if desired. You
-may wish to do this if you are not using XCTest, but rather a different test
-framework (or no framework at all) where the pass/fail outcome is represented as
-a zero/non-zero exit code (as is the case with other Bazel test rules like
-`cc_test`). To do so, disable the `"swift.bundled_xctests"` feature on the
-target:
-
-```python
-swift_test(
-    name = "MyTests",
-    srcs = [...],
-    features = ["-swift.bundled_xctests"],
-)
-```
-
-You can also disable this feature for all the tests in a package by applying it
-to your BUILD file's `package()` declaration instead of the individual targets.
+By default, this rule performs _test discovery_ that finds tests written with
+the `XCTest` framework and executes them automatically, without the user
+providing their own `main` entry point. See the documentation of the
+`discover_tests` attribute for more information about how this affects the rule
+output and how to control this behavior.
 """,
     executable = True,
     fragments = ["cpp"],

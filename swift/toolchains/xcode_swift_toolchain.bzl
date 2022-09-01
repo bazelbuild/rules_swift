@@ -802,6 +802,7 @@ def _xcode_swift_toolchain_impl(ctx):
         test_configuration = struct(
             env = env,
             execution_requirements = execution_requirements,
+            uses_xctest_bundles = True,
         ),
         tool_configs = all_tool_configs,
         unsupported_features = ctx.disabled_features + [
