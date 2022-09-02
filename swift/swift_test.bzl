@@ -282,8 +282,14 @@ def _swift_test_impl(ctx):
     output_groups = {}
     owner_symbol_graph_dir = None
 
-    # Inject the test observer that prints the xUnit-style output for Bazel.
-    all_deps = ctx.attr.deps + [ctx.attr._test_observer]
+    all_deps = list(ctx.attr.deps)
+
+    # In test discovery mode (whether manual or by the Obj-C runtime), inject
+    # the test observer that prints the xUnit-style output for Bazel. Otherwise
+    # don't link this, because we don't want it to pull in link time
+    # dependencies on XCTest, which the test binary may not be using.
+    if discover_tests:
+        all_deps.append(ctx.attr._test_observer)
 
     compilation_contexts = get_compilation_contexts(all_deps)
     swift_infos = get_providers(all_deps, SwiftInfo)
