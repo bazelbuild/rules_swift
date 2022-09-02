@@ -306,8 +306,13 @@ def _swift_test_impl(ctx):
             # In test discovery mode (whether manual or by the Obj-C runtime),
             # compile the code with `-parse-as-library` to avoid the case where
             # a single file with no top-level code still produces an empty
-            # `main`.
-            additional_copts = ["-parse-as-library"] if discover_tests else [],
+            # `main`. Also compile with `-enable-testing`, because the generated
+            # sources will `@testable import` this module, and this allows that
+            # to work even when building in `-c opt` mode.
+            additional_copts = [
+                "-parse-as-library",
+                "-enable-testing",
+            ] if discover_tests else [],
             compilation_contexts = compilation_contexts,
             feature_configuration = feature_configuration,
             module_name = module_name,
