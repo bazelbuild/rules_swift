@@ -47,7 +47,6 @@ load(
 load("//swift/internal:attrs.bzl", "swift_toolchain_driver_attrs")
 load(
     "//swift/internal:feature_names.bzl",
-    "SWIFT_FEATURE_BUNDLED_XCTESTS",
     "SWIFT_FEATURE_CACHEABLE_SWIFTMODULES",
     "SWIFT_FEATURE_COVERAGE",
     "SWIFT_FEATURE_COVERAGE_PREFIX_MAP",
@@ -698,7 +697,6 @@ def _xcode_swift_toolchain_impl(ctx):
     ) + wmo_features_from_swiftcopts(swiftcopts = swiftcopts)
     requested_features.extend(ctx.features)
     requested_features.extend([
-        SWIFT_FEATURE_BUNDLED_XCTESTS,
         SWIFT_FEATURE_CACHEABLE_SWIFTMODULES,
         SWIFT_FEATURE_COVERAGE_PREFIX_MAP,
         SWIFT_FEATURE_DEBUG_PREFIX_MAP,

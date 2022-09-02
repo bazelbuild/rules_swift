@@ -38,13 +38,6 @@ SWIFT_FEATURE_HEADERS_ALWAYS_ACTION_INPUTS = "swift.headers_always_action_inputs
 # the note above about not depending on the C++ features.)
 SWIFT_FEATURE_COVERAGE = "swift.coverage"
 
-# If enabled, the `swift_test` rule will output an `.xctest` bundle for Darwin
-# targets instead of a standalone binary. This is necessary for XCTest-based
-# tests that use runtime reflection to locate test methods. This feature can be
-# explicitly disabled on a per-target or per-package basis if needed to make
-# `swift_test` output just a binary.
-SWIFT_FEATURE_BUNDLED_XCTESTS = "swift.bundled_xctests"
-
 # If enabled, debug builds will use the `-debug-prefix-map` feature to remap the
 # current working directory to `.`, which permits debugging remote or sandboxed
 # builds.
