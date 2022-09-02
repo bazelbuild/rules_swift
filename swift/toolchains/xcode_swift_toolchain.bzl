@@ -41,7 +41,6 @@ load(
     "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_BITCODE_EMBEDDED",
     "SWIFT_FEATURE_BITCODE_EMBEDDED_MARKERS",
-    "SWIFT_FEATURE_BUNDLED_XCTESTS",
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
@@ -729,7 +728,6 @@ def _xcode_swift_toolchain_impl(ctx):
         _features_for_bitcode_mode(cpp_fragment.apple_bitcode_mode),
     )
     requested_features.extend([
-        SWIFT_FEATURE_BUNDLED_XCTESTS,
         SWIFT_FEATURE_ENABLE_BATCH_MODE,
         SWIFT_FEATURE_USE_RESPONSE_FILES,
         SWIFT_FEATURE_DEBUG_PREFIX_MAP,
