@@ -133,7 +133,7 @@ A list of C targets (or anything propagating `CcInfo`) that are dependencies of
 this target and whose headers may be referenced by the module map.
 """,
                 mandatory = False,
-                providers = [[CcInfo], [SwiftInfo]],
+                providers = [[CcInfo]],
             ),
         },
     ),
