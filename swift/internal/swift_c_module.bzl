@@ -15,6 +15,7 @@
 """Implementation of the `swift_c_module` rule."""
 
 load(":attrs.bzl", "swift_toolchain_attrs")
+load(":feature_names.bzl", "SWIFT_FEATURE_SYSTEM_MODULE")
 load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
 load(":swift_common.bzl", "swift_common")
 load(":utils.bzl", "merge_runfiles")
@@ -43,9 +44,13 @@ def _swift_c_module_impl(ctx):
         compilation_context = cc_common.create_compilation_context()
         cc_info = CcInfo(compilation_context = compilation_context)
 
+    requested_features = ctx.features
+    if is_system:
+        requested_features.append(SWIFT_FEATURE_SYSTEM_MODULE)
+
     feature_configuration = swift_common.configure_features(
         ctx = ctx,
-        requested_features = ctx.features,
+        requested_features = requested_features,
         swift_toolchain = swift_toolchain,
     )
 
