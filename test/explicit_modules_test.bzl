@@ -24,6 +24,7 @@ explicit_modules_action_command_line_test = make_action_command_line_test_rule(
         "//command_line_option:features": [
             "swift.use_c_modules",
             "swift.emit_c_module",
+            "swift.supports_system_module_flag",
         ],
     },
 )
