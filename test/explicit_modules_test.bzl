@@ -68,6 +68,24 @@ def explicit_modules_test_suite(name):
         target_compatible_with = ["@platforms//os:macos"],
     )
 
+    # Verify that a swift_c_module with dependencies precompiles.
+    explicit_modules_action_command_line_test(
+        name = "{}_enabled_c_module_deps".format(name),
+        expected_argv = [
+            "-fsystem-module",
+            "-fmodule-file=_Builtin_stddef_max_align_t",
+            "-fmodule-map-file=__BAZEL_XCODE_DEVELOPER_DIR__/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/clang/include/module.modulemap",
+            "-module-name Darwin",
+            "-emit-pcm",
+            "-fno-implicit-module-maps",
+            "-fno-implicit-modules",
+        ],
+        mnemonic = "SwiftPrecompileCModule",
+        tags = [name],
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/explicit_modules:Darwin",
+        target_compatible_with = ["@platforms//os:macos"],
+    )
+
     # Verify that the default behavior isn't impacted.
     implicit_modules_action_command_line_test(
         name = "{}_disabled_test".format(name),
