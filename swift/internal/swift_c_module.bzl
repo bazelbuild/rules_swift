@@ -115,6 +115,7 @@ appropriately for, i.e.
 and
 `/Applications/Xcode.app/Contents/Developer` respectively.
 """,
+                mandatory = False,
             ),
             "module_name": attr.string(
                 doc = """\
