@@ -10,6 +10,7 @@ load(":private_deps_tests.bzl", "private_deps_test_suite")
 load(":swift_through_non_swift_tests.bzl", "swift_through_non_swift_test_suite")
 load(":split_derived_files_tests.bzl", "split_derived_files_test_suite")
 load(":pch_output_dir_tests.bzl", "pch_output_dir_test_suite")
+load(":explicit_modules_test.bzl", "explicit_modules_test_suite")
 load(":bzl_test.bzl", "bzl_test")
 
 licenses(["notice"])
@@ -35,6 +36,8 @@ swift_through_non_swift_test_suite(name = "swift_through_non_swift")
 split_derived_files_test_suite(name = "split_derived_files")
 
 pch_output_dir_test_suite(name = "pch_output_dir_settings")
+
+explicit_modules_test_suite(name = "explicit_modules")
 
 test_suite(
     name = "all_tests",

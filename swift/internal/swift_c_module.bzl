@@ -14,14 +14,26 @@
 
 """Implementation of the `swift_c_module` rule."""
 
+load(":attrs.bzl", "swift_toolchain_attrs")
+load(":feature_names.bzl", "SWIFT_FEATURE_SYSTEM_MODULE")
+load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
 load(":swift_common.bzl", "swift_common")
 load(":utils.bzl", "merge_runfiles")
+load("@bazel_skylib//lib:dicts.bzl", "dicts")
 
 def _swift_c_module_impl(ctx):
-    module_map = ctx.file.module_map
+    if (
+        (ctx.file.module_map and ctx.attr.system_module_map) or
+        (not ctx.file.module_map and not ctx.attr.system_module_map)
+    ):
+        fail("Must specify one (and only one) of module_map and system_module_map.")
+    swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
+    module_map = ctx.file.module_map or ctx.attr.system_module_map
+    is_system = True if ctx.attr.system_module_map else False
 
     deps = ctx.attr.deps
     cc_infos = [dep[CcInfo] for dep in deps]
+    swift_infos = [dep[SwiftInfo] for dep in deps if SwiftInfo in dep]
     data_runfiles = [dep[DefaultInfo].data_runfiles for dep in deps]
     default_runfiles = [dep[DefaultInfo].default_runfiles for dep in deps]
 
@@ -29,8 +41,29 @@ def _swift_c_module_impl(ctx):
         cc_info = cc_common.merge_cc_infos(cc_infos = cc_infos)
         compilation_context = cc_info.compilation_context
     else:
-        cc_info = None
         compilation_context = cc_common.create_compilation_context()
+        cc_info = CcInfo(compilation_context = compilation_context)
+
+    requested_features = ctx.features
+    if is_system:
+        requested_features.append(SWIFT_FEATURE_SYSTEM_MODULE)
+
+    feature_configuration = swift_common.configure_features(
+        ctx = ctx,
+        requested_features = requested_features,
+        swift_toolchain = swift_toolchain,
+    )
+
+    precompiled_module = swift_common.precompile_clang_module(
+        actions = ctx.actions,
+        cc_compilation_context = compilation_context,
+        module_map_file = module_map,
+        module_name = ctx.attr.module_name,
+        target_name = ctx.attr.name,
+        swift_toolchain = swift_toolchain,
+        feature_configuration = feature_configuration,
+        swift_infos = swift_infos,
+    )
 
     providers = [
         # We must repropagate the dependencies' DefaultInfos, otherwise we
@@ -39,7 +72,7 @@ def _swift_c_module_impl(ctx):
         DefaultInfo(
             data_runfiles = merge_runfiles(data_runfiles),
             default_runfiles = merge_runfiles(default_runfiles),
-            files = depset([module_map]),
+            files = depset([module_map]) if not is_system else None,
         ),
         swift_common.create_swift_info(
             modules = [
@@ -48,32 +81,44 @@ def _swift_c_module_impl(ctx):
                     clang = swift_common.create_clang_module(
                         compilation_context = compilation_context,
                         module_map = module_map,
-                        # TODO(b/142867898): Precompile the module and place it
-                        # here.
-                        precompiled_module = None,
+                        precompiled_module = precompiled_module,
                     ),
+                    is_system = is_system,
                 ),
             ],
+            swift_infos = swift_infos,
         ),
+        cc_info,
     ]
-
-    if cc_info:
-        providers.append(cc_info)
 
     return providers
 
 swift_c_module = rule(
-    attrs = {
-        "module_map": attr.label(
-            allow_single_file = True,
-            doc = """\
+    attrs = dicts.add(
+        swift_toolchain_attrs(),
+        {
+            "module_map": attr.label(
+                allow_single_file = True,
+                doc = """\
 The module map file that should be loaded to import the C library dependency
-into Swift.
+into Swift. This is mutally exclusive with `system_module_map`.
 """,
-            mandatory = True,
-        ),
-        "module_name": attr.string(
-            doc = """\
+                mandatory = False,
+            ),
+            "system_module_map": attr.string(
+                doc = """\
+The path to a system framework module map. This is mutually exclusive with `module_map`.
+
+Variables `__BAZEL_XCODE_SDKROOT__` and `__BAZEL_XCODE_DEVELOPER_DIR__` will be substitued
+appropriately for, i.e.  
+`/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk`
+and
+`/Applications/Xcode.app/Contents/Developer` respectively.
+""",
+                mandatory = False,
+            ),
+            "module_name": attr.string(
+                doc = """\
 The name of the top-level module in the module map that this target represents.
 
 A single `module.modulemap` file can define multiple top-level modules. When
@@ -85,18 +130,19 @@ file, so it must be provided directly. Therefore, one may have multiple
 `swift_c_module` targets that reference the same `module.modulemap` file but
 with different module names and headers.
 """,
-            mandatory = True,
-        ),
-        "deps": attr.label_list(
-            allow_empty = False,
-            doc = """\
+                mandatory = True,
+            ),
+            "deps": attr.label_list(
+                allow_empty = True,
+                doc = """\
 A list of C targets (or anything propagating `CcInfo`) that are dependencies of
 this target and whose headers may be referenced by the module map.
 """,
-            mandatory = True,
-            providers = [[CcInfo]],
-        ),
-    },
+                mandatory = False,
+                providers = [[CcInfo]],
+            ),
+        },
+    ),
     doc = """\
 Wraps one or more C targets in a new module map that allows it to be imported
 into Swift to access its C interfaces.
@@ -129,4 +175,5 @@ visible, often by using preprocessor conditions like `#if __cplusplus` to hide
 any C++ declarations.
 """,
     implementation = _swift_c_module_impl,
+    fragments = ["cpp"],
 )
