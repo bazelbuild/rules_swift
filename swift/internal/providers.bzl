@@ -171,10 +171,6 @@ linking target (but not to precompiled explicit C/Objective-C modules):
 For ease of use, this field is never `None`; it will always be a valid `struct`
 containing the fields described above, even if those lists are empty.
 """,
-        "linker_supports_filelist": """\
-`Boolean`. Indicates whether or not the toolchain's linker supports the input
-files passed to it via a file list.
-""",
         "package_configurations": """\
 A list of `SwiftPackageConfigurationInfo` providers that specify additional
 compilation configuration options that are applied to targets on a per-package
