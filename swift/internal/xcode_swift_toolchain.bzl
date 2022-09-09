@@ -54,6 +54,7 @@ load(
     "SwiftToolchainInfo",
 )
 load(":target_triples.bzl", "target_triples")
+load(":transitions.bzl", "apple_crosstool_transition")
 load(
     ":utils.bzl",
     "collect_implicit_deps_providers",
@@ -772,6 +773,9 @@ configuration options that are applied to targets on a per-package basis.
 """,
                 providers = [[SwiftPackageConfigurationInfo]],
             ),
+            "_allowlist_function_transition": attr.label(
+                default = "@bazel_tools//tools/allowlists/function_transition_allowlist",
+            ),
             "_cc_toolchain": attr.label(
                 default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
                 doc = """\
@@ -799,6 +803,7 @@ for incremental compilation using a persistent mode.
             ),
         },
     ),
+    cfg = apple_crosstool_transition,
     doc = "Represents a Swift compiler toolchain provided by Xcode.",
     fragments = [
         "cpp",
