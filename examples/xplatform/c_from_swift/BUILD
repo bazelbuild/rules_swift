@@ -53,5 +53,7 @@ swift_binary(
     name = "c_from_swift",
     srcs = ["main.swift"],
     module_name = "main",
-    deps = [":swift_counter"],
+    deps = [
+        ":swift_counter",
+    ],
 )
