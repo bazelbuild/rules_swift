@@ -74,7 +74,7 @@ please use one of the platform-specific application rules in
 ## swift_c_module
 
 <pre>
-swift_c_module(<a href="#swift_c_module-name">name</a>, <a href="#swift_c_module-deps">deps</a>, <a href="#swift_c_module-module_map">module_map</a>, <a href="#swift_c_module-module_name">module_name</a>)
+swift_c_module(<a href="#swift_c_module-name">name</a>, <a href="#swift_c_module-deps">deps</a>, <a href="#swift_c_module-module_map">module_map</a>, <a href="#swift_c_module-module_name">module_name</a>, <a href="#swift_c_module-system_module_map">system_module_map</a>)
 </pre>
 
 Wraps one or more C targets in a new module map that allows it to be imported
@@ -114,9 +114,10 @@ any C++ declarations.
 | Name  | Description | Type | Mandatory | Default |
 | :------------- | :------------- | :------------- | :------------- | :------------- |
 | <a id="swift_c_module-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/docs/build-ref.html#name">Name</a> | required |  |
-| <a id="swift_c_module-deps"></a>deps |  A list of C targets (or anything propagating <code>CcInfo</code>) that are dependencies of this target and whose headers may be referenced by the module map.   | <a href="https://bazel.build/docs/build-ref.html#labels">List of labels</a> | required |  |
-| <a id="swift_c_module-module_map"></a>module_map |  The module map file that should be loaded to import the C library dependency into Swift.   | <a href="https://bazel.build/docs/build-ref.html#labels">Label</a> | required |  |
+| <a id="swift_c_module-deps"></a>deps |  A list of C targets (or anything propagating <code>CcInfo</code>) that are dependencies of this target and whose headers may be referenced by the module map.   | <a href="https://bazel.build/docs/build-ref.html#labels">List of labels</a> | optional | [] |
+| <a id="swift_c_module-module_map"></a>module_map |  The module map file that should be loaded to import the C library dependency into Swift. This is mutally exclusive with <code>system_module_map</code>.   | <a href="https://bazel.build/docs/build-ref.html#labels">Label</a> | optional | None |
 | <a id="swift_c_module-module_name"></a>module_name |  The name of the top-level module in the module map that this target represents.<br><br>A single <code>module.modulemap</code> file can define multiple top-level modules. When building with implicit modules, the presence of that module map allows any of the modules defined in it to be imported. When building explicit modules, however, there is a one-to-one correspondence between top-level modules and BUILD targets and the module name must be known without reading the module map file, so it must be provided directly. Therefore, one may have multiple <code>swift_c_module</code> targets that reference the same <code>module.modulemap</code> file but with different module names and headers.   | String | required |  |
+| <a id="swift_c_module-system_module_map"></a>system_module_map |  The path to a system framework module map. This is mutually exclusive with <code>module_map</code>.<br><br>Variables <code>__BAZEL_XCODE_SDKROOT__</code> and <code>__BAZEL_XCODE_DEVELOPER_DIR__</code> will be substitued appropriately for, i.e.   <code>/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk</code> and <code>/Applications/Xcode.app/Contents/Developer</code> respectively.   | String | optional | "" |
 
 
 <a id="#swift_feature_allowlist"></a>
