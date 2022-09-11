@@ -434,6 +434,7 @@ def _all_tool_configs(
         generated_header_rewriter,
         swift_executable,
         toolchain_root,
+        use_param_file,
         xcode_config):
     """Returns the tool configurations for the Swift toolchain.
 
@@ -448,6 +449,8 @@ def _all_tool_configs(
         swift_executable: A custom Swift driver executable to be used during the
             build, if provided.
         toolchain_root: The root directory of the toolchain, if provided.
+        use_param_file: If True, the compile action should use a param file for
+            its arguments.
         xcode_config: The `apple_common.XcodeVersionConfig` provider.
 
     Returns:
@@ -471,7 +474,7 @@ def _all_tool_configs(
         tool_input_manifests = generated_header_rewriter.input_manifests,
         tool_inputs = generated_header_rewriter.inputs,
         toolchain_root = toolchain_root,
-        use_param_file = True,
+        use_param_file = use_param_file,
         worker_mode = "persistent",
     )
 
@@ -490,7 +493,7 @@ def _all_tool_configs(
                 execution_requirements = execution_requirements,
                 swift_executable = swift_executable,
                 toolchain_root = toolchain_root,
-                use_param_file = True,
+                use_param_file = use_param_file,
                 worker_mode = "wrap",
             )
         )
@@ -587,7 +590,6 @@ def _xcode_swift_toolchain_impl(ctx):
     requested_features.extend([
         SWIFT_FEATURE_BUNDLED_XCTESTS,
         SWIFT_FEATURE_ENABLE_BATCH_MODE,
-        SWIFT_FEATURE_USE_RESPONSE_FILES,
         SWIFT_FEATURE_DEBUG_PREFIX_MAP,
         SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION,
         SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS,
@@ -617,6 +619,8 @@ def _xcode_swift_toolchain_impl(ctx):
         target = ctx.attr.generated_header_rewriter,
     )
 
+    use_param_file = SWIFT_FEATURE_USE_RESPONSE_FILES not in ctx.disabled_features
+
     all_tool_configs = _all_tool_configs(
         custom_toolchain = custom_toolchain,
         env = env,
@@ -624,6 +628,7 @@ def _xcode_swift_toolchain_impl(ctx):
         generated_header_rewriter = generated_header_rewriter,
         swift_executable = swift_executable,
         toolchain_root = toolchain_root,
+        use_param_file = use_param_file,
         xcode_config = xcode_config,
     )
     all_action_configs = _all_action_configs(
