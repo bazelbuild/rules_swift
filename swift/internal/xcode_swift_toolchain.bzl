@@ -686,7 +686,6 @@ def _xcode_swift_toolchain_impl(ctx):
                 additional_cc_infos = [swift_linkopts_providers.cc_info],
                 additional_objc_infos = [swift_linkopts_providers.objc_info],
             ),
-            linker_supports_filelist = True,
             package_configurations = [
                 target[SwiftPackageConfigurationInfo]
                 for target in ctx.attr.package_configurations

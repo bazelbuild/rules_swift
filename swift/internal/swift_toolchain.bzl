@@ -347,7 +347,6 @@ def _swift_toolchain_impl(ctx):
                 [],
                 additional_cc_infos = [swift_linkopts_cc_info],
             ),
-            linker_supports_filelist = False,
             package_configurations = [
                 target[SwiftPackageConfigurationInfo]
                 for target in ctx.attr.package_configurations
