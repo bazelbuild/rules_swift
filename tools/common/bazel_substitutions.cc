@@ -56,15 +56,6 @@ BazelPlaceholderSubstitutions::BazelPlaceholderSubstitutions() {
   };
 }
 
-BazelPlaceholderSubstitutions::BazelPlaceholderSubstitutions(
-    const std::string &developer_dir, const std::string &sdk_root) {
-  placeholder_resolvers_ = {
-      {kBazelXcodeDeveloperDir,
-       PlaceholderResolver([=]() { return developer_dir; })},
-      {kBazelXcodeSdkRoot, PlaceholderResolver([=]() { return sdk_root; })},
-  };
-}
-
 bool BazelPlaceholderSubstitutions::Apply(std::string &arg) {
   bool changed = false;
 
