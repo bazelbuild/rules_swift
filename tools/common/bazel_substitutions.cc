@@ -32,10 +32,15 @@ static const char kBazelXcodeSdkRoot[] = "__BAZEL_XCODE_SDKROOT__";
 
 // Returns the value of the given environment variable, or the empty string if
 // it wasn't set.
-std::string GetEnvironmentVariable(const char *name) {
+std::string GetAppleEnvironmentVariable(const char *name) {
+#if !defined(__APPLE__)
+  return "";
+#endif
+
   char *env_value = getenv(name);
   if (env_value == nullptr) {
-    return "";
+    std::cerr << "error: required Apple environment variable '" << name << "' was not set. Please file an issue on bazelbuild/rules_swift.\n";
+    exit(EXIT_FAILURE);
   }
   return env_value;
 }
@@ -49,10 +54,10 @@ BazelPlaceholderSubstitutions::BazelPlaceholderSubstitutions() {
   // the argument list.
   placeholder_resolvers_ = {
       {kBazelXcodeDeveloperDir, PlaceholderResolver([]() {
-         return GetEnvironmentVariable("DEVELOPER_DIR");
+         return GetAppleEnvironmentVariable("DEVELOPER_DIR");
        })},
       {kBazelXcodeSdkRoot,
-       PlaceholderResolver([]() { return GetEnvironmentVariable("SDKROOT"); })},
+       PlaceholderResolver([]() { return GetAppleEnvironmentVariable("SDKROOT"); })},
   };
 }
 
