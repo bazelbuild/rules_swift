@@ -44,9 +44,6 @@ load(
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
-    "SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION",
-    "SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS",
-    "SWIFT_FEATURE_SUPPORTS_SYSTEM_MODULE_FLAG",
     "SWIFT_FEATURE_USE_RESPONSE_FILES",
 )
 load(
@@ -731,13 +728,7 @@ def _xcode_swift_toolchain_impl(ctx):
         SWIFT_FEATURE_ENABLE_BATCH_MODE,
         SWIFT_FEATURE_USE_RESPONSE_FILES,
         SWIFT_FEATURE_DEBUG_PREFIX_MAP,
-        SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION,
-        SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS,
     ])
-
-    # Xcode 12.5 implies Swift 5.4.
-    if _is_xcode_at_least_version(xcode_config, "12.5"):
-        requested_features.append(SWIFT_FEATURE_SUPPORTS_SYSTEM_MODULE_FLAG)
 
     env = _xcode_env(target_triple = target_triple, xcode_config = xcode_config)
     execution_requirements = xcode_config.execution_info()

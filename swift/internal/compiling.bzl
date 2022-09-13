@@ -35,7 +35,6 @@ load(
     "SWIFT_FEATURE_NO_GENERATED_MODULE_MAP",
     "SWIFT_FEATURE_OPT",
     "SWIFT_FEATURE_OPT_USES_WMO",
-    "SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_SYSTEM_MODULE",
     "SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP",
     "SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS",
@@ -835,12 +834,9 @@ def _declare_compile_outputs(
         "{}.swiftsourceinfo".format(module_name),
     )
 
-    if are_all_features_enabled(
+    if is_feature_enabled(
         feature_configuration = feature_configuration,
-        feature_names = [
-            SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION,
-            SWIFT_FEATURE_EMIT_SWIFTINTERFACE,
-        ],
+        feature_name = SWIFT_FEATURE_EMIT_SWIFTINTERFACE,
     ):
         swiftinterface_file = actions.declare_file(
             "{}.swiftinterface".format(module_name),
