@@ -28,7 +28,6 @@ load(
     "SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
-    "SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS",
 )
 load("//swift/internal:linking.bzl", "new_objc_provider")
 load(
@@ -141,28 +140,9 @@ def _swift_library_impl(ctx):
         unsupported_features = ctx.disabled_features,
     )
 
-    if swift_common.is_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS,
-    ):
-        # The implicit deps can be added to the private deps; since they are
-        # added to the compilation of every library, they don't need to be
-        # propagated. However, it's not an error to list one of the implicit
-        # deps in "deps", either, so we need to make sure not to pass them in to
-        # `_check_deps_are_disjoint`.
-        deps = ctx.attr.deps
-        private_deps = ctx.attr.private_deps
-        _check_deps_are_disjoint(ctx.label, deps, private_deps)
-    elif ctx.attr.private_deps:
-        fail(
-            ("In target '{}', 'private_deps' cannot be used because this " +
-             "version of the Swift toolchain does not support " +
-             "implementation-only imports.").format(ctx.label),
-            attr = "private_deps",
-        )
-    else:
-        deps = ctx.attr.deps
-        private_deps = []
+    deps = ctx.attr.deps
+    private_deps = ctx.attr.private_deps
+    _check_deps_are_disjoint(ctx.label, deps, private_deps)
 
     swift_infos = get_providers(deps, SwiftInfo)
     private_swift_infos = get_providers(private_deps, SwiftInfo)

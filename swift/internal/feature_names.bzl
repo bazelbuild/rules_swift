@@ -89,14 +89,6 @@ SWIFT_FEATURE_LAYERING_CHECK = "swift.layering_check"
 # If enabled, the C or Objective-C target should be compiled as a system module.
 SWIFT_FEATURE_SYSTEM_MODULE = "swift.system_module"
 
-# If enabled, the `-Xcc -fsystem-module` flag will be passed when compiling a
-# system C/Objective-C module (with feature `swift.system_module`) because the
-# compiler is new enough to honor it correctly. If disabled, we attempt to mimic
-# this by disabling certain warnings; however, this unfortunately causes `UInt`
-# APIs to be imported by ClangImporter as `UInt` instead of `Int` because
-# ClangImporter doesn't recognize them as true system modules.
-SWIFT_FEATURE_SUPPORTS_SYSTEM_MODULE_FLAG = "swift.supports_system_module_flag"
-
 # If enabled, Swift compilation actions will use batch mode by passing
 # `-enable-batch-mode` to `swiftc`. This is a new compilation mode as of
 # Swift 4.2 that is intended to speed up non-incremental non-WMO builds by
@@ -245,10 +237,6 @@ SWIFT_FEATURE_VFSOVERLAY = "swift.vfsoverlay"
 #     target.swift-extra-clang-flags
 SWIFT_FEATURE_CACHEABLE_SWIFTMODULES = "swift.cacheable_swiftmodules"
 
-# If enabled, enables features that require the library evolution compilation
-# mode. If disabled, features that require library evolution mode are noops.
-SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION = "swift.supports_library_evolution"
-
 # If enabled, requests the `-enable-library-evolution` swiftc flag which is
 # required for newer features like swiftinterface file generation.
 SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION = "swift.enable_library_evolution"
@@ -264,11 +252,6 @@ SWIFT_FEATURE_EMIT_SWIFTINTERFACE = "swift.emit_swiftinterface"
 # If enabled, requests the private swiftinterface file to be built on the
 # swiftc invocation.
 SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE = "swift.emit_private_swiftinterface"
-
-# If enabled, the toolchain supports private deps (implementation-only imports).
-# This allows Bazel to avoid propagating swiftmodules of such dependencies
-# higher in the dependency graph than they need to be.
-SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS = "swift.supports_private_deps"
 
 # If enabled, the .swiftmodule file for the affected target will not be
 # embedded in debug info and propagated to the linker.
