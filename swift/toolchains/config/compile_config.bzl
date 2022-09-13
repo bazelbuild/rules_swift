@@ -63,8 +63,6 @@ load(
     "SWIFT_FEATURE_REWRITE_GENERATED_HEADER",
     "SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION",
     "SWIFT_FEATURE_SUPPORTS_BARE_SLASH_REGEX",
-    "SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION",
-    "SWIFT_FEATURE_SUPPORTS_SYSTEM_MODULE_FLAG",
     "SWIFT_FEATURE_SYSTEM_MODULE",
     "SWIFT_FEATURE_THIN_LTO",
     "SWIFT_FEATURE_TREAT_WARNINGS_AS_ERRORS",
@@ -221,10 +219,7 @@ def compile_action_configs(
                 SWIFT_ACTION_DERIVE_FILES,
             ],
             configurators = [add_arg("-enable-library-evolution")],
-            features = [
-                SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION,
-                SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION,
-            ],
+            features = [SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION],
         ),
         ActionConfigInfo(
             actions = [
@@ -232,10 +227,7 @@ def compile_action_configs(
                 SWIFT_ACTION_DERIVE_FILES,
             ],
             configurators = [_emit_module_interface_path_configurator],
-            features = [
-                SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION,
-                SWIFT_FEATURE_EMIT_SWIFTINTERFACE,
-            ],
+            features = [SWIFT_FEATURE_EMIT_SWIFTINTERFACE],
         ),
         ActionConfigInfo(
             actions = [
@@ -243,10 +235,7 @@ def compile_action_configs(
                 SWIFT_ACTION_DERIVE_FILES,
             ],
             configurators = [_emit_private_module_interface_path_configurator],
-            features = [
-                SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION,
-                SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE,
-            ],
+            features = [SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE],
         ),
 
         # Configure the path to the emitted *-Swift.h file.
@@ -718,23 +707,6 @@ def compile_action_configs(
         ActionConfigInfo(
             actions = [SWIFT_ACTION_PRECOMPILE_C_MODULE],
             configurators = [
-                # Before Swift 5.4, ClangImporter doesn't currently handle the
-                # IsSystem bit correctly for the input file and ignores the
-                # `-fsystem-module` flag, which causes the module map to be
-                # treated as a user input. We can work around this by disabling
-                # diagnostics for system modules. However, this also disables
-                # behavior in ClangImporter that causes system APIs that use
-                # `UInt` to be imported to use `Int` instead. The only solution
-                # here is to use Xcode 12.5 or higher.
-                add_arg("-Xcc", "-w"),
-                add_arg("-Xcc", "-Wno-nullability-declspec"),
-            ],
-            features = [SWIFT_FEATURE_SYSTEM_MODULE],
-            not_features = [SWIFT_FEATURE_SUPPORTS_SYSTEM_MODULE_FLAG],
-        ),
-        ActionConfigInfo(
-            actions = [SWIFT_ACTION_PRECOMPILE_C_MODULE],
-            configurators = [
                 # `-Xclang -emit-module` ought to be unnecessary if `-emit-pcm`
                 # is present because ClangImporter configures the invocation to
                 # use the `GenerateModule` action. However, it does so *after*
@@ -751,10 +723,7 @@ def compile_action_configs(
                 add_arg("-Xcc", "-Xclang"),
                 add_arg("-Xcc", "-fsystem-module"),
             ],
-            features = [
-                SWIFT_FEATURE_SUPPORTS_SYSTEM_MODULE_FLAG,
-                SWIFT_FEATURE_SYSTEM_MODULE,
-            ],
+            features = [SWIFT_FEATURE_SYSTEM_MODULE],
         ),
     ]
 

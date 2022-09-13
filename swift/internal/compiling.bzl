@@ -36,7 +36,6 @@ load(
     "SWIFT_FEATURE_EMIT_SWIFTDOC",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
     "SWIFT_FEATURE_EMIT_SWIFTSOURCEINFO",
-    "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_FULL_LTO",
     "SWIFT_FEATURE_HEADERS_ALWAYS_ACTION_INPUTS",
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
@@ -45,7 +44,6 @@ load(
     "SWIFT_FEATURE_OPT_USES_WMO",
     "SWIFT_FEATURE_PROPAGATE_GENERATED_MODULE_MAP",
     "SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION",
-    "SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_SYSTEM_MODULE",
     "SWIFT_FEATURE_THIN_LTO",
     "SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP",
@@ -1159,12 +1157,9 @@ def _declare_compile_outputs(
         basename = "{}.swiftsourceinfo".format(module_name),
     ) if include_swiftsourceinfo else None
 
-    if are_all_features_enabled(
+    if is_feature_enabled(
         feature_configuration = feature_configuration,
-        feature_names = [
-            SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION,
-            SWIFT_FEATURE_EMIT_SWIFTINTERFACE,
-        ],
+        feature_name = SWIFT_FEATURE_EMIT_SWIFTINTERFACE,
     ):
         swiftinterface_file = _declare_target_scoped_file(
             actions = actions,
@@ -1175,12 +1170,9 @@ def _declare_compile_outputs(
     else:
         swiftinterface_file = None
 
-    if are_all_features_enabled(
+    if is_feature_enabled(
         feature_configuration = feature_configuration,
-        feature_names = [
-            SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION,
-            SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE,
-        ],
+        feature_name = SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE,
     ):
         private_swiftinterface_file = _declare_target_scoped_file(
             actions = actions,

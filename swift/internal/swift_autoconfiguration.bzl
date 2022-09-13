@@ -37,7 +37,6 @@ load(
     "SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS",
     "SWIFT_FEATURE_NO_EMBED_DEBUG_MODULE",
     "SWIFT_FEATURE_SUPPORTS_BARE_SLASH_REGEX",
-    "SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS",
     "SWIFT_FEATURE_USE_AUTOLINK_EXTRACT",
     "SWIFT_FEATURE_USE_MODULE_WRAP",
     "SWIFT_FEATURE_USE_OLD_DRIVER",
@@ -112,23 +111,6 @@ def _check_enable_bare_slash_regex(repository_ctx, swiftc_path, _temp_dir):
         swiftc_path,
         "-version",
         "-enable-bare-slash-regex",
-    )
-
-def _check_supports_private_deps(repository_ctx, swiftc_path, temp_dir):
-    """Returns True if `swiftc` supports implementation-only imports."""
-    source_file = _scratch_file(
-        repository_ctx,
-        temp_dir,
-        "main.swift",
-        """\
-@_implementationOnly import Foundation
-print("Hello")
-""",
-    )
-    return _swift_succeeds(
-        repository_ctx,
-        swiftc_path,
-        source_file,
     )
 
 def _check_supports_lld_gc_workaround(repository_ctx, swiftc_path, temp_dir):
@@ -250,7 +232,6 @@ _FEATURE_CHECKS = {
     SWIFT_FEATURE_FILE_PREFIX_MAP: _check_file_prefix_map,
     SWIFT_FEATURE_LLD_GC_WORKAROUND: _check_supports_lld_gc_workaround,
     SWIFT_FEATURE_SUPPORTS_BARE_SLASH_REGEX: _check_enable_bare_slash_regex,
-    SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS: _check_supports_private_deps,
 }
 
 def _normalized_linux_cpu(cpu):
@@ -371,7 +352,6 @@ def _create_windows_toolchain(repository_ctx):
         SWIFT_FEATURE_EMIT_SWIFTSOURCEINFO,
         SWIFT_FEATURE_ENABLE_BATCH_MODE,
         SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES,
-        SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS,
         SWIFT_FEATURE_USE_RESPONSE_FILES,
         SWIFT_FEATURE_NO_EMBED_DEBUG_MODULE,
         SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS,
