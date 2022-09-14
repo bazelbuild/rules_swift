@@ -68,6 +68,7 @@ load(
     "SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS",
     "SWIFT_FEATURE_SUPPORTS_SYSTEM_MODULE_FLAG",
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
+    "SWIFT_FEATURE_USE_OLD_DRIVER",
     "SWIFT_FEATURE_USE_RESPONSE_FILES",
     "SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE",
     "SWIFT_FEATURE__SUPPORTS_CONST_VALUE_EXTRACTION",
@@ -493,7 +494,8 @@ def _all_tool_configs(
         execution_requirements,
         generated_header_rewriter,
         swift_executable,
-        toolchain_root):
+        toolchain_root,
+        xcode_config):
     """Returns the tool configurations for the Swift toolchain.
 
     Args:
@@ -506,6 +508,7 @@ def _all_tool_configs(
         swift_executable: A custom Swift driver executable to be used during the
             build, if provided.
         toolchain_root: The root directory of the toolchain, if provided.
+        xcode_config: The `apple_common.XcodeVersionConfig` provider.
 
     Returns:
         A dictionary mapping action name to tool configuration.
@@ -518,7 +521,14 @@ def _all_tool_configs(
         env = dict(env)
         env["TOOLCHAINS"] = custom_toolchain
 
-    env["SWIFT_AVOID_WARNING_USING_OLD_DRIVER"] = "1"
+    # In Xcode 13.3 and 13.4 (Swift 5.6), the legacy driver prints a warning
+    # if it is used. Suppress it, since we still have to use it on those
+    # specific versions due to response file bugs.
+    if (
+        _is_xcode_at_least_version(xcode_config, "13.3") and
+        not _is_xcode_at_least_version(xcode_config, "14.0")
+    ):
+        env["SWIFT_AVOID_WARNING_USING_OLD_DRIVER"] = "1"
 
     def _driver_config(*, mode):
         return {
@@ -710,6 +720,11 @@ def _xcode_swift_toolchain_impl(ctx):
         SWIFT_FEATURE_USE_RESPONSE_FILES,
     ])
 
+    # The new driver had response file bugs in Xcode 13.x that are fixed in
+    # Xcode 14.
+    if not _is_xcode_at_least_version(xcode_config, "14.0"):
+        requested_features.append(SWIFT_FEATURE_USE_OLD_DRIVER)
+
     # Xcode 14 implies Swift 5.7.
     if _is_xcode_at_least_version(xcode_config, "14.0"):
         requested_features.append(SWIFT_FEATURE_FILE_PREFIX_MAP)
@@ -736,6 +751,7 @@ def _xcode_swift_toolchain_impl(ctx):
         generated_header_rewriter = generated_header_rewriter,
         swift_executable = swift_executable,
         toolchain_root = toolchain_root,
+        xcode_config = xcode_config,
     )
     all_action_configs = _all_action_configs(
         additional_objc_copts = _command_line_objc_copts(
