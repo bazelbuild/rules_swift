@@ -284,6 +284,12 @@ bool SwiftRunner::ProcessArgument(
         consumer("-coverage-prefix-map");
         consumer(std::filesystem::current_path().string() + "=.");
         changed = true;
+      } else if (new_arg == "-file-prefix-pwd-is-dot") {
+        // Get the actual current working directory (the workspace root), which
+        // we didn't know at analysis time.
+        consumer("-file-prefix-map");
+        consumer(std::filesystem::current_path().string() + "=.");
+        changed = true;
       } else if (new_arg == "-ephemeral-module-cache") {
         // Create a temporary directory to hold the module cache, which will be
         // deleted after compilation is finished.

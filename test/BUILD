@@ -2,6 +2,7 @@ load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load(":ast_file_tests.bzl", "ast_file_test_suite")
 load(":coverage_settings_tests.bzl", "coverage_settings_test_suite")
 load(":debug_settings_tests.bzl", "debug_settings_test_suite")
+load(":features_tests.bzl", "features_test_suite")
 load(":generated_header_tests.bzl", "generated_header_test_suite")
 load(":linking_tests.bzl", "linking_test_suite")
 load(":module_cache_settings_tests.bzl", "module_cache_settings_test_suite")
@@ -20,6 +21,8 @@ ast_file_test_suite(name = "ast_file")
 coverage_settings_test_suite(name = "coverage_settings")
 
 debug_settings_test_suite(name = "debug_settings")
+
+features_test_suite(name = "features")
 
 generated_header_test_suite(name = "generated_header")
 
