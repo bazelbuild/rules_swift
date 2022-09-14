@@ -194,12 +194,6 @@ SWIFT_FEATURE_GLOBAL_MODULE_CACHE_USES_TMPDIR = "swift.global_module_cache_uses_
 # launched in Xcode 13/Swift 5.5.
 SWIFT_FEATURE_USE_OLD_DRIVER = "swift.use_old_driver"
 
-# If enabled, actions invoking the Swift driver or frontend may write argument
-# lists into response files (i.e., "@args.txt") to avoid passing command lines
-# that exceed the system limit. Toolchains typically set this automatically if
-# using a sufficiently recent version of Swift (4.2 or higher).
-SWIFT_FEATURE_USE_RESPONSE_FILES = "swift.use_response_files"
-
 # If enabled, Swift linking actions will use `swift-autolink-extract` to extract
 # the linker arguments.  This is required for ELF targets.  This is used
 # internally to determine the behaviour of the actions across different
