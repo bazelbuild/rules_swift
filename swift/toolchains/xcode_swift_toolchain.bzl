@@ -45,7 +45,6 @@ load(
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_USE_OLD_DRIVER",
-    "SWIFT_FEATURE_USE_RESPONSE_FILES",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:features.bzl",
@@ -730,7 +729,6 @@ def _xcode_swift_toolchain_impl(ctx):
     )
     requested_features.extend([
         SWIFT_FEATURE_ENABLE_BATCH_MODE,
-        SWIFT_FEATURE_USE_RESPONSE_FILES,
         SWIFT_FEATURE_DEBUG_PREFIX_MAP,
     ])
 

@@ -151,12 +151,6 @@ SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE = "swift.use_global_module_cache"
 # launched in Xcode 13/Swift 5.5.
 SWIFT_FEATURE_USE_OLD_DRIVER = "swift.use_old_driver"
 
-# If enabled, actions invoking the Swift driver or frontend may write argument
-# lists into response files (i.e., "@args.txt") to avoid passing command lines
-# that exceed the system limit. Toolchains typically set this automatically if
-# using a sufficiently recent version of Swift (4.2 or higher).
-SWIFT_FEATURE_USE_RESPONSE_FILES = "swift.use_response_files"
-
 # If enabled, builds using the "dbg" compilation mode will explicitly disable
 # swiftc from producing swiftmodules containing embedded file paths, which are
 # inherently non-portable across machines.
