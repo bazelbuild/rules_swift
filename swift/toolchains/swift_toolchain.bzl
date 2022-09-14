@@ -61,7 +61,6 @@ load(
     "SWIFT_FEATURE_USE_GLOBAL_INDEX_STORE",
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
     "SWIFT_FEATURE_USE_MODULE_WRAP",
-    "SWIFT_FEATURE_USE_RESPONSE_FILES",
 )
 load("//swift/internal:features.bzl", "features_for_build_modes")
 load("//swift/internal:target_triples.bzl", "target_triples")
@@ -100,7 +99,6 @@ def _all_tool_configs(
         env,
         swift_executable,
         toolchain_root,
-        use_param_file,
         use_autolink_extract,
         use_module_wrap,
         additional_tools,
@@ -112,8 +110,6 @@ def _all_tool_configs(
         swift_executable: A custom Swift driver executable to be used during the
             build, if provided.
         toolchain_root: The root directory of the toolchain.
-        use_param_file: If True, the compile action should use a param file for
-            its arguments.
         use_autolink_extract: If True, the link action should use
             `swift-autolink-extract` to extract the complier directed linking
             flags.
@@ -140,7 +136,7 @@ def _all_tool_configs(
         additional_tools = additional_tools,
         driver_config = _driver_config(mode = "swiftc"),
         resource_set = _swift_compile_resource_set,
-        use_param_file = use_param_file,
+        use_param_file = True,
         worker_mode = "persistent",
         env = env,
     )
@@ -469,7 +465,6 @@ def _swift_toolchain_impl(ctx):
         SWIFT_FEATURE_NO_GENERATED_MODULE_MAP,
         SWIFT_FEATURE_OPT_USES_WMO,
         SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE,
-        SWIFT_FEATURE_USE_RESPONSE_FILES,
     ])
 
     requested_features.extend(ctx.features)
@@ -483,7 +478,6 @@ def _swift_toolchain_impl(ctx):
         env = ctx.attr.env,
         swift_executable = swift_executable,
         toolchain_root = toolchain_root,
-        use_param_file = SWIFT_FEATURE_USE_RESPONSE_FILES in ctx.features,
         use_autolink_extract = SWIFT_FEATURE_USE_AUTOLINK_EXTRACT in ctx.features,
         use_module_wrap = SWIFT_FEATURE_USE_MODULE_WRAP in ctx.features,
         additional_tools = [ctx.file.version_file],
