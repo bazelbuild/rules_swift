@@ -50,16 +50,9 @@ load(
     "SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP",
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
     "SWIFT_FEATURE_USE_OLD_DRIVER",
-    "SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
 )
 load(":action_config.bzl", "ActionConfigInfo", "ConfigResultInfo", "add_arg")
-
-# The number of threads to use for WMO builds, using the same number of cores
-# that is on a Mac Pro for historical reasons.
-# TODO(b/32571265): Generalize this based on platform and core count
-# when an API to obtain this is available.
-_DEFAULT_WMO_THREAD_COUNT = 12
 
 # Swift command line flags that enable whole module optimization. (This
 # dictionary is used as a set for quick lookup; the values are irrelevant.)
@@ -94,6 +87,7 @@ def compile_action_configs(
     Returns:
         The list of action configs needed to perform compilation.
     """
+    _validate_swiftc_copts(additional_swiftc_copts)
 
     #### Flags that control the driver
     action_configs = [
@@ -613,38 +607,6 @@ def compile_action_configs(
             not_features = [
                 [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_WMO],
                 [SWIFT_FEATURE__WMO_IN_SWIFTCOPTS],
-            ],
-        ),
-
-        # Set the number of threads to use for WMO. (We can skip this if we know
-        # we'll already be applying `-num-threads` via `--swiftcopt` flags.)
-        ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
-            configurators = [
-                _make_wmo_thread_count_configurator(
-                    # WMO is implied by features, so don't check the user
-                    # compile flags.
-                    should_check_flags = False,
-                ),
-            ],
-            features = [
-                [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_WMO],
-                [SWIFT_FEATURE__WMO_IN_SWIFTCOPTS],
-            ],
-            not_features = [SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS],
-        ),
-        ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
-            configurators = [
-                _make_wmo_thread_count_configurator(
-                    # WMO is not implied by features, so check the user compile
-                    # flags in case they enabled it there.
-                    should_check_flags = True,
-                ),
-            ],
-            not_features = [
-                [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_WMO],
-                [SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS],
             ],
         ),
 
@@ -1201,32 +1163,12 @@ def _source_files_configurator(prerequisites, args):
 
 def _user_compile_flags_configurator(prerequisites, args):
     """Adds user compile flags to the command line."""
+
+    # It's cleanest to do this validation here rather than at the individual
+    # rule or API level.
+    _validate_swiftc_copts(prerequisites.user_compile_flags)
+
     args.add_all(prerequisites.user_compile_flags)
-
-def _make_wmo_thread_count_configurator(should_check_flags):
-    """Adds thread count flags for WMO compiles to the command line.
-
-    Args:
-        should_check_flags: If `True`, WMO wasn't enabled by a feature so the
-            user compile flags should be checked for an explicit WMO option. If
-            `False`, unconditionally apply the flags, because it is assumed that
-            the configurator was triggered by feature satisfaction.
-
-    Returns:
-        A function used to configure the `-num-threads` flag for WMO.
-    """
-
-    def _add_num_threads(args):
-        args.add("-num-threads", str(_DEFAULT_WMO_THREAD_COUNT))
-
-    if not should_check_flags:
-        return lambda _prerequisites, args: _add_num_threads(args)
-
-    def _flag_checking_wmo_thread_count_configurator(prerequisites, args):
-        if _is_wmo_manually_requested(prerequisites.user_compile_flags):
-            _add_num_threads(args)
-
-    return _flag_checking_wmo_thread_count_configurator
 
 def _is_wmo_manually_requested(user_compile_flags):
     """Returns `True` if a WMO flag is in the given list of compiler flags.
@@ -1289,3 +1231,12 @@ def _additional_inputs_configurator(prerequisites, _args):
     return ConfigResultInfo(
         inputs = prerequisites.additional_inputs,
     )
+
+def _validate_swiftc_copts(compile_flags):
+    """Fails the build if any unsupported compiler flags are specified.
+
+    Args:
+        compile_flags: The list of compiler flags to check.
+    """
+    if "-num-threads" in compile_flags:
+        fail("Passing the `-num-threads` flag is not supported.")
