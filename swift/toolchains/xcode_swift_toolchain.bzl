@@ -44,6 +44,7 @@ load(
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
+    "SWIFT_FEATURE_USE_OLD_DRIVER",
     "SWIFT_FEATURE_USE_RESPONSE_FILES",
 )
 load(
@@ -577,10 +578,13 @@ def _all_tool_configs(
     if custom_toolchain:
         env["TOOLCHAINS"] = custom_toolchain
 
-    # Starting with Xcode 13.3 (Swift 5.6), the legacy driver prints a warning
-    # if it is used. Suppress it, since we still have to use it due to response
-    # file bugs.
-    if _is_xcode_at_least_version(xcode_config, "13.3"):
+    # In Xcode 13.3 and 13.4 (Swift 5.6), the legacy driver prints a warning
+    # if it is used. Suppress it, since we still have to use it on those
+    # specific versions due to response file bugs.
+    if (
+        _is_xcode_at_least_version(xcode_config, "13.3") and
+        not _is_xcode_at_least_version(xcode_config, "14.0")
+    ):
         env["SWIFT_AVOID_WARNING_USING_OLD_DRIVER"] = "1"
 
     def _driver_config(*, mode):
@@ -729,6 +733,11 @@ def _xcode_swift_toolchain_impl(ctx):
         SWIFT_FEATURE_USE_RESPONSE_FILES,
         SWIFT_FEATURE_DEBUG_PREFIX_MAP,
     ])
+
+    # The new driver had response file bugs in Xcode 13.x that are fixed in
+    # Xcode 14.
+    if not _is_xcode_at_least_version(xcode_config, "14.0"):
+        requested_features.append(SWIFT_FEATURE_USE_OLD_DRIVER)
 
     env = _xcode_env(target_triple = target_triple, xcode_config = xcode_config)
     execution_requirements = xcode_config.execution_info()
