@@ -37,6 +37,7 @@ load(
     "SWIFT_FEATURE_OPT_USES_WMO",
     "SWIFT_FEATURE_SYSTEM_MODULE",
     "SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP",
+    "SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
 )
 load(
@@ -61,7 +62,7 @@ load(
     "owner_relative_path",
     "struct_fields",
 )
-load(":wmo.bzl", "is_wmo_manually_requested")
+load(":wmo.bzl", "find_num_threads_flag_value", "is_wmo_manually_requested")
 
 def _module_name_safe(string):
     """Returns a transformation of `string` that is safe for module names."""
@@ -1088,7 +1089,16 @@ def _emitted_output_nature(feature_configuration, user_compile_flags):
         is_wmo_manually_requested(user_compile_flags)
     )
 
-    return struct(emits_multiple_objects = not is_wmo)
+    # We check the feature first because that implies that `-num-threads 1` was
+    # present in `--swiftcopt`, which overrides all other flags (like the user
+    # compile flags, which come from the target's `copts`). Only fallback to
+    # checking the flags if the feature is disabled.
+    is_single_threaded = is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS,
+    ) or find_num_threads_flag_value(user_compile_flags) == 1
+
+    return struct(emits_multiple_objects = not (is_wmo and is_single_threaded))
 
 def _write_deps_modules_file(
         actions,
