@@ -45,6 +45,7 @@ load(
     "SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES",
     "SWIFT_FEATURE_ENABLE_TESTING",
     "SWIFT_FEATURE_FASTBUILD",
+    "SWIFT_FEATURE_FILE_PREFIX_MAP",
     "SWIFT_FEATURE_FULL_DEBUG_INFO",
     "SWIFT_FEATURE_GLOBAL_MODULE_CACHE_USES_TMPDIR",
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
@@ -607,6 +608,20 @@ def compile_action_configs(
             ],
             features = [
                 [SWIFT_FEATURE_COVERAGE_PREFIX_MAP, SWIFT_FEATURE_COVERAGE],
+            ],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVE_FILES,
+            ],
+            configurators = [
+                swift_toolchain_config.add_arg(
+                    "-Xwrapped-swift=-file-prefix-pwd-is-dot",
+                ),
+            ],
+            features = [
+                [SWIFT_FEATURE_FILE_PREFIX_MAP],
             ],
         ),
     ]

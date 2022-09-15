@@ -57,6 +57,14 @@ SWIFT_FEATURE_DEBUG_PREFIX_MAP = "swift.debug_prefix_map"
 # of remote builds.
 SWIFT_FEATURE_COVERAGE_PREFIX_MAP = "swift.coverage_prefix_map"
 
+# If enabled, builds will use the `-file-prefix-map` feature to remap the
+# current working directory to `.`, which avoids embedding non-hermetic
+# absolute path information in build artifacts. Specifically what this flag
+# does is subject to change in Swift, but it should imply all other
+# `-*-prefix-map` flags. How those flags compose is potentially complicated, so
+# using only this flag, or the same values for each flag, is recommended.
+SWIFT_FEATURE_FILE_PREFIX_MAP = "swift.file_prefix_map"
+
 # If enabled, C and Objective-C libraries that are direct or transitive
 # dependencies of a Swift library will emit explicit precompiled modules that
 # are compatible with Swift's ClangImporter and propagate them up the build
