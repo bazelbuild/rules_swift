@@ -273,20 +273,20 @@ bool SwiftRunner::ProcessArgument(
     std::string new_arg = arg;
     if (StripPrefix("-Xwrapped-swift=", new_arg)) {
       if (new_arg == "-debug-prefix-pwd-is-dot") {
-        // Get the actual current working directory (the workspace root), which
-        // we didn't know at analysis time.
+        // Replace the $PWD with . to make the paths relative to the workspace
+        // without breaking hermiticity.
         consumer("-debug-prefix-map");
         consumer(std::filesystem::current_path().string() + "=.");
         changed = true;
       } else if (new_arg == "-coverage-prefix-pwd-is-dot") {
-        // Get the actual current working directory (the workspace root), which
-        // we didn't know at analysis time.
+        // Replace the $PWD with . to make the paths relative to the workspace
+        // without breaking hermiticity.
         consumer("-coverage-prefix-map");
         consumer(std::filesystem::current_path().string() + "=.");
         changed = true;
       } else if (new_arg == "-file-prefix-pwd-is-dot") {
-        // Get the actual current working directory (the workspace root), which
-        // we didn't know at analysis time.
+        // Replace the $PWD with . to make the paths relative to the workspace
+        // without breaking hermiticity.
         consumer("-file-prefix-map");
         consumer(std::filesystem::current_path().string() + "=.");
         changed = true;
