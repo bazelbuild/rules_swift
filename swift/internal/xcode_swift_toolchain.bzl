@@ -36,6 +36,7 @@ load(
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
     "SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES",
+    "SWIFT_FEATURE_FILE_PREFIX_MAP",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_REMAP_XCODE_PATH",
     "SWIFT_FEATURE_SUPPORTS_BARE_SLASH_REGEX",
@@ -394,6 +395,24 @@ def _all_action_configs(
                     SWIFT_FEATURE_REMAP_XCODE_PATH,
                     SWIFT_FEATURE_COVERAGE_PREFIX_MAP,
                     SWIFT_FEATURE_COVERAGE,
+                ],
+            ],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVE_FILES,
+            ],
+            configurators = [
+                swift_toolchain_config.add_arg(
+                    "-file-prefix-map",
+                    "__BAZEL_XCODE_DEVELOPER_DIR__=DEVELOPER_DIR",
+                ),
+            ],
+            features = [
+                [
+                    SWIFT_FEATURE_REMAP_XCODE_PATH,
+                    SWIFT_FEATURE_FILE_PREFIX_MAP,
                 ],
             ],
         ),
