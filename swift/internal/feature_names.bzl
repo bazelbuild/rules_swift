@@ -162,6 +162,11 @@ SWIFT_FEATURE_USE_OLD_DRIVER = "swift.use_old_driver"
 #     target.swift-extra-clang-flags
 SWIFT_FEATURE_CACHEABLE_SWIFTMODULES = "swift.cacheable_swiftmodules"
 
+# This feature is enabled in Xcode 14.0 and later, which have support for the
+# `-Xfrontend -prefix-serialized-debugging-options` flag to remap paths
+# serialized into `.swiftmodule` files.
+SWIFT_FEATURE_SUPPORTS_REMAP_SWIFTMODULES = "swift.supports_remap_swiftmodules"
+
 # If enabled, requests the `-enable-library-evolution` swiftc flag which is
 # required for newer features like swiftinterface file generation. If the
 # `SWIFT_FEATURES_SUPPORTS_LIBRARY_EVOLUTION` feature is not enabled, this

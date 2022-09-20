@@ -45,6 +45,7 @@ load(
     "SWIFT_FEATURE_OPT_USES_OSIZE",
     "SWIFT_FEATURE_OPT_USES_WMO",
     "SWIFT_FEATURE_REWRITE_GENERATED_HEADER",
+    "SWIFT_FEATURE_SUPPORTS_REMAP_SWIFTMODULES",
     "SWIFT_FEATURE_SYSTEM_MODULE",
     "SWIFT_FEATURE_USE_C_MODULES",
     "SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP",
@@ -256,8 +257,7 @@ def compile_action_configs(
             features = [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_WMO],
         ),
 
-        # Enable or disable serialization of debugging options into
-        # swiftmodules.
+        # Control serialization of debugging options into `.swiftmodules`.
         ActionConfigInfo(
             actions = [
                 SWIFT_ACTION_COMPILE,
@@ -275,6 +275,19 @@ def compile_action_configs(
             configurators = [
                 add_arg("-Xfrontend", "-serialize-debugging-options"),
             ],
+            not_features = [
+                [SWIFT_FEATURE_OPT],
+                [SWIFT_FEATURE_CACHEABLE_SWIFTMODULES],
+            ],
+        ),
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_COMPILE,
+            ],
+            configurators = [
+                add_arg("-Xfrontend", "-prefix-serialize-debugging-options"),
+            ],
+            features = [SWIFT_FEATURE_SUPPORTS_REMAP_SWIFTMODULES],
             not_features = [
                 [SWIFT_FEATURE_OPT],
                 [SWIFT_FEATURE_CACHEABLE_SWIFTMODULES],
