@@ -44,7 +44,6 @@ load(
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
-    "SWIFT_FEATURE_SUPPORTS_REMAP_SWIFTMODULES",
     "SWIFT_FEATURE_USE_OLD_DRIVER",
 )
 load(
@@ -733,13 +732,9 @@ def _xcode_swift_toolchain_impl(ctx):
         SWIFT_FEATURE_DEBUG_PREFIX_MAP,
     ])
 
-    if _is_xcode_at_least_version(xcode_config, "14.0"):
-        # Xcode 14 and higher support remapping paths serialized into
-        # .swiftmodules.
-        requested_features.append(SWIFT_FEATURE_SUPPORTS_REMAP_SWIFTMODULES)
-    else:
-        # The new driver had response file bugs in Xcode 13.x that are fixed in
-        # Xcode 14.
+    # The new driver had response file bugs in Xcode 13.x that are fixed in
+    # Xcode 14.
+    if not _is_xcode_at_least_version(xcode_config, "14.0"):
         requested_features.append(SWIFT_FEATURE_USE_OLD_DRIVER)
 
     env = _xcode_env(target_triple = target_triple, xcode_config = xcode_config)
