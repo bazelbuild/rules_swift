@@ -123,13 +123,17 @@ def compile_action_configs(
             configurators = [_output_object_or_file_map_configurator],
         ),
 
-        # Don't embed Clang module breadcrumbs in debug info.
+        # Don't embed Clang module breadcrumbs in debug info if we're remapping
+        # `.swiftmodule` paths/flags (or not serializing them at all).
         ActionConfigInfo(
             actions = [SWIFT_ACTION_COMPILE],
             configurators = [
                 add_arg("-Xfrontend", "-no-clang-module-breadcrumbs"),
             ],
-            features = [SWIFT_FEATURE_CACHEABLE_SWIFTMODULES],
+            features = [
+                [SWIFT_FEATURE_SUPPORTS_REMAP_SWIFTMODULES],
+                [SWIFT_FEATURE_CACHEABLE_SWIFTMODULES],
+            ],
         ),
 
         # Emit precompiled Clang modules, and embed all files that were read
