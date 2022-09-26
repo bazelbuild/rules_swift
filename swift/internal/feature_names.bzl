@@ -38,6 +38,14 @@ SWIFT_FEATURE_HEADERS_ALWAYS_ACTION_INPUTS = "swift.headers_always_action_inputs
 # the note above about not depending on the C++ features.)
 SWIFT_FEATURE_COVERAGE = "swift.coverage"
 
+# If enabled, builds will use the `-file-prefix-map` feature to remap the
+# current working directory to `.`, which avoids embedding non-hermetic
+# absolute path information in build artifacts. Specifically what this flag
+# does is subject to change in Swift, but it should imply all other
+# `-*-prefix-map` flags. How those flags compose is potentially complicated, so
+# using only this flag, or the same values for each flag, is recommended.
+SWIFT_FEATURE_FILE_PREFIX_MAP = "swift.file_prefix_map"
+
 # If enabled, debug builds will use the `-debug-prefix-map` feature to remap the
 # current working directory to `.`, which permits debugging remote or sandboxed
 # builds.
@@ -47,14 +55,6 @@ SWIFT_FEATURE_DEBUG_PREFIX_MAP = "swift.debug_prefix_map"
 # remap the current working directory to `.`, which increases reproducibility
 # of remote builds.
 SWIFT_FEATURE_COVERAGE_PREFIX_MAP = "swift.coverage_prefix_map"
-
-# If enabled, builds will use the `-file-prefix-map` feature to remap the
-# current working directory to `.`, which avoids embedding non-hermetic
-# absolute path information in build artifacts. Specifically what this flag
-# does is subject to change in Swift, but it should imply all other
-# `-*-prefix-map` flags. How those flags compose is potentially complicated, so
-# using only this flag, or the same values for each flag, is recommended.
-SWIFT_FEATURE_FILE_PREFIX_MAP = "swift.file_prefix_map"
 
 # If enabled, C and Objective-C libraries that are direct or transitive
 # dependencies of a Swift library will emit explicit precompiled modules that
