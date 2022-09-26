@@ -44,6 +44,12 @@ SWIFT_FEATURE_BITCODE_EMBEDDED_MARKERS = "swift.bitcode_embedded_markers"
 # the note above about not depending on the C++ features.)
 SWIFT_FEATURE_COVERAGE = "swift.coverage"
 
+# If enabled, builds will use the `-file-prefix-map` feature to remap the
+# current working directory to `.`, which permits debugging remote or sandboxed
+# builds as well as hermetic index and coverage information. This requires
+# Xcode 14 or newer.
+SWIFT_FEATURE_FILE_PREFIX_MAP = "swift.file_prefix_map"
+
 # If enabled, debug builds will use the `-debug-prefix-map` feature to remap the
 # current working directory to `.`, which permits debugging remote or sandboxed
 # builds.

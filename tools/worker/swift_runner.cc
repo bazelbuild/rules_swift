@@ -235,9 +235,17 @@ bool SwiftRunner::ProcessArgument(
   absl::string_view trimmed_arg = arg;
   if (absl::ConsumePrefix(&trimmed_arg, "-Xwrapped-swift=")) {
     if (trimmed_arg == "-debug-prefix-pwd-is-dot") {
-      // Get the actual current working directory (the workspace root), which
+      // Get the actual current working directory (the execution root), which
       // we didn't know at analysis time.
       consumer("-debug-prefix-map");
+      consumer(GetCurrentDirectory() + "=.");
+      return true;
+    }
+
+    if (trimmed_arg == "-file-prefix-pwd-is-dot") {
+      // Get the actual current working directory (the execution root), which
+      // we didn't know at analysis time.
+      consumer("-file-prefix-map");
       consumer(GetCurrentDirectory() + "=.");
       return true;
     }

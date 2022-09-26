@@ -34,6 +34,7 @@ load(
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_ENABLE_TESTING",
     "SWIFT_FEATURE_FASTBUILD",
+    "SWIFT_FEATURE_FILE_PREFIX_MAP",
     "SWIFT_FEATURE_FULL_DEBUG_INFO",
     "SWIFT_FEATURE_INDEX_SYSTEM_MODULES",
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
@@ -340,6 +341,17 @@ def compile_action_configs(
                 [SWIFT_FEATURE_DEBUG_PREFIX_MAP, SWIFT_FEATURE_FASTBUILD],
                 [SWIFT_FEATURE_DEBUG_PREFIX_MAP, SWIFT_FEATURE_FULL_DEBUG_INFO],
             ],
+            not_features = [SWIFT_FEATURE_FILE_PREFIX_MAP],
+        ),
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_PRECOMPILE_C_MODULE,
+            ],
+            configurators = [
+                add_arg("-Xwrapped-swift=-file-prefix-pwd-is-dot"),
+            ],
+            features = [SWIFT_FEATURE_FILE_PREFIX_MAP],
         ),
     ]
 
