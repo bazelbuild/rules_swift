@@ -27,6 +27,7 @@ load(
     "SWIFT_FEATURE_NO_EMBED_DEBUG_MODULE",
 )
 load(":features.bzl", "is_feature_enabled")
+load("@bazel_skylib//lib:paths.bzl", "paths")
 
 def ensure_swiftmodule_is_embedded(
         actions,
@@ -60,7 +61,7 @@ def ensure_swiftmodule_is_embedded(
         # to wrap the .swiftmodule file in a .o file that gets propagated to the
         # linker.
         modulewrap_obj = actions.declare_file(
-            "{}.modulewrap.o".format(label.name),
+            paths.replace_extension(swiftmodule.basename, ".modulewrap.o"),
         )
         prerequisites = struct(
             object_file = modulewrap_obj,

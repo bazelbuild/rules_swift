@@ -46,6 +46,7 @@ def _swift_binary_impl(ctx):
 
     srcs = ctx.files.srcs
     output_groups = {}
+    module_contexts = []
 
     # If the binary has sources, compile those first and collect the outputs to
     # be passed to the linker.
@@ -71,6 +72,7 @@ def _swift_binary_impl(ctx):
             swift_toolchain = swift_toolchain,
             target_name = ctx.label.name,
         )
+        module_contexts.append(compile_result.module_context)
         compilation_outputs = compile_result.compilation_outputs
         supplemental_outputs = compile_result.supplemental_outputs
 
@@ -81,19 +83,16 @@ def _swift_binary_impl(ctx):
     else:
         compilation_outputs = cc_common.create_compilation_outputs()
 
-    cc_feature_configuration = swift_common.cc_feature_configuration(
-        feature_configuration = feature_configuration,
-    )
-
     linking_outputs = register_link_binary_action(
         actions = ctx.actions,
         additional_inputs = ctx.files.swiftc_inputs,
         additional_linking_contexts = [malloc_linking_context(ctx)],
-        cc_feature_configuration = cc_feature_configuration,
+        feature_configuration = feature_configuration,
         compilation_outputs = compilation_outputs,
         deps = ctx.attr.deps,
         grep_includes = ctx.file._grep_includes,
-        name = ctx.label.name,
+        label = ctx.label,
+        module_contexts = module_contexts,
         output_type = "executable",
         owner = ctx.label,
         stamp = ctx.attr.stamp,

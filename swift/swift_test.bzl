@@ -298,6 +298,8 @@ def _swift_test_impl(ctx):
     if not module_name:
         module_name = swift_common.derive_module_name(ctx.label)
 
+    module_contexts = []
+
     if srcs:
         # If the `swift_test` target had sources, compile those first and then
         # extract a symbol graph from it.
@@ -322,6 +324,7 @@ def _swift_test_impl(ctx):
             swift_toolchain = swift_toolchain,
         )
 
+        module_contexts.append(compile_result.module_context)
         compilation_outputs = compile_result.compilation_outputs
         supplemental_outputs = compile_result.supplemental_outputs
 
@@ -379,6 +382,7 @@ def _swift_test_impl(ctx):
             swift_infos = swift_infos_including_owner,
             swift_toolchain = swift_toolchain,
         )
+        module_contexts.append(discovery_compile_result.module_context)
         compilation_outputs = cc_common.merge_compilation_outputs(
             compilation_outputs = [
                 compilation_outputs,
@@ -393,10 +397,6 @@ def _swift_test_impl(ctx):
                 discovery_supplemental_outputs.indexstore_directory,
             ])
 
-    cc_feature_configuration = swift_common.cc_feature_configuration(
-        feature_configuration = feature_configuration,
-    )
-
     # If we need to run the test in an .xctest bundle, the binary must have
     # Mach-O type `MH_BUNDLE` instead of `MH_EXECUTE`.
     extra_linkopts = ["-Wl,-bundle"] if is_bundled else []
@@ -405,11 +405,12 @@ def _swift_test_impl(ctx):
         actions = ctx.actions,
         additional_inputs = ctx.files.swiftc_inputs,
         additional_linking_contexts = [malloc_linking_context(ctx)],
-        cc_feature_configuration = cc_feature_configuration,
         compilation_outputs = compilation_outputs,
         deps = all_deps,
+        feature_configuration = feature_configuration,
         grep_includes = ctx.file._grep_includes,
-        name = ctx.label.name,
+        label = ctx.label,
+        module_contexts = module_contexts,
         output_type = "executable",
         owner = ctx.label,
         stamp = ctx.attr.stamp,
