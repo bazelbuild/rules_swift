@@ -102,6 +102,7 @@ bzl_library(
         ":actions",
         ":feature_names",
         ":features",
+        "@bazel_skylib//lib:paths",
     ],
 )
 

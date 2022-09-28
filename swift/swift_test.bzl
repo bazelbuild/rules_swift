@@ -15,9 +15,11 @@
 """Implementation of the `swift_binary` and `swift_test` rules."""
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
+load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//swift/internal:env_expansion.bzl", "expanded_env")
 load(
     "//swift/internal:feature_names.bzl",
+    "SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT",
     "SWIFT_FEATURE_BUNDLED_XCTESTS",
 )
 load(
@@ -338,42 +340,28 @@ def _swift_test_impl(ctx):
         module_contexts.append(module_context)
         compilation_outputs = compile_result.compilation_outputs
         all_supplemental_outputs.append(compile_result.supplemental_outputs)
-
-        # Unlike `upstream`, we create a linking_context in order to support
-        # `autolink-extract`. See `a1395155c6a27d76aab5e1a93455259a0ac10b2f` and
-        # `93219a3b21390f212f5fd013e8db3654fd09814c`.
-        linking_context, _ = swift_common.create_linking_context_from_compilation_outputs(
-            actions = ctx.actions,
-            alwayslink = True,
-            compilation_outputs = compilation_outputs,
-            feature_configuration = feature_configuration,
-            include_dev_srch_paths = include_dev_srch_paths,
-            label = ctx.label,
-            linking_contexts = [
-                dep[CcInfo].linking_context
-                for dep in ctx.attr.deps + extra_deps
-                if CcInfo in dep
-            ],
-            module_context = module_context,
-            swift_toolchain = swift_toolchain,
-        )
-        additional_linking_contexts.append(linking_context)
+    else:
+        compilation_outputs = cc_common.create_compilation_outputs()
 
     additional_linking_contexts.append(malloc_linking_context(ctx))
 
-    cc_feature_configuration = swift_common.cc_feature_configuration(
+    if swift_common.is_enabled(
         feature_configuration = feature_configuration,
-    )
+        feature_name = SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT,
+    ):
+        name = paths.join(ctx.label.name, ctx.label.name)
+    else:
+        name = ctx.label.name
 
     linking_outputs = register_link_binary_action(
         actions = ctx.actions,
         additional_inputs = ctx.files.swiftc_inputs,
         additional_linking_contexts = additional_linking_contexts,
-        cc_feature_configuration = cc_feature_configuration,
-        # This is already collected from `linking_context`.
-        compilation_outputs = None,
+        compilation_outputs = compilation_outputs,
         deps = ctx.attr.deps + extra_deps + extra_link_deps,
-        name = ctx.label.name,
+        feature_configuration = feature_configuration,
+        module_contexts = module_contexts,
+        name = name,
         output_type = "executable",
         owner = ctx.label,
         stamp = ctx.attr.stamp,
