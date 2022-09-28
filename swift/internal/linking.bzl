@@ -171,6 +171,108 @@ def configure_features_for_binary(
         unsupported_features = unsupported_features,
     )
 
+def _create_autolink_linking_context(
+        *,
+        actions,
+        compilation_outputs,
+        feature_configuration,
+        label,
+        name,
+        swift_toolchain):
+    """Creates a linking context that embeds a .swiftmodule for debugging.
+
+    Args:
+        actions: The context's `actions` object.
+        compilation_outputs: A `CcCompilationOutputs` value containing the
+            object files to link. Typically, this is the second tuple element in
+            the value returned by `swift_common.compile`.
+        feature_configuration: A feature configuration obtained from
+            `swift_common.configure_features`.
+        label: The `Label` of the target being built. This is used as the owner
+            of the linker inputs created for post-compile actions (if any).
+        name: The name of the target being linked, which is used to derive the
+            output artifact.
+        swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
+
+    Returns:
+        A valid `CcLinkingContext`, or `None` if no linking context was created.
+    """
+    if compilation_outputs.objects and is_action_enabled(
+        action_name = SWIFT_ACTION_AUTOLINK_EXTRACT,
+        swift_toolchain = swift_toolchain,
+    ):
+        autolink_file = actions.declare_file(
+            "{}.autolink".format(name),
+        )
+        register_autolink_extract_action(
+            actions = actions,
+            autolink_file = autolink_file,
+            feature_configuration = feature_configuration,
+            object_files = compilation_outputs.objects,
+            swift_toolchain = swift_toolchain,
+        )
+        post_compile_linker_inputs = [
+            cc_common.create_linker_input(
+                owner = label,
+                user_link_flags = depset(
+                    ["@{}".format(autolink_file.path)],
+                ),
+                additional_inputs = depset([autolink_file]),
+            ),
+        ]
+        return cc_common.create_linking_context(
+            linker_inputs = depset(post_compile_linker_inputs),
+        )
+
+    return None
+
+def _create_embedded_debugging_linking_context(
+        *,
+        actions,
+        feature_configuration,
+        label,
+        module_context,
+        swift_toolchain):
+    """Creates a linking context that embeds a .swiftmodule for debugging.
+
+    Args:
+        actions: The context's `actions` object.
+        feature_configuration: A feature configuration obtained from
+            `swift_common.configure_features`.
+        label: The `Label` of the target being built. This is used as the owner
+            of the linker inputs created for post-compile actions (if any).
+        module_context: The module context returned by `swift_common.compile`
+            containing information about the Swift module that was compiled.
+            Typically, this is the first tuple element in the value returned by
+            `swift_common.compile`.
+        swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
+
+    Returns:
+        A valid `CcLinkingContext`, or `None` if no linking context was created.
+    """
+    if (
+        module_context and
+        module_context.swift and
+        should_embed_swiftmodule_for_debugging(
+            feature_configuration = feature_configuration,
+            module_context = module_context,
+        )
+    ):
+        post_compile_linker_inputs = [
+            ensure_swiftmodule_is_embedded(
+                actions = actions,
+                feature_configuration = feature_configuration,
+                label = label,
+                swiftmodule = module_context.swift.swiftmodule,
+                swift_toolchain = swift_toolchain,
+            ),
+        ]
+        return cc_common.create_linking_context(
+            linker_inputs = depset(post_compile_linker_inputs),
+        )
+
+    return None
+
 def create_linking_context_from_compilation_outputs(
         *,
         actions,
@@ -241,55 +343,29 @@ def create_linking_context_from_compilation_outputs(
         for cc_info in swift_toolchain.implicit_deps_providers.cc_infos
     ]
 
-    if module_context and module_context.swift:
-        post_compile_linker_inputs = []
+    debugging_linking_context = _create_embedded_debugging_linking_context(
+        actions = actions,
+        feature_configuration = feature_configuration,
+        label = label,
+        module_context = module_context,
+        swift_toolchain = swift_toolchain,
+    )
+    if debugging_linking_context:
+        extra_linking_contexts.append(debugging_linking_context)
 
-        # Ensure that the .swiftmodule file is embedded in the final library or
-        # binary for debugging purposes.
-        if should_embed_swiftmodule_for_debugging(
-            feature_configuration = feature_configuration,
-            module_context = module_context,
-        ):
-            post_compile_linker_inputs.append(
-                ensure_swiftmodule_is_embedded(
-                    actions = actions,
-                    feature_configuration = feature_configuration,
-                    label = label,
-                    swiftmodule = module_context.swift.swiftmodule,
-                    swift_toolchain = swift_toolchain,
-                ),
-            )
+    if not name:
+        name = label.name
 
-        # Invoke an autolink-extract action for toolchains that require it.
-        if is_action_enabled(
-            action_name = SWIFT_ACTION_AUTOLINK_EXTRACT,
-            swift_toolchain = swift_toolchain,
-        ):
-            autolink_file = actions.declare_file(
-                "{}.autolink".format(label.name),
-            )
-            register_autolink_extract_action(
-                actions = actions,
-                autolink_file = autolink_file,
-                feature_configuration = feature_configuration,
-                object_files = compilation_outputs.objects,
-                swift_toolchain = swift_toolchain,
-            )
-            post_compile_linker_inputs.append(
-                cc_common.create_linker_input(
-                    owner = label,
-                    user_link_flags = depset(
-                        ["@{}".format(autolink_file.path)],
-                    ),
-                    additional_inputs = depset([autolink_file]),
-                ),
-            )
-
-        extra_linking_contexts.append(
-            cc_common.create_linking_context(
-                linker_inputs = depset(post_compile_linker_inputs),
-            ),
-        )
+    autolink_linking_context = _create_autolink_linking_context(
+        actions = actions,
+        compilation_outputs = compilation_outputs,
+        feature_configuration = feature_configuration,
+        label = label,
+        name = name,
+        swift_toolchain = swift_toolchain,
+    )
+    if autolink_linking_context:
+        extra_linking_contexts.append(autolink_linking_context)
 
     if not alwayslink:
         alwayslink = is_feature_enabled(
@@ -327,9 +403,6 @@ def create_linking_context_from_compilation_outputs(
                 ]),
             ),
         )
-
-    if not name:
-        name = label.name
 
     if include_dev_srch_paths != None and is_test != None:
         fail("""\
@@ -498,10 +571,11 @@ def register_link_binary_action(
         actions,
         additional_inputs,
         additional_linking_contexts,
-        cc_feature_configuration,
         compilation_outputs,
         deps,
+        feature_configuration,
         name,
+        module_contexts,
         output_type,
         owner,
         stamp,
@@ -516,12 +590,15 @@ def register_link_binary_action(
             scripts, and so forth.
         additional_linking_contexts: Additional linking contexts that provide
             libraries or flags that should be linked into the executable.
-        cc_feature_configuration: The C++ feature configuration to use when
-            constructing the action.
         compilation_outputs: A `CcCompilationOutputs` object containing object
             files that will be passed to the linker.
         deps: A list of targets representing additional libraries that will be
             passed to the linker.
+        feature_configuration: The Swift feature configuration.
+        module_contexts: A list of module contexts resulting from the
+            compilation of the sources in the binary target, which are embedded
+            in the binary for debugging if this is a debug build. This list may
+            be empty if the target had no sources of its own.
         name: The name of the target being linked, which is used to derive the
             output artifact.
         output_type: A string indicating the output type; "executable" or
@@ -609,6 +686,59 @@ def register_link_binary_action(
 
     linking_contexts.extend(additional_linking_contexts)
 
+    for module_context in module_contexts:
+        debugging_linking_context = _create_embedded_debugging_linking_context(
+            actions = actions,
+            feature_configuration = feature_configuration,
+            label = owner,
+            module_context = module_context,
+            swift_toolchain = swift_toolchain,
+        )
+        if debugging_linking_context:
+            linking_contexts.append(debugging_linking_context)
+
+    autolink_linking_context = _create_autolink_linking_context(
+        actions = actions,
+        compilation_outputs = compilation_outputs,
+        feature_configuration = feature_configuration,
+        label = owner,
+        name = name,
+        swift_toolchain = swift_toolchain,
+    )
+    if autolink_linking_context:
+        linking_contexts.append(autolink_linking_context)
+
+    if is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_LLD_GC_WORKAROUND,
+    ):
+        linking_contexts.append(
+            cc_common.create_linking_context(
+                linker_inputs = depset([
+                    cc_common.create_linker_input(
+                        owner = owner,
+                        user_link_flags = depset(["-Wl,-z,nostart-stop-gc"]),
+                    ),
+                ]),
+            ),
+        )
+
+    if is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_OBJC_LINK_FLAGS,
+    ):
+        # TODO: Remove once we can rely on folks using the new toolchain
+        linking_contexts.append(
+            cc_common.create_linking_context(
+                linker_inputs = depset([
+                    cc_common.create_linker_input(
+                        owner = owner,
+                        user_link_flags = depset(["-ObjC"]),
+                    ),
+                ]),
+            ),
+        )
+
     # Collect linking contexts from any of the toolchain's implicit
     # dependencies.
     linking_contexts.extend([
@@ -621,7 +751,9 @@ def register_link_binary_action(
         additional_inputs = additional_inputs,
         cc_toolchain = swift_toolchain.cc_toolchain_info,
         compilation_outputs = compilation_outputs,
-        feature_configuration = cc_feature_configuration,
+        feature_configuration = get_cc_feature_configuration(
+            feature_configuration,
+        ),
         name = name,
         user_link_flags = user_link_flags,
         linking_contexts = linking_contexts,

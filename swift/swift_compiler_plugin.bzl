@@ -62,6 +62,7 @@ def _swift_compiler_plugin_impl(ctx):
 
     deps = ctx.attr.deps
     srcs = ctx.files.srcs
+    module_contexts = []
 
     if not srcs:
         fail("A compiler plugin must have at least one file in 'srcs'.")
@@ -105,24 +106,22 @@ def _swift_compiler_plugin_impl(ctx):
         workspace_name = ctx.workspace_name,
     )
     module_context = compile_result.module_context
+    module_contexts.append(module_context)
     compilation_outputs = compile_result.compilation_outputs
     supplemental_outputs = compile_result.supplemental_outputs
-
-    cc_feature_configuration = swift_common.cc_feature_configuration(
-        feature_configuration = feature_configuration,
-    )
 
     binary_linking_outputs = register_link_binary_action(
         actions = ctx.actions,
         additional_inputs = ctx.files.swiftc_inputs,
         additional_linking_contexts = [malloc_linking_context(ctx)],
-        cc_feature_configuration = cc_feature_configuration,
         compilation_outputs = compilation_outputs,
         deps = deps,
+        feature_configuration = feature_configuration,
+        module_contexts = module_contexts,
         name = ctx.label.name,
         output_type = "executable",
-        stamp = ctx.attr.stamp,
         owner = ctx.label,
+        stamp = ctx.attr.stamp,
         swift_toolchain = swift_toolchain,
         user_link_flags = expand_locations(
             ctx,

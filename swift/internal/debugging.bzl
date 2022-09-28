@@ -14,6 +14,7 @@
 
 """Functions relating to debugging support during compilation and linking."""
 
+load("@bazel_skylib//lib:paths.bzl", "paths")
 load(":action_names.bzl", "SWIFT_ACTION_MODULEWRAP")
 load(
     ":actions.bzl",
@@ -60,7 +61,7 @@ def ensure_swiftmodule_is_embedded(
         # to wrap the .swiftmodule file in a .o file that gets propagated to the
         # linker.
         modulewrap_obj = actions.declare_file(
-            "{}.modulewrap.o".format(label.name),
+            paths.replace_extension(swiftmodule.basename, ".modulewrap.o"),
         )
         prerequisites = struct(
             object_file = modulewrap_obj,

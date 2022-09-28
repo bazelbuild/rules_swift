@@ -105,39 +105,16 @@ def _swift_binary_impl(ctx):
             target_name = ctx.label.name,
             workspace_name = ctx.workspace_name,
         )
-        module_context = compile_result.module_context
-        module_contexts.append(module_context)
+        module_contexts.append(compile_result.module_context)
         compilation_outputs = compile_result.compilation_outputs
         supplemental_outputs = compile_result.supplemental_outputs
         output_groups = supplemental_compilation_output_groups(
             supplemental_outputs,
         )
-
-        # Unlike `upstream`, we create a linking_context in order to support
-        # `autolink-extract`. See `a1395155c6a27d76aab5e1a93455259a0ac10b2f` and
-        # `93219a3b21390f212f5fd013e8db3654fd09814c`.
-        linking_context, _ = swift_common.create_linking_context_from_compilation_outputs(
-            actions = ctx.actions,
-            alwayslink = True,
-            compilation_outputs = compilation_outputs,
-            feature_configuration = feature_configuration,
-            include_dev_srch_paths = include_dev_srch_paths,
-            label = ctx.label,
-            linking_contexts = [
-                dep[CcInfo].linking_context
-                for dep in ctx.attr.deps
-                if CcInfo in dep
-            ],
-            module_context = module_context,
-            swift_toolchain = swift_toolchain,
-        )
-        additional_linking_contexts.append(linking_context)
+    else:
+        compilation_outputs = cc_common.create_compilation_outputs()
 
     additional_linking_contexts.append(malloc_linking_context(ctx))
-
-    cc_feature_configuration = swift_common.cc_feature_configuration(
-        feature_configuration = feature_configuration,
-    )
 
     if swift_common.is_enabled(
         feature_configuration = feature_configuration,
@@ -151,10 +128,10 @@ def _swift_binary_impl(ctx):
         actions = ctx.actions,
         additional_inputs = ctx.files.swiftc_inputs,
         additional_linking_contexts = additional_linking_contexts,
-        cc_feature_configuration = cc_feature_configuration,
-        # This is already collected from `linking_context`.
-        compilation_outputs = None,
+        feature_configuration = feature_configuration,
+        compilation_outputs = compilation_outputs,
         deps = ctx.attr.deps,
+        module_contexts = module_contexts,
         name = name,
         output_type = "executable",
         owner = ctx.label,
