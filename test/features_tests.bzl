@@ -6,6 +6,20 @@ load(
 )
 
 default_test = make_action_command_line_test_rule()
+default_opt_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:compilation_mode": "opt",
+    },
+)
+
+opt_no_wmo_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:compilation_mode": "opt",
+        "//command_line_option:features": [
+            "-swift.opt_uses_wmo",
+        ],
+    },
+)
 
 file_prefix_map_test = make_action_command_line_test_rule(
     config_settings = {
@@ -61,6 +75,23 @@ def features_test_suite(name):
             "__BAZEL_XCODE_DEVELOPER_DIR__=DEVELOPER_DIR",
         ],
         target_compatible_with = ["@platforms//os:macos"],
+        mnemonic = "SwiftCompile",
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+    )
+
+    default_opt_test(
+        name = "{}_default_opt_test".format(name),
+        tags = [name],
+        expected_argv = ["-emit-object", "-O", "-whole-module-optimization"],
+        mnemonic = "SwiftCompile",
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+    )
+
+    opt_no_wmo_test(
+        name = "{}_opt_no_wmo_test".format(name),
+        tags = [name],
+        expected_argv = ["-emit-object", "-O"],
+        not_expected_argv = ["-whole-module-optimization"],
         mnemonic = "SwiftCompile",
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
