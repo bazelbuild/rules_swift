@@ -31,6 +31,7 @@ load(
     ":feature_names.bzl",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_NO_GENERATED_MODULE_MAP",
+    "SWIFT_FEATURE_OPT_USES_WMO",
     "SWIFT_FEATURE_USE_AUTOLINK_EXTRACT",
     "SWIFT_FEATURE_USE_MODULE_WRAP",
     "SWIFT_FEATURE_USE_RESPONSE_FILES",
@@ -281,7 +282,11 @@ def _swift_toolchain_impl(ctx):
         features_for_build_modes(ctx) +
         features_from_swiftcopts(swiftcopts = ctx.fragments.swift.copts())
     )
-    requested_features.append(SWIFT_FEATURE_NO_GENERATED_MODULE_MAP)
+    requested_features.extend([
+        SWIFT_FEATURE_NO_GENERATED_MODULE_MAP,
+        SWIFT_FEATURE_OPT_USES_WMO,
+    ])
+
     requested_features.extend(ctx.features)
 
     # Swift.org toolchains assume everything is just available on the PATH so we
