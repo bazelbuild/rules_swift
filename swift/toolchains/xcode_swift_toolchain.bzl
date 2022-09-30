@@ -630,6 +630,25 @@ def _entry_point_linkopts_provider(*, entry_point_name):
         linkopts = ["-Wl,-alias,_{},_main".format(entry_point_name)],
     )
 
+def _dsym_provider(*, ctx):
+    """Apple-specific linking extension to generate .dSYM binaries.
+
+    This extension generates a minimal dSYM bundle that LLDB can find next to
+    the built binary.
+    """
+    dsym_file = ctx.actions.declare_file(
+        "{name}.dSYM/Contents/Resources/DWARF/{name}".format(
+            name = ctx.label.name,
+        ),
+    )
+    variables_extension = {
+        "dsym_path": dsym_file.path,
+    }
+    return struct(
+        additional_outputs = [dsym_file],
+        variables_extension = variables_extension,
+    )
+
 def _xcode_swift_toolchain_impl(ctx):
     cpp_fragment = ctx.fragments.cpp
     apple_toolchain = apple_common.apple_toolchain()
@@ -778,6 +797,11 @@ def _xcode_swift_toolchain_impl(ctx):
             target[SwiftFeatureAllowlistInfo]
             for target in ctx.attr.feature_allowlists
         ],
+        debug_outputs_provider = (
+            # This function unconditionally declares the output file, so we
+            # should only use it if a .dSYM is being requested during the build.
+            _dsym_provider if cpp_fragment.apple_generate_dsym else None
+        ),
         generated_header_module_implicit_deps_providers = (
             collect_implicit_deps_providers(
                 ctx.attr.generated_header_module_implicit_deps,
