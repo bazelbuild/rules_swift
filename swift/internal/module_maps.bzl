@@ -93,7 +93,7 @@ def write_module_map(
 
     def _add_headers(*, headers, kind):
         content.add_all(
-            headers,
+            [h for h in headers if h.extension.lower() in ("h", "hpp", "hh")],
             allow_closure = True,
             format_each = '    {} "%s"'.format(kind),
             map_each = _relativized_header_paths,
