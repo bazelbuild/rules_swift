@@ -568,19 +568,22 @@ def new_objc_provider(
     return apple_common.new_objc_provider(**kwargs)
 
 def register_link_binary_action(
+        *,
         actions,
-        additional_inputs,
-        additional_linking_contexts,
+        additional_inputs = [],
+        additional_linking_contexts = [],
+        additional_outputs = [],
         compilation_outputs,
         deps,
         feature_configuration,
         name,
-        module_contexts,
+        module_contexts = [],
         output_type,
         owner,
         stamp,
         swift_toolchain,
-        user_link_flags):
+        user_link_flags = [],
+        variables_extension = {}):
     """Registers an action that invokes the linker to produce a binary.
 
     Args:
@@ -590,6 +593,8 @@ def register_link_binary_action(
             scripts, and so forth.
         additional_linking_contexts: Additional linking contexts that provide
             libraries or flags that should be linked into the executable.
+        additional_outputs: Additional files that are outputs of the linking
+            action but which are not among the return value of `cc_common.link`.
         compilation_outputs: A `CcCompilationOutputs` object containing object
             files that will be passed to the linker.
         deps: A list of targets representing additional libraries that will be
@@ -611,6 +616,8 @@ def register_link_binary_action(
         user_link_flags: Additional flags passed to the linker. Any
             `$(location ...)` placeholders are assumed to have already been
             expanded.
+        variables_extension: A dictionary containing additional crosstool
+            variables that should be set for the linking action.
 
     Returns:
         A `CcLinkingOutputs` object that contains the `executable` or
@@ -749,6 +756,7 @@ def register_link_binary_action(
     return cc_common.link(
         actions = actions,
         additional_inputs = additional_inputs,
+        additional_outputs = additional_outputs,
         cc_toolchain = swift_toolchain.cc_toolchain_info,
         compilation_outputs = compilation_outputs,
         feature_configuration = get_cc_feature_configuration(
@@ -760,4 +768,5 @@ def register_link_binary_action(
         link_deps_statically = True,
         output_type = output_type,
         stamp = stamp,
+        variables_extension = variables_extension,
     )

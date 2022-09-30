@@ -116,6 +116,17 @@ def _swift_binary_impl(ctx):
 
     additional_linking_contexts.append(malloc_linking_context(ctx))
 
+    # Apply the optional debugging outputs extension if the toolchain defines
+    # one.
+    debug_outputs_provider = swift_toolchain.debug_outputs_provider
+    if debug_outputs_provider:
+        debug_extension = debug_outputs_provider(ctx = ctx)
+        additional_debug_outputs = debug_extension.additional_outputs
+        variables_extension = debug_extension.variables_extension
+    else:
+        additional_debug_outputs = []
+        variables_extension = {}
+
     if swift_common.is_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT,
@@ -128,6 +139,7 @@ def _swift_binary_impl(ctx):
         actions = ctx.actions,
         additional_inputs = ctx.files.swiftc_inputs,
         additional_linking_contexts = additional_linking_contexts,
+        additional_outputs = additional_debug_outputs,
         feature_configuration = feature_configuration,
         compilation_outputs = compilation_outputs,
         deps = ctx.attr.deps,
@@ -142,11 +154,15 @@ def _swift_binary_impl(ctx):
             ctx.attr.linkopts,
             ctx.attr.swiftc_inputs,
         ) + ctx.fragments.cpp.linkopts,
+        variables_extension = variables_extension,
     )
 
     return [
         DefaultInfo(
             executable = linking_outputs.executable,
+            files = depset(
+                [linking_outputs.executable] + additional_debug_outputs,
+            ),
             runfiles = ctx.runfiles(
                 collect_data = True,
                 collect_default = True,

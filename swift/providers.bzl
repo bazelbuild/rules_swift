@@ -224,6 +224,16 @@ containing the fields described above, even if those lists are empty.
 `File`. A JSON file specifying a list of protocols for extraction of
 conformances' const values.
 """,
+        "debug_outputs_provider": """\
+An optional function that provides toolchain-specific logic around the handling
+of additional debug outputs for `swift_binary` and `swift_test` targets.
+If specified, this function must take the following keyword arguments:
+*   `ctx`: The rule context of the calling binary or test rule.
+It must return a `struct` with the following fields:
+*   `additional_outputs`: Additional outputs expected from the linking action.
+*   `variables_extension`: A dictionary of additional crosstool variables to
+    pass to the linking action.
+""",
         "developer_dirs": """
 A list of `structs` containing the following fields:\
 *   `developer_path_label`: A `string` representing the type of developer path.
