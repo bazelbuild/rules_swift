@@ -401,10 +401,22 @@ def _swift_test_impl(ctx):
     # Mach-O type `MH_BUNDLE` instead of `MH_EXECUTE`.
     extra_linkopts = ["-Wl,-bundle"] if is_bundled else []
 
+    # Apply the optional debugging outputs extension if the toolchain defines
+    # one.
+    debug_outputs_provider = swift_toolchain.debug_outputs_provider
+    if debug_outputs_provider:
+        debug_extension = debug_outputs_provider(ctx = ctx)
+        additional_debug_outputs = debug_extension.additional_outputs
+        variables_extension = debug_extension.variables_extension
+    else:
+        additional_debug_outputs = []
+        variables_extension = {}
+
     linking_outputs = register_link_binary_action(
         actions = ctx.actions,
         additional_inputs = ctx.files.swiftc_inputs,
         additional_linking_contexts = [malloc_linking_context(ctx)],
+        additional_outputs = additional_debug_outputs,
         compilation_outputs = compilation_outputs,
         deps = all_deps,
         feature_configuration = feature_configuration,
@@ -420,6 +432,7 @@ def _swift_test_impl(ctx):
             ctx.attr.linkopts,
             ctx.attr.swiftc_inputs,
         ) + extra_linkopts + ctx.fragments.cpp.linkopts,
+        variables_extension = variables_extension,
     )
 
     # If the tests are to be bundled, create the bundle and the test runner
@@ -451,7 +464,10 @@ def _swift_test_impl(ctx):
     return [
         DefaultInfo(
             executable = executable,
-            files = depset(direct = [executable] + additional_test_outputs),
+            files = depset(
+                [executable] + additional_test_outputs +
+                additional_debug_outputs,
+            ),
             runfiles = ctx.runfiles(
                 collect_data = True,
                 collect_default = True,

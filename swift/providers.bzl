@@ -152,6 +152,20 @@ C/Objective-C modules:
 For ease of use, this field is never `None`; it will always be a valid `struct`
 containing the fields described above, even if those lists are empty.
 """,
+        "debug_outputs_provider": """\
+An optional function that provides toolchain-specific logic around the handling
+of additional debug outputs for `swift_binary` and `swift_test` targets.
+
+If specified, this function must take the following keyword arguments:
+
+*   `ctx`: The rule context of the calling binary or test rule.
+
+It must return a `struct` with the following fields:
+
+*   `additional_outputs`: Additional outputs expected from the linking action.
+*   `variables_extension`: A dictionary of additional crosstool variables to
+    pass to the linking action.
+""",
         "feature_allowlists": """\
 A list of `SwiftFeatureAllowlistInfo` providers that allow or prohibit packages
 from requesting or disabling features.
