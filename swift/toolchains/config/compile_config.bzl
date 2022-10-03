@@ -56,6 +56,7 @@ load(
     "SWIFT_FEATURE_GLOBAL_MODULE_CACHE_USES_TMPDIR",
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
     "SWIFT_FEATURE_LAYERING_CHECK",
+    "SWIFT_FEATURE_MODULAR_INDEXING",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_NO_ASAN_VERSION_CHECK",
     "SWIFT_FEATURE_OPT",
@@ -990,6 +991,17 @@ def compile_action_configs(
             ],
             configurators = [_module_name_configurator],
         ),
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_DERIVE_FILES,
+                SWIFT_ACTION_PRECOMPILE_C_MODULE,
+            ],
+            configurators = [
+                add_arg("-file-prefix-map", "__BAZEL_XCODE_DEVELOPER_DIR__=DEVELOPER_DIR"),
+            ],
+            features = [SWIFT_FEATURE_FILE_PREFIX_MAP],
+        ),
 
         # Set the package name.
         ActionConfigInfo(
@@ -1023,6 +1035,33 @@ def compile_action_configs(
             features = [
                 SWIFT_FEATURE_INDEX_WHILE_BUILDING,
                 SWIFT_FEATURE_DISABLE_SYSTEM_INDEX,
+            ],
+        ),
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE],
+            configurators = [
+                add_arg("-index-ignore-clang-modules"),
+            ],
+            features = [
+                SWIFT_FEATURE_INDEX_WHILE_BUILDING,
+                SWIFT_FEATURE_MODULAR_INDEXING,
+                SWIFT_FEATURE_USE_C_MODULES,
+            ],
+        ),
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_PRECOMPILE_C_MODULE],
+            configurators = [
+                _index_while_building_configurator,
+                add_arg("-index-ignore-clang-modules"),
+                add_arg("-Xcc", "-index-ignore-pcms"),
+            ],
+            features = [
+                SWIFT_FEATURE_INDEX_WHILE_BUILDING,
+                SWIFT_FEATURE_MODULAR_INDEXING,
+                # Only index system PCMs since we should have the source code
+                # available for most non system modules except for third-party
+                # frameworks which we don't have the source code for.
+                SWIFT_FEATURE_SYSTEM_MODULE,
             ],
         ),
         ActionConfigInfo(
@@ -1787,6 +1826,10 @@ def _package_name_configurator(prerequisites, args):
 def _index_while_building_configurator(prerequisites, args):
     """Adds flags for indexstore generation to the command line."""
     args.add("-index-store-path", prerequisites.indexstore_directory.path)
+    index_output_path = getattr(prerequisites, "index_unit_output_path", None)
+    if index_output_path:
+        args.add("-Xcc", "-index-unit-output-path")
+        args.add("-Xcc", index_output_path)
 
 def _global_index_store_configurator(prerequisites, args):
     """Adds flags for index-store generation to the command line."""

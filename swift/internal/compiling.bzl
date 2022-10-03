@@ -39,6 +39,7 @@ load(
     "SWIFT_FEATURE_FULL_LTO",
     "SWIFT_FEATURE_HEADERS_ALWAYS_ACTION_INPUTS",
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
+    "SWIFT_FEATURE_MODULAR_INDEXING",
     "SWIFT_FEATURE_NO_GENERATED_MODULE_MAP",
     "SWIFT_FEATURE_OPT",
     "SWIFT_FEATURE_OPT_USES_WMO",
@@ -758,7 +759,8 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
                 swift_infos = swift_infos,
             )
         )
-        precompiled_module = _precompile_clang_module(
+
+        pcm_outputs = _precompile_clang_module(
             actions = actions,
             cc_compilation_context = compilation_context_to_compile,
             exec_group = exec_group,
@@ -770,6 +772,10 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
             swift_toolchain = swift_toolchain,
             target_name = target_name,
         )
+        if pcm_outputs:
+            precompiled_module = pcm_outputs.pcm_file
+        else:
+            precompiled_module = None
     else:
         precompiled_module = None
 
@@ -882,8 +888,8 @@ def precompile_clang_module(
             required to compile this module.
 
     Returns:
-        A `File` representing the precompiled module (`.pcm`) file, or `None` if
-        the toolchain or target does not support precompiled modules.
+        A struct containing the precompiled module and optional indexstore directory,
+        or `None` if the toolchain or target does not support precompiled modules.
     """
     return _precompile_clang_module(
         actions = actions,
@@ -941,8 +947,8 @@ def _precompile_clang_module(
             outputs.
 
     Returns:
-        A `File` representing the precompiled module (`.pcm`) file, or `None` if
-        the toolchain or target does not support precompiled modules.
+        A struct containing the precompiled module and optional indexstore directory,
+        or `None` if the toolchain or target does not support precompiled modules.
     """
 
     # Exit early if the toolchain does not support precompiled modules or if the
@@ -987,11 +993,31 @@ def _precompile_clang_module(
     else:
         transitive_modules = []
 
+    outputs = [precompiled_module]
+    if are_all_features_enabled(
+        feature_configuration = feature_configuration,
+        feature_names = [
+            SWIFT_FEATURE_INDEX_WHILE_BUILDING,
+            SWIFT_FEATURE_MODULAR_INDEXING,
+            SWIFT_FEATURE_SYSTEM_MODULE,
+        ],
+    ):
+        indexstore_directory = actions.declare_directory(
+            "{}.swift.pcm.indexstore".format(target_name),
+        )
+        outputs.append(indexstore_directory)
+        index_unit_output_path = _index_unit_output_path(precompiled_module)
+    else:
+        indexstore_directory = None
+        index_unit_output_path = None
+
     prerequisites = struct(
         bin_dir = feature_configuration._bin_dir,
         cc_compilation_context = cc_compilation_context,
         genfiles_dir = feature_configuration._genfiles_dir,
         include_dev_srch_paths = False,
+        indexstore_directory = indexstore_directory,
+        index_unit_output_path = index_unit_output_path,
         is_swift = False,
         is_swift_generated_header = is_swift_generated_header,
         module_name = module_name,
@@ -1008,13 +1034,16 @@ def _precompile_clang_module(
         action_name = SWIFT_ACTION_PRECOMPILE_C_MODULE,
         exec_group = exec_group,
         feature_configuration = feature_configuration,
-        outputs = [precompiled_module],
+        outputs = outputs,
         prerequisites = prerequisites,
         progress_message = "Precompiling C module %{label}",
         swift_toolchain = swift_toolchain,
     )
 
-    return precompiled_module
+    return struct(
+        indexstore_directory = indexstore_directory,
+        pcm_file = precompiled_module,
+    )
 
 def _create_cc_compilation_context(
         *,
@@ -1282,6 +1311,8 @@ def _declare_compile_outputs(
         ]
         output_file_map = None
         derived_files_output_file_map = None
+        # TODO(b/147451378): Support indexing even with a single object file.
+
     else:
         split_derived_file_generation = is_feature_enabled(
             feature_configuration = feature_configuration,
@@ -1371,6 +1402,14 @@ def _intermediate_frontend_file_path(target_name, src):
     safe_name = paths.basename(owner_rel_path)
 
     return paths.join(objs_dir, paths.dirname(owner_rel_path)), safe_name
+
+def _index_unit_output_path(output_file):
+    """Returns the hermetic index unit output path for indexing.
+
+    We use an absolute path since IndexStoreDB can't properly handle relative
+    paths.
+    """
+    return "/BAZEL_EXECUTION_ROOT/{}".format(output_file.path)
 
 def _declare_per_source_ast_file(*, actions, target_name, src):
     """Declares a file for an ast file during compilation.
@@ -1550,6 +1589,8 @@ def _declare_multiple_outputs_and_write_output_file_map(
             )
             output_objs.append(obj)
             src_output_map["object"] = obj.path
+
+        src_output_map["index-unit-output-path"] = _index_unit_output_path(obj)
 
         ast = _declare_per_source_ast_file(
             actions = actions,
