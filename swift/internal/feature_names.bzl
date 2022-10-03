@@ -74,6 +74,15 @@ SWIFT_FEATURE_DISABLE_SYSTEM_INDEX = "swift.disable_system_index"
 # Index while building - using a global index store cache
 SWIFT_FEATURE_USE_GLOBAL_INDEX_STORE = "swift.use_global_index_store"
 
+# If enabled, indexing will be completely modular - PCMs and Swift Modules will only
+# be indexed when they are compiled. While indexing a module/PCM, none of its dependencies
+# will be indexed.
+#
+# NOTE: This is only applicable if both `SWIFT_FEATURE_EMIT_C_MODULE` and
+# `SWIFT_FEATURE_INDEX_WHILE_BUILDING` are enabled as well. In addition, this feature requires
+# Xcode 14 in order to work.
+SWIFT_FEATURE_MODULAR_INDEXING = "swift.modular_indexing"
+
 # If enabled, when compiling an explicit C or Objectve-C module, every header
 # included by the module being compiled must belong to one of the modules listed
 # in its dependencies. This is ignored for system modules.

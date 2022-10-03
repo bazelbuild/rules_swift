@@ -709,8 +709,8 @@ Precompiles an explicit Clang module that is compatible with Swift.
 
 **RETURNS**
 
-A `File` representing the precompiled module (`.pcm`) file, or `None` if
-  the toolchain or target does not support precompiled modules.
+A struct containing the precompiled module and optional indexstore directory,
+  or `None` if the toolchain or target does not support precompiled modules.
 
 
 <a id="swift_common.toolchain_attrs"></a>
