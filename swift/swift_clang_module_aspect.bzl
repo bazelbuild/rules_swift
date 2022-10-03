@@ -502,7 +502,7 @@ def _handle_module(
         )
     )
 
-    precompiled_module = precompile_clang_module(
+    pcm_outputs = precompile_clang_module(
         actions = aspect_ctx.actions,
         cc_compilation_context = compilation_context_to_compile,
         feature_configuration = feature_configuration,
@@ -512,6 +512,8 @@ def _handle_module(
         swift_toolchain = swift_toolchain,
         target_name = target.label.name,
     )
+    precompiled_module = getattr(pcm_outputs, "pcm_file", None)
+    indexstore_directory = getattr(pcm_outputs, "indexstore_directory", None)
 
     providers = [
         create_swift_info(
@@ -532,10 +534,11 @@ def _handle_module(
     ]
 
     if precompiled_module:
+        output_groups = {"swift_explicit_module": depset([precompiled_module])}
+        if indexstore_directory:
+            output_groups["indexstore"] = depset([indexstore_directory])
         providers.append(
-            OutputGroupInfo(
-                swift_explicit_module = depset([precompiled_module]),
-            ),
+            OutputGroupInfo(**output_groups),
         )
 
     return providers
