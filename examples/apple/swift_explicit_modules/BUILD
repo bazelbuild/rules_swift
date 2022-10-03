@@ -13,6 +13,6 @@ swift_c_module(
 
 swift_binary(
     name = "hello_world",
-    srcs = ["helloworld.swift"],
+    srcs = ["main.swift"],
     deps = [":shims"],
 )

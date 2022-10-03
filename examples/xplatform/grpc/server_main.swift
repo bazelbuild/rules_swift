@@ -19,7 +19,6 @@ import NIOPosix
 import examples_xplatform_grpc_echo_proto
 import examples_xplatform_grpc_echo_server_services_swift
 
-
 /// Concrete implementation of the `EchoService` service definition.
 class EchoProvider: RulesSwift_Examples_Grpc_EchoServiceProvider {
   var interceptors: RulesSwift_Examples_Grpc_EchoServiceServerInterceptorFactoryProtocol?
@@ -38,23 +37,28 @@ class EchoProvider: RulesSwift_Examples_Grpc_EchoServiceProvider {
   }
 }
 
-let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-defer {
-  try! group.syncShutdownGracefully()
+@main
+struct ServerMain {
+  static func main() throws {
+    let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+    defer {
+      try! group.syncShutdownGracefully()
+    }
+
+    // Initialize and start the service.
+    let server = Server.insecure(group: group)
+      .withServiceProviders([EchoProvider()])
+      .bind(host: "0.0.0.0", port: 9000)
+
+    server.map {
+      $0.channel.localAddress
+    }.whenSuccess { address in
+      print("server started on port \(address!.port!)")
+    }
+
+    // Wait on the server's `onClose` future to stop the program from exiting.
+    _ = try server.flatMap {
+      $0.onClose
+    }.wait()
+  }
 }
-
-// Initialize and start the service.
-let server = Server.insecure(group: group)
-  .withServiceProviders([EchoProvider()])
-  .bind(host: "0.0.0.0", port: 9000)
-
-server.map {
-  $0.channel.localAddress
-}.whenSuccess { address in
-  print("server started on port \(address!.port!)")
-}
-
-// Wait on the server's `onClose` future to stop the program from exiting.
-_ = try server.flatMap {
-  $0.onClose
-}.wait()
