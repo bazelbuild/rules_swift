@@ -4,7 +4,7 @@
 The `swift_common` module provides API access to the behavior implemented
 by the Swift build rules, so that other custom rules can invoke Swift
 compilation and/or linking as part of their implementation.
-<a id="#swift_common.cc_feature_configuration"></a>
+<a id="swift_common.cc_feature_configuration"></a>
 
 ## swift_common.cc_feature_configuration
 
@@ -28,7 +28,7 @@ A C++ `FeatureConfiguration` value (see
   for more information).
 
 
-<a id="#swift_common.compilation_attrs"></a>
+<a id="swift_common.compilation_attrs"></a>
 
 ## swift_common.compilation_attrs
 
@@ -78,7 +78,7 @@ A new attribute dictionary that can be added to the attributes of a
   `swift_library`, and `swift_test`.
 
 
-<a id="#swift_common.compile"></a>
+<a id="swift_common.compile"></a>
 
 ## swift_common.compile
 
@@ -134,7 +134,7 @@ A tuple containing three elements:
           will be `None`.
 
 
-<a id="#swift_common.configure_features"></a>
+<a id="swift_common.configure_features"></a>
 
 ## swift_common.configure_features
 
@@ -168,7 +168,7 @@ An opaque value representing the feature configuration that can be
   this value should otherwise not be relied on or inspected directly.
 
 
-<a id="#swift_common.create_clang_module"></a>
+<a id="swift_common.create_clang_module"></a>
 
 ## swift_common.create_clang_module
 
@@ -213,7 +213,7 @@ A `struct` containing the `compilation_context`, `module_map`, and
   `precompiled_module` fields provided as arguments.
 
 
-<a id="#swift_common.create_compilation_context"></a>
+<a id="swift_common.create_compilation_context"></a>
 
 ## swift_common.create_compilation_context
 
@@ -246,7 +246,7 @@ A `struct` containing four fields:
       target.
 
 
-<a id="#swift_common.create_linking_context_from_compilation_outputs"></a>
+<a id="swift_common.create_linking_context_from_compilation_outputs"></a>
 
 ## swift_common.create_linking_context_from_compilation_outputs
 
@@ -293,7 +293,7 @@ A tuple of `(CcLinkingContext, CcLinkingOutputs)` containing the linking
   artifact representing the library that was linked, respectively.
 
 
-<a id="#swift_common.create_module"></a>
+<a id="swift_common.create_module"></a>
 
 ## swift_common.create_module
 
@@ -337,7 +337,7 @@ A `struct` containing the `name`, `clang`, `is_system`, and `swift`
   fields provided as arguments.
 
 
-<a id="#swift_common.create_swift_info"></a>
+<a id="swift_common.create_swift_info"></a>
 
 ## swift_common.create_swift_info
 
@@ -372,7 +372,7 @@ returned provider will not represent a true Swift module; it is merely a
 A new `SwiftInfo` provider with the given values.
 
 
-<a id="#swift_common.create_swift_interop_info"></a>
+<a id="swift_common.create_swift_interop_info"></a>
 
 ## swift_common.create_swift_interop_info
 
@@ -424,7 +424,7 @@ A provider whose type/layout is an implementation detail and should not
   be relied upon.
 
 
-<a id="#swift_common.create_swift_module"></a>
+<a id="swift_common.create_swift_module"></a>
 
 ## swift_common.create_swift_module
 
@@ -456,7 +456,7 @@ A `struct` containing the `ast_files`, `defines`, `indexstore,
   provided as arguments.
 
 
-<a id="#swift_common.derive_module_name"></a>
+<a id="swift_common.derive_module_name"></a>
 
 ## swift_common.derive_module_name
 
@@ -494,7 +494,7 @@ This mapping is intended to be fairly predictable, but not reversible.
 The module name derived from the label.
 
 
-<a id="#swift_common.is_enabled"></a>
+<a id="swift_common.is_enabled"></a>
 
 ## swift_common.is_enabled
 
@@ -522,7 +522,7 @@ check it.
 `True` if the given feature is enabled in the feature configuration.
 
 
-<a id="#swift_common.library_rule_attrs"></a>
+<a id="swift_common.library_rule_attrs"></a>
 
 ## swift_common.library_rule_attrs
 
@@ -573,7 +573,7 @@ A new attribute dictionary that can be added to the attributes of a
   custom build rule to provide the same interface as `swift_library`.
 
 
-<a id="#swift_common.precompile_clang_module"></a>
+<a id="swift_common.precompile_clang_module"></a>
 
 ## swift_common.precompile_clang_module
 
@@ -605,7 +605,7 @@ A `File` representing the precompiled module (`.pcm`) file, or `None` if
   the toolchain or target does not support precompiled modules.
 
 
-<a id="#swift_common.toolchain_attrs"></a>
+<a id="swift_common.toolchain_attrs"></a>
 
 ## swift_common.toolchain_attrs
 
