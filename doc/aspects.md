@@ -9,7 +9,7 @@ On this page:
 
   * [swift_usage_aspect](#swift_usage_aspect)
 
-<a id="#swift_usage_aspect"></a>
+<a id="swift_usage_aspect"></a>
 
 ## swift_usage_aspect
 
@@ -44,6 +44,6 @@ language rules that wouldn't know how to propagate the Swift-specific providers.
 
 | Name  | Description | Type | Mandatory | Default |
 | :------------- | :------------- | :------------- | :------------- | :------------- |
-| <a id="swift_usage_aspect-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/docs/build-ref.html#name">Name</a> | required |   |
+| <a id="swift_usage_aspect-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |   |
 
 

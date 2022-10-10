@@ -1,6 +1,6 @@
 <!-- Generated with Stardoc, Do Not Edit! -->
 # Workspace Setup
-<a id="#swift_rules_dependencies"></a>
+<a id="swift_rules_dependencies"></a>
 
 ## swift_rules_dependencies
 
