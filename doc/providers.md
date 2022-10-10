@@ -12,7 +12,7 @@ On this page:
   * [SwiftProtoInfo](#SwiftProtoInfo)
   * [SwiftUsageInfo](#SwiftUsageInfo)
 
-<a id="#SwiftInfo"></a>
+<a id="SwiftInfo"></a>
 
 ## SwiftInfo
 
@@ -37,7 +37,7 @@ has reasonable defaults for any fields not explicitly set.
 | <a id="SwiftInfo-transitive_modules"></a>transitive_modules |  <code>Depset</code> of values returned from <code>swift_common.create_module</code>. The transitive modules (both Swift and C/Objective-C) emitted by the library that propagated this provider and all of its dependencies.    |
 
 
-<a id="#SwiftProtoInfo"></a>
+<a id="SwiftProtoInfo"></a>
 
 ## SwiftProtoInfo
 
@@ -56,7 +56,7 @@ Propagates Swift-specific information about a `proto_library`.
 | <a id="SwiftProtoInfo-pbswift_files"></a>pbswift_files |  <code>Depset</code> of <code>File</code>s. The transitive Swift source files (<code>.pb.swift</code>) generated from the <code>.proto</code> files.    |
 
 
-<a id="#SwiftToolchainInfo"></a>
+<a id="SwiftToolchainInfo"></a>
 
 ## SwiftToolchainInfo
 
@@ -93,7 +93,7 @@ that use the toolchain.
 | <a id="SwiftToolchainInfo-unsupported_features"></a>unsupported_features |  <code>List</code> of <code>string</code>s. Features that should be implicitly disabled by default for targets built using this toolchain, unless overridden by the user by listing them in the <code>features</code> attribute of a target/package or in the <code>--features</code> command line flag.<br><br>These features determine various compilation and debugging behaviors of the Swift build rules, and they are also passed to the C++ APIs used when linking (so features defined in CROSSTOOL may be used here).    |
 
 
-<a id="#SwiftUsageInfo"></a>
+<a id="SwiftUsageInfo"></a>
 
 ## SwiftUsageInfo
 

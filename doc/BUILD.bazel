@@ -153,5 +153,5 @@ write_file(
 sh_binary(
     name = "update",
     srcs = ["update.sh"],
-    data = [file + ".md_" for file in _DOC_SRCS.keys()],
+    data = [file + ".md_" for file in _DOC_SRCS.keys() + ["setup"]],
 )
