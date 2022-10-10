@@ -166,6 +166,10 @@ SWIFT_FEATURE_REWRITE_GENERATED_HEADER = "swift.rewrite_generated_header"
 # them.
 SWIFT_FEATURE_USE_C_MODULES = "swift.use_c_modules"
 
+# If enabled, Swift modules for dependencies will be passed to the compiler
+# using a JSON file instead of `-I` search paths.
+SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP = "swift.use_explicit_swift_module_map"
+
 # If enabled, Swift compilation actions will use the same global Clang module
 # cache used by Objective-C compilation actions. This is disabled by default
 # because under some circumstances Clang module cache corruption can cause the
