@@ -24,6 +24,7 @@ load(
     "run_toolchain_action",
     "swift_action_names",
 )
+load(":explicit_module_map_file.bzl", "write_explicit_swift_module_map_file")
 load(":derived_files.bzl", "derived_files")
 load(
     ":feature_names.bzl",
@@ -62,6 +63,7 @@ load(
     "SWIFT_FEATURE_SUPPORTS_SYSTEM_MODULE_FLAG",
     "SWIFT_FEATURE_SYSTEM_MODULE",
     "SWIFT_FEATURE_USE_C_MODULES",
+    "SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP",
     "SWIFT_FEATURE_USE_GLOBAL_INDEX_STORE",
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
     "SWIFT_FEATURE_USE_OLD_DRIVER",
@@ -875,7 +877,10 @@ def compile_action_configs(
                 swift_action_names.DUMP_AST,
             ],
             configurators = [_dependencies_swiftmodules_configurator],
-            not_features = [SWIFT_FEATURE_VFSOVERLAY],
+            not_features = [
+                [SWIFT_FEATURE_VFSOVERLAY],
+                [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
+            ],
         ),
         swift_toolchain_config.action_config(
             actions = [
@@ -887,6 +892,17 @@ def compile_action_configs(
                 _dependencies_swiftmodules_vfsoverlay_configurator,
             ],
             features = [SWIFT_FEATURE_VFSOVERLAY],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVE_FILES,
+                swift_action_names.DUMP_AST,
+            ],
+            configurators = [
+                _explicit_swift_module_map_configurator,
+            ],
+            features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
         ),
     ])
 
@@ -1620,6 +1636,21 @@ def _dependencies_swiftmodules_vfsoverlay_configurator(prerequisites, args):
         inputs = swiftmodules + [prerequisites.vfsoverlay_file],
     )
 
+def _explicit_swift_module_map_configurator(prerequisites, args):
+    """Adds the explicit Swift module map file to the command line."""
+    args.add_all(
+        [
+            "-explicit-swift-module-map-file",
+            prerequisites.explicit_swift_module_map_file,
+        ],
+        before_each = "-Xfrontend",
+    )
+    return swift_toolchain_config.config_result(
+        inputs = prerequisites.transitive_swiftmodules + [
+            prerequisites.explicit_swift_module_map_file,
+        ],
+    )
+
 def _module_name_configurator(prerequisites, args):
     """Adds the module name flag to the command line."""
     args.add("-module-name", prerequisites.module_name)
@@ -2081,11 +2112,32 @@ def compile(
     else:
         vfsoverlay_file = None
 
+    if is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP,
+    ):
+        if vfsoverlay_file:
+            fail("Cannot use both `swift.vfsoverlay` and `swift.use_explicit_swift_module_map` features at the same time.")
+
+        # Generate the JSON file that contains the manifest of Swift
+        # dependencies.
+        explicit_swift_module_map_file = actions.declare_file(
+            "{}.swift-explicit-module-map.json".format(target_name),
+        )
+        write_explicit_swift_module_map_file(
+            actions = actions,
+            explicit_swift_module_map_file = explicit_swift_module_map_file,
+            module_contexts = transitive_modules,
+        )
+    else:
+        explicit_swift_module_map_file = None
+
     prerequisites = struct(
         additional_inputs = additional_inputs,
         bin_dir = feature_configuration._bin_dir,
         cc_compilation_context = merged_providers.cc_info.compilation_context,
         defines = sets.to_list(defines_set),
+        explicit_swift_module_map_file = explicit_swift_module_map_file,
         developer_dirs = swift_toolchain.developer_dirs,
         genfiles_dir = feature_configuration._genfiles_dir,
         is_swift = True,
