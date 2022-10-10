@@ -877,7 +877,10 @@ def compile_action_configs(
                 swift_action_names.DUMP_AST,
             ],
             configurators = [_dependencies_swiftmodules_configurator],
-            not_features = [SWIFT_FEATURE_VFSOVERLAY],
+            not_features = [
+                [SWIFT_FEATURE_VFSOVERLAY],
+                [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
+            ],
         ),
         swift_toolchain_config.action_config(
             actions = [
@@ -889,18 +892,6 @@ def compile_action_configs(
                 _dependencies_swiftmodules_vfsoverlay_configurator,
             ],
             features = [SWIFT_FEATURE_VFSOVERLAY],
-        ),
-    ])
-
-    action_configs.extend([
-        swift_toolchain_config.action_config(
-            actions = [
-                swift_action_names.COMPILE,
-                swift_action_names.DERIVE_FILES,
-                swift_action_names.DUMP_AST,
-            ],
-            configurators = [_dependencies_swiftmodules_configurator],
-            not_features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
         ),
         swift_toolchain_config.action_config(
             actions = [

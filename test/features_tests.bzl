@@ -38,6 +38,22 @@ file_prefix_xcode_remap_test = make_action_command_line_test_rule(
     },
 )
 
+vfsoverlay_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:features": [
+            "swift.vfsoverlay",
+        ],
+    },
+)
+
+explicit_swift_module_map_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:features": [
+            "swift.use_explicit_swift_module_map",
+        ],
+    },
+)
+
 def features_test_suite(name):
     """Test suite for various features.
 
@@ -47,13 +63,16 @@ def features_test_suite(name):
     default_test(
         name = "{}_default_test".format(name),
         tags = [name],
-        expected_argv = ["-emit-object"],
+        expected_argv = [
+            "-emit-object",
+            "-I$(BIN_DIR)/test/fixtures/basic",
+        ],
         not_expected_argv = [
             "-file-prefix-map",
             "-Xwrapped-swift=-file-prefix-pwd-is-dot",
         ],
         mnemonic = "SwiftCompile",
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/basic:second",
     )
 
     file_prefix_map_test(
@@ -94,4 +113,34 @@ def features_test_suite(name):
         not_expected_argv = ["-whole-module-optimization"],
         mnemonic = "SwiftCompile",
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+    )
+
+    vfsoverlay_test(
+        name = "{}_vfsoverlay_test".format(name),
+        tags = [name],
+        expected_argv = [
+            "-Xfrontend -vfsoverlay$(BIN_DIR)/test/fixtures/basic/second.vfsoverlay.yaml",
+            "-I/__build_bazel_rules_swift/swiftmodules",
+        ],
+        not_expected_argv = [
+            "-I$(BIN_DIR)/test/fixtures/basic",
+            "-explicit-swift-module-map-file",
+        ],
+        mnemonic = "SwiftCompile",
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/basic:second",
+    )
+
+    explicit_swift_module_map_test(
+        name = "{}_explicit_swift_module_map_test".format(name),
+        tags = [name],
+        expected_argv = [
+            "-Xfrontend -explicit-swift-module-map-file -Xfrontend $(BIN_DIR)/test/fixtures/basic/second.swift-explicit-module-map.json",
+        ],
+        not_expected_argv = [
+            "-I$(BIN_DIR)/test/fixtures/basic",
+            "-I/__build_bazel_rules_swift/swiftmodules",
+            "-Xfrontend -vfsoverlay$(BIN_DIR)/test/fixtures/basic/second.vfsoverlay.yaml",
+        ],
+        mnemonic = "SwiftCompile",
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/basic:second",
     )
