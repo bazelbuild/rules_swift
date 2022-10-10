@@ -45,6 +45,7 @@ bzl_library(
         ":debugging",
         ":derived_files",
         ":developer_dirs",
+        ":explicit_module_map_file",
         ":feature_names",
         ":features",
         ":providers",
@@ -386,6 +387,11 @@ bzl_library(
         "@bazel_skylib//rules:common_settings",
         "@bazel_tools//tools/cpp:toolchain_utils.bzl",
     ],
+)
+
+bzl_library(
+    name = "explicit_module_map_file",
+    srcs = ["explicit_module_map_file.bzl"],
 )
 
 bzl_library(
