@@ -31,31 +31,36 @@ def _maybe(repo_rule, name, **kwargs):
     if not native.existing_rule(name):
         repo_rule(name = name, **kwargs)
 
-def swift_rules_dependencies():
+def swift_rules_dependencies(include_bzlmod_ready_dependencies = True):
     """Fetches repositories that are dependencies of `rules_swift`.
 
     Users should call this macro in their `WORKSPACE` to ensure that all of the
     dependencies of the Swift rules are downloaded and that they are isolated
     from changes to those dependencies.
-    """
-    _maybe(
-        http_archive,
-        name = "bazel_skylib",
-        urls = [
-            "https://github.com/bazelbuild/bazel-skylib/releases/download/1.1.1/bazel-skylib-1.1.1.tar.gz",
-            "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/1.1.1/bazel-skylib-1.1.1.tar.gz",
-        ],
-        sha256 = "c6966ec828da198c5d9adbaa94c05e3a1c7f21bd012a0b29ba8ddbccb2c93b0d",
-    )
 
-    _maybe(
-        http_archive,
-        name = "build_bazel_apple_support",
-        urls = [
-            "https://github.com/bazelbuild/apple_support/releases/download/1.3.1/apple_support.1.3.1.tar.gz",
-        ],
-        sha256 = "f4fdf5c9b42b92ea12f229b265d74bb8cedb8208ca7a445b383c9f866cf53392",
-    )
+    Args:
+        include_bzlmod_ready_dependencies: Whether or not bzlmod-ready
+            dependencies should be included.
+    """
+    if include_bzlmod_ready_dependencies:
+        _maybe(
+            http_archive,
+            name = "bazel_skylib",
+            urls = [
+                "https://github.com/bazelbuild/bazel-skylib/releases/download/1.1.1/bazel-skylib-1.1.1.tar.gz",
+                "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/1.1.1/bazel-skylib-1.1.1.tar.gz",
+            ],
+            sha256 = "c6966ec828da198c5d9adbaa94c05e3a1c7f21bd012a0b29ba8ddbccb2c93b0d",
+        )
+
+        _maybe(
+            http_archive,
+            name = "build_bazel_apple_support",
+            urls = [
+                "https://github.com/bazelbuild/apple_support/releases/download/1.3.1/apple_support.1.3.1.tar.gz",
+            ],
+            sha256 = "f4fdf5c9b42b92ea12f229b265d74bb8cedb8208ca7a445b383c9f866cf53392",
+        )
 
     _maybe(
         http_archive,
