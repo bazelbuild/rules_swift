@@ -290,6 +290,11 @@ SWIFT_FEATURE_NO_EMBED_DEBUG_MODULE = "swift.no_embed_debug_module"
 # remains opt in.
 SWIFT_FEATURE_GENERATE_FROM_RAW_PROTO_FILES = "swift.generate_from_raw_proto_files"
 
+# If enabled, the toolchain will use `--swift_opt=FileNaming=PathToUnderscores`
+# (instead of `--swift_opt=FileNaming=FullPath`) for the protoc arguments when
+# generating a Swift file from a proto file.
+SWIFT_FEATURE_GENERATE_PATH_TO_UNDERSCORES_FROM_PROTO_FILES = "swift.generate_path_to_underscores_from_proto_files"
+
 # If enabled and whole module optimisation is being used, the `*.swiftdoc`,
 # `*.swiftmodule` and `*-Swift.h` are generated with a separate action
 # rather than as part of the compilation.

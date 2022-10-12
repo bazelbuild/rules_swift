@@ -25,6 +25,7 @@ load(
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_ENABLE_TESTING",
     "SWIFT_FEATURE_GENERATE_FROM_RAW_PROTO_FILES",
+    "SWIFT_FEATURE_GENERATE_PATH_TO_UNDERSCORES_FROM_PROTO_FILES",
 )
 load(":linking.bzl", "new_objc_provider")
 load(
@@ -105,6 +106,7 @@ def _register_pbswift_generate_action(
         transitive_descriptor_sets,
         module_mapping_file,
         generate_from_proto_sources,
+        generate_path_to_underscores_from_proto_files,
         mkdir_and_run,
         protoc_executable,
         protoc_plugin_executable,
@@ -128,6 +130,7 @@ def _register_pbswift_generate_action(
             from proto source file vs just via the DescriptorSets. The Sets
             don't have source info, so the generated sources won't have
             comments (https://github.com/bazelbuild/bazel/issues/9337).
+        generate_path_to_underscores_from_proto_files: TBD
         mkdir_and_run: The `File` representing the `mkdir_and_run` executable.
         protoc_executable: The `File` representing the `protoc` executable.
         protoc_plugin_executable: The `File` representing the `protoc` plugin
@@ -145,6 +148,7 @@ def _register_pbswift_generate_action(
         "pb",
         proto_source_root,
         direct_srcs,
+        generate_path_to_underscores_from_proto_files,
     )
     generated_dir_path = extract_generated_dir_path(
         label.name,
@@ -171,7 +175,12 @@ def _register_pbswift_generate_action(
         format = "--plugin=protoc-gen-swift=%s",
     )
     protoc_args.add(generated_dir_path, format = "--swift_out=%s")
-    protoc_args.add("--swift_opt=FileNaming=FullPath")
+
+    if generate_path_to_underscores_from_proto_files:
+        protoc_args.add("--swift_opt=FileNaming=PathToUnderscores")
+    else:
+        protoc_args.add("--swift_opt=FileNaming=FullPath")
+
     protoc_args.add("--swift_opt=Visibility=Public")
     if module_mapping_file:
         protoc_args.add(
@@ -378,6 +387,10 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             feature_configuration = feature_configuration,
             feature_name = SWIFT_FEATURE_GENERATE_FROM_RAW_PROTO_FILES,
         )
+        generate_path_to_underscores_from_proto_files = swift_common.is_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_GENERATE_PATH_TO_UNDERSCORES_FROM_PROTO_FILES,
+        )
 
         # Only the files for direct sources should be generated, but the
         # transitive descriptor sets are still need to be able to parse/load
@@ -403,6 +416,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             transitive_descriptor_sets,
             transitive_module_mapping_file,
             generate_from_proto_sources,
+            generate_path_to_underscores_from_proto_files,
             aspect_ctx.executable._mkdir_and_run,
             aspect_ctx.executable._protoc,
             aspect_ctx.executable._protoc_gen_swift,
