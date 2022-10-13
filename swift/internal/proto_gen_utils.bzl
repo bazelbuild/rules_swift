@@ -34,7 +34,7 @@ def declare_generated_files(
         proto_source_root: the source root of the `.proto` files in
             `proto_srcs`.
         proto_srcs: A list of `.proto` files.
-        path_to_underscores: TBD
+        path_to_underscores: True/False for if paths should be converted to underscores.
 
     Returns:
         A list of files that map one-to-one to `proto_srcs` but with
@@ -166,7 +166,7 @@ def _generated_file_path(
         proto_source_root: The source root for the `.proto` file.
         proto_file: The `.proto` file whose generated `.swift` path should be
             computed.
-        path_to_underscores: TBD
+        path_to_underscores: True/False for if path should be converted to underscores.
 
     Returns:
         The workspace-relative path of the `.swift` file that will be generated

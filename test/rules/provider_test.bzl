@@ -362,7 +362,8 @@ def make_provider_test_rule(config_settings = {}, extra_target_under_test_aspect
     Args:
         config_settings: A dictionary of configuration settings and their values
             that should be applied during tests.
-        extra_target_under_test_aspects: TBD
+      extra_target_under_test_aspects: An optional list of aspects to apply to the target_under_test
+          in addition to those set up by default for the test harness itself.
 
     Returns:
         A rule returned by `analysistest.make` that has the `provider_test`

@@ -130,7 +130,8 @@ def _register_pbswift_generate_action(
             from proto source file vs just via the DescriptorSets. The Sets
             don't have source info, so the generated sources won't have
             comments (https://github.com/bazelbuild/bazel/issues/9337).
-        generate_path_to_underscores_from_proto_files: TBD
+        generate_path_to_underscores_from_proto_files: True/False for if
+            generation should use `FileNaming=PathToUnderscores` argument.
         mkdir_and_run: The `File` representing the `mkdir_and_run` executable.
         protoc_executable: The `File` representing the `protoc` executable.
         protoc_plugin_executable: The `File` representing the `protoc` plugin
