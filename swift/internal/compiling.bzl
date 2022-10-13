@@ -1276,24 +1276,27 @@ def _declare_compile_outputs(
         user_compile_flags = user_compile_flags,
     )
 
-    # If enabled the compiler will emit LLVM BC files instead of Mach-O object
-    # files.
-    # LTO implies emitting LLVM BC files, too
-
-    full_lto_enabled = is_feature_enabled(
+    # Configure index-while-building if requested. IDEs and other indexing tools
+    # can enable this feature on the command line during a build and then access
+    # the index store artifacts that are produced.
+    index_while_building = is_feature_enabled(
         feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_FULL_LTO,
+        feature_name = SWIFT_FEATURE_INDEX_WHILE_BUILDING,
     )
-
-    thin_lto_enabled = is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_THIN_LTO,
-    )
-
-    emits_bc = is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_EMIT_BC,
-    ) or full_lto_enabled or thin_lto_enabled
+    if (
+        index_while_building and
+        not _is_index_store_path_overridden(user_compile_flags)
+    ):
+        indexstore_directory = actions.declare_directory(
+            "{}.indexstore".format(target_name),
+        )
+        include_index_unit_paths = is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_MODULAR_INDEXING,
+        )
+    else:
+        indexstore_directory = None
+        include_index_unit_paths = False
 
     if not output_nature.emits_multiple_objects:
         # If we're emitting a single object, we don't use an object map; we just
@@ -1319,6 +1322,25 @@ def _declare_compile_outputs(
             feature_name = SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION,
         )
 
+        # If enabled the compiler will emit LLVM BC files instead of Mach-O object
+        # files.
+        # LTO implies emitting LLVM BC files, too
+
+        full_lto_enabled = is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_FULL_LTO,
+        )
+
+        thin_lto_enabled = is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_THIN_LTO,
+        )
+
+        emits_bc = is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_EMIT_BC,
+        ) or full_lto_enabled or thin_lto_enabled
+
         # Otherwise, we need to create an output map that lists the individual
         # object files so that we can pass them all to the archive action.
         output_info = _declare_multiple_outputs_and_write_output_file_map(
@@ -1329,6 +1351,7 @@ def _declare_compile_outputs(
             split_derived_file_generation = split_derived_file_generation,
             srcs = srcs,
             target_name = target_name,
+            include_index_unit_paths = include_index_unit_paths,
         )
         object_files = output_info.object_files
         ast_files = output_info.ast_files
@@ -1336,23 +1359,6 @@ def _declare_compile_outputs(
         const_values_files = output_info.const_values_files
         output_file_map = output_info.output_file_map
         derived_files_output_file_map = output_info.derived_files_output_file_map
-
-    # Configure index-while-building if requested. IDEs and other indexing tools
-    # can enable this feature on the command line during a build and then access
-    # the index store artifacts that are produced.
-    index_while_building = is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_INDEX_WHILE_BUILDING,
-    )
-    if (
-        index_while_building and
-        not _is_index_store_path_overridden(user_compile_flags)
-    ):
-        indexstore_directory = actions.declare_directory(
-            "{}.indexstore".format(target_name),
-        )
-    else:
-        indexstore_directory = None
 
     if not is_feature_enabled(
         feature_configuration = feature_configuration,
@@ -1490,7 +1496,8 @@ def _declare_multiple_outputs_and_write_output_file_map(
         emits_bc,
         split_derived_file_generation,
         srcs,
-        target_name):
+        target_name,
+        include_index_unit_paths):
     """Declares low-level outputs and writes the output map for a compilation.
 
     Args:
@@ -1506,6 +1513,8 @@ def _declare_multiple_outputs_and_write_output_file_map(
         srcs: The list of source files that will be compiled.
         target_name: The name (excluding package path) of the target being
             built.
+        include_index_unit_paths: Whether to include "index-unit-output-path" paths in the output
+            file map.
 
     Returns:
         A `struct` with the following fields:
@@ -1590,7 +1599,8 @@ def _declare_multiple_outputs_and_write_output_file_map(
             output_objs.append(obj)
             src_output_map["object"] = obj.path
 
-        src_output_map["index-unit-output-path"] = _index_unit_output_path(obj)
+        if include_index_unit_paths:
+            src_output_map["index-unit-output-path"] = _index_unit_output_path(obj)
 
         ast = _declare_per_source_ast_file(
             actions = actions,
