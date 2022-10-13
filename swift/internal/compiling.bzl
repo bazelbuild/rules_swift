@@ -925,6 +925,21 @@ def _declare_compile_outputs(
         user_compile_flags = user_compile_flags,
     )
 
+    if is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_INDEX_WHILE_BUILDING,
+    ):
+        indexstore_directory = actions.declare_directory(
+            "{}.indexstore".format(target_name),
+        )
+        include_index_unit_paths = is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_MODULAR_INDEXING,
+        )
+    else:
+        indexstore_directory = None
+        include_index_unit_paths = False
+
     if not output_nature.emits_multiple_objects:
         # If we're emitting a single object, we don't use an object map; we just
         # declare the output file that the compiler will generate and there are
@@ -940,19 +955,10 @@ def _declare_compile_outputs(
             actions = actions,
             srcs = srcs,
             target_name = target_name,
+            include_index_unit_paths = include_index_unit_paths,
         )
         object_files = output_info.object_files
         output_file_map = output_info.output_file_map
-
-    if is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_INDEX_WHILE_BUILDING,
-    ):
-        indexstore_directory = actions.declare_directory(
-            "{}.indexstore".format(target_name),
-        )
-    else:
-        indexstore_directory = None
 
     return struct(
         generated_header_file = generated_header,
@@ -1002,7 +1008,8 @@ def _index_unit_output_path(output_file):
 def _declare_multiple_outputs_and_write_output_file_map(
         actions,
         srcs,
-        target_name):
+        target_name,
+        include_index_unit_paths):
     """Declares low-level outputs and writes the output map for a compilation.
 
     Args:
@@ -1010,6 +1017,8 @@ def _declare_multiple_outputs_and_write_output_file_map(
         srcs: The list of source files that will be compiled.
         target_name: The name (excluding package path) of the target being
             built.
+        include_index_unit_paths: Whether to include "index-unit-output-path" paths in the output
+            file map.
 
     Returns:
         A `struct` with the following fields:
@@ -1040,10 +1049,12 @@ def _declare_multiple_outputs_and_write_output_file_map(
             src = src,
         )
         output_objs.append(obj)
-        output_map[src.path] = {
+        file_outputs = {
             "object": obj.path,
-            "index-unit-output-path": _index_unit_output_path(obj),
         }
+        if include_index_unit_paths:
+            file_outputs["index-unit-output-path"] = _index_unit_output_path(obj)
+        output_map[src.path] = file_outputs
 
     actions.write(
         content = json.encode(output_map),
