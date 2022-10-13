@@ -14,7 +14,7 @@
 
 """Rules for testing the providers of a target under test."""
 
-load("@build_bazel_rules_swift//swift:swift.bzl", "SwiftInfo")
+load("@build_bazel_rules_swift//swift:swift.bzl", "SwiftInfo", "SwiftProtoInfo")
 load("@bazel_skylib//lib:types.bzl", "types")
 load(
     "@bazel_skylib//lib:unittest.bzl",
@@ -153,6 +153,8 @@ def _lookup_provider_by_name(env, target, provider_name):
         provider = OutputGroupInfo
     elif provider_name == "SwiftInfo":
         provider = SwiftInfo
+    elif provider_name == "SwiftProtoInfo":
+        provider = SwiftProtoInfo
     elif provider_name == "apple_common.Objc":
         provider = apple_common.Objc
 
@@ -354,12 +356,13 @@ def _provider_test_impl(ctx):
 
     return analysistest.end(env)
 
-def make_provider_test_rule(config_settings = {}):
+def make_provider_test_rule(config_settings = {}, extra_target_under_test_aspects = []):
     """Returns a new `provider_test`-like rule with custom config settings.
 
     Args:
         config_settings: A dictionary of configuration settings and their values
             that should be applied during tests.
+        extra_target_under_test_aspects: TBD
 
     Returns:
         A rule returned by `analysistest.make` that has the `provider_test`
@@ -419,6 +422,7 @@ Currently, only the following providers are recognized:
             ),
         },
         config_settings = config_settings,
+        extra_target_under_test_aspects = extra_target_under_test_aspects,
     )
 
 # A default instantiation of the rule when no custom config settings are needed.
