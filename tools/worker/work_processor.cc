@@ -82,6 +82,7 @@ void WorkProcessor::ProcessWorkRequest(
   OutputFileMap output_file_map;
   std::string output_file_map_path;
   std::string emit_module_path;
+  std::string emit_objc_header_path;
   bool is_wmo = false;
   bool is_dump_ast = false;
 
@@ -99,6 +100,8 @@ void WorkProcessor::ProcessWorkRequest(
       arg.clear();
     } else if (prev_arg == "-emit-module-path") {
       emit_module_path = arg;
+    } else if (prev_arg == "-emit-objc-header-path") {
+      emit_objc_header_path = arg;
     } else if (ArgumentEnablesWMO(arg)) {
       is_wmo = true;
     }
@@ -114,7 +117,8 @@ void WorkProcessor::ProcessWorkRequest(
 
   if (!output_file_map_path.empty()) {
     if (is_incremental) {
-      output_file_map.ReadFromPath(output_file_map_path, emit_module_path);
+      output_file_map.ReadFromPath(output_file_map_path, emit_module_path,
+                                   emit_objc_header_path);
 
       // Rewrite the output file map to use the incremental storage area and
       // pass the compiler the path to the rewritten file.

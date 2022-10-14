@@ -54,10 +54,11 @@ static std::string MakeIncrementalOutputPath(std::string path,
 };  // end namespace
 
 void OutputFileMap::ReadFromPath(const std::string &path,
-                                 const std::string &emit_module_path) {
+                                 const std::string &emit_module_path,
+                                 const std::string &emit_objc_header_path) {
   std::ifstream stream(path);
   stream >> json_;
-  UpdateForIncremental(path, emit_module_path);
+  UpdateForIncremental(path, emit_module_path, emit_objc_header_path);
 }
 
 void OutputFileMap::WriteToPath(const std::string &path) {
@@ -65,8 +66,9 @@ void OutputFileMap::WriteToPath(const std::string &path) {
   stream << json_;
 }
 
-void OutputFileMap::UpdateForIncremental(const std::string &path,
-                                         const std::string &emit_module_path) {
+void OutputFileMap::UpdateForIncremental(
+    const std::string &path, const std::string &emit_module_path,
+    const std::string &emit_objc_header_path) {
   bool derived =
       path.find(".derived_output_file_map.json") != std::string::npos;
 
@@ -169,6 +171,12 @@ void OutputFileMap::UpdateForIncremental(const std::string &path,
     auto copied_swiftsourceinfo_path =
         MakeIncrementalOutputPath(swiftsourceinfo_path, derived);
     incremental_inputs[swiftsourceinfo_path] = copied_swiftsourceinfo_path;
+  }
+
+  if (!emit_objc_header_path.empty()) {
+    auto copied_objc_header_path =
+        MakeIncrementalOutputPath(emit_objc_header_path, derived);
+    incremental_inputs[emit_objc_header_path] = copied_objc_header_path;
   }
 
   json_ = new_output_file_map;
