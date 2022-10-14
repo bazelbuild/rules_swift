@@ -146,7 +146,7 @@ int SwiftRunner::Run(std::ostream *stderr_stream, bool stdout_to_stderr) {
     }
 
     OutputFileMap output_file_map;
-    output_file_map.ReadFromPath(output_file_map_path_, "");
+    output_file_map.ReadFromPath(output_file_map_path_, "", "");
 
     auto outputs = output_file_map.incremental_outputs();
     std::map<std::string, std::string>::iterator it;
