@@ -8,6 +8,9 @@ swift_test(
         "SimpleTests.swift",
         "main.swift",
     ],
+    env = {
+        "XCTEST_ENV_VAR": "TRUE",
+    },
 )
 
 swift_test(
@@ -16,6 +19,9 @@ swift_test(
         "SimpleTests.swift",
         "main.swift",
     ],
+    env = {
+        "XCTEST_ENV_VAR": "TRUE",
+    },
     features = ["tsan"],
 )
 
@@ -25,6 +31,9 @@ swift_test(
         "SimpleTests.swift",
         "main.swift",
     ],
+    env = {
+        "XCTEST_ENV_VAR": "TRUE",
+    },
     features = ["asan"],
 )
 
@@ -34,6 +43,9 @@ swift_test(
         "SimpleTests.swift",
         "main.swift",
     ],
+    env = {
+        "XCTEST_ENV_VAR": "TRUE",
+    },
     features = ["ubsan"],
 )
 
@@ -43,6 +55,9 @@ swift_test(
         "SimpleTests.swift",
         "main.swift",
     ],
+    env = {
+        "XCTEST_ENV_VAR": "TRUE",
+    },
     features = [
         "tsan",
         "ubsan",

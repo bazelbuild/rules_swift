@@ -32,6 +32,10 @@ class SimpleTests: XCTestCase {
     XCTAssertEqual(value, 4)
   }
 
+  func testThatEnvVariablesArePassed() {
+    XCTAssertEqual(ProcessInfo.processInfo.environment["XCTEST_ENV_VAR"], "TRUE")
+  }
+
   static var allTests = [
     ("testThatWillSucceed", testThatWillSucceed),
     ("testThatWillFailIfChanged", testThatWillFailIfChanged),

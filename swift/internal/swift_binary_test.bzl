@@ -23,6 +23,7 @@ load(":providers.bzl", "SwiftToolchainInfo")
 load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 load(":swift_common.bzl", "swift_common")
 load(":utils.bzl", "expand_locations")
+load(":env_expansion.bzl", "expanded_env")
 
 def _binary_rule_attrs(stamp_default):
     """Returns attributes common to both `swift_binary` and `swift_test`.
@@ -416,6 +417,7 @@ def _swift_test_impl(ctx):
     test_environment = dicts.add(
         swift_toolchain.test_configuration.env,
         {"TEST_BINARIES_FOR_LLVM_COV": linking_outputs.executable.short_path},
+        expanded_env.get_expanded_env(ctx, []),
     )
 
     return providers + [
@@ -467,6 +469,11 @@ swift_test = rule(
     attrs = dicts.add(
         _binary_rule_attrs(stamp_default = 0),
         {
+            "env": attr.string_dict(
+                doc = """
+                Dictionary of environment variables that should be set during the test execution.
+                """,
+            ),
             "_apple_coverage_support": attr.label(
                 cfg = "exec",
                 default = Label(
