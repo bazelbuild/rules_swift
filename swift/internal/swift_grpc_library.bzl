@@ -35,6 +35,7 @@ load(
 )
 load(":providers.bzl", "SwiftInfo", "SwiftProtoInfo", "SwiftToolchainInfo")
 load(":swift_common.bzl", "swift_common")
+load(":transitions.bzl", "proto_compiler_transition")
 load(":utils.bzl", "compact", "get_providers")
 
 def _register_grpcswift_generate_action(
@@ -389,6 +390,11 @@ The kind of definitions that should be generated:
 *   `"server"` to generate server definitions.
 """,
             ),
+            "_allowlist_function_transition": attr.label(
+                default = Label(
+                    "@bazel_tools//tools/allowlists/function_transition_allowlist",
+                ),
+            ),
             "_mkdir_and_run": attr.label(
                 cfg = "exec",
                 default = Label(
@@ -403,19 +409,20 @@ The kind of definitions that should be generated:
             "_protoc": attr.label(
                 cfg = "exec",
                 default = Label(
-                    "@com_google_protobuf//:protoc",
+                    "//tools/protoc_wrapper:protoc",
                 ),
                 executable = True,
             ),
             "_protoc_gen_swiftgrpc": attr.label(
                 cfg = "exec",
                 default = Label(
-                    "@com_github_grpc_grpc_swift//:protoc-gen-grpc-swift_wrapper",
+                    "//tools/protoc_wrapper:protoc-gen-grpc-swift",
                 ),
                 executable = True,
             ),
         },
     ),
+    cfg = proto_compiler_transition,
     doc = """\
 Generates a Swift library from gRPC services defined in protocol buffer sources.
 
