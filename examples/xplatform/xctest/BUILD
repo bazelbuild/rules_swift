@@ -10,7 +10,7 @@ swift_test(
     ],
     env = {
         "XCTEST_ENV_VAR": "TRUE",
-        "XCTEST_BINDIR_ENV_VAR": "$(BINDIR)"
+        "XCTEST_BINDIR_ENV_VAR": "$(BINDIR)",
     },
 )
 
@@ -22,7 +22,7 @@ swift_test(
     ],
     env = {
         "XCTEST_ENV_VAR": "TRUE",
-        "XCTEST_BINDIR_ENV_VAR": "$(BINDIR)"
+        "XCTEST_BINDIR_ENV_VAR": "$(BINDIR)",
     },
     features = ["tsan"],
 )
@@ -35,7 +35,7 @@ swift_test(
     ],
     env = {
         "XCTEST_ENV_VAR": "TRUE",
-        "XCTEST_BINDIR_ENV_VAR": "$(BINDIR)"
+        "XCTEST_BINDIR_ENV_VAR": "$(BINDIR)",
     },
     features = ["asan"],
 )
@@ -48,7 +48,7 @@ swift_test(
     ],
     env = {
         "XCTEST_ENV_VAR": "TRUE",
-        "XCTEST_BINDIR_ENV_VAR": "$(BINDIR)"
+        "XCTEST_BINDIR_ENV_VAR": "$(BINDIR)",
     },
     features = ["ubsan"],
 )
@@ -61,7 +61,7 @@ swift_test(
     ],
     env = {
         "XCTEST_ENV_VAR": "TRUE",
-        "XCTEST_BINDIR_ENV_VAR": "$(BINDIR)"
+        "XCTEST_BINDIR_ENV_VAR": "$(BINDIR)",
     },
     features = [
         "tsan",
