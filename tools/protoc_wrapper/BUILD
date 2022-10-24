@@ -7,6 +7,10 @@ package(default_visibility = ["//visibility:public"])
 universal_binary(
     name = "universal_protoc",
     binary = "@com_google_protobuf//:protoc",
+    target_compatible_with = select({
+        "@platforms//os:windows": ["@platforms//:incompatible"],
+        "//conditions:default": [],
+    }),
 )
 
 alias(
@@ -15,6 +19,10 @@ alias(
         "//swift:universal_tools_config": ":universal_protoc",
         "//conditions:default": "@com_google_protobuf//:protoc",
     }),
+    target_compatible_with = select({
+        "@platforms//os:windows": ["@platforms//:incompatible"],
+        "//conditions:default": [],
+    }),
 )
 
 # protoc-gen-grpc-swift
@@ -22,6 +30,10 @@ alias(
 universal_binary(
     name = "universal_protoc-gen-grpc-swift",
     binary = "@com_github_grpc_grpc_swift//:protoc-gen-grpc-swift",
+    target_compatible_with = select({
+        "@platforms//os:windows": ["@platforms//:incompatible"],
+        "//conditions:default": [],
+    }),
 )
 
 alias(
@@ -30,6 +42,10 @@ alias(
         "//swift:universal_tools_config": ":universal_protoc-gen-grpc-swift",
         "//conditions:default": "@com_github_grpc_grpc_swift//:protoc-gen-grpc-swift",
     }),
+    target_compatible_with = select({
+        "@platforms//os:windows": ["@platforms//:incompatible"],
+        "//conditions:default": [],
+    }),
 )
 
 # ProtoCompilerPlugin
@@ -37,6 +53,10 @@ alias(
 universal_binary(
     name = "universal_ProtoCompilerPlugin",
     binary = "@com_github_apple_swift_protobuf//:ProtoCompilerPlugin",
+    target_compatible_with = select({
+        "@platforms//os:windows": ["@platforms//:incompatible"],
+        "//conditions:default": [],
+    }),
 )
 
 alias(
@@ -44,5 +64,9 @@ alias(
     actual = select({
         "//swift:universal_tools_config": ":universal_ProtoCompilerPlugin",
         "//conditions:default": "@com_github_apple_swift_protobuf//:ProtoCompilerPlugin",
+    }),
+    target_compatible_with = select({
+        "@platforms//os:windows": ["@platforms//:incompatible"],
+        "//conditions:default": [],
     }),
 )
