@@ -37,6 +37,7 @@ x_defaults:
       # Override 'sandboxed' strategy set in .bazelrc because it's not
       # available on Windows
       - "--strategy=SwiftCompile="
+      - "--noremote_accept_cached"
     build_targets:
       - "//tools/..."
 
