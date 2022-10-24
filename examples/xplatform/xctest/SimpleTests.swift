@@ -35,6 +35,7 @@ class SimpleTests: XCTestCase {
   func testThatEnvVariablesArePassed() throws {
     XCTAssertEqual(ProcessInfo.processInfo.environment["XCTEST_ENV_VAR"], "TRUE")
     let bindirEnvVar: String = ProcessInfo.processInfo.environment["XCTEST_BINDIR_ENV_VAR"] ?? ""
+    XCTAssertNotEqual(bindirEnvVar, "$(BINDIR)")
     let bindirURL: URL = try XCTUnwrap(URL(string: bindirEnvVar))
     XCTAssertTrue(bindirURL.pathComponents.count > 0)
   }
