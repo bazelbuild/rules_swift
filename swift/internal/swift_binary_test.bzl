@@ -417,7 +417,7 @@ def _swift_test_impl(ctx):
     test_environment = dicts.add(
         swift_toolchain.test_configuration.env,
         {"TEST_BINARIES_FOR_LLVM_COV": linking_outputs.executable.short_path},
-        expanded_env.get_expanded_env(ctx, []),
+        expanded_env.get_expanded_env(ctx, {}),
     )
 
     return providers + [

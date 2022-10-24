@@ -34,6 +34,8 @@ class SimpleTests: XCTestCase {
 
   func testThatEnvVariablesArePassed() {
     XCTAssertEqual(ProcessInfo.processInfo.environment["XCTEST_ENV_VAR"], "TRUE")
+    let bindirEnvVar: String = ProcessInfo.processInfo.environment["XCTEST_BINDIR_ENV_VAR"] ?? ""
+    XCTAssertFalse(bindirEnvVar.isEmpty)
   }
 
   static var allTests = [
