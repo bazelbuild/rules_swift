@@ -316,7 +316,7 @@ def _get_python_bin(repository_ctx):
 def _create_windows_toolchain(repository_ctx):
     path_to_swiftc = repository_ctx.which("swiftc.exe")
     if not path_to_swiftc:
-        fail("No 'swiftc.exe' executable found in Path")
+        fail("No 'swiftc.exe' executable found in Path.")
 
     root = path_to_swiftc.dirname.dirname
     enabled_features = [
