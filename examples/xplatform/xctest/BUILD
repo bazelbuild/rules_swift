@@ -8,6 +8,10 @@ swift_test(
         "SimpleTests.swift",
         "main.swift",
     ],
+    env = {
+        "XCTEST_ENV_VAR": "TRUE",
+        "XCTEST_BINDIR_ENV_VAR": "$(BINDIR)",
+    },
 )
 
 swift_test(
@@ -16,6 +20,10 @@ swift_test(
         "SimpleTests.swift",
         "main.swift",
     ],
+    env = {
+        "XCTEST_ENV_VAR": "TRUE",
+        "XCTEST_BINDIR_ENV_VAR": "$(BINDIR)",
+    },
     features = ["tsan"],
 )
 
@@ -25,6 +33,10 @@ swift_test(
         "SimpleTests.swift",
         "main.swift",
     ],
+    env = {
+        "XCTEST_ENV_VAR": "TRUE",
+        "XCTEST_BINDIR_ENV_VAR": "$(BINDIR)",
+    },
     features = ["asan"],
 )
 
@@ -34,6 +46,10 @@ swift_test(
         "SimpleTests.swift",
         "main.swift",
     ],
+    env = {
+        "XCTEST_ENV_VAR": "TRUE",
+        "XCTEST_BINDIR_ENV_VAR": "$(BINDIR)",
+    },
     features = ["ubsan"],
 )
 
@@ -43,6 +59,10 @@ swift_test(
         "SimpleTests.swift",
         "main.swift",
     ],
+    env = {
+        "XCTEST_ENV_VAR": "TRUE",
+        "XCTEST_BINDIR_ENV_VAR": "$(BINDIR)",
+    },
     features = [
         "tsan",
         "ubsan",
