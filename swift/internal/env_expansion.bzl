@@ -1,4 +1,4 @@
-""" Logic to expand env variables (Taken from https://github.com/bazelbuild/bazel/blob/675172439552055398c480990e277bb2f39d6aaa/src/main/starlark/builtins_bzl/common/cc/cc_helper.bzl) """
+""" Logic to expand env variables (Taken from https://github.com/bazelbuild/bazel/blob/675172439552055398c480990e277bb2f39d6aaa/src/main/starlark/builtins_bzl/common/cc/cc_helper.bzl), Tracking issue: https://github.com/bazelbuild/bazel/issues/16546 """
 
 def _get_expanded_env(ctx, additional_make_variable_substitutions):
     if not hasattr(ctx.attr, "env"):
