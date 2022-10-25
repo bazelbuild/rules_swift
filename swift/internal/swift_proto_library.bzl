@@ -16,6 +16,7 @@
 
 load("@rules_proto//proto:defs.bzl", "ProtoInfo")
 load(":providers.bzl", "SwiftInfo", "SwiftProtoInfo")
+load(":transitions.bzl", "proto_compiler_transition")
 load(
     ":swift_protoc_gen_aspect.bzl",
     "SwiftProtoCcInfo",
@@ -78,7 +79,13 @@ provider) from which the Swift library should be generated.
 """,
             providers = [ProtoInfo],
         ),
+        "_allowlist_function_transition": attr.label(
+            default = Label(
+                "@bazel_tools//tools/allowlists/function_transition_allowlist",
+            ),
+        ),
     },
+    cfg = proto_compiler_transition,
     doc = """\
 Generates a Swift library from protocol buffer sources.
 

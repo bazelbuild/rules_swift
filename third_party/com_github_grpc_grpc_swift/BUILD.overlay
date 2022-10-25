@@ -1,8 +1,4 @@
 load(
-    "@build_bazel_apple_support//rules:universal_binary.bzl",
-    "universal_binary",
-)
-load(
     "@build_bazel_rules_swift//swift:swift.bzl",
     "swift_binary",
     "swift_library",
@@ -52,19 +48,4 @@ swift_binary(
         "@com_github_apple_swift_protobuf//:SwiftProtobuf",
         "@com_github_apple_swift_protobuf//:SwiftProtobufPluginLibrary",
     ],
-)
-
-universal_binary(
-    name = "universal_protoc-gen-grpc-swift",
-    binary = ":protoc-gen-grpc-swift",
-    visibility = ["//visibility:public"],
-)
-
-alias(
-    name = "protoc-gen-grpc-swift_wrapper",
-    actual = select({
-        "@build_bazel_rules_swift//swift:universal_tools_config": ":universal_protoc-gen-grpc-swift",
-        "//conditions:default": ":protoc-gen-grpc-swift",
-    }),
-    visibility = ["//visibility:public"],
 )
