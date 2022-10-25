@@ -138,8 +138,6 @@ def swift_rules_dependencies():
         urls = [
             "https://github.com/bazelbuild/rules_proto/archive/d3702796e768abe7086d2dc7e299d3f7aeb1dd34.tar.gz",
         ],
-        patch_args = ["-p1"],
-        patches = ["@build_bazel_rules_swift//third_party/rules_proto:rules_proto.patch"],
         sha256 = "a88c799bf19c0a157f9c423477277a0d0362f251388d7b28f0f00bfb0bf25b3d",
         strip_prefix = "rules_proto-d3702796e768abe7086d2dc7e299d3f7aeb1dd34",
     )
