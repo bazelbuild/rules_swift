@@ -67,6 +67,12 @@ bool_setting(
     build_setting_default = False,
 )
 
+# NOTE: Enabling this flag will transition --proto_compiler to
+# //tools/protoc_wrapper:protoc for swift_grpc_library and swift_proto_library,
+# unless you set --proto_compiler manually.
+# If you use this flag, we recommend to also set
+# --proto_compiler=@build_bazel_rules_swift//tools/protoc_wrapper:protoc to
+# ensure that the same proto compiler is used across your builds.
 bool_flag(
     name = "universal_tools",
     build_setting_default = False,
