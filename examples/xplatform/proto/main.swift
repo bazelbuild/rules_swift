@@ -14,6 +14,7 @@
 
 import Foundation
 import SwiftProtobuf
+import examples_xplatform_proto_example_path_to_underscores_proto
 import examples_xplatform_proto_example_proto
 
 let person = RulesSwift_Examples_Person.with {
