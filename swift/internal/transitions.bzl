@@ -21,7 +21,7 @@ def _proto_compiler_transition_impl(settings, _attr):
     if str(settings["//command_line_option:proto_compiler"]) != "@com_google_protobuf//:protoc":
         return settings
 
-    return {"//command_line_option:proto_compiler": "//tools/protoc_wrapper:protoc"}
+    return {"//command_line_option:proto_compiler": "@build_bazel_rules_swift//tools/protoc_wrapper:protoc"}
 
 proto_compiler_transition = transition(
     implementation = _proto_compiler_transition_impl,

@@ -409,14 +409,14 @@ The kind of definitions that should be generated:
             "_protoc": attr.label(
                 cfg = "exec",
                 default = Label(
-                    "//tools/protoc_wrapper:protoc",
+                    "@build_bazel_rules_swift//tools/protoc_wrapper:protoc",
                 ),
                 executable = True,
             ),
             "_protoc_gen_swiftgrpc": attr.label(
                 cfg = "exec",
                 default = Label(
-                    "//tools/protoc_wrapper:protoc-gen-grpc-swift",
+                    "@build_bazel_rules_swift//tools/protoc_wrapper:protoc-gen-grpc-swift",
                 ),
                 executable = True,
             ),
