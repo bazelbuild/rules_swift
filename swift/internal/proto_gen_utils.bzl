@@ -21,7 +21,8 @@ def declare_generated_files(
         actions,
         extension_fragment,
         proto_source_root,
-        proto_srcs):
+        proto_srcs,
+        path_to_underscores = False):
     """Declares generated `.swift` files from a list of `.proto` files.
 
     Args:
@@ -33,6 +34,7 @@ def declare_generated_files(
         proto_source_root: the source root of the `.proto` files in
             `proto_srcs`.
         proto_srcs: A list of `.proto` files.
+        path_to_underscores: True/False for if paths should be converted to underscores.
 
     Returns:
         A list of files that map one-to-one to `proto_srcs` but with
@@ -45,6 +47,7 @@ def declare_generated_files(
                 extension_fragment,
                 proto_source_root,
                 f,
+                path_to_underscores,
             ),
         )
         for f in proto_srcs
@@ -143,7 +146,8 @@ def _generated_file_path(
         name,
         extension_fragment,
         proto_source_root,
-        proto_file = None):
+        proto_file = None,
+        path_to_underscores = False):
     """Returns the short path of a generated `.swift` file from a `.proto` file.
 
     The returned workspace-relative path should be used to declare output files
@@ -162,6 +166,7 @@ def _generated_file_path(
         proto_source_root: The source root for the `.proto` file.
         proto_file: The `.proto` file whose generated `.swift` path should be
             computed.
+        path_to_underscores: True/False for if path should be converted to underscores.
 
     Returns:
         The workspace-relative path of the `.swift` file that will be generated
@@ -178,6 +183,8 @@ def _generated_file_path(
             proto_import_path(proto_file, proto_source_root),
             ".{}.swift".format(extension_fragment),
         )
+        if path_to_underscores:
+            generated_file_path = generated_file_path.replace("/", "_")
         return paths.join(dir_path, generated_file_path)
     return dir_path
 
