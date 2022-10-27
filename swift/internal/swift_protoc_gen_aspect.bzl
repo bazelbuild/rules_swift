@@ -590,12 +590,12 @@ swift_protoc_gen_aspect = aspect(
             ),
             "_protoc": attr.label(
                 cfg = "exec",
-                default = Label("@build_bazel_rules_swift//tools/protoc_wrapper:protoc"),
+                default = Label("//tools/protoc_wrapper:protoc"),
                 executable = True,
             ),
             "_protoc_gen_swift": attr.label(
                 cfg = "exec",
-                default = Label("@build_bazel_rules_swift//tools/protoc_wrapper:ProtoCompilerPlugin"),
+                default = Label("//tools/protoc_wrapper:ProtoCompilerPlugin"),
                 executable = True,
             ),
         },
