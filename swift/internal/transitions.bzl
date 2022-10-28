@@ -18,7 +18,10 @@ def _proto_compiler_transition_impl(settings, _attr):
     # Change --proto_compiler option to point to our wrapper, so that we can
     # configure it to the universal binary when needed. However, respect
     # user-provided option if user provides their own compiler.
-    if str(settings["//command_line_option:proto_compiler"]) != "@com_google_protobuf//:protoc":
+    if str(settings["//command_line_option:proto_compiler"]) not in [
+        "@bazel_tools//tools/proto:protoc",
+        "@com_google_protobuf//:protoc",
+    ]:
         return settings
 
     return {"//command_line_option:proto_compiler": Label("//tools/protoc_wrapper:protoc")}
