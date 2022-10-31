@@ -209,15 +209,14 @@ def _generate_module_map(
     return module_map_file
 
 def _objc_library_module_info(aspect_ctx):
-    """Returns the `module_name` and `module_map` attrs for an `objc_library`.
+    """Returns the `module_name` attribute for an `objc_library`.
 
     Args:
         aspect_ctx: The aspect context.
 
     Returns:
-        A tuple containing the module name (a string) and the module map file (a
-        `File`) specified as attributes on the `objc_library`. These values may
-        be `None`.
+        The module name (a string) specified as an attribute on the
+        `objc_library`. This may be `None`.
     """
     attr = aspect_ctx.rule.attr
 
@@ -225,15 +224,16 @@ def _objc_library_module_info(aspect_ctx):
     # `swift_interop_hint` to customize `objc_*` targets' module names and
     # module maps.
     module_name = getattr(attr, "module_name", None)
-    module_map_file = None
 
-    module_map_target = getattr(attr, "module_map", None)
-    if module_map_target:
-        module_map_files = module_map_target.files.to_list()
-        if module_map_files:
-            module_map_file = module_map_files[0]
+    # TODO(b/195019413): Remove this when the `module_map` attribute is deleted.
+    if getattr(attr, "module_map", None):
+        fail(
+            "The `module_map` attribute on `objc_library` is no longer " +
+            "supported. Use `swift_interop_hint` instead to customize the " +
+            "module map for a target.",
+        )
 
-    return module_name, module_map_file
+    return module_name
 
 # TODO(b/151667396): Remove j2objc-specific knowledge.
 def _j2objc_compilation_context(target):
@@ -345,14 +345,12 @@ def _module_info_for_target(
     ):
         return None, None
 
-    module_map_file = None
-
     if not module_name:
         if apple_common.Objc not in target:
             return None, None
 
         if aspect_ctx.rule.kind == "objc_library":
-            module_name, module_map_file = _objc_library_module_info(aspect_ctx)
+            module_name = _objc_library_module_info(aspect_ctx)
 
         # If it was an `objc_library` without an explicit module name, or it
         # was some other `Objc`-providing target, derive the module name
@@ -360,18 +358,16 @@ def _module_info_for_target(
         if not module_name:
             module_name = derive_module_name(target.label)
 
-    # If we didn't get a module map above, generate it now.
-    if not module_map_file:
-        module_map_file = _generate_module_map(
-            actions = aspect_ctx.actions,
-            aspect_ctx = aspect_ctx,
-            compilation_context = compilation_context,
-            dependent_module_names = dependent_module_names,
-            exclude_headers = exclude_headers,
-            feature_configuration = feature_configuration,
-            module_name = module_name,
-            target = target,
-        )
+    module_map_file = _generate_module_map(
+        actions = aspect_ctx.actions,
+        aspect_ctx = aspect_ctx,
+        compilation_context = compilation_context,
+        dependent_module_names = dependent_module_names,
+        exclude_headers = exclude_headers,
+        feature_configuration = feature_configuration,
+        module_name = module_name,
+        target = target,
+    )
 
     return module_name, module_map_file
 
