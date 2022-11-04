@@ -144,6 +144,14 @@ bzl_library(
 )
 
 bzl_library(
+    name = "swift_module_mapping",
+    srcs = ["swift_module_mapping.bzl"],
+    deps = [
+        "//swift/internal:providers",
+    ],
+)
+
+bzl_library(
     name = "swift_package_configuration",
     srcs = ["swift_package_configuration.bzl"],
     deps = [
