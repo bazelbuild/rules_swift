@@ -18,7 +18,19 @@ Note that some of these definitions are exported via the `swift_common` module.
 (`swift/internal:providers.bzl`).
 """
 
-load("@build_bazel_rules_swift//swift:providers.bzl", "SwiftInfo")
+load("//swift:providers.bzl", "SwiftInfo")
+
+SwiftModuleAliasesInfo = provider(
+    doc = "Defines a remapping of Swift module names.",
+    fields = {
+        "aliases": """\
+A string-to-string dictionary that contains aliases for Swift modules.
+Each key in the dictionary is the name of a module as it is written in source
+code. The corresponding value is the replacement module name to use when
+compiling it and/or any modules that depend on it.
+""",
+    },
+)
 
 def create_module(
         *,
