@@ -720,7 +720,7 @@ def _precompile_clang_module(
             "{}.swift.pcm.indexstore".format(target_name),
         )
         outputs.append(indexstore_directory)
-        index_unit_output_path = _index_unit_output_path(precompiled_module)
+        index_unit_output_path = precompiled_module.path
     else:
         indexstore_directory = None
         index_unit_output_path = None
@@ -1007,14 +1007,6 @@ def _declare_per_source_object_file(actions, target_name, src):
         paths.join(dirname, "{}.o".format(basename)),
     )
 
-def _index_unit_output_path(output_file):
-    """Returns the hermetic index unit output path for indexing.
-
-    We use an absolute path since IndexStoreDB can't properly handle relative
-    paths.
-    """
-    return "/BAZEL_EXECUTION_ROOT/{}".format(output_file.path)
-
 def _declare_multiple_outputs_and_write_output_file_map(
         actions,
         srcs,
@@ -1063,7 +1055,7 @@ def _declare_multiple_outputs_and_write_output_file_map(
             "object": obj.path,
         }
         if include_index_unit_paths:
-            file_outputs["index-unit-output-path"] = _index_unit_output_path(obj)
+            file_outputs["index-unit-output-path"] = obj.path
         output_map[src.path] = file_outputs
 
     actions.write(
