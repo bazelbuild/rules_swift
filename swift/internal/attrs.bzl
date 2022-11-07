@@ -249,6 +249,20 @@ def swift_library_rule_attrs(
         ),
         swift_config_attrs(),
         {
+            "library_evolution": attr.bool(
+                default = False,
+                doc = """\
+Indicates whether the Swift code should be compiled with library evolution mode
+enabled.
+
+This attribute should be used to compile a module that will be distributed as
+part of a client-facing (non-implementation-only) module in a library or
+framework that will be distributed for use outside of the Bazel build graph.
+Setting this to true will compile the module with the `-library-evolution` flag
+and emit a `.swiftinterface` file as one of the compilation outputs.
+""",
+                mandatory = False,
+            ),
             "linkopts": attr.string_list(
                 doc = """\
 Additional linker options that should be passed to the linker for the binary

@@ -15,6 +15,10 @@
 """Tests for interoperability with `cc_library`-specific features."""
 
 load(
+    "@build_bazel_rules_swift//test/rules:provider_test.bzl",
+    "provider_test",
+)
+load(
     "@bazel_skylib//rules:build_test.bzl",
     "build_test",
 )
@@ -36,6 +40,34 @@ def module_interface_test_suite(name, tags = []):
             "@build_bazel_rules_swift//test/fixtures/module_interface:client",
         ],
         tags = all_tags,
+    )
+
+    # Verify that `.swiftinterface` file is emitted when the `library_evolution`
+    # attribute is true.
+    provider_test(
+        name = "{}_swift_library_with_evolution_emits_swiftinterface".format(name),
+        expected_files = [
+            "test/fixtures/module_interface/library/ToyModule.swiftinterface",
+            "*",
+        ],
+        field = "files",
+        provider = "DefaultInfo",
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/module_interface/library:toy_module_library",
+    )
+
+    # Verify that `.swiftinterface` file is not emitted when the
+    # `library_evolution` attribute is false.
+    provider_test(
+        name = "{}_swift_library_without_evolution_emits_no_swiftinterface".format(name),
+        expected_files = [
+            "-test/fixtures/module_interface/library/ToyModuleNoEvolution.swiftinterface",
+            "*",
+        ],
+        field = "files",
+        provider = "DefaultInfo",
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/module_interface/library:toy_module_library_without_library_evolution",
     )
 
     native.test_suite(

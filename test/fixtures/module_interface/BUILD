@@ -1,13 +1,8 @@
 load("//swift:swift_binary.bzl", "swift_binary")
 load("//swift:swift_import.bzl", "swift_import")
-load("//swift:swift_library.bzl", "swift_library")
 load(
     "//test/fixtures:common.bzl",
     "FIXTURE_TAGS",
-)
-load(
-    "//test/rules:swift_library_artifact_collector.bzl",
-    "swift_library_artifact_collector",
 )
 
 package(
@@ -26,31 +21,11 @@ swift_binary(
 
 swift_import(
     name = "toy_module",
-    archives = [":toy_outputs/libToyModule.a"],
+    archives = [
+        "//test/fixtures/module_interface/library:toy_outputs/libToyModule.a",
+    ],
     module_name = "ToyModule",
-    swiftdoc = ":toy_outputs/ToyModule.swiftdoc",
-    swiftinterface = ":toy_outputs/ToyModule.swiftinterface",
+    swiftdoc = "//test/fixtures/module_interface/library:toy_outputs/ToyModule.swiftdoc",
+    swiftinterface = "//test/fixtures/module_interface/library:toy_outputs/ToyModule.swiftinterface",
     tags = FIXTURE_TAGS,
-)
-
-# Checking in pre-built artifacts like a `.swiftinterface` and static libraries
-# would require different artifacts for every platform the test might run on.
-# Instead, build it on-demand but forward the outputs using the "artifact
-# collector" rule below to make them act as if they were pre-built outputs when
-# referenced by the `swift_import` rule.
-
-swift_library(
-    name = "toy_module_library",
-    srcs = ["ToyModule.swift"],
-    module_name = "ToyModule",
-    tags = FIXTURE_TAGS,
-)
-
-swift_library_artifact_collector(
-    name = "toy_module_artifact_collector",
-    static_library = "toy_outputs/libToyModule.a",
-    swiftdoc = "toy_outputs/ToyModule.swiftdoc",
-    swiftinterface = "toy_outputs/ToyModule.swiftinterface",
-    tags = FIXTURE_TAGS,
-    target = ":toy_module_library",
 )

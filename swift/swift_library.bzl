@@ -123,7 +123,12 @@ def _swift_library_impl(ctx):
     copts.extend(module_copts)
 
     extra_features = []
-    if ctx.attr._config_emit_swiftinterface[BuildSettingInfo].value:
+
+    # TODO(b/239957001): Remove the global flag.
+    if (
+        ctx.attr.library_evolution or
+        ctx.attr._config_emit_swiftinterface[BuildSettingInfo].value
+    ):
         extra_features.append(SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION)
         extra_features.append(SWIFT_FEATURE_EMIT_SWIFTINTERFACE)
 
