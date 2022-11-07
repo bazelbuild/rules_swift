@@ -52,6 +52,10 @@ load(
     "features_for_build_modes",
 )
 load(
+    "@build_bazel_rules_swift//swift/internal:providers.bzl",
+    "SwiftModuleAliasesInfo",
+)
+load(
     "@build_bazel_rules_swift//swift/internal:target_triples.bzl",
     "target_triples",
 )
@@ -791,6 +795,13 @@ def _xcode_swift_toolchain_impl(ctx):
         xcode_config = xcode_config,
     )
 
+    module_aliases = ctx.attr._module_mapping[SwiftModuleAliasesInfo].aliases
+    if module_aliases and not _is_xcode_at_least_version(xcode_config, "14.0"):
+        fail(
+            "Module mappings are only supported by Swift 5.7 (Xcode 14.0) " +
+            "and higher.",
+        )
+
     swift_toolchain_info = SwiftToolchainInfo(
         action_configs = all_action_configs,
         cc_toolchain_info = cc_toolchain,
@@ -818,6 +829,7 @@ def _xcode_swift_toolchain_impl(ctx):
                 swift_linkopts_providers.objc_info,
             ],
         ),
+        module_aliases = module_aliases,
         package_configurations = [
             target[SwiftPackageConfigurationInfo]
             for target in ctx.attr.package_configurations
@@ -918,6 +930,12 @@ configuration options that are applied to targets on a per-package basis.
 The C++ toolchain from which linking flags and other tools needed by the Swift
 toolchain (such as `clang`) will be retrieved.
 """,
+            ),
+            "_module_mapping": attr.label(
+                default = Label(
+                    "@build_bazel_rules_swift//swift:module_mapping",
+                ),
+                providers = [[SwiftModuleAliasesInfo]],
             ),
             "_worker": attr.label(
                 cfg = "exec",
