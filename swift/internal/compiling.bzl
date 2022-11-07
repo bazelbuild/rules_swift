@@ -338,6 +338,14 @@ def compile(
                 `swift.index_while_building` is enabled.
     """
 
+    # Apply the module alias for the module being compiled, if present.
+    module_alias = swift_toolchain.module_aliases.get(module_name)
+    if module_alias:
+        original_module_name = module_name
+        module_name = module_alias
+    else:
+        original_module_name = None
+
     # Collect the `SwiftInfo` providers that represent the dependencies of the
     # Objective-C generated header module -- this includes the dependencies of
     # the Swift module, plus any additional dependencies that the toolchain says
@@ -464,6 +472,7 @@ def compile(
         genfiles_dir = feature_configuration._genfiles_dir,
         is_swift = True,
         module_name = module_name,
+        original_module_name = original_module_name,
         source_files = srcs,
         target_label = feature_configuration._label,
         transitive_modules = transitive_modules,
@@ -539,6 +548,7 @@ def compile(
         is_system = False,
         swift = create_swift_module(
             defines = defines,
+            original_module_name = original_module_name,
             swiftdoc = compile_outputs.swiftdoc_file,
             swiftinterface = compile_outputs.swiftinterface_file,
             swiftmodule = compile_outputs.swiftmodule_file,

@@ -134,23 +134,26 @@ def create_clang_module(
 
 def create_swift_module(
         *,
-        swiftdoc,
-        swiftmodule,
         defines = [],
-        swiftsourceinfo = None,
-        swiftinterface = None):
+        original_module_name = None,
+        swiftdoc,
+        swiftinterface = None,
+        swiftmodule,
+        swiftsourceinfo = None):
     """Creates a value representing a Swift module use as a Swift dependency.
 
     Args:
-        swiftdoc: The `.swiftdoc` file emitted by the compiler for this module.
-        swiftmodule: The `.swiftmodule` file emitted by the compiler for this
-            module.
         defines: A list of defines that will be provided as `copts` to targets
             that depend on this module. If omitted, the empty list will be used.
-        swiftsourceinfo: The `.swiftsourceinfo` file emitted by the compiler for
-            this module. May be `None` if no source info file was emitted.
+        original_module_name: The original name of the module if it was changed
+            by a module mapping; otherwise, `None`.
+        swiftdoc: The `.swiftdoc` file emitted by the compiler for this module.
         swiftinterface: The `.swiftinterface` file emitted by the compiler for
             this module. May be `None` if no module interface file was emitted.
+        swiftmodule: The `.swiftmodule` file emitted by the compiler for this
+            module.
+        swiftsourceinfo: The `.swiftsourceinfo` file emitted by the compiler for
+            this module. May be `None` if no source info file was emitted.
 
     Returns:
         A `struct` containing the `defines`, `swiftdoc`, `swiftmodule`, and
@@ -158,6 +161,7 @@ def create_swift_module(
     """
     return struct(
         defines = defines,
+        original_module_name = original_module_name,
         swiftdoc = swiftdoc,
         swiftinterface = swiftinterface,
         swiftmodule = swiftmodule,
