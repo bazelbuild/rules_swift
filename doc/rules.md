@@ -24,6 +24,8 @@ On this page:
   * [swift_library_group](#swift_library_group)
   * [mixed_language_library](#mixed_language_library)
   * [swift_module_alias](#swift_module_alias)
+  * [swift_module_mapping](#swift_module_mapping)
+  * [swift_module_mapping_test](#swift_module_mapping_test)
   * [swift_package_configuration](#swift_package_configuration)
   * [swift_test](#swift_test)
   * [swift_proto_library](#swift_proto_library)
@@ -468,6 +470,105 @@ symbol is defined; it is not repeated by the alias module.)
 | <a id="swift_module_alias-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
 | <a id="swift_module_alias-deps"></a>deps |  A list of targets that are dependencies of the target being built, which will be linked into that target. Allowed kinds are `swift_import` and `swift_library` (or anything else propagating `SwiftInfo`).   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 | <a id="swift_module_alias-module_name"></a>module_name |  The name of the Swift module being built.<br><br>If left unspecified, the module name will be computed based on the target's build label, by stripping the leading `//` and replacing `/`, `:`, and other non-identifier characters with underscores.   | String | optional |  `""`  |
+
+
+<a id="swift_module_mapping"></a>
+
+## swift_module_mapping
+
+<pre>
+swift_module_mapping(<a href="#swift_module_mapping-name">name</a>, <a href="#swift_module_mapping-aliases">aliases</a>)
+</pre>
+
+Defines a set of
+[module aliases](https://github.com/apple/swift-evolution/blob/main/proposals/0339-module-aliasing-for-disambiguation.md)
+that will be passed to the Swift compiler.
+
+This rule defines a mapping from original module names to aliased names. This is
+useful if you are building a library or framework for external use and want to
+ensure that dependencies do not conflict with other versions of the same library
+that another framework or the client may use.
+
+To use this feature, first define a `swift_module_mapping` target that lists the
+aliases you need:
+
+```build
+# //some/package/BUILD
+
+swift_library(
+    name = "Utils",
+    srcs = [...],
+    module_name = "Utils",
+)
+
+swift_library(
+    name = "Framework",
+    srcs = [...],
+    module_name = "Framework",
+    deps = [":Utils"],
+)
+
+swift_module_mapping(
+    name = "mapping",
+    aliases = {
+        "Utils": "GameUtils",
+    },
+)
+```
+
+Then, pass the label of that target to Bazel using the
+`--@build_bazel_rules_swift//swift:module_mapping` build flag:
+
+```shell
+bazel build //some/package:Framework \
+    --@build_bazel_rules_swift//swift:module_mapping=//some/package:mapping
+```
+
+When `Utils` is compiled, it will be given the module name `GameUtils` instead.
+Then, when `Framework` is compiled, it will import `GameUtils` anywhere that the
+source asked to `import Utils`.
+
+**ATTRIBUTES**
+
+
+| Name  | Description | Type | Mandatory | Default |
+| :------------- | :------------- | :------------- | :------------- | :------------- |
+| <a id="swift_module_mapping-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
+| <a id="swift_module_mapping-aliases"></a>aliases |  A dictionary that remaps the names of Swift modules.<br><br>Each key in the dictionary is the name of a module as it is written in source code. The corresponding value is the replacement module name to use when compiling it and/or any modules that depend on it.   | <a href="https://bazel.build/rules/lib/dict">Dictionary: String -> String</a> | required |  |
+
+
+<a id="swift_module_mapping_test"></a>
+
+## swift_module_mapping_test
+
+<pre>
+swift_module_mapping_test(<a href="#swift_module_mapping_test-name">name</a>, <a href="#swift_module_mapping_test-deps">deps</a>, <a href="#swift_module_mapping_test-exclude">exclude</a>, <a href="#swift_module_mapping_test-mapping">mapping</a>)
+</pre>
+
+Validates that a `swift_module_mapping` target covers all the modules in the
+transitive closure of a list of dependencies.
+
+If you are building a static library or framework for external distribution and
+you are using `swift_module_mapping` to rename some of the modules used by your
+implementation, this rule will detect if any of your dependencies have taken on
+a new dependency that you need to add to the mapping (otherwise, its symbols
+would leak into your library with their original names).
+
+When executed, this test will collect the names of all Swift modules in the
+transitive closure of `deps`. System modules and modules whose names are listed
+in the `exclude` attribute are omitted. Then, the test will fail if any of the
+remaining modules collected are not present in the `aliases` of the
+`swift_module_mapping` target specified by the `mapping` attribute.
+
+**ATTRIBUTES**
+
+
+| Name  | Description | Type | Mandatory | Default |
+| :------------- | :------------- | :------------- | :------------- | :------------- |
+| <a id="swift_module_mapping_test-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
+| <a id="swift_module_mapping_test-deps"></a>deps |  A list of Swift targets whose transitive closure will be validated against the `swift_module_mapping` target specified by `mapping`.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | required |  |
+| <a id="swift_module_mapping_test-exclude"></a>exclude |  A list of module names that may be in the transitive closure of `deps` but are not required to be covered by `mapping`.   | List of strings | optional |  `[]`  |
+| <a id="swift_module_mapping_test-mapping"></a>mapping |  The label of a `swift_module_mapping` target against which the transitive closure of `deps` will be validated.   | <a href="https://bazel.build/concepts/labels">Label</a> | required |  |
 
 
 <a id="swift_package_configuration"></a>

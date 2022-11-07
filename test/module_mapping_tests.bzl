@@ -15,6 +15,10 @@
 """Tests for Swift module aliases using the `:module_mapping` flag."""
 
 load(
+    "@build_bazel_rules_swift//swift:swift_module_mapping_test.bzl",
+    "swift_module_mapping_test",
+)
+load(
     "@bazel_skylib//rules:build_test.bzl",
     "build_test",
 )
@@ -36,6 +40,29 @@ def module_mapping_test_suite(name, tags = []):
             "@build_bazel_rules_swift//test/fixtures/module_mapping:MySDK_with_mapping",
         ],
         tags = all_tags,
+    )
+
+    # Verify that a `swift_module_mapping_test` with a complete mapping
+    # succeeds.
+    swift_module_mapping_test(
+        name = "{}_module_mapping_test_succeeds_with_complete_mapping".format(name),
+        mapping = "@build_bazel_rules_swift//test/fixtures/module_mapping:ExistingLibrary_module_mapping_complete",
+        tags = all_tags,
+        deps = [
+            "@build_bazel_rules_swift//test/fixtures/module_mapping:ExistingLibrary",
+        ],
+    )
+
+    # Verify that a `swift_module_mapping_test` with an incomplete mapping
+    # succeeds if the missing modules are listed in `exclude`.
+    swift_module_mapping_test(
+        name = "{}_module_mapping_test_succeeds_with_exclusions".format(name),
+        exclude = ["NewDependency"],
+        mapping = "@build_bazel_rules_swift//test/fixtures/module_mapping:ExistingLibrary_module_mapping_incomplete",
+        tags = all_tags,
+        deps = [
+            "@build_bazel_rules_swift//test/fixtures/module_mapping:ExistingLibrary",
+        ],
     )
 
     native.test_suite(

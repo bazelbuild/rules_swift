@@ -211,6 +211,14 @@ bzl_library(
 )
 
 bzl_library(
+    name = "swift_module_mapping_test",
+    srcs = ["swift_module_mapping_test.bzl"],
+    deps = [
+        "//swift/internal:providers",
+    ],
+)
+
+bzl_library(
     name = "swift_package_configuration",
     srcs = ["swift_package_configuration.bzl"],
     deps = [
@@ -263,6 +271,8 @@ bzl_library(
         ":swift_library",
         ":swift_library_group",
         ":swift_module_alias",
+        ":swift_module_mapping",
+        ":swift_module_mapping_test",
         ":swift_package_configuration",
         ":swift_symbol_graph_aspect",
         ":swift_test",
