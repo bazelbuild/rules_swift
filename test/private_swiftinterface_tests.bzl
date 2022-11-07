@@ -19,7 +19,7 @@ load(
     "build_test",
 )
 load(
-    "@build_bazel_rules_swift//test/rules:action_command_line_test.bzl",
+    "//test/rules:action_command_line_test.bzl",
     "make_action_command_line_test_rule",
 )
 
