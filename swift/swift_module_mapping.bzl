@@ -29,7 +29,7 @@ def _swift_module_mapping_impl(ctx):
 
     aliases = ctx.attr.aliases
     new_names_seen = dict()
-    for original_name, new_name in aliases:
+    for original_name, new_name in aliases.items():
         previous_new_name = new_names_seen.get(new_name, None)
         if previous_new_name:
             fail((

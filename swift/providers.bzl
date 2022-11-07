@@ -287,6 +287,10 @@ linking target (but not to precompiled explicit C/Objective-C modules):
 For ease of use, this field is never `None`; it will always be a valid `struct`
 containing the fields described above, even if those lists are empty.
 """,
+        "module_aliases": """\
+A `SwiftModuleAliasesInfo` provider that defines the module aliases to use
+during compilation.
+""",
         "package_configurations": """\
 A list of `SwiftPackageConfigurationInfo` providers that specify additional
 compilation configuration options that are applied to targets on a per-package

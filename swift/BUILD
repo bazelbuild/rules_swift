@@ -6,6 +6,7 @@ load(
     "repeatable_string_flag",
 )
 load(":swift_interop_hint.bzl", "swift_interop_hint")
+load(":swift_module_mapping.bzl", "swift_module_mapping")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -366,5 +367,19 @@ label_flag(
 # since the `build_setting_default` value is required.
 filegroup(
     name = "empty",
+    visibility = ["//visibility:private"],
+)
+
+# Provides the mapping that will be passed to the compiler as module aliases.
+label_flag(
+    name = "module_mapping",
+    build_setting_default = ":empty_module_mapping",
+)
+
+# The default empty module mapping used when the `:module_mapping` flag is not
+# set.
+swift_module_mapping(
+    name = "empty_module_mapping",
+    aliases = {},
     visibility = ["//visibility:private"],
 )
