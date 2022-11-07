@@ -799,6 +799,10 @@ def compile_action_configs(
             features = [SWIFT_FEATURE_VFSOVERLAY],
         ),
         ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE],
+            configurators = [_module_aliases_configurator],
+        ),
+        ActionConfigInfo(
             actions = [
                 SWIFT_ACTION_COMPILE,
                 SWIFT_ACTION_DERIVE_FILES,
@@ -1717,6 +1721,44 @@ def _swift_module_search_path_map_fn(module):
     else:
         return None
 
+def _module_alias_flags(name, original):
+    """Returns compiler flags to set the given module alias."""
+
+    # TODO(b/257269318): Remove `-Xfrontend`; this is only needed to workaround
+    # a bug in toolchains still using the legacy C++ driver.
+    return [
+        "-Xfrontend",
+        "-module-alias",
+        "-Xfrontend",
+        "{original}={name}".format(
+            name = name,
+            original = original,
+        ),
+    ]
+
+def _module_alias_map_fn(module):
+    """Returns compiler flags to alias the given module.
+
+    This function is intended to be used as a mapping function for modules
+    passed into `Args.add_all`.
+
+    Args:
+        module: The module structure (as returned by
+            `swift_common.create_module`) extracted from the transitive
+            modules of a `SwiftInfo` provider.
+
+    Returns:
+        The flags to pass to the compiler to alias the given module, or `None`
+        if no alias applies.
+    """
+    if module.swift and module.swift.original_module_name:
+        return _module_alias_flags(
+            original = module.swift.original_module_name,
+            name = module.name,
+        )
+    else:
+        return None
+
 def _dependencies_swiftmodules_and_swiftdocs_configurator(prerequisites, args):
     """Adds `.swiftmodule` and `.swiftdoc` files from the transitive modules to search paths and action inputs."""
     args.add_all(
@@ -1743,6 +1785,21 @@ def _dependencies_swiftmodules_configurator(prerequisites, args):
     return ConfigResultInfo(
         inputs = prerequisites.transitive_swiftmodules,
     )
+
+def _module_aliases_configurator(prerequisites, args):
+    """Adds `-module-alias` flags for the active module mapping, if any."""
+    args.add_all(
+        prerequisites.transitive_modules,
+        map_each = _module_alias_map_fn,
+    )
+
+    if prerequisites.original_module_name:
+        args.add_all(
+            _module_alias_flags(
+                original = prerequisites.original_module_name,
+                name = prerequisites.module_name,
+            ),
+        )
 
 def _load_executable_plugin_map_fn(plugin):
     """Returns frontend flags to load compiler plugins."""

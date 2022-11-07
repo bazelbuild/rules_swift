@@ -479,6 +479,14 @@ def compile(
                 macros).
     """
 
+    # Apply the module alias for the module being compiled, if present.
+    module_alias = swift_toolchain.module_aliases.get(module_name)
+    if module_alias:
+        original_module_name = module_name
+        module_name = module_alias
+    else:
+        original_module_name = None
+
     # Collect the `SwiftInfo` providers that represent the dependencies of the
     # Objective-C generated header module -- this includes the dependencies of
     # the Swift module, plus any additional dependencies that the toolchain says
@@ -689,8 +697,9 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         include_dev_srch_paths = include_dev_srch_paths_value,
         is_swift = True,
         module_name = module_name,
-        package_name = package_name,
         objc_info = merged_objc_info,
+        original_module_name = original_module_name,
+        package_name = package_name,
         plugins = depset(used_plugins),
         source_files = srcs,
         target_label = feature_configuration._label,
@@ -824,6 +833,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
             defines = defines,
             generated_header = compile_outputs.generated_header_file,
             indexstore = compile_outputs.indexstore_directory,
+            original_module_name = original_module_name,
             plugins = depset(plugins),
             private_swiftinterface = compile_outputs.private_swiftinterface_file,
             swiftdoc = compile_outputs.swiftdoc_file,
