@@ -67,6 +67,7 @@ load(
     "SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE",
 )
 load("//swift/internal:features.bzl", "features_for_build_modes")
+load("//swift/internal:providers.bzl", "SwiftModuleAliasesInfo")
 load("//swift/internal:target_triples.bzl", "target_triples")
 load(
     "//swift/internal:utils.bzl",
@@ -785,6 +786,13 @@ def _xcode_swift_toolchain_impl(ctx):
             ),
         )
 
+    module_aliases = ctx.attr._module_mapping[SwiftModuleAliasesInfo].aliases
+    if module_aliases and not _is_xcode_at_least_version(xcode_config, "14.0"):
+        fail(
+            "Module mappings are only supported by Swift 5.7 (Xcode 14.0) " +
+            "and higher.",
+        )
+
     swift_toolchain_info = SwiftToolchainInfo(
         action_configs = all_action_configs,
         cc_toolchain_info = cc_toolchain,
@@ -812,6 +820,7 @@ def _xcode_swift_toolchain_impl(ctx):
             additional_cc_infos = [swift_linkopts_providers.cc_info],
             additional_objc_infos = [swift_linkopts_providers.objc_info],
         ),
+        module_aliases = module_aliases,
         package_configurations = [
             target[SwiftPackageConfigurationInfo]
             for target in ctx.attr.package_configurations
@@ -935,6 +944,12 @@ to the compiler.
 The label of the `string_list` containing additional flags that should be passed
 to the compiler for exec transition builds.
 """,
+            ),
+            "_module_mapping": attr.label(
+                default = Label(
+                    "@build_bazel_rules_swift//swift:module_mapping",
+                ),
+                providers = [[SwiftModuleAliasesInfo]],
             ),
             "_worker": attr.label(
                 cfg = "exec",

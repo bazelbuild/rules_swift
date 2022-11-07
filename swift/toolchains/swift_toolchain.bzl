@@ -63,6 +63,7 @@ load(
     "SWIFT_FEATURE_USE_MODULE_WRAP",
 )
 load("//swift/internal:features.bzl", "features_for_build_modes")
+load("//swift/internal:providers.bzl", "SwiftModuleAliasesInfo")
 load("//swift/internal:target_triples.bzl", "target_triples")
 load(
     "//swift/internal:utils.bzl",
@@ -529,6 +530,7 @@ def _swift_toolchain_impl(ctx):
         generated_header_module_implicit_deps_providers = (
             collect_implicit_deps_providers([])
         ),
+        module_aliases = ctx.attr._module_mapping[SwiftModuleAliasesInfo].aliases,
         implicit_deps_providers = collect_implicit_deps_providers(
             [],
             additional_cc_infos = [swift_linkopts_cc_info],
@@ -625,6 +627,12 @@ to the compiler.
 The label of the `string_list` containing additional flags that should be passed
 to the compiler for exec transition builds.
 """,
+            ),
+            "_module_mapping": attr.label(
+                default = Label(
+                    "@build_bazel_rules_swift//swift:module_mapping",
+                ),
+                providers = [[SwiftModuleAliasesInfo]],
             ),
             "_worker": attr.label(
                 cfg = "exec",
