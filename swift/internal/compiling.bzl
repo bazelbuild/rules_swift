@@ -205,6 +205,7 @@ def compile_module_interface(
         *,
         actions,
         compilation_contexts,
+        copts = [],
         exec_group = None,
         feature_configuration,
         module_name,
@@ -221,6 +222,7 @@ def compile_module_interface(
             Swift-compatible preprocessor defines, header search paths, and so
             forth. These are typically retrieved from the `CcInfo` providers of
             a target's dependencies.
+        copts: A list of compiler flags that apply to the target being built.
         exec_group: Runs the Swift compilation action under the given execution
             group's context. If `None`, the default execution group is used.
         feature_configuration: A feature configuration obtained from
@@ -323,7 +325,7 @@ def compile_module_interface(
         target_label = feature_configuration._label,
         transitive_modules = transitive_modules,
         transitive_swiftmodules = transitive_swiftmodules,
-        user_compile_flags = [],
+        user_compile_flags = copts,
         vfsoverlay_file = vfsoverlay_file,
         vfsoverlay_search_path = _SWIFTMODULES_VFS_ROOT,
     )
