@@ -141,6 +141,7 @@ def compile_module_interface(
         *,
         actions,
         compilation_contexts,
+        copts = [],
         feature_configuration,
         module_name,
         swiftinterface_file,
@@ -155,6 +156,7 @@ def compile_module_interface(
             Swift-compatible preprocessor defines, header search paths, and so
             forth. These are typically retrieved from the `CcInfo` providers of
             a target's dependencies.
+        copts: A list of compiler flags that apply to the target being built.
         feature_configuration: A feature configuration obtained from
             `swift_common.configure_features`.
         module_name: The name of the Swift module being compiled. This must be
@@ -227,7 +229,7 @@ def compile_module_interface(
         swiftmodule_file = swiftmodule_file,
         transitive_modules = transitive_modules,
         transitive_swiftmodules = transitive_swiftmodules,
-        user_compile_flags = [],
+        user_compile_flags = copts,
     )
 
     run_toolchain_action(
