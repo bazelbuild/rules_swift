@@ -224,6 +224,12 @@ containing the fields described above, even if those lists are empty.
 `File`. A JSON file specifying a list of protocols for extraction of
 conformances' const values.
 """,
+        "cross_import_overlays": """\
+A list of `SwiftCrossImportOverlayInfo` providers whose `SwiftInfo` providers
+will be automatically injected into the dependencies of Swift compilations if
+their declaring module and bystanding module are both already declared as
+dependencies.
+""",
         "debug_outputs_provider": """\
 An optional function that provides toolchain-specific logic around the handling
 of additional debug outputs for `swift_binary` and `swift_test` targets.

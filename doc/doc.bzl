@@ -65,6 +65,10 @@ load(
     _universal_swift_compiler_plugin = "universal_swift_compiler_plugin",
 )
 load(
+    "//swift:swift_cross_import_overlay.bzl",
+    _swift_cross_import_overlay = "swift_cross_import_overlay",
+)
+load(
     "//swift:swift_feature_allowlist.bzl",
     _swift_feature_allowlist = "swift_feature_allowlist",
 )
@@ -114,6 +118,7 @@ SwiftToolchainInfo = _SwiftToolchainInfo
 swift_binary = _swift_binary
 swift_compiler_plugin = _swift_compiler_plugin
 universal_swift_compiler_plugin = _universal_swift_compiler_plugin
+swift_cross_import_overlay = _swift_cross_import_overlay
 swift_feature_allowlist = _swift_feature_allowlist
 swift_import = _swift_import
 swift_interop_hint = _swift_interop_hint
