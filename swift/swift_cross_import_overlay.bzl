@@ -32,15 +32,17 @@ def _get_sole_module_name(swift_info, attr):
 def _swift_cross_import_overlay_impl(ctx):
     bystanding_module = _get_sole_module_name(
         ctx.attr.bystanding_module[SwiftInfo],
+        "bystanding_module",
     )
     declaring_module = _get_sole_module_name(
         ctx.attr.declaring_module[SwiftInfo],
+        "declaring_module",
     )
     return [
         SwiftCrossImportOverlayInfo(
             bystanding_module = bystanding_module,
             declaring_module = declaring_module,
-            swift_infos = [dep[SwiftInfo] for dep in deps],
+            swift_infos = [dep[SwiftInfo] for dep in ctx.attr.deps],
         ),
     ]
 
