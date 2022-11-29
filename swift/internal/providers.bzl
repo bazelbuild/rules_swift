@@ -20,6 +20,23 @@ Note that some of these definitions are exported via the `swift_common` module.
 
 load("//swift:providers.bzl", "SwiftInfo")
 
+SwiftCrossImportOverlayInfo = provider(
+    doc = "Information about a cross-import overlay module.",
+    fields = {
+        "bystanding_module": """\
+The name of the bystanding module in the cross-import.
+""",
+        "declaring_module": """\
+The name of the declaring module in the cross-import.
+""",
+        "swift_infos": """\
+A list of `SwiftInfo` providers that describe the cross-import overlay modules
+that should be injected into the dependencies of a compilation when both the
+`declaring_module` and `bystanding_module` are imported.
+""",
+    },
+)
+
 SwiftModuleAliasesInfo = provider(
     doc = "Defines a remapping of Swift module names.",
     fields = {

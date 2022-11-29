@@ -67,7 +67,11 @@ load(
     "SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE",
 )
 load("//swift/internal:features.bzl", "features_for_build_modes")
-load("//swift/internal:providers.bzl", "SwiftModuleAliasesInfo")
+load(
+    "//swift/internal:providers.bzl",
+    "SwiftCrossImportOverlayInfo",
+    "SwiftModuleAliasesInfo",
+)
 load("//swift/internal:target_triples.bzl", "target_triples")
 load(
     "//swift/internal:utils.bzl",
@@ -799,6 +803,10 @@ def _xcode_swift_toolchain_impl(ctx):
         clang_implicit_deps_providers = collect_implicit_deps_providers(
             ctx.attr.clang_implicit_deps,
         ),
+        cross_import_overlays = [
+            target[SwiftCrossImportOverlayInfo]
+            for target in ctx.attr.cross_import_overlays
+        ],
         developer_dirs = swift_toolchain_developer_paths,
         entry_point_linkopts_provider = _entry_point_linkopts_provider,
         feature_allowlists = [
@@ -868,6 +876,16 @@ not possible as it would create a dependency cycle between the toolchain and the
 implicit dependencies.
 """,
                 providers = [[SwiftInfo]],
+            ),
+            "cross_import_overlays": attr.label_list(
+                allow_empty = True,
+                doc = """\
+A list of `swift_cross_import_overlay` targets that will be automatically
+injected into the dependencies of Swift compilations if their declaring module
+and bystanding module are both already declared as dependencies.
+""",
+                mandatory = False,
+                providers = [[SwiftCrossImportOverlayInfo]],
             ),
             "feature_allowlists": attr.label_list(
                 doc = """\

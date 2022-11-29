@@ -17,6 +17,7 @@ On this page:
   * [swift_binary](#swift_binary)
   * [swift_compiler_plugin](#swift_compiler_plugin)
   * [universal_swift_compiler_plugin](#universal_swift_compiler_plugin)
+  * [swift_cross_import_overlay](#swift_cross_import_overlay)
   * [swift_feature_allowlist](#swift_feature_allowlist)
   * [swift_import](#swift_import)
   * [swift_interop_hint](#swift_interop_hint)
@@ -163,6 +164,47 @@ swift_library(
 | <a id="swift_compiler_plugin-plugins"></a>plugins |  A list of `swift_compiler_plugin` targets that should be loaded by the compiler when compiling this module and any modules that directly depend on it.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 | <a id="swift_compiler_plugin-stamp"></a>stamp |  Enable or disable link stamping; that is, whether to encode build information into the binary. Possible values are:<br><br>* `stamp = 1`: Stamp the build information into the binary. Stamped binaries are   only rebuilt when their dependencies change. Use this if there are tests that   depend on the build information.<br><br>* `stamp = 0`: Always replace build information by constant values. This gives   good build result caching.<br><br>* `stamp = -1`: Embedding of build information is controlled by the   `--[no]stamp` flag.   | Integer | optional |  `0`  |
 | <a id="swift_compiler_plugin-swiftc_inputs"></a>swiftc_inputs |  Additional files that are referenced using `$(location ...)` in attributes that support location expansion.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
+
+
+<a id="swift_cross_import_overlay"></a>
+
+## swift_cross_import_overlay
+
+<pre>
+swift_cross_import_overlay(<a href="#swift_cross_import_overlay-name">name</a>, <a href="#swift_cross_import_overlay-deps">deps</a>, <a href="#swift_cross_import_overlay-bystanding_module">bystanding_module</a>, <a href="#swift_cross_import_overlay-declaring_module">declaring_module</a>)
+</pre>
+
+Declares a cross-import overlay that will be automatically added as a dependency
+by the toolchain if its declaring and bystanding modules are both imported.
+
+Since Bazel requires the dependency graph to be explicit, cross-import overlays
+do not work correctly when the Swift compiler attempts to import them
+automatically when they aren't represented in the graph. Users can explicitly
+depend on the cross-import overlay module, but this is unsatisfying because
+there is no single `import` declaration in the source code that indicates what
+needs to be depended on.
+
+To address this, the toolchain owner can define a `swift_cross_import_overlay`
+target for each cross-import overlay that they wish to support and set them as
+`cross_import_overlays` on the toolchain. During Swift compilation analysis, the
+direct dependencies will be scanned and if any pair of dependencies matches a
+cross-import overlay defined by the toolchain, the overlay module will be
+automatically injected as a dependency as well.
+
+NOTE: This rule and its associated APIs only exists to support cross-import
+overlays _already defined by Apple's SDKs_. Since cross-import overlays are not
+a public feature of the compiler and its design and implementation may change in
+the future, this rule is not recommended for other widespread use.
+
+**ATTRIBUTES**
+
+
+| Name  | Description | Type | Mandatory | Default |
+| :------------- | :------------- | :------------- | :------------- | :------------- |
+| <a id="swift_cross_import_overlay-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
+| <a id="swift_cross_import_overlay-deps"></a>deps |  A non-empty list of targets representing modules that should be passed as dependencies when a target depends on both `declaring_module` and `bystanding_module`.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | required |  |
+| <a id="swift_cross_import_overlay-bystanding_module"></a>bystanding_module |  A label for the target representing the second of the two modules (the other being `declaring_module`) that must be imported for the cross-import overlay modules to be imported. It is completely passive in the cross-import process, having no definition with or other association to either the declaring module or the cross-import modules.   | <a href="https://bazel.build/concepts/labels">Label</a> | required |  |
+| <a id="swift_cross_import_overlay-declaring_module"></a>declaring_module |  A label for the target representing the first of the two modules (the other being `bystanding_module`) that must be imported for the cross-import overlay modules to be imported. This is the module that contains the `.swiftcrossimport` overlay definition that connects it to the bystander and to the overlay modules.   | <a href="https://bazel.build/concepts/labels">Label</a> | required |  |
 
 
 <a id="swift_feature_allowlist"></a>
