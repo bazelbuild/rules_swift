@@ -53,6 +53,7 @@ load(
 )
 load(
     "@build_bazel_rules_swift//swift/internal:providers.bzl",
+    "SwiftCrossImportOverlayInfo",
     "SwiftModuleAliasesInfo",
 )
 load(
@@ -808,6 +809,10 @@ def _xcode_swift_toolchain_impl(ctx):
         clang_implicit_deps_providers = collect_implicit_deps_providers(
             ctx.attr.clang_implicit_deps,
         ),
+        cross_import_overlays = [
+            target[SwiftCrossImportOverlayInfo]
+            for target in ctx.attr.cross_import_overlays
+        ],
         debug_outputs_provider = (
             # This function unconditionally declares the output file, so we
             # should only use it if a .dSYM is being requested during the build.
@@ -876,6 +881,16 @@ not possible as it would create a dependency cycle between the toolchain and the
 implicit dependencies.
 """,
                 providers = [[SwiftInfo]],
+            ),
+            "cross_import_overlays": attr.label_list(
+                allow_empty = True,
+                doc = """\
+A list of `swift_cross_import_overlay` targets that will be automatically
+injected into the dependencies of Swift compilations if their declaring module
+and bystanding module are both already declared as dependencies.
+""",
+                mandatory = False,
+                providers = [[SwiftCrossImportOverlayInfo]],
             ),
             "feature_allowlists": attr.label_list(
                 doc = """\

@@ -152,6 +152,12 @@ C/Objective-C modules:
 For ease of use, this field is never `None`; it will always be a valid `struct`
 containing the fields described above, even if those lists are empty.
 """,
+        "cross_import_overlays": """\
+A list of `SwiftCrossImportOverlayInfo` providers whose `SwiftInfo` providers
+will be automatically injected into the dependencies of Swift compilations if
+their declaring module and bystanding module are both already declared as
+dependencies.
+""",
         "debug_outputs_provider": """\
 An optional function that provides toolchain-specific logic around the handling
 of additional debug outputs for `swift_binary` and `swift_test` targets.

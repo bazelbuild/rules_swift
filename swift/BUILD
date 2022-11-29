@@ -61,6 +61,15 @@ bzl_library(
 )
 
 bzl_library(
+    name = "swift_cross_import_overlay",
+    srcs = ["swift_cross_import_overlay.bzl"],
+    deps = [
+        ":providers",
+        "//swift/internal:providers",
+    ],
+)
+
+bzl_library(
     name = "swift_extract_symbol_graph",
     srcs = ["swift_extract_symbol_graph.bzl"],
     deps = [
