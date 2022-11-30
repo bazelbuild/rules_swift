@@ -393,7 +393,11 @@ def compile(
     all_swift_infos = (
         swift_infos +
         private_swift_infos +
-        swift_toolchain.implicit_deps_providers.swift_infos
+        swift_toolchain.implicit_deps_providers.swift_infos +
+        _cross_imported_swift_infos(
+            swift_toolchain = swift_toolchain,
+            user_swift_infos = swift_infos + private_swift_infos,
+        )
     )
     merged_swift_info = create_swift_info(swift_infos = all_swift_infos)
 
@@ -830,6 +834,40 @@ def _create_cc_compilation_context(
         direct_compilation_contexts = direct_compilation_contexts,
         transitive_compilation_contexts = compilation_contexts,
     )
+
+def _cross_imported_swift_infos(*, swift_toolchain, user_swift_infos):
+    """Returns `SwiftInfo` providers for any cross-imported modules.
+
+    Args:
+        swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
+        user_swift_infos: A list of `SwiftInfo` providers from regular and
+            private dependencies of the target being compiled. The direct
+            modules of these providers will be used to determine which
+            cross-import modules need to be implicitly added to the target's
+            compilation prerequisites, if any.
+
+    Returns:
+        A list of `SwiftInfo` providers representing cross-import overlays
+        needed for compilation.
+    """
+
+    # Build a "set" containing the module names of direct dependencies so that
+    # we can do quicker hash-based lookups below.
+    direct_module_names = {}
+    for swift_info in user_swift_infos:
+        for module_context in swift_info.direct_modules:
+            direct_module_names[module_context.name] = True
+
+    # For each cross-import overlay registered with the toolchain, add its
+    # `SwiftInfo` providers to the list if both its declaring and bystanding
+    # modules were imported.
+    overlay_swift_infos = []
+    for overlay in swift_toolchain.cross_import_overlays:
+        if (overlay.declaring_module in direct_module_names and
+            overlay.bystanding_module in direct_module_names):
+            overlay_swift_infos.extend(overlay.swift_infos)
+
+    return overlay_swift_infos
 
 def _declare_compile_outputs(
         *,
