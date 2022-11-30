@@ -15,12 +15,12 @@
 """Tests for Swift module aliases using the `:module_mapping` flag."""
 
 load(
-    "@build_bazel_rules_swift//swift:swift_module_mapping_test.bzl",
-    "swift_module_mapping_test",
-)
-load(
     "@bazel_skylib//rules:build_test.bzl",
     "build_test",
+)
+load(
+    "@build_bazel_rules_swift//swift:swift_module_mapping_test.bzl",
+    "swift_module_mapping_test",
 )
 
 def module_mapping_test_suite(name, tags = []):
