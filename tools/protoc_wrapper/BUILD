@@ -7,6 +7,7 @@ package(default_visibility = ["//visibility:public"])
 universal_binary(
     name = "universal_protoc",
     binary = "@com_google_protobuf//:protoc",
+    tags = ["manual"],
     target_compatible_with = select({
         "@platforms//os:windows": ["@platforms//:incompatible"],
         "//conditions:default": [],
@@ -30,6 +31,7 @@ alias(
 universal_binary(
     name = "universal_protoc-gen-grpc-swift",
     binary = "@com_github_grpc_grpc_swift//:protoc-gen-grpc-swift",
+    tags = ["manual"],
     target_compatible_with = select({
         "@platforms//os:windows": ["@platforms//:incompatible"],
         "//conditions:default": [],
@@ -53,6 +55,7 @@ alias(
 universal_binary(
     name = "universal_ProtoCompilerPlugin",
     binary = "@com_github_apple_swift_protobuf//:ProtoCompilerPlugin",
+    tags = ["manual"],
     target_compatible_with = select({
         "@platforms//os:windows": ["@platforms//:incompatible"],
         "//conditions:default": [],
