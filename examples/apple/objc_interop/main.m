@@ -17,7 +17,7 @@
 // rules automatically add "bazel-genfiles" to the include path, the file should
 // be imported using a workspace-relative path to access the Obj-C interface for
 // the Swift code.
-#import "examples/apple/objc_interop/Printer-Swift.h"
+#import "examples/apple/objc_interop/generated_header/Printer-Swift.h"
 
 int main(int argc, char **argv) {
   @autoreleasepool {
