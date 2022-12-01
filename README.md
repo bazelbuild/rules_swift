@@ -36,37 +36,8 @@ also ensure that the Swift compiler is available on your system path.
 
 ### 2. Configure your workspace
 
-Add the following to your `WORKSPACE` file to add the external repositories,
-replacing the `urls` and `sha256` attributes with the values from the release
-you wish to depend on:
-
-```python
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-
-http_archive(
-    name = "build_bazel_rules_swift",
-    sha256 = "51efdaf85e04e51174de76ef563f255451d5a5cd24c61ad902feeadafc7046d9",
-    url = "https://github.com/bazelbuild/rules_swift/releases/download/1.2.0/rules_swift.1.2.0.tar.gz",
-)
-
-load(
-    "@build_bazel_rules_swift//swift:repositories.bzl",
-    "swift_rules_dependencies",
-)
-
-swift_rules_dependencies()
-
-load(
-    "@build_bazel_rules_swift//swift:extras.bzl",
-    "swift_rules_extra_dependencies",
-)
-
-swift_rules_extra_dependencies()
-```
-
-The `swift_rules_dependencies` macro creates a toolchain appropriate for your
-platform (either by locating an installation of Xcode on macOS, or looking for
-`swiftc` on the system path on Linux).
+Copy the `WORKSPACE` snippet from [the releases
+page](https://github.com/bazelbuild/rules_swift/releases).
 
 ### 3. Additional configuration (Linux only)
 

@@ -22,6 +22,7 @@
 #include <filesystem>
 #include <fstream>
 #include <map>
+#include <set>
 #include <sstream>
 #include <string>
 
@@ -148,6 +149,20 @@ void WorkProcessor::ProcessWorkRequest(
   std::ostringstream stderr_stream;
 
   if (is_incremental) {
+    std::set<std::string> dir_paths;
+
+    for (const auto &expected_object_pair :
+         output_file_map.incremental_inputs()) {
+      // Bazel creates the intermediate directories for the files declared at
+      // analysis time, but not any any deeper directories, like one can have
+      // with -emit-objc-header-path, so we need to create those.
+      const std::string dir_path =
+          std::filesystem::path(expected_object_pair.second)
+              .parent_path()
+              .string();
+      dir_paths.insert(dir_path);
+    }
+
     for (const auto &expected_object_pair :
          output_file_map.incremental_outputs()) {
       // Bazel creates the intermediate directories for the files declared at
@@ -157,6 +172,10 @@ void WorkProcessor::ProcessWorkRequest(
           std::filesystem::path(expected_object_pair.second)
               .parent_path()
               .string();
+      dir_paths.insert(dir_path);
+    }
+
+    for (const auto &dir_path : dir_paths) {
       std::error_code ec;
       std::filesystem::create_directories(dir_path, ec);
       if (ec) {

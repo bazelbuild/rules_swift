@@ -88,6 +88,12 @@ bzl_library(
 )
 
 bzl_library(
+    name = "env_expansion",
+    srcs = ["env_expansion.bzl"],
+    visibility = ["//swift:__subpackages__"],
+)
+
+bzl_library(
     name = "features",
     srcs = ["features.bzl"],
     visibility = ["//swift:__subpackages__"],
@@ -176,6 +182,7 @@ bzl_library(
     deps = [
         ":compiling",
         ":derived_files",
+        ":env_expansion",
         ":feature_names",
         ":linking",
         ":providers",
@@ -227,6 +234,7 @@ bzl_library(
         ":proto_gen_utils",
         ":providers",
         ":swift_common",
+        ":transitions",
         ":utils",
         "@bazel_skylib//lib:dicts",
         "@rules_proto//proto:defs",
@@ -298,6 +306,7 @@ bzl_library(
     deps = [
         ":providers",
         ":swift_protoc_gen_aspect",
+        ":transitions",
         "@rules_proto//proto:defs",
     ],
 )
@@ -358,6 +367,12 @@ bzl_library(
         "@bazel_skylib//lib:paths",
         "@bazel_skylib//lib:types",
     ],
+)
+
+bzl_library(
+    name = "transitions",
+    srcs = ["transitions.bzl"],
+    visibility = ["//swift:__subpackages__"],
 )
 
 bzl_library(
