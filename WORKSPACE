@@ -31,3 +31,12 @@ http_archive(
         "https://github.com/bazelbuild/stardoc/releases/download/0.5.3/stardoc-0.5.3.tar.gz",
     ],
 )
+
+http_archive(
+    name = "transitive_swift_protobuf_repro",
+    sha256 = "",
+    urls = [
+        "https://github.com/maxwellE/transitive_swift_protobuf_repro/archive/b436657547be46edaaf79816fb7e7b3f9f685e5d.zip",
+    ],
+    strip_prefix = "transitive_swift_protobuf_repro-b436657547be46edaaf79816fb7e7b3f9f685e5d"
+)
