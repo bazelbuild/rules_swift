@@ -12,3 +12,5 @@ build --features treat_warnings_as_errors
 # The default strategy is worker, which has sandboxing disabled by default,
 # which can hide issues with non-hermetic bugs.
 build --worker_sandboxing
+
+build --experimental_ui_max_stdouterr_bytes=-1
