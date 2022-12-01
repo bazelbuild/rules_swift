@@ -35,8 +35,8 @@ http_archive(
 http_archive(
     name = "transitive_swift_protobuf_repro",
     sha256 = "",
+    strip_prefix = "transitive_swift_protobuf_repro-b436657547be46edaaf79816fb7e7b3f9f685e5d",
     urls = [
         "https://github.com/maxwellE/transitive_swift_protobuf_repro/archive/b436657547be46edaaf79816fb7e7b3f9f685e5d.zip",
     ],
-    strip_prefix = "transitive_swift_protobuf_repro-b436657547be46edaaf79816fb7e7b3f9f685e5d"
 )
