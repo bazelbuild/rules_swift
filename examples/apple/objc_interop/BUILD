@@ -19,6 +19,7 @@ objc_library(
 swift_library(
     name = "Printer",
     srcs = ["Printer.swift"],
+    generated_header_name = "generated_header/Printer-Swift.h",
     generates_header = True,
     deps = [":PrintStream"],
 )
