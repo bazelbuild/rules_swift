@@ -155,7 +155,7 @@ void WorkProcessor::ProcessWorkRequest(
          output_file_map.incremental_inputs()) {
       // Bazel creates the intermediate directories for the files declared at
       // analysis time, but not any any deeper directories, like one can have
-      // with -emit-objc-header-path.
+      // with -emit-objc-header-path, so we need to create those.
       const std::string dir_path =
           std::filesystem::path(expected_object_pair.second)
               .parent_path()
