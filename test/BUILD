@@ -4,7 +4,7 @@ load(":coverage_settings_tests.bzl", "coverage_settings_test_suite")
 load(":debug_settings_tests.bzl", "debug_settings_test_suite")
 load(":features_tests.bzl", "features_test_suite")
 load(":generated_header_tests.bzl", "generated_header_test_suite")
-load(":linking_tests.bzl", "linking_test_suite")
+load(":imported_framework_tests.bzl", "imported_framework_test_suite")
 load(":mainattr_tests.bzl", "mainattr_test_suite")
 load(":module_cache_settings_tests.bzl", "module_cache_settings_test_suite")
 load(":output_file_map_tests.bzl", "output_file_map_test_suite")
@@ -27,7 +27,7 @@ features_test_suite(name = "features")
 
 generated_header_test_suite(name = "generated_header")
 
-linking_test_suite(name = "linking")
+imported_framework_test_suite(name = "imported_framework")
 
 mainattr_test_suite(name = "mainattr")
 
