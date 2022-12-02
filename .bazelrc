@@ -14,3 +14,4 @@ build --features treat_warnings_as_errors
 build --worker_sandboxing
 
 build --experimental_ui_max_stdouterr_bytes=-1
+build --proto_compiler=@build_bazel_rules_swift//tools/protoc_wrapper:protoc
