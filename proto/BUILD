@@ -33,6 +33,7 @@ bzl_library(
     srcs = ["swift_proto_library.bzl"],
     deps = [
         ":swift_proto_utils",
+        "//swift:module_name",
         "//swift:swift_clang_module_aspect",
         "//swift:swift_common",
         "//swift/internal:attrs",
@@ -54,6 +55,7 @@ bzl_library(
     srcs = ["swift_proto_library_group.bzl"],
     deps = [
         ":swift_proto_utils",
+        "//swift:module_name",
         "//swift:providers",
         "//swift:swift_common",
         "//swift/internal:toolchain_utils",

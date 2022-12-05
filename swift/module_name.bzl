@@ -54,8 +54,8 @@ def derive_swift_module_name(*args):
         package = args[0]
         name = args[1]
     else:
-        fail("derive_module_name may only be called with a single argument " +
-             "of type 'Label' or two arguments of type 'str'.")
+        fail("derive_swift_module_name may only be called with a single " +
+             "argument of type 'Label' or two arguments of type 'str'.")
 
     package_part = _module_name_safe(package.lstrip("//"))
     name_part = _module_name_safe(name)

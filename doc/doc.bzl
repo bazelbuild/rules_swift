@@ -47,6 +47,10 @@ load(
     _swift_proto_library_group = "swift_proto_library_group",
 )
 load(
+    "//swift:module_name.bzl",
+    _derive_swift_module_name = "derive_swift_module_name",
+)
+load(
     "//swift:providers.bzl",
     _SwiftInfo = "SwiftInfo",
     _SwiftProtoCompilerInfo = "SwiftProtoCompilerInfo",
@@ -103,6 +107,7 @@ swift_proto_library = _swift_proto_library
 swift_proto_library_group = _swift_proto_library_group
 
 # swift symbols
+derive_swift_module_name = _derive_swift_module_name
 swift_common = _swift_common
 SwiftInfo = _SwiftInfo
 SwiftToolchainInfo = _SwiftToolchainInfo

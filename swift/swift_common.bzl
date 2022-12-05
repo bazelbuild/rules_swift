@@ -31,7 +31,6 @@ load(
     "compile",
     "compile_module_interface",
     "create_compilation_context",
-    "derive_module_name",
     "precompile_clang_module",
 )
 load(
@@ -61,6 +60,7 @@ load(
     "get_swift_toolchain",
     "use_swift_toolchain",
 )
+load(":module_name.bzl", "derive_swift_module_name")
 
 # The exported `swift_common` module, which defines the public API for directly
 # invoking actions that compile Swift code from other rules.
@@ -77,7 +77,9 @@ swift_common = struct(
     create_swift_info = create_swift_info,
     create_swift_interop_info = create_swift_interop_info,
     create_swift_module = create_swift_module,
-    derive_module_name = derive_module_name,
+    # TODO(b/261444771): Remove this after everyone is migrated to the free
+    # function.
+    derive_module_name = derive_swift_module_name,
     extract_symbol_graph = extract_symbol_graph,
     get_toolchain = get_swift_toolchain,
     is_enabled = is_feature_enabled,
