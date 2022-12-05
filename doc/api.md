@@ -111,7 +111,7 @@ Compiles a Swift module.
 | <a id="swift_common.compile-generated_header_name"></a>generated_header_name |  The name of the Objective-C generated header that should be generated for this module. If omitted, no header will be generated.   |  `None` |
 | <a id="swift_common.compile-is_test"></a>is_test |  Deprecated. This argument will be removed in the next major release. Use the `include_dev_srch_paths` attribute instead. Represents if the `testonly` value of the context.   |  `None` |
 | <a id="swift_common.compile-include_dev_srch_paths"></a>include_dev_srch_paths |  A `bool` that indicates whether the developer framework search paths will be added to the compilation command.   |  `None` |
-| <a id="swift_common.compile-module_name"></a>module_name |  The name of the Swift module being compiled. This must be present and valid; use `swift_common.derive_module_name` to generate a default from the target's label if needed.   |  none |
+| <a id="swift_common.compile-module_name"></a>module_name |  The name of the Swift module being compiled. This must be present and valid; use `derive_swift_module_name` to generate a default from the target's label if needed.   |  none |
 | <a id="swift_common.compile-objc_infos"></a>objc_infos |  A list of `apple_common.ObjC` providers that represent C/Objective-C requirements of the target being compiled, such as Swift-compatible preprocessor defines, header search paths, and so forth. These are typically retrieved from a target's dependencies.   |  none |
 | <a id="swift_common.compile-package_name"></a>package_name |  The semantic package of the name of the Swift module being compiled.   |  none |
 | <a id="swift_common.compile-plugins"></a>plugins |  A list of `SwiftCompilerPluginInfo` providers that represent plugins that should be loaded by the compiler.   |  `[]` |
@@ -180,7 +180,7 @@ Compiles a Swift module interface.
 | <a id="swift_common.compile_module_interface-copts"></a>copts |  A list of compiler flags that apply to the target being built.   |  `[]` |
 | <a id="swift_common.compile_module_interface-exec_group"></a>exec_group |  Runs the Swift compilation action under the given execution group's context. If `None`, the default execution group is used.   |  `None` |
 | <a id="swift_common.compile_module_interface-feature_configuration"></a>feature_configuration |  A feature configuration obtained from `swift_common.configure_features`.   |  none |
-| <a id="swift_common.compile_module_interface-module_name"></a>module_name |  The name of the Swift module being compiled. This must be present and valid; use `swift_common.derive_module_name` to generate a default from the target's label if needed.   |  none |
+| <a id="swift_common.compile_module_interface-module_name"></a>module_name |  The name of the Swift module being compiled. This must be present and valid; use `derive_swift_module_name` to generate a default from the target's label if needed.   |  none |
 | <a id="swift_common.compile_module_interface-swiftinterface_file"></a>swiftinterface_file |  The Swift module interface file to compile.   |  none |
 | <a id="swift_common.compile_module_interface-swift_infos"></a>swift_infos |  A list of `SwiftInfo` providers from dependencies of the target being compiled.   |  none |
 | <a id="swift_common.compile_module_interface-swift_toolchain"></a>swift_toolchain |  The `SwiftToolchainInfo` provider of the toolchain.   |  none |

@@ -18,6 +18,7 @@ bzl_library(
         "//mixed_language/internal:library",
         "//mixed_language/internal:module_map",
         "//mixed_language/internal:umbrella_header",
+        "//swift:module_name",
         "//swift:swift_interop_hint",
         "//swift:swift_library",
         "//swift/internal:compiling",

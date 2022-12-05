@@ -57,6 +57,7 @@ bzl_library(
     name = "swift_binary",
     srcs = ["swift_binary.bzl"],
     deps = [
+        ":module_name",
         ":providers",
         ":swift_common",
         "//swift/internal:compiling",
@@ -72,6 +73,7 @@ bzl_library(
     name = "swift_clang_module_aspect",
     srcs = ["swift_clang_module_aspect.bzl"],
     deps = [
+        ":module_name",
         ":providers",
         "//swift/internal:attrs",
         "//swift/internal:compiling",
@@ -88,6 +90,7 @@ bzl_library(
     name = "swift_common",
     srcs = ["swift_common.bzl"],
     deps = [
+        ":module_name",
         "//swift/internal:attrs",
         "//swift/internal:compiling",
         "//swift/internal:features",
@@ -160,6 +163,7 @@ bzl_library(
     name = "swift_library",
     srcs = ["swift_library.bzl"],
     deps = [
+        ":module_name",
         ":providers",
         ":swift_clang_module_aspect",
         ":swift_common",
@@ -192,6 +196,7 @@ bzl_library(
     name = "swift_module_alias",
     srcs = ["swift_module_alias.bzl"],
     deps = [
+        ":module_name",
         ":providers",
         ":swift_common",
         "//swift/internal:linking",
@@ -214,6 +219,7 @@ bzl_library(
     name = "swift_module_mapping_test",
     srcs = ["swift_module_mapping_test.bzl"],
     deps = [
+        ":providers",
         "//swift/internal:providers",
     ],
 )
@@ -241,6 +247,7 @@ bzl_library(
     name = "swift_test",
     srcs = ["swift_test.bzl"],
     deps = [
+        ":module_name",
         ":providers",
         ":swift_common",
         "//swift/internal:env_expansion",

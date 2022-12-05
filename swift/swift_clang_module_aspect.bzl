@@ -16,11 +16,7 @@
 
 load("@bazel_skylib//lib:sets.bzl", "sets")
 load("//swift/internal:attrs.bzl", "swift_toolchain_attrs")
-load(
-    "//swift/internal:compiling.bzl",
-    "derive_module_name",
-    "precompile_clang_module",
-)
+load("//swift/internal:compiling.bzl", "precompile_clang_module")
 load(
     "//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_EMIT_C_MODULE",
@@ -54,6 +50,7 @@ load(
     "//swift/internal:utils.bzl",
     "compilation_context_for_explicit_module_compilation",
 )
+load(":module_name.bzl", "derive_swift_module_name")
 load(":providers.bzl", "SwiftInfo")
 
 _MULTIPLE_TARGET_ASPECT_ATTRS = [
@@ -360,7 +357,7 @@ def _module_info_for_target(
         # was some other `Objc`-providing target, derive the module name
         # now.
         if not module_name:
-            module_name = derive_module_name(target.label)
+            module_name = derive_swift_module_name(target.label)
 
     # If we didn't get a module map above, generate it now.
     if not module_map_file:
@@ -696,7 +693,7 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx):
         exclude_headers = interop_info.exclude_headers
         module_map_file = interop_info.module_map
         module_name = (
-            interop_info.module_name or derive_module_name(target.label)
+            interop_info.module_name or derive_swift_module_name(target.label)
         )
         swift_infos.extend(interop_info.swift_infos)
         requested_features.extend(interop_info.requested_features)

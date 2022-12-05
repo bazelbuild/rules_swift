@@ -29,6 +29,7 @@ load(
     "SwiftProtoCcInfo",
     "compile_swift_protos_for_target",
 )
+load("//swift:module_name.bzl", "derive_swift_module_name")
 load(
     "//swift:providers.bzl",
     "SwiftInfo",
@@ -47,7 +48,7 @@ load("//swift/internal:utils.bzl", "compact")
 
 def _swift_proto_library_group_aspect_impl(target, aspect_ctx):
     # Get the module name and generate the module mappings:
-    module_name = swift_common.derive_module_name(target.label)
+    module_name = derive_swift_module_name(target.label)
 
     # Compile the source files to a module:
     direct_providers = compile_swift_protos_for_target(

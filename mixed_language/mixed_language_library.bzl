@@ -26,11 +26,9 @@ load(
     "//mixed_language/internal:umbrella_header.bzl",
     "mixed_language_umbrella_header",
 )
+load("//swift:module_name.bzl", "derive_swift_module_name")
 load("//swift:swift_interop_hint.bzl", "swift_interop_hint")
 load("//swift:swift_library.bzl", "swift_library")
-
-# buildifier: disable=bzl-visibility
-load("//swift/internal:compiling.bzl", "derive_module_name")
 
 # `mixed_language_library`
 
@@ -225,7 +223,7 @@ a mixed language Swift library, use a clang only library rule like \
         )
 
     if not module_name:
-        module_name = derive_module_name(native.package_name(), name)
+        module_name = derive_swift_module_name(native.package_name(), name)
 
     if not module_map:
         internal_modulemap_name = name + "_modulemap"

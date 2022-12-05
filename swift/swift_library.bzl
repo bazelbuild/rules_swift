@@ -43,6 +43,7 @@ load(
     "get_providers",
     "include_developer_search_paths",
 )
+load(":module_name.bzl", "derive_swift_module_name")
 load(":providers.bzl", "SwiftCompilerPluginInfo", "SwiftInfo")
 load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 load(":swift_common.bzl", "swift_common")
@@ -139,7 +140,7 @@ def _swift_library_impl(ctx):
 
     module_name = ctx.attr.module_name
     if not module_name:
-        module_name = swift_common.derive_module_name(ctx.label)
+        module_name = derive_swift_module_name(ctx.label)
 
     swift_toolchain = swift_common.get_toolchain(ctx)
     feature_configuration = swift_common.configure_features(

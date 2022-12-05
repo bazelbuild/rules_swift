@@ -91,7 +91,6 @@ bzl_library(
         ":wmo",
         "@bazel_skylib//lib:paths",
         "@bazel_skylib//lib:sets",
-        "@bazel_skylib//lib:types",
     ],
 )
 

@@ -16,7 +16,6 @@
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:sets.bzl", "sets")
-load("@bazel_skylib//lib:types.bzl", "types")
 load(
     ":action_names.bzl",
     "SWIFT_ACTION_COMPILE",
@@ -80,78 +79,6 @@ load(":wmo.bzl", "find_num_threads_flag_value", "is_wmo_manually_requested")
 # VFS root where all .swiftmodule files will be placed when
 # SWIFT_FEATURE_VFSOVERLAY is enabled.
 _SWIFTMODULES_VFS_ROOT = "/__build_bazel_rules_swift/swiftmodules"
-
-def _module_name_safe(string):
-    """Returns a transformation of `string` that is safe for module names."""
-    result = ""
-    saw_non_identifier_char = False
-    for ch in string.elems():
-        if ch.isalnum() or ch == "_":
-            # If we're seeing an identifier character after a sequence of
-            # non-identifier characters, append an underscore and reset our
-            # tracking state before appending the identifier character.
-            if saw_non_identifier_char:
-                result += "_"
-                saw_non_identifier_char = False
-            result += ch
-        elif result:
-            # Only track this if `result` has content; this ensures that we
-            # (intentionally) drop leading non-identifier characters instead of
-            # adding a leading underscore.
-            saw_non_identifier_char = True
-
-    return result
-
-def derive_module_name(*args):
-    """Returns a derived module name from the given build label.
-
-    For targets whose module name is not explicitly specified, the module name
-    is computed using the following algorithm:
-
-    *   The package and name components of the label are considered separately.
-        All _interior_ sequences of non-identifier characters (anything other
-        than `a-z`, `A-Z`, `0-9`, and `_`) are replaced by a single underscore
-        (`_`). Any leading or trailing non-identifier characters are dropped.
-    *   If the package component is non-empty after the above transformation,
-        it is joined with the transformed name component using an underscore.
-        Otherwise, the transformed name is used by itself.
-    *   If this would result in a string that begins with a digit (`0-9`), an
-        underscore is prepended to make it identifier-safe.
-
-    This mapping is intended to be fairly predictable, but not reversible.
-
-    Args:
-        *args: Either a single argument of type `Label`, or two arguments of
-            type `str` where the first argument is the package name and the
-            second argument is the target name.
-
-    Returns:
-        The module name derived from the label.
-    """
-    if (len(args) == 1 and
-        hasattr(args[0], "package") and
-        hasattr(args[0], "name")):
-        label = args[0]
-        package = label.package
-        name = label.name
-    elif (len(args) == 2 and
-          types.is_string(args[0]) and
-          types.is_string(args[1])):
-        package = args[0]
-        name = args[1]
-    else:
-        fail("derive_module_name may only be called with a single argument " +
-             "of type 'Label' or two arguments of type 'str'.")
-
-    package_part = _module_name_safe(package.lstrip("//"))
-    name_part = _module_name_safe(name)
-    if package_part:
-        module_name = package_part + "_" + name_part
-    else:
-        module_name = name_part
-    if module_name[0].isdigit():
-        module_name = "_" + module_name
-    return module_name
 
 def create_compilation_context(defines, srcs, transitive_modules):
     """Cretes a compilation context for a Swift target.
@@ -228,8 +155,8 @@ def compile_module_interface(
         feature_configuration: A feature configuration obtained from
             `swift_common.configure_features`.
         module_name: The name of the Swift module being compiled. This must be
-            present and valid; use `swift_common.derive_module_name` to generate
-            a default from the target's label if needed.
+            present and valid; use `derive_swift_module_name` to generate a
+            default from the target's label if needed.
         swiftinterface_file: The Swift module interface file to compile.
         swift_infos: A list of `SwiftInfo` providers from dependencies of the
             target being compiled.
@@ -416,8 +343,8 @@ def compile(
             should be generated for this module. If omitted, no header will be
             generated.
         module_name: The name of the Swift module being compiled. This must be
-            present and valid; use `swift_common.derive_module_name` to generate
-            a default from the target's label if needed.
+            present and valid; use `derive_swift_module_name` to generate a
+            default from the target's label if needed.
         objc_infos: A list of `apple_common.ObjC` providers that represent
             C/Objective-C requirements of the target being compiled, such as
             Swift-compatible preprocessor defines, header search paths, and so
