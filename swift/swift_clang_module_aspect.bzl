@@ -20,7 +20,6 @@ load(
 )
 load(
     "@build_bazel_rules_swift//swift/internal:compiling.bzl",
-    "derive_module_name",
     "precompile_clang_module",
 )
 load(
@@ -59,6 +58,7 @@ load(
     "compilation_context_for_explicit_module_compilation",
 )
 load("@bazel_skylib//lib:sets.bzl", "sets")
+load(":module_name.bzl", "derive_swift_module_name")
 load(":providers.bzl", "SwiftInfo")
 
 _MULTIPLE_TARGET_ASPECT_ATTRS = [
@@ -356,7 +356,7 @@ def _module_info_for_target(
         # was some other `Objc`-providing target, derive the module name
         # now.
         if not module_name:
-            module_name = derive_module_name(target.label)
+            module_name = derive_swift_module_name(target.label)
 
     module_map_file = _generate_module_map(
         actions = aspect_ctx.actions,
@@ -690,7 +690,7 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx):
         exclude_headers = interop_info.exclude_headers
         module_map_file = interop_info.module_map
         module_name = (
-            interop_info.module_name or derive_module_name(target.label)
+            interop_info.module_name or derive_swift_module_name(target.label)
         )
         swift_infos.extend(interop_info.swift_infos)
         requested_features.extend(interop_info.requested_features)

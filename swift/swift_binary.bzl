@@ -31,6 +31,7 @@ load(
     "get_compilation_contexts",
     "get_providers",
 )
+load(":module_name.bzl", "derive_swift_module_name")
 load(":providers.bzl", "SwiftInfo")
 load(":swift_common.bzl", "swift_common")
 
@@ -53,7 +54,7 @@ def _swift_binary_impl(ctx):
     if srcs:
         module_name = ctx.attr.module_name
         if not module_name:
-            module_name = swift_common.derive_module_name(ctx.label)
+            module_name = derive_swift_module_name(ctx.label)
 
         compile_result = swift_common.compile(
             actions = ctx.actions,

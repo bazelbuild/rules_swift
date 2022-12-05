@@ -12,6 +12,14 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])
 
 bzl_library(
+    name = "module_name",
+    srcs = ["module_name.bzl"],
+    deps = [
+        "@bazel_skylib//lib:types",
+    ],
+)
+
+bzl_library(
     name = "providers",
     srcs = ["providers.bzl"],
 )
@@ -20,9 +28,11 @@ bzl_library(
     name = "swift_binary",
     srcs = ["swift_binary.bzl"],
     deps = [
+        ":module_name",
         ":providers",
         ":swift_common",
         "//swift/internal:linking",
+        "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
     ],
 )
@@ -31,6 +41,7 @@ bzl_library(
     name = "swift_clang_module_aspect",
     srcs = ["swift_clang_module_aspect.bzl"],
     deps = [
+        ":module_name",
         ":providers",
         "//swift/internal:attrs",
         "//swift/internal:compiling",
@@ -49,6 +60,7 @@ bzl_library(
     name = "swift_common",
     srcs = ["swift_common.bzl"],
     deps = [
+        ":module_name",
         "//swift/internal:attrs",
         "//swift/internal:compiling",
         "//swift/internal:features",
@@ -91,11 +103,13 @@ bzl_library(
     name = "swift_grpc_library",
     srcs = ["swift_grpc_library.bzl"],
     deps = [
+        ":module_name",
         ":providers",
         ":swift_common",
         "//swift/internal:feature_names",
         "//swift/internal:linking",
         "//swift/internal:proto_gen_utils",
+        "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
         "@bazel_skylib//lib:dicts",
     ],
@@ -126,6 +140,7 @@ bzl_library(
     name = "swift_library",
     srcs = ["swift_library.bzl"],
     deps = [
+        ":module_name",
         ":providers",
         ":swift_clang_module_aspect",
         ":swift_common",
@@ -134,6 +149,7 @@ bzl_library(
         "//swift/internal:compiling",
         "//swift/internal:feature_names",
         "//swift/internal:linking",
+        "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
         "@bazel_skylib//lib:dicts",
         "@bazel_skylib//lib:sets",
@@ -145,9 +161,11 @@ bzl_library(
     name = "swift_module_alias",
     srcs = ["swift_module_alias.bzl"],
     deps = [
+        ":module_name",
         ":providers",
         ":swift_common",
         "//swift/internal:linking",
+        "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
         "@bazel_skylib//lib:dicts",
     ],
@@ -165,6 +183,7 @@ bzl_library(
     name = "swift_module_mapping_test",
     srcs = ["swift_module_mapping_test.bzl"],
     deps = [
+        ":providers",
         "//swift/internal:providers",
     ],
 )
@@ -199,11 +218,12 @@ bzl_library(
     name = "swift_test",
     srcs = ["swift_test.bzl"],
     deps = [
+        ":module_name",
         ":providers",
         ":swift_common",
-        "//swift/internal:feature_names",
         "//swift/internal:linking",
         "//swift/internal:swift_symbol_graph_aspect",
+        "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
         "@bazel_skylib//lib:dicts",
     ],

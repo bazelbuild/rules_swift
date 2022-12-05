@@ -52,7 +52,6 @@ bzl_library(
         ":wmo",
         "@bazel_skylib//lib:paths",
         "@bazel_skylib//lib:sets",
-        "@bazel_skylib//lib:types",
     ],
 )
 
@@ -138,7 +137,9 @@ bzl_library(
         ":feature_names",
         ":linking",
         ":proto_gen_utils",
+        ":toolchain_utils",
         ":utils",
+        "//swift:module_name",
         "//swift:providers",
         "//swift:swift_common",
         "@bazel_skylib//lib:dicts",

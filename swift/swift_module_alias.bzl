@@ -29,6 +29,7 @@ load(
     "get_providers",
 )
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
+load(":module_name.bzl", "derive_swift_module_name")
 load(":providers.bzl", "SwiftInfo")
 load(":swift_common.bzl", "swift_common")
 
@@ -42,7 +43,7 @@ def _swift_module_alias_impl(ctx):
 
     module_name = ctx.attr.module_name
     if not module_name:
-        module_name = swift_common.derive_module_name(ctx.label)
+        module_name = derive_swift_module_name(ctx.label)
 
     # Generate a source file that imports each of the deps using `@_exported`.
     reexport_src = ctx.actions.declare_file(

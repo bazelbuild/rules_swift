@@ -15,6 +15,10 @@
 """An aspect attached to `proto_library` targets to generate Swift artifacts."""
 
 load(
+    "@build_bazel_rules_swift//swift:module_name.bzl",
+    "derive_swift_module_name",
+)
+load(
     "@build_bazel_rules_swift//swift:providers.bzl",
     "SwiftInfo",
     "SwiftProtoInfo",
@@ -267,7 +271,7 @@ def _build_module_mapping_from_srcs(target, proto_srcs, proto_source_root):
     # workspace-relative paths, there will be a clash. Figure out what to do
     # here; it may require an update to protoc-gen-swift?
     return struct(
-        module_name = swift_common.derive_module_name(target.label),
+        module_name = derive_swift_module_name(target.label),
         proto_file_paths = [
             proto_import_path(f, proto_source_root)
             for f in proto_srcs
@@ -404,7 +408,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             aspect_ctx.bin_dir.path,
         )
 
-        module_name = swift_common.derive_module_name(target.label)
+        module_name = derive_swift_module_name(target.label)
 
         support_deps = aspect_ctx.attr._proto_support
         for p in support_deps:

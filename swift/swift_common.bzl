@@ -20,6 +20,7 @@ example, `swift_proto_library` generates Swift source code from `.proto` files
 and then needs to compile them. This module provides that lower-level interface.
 """
 
+load(":module_name.bzl", "derive_swift_module_name")
 load(
     "@build_bazel_rules_swift//swift/internal:attrs.bzl",
     "swift_compilation_attrs",
@@ -30,7 +31,6 @@ load(
     "@build_bazel_rules_swift//swift/internal:compiling.bzl",
     "compile",
     "compile_module_interface",
-    "derive_module_name",
     "precompile_clang_module",
 )
 load(
@@ -78,7 +78,9 @@ swift_common = struct(
     create_swift_info = create_swift_info,
     create_swift_interop_info = create_swift_interop_info,
     create_swift_module = create_swift_module,
-    derive_module_name = derive_module_name,
+    # TODO(b/261444771): Remove this after everyone is migrated to the free
+    # function.
+    derive_module_name = derive_swift_module_name,
     extract_symbol_graph = extract_symbol_graph,
     get_toolchain = get_swift_toolchain,
     is_enabled = is_feature_enabled,
