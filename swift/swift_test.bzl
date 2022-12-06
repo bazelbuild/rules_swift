@@ -334,7 +334,7 @@ def _swift_test_impl(ctx):
                 supplemental_outputs.indexstore_directory,
             ])
 
-        swift_infos_including_owner = [swift_common.create_swift_info(
+        swift_infos_including_owner = [SwiftInfo(
             modules = [compile_result.module_context],
             swift_infos = swift_infos,
         )]

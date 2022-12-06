@@ -22,6 +22,13 @@ and then needs to compile them. This module provides that lower-level interface.
 
 load(":module_name.bzl", "derive_swift_module_name")
 load(
+    ":providers.bzl",
+    "SwiftInfo",
+    "create_clang_module_inputs",
+    "create_swift_module_context",
+    "create_swift_module_inputs",
+)
+load(
     "@build_bazel_rules_swift//swift/internal:attrs.bzl",
     "swift_compilation_attrs",
     "swift_library_rule_attrs",
@@ -42,13 +49,6 @@ load(
 load(
     "@build_bazel_rules_swift//swift/internal:linking.bzl",
     "create_linking_context_from_compilation_outputs",
-)
-load(
-    "@build_bazel_rules_swift//swift/internal:providers.bzl",
-    "create_clang_module",
-    "create_module",
-    "create_swift_info",
-    "create_swift_module",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:swift_interop_info.bzl",
@@ -72,12 +72,20 @@ swift_common = struct(
     compile = compile,
     compile_module_interface = compile_module_interface,
     configure_features = configure_features,
-    create_clang_module = create_clang_module,
+    # TODO(b/261445197): Remove this after everyone is migrated to the free
+    # function.
+    create_clang_module = create_clang_module_inputs,
     create_linking_context_from_compilation_outputs = create_linking_context_from_compilation_outputs,
-    create_module = create_module,
-    create_swift_info = create_swift_info,
+    # TODO(b/261445197): Remove this after everyone is migrated to the free
+    # function.
+    create_module = create_swift_module_context,
+    # TODO(b/261445197): Remove this after everyone is migrated to the free
+    # function.
+    create_swift_info = SwiftInfo,
     create_swift_interop_info = create_swift_interop_info,
-    create_swift_module = create_swift_module,
+    # TODO(b/261445197): Remove this after everyone is migrated to the free
+    # function.
+    create_swift_module = create_swift_module_inputs,
     # TODO(b/261444771): Remove this after everyone is migrated to the free
     # function.
     derive_module_name = derive_swift_module_name,

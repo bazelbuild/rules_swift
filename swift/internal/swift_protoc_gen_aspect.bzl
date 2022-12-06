@@ -485,7 +485,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             SwiftProtoCompilationInfo(
                 cc_info = cc_info,
                 objc_info = objc_info,
-                swift_info = swift_common.create_swift_info(
+                swift_info = SwiftInfo(
                     modules = [module_context],
                     swift_infos = transitive_swift_infos,
                 ),
@@ -507,9 +507,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
                 objc_info = apple_common.new_objc_provider(
                     providers = transitive_objc_infos,
                 ),
-                swift_info = swift_common.create_swift_info(
-                    swift_infos = transitive_swift_infos,
-                ),
+                swift_info = SwiftInfo(swift_infos = transitive_swift_infos),
             ),
         ]
 

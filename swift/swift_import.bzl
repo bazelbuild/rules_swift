@@ -30,7 +30,13 @@ load(
     "get_compilation_contexts",
     "get_providers",
 )
-load(":providers.bzl", "SwiftInfo")
+load(
+    ":providers.bzl",
+    "SwiftInfo",
+    "create_clang_module_inputs",
+    "create_swift_module_context",
+    "create_swift_module_inputs",
+)
 load(":swift_common.bzl", "swift_common")
 load(
     "@build_bazel_rules_swift//swift/internal:toolchain_utils.bzl",
@@ -95,13 +101,13 @@ def _swift_import_impl(ctx):
             module_context.swift.swiftmodule,
         ] + compact([module_context.swift.swiftdoc])
     else:
-        module_context = swift_common.create_module(
+        module_context = create_swift_module_context(
             name = ctx.attr.module_name,
-            clang = swift_common.create_clang_module(
+            clang = create_clang_module_inputs(
                 compilation_context = cc_info.compilation_context,
                 module_map = None,
             ),
-            swift = swift_common.create_swift_module(
+            swift = create_swift_module_inputs(
                 swiftdoc = swiftdoc,
                 swiftmodule = swiftmodule,
             ),

@@ -251,7 +251,7 @@ def _swift_library_impl(ctx):
             extensions = ["swift"],
             source_attributes = ["srcs"],
         ),
-        swift_common.create_swift_info(
+        SwiftInfo(
             modules = [module_context],
             # Note that private_deps are explicitly omitted here; they should
             # not propagate.

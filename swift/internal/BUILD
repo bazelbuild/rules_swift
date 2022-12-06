@@ -47,9 +47,9 @@ bzl_library(
         ":feature_names",
         ":features",
         ":module_maps",
-        ":providers",
         ":utils",
         ":wmo",
+        "//swift:providers",
         "@bazel_skylib//lib:paths",
         "@bazel_skylib//lib:sets",
     ],
@@ -121,7 +121,6 @@ bzl_library(
 bzl_library(
     name = "providers",
     srcs = ["providers.bzl"],
-    deps = ["//swift:providers"],
 )
 
 bzl_library(
@@ -169,8 +168,8 @@ bzl_library(
     deps = [
         ":action_names",
         ":actions",
-        ":providers",
         ":utils",
+        "//swift:providers",
     ],
 )
 
