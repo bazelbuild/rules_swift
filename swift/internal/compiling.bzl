@@ -17,6 +17,13 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:sets.bzl", "sets")
 load(
+    "//swift:providers.bzl",
+    "SwiftInfo",
+    "create_clang_module_inputs",
+    "create_swift_module_context",
+    "create_swift_module_inputs",
+)
+load(
     ":action_names.bzl",
     "SWIFT_ACTION_COMPILE",
     "SWIFT_ACTION_COMPILE_MODULE_INTERFACE",
@@ -59,13 +66,6 @@ load(
 )
 load(":module_maps.bzl", "write_module_map")
 load(
-    ":providers.bzl",
-    "create_clang_module",
-    "create_module",
-    "create_swift_info",
-    "create_swift_module",
-)
-load(
     ":utils.bzl",
     "compact",
     "compilation_context_for_explicit_module_compilation",
@@ -87,7 +87,7 @@ def create_compilation_context(defines, srcs, transitive_modules):
         defines: A list of defines
         srcs: A list of Swift source files used to compile the target.
         transitive_modules: A list of modules (as returned by
-            `swift_common.create_module`) from the transitive dependencies of
+            `create_swift_module_context`) from the transitive dependencies of
             the target.
 
     Returns:
@@ -166,7 +166,7 @@ def compile_module_interface(
             outputs.
 
     Returns:
-        A Swift module context (as returned by `swift_common.create_module`)
+        A Swift module context (as returned by `create_swift_module_context`)
         that contains the Swift (and potentially C/Objective-C) compilation
         prerequisites of the compiled module. This should typically be
         propagated by a `SwiftInfo` provider of the calling rule, and the
@@ -181,7 +181,7 @@ def compile_module_interface(
             for cc_info in swift_toolchain.implicit_deps_providers.cc_infos
         ],
     )
-    merged_swift_info = create_swift_info(
+    merged_swift_info = SwiftInfo(
         swift_infos = (
             swift_infos + swift_toolchain.implicit_deps_providers.swift_infos
         ),
@@ -268,9 +268,9 @@ def compile_module_interface(
         swift_toolchain = swift_toolchain,
     )
 
-    module_context = create_module(
+    module_context = create_swift_module_context(
         name = module_name,
-        clang = create_clang_module(
+        clang = create_clang_module_inputs(
             compilation_context = merged_compilation_context,
             module_map = None,
         ),
@@ -278,7 +278,7 @@ def compile_module_interface(
             feature_configuration = feature_configuration,
             feature_name = SWIFT_FEATURE_SYSTEM_MODULE,
         ),
-        swift = create_swift_module(
+        swift = create_swift_module_inputs(
             swiftdoc = None,
             swiftinterface = swiftinterface_file,
             swiftmodule = swiftmodule_file,
@@ -375,7 +375,7 @@ def compile(
         A `struct` with the following fields:
 
         *   `module_context`: A Swift module context (as returned by
-            `swift_common.create_module`) that contains the Swift (and
+            `create_swift_module_context`) that contains the Swift (and
             potentially C/Objective-C) compilation prerequisites of the compiled
             module. This should typically be propagated by a `SwiftInfo`
             provider of the calling rule, and the `CcCompilationContext` inside
@@ -511,7 +511,7 @@ def compile(
         providers = objc_infos + swift_toolchain.implicit_deps_providers.objc_infos,
     )
 
-    merged_swift_info = create_swift_info(
+    merged_swift_info = SwiftInfo(
         swift_infos = (
             swift_infos +
             private_swift_infos +
@@ -737,9 +737,9 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
     else:
         includes = []
 
-    module_context = create_module(
+    module_context = create_swift_module_context(
         name = module_name,
-        clang = create_clang_module(
+        clang = create_clang_module_inputs(
             compilation_context = _create_cc_compilation_context(
                 actions = actions,
                 compilation_contexts = compilation_contexts,
@@ -755,7 +755,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         ),
         compilation_context = compilation_context,
         is_system = False,
-        swift = create_swift_module(
+        swift = create_swift_module_inputs(
             ast_files = compile_outputs.ast_files,
             defines = defines,
             generated_header = compile_outputs.generated_header_file,
@@ -927,7 +927,7 @@ def _precompile_clang_module(
         swift_infos.extend(implicit_swift_infos)
 
     if swift_infos:
-        merged_swift_info = create_swift_info(swift_infos = swift_infos)
+        merged_swift_info = SwiftInfo(swift_infos = swift_infos)
         transitive_modules = merged_swift_info.transitive_modules.to_list()
     else:
         transitive_modules = []

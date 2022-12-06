@@ -16,7 +16,12 @@
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("//swift:providers.bzl", "SwiftInfo")
+load(
+    "//swift:providers.bzl",
+    "SwiftInfo",
+    "create_clang_module_inputs",
+    "create_swift_module_context",
+)
 load("//swift:swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 
 # buildifier: disable=bzl-visibility
@@ -33,14 +38,6 @@ load(
     "//swift/internal:features.bzl",
     "configure_features",
     "is_feature_enabled",
-)
-
-# buildifier: disable=bzl-visibility
-load(
-    "//swift/internal:providers.bzl",
-    "create_clang_module",
-    "create_module",
-    "create_swift_info",
 )
 
 # buildifier: disable=bzl-visibility
@@ -167,11 +164,11 @@ def _mixed_language_library_impl(ctx):
         ],
         cc_infos = [swift_target[CcInfo], clang_target[CcInfo]],
     )
-    swift_info = create_swift_info(
+    swift_info = SwiftInfo(
         modules = [
-            create_module(
+            create_swift_module_context(
                 name = module_name,
-                clang = create_clang_module(
+                clang = create_clang_module_inputs(
                     compilation_context = cc_info.compilation_context,
                     module_map = extended_module_map,
                 ),

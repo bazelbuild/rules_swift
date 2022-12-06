@@ -91,11 +91,11 @@ bzl_library(
     srcs = ["swift_common.bzl"],
     deps = [
         ":module_name",
+        ":providers",
         "//swift/internal:attrs",
         "//swift/internal:compiling",
         "//swift/internal:features",
         "//swift/internal:linking",
-        "//swift/internal:providers",
         "//swift/internal:swift_interop_info",
         "//swift/internal:symbol_graph_extracting",
         "//swift/internal:toolchain_utils",
@@ -187,7 +187,6 @@ bzl_library(
         ":providers",
         ":swift_clang_module_aspect",
         "//swift/internal:attrs",
-        "//swift/internal:providers",
         "//swift/internal:utils",
     ],
 )

@@ -32,12 +32,6 @@ load(
 )
 load("//swift/internal:module_maps.bzl", "write_module_map")
 load(
-    "//swift/internal:providers.bzl",
-    "create_clang_module",
-    "create_module",
-    "create_swift_info",
-)
-load(
     "//swift/internal:swift_interop_info.bzl",
     "SwiftInteropInfo",
 )
@@ -51,7 +45,12 @@ load(
     "compilation_context_for_explicit_module_compilation",
 )
 load(":module_name.bzl", "derive_swift_module_name")
-load(":providers.bzl", "SwiftInfo")
+load(
+    ":providers.bzl",
+    "SwiftInfo",
+    "create_clang_module_inputs",
+    "create_swift_module_context",
+)
 
 _MULTIPLE_TARGET_ASPECT_ATTRS = [
     "deps",
@@ -448,7 +447,7 @@ def _handle_module(
     if not module_map_file:
         if all_swift_infos:
             return [
-                create_swift_info(
+                SwiftInfo(
                     direct_swift_infos = direct_swift_infos,
                     swift_infos = swift_infos,
                 ),
@@ -514,11 +513,11 @@ def _handle_module(
     indexstore_directory = getattr(pcm_outputs, "indexstore_directory", None)
 
     providers = [
-        create_swift_info(
+        SwiftInfo(
             modules = [
-                create_module(
+                create_swift_module_context(
                     name = module_name,
-                    clang = create_clang_module(
+                    clang = create_clang_module_inputs(
                         compilation_context = compilation_context,
                         module_map = module_map_file,
                         precompiled_module = precompiled_module,
@@ -737,7 +736,7 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx):
     # If it's any other rule, just merge the `SwiftInfo` providers from its
     # deps.
     if direct_swift_infos or swift_infos:
-        return [create_swift_info(
+        return [SwiftInfo(
             direct_swift_infos = direct_swift_infos,
             swift_infos = swift_infos,
         )]

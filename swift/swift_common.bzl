@@ -43,13 +43,6 @@ load(
     "//swift/internal:linking.bzl",
     "create_linking_context_from_compilation_outputs",
 )
-load(
-    "//swift/internal:providers.bzl",
-    "create_clang_module",
-    "create_module",
-    "create_swift_info",
-    "create_swift_module",
-)
 load("//swift/internal:swift_interop_info.bzl", "create_swift_interop_info")
 load(
     "//swift/internal:symbol_graph_extracting.bzl",
@@ -61,6 +54,13 @@ load(
     "use_swift_toolchain",
 )
 load(":module_name.bzl", "derive_swift_module_name")
+load(
+    ":providers.bzl",
+    "SwiftInfo",
+    "create_clang_module_inputs",
+    "create_swift_module_context",
+    "create_swift_module_inputs",
+)
 
 # The exported `swift_common` module, which defines the public API for directly
 # invoking actions that compile Swift code from other rules.
@@ -70,13 +70,21 @@ swift_common = struct(
     compile = compile,
     compile_module_interface = compile_module_interface,
     configure_features = configure_features,
-    create_clang_module = create_clang_module,
+    # TODO(b/261445197): Remove this after everyone is migrated to the free
+    # function.
+    create_clang_module = create_clang_module_inputs,
     create_compilation_context = create_compilation_context,
     create_linking_context_from_compilation_outputs = create_linking_context_from_compilation_outputs,
-    create_module = create_module,
-    create_swift_info = create_swift_info,
+    # TODO(b/261445197): Remove this after everyone is migrated to the free
+    # function.
+    create_module = create_swift_module_context,
+    # TODO(b/261445197): Remove this after everyone is migrated to the free
+    # function.
+    create_swift_info = SwiftInfo,
     create_swift_interop_info = create_swift_interop_info,
-    create_swift_module = create_swift_module,
+    # TODO(b/261445197): Remove this after everyone is migrated to the free
+    # function.
+    create_swift_module = create_swift_module_inputs,
     # TODO(b/261444771): Remove this after everyone is migrated to the free
     # function.
     derive_module_name = derive_swift_module_name,

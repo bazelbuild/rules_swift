@@ -119,7 +119,7 @@ def _swift_module_alias_impl(ctx):
             compilation_context = module_context.clang.compilation_context,
             linking_context = linking_context,
         ),
-        swift_common.create_swift_info(
+        SwiftInfo(
             modules = [module_context],
             swift_infos = swift_infos,
         ),

@@ -14,9 +14,9 @@
 
 """Functions relating to symbol graph extraction."""
 
+load("//swift:providers.bzl", "SwiftInfo")
 load(":action_names.bzl", "SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT")
 load(":actions.bzl", "run_toolchain_action")
-load(":providers.bzl", "create_swift_info")
 load(":utils.bzl", "merge_compilation_contexts")
 
 def extract_symbol_graph(
@@ -69,7 +69,7 @@ def extract_symbol_graph(
             for cc_info in swift_toolchain.implicit_deps_providers.cc_infos
         ],
     )
-    merged_swift_info = create_swift_info(
+    merged_swift_info = SwiftInfo(
         swift_infos = (
             swift_infos + swift_toolchain.implicit_deps_providers.swift_infos
         ),
