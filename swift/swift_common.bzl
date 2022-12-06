@@ -43,7 +43,6 @@ load(
     "//swift/internal:linking.bzl",
     "create_linking_context_from_compilation_outputs",
 )
-load("//swift/internal:swift_interop_info.bzl", "create_swift_interop_info")
 load(
     "//swift/internal:symbol_graph_extracting.bzl",
     "extract_symbol_graph",
@@ -61,6 +60,7 @@ load(
     "create_swift_module_context",
     "create_swift_module_inputs",
 )
+load(":swift_interop_info.bzl", "create_swift_interop_info")
 
 # The exported `swift_common` module, which defines the public API for directly
 # invoking actions that compile Swift code from other rules.
@@ -81,6 +81,8 @@ swift_common = struct(
     # TODO(b/261445197): Remove this after everyone is migrated to the free
     # function.
     create_swift_info = SwiftInfo,
+    # TODO(b/261445197): Remove this after everyone is migrated to the free
+    # function.
     create_swift_interop_info = create_swift_interop_info,
     # TODO(b/261445197): Remove this after everyone is migrated to the free
     # function.

@@ -446,21 +446,28 @@ provider whose compilation context contains the headers that it wants to
 make into a module, and then also propagate the provider returned from this
 function.
 
-The simplest usage is for a custom rule to call
-`swift_common.create_swift_interop_info` passing it only the list of
-`SwiftInfo` providers from its dependencies; this tells
-`swift_clang_module_aspect` to derive the module name from the target label
-and create a module map using the headers from the compilation context.
+The simplest usage is for a custom rule to do the following:
+
+*   Add `swift_clang_module_aspect` to any attribute that provides
+    dependencies of the code that needs to interop with Swift (typically
+    `deps`, but could be other attributes as well, such as attributes
+    providing additional support libraries).
+*   Have the rule implementation call `create_swift_interop_info`, passing
+    it only the list of `SwiftInfo` providers from its dependencies. This
+    tells `swift_clang_module_aspect` when it runs on *this* rule's target
+    to derive the module name from the target label and create a module map
+    using the headers from the compilation context of the `CcInfo` you
+    propagate.
 
 If the custom rule has reason to provide its own module name or module map,
 then it can do so using the `module_name` and `module_map` arguments.
 
 When a rule returns this provider, it must provide the full set of
 `SwiftInfo` providers from dependencies that will be merged with the one
-that `swift_clang_module_aspect` creates for the target itself; the aspect
-will not do so automatically. This allows the rule to not only add extra
-dependencies (such as support libraries from implicit attributes) but also
-exclude dependencies if necessary.
+that `swift_clang_module_aspect` creates for the target itself. The aspect
+will **not** collect dependency providers automatically. This allows the
+rule to not only add extra dependencies (such as support libraries from
+implicit attributes) but also to exclude dependencies if necessary.
 
 
 **PARAMETERS**
