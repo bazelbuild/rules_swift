@@ -1440,7 +1440,7 @@ def _collect_clang_module_inputs(
             explicit module compilation action. This parameter should be `None`
             if inputs are being collected for Swift compilation.
         modules: A list of module structures (as returned by
-            `swift_common.create_module`). The precompiled Clang modules or the
+            `create_swift_module_context`). The precompiled Clang modules or the
             textual module maps and headers of these modules (depending on the
             value of `prefer_precompiled_modules`) will be collected as inputs.
         prefer_precompiled_modules: If True, precompiled module artifacts should
@@ -1515,7 +1515,7 @@ def _clang_modulemap_dependency_args(module, ignore_system = True):
 
     Args:
         module: A struct containing information about the module, as defined by
-            `swift_common.create_module`.
+            `create_swift_module_context`.
         ignore_system: If `True` and the module is a system module, no flag
             should be returned. Defaults to `True`.
 
@@ -1546,7 +1546,7 @@ def _clang_module_dependency_args(module):
 
     Args:
         module: A struct containing information about the module, as defined by
-            `swift_common.create_module`.
+            `create_swift_module_context`.
 
     Returns:
         A list of arguments, possibly empty, to pass to `swiftc` (without the
@@ -1718,7 +1718,7 @@ def _swift_module_search_path_map_fn(module):
 
     Args:
         module: The module structure (as returned by
-            `swift_common.create_module`) extracted from the transitive
+            `create_swift_module_context`) extracted from the transitive
             modules of a `SwiftInfo` provider.
 
     Returns:
@@ -1759,7 +1759,7 @@ def _module_alias_map_fn(module):
 
     Args:
         module: The module structure (as returned by
-            `swift_common.create_module`) extracted from the transitive
+            `create_swift_module_context`) extracted from the transitive
             modules of a `SwiftInfo` provider.
 
     Returns:

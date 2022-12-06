@@ -4,6 +4,51 @@
 The `swift_common` module provides API access to the behavior implemented
 by the Swift build rules, so that other custom rules can invoke Swift
 compilation and/or linking as part of their implementation.
+<a id="swift_common.create_swift_info"></a>
+
+## swift_common.create_swift_info
+
+<pre>
+swift_common.create_swift_info(<a href="#swift_common.create_swift_info-direct_modules">direct_modules</a>, <a href="#swift_common.create_swift_info-transitive_modules">transitive_modules</a>)
+</pre>
+
+Contains information about the compiled artifacts of a Swift module.
+
+This provider has a custom initializer that will merge the transitive modules of
+a list of `SwiftInfo` providers, rather than a separate "merge" function. The
+correct signature when _creating_ a new `SwiftInfo` provider is the following:
+
+```build
+SwiftInfo(
+    direct_swift_infos,
+    modules,
+    swift_infos,
+)
+```
+
+where the arguments are:
+
+*   `direct_swift_infos`: A list of `SwiftInfo` providers from dependencies
+    whose direct modules should be treated as direct modules in the resulting
+    provider, in addition to their transitive modules being merged.
+*   `modules`: A list of values (as returned by `create_swift_module_context`)
+    that represent Clang and/or Swift module artifacts that are direct outputs
+    of the target being built.
+*   `swift_infos`: A list of `SwiftInfo` providers from dependencies whose
+    transitive modules should be merged into the resulting provider.
+
+When reading an existing `SwiftInfo` provider, it has the two fields described
+below.
+
+**FIELDS**
+
+
+| Name  | Description |
+| :------------- | :------------- |
+| <a id="swift_common.create_swift_info-direct_modules"></a>direct_modules |  `List` of values returned from `create_swift_module_context`. The modules (both Swift and C/Objective-C) emitted by the library that propagated this provider.    |
+| <a id="swift_common.create_swift_info-transitive_modules"></a>transitive_modules |  `Depset` of values returned from `create_swift_module_context`. The transitive modules (both Swift and C/Objective-C) emitted by the library that propagated this provider and all of its dependencies.    |
+
+
 <a id="swift_common.cc_feature_configuration"></a>
 
 ## swift_common.cc_feature_configuration
@@ -127,7 +172,7 @@ Compiles a Swift module.
 A `struct` with the following fields:
 
   *   `module_context`: A Swift module context (as returned by
-      `swift_common.create_module`) that contains the Swift (and
+      `create_swift_module_context`) that contains the Swift (and
       potentially C/Objective-C) compilation prerequisites of the compiled
       module. This should typically be propagated by a `SwiftInfo`
       provider of the calling rule, and the `CcCompilationContext` inside
@@ -188,7 +233,7 @@ Compiles a Swift module interface.
 
 **RETURNS**
 
-A Swift module context (as returned by `swift_common.create_module`)
+A Swift module context (as returned by `create_swift_module_context`)
   that contains the Swift (and potentially C/Objective-C) compilation
   prerequisites of the compiled module. This should typically be
   propagated by a `SwiftInfo` provider of the calling rule, and the
@@ -253,9 +298,7 @@ Creates a value representing a Clang module used as a Swift dependency.
 
 **RETURNS**
 
-A `struct` containing the `compilation_context`, `module_map`,
-  `precompiled_module`, and `strict_includes` fields provided as
-  arguments.
+A `struct` containing the values provided as arguments.
 
 
 <a id="swift_common.create_compilation_context"></a>
@@ -275,7 +318,7 @@ Cretes a compilation context for a Swift target.
 | :------------- | :------------- | :------------- |
 | <a id="swift_common.create_compilation_context-defines"></a>defines |  A list of defines   |  none |
 | <a id="swift_common.create_compilation_context-srcs"></a>srcs |  A list of Swift source files used to compile the target.   |  none |
-| <a id="swift_common.create_compilation_context-transitive_modules"></a>transitive_modules |  A list of modules (as returned by `swift_common.create_module`) from the transitive dependencies of the target.   |  none |
+| <a id="swift_common.create_compilation_context-transitive_modules"></a>transitive_modules |  A list of modules (as returned by `create_swift_module_context`) from the transitive dependencies of the target.   |  none |
 
 **RETURNS**
 
@@ -374,51 +417,15 @@ the set of transitive module names that are propagated by dependencies
 | Name  | Description | Default Value |
 | :------------- | :------------- | :------------- |
 | <a id="swift_common.create_module-name"></a>name |  The name of the module.   |  none |
-| <a id="swift_common.create_module-clang"></a>clang |  A value returned by `swift_common.create_clang_module` that contains artifacts related to Clang modules, such as a module map or precompiled module. This may be `None` if the module is a pure Swift module with no generated Objective-C interface.   |  `None` |
+| <a id="swift_common.create_module-clang"></a>clang |  A value returned by `create_clang_module_inputs` that contains artifacts related to Clang modules, such as a module map or precompiled module. This may be `None` if the module is a pure Swift module with no generated Objective-C interface.   |  `None` |
 | <a id="swift_common.create_module-const_gather_protocols"></a>const_gather_protocols |  A list of protocol names from which constant values should be extracted from source code that takes this module as a *direct* dependency.   |  `[]` |
 | <a id="swift_common.create_module-compilation_context"></a>compilation_context |  A value returned from `swift_common.create_compilation_context` that contains the context needed to compile the module being built. This may be `None` if the module wasn't compiled from sources.   |  `None` |
 | <a id="swift_common.create_module-is_system"></a>is_system |  Indicates whether the module is a system module. The default value is `False`. System modules differ slightly from non-system modules in the way that they are passed to the compiler. For example, non-system modules have their Clang module maps passed to the compiler in both implicit and explicit module builds. System modules, on the other hand, do not have their module maps passed to the compiler in implicit module builds because there is currently no way to indicate that modules declared in a file passed via `-fmodule-map-file` should be treated as system modules even if they aren't declared with the `[system]` attribute, and some system modules may not build cleanly with respect to warnings otherwise. Therefore, it is assumed that any module with `is_system == True` must be able to be found using import search paths in order for implicit module builds to succeed.   |  `False` |
-| <a id="swift_common.create_module-swift"></a>swift |  A value returned by `swift_common.create_swift_module` that contains artifacts related to Swift modules, such as the `.swiftmodule`, `.swiftdoc`, and/or `.swiftinterface` files emitted by the compiler. This may be `None` if the module is a pure C/Objective-C module.   |  `None` |
+| <a id="swift_common.create_module-swift"></a>swift |  A value returned by `create_swift_module_inputs` that contains artifacts related to Swift modules, such as the `.swiftmodule`, `.swiftdoc`, and/or `.swiftinterface` files emitted by the compiler. This may be `None` if the module is a pure C/Objective-C module.   |  `None` |
 
 **RETURNS**
 
-A `struct` containing the `name`, `clang`, `is_system`, and `swift`
-  fields provided as arguments.
-
-
-<a id="swift_common.create_swift_info"></a>
-
-## swift_common.create_swift_info
-
-<pre>
-swift_common.create_swift_info(<a href="#swift_common.create_swift_info-direct_swift_infos">direct_swift_infos</a>, <a href="#swift_common.create_swift_info-modules">modules</a>, <a href="#swift_common.create_swift_info-swift_infos">swift_infos</a>)
-</pre>
-
-Creates a new `SwiftInfo` provider with the given values.
-
-This function is recommended instead of directly creating a `SwiftInfo`
-provider because it encodes reasonable defaults for fields that some rules
-may not be interested in and ensures that the direct and transitive fields
-are set consistently.
-
-This function can also be used to do a simple merge of `SwiftInfo`
-providers, by leaving the `modules` argument unspecified. In that case, the
-returned provider will not represent a true Swift module; it is merely a
-"collector" for other dependencies.
-
-
-**PARAMETERS**
-
-
-| Name  | Description | Default Value |
-| :------------- | :------------- | :------------- |
-| <a id="swift_common.create_swift_info-direct_swift_infos"></a>direct_swift_infos |  A list of `SwiftInfo` providers from dependencies whose direct modules should be treated as direct modules in the resulting provider, in addition to their transitive modules being merged.   |  `[]` |
-| <a id="swift_common.create_swift_info-modules"></a>modules |  A list of values (as returned by `swift_common.create_module`) that represent Clang and/or Swift module artifacts that are direct outputs of the target being built.   |  `[]` |
-| <a id="swift_common.create_swift_info-swift_infos"></a>swift_infos |  A list of `SwiftInfo` providers from dependencies whose transitive modules should be merged into the resulting provider.   |  `[]` |
-
-**RETURNS**
-
-A new `SwiftInfo` provider with the given values.
+A `struct` containing the given values provided as arguments.
 
 
 <a id="swift_common.create_swift_interop_info"></a>
@@ -507,9 +514,7 @@ Creates a value representing a Swift module use as a Swift dependency.
 
 **RETURNS**
 
-A `struct` containing the `ast_files`, `defines`, `indexstore,
-  `swiftdoc`, `swiftmodule`, and `swiftinterface` fields
-  provided as arguments.
+A `struct` containing the values provided as arguments.
 
 
 <a id="swift_common.derive_module_name"></a>

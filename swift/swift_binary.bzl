@@ -39,7 +39,12 @@ load(
     "include_developer_search_paths",
 )
 load(":module_name.bzl", "derive_swift_module_name")
-load(":providers.bzl", "SwiftCompilerPluginInfo", "SwiftInfo")
+load(
+    ":providers.bzl",
+    "SwiftCompilerPluginInfo",
+    "SwiftInfo",
+    "create_swift_module_context",
+)
 load(":swift_common.bzl", "swift_common")
 
 def _maybe_parse_as_library_copts(srcs):
@@ -172,9 +177,9 @@ def _swift_binary_impl(ctx):
             ),
         ),
         OutputGroupInfo(**output_groups),
-        swift_common.create_swift_info(
+        SwiftInfo(
             modules = [
-                swift_common.create_module(
+                create_swift_module_context(
                     name = module_context.name,
                     compilation_context = module_context.compilation_context,
                     # The rest of the fields are intentionally ommited, as we

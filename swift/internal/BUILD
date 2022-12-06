@@ -85,10 +85,10 @@ bzl_library(
         ":feature_names",
         ":features",
         ":module_maps",
-        ":providers",
         ":utils",
         ":vfsoverlay",
         ":wmo",
+        "//swift:providers",
         "@bazel_skylib//lib:paths",
         "@bazel_skylib//lib:sets",
     ],
@@ -203,11 +203,7 @@ bzl_library(
     name = "providers",
     srcs = ["providers.bzl"],
     visibility = [
-        "//mixed_language:__subpackages__",
         "//swift:__subpackages__",
-    ],
-    deps = [
-        "//swift:providers.bzl",
     ],
 )
 
@@ -249,8 +245,8 @@ bzl_library(
     deps = [
         ":action_names",
         ":actions",
-        ":providers",
         ":utils",
+        "//swift:providers",
     ],
 )
 

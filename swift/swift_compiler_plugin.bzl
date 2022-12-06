@@ -183,7 +183,7 @@ def _swift_compiler_plugin_impl(ctx):
             ),
             executable = binary_linking_outputs.executable,
             module_names = depset([module_name]),
-            swift_info = swift_common.create_swift_info(
+            swift_info = SwiftInfo(
                 modules = [module_context],
             ),
         ),
@@ -316,7 +316,7 @@ def _universal_swift_compiler_plugin_impl(ctx):
             cc_info = cc_common.merge_cc_infos(cc_infos = cc_infos),
             executable = output,
             module_names = depset([module_name]),
-            swift_info = swift_common.create_swift_info(
+            swift_info = SwiftInfo(
                 modules = direct_swift_modules,
                 swift_infos = swift_infos,
             ),

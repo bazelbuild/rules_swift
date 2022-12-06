@@ -15,7 +15,6 @@
 """Implementation of the `swift_library_group` rule."""
 
 load("//swift/internal:attrs.bzl", "swift_deps_attr")
-load("//swift/internal:providers.bzl", "create_swift_info")
 load("//swift/internal:utils.bzl", "get_providers")
 load(":providers.bzl", "SwiftInfo")
 load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
@@ -32,7 +31,7 @@ def _swift_library_group_impl(ctx):
             ctx,
             dependency_attributes = ["deps"],
         ),
-        create_swift_info(
+        SwiftInfo(
             swift_infos = get_providers(deps, SwiftInfo),
         ),
         # Propagate an `apple_common.Objc` provider with linking info about the

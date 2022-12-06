@@ -366,7 +366,7 @@ def compile_swift_protos_for_target(
     )
 
     # Create the direct swift info provider:
-    direct_swift_info = swift_common.create_swift_info(
+    direct_swift_info = SwiftInfo(
         modules = [module_context],
         swift_infos = transitive_swift_infos,
     )

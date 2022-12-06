@@ -49,6 +49,7 @@ load(
     "SwiftCompilerPluginInfo",
     "SwiftInfo",
     "SwiftSymbolGraphInfo",
+    "create_swift_module_context",
 )
 load(":swift_common.bzl", "swift_common")
 
@@ -428,7 +429,7 @@ def _swift_test_impl(ctx):
         compilation_outputs = compile_result.compilation_outputs
         all_supplemental_outputs.append(compile_result.supplemental_outputs)
 
-        swift_infos_including_owner = [swift_common.create_swift_info(
+        swift_infos_including_owner = [SwiftInfo(
             modules = [compile_result.module_context],
             swift_infos = deps_swift_infos,
         )]
@@ -590,9 +591,9 @@ def _swift_test_impl(ctx):
             extensions = ["swift"],
             source_attributes = ["srcs"],
         ),
-        swift_common.create_swift_info(
+        SwiftInfo(
             modules = [
-                swift_common.create_module(
+                create_swift_module_context(
                     name = module_context.name,
                     compilation_context = module_context.compilation_context,
                     # The rest of the fields are intentionally ommited, as we
