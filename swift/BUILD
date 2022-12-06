@@ -61,6 +61,7 @@ bzl_library(
     deps = [
         ":module_name",
         ":providers",
+        ":swift_interop_info",
         "//swift/internal:attrs",
         "//swift/internal:compiling",
         "//swift/internal:features",
@@ -130,6 +131,14 @@ bzl_library(
 bzl_library(
     name = "swift_interop_hint",
     srcs = ["swift_interop_hint.bzl"],
+    deps = [
+        ":swift_interop_info",
+    ],
+)
+
+bzl_library(
+    name = "swift_interop_info",
+    srcs = ["swift_interop_info.bzl"],
     deps = [
         "//swift/internal:swift_interop_info",
     ],

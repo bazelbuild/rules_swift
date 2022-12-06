@@ -14,10 +14,7 @@
 
 """Implementation of the `swift_interop_hint` rule."""
 
-load(
-    "@build_bazel_rules_swift//swift/internal:swift_interop_info.bzl",
-    "create_swift_interop_info",
-)
+load(":swift_interop_info.bzl", "create_swift_interop_info")
 
 def _swift_interop_hint_impl(ctx):
     # TODO(b/194733180): Take advantage of the richer API to add support for
