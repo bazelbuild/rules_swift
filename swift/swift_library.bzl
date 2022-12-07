@@ -17,24 +17,38 @@
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:sets.bzl", "sets")
 load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
-load("//swift/internal:attrs.bzl", "swift_deps_attr")
+load(
+    "//swift/internal:attrs.bzl",
+    "swift_deps_attr",
+    "swift_library_rule_attrs",
+)
 load(
     "//swift/internal:build_settings.bzl",
     "PerModuleSwiftCoptSettingInfo",
     "additional_per_module_swiftcopts",
 )
+load("//swift/internal:compiling.bzl", "compile")
 load(
     "//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
 )
-load("//swift/internal:linking.bzl", "new_objc_provider")
+load("//swift/internal:features.bzl", "configure_features")
+load(
+    "//swift/internal:linking.bzl",
+    "create_linking_context_from_compilation_outputs",
+    "new_objc_provider",
+)
 load(
     "//swift/internal:output_groups.bzl",
     "supplemental_compilation_output_groups",
 )
-load("//swift/internal:toolchain_utils.bzl", "use_swift_toolchain")
+load(
+    "//swift/internal:toolchain_utils.bzl",
+    "get_swift_toolchain",
+    "use_swift_toolchain",
+)
 load(
     "//swift/internal:utils.bzl",
     "compact",
@@ -46,7 +60,6 @@ load(
 load(":module_name.bzl", "derive_swift_module_name")
 load(":providers.bzl", "SwiftCompilerPluginInfo", "SwiftInfo")
 load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
-load(":swift_common.bzl", "swift_common")
 
 def _maybe_parse_as_library_copts(srcs):
     """Returns a list of compiler flags depending on `main.swift`'s presence.
@@ -142,8 +155,8 @@ def _swift_library_impl(ctx):
     if not module_name:
         module_name = derive_swift_module_name(ctx.label)
 
-    swift_toolchain = swift_common.get_toolchain(ctx)
-    feature_configuration = swift_common.configure_features(
+    swift_toolchain = get_swift_toolchain(ctx)
+    feature_configuration = configure_features(
         ctx = ctx,
         requested_features = ctx.features + extra_features,
         swift_toolchain = swift_toolchain,
@@ -173,7 +186,7 @@ def _swift_library_impl(ctx):
 
     include_dev_srch_paths = include_developer_search_paths(ctx.attr)
 
-    compile_result = swift_common.compile(
+    compile_result = compile(
         actions = ctx.actions,
         additional_inputs = additional_inputs,
         cc_infos = get_providers(ctx.attr.deps, CcInfo),
@@ -199,7 +212,7 @@ def _swift_library_impl(ctx):
     supplemental_outputs = compile_result.supplemental_outputs
 
     linking_context, linking_output = (
-        swift_common.create_linking_context_from_compilation_outputs(
+        create_linking_context_from_compilation_outputs(
             actions = ctx.actions,
             additional_inputs = additional_inputs,
             alwayslink = ctx.attr.alwayslink,
@@ -291,7 +304,7 @@ def _swift_library_impl(ctx):
 
 swift_library = rule(
     attrs = dicts.add(
-        swift_common.library_rule_attrs(additional_deps_aspects = [
+        swift_library_rule_attrs(additional_deps_aspects = [
             swift_clang_module_aspect,
         ]),
         {

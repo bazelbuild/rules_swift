@@ -105,7 +105,7 @@ def should_embed_swiftmodule_for_debugging(
 
     Args:
         feature_configuration: The Swift feature configuration.
-        module_context: The module context returned by `swift_common.compile`.
+        module_context: The module context returned by `compile`.
 
     Returns:
         True if the `.swiftmodule` should be embedded by the linker for

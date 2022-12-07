@@ -185,9 +185,9 @@ def _create_autolink_linking_context(
         actions: The context's `actions` object.
         compilation_outputs: A `CcCompilationOutputs` value containing the
             object files to link. Typically, this is the second tuple element in
-            the value returned by `swift_common.compile`.
+            the value returned by `compile`.
         feature_configuration: A feature configuration obtained from
-            `swift_common.configure_features`.
+            `configure_features`.
         label: The `Label` of the target being built. This is used as the owner
             of the linker inputs created for post-compile actions (if any).
         name: The name of the target being linked, which is used to derive the
@@ -238,13 +238,13 @@ def _create_embedded_debugging_linking_context(
     Args:
         actions: The context's `actions` object.
         feature_configuration: A feature configuration obtained from
-            `swift_common.configure_features`.
+            `configure_features`.
         label: The `Label` of the target being built. This is used as the owner
             of the linker inputs created for post-compile actions (if any).
-        module_context: The module context returned by `swift_common.compile`
+        module_context: The module context returned by `compile`
             containing information about the Swift module that was compiled.
             Typically, this is the first tuple element in the value returned by
-            `swift_common.compile`.
+            `compile`.
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
 
     Returns:
@@ -307,9 +307,9 @@ def create_linking_context_from_compilation_outputs(
             even if some contain no symbols referenced by the binary.
         compilation_outputs: A `CcCompilationOutputs` value containing the
             object files to link. Typically, this is the second tuple element in
-            the value returned by `swift_common.compile`.
+            the value returned by `compile`.
         feature_configuration: A feature configuration obtained from
-            `swift_common.configure_features`.
+            `configure_features`.
         is_test: Deprecated. This argument will be removed in the next major
             release. Use the `include_dev_srch_paths` attribute instead.
             Represents if the `testonly` value of the context.
@@ -324,10 +324,9 @@ def create_linking_context_from_compilation_outputs(
         name: A string that is used to derive the name of the library or
             libraries linked by this function. If this is not provided or is a
             falsy value, the name component of the `label` argument is used.
-        module_context: The module context returned by `swift_common.compile`
-            containing information about the Swift module that was compiled.
-            Typically, this is the first tuple element in the value returned by
-            `swift_common.compile`.
+        module_context: The module context returned by `compile` containing
+            information about the Swift module that was compiled. Typically,
+            this is the first tuple element in the value returned by `compile`.
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
         user_link_flags: A `list` of strings containing additional flags that
             will be passed to the linker for any binary that links with the
@@ -486,7 +485,7 @@ def new_objc_provider(
             `LibraryToLink` objects from which the static archives (`.a` files)
             containing the target's compiled code will be retrieved.
         module_context: The module context as returned by
-            `swift_common.compile`.
+            `compile`.
         user_link_flags: Linker options that should be propagated to dependents.
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
 

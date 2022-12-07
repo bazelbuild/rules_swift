@@ -20,8 +20,18 @@ load(
     "swift_common_rule_attrs",
     "swift_toolchain_attrs",
 )
+load("//swift/internal:compiling.bzl", "compile_module_interface")
+load(
+    "//swift/internal:features.bzl",
+    "configure_features",
+    "get_cc_feature_configuration",
+)
 load("//swift/internal:linking.bzl", "new_objc_provider")
-load("//swift/internal:toolchain_utils.bzl", "use_swift_toolchain")
+load(
+    "//swift/internal:toolchain_utils.bzl",
+    "get_swift_toolchain",
+    "use_swift_toolchain",
+)
 load(
     "//swift/internal:utils.bzl",
     "compact",
@@ -35,7 +45,6 @@ load(
     "create_swift_module_context",
     "create_swift_module_inputs",
 )
-load(":swift_common.bzl", "swift_common")
 
 def _swift_import_impl(ctx):
     archives = ctx.files.archives
@@ -44,8 +53,8 @@ def _swift_import_impl(ctx):
     swiftinterface = ctx.file.swiftinterface
     swiftmodule = ctx.file.swiftmodule
 
-    swift_toolchain = swift_common.get_toolchain(ctx)
-    feature_configuration = swift_common.configure_features(
+    swift_toolchain = get_swift_toolchain(ctx)
+    feature_configuration = configure_features(
         ctx = ctx,
         swift_toolchain = swift_toolchain,
         requested_features = ctx.features,
@@ -60,8 +69,8 @@ def _swift_import_impl(ctx):
         fail("'swiftinterface' may not be specified when " +
              "'swiftmodule' is specified.")
 
-    swift_toolchain = swift_common.get_toolchain(ctx)
-    feature_configuration = swift_common.configure_features(
+    swift_toolchain = get_swift_toolchain(ctx)
+    feature_configuration = configure_features(
         ctx = ctx,
         swift_toolchain = swift_toolchain,
         requested_features = ctx.features,
@@ -73,7 +82,7 @@ def _swift_import_impl(ctx):
             actions = ctx.actions,
             alwayslink = True,
             cc_toolchain = swift_toolchain.cc_toolchain_info,
-            feature_configuration = swift_common.cc_feature_configuration(
+            feature_configuration = get_cc_feature_configuration(
                 feature_configuration,
             ),
             static_library = archive,
@@ -95,7 +104,7 @@ def _swift_import_impl(ctx):
     swift_infos = get_providers(deps, SwiftInfo)
 
     if swiftinterface:
-        module_context = swift_common.compile_module_interface(
+        module_context = compile_module_interface(
             actions = ctx.actions,
             compilation_contexts = get_compilation_contexts(ctx.attr.deps),
             feature_configuration = feature_configuration,

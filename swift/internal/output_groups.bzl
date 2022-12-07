@@ -24,7 +24,7 @@ def supplemental_compilation_output_groups(*supplemental_outputs):
 
     Args:
         *supplemental_outputs: Zero or more supplemental outputs `struct`s
-            returned from calls to `swift_common.compile`.
+            returned from calls to `compile`.
 
     Returns:
         A dictionary whose keys are output group names and whose values are

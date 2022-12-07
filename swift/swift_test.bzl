@@ -16,11 +16,13 @@
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("//swift/internal:compiling.bzl", "compile")
 load("//swift/internal:env_expansion.bzl", "expanded_env")
 load(
     "//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT",
 )
+load("//swift/internal:features.bzl", "is_feature_enabled")
 load(
     "//swift/internal:linking.bzl",
     "binary_rule_attrs",
@@ -36,7 +38,12 @@ load(
     "//swift/internal:swift_symbol_graph_aspect.bzl",
     "make_swift_symbol_graph_aspect",
 )
-load("//swift/internal:toolchain_utils.bzl", "use_swift_toolchain")
+load("//swift/internal:symbol_graph_extracting.bzl", "extract_symbol_graph")
+load(
+    "//swift/internal:toolchain_utils.bzl",
+    "get_swift_toolchain",
+    "use_swift_toolchain",
+)
 load(
     "//swift/internal:utils.bzl",
     "expand_locations",
@@ -51,7 +58,6 @@ load(
     "SwiftSymbolGraphInfo",
     "create_swift_module_context",
 )
-load(":swift_common.bzl", "swift_common")
 
 _test_discovery_symbol_graph_aspect = make_swift_symbol_graph_aspect(
     default_emit_extension_block_symbols = "0",
@@ -294,9 +300,9 @@ def _do_compile(
              outputs.
 
     Returns:
-        The same value as would be returned by `swift_common.compile`.
+        The same value as would be returned by `compile`.
     """
-    return swift_common.compile(
+    return compile(
         actions = ctx.actions,
         additional_inputs = ctx.files.swiftc_inputs,
         cc_infos = cc_infos,
@@ -319,7 +325,7 @@ def _do_compile(
     )
 
 def _swift_test_impl(ctx):
-    swift_toolchain = swift_common.get_toolchain(ctx)
+    swift_toolchain = get_swift_toolchain(ctx)
 
     feature_configuration = configure_features_for_binary(
         ctx = ctx,
@@ -336,8 +342,8 @@ def _swift_test_impl(ctx):
     # Mach-O type `MH_BUNDLE` instead of `MH_EXECUTE`.
     extra_linkopts = ["-Wl,-bundle"] if is_bundled else []
 
-    # `swift_common.is_enabled` isn't used, as it requires the prefix of the
-    # feature to start with `swift.`
+    # `is_feature_enabled` isn't used, as it requires the prefix of the feature
+    # to start with `swift.`
     swizzle_absolute_xcttestsourcelocation = (
         "apple.swizzle_absolute_xcttestsourcelocation" in
         feature_configuration._enabled_features
@@ -441,7 +447,7 @@ def _swift_test_impl(ctx):
             owner_symbol_graph_dir = ctx.actions.declare_directory(
                 "{}.symbolgraphs".format(ctx.label.name),
             )
-            swift_common.extract_symbol_graph(
+            extract_symbol_graph(
                 actions = ctx.actions,
                 compilation_contexts = deps_compilation_contexts,
                 feature_configuration = feature_configuration,
@@ -511,7 +517,7 @@ def _swift_test_impl(ctx):
         additional_debug_outputs = []
         variables_extension = {}
 
-    if swift_common.is_enabled(
+    if is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT,
     ):

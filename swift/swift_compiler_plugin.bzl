@@ -25,6 +25,7 @@ load(
     "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT",
 )
+load("//swift/internal:compiling.bzl", "compile")
 load("//swift/internal:features.bzl", "is_feature_enabled")
 load(
     "//swift/internal:linking.bzl",
@@ -38,7 +39,11 @@ load(
     "//swift/internal:output_groups.bzl",
     "supplemental_compilation_output_groups",
 )
-load("//swift/internal:toolchain_utils.bzl", "use_swift_toolchain")
+load(
+    "//swift/internal:toolchain_utils.bzl",
+    "get_swift_toolchain",
+    "use_swift_toolchain",
+)
 load(
     "//swift/internal:utils.bzl",
     "expand_locations",
@@ -46,10 +51,9 @@ load(
 )
 load(":module_name.bzl", "derive_swift_module_name")
 load(":providers.bzl", "SwiftCompilerPluginInfo", "SwiftInfo")
-load(":swift_common.bzl", "swift_common")
 
 def _swift_compiler_plugin_impl(ctx):
-    swift_toolchain = swift_common.get_toolchain(ctx)
+    swift_toolchain = get_swift_toolchain(ctx)
 
     feature_configuration = configure_features_for_binary(
         ctx = ctx,
@@ -70,7 +74,7 @@ def _swift_compiler_plugin_impl(ctx):
         module_name = derive_swift_module_name(ctx.label)
     entry_point_function_name = "{}_main".format(module_name)
 
-    compile_result = swift_common.compile(
+    compile_result = compile(
         actions = ctx.actions,
         additional_inputs = ctx.files.swiftc_inputs,
         cc_infos = get_providers(deps, CcInfo),
