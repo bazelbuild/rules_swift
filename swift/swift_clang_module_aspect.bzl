@@ -602,9 +602,9 @@ def _find_swift_interop_info(target, aspect_ctx):
 
     This function first looks at the target itself to determine if it propagated
     a `SwiftInteropInfo` provider directly (that is, its rule implementation
-    function called `swift_common.create_swift_interop_info`). If it did not,
-    then the target's `aspect_hints` attribute is checked for a reference to a
-    target that propagates `SwiftInteropInfo` (such as `swift_interop_hint`).
+    function called `create_swift_interop_info`). If it did not, then the
+    target's `aspect_hints` attribute is checked for a reference to a target
+    that propagates `SwiftInteropInfo` (such as `swift_interop_hint`).
 
     It is an error if `aspect_hints` contains two or more targets that propagate
     `SwiftInteropInfo`, or if the target directly propagates the provider and
@@ -759,11 +759,10 @@ a non-Swift target in the build graph (for example, a `swift_library` that
 depends on an `objc_library` that depends on a `swift_library`).
 
 It also manages module map generation for targets that call
-`swift_common.create_swift_interop_info` and do not provide their own module
-map, and for targets that use the `swift_interop_hint` aspect hint. Note that if
-one of these approaches is used to interop with a target such as a `cc_library`,
-the headers must be parsable as C, since Swift does not support C++ interop at
-this time.
+`create_swift_interop_info` and do not provide their own module map, and for
+targets that use the `swift_interop_hint` aspect hint. Note that if one of these
+approaches is used to interop with a target such as a `cc_library`, the headers
+must be parsable as C, since Swift does not support C++ interop at this time.
 
 Most users will not need to interact directly with this aspect, since it is
 automatically applied to the `deps` attribute of all `swift_binary`,
