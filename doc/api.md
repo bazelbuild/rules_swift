@@ -64,7 +64,7 @@ Returns the C++ feature configuration in a Swift feature configuration.
 
 | Name  | Description | Default Value |
 | :------------- | :------------- | :------------- |
-| <a id="swift_common.cc_feature_configuration-feature_configuration"></a>feature_configuration |  The Swift feature configuration, as returned from `swift_common.configure_features`.   |  none |
+| <a id="swift_common.cc_feature_configuration-feature_configuration"></a>feature_configuration |  The Swift feature configuration, as returned from `configure_features`.   |  none |
 
 **RETURNS**
 
@@ -152,7 +152,7 @@ Compiles a Swift module.
 | <a id="swift_common.compile-defines"></a>defines |  Symbols that should be defined by passing `-D` to the compiler.   |  `[]` |
 | <a id="swift_common.compile-exec_group"></a>exec_group |  Runs the Swift compilation action under the given execution group's context. If `None`, the default execution group is used.   |  `None` |
 | <a id="swift_common.compile-extra_swift_infos"></a>extra_swift_infos |  Extra `SwiftInfo` providers that aren't contained by the `deps` of the target being compiled but are required for compilation.   |  `[]` |
-| <a id="swift_common.compile-feature_configuration"></a>feature_configuration |  A feature configuration obtained from `swift_common.configure_features`.   |  none |
+| <a id="swift_common.compile-feature_configuration"></a>feature_configuration |  A feature configuration obtained from `configure_features`.   |  none |
 | <a id="swift_common.compile-generated_header_name"></a>generated_header_name |  The name of the Objective-C generated header that should be generated for this module. If omitted, no header will be generated.   |  `None` |
 | <a id="swift_common.compile-is_test"></a>is_test |  Deprecated. This argument will be removed in the next major release. Use the `include_dev_srch_paths` attribute instead. Represents if the `testonly` value of the context.   |  `None` |
 | <a id="swift_common.compile-include_dev_srch_paths"></a>include_dev_srch_paths |  A `bool` that indicates whether the developer framework search paths will be added to the compilation command.   |  `None` |
@@ -224,7 +224,7 @@ Compiles a Swift module interface.
 | <a id="swift_common.compile_module_interface-compilation_contexts"></a>compilation_contexts |  A list of `CcCompilationContext`s that represent C/Objective-C requirements of the target being compiled, such as Swift-compatible preprocessor defines, header search paths, and so forth. These are typically retrieved from the `CcInfo` providers of a target's dependencies.   |  none |
 | <a id="swift_common.compile_module_interface-copts"></a>copts |  A list of compiler flags that apply to the target being built.   |  `[]` |
 | <a id="swift_common.compile_module_interface-exec_group"></a>exec_group |  Runs the Swift compilation action under the given execution group's context. If `None`, the default execution group is used.   |  `None` |
-| <a id="swift_common.compile_module_interface-feature_configuration"></a>feature_configuration |  A feature configuration obtained from `swift_common.configure_features`.   |  none |
+| <a id="swift_common.compile_module_interface-feature_configuration"></a>feature_configuration |  A feature configuration obtained from `configure_features`.   |  none |
 | <a id="swift_common.compile_module_interface-module_name"></a>module_name |  The name of the Swift module being compiled. This must be present and valid; use `derive_swift_module_name` to generate a default from the target's label if needed.   |  none |
 | <a id="swift_common.compile_module_interface-swiftinterface_file"></a>swiftinterface_file |  The Swift module interface file to compile.   |  none |
 | <a id="swift_common.compile_module_interface-swift_infos"></a>swift_infos |  A list of `SwiftInfo` providers from dependencies of the target being compiled.   |  none |
@@ -255,7 +255,7 @@ This function calls through to `cc_common.configure_features` to configure
 underlying C++ features as well, and nests the C++ feature configuration
 inside the Swift one. Users who need to call C++ APIs that require a feature
 configuration can extract it by calling
-`swift_common.cc_feature_configuration(feature_configuration)`.
+`get_cc_feature_configuration(feature_configuration)`.
 
 
 **PARAMETERS**
@@ -365,13 +365,13 @@ command line parameters file, those actions will be created here.
 | <a id="swift_common.create_linking_context_from_compilation_outputs-actions"></a>actions |  The context's `actions` object.   |  none |
 | <a id="swift_common.create_linking_context_from_compilation_outputs-additional_inputs"></a>additional_inputs |  A `list` of `File`s containing any additional files that are referenced by `user_link_flags` and therefore need to be propagated up to the linker.   |  `[]` |
 | <a id="swift_common.create_linking_context_from_compilation_outputs-alwayslink"></a>alwayslink |  If True, any binary that depends on the providers returned by this function will link in all of the library's object files, even if some contain no symbols referenced by the binary.   |  `False` |
-| <a id="swift_common.create_linking_context_from_compilation_outputs-compilation_outputs"></a>compilation_outputs |  A `CcCompilationOutputs` value containing the object files to link. Typically, this is the second tuple element in the value returned by `swift_common.compile`.   |  none |
-| <a id="swift_common.create_linking_context_from_compilation_outputs-feature_configuration"></a>feature_configuration |  A feature configuration obtained from `swift_common.configure_features`.   |  none |
+| <a id="swift_common.create_linking_context_from_compilation_outputs-compilation_outputs"></a>compilation_outputs |  A `CcCompilationOutputs` value containing the object files to link. Typically, this is the second tuple element in the value returned by `compile`.   |  none |
+| <a id="swift_common.create_linking_context_from_compilation_outputs-feature_configuration"></a>feature_configuration |  A feature configuration obtained from `configure_features`.   |  none |
 | <a id="swift_common.create_linking_context_from_compilation_outputs-is_test"></a>is_test |  Deprecated. This argument will be removed in the next major release. Use the `include_dev_srch_paths` attribute instead. Represents if the `testonly` value of the context.   |  `None` |
 | <a id="swift_common.create_linking_context_from_compilation_outputs-include_dev_srch_paths"></a>include_dev_srch_paths |  A `bool` that indicates whether the developer framework search paths will be added to the compilation command.   |  `None` |
 | <a id="swift_common.create_linking_context_from_compilation_outputs-label"></a>label |  The `Label` of the target being built. This is used as the owner of the linker inputs created for post-compile actions (if any), and the label's name component also determines the name of the artifact unless it is overridden by the `name` argument.   |  none |
 | <a id="swift_common.create_linking_context_from_compilation_outputs-linking_contexts"></a>linking_contexts |  A `list` of `CcLinkingContext`s containing libraries from dependencies.   |  `[]` |
-| <a id="swift_common.create_linking_context_from_compilation_outputs-module_context"></a>module_context |  The module context returned by `swift_common.compile` containing information about the Swift module that was compiled. Typically, this is the first tuple element in the value returned by `swift_common.compile`.   |  none |
+| <a id="swift_common.create_linking_context_from_compilation_outputs-module_context"></a>module_context |  The module context returned by `compile` containing information about the Swift module that was compiled. Typically, this is the first tuple element in the value returned by `compile`.   |  none |
 | <a id="swift_common.create_linking_context_from_compilation_outputs-name"></a>name |  A string that is used to derive the name of the library or libraries linked by this function. If this is not provided or is a falsy value, the name component of the `label` argument is used.   |  `None` |
 | <a id="swift_common.create_linking_context_from_compilation_outputs-swift_toolchain"></a>swift_toolchain |  The `SwiftToolchainInfo` provider of the toolchain.   |  none |
 | <a id="swift_common.create_linking_context_from_compilation_outputs-user_link_flags"></a>user_link_flags |  A `list` of strings containing additional flags that will be passed to the linker for any binary that links with the returned linking context.   |  `[]` |
@@ -635,7 +635,7 @@ check it.
 
 | Name  | Description | Default Value |
 | :------------- | :------------- | :------------- |
-| <a id="swift_common.is_enabled-feature_configuration"></a>feature_configuration |  The Swift feature configuration, as returned by `swift_common.configure_features`.   |  none |
+| <a id="swift_common.is_enabled-feature_configuration"></a>feature_configuration |  The Swift feature configuration, as returned by `configure_features`.   |  none |
 | <a id="swift_common.is_enabled-feature_name"></a>feature_name |  The name of the feature to check.   |  none |
 
 **RETURNS**
@@ -714,7 +714,7 @@ Precompiles an explicit Clang module that is compatible with Swift.
 | <a id="swift_common.precompile_clang_module-actions"></a>actions |  The context's `actions` object.   |  none |
 | <a id="swift_common.precompile_clang_module-cc_compilation_context"></a>cc_compilation_context |  A `CcCompilationContext` that contains headers and other information needed to compile this module. This compilation context should contain all headers required to compile the module, which includes the headers for the module itself *and* any others that must be present on the file system/in the sandbox for compilation to succeed. The latter typically refers to the set of headers of the direct dependencies of the module being compiled, which Clang needs to be physically present before it detects that they belong to one of the precompiled module dependencies.   |  none |
 | <a id="swift_common.precompile_clang_module-exec_group"></a>exec_group |  Runs the Swift compilation action under the given execution group's context. If `None`, the default execution group is used.   |  `None` |
-| <a id="swift_common.precompile_clang_module-feature_configuration"></a>feature_configuration |  A feature configuration obtained from `swift_common.configure_features`.   |  none |
+| <a id="swift_common.precompile_clang_module-feature_configuration"></a>feature_configuration |  A feature configuration obtained from `configure_features`.   |  none |
 | <a id="swift_common.precompile_clang_module-module_map_file"></a>module_map_file |  A textual module map file that defines the Clang module to be compiled.   |  none |
 | <a id="swift_common.precompile_clang_module-module_name"></a>module_name |  The name of the top-level module in the module map that will be compiled.   |  none |
 | <a id="swift_common.precompile_clang_module-swift_toolchain"></a>swift_toolchain |  The `SwiftToolchainInfo` provider of the toolchain.   |  none |
@@ -788,7 +788,7 @@ toolchains if necessary. For example, a rule with multiple toolchain
 dependencies could write:
 
 ```
-toolchains = swift_common.use_toolchain() + [other toolchains...]
+toolchains = use_swift_toolchain() + [other toolchains...]
 ```
 
 

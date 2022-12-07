@@ -49,9 +49,8 @@ def get_swift_toolchain(ctx, *, exec_group = None, attr = "_toolchain"):
     if toolchain_target and platform_common.ToolchainInfo in toolchain_target:
         return toolchain_target[platform_common.ToolchainInfo].swift_toolchain
 
-    fail("To use `swift_common.get_toolchain`, you must declare the " +
-         "toolchain in your rule using " +
-         "`toolchains = swift_common.use_toolchain()`.")
+    fail("To use `get_swift_toolchain`, you must declare the toolchain in " +
+         "your rule using `toolchains = use_swift_toolchain()`.")
 
 def use_swift_toolchain():
     """Returns a list of toolchain types needed to use the Swift toolchain.
@@ -61,7 +60,7 @@ def use_swift_toolchain():
     dependencies could write:
 
     ```
-    toolchains = swift_common.use_toolchain() + [other toolchains...]
+    toolchains = use_swift_toolchain() + [other toolchains...]
     ```
 
     Returns:

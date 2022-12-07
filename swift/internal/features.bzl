@@ -28,7 +28,7 @@ def are_all_features_enabled(feature_configuration, feature_names):
 
     Args:
         feature_configuration: The Swift feature configuration, as returned by
-            `swift_common.configure_features`.
+            `configure_features`.
         feature_names: The list of feature names to check.
 
     Returns:
@@ -55,7 +55,7 @@ def configure_features(
     underlying C++ features as well, and nests the C++ feature configuration
     inside the Swift one. Users who need to call C++ APIs that require a feature
     configuration can extract it by calling
-    `swift_common.cc_feature_configuration(feature_configuration)`.
+    `get_cc_feature_configuration(feature_configuration)`.
 
     Args:
         ctx: The rule context.
@@ -157,7 +157,7 @@ def get_cc_feature_configuration(feature_configuration):
 
     Args:
         feature_configuration: The Swift feature configuration, as returned from
-            `swift_common.configure_features`.
+            `configure_features`.
 
     Returns:
         A C++ `FeatureConfiguration` value (see
@@ -175,7 +175,7 @@ def is_feature_enabled(feature_configuration, feature_name):
 
     Args:
         feature_configuration: The Swift feature configuration, as returned by
-            `swift_common.configure_features`.
+            `configure_features`.
         feature_name: The name of the feature to check.
 
     Returns:

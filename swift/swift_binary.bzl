@@ -16,10 +16,12 @@
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("//swift/internal:compiling.bzl", "compile")
 load(
     "//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT",
 )
+load("//swift/internal:features.bzl", "is_feature_enabled")
 load(
     "//swift/internal:linking.bzl",
     "binary_rule_attrs",
@@ -31,7 +33,11 @@ load(
     "//swift/internal:output_groups.bzl",
     "supplemental_compilation_output_groups",
 )
-load("//swift/internal:toolchain_utils.bzl", "use_swift_toolchain")
+load(
+    "//swift/internal:toolchain_utils.bzl",
+    "get_swift_toolchain",
+    "use_swift_toolchain",
+)
 load(
     "//swift/internal:utils.bzl",
     "expand_locations",
@@ -45,7 +51,6 @@ load(
     "SwiftInfo",
     "create_swift_module_context",
 )
-load(":swift_common.bzl", "swift_common")
 
 def _maybe_parse_as_library_copts(srcs):
     """Returns a list of compiler flags depending on `main.swift`'s presence.
@@ -67,7 +72,7 @@ def _maybe_parse_as_library_copts(srcs):
     return ["-parse-as-library"] if use_parse_as_library else []
 
 def _swift_binary_impl(ctx):
-    swift_toolchain = swift_common.get_toolchain(ctx)
+    swift_toolchain = get_swift_toolchain(ctx)
 
     feature_configuration = configure_features_for_binary(
         ctx = ctx,
@@ -90,7 +95,7 @@ def _swift_binary_impl(ctx):
 
         include_dev_srch_paths = include_developer_search_paths(ctx.attr)
 
-        compile_result = swift_common.compile(
+        compile_result = compile(
             actions = ctx.actions,
             additional_inputs = ctx.files.swiftc_inputs,
             cc_infos = get_providers(ctx.attr.deps, CcInfo),
@@ -134,7 +139,7 @@ def _swift_binary_impl(ctx):
         additional_debug_outputs = []
         variables_extension = {}
 
-    if swift_common.is_enabled(
+    if is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT,
     ):

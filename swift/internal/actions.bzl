@@ -34,7 +34,7 @@ def _apply_action_configs(
         action_name: The name of the action that should be run.
         args: The `Args` object to which command line flags will be added.
         feature_configuration: A feature configuration obtained from
-            `swift_common.configure_features`.
+            `configure_features`.
         prerequisites: An action-specific `struct` whose fields can be accessed
             by the action configurators to add files and other dependent data to
             the command line.
@@ -138,7 +138,7 @@ def run_toolchain_action(
         exec_group: Runs the Swift compilation action under the given execution
             group's context. If `None`, the default execution group is used.
         feature_configuration: A feature configuration obtained from
-            `swift_common.configure_features`.
+            `configure_features`.
         mnemonic: The mnemonic to associate with the action. If not provided,
             the action name itself will be used.
         prerequisites: An action-specific `struct` whose fields can be accessed
