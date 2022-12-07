@@ -15,11 +15,25 @@
 """Implementation of the `swift_module_alias` rule."""
 
 load(
+    "@build_bazel_rules_swift//swift/internal:attrs.bzl",
+    "swift_toolchain_attrs",
+)
+load(
+    "@build_bazel_rules_swift//swift/internal:compiling.bzl",
+    "compile",
+)
+load(
+    "@build_bazel_rules_swift//swift/internal:features.bzl",
+    "configure_features",
+)
+load(
     "@build_bazel_rules_swift//swift/internal:linking.bzl",
+    "create_linking_context_from_compilation_outputs",
     "new_objc_provider",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:toolchain_utils.bzl",
+    "get_swift_toolchain",
     "use_swift_toolchain",
 )
 load(
@@ -31,7 +45,6 @@ load(
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(":module_name.bzl", "derive_swift_module_name")
 load(":providers.bzl", "SwiftInfo")
-load(":swift_common.bzl", "swift_common")
 
 def _swift_module_alias_impl(ctx):
     deps = ctx.attr.deps
@@ -57,8 +70,8 @@ def _swift_module_alias_impl(ctx):
         output = reexport_src,
     )
 
-    swift_toolchain = swift_common.get_toolchain(ctx)
-    feature_configuration = swift_common.configure_features(
+    swift_toolchain = get_swift_toolchain(ctx)
+    feature_configuration = configure_features(
         ctx = ctx,
         requested_features = ctx.features,
         swift_toolchain = swift_toolchain,
@@ -67,7 +80,7 @@ def _swift_module_alias_impl(ctx):
 
     swift_infos = get_providers(deps, SwiftInfo)
 
-    compile_result = swift_common.compile(
+    compile_result = compile(
         actions = ctx.actions,
         compilation_contexts = get_compilation_contexts(ctx.attr.deps),
         copts = ["-parse-as-library"],
@@ -90,7 +103,7 @@ def _swift_module_alias_impl(ctx):
         ])
 
     linking_context, linking_output = (
-        swift_common.create_linking_context_from_compilation_outputs(
+        create_linking_context_from_compilation_outputs(
             actions = ctx.actions,
             compilation_outputs = compilation_outputs,
             feature_configuration = feature_configuration,
@@ -148,7 +161,7 @@ def _swift_module_alias_impl(ctx):
 
 swift_module_alias = rule(
     attrs = dicts.add(
-        swift_common.toolchain_attrs(),
+        swift_toolchain_attrs(),
         {
             "module_name": attr.string(
                 doc = """\

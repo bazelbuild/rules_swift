@@ -15,6 +15,10 @@
 """Implementation of the `swift_binary` and `swift_test` rules."""
 
 load(
+    "@build_bazel_rules_swift//swift/internal:compiling.bzl",
+    "compile",
+)
+load(
     "@build_bazel_rules_swift//swift/internal:linking.bzl",
     "binary_rule_attrs",
     "configure_features_for_binary",
@@ -23,6 +27,7 @@ load(
 )
 load(
     "@build_bazel_rules_swift//swift/internal:toolchain_utils.bzl",
+    "get_swift_toolchain",
     "use_swift_toolchain",
 )
 load(
@@ -33,10 +38,9 @@ load(
 )
 load(":module_name.bzl", "derive_swift_module_name")
 load(":providers.bzl", "SwiftInfo")
-load(":swift_common.bzl", "swift_common")
 
 def _swift_binary_impl(ctx):
-    swift_toolchain = swift_common.get_toolchain(ctx)
+    swift_toolchain = get_swift_toolchain(ctx)
 
     feature_configuration = configure_features_for_binary(
         ctx = ctx,
@@ -56,7 +60,7 @@ def _swift_binary_impl(ctx):
         if not module_name:
             module_name = derive_swift_module_name(ctx.label)
 
-        compile_result = swift_common.compile(
+        compile_result = compile(
             actions = ctx.actions,
             additional_inputs = ctx.files.swiftc_inputs,
             compilation_contexts = get_compilation_contexts(ctx.attr.deps),

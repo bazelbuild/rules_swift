@@ -23,13 +23,10 @@ load(
     "SwiftInfo",
     "SwiftProtoInfo",
 )
-load(
-    "@build_bazel_rules_swift//swift:swift_common.bzl",
-    "swift_common",
-)
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
-load(":attrs.bzl", "swift_config_attrs")
+load(":attrs.bzl", "swift_config_attrs", "swift_toolchain_attrs")
+load(":compiling.bzl", "compile")
 load(
     ":feature_names.bzl",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
@@ -38,14 +35,19 @@ load(
     "SWIFT_FEATURE_GENERATE_FROM_RAW_PROTO_FILES",
     "SWIFT_FEATURE_LAYERING_CHECK_SWIFT",
 )
-load(":linking.bzl", "new_objc_provider")
+load(":features.bzl", "configure_features", "is_feature_enabled")
+load(
+    ":linking.bzl",
+    "create_linking_context_from_compilation_outputs",
+    "new_objc_provider",
+)
 load(
     ":proto_gen_utils.bzl",
     "declare_generated_files_as_siblings",
     "proto_import_path",
     "register_module_mapping_write_action",
 )
-load(":toolchain_utils.bzl", "use_swift_toolchain")
+load(":toolchain_utils.bzl", "get_swift_toolchain", "use_swift_toolchain")
 load(":utils.bzl", "get_compilation_contexts")
 
 # The paths of proto files bundled with the runtime. This is mainly the well
@@ -307,7 +309,7 @@ def _gather_transitive_module_mappings(targets):
     ) for module_name, file_paths in unique_mappings.items()]
 
 def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
-    swift_toolchain = swift_common.get_toolchain(aspect_ctx)
+    swift_toolchain = get_swift_toolchain(aspect_ctx)
 
     direct_srcs = _filter_out_well_known_types(
         target[ProtoInfo].direct_sources,
@@ -361,7 +363,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
         # .swiftmodule as outputs. In addition to the other proto deps, we also
         # pass support libraries like the SwiftProtobuf runtime as deps to the
         # compile action.
-        feature_configuration = swift_common.configure_features(
+        feature_configuration = configure_features(
             ctx = aspect_ctx,
             requested_features = aspect_ctx.features + extra_features,
             swift_toolchain = swift_toolchain,
@@ -375,7 +377,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             ],
         )
 
-        generate_from_proto_sources = swift_common.is_enabled(
+        generate_from_proto_sources = is_feature_enabled(
             feature_configuration = feature_configuration,
             feature_name = SWIFT_FEATURE_GENERATE_FROM_RAW_PROTO_FILES,
         )
@@ -419,7 +421,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             if apple_common.Objc in p:
                 transitive_objc_infos.append(p[apple_common.Objc])
 
-        compile_result = swift_common.compile(
+        compile_result = compile(
             actions = aspect_ctx.actions,
             compilation_contexts = get_compilation_contexts(support_deps),
             copts = ["-parse-as-library"],
@@ -442,7 +444,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             ])
 
         linking_context, linking_output = (
-            swift_common.create_linking_context_from_compilation_outputs(
+            create_linking_context_from_compilation_outputs(
                 actions = aspect_ctx.actions,
                 compilation_outputs = compilation_outputs,
                 feature_configuration = feature_configuration,
@@ -522,7 +524,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
 swift_protoc_gen_aspect = aspect(
     attr_aspects = ["deps"],
     attrs = dicts.add(
-        swift_common.toolchain_attrs(),
+        swift_toolchain_attrs(),
         swift_config_attrs(),
         {
             # TODO(b/63389580): Migrate to proto_lang_toolchain.

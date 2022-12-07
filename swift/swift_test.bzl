@@ -15,6 +15,10 @@
 """Implementation of the `swift_binary` and `swift_test` rules."""
 
 load(
+    "@build_bazel_rules_swift//swift/internal:compiling.bzl",
+    "compile",
+)
+load(
     "@build_bazel_rules_swift//swift/internal:linking.bzl",
     "binary_rule_attrs",
     "configure_features_for_binary",
@@ -26,7 +30,12 @@ load(
     "make_swift_symbol_graph_aspect",
 )
 load(
+    "@build_bazel_rules_swift//swift/internal:symbol_graph_extracting.bzl",
+    "extract_symbol_graph",
+)
+load(
     "@build_bazel_rules_swift//swift/internal:toolchain_utils.bzl",
+    "get_swift_toolchain",
     "use_swift_toolchain",
 )
 load(
@@ -38,7 +47,6 @@ load(
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(":module_name.bzl", "derive_swift_module_name")
 load(":providers.bzl", "SwiftInfo", "SwiftSymbolGraphInfo")
-load(":swift_common.bzl", "swift_common")
 
 _test_discovery_symbol_graph_aspect = make_swift_symbol_graph_aspect(
     default_minimum_access_level = "internal",
@@ -245,9 +253,9 @@ def _do_compile(
         swift_toolchain: The Swift toolchain to use to configure the build.
 
     Returns:
-        The same value as would be returned by `swift_common.compile`.
+        The same value as would be returned by `compile`.
     """
-    return swift_common.compile(
+    return compile(
         actions = ctx.actions,
         additional_inputs = ctx.files.swiftc_inputs,
         compilation_contexts = compilation_contexts,
@@ -266,7 +274,7 @@ def _do_compile(
     )
 
 def _swift_test_impl(ctx):
-    swift_toolchain = swift_common.get_toolchain(ctx)
+    swift_toolchain = get_swift_toolchain(ctx)
 
     feature_configuration = configure_features_for_binary(
         ctx = ctx,
@@ -346,7 +354,7 @@ def _swift_test_impl(ctx):
             owner_symbol_graph_dir = ctx.actions.declare_directory(
                 "{}.symbolgraphs".format(ctx.label.name),
             )
-            swift_common.extract_symbol_graph(
+            extract_symbol_graph(
                 actions = ctx.actions,
                 compilation_contexts = compilation_contexts,
                 feature_configuration = feature_configuration,

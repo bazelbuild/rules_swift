@@ -16,13 +16,27 @@
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(
+    "@build_bazel_rules_swift//swift/internal:attrs.bzl",
+    "swift_toolchain_attrs",
+)
+load(
+    "@build_bazel_rules_swift//swift/internal:compiling.bzl",
+    "compile",
+)
+load(
     "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_ENABLE_TESTING",
     "SWIFT_FEATURE_GENERATE_FROM_RAW_PROTO_FILES",
     "SWIFT_FEATURE_LAYERING_CHECK_SWIFT",
 )
 load(
+    "@build_bazel_rules_swift//swift/internal:features.bzl",
+    "configure_features",
+    "is_feature_enabled",
+)
+load(
     "@build_bazel_rules_swift//swift/internal:linking.bzl",
+    "create_linking_context_from_compilation_outputs",
     "new_objc_provider",
 )
 load(
@@ -33,6 +47,7 @@ load(
 )
 load(
     "@build_bazel_rules_swift//swift/internal:toolchain_utils.bzl",
+    "get_swift_toolchain",
     "use_swift_toolchain",
 )
 load(
@@ -43,7 +58,6 @@ load(
 )
 load(":module_name.bzl", "derive_swift_module_name")
 load(":providers.bzl", "SwiftInfo", "SwiftProtoInfo")
-load(":swift_common.bzl", "swift_common")
 
 def _register_grpcswift_generate_action(
         label,
@@ -206,7 +220,7 @@ def _swift_grpc_library_impl(ctx):
             attr = "srcs",
         )
 
-    swift_toolchain = swift_common.get_toolchain(ctx)
+    swift_toolchain = get_swift_toolchain(ctx)
 
     unsupported_features = list(ctx.disabled_features)
 
@@ -216,14 +230,14 @@ def _swift_grpc_library_impl(ctx):
     if ctx.attr.flavor != "client_stubs":
         unsupported_features.append(SWIFT_FEATURE_ENABLE_TESTING)
 
-    feature_configuration = swift_common.configure_features(
+    feature_configuration = configure_features(
         ctx = ctx,
         requested_features = ctx.features,
         swift_toolchain = swift_toolchain,
         unsupported_features = unsupported_features,
     )
 
-    generate_from_proto_sources = swift_common.is_enabled(
+    generate_from_proto_sources = is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_GENERATE_FROM_RAW_PROTO_FILES,
     )
@@ -285,7 +299,7 @@ def _swift_grpc_library_impl(ctx):
 
     module_name = derive_swift_module_name(ctx.label)
 
-    compile_result = swift_common.compile(
+    compile_result = compile(
         actions = ctx.actions,
         compilation_contexts = get_compilation_contexts(ctx.attr.deps),
         copts = ["-parse-as-library"],
@@ -308,7 +322,7 @@ def _swift_grpc_library_impl(ctx):
         ])
 
     linking_context, linking_output = (
-        swift_common.create_linking_context_from_compilation_outputs(
+        create_linking_context_from_compilation_outputs(
             actions = ctx.actions,
             compilation_outputs = compilation_outputs,
             feature_configuration = feature_configuration,
@@ -362,7 +376,7 @@ def _swift_grpc_library_impl(ctx):
 
 swift_grpc_library = rule(
     attrs = dicts.add(
-        swift_common.toolchain_attrs(),
+        swift_toolchain_attrs(),
         {
             "srcs": attr.label_list(
                 doc = """\

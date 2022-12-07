@@ -21,8 +21,22 @@ load(
     "swift_toolchain_attrs",
 )
 load(
+    "@build_bazel_rules_swift//swift/internal:compiling.bzl",
+    "compile_module_interface",
+)
+load(
+    "@build_bazel_rules_swift//swift/internal:features.bzl",
+    "configure_features",
+    "get_cc_feature_configuration",
+)
+load(
     "@build_bazel_rules_swift//swift/internal:linking.bzl",
     "new_objc_provider",
+)
+load(
+    "@build_bazel_rules_swift//swift/internal:toolchain_utils.bzl",
+    "get_swift_toolchain",
+    "use_swift_toolchain",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:utils.bzl",
@@ -37,11 +51,6 @@ load(
     "create_swift_module_context",
     "create_swift_module_inputs",
 )
-load(":swift_common.bzl", "swift_common")
-load(
-    "@build_bazel_rules_swift//swift/internal:toolchain_utils.bzl",
-    "use_swift_toolchain",
-)
 
 def _swift_import_impl(ctx):
     archives = ctx.files.archives
@@ -54,8 +63,8 @@ def _swift_import_impl(ctx):
         fail("One or both of 'swiftinterface' and 'swiftmodule' must be " +
              "specified.")
 
-    swift_toolchain = swift_common.get_toolchain(ctx, attr = "toolchain")
-    feature_configuration = swift_common.configure_features(
+    swift_toolchain = get_swift_toolchain(ctx, attr = "toolchain")
+    feature_configuration = configure_features(
         ctx = ctx,
         swift_toolchain = swift_toolchain,
         requested_features = ctx.features,
@@ -66,7 +75,7 @@ def _swift_import_impl(ctx):
         cc_common.create_library_to_link(
             actions = ctx.actions,
             cc_toolchain = swift_toolchain.cc_toolchain_info,
-            feature_configuration = swift_common.cc_feature_configuration(
+            feature_configuration = get_cc_feature_configuration(
                 feature_configuration,
             ),
             static_library = archive,
@@ -88,7 +97,7 @@ def _swift_import_impl(ctx):
     swift_infos = get_providers(deps, SwiftInfo)
 
     if swiftinterface and not swiftmodule:
-        module_context = swift_common.compile_module_interface(
+        module_context = compile_module_interface(
             actions = ctx.actions,
             compilation_contexts = get_compilation_contexts(ctx.attr.deps),
             feature_configuration = feature_configuration,
