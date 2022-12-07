@@ -123,6 +123,10 @@ def _swift_import_impl(ctx):
                 files = ctx.files.data,
             ),
         ),
+        SwiftInfo(
+            modules = [module_context],
+            swift_infos = swift_infos,
+        ),
         cc_info,
         # Propagate an `Objc` provider so that Apple-specific rules like
         # apple_binary` will link the imported library properly. Typically we'd
@@ -135,10 +139,6 @@ def _swift_import_impl(ctx):
             feature_configuration = None,
             libraries_to_link = libraries_to_link,
             module_context = module_context,
-        ),
-        swift_common.create_swift_info(
-            modules = [module_context],
-            swift_infos = swift_infos,
         ),
     ]
 
