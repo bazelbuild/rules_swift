@@ -47,15 +47,6 @@ load(
     "get_swift_toolchain",
     "use_swift_toolchain",
 )
-load(":module_name.bzl", "derive_swift_module_name")
-load(
-    ":providers.bzl",
-    "SwiftInfo",
-    "create_clang_module_inputs",
-    "create_swift_module_context",
-    "create_swift_module_inputs",
-)
-load(":swift_interop_info.bzl", "create_swift_interop_info")
 
 # The exported `swift_common` module, which defines the public API for directly
 # invoking actions that compile Swift code from other rules.
@@ -64,26 +55,8 @@ swift_common = struct(
     compile = compile,
     compile_module_interface = compile_module_interface,
     configure_features = configure_features,
-    # TODO(b/261445197): Remove this after everyone is migrated to the free
-    # function.
-    create_clang_module = create_clang_module_inputs,
     create_compilation_context = create_compilation_context,
     create_linking_context_from_compilation_outputs = create_linking_context_from_compilation_outputs,
-    # TODO(b/261445197): Remove this after everyone is migrated to the free
-    # function.
-    create_module = create_swift_module_context,
-    # TODO(b/261445197): Remove this after everyone is migrated to the free
-    # function.
-    create_swift_info = SwiftInfo,
-    # TODO(b/261445197): Remove this after everyone is migrated to the free
-    # function.
-    create_swift_interop_info = create_swift_interop_info,
-    # TODO(b/261445197): Remove this after everyone is migrated to the free
-    # function.
-    create_swift_module = create_swift_module_inputs,
-    # TODO(b/261444771): Remove this after everyone is migrated to the free
-    # function.
-    derive_module_name = derive_swift_module_name,
     extract_symbol_graph = extract_symbol_graph,
     get_toolchain = get_swift_toolchain,
     is_enabled = is_feature_enabled,
