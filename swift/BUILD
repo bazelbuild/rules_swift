@@ -7,7 +7,9 @@ load(
 load(":swift_interop_hint.bzl", "swift_interop_hint")
 load(":swift_module_mapping.bzl", "swift_module_mapping")
 
-package(default_visibility = ["//visibility:public"])
+package(
+    default_visibility = ["//visibility:public"],
+)
 
 licenses(["notice"])
 

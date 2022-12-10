@@ -1,4 +1,7 @@
-package(default_visibility = ["//visibility:public"])
+# default_applicable_licenses
+package(
+    default_visibility = ["//visibility:public"],
+)
 
 licenses(["notice"])
 
