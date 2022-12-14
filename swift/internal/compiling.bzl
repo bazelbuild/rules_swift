@@ -131,6 +131,7 @@ def create_compilation_context(defines, srcs, transitive_modules):
 def compile_module_interface(
         *,
         actions,
+        clang_module = None,
         compilation_contexts,
         copts = [],
         exec_group = None,
@@ -144,6 +145,8 @@ def compile_module_interface(
 
     Args:
         actions: The context's `actions` object.
+        clang_module: An optional underlying Clang module (as returned by
+            `create_clang_module_inputs`), if present for this Swift module.
         compilation_contexts: A list of `CcCompilationContext`s that represent
             C/Objective-C requirements of the target being compiled, such as
             Swift-compatible preprocessor defines, header search paths, and so
@@ -200,6 +203,12 @@ def compile_module_interface(
         if not swift_module:
             continue
         transitive_swiftmodules.append(swift_module.swiftmodule)
+
+    if clang_module:
+        transitive_modules.append(create_swift_module_context(
+            name = module_name,
+            clang = clang_module,
+        ))
 
     # We need this when generating the VFS overlay file and also when
     # configuring inputs for the compile action, so it's best to precompute it
@@ -270,7 +279,7 @@ def compile_module_interface(
 
     module_context = create_swift_module_context(
         name = module_name,
-        clang = create_clang_module_inputs(
+        clang = clang_module or create_clang_module_inputs(
             compilation_context = merged_compilation_context,
             module_map = None,
         ),

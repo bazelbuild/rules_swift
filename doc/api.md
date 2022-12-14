@@ -208,9 +208,9 @@ A `struct` with the following fields:
 ## swift_common.compile_module_interface
 
 <pre>
-swift_common.compile_module_interface(<a href="#swift_common.compile_module_interface-actions">actions</a>, <a href="#swift_common.compile_module_interface-compilation_contexts">compilation_contexts</a>, <a href="#swift_common.compile_module_interface-copts">copts</a>, <a href="#swift_common.compile_module_interface-exec_group">exec_group</a>,
-                                      <a href="#swift_common.compile_module_interface-feature_configuration">feature_configuration</a>, <a href="#swift_common.compile_module_interface-module_name">module_name</a>, <a href="#swift_common.compile_module_interface-swiftinterface_file">swiftinterface_file</a>,
-                                      <a href="#swift_common.compile_module_interface-swift_infos">swift_infos</a>, <a href="#swift_common.compile_module_interface-swift_toolchain">swift_toolchain</a>, <a href="#swift_common.compile_module_interface-target_name">target_name</a>)
+swift_common.compile_module_interface(<a href="#swift_common.compile_module_interface-actions">actions</a>, <a href="#swift_common.compile_module_interface-clang_module">clang_module</a>, <a href="#swift_common.compile_module_interface-compilation_contexts">compilation_contexts</a>, <a href="#swift_common.compile_module_interface-copts">copts</a>,
+                                      <a href="#swift_common.compile_module_interface-exec_group">exec_group</a>, <a href="#swift_common.compile_module_interface-feature_configuration">feature_configuration</a>, <a href="#swift_common.compile_module_interface-module_name">module_name</a>,
+                                      <a href="#swift_common.compile_module_interface-swiftinterface_file">swiftinterface_file</a>, <a href="#swift_common.compile_module_interface-swift_infos">swift_infos</a>, <a href="#swift_common.compile_module_interface-swift_toolchain">swift_toolchain</a>, <a href="#swift_common.compile_module_interface-target_name">target_name</a>)
 </pre>
 
 Compiles a Swift module interface.
@@ -221,6 +221,7 @@ Compiles a Swift module interface.
 | Name  | Description | Default Value |
 | :------------- | :------------- | :------------- |
 | <a id="swift_common.compile_module_interface-actions"></a>actions |  The context's `actions` object.   |  none |
+| <a id="swift_common.compile_module_interface-clang_module"></a>clang_module |  An optional underlying Clang module (as returned by `create_clang_module_inputs`), if present for this Swift module.   |  `None` |
 | <a id="swift_common.compile_module_interface-compilation_contexts"></a>compilation_contexts |  A list of `CcCompilationContext`s that represent C/Objective-C requirements of the target being compiled, such as Swift-compatible preprocessor defines, header search paths, and so forth. These are typically retrieved from the `CcInfo` providers of a target's dependencies.   |  none |
 | <a id="swift_common.compile_module_interface-copts"></a>copts |  A list of compiler flags that apply to the target being built.   |  `[]` |
 | <a id="swift_common.compile_module_interface-exec_group"></a>exec_group |  Runs the Swift compilation action under the given execution group's context. If `None`, the default execution group is used.   |  `None` |
