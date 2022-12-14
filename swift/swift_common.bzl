@@ -20,12 +20,7 @@ example, `swift_proto_library` generates Swift source code from `.proto` files
 and then needs to compile them. This module provides that lower-level interface.
 """
 
-load(
-    "//swift/internal:attrs.bzl",
-    "swift_compilation_attrs",
-    "swift_library_rule_attrs",
-    "swift_toolchain_attrs",
-)
+load("//swift/internal:attrs.bzl", "swift_toolchain_attrs")
 load(
     "//swift/internal:compiling.bzl",
     "compile",
@@ -66,7 +61,6 @@ load(":swift_interop_info.bzl", "create_swift_interop_info")
 # invoking actions that compile Swift code from other rules.
 swift_common = struct(
     cc_feature_configuration = get_cc_feature_configuration,
-    compilation_attrs = swift_compilation_attrs,
     compile = compile,
     compile_module_interface = compile_module_interface,
     configure_features = configure_features,
@@ -93,7 +87,6 @@ swift_common = struct(
     extract_symbol_graph = extract_symbol_graph,
     get_toolchain = get_swift_toolchain,
     is_enabled = is_feature_enabled,
-    library_rule_attrs = swift_library_rule_attrs,
     precompile_clang_module = precompile_clang_module,
     toolchain_attrs = swift_toolchain_attrs,
     use_toolchain = use_swift_toolchain,

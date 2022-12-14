@@ -73,59 +73,6 @@ A C++ `FeatureConfiguration` value (see
   for more information).
 
 
-<a id="swift_common.compilation_attrs"></a>
-
-## swift_common.compilation_attrs
-
-<pre>
-swift_common.compilation_attrs(<a href="#swift_common.compilation_attrs-additional_deps_aspects">additional_deps_aspects</a>, <a href="#swift_common.compilation_attrs-additional_deps_providers">additional_deps_providers</a>,
-                               <a href="#swift_common.compilation_attrs-include_dev_srch_paths_attrib">include_dev_srch_paths_attrib</a>, <a href="#swift_common.compilation_attrs-requires_srcs">requires_srcs</a>)
-</pre>
-
-Returns an attribute dictionary for rules that compile Swift code.
-
-The returned dictionary contains the subset of attributes that are shared by
-the `swift_binary`, `swift_library`, and `swift_test` rules that deal with
-inputs and options for compilation. Users who are authoring custom rules
-that compile Swift code but not as a library can add this dictionary to
-their own rule's attributes to give it a familiar API.
-
-Do note, however, that it is the responsibility of the rule implementation
-to retrieve the values of those attributes and pass them correctly to the
-other `swift_common` APIs.
-
-There is a hierarchy to the attribute sets offered by the `swift_common`
-API:
-
-1.  If you only need access to the toolchain for its tools and libraries but
-    are not doing any compilation, use `toolchain_attrs`.
-2.  If you need to invoke compilation actions but are not making the
-    resulting object files into a static or shared library, use
-    `compilation_attrs`.
-3.  If you want to provide a rule interface that is suitable as a drop-in
-    replacement for `swift_library`, use `library_rule_attrs`.
-
-Each of the attribute functions in the list above also contains the
-attributes from the earlier items in the list.
-
-
-**PARAMETERS**
-
-
-| Name  | Description | Default Value |
-| :------------- | :------------- | :------------- |
-| <a id="swift_common.compilation_attrs-additional_deps_aspects"></a>additional_deps_aspects |  A list of additional aspects that should be applied to `deps`. Defaults to the empty list. These must be passed by the individual rules to avoid potential circular dependencies between the API and the aspects; the API loaded the aspects directly, then those aspects would not be able to load the API.   |  `[]` |
-| <a id="swift_common.compilation_attrs-additional_deps_providers"></a>additional_deps_providers |  A list of lists representing additional providers that should be allowed by the `deps` attribute of the rule.   |  `[]` |
-| <a id="swift_common.compilation_attrs-include_dev_srch_paths_attrib"></a>include_dev_srch_paths_attrib |  A `bool` that indicates whether to include the `always_include_developer_search_paths` attribute.   |  `False` |
-| <a id="swift_common.compilation_attrs-requires_srcs"></a>requires_srcs |  Indicates whether the `srcs` attribute should be marked as mandatory and non-empty. Defaults to `True`.   |  `True` |
-
-**RETURNS**
-
-A new attribute dictionary that can be added to the attributes of a
-  custom build rule to provide a similar interface to `swift_binary`,
-  `swift_library`, and `swift_test`.
-
-
 <a id="swift_common.compile"></a>
 
 ## swift_common.compile
@@ -650,57 +597,6 @@ check it.
 **RETURNS**
 
 `True` if the given feature is enabled in the feature configuration.
-
-
-<a id="swift_common.library_rule_attrs"></a>
-
-## swift_common.library_rule_attrs
-
-<pre>
-swift_common.library_rule_attrs(<a href="#swift_common.library_rule_attrs-additional_deps_aspects">additional_deps_aspects</a>, <a href="#swift_common.library_rule_attrs-requires_srcs">requires_srcs</a>)
-</pre>
-
-Returns an attribute dictionary for `swift_library`-like rules.
-
-The returned dictionary contains the same attributes that are defined by the
-`swift_library` rule (including the private `_toolchain` attribute that
-specifies the toolchain dependency). Users who are authoring custom rules
-can use this dictionary verbatim or add other custom attributes to it in
-order to make their rule a drop-in replacement for `swift_library` (for
-example, if writing a custom rule that does some preprocessing or generation
-of sources and then compiles them).
-
-Do note, however, that it is the responsibility of the rule implementation
-to retrieve the values of those attributes and pass them correctly to the
-other `swift_common` APIs.
-
-There is a hierarchy to the attribute sets offered by the `swift_common`
-API:
-
-1.  If you only need access to the toolchain for its tools and libraries but
-    are not doing any compilation, use `toolchain_attrs`.
-2.  If you need to invoke compilation actions but are not making the
-    resulting object files into a static or shared library, use
-    `compilation_attrs`.
-3.  If you want to provide a rule interface that is suitable as a drop-in
-    replacement for `swift_library`, use `library_rule_attrs`.
-
-Each of the attribute functions in the list above also contains the
-attributes from the earlier items in the list.
-
-
-**PARAMETERS**
-
-
-| Name  | Description | Default Value |
-| :------------- | :------------- | :------------- |
-| <a id="swift_common.library_rule_attrs-additional_deps_aspects"></a>additional_deps_aspects |  A list of additional aspects that should be applied to `deps`. Defaults to the empty list. These must be passed by the individual rules to avoid potential circular dependencies between the API and the aspects; the API loaded the aspects directly, then those aspects would not be able to load the API.   |  `[]` |
-| <a id="swift_common.library_rule_attrs-requires_srcs"></a>requires_srcs |  Indicates whether the `srcs` attribute should be marked as mandatory and non-empty. Defaults to `True`.   |  `True` |
-
-**RETURNS**
-
-A new attribute dictionary that can be added to the attributes of a
-  custom build rule to provide the same interface as `swift_library`.
 
 
 <a id="swift_common.precompile_clang_module"></a>
