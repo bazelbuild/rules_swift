@@ -27,10 +27,13 @@ load(
 load("//swift:module_name.bzl", "derive_swift_module_name")
 load("//swift:providers.bzl", "SwiftProtoCompilerInfo")
 load("//swift:swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
-load("//swift:swift_common.bzl", "swift_common")
 
 # buildifier: disable=bzl-visibility
-load("//swift/internal:attrs.bzl", "swift_deps_attr")
+load(
+    "//swift/internal:attrs.bzl",
+    "swift_deps_attr",
+    "swift_library_rule_attrs",
+)
 
 # buildifier: disable=bzl-visibility
 load("//swift/internal:toolchain_utils.bzl", "use_swift_toolchain")
@@ -106,7 +109,7 @@ def _swift_proto_library_impl(ctx):
 
 swift_proto_library = rule(
     attrs = dicts.add(
-        swift_common.library_rule_attrs(
+        swift_library_rule_attrs(
             additional_deps_aspects = [
                 swift_clang_module_aspect,
             ],
