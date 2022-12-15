@@ -528,12 +528,9 @@ def _handle_module(
         ),
     ]
 
-    if precompiled_module:
-        output_groups = {"swift_explicit_module": depset([precompiled_module])}
-        if indexstore_directory:
-            output_groups["indexstore"] = depset([indexstore_directory])
+    if indexstore_directory:
         providers.append(
-            OutputGroupInfo(**output_groups),
+            OutputGroupInfo(indexstore = depset([indexstore_directory])),
         )
 
     return providers
