@@ -1171,13 +1171,15 @@ def _framework_search_paths_configurator(prerequisites, args, is_swift):
     # case they're using implicit modules, and Clang module compilations). We
     # don't need to add regular `-F` if this is a Clang module compilation,
     # though, since it won't be used.
+
+    framework_includes = prerequisites.cc_compilation_context.framework_includes
     if is_swift:
         args.add_all(
-            prerequisites.cc_compilation_context.framework_includes,
+            framework_includes,
             format_each = "-F%s",
         )
     args.add_all(
-        prerequisites.cc_compilation_context.framework_includes,
+        framework_includes,
         format_each = "-F%s",
         before_each = "-Xcc",
     )
