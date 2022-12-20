@@ -40,6 +40,7 @@ incorrect_global_module_cache_uses_tmpdir_action_command_line_test = make_action
     config_settings = {
         "//command_line_option:features": [
             "swift.global_module_cache_uses_tmpdir",
+            "-swift.use_global_module_cache",
         ],
     },
 )
