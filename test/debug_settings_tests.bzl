@@ -22,6 +22,7 @@ load(
 DBG_CONFIG_SETTINGS = {
     "//command_line_option:compilation_mode": "dbg",
     "//command_line_option:features": [
+        "-swift.cacheable_swiftmodules",
         "swift.debug_prefix_map",
     ],
 }
@@ -37,6 +38,7 @@ CACHEABLE_DBG_CONFIG_SETTINGS = {
 FASTBUILD_CONFIG_SETTINGS = {
     "//command_line_option:compilation_mode": "fastbuild",
     "//command_line_option:features": [
+        "-swift.cacheable_swiftmodules",
         "swift.debug_prefix_map",
     ],
 }
@@ -44,6 +46,7 @@ FASTBUILD_CONFIG_SETTINGS = {
 FASTBUILD_FULL_DI_CONFIG_SETTINGS = {
     "//command_line_option:compilation_mode": "fastbuild",
     "//command_line_option:features": [
+        "-swift.cacheable_swiftmodules",
         "swift.debug_prefix_map",
         "swift.full_debug_info",
     ],
@@ -52,6 +55,7 @@ FASTBUILD_FULL_DI_CONFIG_SETTINGS = {
 OPT_CONFIG_SETTINGS = {
     "//command_line_option:compilation_mode": "opt",
     "//command_line_option:features": [
+        "-swift.cacheable_swiftmodules",
         # This feature indicates *support*, not unconditional enablement, which
         # is why it is present for `opt` mode as well.
         "swift.debug_prefix_map",
