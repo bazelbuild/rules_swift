@@ -1,6 +1,6 @@
-# Debuggable Remotely Built Swift
+# Debugging Cacheable Swift Modules
 
-This is a guide to using remotely built Swift modules in local debug builds.
+This is a guide to enable debugging of cacheable Swift modules in local debug builds.
 
 At the time of writing, `lldb` depends on debugging options embedded in `.swiftmodule` files. These options include paths that are only valid on the build host. For local builds, this all just works, but for remote builds, it doesn't.
 
@@ -13,15 +13,13 @@ Globally disabling debugging options makes those `.swiftmodule`s usable on any m
 
 An lldb bug has been filed here: https://bugs.swift.org/browse/SR-11485
 
+> **Note**
+>
+> If you don't care about cache misses, instead of following this guide you can instead disable the `swift.cacheable_swiftmodules` feature: `--features=-swift.cacheable_swiftmodules`. This is not recommended though if you use a remote cache.
+
 ### Disable Debugging Options Globally
 
-To globally disable debugging options, use the `swift.cacheable_swiftmodules` feature in rules_swift. For example, your `.bazelrc` could look like this:
-
-```
-build --features=swift.cacheable_swiftmodules
-```
-
-What this does is ensure all modules are built explicitly with `-no-serialize-debugging-options`. It has to be explicit because `swiftc` enables `-serialize-debugging-options` in some cases.
+To globally disable debugging options, use the `swift.cacheable_swiftmodules` feature, which is enabled by default, in rules_swift. What this does is ensure all modules are built explicitly with `-no-serialize-debugging-options`. It has to be explicit because `swiftc` enables `-serialize-debugging-options` in some cases.
 
 ### Add Debug Build Config
 
