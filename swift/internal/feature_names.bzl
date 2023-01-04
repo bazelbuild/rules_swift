@@ -295,6 +295,11 @@ SWIFT_FEATURE_GENERATE_FROM_RAW_PROTO_FILES = "swift.generate_from_raw_proto_fil
 # generating a Swift file from a proto file.
 SWIFT_FEATURE_GENERATE_PATH_TO_UNDERSCORES_FROM_PROTO_FILES = "swift.generate_path_to_underscores_from_proto_files"
 
+# If enabled, the toolchain will use `--swift_opt=Visibility=Internal`
+# (instead of `--swift_opt=Visibility=Public`) for the protoc Swift plugin arguments when
+# generating a Swift file from a proto file.
+SWIFT_FEATURE_GENERATE_INTERNAL_VISIBILITY_FROM_PROTO_FILES = "swift.generate_internal_visibility_from_proto_files"
+
 # If enabled and whole module optimisation is being used, the `*.swiftdoc`,
 # `*.swiftmodule` and `*-Swift.h` are generated with a separate action
 # rather than as part of the compilation.

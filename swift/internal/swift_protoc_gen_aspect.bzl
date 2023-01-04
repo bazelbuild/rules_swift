@@ -26,6 +26,7 @@ load(
     "SWIFT_FEATURE_ENABLE_TESTING",
     "SWIFT_FEATURE_GENERATE_FROM_RAW_PROTO_FILES",
     "SWIFT_FEATURE_GENERATE_PATH_TO_UNDERSCORES_FROM_PROTO_FILES",
+    "SWIFT_FEATURE_GENERATE_INTERNAL_VISIBILITY_FROM_PROTO_FILES",
 )
 load(":linking.bzl", "new_objc_provider")
 load(
@@ -107,6 +108,7 @@ def _register_pbswift_generate_action(
         module_mapping_file,
         generate_from_proto_sources,
         generate_path_to_underscores_from_proto_files,
+        generate_internal_visibility_from_proto_files,
         mkdir_and_run,
         protoc_executable,
         protoc_plugin_executable,
@@ -132,6 +134,8 @@ def _register_pbswift_generate_action(
             comments (https://github.com/bazelbuild/bazel/issues/9337).
         generate_path_to_underscores_from_proto_files: True/False for if
             generation should use `FileNaming=PathToUnderscores` argument.
+        generate_internal_visibility_from_proto_files: True/False for if
+            generation should use `Visibility=Internal` argument
         mkdir_and_run: The `File` representing the `mkdir_and_run` executable.
         protoc_executable: The `File` representing the `protoc` executable.
         protoc_plugin_executable: The `File` representing the `protoc` plugin
@@ -182,7 +186,11 @@ def _register_pbswift_generate_action(
     else:
         protoc_args.add("--swift_opt=FileNaming=FullPath")
 
-    protoc_args.add("--swift_opt=Visibility=Public")
+    if generate_internal_visibility_from_proto_files:
+        protoc_args.add("--swift_opt=Visibility=Internal")
+    else:
+        protoc_args.add("--swift_opt=Visibility=Public")
+
     if module_mapping_file:
         protoc_args.add(
             module_mapping_file,
@@ -392,6 +400,10 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             feature_configuration = feature_configuration,
             feature_name = SWIFT_FEATURE_GENERATE_PATH_TO_UNDERSCORES_FROM_PROTO_FILES,
         )
+        generate_internal_visibility_from_proto_files = swift_common.is_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_GENERATE_INTERNAL_VISIBILITY_FROM_PROTO_FILES
+        )
 
         # Only the files for direct sources should be generated, but the
         # transitive descriptor sets are still need to be able to parse/load
@@ -418,6 +430,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             transitive_module_mapping_file,
             generate_from_proto_sources,
             generate_path_to_underscores_from_proto_files,
+            generate_internal_visibility_from_proto_files,
             aspect_ctx.executable._mkdir_and_run,
             aspect_ctx.executable._protoc,
             aspect_ctx.executable._protoc_gen_swift,
