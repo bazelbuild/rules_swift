@@ -25,8 +25,8 @@ load(
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_ENABLE_TESTING",
     "SWIFT_FEATURE_GENERATE_FROM_RAW_PROTO_FILES",
-    "SWIFT_FEATURE_GENERATE_PATH_TO_UNDERSCORES_FROM_PROTO_FILES",
     "SWIFT_FEATURE_GENERATE_INTERNAL_VISIBILITY_FROM_PROTO_FILES",
+    "SWIFT_FEATURE_GENERATE_PATH_TO_UNDERSCORES_FROM_PROTO_FILES",
 )
 load(":linking.bzl", "new_objc_provider")
 load(
@@ -402,7 +402,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
         )
         generate_internal_visibility_from_proto_files = swift_common.is_enabled(
             feature_configuration = feature_configuration,
-            feature_name = SWIFT_FEATURE_GENERATE_INTERNAL_VISIBILITY_FROM_PROTO_FILES
+            feature_name = SWIFT_FEATURE_GENERATE_INTERNAL_VISIBILITY_FROM_PROTO_FILES,
         )
 
         # Only the files for direct sources should be generated, but the
