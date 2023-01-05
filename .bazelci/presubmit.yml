@@ -51,6 +51,18 @@ tasks:
     bazel: latest
     <<: *mac_common
 
+  macos_latest:
+    name: "Latest Bazel using bzlmod"
+    bazel: latest
+    platform: macos
+    build_targets:
+      - "//examples/..."
+    test_targets:
+      - "//examples/..."
+      - "//test/..."
+    build_flags:
+      - "--enable_bzlmod"
+
   macos_last_green:
     name: "Last Green Bazel"
     bazel: last_green
