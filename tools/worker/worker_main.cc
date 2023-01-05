@@ -25,7 +25,11 @@ using bazel::tools::cpp::runfiles::Runfiles;
 
 int main(int argc, char *argv[]) {
   std::string index_import_path;
-  std::unique_ptr<Runfiles> runfiles(Runfiles::Create(argv[0]));
+  #ifdef BAZEL_CURRENT_REPOSITORY
+    std::unique_ptr<Runfiles> runfiles(Runfiles::Create(argv[0], BAZEL_CURRENT_REPOSITORY));
+  #else
+    std::unique_ptr<Runfiles> runfiles(Runfiles::Create(argv[0]));
+  #endif  // BAZEL_CURRENT_REPOSITORY
   if (runfiles != nullptr) {
     // We silently ignore errors here, we will report an error later if this
     // path is accessed
