@@ -41,6 +41,11 @@ x_defaults:
       - "//tools/..."
 
 tasks:
+  macos_lts:
+    name: "Current LTS"
+    bazel: latest-1
+    <<: *mac_common
+
   macos_latest:
     name: "Latest Bazel"
     bazel: latest
@@ -59,6 +64,15 @@ tasks:
     # has landed on them breaking this project.
     - .bazelci/update_workspace_to_deps_heads.sh
     <<: *mac_common
+
+  ubuntu2004_lts:
+    name: "Current LTS"
+    bazel: latest-1
+    shell_commands:
+      - "echo --- Downloading and extracting Swift $SWIFT_VERSION to $SWIFT_HOME"
+      - "mkdir $SWIFT_HOME"
+      - "curl https://download.swift.org/swift-${SWIFT_VERSION}-release/ubuntu2004/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu20.04.tar.gz | tar xvz --strip-components=1 -C $SWIFT_HOME"
+    <<: *linux_common
 
   ubuntu2004_latest:
     name: "Latest Bazel"
