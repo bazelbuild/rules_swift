@@ -48,7 +48,7 @@ tasks:
 
   macos_last_green:
     name: "Last Green Bazel"
-    bazel: 45ca62c042f3679e60664b9ebe6d24239b390e1d
+    bazel: last_green
     <<: *mac_common
 
   macos_latest_head_deps:
@@ -71,7 +71,7 @@ tasks:
 
   ubuntu2004_last_green:
     name: "Last Green Bazel"
-    bazel: 45ca62c042f3679e60664b9ebe6d24239b390e1d
+    bazel: last_green
     shell_commands:
       - "echo --- Downloading and extracting Swift $SWIFT_VERSION to $SWIFT_HOME"
       - "mkdir $SWIFT_HOME"
@@ -92,12 +92,12 @@ tasks:
 
   windows_last_green:
     name: "Last Green Bazel"
-    bazel: 45ca62c042f3679e60664b9ebe6d24239b390e1d
+    bazel: last_green
     <<: *windows_common
 
   doc_tests:
     name: "Doc tests"
-    bazel: 45ca62c042f3679e60664b9ebe6d24239b390e1d
+    bazel: last_green
     platform: ubuntu2004
     test_targets:
     - "doc/..."
