@@ -65,8 +65,10 @@ have this package configuration applied. Each package pattern is written in the
 syntax used by the `package_group` function:
 
 *   `//foo/bar`: Targets in the package `//foo/bar` but not in subpackages.
+
 *   `//foo/bar/...`: Targets in the package `//foo/bar` and any of its
     subpackages.
+
 *   A leading `-` excludes packages that would otherwise have been included by
     the patterns in the list.
 
