@@ -232,6 +232,7 @@ has Swift dependencies).
 Each `struct` has the following fields:
 
 *   `module_name`: A string denoting the name of the Swift module.
+
 *   `symbol_graph_dir`: A directory-type `File` containing one or more
     `.symbols.json` files representing the symbol graph(s) for the module.
 """,
@@ -267,8 +268,10 @@ C/Objective-C modules:
 
 *   `cc_infos`: A list of `CcInfo` providers from targets specified as the
     toolchain's implicit dependencies.
+
 *   `objc_infos`: A list of `apple_common.Objc` providers from targets specified
     as the toolchain's implicit dependencies.
+
 *   `swift_infos`: A list of `SwiftInfo` providers from targets specified as the
     toolchain's implicit dependencies.
 
@@ -292,6 +295,7 @@ If specified, this function must take the following keyword arguments:
 *   `ctx`: The rule context of the calling binary or test rule.
 It must return a `struct` with the following fields:
 *   `additional_outputs`: Additional outputs expected from the linking action.
+
 *   `variables_extension`: A dictionary of additional crosstool variables to
     pass to the linking action.
 """,
@@ -322,8 +326,10 @@ module for the generated Objective-C header of a Swift module:
 
 *   `cc_infos`: A list of `CcInfo` providers from targets specified as the
     toolchain's implicit dependencies.
+
 *   `objc_infos`: A list of `apple_common.Objc` providers from targets specified
     as the toolchain's implicit dependencies.
+
 *   `swift_infos`: A list of `SwiftInfo` providers from targets specified as the
     toolchain's implicit dependencies.
 
@@ -340,8 +346,10 @@ linking target (but not to precompiled explicit C/Objective-C modules):
 
 *   `cc_infos`: A list of `CcInfo` providers from targets specified as the
     toolchain's implicit dependencies.
+
 *   `objc_infos`: A list of `apple_common.Objc` providers from targets specified
     as the toolchain's implicit dependencies.
+
 *   `swift_infos`: A list of `SwiftInfo` providers from targets specified as the
     toolchain's implicit dependencies.
 
