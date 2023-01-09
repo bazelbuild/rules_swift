@@ -119,10 +119,7 @@ def _swift_module_alias_impl(ctx):
             compilation_context = module_context.clang.compilation_context,
             linking_context = linking_context,
         ),
-        SwiftInfo(
-            modules = [module_context],
-            swift_infos = swift_infos,
-        ),
+        compile_result.swift_info,
     ]
 
     # Propagate an `apple_common.Objc` provider with linking info about the

@@ -429,10 +429,7 @@ def _swift_test_impl(ctx):
         compilation_outputs = compile_result.compilation_outputs
         all_supplemental_outputs.append(compile_result.supplemental_outputs)
 
-        swift_infos_including_owner = [SwiftInfo(
-            modules = [compile_result.module_context],
-            swift_infos = deps_swift_infos,
-        )]
+        swift_infos_including_owner = [compile_result.swift_info]
 
         # If we're going to do test discovery below, extract the symbol graph of
         # the module that we just compiled so that we can discover any tests in

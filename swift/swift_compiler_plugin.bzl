@@ -183,9 +183,7 @@ def _swift_compiler_plugin_impl(ctx):
             ),
             executable = binary_linking_outputs.executable,
             module_names = depset([module_name]),
-            swift_info = SwiftInfo(
-                modules = [module_context],
-            ),
+            swift_info = compile_result.swift_info,
         ),
     ]
 
