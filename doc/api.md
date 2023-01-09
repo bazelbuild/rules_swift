@@ -171,6 +171,14 @@ Compiles a Swift module.
 
 A `struct` with the following fields:
 
+  *   `swift_info`: A `SwiftInfo` provider whose list of direct modules
+      contains the single Swift module context produced by this function
+      (identical to the `module_context` field below) and whose transitive
+      modules represent the transitive non-private dependencies. Rule
+      implementations that call this function can typically return this
+      provider directly, except in rare cases like making multiple calls
+      to `swift_common.compile` that need to be merged.
+
   *   `module_context`: A Swift module context (as returned by
       `create_swift_module_context`) that contains the Swift (and
       potentially C/Objective-C) compilation prerequisites of the compiled
