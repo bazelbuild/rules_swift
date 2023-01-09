@@ -256,6 +256,14 @@ def compile(
     Returns:
         A `struct` with the following fields:
 
+        *   `swift_info`: A `SwiftInfo` provider whose list of direct modules
+            contains the single Swift module context produced by this function
+            (identical to the `module_context` field below) and whose transitive
+            modules represent the transitive non-private dependencies. Rule
+            implementations that call this function can typically return this
+            provider directly, except in rare cases like making multiple calls
+            to `swift_common.compile` that need to be merged.
+
         *   `module_context`: A Swift module context (as returned by
             `create_swift_module_context`) that contains the Swift (and
             potentially C/Objective-C) compilation prerequisites of the compiled
@@ -326,14 +334,23 @@ def compile(
         ],
     )
 
+    # These are the `SwiftInfo` providers that will be merged with the compiled
+    # module context and returned as the `swift_info` field of this function's
+    # result. Note that private deps are explicitly not included here, as they
+    # are not supposed to be propagated.
+    #
+    # TODO(allevato): It would potentially clean things up if we included the
+    # toolchain's implicit dependencies here as well. Do this and make sure it
+    # doesn't break anything unexpected.
+    swift_infos_to_propagate = swift_infos + _cross_imported_swift_infos(
+        swift_toolchain = swift_toolchain,
+        user_swift_infos = swift_infos + private_swift_infos,
+    )
+
     all_swift_infos = (
-        swift_infos +
+        swift_infos_to_propagate +
         private_swift_infos +
-        swift_toolchain.implicit_deps_providers.swift_infos +
-        _cross_imported_swift_infos(
-            swift_toolchain = swift_toolchain,
-            user_swift_infos = swift_infos + private_swift_infos,
-        )
+        swift_toolchain.implicit_deps_providers.swift_infos
     )
     merged_swift_info = SwiftInfo(swift_infos = all_swift_infos)
 
@@ -508,6 +525,10 @@ def compile(
         compilation_outputs = compilation_outputs,
         supplemental_outputs = struct(
             indexstore_directory = compile_outputs.indexstore_directory,
+        ),
+        swift_info = SwiftInfo(
+            modules = [module_context],
+            swift_infos = swift_infos_to_propagate,
         ),
     )
 

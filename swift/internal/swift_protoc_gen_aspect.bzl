@@ -487,10 +487,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             SwiftProtoCompilationInfo(
                 cc_info = cc_info,
                 objc_info = objc_info,
-                swift_info = SwiftInfo(
-                    modules = [module_context],
-                    swift_infos = transitive_swift_infos,
-                ),
+                swift_info = compile_result.swift_info,
             ),
         ]
     else:

@@ -351,10 +351,7 @@ def _swift_grpc_library_impl(ctx):
             linking_context = linking_context,
         ),
         deps[0][SwiftProtoInfo],
-        SwiftInfo(
-            modules = [module_context],
-            swift_infos = compile_deps_swift_infos,
-        ),
+        compile_result.swift_info,
         OutputGroupInfo(**output_groups),
     ]
 
