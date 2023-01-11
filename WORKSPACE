@@ -1,5 +1,11 @@
 workspace(name = "build_bazel_rules_swift")
 
+git_repository(
+    name = "build_bazel_apple_support",
+    branch = "ks/add-example-toolchains-setup",
+    remote = "https://github.com/bazelbuild/apple_support.git",
+)
+
 load(
     "@build_bazel_rules_swift//swift:repositories.bzl",
     "swift_rules_dependencies",
