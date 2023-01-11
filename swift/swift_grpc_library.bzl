@@ -59,6 +59,9 @@ load(
 load(":module_name.bzl", "derive_swift_module_name")
 load(":providers.bzl", "SwiftInfo", "SwiftProtoInfo")
 
+# Name of the execution group used for `ProtocGenSwiftGRPC` actions.
+_GENERATE_EXEC_GROUP = "generate"
+
 def _register_grpcswift_generate_action(
         label,
         actions,
@@ -192,6 +195,7 @@ def _register_grpcswift_generate_action(
     actions.run(
         arguments = [mkdir_args, protoc_executable_args, protoc_args],
         executable = mkdir_and_run,
+        exec_group = _GENERATE_EXEC_GROUP,
         inputs = depset(
             direct = additional_command_inputs,
             transitive = [transitive_descriptor_sets],
@@ -407,7 +411,7 @@ The kind of definitions that should be generated:
 """,
             ),
             "_mkdir_and_run": attr.label(
-                cfg = "exec",
+                cfg = config.exec(_GENERATE_EXEC_GROUP),
                 default = Label(
                     "@build_bazel_rules_swift//tools/mkdir_and_run",
                 ),
@@ -421,14 +425,14 @@ The kind of definitions that should be generated:
                 ],
             ),
             "_protoc": attr.label(
-                cfg = "exec",
+                cfg = config.exec(_GENERATE_EXEC_GROUP),
                 default = Label(
                     "//net/proto2/compiler/public:protocol_compiler",
                 ),
                 executable = True,
             ),
             "_protoc_gen_swiftgrpc": attr.label(
-                cfg = "exec",
+                cfg = config.exec(_GENERATE_EXEC_GROUP),
                 default = Label(
                     "@com_github_grpc_grpc_swift//:protoc-gen-swiftgrpc",
                 ),
@@ -502,6 +506,12 @@ swift_grpc_library(
 )
 ```
 """,
+    exec_groups = {
+        # Define an execution group for `ProtocGenSwiftGRPC` actions that does
+        # not have constraints, so that proto generation can be routed to any
+        # platform that supports it (even one with a different toolchain).
+        _GENERATE_EXEC_GROUP: exec_group(),
+    },
     fragments = ["cpp"],
     implementation = _swift_grpc_library_impl,
     toolchains = use_swift_toolchain(),

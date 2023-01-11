@@ -48,6 +48,9 @@ load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(":module_name.bzl", "derive_swift_module_name")
 load(":providers.bzl", "SwiftInfo", "SwiftSymbolGraphInfo")
 
+# Name of the execution group used for `SwiftTestDiscovery` actions.
+_DISCOVER_TESTS_EXEC_GROUP = "discover_tests"
+
 _test_discovery_symbol_graph_aspect = make_swift_symbol_graph_aspect(
     default_minimum_access_level = "internal",
     testonly_targets = True,
@@ -216,6 +219,7 @@ def _generate_test_discovery_srcs(
     actions.run(
         arguments = [args],
         executable = test_discoverer,
+        exec_group = _DISCOVER_TESTS_EXEC_GROUP,
         inputs = inputs,
         mnemonic = "SwiftTestDiscovery",
         outputs = outputs,
@@ -529,7 +533,7 @@ standard executable binary that is invoked directly.
                 ),
             ),
             "_test_discoverer": attr.label(
-                cfg = "exec",
+                cfg = config.exec(_DISCOVER_TESTS_EXEC_GROUP),
                 default = Label(
                     "@build_bazel_rules_swift//tools/test_discoverer",
                 ),
@@ -578,6 +582,13 @@ test discovery:
 See the documentation of the `discover_tests` attribute for more information
 about how this behavior affects the rule's outputs.
 """,
+    exec_groups = {
+        # Define an execution group for `SwiftTestDiscovery` actions that does
+        # not have constraints, so that test discovery using the already
+        # generated symbol graphs can be routed to any platform that supports it
+        # (even one with a different toolchain).
+        _DISCOVER_TESTS_EXEC_GROUP: exec_group(),
+    },
     executable = True,
     fragments = ["cpp"],
     test = True,

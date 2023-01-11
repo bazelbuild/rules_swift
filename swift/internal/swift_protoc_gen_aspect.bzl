@@ -94,6 +94,9 @@ This provider is an implementation detail not meant to be used by clients.
     },
 )
 
+# Name of the execution group used for `ProtocGenSwift` actions.
+_GENERATE_EXEC_GROUP = "generate"
+
 def _filter_out_well_known_types(srcs, proto_source_root):
     """Returns the given list of files, excluding any well-known type protos.
 
@@ -209,6 +212,7 @@ def _register_pbswift_generate_action(
     actions.run(
         arguments = [protoc_args],
         executable = protoc_executable,
+        exec_group = _GENERATE_EXEC_GROUP,
         inputs = depset(
             direct = additional_command_inputs,
             transitive = [transitive_descriptor_sets],
@@ -531,12 +535,12 @@ swift_protoc_gen_aspect = aspect(
                 ],
             ),
             "_protoc": attr.label(
-                cfg = "exec",
+                cfg = config.exec(_GENERATE_EXEC_GROUP),
                 default = Label("//net/proto2/compiler/public:protocol_compiler"),
                 executable = True,
             ),
             "_protoc_gen_swift": attr.label(
-                cfg = "exec",
+                cfg = config.exec(_GENERATE_EXEC_GROUP),
                 default = Label("@com_github_apple_swift_protobuf//:ProtoCompilerPlugin"),
                 executable = True,
             ),
@@ -553,6 +557,12 @@ provider.
 Most users should not need to use this aspect directly; it is an implementation
 detail of the `swift_proto_library` rule.
 """,
+    exec_groups = {
+        # Define an execution group for `ProtocGenSwift` actions that does not
+        # have constraints, so that proto generation can be routed to any
+        # platform that supports it (even one with a different toolchain).
+        _GENERATE_EXEC_GROUP: exec_group(),
+    },
     fragments = ["cpp"],
     implementation = _swift_protoc_gen_aspect_impl,
     toolchains = use_swift_toolchain(),
