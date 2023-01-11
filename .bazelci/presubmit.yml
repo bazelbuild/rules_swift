@@ -42,17 +42,17 @@ x_defaults:
 
 tasks:
   macos_lts:
-    name: "Current LTS"
+    name: "Previous LTS"
     bazel: latest-1
     <<: *mac_common
 
   macos_latest:
-    name: "Latest Bazel"
+    name: "Current LTS"
     bazel: latest
     <<: *mac_common
 
   macos_latest_bzlmod:
-    name: "Latest Bazel using bzlmod"
+    name: "Current LTS using bzlmod"
     bazel: latest
     <<: *mac_common
     build_flags:
@@ -64,7 +64,7 @@ tasks:
     <<: *mac_common
 
   macos_latest_head_deps:
-    name: "Latest Bazel with Head Deps"
+    name: "Current LTS with Head Deps"
     bazel: latest
     shell_commands:
     # Update the WORKSPACE to use head versions of some deps to ensure nothing
@@ -73,7 +73,7 @@ tasks:
     <<: *mac_common
 
   ubuntu2004_lts:
-    name: "Current LTS"
+    name: "Previous LTS"
     bazel: latest-1
     shell_commands:
       - "echo --- Downloading and extracting Swift $SWIFT_VERSION to $SWIFT_HOME"
@@ -82,7 +82,7 @@ tasks:
     <<: *linux_common
 
   ubuntu2004_latest:
-    name: "Latest Bazel"
+    name: "Current LTS"
     bazel: latest
     shell_commands:
       - "echo --- Downloading and extracting Swift $SWIFT_VERSION to $SWIFT_HOME"
@@ -100,7 +100,7 @@ tasks:
     <<: *linux_common
 
   ubuntu2004_latest_head_deps:
-    name: "Latest Bazel with Head Deps"
+    name: "Current LTS with Head Deps"
     bazel: latest
     shell_commands:
       - "echo --- Downloading and extracting Swift $SWIFT_VERSION to $SWIFT_HOME"
