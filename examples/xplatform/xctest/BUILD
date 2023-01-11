@@ -25,6 +25,8 @@ swift_test(
         "XCTEST_BINDIR_ENV_VAR": "$(BINDIR)",
     },
     features = ["tsan"],
+    # TODO: Re-enable on Linux once Swift race is figured out (or maybe Swift is upgraded)
+    target_compatible_with = ["@platforms//os:macos"],
 )
 
 swift_test(
