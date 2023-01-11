@@ -50,6 +50,9 @@ load(
 )
 load(":swift_common.bzl", "swift_common")
 
+# Name of the execution group used for `SwiftTestDiscovery` actions.
+_DISCOVER_TESTS_EXEC_GROUP = "discover_tests"
+
 _test_discovery_symbol_graph_aspect = make_swift_symbol_graph_aspect(
     default_emit_extension_block_symbols = "0",
     default_minimum_access_level = "internal",
@@ -241,6 +244,7 @@ def _generate_test_discovery_srcs(
     actions.run(
         arguments = [args],
         executable = test_discoverer,
+        exec_group = _DISCOVER_TESTS_EXEC_GROUP,
         inputs = inputs,
         mnemonic = "SwiftTestDiscovery",
         outputs = outputs,
@@ -648,7 +652,7 @@ standard executable binary that is invoked directly.
                 ),
             ),
             "_test_discoverer": attr.label(
-                cfg = "exec",
+                cfg = config.exec(_DISCOVER_TESTS_EXEC_GROUP),
                 default = Label(
                     "@build_bazel_rules_swift//tools/test_discoverer",
                 ),
@@ -715,6 +719,13 @@ A subset of tests for a given target can be executed via the `--test_filter` par
 bazel test //:Tests --test_filter=TestModuleName.TestClassName/testMethodName
 ```
 """,
+    exec_groups = {
+        # Define an execution group for `SwiftTestDiscovery` actions that does
+        # not have constraints, so that test discovery using the already
+        # generated symbol graphs can be routed to any platform that supports it
+        # (even one with a different toolchain).
+        _DISCOVER_TESTS_EXEC_GROUP: exec_group(),
+    },
     executable = True,
     fragments = ["cpp"],
     test = True,
