@@ -25,6 +25,8 @@ swift_test(
         "XCTEST_BINDIR_ENV_VAR": "$(BINDIR)",
     },
     features = ["tsan"],
+    # TODO: Re-enable on Linux once Swift race is figured out (or maybe Swift is upgraded)
+    target_compatible_with = ["@platforms//os:macos"],
 )
 
 swift_test(
@@ -38,6 +40,8 @@ swift_test(
         "XCTEST_BINDIR_ENV_VAR": "$(BINDIR)",
     },
     features = ["asan"],
+    # TODO: Re-enable on Linux once Swift memory leak is figured out (or maybe Swift is upgraded)
+    target_compatible_with = ["@platforms//os:macos"],
 )
 
 swift_test(
@@ -51,6 +55,8 @@ swift_test(
         "XCTEST_BINDIR_ENV_VAR": "$(BINDIR)",
     },
     features = ["ubsan"],
+    # TODO: Re-enable on Linux if Swift ever supports ubsan on linux
+    target_compatible_with = ["@platforms//os:macos"],
 )
 
 swift_test(
@@ -67,4 +73,6 @@ swift_test(
         "tsan",
         "ubsan",
     ],
+    # TODO: Re-enable on Linux if Swift ever supports ubsan on linux
+    target_compatible_with = ["@platforms//os:macos"],
 )
