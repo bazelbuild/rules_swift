@@ -326,3 +326,8 @@ SWIFT_FEATURE_USE_PCH_OUTPUT_DIR = "swift.use_pch_output_dir"
 # `-enable-bare-slash-regex` to `swiftc`. This is a new flag as of
 # Swift 5.7 that enables `/.../` syntax regular-expression literals.
 SWIFT_FEATURE_SUPPORTS_BARE_SLASH_REGEX = "swift.supports_bare_slash_regex"
+
+# Workaround this issue https://github.com/apple/swift/issues/60406, disable
+# this feature if you have a version of Swift that fixes it and you care about
+# minor binary size improvements
+SWIFT_FEATURE_LLD_GC_WORKAROUND = "swift.lld_gc_workaround"
