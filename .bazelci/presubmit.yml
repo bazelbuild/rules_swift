@@ -53,7 +53,7 @@ tasks:
 
   macos_latest_bzlmod:
     name: "Current LTS using bzlmod"
-    bazel: last_green
+    bazel: latest
     <<: *mac_common
     shell_commands:
       - "echo > WORKSPACE"
