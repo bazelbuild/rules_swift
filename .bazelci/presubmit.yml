@@ -23,14 +23,10 @@ x_defaults:
       - "--action_env=PATH"
     build_targets:
       - "//examples/..."
-      - "-//examples/apple/..."
-      - "-//examples/xplatform/grpc/..." # TODO: Fix grpc on Linux
     test_flags: *linux_flags
     test_targets:
       - "//examples/..."
       - "//test/..."
-      - "-//examples/apple/..."
-      - "-//examples/xplatform/grpc/..." # TODO: Fix grpc on Linux
   windows_common: &windows_common
     platform: windows
     build_flags:

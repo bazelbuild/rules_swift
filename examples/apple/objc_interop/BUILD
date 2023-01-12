@@ -14,6 +14,7 @@ objc_library(
     name = "PrintStream",
     srcs = ["OIPrintStream.m"],
     hdrs = ["OIPrintStream.h"],
+    target_compatible_with = ["@platforms//os:macos"],
 )
 
 swift_library(
@@ -27,6 +28,7 @@ swift_library(
 objc_library(
     name = "main",
     srcs = ["main.m"],
+    target_compatible_with = ["@platforms//os:macos"],
     deps = [":Printer"],
 )
 
