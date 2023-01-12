@@ -59,6 +59,8 @@ tasks:
       - "echo > WORKSPACE"
     build_flags:
       - "--enable_bzlmod"
+    test_flags:
+      - "--enable_bzlmod"
 
   macos_last_green:
     name: "Last Green Bazel"
