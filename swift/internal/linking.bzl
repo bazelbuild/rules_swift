@@ -23,7 +23,8 @@ load(
     "should_embed_swiftmodule_for_debugging",
 )
 load(":derived_files.bzl", "derived_files")
-load(":features.bzl", "get_cc_feature_configuration")
+load(":features.bzl", "get_cc_feature_configuration", "is_feature_enabled")
+load(":feature_names.bzl", "SWIFT_FEATURE_LLD_GC_WORKAROUND")
 load(
     ":developer_dirs.bzl",
     "developer_dirs_linkopts",
@@ -143,6 +144,21 @@ def create_linking_context_from_compilation_outputs(
         extra_linking_contexts.append(
             cc_common.create_linking_context(
                 linker_inputs = depset(post_compile_linker_inputs),
+            ),
+        )
+
+    if is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_LLD_GC_WORKAROUND,
+    ):
+        extra_linking_contexts.append(
+            cc_common.create_linking_context(
+                linker_inputs = depset([
+                    cc_common.create_linker_input(
+                        owner = label,
+                        user_link_flags = depset(["-Wl,-z,nostart-stop-gc"]),
+                    ),
+                ]),
             ),
         )
 
