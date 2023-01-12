@@ -31,4 +31,4 @@ use_repo(
 )
 
 # Dev dependencies
-bazel_dep(name = "stardoc", version = "0.5.3", dev_dependency = True, repo_name = "io_bazel_skydoc")
+bazel_dep(name = "stardoc", version = "0.5.3", dev_dependency = True, repo_name = "io_bazel_stardoc")
