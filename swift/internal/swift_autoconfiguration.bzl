@@ -30,6 +30,7 @@ load(
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
     "SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES",
+    "SWIFT_FEATURE_LLD_GC_WORKAROUND",
     "SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS",
     "SWIFT_FEATURE_NO_EMBED_DEBUG_MODULE",
     "SWIFT_FEATURE_SUPPORTS_BARE_SLASH_REGEX",
@@ -140,6 +141,27 @@ def _check_use_response_files(repository_ctx, swiftc_path, temp_dir):
         "@{}".format(param_file),
     )
 
+def _check_supports_lld_gc_workaround(repository_ctx, swiftc_path, temp_dir):
+    """Returns True if lld is being used and it supports nostart-stop-gc"""
+    source_file = _scratch_file(
+        repository_ctx,
+        temp_dir,
+        "main.swift",
+        """\
+print("Hello")
+""",
+    )
+    return _swift_succeeds(
+        repository_ctx,
+        swiftc_path,
+        source_file,
+        "-use-ld=lld",
+        "-Xlinker",
+        "-z",
+        "-Xlinker",
+        "nostart-stop-gc",
+    )
+
 def _write_swift_version(repository_ctx, swiftc_path):
     """Write a file containing the current Swift version info
 
@@ -212,6 +234,7 @@ _FEATURE_CHECKS = {
     SWIFT_FEATURE_DEBUG_PREFIX_MAP: _check_debug_prefix_map,
     SWIFT_FEATURE_ENABLE_BATCH_MODE: _check_enable_batch_mode,
     SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES: _check_skip_function_bodies,
+    SWIFT_FEATURE_LLD_GC_WORKAROUND: _check_supports_lld_gc_workaround,
     SWIFT_FEATURE_SUPPORTS_BARE_SLASH_REGEX: _check_enable_bare_slash_regex,
     SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS: _check_supports_private_deps,
     SWIFT_FEATURE_USE_RESPONSE_FILES: _check_use_response_files,
