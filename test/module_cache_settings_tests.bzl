@@ -63,7 +63,7 @@ def module_cache_settings_test_suite(name):
         ],
         not_expected_argv = [
             "-Xwrapped-swift=-ephemeral-module-cache",
-            "/tmp/__build_bazel_rules_swift/swift_module_cache/build_bazel_rules_swift",
+            "/tmp/__build_bazel_rules_swift/swift_module_cache/$(WORKSPACE_NAME)",
         ],
         mnemonic = "SwiftCompile",
         tags = [name],
@@ -76,7 +76,7 @@ def module_cache_settings_test_suite(name):
         name = "{}_tmpdir_module_cache_build".format(name),
         expected_argv = [
             "-module-cache-path",
-            "/tmp/__build_bazel_rules_swift/swift_module_cache/build_bazel_rules_swift",
+            "/tmp/__build_bazel_rules_swift/swift_module_cache/$(WORKSPACE_NAME)",
         ],
         not_expected_argv = [
             "-Xwrapped-swift=-ephemeral-module-cache",
@@ -91,7 +91,7 @@ def module_cache_settings_test_suite(name):
     incorrect_global_module_cache_uses_tmpdir_action_command_line_test(
         name = "{}_incorrect_tmpdir_module_cache_build".format(name),
         not_expected_argv = [
-            "/tmp/__build_bazel_rules_swift/swift_module_cache/build_bazel_rules_swift",
+            "/tmp/__build_bazel_rules_swift/swift_module_cache/$(WORKSPACE_NAME)",
         ],
         mnemonic = "SwiftCompile",
         tags = [name],
