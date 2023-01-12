@@ -1,3 +1,5 @@
+"""Return the .swiftmodule file from a swift_library for testing"""
+
 load("//swift:swift.bzl", "SwiftInfo")
 
 def _impl(ctx):
