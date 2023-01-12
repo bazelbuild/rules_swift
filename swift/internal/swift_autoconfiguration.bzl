@@ -142,7 +142,7 @@ def _check_use_response_files(repository_ctx, swiftc_path, temp_dir):
     )
 
 def _check_supports_lld_gc_workaround(repository_ctx, swiftc_path, temp_dir):
-    """Returns True if `swiftc` supports implementation-only imports."""
+    """Returns True if lld is being used and it supports nostart-stop-gc"""
     source_file = _scratch_file(
         repository_ctx,
         temp_dir,
