@@ -66,7 +66,10 @@ swift_binary(
 
 swift_test(
     name = "echo_client_unit_test",
-    srcs = ["client_unit_test.swift"],
+    srcs = [
+        "client_unit_test.swift",
+        "main.swift",
+    ],
     deps = [
         ":echo_client_services_swift",
         ":echo_client_test_stubs_swift",
