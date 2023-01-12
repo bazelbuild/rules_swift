@@ -13,8 +13,8 @@ cc_library(
     hdrs = glob([
         "Sources/CGRPCZlib/**/*.h",
     ]),
-    copts = [],
     includes = ["Sources/CGRPCZlib/include"],
+    linkopts = ["-lz"],
     tags = ["swift_module=CGRPCZlib"],
 )
 

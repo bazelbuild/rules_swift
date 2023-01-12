@@ -18,8 +18,7 @@ import examples_xplatform_grpc_echo_proto
 
 @testable import examples_xplatform_grpc_echo_client_test_stubs_swift
 
-class ClientUnitTest {
-
+class ClientUnitTest: XCTestCase {
   func testSynchronousCall() throws {
     let client: RulesSwift_Examples_Grpc_EchoServiceClientProtocol = {
       let stub = RulesSwift_Examples_Grpc_EchoServiceTestClient()
@@ -32,4 +31,8 @@ class ClientUnitTest {
    let response = try! call.response.wait()
    XCTAssertEqual(response.contents, "Hello")
   }
+
+  static var allTests = [
+    ("testSynchronousCall", testSynchronousCall),
+  ]
 }

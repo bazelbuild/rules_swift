@@ -23,14 +23,10 @@ x_defaults:
       - "--action_env=PATH"
     build_targets:
       - "//examples/..."
-      - "-//examples/apple/..."
-      - "-//examples/xplatform/grpc/..." # TODO: Fix grpc on Linux
     test_flags: *linux_flags
     test_targets:
       - "//examples/..."
       - "//test/..."
-      - "-//examples/apple/..."
-      - "-//examples/xplatform/grpc/..." # TODO: Fix grpc on Linux
   windows_common: &windows_common
     platform: windows
     build_flags:
@@ -80,6 +76,13 @@ tasks:
       - "mkdir $SWIFT_HOME"
       - "curl https://download.swift.org/swift-${SWIFT_VERSION}-release/ubuntu2004/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu20.04.tar.gz | tar xvz --strip-components=1 -C $SWIFT_HOME"
     <<: *linux_common
+    build_targets:
+      - "//examples/..."
+      - "-//examples/apple/..."
+    test_targets:
+      - "//examples/..."
+      - "//test/..."
+      - "-//examples/apple/..."
 
   ubuntu2004_latest:
     name: "Current LTS"
