@@ -1,4 +1,5 @@
 load("//swift:swift.bzl", "swift_binary", "swift_import", "swift_library")
+load(":get_swiftmodule.bzl", "get_swiftmodule")
 
 swift_binary(
     name = "hello_world",
@@ -13,15 +14,20 @@ swift_library(
     ],
 )
 
-genrule(
-    name = "generate_swiftmodule",
-    outs = ["archive.swiftmodule"],
-    cmd = "for i in {1..100};do echo \"string\" >> $@;done",
-)
-
 swift_import(
     name = "import",
-    archives = ["import.a"],
-    module_name = "SwiftImport",
-    swiftmodule = ":generate_swiftmodule",
+    archives = ["libdep.a"],
+    module_name = "dep",
+    swiftmodule = ":foo",
+)
+
+get_swiftmodule(
+    name = "foo",
+    lib = "dep",
+)
+
+swift_library(
+    name = "dep",
+    srcs = ["dep.swift"],
+    module_name = "dep",
 )
