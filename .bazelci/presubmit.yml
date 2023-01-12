@@ -55,6 +55,8 @@ tasks:
     name: "Current LTS using bzlmod"
     bazel: latest
     <<: *mac_common
+    shell_commands:
+      - "echo > WORKSPACE"
     build_flags:
       - "--enable_bzlmod"
 
