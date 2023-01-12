@@ -62,6 +62,17 @@ def swift_rules_dependencies(include_bzlmod_ready_dependencies = True):
             sha256 = "2e3dc4d0000e8c2f5782ea7bb53162f37c485b5d8dc62bb3d7d7fc7c276f0d00",
         )
 
+        _maybe(
+            http_archive,
+            name = "rules_proto",
+            # latest as of 2022-09-30
+            urls = [
+                "https://github.com/bazelbuild/rules_proto/archive/d3702796e768abe7086d2dc7e299d3f7aeb1dd34.tar.gz",
+            ],
+            sha256 = "a88c799bf19c0a157f9c423477277a0d0362f251388d7b28f0f00bfb0bf25b3d",
+            strip_prefix = "rules_proto-d3702796e768abe7086d2dc7e299d3f7aeb1dd34",
+        )
+
     _maybe(
         http_archive,
         name = "com_github_apple_swift_protobuf",
@@ -134,17 +145,6 @@ def swift_rules_dependencies(include_bzlmod_ready_dependencies = True):
         sha256 = "69cc88207ce91347ea530b227ff0776db82dcb8de6704e1a3d74f4841bc651cf",
         type = "zip",
         build_file = "@build_bazel_rules_swift//third_party:com_github_nlohmann_json/BUILD.overlay",
-    )
-
-    _maybe(
-        http_archive,
-        name = "rules_proto",
-        # latest as of 2022-09-30
-        urls = [
-            "https://github.com/bazelbuild/rules_proto/archive/d3702796e768abe7086d2dc7e299d3f7aeb1dd34.tar.gz",
-        ],
-        sha256 = "a88c799bf19c0a157f9c423477277a0d0362f251388d7b28f0f00bfb0bf25b3d",
-        strip_prefix = "rules_proto-d3702796e768abe7086d2dc7e299d3f7aeb1dd34",
     )
 
     # It relies on `index-import` to import indexes into Bazel's remote
