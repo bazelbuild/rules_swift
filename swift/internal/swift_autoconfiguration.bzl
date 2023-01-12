@@ -32,6 +32,7 @@ load(
     "SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES",
     "SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS",
     "SWIFT_FEATURE_NO_EMBED_DEBUG_MODULE",
+    "SWIFT_FEATURE_SUPPORTS_BARE_SLASH_REGEX",
     "SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS",
     "SWIFT_FEATURE_USE_AUTOLINK_EXTRACT",
     "SWIFT_FEATURE_USE_MODULE_WRAP",
@@ -97,6 +98,15 @@ def _check_debug_prefix_map(repository_ctx, swiftc_path, _temp_dir):
         "-version",
         "-debug-prefix-map",
         "foo=bar",
+    )
+
+def _check_enable_bare_slash_regex(repository_ctx, swiftc_path, _temp_dir):
+    """Returns True if `swiftc` supports debug prefix mapping."""
+    return _swift_succeeds(
+        repository_ctx,
+        swiftc_path,
+        "-version",
+        "-enable-bare-slash-regex",
     )
 
 def _check_supports_private_deps(repository_ctx, swiftc_path, temp_dir):
@@ -202,6 +212,7 @@ _FEATURE_CHECKS = {
     SWIFT_FEATURE_DEBUG_PREFIX_MAP: _check_debug_prefix_map,
     SWIFT_FEATURE_ENABLE_BATCH_MODE: _check_enable_batch_mode,
     SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES: _check_skip_function_bodies,
+    SWIFT_FEATURE_SUPPORTS_BARE_SLASH_REGEX: _check_enable_bare_slash_regex,
     SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS: _check_supports_private_deps,
     SWIFT_FEATURE_USE_RESPONSE_FILES: _check_use_response_files,
 }
