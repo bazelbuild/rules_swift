@@ -73,6 +73,17 @@ def swift_rules_dependencies(include_bzlmod_ready_dependencies = True):
             strip_prefix = "rules_proto-d3702796e768abe7086d2dc7e299d3f7aeb1dd34",
         )
 
+        _maybe(
+            http_archive,
+            name = "com_github_nlohmann_json",
+            urls = [
+                "https://github.com/nlohmann/json/releases/download/v3.6.1/include.zip",
+            ],
+            sha256 = "69cc88207ce91347ea530b227ff0776db82dcb8de6704e1a3d74f4841bc651cf",
+            type = "zip",
+            build_file = "@build_bazel_rules_swift//third_party:com_github_nlohmann_json/BUILD.overlay",
+        )
+
     _maybe(
         http_archive,
         name = "com_github_apple_swift_protobuf",
@@ -134,17 +145,6 @@ def swift_rules_dependencies(include_bzlmod_ready_dependencies = True):
         sha256 = "de51662b35f47764b6e12e9f1d43e7de28f6dd64f05bc30a318cf978cf3bc473",
         strip_prefix = "swift-log-1.4.2/",
         build_file = "@build_bazel_rules_swift//third_party:com_github_apple_swift_log/BUILD.overlay",
-    )
-
-    _maybe(
-        http_archive,
-        name = "com_github_nlohmann_json",
-        urls = [
-            "https://github.com/nlohmann/json/releases/download/v3.6.1/include.zip",
-        ],
-        sha256 = "69cc88207ce91347ea530b227ff0776db82dcb8de6704e1a3d74f4841bc651cf",
-        type = "zip",
-        build_file = "@build_bazel_rules_swift//third_party:com_github_nlohmann_json/BUILD.overlay",
     )
 
     # It relies on `index-import` to import indexes into Bazel's remote
