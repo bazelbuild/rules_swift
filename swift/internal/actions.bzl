@@ -120,8 +120,10 @@ def is_action_enabled(action_name, swift_toolchain):
     return bool(tool_config)
 
 def run_toolchain_action(
+        *,
         actions,
         action_name,
+        exec_group = None,
         feature_configuration,
         prerequisites,
         swift_toolchain,
@@ -133,6 +135,8 @@ def run_toolchain_action(
         actions: The rule context's `Actions` object, which will be used to
             create `Args` objects.
         action_name: The name of the action that should be run.
+        exec_group: Runs the Swift compilation action under the given execution
+            group's context. If `None`, the default execution group is used.
         feature_configuration: A feature configuration obtained from
             `swift_common.configure_features`.
         mnemonic: The mnemonic to associate with the action. If not provided,
@@ -206,6 +210,7 @@ def run_toolchain_action(
     actions.run(
         arguments = [tool_executable_args, args],
         env = tool_config.env,
+        exec_group = exec_group,
         executable = executable,
         execution_requirements = execution_requirements,
         inputs = depset(
