@@ -204,6 +204,7 @@ def compile_module_interface(
         *,
         actions,
         compilation_contexts,
+        exec_group = None,
         feature_configuration,
         module_name,
         swiftinterface_file,
@@ -219,6 +220,8 @@ def compile_module_interface(
             Swift-compatible preprocessor defines, header search paths, and so
             forth. These are typically retrieved from the `CcInfo` providers of
             a target's dependencies.
+        exec_group: Runs the Swift compilation action under the given execution
+            group's context. If `None`, the default execution group is used.
         feature_configuration: A feature configuration obtained from
             `swift_common.configure_features`.
         module_name: The name of the Swift module being compiled. This must be
@@ -327,6 +330,7 @@ def compile_module_interface(
     run_toolchain_action(
         actions = actions,
         action_name = SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+        exec_group = exec_group,
         feature_configuration = feature_configuration,
         outputs = [swiftmodule_file],
         prerequisites = prerequisites,
@@ -360,6 +364,7 @@ def compile(
         cc_infos,
         copts = [],
         defines = [],
+        exec_group = None,
         extra_swift_infos = [],
         feature_configuration,
         generated_header_name = None,
@@ -392,6 +397,8 @@ def compile(
             determine whether whole module optimization is being requested,
             which affects the nature of the output files.
         defines: Symbols that should be defined by passing `-D` to the compiler.
+        exec_group: Runs the Swift compilation action under the given execution
+            group's context. If `None`, the default execution group is used.
         extra_swift_infos: Extra `SwiftInfo` providers that aren't contained
             by the `deps` of the target being compiled but are required for
             compilation.
@@ -708,6 +715,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
     run_toolchain_action(
         actions = actions,
         action_name = SWIFT_ACTION_COMPILE,
+        exec_group = exec_group,
         feature_configuration = feature_configuration,
         outputs = all_compile_outputs,
         prerequisites = prerequisites,
@@ -753,6 +761,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         precompiled_module = _precompile_clang_module(
             actions = actions,
             cc_compilation_context = compilation_context_to_compile,
+            exec_group = exec_group,
             feature_configuration = feature_configuration,
             is_swift_generated_header = True,
             module_map_file = compile_outputs.generated_module_map_file,
@@ -836,6 +845,7 @@ def precompile_clang_module(
         *,
         actions,
         cc_compilation_context,
+        exec_group = None,
         feature_configuration,
         module_map_file,
         module_name,
@@ -855,6 +865,8 @@ def precompile_clang_module(
             of headers of the direct dependencies of the module being compiled,
             which Clang needs to be physically present before it detects that
             they belong to one of the precompiled module dependencies.
+        exec_group: Runs the Swift compilation action under the given execution
+            group's context. If `None`, the default execution group is used.
         feature_configuration: A feature configuration obtained from
             `swift_common.configure_features`.
         module_map_file: A textual module map file that defines the Clang module
@@ -875,6 +887,7 @@ def precompile_clang_module(
     return _precompile_clang_module(
         actions = actions,
         cc_compilation_context = cc_compilation_context,
+        exec_group = exec_group,
         feature_configuration = feature_configuration,
         is_swift_generated_header = False,
         module_map_file = module_map_file,
@@ -888,6 +901,7 @@ def _precompile_clang_module(
         *,
         actions,
         cc_compilation_context,
+        exec_group = None,
         feature_configuration,
         is_swift_generated_header,
         module_map_file,
@@ -908,6 +922,8 @@ def _precompile_clang_module(
             of headers of the direct dependencies of the module being compiled,
             which Clang needs to be physically present before it detects that
             they belong to one of the precompiled module dependencies.
+        exec_group: Runs the Swift compilation action under the given execution
+            group's context. If `None`, the default execution group is used.
         feature_configuration: A feature configuration obtained from
             `swift_common.configure_features`.
         is_swift_generated_header: If True, the action is compiling the
@@ -989,6 +1005,7 @@ def _precompile_clang_module(
     run_toolchain_action(
         actions = actions,
         action_name = SWIFT_ACTION_PRECOMPILE_C_MODULE,
+        exec_group = exec_group,
         feature_configuration = feature_configuration,
         outputs = [precompiled_module],
         prerequisites = prerequisites,
