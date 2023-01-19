@@ -163,8 +163,6 @@ def _lookup_provider_by_name(env, target, provider_name):
         provider = OutputGroupInfo
     elif provider_name == "SwiftInfo":
         provider = SwiftInfo
-    elif provider_name == "apple_common.Objc":
-        provider = apple_common.Objc
 
     if not provider:
         unittest.fail(
@@ -287,7 +285,6 @@ Currently, only the following providers are recognized:
 *   `DefaultInfo`
 *   `OutputGroupInfo`
 *   `SwiftInfo`
-*   `apple_common.Objc`
 """,
             ),
             "expected_files": attr.string_list(
@@ -340,7 +337,6 @@ Currently, only the following providers are recognized:
 *   `DefaultInfo`
 *   `OutputGroupInfo`
 *   `SwiftInfo`
-*   `apple_common.Objc`
 """,
             ),
         },

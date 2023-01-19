@@ -98,9 +98,6 @@ load(
 )
 load("//swift/toolchains/config:tool_config.bzl", "ToolConfigInfo")
 
-# TODO: Remove once we drop bazel 7.x
-_OBJC_PROVIDER_LINKING = hasattr(apple_common.new_objc_provider(), "linkopt")
-
 def _platform_developer_framework_dir(
         apple_toolchain,
         target_triple):
@@ -143,16 +140,16 @@ def _sdk_developer_framework_dir(apple_toolchain, target_triple):
 
     return paths.join(apple_toolchain.sdk_dir(), "Developer/Library/Frameworks")
 
-def _swift_linkopts_providers(
+def _swift_linkopts_cc_info(
         apple_toolchain,
         target_triple,
         toolchain_label,
         toolchain_root):
-    """Returns providers containing flags that should be passed to the linker.
+    """Returns a `CcInfo` containing flags that should be passed to the linker.
 
     The providers returned by this function will be used as implicit
-    dependencies of the toolchain to ensure that any binary containing Swift code
-    will link to the standard libraries correctly.
+    dependencies of the toolchain to ensure that any binary containing Swift
+    code will link to the standard libraries correctly.
 
     Args:
         apple_toolchain: The `apple_common.apple_toolchain()` object.
@@ -163,12 +160,8 @@ def _swift_linkopts_providers(
             libraries required to link the binary
 
     Returns:
-        A `struct` containing the following fields:
-
-        *   `cc_info`: A `CcInfo` provider that will provide linker flags to
-            binaries that depend on Swift targets.
-        *   `objc_info`: An `apple_common.Objc` provider that will provide
-            linker flags to binaries that depend on Swift targets.
+        A `CcInfo` provider that will provide linker flags to binaries that
+        depend on Swift targets.
     """
     linkopts = []
     if toolchain_root:
@@ -197,23 +190,15 @@ def _swift_linkopts_providers(
         "-Wl,-rpath,/usr/lib/swift",
     ])
 
-    if _OBJC_PROVIDER_LINKING:
-        objc_info = apple_common.new_objc_provider(linkopt = depset(linkopts))
-    else:
-        objc_info = apple_common.new_objc_provider()
-
-    return struct(
-        cc_info = CcInfo(
-            linking_context = cc_common.create_linking_context(
-                linker_inputs = depset([
-                    cc_common.create_linker_input(
-                        owner = toolchain_label,
-                        user_link_flags = depset(linkopts),
-                    ),
-                ]),
-            ),
+    return CcInfo(
+        linking_context = cc_common.create_linking_context(
+            linker_inputs = depset([
+                cc_common.create_linker_input(
+                    owner = toolchain_label,
+                    user_link_flags = depset(linkopts),
+                ),
+            ]),
         ),
-        objc_info = objc_info,
     )
 
 def _make_resource_directory_configurator(developer_dir):
@@ -604,7 +589,7 @@ def _xcode_swift_toolchain_impl(ctx):
     elif custom_toolchain:
         custom_xcode_toolchain_root = "__BAZEL_CUSTOM_XCODE_TOOLCHAIN_PATH__"
 
-    swift_linkopts_providers = _swift_linkopts_providers(
+    swift_linkopts_cc_info = _swift_linkopts_cc_info(
         apple_toolchain = apple_toolchain,
         target_triple = target_triple,
         toolchain_label = ctx.label,
@@ -717,8 +702,7 @@ def _xcode_swift_toolchain_impl(ctx):
         ),
         implicit_deps_providers = collect_implicit_deps_providers(
             ctx.attr.implicit_deps + ctx.attr.clang_implicit_deps,
-            additional_cc_infos = [swift_linkopts_providers.cc_info],
-            additional_objc_infos = [swift_linkopts_providers.objc_info],
+            additional_cc_infos = [swift_linkopts_cc_info],
         ),
         module_aliases = (
             ctx.attr._module_mapping[SwiftModuleAliasesInfo].aliases

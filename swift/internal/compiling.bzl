@@ -258,7 +258,6 @@ def compile_module_interface(
         is_swift = True,
         module_name = module_name,
         objc_include_paths_workaround = depset(),
-        objc_info = None,
         source_files = [swiftinterface_file],
         swiftmodule_file = swiftmodule_file,
         target_label = feature_configuration._label,
@@ -314,7 +313,6 @@ def compile(
         is_test = None,
         include_dev_srch_paths = None,
         module_name,
-        objc_infos,
         package_name,
         plugins = [],
         private_swift_infos = [],
@@ -358,10 +356,6 @@ def compile(
         module_name: The name of the Swift module being compiled. This must be
             present and valid; use `derive_swift_module_name` to generate a
             default from the target's label if needed.
-        objc_infos: A list of `apple_common.ObjC` providers that represent
-            C/Objective-C requirements of the target being compiled, such as
-            Swift-compatible preprocessor defines, header search paths, and so
-            forth. These are typically retrieved from a target's dependencies.
         package_name: The semantic package of the name of the Swift module
             being compiled.
         plugins: A list of `SwiftCompilerPluginInfo` providers that represent
@@ -542,9 +536,6 @@ def compile(
     merged_cc_info = cc_common.merge_cc_infos(
         cc_infos = cc_infos + swift_toolchain.implicit_deps_providers.cc_infos,
     )
-    merged_objc_info = apple_common.new_objc_provider(
-        providers = objc_infos + swift_toolchain.implicit_deps_providers.objc_infos,
-    )
 
     transitive_swiftmodules = []
     defines_set = sets.make(defines)
@@ -645,7 +636,6 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         include_dev_srch_paths = include_dev_srch_paths_value,
         is_swift = True,
         module_name = module_name,
-        objc_info = merged_objc_info,
         original_module_name = original_module_name,
         package_name = package_name,
         plugins = used_plugins,
@@ -987,7 +977,6 @@ def _precompile_clang_module(
         is_swift_generated_header = is_swift_generated_header,
         module_name = module_name,
         package_name = None,
-        objc_info = apple_common.new_objc_provider(),
         pcm_file = precompiled_module,
         source_files = [module_map_file],
         target_label = feature_configuration._label,

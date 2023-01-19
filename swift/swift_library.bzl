@@ -38,7 +38,6 @@ load("//swift/internal:features.bzl", "configure_features")
 load(
     "//swift/internal:linking.bzl",
     "create_linking_context_from_compilation_outputs",
-    "new_objc_provider",
 )
 load(
     "//swift/internal:output_groups.bzl",
@@ -197,7 +196,6 @@ def _swift_library_impl(ctx):
         generated_header_name = generated_header_name,
         include_dev_srch_paths = include_dev_srch_paths,
         module_name = module_name,
-        objc_infos = get_providers(ctx.attr.deps, apple_common.Objc),
         package_name = ctx.attr.package_name,
         plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),
         private_swift_infos = private_swift_infos,
@@ -253,8 +251,7 @@ def _swift_library_impl(ctx):
         linking_output.library_to_link.pic_static_library,
     ])
 
-    implicit_deps_providers = swift_toolchain.implicit_deps_providers
-    providers = [
+    return [
         DefaultInfo(
             files = depset(direct_output_files),
             runfiles = ctx.runfiles(
@@ -278,25 +275,6 @@ def _swift_library_impl(ctx):
             **supplemental_compilation_output_groups(supplemental_outputs)
         ),
     ]
-
-    # Propagate an `apple_common.Objc` provider with linking info about the
-    # library so that linking with Apple Starlark APIs/rules works correctly.
-    # TODO(b/171413861): This can be removed when the Obj-C rules are migrated
-    # to use `CcLinkingContext`.
-    providers.append(new_objc_provider(
-        additional_link_inputs = additional_inputs,
-        additional_objc_infos = implicit_deps_providers.objc_infos,
-        alwayslink = ctx.attr.alwayslink,
-        deps = deps + private_deps,
-        feature_configuration = feature_configuration,
-        is_test = ctx.attr.testonly,
-        module_context = module_context,
-        libraries_to_link = [linking_output.library_to_link],
-        user_link_flags = linkopts,
-        swift_toolchain = swift_toolchain,
-    ))
-
-    return providers
 
 swift_library = rule(
     attrs = dicts.add(
