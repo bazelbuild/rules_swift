@@ -17,10 +17,7 @@
 load("@build_bazel_rules_swift//swift:providers.bzl", "SwiftInfo")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 
-def collect_implicit_deps_providers(
-        targets,
-        additional_cc_infos = [],
-        additional_objc_infos = []):
+def collect_implicit_deps_providers(targets, additional_cc_infos = []):
     """Returns a struct with important providers from a list of implicit deps.
 
     Note that the relationship between each provider in the list and the target
@@ -30,33 +27,25 @@ def collect_implicit_deps_providers(
         targets: A list (possibly empty) of `Target`s.
         additional_cc_infos: A `list` of additional `CcInfo` providers that
             should be included in the returned value.
-        additional_objc_infos: A `list` of additional `apple_common.Objc`
-            providers that should be included in the returned value.
 
     Returns:
         A `struct` containing three fields:
 
         *   `cc_infos`: The merged `CcInfo` provider from the given targets.
-        *   `objc_infos`: The merged `apple_common.Objc` provider from the given
-            targets.
         *   `swift_infos`: The merged `SwiftInfo` provider from the given
             targets.
     """
     cc_infos = []
-    objc_infos = []
     swift_infos = []
 
     for target in targets:
         if CcInfo in target:
             cc_infos.append(target[CcInfo])
-        if apple_common.Objc in target:
-            objc_infos.append(target[apple_common.Objc])
         if SwiftInfo in target:
             swift_infos.append(target[SwiftInfo])
 
     return struct(
         cc_infos = cc_infos + additional_cc_infos,
-        objc_infos = objc_infos + additional_objc_infos,
         swift_infos = swift_infos,
     )
 

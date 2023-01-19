@@ -18,7 +18,6 @@ load(
     "@build_bazel_rules_swift//swift:swift_clang_module_aspect.bzl",
     "swift_clang_module_aspect",
 )
-load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(":attrs.bzl", "swift_compilation_attrs")
 load(
@@ -27,7 +26,6 @@ load(
     "should_embed_swiftmodule_for_debugging",
 )
 load(":features.bzl", "configure_features", "get_cc_feature_configuration")
-load(":utils.bzl", "get_providers")
 
 _MALLOC_DOCSTRING = """\
 Override the default dependency on `malloc`.
@@ -305,99 +303,6 @@ def malloc_linking_context(ctx):
     malloc = ctx.attr._custom_malloc or ctx.attr.malloc
     return malloc[CcInfo].linking_context
 
-def new_objc_provider(
-        *,
-        additional_link_inputs = [],
-        additional_objc_infos = [],
-        alwayslink = False,
-        deps,
-        feature_configuration,
-        libraries_to_link,
-        module_context,
-        user_link_flags = []):
-    """Creates an `apple_common.Objc` provider for a Swift target.
-
-    Args:
-        additional_link_inputs: Additional linker input files that should be
-            propagated to dependents.
-        additional_objc_infos: Additional `apple_common.Objc` providers from
-            transitive dependencies not provided by the `deps` argument.
-        alwayslink: If True, any binary that depends on the providers returned
-            by this function will link in all of the library's object files,
-            even if some contain no symbols referenced by the binary.
-        deps: The dependencies of the target being built, whose `Objc` providers
-            will be passed to the new one in order to propagate the correct
-            transitive fields.
-        feature_configuration: The Swift feature configuration.
-        libraries_to_link: A list (typically of one element) of the
-            `LibraryToLink` objects from which the static archives (`.a` files)
-            containing the target's compiled code will be retrieved.
-        module_context: The module context as returned by
-            `swift_common.compile`.
-        user_link_flags: Linker options that should be propagated to dependents.
-
-    Returns:
-        An `apple_common.Objc` provider that should be returned by the calling
-        rule.
-    """
-
-    # The link action registered by `apple_common.link_multi_arch_binary` only
-    # looks at `Objc` providers, not `CcInfo`, for libraries to link.
-    # Dependencies from an `objc_library` to a `cc_library` are handled as a
-    # special case, but other `cc_library` dependencies (such as `swift_library`
-    # to `cc_library`) would be lost since they do not receive the same
-    # treatment. Until those special cases are resolved via the unification of
-    # the Obj-C and C++ rules, we need to collect libraries from `CcInfo` and
-    # put them into the new `Objc` provider.
-    transitive_cc_libs = []
-    for cc_info in get_providers(deps, CcInfo):
-        static_libs = []
-        for linker_input in cc_info.linking_context.linker_inputs.to_list():
-            for library_to_link in linker_input.libraries:
-                library = library_to_link.static_library
-                if library:
-                    static_libs.append(library)
-        transitive_cc_libs.append(depset(static_libs, order = "topological"))
-
-    direct_libraries = []
-    force_load_libraries = []
-
-    for library_to_link in libraries_to_link:
-        library = library_to_link.static_library
-        if library:
-            direct_libraries.append(library)
-            if alwayslink:
-                force_load_libraries.append(library)
-
-    if feature_configuration and should_embed_swiftmodule_for_debugging(
-        feature_configuration = feature_configuration,
-        module_context = module_context,
-    ):
-        module_file = module_context.swift.swiftmodule
-        debug_link_flags = ["-Wl,-add_ast_path,{}".format(module_file.path)]
-        debug_link_inputs = [module_file]
-    else:
-        debug_link_flags = []
-        debug_link_inputs = []
-
-    return apple_common.new_objc_provider(
-        force_load_library = depset(
-            force_load_libraries,
-            order = "topological",
-        ),
-        library = depset(
-            direct_libraries,
-            transitive = transitive_cc_libs,
-            order = "topological",
-        ),
-        link_inputs = depset(additional_link_inputs + debug_link_inputs),
-        linkopt = depset(user_link_flags + debug_link_flags),
-        providers = get_providers(
-            deps,
-            apple_common.Objc,
-        ) + additional_objc_infos,
-    )
-
 def register_link_binary_action(
         *,
         actions,
@@ -411,7 +316,6 @@ def register_link_binary_action(
         label,
         module_contexts = [],
         output_type,
-        owner,
         stamp,
         swift_toolchain,
         user_link_flags = [],
@@ -441,7 +345,6 @@ def register_link_binary_action(
             be empty if the target had no sources of its own.
         output_type: A string indicating the output type; "executable" or
             "dynamic_library".
-        owner: The `Label` of the target that owns this linker input.
         stamp: A tri-state value (-1, 0, or 1) that specifies whether link
             stamping is enabled. See `cc_common.link` for details about the
             behavior of this argument.
@@ -457,48 +360,11 @@ def register_link_binary_action(
         `library_to_link` that was linked (depending on the value of the
         `output_type` argument).
     """
-    linking_contexts = []
-
-    for dep in deps:
-        if CcInfo in dep:
-            cc_info = dep[CcInfo]
-            linking_contexts.append(cc_info.linking_context)
-
-        # TODO(allevato): Remove all of this when `apple_common.Objc` goes away.
-        if apple_common.Objc in dep:
-            objc = dep[apple_common.Objc]
-
-            static_framework_files = objc.static_framework_file.to_list()
-
-            # We don't need to handle the `objc.sdk_framework` field here
-            # because those values have also been put into the user link flags
-            # of a CcInfo, but the others don't seem to have been.
-            dep_link_flags = [
-                "-l{}".format(dylib)
-                for dylib in objc.sdk_dylib.to_list()
-            ]
-            dep_link_flags.extend([
-                "-F{}".format(path)
-                for path in objc.dynamic_framework_paths.to_list()
-            ])
-            dep_link_flags.extend(collections.before_each(
-                "-framework",
-                objc.dynamic_framework_names.to_list(),
-            ))
-            dep_link_flags.extend(static_framework_files)
-
-            linking_contexts.append(
-                cc_common.create_linking_context(
-                    linker_inputs = depset([
-                        cc_common.create_linker_input(
-                            owner = owner,
-                            user_link_flags = depset(dep_link_flags),
-                        ),
-                    ]),
-                ),
-            )
-
-    linking_contexts.extend(additional_linking_contexts)
+    linking_contexts = [
+        dep[CcInfo].linking_context
+        for dep in deps
+        if CcInfo in dep
+    ] + additional_linking_contexts
 
     for module_context in module_contexts:
         debugging_linking_context = _create_embedded_debugging_linking_context(

@@ -36,11 +36,7 @@ load(
     "SWIFT_FEATURE_LAYERING_CHECK_SWIFT",
 )
 load(":features.bzl", "configure_features", "is_feature_enabled")
-load(
-    ":linking.bzl",
-    "create_linking_context_from_compilation_outputs",
-    "new_objc_provider",
-)
+load(":linking.bzl", "create_linking_context_from_compilation_outputs")
 load(
     ":proto_gen_utils.bzl",
     "declare_generated_files_as_siblings",
@@ -89,7 +85,6 @@ This provider is an implementation detail not meant to be used by clients.
 """,
     fields = {
         "cc_info": "The underlying `CcInfo` provider.",
-        "objc_info": "The underlying `apple_common.Objc` provider.",
         "swift_info": "The underlying `SwiftInfo` provider.",
     },
 )
@@ -322,12 +317,10 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
 
     proto_deps = aspect_ctx.rule.attr.deps
     transitive_cc_infos = []
-    transitive_objc_infos = []
     transitive_swift_infos = []
     for p in proto_deps:
         compilation_info = p[SwiftProtoCompilationInfo]
         transitive_cc_infos.append(compilation_info.cc_info)
-        transitive_objc_infos.append(compilation_info.objc_info)
         transitive_swift_infos.append(compilation_info.swift_info)
 
     minimal_module_mappings = []
@@ -422,8 +415,6 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
                 transitive_cc_infos.append(p[CcInfo])
             if SwiftInfo in p:
                 transitive_swift_infos.append(p[SwiftInfo])
-            if apple_common.Objc in p:
-                transitive_objc_infos.append(p[apple_common.Objc])
 
         compile_result = compile(
             actions = aspect_ctx.actions,
@@ -463,24 +454,6 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             )
         )
 
-        # Propagate an `apple_common.Objc` provider with linking info about the
-        # library so that linking with Apple Starlark APIs/rules works
-        # correctly.
-        # TODO(b/171413861): This can be removed when the Obj-C rules are
-        # migrated to use `CcLinkingContext`.
-        objc_info = new_objc_provider(
-            additional_objc_infos = (
-                transitive_objc_infos +
-                swift_toolchain.implicit_deps_providers.objc_infos
-            ),
-            # We pass an empty list here because we already extracted the
-            # `Objc` providers from `SwiftProtoCompilationInfo` above.
-            deps = [],
-            feature_configuration = feature_configuration,
-            module_context = module_context,
-            libraries_to_link = [linking_output.library_to_link],
-        )
-
         cc_info = CcInfo(
             compilation_context = module_context.clang.compilation_context,
             linking_context = linking_context,
@@ -490,25 +463,20 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             OutputGroupInfo(**output_groups),
             SwiftProtoCompilationInfo(
                 cc_info = cc_info,
-                objc_info = objc_info,
                 swift_info = compile_result.swift_info,
             ),
         ]
     else:
         # If there are no srcs, merge the `SwiftInfo` and `CcInfo` providers and
-        # propagate them. Do likewise for `apple_common.Objc` providers if the
-        # toolchain supports Objective-C interop. Note that we don't need to
-        # handle the runtime support libraries here; we can assume that they've
-        # already been pulled in by a `proto_library` that had srcs.
+        # propagate them. Note that we don't need to handle the runtime support
+        # libraries here; we can assume that they've already been pulled in by a
+        # `proto_library` that had srcs.
         pbswift_files = []
 
         providers = [
             SwiftProtoCompilationInfo(
                 cc_info = cc_common.merge_cc_infos(
                     cc_infos = transitive_cc_infos,
-                ),
-                objc_info = apple_common.new_objc_provider(
-                    providers = transitive_objc_infos,
                 ),
                 swift_info = SwiftInfo(swift_infos = transitive_swift_infos),
             ),

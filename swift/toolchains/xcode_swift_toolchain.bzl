@@ -240,16 +240,16 @@ def _sdk_developer_framework_dir(apple_toolchain, target_triple, xcode_config):
 
     return paths.join(apple_toolchain.sdk_dir(), "Developer/Library/Frameworks")
 
-def _swift_linkopts_providers(
+def _swift_linkopts_cc_info(
         apple_toolchain,
         target_triple,
         toolchain_label,
         xcode_config):
-    """Returns providers containing flags that should be passed to the linker.
+    """Returns a `CcInfo` containing flags that should be passed to the linker.
 
     The providers returned by this function will be used as implicit
-    dependencies of the toolchain to ensure that any binary containing Swift code
-    will link to the standard libraries correctly.
+    dependencies of the toolchain to ensure that any binary containing Swift
+    code will link to the standard libraries correctly.
 
     Args:
         apple_toolchain: The `apple_common.apple_toolchain()` object.
@@ -259,12 +259,8 @@ def _swift_linkopts_providers(
         xcode_config: The Xcode configuration.
 
     Returns:
-        A `struct` containing the following fields:
-
-        *   `cc_info`: A `CcInfo` provider that will provide linker flags to
-            binaries that depend on Swift targets.
-        *   `objc_info`: An `apple_common.Objc` provider that will provide
-            linker flags to binaries that depend on Swift targets.
+        A `CcInfo` provider that will provide linker flags to binaries that
+        depend on Swift targets.
     """
     platform_developer_framework_dir = _platform_developer_framework_dir(
         apple_toolchain,
@@ -310,18 +306,15 @@ def _swift_linkopts_providers(
             ),
         ])
 
-    return struct(
-        cc_info = CcInfo(
-            linking_context = cc_common.create_linking_context(
-                linker_inputs = depset([
-                    cc_common.create_linker_input(
-                        owner = toolchain_label,
-                        user_link_flags = depset(linkopts),
-                    ),
-                ]),
-            ),
+    return CcInfo(
+        linking_context = cc_common.create_linking_context(
+            linker_inputs = depset([
+                cc_common.create_linker_input(
+                    owner = toolchain_label,
+                    user_link_flags = depset(linkopts),
+                ),
+            ]),
         ),
-        objc_info = apple_common.new_objc_provider(linkopt = depset(linkopts)),
     )
 
 def _features_for_bitcode_mode(bitcode_mode):
@@ -716,7 +709,7 @@ def _xcode_swift_toolchain_impl(ctx):
 
     xcode_config = ctx.attr._xcode_config[apple_common.XcodeVersionConfig]
 
-    swift_linkopts_providers = _swift_linkopts_providers(
+    swift_linkopts_cc_info = _swift_linkopts_cc_info(
         apple_toolchain = apple_toolchain,
         target_triple = target_triple,
         toolchain_label = ctx.label,
@@ -829,10 +822,7 @@ def _xcode_swift_toolchain_impl(ctx):
         ),
         implicit_deps_providers = collect_implicit_deps_providers(
             ctx.attr.implicit_deps + ctx.attr.clang_implicit_deps,
-            additional_cc_infos = [swift_linkopts_providers.cc_info],
-            additional_objc_infos = [
-                swift_linkopts_providers.objc_info,
-            ],
+            additional_cc_infos = [swift_linkopts_cc_info],
         ),
         module_aliases = module_aliases,
         package_configurations = [

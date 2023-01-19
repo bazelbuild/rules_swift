@@ -34,7 +34,7 @@ def _swift_proto_library_impl(ctx):
     swift_info = proto_compile_info.swift_info
     swift_proto_info = dep[SwiftProtoInfo]
 
-    providers = [
+    return [
         # Return the generated sources as the default outputs if the user builds
         # this target standalone (along with the direct .swiftmodules, to force
         # compilation). This lets users easily inspect those sources to
@@ -59,13 +59,6 @@ def _swift_proto_library_impl(ctx):
         # typically only be used for IDE support.)
         swift_proto_info,
     ]
-
-    # Propagate a nested apple_common.Objc provider if present so that
-    # apple_binary targets link correctly.
-    if proto_compile_info.objc_info:
-        providers.append(proto_compile_info.objc_info)
-
-    return providers
 
 swift_proto_library = rule(
     attrs = {

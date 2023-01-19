@@ -434,7 +434,6 @@ def _swift_test_impl(ctx):
         label = ctx.label,
         module_contexts = module_contexts,
         output_type = "executable",
-        owner = ctx.label,
         stamp = ctx.attr.stamp,
         swift_toolchain = swift_toolchain,
         user_link_flags = expand_locations(

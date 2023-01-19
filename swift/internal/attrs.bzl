@@ -164,7 +164,7 @@ def swift_deps_attr(doc, **kwargs):
     """Returns an attribute suitable for representing Swift rule dependencies.
 
     The returned attribute will be configured to accept targets that propagate
-    `CcInfo`, `SwiftInfo`, or `apple_common.Objc` providers.
+    `CcInfo` or `SwiftInfo` providers.
 
     Args:
         doc: A string containing a summary description of the purpose of the
@@ -183,18 +183,9 @@ Allowed kinds of dependencies are:
 
 *   `swift_import` and `swift_library` (or anything propagating `SwiftInfo`)
 
-*   `cc_library` (or anything propagating `CcInfo`)
-
-Additionally, on platforms that support Objective-C interop, `objc_library`
-targets (or anything propagating the `apple_common.Objc` provider) are allowed
-as dependencies. On platforms that do not support Objective-C interop (such as
-Linux), those dependencies will be **ignored.**
+*   `cc_library` and `objc_library` (or anything propagating `CcInfo`)
 """,
-        providers = [
-            [CcInfo],
-            [SwiftInfo],
-            [apple_common.Objc],
-        ],
+        providers = [[CcInfo], [SwiftInfo]],
         **kwargs
     )
 
