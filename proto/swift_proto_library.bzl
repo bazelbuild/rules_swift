@@ -103,7 +103,6 @@ def _swift_proto_library_impl(ctx):
         direct_output_group_info,
         direct_swift_info,
         direct_swift_proto_cc_info.cc_info,
-        direct_swift_proto_cc_info.objc_info,
         direct_swift_proto_info,
     ]
 

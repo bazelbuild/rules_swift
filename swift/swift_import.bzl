@@ -26,7 +26,6 @@ load(
     "configure_features",
     "get_cc_feature_configuration",
 )
-load("//swift/internal:linking.bzl", "new_objc_provider")
 load("//swift/internal:providers.bzl", "SwiftCompilerPluginInfo")
 load(
     "//swift/internal:toolchain_utils.bzl",
@@ -138,7 +137,7 @@ def _swift_import_impl(ctx):
         )
         swift_outputs = [swiftmodule] + compact([swiftdoc])
 
-    providers = [
+    return [
         DefaultInfo(
             files = depset(archives + swift_outputs),
             runfiles = ctx.runfiles(
@@ -152,23 +151,7 @@ def _swift_import_impl(ctx):
             swift_infos = swift_infos,
         ),
         cc_info,
-        # Propagate an `Objc` provider so that Apple-specific rules like
-        # apple_binary` will link the imported library properly. Typically we'd
-        # want to only propagate this if the toolchain reports that it supports
-        # Objective-C interop, but we would hit the same cyclic dependency
-        # mentioned above, so we propagate it unconditionally; it will be
-        # ignored on non-Apple platforms anyway.
-        new_objc_provider(
-            deps = deps,
-            feature_configuration = None,
-            is_test = ctx.attr.testonly,
-            libraries_to_link = libraries_to_link,
-            module_context = module_context,
-            swift_toolchain = swift_toolchain,
-        ),
     ]
-
-    return providers
 
 swift_import = rule(
     attrs = dicts.add(

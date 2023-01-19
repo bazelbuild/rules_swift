@@ -194,17 +194,6 @@ def _mixed_language_library_impl(ctx):
             dependency_attributes = ["deps"],
         ),
         swift_info,
-        # Propagate an `apple_common.Objc` provider with linking info about the
-        # library so that linking with Apple Starlark APIs/rules works
-        # correctly.
-        # TODO(b/171413861): This can be removed when the Obj-C rules are
-        # migrated to use `CcLinkingContext`.
-        apple_common.new_objc_provider(
-            providers = get_providers(
-                [swift_target, clang_target],
-                apple_common.Objc,
-            ),
-        ),
     ]
 
 mixed_language_library = rule(

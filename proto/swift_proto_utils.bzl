@@ -30,12 +30,6 @@ load("//swift:swift_common.bzl", "swift_common")
 
 # buildifier: disable=bzl-visibility
 load(
-    "//swift/internal:linking.bzl",
-    "new_objc_provider",
-)
-
-# buildifier: disable=bzl-visibility
-load(
     "//swift/internal:output_groups.bzl",
     "supplemental_compilation_output_groups",
 )
@@ -189,7 +183,6 @@ This provider is an implementation detail not meant to be used by clients.
 """,
     fields = {
         "cc_info": "The underlying `CcInfo` provider.",
-        "objc_info": "The underlying `apple_common.Objc` provider.",
     },
 )
 
@@ -274,7 +267,6 @@ def compile_swift_protos_for_target(
         feature_configuration = feature_configuration,
         include_dev_srch_paths = include_dev_srch_paths,
         module_name = module_name,
-        objc_infos = get_providers(compiler_deps, apple_common.Objc),
         package_name = None,
         srcs = generated_swift_srcs,
         swift_toolchain = swift_toolchain,
@@ -288,7 +280,7 @@ def compile_swift_protos_for_target(
     supplemental_outputs = compile_result.supplemental_outputs
 
     # Create the linking context from the compilation outputs:
-    linking_context, linking_output = (
+    linking_context, _ = (
         swift_common.create_linking_context_from_compilation_outputs(
             actions = ctx.actions,
             compilation_outputs = compilation_outputs,
@@ -321,13 +313,6 @@ def compile_swift_protos_for_target(
         lambda proto_cc_info: proto_cc_info.cc_info,
     ) + get_providers(compiler_deps, CcInfo)
 
-    # Gather the transitive objc info providers:
-    transitive_objc_infos = get_providers(
-        compiler_deps,
-        SwiftProtoCcInfo,
-        lambda proto_cc_info: proto_cc_info.objc_info,
-    ) + get_providers(compiler_deps, apple_common.Objc)
-
     # Gather the transitive swift info providers:
     transitive_swift_infos = get_providers(
         compiler_deps,
@@ -351,20 +336,6 @@ def compile_swift_protos_for_target(
         cc_infos = transitive_cc_infos,
     )
 
-    # Create the direct objc info provider:
-    direct_objc_info = new_objc_provider(
-        additional_objc_infos = (
-            transitive_objc_infos +
-            swift_toolchain.implicit_deps_providers.objc_infos
-        ),
-        deps = [],
-        feature_configuration = feature_configuration,
-        is_test = False,
-        module_context = module_context,
-        libraries_to_link = [linking_output.library_to_link],
-        swift_toolchain = swift_toolchain,
-    )
-
     # Create the direct swift info provider:
     direct_swift_info = SwiftInfo(
         modules = [module_context],
@@ -381,7 +352,6 @@ def compile_swift_protos_for_target(
     # Create the direct swift proto cc info provider:
     direct_swift_proto_cc_info = SwiftProtoCcInfo(
         cc_info = direct_cc_info,
-        objc_info = direct_objc_info,
     )
 
     # Create the direct swift proto info:

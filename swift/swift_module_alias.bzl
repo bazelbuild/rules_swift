@@ -21,7 +21,6 @@ load("//swift/internal:features.bzl", "configure_features")
 load(
     "//swift/internal:linking.bzl",
     "create_linking_context_from_compilation_outputs",
-    "new_objc_provider",
 )
 load(
     "//swift/internal:output_groups.bzl",
@@ -77,7 +76,6 @@ def _swift_module_alias_impl(ctx):
         feature_configuration = feature_configuration,
         include_dev_srch_paths = ctx.attr.testonly,
         module_name = module_name,
-        objc_infos = get_providers(ctx.attr.deps, apple_common.Objc),
         package_name = None,
         srcs = [reexport_src],
         swift_infos = swift_infos,
@@ -107,7 +105,7 @@ def _swift_module_alias_impl(ctx):
         )
     )
 
-    providers = [
+    return [
         DefaultInfo(
             files = depset(compact([
                 module_context.swift.swiftdoc,
@@ -131,24 +129,6 @@ def _swift_module_alias_impl(ctx):
         ),
         compile_result.swift_info,
     ]
-
-    # Propagate an `apple_common.Objc` provider with linking info about the
-    # library so that linking with Apple Starlark APIs/rules works correctly.
-    # TODO(b/171413861): This can be removed when the Obj-C rules are migrated
-    # to use `CcLinkingContext`.
-    providers.append(new_objc_provider(
-        additional_objc_infos = (
-            swift_toolchain.implicit_deps_providers.objc_infos
-        ),
-        deps = deps,
-        feature_configuration = feature_configuration,
-        is_test = ctx.attr.testonly,
-        module_context = module_context,
-        libraries_to_link = [linking_output.library_to_link],
-        swift_toolchain = swift_toolchain,
-    ))
-
-    return providers
 
 swift_module_alias = rule(
     attrs = dicts.add(
