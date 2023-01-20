@@ -39,7 +39,10 @@ def write_explicit_swift_module_map_file(
             continue
 
         swift_context = module_context.swift
-        module_description = {"moduleName": module_context.name}
+        module_description = {
+            "moduleName": module_context.name,
+            "isFramework": False,
+        }
         if swift_context.swiftmodule:
             module_description["modulePath"] = swift_context.swiftmodule.path
         module_descriptions.append(module_description)
