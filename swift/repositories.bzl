@@ -31,6 +31,7 @@ def _maybe(repo_rule, name, **kwargs):
     if not native.existing_rule(name):
         repo_rule(name = name, **kwargs)
 
+# buildifier: disable=unnamed-macro
 def swift_rules_dependencies(include_bzlmod_ready_dependencies = True):
     """Fetches repositories that are dependencies of `rules_swift`.
 
@@ -213,3 +214,9 @@ def swift_rules_dependencies(include_bzlmod_ready_dependencies = True):
         swift_autoconfiguration,
         name = "build_bazel_rules_swift_local_config",
     )
+
+    if include_bzlmod_ready_dependencies:
+        native.register_toolchains(
+            # Use register_toolchain's target pattern expansion to register all toolchains in the package.
+            "@build_bazel_rules_swift_local_config//:all",
+        )
