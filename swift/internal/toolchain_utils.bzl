@@ -68,8 +68,4 @@ def use_swift_toolchain():
         A list of toolchain types that should be passed to `rule()`, `aspect()`,
         or `exec_group`.
     """
-
-    # TODO(b/205018581): Intentionally empty for now so that rule definitions
-    # can reference the function while still being a no-op. A future change will
-    # add the toolchain type to this list to enable toolchain resolution.
-    return []
+    return [SWIFT_TOOLCHAIN_TYPE]
