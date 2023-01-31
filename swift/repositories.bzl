@@ -69,7 +69,7 @@ def swift_rules_dependencies(include_bzlmod_ready_dependencies = True):
             urls = [
                 "https://github.com/bazelbuild/rules_proto/archive/d3702796e768abe7086d2dc7e299d3f7aeb1dd34.tar.gz",
             ],
-            sha256 = "a88c799bf19c0a157f9c423477277a0d0362f251388d7b28f0f00bfb0bf25b3d",
+            sha256 = "fb694e0cb1cf0dd0ce968f34292c012105732366af07d76772d2a1fd196be7fd",
             strip_prefix = "rules_proto-d3702796e768abe7086d2dc7e299d3f7aeb1dd34",
         )
 
