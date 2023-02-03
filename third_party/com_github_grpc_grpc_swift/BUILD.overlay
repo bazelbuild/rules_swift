@@ -8,7 +8,6 @@ cc_library(
     name = "CGRPCZlib",
     srcs = glob([
         "Sources/CGRPCZlib/**/*.c",
-        "Sources/CGRPCZlib/**/*.cc",
     ]),
     hdrs = glob([
         "Sources/CGRPCZlib/**/*.h",
