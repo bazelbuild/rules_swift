@@ -93,7 +93,6 @@ cc_library(
     name = "CNIOAtomics",
     srcs = glob([
         "Sources/CNIOAtomics/**/*.c",
-        "Sources/CNIOAtomics/**/*.cc",
     ]),
     hdrs = glob([
         "Sources/CNIOAtomics/**/*.h",
@@ -107,7 +106,6 @@ cc_library(
     name = "CNIOSHA1",
     srcs = glob([
         "Sources/CNIOSHA1/**/*.c",
-        "Sources/CNIOSHA1/**/*.cc",
     ]),
     hdrs = [
         "Sources/CNIOSHA1/**/*.h",
@@ -121,7 +119,6 @@ cc_library(
     name = "CNIOLinux",
     srcs = glob([
         "Sources/CNIOLinux/**/*.c",
-        "Sources/CNIOLinux/**/*.cc",
     ]),
     hdrs = glob([
         "Sources/CNIOLinux/**/*.h",
@@ -135,7 +132,6 @@ cc_library(
     name = "CNIODarwin",
     srcs = glob([
         "Sources/CNIODarwin/**/*.c",
-        "Sources/CNIODarwin/**/*.cc",
     ]),
     hdrs = glob([
         "Sources/CNIODarwin/**/*.h",
@@ -149,7 +145,6 @@ cc_library(
     name = "CNIOWindows",
     srcs = glob([
         "Sources/CNIOWindows/**/*.c",
-        "Sources/CNIOWindows/**/*.cc",
     ]),
     hdrs = glob([
         "Sources/CNIOWindows/**/*.h",
@@ -212,7 +207,6 @@ cc_library(
     name = "CNIOHTTPParser",
     srcs = glob([
         "Sources/CNIOHTTPParser/**/*.c",
-        "Sources/CNIOHTTPParser/**/*.cc",
     ]),
     hdrs = glob([
         "Sources/CNIOHTTPParser/**/*.h",
