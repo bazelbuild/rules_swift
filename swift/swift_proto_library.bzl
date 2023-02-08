@@ -21,6 +21,8 @@ load(
 )
 load(":providers.bzl", "SwiftProtoInfo")
 
+visibility("public")
+
 def _swift_proto_library_impl(ctx):
     if len(ctx.attr.deps) != 1:
         fail(

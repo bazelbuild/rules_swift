@@ -19,6 +19,8 @@ load(
     "provider_test",
 )
 
+visibility("private")
+
 def swift_through_non_swift_test_suite(name, tags = []):
     """Test suite for propagation of `SwiftInfo` through non-Swift targets.
 

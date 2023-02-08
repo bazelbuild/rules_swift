@@ -19,6 +19,8 @@ load(
     "make_action_command_line_test_rule",
 )
 
+visibility("private")
+
 DBG_CONFIG_SETTINGS = {
     "//command_line_option:compilation_mode": "dbg",
     "//command_line_option:features": [

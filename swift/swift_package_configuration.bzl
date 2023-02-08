@@ -20,6 +20,8 @@ load(
 )
 load(":providers.bzl", "SwiftPackageConfigurationInfo")
 
+visibility("public")
+
 def _swift_package_configuration_impl(ctx):
     disabled_features = []
     enabled_features = []

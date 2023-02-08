@@ -48,6 +48,8 @@ load(
     "create_swift_module_inputs",
 )
 
+visibility("public")
+
 def _swift_import_impl(ctx):
     archives = ctx.files.archives
     deps = ctx.attr.deps

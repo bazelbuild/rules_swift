@@ -17,6 +17,10 @@
 load("@build_bazel_rules_swift//swift:providers.bzl", "SwiftInfo")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 
+visibility([
+    "@build_bazel_rules_swift//swift/...",
+])
+
 def collect_implicit_deps_providers(targets, additional_cc_infos = []):
     """Returns a struct with important providers from a list of implicit deps.
 

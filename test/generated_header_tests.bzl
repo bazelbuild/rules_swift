@@ -23,6 +23,8 @@ load(
     "provider_test",
 )
 
+visibility("private")
+
 def generated_header_test_suite(name, tags = []):
     """Test suite for `swift_library` generated headers.
 

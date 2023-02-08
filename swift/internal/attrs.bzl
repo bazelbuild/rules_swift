@@ -17,6 +17,10 @@
 load("@build_bazel_rules_swift//swift:providers.bzl", "SwiftInfo")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 
+visibility([
+    "@build_bazel_rules_swift//swift/...",
+])
+
 def swift_common_rule_attrs(additional_deps_aspects = []):
     return {
         "data": attr.label_list(

@@ -33,6 +33,8 @@ load(
     "SwiftInteropInfo",
 )
 
+visibility("public")
+
 def create_swift_interop_info(
         *,
         exclude_headers = [],

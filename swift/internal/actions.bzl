@@ -21,6 +21,8 @@ load(
 load("@bazel_skylib//lib:types.bzl", "types")
 load(":features.bzl", "are_all_features_enabled")
 
+visibility("private")
+
 def _apply_action_configs(
         action_name,
         args,

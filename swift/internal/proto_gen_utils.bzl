@@ -16,6 +16,10 @@
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 
+visibility([
+    "@build_bazel_rules_swift//swift/...",
+])
+
 def declare_generated_files_in_subdir(
         name,
         actions,

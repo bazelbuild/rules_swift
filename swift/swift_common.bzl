@@ -50,6 +50,8 @@ load(
     "use_swift_toolchain",
 )
 
+visibility("public")
+
 # The exported `swift_common` module, which defines the public API for directly
 # invoking actions that compile Swift code from other rules.
 swift_common = struct(

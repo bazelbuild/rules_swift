@@ -23,6 +23,8 @@ load(
     "build_test",
 )
 
+visibility("private")
+
 def module_mapping_test_suite(name, tags = []):
     """Tests for Swift module aliases using the `:module_mapping` flag.
 

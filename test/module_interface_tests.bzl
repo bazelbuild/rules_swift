@@ -23,6 +23,8 @@ load(
     "build_test",
 )
 
+visibility("private")
+
 def module_interface_test_suite(name, tags = []):
     """Test suite for features that compile Swift module interfaces.
 

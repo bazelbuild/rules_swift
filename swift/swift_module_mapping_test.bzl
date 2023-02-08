@@ -20,6 +20,8 @@ load(
     "SwiftModuleAliasesInfo",
 )
 
+visibility("public")
+
 _SwiftModulesToValidateMappingInfo = provider(
     doc = "Propagates module names to have their mapping validated.",
     fields = {

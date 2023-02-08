@@ -14,6 +14,10 @@
 
 """Internal APIs used to operate on package specs."""
 
+visibility([
+    "@build_bazel_rules_swift//swift/...",
+])
+
 def _parse_package_spec(*, package_spec, workspace_name):
     """Parses a package spec from a string into a structured form.
 

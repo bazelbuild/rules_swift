@@ -16,6 +16,11 @@
 
 load("@bazel_skylib//lib:types.bzl", "types")
 
+visibility([
+    "@build_bazel_rules_swift//swift/internal/...",
+    "@build_bazel_rules_swift//swift/toolchains/...",
+])
+
 def _normalize_action_config_features(features):
     """Validates and normalizes the `features` of an `action_config`.
 

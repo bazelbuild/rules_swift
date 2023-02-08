@@ -20,6 +20,8 @@ load(
 )
 load(":providers.bzl", "SwiftFeatureAllowlistInfo")
 
+visibility("public")
+
 def _swift_feature_allowlist_impl(ctx):
     return [SwiftFeatureAllowlistInfo(
         allowlist_label = str(ctx.label),

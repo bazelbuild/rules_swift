@@ -17,6 +17,8 @@
 load(":providers.bzl", "SwiftInfo", "SwiftSymbolGraphInfo")
 load(":swift_symbol_graph_aspect.bzl", "swift_symbol_graph_aspect")
 
+visibility("public")
+
 def _swift_extract_symbol_graph_impl(ctx):
     actions = ctx.actions
 

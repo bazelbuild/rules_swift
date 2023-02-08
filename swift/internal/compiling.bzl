@@ -64,6 +64,10 @@ load(
     "create_swift_module_inputs",
 )
 
+visibility([
+    "@build_bazel_rules_swift//swift/...",
+])
+
 def compile_module_interface(
         *,
         actions,

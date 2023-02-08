@@ -27,6 +27,10 @@ load(
 )
 load(":features.bzl", "configure_features", "get_cc_feature_configuration")
 
+visibility([
+    "@build_bazel_rules_swift//swift/...",
+])
+
 _MALLOC_DOCSTRING = """\
 Override the default dependency on `malloc`.
 

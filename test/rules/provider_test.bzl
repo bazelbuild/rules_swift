@@ -27,6 +27,10 @@ load(
     "unittest",
 )
 
+visibility([
+    "@build_bazel_rules_swift//test/...",
+])
+
 # A sentinel value returned by `_evaluate_field` when a `None` value is
 # encountered during the evaluation of a dotted path on any component other than
 # the last component. This allows the caller to distinguish between a legitimate

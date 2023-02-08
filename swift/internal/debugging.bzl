@@ -29,6 +29,8 @@ load(
 load(":features.bzl", "is_feature_enabled")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 
+visibility("private")
+
 def ensure_swiftmodule_is_embedded(
         actions,
         feature_configuration,

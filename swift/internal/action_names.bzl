@@ -14,6 +14,10 @@
 
 """Constants representing the names of actions spawned by the Swift rules."""
 
+visibility([
+    "@build_bazel_rules_swift//swift/toolchains/...",
+])
+
 # Compiles one or more `.swift` source files into a `.swiftmodule` and
 # object files.
 SWIFT_ACTION_COMPILE = "SwiftCompile"

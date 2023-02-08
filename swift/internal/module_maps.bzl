@@ -16,6 +16,10 @@
 
 load("@bazel_skylib//lib:sets.bzl", "sets")
 
+visibility([
+    "@build_bazel_rules_swift//swift/...",
+])
+
 def write_module_map(
         actions,
         module_map_file,

@@ -19,6 +19,8 @@ load(
     "SwiftModuleAliasesInfo",
 )
 
+visibility("public")
+
 def _swift_module_mapping_impl(ctx):
     # This rule generates no actions/outputs; it only serves to propagate a
     # provider that other rules can read through a `label_flag` dependency.

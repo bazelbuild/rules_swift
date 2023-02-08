@@ -19,6 +19,8 @@ load(
     "build_test",
 )
 
+visibility("private")
+
 def cc_library_test_suite(name, tags = []):
     """Test suite for interoperability with `cc_library`-specific features.
 

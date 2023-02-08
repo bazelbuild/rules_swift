@@ -20,6 +20,10 @@ load(
 )
 load(":action_config.bzl", "ActionConfigInfo")
 
+visibility([
+    "@build_bazel_rules_swift//swift/toolchains/...",
+])
+
 def _target_label_configurator(prerequisites, args):
     """Adds the Bazel target label to the action command line."""
     label = getattr(prerequisites, "target_label", None)

@@ -14,6 +14,10 @@
 
 """Custom build settings rules for Swift rules."""
 
+visibility([
+    "@build_bazel_rules_swift//swift/...",
+])
+
 PerModuleSwiftCoptSettingInfo = provider(
     doc = "A provider for the parsed per-swiftmodule swift copts.",
     fields = {

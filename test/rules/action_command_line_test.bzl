@@ -17,6 +17,10 @@
 load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "unittest")
 
+visibility([
+    "@build_bazel_rules_swift//test/...",
+])
+
 def _action_command_line_test_impl(ctx):
     env = analysistest.begin(ctx)
     target_under_test = analysistest.target_under_test(env)

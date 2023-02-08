@@ -16,6 +16,10 @@
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 
+visibility([
+    "@build_bazel_rules_swift//swift/toolchains/...",
+])
+
 def _tool_config_info_init(
         *,
         args = [],

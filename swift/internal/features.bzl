@@ -23,6 +23,10 @@ load(
 )
 load(":package_specs.bzl", "label_matches_package_specs")
 
+visibility([
+    "@build_bazel_rules_swift//swift/...",
+])
+
 def are_all_features_enabled(feature_configuration, feature_names):
     """Returns `True` if all features are enabled in the feature configuration.
 

@@ -20,6 +20,10 @@ load(
 )
 load(":action_config.bzl", "ActionConfigInfo", "ConfigResultInfo")
 
+visibility([
+    "@build_bazel_rules_swift//swift/toolchains/...",
+])
+
 def modulewrap_action_configs():
     """Returns the list of action configs needed to perform module wrapping.
 

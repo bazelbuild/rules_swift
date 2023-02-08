@@ -14,6 +14,10 @@
 
 """Helpers used to depend on and access the Swift toolchain."""
 
+visibility([
+    "@build_bazel_rules_swift//swift/...",
+])
+
 SWIFT_TOOLCHAIN_TYPE = "@build_bazel_rules_swift//toolchains:toolchain_type"
 
 def get_swift_toolchain(ctx, *, exec_group = None, attr = "_toolchain"):

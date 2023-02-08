@@ -19,6 +19,10 @@ load(":actions.bzl", "run_toolchain_action")
 load(":utils.bzl", "merge_compilation_contexts")
 load("@build_bazel_rules_swift//swift:providers.bzl", "SwiftInfo")
 
+visibility([
+    "@build_bazel_rules_swift//swift/...",
+])
+
 def extract_symbol_graph(
         *,
         actions,

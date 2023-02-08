@@ -19,6 +19,8 @@ load(
     "make_swift_symbol_graph_aspect",
 )
 
+visibility("public")
+
 swift_symbol_graph_aspect = make_swift_symbol_graph_aspect(
     default_minimum_access_level = "public",
     doc = """\

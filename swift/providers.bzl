@@ -20,6 +20,8 @@ to the rule implementations do not unnecessarily cause reanalysis impacting
 users who just load these providers to inspect and/or repropagate them.
 """
 
+visibility("public")
+
 SwiftFeatureAllowlistInfo = provider(
     doc = """\
 Describes a set of features and the packages that are allowed to request or

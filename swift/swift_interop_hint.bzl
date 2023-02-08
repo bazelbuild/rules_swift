@@ -16,6 +16,8 @@
 
 load(":swift_interop_info.bzl", "create_swift_interop_info")
 
+visibility("public")
+
 def _swift_interop_hint_impl(ctx):
     # TODO(b/194733180): Take advantage of the richer API to add support for
     # other features, like APINotes, later.

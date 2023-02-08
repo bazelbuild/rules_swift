@@ -61,6 +61,8 @@ load(":module_name.bzl", "derive_swift_module_name")
 load(":providers.bzl", "SwiftInfo")
 load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 
+visibility("public")
+
 def _maybe_parse_as_library_copts(srcs):
     """Returns a list of compiler flags depending on `main.swift`'s presence.
 
@@ -237,7 +239,6 @@ def _swift_library_impl(ctx):
         linking_output.library_to_link.pic_static_library,
     ])
 
-    implicit_deps_providers = swift_toolchain.implicit_deps_providers
     return [
         DefaultInfo(
             files = depset(direct_output_files),

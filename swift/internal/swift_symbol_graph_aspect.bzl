@@ -33,6 +33,10 @@ load(
     "SwiftSymbolGraphInfo",
 )
 
+visibility([
+    "@build_bazel_rules_swift//swift/...",
+])
+
 def _swift_symbol_graph_aspect_impl(target, aspect_ctx):
     symbol_graphs = []
 

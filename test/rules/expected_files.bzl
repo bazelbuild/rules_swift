@@ -24,6 +24,10 @@ load(
     "unittest",
 )
 
+visibility([
+    "@build_bazel_rules_swift//test/...",
+])
+
 def _prettify(object):
     """Returns a prettified version of the given value for failure messages.
 

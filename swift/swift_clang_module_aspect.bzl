@@ -60,6 +60,8 @@ load(
     "create_swift_module_context",
 )
 
+visibility("public")
+
 _MULTIPLE_TARGET_ASPECT_ATTRS = [
     "deps",
     # TODO(b/151667396): Remove j2objc-specific attributes when possible.

@@ -20,6 +20,10 @@ load(
     "swift_clang_module_aspect",
 )
 
+visibility([
+    "@build_bazel_rules_swift//test/fixtures/...",
+])
+
 # Common tags that prevent the test fixtures from actually being built (i.e.,
 # their actions executed) when running `bazel test` to do analysis testing.
 FIXTURE_TAGS = [

@@ -58,6 +58,10 @@ load(
 )
 load(":action_config.bzl", "ActionConfigInfo", "ConfigResultInfo", "add_arg")
 
+visibility([
+    "@build_bazel_rules_swift//swift/toolchains/...",
+])
+
 # The number of threads to use for WMO builds, using the same number of cores
 # that is on a Mac Pro for historical reasons.
 # TODO(b/32571265): Generalize this based on platform and core count

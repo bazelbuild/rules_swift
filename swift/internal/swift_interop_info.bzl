@@ -26,6 +26,10 @@ minimize build graph invalidations among those packages when other, unrelated
 parts of the Swift rules change.
 """
 
+visibility([
+    "@build_bazel_rules_swift//swift/...",
+])
+
 SwiftInteropInfo = provider(
     doc = """\
 Contains minimal information required to allow `swift_clang_module_aspect` to

@@ -48,6 +48,8 @@ load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(":module_name.bzl", "derive_swift_module_name")
 load(":providers.bzl", "SwiftInfo", "SwiftSymbolGraphInfo")
 
+visibility("public")
+
 # Name of the execution group used for `SwiftTestDiscovery` actions.
 _DISCOVER_TESTS_EXEC_GROUP = "discover_tests"
 

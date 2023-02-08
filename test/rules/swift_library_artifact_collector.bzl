@@ -23,6 +23,10 @@ load(
     "SwiftInfo",
 )
 
+visibility([
+    "@build_bazel_rules_swift//test/...",
+])
+
 def _copy_file(actions, source, destination):
     """Copies the source file to the destination file.
 

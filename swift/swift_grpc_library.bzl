@@ -58,6 +58,8 @@ load(
 load(":module_name.bzl", "derive_swift_module_name")
 load(":providers.bzl", "SwiftInfo", "SwiftProtoInfo")
 
+visibility("public")
+
 # Name of the execution group used for `ProtocGenSwiftGRPC` actions.
 _GENERATE_EXEC_GROUP = "generate"
 

@@ -20,6 +20,10 @@ load(
     "asserts",
 )
 
+visibility([
+    "@build_bazel_rules_swift//test/...",
+])
+
 def _analysis_failure_test_impl(ctx):
     env = analysistest.begin(ctx)
     asserts.expect_failure(env, ctx.attr.expected_message)

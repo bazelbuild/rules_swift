@@ -14,6 +14,8 @@
 
 """Rule and transition to force a specific module mapping in tests."""
 
+visibility("private")
+
 def _apply_mapping_transition_impl(settings, attr):
     settings = dict(settings)
     settings["@build_bazel_rules_swift//swift:module_mapping"] = attr.mapping

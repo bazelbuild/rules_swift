@@ -19,6 +19,8 @@ load(
     "make_provider_test_rule",
 )
 
+visibility("private")
+
 # Force private deps support to be enabled at analysis time, regardless of
 # whether the active toolchain actually supports it.
 private_deps_provider_test = make_provider_test_rule(

@@ -23,6 +23,8 @@ load(
     "SwiftCrossImportOverlayInfo",
 )
 
+visibility("public")
+
 def _get_sole_module_name(swift_info, attr):
     if len(swift_info.direct_modules) != 1:
         fail(("The target specified by '{}' must define exactly one Swift " +

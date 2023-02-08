@@ -19,6 +19,8 @@ load(
     "directory_test",
 )
 
+visibility("private")
+
 def symbol_graphs_test_suite(name, tags = []):
     """Test suite for extracting symbol graphs.
 

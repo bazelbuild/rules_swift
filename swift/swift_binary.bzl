@@ -39,6 +39,8 @@ load(
 load(":module_name.bzl", "derive_swift_module_name")
 load(":providers.bzl", "SwiftInfo")
 
+visibility("public")
+
 def _swift_binary_impl(ctx):
     swift_toolchain = get_swift_toolchain(ctx)
 

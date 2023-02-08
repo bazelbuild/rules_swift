@@ -18,6 +18,10 @@ Since the contents of these directories are not known at analysis time, we need
 to spawn a shell script that lists their contents.
 """
 
+visibility([
+    "@build_bazel_rules_swift//test/...",
+])
+
 def _directory_test_impl(ctx):
     target_under_test = ctx.attr.target_under_test
     path_suffixes = ctx.attr.expected_directories.keys()

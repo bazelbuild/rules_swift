@@ -100,6 +100,8 @@ load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain", "use_cpp_toolchain")
 
+visibility("public")
+
 # Maps (operating system, environment) pairs from target triples to the legacy
 # Bazel core `apple_common.platform` values, since we still use some APIs that
 # require these.

@@ -14,6 +14,10 @@
 
 """Constants defining feature names used throughout the build rules."""
 
+visibility([
+    "@build_bazel_rules_swift//swift/...",
+])
+
 # We use the following constants within the rule definitions to prevent the
 # possibility of typos when referring to them as part of the implementation, but
 # we explicitly do not export them since it's not a common practice to use them

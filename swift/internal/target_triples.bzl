@@ -14,6 +14,10 @@
 
 """Utility functions to inspect and manipulate target triples."""
 
+visibility([
+    "@build_bazel_rules_swift//swift/...",
+])
+
 _IOS_SIM_ARM64_MIN_OS_VERSION = apple_common.dotted_version("14.0")
 
 def _make(*, cpu, vendor, os, environment = None):

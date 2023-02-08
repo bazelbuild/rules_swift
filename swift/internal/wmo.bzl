@@ -20,6 +20,10 @@ load(
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
 )
 
+visibility([
+    "@build_bazel_rules_swift//swift/toolchains/...",
+])
+
 # Swift command line flags that enable whole module optimization. (This
 # dictionary is used as a set for quick lookup; the values are irrelevant.)
 _WMO_FLAGS = {

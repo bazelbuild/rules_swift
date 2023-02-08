@@ -14,6 +14,10 @@
 
 """Internal providers."""
 
+visibility([
+    "@build_bazel_rules_swift//swift/...",
+])
+
 SwiftCrossImportOverlayInfo = provider(
     doc = "Information about a cross-import overlay module.",
     fields = {

@@ -14,6 +14,8 @@
 
 """Generates the JSON manifest used to pass Swift modules to the compiler."""
 
+visibility("private")
+
 def write_explicit_swift_module_map_file(
         *,
         actions,

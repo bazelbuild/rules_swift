@@ -23,6 +23,8 @@ load(
     "provider_test",
 )
 
+visibility("private")
+
 def interop_hints_test_suite(name, tags = []):
     """Test suite for `swift_interop_hint`.
 

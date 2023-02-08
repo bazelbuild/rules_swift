@@ -20,6 +20,10 @@ load(
 )
 load(":action_config.bzl", "ActionConfigInfo")
 
+visibility([
+    "@build_bazel_rules_swift//swift/toolchains/...",
+])
+
 def symbol_graph_action_configs():
     """Returns the list of action configs needed to extract symbol graphs.
 

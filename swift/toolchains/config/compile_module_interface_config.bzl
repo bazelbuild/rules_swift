@@ -20,6 +20,10 @@ load(
 )
 load(":action_config.bzl", "ActionConfigInfo", "add_arg")
 
+visibility([
+    "@build_bazel_rules_swift//swift/toolchains/...",
+])
+
 def compile_module_interface_action_configs():
     return [
         ActionConfigInfo(
