@@ -322,6 +322,7 @@ per_module_swiftcopt_flag(
 bool_setting(
     name = "emit_swiftinterface",
     build_setting_default = False,
+    visibility = ["//visibility:public"],
 )
 
 # Configuration setting for enabling the generation of private swiftinterface files (e.g. those for `@_spi`).
@@ -354,6 +355,7 @@ config_setting(
 bool_setting(
     name = "force_apple_target",
     build_setting_default = False,
+    visibility = ["//visibility:public"],
 )
 
 # Allows a user to override the default Swift driver during a build, if the
@@ -361,6 +363,7 @@ bool_setting(
 label_flag(
     name = "default_swift_executable",
     build_setting_default = ":empty",
+    visibility = ["//visibility:public"],
 )
 
 # Empty filegroup used as the default value for `:default_swift_executable`
@@ -374,6 +377,7 @@ filegroup(
 label_flag(
     name = "module_mapping",
     build_setting_default = ":empty_module_mapping",
+    visibility = ["//visibility:public"],
 )
 
 # The default empty module mapping used when the `:module_mapping` flag is not
