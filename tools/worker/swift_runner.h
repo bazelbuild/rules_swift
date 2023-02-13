@@ -143,6 +143,9 @@ class SwiftRunner {
   // This is used to avoid implicitly adding incompatible flags.
   bool is_dump_ast_;
 
+  // Whether `-file-prefix-map PWD=.` is set.
+  bool file_prefix_pwd_is_dot_;
+
   // The path to the generated header rewriter tool, if one is being used for
   // this compilation.
   std::string generated_header_rewriter_path_;
