@@ -30,6 +30,7 @@ load(":debugging.bzl", "modulewrap_action_configs")
 load(
     ":feature_names.bzl",
     "SWIFT_FEATURE_CACHEABLE_SWIFTMODULES",
+    "SWIFT_FEATURE_COVERAGE_PREFIX_MAP",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_NO_GENERATED_MODULE_MAP",
     "SWIFT_FEATURE_OPT_USES_WMO",
@@ -286,6 +287,7 @@ def _swift_toolchain_impl(ctx):
     )
     requested_features.extend([
         SWIFT_FEATURE_CACHEABLE_SWIFTMODULES,
+        SWIFT_FEATURE_COVERAGE_PREFIX_MAP,
         SWIFT_FEATURE_NO_GENERATED_MODULE_MAP,
         SWIFT_FEATURE_OPT_USES_WMO,
         SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE,
