@@ -4,10 +4,7 @@ common --incompatible_allow_tags_propagation
 # Fail if a glob doesn't match anything (https://github.com/bazelbuild/bazel/issues/8195)
 build --incompatible_disallow_empty_glob
 
-# Since there's no way to set the deployment version for swift_{binary,test},
-# this forces all targets' minimum macOS to Catalina until Bazel CI has
-# upgraded their Mac machines to Big Sur.
-build --macos_minimum_os=10.15
+build --macos_minimum_os=11.0
 
 # Make sure no warnings slip into the C++ tools we vendor
 build --features treat_warnings_as_errors
