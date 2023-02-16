@@ -38,6 +38,23 @@ file_prefix_xcode_remap_test = make_action_command_line_test_rule(
     },
 )
 
+use_global_index_store_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:features": [
+            "swift.use_global_index_store",
+        ],
+    },
+)
+
+use_global_index_store_index_while_building_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:features": [
+            "swift.index_while_building",
+            "swift.use_global_index_store",
+        ],
+    },
+)
+
 vfsoverlay_test = make_action_command_line_test_rule(
     config_settings = {
         "//command_line_option:features": [
@@ -94,6 +111,26 @@ def features_test_suite(name):
             "__BAZEL_XCODE_DEVELOPER_DIR__=DEVELOPER_DIR",
         ],
         target_compatible_with = ["@platforms//os:macos"],
+        mnemonic = "SwiftCompile",
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+    )
+
+    use_global_index_store_test(
+        name = "{}_use_global_index_store_test".format(name),
+        tags = [name],
+        not_expected_argv = [
+            "-Xwrapped-swift=-global-index-store-import-path=",
+        ],
+        mnemonic = "SwiftCompile",
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+    )
+
+    use_global_index_store_index_while_building_test(
+        name = "{}_use_global_index_store_index_while_building_test".format(name),
+        tags = [name],
+        expected_argv = [
+            "-Xwrapped-swift=-global-index-store-import-path=bazel-out/_global_index_store",
+        ],
         mnemonic = "SwiftCompile",
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
