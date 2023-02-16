@@ -499,6 +499,12 @@ have the paths made absolute via swizzling by enabling the
 set the `BUILD_WORKSPACE_DIRECTORY` environment variable in your scheme to the
 root of your workspace (i.e. `$(SRCROOT)`).
 
+A subset of tests for a given target can be executed via the `--test_filter` parameter:
+
+```
+bazel test //:Tests --test_filter=TestModuleName.TestClassName/testMethodName
+```
+
 
 **ATTRIBUTES**
 
