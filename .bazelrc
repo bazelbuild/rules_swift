@@ -17,3 +17,7 @@ build --enable_platform_specific_config
 build:macos --apple_crosstool_top=@local_config_apple_cc//:toolchain
 build:macos --crosstool_top=@local_config_apple_cc//:toolchain
 build:macos --host_crosstool_top=@local_config_apple_cc//:toolchain
+
+# TODO: Remove once https://github.com/protocolbuffers/protobuf/commit/7bb756c1cc580380c689a9141b27e20c7a5d95f3 is in a release
+build --host_per_file_copt="external/.*protobuf.*/src/google/protobuf/stubs/strutil.cc@-Wno-deprecated-declarations"
+build --per_file_copt="external/.*protobuf.*/src/google/protobuf/stubs/strutil.cc@-Wno-deprecated-declarations"
