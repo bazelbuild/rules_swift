@@ -154,6 +154,11 @@ int SwiftRunner::Run(std::ostream *stderr_stream, bool stdout_to_stderr) {
     std::vector<std::string> ii_args;
     ii_args.push_back(index_import_path_);
 
+    if (file_prefix_pwd_is_dot_) {
+      ii_args.push_back("-file-prefix-map");
+      ii_args.push_back(std::filesystem::current_path().string() + "=.");
+    }
+
     for (it = outputs.begin(); it != outputs.end(); it++) {
       // Need the actual output paths of the compiler - not bazel
       auto output_path = it->first;
@@ -362,6 +367,8 @@ std::vector<std::string> SwiftRunner::ParseArguments(Iterator itr) {
         global_index_store_import_path_ = arg;
       } else if (StripPrefix("-generated-header-rewriter=", arg)) {
         generated_header_rewriter_path_ = arg;
+      } else if (arg == "-file-prefix-pwd-is-dot") {
+        file_prefix_pwd_is_dot_ = true;
       }
     } else {
       if (arg == "-output-file-map") {
