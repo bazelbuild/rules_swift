@@ -22,3 +22,8 @@ build:macos --host_crosstool_top=@local_config_apple_cc//:toolchain
 build --per_file_copt="external/.*protobuf.*/src/google/protobuf/stubs/strutil.cc@-Wno-deprecated-declarations"
 # TODO: Use --host_per_file_copt here once we drop bazel 5.x
 build --host_cxxopt="-Wno-deprecated-declarations"
+
+# TODO: Remove once https://github.com/protocolbuffers/protobuf/commit/85225b83c3386a282bf1e51f1be8bd2ad0bc45d0 is in a release
+build --per_file_copt="external/.*protobuf.*/.*.cc@-Wno-unused-function"
+# TODO: Use --host_per_file_copt here once we drop bazel 5.x
+build --host_cxxopt="-Wno-unused-function"
