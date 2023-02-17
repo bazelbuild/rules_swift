@@ -4,10 +4,7 @@ common --incompatible_allow_tags_propagation
 # Fail if a glob doesn't match anything (https://github.com/bazelbuild/bazel/issues/8195)
 build --incompatible_disallow_empty_glob
 
-# Since there's no way to set the deployment version for swift_{binary,test},
-# this forces all targets' minimum macOS to Catalina until Bazel CI has
-# upgraded their Mac machines to Big Sur.
-build --macos_minimum_os=10.15
+build --macos_minimum_os=11.0
 
 # Make sure no warnings slip into the C++ tools we vendor
 build --features treat_warnings_as_errors
@@ -15,3 +12,18 @@ build --features treat_warnings_as_errors
 # The default strategy is worker, which has sandboxing disabled by default,
 # which can hide issues with non-hermetic bugs.
 build --worker_sandboxing
+
+build --enable_platform_specific_config
+build:macos --apple_crosstool_top=@local_config_apple_cc//:toolchain
+build:macos --crosstool_top=@local_config_apple_cc//:toolchain
+build:macos --host_crosstool_top=@local_config_apple_cc//:toolchain
+
+# TODO: Remove once https://github.com/protocolbuffers/protobuf/commit/7bb756c1cc580380c689a9141b27e20c7a5d95f3 is in a release
+build --per_file_copt="external/.*protobuf.*/src/google/protobuf/stubs/strutil.cc@-Wno-deprecated-declarations"
+# TODO: Use --host_per_file_copt here once we drop bazel 5.x
+build --host_cxxopt="-Wno-deprecated-declarations"
+
+# TODO: Remove once https://github.com/protocolbuffers/protobuf/commit/85225b83c3386a282bf1e51f1be8bd2ad0bc45d0 is in a release
+build --per_file_copt="external/.*protobuf.*/.*.cc@-Wno-unused-function"
+# TODO: Use --host_per_file_copt here once we drop bazel 5.x
+build --host_cxxopt="-Wno-unused-function"
