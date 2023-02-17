@@ -91,16 +91,6 @@ def _check_skip_function_bodies(repository_ctx, swiftc_path, _temp_dir):
         "-experimental-skip-non-inlinable-function-bodies",
     )
 
-def _check_debug_prefix_map(repository_ctx, swiftc_path, _temp_dir):
-    """Returns True if `swiftc` supports debug prefix mapping."""
-    return _swift_succeeds(
-        repository_ctx,
-        swiftc_path,
-        "-version",
-        "-debug-prefix-map",
-        "foo=bar",
-    )
-
 def _check_enable_bare_slash_regex(repository_ctx, swiftc_path, _temp_dir):
     """Returns True if `swiftc` supports debug prefix mapping."""
     return _swift_succeeds(
@@ -231,7 +221,6 @@ def _compute_feature_values(repository_ctx, swiftc_path):
 # the `swiftc` executable and a scratch directory, respectively. The function
 # should return True if the feature is supported.
 _FEATURE_CHECKS = {
-    SWIFT_FEATURE_DEBUG_PREFIX_MAP: _check_debug_prefix_map,
     SWIFT_FEATURE_ENABLE_BATCH_MODE: _check_enable_batch_mode,
     SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES: _check_skip_function_bodies,
     SWIFT_FEATURE_LLD_GC_WORKAROUND: _check_supports_lld_gc_workaround,
