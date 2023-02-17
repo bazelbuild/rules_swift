@@ -31,5 +31,8 @@ use_repo(
     "com_github_grpc_grpc_swift",
 )
 
+apple_cc_configure = use_extension("@build_bazel_apple_support//crosstool:setup.bzl", "apple_cc_configure_extension")
+use_repo(apple_cc_configure, "local_config_apple_cc")
+
 # Dev dependencies
 bazel_dep(name = "stardoc", version = "0.5.3", dev_dependency = True, repo_name = "io_bazel_stardoc")
