@@ -117,20 +117,6 @@ print("Hello")
         source_file,
     )
 
-def _check_use_response_files(repository_ctx, swiftc_path, temp_dir):
-    """Returns True if `swiftc` supports the use of response files."""
-    param_file = _scratch_file(
-        repository_ctx,
-        temp_dir,
-        "check-response-files.params",
-        "-version",
-    )
-    return _swift_succeeds(
-        repository_ctx,
-        swiftc_path,
-        "@{}".format(param_file),
-    )
-
 def _check_supports_lld_gc_workaround(repository_ctx, swiftc_path, temp_dir):
     """Returns True if lld is being used and it supports nostart-stop-gc"""
     source_file = _scratch_file(
@@ -226,7 +212,6 @@ _FEATURE_CHECKS = {
     SWIFT_FEATURE_LLD_GC_WORKAROUND: _check_supports_lld_gc_workaround,
     SWIFT_FEATURE_SUPPORTS_BARE_SLASH_REGEX: _check_enable_bare_slash_regex,
     SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS: _check_supports_private_deps,
-    SWIFT_FEATURE_USE_RESPONSE_FILES: _check_use_response_files,
 }
 
 def _normalized_linux_cpu(cpu):
