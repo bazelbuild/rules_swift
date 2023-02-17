@@ -21,19 +21,10 @@ opt_no_wmo_test = make_action_command_line_test_rule(
     },
 )
 
-file_prefix_map_test = make_action_command_line_test_rule(
+disabled_file_prefix_map_test = make_action_command_line_test_rule(
     config_settings = {
         "//command_line_option:features": [
-            "swift.file_prefix_map",
-        ],
-    },
-)
-
-file_prefix_xcode_remap_test = make_action_command_line_test_rule(
-    config_settings = {
-        "//command_line_option:features": [
-            "swift.file_prefix_map",
-            "swift.remap_xcode_path",
+            "-swift.file_prefix_map",
         ],
     },
 )
@@ -83,26 +74,23 @@ def features_test_suite(name):
         expected_argv = [
             "-emit-object",
             "-I$(BIN_DIR)/test/fixtures/basic",
-        ],
-        not_expected_argv = [
-            "-file-prefix-map",
             "-Xwrapped-swift=-file-prefix-pwd-is-dot",
         ],
         mnemonic = "SwiftCompile",
         target_under_test = "@build_bazel_rules_swift//test/fixtures/basic:second",
     )
 
-    file_prefix_map_test(
+    disabled_file_prefix_map_test(
         name = "{}_file_prefix_map_test".format(name),
         tags = [name],
-        expected_argv = [
+        not_expected_argv = [
             "-Xwrapped-swift=-file-prefix-pwd-is-dot",
         ],
         mnemonic = "SwiftCompile",
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
 
-    file_prefix_xcode_remap_test(
+    default_test(
         name = "{}_file_prefix_xcode_remap_test".format(name),
         tags = [name],
         expected_argv = [
