@@ -635,6 +635,7 @@ def _xcode_swift_toolchain_impl(ctx):
 
     # Xcode 14 implies Swift 5.7.
     if _is_xcode_at_least_version(xcode_config, "14.0"):
+        requested_features.append(SWIFT_FEATURE_FILE_PREFIX_MAP)
         requested_features.append(SWIFT_FEATURE_SUPPORTS_BARE_SLASH_REGEX)
 
     env = _xcode_env(target_triple = target_triple, xcode_config = xcode_config)
