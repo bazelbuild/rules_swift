@@ -177,8 +177,8 @@ swift_library(
     module_name = "NIOHTTP1",
     visibility = ["//visibility:public"],
     deps = [
-        ":CNIOHTTPParser",
         ":CNIOLLHTTP",
+        ":NIOConcurrencyHelpers",
         ":NIOCore",
     ],
 )
@@ -201,23 +201,7 @@ swift_library(
     module_name = "_NIODataStructures",
     visibility = ["//visibility:public"],
     deps = [
-        "CNIOHTTPParser",
-        "NIOConcurrencyHelpers",
-        "NIOCore",
     ],
-)
-
-cc_library(
-    name = "CNIOHTTPParser",
-    srcs = glob([
-        "Sources/CNIOHTTPParser/**/*.c",
-    ]),
-    hdrs = glob([
-        "Sources/CNIOHTTPParser/**/*.h",
-    ]),
-    copts = [],
-    includes = ["Sources/CNIOHTTPParser/include"],
-    tags = ["swift_module=CNIOHTTPParser"],
 )
 
 cc_library(
