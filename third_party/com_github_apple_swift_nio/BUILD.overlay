@@ -1,61 +1,61 @@
 load(
-    "@build_bazel_apple_support//rules:universal_binary.bzl",
-    "universal_binary",
-)
-load(
     "@build_bazel_rules_swift//swift:swift.bzl",
-    "swift_binary",
     "swift_library",
 )
 
 swift_library(
     name = "NIOCore",
     srcs = glob([
-        "Sources/NIOCore/*.swift",
+        "Sources/NIOCore/**/*.swift",
     ]),
-    deps = [
-        ":NIOConcurrencyHelpers",
-        ":CNIOLinux",
-    ],
     module_name = "NIOCore",
     visibility = ["//visibility:public"],
+    deps = [
+        ":CNIOLinux",
+        ":NIOConcurrencyHelpers",
+        "@com_github_apple_swift_atomics//:Atomics",
+        "@com_github_apple_swift_collections//:Collections",
+    ],
 )
 
 swift_library(
     name = "NIOEmbedded",
     srcs = glob([
-        "Sources/NIOEmbedded/*.swift",
+        "Sources/NIOEmbedded/**/*.swift",
     ]),
     module_name = "NIOEmbedded",
     visibility = ["//visibility:public"],
     deps = [
-        "NIOCore",
         "NIOConcurrencyHelpers",
+        "NIOCore",
         "_NIODataStructures",
+        "@com_github_apple_swift_atomics//:Atomics",
+        "@com_github_apple_swift_collections//:Collections",
     ],
 )
 
 swift_library(
     name = "NIOPosix",
     srcs = glob([
-        "Sources/NIOPosix/*.swift",
+        "Sources/NIOPosix/**/*.swift",
     ]),
     module_name = "NIOPosix",
     visibility = ["//visibility:public"],
     deps = [
-        "CNIOLinux",
         "CNIODarwin",
+        "CNIOLinux",
         "CNIOWindows",
         "NIOConcurrencyHelpers",
         "NIOCore",
         "_NIODataStructures",
+        "@com_github_apple_swift_atomics//:Atomics",
     ],
 )
 
 swift_library(
     name = "NIO",
     srcs = glob([
-        "Sources/NIO/*.swift",
+        "Sources/NIO/**/*.swift",
     ]),
     module_name = "NIO",
     visibility = ["//visibility:public"],
@@ -69,17 +69,20 @@ swift_library(
 swift_library(
     name = "_NIOConcurrency",
     srcs = glob([
-        "Sources/_NIOConcurrency/*.swift",
+        "Sources/_NIOConcurrency/**/*.swift",
     ]),
     module_name = "_NIOConcurrency",
     visibility = ["//visibility:public"],
-    deps = ["NIO", "NIOCore"],
+    deps = [
+        "NIO",
+        "NIOCore",
+    ],
 )
 
 swift_library(
     name = "NIOFoundationCompat",
     srcs = glob([
-        "Sources/NIOFoundationCompat/*.swift",
+        "Sources/NIOFoundationCompat/**/*.swift",
     ]),
     module_name = "NIOFoundationCompat",
     visibility = ["//visibility:public"],
@@ -157,7 +160,7 @@ cc_library(
 swift_library(
     name = "NIOTLS",
     srcs = glob([
-        "Sources/NIOTLS/*.swift",
+        "Sources/NIOTLS/**/*.swift",
     ]),
     module_name = "NIOTLS",
     visibility = ["//visibility:public"],
@@ -169,20 +172,21 @@ swift_library(
 swift_library(
     name = "NIOHTTP1",
     srcs = glob([
-        "Sources/NIOHTTP1/*.swift",
+        "Sources/NIOHTTP1/**/*.swift",
     ]),
     module_name = "NIOHTTP1",
     visibility = ["//visibility:public"],
     deps = [
-        ":NIOCore",
         ":CNIOHTTPParser",
+        ":CNIOLLHTTP",
+        ":NIOCore",
     ],
 )
 
 swift_library(
     name = "NIOConcurrencyHelpers",
     srcs = glob([
-        "Sources/NIOConcurrencyHelpers/*.swift",
+        "Sources/NIOConcurrencyHelpers/**/*.swift",
     ]),
     module_name = "NIOConcurrencyHelpers",
     visibility = ["//visibility:public"],
@@ -192,14 +196,14 @@ swift_library(
 swift_library(
     name = "_NIODataStructures",
     srcs = glob([
-        "Sources/_NIODataStructures/*.swift",
+        "Sources/_NIODataStructures/**/*.swift",
     ]),
     module_name = "_NIODataStructures",
     visibility = ["//visibility:public"],
     deps = [
-        "NIOCore",
-        "NIOConcurrencyHelpers",
         "CNIOHTTPParser",
+        "NIOConcurrencyHelpers",
+        "NIOCore",
     ],
 )
 
@@ -214,4 +218,20 @@ cc_library(
     copts = [],
     includes = ["Sources/CNIOHTTPParser/include"],
     tags = ["swift_module=CNIOHTTPParser"],
+)
+
+cc_library(
+    name = "CNIOLLHTTP",
+    srcs = glob([
+        "Sources/CNIOLLHTTP/**/*.c",
+    ]),
+    hdrs = glob([
+        "Sources/CNIOLLHTTP/**/*.h",
+    ]),
+    copts = [],
+    includes = ["Sources/CNIOLLHTTP/include"],
+    local_defines = [
+        "LLHTTP_STRICT_MODE",
+    ],
+    tags = ["swift_module=CNIOLLHTTP"],
 )
