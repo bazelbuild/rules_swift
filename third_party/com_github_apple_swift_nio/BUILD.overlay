@@ -1,10 +1,5 @@
 load(
-    "@build_bazel_apple_support//rules:universal_binary.bzl",
-    "universal_binary",
-)
-load(
     "@build_bazel_rules_swift//swift:swift.bzl",
-    "swift_binary",
     "swift_library",
 )
 
@@ -13,12 +8,12 @@ swift_library(
     srcs = glob([
         "Sources/NIOCore/*.swift",
     ]),
-    deps = [
-        ":NIOConcurrencyHelpers",
-        ":CNIOLinux",
-    ],
     module_name = "NIOCore",
     visibility = ["//visibility:public"],
+    deps = [
+        ":CNIOLinux",
+        ":NIOConcurrencyHelpers",
+    ],
 )
 
 swift_library(
@@ -29,8 +24,8 @@ swift_library(
     module_name = "NIOEmbedded",
     visibility = ["//visibility:public"],
     deps = [
-        "NIOCore",
         "NIOConcurrencyHelpers",
+        "NIOCore",
         "_NIODataStructures",
     ],
 )
@@ -43,8 +38,8 @@ swift_library(
     module_name = "NIOPosix",
     visibility = ["//visibility:public"],
     deps = [
-        "CNIOLinux",
         "CNIODarwin",
+        "CNIOLinux",
         "CNIOWindows",
         "NIOConcurrencyHelpers",
         "NIOCore",
@@ -73,7 +68,10 @@ swift_library(
     ]),
     module_name = "_NIOConcurrency",
     visibility = ["//visibility:public"],
-    deps = ["NIO", "NIOCore"],
+    deps = [
+        "NIO",
+        "NIOCore",
+    ],
 )
 
 swift_library(
@@ -179,8 +177,8 @@ swift_library(
     module_name = "NIOHTTP1",
     visibility = ["//visibility:public"],
     deps = [
-        ":NIOCore",
         ":CNIOHTTPParser",
+        ":NIOCore",
     ],
 )
 
@@ -202,9 +200,9 @@ swift_library(
     module_name = "_NIODataStructures",
     visibility = ["//visibility:public"],
     deps = [
-        "NIOCore",
-        "NIOConcurrencyHelpers",
         "CNIOHTTPParser",
+        "NIOConcurrencyHelpers",
+        "NIOCore",
     ],
 )
 
