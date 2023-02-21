@@ -11,24 +11,8 @@ swift_library(
     module_name = "Collections",
     visibility = ["//visibility:public"],
     deps = [
-        ":BitCollections",
         ":DequeModule",
-        ":HashTreeCollections",
-        ":HeapModule",
         ":OrderedCollections",
-        ":SortedCollections",
-    ],
-)
-
-swift_library(
-    name = "BitCollections",
-    srcs = glob([
-        "Sources/BitCollections/**/*.swift",
-    ]),
-    module_name = "BitCollections",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":_CollectionsUtilities",
     ],
 )
 
@@ -39,21 +23,7 @@ swift_library(
     ]),
     module_name = "DequeModule",
     visibility = ["//visibility:public"],
-    deps = [
-        ":_CollectionsUtilities",
-    ],
-)
-
-swift_library(
-    name = "HeapModule",
-    srcs = glob([
-        "Sources/HeapModule/**/*.swift",
-    ]),
-    module_name = "HeapModule",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":_CollectionsUtilities",
-    ],
+    deps = [],
 )
 
 swift_library(
@@ -63,42 +33,5 @@ swift_library(
     ]),
     module_name = "OrderedCollections",
     visibility = ["//visibility:public"],
-    deps = [
-        ":_CollectionsUtilities",
-    ],
-)
-
-swift_library(
-    name = "HashTreeCollections",
-    srcs = glob([
-        "Sources/HashTreeCollections/**/*.swift",
-    ]),
-    module_name = "HashTreeCollections",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":_CollectionsUtilities",
-    ],
-)
-
-swift_library(
-    name = "SortedCollections",
-    srcs = glob([
-        "Sources/SortedCollections/**/*.swift",
-    ]),
-    module_name = "SortedCollections",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":_CollectionsUtilities",
-    ],
-)
-
-swift_library(
-    name = "_CollectionsUtilities",
-    srcs = glob([
-        "Sources/_CollectionsUtilities/**/*.swift",
-    ]),
-    module_name = "_CollectionsUtilities",
-    visibility = ["//visibility:public"],
-    deps = [
-    ],
+    deps = [],
 )

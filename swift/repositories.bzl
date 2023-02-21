@@ -158,9 +158,9 @@ def swift_rules_dependencies(include_bzlmod_ready_dependencies = True):
     _maybe(
         http_archive,
         name = "com_github_apple_swift_collections",
-        urls = ["https://github.com/apple/swift-collections/archive/53a8adc54374f620002a3b6401d39e0feb3c57ae.tar.gz"],
-        sha256 = "70c382c806cb94c939cecff5873ba1f8f695cb115d2085db855d0441e7122df8",
-        strip_prefix = "swift-collections-53a8adc54374f620002a3b6401d39e0feb3c57ae/",
+        urls = ["https://github.com/apple/swift-collections/archive/1.0.2.tar.gz"],
+        sha256 = "b18c522aff4241160f60bcd0695702657c7862512c994c260a7d63f15a8450d8",
+        strip_prefix = "swift-collections-1.0.2/",
         build_file = "@build_bazel_rules_swift//third_party:com_github_apple_swift_collections/BUILD.overlay",
     )
 
