@@ -33,10 +33,6 @@ class ClientUnitTest: XCTestCase {
     try group?.syncShutdownGracefully()
   }
 
-  func testSanity() throws {
-    print("Hello")
-  }
-
   func testSynchronousCall() throws {
     let channel = try GRPCChannelPool.with(
       target: .host("localhost", port: 9000),
@@ -53,7 +49,6 @@ class ClientUnitTest: XCTestCase {
 
   static var allTests = [
     ("testSynchronousCall", testSynchronousCall),
-    ("testSanity", testSanity),
   ]
 }
 
