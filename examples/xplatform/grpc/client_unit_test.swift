@@ -13,26 +13,84 @@
 // limitations under the License.
 
 import XCTest
+import Dispatch
+import GRPC
+import NIOCore
+import NIOPosix
 import examples_xplatform_grpc_echo_client_services_swift
+import examples_xplatform_grpc_echo_server_services_swift
 import examples_xplatform_grpc_echo_proto
 
-@testable import examples_xplatform_grpc_echo_client_test_stubs_swift
-
 class ClientUnitTest: XCTestCase {
+  var group: MultiThreadedEventLoopGroup?
+
+  override func setUpWithError() throws {
+    group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+
+    try EchoServer().start()
+  }
+
+  override func tearDownWithError() throws {
+    try group?.syncShutdownGracefully()
+  }
+
   func testSynchronousCall() throws {
-    let client: RulesSwift_Examples_Grpc_EchoServiceClientProtocol = {
-      let stub = RulesSwift_Examples_Grpc_EchoServiceTestClient()
-      stub.enqueueEchoResponse(RulesSwift_Examples_Grpc_EchoResponse.with { response in
-        response.contents = "Hello"
-      })
-      return stub
-   }()
-   let call = client.echo(RulesSwift_Examples_Grpc_EchoRequest())
-   let response = try! call.response.wait()
-   XCTAssertEqual(response.contents, "Hello")
+    let channel = try GRPCChannelPool.with(
+      target: .host("localhost", port: 9000),
+      transportSecurity: .plaintext,
+      eventLoopGroup: group!
+    )
+
+    let client = RulesSwift_Examples_Grpc_EchoServiceNIOClient(channel: channel)
+
+    let call = client.echo(RulesSwift_Examples_Grpc_EchoRequest())
+    let response = try! call.response.wait()
+    XCTAssertEqual(response.contents, "Hello")
   }
 
   static var allTests = [
     ("testSynchronousCall", testSynchronousCall),
   ]
+}
+
+class EchoServer {
+    let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+    var serverCloseFuture: EventLoopFuture<Void>?
+    
+    deinit {
+      try! serverCloseFuture?.wait()
+      try! group.syncShutdownGracefully()
+    }
+
+    func start() throws {
+      let server = Server.insecure(group: group)
+        .withServiceProviders([EchoProvider()])
+        .bind(host: "0.0.0.0", port: 9000)
+
+      server.map {
+        $0.channel.localAddress
+      }.whenSuccess { address in
+        print("server started on port \(address!.port!)")
+      }
+
+      serverCloseFuture = server.flatMap { $0.onClose }
+    }
+}
+
+/// Concrete implementation of the `EchoService` service definition.
+class EchoProvider: RulesSwift_Examples_Grpc_EchoServiceProvider {
+  var interceptors: RulesSwift_Examples_Grpc_EchoServiceServerInterceptorFactoryProtocol?
+
+  /// Called when the server receives a request for the `EchoService.Echo` method.
+  ///
+  /// - Parameters:
+  ///   - request: The message containing the request parameters.
+  ///   - context: Information about the current session.
+  /// - Returns: The response that will be sent back to the client.
+  func echo(request: RulesSwift_Examples_Grpc_EchoRequest,
+            context: StatusOnlyCallContext) -> EventLoopFuture<RulesSwift_Examples_Grpc_EchoResponse> {
+    return context.eventLoop.makeSucceededFuture(RulesSwift_Examples_Grpc_EchoResponse.with {
+      $0.contents = "Hello"
+    })
+  }
 }

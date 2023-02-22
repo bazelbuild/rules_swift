@@ -42,13 +42,6 @@ swift_grpc_library(
 )
 
 swift_grpc_library(
-    name = "echo_client_test_stubs_swift",
-    srcs = [":echo_proto"],
-    flavor = "client_stubs",
-    deps = [":echo_client_services_swift"],
-)
-
-swift_grpc_library(
     name = "echo_server_services_swift",
     srcs = [":echo_proto"],
     flavor = "server",
@@ -72,7 +65,7 @@ swift_test(
     ],
     deps = [
         ":echo_client_services_swift",
-        ":echo_client_test_stubs_swift",
+        ":echo_server_services_swift",
     ],
 )
 
