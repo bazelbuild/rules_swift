@@ -120,6 +120,7 @@ def features_test_suite(name):
             "-Xwrapped-swift=-global-index-store-import-path=bazel-out/_global_index_store",
         ],
         mnemonic = "SwiftCompile",
+        target_compatible_with = ["@platforms//os:macos"],
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
 
