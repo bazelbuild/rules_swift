@@ -36,6 +36,7 @@ load(
     "SWIFT_FEATURE_NO_GENERATED_MODULE_MAP",
     "SWIFT_FEATURE_OPT_USES_WMO",
     "SWIFT_FEATURE_USE_AUTOLINK_EXTRACT",
+    "SWIFT_FEATURE_USE_GLOBAL_INDEX_STORE",
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
     "SWIFT_FEATURE_USE_MODULE_WRAP",
     "SWIFT_FEATURE_USE_RESPONSE_FILES",
@@ -375,6 +376,7 @@ def _swift_toolchain_impl(ctx):
             tool_configs = all_tool_configs,
             unsupported_features = ctx.disabled_features + [
                 SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD,
+                SWIFT_FEATURE_USE_GLOBAL_INDEX_STORE,
             ],
         ),
     ]
