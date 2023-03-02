@@ -62,6 +62,14 @@ explicit_swift_module_map_test = make_action_command_line_test_rule(
     },
 )
 
+disable_objc_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:features": [
+            "-swift.objc_link_flags",
+        ],
+    },
+)
+
 def features_test_suite(name):
     """Test suite for various features.
 
@@ -168,4 +176,32 @@ def features_test_suite(name):
         ],
         mnemonic = "SwiftCompile",
         target_under_test = "@build_bazel_rules_swift//test/fixtures/basic:second",
+    )
+
+    default_test(
+        name = "{}_default_link_test".format(name),
+        tags = [name],
+        expected_argv = [
+            "-L/usr/lib/swift",
+            "-ObjC",
+            "-Wl,-objc_abi_version,2",
+            "-Wl,-rpath,/usr/lib/swift",
+        ],
+        mnemonic = "CppLink",
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/linking:bin",
+        target_compatible_with = ["@platforms//os:macos"],
+    )
+
+    disable_objc_test(
+        name = "{}_disable_objc_test".format(name),
+        tags = [name],
+        expected_argv = [
+            "-L/usr/lib/swift",
+            "-Wl,-objc_abi_version,2",
+            "-Wl,-rpath,/usr/lib/swift",
+        ],
+        not_expected_argv = ["-ObjC"],
+        mnemonic = "CppLink",
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/linking:bin",
+        target_compatible_with = ["@platforms//os:macos"],
     )

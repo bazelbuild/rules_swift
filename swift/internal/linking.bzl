@@ -24,7 +24,11 @@ load(
 )
 load(":derived_files.bzl", "derived_files")
 load(":features.bzl", "get_cc_feature_configuration", "is_feature_enabled")
-load(":feature_names.bzl", "SWIFT_FEATURE_LLD_GC_WORKAROUND")
+load(
+    ":feature_names.bzl",
+    "SWIFT_FEATURE_LLD_GC_WORKAROUND",
+    "SWIFT_FEATURE_OBJC_LINK_FLAGS",
+)
 load(
     ":developer_dirs.bzl",
     "developer_dirs_linkopts",
@@ -157,6 +161,25 @@ def create_linking_context_from_compilation_outputs(
                     cc_common.create_linker_input(
                         owner = label,
                         user_link_flags = depset(["-Wl,-z,nostart-stop-gc"]),
+                    ),
+                ]),
+            ),
+        )
+
+    if is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_OBJC_LINK_FLAGS,
+    ):
+        # TODO(b/112000244): These should get added by the C++ Starlark API,
+        # but we're using the "c++-link-executable" action right now instead of
+        # "objc-executable" because the latter requires additional variables
+        # not provided by cc_common. Figure out how to handle this correctly.
+        extra_linking_contexts.append(
+            cc_common.create_linking_context(
+                linker_inputs = depset([
+                    cc_common.create_linker_input(
+                        owner = label,
+                        user_link_flags = depset(["-ObjC"]),
                     ),
                 ]),
             ),
