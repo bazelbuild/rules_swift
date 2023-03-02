@@ -100,7 +100,9 @@ def _swift_symbol_graph_aspect_impl(target, aspect_ctx):
     ]
 
 def _testonly_symbol_graph_aspect_impl(target, aspect_ctx):
-    if not getattr(aspect_ctx.rule.attr, "testonly", False):
+    ignored = not getattr(aspect_ctx.rule.attr, "testonly", False)
+
+    if ignored:
         # It's safe to return early (and not propagate transitive info) because
         # a non-`testonly` target can't depend on a `testonly` target, so there
         # is no possibility of losing anything we'd want to keep.
