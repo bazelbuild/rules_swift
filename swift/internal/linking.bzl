@@ -24,7 +24,11 @@ load(
 )
 load(":derived_files.bzl", "derived_files")
 load(":features.bzl", "get_cc_feature_configuration", "is_feature_enabled")
-load(":feature_names.bzl", "SWIFT_FEATURE_LLD_GC_WORKAROUND")
+load(
+    ":feature_names.bzl",
+    "SWIFT_FEATURE_LLD_GC_WORKAROUND",
+    "SWIFT_FEATURE_OBJC_LINK_FLAGS",
+)
 load(
     ":developer_dirs.bzl",
     "developer_dirs_linkopts",
@@ -162,6 +166,22 @@ def create_linking_context_from_compilation_outputs(
             ),
         )
 
+    if is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_OBJC_LINK_FLAGS,
+    ):
+        # TODO: Remove once we can rely on folks using the new toolchain
+        extra_linking_contexts.append(
+            cc_common.create_linking_context(
+                linker_inputs = depset([
+                    cc_common.create_linker_input(
+                        owner = label,
+                        user_link_flags = depset(["-ObjC"]),
+                    ),
+                ]),
+            ),
+        )
+
     if not name:
         name = label.name
 
@@ -255,21 +275,25 @@ def new_objc_provider(
             if alwayslink:
                 force_load_libraries.append(library)
 
+    extra_linkopts = []
     if feature_configuration and should_embed_swiftmodule_for_debugging(
         feature_configuration = feature_configuration,
         module_context = module_context,
     ):
         module_file = module_context.swift.swiftmodule
-        debug_link_flags = ["-Wl,-add_ast_path,{}".format(module_file.path)]
+        extra_linkopts.append("-Wl,-add_ast_path,{}".format(module_file.path))
         debug_link_inputs = [module_file]
     else:
-        debug_link_flags = []
         debug_link_inputs = []
 
     if is_test:
-        developer_paths_linkopts = developer_dirs_linkopts(swift_toolchain.developer_dirs)
-    else:
-        developer_paths_linkopts = []
+        extra_linkopts.extend(developer_dirs_linkopts(swift_toolchain.developer_dirs))
+
+    if feature_configuration and is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_OBJC_LINK_FLAGS,
+    ):
+        extra_linkopts.append("-ObjC")
 
     return apple_common.new_objc_provider(
         force_load_library = depset(
@@ -282,7 +306,7 @@ def new_objc_provider(
             order = "topological",
         ),
         link_inputs = depset(additional_link_inputs + debug_link_inputs),
-        linkopt = depset(user_link_flags + debug_link_flags + developer_paths_linkopts),
+        linkopt = depset(user_link_flags + extra_linkopts),
         providers = get_providers(
             deps,
             apple_common.Objc,
