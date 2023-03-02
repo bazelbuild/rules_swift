@@ -230,7 +230,6 @@ def _swift_linkopts_providers(
         # of "objc-executable" because the latter requires additional
         # variables not provided by cc_common. Figure out how to handle this
         # correctly.
-        "-ObjC",
         "-Wl,-objc_abi_version,2",
     ]
 
