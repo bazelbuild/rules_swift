@@ -335,4 +335,4 @@ SWIFT_FEATURE_LLD_GC_WORKAROUND = "swift.lld_gc_workaround"
 # Enable the default -ObjC link flags that otherwise wouldn't be passed to
 # non-Apple binary top level targets. Disable this to avoid over-linking
 # objects if you know that isn't required.
-SWIFT_FEATURE_OBJC_LINK_FLAGS = "swift.objc_link_flags"
+SWIFT_FEATURE_OBJC_LINK_FLAGS = "swift.objc_link_flag"

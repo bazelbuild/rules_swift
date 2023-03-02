@@ -170,10 +170,7 @@ def create_linking_context_from_compilation_outputs(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_OBJC_LINK_FLAGS,
     ):
-        # TODO(b/112000244): These should get added by the C++ Starlark API,
-        # but we're using the "c++-link-executable" action right now instead of
-        # "objc-executable" because the latter requires additional variables
-        # not provided by cc_common. Figure out how to handle this correctly.
+        # TODO: Remove once we can rely on folks using the new toolchain
         extra_linking_contexts.append(
             cc_common.create_linking_context(
                 linker_inputs = depset([
@@ -293,6 +290,12 @@ def new_objc_provider(
         developer_paths_linkopts = developer_dirs_linkopts(swift_toolchain.developer_dirs)
     else:
         developer_paths_linkopts = []
+
+    if is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_OBJC_LINK_FLAGS,
+    ):
+        user_link_flags.append("-ObjC")
 
     return apple_common.new_objc_provider(
         force_load_library = depset(
