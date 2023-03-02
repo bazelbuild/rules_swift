@@ -289,7 +289,7 @@ def new_objc_provider(
     if is_test:
         extra_linkopts.extend(developer_dirs_linkopts(swift_toolchain.developer_dirs))
 
-    if is_feature_enabled(
+    if feature_configuration and is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_OBJC_LINK_FLAGS,
     ):
