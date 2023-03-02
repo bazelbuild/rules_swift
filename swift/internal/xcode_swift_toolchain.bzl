@@ -39,6 +39,7 @@ load(
     "SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES",
     "SWIFT_FEATURE_FILE_PREFIX_MAP",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
+    "SWIFT_FEATURE_OBJC_LINK_FLAGS",
     "SWIFT_FEATURE_OPT_USES_WMO",
     "SWIFT_FEATURE_REMAP_XCODE_PATH",
     "SWIFT_FEATURE_SUPPORTS_BARE_SLASH_REGEX",
@@ -230,7 +231,6 @@ def _swift_linkopts_providers(
         # of "objc-executable" because the latter requires additional
         # variables not provided by cc_common. Figure out how to handle this
         # correctly.
-        "-ObjC",
         "-Wl,-objc_abi_version,2",
     ]
 
@@ -612,6 +612,7 @@ def _xcode_swift_toolchain_impl(ctx):
         SWIFT_FEATURE_COVERAGE_PREFIX_MAP,
         SWIFT_FEATURE_DEBUG_PREFIX_MAP,
         SWIFT_FEATURE_ENABLE_BATCH_MODE,
+        SWIFT_FEATURE_OBJC_LINK_FLAGS,
         SWIFT_FEATURE_OPT_USES_WMO,
         SWIFT_FEATURE_REMAP_XCODE_PATH,
         SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION,

@@ -331,3 +331,8 @@ SWIFT_FEATURE_SUPPORTS_BARE_SLASH_REGEX = "swift.supports_bare_slash_regex"
 # this feature if you have a version of Swift that fixes it and you care about
 # minor binary size improvements
 SWIFT_FEATURE_LLD_GC_WORKAROUND = "swift.lld_gc_workaround"
+
+# Enable the default -ObjC link flags that otherwise wouldn't be passed to
+# non-Apple binary top level targets. Disable this to avoid over-linking
+# objects if you know that isn't required.
+SWIFT_FEATURE_OBJC_LINK_FLAGS = "swift.objc_link_flag"
