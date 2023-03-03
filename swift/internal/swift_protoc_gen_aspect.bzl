@@ -475,6 +475,11 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
         # propagate them. Note that we don't need to handle the runtime support
         # libraries here; we can assume that they've already been pulled in by a
         # `proto_library` that had srcs.
+        #
+        # NOTE: `swift_proto_library` won't allow itself to depend on a
+        # `proto_library` with no `srcs`, but this case can happen in the
+        # transitive `proto_library` graph so the merging behavior is needed
+        # for things that depend on such targets.
         pbswift_files = []
 
         providers = [

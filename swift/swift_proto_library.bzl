@@ -31,6 +31,15 @@ def _swift_proto_library_impl(ctx):
         )
 
     dep = ctx.attr.deps[0]
+
+    if not dep[ProtoInfo].direct_sources:
+        fail(
+            "proto_library deps without srcs are not permitted. Add a " +
+            "swift_proto_library for each of that proto_library's " +
+            "deps instead.",
+            attr = "deps",
+        )
+
     proto_compile_info = dep[SwiftProtoCompilationInfo]
     cc_info = proto_compile_info.cc_info
     swift_info = proto_compile_info.swift_info
