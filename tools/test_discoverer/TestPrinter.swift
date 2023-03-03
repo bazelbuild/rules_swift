@@ -144,6 +144,7 @@ struct TestPrinter {
 
     var contents = """
       import BazelTestObservation
+      import Foundation
       import XCTest
 
       @main
@@ -162,11 +163,26 @@ struct TestPrinter {
         """
     }
 
+    // Bazel's `--test_filter` flag is passed to the test binary via the `TESTBRIDGE_TEST_ONLY`
+    // environment variable. Below, we read that value if it is present and pass it to `XCTMain`,
+    // where it behaves the same as the `-XCTest` flag value in Xcode's `xctest` tool.
+    //
+    // Note that `XCTMain` treats `arguments` as an actual command line, meaning that `arguments[0]`
+    // is expected to be the binary's path. So we only do the test filter logic if we've already
+    // been passed no other arguments. This lets the test binary still support other XCTest flags
+    // like `--list-tests` or `--dump-tests-json` if the user wishes to use those directly.
     contents += """
           if let xmlObserver = BazelXMLTestObserver.default {
             XCTestObservationCenter.shared.addTestObserver(xmlObserver)
           }
-          XCTMain(tests)
+
+          var arguments = CommandLine.arguments
+          if arguments.count == 1,
+            let testFilter = ProcessInfo.processInfo.environment["TESTBRIDGE_TEST_ONLY"]
+          {
+            arguments.append(testFilter)
+          }
+          XCTMain(tests, arguments: arguments)
         }
       }
 
