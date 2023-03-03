@@ -11,7 +11,6 @@ swift_library(
         "TestHelper.swift",
     ],
     module_name = "test_filter",
-    target_compatible_with = ["@platforms//os:macos"],
 )
 
 # Verify that tests fail as expected without test filtering.
@@ -20,8 +19,7 @@ swift_test(
     env = {
         "EXPECT_FAILURE": "TRUE",
     },
-    module_name = "test_filter",
-    target_compatible_with = ["@platforms//os:macos"],
+    module_name = "test_filter__baseline",
     deps = [":test_filter_lib"],
 )
 
@@ -31,8 +29,7 @@ swift_test(
     env = {
         "TESTBRIDGE_TEST_ONLY": "test_filter.PassTests",
     },
-    module_name = "test_filter",
-    target_compatible_with = ["@platforms//os:macos"],
+    module_name = "test_filter__feature__target_class",
     deps = [":test_filter_lib"],
 )
 
@@ -42,7 +39,6 @@ swift_test(
     env = {
         "TESTBRIDGE_TEST_ONLY": "test_filter.PassFailTests/test_pass",
     },
-    module_name = "test_filter",
-    target_compatible_with = ["@platforms//os:macos"],
+    module_name = "test_filter__feature__target_class_method",
     deps = [":test_filter_lib"],
 )
