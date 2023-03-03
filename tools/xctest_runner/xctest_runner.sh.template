@@ -17,12 +17,12 @@
 set -eu
 
 # This test script is used as the executable output of a `swift_test` rule when
-# building macOS targets (unless the "swift.bundled_tests" feature is disabled)
+# building macOS targets (unless the target has `discover_tests = False`)
 # because the test binary is an `MH_BUNDLE` that needs to be loaded dynamically
 # and runtime reflection is used to locate the test methods.
 
-# TODO(allevato): Support Bazel's --test_filter.
-exec xcrun xctest -XCTest All "%bundle%"
+readonly TEST_FILTER=${TESTBRIDGE_TEST_ONLY:-All}
+exec xcrun xctest -XCTest "${TEST_FILTER}" "%bundle%"
 
 # We should never make it here unless `exec` failed.
 exit 2

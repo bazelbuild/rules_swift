@@ -582,6 +582,24 @@ test discovery:
 
 See the documentation of the `discover_tests` attribute for more information
 about how this behavior affects the rule's outputs.
+
+### Test Filtering
+
+`swift_test` supports Bazel's `--test_filter` flag on all platforms (i.e., Apple
+and Linux), which can be used to run only a subset of tests. The expected filter
+format is the same as Xcode's `xctest` tool:
+
+*   `ModuleName`: Run only the test classes/methods in module `ModuleName`.
+*   `ModuleName.ClassName`: Run only the test methods in class
+    `ModuleName.ClassName`.
+*   `ModuleName.ClassName/testMethodName`: Run only the method `testMethodName`
+    in class `ModuleName.ClassName`.
+
+Multiple such filters can be separated by commas. For example:
+
+```shell
+bazel test --test_filter=AModule,BModule.SomeTests,BModule.OtherTests/testX //my/package/...
+```
 """,
     exec_groups = {
         # Define an execution group for `SwiftTestDiscovery` actions that does
