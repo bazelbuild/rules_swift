@@ -395,10 +395,6 @@ def register_link_binary_action(
                 "-framework",
                 objc.static_framework_names.to_list(),
             ))
-            dep_link_flags.extend([
-                lib.path
-                for lib in objc.imported_library.to_list()
-            ])
 
             linking_contexts.append(
                 cc_common.create_linking_context(
@@ -406,9 +402,7 @@ def register_link_binary_action(
                         cc_common.create_linker_input(
                             owner = owner,
                             user_link_flags = dep_link_flags,
-                            additional_inputs = depset(
-                                transitive = [objc.static_framework_file, objc.imported_library],
-                            ),
+                            additional_inputs = objc.static_framework_file,
                         ),
                     ]),
                 ),
