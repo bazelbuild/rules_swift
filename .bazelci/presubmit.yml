@@ -124,8 +124,7 @@ tasks:
 
   doc_tests:
     name: "Doc tests"
-    # TODO: Revert to last_green once https://github.com/bazelbuild/bazel/pull/17685 lands
-    bazel: rolling
+    bazel: last_green
     platform: ubuntu2004
     test_targets:
     - "doc/..."
