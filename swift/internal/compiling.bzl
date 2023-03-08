@@ -1116,7 +1116,7 @@ def compile_action_configs(
         # Disable auto-linking for prebuilt static frameworks.
         swift_toolchain_config.action_config(
             actions = [swift_action_names.COMPILE],
-            configurators = [_static_frameworks_disable_autolink_configurator],
+            configurators = [_frameworks_disable_autolink_configurator],
         ),
     ]
 
@@ -1614,7 +1614,7 @@ def _framework_search_paths_configurator(prerequisites, args, is_swift):
         before_each = "-Xcc",
     )
 
-def _static_frameworks_disable_autolink_configurator(prerequisites, args):
+def _frameworks_disable_autolink_configurator(prerequisites, args):
     """Add flags to disable auto-linking for static prebuilt frameworks.
 
     This disables the `LC_LINKER_OPTION` load commands for auto-linking when
@@ -1623,7 +1623,8 @@ def _static_frameworks_disable_autolink_configurator(prerequisites, args):
     library.
     """
     args.add_all(
-        prerequisites.objc_info.imported_library,
+        # TODO: This needs to come from CcInfo at some point
+        depset(transitive = [prerequisites.objc_info.imported_library, prerequisites.objc_info.dynamic_framework_file]),
         map_each = _disable_autolink_framework_copts,
     )
 
