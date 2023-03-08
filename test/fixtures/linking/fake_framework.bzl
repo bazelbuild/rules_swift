@@ -6,8 +6,9 @@ def _impl(ctx):
     binary2 = ctx.actions.declare_file("framework2.framework/framework2")
     ctx.actions.write(binary2, "empty")
     return apple_common.new_objc_provider(
-        static_framework_file = depset([binary1, binary2]),
-        imported_library = depset([binary1, binary2]),
+        static_framework_file = depset([binary1]),
+        imported_library = depset([binary1]),
+        dynamic_framework_file = depset([binary2]),
     )
 
 fake_framework = rule(
