@@ -25,7 +25,8 @@ load(
     "ensure_swiftmodule_is_embedded",
     "should_embed_swiftmodule_for_debugging",
 )
-load(":features.bzl", "configure_features", "get_cc_feature_configuration")
+load(":features.bzl", "configure_features", "get_cc_feature_configuration", "is_feature_enabled")
+load(":feature_names.bzl", "SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE")
 
 visibility([
     "@build_bazel_rules_swift//swift/...",
@@ -263,6 +264,12 @@ def create_linking_context_from_compilation_outputs(
         cc_info.linking_context
         for cc_info in swift_toolchain.implicit_deps_providers.cc_infos
     ]
+
+    if not alwayslink:
+        alwayslink = is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE,
+        )
 
     debugging_linking_context = _create_embedded_debugging_linking_context(
         actions = actions,

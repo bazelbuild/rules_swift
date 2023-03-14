@@ -93,10 +93,9 @@ bzl_library(
     deps = [
         ":attrs",
         ":debugging",
+        ":feature_names",
         ":features",
-        ":utils",
         "//swift:swift_clang_module_aspect",
-        "@bazel_skylib//lib:collections",
         "@bazel_skylib//lib:dicts",
     ],
 )

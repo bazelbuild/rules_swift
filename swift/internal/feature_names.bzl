@@ -229,3 +229,7 @@ SWIFT_FEATURE__WMO_IN_SWIFTCOPTS = "swift._wmo_in_swiftcopts"
 # were passed on the command line using `--swiftcopt`. Users should never
 # manually enable, disable, or query this feature.
 SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS = "swift._num_threads_1_in_swiftcopts"
+
+# A private feature that is set by the toolchain if the given toolchain wants
+# all Swift compilations to always be linked.
+SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE = "swift._force_alwayslink_true"
