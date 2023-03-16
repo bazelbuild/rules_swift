@@ -20,6 +20,26 @@ visibility([
 
 _IOS_SIM_ARM64_MIN_OS_VERSION = apple_common.dotted_version("14.0")
 
+# Maps (operating system, environment) pairs from target triples to the legacy
+# Bazel core `apple_common.platform` values, since we still use some APIs that
+# require these.
+_TRIPLE_OS_TO_PLATFORM = {
+    ("ios", None): apple_common.platform.ios_device,
+    ("ios", "simulator"): apple_common.platform.ios_simulator,
+    ("macos", None): apple_common.platform.macos,
+    ("tvos", None): apple_common.platform.tvos_device,
+    ("tvos", "simulator"): apple_common.platform.tvos_simulator,
+    ("watchos", None): apple_common.platform.watchos_device,
+    ("watchos", "simulator"): apple_common.platform.watchos_simulator,
+}
+
+def _bazel_apple_platform(target_triple):
+    """Returns the `apple_common.platform` value for the given target triple."""
+    return _TRIPLE_OS_TO_PLATFORM[(
+        _unversioned_os(target_triple),
+        target_triple.environment,
+    )]
+
 def _make(*, cpu, vendor, os, environment = None):
     """Creates a target triple struct from the given values.
 
@@ -228,6 +248,7 @@ def _unversioned_os(triple):
     return _split_os_version(triple.os)[0]
 
 target_triples = struct(
+    bazel_apple_platform = _bazel_apple_platform,
     make = _make,
     normalize_for_swift = _normalize_for_swift,
     parse = _parse,

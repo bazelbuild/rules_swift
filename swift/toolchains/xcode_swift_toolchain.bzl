@@ -102,26 +102,6 @@ load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain", "use_c
 
 visibility("public")
 
-# Maps (operating system, environment) pairs from target triples to the legacy
-# Bazel core `apple_common.platform` values, since we still use some APIs that
-# require these.
-_TRIPLE_OS_TO_PLATFORM = {
-    ("ios", None): apple_common.platform.ios_device,
-    ("ios", "simulator"): apple_common.platform.ios_simulator,
-    ("macos", None): apple_common.platform.macos,
-    ("tvos", None): apple_common.platform.tvos_device,
-    ("tvos", "simulator"): apple_common.platform.tvos_simulator,
-    ("watchos", None): apple_common.platform.watchos_device,
-    ("watchos", "simulator"): apple_common.platform.watchos_simulator,
-}
-
-def _bazel_apple_platform(target_triple):
-    """Returns the `apple_common.platform` value for the given target triple."""
-    return _TRIPLE_OS_TO_PLATFORM[(
-        target_triples.unversioned_os(target_triple),
-        target_triple.environment,
-    )]
-
 def _swift_developer_lib_dir(platform_framework_dir):
     """Returns the directory containing extra Swift developer libraries.
 
@@ -213,7 +193,7 @@ def _platform_developer_framework_dir(
         apple_toolchain.developer_dir(),
         "Platforms",
         "{}.platform".format(
-            _bazel_apple_platform(target_triple).name_in_plist,
+            target_triples.bazel_apple_platform(target_triple).name_in_plist,
         ),
         "Developer/Library/Frameworks",
     )
@@ -521,7 +501,7 @@ def _all_action_configs(
                 add_arg(
                     "-target-sdk-version",
                     str(xcode_config.sdk_version_for_platform(
-                        _bazel_apple_platform(target_triple),
+                        target_triples.bazel_apple_platform(target_triple),
                     )),
                 ),
             ],
@@ -677,7 +657,7 @@ def _xcode_env(target_triple, xcode_config):
         apple_common.apple_host_system_env(xcode_config),
         apple_common.target_apple_env(
             xcode_config,
-            _bazel_apple_platform(target_triple),
+            target_triples.bazel_apple_platform(target_triple),
         ),
     )
 
