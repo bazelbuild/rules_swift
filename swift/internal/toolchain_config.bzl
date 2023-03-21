@@ -15,7 +15,6 @@
 """Definitions used to configure toolchains and actions."""
 
 load("@bazel_skylib//lib:partial.bzl", "partial")
-load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:types.bzl", "types")
 
 _ActionConfigInfo = provider(
@@ -225,7 +224,6 @@ def _driver_tool_config(
         driver_mode,
         args = [],
         swift_executable = None,
-        toolchain_root = None,
         tool_executable_suffix = "",
         **kwargs):
     """Returns a new Swift toolchain tool configuration for the Swift driver.
@@ -253,8 +251,6 @@ def _driver_tool_config(
         args: A list of arguments that are always passed to the driver.
         swift_executable: A custom Swift driver executable, if provided by the
             toolchain.
-        toolchain_root: The root directory of the Swift toolchain, if the
-            toolchain provides it.
         tool_executable_suffix: The suffix for executable tools.
         **kwargs: Additional arguments that will be passed unmodified to
             `swift_toolchain_config.tool_config`.
@@ -265,8 +261,6 @@ def _driver_tool_config(
     if swift_executable:
         executable = swift_executable.path
         args = ["--driver-mode={}".format(driver_mode)] + args
-    elif toolchain_root:
-        executable = paths.join(toolchain_root, "bin", driver_mode)
     else:
         executable = driver_mode
 

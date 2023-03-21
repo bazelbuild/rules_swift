@@ -450,18 +450,14 @@ def _all_action_configs(
     return action_configs
 
 def _all_tool_configs(
-        custom_toolchain,
         env,
         execution_requirements,
         generated_header_rewriter,
         swift_executable,
-        toolchain_root,
         xcode_config):
     """Returns the tool configurations for the Swift toolchain.
 
     Args:
-        custom_toolchain: The bundle identifier of a custom Swift toolchain, if
-            one was requested.
         env: The environment variables to set when launching tools.
         execution_requirements: The execution requirements for tools.
         generated_header_rewriter: A `struct` returned by
@@ -469,20 +465,11 @@ def _all_tool_configs(
             invoked after compilation to rewrite the generated header.
         swift_executable: A custom Swift driver executable to be used during the
             build, if provided.
-        toolchain_root: The root directory of the toolchain, if provided.
         xcode_config: The `apple_common.XcodeVersionConfig` provider.
 
     Returns:
         A dictionary mapping action name to tool configuration.
     """
-
-    # Configure the environment variables that the worker needs to fill in the
-    # Bazel placeholders for SDK root and developer directory, along with the
-    # custom toolchain if requested.
-    if custom_toolchain:
-        env = dict(env)
-        env["TOOLCHAINS"] = custom_toolchain
-
     env["SWIFT_AVOID_WARNING_USING_OLD_DRIVER"] = "1"
 
     tool_config = swift_toolchain_config.driver_tool_config(
@@ -492,7 +479,6 @@ def _all_tool_configs(
         swift_executable = swift_executable,
         tool_input_manifests = generated_header_rewriter.input_manifests,
         tool_inputs = generated_header_rewriter.inputs,
-        toolchain_root = toolchain_root,
         use_param_file = True,
         worker_mode = "persistent",
     )
@@ -511,7 +497,6 @@ def _all_tool_configs(
                 env = env,
                 execution_requirements = execution_requirements,
                 swift_executable = swift_executable,
-                toolchain_root = toolchain_root,
                 use_param_file = True,
                 worker_mode = "wrap",
             )
@@ -577,24 +562,7 @@ def _xcode_swift_toolchain_impl(ctx):
         toolchain_label = ctx.label,
     )
 
-    # `--define=SWIFT_USE_TOOLCHAIN_ROOT=<path>` is a rapid development feature
-    # that lets you build *just* a custom `swift` driver (and `swiftc`
-    # symlink), rather than a full toolchain, and point compilation actions at
-    # those. Note that the files must still be in a "toolchain-like" directory
-    # structure, meaning that the path passed here must contain a `bin`
-    # directory and that directory contains the `swift` and `swiftc` files.
-    #
-    # TODO(allevato): Retire this feature in favor of the `swift_executable`
-    # attribute, which supports remote builds.
-    #
-    # To use a "standard" custom toolchain built using the full Swift build
-    # script, use `--define=SWIFT_CUSTOM_TOOLCHAIN=<id>` as shown below.
     swift_executable = get_swift_executable_for_toolchain(ctx)
-    toolchain_root = ctx.var.get("SWIFT_USE_TOOLCHAIN_ROOT")
-    custom_toolchain = ctx.var.get("SWIFT_CUSTOM_TOOLCHAIN")
-    if toolchain_root and custom_toolchain:
-        fail("Do not use SWIFT_USE_TOOLCHAIN_ROOT and SWIFT_CUSTOM_TOOLCHAIN" +
-             "in the same build.")
 
     # Compute the default requested features and conditional ones based on Xcode
     # version.
@@ -647,12 +615,10 @@ def _xcode_swift_toolchain_impl(ctx):
     )
 
     all_tool_configs = _all_tool_configs(
-        custom_toolchain = custom_toolchain,
         env = env,
         execution_requirements = execution_requirements,
         generated_header_rewriter = generated_header_rewriter,
         swift_executable = swift_executable,
-        toolchain_root = toolchain_root,
         xcode_config = xcode_config,
     )
     all_action_configs = _all_action_configs(
@@ -664,7 +630,7 @@ def _xcode_swift_toolchain_impl(ctx):
         additional_swiftc_copts = ctx.fragments.swift.copts(),
         apple_toolchain = apple_toolchain,
         generated_header_rewriter = generated_header_rewriter,
-        needs_resource_directory = swift_executable or toolchain_root,
+        needs_resource_directory = bool(swift_executable),
         target_triple = target_triple,
     )
     swift_toolchain_developer_paths = []
