@@ -79,21 +79,9 @@ To make cacheable builds work correctly with debugging see
 
 ## Swift Package Manager Support
 
-To download, build, and reference external Swift packages as Bazel targets, check out
-[rules_spm](https://github.com/cgrindel/rules_spm).  The rules in
-[rules_spm](https://github.com/cgrindel/rules_spm) build external Swift packages with [Swift
-Package Manager](https://swift.org/package-manager/), then make the outputs available to Bazel
-rules.
-
-## Future Work
-
-- Support for building and linking to shared libraries (`.dylib`/`.so`) written
-  in Swift.
-- Migration to the Bazel platforms/toolchains APIs.
-- Support for multiple toolchains, and support for non-Xcode toolchains on
-  macOS.
-- Automatically download a Linux toolchain from [swift.org](https://swift.org)
-  if one is not already installed.
+To download, build, and reference external Swift packages as Bazel
+targets, check out
+[swift_bazel](https://github.com/cgrindel/swift_bazel).
 
 ## Supported bazel versions
 
@@ -115,16 +103,3 @@ as best as we can since the 1.0.0 release.
 | 5.x | 0.25.0 | current |
 | 4.x | 0.19.0 | 0.24.0 |
 | 3.x | 0.14.0 | 0.18.0 |
-
-## Acknowledgments
-
-We gratefully acknowledge the following external packages that rules_swift
-depends on:
-
-- [Apple Support for Bazel](https://github.com/bazelbuild/apple_support) (Google)
-- [Bazel Skylib](https://github.com/bazelbuild/bazel-skylib) (Google)
-- [JSON for Modern C++](https://github.com/nlohmann/json) (Niels Lohmann)
-- [Protocol Buffers](https://github.com/protocolbuffers/protobuf) (Google)
-- [Swift gRPC](https://github.com/grpc/grpc-swift) (Google)
-- [Swift Protobuf](https://github.com/apple/swift-protobuf) (Apple)
-- [zlib](https://www.zlib.net) (Jean-loup Gailly and Mark Adler)
