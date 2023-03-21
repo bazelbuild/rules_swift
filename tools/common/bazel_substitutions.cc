@@ -93,7 +93,7 @@ std::string GetToolchainPath() {
 
   std::filesystem::path toolchain_path(output_stream.str());
   // Remove usr/bin/clang components to get the root of the custom toolchain
-  return toolchain_path.parent_path().parent_path().parent_path();
+  return toolchain_path.parent_path().parent_path().parent_path().string();
 }
 
 }  // namespace
