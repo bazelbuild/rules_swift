@@ -195,7 +195,8 @@ def _sdk_developer_framework_dir(apple_toolchain, target_triple, xcode_config):
 def _swift_linkopts_providers(
         apple_toolchain,
         target_triple,
-        toolchain_label):
+        toolchain_label,
+        toolchain_root):
     """Returns providers containing flags that should be passed to the linker.
 
     The providers returned by this function will be used as implicit
@@ -207,6 +208,8 @@ def _swift_linkopts_providers(
         target_triple: The target triple `struct`.
         toolchain_label: The label of the Swift toolchain that will act as the
             owner of the linker input propagating the flags.
+        toolchain_root: The path to a custom Swift toolchain that could contain
+            libraries required to link the binary
 
     Returns:
         A `struct` containing the following fields:
@@ -216,14 +219,22 @@ def _swift_linkopts_providers(
         *   `objc_info`: An `apple_common.Objc` provider that will provide
             linker flags to binaries that depend on Swift targets.
     """
+    linkopts = []
+    if toolchain_root:
+        # This -L has to come before Xcode's to make sure libraries are
+        # overridden when applicable
+        linkopts.append("-L{}/usr/lib/swift/{}".format(
+            toolchain_root,
+            target_triples.platform_name_for_swift(target_triple),
+        ))
+
     swift_lib_dir = paths.join(
         apple_toolchain.developer_dir(),
         "Toolchains/XcodeDefault.xctoolchain/usr/lib/swift",
         target_triples.platform_name_for_swift(target_triple),
     )
 
-    linkopts = [
-        "-Wl,-rpath,/usr/lib/swift",
+    linkopts.extend([
         "-L{}".format(swift_lib_dir),
         "-L/usr/lib/swift",
         # TODO(b/112000244): These should get added by the C++ Starlark API,
@@ -232,7 +243,8 @@ def _swift_linkopts_providers(
         # variables not provided by cc_common. Figure out how to handle this
         # correctly.
         "-Wl,-objc_abi_version,2",
-    ]
+        "-Wl,-rpath,/usr/lib/swift",
+    ])
 
     return struct(
         cc_info = CcInfo(
@@ -571,12 +583,6 @@ def _xcode_swift_toolchain_impl(ctx):
 
     xcode_config = ctx.attr._xcode_config[apple_common.XcodeVersionConfig]
 
-    swift_linkopts_providers = _swift_linkopts_providers(
-        apple_toolchain = apple_toolchain,
-        target_triple = target_triple,
-        toolchain_label = ctx.label,
-    )
-
     # `--define=SWIFT_USE_TOOLCHAIN_ROOT=<path>` is a rapid development feature
     # that lets you build *just* a custom `swift` driver (and `swiftc`
     # symlink), rather than a full toolchain, and point compilation actions at
@@ -591,10 +597,22 @@ def _xcode_swift_toolchain_impl(ctx):
     # script, use `--define=SWIFT_CUSTOM_TOOLCHAIN=<id>` as shown below.
     swift_executable = get_swift_executable_for_toolchain(ctx)
     toolchain_root = ctx.var.get("SWIFT_USE_TOOLCHAIN_ROOT")
-    custom_toolchain = ctx.var.get("SWIFT_CUSTOM_TOOLCHAIN")
+
+    # TODO: Remove SWIFT_CUSTOM_TOOLCHAIN for the next major release
+    custom_toolchain = ctx.var.get("SWIFT_CUSTOM_TOOLCHAIN") or ctx.configuration.default_shell_env.get("TOOLCHAINS")
+    custom_xcode_toolchain_root = None
     if toolchain_root and custom_toolchain:
         fail("Do not use SWIFT_USE_TOOLCHAIN_ROOT and SWIFT_CUSTOM_TOOLCHAIN" +
              "in the same build.")
+    elif custom_toolchain:
+        custom_xcode_toolchain_root = "__BAZEL_CUSTOM_XCODE_TOOLCHAIN_PATH__"
+
+    swift_linkopts_providers = _swift_linkopts_providers(
+        apple_toolchain = apple_toolchain,
+        target_triple = target_triple,
+        toolchain_label = ctx.label,
+        toolchain_root = toolchain_root or custom_xcode_toolchain_root,
+    )
 
     # Compute the default requested features and conditional ones based on Xcode
     # version.
