@@ -137,14 +137,12 @@ def _command_line_objc_copts(compilation_mode, cpp_fragment, objc_fragment):
 
 def _platform_developer_framework_dir(
         apple_toolchain,
-        target_triple,
-        xcode_config):
+        target_triple):
     """Returns the Developer framework directory for the platform.
 
     Args:
         apple_toolchain: The `apple_common.apple_toolchain()` object.
         target_triple: The triple of the platform being targeted.
-        xcode_config: The Xcode configuration.
 
     Returns:
         The path to the Developer framework directory for the platform if one
@@ -159,13 +157,12 @@ def _platform_developer_framework_dir(
         "Developer/Library/Frameworks",
     )
 
-def _sdk_developer_framework_dir(apple_toolchain, target_triple, xcode_config):
+def _sdk_developer_framework_dir(apple_toolchain, target_triple):
     """Returns the Developer framework directory for the SDK.
 
     Args:
         apple_toolchain: The `apple_common.apple_toolchain()` object.
         target_triple: The triple of the platform being targeted.
-        xcode_config: The Xcode configuration.
 
     Returns:
         The path to the Developer framework directory for the SDK if one
@@ -455,8 +452,7 @@ def _all_tool_configs(
         execution_requirements,
         generated_header_rewriter,
         swift_executable,
-        toolchain_root,
-        xcode_config):
+        toolchain_root):
     """Returns the tool configurations for the Swift toolchain.
 
     Args:
@@ -470,7 +466,6 @@ def _all_tool_configs(
         swift_executable: A custom Swift driver executable to be used during the
             build, if provided.
         toolchain_root: The root directory of the toolchain, if provided.
-        xcode_config: The `apple_common.XcodeVersionConfig` provider.
 
     Returns:
         A dictionary mapping action name to tool configuration.
