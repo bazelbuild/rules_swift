@@ -150,15 +150,6 @@ def _platform_developer_framework_dir(
         The path to the Developer framework directory for the platform if one
         exists, otherwise `None`.
     """
-
-    # All platforms have a `Developer/Library/Frameworks` directory in their
-    # platform root, except for watchOS prior to Xcode 12.5.
-    if (
-        target_triples.unversioned_os(target_triple) == "watchos" and
-        not _is_xcode_at_least_version(xcode_config, "12.5")
-    ):
-        return None
-
     return paths.join(
         apple_toolchain.developer_dir(),
         "Platforms",
@@ -182,12 +173,9 @@ def _sdk_developer_framework_dir(apple_toolchain, target_triple, xcode_config):
     """
 
     # All platforms have a `Developer/Library/Frameworks` directory in their SDK
-    # root except for macOS (all versions of Xcode so far), and watchOS (prior
-    # to Xcode 12.5).
+    # root except for macOS (all versions of Xcode so far)
     os = target_triples.unversioned_os(target_triple)
-    if (os == "macos" or
-        (os == "watchos" and
-         not _is_xcode_at_least_version(xcode_config, "12.5"))):
+    if os == "macos":
         return None
 
     return paths.join(apple_toolchain.sdk_dir(), "Developer/Library/Frameworks")
@@ -513,11 +501,7 @@ def _all_tool_configs(
         swift_action_names.COMPILE: tool_config,
         swift_action_names.DERIVE_FILES: tool_config,
         swift_action_names.DUMP_AST: tool_config,
-    }
-
-    # Xcode 12.0 implies Swift 5.3.
-    if _is_xcode_at_least_version(xcode_config, "12.0"):
-        tool_configs[swift_action_names.PRECOMPILE_C_MODULE] = (
+        swift_action_names.PRECOMPILE_C_MODULE: (
             swift_toolchain_config.driver_tool_config(
                 driver_mode = "swiftc",
                 env = env,
@@ -527,7 +511,8 @@ def _all_tool_configs(
                 use_param_file = True,
                 worker_mode = "wrap",
             )
-        )
+        ),
+    }
 
     return tool_configs
 
@@ -630,27 +615,16 @@ def _xcode_swift_toolchain_impl(ctx):
         SWIFT_FEATURE_COVERAGE_PREFIX_MAP,
         SWIFT_FEATURE_DEBUG_PREFIX_MAP,
         SWIFT_FEATURE_ENABLE_BATCH_MODE,
+        SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES,
         SWIFT_FEATURE_OBJC_LINK_FLAGS,
         SWIFT_FEATURE_OPT_USES_WMO,
         SWIFT_FEATURE_REMAP_XCODE_PATH,
         SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION,
         SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS,
+        SWIFT_FEATURE_SUPPORTS_SYSTEM_MODULE_FLAG,
         SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE,
         SWIFT_FEATURE_USE_RESPONSE_FILES,
     ])
-
-    # Xcode 11.0 implies Swift 5.1.
-    if _is_xcode_at_least_version(xcode_config, "11.0"):
-        requested_features.append(SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION)
-        requested_features.append(SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS)
-
-    # Xcode 11.4 implies Swift 5.2.
-    if _is_xcode_at_least_version(xcode_config, "11.4"):
-        requested_features.append(SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES)
-
-    # Xcode 12.5 implies Swift 5.4.
-    if _is_xcode_at_least_version(xcode_config, "12.5"):
-        requested_features.append(SWIFT_FEATURE_SUPPORTS_SYSTEM_MODULE_FLAG)
 
     # Xcode 14 implies Swift 5.7.
     if _is_xcode_at_least_version(xcode_config, "14.0"):
