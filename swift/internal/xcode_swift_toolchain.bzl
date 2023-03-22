@@ -640,7 +640,6 @@ def _xcode_swift_toolchain_impl(ctx):
         generated_header_rewriter = generated_header_rewriter,
         swift_executable = swift_executable,
         toolchain_root = toolchain_root,
-        xcode_config = xcode_config,
     )
     all_action_configs = _all_action_configs(
         additional_objc_copts = _command_line_objc_copts(
@@ -658,7 +657,6 @@ def _xcode_swift_toolchain_impl(ctx):
     platform_developer_framework_dir = _platform_developer_framework_dir(
         apple_toolchain,
         target_triple,
-        xcode_config,
     )
     if platform_developer_framework_dir:
         swift_toolchain_developer_paths.append(
@@ -670,7 +668,6 @@ def _xcode_swift_toolchain_impl(ctx):
     sdk_developer_framework_dir = _sdk_developer_framework_dir(
         apple_toolchain,
         target_triple,
-        xcode_config,
     )
     if sdk_developer_framework_dir:
         swift_toolchain_developer_paths.append(
