@@ -336,3 +336,7 @@ SWIFT_FEATURE_LLD_GC_WORKAROUND = "swift.lld_gc_workaround"
 # non-Apple binary top level targets. Disable this to avoid over-linking
 # objects if you know that isn't required.
 SWIFT_FEATURE_OBJC_LINK_FLAGS = "swift.objc_link_flag"
+
+# A private feature that is set by the toolchain if the given toolchain wants
+# all Swift compilations to always be linked.
+SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE = "swift._force_alwayslink_true"

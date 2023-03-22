@@ -28,6 +28,7 @@ load(
     ":feature_names.bzl",
     "SWIFT_FEATURE_LLD_GC_WORKAROUND",
     "SWIFT_FEATURE_OBJC_LINK_FLAGS",
+    "SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE",
 )
 load(
     ":developer_dirs.bzl",
@@ -149,6 +150,12 @@ def create_linking_context_from_compilation_outputs(
             cc_common.create_linking_context(
                 linker_inputs = depset(post_compile_linker_inputs),
             ),
+        )
+
+    if not alwayslink:
+        alwayslink = is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE,
         )
 
     if is_feature_enabled(
