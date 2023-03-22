@@ -12,9 +12,18 @@ cc_library(
         "//tools:clang-cl": [
             "-Xclang",
             "-fno-split-cold-code",
+            "/std:c++17",
         ],
-        "//conditions:default": [],
+        "//tools:msvc": [
+            "/std:c++17",
+        ],
+        "//conditions:default": [
+            "-std=c++17",
+        ],
     }),
+    deps = [
+        ":process",
+    ],
 )
 
 cc_library(

@@ -52,15 +52,15 @@ uses `clang`.
 
 ## Building with Custom Toolchains
 
-**macOS hosts:** You can build with a custom toolchain installed in
-`/Library/Developer/Toolchains` instead of Xcode's default. To do so, pass the
-following flag to Bazel:
+**macOS hosts:** You can build with a custom Swift toolchain (downloaded
+from https://swift.org/download) instead of Xcode's default. To do so,
+pass the following flag to Bazel:
 
 ```lang-none
---define=SWIFT_CUSTOM_TOOLCHAIN=toolchain.id
+--action_env=TOOLCHAINS=toolchain.id
 ```
 
-where `toolchain.id` is the value of the `CFBundleIdentifier` key in the
+Where `toolchain.id` is the value of the `CFBundleIdentifier` key in the
 toolchain's Info.plist file.
 
 To list the available toolchains and their bundle identifiers, you can run:
