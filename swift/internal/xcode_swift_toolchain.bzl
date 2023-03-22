@@ -597,6 +597,8 @@ def _xcode_swift_toolchain_impl(ctx):
     # script, use `--define=SWIFT_CUSTOM_TOOLCHAIN=<id>` as shown below.
     swift_executable = get_swift_executable_for_toolchain(ctx)
     toolchain_root = ctx.var.get("SWIFT_USE_TOOLCHAIN_ROOT")
+
+    # TODO: Remove SWIFT_CUSTOM_TOOLCHAIN for the next major release
     custom_toolchain = ctx.var.get("SWIFT_CUSTOM_TOOLCHAIN") or ctx.configuration.default_shell_env.get("TOOLCHAINS")
     custom_xcode_toolchain_root = None
     if toolchain_root and custom_toolchain:
