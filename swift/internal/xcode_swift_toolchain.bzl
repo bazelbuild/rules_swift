@@ -601,8 +601,10 @@ def _xcode_swift_toolchain_impl(ctx):
     # TODO: Remove SWIFT_CUSTOM_TOOLCHAIN for the next major release
     custom_toolchain = ctx.var.get("SWIFT_CUSTOM_TOOLCHAIN") or ctx.configuration.default_shell_env.get("TOOLCHAINS")
     custom_xcode_toolchain_root = None
+    if ctx.var.get("SWIFT_CUSTOM_TOOLCHAIN"):
+        print("WARNING: SWIFT_CUSTOM_TOOLCHAIN is deprecated. Use --action_env=TOOLCHAINS=<id> instead.")  # buildifier: disable=print
     if toolchain_root and custom_toolchain:
-        fail("Do not use SWIFT_USE_TOOLCHAIN_ROOT and SWIFT_CUSTOM_TOOLCHAIN" +
+        fail("Do not use SWIFT_USE_TOOLCHAIN_ROOT and TOOLCHAINS" +
              "in the same build.")
     elif custom_toolchain:
         custom_xcode_toolchain_root = "__BAZEL_CUSTOM_XCODE_TOOLCHAIN_PATH__"
