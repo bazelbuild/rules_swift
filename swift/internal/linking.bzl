@@ -403,13 +403,28 @@ def register_link_binary_action(
                 objc.static_framework_names.to_list(),
             ))
 
+            is_bazel_6 = hasattr(apple_common, "link_multi_arch_static_library")
+            if is_bazel_6:
+                additional_inputs = objc.static_framework_file
+            else:
+                additional_inputs = depset(
+                    transitive = [
+                        objc.static_framework_file,
+                        objc.imported_library,
+                    ],
+                )
+                dep_link_flags.extend([
+                    lib.path
+                    for lib in objc.imported_library.to_list()
+                ])
+
             linking_contexts.append(
                 cc_common.create_linking_context(
                     linker_inputs = depset([
                         cc_common.create_linker_input(
                             owner = owner,
                             user_link_flags = dep_link_flags,
-                            additional_inputs = objc.static_framework_file,
+                            additional_inputs = additional_inputs,
                         ),
                     ]),
                 ),
