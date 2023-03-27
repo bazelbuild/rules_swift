@@ -629,7 +629,7 @@ def _xcode_swift_toolchain_impl(ctx):
         requested_features.append(SWIFT_FEATURE_FILE_PREFIX_MAP)
         requested_features.append(SWIFT_FEATURE_SUPPORTS_BARE_SLASH_REGEX)
 
-    if ctx.fragments.objc.alwayslink_by_default:
+    if hasattr(ctx.fragments.objc, "alwayslink_by_default") and ctx.fragments.objc.alwayslink_by_default:
         requested_features.append(SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE)
 
     env = _xcode_env(target_triple = target_triple, xcode_config = xcode_config)
