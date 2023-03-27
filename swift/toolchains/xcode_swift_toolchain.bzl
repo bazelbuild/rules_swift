@@ -46,6 +46,7 @@ load(
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_SUPPORTS_REMAP_SWIFTMODULES",
     "SWIFT_FEATURE_USE_OLD_DRIVER",
+    "SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:features.bzl",
@@ -740,6 +741,9 @@ def _xcode_swift_toolchain_impl(ctx):
         # The new driver had response file bugs in Xcode 13.x that are fixed in
         # Xcode 14.
         requested_features.append(SWIFT_FEATURE_USE_OLD_DRIVER)
+
+    if ctx.fragments.objc.alwayslink_by_default:
+        requested_features.append(SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE)
 
     env = _xcode_env(target_triple = target_triple, xcode_config = xcode_config)
     execution_requirements = xcode_config.execution_info()
