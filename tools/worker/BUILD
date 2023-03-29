@@ -3,14 +3,6 @@ load("@build_bazel_apple_support//rules:universal_binary.bzl", "universal_binary
 
 licenses(["notice"])
 
-# Internal hinge for index while building V2 feature
-config_setting(
-    name = "use_global_index_store",
-    values = {
-        "features": "swift.use_global_index_store",
-    },
-)
-
 cc_library(
     name = "compile_with_worker",
     srcs = [
@@ -83,7 +75,7 @@ cc_library(
         ],
     }),
     data = select({
-        ":use_global_index_store": [
+        "//swift/internal:apple": [
             "@build_bazel_rules_swift_index_import//:index_import",
         ],
         "//conditions:default": [],
