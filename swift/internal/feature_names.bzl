@@ -320,6 +320,10 @@ SWIFT_FEATURE_OBJC_LINK_FLAGS = "swift.objc_link_flag"
 # all Swift compilations to always be linked.
 SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE = "swift._force_alwayslink_true"
 
+# If enabled, requests the `-enforce-exclusivity=checked` swiftc flag which
+# enables runtime checking of exclusive memory access on mutation.
+SWIFT_FEATURE_CHECKED_EXCLUSIVITY = "swift.checked_exclusivity"
+
 # Disables Swift sandbox which prevents issues with nested sandboxing when Swift code contains system-provided macros.
 # If enabled '#Preview' macro provided by SwiftUI fails to build and probably other system-provided macros.
 # Enabled by default for Swift 5.10+ on macOS.
