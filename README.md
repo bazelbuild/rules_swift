@@ -81,7 +81,7 @@ To make cacheable builds work correctly with debugging see
 
 To download, build, and reference external Swift packages as Bazel
 targets, check out
-[swift_bazel](https://github.com/cgrindel/swift_bazel).
+[rules_swift_package_manager](https://github.com/cgrindel/rules_swift_package_manager).
 
 ## Supported bazel versions
 
