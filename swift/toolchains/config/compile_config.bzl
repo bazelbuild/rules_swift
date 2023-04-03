@@ -26,6 +26,7 @@ load(
 load(
     "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_CACHEABLE_SWIFTMODULES",
+    "SWIFT_FEATURE_CHECKED_EXCLUSIVITY",
     "SWIFT_FEATURE_COVERAGE",
     "SWIFT_FEATURE_DBG",
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
@@ -193,6 +194,13 @@ def compile_action_configs(
             actions = [SWIFT_ACTION_COMPILE],
             configurators = [_swift_layering_check_configurator],
             features = [SWIFT_FEATURE_LAYERING_CHECK_SWIFT],
+        ),
+
+        # Configure enforce exclusivity checks if enabled.
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE],
+            configurators = [add_arg("-enforce-exclusivity=checked")],
+            features = [SWIFT_FEATURE_CHECKED_EXCLUSIVITY],
         ),
     ]
 

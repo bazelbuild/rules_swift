@@ -83,8 +83,8 @@ cc_binary(
     deps = select({
         ":no_worker": [":compile_without_worker"],
         "//conditions:default": [
-            ":compile_without_worker",
             ":compile_with_worker",
+            ":compile_without_worker",
         ],
     }) + [
         "@com_google_absl//absl/algorithm:container",
