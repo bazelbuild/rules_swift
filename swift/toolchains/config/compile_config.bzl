@@ -34,6 +34,7 @@ load(
 load(
     "//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_CACHEABLE_SWIFTMODULES",
+    "SWIFT_FEATURE_CHECKED_EXCLUSIVITY",
     "SWIFT_FEATURE_CODEVIEW_DEBUG_INFO",
     "SWIFT_FEATURE_COVERAGE",
     "SWIFT_FEATURE_COVERAGE_PREFIX_MAP",
@@ -247,6 +248,13 @@ def compile_action_configs(
         ActionConfigInfo(
             actions = [SWIFT_ACTION_DERIVE_FILES],
             configurators = [_emit_objc_header_path_configurator],
+        ),
+
+        # Configure enforce exclusivity checks if enabled.
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE],
+            configurators = [add_arg("-enforce-exclusivity=checked")],
+            features = [SWIFT_FEATURE_CHECKED_EXCLUSIVITY],
         ),
 
         # Configure Const value extraction.
