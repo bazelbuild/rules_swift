@@ -27,7 +27,6 @@ load(
 load(
     "@build_bazel_rules_swift//swift/internal:compiling.bzl",
     "compile",
-    "swift_library_output_map",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
@@ -284,6 +283,5 @@ Compiles and links Swift code into a static library and Swift module.
 """,
     fragments = ["cpp"],
     implementation = _swift_library_impl,
-    outputs = swift_library_output_map,
     toolchains = use_swift_toolchain(),
 )

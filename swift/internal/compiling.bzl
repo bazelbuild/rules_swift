@@ -1114,23 +1114,6 @@ def _declare_validated_generated_header(actions, generated_header_name):
 
     return actions.declare_file(generated_header_name)
 
-def swift_library_output_map(name):
-    """Returns the dictionary of implicit outputs for a `swift_library`.
-
-    This function is used to specify the `outputs` of the `swift_library` rule;
-    as such, its arguments must be named exactly the same as the attributes to
-    which they refer.
-
-    Args:
-        name: The name of the target being built.
-
-    Returns:
-        The implicit outputs dictionary for a `swift_library`.
-    """
-    return {
-        "archive": "lib{}.a".format(name),
-    }
-
 def _emitted_output_nature(feature_configuration, user_compile_flags):
     """Returns information about the nature of emitted compilation outputs.
 
