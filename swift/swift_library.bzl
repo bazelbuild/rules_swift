@@ -23,7 +23,6 @@ load(
     "PerModuleSwiftCoptSettingInfo",
     "additional_per_module_swiftcopts",
 )
-load("//swift/internal:compiling.bzl", "swift_library_output_map")
 load(
     "//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE",
@@ -322,6 +321,5 @@ Compiles and links Swift code into a static library and Swift module.
 """,
     fragments = ["cpp"],
     implementation = _swift_library_impl,
-    outputs = swift_library_output_map,
     toolchains = use_swift_toolchain(),
 )

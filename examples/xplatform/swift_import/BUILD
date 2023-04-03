@@ -1,8 +1,10 @@
-load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("//swift:swift_binary.bzl", "swift_binary")
 load("//swift:swift_import.bzl", "swift_import")
 load("//swift:swift_library.bzl", "swift_library")
-load(":get_swiftmodule.bzl", "get_swiftmodule")
+load(
+    "//test/rules:swift_library_artifact_collector.bzl",
+    "swift_library_artifact_collector",
+)
 
 swift_binary(
     name = "hello_world",
@@ -19,25 +21,20 @@ swift_library(
 
 swift_import(
     name = "import",
-    archives = ["libdep.a"],
+    archives = ["dep_outputs/libdep.a"],
     module_name = "dep",
-    swiftmodule = ":foo",
+    swiftmodule = "dep_outputs/dep.swiftmodule",
 )
 
-get_swiftmodule(
-    name = "foo",
-    lib = "dep",
+swift_library_artifact_collector(
+    name = "dep_artifact_collector",
+    static_library = "dep_outputs/libdep.a",
+    swiftmodule = "dep_outputs/dep.swiftmodule",
+    target = ":dep",
 )
 
 swift_library(
     name = "dep",
     srcs = ["dep.swift"],
     module_name = "dep",
-)
-
-bzl_library(
-    name = "get_swiftmodule",
-    srcs = ["get_swiftmodule.bzl"],
-    visibility = ["//visibility:public"],
-    deps = ["//swift"],
 )
