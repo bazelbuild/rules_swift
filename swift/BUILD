@@ -186,7 +186,6 @@ bzl_library(
         ":swift_common",
         "//swift/internal:attrs",
         "//swift/internal:build_settings",
-        "//swift/internal:compiling",
         "//swift/internal:feature_names",
         "//swift/internal:linking",
         "//swift/internal:output_groups",

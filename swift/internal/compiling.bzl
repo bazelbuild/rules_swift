@@ -1626,23 +1626,6 @@ def _declare_validated_generated_header(
         basename = generated_header_name,
     )
 
-def swift_library_output_map(name):
-    """Returns the dictionary of implicit outputs for a `swift_library`.
-
-    This function is used to specify the `outputs` of the `swift_library` rule;
-    as such, its arguments must be named exactly the same as the attributes to
-    which they refer.
-
-    Args:
-        name: The name of the target being built.
-
-    Returns:
-        The implicit outputs dictionary for a `swift_library`.
-    """
-    return {
-        "archive": "lib{}.a".format(name),
-    }
-
 def _is_index_store_path_overridden(copts):
     """Checks if index_while_building must be disabled.
 
