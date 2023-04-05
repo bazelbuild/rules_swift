@@ -237,3 +237,7 @@ SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE = "swift._force_alwayslink_true"
 # If enabled, requests the `-enforce-exclusivity=checked` swiftc flag which
 # enables runtime checking of exclusive memory access on mutation.
 SWIFT_FEATURE_CHECKED_EXCLUSIVITY = "swift.checked_exclusivity"
+
+# If enabled, requests the `-enable-bare-slash-regex` swiftc flag which is
+# required for forward slash regex expression literals.
+SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX = "swift.enable_bare_slash_regex"

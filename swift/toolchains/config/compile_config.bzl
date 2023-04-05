@@ -31,6 +31,7 @@ load(
     "SWIFT_FEATURE_DBG",
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
+    "SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_ENABLE_TESTING",
@@ -773,6 +774,16 @@ def compile_action_configs(
         ActionConfigInfo(
             actions = [SWIFT_ACTION_COMPILE],
             configurators = [_conditional_compilation_flag_configurator],
+        ),
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+            ],
+            configurators = [add_arg("-enable-bare-slash-regex")],
+            features = [
+                SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX,
+            ],
         ),
     ]
 

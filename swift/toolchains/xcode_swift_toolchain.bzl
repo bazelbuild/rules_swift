@@ -43,6 +43,7 @@ load(
     "SWIFT_FEATURE_BITCODE_EMBEDDED_MARKERS",
     "SWIFT_FEATURE_CHECKED_EXCLUSIVITY",
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
+    "SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_SUPPORTS_REMAP_SWIFTMODULES",
@@ -739,6 +740,9 @@ def _xcode_swift_toolchain_impl(ctx):
         # Xcode 14 and higher support remapping paths serialized into
         # .swiftmodules.
         requested_features.append(SWIFT_FEATURE_SUPPORTS_REMAP_SWIFTMODULES)
+
+        # Xcode 14 and higher support forward slash regex literals.
+        requested_features.append(SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX)
     else:
         # The new driver had response file bugs in Xcode 13.x that are fixed in
         # Xcode 14.
