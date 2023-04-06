@@ -66,7 +66,7 @@ std::string GetToolchainPath() {
 
   std::ostringstream output_stream;
   int exit_code =
-      RunSubProcess({"xcrun", "--find", "clang", "--toolchain", toolchain_id},
+      RunSubProcess({"/usr/bin/xcrun", "--find", "clang", "--toolchain", toolchain_id},
                     &output_stream, /*stdout_to_stderr=*/true);
   if (exit_code != 0) {
     std::cerr << output_stream.str() << "Error: TOOLCHAINS was set to '"
