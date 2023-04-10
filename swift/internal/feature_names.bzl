@@ -200,11 +200,6 @@ SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE = "swift.use_global_module_cache"
 # This feature requires `swift.use_global_module_cache` to be enabled.
 SWIFT_FEATURE_GLOBAL_MODULE_CACHE_USES_TMPDIR = "swift.global_module_cache_uses_tmpdir"
 
-# If enabled, actions invoking the Swift driver will use the legacy driver
-# instead of the new driver (https://github.com/apple/swift-driver) that
-# launched in Xcode 13/Swift 5.5.
-SWIFT_FEATURE_USE_OLD_DRIVER = "swift.use_old_driver"
-
 # If enabled, Swift linking actions will use `swift-autolink-extract` to extract
 # the linker arguments.  This is required for ELF targets.  This is used
 # internally to determine the behaviour of the actions across different

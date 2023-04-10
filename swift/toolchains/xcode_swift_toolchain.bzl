@@ -487,8 +487,7 @@ def _all_tool_configs(
         execution_requirements,
         generated_header_rewriter,
         swift_executable,
-        toolchain_root,
-        xcode_config):
+        toolchain_root):
     """Returns the tool configurations for the Swift toolchain.
 
     Args:
@@ -501,7 +500,6 @@ def _all_tool_configs(
         swift_executable: A custom Swift driver executable to be used during the
             build, if provided.
         toolchain_root: The root directory of the toolchain, if provided.
-        xcode_config: The `apple_common.XcodeVersionConfig` provider.
 
     Returns:
         A dictionary mapping action name to tool configuration.
@@ -513,15 +511,6 @@ def _all_tool_configs(
     if custom_toolchain:
         env = dict(env)
         env["TOOLCHAINS"] = custom_toolchain
-
-    # In Xcode 13.3 and 13.4 (Swift 5.6), the legacy driver prints a warning
-    # if it is used. Suppress it, since we still have to use it on those
-    # specific versions due to response file bugs.
-    if (
-        _is_xcode_at_least_version(xcode_config, "13.3") and
-        not _is_xcode_at_least_version(xcode_config, "14.0")
-    ):
-        env["SWIFT_AVOID_WARNING_USING_OLD_DRIVER"] = "1"
 
     def _driver_config(*, mode):
         return {
@@ -747,7 +736,6 @@ def _xcode_swift_toolchain_impl(ctx):
         generated_header_rewriter = generated_header_rewriter,
         swift_executable = swift_executable,
         toolchain_root = toolchain_root,
-        xcode_config = xcode_config,
     )
     all_action_configs = _all_action_configs(
         additional_objc_copts = _command_line_objc_copts(
@@ -786,13 +774,6 @@ def _xcode_swift_toolchain_impl(ctx):
             ),
         )
 
-    module_aliases = ctx.attr._module_mapping[SwiftModuleAliasesInfo].aliases
-    if module_aliases and not _is_xcode_at_least_version(xcode_config, "14.0"):
-        fail(
-            "Module mappings are only supported by Swift 5.7 (Xcode 14.0) " +
-            "and higher.",
-        )
-
     swift_toolchain_info = SwiftToolchainInfo(
         action_configs = all_action_configs,
         cc_toolchain_info = cc_toolchain,
@@ -820,7 +801,9 @@ def _xcode_swift_toolchain_impl(ctx):
             additional_cc_infos = [swift_linkopts_providers.cc_info],
             additional_objc_infos = [swift_linkopts_providers.objc_info],
         ),
-        module_aliases = module_aliases,
+        module_aliases = (
+            ctx.attr._module_mapping[SwiftModuleAliasesInfo].aliases
+        ),
         package_configurations = [
             target[SwiftPackageConfigurationInfo]
             for target in ctx.attr.package_configurations
