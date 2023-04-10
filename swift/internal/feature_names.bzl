@@ -165,11 +165,6 @@ SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP = "swift.use_explicit_swift_module_m
 # crashes.
 SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE = "swift.use_global_module_cache"
 
-# If enabled, actions invoking the Swift driver will use the legacy driver
-# instead of the new driver (https://github.com/apple/swift-driver) that
-# launched in Xcode 13/Swift 5.5.
-SWIFT_FEATURE_USE_OLD_DRIVER = "swift.use_old_driver"
-
 # If enabled, builds using the "dbg" compilation mode will explicitly disable
 # swiftc from producing swiftmodules containing embedded file paths, which are
 # inherently non-portable across machines.
@@ -180,11 +175,6 @@ SWIFT_FEATURE_USE_OLD_DRIVER = "swift.use_old_driver"
 #     target.swift-framework-search-paths
 #     target.swift-extra-clang-flags
 SWIFT_FEATURE_CACHEABLE_SWIFTMODULES = "swift.cacheable_swiftmodules"
-
-# This feature is enabled in Xcode 14.0 and later, which have support for the
-# `-Xfrontend -prefix-serialized-debugging-options` flag to remap paths
-# serialized into `.swiftmodule` files.
-SWIFT_FEATURE_SUPPORTS_REMAP_SWIFTMODULES = "swift.supports_remap_swiftmodules"
 
 # If enabled, requests the `-enable-library-evolution` swiftc flag which is
 # required for newer features like swiftinterface file generation. If the

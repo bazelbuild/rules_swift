@@ -49,12 +49,10 @@ load(
     "SWIFT_FEATURE_OPT_USES_OSIZE",
     "SWIFT_FEATURE_OPT_USES_WMO",
     "SWIFT_FEATURE_REWRITE_GENERATED_HEADER",
-    "SWIFT_FEATURE_SUPPORTS_REMAP_SWIFTMODULES",
     "SWIFT_FEATURE_SYSTEM_MODULE",
     "SWIFT_FEATURE_USE_C_MODULES",
     "SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP",
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
-    "SWIFT_FEATURE_USE_OLD_DRIVER",
     "SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
 )
@@ -109,21 +107,8 @@ def compile_action_configs(
         The list of action configs needed to perform compilation.
     """
 
-    #### Flags that control the driver
-    action_configs = [
-        # Use the legacy driver if requested.
-        ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
-                SWIFT_ACTION_PRECOMPILE_C_MODULE,
-            ],
-            configurators = [add_arg("-disallow-use-new-driver")],
-            features = [SWIFT_FEATURE_USE_OLD_DRIVER],
-        ),
-    ]
-
     #### Flags that control compilation outputs
-    action_configs += [
+    action_configs = [
         # Emit object file(s).
         ActionConfigInfo(
             actions = [SWIFT_ACTION_COMPILE],
@@ -142,10 +127,6 @@ def compile_action_configs(
             actions = [SWIFT_ACTION_COMPILE],
             configurators = [
                 add_arg("-Xfrontend", "-no-clang-module-breadcrumbs"),
-            ],
-            features = [
-                [SWIFT_FEATURE_SUPPORTS_REMAP_SWIFTMODULES],
-                [SWIFT_FEATURE_CACHEABLE_SWIFTMODULES],
             ],
         ),
 
@@ -311,7 +292,6 @@ def compile_action_configs(
             configurators = [
                 add_arg("-Xfrontend", "-prefix-serialized-debugging-options"),
             ],
-            features = [SWIFT_FEATURE_SUPPORTS_REMAP_SWIFTMODULES],
             not_features = [
                 [SWIFT_FEATURE_OPT],
                 [SWIFT_FEATURE_CACHEABLE_SWIFTMODULES],

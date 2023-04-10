@@ -46,8 +46,6 @@ load(
     "SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
-    "SWIFT_FEATURE_SUPPORTS_REMAP_SWIFTMODULES",
-    "SWIFT_FEATURE_USE_OLD_DRIVER",
     "SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE",
 )
 load(
@@ -732,21 +730,10 @@ def _xcode_swift_toolchain_impl(ctx):
     )
     requested_features.extend([
         SWIFT_FEATURE_CHECKED_EXCLUSIVITY,
-        SWIFT_FEATURE_ENABLE_BATCH_MODE,
         SWIFT_FEATURE_DEBUG_PREFIX_MAP,
+        SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX,
+        SWIFT_FEATURE_ENABLE_BATCH_MODE,
     ])
-
-    if _is_xcode_at_least_version(xcode_config, "14.0"):
-        # Xcode 14 and higher support remapping paths serialized into
-        # .swiftmodules.
-        requested_features.append(SWIFT_FEATURE_SUPPORTS_REMAP_SWIFTMODULES)
-
-        # Xcode 14 and higher support forward slash regex literals.
-        requested_features.append(SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX)
-    else:
-        # The new driver had response file bugs in Xcode 13.x that are fixed in
-        # Xcode 14.
-        requested_features.append(SWIFT_FEATURE_USE_OLD_DRIVER)
 
     if ctx.fragments.objc.alwayslink_by_default:
         requested_features.append(SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE)
@@ -781,13 +768,6 @@ def _xcode_swift_toolchain_impl(ctx):
         xcode_config = xcode_config,
     )
 
-    module_aliases = ctx.attr._module_mapping[SwiftModuleAliasesInfo].aliases
-    if module_aliases and not _is_xcode_at_least_version(xcode_config, "14.0"):
-        fail(
-            "Module mappings are only supported by Swift 5.7 (Xcode 14.0) " +
-            "and higher.",
-        )
-
     swift_toolchain_info = SwiftToolchainInfo(
         action_configs = all_action_configs,
         cc_toolchain_info = cc_toolchain,
@@ -816,7 +796,9 @@ def _xcode_swift_toolchain_impl(ctx):
             ctx.attr.implicit_deps + ctx.attr.clang_implicit_deps,
             additional_cc_infos = [swift_linkopts_cc_info],
         ),
-        module_aliases = module_aliases,
+        module_aliases = (
+            ctx.attr._module_mapping[SwiftModuleAliasesInfo].aliases
+        ),
         package_configurations = [
             target[SwiftPackageConfigurationInfo]
             for target in ctx.attr.package_configurations
