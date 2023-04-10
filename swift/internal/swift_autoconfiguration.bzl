@@ -39,7 +39,6 @@ load(
     "SWIFT_FEATURE_SUPPORTS_BARE_SLASH_REGEX",
     "SWIFT_FEATURE_USE_AUTOLINK_EXTRACT",
     "SWIFT_FEATURE_USE_MODULE_WRAP",
-    "SWIFT_FEATURE_USE_OLD_DRIVER",
 )
 load(":toolchain_utils.bzl", "SWIFT_TOOLCHAIN_TYPE")
 
@@ -368,9 +367,7 @@ def _create_windows_toolchain(repository_ctx):
         SWIFT_FEATURE_NO_EMBED_DEBUG_MODULE,
         SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS,
     ]
-    disabled_features = [
-        SWIFT_FEATURE_USE_OLD_DRIVER,
-    ]
+    disabled_features = []
 
     version_file = _write_swift_version(repository_ctx, path_to_swiftc)
     xctest_version = repository_ctx.execute([

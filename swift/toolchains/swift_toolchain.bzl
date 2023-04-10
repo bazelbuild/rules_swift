@@ -530,7 +530,9 @@ def _swift_toolchain_impl(ctx):
         generated_header_module_implicit_deps_providers = (
             collect_implicit_deps_providers([])
         ),
-        module_aliases = ctx.attr._module_mapping[SwiftModuleAliasesInfo].aliases,
+        module_aliases = (
+            ctx.attr._module_mapping[SwiftModuleAliasesInfo].aliases
+        ),
         implicit_deps_providers = collect_implicit_deps_providers(
             [],
             additional_cc_infos = [swift_linkopts_cc_info],

@@ -72,7 +72,6 @@ load(
     "SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP",
     "SWIFT_FEATURE_USE_GLOBAL_INDEX_STORE",
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
-    "SWIFT_FEATURE_USE_OLD_DRIVER",
     "SWIFT_FEATURE_USE_PCH_OUTPUT_DIR",
     "SWIFT_FEATURE_VFSOVERLAY",
     "SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS",
@@ -120,24 +119,8 @@ def compile_action_configs(
         The list of action configs needed to perform compilation.
     """
 
-    #### Flags that control the driver
-    action_configs = [
-        # Use the legacy driver if requested.
-        ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
-                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
-                SWIFT_ACTION_DERIVE_FILES,
-                SWIFT_ACTION_DUMP_AST,
-                SWIFT_ACTION_PRECOMPILE_C_MODULE,
-            ],
-            configurators = [add_arg("-disallow-use-new-driver")],
-            features = [SWIFT_FEATURE_USE_OLD_DRIVER],
-        ),
-    ]
-
     #### Flags that control compilation outputs
-    action_configs += [
+    action_configs = [
         # Emit object file(s).
         ActionConfigInfo(
             actions = [SWIFT_ACTION_COMPILE],
