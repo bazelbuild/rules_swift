@@ -30,6 +30,7 @@ load(
     "SWIFT_FEATURE_COVERAGE",
     "SWIFT_FEATURE_DBG",
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
+    "SWIFT_FEATURE_DISABLE_CLANG_SPI",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
     "SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
@@ -763,6 +764,15 @@ def compile_action_configs(
             configurators = [add_arg("-enable-bare-slash-regex")],
             features = [
                 SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX,
+            ],
+        ),
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_COMPILE,
+            ],
+            configurators = [add_arg("-Xfrontend", "-disable-clang-spi")],
+            features = [
+                SWIFT_FEATURE_DISABLE_CLANG_SPI,
             ],
         ),
     ]
