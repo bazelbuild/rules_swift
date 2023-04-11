@@ -324,6 +324,10 @@ SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE = "swift._force_alwayslink_true"
 # enables runtime checking of exclusive memory access on mutation.
 SWIFT_FEATURE_CHECKED_EXCLUSIVITY = "swift.checked_exclusivity"
 
+# If enabled, requests the `-disable-clang-spi` swiftc flag. Disables importing
+# Clang SPIs as Swift SPIs.
+SWIFT_FEATURE_DISABLE_CLANG_SPI = "swift.disable_clang_spi"
+
 # Disables Swift sandbox which prevents issues with nested sandboxing when Swift code contains system-provided macros.
 # If enabled '#Preview' macro provided by SwiftUI fails to build and probably other system-provided macros.
 # Enabled by default for Swift 5.10+ on macOS.
