@@ -17,6 +17,7 @@
 #include <fstream>
 
 #include "absl/container/btree_set.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
@@ -152,13 +153,20 @@ bool SkipLayeringCheckIncompatibleArgs(std::vector<std::string>::iterator &it) {
   return false;
 }
 
+// Modules that can be imported without an explicit dependency. Specifically,
+// the standard library is always provided, along with other modules that are
+// distributed as part of the standard library even though they are seprate
+// modules.
+static const absl::flat_hash_set<absl::string_view>
+    kModulesIgnorableForLayeringCheck = {
+        "Swift",        "SwiftOnoneSupport", "_Backtracing",
+        "_Concurrency", "_StringProcessing",
+};
+
 // Returns true if the module can be ignored for the purposes of layering check
 // (that is, it does not need to be in `deps` even if imported).
-//
-// This is mainly a workaround in case code explicitly, though unnecessarily,
-// imports `Swift`.
 bool IsModuleIgnorableForLayeringCheck(absl::string_view module_name) {
-  return module_name == "Swift";
+  return kModulesIgnorableForLayeringCheck.contains(module_name);
 }
 
 }  // namespace
