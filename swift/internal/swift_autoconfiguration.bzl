@@ -413,4 +413,5 @@ def _swift_autoconfiguration_impl(repository_ctx):
 swift_autoconfiguration = repository_rule(
     environ = ["CC", "PATH", "ProgramData", "Path"],
     implementation = _swift_autoconfiguration_impl,
+    local = True,
 )
