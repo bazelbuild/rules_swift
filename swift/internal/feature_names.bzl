@@ -333,6 +333,12 @@ SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX = "swift.supports_bare_slash_regex"
 # Clang SPIs as Swift SPIs.
 SWIFT_FEATURE_DISABLE_CLANG_SPI = "swift.disable_clang_spi"
 
+# If enabled, allow public symbols to be internalized at link time to support
+# better dead-code stripping. This assumes that all clients of public types are
+# part of the same link unit or that public symbols linked into frameworks are
+# explicitly exported via `-exported_symbols_list`.
+SWIFT_FEATURE_INTERNALIZE_AT_LINK = "swift.internalize_at_link"
+
 # Disables Swift sandbox which prevents issues with nested sandboxing when Swift code contains system-provided macros.
 # If enabled '#Preview' macro provided by SwiftUI fails to build and probably other system-provided macros.
 # Enabled by default for Swift 5.10+ on macOS.
