@@ -41,6 +41,7 @@ load(
     "SWIFT_FEATURE_FULL_DEBUG_INFO",
     "SWIFT_FEATURE_INDEX_SYSTEM_MODULES",
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
+    "SWIFT_FEATURE_INTERNALIZE_AT_LINK",
     "SWIFT_FEATURE_LAYERING_CHECK",
     "SWIFT_FEATURE_LAYERING_CHECK_SWIFT",
     "SWIFT_FEATURE_MODULAR_INDEXING",
@@ -261,6 +262,13 @@ def compile_action_configs(
             actions = [SWIFT_ACTION_COMPILE],
             configurators = [add_arg("-whole-module-optimization")],
             features = [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_WMO],
+        ),
+
+        # Improve dead-code stripping.
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE],
+            configurators = [add_arg("-Xfrontend", "-internalize-at-link")],
+            features = [SWIFT_FEATURE_INTERNALIZE_AT_LINK],
         ),
 
         # Control serialization of debugging options into `.swiftmodules`.
