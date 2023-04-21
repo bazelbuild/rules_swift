@@ -48,23 +48,16 @@ load("//swift/internal:attrs.bzl", "swift_toolchain_driver_attrs")
 load("//swift/internal:autolinking.bzl", "autolink_extract_action_configs")
 load(
     "//swift/internal:feature_names.bzl",
-    "SWIFT_FEATURE_CACHEABLE_SWIFTMODULES",
-    "SWIFT_FEATURE_COVERAGE_PREFIX_MAP",
-    "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
-    "SWIFT_FEATURE_DISABLE_CLANG_SPI",
-    "SWIFT_FEATURE_DISABLE_SYSTEM_INDEX",
-    "SWIFT_FEATURE_EMIT_SWIFTDOC",
-    "SWIFT_FEATURE_EMIT_SWIFTSOURCEINFO",
-    "SWIFT_FEATURE_INTERNALIZE_AT_LINK",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
-    "SWIFT_FEATURE_NO_GENERATED_MODULE_MAP",
-    "SWIFT_FEATURE_OPT_USES_WMO",
     "SWIFT_FEATURE_USE_AUTOLINK_EXTRACT",
     "SWIFT_FEATURE_USE_GLOBAL_INDEX_STORE",
-    "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
     "SWIFT_FEATURE_USE_MODULE_WRAP",
 )
-load("//swift/internal:features.bzl", "features_for_build_modes")
+load(
+    "//swift/internal:features.bzl",
+    "default_features_for_toolchain",
+    "features_for_build_modes",
+)
 load(
     "//swift/internal:providers.bzl",
     "SwiftCrossImportOverlayInfo",
@@ -462,19 +455,10 @@ def _swift_toolchain_impl(ctx):
         features_for_build_modes(ctx) +
         features_from_swiftcopts(swiftcopts = swiftcopts)
     )
-    requested_features.extend([
-        SWIFT_FEATURE_CACHEABLE_SWIFTMODULES,
-        SWIFT_FEATURE_COVERAGE_PREFIX_MAP,
-        SWIFT_FEATURE_DEBUG_PREFIX_MAP,
-        SWIFT_FEATURE_DISABLE_CLANG_SPI,
-        SWIFT_FEATURE_DISABLE_SYSTEM_INDEX,
-        SWIFT_FEATURE_EMIT_SWIFTDOC,
-        SWIFT_FEATURE_EMIT_SWIFTSOURCEINFO,
-        SWIFT_FEATURE_INTERNALIZE_AT_LINK,
-        SWIFT_FEATURE_NO_GENERATED_MODULE_MAP,
-        SWIFT_FEATURE_OPT_USES_WMO,
-        SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE,
-    ])
+    requested_features.extend(default_features_for_toolchain(
+        ctx = ctx,
+        target_triple = target_triple,
+    ))
 
     requested_features.extend(ctx.features)
 

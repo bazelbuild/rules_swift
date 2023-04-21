@@ -30,10 +30,6 @@ load(
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
     "SWIFT_FEATURE_EMIT_SWIFTDOC",
     "SWIFT_FEATURE_EMIT_SWIFTSOURCEINFO",
-    "SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX",
-    "SWIFT_FEATURE_ENABLE_BATCH_MODE",
-    "SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES",
-    "SWIFT_FEATURE_FILE_PREFIX_MAP",
     "SWIFT_FEATURE_LLD_GC_WORKAROUND",
     "SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS",
     "SWIFT_FEATURE_NO_EMBED_DEBUG_MODULE",
@@ -73,43 +69,6 @@ def _swift_succeeds(repository_ctx, swiftc_path, *args):
     """
     swift_result = repository_ctx.execute([swiftc_path] + list(args))
     return swift_result.return_code == 0
-
-def _check_enable_batch_mode(repository_ctx, swiftc_path, _temp_dir):
-    """Returns True if `swiftc` supports batch mode."""
-    return _swift_succeeds(
-        repository_ctx,
-        swiftc_path,
-        "-version",
-        "-enable-batch-mode",
-    )
-
-def _check_skip_function_bodies(repository_ctx, swiftc_path, _temp_dir):
-    """Returns True if `swiftc` supports skip function bodies."""
-    return _swift_succeeds(
-        repository_ctx,
-        swiftc_path,
-        "-version",
-        "-experimental-skip-non-inlinable-function-bodies",
-    )
-
-def _check_file_prefix_map(repository_ctx, swiftc_path, _temp_dir):
-    """Returns True if `swiftc` supports -file-prefix-map."""
-    return _swift_succeeds(
-        repository_ctx,
-        swiftc_path,
-        "-version",
-        "-file-prefix-map",
-        "foo=bar",
-    )
-
-def _check_enable_bare_slash_regex(repository_ctx, swiftc_path, _temp_dir):
-    """Returns True if `swiftc` supports debug prefix mapping."""
-    return _swift_succeeds(
-        repository_ctx,
-        swiftc_path,
-        "-version",
-        "-enable-bare-slash-regex",
-    )
 
 def _check_supports_lld_gc_workaround(repository_ctx, swiftc_path, temp_dir):
     """Returns True if lld is being used and it supports nostart-stop-gc"""
@@ -201,10 +160,6 @@ def _compute_feature_values(repository_ctx, swiftc_path):
 # the `swiftc` executable and a scratch directory, respectively. The function
 # should return True if the feature is supported.
 _FEATURE_CHECKS = {
-    SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX: _check_enable_bare_slash_regex,
-    SWIFT_FEATURE_ENABLE_BATCH_MODE: _check_enable_batch_mode,
-    SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES: _check_skip_function_bodies,
-    SWIFT_FEATURE_FILE_PREFIX_MAP: _check_file_prefix_map,
     SWIFT_FEATURE_LLD_GC_WORKAROUND: _check_supports_lld_gc_workaround,
 }
 
@@ -362,8 +317,6 @@ def _create_windows_toolchain(repository_ctx):
         SWIFT_FEATURE_DEBUG_PREFIX_MAP,
         SWIFT_FEATURE_EMIT_SWIFTDOC,
         SWIFT_FEATURE_EMIT_SWIFTSOURCEINFO,
-        SWIFT_FEATURE_ENABLE_BATCH_MODE,
-        SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES,
         SWIFT_FEATURE_NO_EMBED_DEBUG_MODULE,
         SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS,
     ]

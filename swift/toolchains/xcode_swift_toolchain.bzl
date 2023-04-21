@@ -47,29 +47,19 @@ load(
 load("//swift/internal:attrs.bzl", "swift_toolchain_driver_attrs")
 load(
     "//swift/internal:feature_names.bzl",
-    "SWIFT_FEATURE_CACHEABLE_SWIFTMODULES",
-    "SWIFT_FEATURE_CHECKED_EXCLUSIVITY",
     "SWIFT_FEATURE_COVERAGE",
     "SWIFT_FEATURE_COVERAGE_PREFIX_MAP",
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
-    "SWIFT_FEATURE_DISABLE_CLANG_SPI",
     "SWIFT_FEATURE_DISABLE_SWIFT_SANDBOX",
-    "SWIFT_FEATURE_DISABLE_SYSTEM_INDEX",
-    "SWIFT_FEATURE_EMIT_SWIFTDOC",
-    "SWIFT_FEATURE_EMIT_SWIFTSOURCEINFO",
-    "SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX",
-    "SWIFT_FEATURE_ENABLE_BATCH_MODE",
-    "SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES",
     "SWIFT_FEATURE_FILE_PREFIX_MAP",
-    "SWIFT_FEATURE_INTERNALIZE_AT_LINK",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
-    "SWIFT_FEATURE_OBJC_LINK_FLAGS",
-    "SWIFT_FEATURE_OPT_USES_WMO",
     "SWIFT_FEATURE_REMAP_XCODE_PATH",
-    "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
-    "SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE",
 )
-load("//swift/internal:features.bzl", "features_for_build_modes")
+load(
+    "//swift/internal:features.bzl",
+    "default_features_for_toolchain",
+    "features_for_build_modes",
+)
 load(
     "//swift/internal:providers.bzl",
     "SwiftCrossImportOverlayInfo",
@@ -626,29 +616,10 @@ def _xcode_swift_toolchain_impl(ctx):
         cpp_fragment = cpp_fragment,
     ) + wmo_features_from_swiftcopts(swiftcopts = swiftcopts)
     requested_features.extend(ctx.features)
-    requested_features.extend([
-        SWIFT_FEATURE_CACHEABLE_SWIFTMODULES,
-        SWIFT_FEATURE_CHECKED_EXCLUSIVITY,
-        SWIFT_FEATURE_COVERAGE_PREFIX_MAP,
-        SWIFT_FEATURE_DEBUG_PREFIX_MAP,
-        SWIFT_FEATURE_DISABLE_CLANG_SPI,
-        SWIFT_FEATURE_DISABLE_SYSTEM_INDEX,
-        SWIFT_FEATURE_EMIT_SWIFTDOC,
-        SWIFT_FEATURE_EMIT_SWIFTSOURCEINFO,
-        SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX,
-        SWIFT_FEATURE_ENABLE_BATCH_MODE,
-        SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES,
-        SWIFT_FEATURE_FILE_PREFIX_MAP,
-        SWIFT_FEATURE_INTERNALIZE_AT_LINK,
-        SWIFT_FEATURE_OBJC_LINK_FLAGS,
-        SWIFT_FEATURE_OPT_USES_WMO,
-        SWIFT_FEATURE_REMAP_XCODE_PATH,
-        SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE,
-    ])
-
-    # The new driver had response file bugs in Xcode 13.x that are fixed in
-    if getattr(ctx.fragments.objc, "alwayslink_by_default", False):
-        requested_features.append(SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE)
+    requested_features.extend(default_features_for_toolchain(
+        ctx = ctx,
+        target_triple = target_triple,
+    ))
 
     if _is_xcode_at_least_version(xcode_config, "15.3"):
         requested_features.append(SWIFT_FEATURE_DISABLE_SWIFT_SANDBOX)
