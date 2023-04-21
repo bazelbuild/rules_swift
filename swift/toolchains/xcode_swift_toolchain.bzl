@@ -41,17 +41,11 @@ load(
     "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_BITCODE_EMBEDDED",
     "SWIFT_FEATURE_BITCODE_EMBEDDED_MARKERS",
-    "SWIFT_FEATURE_CHECKED_EXCLUSIVITY",
-    "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
-    "SWIFT_FEATURE_DISABLE_CLANG_SPI",
-    "SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX",
-    "SWIFT_FEATURE_ENABLE_BATCH_MODE",
-    "SWIFT_FEATURE_INTERNALIZE_AT_LINK",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
-    "SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:features.bzl",
+    "default_features_for_toolchain",
     "features_for_build_modes",
 )
 load(
@@ -730,17 +724,10 @@ def _xcode_swift_toolchain_impl(ctx):
     requested_features.extend(
         _features_for_bitcode_mode(cpp_fragment.apple_bitcode_mode),
     )
-    requested_features.extend([
-        SWIFT_FEATURE_CHECKED_EXCLUSIVITY,
-        SWIFT_FEATURE_DEBUG_PREFIX_MAP,
-        SWIFT_FEATURE_DISABLE_CLANG_SPI,
-        SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX,
-        SWIFT_FEATURE_ENABLE_BATCH_MODE,
-        SWIFT_FEATURE_INTERNALIZE_AT_LINK,
-    ])
-
-    if ctx.fragments.objc.alwayslink_by_default:
-        requested_features.append(SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE)
+    requested_features.extend(default_features_for_toolchain(
+        ctx = ctx,
+        target_triple = target_triple,
+    ))
 
     env = _xcode_env(target_triple = target_triple, xcode_config = xcode_config)
     execution_requirements = xcode_config.execution_info()

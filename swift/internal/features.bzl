@@ -17,11 +17,20 @@
 load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load(
     ":feature_names.bzl",
+    "SWIFT_FEATURE_CHECKED_EXCLUSIVITY",
     "SWIFT_FEATURE_COVERAGE",
+    "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
+    "SWIFT_FEATURE_DISABLE_CLANG_SPI",
+    "SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX",
+    "SWIFT_FEATURE_ENABLE_BATCH_MODE",
     "SWIFT_FEATURE_ENABLE_TESTING",
     "SWIFT_FEATURE_FULL_DEBUG_INFO",
+    "SWIFT_FEATURE_INTERNALIZE_AT_LINK",
+    "SWIFT_FEATURE_NO_GENERATED_MODULE_MAP",
+    "SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE",
 )
 load(":package_specs.bzl", "label_matches_package_specs")
+load(":target_triples.bzl", "target_triples")
 
 visibility([
     "@build_bazel_rules_swift//swift/...",
@@ -196,6 +205,47 @@ def is_feature_enabled(feature_configuration, feature_name):
             ),
             feature_name = feature_name,
         )
+
+def default_features_for_toolchain(ctx, target_triple):
+    """Enables a common set of swift features based on build configuration.
+
+    We have a common set of features we'd like to enable for both
+    swift_toolchain and xcode_swift_toolchain. This method configures that set
+    of features based on what exec platform we're using (linux or apple) and
+    what platform we're targetting (linux, macos, ios, etc.).
+
+    Args:
+        ctx: Context of the swift toolchain rule building this list of features.
+        target_triple: Target triple configured for our toolchain.
+
+    Returns:
+        List of default features for our toolchain's build config.
+    """
+
+    # Common features we turn on regardless of target.
+    features = [
+        SWIFT_FEATURE_CHECKED_EXCLUSIVITY,
+        SWIFT_FEATURE_DISABLE_CLANG_SPI,
+        SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX,
+        SWIFT_FEATURE_ENABLE_BATCH_MODE,
+        SWIFT_FEATURE_INTERNALIZE_AT_LINK,
+    ]
+
+    # Apple specific features
+    if target_triple.vendor == "apple":
+        features.append(SWIFT_FEATURE_DEBUG_PREFIX_MAP)
+
+        if ctx.fragments.objc.alwayslink_by_default:
+            features.append(SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE)
+
+    # Linux specific features
+    if target_triples.unversioned_os(target_triple) == "linux":
+        features.extend([
+            SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE,
+            SWIFT_FEATURE_NO_GENERATED_MODULE_MAP,
+        ])
+
+    return features
 
 def _check_allowlists(
         *,
