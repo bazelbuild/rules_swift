@@ -445,6 +445,8 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
         linking_context, _ = (
             create_linking_context_from_compilation_outputs(
                 actions = aspect_ctx.actions,
+                # No protocol conformances, single source per file, so require linker references.
+                alwayslink = False,
                 compilation_outputs = compilation_outputs,
                 feature_configuration = feature_configuration,
                 label = target.label,
