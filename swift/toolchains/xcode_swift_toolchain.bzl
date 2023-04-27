@@ -39,8 +39,6 @@ load(
 )
 load(
     "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
-    "SWIFT_FEATURE_BITCODE_EMBEDDED",
-    "SWIFT_FEATURE_BITCODE_EMBEDDED_MARKERS",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
 )
 load(
@@ -296,29 +294,6 @@ def _swift_linkopts_cc_info(
         ),
     )
 
-def _features_for_bitcode_mode(bitcode_mode):
-    """Gets the list of features to enable for the selected Bitcode mode.
-
-    Args:
-        bitcode_mode: The `bitcode_mode` value from the C++ configuration
-            fragment.
-
-    Returns:
-        A list containing the features to enable.
-    """
-    bitcode_mode_string = str(bitcode_mode)
-    if bitcode_mode_string == "embedded":
-        return [SWIFT_FEATURE_BITCODE_EMBEDDED]
-    elif bitcode_mode_string == "embedded_markers":
-        return [SWIFT_FEATURE_BITCODE_EMBEDDED_MARKERS]
-    elif bitcode_mode_string == "none":
-        return []
-
-    fail("Internal error: expected bitcode_mode to be one of: " +
-         "['embedded', 'embedded_markers', 'none'], but got '{}'".format(
-             bitcode_mode_string,
-         ))
-
 def _make_resource_directory_configurator(developer_dir):
     """Makes a configurator for resource-directory-related compiler flags.
 
@@ -441,28 +416,6 @@ def _all_action_configs(
                 ],
             ),
         )
-
-    action_configs.extend([
-        # Bitcode-related flags.
-        ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
-                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
-                SWIFT_ACTION_PRECOMPILE_C_MODULE,
-            ],
-            configurators = [add_arg("-embed-bitcode")],
-            features = [SWIFT_FEATURE_BITCODE_EMBEDDED],
-        ),
-        ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
-                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
-                SWIFT_ACTION_PRECOMPILE_C_MODULE,
-            ],
-            configurators = [add_arg("-embed-bitcode-marker")],
-            features = [SWIFT_FEATURE_BITCODE_EMBEDDED_MARKERS],
-        ),
-    ])
 
     if needs_resource_directory:
         # If the user is using a custom driver but not a complete custom
@@ -721,9 +674,6 @@ def _xcode_swift_toolchain_impl(ctx):
         cpp_fragment = cpp_fragment,
     ) + wmo_features_from_swiftcopts(swiftcopts = ctx.fragments.swift.copts())
     requested_features.extend(ctx.features)
-    requested_features.extend(
-        _features_for_bitcode_mode(cpp_fragment.apple_bitcode_mode),
-    )
     requested_features.extend(default_features_for_toolchain(
         ctx = ctx,
         target_triple = target_triple,
