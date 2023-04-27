@@ -221,7 +221,7 @@ def swift_deps_attr(*, additional_deps_providers = [], doc, **kwargs):
 
 Allowed kinds of dependencies are:
 
-*   `swift_import` and `swift_library` (or anything propagating `SwiftInfo`)
+*   `swift_library` (or anything propagating `SwiftInfo`)
 
 *   `cc_library` (or anything propagating `CcInfo`)
 
