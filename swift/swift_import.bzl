@@ -65,6 +65,7 @@ def _swift_import_impl(ctx):
     libraries_to_link = [
         cc_common.create_library_to_link(
             actions = ctx.actions,
+            alwayslink = True,
             cc_toolchain = swift_toolchain.cc_toolchain_info,
             feature_configuration = swift_common.cc_feature_configuration(
                 feature_configuration,
