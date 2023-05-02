@@ -26,7 +26,6 @@ _DOC_SRCS = {
         "swift_library",
         "swift_library_group",
         "mixed_language_library",
-        "swift_module_alias",
         "swift_module_mapping",
         "swift_module_mapping_test",
         "swift_package_configuration",

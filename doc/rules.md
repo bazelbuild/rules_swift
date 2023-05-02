@@ -25,7 +25,6 @@ On this page:
   * [swift_library](#swift_library)
   * [swift_library_group](#swift_library_group)
   * [mixed_language_library](#mixed_language_library)
-  * [swift_module_alias](#swift_module_alias)
   * [swift_module_mapping](#swift_module_mapping)
   * [swift_module_mapping_test](#swift_module_mapping_test)
   * [swift_package_configuration](#swift_package_configuration)
@@ -494,8 +493,8 @@ Groups Swift compatible libraries (e.g. `swift_library` and `objc_library`).
 The target can be used anywhere a `swift_library` can be used. It behaves
 similar to source-less `{cc,obj}_library` targets.
 
-Unlike `swift_module_alias`, a new module isn't created for this target, you
-need to import the grouped libraries directly.
+A new module isn't created for this target, you need to import the grouped
+libraries directly.
 
 **ATTRIBUTES**
 
@@ -504,42 +503,6 @@ need to import the grouped libraries directly.
 | :------------- | :------------- | :------------- | :------------- | :------------- |
 | <a id="swift_library_group-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
 | <a id="swift_library_group-deps"></a>deps |  A list of targets that should be included in the group. Allowed kinds of dependencies are:<br><br>*   `swift_library` (or anything propagating `SwiftInfo`)<br><br>*   `cc_library` and `objc_library` (or anything propagating `CcInfo`)   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
-
-
-<a id="swift_module_alias"></a>
-
-## swift_module_alias
-
-<pre>
-swift_module_alias(<a href="#swift_module_alias-name">name</a>, <a href="#swift_module_alias-deps">deps</a>, <a href="#swift_module_alias-module_name">module_name</a>)
-</pre>
-
-Creates a Swift module that re-exports other modules.
-
-This rule effectively creates an "alias" for one or more modules such that a
-client can import the alias module and it will implicitly import those
-dependencies. It should be used primarily as a way to migrate users when a
-module name is being changed. An alias that depends on more than one module can
-be used to split a large module into smaller, more targeted modules.
-
-Symbols in the original modules can be accessed through either the original
-module name or the alias module name, so callers can be migrated separately
-after moving the physical build target as needed. (An exception to this is
-runtime type metadata, which only encodes the module name of the type where the
-symbol is defined; it is not repeated by the alias module.)
-
-> Caution: This rule uses the undocumented `@_exported` feature to re-export the
-> `deps` in the new module. You depend on undocumented features at your own
-> risk, as they may change in a future version of Swift.
-
-**ATTRIBUTES**
-
-
-| Name  | Description | Type | Mandatory | Default |
-| :------------- | :------------- | :------------- | :------------- | :------------- |
-| <a id="swift_module_alias-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
-| <a id="swift_module_alias-deps"></a>deps |  A list of targets that are dependencies of the target being built, which will be linked into that target. Allowed kinds are `swift_import` and `swift_library` (or anything else propagating `SwiftInfo`).   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
-| <a id="swift_module_alias-module_name"></a>module_name |  The name of the Swift module being built.<br><br>If left unspecified, the module name will be computed based on the target's build label, by stripping the leading `//` and replacing `/`, `:`, and other non-identifier characters with underscores.   | String | optional |  `""`  |
 
 
 <a id="swift_module_mapping"></a>

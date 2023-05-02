@@ -87,10 +87,6 @@ load(
     _swift_library_group = "swift_library_group",
 )
 load(
-    "//swift:swift_module_alias.bzl",
-    _swift_module_alias = "swift_module_alias",
-)
-load(
     "//swift:swift_module_mapping.bzl",
     _swift_module_mapping = "swift_module_mapping",
 )
@@ -130,7 +126,6 @@ swift_interop_hint = _swift_interop_hint
 swift_library = _swift_library
 swift_library_group = _swift_library_group
 mixed_language_library = _mixed_language_library
-swift_module_alias = _swift_module_alias
 swift_module_mapping = _swift_module_mapping
 swift_module_mapping_test = _swift_module_mapping_test
 swift_package_configuration = _swift_package_configuration
