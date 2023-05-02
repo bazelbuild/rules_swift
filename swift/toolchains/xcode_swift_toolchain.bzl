@@ -77,6 +77,7 @@ load(
 )
 load(
     "@build_bazel_rules_swift//swift/toolchains/config:compile_config.bzl",
+    "command_line_objc_copts",
     "compile_action_configs",
 )
 load(
@@ -113,52 +114,6 @@ def _swift_developer_lib_dir(platform_framework_dir):
         "usr",
         "lib",
     )
-
-def _command_line_objc_copts(compilation_mode, cpp_fragment, objc_fragment):
-    """Returns copts that should be passed to `clang` from the `objc` fragment.
-
-    Args:
-        compilation_mode: The current compilation mode.
-        cpp_fragment: The `cpp` configuration fragment.
-        objc_fragment: The `objc` configuration fragment.
-
-    Returns:
-        A list of `clang` copts, each of which is preceded by `-Xcc` so that
-        they can be passed through `swiftc` to its underlying ClangImporter
-        instance.
-    """
-
-    # In general, every compilation mode flag from native `objc_*` rules should
-    # be passed, but `-g` seems to break Clang module compilation. Since this
-    # flag does not make much sense for module compilation and only touches
-    # headers, it's ok to omit.
-    # TODO(b/153867054): These flags were originally being set by Bazel's legacy
-    # hardcoded Objective-C behavior, which has been migrated to crosstool. In
-    # the long term, we should query crosstool for the flags we're interested in
-    # and pass those to ClangImporter, and do this across all platforms. As an
-    # immediate short-term workaround, we preserve the old behavior by passing
-    # the exact set of flags that Bazel was originally passing if the list we
-    # get back from the configuration fragment is empty.
-    legacy_copts = objc_fragment.copts_for_current_compilation_mode
-    if not legacy_copts:
-        if compilation_mode == "dbg":
-            legacy_copts = [
-                "-O0",
-                "-DDEBUG=1",
-                "-fstack-protector",
-                "-fstack-protector-all",
-            ]
-        elif compilation_mode == "opt":
-            legacy_copts = [
-                "-Os",
-                "-DNDEBUG=1",
-                "-Wno-unused-variable",
-                "-Winit-self",
-                "-Wno-extra",
-            ]
-
-    clang_copts = cpp_fragment.objccopts + legacy_copts
-    return [copt for copt in clang_copts if copt != "-g"]
 
 def _platform_developer_framework_dir(
         apple_toolchain,
@@ -696,7 +651,7 @@ def _xcode_swift_toolchain_impl(ctx):
         xcode_config = xcode_config,
     )
     all_action_configs = _all_action_configs(
-        additional_objc_copts = _command_line_objc_copts(
+        additional_objc_copts = command_line_objc_copts(
             ctx.var["COMPILATION_MODE"],
             ctx.fragments.cpp,
             ctx.fragments.objc,
