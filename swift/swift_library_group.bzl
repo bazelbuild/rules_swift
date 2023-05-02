@@ -56,8 +56,8 @@ Groups Swift compatible libraries (e.g. `swift_library` and `objc_library`).
 The target can be used anywhere a `swift_library` can be used. It behaves
 similar to source-less `{cc,obj}_library` targets.
 
-Unlike `swift_module_alias`, a new module isn't created for this target, you
-need to import the grouped libraries directly.
+A new module isn't created for this target, you need to import the grouped
+libraries directly.
 """,
     implementation = _swift_library_group_impl,
 )

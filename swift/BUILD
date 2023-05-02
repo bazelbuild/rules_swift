@@ -219,23 +219,6 @@ bzl_library(
 )
 
 bzl_library(
-    name = "swift_module_alias",
-    srcs = ["swift_module_alias.bzl"],
-    deps = [
-        ":module_name",
-        ":providers",
-        "//swift/internal:attrs",
-        "//swift/internal:compiling",
-        "//swift/internal:features",
-        "//swift/internal:linking",
-        "//swift/internal:output_groups",
-        "//swift/internal:toolchain_utils",
-        "//swift/internal:utils",
-        "@bazel_skylib//lib:dicts",
-    ],
-)
-
-bzl_library(
     name = "swift_module_mapping",
     srcs = ["swift_module_mapping.bzl"],
     deps = [
@@ -310,7 +293,6 @@ bzl_library(
         ":swift_interop_info",
         ":swift_library",
         ":swift_library_group",
-        ":swift_module_alias",
         ":swift_module_mapping",
         ":swift_module_mapping_test",
         ":swift_package_configuration",
