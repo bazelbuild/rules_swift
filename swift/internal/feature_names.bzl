@@ -30,12 +30,6 @@ SWIFT_FEATURE_DBG = "swift.dbg"
 SWIFT_FEATURE_FASTBUILD = "swift.fastbuild"
 SWIFT_FEATURE_OPT = "swift.opt"
 
-# These features correspond to the current Bitcode mode as specified by the
-# `apple` configuration fragment when targeting Apple platforms. At most one of
-# these will be enabled by the toolchain.
-SWIFT_FEATURE_BITCODE_EMBEDDED = "swift.bitcode_embedded"
-SWIFT_FEATURE_BITCODE_EMBEDDED_MARKERS = "swift.bitcode_embedded_markers"
-
 # This feature is enabled if coverage collection is enabled for the build. (See
 # the note above about not depending on the C++ features.)
 SWIFT_FEATURE_COVERAGE = "swift.coverage"

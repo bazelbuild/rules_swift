@@ -23,7 +23,7 @@ load(
 output_file_map_embed_bitcode_test = make_output_file_map_test_rule(
     config_settings = {
         "//command_line_option:features": [
-            "swift.bitcode_embedded",
+            "swift.emit_bc",
         ],
     },
 )
@@ -34,7 +34,7 @@ output_file_map_embed_bitcode_wmo_test = make_output_file_map_test_rule(
             "-whole-module-optimization",
         ],
         "//command_line_option:features": [
-            "swift.bitcode_embedded",
+            "swift.emit_bc",
         ],
     },
 )
@@ -63,7 +63,6 @@ def output_file_map_test_suite(name):
         name = "{}_embed_bitcode".format(name),
         expected_mapping = {
             "llvm-bc": "test/fixtures/debug_settings/simple_objs/Empty.swift.bc",
-            "object": "test/fixtures/debug_settings/simple_objs/Empty.swift.o",
         },
         file_entry = "test/fixtures/debug_settings/Empty.swift",
         output_file_map = "test/fixtures/debug_settings/simple.output_file_map.json",
@@ -75,7 +74,6 @@ def output_file_map_test_suite(name):
         name = "{}_embed_bitcode_wmo".format(name),
         expected_mapping = {
             "llvm-bc": "test/fixtures/debug_settings/simple_objs/Empty.swift.bc",
-            "object": "test/fixtures/debug_settings/simple_objs/Empty.swift.o",
         },
         file_entry = "test/fixtures/debug_settings/Empty.swift",
         output_file_map = "test/fixtures/debug_settings/simple.output_file_map.json",

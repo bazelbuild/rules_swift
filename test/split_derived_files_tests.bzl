@@ -66,17 +66,9 @@ split_swiftmodule_indexing_test = make_action_command_line_test_rule(
 )
 split_swiftmodule_bitcode_test = make_action_command_line_test_rule(
     config_settings = {
-        "//command_line_option:apple_bitcode": "embedded",
         "//command_line_option:features": [
             "swift.split_derived_files_generation",
-        ],
-    },
-)
-split_swiftmodule_bitcode_markers_test = make_action_command_line_test_rule(
-    config_settings = {
-        "//command_line_option:apple_bitcode": "embedded_markers",
-        "//command_line_option:features": [
-            "swift.split_derived_files_generation",
+            "swift.emit_bc",
         ],
     },
 )
@@ -385,8 +377,7 @@ def split_derived_files_test_suite(name):
 
     split_swiftmodule_bitcode_test(
         name = "{}_bitcode_compile".format(name),
-        expected_argv = ["-embed-bitcode"],
-        target_compatible_with = ["@platforms//os:macos"],
+        expected_argv = ["-emit-bc"],
         mnemonic = "SwiftCompile",
         tags = [name],
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
@@ -395,26 +386,7 @@ def split_derived_files_test_suite(name):
     split_swiftmodule_bitcode_test(
         name = "{}_bitcode_derive_files".format(name),
         not_expected_argv = [
-            "-embed-bitcode",
-        ],
-        mnemonic = "SwiftDeriveFiles",
-        tags = [name],
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
-    )
-
-    split_swiftmodule_bitcode_markers_test(
-        name = "{}_bitcode_markers_compile".format(name),
-        expected_argv = ["-embed-bitcode-marker"],
-        target_compatible_with = ["@platforms//os:macos"],
-        mnemonic = "SwiftCompile",
-        tags = [name],
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
-    )
-
-    split_swiftmodule_bitcode_markers_test(
-        name = "{}_bitcode_markers_derive_files".format(name),
-        not_expected_argv = [
-            "-embed-bitcode-marker",
+            "-emit-bc",
         ],
         mnemonic = "SwiftDeriveFiles",
         tags = [name],
