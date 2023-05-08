@@ -2820,7 +2820,7 @@ def _declare_multiple_outputs_and_write_output_file_map(
                 target_name = target_name,
                 src = src,
             )
-            (output_objs if emits_bc else other_outputs).append(obj)
+            output_objs.append(obj)
             src_output_map["llvm-bc"] = obj.path
         else:
             # Declare the object file (there is one per source file).
