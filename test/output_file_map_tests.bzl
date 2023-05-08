@@ -47,7 +47,7 @@ def output_file_map_test_suite(name):
     """
 
     output_file_map_test(
-        name = "{}_without_bitcode".format(name),
+        name = "{}_default".format(name),
         expected_mapping = {
             "object": "test/fixtures/debug_settings/simple_objs/Empty.swift.o",
         },
@@ -60,7 +60,7 @@ def output_file_map_test_suite(name):
     # In Xcode13, the bitcode file needs to be in the output file map
     # (https://github.com/bazelbuild/rules_swift/issues/682).
     output_file_map_embed_bitcode_test(
-        name = "{}_embed_bitcode".format(name),
+        name = "{}_emit_bc".format(name),
         expected_mapping = {
             "llvm-bc": "test/fixtures/debug_settings/simple_objs/Empty.swift.bc",
         },
@@ -71,7 +71,7 @@ def output_file_map_test_suite(name):
     )
 
     output_file_map_embed_bitcode_wmo_test(
-        name = "{}_embed_bitcode_wmo".format(name),
+        name = "{}_emit_bc_wmo".format(name),
         expected_mapping = {
             "llvm-bc": "test/fixtures/debug_settings/simple_objs/Empty.swift.bc",
         },
