@@ -15,6 +15,12 @@ split_test = make_action_command_line_test_rule(
 )
 
 def compiler_arguments_test_suite(name):
+    """Test suite for various command line flags passed to Swift compiles.
+
+    Args:
+      name: the base name to be used in things created by this macro
+    """
+
     action_command_line_test(
         name = "{}_no_package_by_default".format(name),
         not_expected_argv = ["-package-name"],
