@@ -34,7 +34,9 @@ build --host_cxxopt="-Wno-unused-function"
 # https://stackoverflow.com/questions/40260242/how-to-set-c-standard-version-when-build-with-bazel/43388168#43388168
 build --cxxopt='-std=c++14'
 
+# TODO: Remove once we drop bazel 6.x support with bad zlib version
 # This C2K warning causes zlib to fail to compile.
 # There is an open issue about it on the zlib repository here:
 # https://github.com/madler/zlib/issues/633
 build --per_file_copt="external/.*zlib.*/.*.c@-Wno-deprecated-non-prototype"
+build --host_copt=-Wno-deprecated-non-prototype
