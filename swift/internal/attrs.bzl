@@ -131,6 +131,12 @@ build label, by stripping the leading `//` and replacing `/`, `:`, and other
 non-identifier characters with underscores.
 """,
             ),
+            "package_name": attr.string(
+                doc = """\
+The semantic package of the Swift target being built. Targets with the same
+package_name can access APIs using the 'package' access control modifier.
+""",
+            ),
             "swiftc_inputs": attr.label_list(
                 allow_files = True,
                 doc = """\

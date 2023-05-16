@@ -182,6 +182,7 @@ def _swift_library_impl(ctx):
         generated_header_name = generated_header_name,
         is_test = ctx.attr.testonly,
         module_name = module_name,
+        package_name = ctx.attr.package_name,
         private_deps = private_deps,
         srcs = srcs,
         swift_toolchain = swift_toolchain,
