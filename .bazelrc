@@ -4,7 +4,7 @@ common --incompatible_allow_tags_propagation
 # Fail if a glob doesn't match anything (https://github.com/bazelbuild/bazel/issues/8195)
 build --incompatible_disallow_empty_glob
 
-build --macos_minimum_os=11.0
+build --macos_minimum_os=12.0
 
 # Make sure no warnings slip into the C++ tools we vendor
 build --features treat_warnings_as_errors
