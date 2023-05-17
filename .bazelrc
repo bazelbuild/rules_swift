@@ -1,6 +1,8 @@
 # https://github.com/bazelbuild/stardoc/issues/112
 common --incompatible_allow_tags_propagation
 
+build --enable_platform_specific_config
+
 # Fail if a glob doesn't match anything (https://github.com/bazelbuild/bazel/issues/8195)
 build --incompatible_disallow_empty_glob
 
@@ -39,4 +41,4 @@ build --cxxopt='-std=c++14'
 # There is an open issue about it on the zlib repository here:
 # https://github.com/madler/zlib/issues/633
 build --per_file_copt="external/.*zlib.*/.*.c@-Wno-deprecated-non-prototype"
-build --host_copt=-Wno-deprecated-non-prototype
+build:macos --host_copt=-Wno-deprecated-non-prototype
