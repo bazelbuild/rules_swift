@@ -75,7 +75,7 @@ cc_library(
         ],
     }),
     data = select({
-        "//swift/internal:apple": [
+        "@build_bazel_apple_support//configs:apple": [
             "@build_bazel_rules_swift_index_import//:index_import",
         ],
         "//conditions:default": [],
