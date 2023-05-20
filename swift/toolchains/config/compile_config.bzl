@@ -1770,10 +1770,14 @@ def _collect_clang_module_inputs(
         # headers include those. This will likely over-estimate the needed
         # inputs, but we can't do better without include scanning in
         # Starlark.
-        transitive_inputs.append(explicit_module_compilation_context.headers)
+        transitive_inputs.append(explicit_module_compilation_context.public_headers)
         transitive_inputs.append(
             depset(explicit_module_compilation_context.direct_textual_headers),
         )
+        # when we add context.public_headers instead of context.headers,
+        # we need to export .direct_public_headers to propagate the module map
+        # file
+        transitive_inputs.append(depset(explicit_module_compilation_context.direct_public_headers))
 
     for module in modules:
         clang_module = module.clang
@@ -1802,10 +1806,20 @@ def _collect_clang_module_inputs(
             # use include scanning from Starlark, we can't compute a more
             # precise input set.
             compilation_context = clang_module.compilation_context
-            transitive_inputs.append(compilation_context.headers)
+            transitive_inputs.append(compilation_context.public_headers)
             transitive_inputs.append(
                 depset(compilation_context.direct_textual_headers),
             )
+            # compilation_context.public_headers is missing the module map file
+            # causing:
+            #
+            # MixedAnswer.modulemap:9:12: error: header 'MixedAnswer-Swift.h' not found
+            # module "MixedAnswer".Swift {
+            #     header "MixedAnswer-Swift.h"
+            #            `- error: header 'MixedAnswer-Swift.h' not found
+            #
+            # We need to add .direct_public_headers which has the module map file
+            transitive_inputs.append(depset(compilation_context.direct_public_headers))
 
     return ConfigResultInfo(
         inputs = direct_inputs,
