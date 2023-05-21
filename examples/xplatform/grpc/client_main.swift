@@ -41,7 +41,7 @@ struct ClientMain {
     )
 
     // Initialize the client using the same address the server is started on.
-    let client = RulesSwift_Examples_Grpc_EchoServiceClient(channel: channel)
+    let client = RulesSwift_Examples_Grpc_EchoServiceNIOClient(channel: channel)
 
     // Construct a request to the echo service.
     let request = RulesSwift_Examples_Grpc_EchoRequest.with {
