@@ -220,6 +220,7 @@ def new_objc_provider(
         additional_objc_infos = [],
         alwayslink = False,
         deps,
+        private_deps,
         feature_configuration,
         is_test,
         libraries_to_link,
@@ -239,6 +240,9 @@ def new_objc_provider(
         deps: The dependencies of the target being built, whose `Objc` providers
             will be passed to the new one in order to propagate the correct
             transitive fields.
+        private_deps: The private dependencies of the target being built,
+            whose `Objc` providers will be passed to the new one in order to
+            propagate the correct transitive fields.
         feature_configuration: The Swift feature configuration.
         is_test: Represents if the `testonly` value of the context.
         libraries_to_link: A list (typically of one element) of the
@@ -263,7 +267,8 @@ def new_objc_provider(
     # the Obj-C and C++ rules, we need to collect libraries from `CcInfo` and
     # put them into the new `Objc` provider.
     transitive_cc_libs = []
-    for cc_info in get_providers(deps, CcInfo):
+    all_deps = deps + private_deps
+    for cc_info in get_providers(all_deps, CcInfo):
         static_libs = []
         for linker_input in cc_info.linking_context.linker_inputs.to_list():
             for library_to_link in linker_input.libraries:
@@ -302,6 +307,26 @@ def new_objc_provider(
     ):
         extra_linkopts.append("-ObjC")
 
+    providers = get_providers(
+        deps,
+        apple_common.Objc,
+    )
+    for private_dep in private_deps:
+        if apple_common.Objc in private_dep:
+            # For private deps, we only need to propagate linker inputs with Objc provider, but no compilation artifacts (eg module_map, umbrella_header).
+            private_dep_objc_provider_kwargs = {
+                "force_load_library": private_dep[apple_common.Objc].force_load_library,
+                "imported_library": private_dep[apple_common.Objc].imported_library,
+                "library": private_dep[apple_common.Objc].library,
+                "linkopt": private_dep[apple_common.Objc].linkopt,
+                "sdk_dylib": private_dep[apple_common.Objc].sdk_dylib,
+                "sdk_framework": private_dep[apple_common.Objc].sdk_framework,
+                "source": private_dep[apple_common.Objc].source,
+                "weak_sdk_framework": private_dep[apple_common.Objc].weak_sdk_framework,
+            }
+            objc_provider = apple_common.new_objc_provider(**private_dep_objc_provider_kwargs)
+            providers.append(objc_provider)
+
     return apple_common.new_objc_provider(
         force_load_library = depset(
             force_load_libraries,
@@ -314,10 +339,7 @@ def new_objc_provider(
         ),
         link_inputs = depset(additional_link_inputs + debug_link_inputs),
         linkopt = depset(user_link_flags + extra_linkopts),
-        providers = get_providers(
-            deps,
-            apple_common.Objc,
-        ) + additional_objc_infos,
+        providers = providers + additional_objc_infos,
     )
 
 def register_link_binary_action(

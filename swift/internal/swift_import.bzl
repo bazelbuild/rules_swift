@@ -91,6 +91,7 @@ def _swift_import_impl(ctx):
         # ignored on non-Apple platforms anyway.
         new_objc_provider(
             deps = deps,
+            private_deps = [],
             feature_configuration = None,
             is_test = ctx.attr.testonly,
             libraries_to_link = libraries_to_link,

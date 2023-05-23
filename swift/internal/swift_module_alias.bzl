@@ -121,6 +121,7 @@ def _swift_module_alias_impl(ctx):
             swift_toolchain.implicit_deps_providers.objc_infos
         ),
         deps = deps,
+        private_deps = [],
         feature_configuration = feature_configuration,
         is_test = ctx.attr.testonly,
         module_context = module_context,

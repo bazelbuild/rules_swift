@@ -498,6 +498,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             # We pass an empty list here because we already extracted the
             # `Objc` providers from `SwiftProtoCcInfo` above.
             deps = [],
+            private_deps = [],
             feature_configuration = feature_configuration,
             is_test = False,
             module_context = module_context,
