@@ -297,17 +297,24 @@ def _swift_test_impl(ctx):
     output_groups = {}
     owner_symbol_graph_dir = None
 
-    all_deps = list(ctx.attr.deps)
+    deps = list(ctx.attr.deps)
+    test_runner_deps = list(ctx.attr._test_runner_deps)
 
     # In test discovery mode (whether manual or by the Obj-C runtime), inject
     # the test observer that prints the xUnit-style output for Bazel. Otherwise
     # don't link this, because we don't want it to pull in link time
     # dependencies on XCTest, which the test binary may not be using.
     if discover_tests:
-        all_deps.append(ctx.attr._test_observer)
+        additional_link_deps = test_runner_deps
+    else:
+        additional_link_deps = []
 
-    compilation_contexts = get_compilation_contexts(all_deps)
-    swift_infos = get_providers(all_deps, SwiftInfo)
+    deps_compilation_contexts = get_compilation_contexts(deps)
+    deps_swift_infos = get_providers(deps, SwiftInfo)
+    test_runner_deps_compilation_contexts = get_compilation_contexts(
+        test_runner_deps,
+    )
+    test_runner_deps_swift_infos = get_providers(test_runner_deps, SwiftInfo)
 
     module_name = ctx.attr.module_name
     if not module_name:
@@ -330,12 +337,12 @@ def _swift_test_impl(ctx):
                 "-parse-as-library",
                 "-enable-testing",
             ] if discover_tests else [],
-            compilation_contexts = compilation_contexts,
+            compilation_contexts = deps_compilation_contexts,
             feature_configuration = feature_configuration,
             module_name = module_name,
             name = ctx.label.name,
             srcs = srcs,
-            swift_infos = swift_infos,
+            swift_infos = deps_swift_infos,
             swift_toolchain = swift_toolchain,
         )
 
@@ -359,7 +366,7 @@ def _swift_test_impl(ctx):
             )
             extract_symbol_graph(
                 actions = ctx.actions,
-                compilation_contexts = compilation_contexts,
+                compilation_contexts = deps_compilation_contexts,
                 feature_configuration = feature_configuration,
                 minimum_access_level = "internal",
                 module_name = module_name,
@@ -369,7 +376,7 @@ def _swift_test_impl(ctx):
             )
     else:
         compilation_outputs = cc_common.create_compilation_outputs()
-        swift_infos_including_owner = swift_infos
+        swift_infos_including_owner = deps_swift_infos
 
     # If requested, discover tests using symbol graphs and generate a runner for
     # them.
@@ -386,12 +393,14 @@ def _swift_test_impl(ctx):
             ctx = ctx,
             # The generated test runner uses `@main`.
             additional_copts = ["-parse-as-library"],
-            compilation_contexts = compilation_contexts,
+            compilation_contexts = test_runner_deps_compilation_contexts,
             feature_configuration = feature_configuration,
             module_name = module_name + "__GeneratedTestDiscoveryRunner",
             name = ctx.label.name + "__GeneratedTestDiscoveryRunner",
             srcs = discovery_srcs,
-            swift_infos = swift_infos_including_owner,
+            swift_infos = (
+                swift_infos_including_owner + test_runner_deps_swift_infos
+            ),
             swift_toolchain = swift_toolchain,
         )
         module_contexts.append(discovery_compile_result.module_context)
@@ -430,7 +439,7 @@ def _swift_test_impl(ctx):
         additional_linking_contexts = [malloc_linking_context(ctx)],
         additional_outputs = additional_debug_outputs,
         compilation_outputs = compilation_outputs,
-        deps = all_deps,
+        deps = deps + additional_link_deps,
         feature_configuration = feature_configuration,
         grep_includes = ctx.file._grep_includes,
         label = ctx.label,
@@ -540,10 +549,10 @@ standard executable binary that is invoked directly.
                 ),
                 executable = True,
             ),
-            "_test_observer": attr.label(
-                default = Label(
+            "_test_runner_deps": attr.label_list(
+                default = [
                     "@build_bazel_rules_swift//tools/test_observer",
-                ),
+                ],
             ),
             "_xctest_runner_template": attr.label(
                 allow_single_file = True,
