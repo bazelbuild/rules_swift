@@ -40,6 +40,7 @@ load("//swift/internal:toolchain_utils.bzl", "use_swift_toolchain")
 load(
     "//swift/internal:utils.bzl",
     "expand_locations",
+    "get_providers",
     "include_developer_search_paths",
 )
 load(
@@ -344,6 +345,18 @@ def _swift_test_impl(ctx):
     if swizzle_absolute_xcttestsourcelocation:
         extra_link_deps.append(ctx.attr._swizzle_absolute_xcttestsourcelocation)
 
+    deps = list(ctx.attr.deps)
+    test_runner_deps = list(ctx.attr._test_runner_deps)
+
+    # In test discovery mode (whether manual or by the Obj-C runtime), inject
+    # the test observer that prints the xUnit-style output for Bazel. Otherwise
+    # don't link this, because we don't want it to pull in link time
+    # dependencies on XCTest, which the test binary may not be using.
+    if discover_tests:
+        additional_link_deps = test_runner_deps
+    else:
+        additional_link_deps = []
+
     # We also need to collect nested providers from `SwiftCompilerPluginInfo`
     # since we support testing those.
     deps_cc_infos = []
@@ -351,7 +364,7 @@ def _swift_test_impl(ctx):
     deps_objc_infos = []
     deps_swift_infos = []
     additional_linking_contexts = []
-    for dep in ctx.attr.deps:
+    for dep in deps:
         if CcInfo in dep:
             deps_cc_infos.append(dep[CcInfo])
             deps_compilation_contexts.append(dep[CcInfo].compilation_context)
@@ -365,20 +378,13 @@ def _swift_test_impl(ctx):
             additional_linking_contexts.append(
                 plugin_info.cc_info.linking_context,
             )
+    additional_linking_contexts.append(malloc_linking_context(ctx))
 
-    test_runner_deps_swift_infos = [ctx.attr._test_observer[SwiftInfo]]
+    test_runner_deps_cc_infos = get_providers(test_runner_deps, CcInfo)
+    test_runner_deps_swift_infos = get_providers(test_runner_deps, SwiftInfo)
 
     srcs = ctx.files.srcs
     owner_symbol_graph_dir = None
-
-    all_deps = list(ctx.attr.deps)
-
-    # In test discovery mode (whether manual or by the Obj-C runtime), inject
-    # the test observer that prints the xUnit-style output for Bazel. Otherwise
-    # don't link this, because we don't want it to pull in link time
-    # dependencies on XCTest, which the test binary may not be using.
-    if discover_tests:
-        all_deps.append(ctx.attr._test_observer)
 
     module_name = ctx.attr.module_name
     if not module_name:
@@ -463,7 +469,7 @@ def _swift_test_impl(ctx):
             ctx = ctx,
             # The generated test runner uses `@main`.
             additional_copts = ["-parse-as-library"],
-            cc_infos = deps_cc_infos,
+            cc_infos = test_runner_deps_cc_infos,
             feature_configuration = feature_configuration,
             include_dev_srch_paths = include_dev_srch_paths,
             module_name = module_name + "__GeneratedTestDiscoveryRunner",
@@ -487,8 +493,6 @@ def _swift_test_impl(ctx):
         all_supplemental_outputs.append(
             discovery_compile_result.supplemental_outputs,
         )
-
-    additional_linking_contexts.append(malloc_linking_context(ctx))
 
     # If we need to run the test in an .xctest bundle, the binary must have
     # Mach-O type `MH_BUNDLE` instead of `MH_EXECUTE`.
@@ -519,7 +523,7 @@ def _swift_test_impl(ctx):
         additional_linking_contexts = additional_linking_contexts,
         additional_outputs = additional_debug_outputs,
         compilation_outputs = compilation_outputs,
-        deps = all_deps,
+        deps = deps + additional_link_deps,
         feature_configuration = feature_configuration,
         module_contexts = module_contexts,
         name = name,
@@ -654,10 +658,10 @@ standard executable binary that is invoked directly.
                 ),
                 executable = True,
             ),
-            "_test_observer": attr.label(
-                default = Label(
+            "_test_runner_deps": attr.label_list(
+                default = [
                     "@build_bazel_rules_swift//tools/test_observer",
-                ),
+                ],
             ),
             "_xctest_runner_template": attr.label(
                 allow_single_file = True,
