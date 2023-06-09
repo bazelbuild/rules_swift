@@ -15,7 +15,7 @@
 """Common attributes used by multiple Swift build rules."""
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
+load(":providers.bzl", "SwiftInfo", "SwiftMacroInfo", "SwiftToolchainInfo")
 
 def swift_common_rule_attrs(additional_deps_aspects = []):
     return {
@@ -121,6 +121,13 @@ it, so use this attribute with caution. It is preferred that you add defines
 directly to `copts`, only using this feature in the rare case that a library
 needs to propagate a symbol up to those that depend on it.
 """,
+            ),
+            "macros": attr.label_list(
+                doc = "TODO",
+                cfg = "exec",
+                providers = [
+                    [SwiftMacroInfo],
+                ],
             ),
             "module_name": attr.string(
                 doc = """\

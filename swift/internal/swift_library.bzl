@@ -178,6 +178,7 @@ def _swift_library_impl(ctx):
         copts = _maybe_parse_as_library_copts(srcs) + copts,
         defines = ctx.attr.defines,
         deps = deps,
+        macros = ctx.attr.macros,
         feature_configuration = feature_configuration,
         generated_header_name = generated_header_name,
         is_test = ctx.attr.testonly,
@@ -254,9 +255,10 @@ def _swift_library_impl(ctx):
         ),
         swift_common.create_swift_info(
             modules = [module_context],
+            macros = ctx.attr.macros,
             # Note that private_deps are explicitly omitted here; they should
             # not propagate.
-            swift_infos = get_providers(deps, SwiftInfo),
+            swift_infos = get_providers(deps + ctx.attr.macros, SwiftInfo),
         ),
     ]
 
@@ -268,7 +270,7 @@ def _swift_library_impl(ctx):
         additional_link_inputs = additional_inputs,
         additional_objc_infos = implicit_deps_providers.objc_infos,
         alwayslink = ctx.attr.alwayslink,
-        deps = deps + private_deps,
+        deps = deps + private_deps + ctx.attr.macros,
         feature_configuration = feature_configuration,
         is_test = ctx.attr.testonly,
         module_context = module_context,

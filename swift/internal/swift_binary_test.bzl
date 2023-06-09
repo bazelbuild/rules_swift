@@ -19,7 +19,7 @@ load(":compiling.bzl", "output_groups_from_other_compilation_outputs")
 load(":derived_files.bzl", "derived_files")
 load(":feature_names.bzl", "SWIFT_FEATURE_BUNDLED_XCTESTS")
 load(":linking.bzl", "register_link_binary_action")
-load(":providers.bzl", "SwiftToolchainInfo")
+load(":providers.bzl", "SwiftInfo", "SwiftMacroInfo", "SwiftToolchainInfo")
 load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 load(":swift_common.bzl", "swift_common")
 load(":utils.bzl", "expand_locations")
@@ -335,6 +335,35 @@ def _create_xctest_runner(name, actions, executable, xctest_runner_template):
 
     return xctest_runner
 
+def _swift_macro_impl(ctx):
+    swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
+    feature_configuration = _configure_features_for_binary(
+        ctx = ctx,
+        requested_features = ["static_linking_mode"],
+    )
+
+    _, linking_outputs, providers = _swift_linking_rule_impl(
+        ctx,
+        binary_path = ctx.label.name,
+        feature_configuration = feature_configuration,
+        swift_toolchain = swift_toolchain,
+    )
+
+    return providers + [
+        SwiftMacroInfo(
+            # TODO: fix hack
+            module_name = providers[-1].direct_modules[0].name,
+        ),
+        DefaultInfo(
+            executable = linking_outputs.executable,
+            runfiles = ctx.runfiles(
+                collect_data = True,
+                collect_default = True,
+                files = ctx.files.data,
+            ),
+        ),
+    ]
+
 def _swift_binary_impl(ctx):
     swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
     feature_configuration = _configure_features_for_binary(
@@ -463,6 +492,17 @@ please use one of the platform-specific application rules in
     executable = True,
     fragments = ["cpp"],
     implementation = _swift_binary_impl,
+)
+
+swift_macro = rule(
+    # FIXME: Remove some attrs?
+    attrs = _binary_rule_attrs(stamp_default = -1),
+    doc = """\
+            TODO
+""",
+    executable = True,
+    fragments = ["cpp"],
+    implementation = _swift_macro_impl,
 )
 
 swift_test = rule(

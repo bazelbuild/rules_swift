@@ -58,6 +58,17 @@ Swift and C/Objective-C) emitted by the library that propagated this provider.
 modules (both Swift and C/Objective-C) emitted by the library that propagated
 this provider and all of its dependencies.
 """,
+        "direct_macros": "TODO",
+        "transitive_macros": "TODO",
+    },
+)
+
+SwiftMacroInfo = provider(
+    doc = """\
+    TODO
+""",
+    fields = {
+        "module_name": "TODO",
     },
 )
 
@@ -402,6 +413,7 @@ def create_swift_info(
         *,
         direct_swift_infos = [],
         modules = [],
+        macros = [],
         swift_infos = []):
     """Creates a new `SwiftInfo` provider with the given values.
 
@@ -438,11 +450,24 @@ def create_swift_info(
         provider.transitive_modules
         for provider in direct_swift_infos + swift_infos
     ]
+    direct_macros = macros + [
+        provider.macros
+        for provider in direct_swift_infos
+    ]
+    transitive_macros = [
+        provider.transitive_macros
+        for provider in direct_swift_infos + swift_infos
+    ]
 
     return SwiftInfo(
         direct_modules = direct_modules,
         transitive_modules = depset(
             direct_modules,
             transitive = transitive_modules,
+        ),
+        direct_macros = direct_macros,
+        transitive_macros = depset(
+            direct_macros,
+            transitive = transitive_macros,
         ),
     )

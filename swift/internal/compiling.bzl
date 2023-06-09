@@ -82,6 +82,7 @@ load(":module_maps.bzl", "write_module_map")
 load(
     ":providers.bzl",
     "SwiftInfo",
+    "SwiftMacroInfo",
     "create_clang_module",
     "create_module",
     "create_swift_info",
@@ -350,6 +351,14 @@ def compile_action_configs(
                 SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION,
                 SWIFT_FEATURE_EMIT_SWIFTINTERFACE,
             ],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVE_FILES,
+                swift_action_names.DUMP_AST,
+            ],
+            configurators = [_load_macros_configurator],
         ),
 
         # Configure the path to the emitted *-Swift.h file.
@@ -1249,6 +1258,31 @@ def _emit_module_interface_path_configurator(prerequisites, args):
     """Adds the `.swiftinterface` output path to the command line."""
     args.add("-emit-module-interface-path", prerequisites.swiftinterface_file)
 
+def _load_macros_args(macro):
+    macro_module_name, files = macro
+    if len(files) != 1:
+        fail("unexpected number of files for macro module {}: {}".format(
+            macro_module_name,
+            files,
+        ))
+    return [
+        "-Xfrontend",
+        "-load-plugin-executable",
+        "-Xfrontend",
+        files[0].path + "#" + macro_module_name,
+    ]
+
+def _load_macros_configurator(prerequisites, args):
+    args.add_all(
+        prerequisites.transitive_macros,
+        map_each = _load_macros_args,
+    )
+
+    all_macro_files = []
+    for _, files in prerequisites.transitive_macros:
+        all_macro_files.extend(files)
+    return swift_toolchain_config.config_result(inputs = all_macro_files)
+
 def _emit_objc_header_path_configurator(prerequisites, args):
     """Adds the generated header output path to the command line."""
     if prerequisites.generated_header_file:
@@ -1947,6 +1981,7 @@ def compile(
         copts = [],
         defines = [],
         deps = [],
+        macros = [],
         feature_configuration,
         generated_header_name = None,
         is_test,
@@ -2086,7 +2121,7 @@ def compile(
     # the full set of values and inputs through a single accessor.
     merged_providers = _merge_targets_providers(
         implicit_deps_providers = swift_toolchain.implicit_deps_providers,
-        targets = deps + private_deps,
+        targets = deps + private_deps + macros,
     )
 
     # Flattening this `depset` is necessary because we need to extract the
@@ -2098,6 +2133,11 @@ def compile(
     transitive_modules = (
         merged_providers.swift_info.transitive_modules.to_list()
     )
+
+    transitive_macros = []
+    for macro in merged_providers.swift_info.transitive_macros.to_list() + macros:
+        macro_module_name = macro[SwiftMacroInfo].module_name
+        transitive_macros.append((macro_module_name, macro.files.to_list()))
 
     transitive_swiftmodules = []
     defines_set = sets.make(defines)
@@ -2168,6 +2208,7 @@ def compile(
         ),
         objc_info = merged_providers.objc_info,
         source_files = srcs,
+        transitive_macros = transitive_macros,
         transitive_modules = transitive_modules,
         transitive_swiftmodules = transitive_swiftmodules,
         user_compile_flags = copts,
