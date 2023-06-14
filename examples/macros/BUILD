@@ -1,8 +1,24 @@
-load("//swift:swift.bzl", "swift_binary", "swift_library", "swift_macro")
+load("//swift:swift.bzl", "swift_binary", "swift_library", "swift_macro", "swift_test")
+
+swift_test(
+    name = "macrostests",
+    srcs = [
+        "macro.swift",
+        "macrostests.swift",
+    ],
+    deps = [
+        "@SwiftSyntax//:SwiftCompilerPlugin",
+        "@SwiftSyntax//:SwiftSyntaxMacros",
+        "@SwiftSyntax//:SwiftSyntaxMacrosTestSupport",
+    ],
+)
 
 swift_macro(
-    name = "macroslib",
-    srcs = ["macro.swift"],
+    name = "macrosplugin",
+    srcs = [
+        "macro.swift",
+        "plugin.swift",
+    ],
     module_name = "macros",
     deps = [
         "@SwiftSyntax",
@@ -14,7 +30,7 @@ swift_macro(
 swift_library(
     name = "lib",
     srcs = ["lib.swift"],
-    macros = [":macroslib"],
+    macros = [":macrosplugin"],
     module_name = "lib",
 )
 

@@ -37,10 +37,3 @@ public struct URLMacro: ExpressionMacro {
     return "URL(string: \(argument))!"
   }
 }
-
-@main
-struct MyPlugin: CompilerPlugin {
-  let providingMacros: [Macro.Type] = [
-      URLMacro.self,
-  ]
-}
