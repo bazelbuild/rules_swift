@@ -18,14 +18,13 @@ load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(":compiling.bzl", "output_groups_from_other_compilation_outputs")
 load(":derived_files.bzl", "derived_files")
 load(":feature_names.bzl", "SWIFT_FEATURE_BUNDLED_XCTESTS")
-load(":linking.bzl", "register_link_binary_action")
+load(":linking.bzl", "binary_rule_attrs", "configure_features_for_binary", "register_link_binary_action")
 load(":providers.bzl", "SwiftCompilerPluginInfo", "SwiftToolchainInfo")
-load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 load(":swift_common.bzl", "swift_common")
 load(":utils.bzl", "expand_locations", "get_providers")
 load(":env_expansion.bzl", "expanded_env")
 
-def _binary_rule_attrs(
+def binary_rule_attrs(
         *,
         additional_deps_providers = [],
         stamp_default):
@@ -101,7 +100,7 @@ into the binary. Possible values are:
         },
     )
 
-def _configure_features_for_binary(
+def configure_features_for_binary(
         ctx,
         requested_features = [],
         unsupported_features = []):
@@ -338,7 +337,7 @@ def _create_xctest_runner(name, actions, executable, xctest_runner_template):
 
 def _swift_binary_impl(ctx):
     swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
-    feature_configuration = _configure_features_for_binary(
+    feature_configuration = configure_features_for_binary(
         ctx = ctx,
         requested_features = ["static_linking_mode"],
     )
@@ -363,7 +362,7 @@ def _swift_binary_impl(ctx):
 
 def _swift_test_impl(ctx):
     swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
-    feature_configuration = _configure_features_for_binary(
+    feature_configuration = configure_features_for_binary(
         ctx = ctx,
         requested_features = ["static_linking_mode"],
     )
@@ -445,7 +444,7 @@ def _swift_test_impl(ctx):
     ]
 
 swift_binary = rule(
-    attrs = _binary_rule_attrs(
+    attrs = binary_rule_attrs(
         additional_deps_providers = [[SwiftCompilerPluginInfo]],
         stamp_default = -1,
     ),
@@ -471,7 +470,7 @@ please use one of the platform-specific application rules in
 
 swift_test = rule(
     attrs = dicts.add(
-        _binary_rule_attrs(
+        binary_rule_attrs(
             additional_deps_providers = [[SwiftCompilerPluginInfo]],
             stamp_default = 0,
         ),
