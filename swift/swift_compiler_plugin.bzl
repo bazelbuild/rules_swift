@@ -147,18 +147,6 @@ def _swift_compiler_plugin_impl(ctx):
         )
     )
 
-    if module_context:
-        modules = [
-            swift_common.create_module(
-                name = module_context.name,
-                compilation_context = module_context.compilation_context,
-                # The rest of the fields are intentionally ommited, as we only
-                # want to expose the compilation_context
-            ),
-        ]
-    else:
-        modules = []
-
     return [
         DefaultInfo(
             executable = binary_linking_outputs.executable,
@@ -178,7 +166,7 @@ def _swift_compiler_plugin_impl(ctx):
             executable = binary_linking_outputs.executable,
             module_names = depset([module_name]),
             swift_info = swift_common.create_swift_info(
-                modules = modules,
+                modules = [module_context],
             ),
         ),
     ]

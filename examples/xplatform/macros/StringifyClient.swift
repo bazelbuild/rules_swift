@@ -14,4 +14,9 @@
 
 import Stringify
 
-print(#stringify(1 + 2))
+@main
+struct Main {
+  static func main() {
+    print(#stringify(1 + 2))
+  }
+}
