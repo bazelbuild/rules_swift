@@ -15,7 +15,8 @@
 """Common attributes used by multiple Swift build rules."""
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load("//swift:providers.bzl", "SwiftCompilerPluginInfo", "SwiftInfo")
+load("//swift:providers.bzl", "SwiftInfo")
+load(":providers.bzl", "SwiftCompilerPluginInfo")
 
 def swift_common_rule_attrs(
         additional_deps_aspects = [],

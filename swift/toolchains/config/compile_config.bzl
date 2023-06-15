@@ -1912,7 +1912,7 @@ def _plugins_configurator(prerequisites, args):
     )
 
     return ConfigResultInfo(
-        inputs = [p.executable for p in prerequisites.plugins.to_list()],
+        inputs = [p.executable for p in prerequisites.plugins],
     )
 
 def _macro_expansion_configurator(prerequisites, args):

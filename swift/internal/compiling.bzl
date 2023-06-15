@@ -622,7 +622,7 @@ def compile(
     used_plugins = list(plugins)
     for module_context in transitive_modules:
         if module_context.swift and module_context.swift.plugins:
-            used_plugins.extend(module_context.swift.plugins.to_list())
+            used_plugins.extend(module_context.swift.plugins)
 
     if include_dev_srch_paths != None and is_test != None:
         fail("""\
@@ -659,7 +659,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         objc_info = merged_objc_info,
         original_module_name = original_module_name,
         package_name = package_name,
-        plugins = depset(used_plugins),
+        plugins = used_plugins,
         source_files = srcs,
         target_label = feature_configuration._label,
         transitive_modules = transitive_modules,
@@ -793,7 +793,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
             generated_header = compile_outputs.generated_header_file,
             indexstore = compile_outputs.indexstore_directory,
             original_module_name = original_module_name,
-            plugins = depset(plugins),
+            plugins = plugins,
             private_swiftinterface = compile_outputs.private_swiftinterface_file,
             swiftdoc = compile_outputs.swiftdoc_file,
             swiftinterface = compile_outputs.swiftinterface_file,

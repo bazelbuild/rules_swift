@@ -44,6 +44,7 @@ load(
     "//swift/internal:output_groups.bzl",
     "supplemental_compilation_output_groups",
 )
+load("//swift/internal:providers.bzl", "SwiftCompilerPluginInfo")
 load(
     "//swift/internal:toolchain_utils.bzl",
     "get_swift_toolchain",
@@ -58,7 +59,7 @@ load(
     "include_developer_search_paths",
 )
 load(":module_name.bzl", "derive_swift_module_name")
-load(":providers.bzl", "SwiftCompilerPluginInfo", "SwiftInfo")
+load(":providers.bzl", "SwiftInfo")
 load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 
 def _maybe_parse_as_library_copts(srcs):
