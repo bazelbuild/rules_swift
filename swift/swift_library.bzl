@@ -42,6 +42,10 @@ load(
     "create_linking_context_from_compilation_outputs",
 )
 load(
+    "@build_bazel_rules_swift//swift/internal:providers.bzl",
+    "SwiftCompilerPluginInfo",
+)
+load(
     "@build_bazel_rules_swift//swift/internal:toolchain_utils.bzl",
     "get_swift_toolchain",
     "use_swift_toolchain",
@@ -182,6 +186,7 @@ def _swift_library_impl(ctx):
         feature_configuration = feature_configuration,
         generated_header_name = generated_header_name,
         module_name = module_name,
+        plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),
         private_swift_infos = private_swift_infos,
         srcs = srcs,
         swift_infos = swift_infos,

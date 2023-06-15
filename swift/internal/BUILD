@@ -27,6 +27,7 @@ bzl_library(
     name = "attrs",
     srcs = ["attrs.bzl"],
     deps = [
+        ":providers",
         "//swift:providers",
         "@bazel_skylib//lib:dicts",
     ],
@@ -122,6 +123,9 @@ bzl_library(
 bzl_library(
     name = "providers",
     srcs = ["providers.bzl"],
+    visibility = [
+        "//swift:__subpackages__",
+    ],
 )
 
 bzl_library(

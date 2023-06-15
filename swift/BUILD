@@ -34,6 +34,7 @@ bzl_library(
         ":providers",
         "//swift/internal:compiling",
         "//swift/internal:linking",
+        "//swift/internal:providers",
         "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
     ],
@@ -67,6 +68,21 @@ bzl_library(
         "//swift/internal:linking",
         "//swift/internal:symbol_graph_extracting",
         "//swift/internal:toolchain_utils",
+    ],
+)
+
+bzl_library(
+    name = "swift_compiler_plugin",
+    srcs = ["swift_compiler_plugin.bzl"],
+    deps = [
+        ":module_name",
+        ":providers",
+        "//swift/internal:compiling",
+        "//swift/internal:linking",
+        "//swift/internal:providers",
+        "//swift/internal:toolchain_utils",
+        "//swift/internal:utils",
+        "@bazel_skylib//lib:dicts",
     ],
 )
 
@@ -158,6 +174,7 @@ bzl_library(
         "//swift/internal:feature_names",
         "//swift/internal:features",
         "//swift/internal:linking",
+        "//swift/internal:providers",
         "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
         "@bazel_skylib//lib:dicts",
@@ -216,8 +233,8 @@ bzl_library(
         ":module_name",
         ":providers",
         "//swift/internal:compiling",
-        "//swift/internal:features",
         "//swift/internal:linking",
+        "//swift/internal:providers",
         "//swift/internal:swift_symbol_graph_aspect",
         "//swift/internal:symbol_graph_extracting",
         "//swift/internal:toolchain_utils",

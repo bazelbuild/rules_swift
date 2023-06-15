@@ -16,12 +16,15 @@
 
 load("@build_bazel_rules_swift//swift:providers.bzl", "SwiftInfo")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
+load(":providers.bzl", "SwiftCompilerPluginInfo")
 
 visibility([
     "@build_bazel_rules_swift//swift/...",
 ])
 
-def swift_common_rule_attrs(additional_deps_aspects = []):
+def swift_common_rule_attrs(
+        additional_deps_aspects = [],
+        additional_deps_providers = []):
     return {
         "data": attr.label_list(
             allow_files = True,
@@ -34,6 +37,7 @@ binary or library, or other programs needed by it.
 """,
         ),
         "deps": swift_deps_attr(
+            additional_deps_providers = additional_deps_providers,
             aspects = additional_deps_aspects,
             doc = """\
 A list of targets that are dependencies of the target being built, which will be
@@ -52,6 +56,7 @@ indirect (transitive) dependents.
 
 def swift_compilation_attrs(
         additional_deps_aspects = [],
+        additional_deps_providers = [],
         requires_srcs = True):
     """Returns an attribute dictionary for rules that compile Swift code.
 
@@ -85,6 +90,9 @@ def swift_compilation_attrs(
             by the individual rules to avoid potential circular dependencies
             between the API and the aspects; the API loaded the aspects
             directly, then those aspects would not be able to load the API.
+        additional_deps_providers: A list of lists representing additional
+            providers that should be allowed by the `deps` attribute of the
+            rule.
         requires_srcs: Indicates whether the `srcs` attribute should be marked
             as mandatory and non-empty. Defaults to `True`.
 
@@ -96,6 +104,7 @@ def swift_compilation_attrs(
     return dicts.add(
         swift_common_rule_attrs(
             additional_deps_aspects = additional_deps_aspects,
+            additional_deps_providers = additional_deps_providers,
         ),
         swift_toolchain_attrs(),
         {
@@ -138,6 +147,14 @@ build label, by stripping the leading `//` and replacing `/`, `:`, and other
 non-identifier characters with underscores.
 """,
             ),
+            "plugins": attr.label_list(
+                cfg = "exec",
+                doc = """\
+A list of `swift_compiler_plugin` targets that should be loaded by the compiler
+when compiling this module and any modules that directly depend on it.
+""",
+                providers = [[SwiftCompilerPluginInfo]],
+            ),
             "swiftc_inputs": attr.label_list(
                 allow_files = True,
                 doc = """\
@@ -164,13 +181,16 @@ def swift_config_attrs():
         ),
     }
 
-def swift_deps_attr(doc, **kwargs):
+def swift_deps_attr(*, additional_deps_providers = [], doc, **kwargs):
     """Returns an attribute suitable for representing Swift rule dependencies.
 
     The returned attribute will be configured to accept targets that propagate
     `CcInfo` or `SwiftInfo` providers.
 
     Args:
+        additional_deps_providers: A list of lists representing additional
+            providers that should be allowed by the `deps` attribute of the
+            rule.
         doc: A string containing a summary description of the purpose of the
             attribute. This string will be followed by additional text that
             lists the permitted kinds of targets that may go in this attribute.
@@ -189,7 +209,7 @@ Allowed kinds of dependencies are:
 
 *   `cc_library` and `objc_library` (or anything propagating `CcInfo`)
 """,
-        providers = [[CcInfo], [SwiftInfo]],
+        providers = [[CcInfo], [SwiftInfo]] + additional_deps_providers,
         **kwargs
     )
 

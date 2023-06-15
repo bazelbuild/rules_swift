@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Implementation of the `swift_binary` and `swift_test` rules."""
+"""Implementation of the `swift_binary` rule."""
 
 load(
     "@build_bazel_rules_swift//swift/internal:compiling.bzl",
@@ -24,6 +24,10 @@ load(
     "configure_features_for_binary",
     "malloc_linking_context",
     "register_link_binary_action",
+)
+load(
+    "@build_bazel_rules_swift//swift/internal:providers.bzl",
+    "SwiftCompilerPluginInfo",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:toolchain_utils.bzl",
@@ -74,6 +78,7 @@ def _swift_binary_impl(ctx):
             defines = ctx.attr.defines,
             feature_configuration = feature_configuration,
             module_name = module_name,
+            plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),
             srcs = srcs,
             swift_infos = get_providers(ctx.attr.deps, SwiftInfo),
             swift_toolchain = swift_toolchain,

@@ -216,6 +216,7 @@ def compile(
         feature_configuration,
         generated_header_name = None,
         module_name,
+        plugins = [],
         private_swift_infos = [],
         srcs,
         swift_infos,
@@ -249,6 +250,8 @@ def compile(
         module_name: The name of the Swift module being compiled. This must be
             present and valid; use `derive_swift_module_name` to generate a
             default from the target's label if needed.
+        plugins: A list of `SwiftCompilerPluginInfo` providers that represent
+            plugins that should be loaded by the compiler.
         private_swift_infos: A list of `SwiftInfo` providers from private
             (implementation-only) dependencies of the target being compiled. The
             modules defined by these providers are used as dependencies of the
@@ -428,6 +431,18 @@ def compile(
     else:
         deps_modules_file = None
 
+    # As of the time of this writing (Xcode 15.0), macros are the only kind of
+    # plugins that are available. Since macros do source-level transformations,
+    # we only need to load plugins directly used by the module being compiled.
+    # Plugins that are only used by transitive dependencies do *not* need to be
+    # passed; the compiler does not attempt to load them when deserializing
+    # modules.
+    used_plugins = list(plugins)
+    for swift_info in swift_infos:
+        for module_context in swift_info.direct_modules:
+            if module_context.swift and module_context.swift.plugins:
+                used_plugins.extend(module_context.swift.plugins)
+
     prerequisites = struct(
         additional_inputs = additional_inputs,
         always_include_headers = is_feature_enabled(
@@ -443,6 +458,7 @@ def compile(
         is_swift = True,
         module_name = module_name,
         original_module_name = original_module_name,
+        plugins = used_plugins,
         source_files = srcs,
         target_label = feature_configuration._label,
         transitive_modules = transitive_modules,
@@ -521,6 +537,7 @@ def compile(
         swift = create_swift_module_inputs(
             defines = defines,
             original_module_name = original_module_name,
+            plugins = plugins,
             swiftdoc = compile_outputs.swiftdoc_file,
             swiftinterface = compile_outputs.swiftinterface_file,
             swiftmodule = compile_outputs.swiftmodule_file,

@@ -226,6 +226,21 @@ It must return a `struct` with the following fields:
 *   `variables_extension`: A dictionary of additional crosstool variables to
     pass to the linking action.
 """,
+        "entry_point_linkopts_provider": """\
+A function that returns flags that should be passed to the linker to control the
+name of the entry point of a linked binary for rules that customize their entry
+point.
+
+This function must take the following keyword arguments:
+
+*   `entry_point_name`: The name of the entry point function, as was passed to
+    the Swift compiler using the `-entry-point-function-name` flag.
+
+It must return a `struct` with the following fields:
+
+*   `linkopts`: A list of strings that will be passed as additional linker flags
+    when linking a binary with a custom entry point.
+""",
         "feature_allowlists": """\
 A list of `SwiftFeatureAllowlistInfo` providers that allow or prohibit packages
 from requesting or disabling features.
@@ -424,6 +439,7 @@ def create_swift_module_inputs(
         *,
         defines = [],
         original_module_name = None,
+        plugins = [],
         swiftdoc,
         swiftinterface = None,
         swiftmodule,
@@ -435,6 +451,9 @@ def create_swift_module_inputs(
             that depend on this module. If omitted, the empty list will be used.
         original_module_name: The original name of the module if it was changed
             by a module mapping; otherwise, `None`.
+        plugins: A list of `SwiftCompilerPluginInfo` providers representing
+            compiler plugins that are required by this module and should be
+            loaded by the compiler when this module is directly depended on.
         swiftdoc: The `.swiftdoc` file emitted by the compiler for this module.
         swiftinterface: The `.swiftinterface` file emitted by the compiler for
             this module. May be `None` if no module interface file was emitted.
@@ -449,6 +468,7 @@ def create_swift_module_inputs(
     return struct(
         defines = defines,
         original_module_name = original_module_name,
+        plugins = plugins,
         swiftdoc = swiftdoc,
         swiftinterface = swiftinterface,
         swiftmodule = swiftmodule,

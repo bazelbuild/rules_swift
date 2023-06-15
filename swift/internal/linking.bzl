@@ -40,12 +40,19 @@ which is an empty library and the resulting binary will use libc's `malloc`.
 This label must refer to a `cc_library` rule.
 """
 
-def binary_rule_attrs(*, additional_deps_aspects = [], stamp_default):
+def binary_rule_attrs(
+        *,
+        additional_deps_aspects = [],
+        additional_deps_providers = [],
+        stamp_default):
     """Returns attributes common to both `swift_binary` and `swift_test`.
 
     Args:
         additional_deps_aspects: A list of additional aspects that should be
             applied to the `deps` attribute of the rule.
+        additional_deps_providers: A list of lists representing additional
+            providers that should be allowed by the `deps` attribute of the
+            rule.
         stamp_default: The default value of the `stamp` attribute.
 
     Returns:
@@ -56,6 +63,7 @@ def binary_rule_attrs(*, additional_deps_aspects = [], stamp_default):
             additional_deps_aspects = [
                 swift_clang_module_aspect,
             ] + additional_deps_aspects,
+            additional_deps_providers = additional_deps_providers,
             requires_srcs = False,
         ),
         {

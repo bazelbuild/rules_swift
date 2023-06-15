@@ -545,6 +545,10 @@ def compile_action_configs(
             actions = [SWIFT_ACTION_COMPILE],
             configurators = [_module_aliases_configurator],
         ),
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE],
+            configurators = [_plugins_configurator],
+        ),
 
         # swift-symbolgraph-extract doesn't yet support explicit Swift module
         # maps.
@@ -1362,6 +1366,28 @@ def _module_aliases_configurator(prerequisites, args):
                 name = prerequisites.module_name,
             ),
         )
+
+def _load_executable_plugin_map_fn(plugin):
+    """Returns frontend flags to load compiler plugins."""
+    return [
+        "-load-plugin-executable",
+        "{executable}#{module_names}".format(
+            executable = plugin.executable.path,
+            module_names = ",".join(plugin.module_names.to_list()),
+        ),
+    ]
+
+def _plugins_configurator(prerequisites, args):
+    """Adds `-load-plugin-executable` flags for required plugins, if any."""
+    args.add_all(
+        prerequisites.plugins,
+        before_each = "-Xfrontend",
+        map_each = _load_executable_plugin_map_fn,
+    )
+
+    return ConfigResultInfo(
+        inputs = [p.executable for p in prerequisites.plugins],
+    )
 
 def _explicit_swift_module_map_configurator(prerequisites, args, is_frontend = False):
     """Adds the explicit Swift module map file to the command line."""

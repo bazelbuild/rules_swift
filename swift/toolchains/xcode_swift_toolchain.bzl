@@ -585,6 +585,12 @@ def _dsym_provider(*, ctx):
         variables_extension = variables_extension,
     )
 
+def _entry_point_linkopts_provider(*, entry_point_name):
+    """Returns linkopts to customize the entry point of a binary."""
+    return struct(
+        linkopts = ["-Wl,-alias,_{},_main".format(entry_point_name)],
+    )
+
 def _xcode_swift_toolchain_impl(ctx):
     cpp_fragment = ctx.fragments.cpp
     apple_toolchain = apple_common.apple_toolchain()
@@ -679,6 +685,7 @@ def _xcode_swift_toolchain_impl(ctx):
             # should only use it if a .dSYM is being requested during the build.
             _dsym_provider if cpp_fragment.apple_generate_dsym else None
         ),
+        entry_point_linkopts_provider = _entry_point_linkopts_provider,
         feature_allowlists = [
             target[SwiftFeatureAllowlistInfo]
             for target in ctx.attr.feature_allowlists
