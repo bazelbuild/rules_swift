@@ -116,25 +116,6 @@ def expand_locations(ctx, values, targets = []):
     """
     return [ctx.expand_location(value, targets) for value in values]
 
-def get_compilation_contexts(targets):
-    """Returns the `CcCompilationContext` for each target in the given list.
-
-    As with `get_providers`, it is not an error if a target in the list does not
-    propagate `CcInfo`; those targets are simply ignored.
-
-    Args:
-        targets: A list of targets.
-
-    Returns:
-        Any `CcCompilationContext`s found in `CcInfo` providers among the
-        targets in the list.
-    """
-    return get_providers(
-        targets,
-        CcInfo,
-        lambda cc_info: cc_info.compilation_context,
-    )
-
 def expand_make_variables(ctx, values, attribute_name):
     """Expands all references to Make variables in each of the given values.
 

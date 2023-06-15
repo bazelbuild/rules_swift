@@ -16,7 +16,7 @@
 
 load(
     "@build_bazel_rules_swift//swift/internal:compiling.bzl",
-    "compile",
+    "output_groups_from_other_compilation_outputs",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:linking.bzl",
@@ -29,17 +29,19 @@ load(
 load(
     "@build_bazel_rules_swift//swift/internal:providers.bzl",
     "SwiftCompilerPluginInfo",
-    "SwiftInfo",
     "SwiftToolchainInfo",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:utils.bzl",
     "expand_locations",
-    "get_compilation_contexts",
     "get_providers",
 )
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(":module_name.bzl", "derive_swift_module_name")
+load(
+    "@build_bazel_rules_swift//swift/internal:swift_common.bzl",
+    "swift_common",
+)
 
 def _swift_compiler_plugin_impl(ctx):
     swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
@@ -47,14 +49,11 @@ def _swift_compiler_plugin_impl(ctx):
     feature_configuration = configure_features_for_binary(
         ctx = ctx,
         requested_features = ctx.features,
-        swift_toolchain = swift_toolchain,
         unsupported_features = ctx.disabled_features,
     )
 
     deps = ctx.attr.deps
     srcs = ctx.files.srcs
-    output_groups = {}
-    module_contexts = []
 
     if not srcs:
         fail("A compiler plugin must have at least one file in 'srcs'.")
@@ -64,10 +63,9 @@ def _swift_compiler_plugin_impl(ctx):
         module_name = derive_swift_module_name(ctx.label)
     entry_point_function_name = "{}_main".format(module_name)
 
-    compile_result = compile(
+    module_context, cc_compilation_outputs, other_compilation_outputs = swift_common.compile(
         actions = ctx.actions,
         additional_inputs = ctx.files.swiftc_inputs,
-        compilation_contexts = get_compilation_contexts(ctx.attr.deps),
         copts = expand_locations(
             ctx,
             ctx.attr.copts,
@@ -85,48 +83,36 @@ def _swift_compiler_plugin_impl(ctx):
             entry_point_function_name,
         ],
         defines = ctx.attr.defines,
+        deps = deps,
         feature_configuration = feature_configuration,
+        is_test = ctx.attr.testonly,
         module_name = module_name,
         plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),
         srcs = srcs,
-        swift_infos = get_providers(deps, SwiftInfo),
         swift_toolchain = swift_toolchain,
         target_name = ctx.label.name,
+        workspace_name = ctx.workspace_name,
     )
-    module_context = compile_result.module_context
-    module_contexts.append(module_context)
-    compilation_outputs = compile_result.compilation_outputs
-    supplemental_outputs = compile_result.supplemental_outputs
+    output_groups = output_groups_from_other_compilation_outputs(
+        other_compilation_outputs = other_compilation_outputs,
+    )
 
-    if supplemental_outputs.indexstore_directory:
-        output_groups["indexstore"] = depset([
-            supplemental_outputs.indexstore_directory,
-        ])
-
-    # Apply the optional debugging outputs extension if the toolchain defines
-    # one.
-    debug_outputs_provider = swift_toolchain.debug_outputs_provider
-    if debug_outputs_provider:
-        debug_extension = debug_outputs_provider(ctx = ctx)
-        additional_debug_outputs = debug_extension.additional_outputs
-        variables_extension = debug_extension.variables_extension
-    else:
-        additional_debug_outputs = []
-        variables_extension = {}
+    cc_feature_configuration = swift_common.cc_feature_configuration(
+        feature_configuration = feature_configuration,
+    )
 
     binary_linking_outputs = register_link_binary_action(
         actions = ctx.actions,
         additional_inputs = ctx.files.swiftc_inputs,
         additional_linking_contexts = [malloc_linking_context(ctx)],
-        additional_outputs = additional_debug_outputs,
-        feature_configuration = feature_configuration,
-        compilation_outputs = compilation_outputs,
+        cc_feature_configuration = cc_feature_configuration,
+        compilation_outputs = cc_compilation_outputs,
         deps = deps,
         grep_includes = ctx.file._grep_includes,
-        label = ctx.label,
-        module_contexts = module_contexts,
+        name = ctx.label.name,
         output_type = "executable",
         stamp = ctx.attr.stamp,
+        owner = ctx.label,
         swift_toolchain = swift_toolchain,
         user_link_flags = expand_locations(
             ctx,
@@ -139,7 +125,6 @@ def _swift_compiler_plugin_impl(ctx):
                 entry_point_name = entry_point_function_name,
             ).linkopts
         ),
-        variables_extension = variables_extension,
     )
 
     linking_context, _ = (
@@ -147,9 +132,10 @@ def _swift_compiler_plugin_impl(ctx):
             actions = ctx.actions,
             additional_inputs = ctx.files.swiftc_inputs,
             alwayslink = True,
-            compilation_outputs = compilation_outputs,
+            compilation_outputs = cc_compilation_outputs,
             feature_configuration = feature_configuration,
             label = ctx.label,
+            is_test = ctx.attr.testonly,
             linking_contexts = [
                 dep[CcInfo].linking_context
                 for dep in deps
@@ -161,12 +147,22 @@ def _swift_compiler_plugin_impl(ctx):
         )
     )
 
+    if module_context:
+        modules = [
+            swift_common.create_module(
+                name = module_context.name,
+                compilation_context = module_context.compilation_context,
+                # The rest of the fields are intentionally ommited, as we only
+                # want to expose the compilation_context
+            ),
+        ]
+    else:
+        modules = []
+
     return [
         DefaultInfo(
             executable = binary_linking_outputs.executable,
-            files = depset(
-                [binary_linking_outputs.executable] + additional_debug_outputs,
-            ),
+            files = depset([binary_linking_outputs.executable]),
             runfiles = ctx.runfiles(
                 collect_data = True,
                 collect_default = True,
@@ -181,7 +177,9 @@ def _swift_compiler_plugin_impl(ctx):
             ),
             executable = binary_linking_outputs.executable,
             module_names = depset([module_name]),
-            swift_info = compile_result.swift_info,
+            swift_info = swift_common.create_swift_info(
+                modules = modules,
+            ),
         ),
     ]
 

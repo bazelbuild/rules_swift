@@ -1757,7 +1757,7 @@ def _plugins_configurator(prerequisites, args):
     )
 
     return swift_toolchain_config.config_result(
-        inputs = [p.executable for p in prerequisites.plugins],
+        inputs = [p.executable for p in prerequisites.plugins.to_list()],
     )
 
 def _explicit_swift_module_map_configurator(prerequisites, args, is_frontend = False):
@@ -2448,7 +2448,7 @@ def compile(
             merged_providers.objc_include_paths_workaround
         ),
         objc_info = merged_providers.objc_info,
-        plugins = used_plugins,
+        plugins = depset(used_plugins),
         source_files = srcs,
         transitive_modules = transitive_modules,
         transitive_swiftmodules = transitive_swiftmodules,
@@ -2552,7 +2552,7 @@ def compile(
             ast_files = compile_outputs.ast_files,
             defines = defines,
             indexstore = compile_outputs.indexstore_directory,
-            plugins = plugins,
+            plugins = depset(plugins),
             swiftdoc = compile_outputs.swiftdoc_file,
             swiftinterface = compile_outputs.swiftinterface_file,
             swiftmodule = compile_outputs.swiftmodule_file,
