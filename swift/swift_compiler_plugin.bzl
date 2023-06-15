@@ -39,6 +39,7 @@ load(
     "//swift/internal:output_groups.bzl",
     "supplemental_compilation_output_groups",
 )
+load("//swift/internal:providers.bzl", "SwiftCompilerPluginInfo")
 load(
     "//swift/internal:toolchain_utils.bzl",
     "get_swift_toolchain",
@@ -50,7 +51,7 @@ load(
     "get_providers",
 )
 load(":module_name.bzl", "derive_swift_module_name")
-load(":providers.bzl", "SwiftCompilerPluginInfo", "SwiftInfo")
+load(":providers.bzl", "SwiftInfo")
 
 def _swift_compiler_plugin_impl(ctx):
     swift_toolchain = get_swift_toolchain(ctx)
@@ -112,6 +113,17 @@ def _swift_compiler_plugin_impl(ctx):
     compilation_outputs = compile_result.compilation_outputs
     supplemental_outputs = compile_result.supplemental_outputs
 
+    # Apply the optional debugging outputs extension if the toolchain defines
+    # one.
+    debug_outputs_provider = swift_toolchain.debug_outputs_provider
+    if debug_outputs_provider:
+        debug_extension = debug_outputs_provider(ctx = ctx)
+        additional_debug_outputs = debug_extension.additional_outputs
+        variables_extension = debug_extension.variables_extension
+    else:
+        additional_debug_outputs = []
+        variables_extension = {}
+
     if is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT,
@@ -125,6 +137,7 @@ def _swift_compiler_plugin_impl(ctx):
         actions = ctx.actions,
         additional_inputs = ctx.files.swiftc_inputs,
         additional_linking_contexts = [malloc_linking_context(ctx)],
+        additional_outputs = additional_debug_outputs,
         compilation_outputs = compilation_outputs,
         deps = deps,
         feature_configuration = feature_configuration,
@@ -145,6 +158,7 @@ def _swift_compiler_plugin_impl(ctx):
                 entry_point_name = entry_point_function_name,
             ).linkopts
         ),
+        variables_extension = variables_extension,
     )
 
     linking_context, _ = (
@@ -170,7 +184,9 @@ def _swift_compiler_plugin_impl(ctx):
     return [
         DefaultInfo(
             executable = binary_linking_outputs.executable,
-            files = depset([binary_linking_outputs.executable]),
+            files = depset(
+                [binary_linking_outputs.executable] + additional_debug_outputs,
+            ),
             runfiles = ctx.runfiles(
                 collect_data = True,
                 collect_default = True,

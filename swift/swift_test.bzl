@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Implementation of the `swift_binary` and `swift_test` rules."""
+"""Implementation of the `swift_test` rule."""
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:paths.bzl", "paths")
@@ -34,6 +34,7 @@ load(
     "//swift/internal:output_groups.bzl",
     "supplemental_compilation_output_groups",
 )
+load("//swift/internal:providers.bzl", "SwiftCompilerPluginInfo")
 load(
     "//swift/internal:swift_symbol_graph_aspect.bzl",
     "make_swift_symbol_graph_aspect",
@@ -53,7 +54,6 @@ load(
 load(":module_name.bzl", "derive_swift_module_name")
 load(
     ":providers.bzl",
-    "SwiftCompilerPluginInfo",
     "SwiftInfo",
     "SwiftSymbolGraphInfo",
     "create_swift_module_context",
@@ -269,6 +269,7 @@ def _do_compile(
         objc_infos,
         name,
         package_name,
+        plugins = [],
         srcs,
         swift_infos,
         swift_toolchain,
@@ -291,6 +292,8 @@ def _do_compile(
             provided as inputs to the compilation action.
         package_name: The semantic package of the name of the Swift module
             being compiled.
+        plugins: A list of `SwiftCompilerPluginInfo` providers that need to be
+            loaded when compiling this module.
         srcs: The sources to compile.
         swift_infos: A list of `SwiftInfo` providers that should be used to
             determine the module inputs for the action.
@@ -316,6 +319,7 @@ def _do_compile(
         include_dev_srch_paths = include_dev_srch_paths,
         module_name = module_name,
         package_name = package_name,
+        plugins = plugins,
         objc_infos = objc_infos,
         srcs = srcs,
         swift_infos = swift_infos,
@@ -424,6 +428,7 @@ def _swift_test_impl(ctx):
             module_name = module_name,
             objc_infos = deps_objc_infos,
             package_name = ctx.attr.package_name,
+            plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),
             name = ctx.label.name,
             srcs = srcs,
             swift_infos = deps_swift_infos,

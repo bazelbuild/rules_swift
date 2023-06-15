@@ -14,6 +14,29 @@
 
 """Internal providers."""
 
+SwiftCompilerPluginInfo = provider(
+    doc = "Information about compiler plugins, like macros.",
+    fields = {
+        "cc_info": """\
+A `CcInfo` provider containing the `swift_compiler_plugin`'s code compiled as a
+static library, which is suitable for linking into a `swift_test` so that unit
+tests can be written against it.
+""",
+        "executable": "A `File` representing the plugin's binary executable.",
+        "module_names": """\
+A `depset` of strings denoting the names of the Swift modules that provide
+plugin types looked up by the compiler. This currently contains a single
+element, the name of the module created by the `swift_compiler_plugin` target.
+""",
+        "swift_info": """\
+A `SwiftInfo` provider representing the Swift module created by the
+`swift_compiler_plugin` target. This is used specifically by `swift_test` to
+allow test code to depend on the plugin's module without making it possible for
+arbitrary libraries/binaries to depend on a plugin.
+""",
+    },
+)
+
 SwiftCrossImportOverlayInfo = provider(
     doc = "Information about a cross-import overlay module.",
     fields = {

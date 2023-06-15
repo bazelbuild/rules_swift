@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Implementation of the `swift_binary` and `swift_test` rules."""
+"""Implementation of the `swift_binary` rule."""
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:paths.bzl", "paths")
@@ -33,6 +33,7 @@ load(
     "//swift/internal:output_groups.bzl",
     "supplemental_compilation_output_groups",
 )
+load("//swift/internal:providers.bzl", "SwiftCompilerPluginInfo")
 load(
     "//swift/internal:toolchain_utils.bzl",
     "get_swift_toolchain",
@@ -45,12 +46,7 @@ load(
     "include_developer_search_paths",
 )
 load(":module_name.bzl", "derive_swift_module_name")
-load(
-    ":providers.bzl",
-    "SwiftCompilerPluginInfo",
-    "SwiftInfo",
-    "create_swift_module_context",
-)
+load(":providers.bzl", "SwiftInfo", "create_swift_module_context")
 
 def _maybe_parse_as_library_copts(srcs):
     """Returns a list of compiler flags depending on `main.swift`'s presence.

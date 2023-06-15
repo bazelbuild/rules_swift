@@ -20,29 +20,6 @@ to the rule implementations do not unnecessarily cause reanalysis impacting
 users who just load these providers to inspect and/or repropagate them.
 """
 
-SwiftCompilerPluginInfo = provider(
-    doc = "Information about compiler plugins, like macros.",
-    fields = {
-        "cc_info": """\
-A `CcInfo` provider containing the `swift_compiler_plugin`'s code compiled as a
-static library, which is suitable for linking into a `swift_test` so that unit
-tests can be written against it.
-""",
-        "executable": "A `File` representing the plugin's binary executable.",
-        "module_names": """\
-A `depset` of strings denoting the names of the Swift modules that provide
-plugin types looked up by the compiler. This currently contains a single
-element, the name of the module created by the `swift_compiler_plugin` target.
-""",
-        "swift_info": """\
-A `SwiftInfo` provider representing the Swift module created by the
-`swift_compiler_plugin` target. This is used specifically by `swift_test` to
-allow test code to depend on the plugin's module without making it possible for
-arbitrary libraries/binaries to depend on a plugin.
-""",
-    },
-)
-
 SwiftFeatureAllowlistInfo = provider(
     doc = """\
 Describes a set of features and the packages and aspects that are allowed to
@@ -296,27 +273,37 @@ dependencies.
         "debug_outputs_provider": """\
 An optional function that provides toolchain-specific logic around the handling
 of additional debug outputs for `swift_binary` and `swift_test` targets.
+
 If specified, this function must take the following keyword arguments:
+
 *   `ctx`: The rule context of the calling binary or test rule.
+
 It must return a `struct` with the following fields:
+
 *   `additional_outputs`: Additional outputs expected from the linking action.
 
 *   `variables_extension`: A dictionary of additional crosstool variables to
     pass to the linking action.
 """,
-        "developer_dirs": """
-A list of `structs` containing the following fields:\
+        "developer_dirs": """\
+A list of `structs` containing the following fields:
+
 *   `developer_path_label`: A `string` representing the type of developer path.
+
 *   `path`: A `string` representing the path to the developer framework.
 """,
         "entry_point_linkopts_provider": """\
 A function that returns flags that should be passed to the linker to control the
 name of the entry point of a linked binary for rules that customize their entry
 point.
+
 This function must take the following keyword arguments:
+
 *   `entry_point_name`: The name of the entry point function, as was passed to
     the Swift compiler using the `-entry-point-function-name` flag.
+
 It must return a `struct` with the following fields:
+
 *   `linkopts`: A list of strings that will be passed as additional linker flags
     when linking a binary with a custom entry point.
 """,
@@ -602,7 +589,7 @@ def create_swift_module_inputs(
         defines = tuple(defines),
         generated_header = generated_header,
         indexstore = indexstore,
-        plugins = plugins,
+        plugins = tuple(plugins),
         private_swiftinterface = private_swiftinterface,
         original_module_name = original_module_name,
         swiftdoc = swiftdoc,
