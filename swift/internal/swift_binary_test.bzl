@@ -164,7 +164,9 @@ def _swift_linking_rule_impl(
         binary_path,
         feature_configuration,
         swift_toolchain,
+        additional_linking_contexts = [],
         extra_link_deps = [],
+        extra_swift_infos = [],
         linkopts = []):
     """The shared implementation function for `swift_{binary,test}`.
 
@@ -175,8 +177,13 @@ def _swift_linking_rule_impl(
             `swift_common.configure_features`.
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain
             being used to build the target.
+        additional_linking_contexts: Additional linking contexts that provide
+            libraries or flags that should be linked into the executable.
         extra_link_deps: Additional dependencies that should be linked into the
             binary.
+        extra_swift_infos: Extra `SwiftInfo` providers that aren't contained
+            by the `deps` of the target being compiled but are required for
+            compilation.
         linkopts: Additional rule-specific flags that should be passed to the
             linker.
 
@@ -189,7 +196,7 @@ def _swift_linking_rule_impl(
     """
     additional_inputs = ctx.files.swiftc_inputs
     additional_inputs_to_linker = list(additional_inputs)
-    additional_linking_contexts = []
+    additional_linking_contexts = list(additional_linking_contexts)
     cc_feature_configuration = swift_common.cc_feature_configuration(
         feature_configuration = feature_configuration,
     )
@@ -218,6 +225,7 @@ def _swift_linking_rule_impl(
             package_name = ctx.attr.package_name,
             plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),
             srcs = srcs,
+            extra_swift_infos = extra_swift_infos,
             swift_toolchain = swift_toolchain,
             target_name = ctx.label.name,
             workspace_name = ctx.workspace_name,
@@ -389,9 +397,21 @@ def _swift_test_impl(ctx):
     if swizzle_absolute_xcttestsourcelocation:
         extra_link_deps.append(ctx.attr._swizzle_absolute_xcttestsourcelocation)
 
+    # We also need to collect nested providers from `SwiftCompilerPluginInfo`
+    # since we support testing those.
+    extra_swift_infos = []
+    additional_linking_contexts = []
+    for dep in ctx.attr.deps:
+        if SwiftCompilerPluginInfo in dep:
+            plugin_info = dep[SwiftCompilerPluginInfo]
+            extra_swift_infos.append(plugin_info.swift_info)
+            additional_linking_contexts.append(plugin_info.cc_info.linking_context)
+
     _, linking_outputs, providers = _swift_linking_rule_impl(
         ctx,
+        additional_linking_contexts = additional_linking_contexts,
         binary_path = binary_path,
+        extra_swift_infos = extra_swift_infos,
         extra_link_deps = extra_link_deps,
         feature_configuration = feature_configuration,
         linkopts = linkopts,

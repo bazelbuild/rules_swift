@@ -2210,6 +2210,7 @@ def compile(
         copts = [],
         defines = [],
         deps = [],
+        extra_swift_infos = [],
         feature_configuration,
         generated_header_name = None,
         is_test,
@@ -2239,6 +2240,9 @@ def compile(
             compiled and the Clang module for the generated header. These
             targets must propagate one of the following providers: `CcInfo`,
             `SwiftInfo`, or `apple_common.Objc`.
+        extra_swift_infos: Extra `SwiftInfo` providers that aren't contained
+            by the `deps` of the target being compiled but are required for
+            compilation.
         feature_configuration: A feature configuration obtained from
             `swift_common.configure_features`.
         is_test: Represents if the `testonly` value of the context.
@@ -2367,6 +2371,8 @@ def compile(
     transitive_modules = (
         merged_providers.swift_info.transitive_modules.to_list()
     )
+    for info in extra_swift_infos:
+        transitive_modules.extend(info.transitive_modules.to_list())
 
     transitive_swiftmodules = []
     defines_set = sets.make(defines)
@@ -2428,9 +2434,9 @@ def compile(
     # passed; the compiler does not attempt to load them when deserializing
     # modules.
     used_plugins = list(plugins)
-    for module_context in merged_providers.swift_info.direct_modules:
+    for module_context in transitive_modules:
         if module_context.swift and module_context.swift.plugins:
-            used_plugins.extend(module_context.swift.plugins)
+            used_plugins.extend(module_context.swift.plugins.to_list())
 
     prerequisites = struct(
         additional_inputs = additional_inputs,
