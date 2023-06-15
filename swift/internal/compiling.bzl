@@ -949,6 +949,14 @@ def compile_action_configs(
             ],
             features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
         ),
+        swift_toolchain_config.action_config(
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVE_FILES,
+                swift_action_names.DUMP_AST,
+            ],
+            configurators = [_plugins_configurator],
+        ),
     ])
 
     #### Search paths for framework dependencies
@@ -1730,6 +1738,28 @@ def _dependencies_swiftmodules_vfsoverlay_configurator(prerequisites, args, is_f
         inputs = swiftmodules + [prerequisites.vfsoverlay_file],
     )
 
+def _load_executable_plugin_map_fn(plugin):
+    """Returns frontend flags to load compiler plugins."""
+    return [
+        "-load-plugin-executable",
+        "{executable}#{module_names}".format(
+            executable = plugin.executable.path,
+            module_names = ",".join(plugin.module_names.to_list()),
+        ),
+    ]
+
+def _plugins_configurator(prerequisites, args):
+    """Adds `-load-plugin-executable` flags for required plugins, if any."""
+    args.add_all(
+        prerequisites.plugins,
+        before_each = "-Xfrontend",
+        map_each = _load_executable_plugin_map_fn,
+    )
+
+    return swift_toolchain_config.config_result(
+        inputs = [p.executable for p in prerequisites.plugins],
+    )
+
 def _explicit_swift_module_map_configurator(prerequisites, args, is_frontend = False):
     """Adds the explicit Swift module map file to the command line."""
     if is_frontend:
@@ -2185,6 +2215,7 @@ def compile(
         is_test,
         module_name,
         package_name,
+        plugins = [],
         private_deps = [],
         srcs,
         swift_toolchain,
@@ -2219,6 +2250,8 @@ def compile(
             a default from the target's label if needed.
         package_name: The semantic package of the name of the Swift module
             being compiled.
+        plugins: A list of `SwiftCompilerPluginInfo` providers that represent
+            plugins that should be loaded by the compiler.
         private_deps: Private (implementation-only) dependencies of the target
             being compiled. These are only used as dependencies of the Swift
             module, not of the Clang module for the generated header. These
@@ -2388,6 +2421,17 @@ def compile(
     else:
         explicit_swift_module_map_file = None
 
+    # As of the time of this writing (Xcode 15.0), macros are the only kind of
+    # plugins that are available. Since macros do source-level transformations,
+    # we only need to load plugins directly used by the module being compiled.
+    # Plugins that are only used by transitive dependencies do *not* need to be
+    # passed; the compiler does not attempt to load them when deserializing
+    # modules.
+    used_plugins = list(plugins)
+    for module_context in merged_providers.swift_info.direct_modules:
+        if module_context.swift and module_context.swift.plugins:
+            used_plugins.extend(module_context.swift.plugins)
+
     prerequisites = struct(
         additional_inputs = additional_inputs,
         bin_dir = feature_configuration._bin_dir,
@@ -2404,6 +2448,7 @@ def compile(
             merged_providers.objc_include_paths_workaround
         ),
         objc_info = merged_providers.objc_info,
+        plugins = used_plugins,
         source_files = srcs,
         transitive_modules = transitive_modules,
         transitive_swiftmodules = transitive_swiftmodules,
@@ -2507,6 +2552,7 @@ def compile(
             ast_files = compile_outputs.ast_files,
             defines = defines,
             indexstore = compile_outputs.indexstore_directory,
+            plugins = plugins,
             swiftdoc = compile_outputs.swiftdoc_file,
             swiftinterface = compile_outputs.swiftinterface_file,
             swiftmodule = compile_outputs.swiftmodule_file,

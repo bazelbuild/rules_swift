@@ -522,6 +522,12 @@ def _xcode_env(target_triple, xcode_config):
         ),
     )
 
+def _entry_point_linkopts_provider(*, entry_point_name):
+    """Returns linkopts to customize the entry point of a binary."""
+    return struct(
+        linkopts = ["-Wl,-alias,_{},_main".format(entry_point_name)],
+    )
+
 def _xcode_swift_toolchain_impl(ctx):
     cpp_fragment = ctx.fragments.cpp
     apple_toolchain = apple_common.apple_toolchain()
@@ -657,6 +663,7 @@ def _xcode_swift_toolchain_impl(ctx):
                 ctx.attr.clang_implicit_deps,
             ),
             developer_dirs = swift_toolchain_developer_paths,
+            entry_point_linkopts_provider = _entry_point_linkopts_provider,
             feature_allowlists = [
                 target[SwiftFeatureAllowlistInfo]
                 for target in ctx.attr.feature_allowlists

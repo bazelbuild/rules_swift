@@ -19,16 +19,22 @@ load(":compiling.bzl", "output_groups_from_other_compilation_outputs")
 load(":derived_files.bzl", "derived_files")
 load(":feature_names.bzl", "SWIFT_FEATURE_BUNDLED_XCTESTS")
 load(":linking.bzl", "register_link_binary_action")
-load(":providers.bzl", "SwiftToolchainInfo")
+load(":providers.bzl", "SwiftCompilerPluginInfo", "SwiftToolchainInfo")
 load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 load(":swift_common.bzl", "swift_common")
-load(":utils.bzl", "expand_locations")
+load(":utils.bzl", "expand_locations", "get_providers")
 load(":env_expansion.bzl", "expanded_env")
 
-def _binary_rule_attrs(stamp_default):
+def _binary_rule_attrs(
+        *,
+        additional_deps_providers = [],
+        stamp_default):
     """Returns attributes common to both `swift_binary` and `swift_test`.
 
     Args:
+        additional_deps_providers: A list of lists representing additional
+            providers that should be allowed by the `deps` attribute of the
+            rule.
         stamp_default: The default value of the `stamp` attribute.
 
     Returns:
@@ -37,6 +43,7 @@ def _binary_rule_attrs(stamp_default):
     return dicts.add(
         swift_common.compilation_attrs(
             additional_deps_aspects = [swift_clang_module_aspect],
+            additional_deps_providers = additional_deps_providers,
             requires_srcs = False,
         ),
         {
@@ -210,6 +217,7 @@ def _swift_linking_rule_impl(
             is_test = ctx.attr.testonly,
             module_name = module_name,
             package_name = ctx.attr.package_name,
+            plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),
             srcs = srcs,
             swift_toolchain = swift_toolchain,
             target_name = ctx.label.name,
@@ -437,7 +445,10 @@ def _swift_test_impl(ctx):
     ]
 
 swift_binary = rule(
-    attrs = _binary_rule_attrs(stamp_default = -1),
+    attrs = _binary_rule_attrs(
+        additional_deps_providers = [[SwiftCompilerPluginInfo]],
+        stamp_default = -1,
+    ),
     doc = """\
 Compiles and links Swift code into an executable binary.
 
@@ -460,7 +471,10 @@ please use one of the platform-specific application rules in
 
 swift_test = rule(
     attrs = dicts.add(
-        _binary_rule_attrs(stamp_default = 0),
+        _binary_rule_attrs(
+            additional_deps_providers = [[SwiftCompilerPluginInfo]],
+            stamp_default = 0,
+        ),
         {
             "env": attr.string_dict(
                 doc = """

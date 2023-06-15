@@ -32,7 +32,7 @@ load(
     "SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS",
 )
 load(":linking.bzl", "new_objc_provider")
-load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
+load(":providers.bzl", "SwiftCompilerPluginInfo", "SwiftInfo", "SwiftToolchainInfo")
 load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 load(":swift_common.bzl", "swift_common")
 load(
@@ -183,6 +183,7 @@ def _swift_library_impl(ctx):
         is_test = ctx.attr.testonly,
         module_name = module_name,
         package_name = ctx.attr.package_name,
+        plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),
         private_deps = private_deps,
         srcs = srcs,
         swift_toolchain = swift_toolchain,
