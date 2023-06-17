@@ -72,8 +72,8 @@ swift_test(
     ],
     deps = [
         ":echo_client_services_swift",
-        ":echo_server_services_swift",
         ":echo_proto_swift",
+        ":echo_server_services_swift",
     ],
 )
 
