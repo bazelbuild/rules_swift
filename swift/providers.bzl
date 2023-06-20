@@ -440,6 +440,7 @@ def create_swift_module_context(
         clang = None,
         const_gather_protocols = [],
         compilation_context = None,
+        is_framework = False,
         is_system = False,
         swift = None):
     """Creates a value containing Clang/Swift module artifacts of a dependency.
@@ -473,6 +474,8 @@ def create_swift_module_context(
             `swift_common.create_compilation_context` that contains the
             context needed to compile the module being built. This may be `None`
             if the module wasn't compiled from sources.
+        is_framework: Indictates whether the module is a framework module. The
+            default value is `False`.
         is_system: Indicates whether the module is a system module. The default
             value is `False`. System modules differ slightly from non-system
             modules in the way that they are passed to the compiler. For
@@ -500,6 +503,7 @@ def create_swift_module_context(
         clang = clang,
         const_gather_protocols = tuple(const_gather_protocols),
         compilation_context = compilation_context,
+        is_framework = is_framework,
         is_system = is_system,
         name = name,
         swift = swift,

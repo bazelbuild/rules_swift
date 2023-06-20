@@ -136,6 +136,7 @@ def compile_module_interface(
         copts = [],
         exec_group = None,
         feature_configuration,
+        is_framework = False,
         module_name,
         swiftinterface_file,
         swift_infos,
@@ -157,6 +158,7 @@ def compile_module_interface(
             group's context. If `None`, the default execution group is used.
         feature_configuration: A feature configuration obtained from
             `configure_features`.
+        is_framework: True if this module is a Framework module, false othwerise.
         module_name: The name of the Swift module being compiled. This must be
             present and valid; use `derive_swift_module_name` to generate a
             default from the target's label if needed.
@@ -283,6 +285,7 @@ def compile_module_interface(
             compilation_context = merged_compilation_context,
             module_map = None,
         ),
+        is_framework = is_framework,
         is_system = is_feature_enabled(
             feature_configuration = feature_configuration,
             feature_name = SWIFT_FEATURE_SYSTEM_MODULE,
