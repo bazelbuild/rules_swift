@@ -339,6 +339,7 @@ def create_swift_module_context(
         *,
         name,
         clang = None,
+        is_framework = False,
         is_system = False,
         swift = None):
     """Creates a value containing Clang/Swift module artifacts of a dependency.
@@ -365,6 +366,8 @@ def create_swift_module_context(
             contains artifacts related to Clang modules, such as a module map or
             precompiled module. This may be `None` if the module is a pure Swift
             module with no generated Objective-C interface.
+        is_framework: Indictates whether the module is a framework module. The
+            default value is `False`.
         is_system: Indicates whether the module is a system module. The default
             value is `False`. System modules differ slightly from non-system
             modules in the way that they are passed to the compiler. For
@@ -390,6 +393,7 @@ def create_swift_module_context(
     """
     return struct(
         clang = clang,
+        is_framework = is_framework,
         is_system = is_system,
         name = name,
         swift = swift,
