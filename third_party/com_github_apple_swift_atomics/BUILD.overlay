@@ -5,16 +5,15 @@ load(
 
 swift_library(
     name = "Atomics",
-    copts = [],
     srcs = glob([
         "Sources/Atomics/**/*.swift",
     ]),
     module_name = "Atomics",
-    alwayslink = True,
+    visibility = ["//visibility:public"],
     deps = [
         ":_AtomicsShims",
     ],
-    visibility = ["//visibility:public"],
+    alwayslink = True,
 )
 
 cc_library(
