@@ -44,6 +44,10 @@ def write_explicit_swift_module_map_file(
         module_description = {"moduleName": module_context.name}
         if swift_context.swiftmodule:
             module_description["modulePath"] = swift_context.swiftmodule.path
+        if module_context.is_system:
+            module_description["isSystem"] = module_context.is_system
+        if module_context.is_framework:
+            module_description["isFramework"] = module_context.is_framework
         module_descriptions.append(module_description)
 
     actions.write(
