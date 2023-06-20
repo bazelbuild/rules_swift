@@ -86,64 +86,91 @@ def swift_rules_dependencies(include_bzlmod_ready_dependencies = True):
     _maybe(
         http_archive,
         name = "com_github_apple_swift_protobuf",
-        urls = ["https://github.com/apple/swift-protobuf/archive/1.19.0.tar.gz"],
-        sha256 = "f057930b9dbd17abeaaceaa45e9f8b3e87188c05211710563d2311b9edf490aa",
-        strip_prefix = "swift-protobuf-1.19.0/",
+        urls = ["https://github.com/apple/swift-protobuf/archive/1.20.2.tar.gz"],  # pinned to grpc-swift version
+        sha256 = "3fb50bd4d293337f202d917b6ada22f9548a0a0aed9d9a4d791e6fbd8a246ebb",
+        strip_prefix = "swift-protobuf-1.20.2/",
         build_file = "@build_bazel_rules_swift//third_party:com_github_apple_swift_protobuf/BUILD.overlay",
     )
 
     _maybe(
         http_archive,
         name = "com_github_grpc_grpc_swift",
-        urls = ["https://github.com/grpc/grpc-swift/archive/1.7.3.tar.gz"],
-        sha256 = "833a150bdebb8ec0282fd91761aec0705a9b05645de42619b60fb6b9ec04b786",
-        strip_prefix = "grpc-swift-1.7.3/",
+        urls = ["https://github.com/grpc/grpc-swift/archive/1.16.0.tar.gz"],  # latest at time of writing
+        sha256 = "58b60431d0064969f9679411264b82e40a217ae6bd34e17096d92cc4e47556a5",
+        strip_prefix = "grpc-swift-1.16.0/",
         build_file = "@build_bazel_rules_swift//third_party:com_github_grpc_grpc_swift/BUILD.overlay",
     )
 
     _maybe(
         http_archive,
         name = "com_github_apple_swift_nio",
-        urls = ["https://github.com/apple/swift-nio/archive/2.40.0.tar.gz"],
-        sha256 = "fd0418e9cc64d5c05012b37147c819978ac162c5ec7aa874a488846f6b3a90e6",
-        strip_prefix = "swift-nio-2.40.0/",
+        urls = ["https://github.com/apple/swift-nio/archive/2.42.0.tar.gz"],  # pinned to grpc swift version
+        sha256 = "e3304bc3fb53aea74a3e54bd005ede11f6dc357117d9b1db642d03aea87194a0",
+        strip_prefix = "swift-nio-2.42.0/",
         build_file = "@build_bazel_rules_swift//third_party:com_github_apple_swift_nio/BUILD.overlay",
     )
 
     _maybe(
         http_archive,
         name = "com_github_apple_swift_nio_http2",
-        urls = ["https://github.com/apple/swift-nio-http2/archive/1.21.0.tar.gz"],
-        sha256 = "f034bd793d2170e1b85b6feb8cb796154d96ae43ff3a912ac6b992367faef09c",
-        strip_prefix = "swift-nio-http2-1.21.0/",
+        urls = ["https://github.com/apple/swift-nio-http2/archive/1.26.0.tar.gz"],  # pinned to grpc-swift version
+        sha256 = "f0edfc9d6a7be1d587e5b403f2d04264bdfae59aac1d74f7d974a9022c6d2b25",
+        strip_prefix = "swift-nio-http2-1.26.0/",
         build_file = "@build_bazel_rules_swift//third_party:com_github_apple_swift_nio_http2/BUILD.overlay",
     )
 
     _maybe(
         http_archive,
         name = "com_github_apple_swift_nio_transport_services",
-        urls = ["https://github.com/apple/swift-nio-transport-services/archive/1.12.0.tar.gz"],
-        sha256 = "bf0fa49564263048b988b9767a05ca2c43c167d27172886c5f070720c3adbe8d",
-        strip_prefix = "swift-nio-transport-services-1.12.0/",
+        urls = ["https://github.com/apple/swift-nio-transport-services/archive/1.15.0.tar.gz"],  # pinned to grpc-swift version
+        sha256 = "f3498dafa633751a52b9b7f741f7ac30c42bcbeb3b9edca6d447e0da8e693262",
+        strip_prefix = "swift-nio-transport-services-1.15.0/",
         build_file = "@build_bazel_rules_swift//third_party:com_github_apple_swift_nio_transport_services/BUILD.overlay",
     )
 
     _maybe(
         http_archive,
         name = "com_github_apple_swift_nio_extras",
-        urls = ["https://github.com/apple/swift-nio-extras/archive/1.11.0.tar.gz"],
-        sha256 = "57ef8b0a19bd3d4233ee18d4b96c0d2fc95d66ae53c5d6d2105e1428f672bd0d",
-        strip_prefix = "swift-nio-extras-1.11.0/",
+        urls = ["https://github.com/apple/swift-nio-extras/archive/1.4.0.tar.gz"],  # pinned to grpc-swift version
+        sha256 = "4684b52951d9d9937bb3e8ccd6b5daedd777021ef2519ea2f18c4c922843b52b",
+        strip_prefix = "swift-nio-extras-1.4.0/",
         build_file = "@build_bazel_rules_swift//third_party:com_github_apple_swift_nio_extras/BUILD.overlay",
     )
 
     _maybe(
         http_archive,
         name = "com_github_apple_swift_log",
-        urls = ["https://github.com/apple/swift-log/archive/1.4.2.tar.gz"],
-        sha256 = "de51662b35f47764b6e12e9f1d43e7de28f6dd64f05bc30a318cf978cf3bc473",
-        strip_prefix = "swift-log-1.4.2/",
+        urls = ["https://github.com/apple/swift-log/archive/1.4.4.tar.gz"],  # pinned to grpc-swift version
+        sha256 = "48fe66426c784c0c20031f15dc17faf9f4c9037c192bfac2f643f65cb2321ba0",
+        strip_prefix = "swift-log-1.4.4/",
         build_file = "@build_bazel_rules_swift//third_party:com_github_apple_swift_log/BUILD.overlay",
+    )
+
+    _maybe(
+        http_archive,
+        name = "com_github_apple_swift_nio_ssl",
+        urls = ["https://github.com/apple/swift-nio-ssl/archive/2.23.0.tar.gz"],  # pinned to grpc swift version
+        sha256 = "4787c63f61dd04d99e498adc3d1a628193387e41efddf8de19b8db04544d016d",
+        strip_prefix = "swift-nio-ssl-2.23.0/",
+        build_file = "@build_bazel_rules_swift//third_party:com_github_apple_swift_nio_ssl/BUILD.overlay",
+    )
+
+    _maybe(
+        http_archive,
+        name = "com_github_apple_swift_collections",
+        urls = ["https://github.com/apple/swift-collections/archive/1.0.4.tar.gz"],  # pinned to swift-nio @ grpc-swift version
+        sha256 = "d9e4c8a91c60fb9c92a04caccbb10ded42f4cb47b26a212bc6b39cc390a4b096",
+        strip_prefix = "swift-collections-1.0.4/",
+        build_file = "@build_bazel_rules_swift//third_party:com_github_apple_swift_collections/BUILD.overlay",
+    )
+
+    _maybe(
+        http_archive,
+        name = "com_github_apple_swift_atomics",
+        urls = ["https://github.com/apple/swift-atomics/archive/1.1.0.tar.gz"],  # pinned to swift-nio @ grpc-swift version
+        sha256 = "1bee7f469f7e8dc49f11cfa4da07182fbc79eab000ec2c17bfdce468c5d276fb",
+        strip_prefix = "swift-atomics-1.1.0/",
+        build_file = "@build_bazel_rules_swift//third_party:com_github_apple_swift_atomics/BUILD.overlay",
     )
 
     # It relies on `index-import` to import indexes into Bazel's remote
