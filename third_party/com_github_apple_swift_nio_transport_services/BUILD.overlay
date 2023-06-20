@@ -1,10 +1,5 @@
 load(
-    "@build_bazel_apple_support//rules:universal_binary.bzl",
-    "universal_binary",
-)
-load(
     "@build_bazel_rules_swift//swift:swift.bzl",
-    "swift_binary",
     "swift_library",
 )
 
@@ -14,9 +9,11 @@ swift_library(
         "Sources/NIOTransportServices/**/*.swift",
     ]),
     deps = [
+        "@com_github_apple_swift_nio//:NIO",
         "@com_github_apple_swift_nio//:NIOCore",
         "@com_github_apple_swift_nio//:NIOFoundationCompat",
         "@com_github_apple_swift_nio//:NIOTLS",
+        "@com_github_apple_swift_atomics//:Atomics",
     ],
     module_name = "NIOTransportServices",
     visibility = ["//visibility:public"],
