@@ -5,51 +5,51 @@ load(
 
 swift_library(
     name = "NIOSSL",
+    srcs = glob([
+        "Sources/NIOSSL/**/*.swift",
+    ]),
+    module_name = "NIOSSL",
+    visibility = ["//visibility:public"],
     deps = [
         ":CNIOBoringSSL",
         ":CNIOBoringSSLShims",
         "@com_github_apple_swift_nio//:NIO",
-        "@com_github_apple_swift_nio//:NIOCore",
         "@com_github_apple_swift_nio//:NIOConcurrencyHelpers",
+        "@com_github_apple_swift_nio//:NIOCore",
         "@com_github_apple_swift_nio//:NIOTLS",
     ],
-    module_name = "NIOSSL",
-    srcs = glob([
-        "Sources/NIOSSL/**/*.swift",
-    ]),
-    visibility = ["//visibility:public"],
 )
 
 cc_library(
     name = "CNIOBoringSSLShims",
-    copts = [],
-    deps = [":CNIOBoringSSL"],
-    hdrs = glob([
-        "Sources/CNIOBoringSSLShims/include/**/*.h",
-    ]),
-    includes = ["Sources/CNIOBoringSSLShims/include"],
     srcs = glob([
         "Sources/CNIOBoringSSLShims/**/*.c",
     ]),
+    hdrs = glob([
+        "Sources/CNIOBoringSSLShims/include/**/*.h",
+    ]),
+    copts = [],
+    includes = ["Sources/CNIOBoringSSLShims/include"],
     tags = ["swift_module=CNIOBoringSSLShims"],
     visibility = ["//visibility:public"],
+    deps = [":CNIOBoringSSL"],
 )
 
 cc_library(
     name = "CNIOBoringSSL",
-    copts = [],
-    deps = [],
-    hdrs = glob([
-        "Sources/CNIOBoringSSL/include/**/*.h",
-        "Sources/CNIOBoringSSL/include/**/*.inc",
-    ]),
-    includes = ["Sources/CNIOBoringSSL/include"],
     srcs = glob([
         "Sources/CNIOBoringSSL/**/*.h",
         "Sources/CNIOBoringSSL/**/*.c",
         "Sources/CNIOBoringSSL/**/*.cc",
         "Sources/CNIOBoringSSL/**/*.S",
     ]),
+    hdrs = glob([
+        "Sources/CNIOBoringSSL/include/**/*.h",
+        "Sources/CNIOBoringSSL/include/**/*.inc",
+    ]),
+    copts = [],
+    includes = ["Sources/CNIOBoringSSL/include"],
     tags = ["swift_module=CNIOBoringSSL"],
     visibility = ["//visibility:public"],
+    deps = [],
 )

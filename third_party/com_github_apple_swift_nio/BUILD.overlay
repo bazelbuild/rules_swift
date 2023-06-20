@@ -108,38 +108,38 @@ swift_library(
     module_name = "NIOConcurrencyHelpers",
     visibility = ["//visibility:public"],
     deps = [
-        ":CNIOAtomics"
+        ":CNIOAtomics",
     ],
 )
 
 swift_library(
     name = "NIOCore",
-    copts = [],
     srcs = glob([
         "Sources/NIOCore/**/*.swift",
     ]),
+    copts = [],
+    module_name = "NIOCore",
+    visibility = ["//visibility:public"],
     deps = [
-        ":NIOConcurrencyHelpers",
         ":CNIOLinux",
         ":CNIOWindows",
+        ":NIOConcurrencyHelpers",
         "@com_github_apple_swift_atomics//:Atomics",
         "@com_github_apple_swift_collections//:DequeModule",
     ],
-    module_name = "NIOCore",
-    visibility = ["//visibility:public"],
 )
 
 swift_library(
     name = "NIOEmbedded",
-    copts = [],
     srcs = glob([
         "Sources/NIOEmbedded/*.swift",
     ]),
+    copts = [],
     module_name = "NIOEmbedded",
     visibility = ["//visibility:public"],
     deps = [
-        ":NIOCore",
         ":NIOConcurrencyHelpers",
+        ":NIOCore",
         ":_NIODataStructures",
         "@com_github_apple_swift_atomics//:Atomics",
     ],
@@ -166,24 +166,24 @@ swift_library(
     module_name = "NIOHTTP1",
     visibility = ["//visibility:public"],
     deps = [
-        ":NIO",
-        ":NIOCore",
-        ":NIOConcurrencyHelpers",
         ":CNIOLLHTTP",
+        ":NIO",
+        ":NIOConcurrencyHelpers",
+        ":NIOCore",
     ],
 )
 
 swift_library(
     name = "NIOPosix",
-    copts = [],
     srcs = glob([
         "Sources/NIOPosix/*.swift",
     ]),
+    copts = [],
     module_name = "NIOPosix",
     visibility = ["//visibility:public"],
     deps = [
-        ":CNIOLinux",
         ":CNIODarwin",
+        ":CNIOLinux",
         ":CNIOWindows",
         ":NIOConcurrencyHelpers",
         ":NIOCore",
