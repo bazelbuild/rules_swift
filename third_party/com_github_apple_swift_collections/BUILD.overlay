@@ -9,11 +9,11 @@ swift_library(
         "Sources/Collections/**/*.swift",
     ]),
     module_name = "Collections",
+    visibility = ["//visibility:public"],
     deps = [
         ":DequeModule",
         ":OrderedCollections",
     ],
-    visibility = ["//visibility:public"],
 )
 
 swift_library(

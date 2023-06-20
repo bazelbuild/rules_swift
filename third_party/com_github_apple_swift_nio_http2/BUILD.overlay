@@ -8,14 +8,14 @@ swift_library(
     srcs = glob([
         "Sources/NIOHPACK/**/*.swift",
     ]),
-    deps = [
-        "@com_github_apple_swift_nio//:NIO",
-        "@com_github_apple_swift_nio//:NIOCore",
-        "@com_github_apple_swift_nio//:NIOConcurrencyHelpers",
-        "@com_github_apple_swift_nio//:NIOHTTP1",
-    ],
     module_name = "NIOHPACK",
     visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_apple_swift_nio//:NIO",
+        "@com_github_apple_swift_nio//:NIOConcurrencyHelpers",
+        "@com_github_apple_swift_nio//:NIOCore",
+        "@com_github_apple_swift_nio//:NIOHTTP1",
+    ],
 )
 
 swift_library(
@@ -23,15 +23,15 @@ swift_library(
     srcs = glob([
         "Sources/NIOHTTP2/**/*.swift",
     ]),
+    module_name = "NIOHTTP2",
+    visibility = ["//visibility:public"],
     deps = [
         ":NIOHPACK",
+        "@com_github_apple_swift_atomics//:Atomics",
         "@com_github_apple_swift_nio//:NIO",
+        "@com_github_apple_swift_nio//:NIOConcurrencyHelpers",
         "@com_github_apple_swift_nio//:NIOCore",
         "@com_github_apple_swift_nio//:NIOHTTP1",
         "@com_github_apple_swift_nio//:NIOTLS",
-        "@com_github_apple_swift_nio//:NIOConcurrencyHelpers",
-        "@com_github_apple_swift_atomics//:Atomics",
     ],
-    module_name = "NIOHTTP2",
-    visibility = ["//visibility:public"],
 )
