@@ -22,7 +22,7 @@
 #include <vector>
 
 #include "absl/strings/string_view.h"
-#include "tools/common/swift_substitutions.h"
+#include "tools/common/bazel_substitutions.h"
 #include "tools/common/temp_file.h"
 
 namespace bazel_rules_swift {
@@ -123,8 +123,8 @@ class SwiftRunner {
 
   // A mapping of Bazel placeholder strings to the actual paths that should be
   // substituted for them. Supports Xcode resolution on Apple OSes.
-  bazel_rules_swift::SwiftPlaceholderSubstitutions
-      swift_placeholder_substitutions_;
+  bazel_rules_swift::BazelPlaceholderSubstitutions
+      bazel_placeholder_substitutions_;
 
   // The portion of the command line that indicates which tool should be
   // spawned; that is, the name/path of the binary, possibly preceded by `xcrun`

@@ -65,18 +65,6 @@ cc_library(
 )
 
 cc_library(
-    name = "swift_substitutions",
-    srcs = ["swift_substitutions.cc"],
-    hdrs = ["swift_substitutions.h"],
-    deps = [
-        ":bazel_substitutions",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:optional",
-    ],
-)
-
-cc_library(
     name = "temp_file",
     hdrs = ["temp_file.h"],
     deps = ["@com_google_absl//absl/strings"],
