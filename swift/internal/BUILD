@@ -190,6 +190,11 @@ bzl_library(
 )
 
 bzl_library(
+    name = "transitions",
+    srcs = ["transitions.bzl"],
+)
+
+bzl_library(
     name = "utils",
     srcs = ["utils.bzl"],
     deps = [

@@ -36,6 +36,10 @@ load(
     "use_swift_toolchain",
 )
 load(
+    "@build_bazel_rules_swift//swift/internal:transitions.bzl",
+    "cxx_interop_transition",
+)
+load(
     "@build_bazel_rules_swift//swift/internal:utils.bzl",
     "expand_locations",
     "get_compilation_contexts",
@@ -195,6 +199,11 @@ swift_compiler_plugin = rule(
     attrs = dicts.add(
         # Do not stamp macro binaries by default to prevent frequent rebuilds.
         binary_rule_attrs(stamp_default = 0),
+        {
+            "_allowlist_function_transition": attr.label(
+                default = "@bazel_tools//tools/allowlists/function_transition_allowlist",
+            ),
+        },
     ),
     doc = """\
 Compiles and links a Swift compiler plugin (for example, a macro).
@@ -216,6 +225,7 @@ tested. The `swift_test` rule can contain `swift_compiler_plugin` targets in its
 `deps`, and the plugin's module can be imported by the test's sources so that
 unit tests can be written against the plugin.
 """,
+    cfg = cxx_interop_transition,
     executable = True,
     fragments = ["cpp"],
     implementation = _swift_compiler_plugin_impl,

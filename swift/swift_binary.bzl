@@ -35,11 +35,16 @@ load(
     "use_swift_toolchain",
 )
 load(
+    "@build_bazel_rules_swift//swift/internal:transitions.bzl",
+    "cxx_interop_transition",
+)
+load(
     "@build_bazel_rules_swift//swift/internal:utils.bzl",
     "expand_locations",
     "get_compilation_contexts",
     "get_providers",
 )
+load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(":module_name.bzl", "derive_swift_module_name")
 load(":providers.bzl", "SwiftInfo")
 
@@ -144,7 +149,14 @@ def _swift_binary_impl(ctx):
     ]
 
 swift_binary = rule(
-    attrs = binary_rule_attrs(stamp_default = -1),
+    attrs = dicts.add(
+        binary_rule_attrs(stamp_default = -1),
+        {
+            "_allowlist_function_transition": attr.label(
+                default = "@bazel_tools//tools/allowlists/function_transition_allowlist",
+            ),
+        },
+    ),
     doc = """\
 Compiles and links Swift code into an executable binary.
 
@@ -160,6 +172,7 @@ please use one of the platform-specific application rules in
 [rules_apple](https://github.com/bazelbuild/rules_apple) instead of
 `swift_binary`.
 """,
+    cfg = cxx_interop_transition,
     executable = True,
     fragments = ["cpp"],
     implementation = _swift_binary_impl,

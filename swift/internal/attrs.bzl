@@ -123,6 +123,16 @@ Additional compiler options that should be passed to `swiftc`. These strings are
 subject to `$(location ...)` expansion.
 """,
             ),
+            "cxx_interop": attr.string(
+                doc = """\
+The C++ interoperability mode to use when importing Clang modules that are
+dependencies of this Swift module.
+
+If present, this value is passed directly to the compiler using the
+`-cxx-interoperability-mode=` flag. To enable C++ interop, specify `"default"`.
+To disable it, leave this attribute empty or specify `"off"`.
+""",
+            ),
             "defines": attr.string_list(
                 doc = """\
 A list of defines to add to the compilation command line.

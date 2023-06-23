@@ -1,5 +1,9 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
-load("@bazel_skylib//rules:common_settings.bzl", "bool_setting")
+load(
+    "@bazel_skylib//rules:common_settings.bzl",
+    "bool_setting",
+    "string_setting",
+)
 load(
     "//swift/internal:build_settings.bzl",
     "per_module_swiftcopt_flag",
@@ -36,6 +40,7 @@ bzl_library(
         "//swift/internal:linking",
         "//swift/internal:providers",
         "//swift/internal:toolchain_utils",
+        "//swift/internal:transitions",
         "//swift/internal:utils",
     ],
 )
@@ -68,6 +73,7 @@ bzl_library(
         "//swift/internal:linking",
         "//swift/internal:symbol_graph_extracting",
         "//swift/internal:toolchain_utils",
+        "//swift/internal:transitions",
     ],
 )
 
@@ -81,6 +87,7 @@ bzl_library(
         "//swift/internal:linking",
         "//swift/internal:providers",
         "//swift/internal:toolchain_utils",
+        "//swift/internal:transitions",
         "//swift/internal:utils",
         "@bazel_skylib//lib:dicts",
     ],
@@ -176,6 +183,7 @@ bzl_library(
         "//swift/internal:linking",
         "//swift/internal:providers",
         "//swift/internal:toolchain_utils",
+        "//swift/internal:transitions",
         "//swift/internal:utils",
         "@bazel_skylib//lib:dicts",
         "@bazel_skylib//lib:sets",
@@ -238,6 +246,7 @@ bzl_library(
         "//swift/internal:swift_symbol_graph_aspect",
         "//swift/internal:symbol_graph_extracting",
         "//swift/internal:toolchain_utils",
+        "//swift/internal:transitions",
         "//swift/internal:utils",
         "@bazel_skylib//lib:dicts",
     ],
@@ -301,6 +310,16 @@ swift_module_mapping(
     name = "empty_module_mapping",
     aliases = {},
     visibility = ["//visibility:private"],
+)
+
+# The value to pass to the Swift compiler for the `-cxx-interoperability-mode=`
+# flag. This cannot be set directly; it is applied by the
+# `cxx_interop_transition` by reading the `cxx_interop` attribute on compiling
+# rules like `swift_library`.
+string_setting(
+    name = "cxx_interop",
+    build_setting_default = "",
+    visibility = ["//visibility:public"],
 )
 
 # Consumed by Bazel integration tests.
