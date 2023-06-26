@@ -242,53 +242,57 @@ def _swiftc_derived_output_file_map(actions, target_name):
         "{}.derived_output_file_map.json".format(target_name),
     )
 
-def _swiftdoc(actions, module_name):
+def _swiftdoc(actions, target_name, module_name):
     """Declares a file for the Swift doc file created by a compilation rule.
 
     Args:
         actions: The context's actions object.
+        target_name: The name of the target being built.
         module_name: The name of the module being built.
 
     Returns:
         The declared `File`.
     """
-    return actions.declare_file("{}.swiftdoc".format(module_name))
+    return actions.declare_file("{}/{}.swiftdoc".format(target_name, module_name))
 
-def _swiftinterface(actions, module_name):
+def _swiftinterface(actions, target_name, module_name):
     """Declares a file for the Swift interface created by a compilation rule.
 
     Args:
         actions: The context's actions object.
+        target_name: The name of the target being built.
         module_name: The name of the module being built.
 
     Returns:
         The declared `File`.
     """
-    return actions.declare_file("{}.swiftinterface".format(module_name))
+    return actions.declare_file("{}/{}.swiftinterface".format(target_name, module_name))
 
-def _swiftmodule(actions, module_name):
+def _swiftmodule(actions, target_name, module_name):
     """Declares a file for the Swift module created by a compilation rule.
 
     Args:
         actions: The context's actions object.
+        target_name: The name of the target being built.
         module_name: The name of the module being built.
 
     Returns:
         The declared `File`.
     """
-    return actions.declare_file("{}.swiftmodule".format(module_name))
+    return actions.declare_file("{}/{}.swiftmodule".format(target_name, module_name))
 
-def _swiftsourceinfo(actions, module_name):
+def _swiftsourceinfo(actions, target_name, module_name):
     """Declares a file for the Swift sourceinfo created by a compilation rule.
 
     Args:
         actions: The context's actions object.
+        target_name: The name of the target being built.
         module_name: The name of the module being built.
 
     Returns:
         The declared `File`.
     """
-    return actions.declare_file("{}.swiftsourceinfo".format(module_name))
+    return actions.declare_file("{}/{}.swiftsourceinfo".format(target_name, module_name))
 
 def _vfsoverlay(actions, target_name):
     """Declares a file for the VFS overlay for a compilation action.
