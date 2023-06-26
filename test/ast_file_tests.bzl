@@ -29,7 +29,7 @@ def ast_file_test_suite(name):
     provider_test(
         name = "{}_with_no_deps".format(name),
         expected_files = [
-            "test/fixtures/swift_through_non_swift/lower_objs/Empty.swift.ast",
+            "test/fixtures/swift_through_non_swift/lower/lower_objs/Empty.swift.ast",
         ],
         field = "swift_ast_file",
         provider = "OutputGroupInfo",
@@ -40,7 +40,7 @@ def ast_file_test_suite(name):
     provider_test(
         name = "{}_with_deps".format(name),
         expected_files = [
-            "test/fixtures/swift_through_non_swift/upper_objs/Empty.swift.ast",
+            "test/fixtures/swift_through_non_swift/upper/upper_objs/Empty.swift.ast",
         ],
         field = "swift_ast_file",
         provider = "OutputGroupInfo",
@@ -51,7 +51,7 @@ def ast_file_test_suite(name):
     provider_test(
         name = "{}_with_private_swift_deps".format(name),
         expected_files = [
-            "test/fixtures/private_deps/client_swift_deps_objs/Empty.swift.ast",
+            "test/fixtures/private_deps/client_swift_deps/client_swift_deps_objs/Empty.swift.ast",
         ],
         field = "swift_ast_file",
         provider = "OutputGroupInfo",
@@ -62,7 +62,7 @@ def ast_file_test_suite(name):
     provider_test(
         name = "{}_with_private_cc_deps".format(name),
         expected_files = [
-            "test/fixtures/private_deps/client_cc_deps_objs/Empty.swift.ast",
+            "test/fixtures/private_deps/client_cc_deps/client_cc_deps_objs/Empty.swift.ast",
         ],
         field = "swift_ast_file",
         provider = "OutputGroupInfo",
@@ -73,8 +73,8 @@ def ast_file_test_suite(name):
     provider_test(
         name = "{}_with_multiple_swift_files".format(name),
         expected_files = [
-            "test/fixtures/multiple_files/multiple_files_objs/Empty.swift.ast",
-            "test/fixtures/multiple_files/multiple_files_objs/Empty2.swift.ast",
+            "test/fixtures/multiple_files/multiple_files/multiple_files_objs/Empty.swift.ast",
+            "test/fixtures/multiple_files/multiple_files/multiple_files_objs/Empty2.swift.ast",
         ],
         field = "swift_ast_file",
         provider = "OutputGroupInfo",

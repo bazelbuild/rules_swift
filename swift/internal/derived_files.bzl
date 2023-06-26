@@ -17,6 +17,16 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load(":utils.bzl", "owner_relative_path")
 
+def _default_path(ctx, basename):
+    target_name = ctx.label.name
+    return paths.join(target_name, basename)
+
+def _declare_file(actions, target_name, basename):
+    return actions.declare_file(paths.join(target_name, basename))
+
+def _declare_directory(actions, target_name, directory):
+    return actions.declare_directory(paths.join(target_name, directory))
+
 def _ast(actions, target_name, src):
     """Declares a file for an ast file during compilation.
 
@@ -29,7 +39,9 @@ def _ast(actions, target_name, src):
         The declared `File` where the given src's AST will be dumped to.
     """
     dirname, basename = _intermediate_frontend_file_path(target_name, src)
-    return actions.declare_file(
+    return _declare_file(
+        actions,
+        target_name,
         paths.join(dirname, "{}.ast".format(basename)),
     )
 
@@ -43,7 +55,11 @@ def _autolink_flags(actions, target_name):
     Returns:
         The declared `File`.
     """
-    return actions.declare_file("{}.autolink".format(target_name))
+    return _declare_file(
+        actions,
+        target_name,
+        "{}.autolink".format(target_name),
+    )
 
 def _executable(actions, target_name):
     """Declares a file for the executable created by a binary or test rule.
@@ -55,7 +71,11 @@ def _executable(actions, target_name):
     Returns:
         The declared `File`.
     """
-    return actions.declare_file(target_name)
+    return _declare_file(
+        actions,
+        target_name,
+        target_name,
+    )
 
 def _indexstore_directory(actions, target_name):
     """Declares a directory in which the compiler's indexstore will be written.
@@ -67,7 +87,11 @@ def _indexstore_directory(actions, target_name):
     Returns:
         The declared `File`.
     """
-    return actions.declare_directory("{}.indexstore".format(target_name))
+    return _declare_directory(
+        actions,
+        target_name,
+        "{}.indexstore".format(target_name),
+    )
 
 def _symbol_graph_directory(actions, target_name):
     """Declares a directory in which the compiler's symbol graph will be written.
@@ -79,7 +103,11 @@ def _symbol_graph_directory(actions, target_name):
     Returns:
         The declared `File`.
     """
-    return actions.declare_directory("{}.symbolgraph".format(target_name))
+    return _declare_directory(
+        actions,
+        target_name,
+        "{}.symbolgraph".format(target_name),
+    )
 
 def _intermediate_bc_file(actions, target_name, src):
     """Declares a file for an intermediate llvm bc file during compilation.
@@ -93,7 +121,9 @@ def _intermediate_bc_file(actions, target_name, src):
         The declared `File`.
     """
     dirname, basename = _intermediate_frontend_file_path(target_name, src)
-    return actions.declare_file(
+    return _declare_file(
+        actions,
+        target_name,
         paths.join(dirname, "{}.bc".format(basename)),
     )
 
@@ -135,7 +165,9 @@ def _intermediate_object_file(actions, target_name, src):
         The declared `File`.
     """
     dirname, basename = _intermediate_frontend_file_path(target_name, src)
-    return actions.declare_file(
+    return _declare_file(
+        actions,
+        target_name,
         paths.join(dirname, "{}.o".format(basename)),
     )
 
@@ -153,7 +185,11 @@ def _module_map(actions, target_name):
     Returns:
         The declared `File`.
     """
-    return actions.declare_file("{}.swift.modulemap".format(target_name))
+    return _declare_file(
+        actions,
+        target_name,
+        "{}.swift.modulemap".format(target_name),
+    )
 
 def _modulewrap_object(actions, target_name):
     """Declares the object file used to wrap Swift modules for ELF binaries.
@@ -165,7 +201,11 @@ def _modulewrap_object(actions, target_name):
     Returns:
         The declared `File`.
     """
-    return actions.declare_file("{}.modulewrap.o".format(target_name))
+    return _declare_file(
+        actions,
+        target_name,
+        "{}.modulewrap.o".format(target_name),
+    )
 
 def _precompiled_module(actions, target_name):
     """Declares the precompiled module for a C/Objective-C target.
@@ -177,7 +217,11 @@ def _precompiled_module(actions, target_name):
     Returns:
         The declared `File`.
     """
-    return actions.declare_file("{}.swift.pcm".format(target_name))
+    return _declare_file(
+        actions,
+        target_name,
+        "{}.swift.pcm".format(target_name),
+    )
 
 def _reexport_modules_src(actions, target_name):
     """Declares a source file used to re-export other Swift modules.
@@ -189,13 +233,18 @@ def _reexport_modules_src(actions, target_name):
     Returns:
         The declared `File`.
     """
-    return actions.declare_file("{}_exports.swift".format(target_name))
+    return _declare_file(
+        actions,
+        target_name,
+        "{}_exports.swift".format(target_name),
+    )
 
-def _static_archive(actions, alwayslink, link_name):
+def _static_archive(actions, target_name, alwayslink, link_name):
     """Declares a file for the static archive created by a compilation rule.
 
     Args:
         actions: The context's actions object.
+        target_name: The name of the target being built.
         alwayslink: Indicates whether the object files in the library should
             always be always be linked into any binaries that depend on it, even
             if some contain no symbols referenced by the binary.
@@ -206,7 +255,11 @@ def _static_archive(actions, alwayslink, link_name):
         The declared `File`.
     """
     extension = "lo" if alwayslink else "a"
-    return actions.declare_file("lib{}.{}".format(link_name, extension))
+    return _declare_file(
+        actions,
+        target_name,
+        "lib{}.{}".format(link_name, extension)
+    )
 
 def _swiftc_output_file_map(actions, target_name):
     """Declares a file for the output file map for a compilation action.
@@ -222,7 +275,11 @@ def _swiftc_output_file_map(actions, target_name):
     Returns:
         The declared `File`.
     """
-    return actions.declare_file("{}.output_file_map.json".format(target_name))
+    return _declare_file(
+        actions,
+        target_name,
+        "{}.output_file_map.json".format(target_name),
+    )
 
 def _swiftc_derived_output_file_map(actions, target_name):
     """Declares a file for the output file map for a swiftmodule only action.
@@ -238,57 +295,79 @@ def _swiftc_derived_output_file_map(actions, target_name):
     Returns:
         The declared `File`.
     """
-    return actions.declare_file(
+    return _declare_file(
+        actions,
+        target_name,
         "{}.derived_output_file_map.json".format(target_name),
     )
 
-def _swiftdoc(actions, module_name):
+def _swiftdoc(actions, target_name, module_name):
     """Declares a file for the Swift doc file created by a compilation rule.
 
     Args:
         actions: The context's actions object.
+        target_name: The name of the target being built.
         module_name: The name of the module being built.
 
     Returns:
         The declared `File`.
     """
-    return actions.declare_file("{}.swiftdoc".format(module_name))
+    return _declare_file(
+        actions,
+        target_name,
+        "{}.swiftdoc".format(module_name),
+    )
 
-def _swiftinterface(actions, module_name):
+def _swiftinterface(actions, target_name, module_name):
     """Declares a file for the Swift interface created by a compilation rule.
 
     Args:
         actions: The context's actions object.
+        target_name: The name of the target being built.
         module_name: The name of the module being built.
 
     Returns:
         The declared `File`.
     """
-    return actions.declare_file("{}.swiftinterface".format(module_name))
+    return _declare_file(
+        actions,
+        target_name,
+        "{}.swiftinterface".format(module_name),
+    )
 
-def _swiftmodule(actions, module_name):
+def _swiftmodule(actions, target_name, module_name):
     """Declares a file for the Swift module created by a compilation rule.
 
     Args:
         actions: The context's actions object.
+        target_name: The name of the target being built.
         module_name: The name of the module being built.
 
     Returns:
         The declared `File`.
     """
-    return actions.declare_file("{}.swiftmodule".format(module_name))
+    return _declare_file(
+        actions,
+        target_name,
+        "{}.swiftmodule".format(module_name),
+    )
 
-def _swiftsourceinfo(actions, module_name):
+def _swiftsourceinfo(actions, target_name, module_name):
     """Declares a file for the Swift sourceinfo created by a compilation rule.
 
     Args:
         actions: The context's actions object.
+        target_name: The name of the target being built.
         module_name: The name of the module being built.
 
     Returns:
         The declared `File`.
     """
-    return actions.declare_file("{}.swiftsourceinfo".format(module_name))
+    return _declare_file(
+        actions,
+        target_name,
+        "{}.swiftsourceinfo".format(module_name),
+    )
 
 def _vfsoverlay(actions, target_name):
     """Declares a file for the VFS overlay for a compilation action.
@@ -304,7 +383,11 @@ def _vfsoverlay(actions, target_name):
     Returns:
         The declared `File`.
     """
-    return actions.declare_file("{}.vfsoverlay.yaml".format(target_name))
+    return _declare_file(
+        actions,
+        target_name,
+        "{}.vfsoverlay.yaml".format(target_name),
+    )
 
 def _whole_module_object_file(actions, target_name):
     """Declares a file for object files created with whole module optimization.
@@ -320,7 +403,11 @@ def _whole_module_object_file(actions, target_name):
     Returns:
         The declared `File`.
     """
-    return actions.declare_file("{}.o".format(target_name))
+    return _declare_file(
+        actions,
+        target_name,
+        "{}.o".format(target_name),
+    )
 
 def _xctest_runner_script(actions, target_name):
     """Declares a file for the script that runs an `.xctest` bundle on Darwin.
@@ -332,7 +419,11 @@ def _xctest_runner_script(actions, target_name):
     Returns:
         The declared `File`.
     """
-    return actions.declare_file("{}.test-runner.sh".format(target_name))
+    return _declare_file(
+        actions,
+        target_name,
+        "{}.test-runner.sh".format(target_name),
+    )
 
 derived_files = struct(
     ast = _ast,
@@ -343,6 +434,7 @@ derived_files = struct(
     intermediate_object_file = _intermediate_object_file,
     module_map = _module_map,
     modulewrap_object = _modulewrap_object,
+    path = _default_path,
     precompiled_module = _precompiled_module,
     reexport_modules_src = _reexport_modules_src,
     static_archive = _static_archive,
