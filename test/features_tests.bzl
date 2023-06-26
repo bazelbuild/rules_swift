@@ -82,7 +82,7 @@ def features_test_suite(name):
         tags = [name],
         expected_argv = [
             "-emit-object",
-            "-I$(BIN_DIR)/test/fixtures/basic",
+            "-I$(BIN_DIR)/test/fixtures/basic/first",
             "-Xwrapped-swift=-file-prefix-pwd-is-dot",
         ],
         mnemonic = "SwiftCompile",
@@ -154,7 +154,7 @@ def features_test_suite(name):
         name = "{}_vfsoverlay_test".format(name),
         tags = [name],
         expected_argv = [
-            "-Xfrontend -vfsoverlay$(BIN_DIR)/test/fixtures/basic/second.vfsoverlay.yaml",
+            "-Xfrontend -vfsoverlay$(BIN_DIR)/test/fixtures/basic/second/second.vfsoverlay.yaml",
             "-I/__build_bazel_rules_swift/swiftmodules",
         ],
         not_expected_argv = [
@@ -172,7 +172,7 @@ def features_test_suite(name):
             "-Xfrontend -explicit-swift-module-map-file -Xfrontend $(BIN_DIR)/test/fixtures/basic/second.swift-explicit-module-map.json",
         ],
         not_expected_argv = [
-            "-I$(BIN_DIR)/test/fixtures/basic",
+            "-I$(BIN_DIR)/test/fixtures/basic/second",
             "-I/__build_bazel_rules_swift/swiftmodules",
             "-Xfrontend -vfsoverlay$(BIN_DIR)/test/fixtures/basic/second.vfsoverlay.yaml",
         ],

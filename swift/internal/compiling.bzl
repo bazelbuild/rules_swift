@@ -2579,14 +2579,17 @@ def _declare_compile_outputs(
     # depending on compilation mode, like WMO vs. non-WMO).
     swiftmodule_file = derived_files.swiftmodule(
         actions = actions,
+        target_name = target_name,
         module_name = module_name,
     )
     swiftdoc_file = derived_files.swiftdoc(
         actions = actions,
+        target_name = target_name,
         module_name = module_name,
     )
     swiftsourceinfo_file = derived_files.swiftsourceinfo(
         actions = actions,
+        target_name = target_name,
         module_name = module_name,
     )
 
@@ -2599,6 +2602,7 @@ def _declare_compile_outputs(
     ):
         swiftinterface_file = derived_files.swiftinterface(
             actions = actions,
+            target_name = target_name,
             module_name = module_name,
         )
     else:
