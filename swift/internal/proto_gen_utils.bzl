@@ -68,35 +68,6 @@ def declare_generated_files_in_subdir(
 
     return generation_dir, generated_files
 
-def declare_generated_files_as_siblings(
-        actions,
-        extension_fragment,
-        proto_srcs):
-    """Declares generated `.swift` files from a list of `.proto` files.
-
-    The generated files will be "siblings" of the files they generate from.
-
-    Args:
-        actions: The context's actions object.
-        extension_fragment: An extension fragment that precedes `.swift` on the
-            end of the generated files. In other words, the file `foo.proto`
-            will generate a file named `foo.{extension_fragment}.swift`.
-        proto_srcs: A list of `.proto` files.
-
-    Returns:
-        A list of files that map one-to-one to `proto_srcs` but with
-        `.{extension_fragment}.swift` extensions instead of `.proto`.
-
-    """
-    ext = ".{}.swift".format(extension_fragment)
-    return [
-        actions.declare_file(
-            paths.replace_extension(f.basename, ext),
-            sibling = f,
-        )
-        for f in proto_srcs
-    ]
-
 def register_module_mapping_write_action(name, actions, module_mappings):
     """Registers an action that generates a module mapping for a proto library.
 

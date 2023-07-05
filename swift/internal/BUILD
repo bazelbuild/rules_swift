@@ -1,4 +1,5 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+load("@rules_proto//proto:defs.bzl", "proto_lang_toolchain")
 
 licenses(["notice"])
 
@@ -6,6 +7,16 @@ package(
     default_visibility = [
         "//swift:__subpackages__",
     ],
+)
+
+proto_lang_toolchain(
+    name = "proto_swift_toolchain",
+    command_line = "--swift_out=$(OUT)",
+    mnemonic = "ProtocGenSwift",
+    plugin = "@com_github_apple_swift_protobuf//:ProtoCompilerPlugin",
+    plugin_format_flag = "--plugin=protoc-gen-swift=%s",
+    progress_message = "Generating Swift sources for %{label}",
+    visibility = ["//visibility:public"],
 )
 
 bzl_library(
