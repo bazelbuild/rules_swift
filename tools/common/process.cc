@@ -368,8 +368,8 @@ int RunSubProcess(const std::vector<std::string> &args,
     } while ((wait_status == -1) && (errno == EINTR));
 
     if (wait_status < 0) {
-      std::cerr << "Error waiting on child process '" << args[0] << "'. "
-                << strerror(errno) << "\n";
+      (*stderr_stream) << "error: 1 waiting on child process '" << args[0]
+                       << "'. " << strerror(errno) << "\n";
       return wait_status;
     }
 
@@ -384,8 +384,8 @@ int RunSubProcess(const std::vector<std::string> &args,
     // Unhandled case, if we hit this we should handle it above.
     return 42;
   } else {
-    std::cerr << "Error forking process '" << args[0] << "'. "
-              << strerror(status) << "\n";
+    (*stderr_stream) << "error: forking process failed '" << args[0] << "'. "
+                     << strerror(status) << "\n";
     return status;
   }
 }
