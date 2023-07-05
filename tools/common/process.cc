@@ -368,7 +368,7 @@ int RunSubProcess(const std::vector<std::string> &args,
     } while ((wait_status == -1) && (errno == EINTR));
 
     if (wait_status < 0) {
-      (*stderr_stream) << "error: 1 waiting on child process '" << args[0]
+      (*stderr_stream) << "error: waiting on child process '" << args[0]
                        << "'. " << strerror(errno) << "\n";
       return wait_status;
     }
