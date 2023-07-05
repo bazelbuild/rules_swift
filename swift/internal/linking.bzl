@@ -306,7 +306,6 @@ def create_linking_context_from_compilation_outputs(
         additional_inputs = additional_inputs,
         disallow_static_libraries = False,
         disallow_dynamic_library = True,
-        grep_includes = None,
     )
 
 def malloc_linking_context(ctx):
@@ -331,7 +330,6 @@ def register_link_binary_action(
         compilation_outputs,
         deps,
         feature_configuration,
-        grep_includes,
         label,
         module_contexts = [],
         output_type,
@@ -355,7 +353,6 @@ def register_link_binary_action(
         deps: A list of targets representing additional libraries that will be
             passed to the linker.
         feature_configuration: The Swift feature configuration.
-        grep_includes: Used internally only.
         label: The label of the target being linked, whose name is used to
             derive the output artifact.
         module_contexts: A list of module contexts resulting from the
@@ -412,7 +409,6 @@ def register_link_binary_action(
         feature_configuration = get_cc_feature_configuration(
             feature_configuration,
         ),
-        grep_includes = grep_includes,
         name = label.name,
         user_link_flags = user_link_flags,
         linking_contexts = linking_contexts,

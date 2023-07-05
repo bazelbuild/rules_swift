@@ -472,7 +472,6 @@ def _swift_test_impl(ctx):
         compilation_outputs = compilation_outputs,
         deps = deps + additional_link_deps,
         feature_configuration = feature_configuration,
-        grep_includes = ctx.file._grep_includes,
         label = ctx.label,
         module_contexts = module_contexts,
         output_type = "executable",

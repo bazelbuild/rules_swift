@@ -132,7 +132,6 @@ def _swift_compiler_plugin_impl(ctx):
         feature_configuration = feature_configuration,
         compilation_outputs = compilation_outputs,
         deps = deps,
-        grep_includes = ctx.file._grep_includes,
         label = ctx.label,
         module_contexts = module_contexts,
         output_type = "executable",
