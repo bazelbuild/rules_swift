@@ -328,7 +328,7 @@ def _all_action_configs(
             configurators = [
                 swift_toolchain_config.add_arg(
                     "-debug-prefix-map",
-                    "__BAZEL_XCODE_DEVELOPER_DIR__=DEVELOPER_DIR",
+                    "__BAZEL_XCODE_DEVELOPER_DIR__=/PLACEHOLDER_DEVELOPER_DIR",
                 ),
             ],
             features = [
@@ -343,7 +343,7 @@ def _all_action_configs(
             configurators = [
                 swift_toolchain_config.add_arg(
                     "-coverage-prefix-map",
-                    "__BAZEL_XCODE_DEVELOPER_DIR__=DEVELOPER_DIR",
+                    "__BAZEL_XCODE_DEVELOPER_DIR__=/PLACEHOLDER_DEVELOPER_DIR",
                 ),
             ],
             features = [
@@ -362,7 +362,7 @@ def _all_action_configs(
             configurators = [
                 swift_toolchain_config.add_arg(
                     "-file-prefix-map",
-                    "__BAZEL_XCODE_DEVELOPER_DIR__=DEVELOPER_DIR",
+                    "__BAZEL_XCODE_DEVELOPER_DIR__=/PLACEHOLDER_DEVELOPER_DIR",
                 ),
             ],
             features = [

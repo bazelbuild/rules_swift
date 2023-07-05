@@ -231,7 +231,7 @@ def debug_settings_test_suite(name):
         name = "{}_remap_xcode_path".format(name),
         expected_argv = [
             "-debug-prefix-map",
-            "__BAZEL_XCODE_DEVELOPER_DIR__=DEVELOPER_DIR",
+            "__BAZEL_XCODE_DEVELOPER_DIR__=/PLACEHOLDER_DEVELOPER_DIR",
         ],
         target_compatible_with = ["@platforms//os:macos"],
         mnemonic = "SwiftCompile",

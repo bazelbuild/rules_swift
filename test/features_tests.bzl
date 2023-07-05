@@ -105,7 +105,7 @@ def features_test_suite(name):
         expected_argv = [
             "-Xwrapped-swift=-file-prefix-pwd-is-dot",
             "-file-prefix-map",
-            "__BAZEL_XCODE_DEVELOPER_DIR__=DEVELOPER_DIR",
+            "__BAZEL_XCODE_DEVELOPER_DIR__=/PLACEHOLDER_DEVELOPER_DIR",
         ],
         target_compatible_with = ["@platforms//os:macos"],
         mnemonic = "SwiftCompile",
