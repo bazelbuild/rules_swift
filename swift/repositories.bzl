@@ -181,8 +181,8 @@ def swift_rules_dependencies(include_bzlmod_ready_dependencies = True):
         name = "build_bazel_rules_swift_index_import",
         build_file = "@build_bazel_rules_swift//third_party:build_bazel_rules_swift_index_import/BUILD.overlay",
         canonical_id = "index-import-5.8",
-        urls = ["https://github.com/MobileNativeFoundation/index-import/releases/download/5.8.0.1/index-import.tar.gz"],
-        sha256 = "28c1ffa39d99e74ed70623899b207b41f79214c498c603915aef55972a851a15",
+        urls = ["https://github.com/MobileNativeFoundation/index-import/releases/download/5.8/index-import.tar.gz"],
+        sha256 = "9f0a5339ccc90a26361b013735b45044ed491bd000e2d3705451ee0327f17148",
     )
 
     _maybe(
