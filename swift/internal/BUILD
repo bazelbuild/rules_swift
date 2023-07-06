@@ -16,6 +16,7 @@ proto_lang_toolchain(
     plugin = "@com_github_apple_swift_protobuf//:ProtoCompilerPlugin",
     plugin_format_flag = "--plugin=protoc-gen-swift=%s",
     progress_message = "Generating Swift sources for %{label}",
+    runtime = "@com_github_apple_swift_protobuf//:SwiftProtobuf",
     visibility = ["//visibility:public"],
 )
 

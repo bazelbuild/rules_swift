@@ -269,14 +269,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
 
         module_name = derive_swift_module_name(target.label)
 
-        # TODO: Revisit using `proto_lang_toolchain_info.runtime` here, was seeing:
-        #   bazel_rules/rules_swift/test/fixtures/module_interface/library/ToyModule.swift:15:8:
-        #      warning: module 'Foundation' was not compiled with library evolution support; using
-        #      it means binary compatibility for 'ToyModule' can't be guaranteed
-        #   import Foundation
-        #          ^
-        #
-        support_deps = aspect_ctx.attr._proto_support
+        support_deps = [proto_lang_toolchain_info.runtime]
         for p in support_deps:
             if CcInfo in p:
                 transitive_cc_infos.append(p[CcInfo])
@@ -369,13 +362,6 @@ swift_protoc_gen_aspect = aspect(
         swift_toolchain_attrs(),
         swift_config_attrs(),
         {
-            # TODO: `proto_lang_toolchain_info.runtime` wasn't working in all cases, used
-            # custom attribute instead.
-            "_proto_support": attr.label_list(
-                default = [
-                    Label("@com_github_apple_swift_protobuf//:SwiftProtobuf"),
-                ],
-            ),
             "_proto_lang_toolchain": attr.label(
                 default = Label("@build_bazel_rules_swift//swift/internal:proto_swift_toolchain"),
             ),
