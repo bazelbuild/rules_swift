@@ -74,6 +74,8 @@ _TRIPLE_OS_TO_PLATFORM = {
     ("macos", None): apple_common.platform.macos,
     ("tvos", None): apple_common.platform.tvos_device,
     ("tvos", "simulator"): apple_common.platform.tvos_simulator,
+    ("xros", None): apple_common.platform.visionos_device,
+    ("xros", "simulator"): apple_common.platform.visionos_simulator,
     ("watchos", None): apple_common.platform.watchos_device,
     ("watchos", "simulator"): apple_common.platform.watchos_simulator,
 }
