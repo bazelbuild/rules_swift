@@ -231,8 +231,6 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             additional_inputs = depset(direct = [transitive_module_mapping_file]),
             experimental_exec_group = _GENERATE_EXEC_GROUP,
             generated_files = pbswift_files,
-            # ??? Docs says this is deprecated, but seems to be required
-            plugin_output = aspect_ctx.bin_dir.path,
             proto_info = target_proto_info,
             proto_lang_toolchain_info = proto_lang_toolchain_info,
         )
