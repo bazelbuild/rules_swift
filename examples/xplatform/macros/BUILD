@@ -52,6 +52,6 @@ swift_test(
         ":stringify_macro",
         "@SwiftSyntax",
         "@SwiftSyntax//:SwiftSyntaxBuilder",
-        "@SwiftSyntax//:SwiftSyntaxMacros",
+        "@SwiftSyntax//:SwiftSyntaxMacroExpansion",
     ],
 )
