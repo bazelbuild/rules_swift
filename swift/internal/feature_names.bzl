@@ -334,3 +334,7 @@ SWIFT_FEATURE_OBJC_LINK_FLAGS = "swift.objc_link_flag"
 # A private feature that is set by the toolchain if the given toolchain wants
 # all Swift compilations to always be linked.
 SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE = "swift._force_alwayslink_true"
+
+# A feature that adds target_name in output path to support building
+# multiple frameworks with different target name, but same module name.
+SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT = "swift.add_target_name_to_output"

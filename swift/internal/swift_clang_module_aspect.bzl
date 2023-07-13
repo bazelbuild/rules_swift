@@ -19,6 +19,7 @@ load(":compiling.bzl", "derive_module_name", "precompile_clang_module")
 load(":derived_files.bzl", "derived_files")
 load(
     ":feature_names.bzl",
+    "SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS",
 )
@@ -251,9 +252,14 @@ def _generate_module_map(
     else:
         private_headers = compilation_context.direct_private_headers
 
+    add_target_name_to_output_path = is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT,
+    )
     module_map_file = derived_files.module_map(
         actions = actions,
         target_name = target.label.name,
+        add_target_name_to_output_path = add_target_name_to_output_path,
     )
 
     # Sort dependent module names and the headers to ensure a deterministic
