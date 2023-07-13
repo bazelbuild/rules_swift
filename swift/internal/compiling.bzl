@@ -2613,6 +2613,7 @@ def _declare_compile_outputs(
     if generated_header_name:
         generated_header = _declare_validated_generated_header(
             actions = actions,
+            target_name = target_name,
             generated_header_name = generated_header_name,
         )
     else:
@@ -2864,7 +2865,7 @@ def _declare_multiple_outputs_and_write_output_file_map(
         derived_files_output_file_map = derived_files_output_map_file,
     )
 
-def _declare_validated_generated_header(actions, generated_header_name):
+def _declare_validated_generated_header(actions, target_name, generated_header_name):
     """Validates and declares the explicitly named generated header.
 
     If the file does not have a `.h` extension, the build will fail.
@@ -2883,7 +2884,7 @@ def _declare_validated_generated_header(actions, generated_header_name):
             "extension (got '{}').".format(generated_header_name),
         )
 
-    return actions.declare_file(generated_header_name)
+    return actions.declare_file(paths.join(target_name, generated_header_name))
 
 def _merge_targets_providers(implicit_deps_providers, targets):
     """Merges the compilation-related providers for the given targets.
