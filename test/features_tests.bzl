@@ -4,6 +4,10 @@ load(
     "@build_bazel_rules_swift//test/rules:action_command_line_test.bzl",
     "make_action_command_line_test_rule",
 )
+load(
+    "@bazel_skylib//rules:build_test.bzl",
+    "build_test",
+)
 
 default_test = make_action_command_line_test_rule()
 default_opt_test = make_action_command_line_test_rule(
@@ -105,7 +109,7 @@ def features_test_suite(name):
         expected_argv = [
             "-Xwrapped-swift=-file-prefix-pwd-is-dot",
             "-file-prefix-map",
-            "__BAZEL_XCODE_DEVELOPER_DIR__=DEVELOPER_DIR",
+            "__BAZEL_XCODE_DEVELOPER_DIR__=/PLACEHOLDER_DEVELOPER_DIR",
         ],
         target_compatible_with = ["@platforms//os:macos"],
         mnemonic = "SwiftCompile",
@@ -234,4 +238,12 @@ def features_test_suite(name):
         mnemonic = "CppLink",
         target_under_test = "@build_bazel_rules_swift//test/fixtures/linking:cc_bin",
         target_compatible_with = ["@platforms//os:macos"],
+    )
+
+    build_test(
+        name = "{}_global_index_store_builds".format(name),
+        tags = [name],
+        targets = [
+            "//test/fixtures/global_index_store:simple",
+        ],
     )

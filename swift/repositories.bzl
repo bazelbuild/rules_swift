@@ -57,9 +57,9 @@ def swift_rules_dependencies(include_bzlmod_ready_dependencies = True):
             http_archive,
             name = "build_bazel_apple_support",
             urls = [
-                "https://github.com/bazelbuild/apple_support/releases/download/1.6.0/apple_support.1.6.0.tar.gz",
+                "https://github.com/bazelbuild/apple_support/releases/download/1.7.1/apple_support.1.7.1.tar.gz",
             ],
-            sha256 = "9f7bb62c3ae889e0eae8c18458fd8764e2e537687d9a1d85885d6af980e4fc31",
+            sha256 = "4f8dabf7cd16c23d2a406bbf60291c7c8c2e3c617e182a82585e1d3efe36670b",
         )
 
         _maybe(
@@ -180,9 +180,9 @@ def swift_rules_dependencies(include_bzlmod_ready_dependencies = True):
         http_archive,
         name = "build_bazel_rules_swift_index_import",
         build_file = "@build_bazel_rules_swift//third_party:build_bazel_rules_swift_index_import/BUILD.overlay",
-        canonical_id = "index-import-5.7.0.1",
-        urls = ["https://github.com/MobileNativeFoundation/index-import/releases/download/5.7.0.1/index-import.tar.gz"],
-        sha256 = "9e26765efd7cda24dbe91965dfb1ff8abcaa9ac7bafc3afa7fc1d081dea47d7f",
+        canonical_id = "index-import-5.8",
+        urls = ["https://github.com/MobileNativeFoundation/index-import/releases/download/5.8.0.1/index-import.tar.gz"],
+        sha256 = "28c1ffa39d99e74ed70623899b207b41f79214c498c603915aef55972a851a15",
     )
 
     _maybe(
