@@ -84,8 +84,8 @@ A new attribute dictionary that can be added to the attributes of a
 
 <pre>
 swift_common.compile(<a href="#swift_common.compile-actions">actions</a>, <a href="#swift_common.compile-additional_inputs">additional_inputs</a>, <a href="#swift_common.compile-copts">copts</a>, <a href="#swift_common.compile-defines">defines</a>, <a href="#swift_common.compile-deps">deps</a>, <a href="#swift_common.compile-feature_configuration">feature_configuration</a>,
-                     <a href="#swift_common.compile-generated_header_name">generated_header_name</a>, <a href="#swift_common.compile-is_test">is_test</a>, <a href="#swift_common.compile-module_name">module_name</a>, <a href="#swift_common.compile-private_deps">private_deps</a>, <a href="#swift_common.compile-srcs">srcs</a>, <a href="#swift_common.compile-swift_toolchain">swift_toolchain</a>,
-                     <a href="#swift_common.compile-target_name">target_name</a>, <a href="#swift_common.compile-workspace_name">workspace_name</a>)
+                     <a href="#swift_common.compile-generated_header_name">generated_header_name</a>, <a href="#swift_common.compile-is_test">is_test</a>, <a href="#swift_common.compile-module_name">module_name</a>, <a href="#swift_common.compile-package_name">package_name</a>, <a href="#swift_common.compile-private_deps">private_deps</a>, <a href="#swift_common.compile-srcs">srcs</a>,
+                     <a href="#swift_common.compile-swift_toolchain">swift_toolchain</a>, <a href="#swift_common.compile-target_name">target_name</a>, <a href="#swift_common.compile-workspace_name">workspace_name</a>)
 </pre>
 
 Compiles a Swift module.
@@ -104,6 +104,7 @@ Compiles a Swift module.
 | <a id="swift_common.compile-generated_header_name"></a>generated_header_name |  The name of the Objective-C generated header that should be generated for this module. If omitted, no header will be generated.   |  <code>None</code> |
 | <a id="swift_common.compile-is_test"></a>is_test |  Represents if the <code>testonly</code> value of the context.   |  none |
 | <a id="swift_common.compile-module_name"></a>module_name |  The name of the Swift module being compiled. This must be present and valid; use <code>swift_common.derive_module_name</code> to generate a default from the target's label if needed.   |  none |
+| <a id="swift_common.compile-package_name"></a>package_name |  The semantic package of the name of the Swift module being compiled.   |  none |
 | <a id="swift_common.compile-private_deps"></a>private_deps |  Private (implementation-only) dependencies of the target being compiled. These are only used as dependencies of the Swift module, not of the Clang module for the generated header. These targets must propagate one of the following providers: <code>CcInfo</code>, <code>SwiftInfo</code>, or <code>apple_common.Objc</code>.   |  <code>[]</code> |
 | <a id="swift_common.compile-srcs"></a>srcs |  The Swift source files to compile.   |  none |
 | <a id="swift_common.compile-swift_toolchain"></a>swift_toolchain |  The <code>SwiftToolchainInfo</code> provider of the toolchain.   |  none |

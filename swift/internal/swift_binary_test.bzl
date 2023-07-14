@@ -216,6 +216,7 @@ def _swift_linking_rule_impl(
             feature_configuration = feature_configuration,
             is_test = ctx.attr.testonly,
             module_name = module_name,
+            package_name = ctx.attr.package_name,
             srcs = srcs,
             swift_toolchain = swift_toolchain,
             target_name = ctx.label.name,

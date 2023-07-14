@@ -1062,6 +1062,16 @@ def compile_action_configs(
             ],
             configurators = [_module_name_configurator],
         ),
+        # Set the package name.
+        swift_toolchain_config.action_config(
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVE_FILES,
+                swift_action_names.PRECOMPILE_C_MODULE,
+                swift_action_names.DUMP_AST,
+            ],
+            configurators = [_package_name_configurator],
+        ),
 
         # Pass extra flags for swiftmodule only compilations
         swift_toolchain_config.action_config(
@@ -1675,6 +1685,10 @@ def _module_name_configurator(prerequisites, args):
     """Adds the module name flag to the command line."""
     args.add("-module-name", prerequisites.module_name)
 
+def _package_name_configurator(prerequisites, args):
+    if prerequisites.package_name:
+        args.add("-package-name", prerequisites.package_name)
+
 def _source_files_configurator(prerequisites, args):
     """Adds source files to the command line and required inputs."""
     args.add_all(prerequisites.source_files)
@@ -1951,6 +1965,7 @@ def compile(
         generated_header_name = None,
         is_test,
         module_name,
+        package_name,
         private_deps = [],
         srcs,
         swift_toolchain,
@@ -1983,6 +1998,8 @@ def compile(
         module_name: The name of the Swift module being compiled. This must be
             present and valid; use `swift_common.derive_module_name` to generate
             a default from the target's label if needed.
+        package_name: The semantic package of the name of the Swift module
+            being compiled.
         private_deps: Private (implementation-only) dependencies of the target
             being compiled. These are only used as dependencies of the Swift
             module, not of the Clang module for the generated header. These
@@ -2163,6 +2180,7 @@ def compile(
         is_swift = True,
         is_test = is_test,
         module_name = module_name,
+        package_name = package_name,
         objc_include_paths_workaround = (
             merged_providers.objc_include_paths_workaround
         ),
@@ -2437,6 +2455,7 @@ def _precompile_clang_module(
         is_swift_generated_header = is_swift_generated_header,
         is_test = False,
         module_name = module_name,
+        package_name = None,
         objc_include_paths_workaround = depset(),
         objc_info = apple_common.new_objc_provider(),
         pcm_file = precompiled_module,

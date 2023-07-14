@@ -433,6 +433,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             feature_configuration = feature_configuration,
             is_test = False,
             module_name = module_name,
+            package_name = None,
             srcs = pbswift_files,
             swift_toolchain = swift_toolchain,
             target_name = target.label.name,

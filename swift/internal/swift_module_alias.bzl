@@ -62,6 +62,7 @@ def _swift_module_alias_impl(ctx):
         feature_configuration = feature_configuration,
         is_test = ctx.attr.testonly,
         module_name = module_name,
+        package_name = None,
         srcs = [reexport_src],
         swift_toolchain = swift_toolchain,
         target_name = ctx.label.name,

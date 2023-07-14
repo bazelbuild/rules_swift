@@ -1,5 +1,6 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load(":ast_file_tests.bzl", "ast_file_test_suite")
+load(":compiler_arguments_tests.bzl", "compiler_arguments_test_suite")
 load(":coverage_settings_tests.bzl", "coverage_settings_test_suite")
 load(":debug_settings_tests.bzl", "debug_settings_test_suite")
 load(":features_tests.bzl", "features_test_suite")
@@ -18,6 +19,8 @@ load(":bzl_test.bzl", "bzl_test")
 licenses(["notice"])
 
 ast_file_test_suite(name = "ast_file")
+
+compiler_arguments_test_suite(name = "compiler_arguments")
 
 coverage_settings_test_suite(name = "coverage_settings")
 
