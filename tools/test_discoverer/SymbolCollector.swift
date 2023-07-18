@@ -72,13 +72,13 @@ final class SymbolCollector {
     // described below.
     symbolLoop: for (preciseIdentifier, symbol) in symbolGraph.symbols {
       switch symbol.kind.identifier {
-      case "swift.class":
+      case .class:
         // Keep track of all classes for now; their inheritance relationships will be resolved
         // on-demand once we have all the symbol graphs loaded.
         possibleTestClasses[preciseIdentifier] = symbol
         modulesForClassIdentifiers[preciseIdentifier] = symbolGraph.module.name
 
-      case "swift.method":
+      case .method:
         // Swift Package Manager uses the index store to discover tests; index-while-building writes
         // a unit-test property for any method that satisfies this method:
         // https://github.com/apple/swift/blob/da3856c45b7149730d6e5fdf528ac82b43daccac/lib/Index/IndexSymbol.cpp#L40-L82
