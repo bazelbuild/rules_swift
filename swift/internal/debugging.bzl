@@ -23,6 +23,7 @@ load(
 load(":derived_files.bzl", "derived_files")
 load(
     ":feature_names.bzl",
+    "SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT",
     "SWIFT_FEATURE_DBG",
     "SWIFT_FEATURE_FASTBUILD",
     "SWIFT_FEATURE_NO_EMBED_DEBUG_MODULE",
@@ -58,12 +59,18 @@ def ensure_swiftmodule_is_embedded(
         action_name = swift_action_names.MODULEWRAP,
         swift_toolchain = swift_toolchain,
     ):
+        add_target_name_to_output_path = is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT,
+        )
+
         # For ELF-format binaries, we need to invoke a Swift modulewrap action
         # to wrap the .swiftmodule file in a .o file that gets propagated to the
         # linker.
         modulewrap_obj = derived_files.modulewrap_object(
             actions,
             target_name = label.name,
+            add_target_name_to_output_path = add_target_name_to_output_path,
         )
         _register_modulewrap_action(
             actions = actions,
