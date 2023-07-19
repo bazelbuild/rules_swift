@@ -130,15 +130,6 @@ def _platform_developer_framework_dir(
         The path to the Developer framework directory for the platform if one
         exists, otherwise `None`.
     """
-
-    # All platforms have a `Developer/Library/Frameworks` directory in their
-    # platform root, except for watchOS prior to Xcode 12.5.
-    if (
-        target_triples.unversioned_os(target_triple) == "watchos" and
-        not _is_xcode_at_least_version(xcode_config, "12.5")
-    ):
-        return None
-
     return paths.join(
         apple_toolchain.developer_dir(),
         "Platforms",
@@ -162,12 +153,9 @@ def _sdk_developer_framework_dir(apple_toolchain, target_triple, xcode_config):
     """
 
     # All platforms have a `Developer/Library/Frameworks` directory in their SDK
-    # root except for macOS (all versions of Xcode so far), and watchOS (prior
-    # to Xcode 12.5).
+    # root except for macOS.
     os = target_triples.unversioned_os(target_triple)
-    if (os == "macos" or
-        (os == "watchos" and
-         not _is_xcode_at_least_version(xcode_config, "12.5"))):
+    if os == "macos":
         return None
 
     return paths.join(apple_toolchain.sdk_dir(), "Developer/Library/Frameworks")
@@ -463,15 +451,6 @@ def _all_tool_configs(
     if custom_toolchain:
         env["TOOLCHAINS"] = custom_toolchain
 
-    # In Xcode 13.3 and 13.4 (Swift 5.6), the legacy driver prints a warning
-    # if it is used. Suppress it, since we still have to use it on those
-    # specific versions due to response file bugs.
-    if (
-        _is_xcode_at_least_version(xcode_config, "13.3") and
-        not _is_xcode_at_least_version(xcode_config, "14.0")
-    ):
-        env["SWIFT_AVOID_WARNING_USING_OLD_DRIVER"] = "1"
-
     def _driver_config(*, mode):
         return {
             "mode": mode,
@@ -479,7 +458,7 @@ def _all_tool_configs(
             "toolchain_root": toolchain_root,
         }
 
-    tool_configs = {
+    return {
         SWIFT_ACTION_COMPILE: ToolConfigInfo(
             driver_config = _driver_config(mode = "swiftc"),
             env = env,
@@ -501,29 +480,21 @@ def _all_tool_configs(
             use_param_file = True,
             worker_mode = "wrap",
         ),
-    }
-
-    # Xcode 12.0 implies Swift 5.3.
-    if _is_xcode_at_least_version(xcode_config, "12.0"):
-        tool_configs[SWIFT_ACTION_PRECOMPILE_C_MODULE] = ToolConfigInfo(
+        SWIFT_ACTION_PRECOMPILE_C_MODULE: ToolConfigInfo(
             driver_config = _driver_config(mode = "swiftc"),
             env = env,
             execution_requirements = execution_requirements,
             use_param_file = True,
             worker_mode = "wrap",
-        )
-
-    # Xcode 13.0 implies Swift 5.5.
-    if _is_xcode_at_least_version(xcode_config, "13.0"):
-        tool_configs[SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT] = ToolConfigInfo(
+        ),
+        SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT: ToolConfigInfo(
             driver_config = _driver_config(mode = "swift-symbolgraph-extract"),
             env = env,
             execution_requirements = execution_requirements,
             use_param_file = True,
             worker_mode = "wrap",
-        )
-
-    return tool_configs
+        ),
+    }
 
 def _is_xcode_at_least_version(xcode_config, desired_version):
     """Returns True if we are building with at least the given Xcode version.
