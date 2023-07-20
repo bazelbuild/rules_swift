@@ -22,14 +22,13 @@ visibility([
 
 def _tool_config_info_init(
         *,
+        additional_tools = [],
         args = [],
         driver_config = {},
         env = {},
         executable = None,
         execution_requirements = {},
         resource_set = None,
-        tool_input_manifests = [],
-        tool_inputs = depset(),
         use_param_file = False,
         worker_mode = None):
     """Validates and initializes a new Swift toolchain tool configuration.
@@ -51,6 +50,11 @@ def _tool_config_info_init(
         path or by another delegating tool like `xcrun` from Xcode).
 
     Args:
+        additional_tools: A list of `File`s or `FilesToRunProvider`s denoting
+            additional tools that should be passed as inputs to actions that
+            use this tool. This should be used if `executable` is, for example,
+            a symlink that points to another executable or if it is a driver
+            that launches other executables as subprocesses.
         args: A list of arguments that are always passed to the tool.
         driver_config: Special configuration for a Swift driver tool. This
             dictionary must contain a `mode` key that indicates the Swift driver
@@ -70,14 +74,6 @@ def _tool_config_info_init(
             should be passed when creating actions with this tool.
         resource_set: The function which build resource set (mem, cpu) for local
             invocation of the action.
-        tool_input_manifests: A list of input runfiles metadata for tools that
-            should be passed into the `input_manifests` argument of the
-            `ctx.actions.run` call that registers actions using this tool (see
-            also Bazel's `ctx.resolve_tools`).
-        tool_inputs: A `depset` of additional inputs for tools that should be
-            passed into the `tools` argument of the `ctx.actions.run` call that
-            registers actions using this tool (see also Bazel's
-            `ctx.resolve_tools`).
         use_param_file: If True, actions invoked using this tool will have their
             arguments written to a param file.
         worker_mode: A string, or `None`, describing how the tool is invoked
@@ -114,13 +110,12 @@ def _tool_config_info_init(
             executable = driver_mode
 
     return {
+        "additional_tools": additional_tools,
         "args": args,
         "env": env,
         "executable": executable,
         "execution_requirements": execution_requirements,
         "resource_set": resource_set,
-        "tool_input_manifests": tool_input_manifests,
-        "tool_inputs": tool_inputs,
         "use_param_file": use_param_file,
         "worker_mode": _validate_worker_mode(worker_mode),
     }
@@ -128,13 +123,12 @@ def _tool_config_info_init(
 ToolConfigInfo, _tool_config_info_init_unchecked = provider(
     doc = "A tool used by the Swift toolchain and its requirements.",
     fields = [
+        "additional_tools",
         "args",
         "env",
         "executable",
         "execution_requirements",
         "resource_set",
-        "tool_input_manifests",
-        "tool_inputs",
         "use_param_file",
         "worker_mode",
     ],
