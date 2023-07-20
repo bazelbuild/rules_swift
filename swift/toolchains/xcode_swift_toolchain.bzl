@@ -114,16 +114,12 @@ def _swift_developer_lib_dir(platform_framework_dir):
         "lib",
     )
 
-def _platform_developer_framework_dir(
-        apple_toolchain,
-        target_triple,
-        xcode_config):
+def _platform_developer_framework_dir(apple_toolchain, target_triple):
     """Returns the Developer framework directory for the platform.
 
     Args:
         apple_toolchain: The `apple_common.apple_toolchain()` object.
         target_triple: The triple of the platform being targeted.
-        xcode_config: The Xcode configuration.
 
     Returns:
         The path to the Developer framework directory for the platform if one
@@ -138,13 +134,12 @@ def _platform_developer_framework_dir(
         "Developer/Library/Frameworks",
     )
 
-def _sdk_developer_framework_dir(apple_toolchain, target_triple, xcode_config):
+def _sdk_developer_framework_dir(apple_toolchain, target_triple):
     """Returns the Developer framework directory for the SDK.
 
     Args:
         apple_toolchain: The `apple_common.apple_toolchain()` object.
         target_triple: The triple of the platform being targeted.
-        xcode_config: The Xcode configuration.
 
     Returns:
         The path to the Developer framework directory for the SDK if one
@@ -162,8 +157,7 @@ def _sdk_developer_framework_dir(apple_toolchain, target_triple, xcode_config):
 def _swift_linkopts_cc_info(
         apple_toolchain,
         target_triple,
-        toolchain_label,
-        xcode_config):
+        toolchain_label):
     """Returns a `CcInfo` containing flags that should be passed to the linker.
 
     The providers returned by this function will be used as implicit
@@ -175,7 +169,6 @@ def _swift_linkopts_cc_info(
         target_triple: The target triple `struct`.
         toolchain_label: The label of the Swift toolchain that will act as the
             owner of the linker input propagating the flags.
-        xcode_config: The Xcode configuration.
 
     Returns:
         A `CcInfo` provider that will provide linker flags to binaries that
@@ -184,12 +177,10 @@ def _swift_linkopts_cc_info(
     platform_developer_framework_dir = _platform_developer_framework_dir(
         apple_toolchain,
         target_triple,
-        xcode_config,
     )
     sdk_developer_framework_dir = _sdk_developer_framework_dir(
         apple_toolchain,
         target_triple,
-        xcode_config,
     )
     swift_lib_dir = paths.join(
         apple_toolchain.developer_dir(),
@@ -295,12 +286,10 @@ def _all_action_configs(
     platform_developer_framework_dir = _platform_developer_framework_dir(
         apple_toolchain,
         target_triple,
-        xcode_config,
     )
     sdk_developer_framework_dir = _sdk_developer_framework_dir(
         apple_toolchain,
         target_triple,
-        xcode_config,
     )
     developer_framework_dirs = compact([
         platform_developer_framework_dir,
@@ -424,8 +413,7 @@ def _all_tool_configs(
         execution_requirements,
         generated_header_rewriter,
         swift_executable,
-        toolchain_root,
-        xcode_config):
+        toolchain_root):
     """Returns the tool configurations for the Swift toolchain.
 
     Args:
@@ -439,7 +427,6 @@ def _all_tool_configs(
         swift_executable: A custom Swift driver executable to be used during the
             build, if provided.
         toolchain_root: The root directory of the toolchain, if provided.
-        xcode_config: The `apple_common.XcodeVersionConfig` provider.
 
     Returns:
         A dictionary mapping action name to tool configuration.
@@ -577,7 +564,6 @@ def _xcode_swift_toolchain_impl(ctx):
         apple_toolchain = apple_toolchain,
         target_triple = target_triple,
         toolchain_label = ctx.label,
-        xcode_config = xcode_config,
     )
 
     # `--define=SWIFT_USE_TOOLCHAIN_ROOT=<path>` is a rapid development feature
@@ -625,7 +611,6 @@ def _xcode_swift_toolchain_impl(ctx):
         generated_header_rewriter = generated_header_rewriter,
         swift_executable = swift_executable,
         toolchain_root = toolchain_root,
-        xcode_config = xcode_config,
     )
     all_action_configs = _all_action_configs(
         additional_objc_copts = command_line_objc_copts(
