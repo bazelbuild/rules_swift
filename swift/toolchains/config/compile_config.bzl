@@ -811,6 +811,10 @@ def compile_action_configs(
                 SWIFT_ACTION_DERIVE_FILES,
             ],
             configurators = [_macro_expansion_configurator],
+            # The compiler only generates these in debug builds, unless we pass
+            # additional frontend flags. At the current time, we only want to
+            # capture these for debug builds.
+            not_features = [SWIFT_FEATURE_OPT],
         ),
 
         # swift-symbolgraph-extract doesn't yet support explicit Swift module
