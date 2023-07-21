@@ -25,6 +25,10 @@
 #include <string>
 #include <vector>
 
+#include "absl/cleanup/cleanup.h"
+#include "absl/container/flat_hash_map.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_split.h"
 #include "tools/common/path_utils.h"
 
 extern char **environ;
@@ -136,18 +140,20 @@ std::vector<const char *> ConvertToCArgs(const std::vector<std::string> &args) {
 
 }  // namespace
 
-void ExecProcess(const std::vector<std::string> &args) {
-  std::vector<const char *> exec_argv = ConvertToCArgs(args);
-  execv(args[0].c_str(), const_cast<char **>(exec_argv.data()));
-  std::cerr << "Error executing child process.'" << args[0] << "'. "
-            << strerror(errno) << std::endl;
-  abort();
+absl::flat_hash_map<std::string, std::string> GetCurrentEnvironment() {
+  absl::flat_hash_map<std::string, std::string> result;
+  char **envp = environ;
+  while (*envp++ != nullptr) {
+    std::pair<absl::string_view, absl::string_view> key_value =
+        absl::StrSplit(*envp, absl::MaxSplits('=', 1));
+    result[key_value.first] = std::string(key_value.second);
+  }
+  return result;
 }
 
 int RunSubProcess(const std::vector<std::string> &args,
+                  const absl::flat_hash_map<std::string, std::string> *env,
                   std::ostream &stderr_stream, bool stdout_to_stderr) {
-  std::vector<const char *> exec_argv = ConvertToCArgs(args);
-
   // Set up a pipe to redirect stderr from the child process so that we can
   // capture it and return it in the response message.
   std::unique_ptr<PosixSpawnIORedirector> redirector =
@@ -158,10 +164,34 @@ int RunSubProcess(const std::vector<std::string> &args,
     return 254;
   }
 
+  std::vector<const char *> exec_argv = ConvertToCArgs(args);
+
+  char **envp;
+  std::vector<char *> new_environ;
+
+  if (env) {
+    // Copy the environment as an array of C strings, with guaranteed cleanup
+    // below whenever we exit.
+    for (const auto &[key, value] : *env) {
+      new_environ.push_back(strdup(absl::StrCat(key, "=", value).c_str()));
+    }
+    new_environ.push_back(nullptr);
+    envp = new_environ.data();
+  } else {
+    // If no environment was passed, use the current process's verbatim.
+    envp = environ;
+  }
+
+  absl::Cleanup c = [&new_environ] {
+    for (char *envp : new_environ) {
+      free(envp);
+    }
+  };
+
   pid_t pid;
   int status =
       posix_spawn(&pid, args[0].c_str(), redirector->PosixSpawnFileActions(),
-                  nullptr, const_cast<char **>(exec_argv.data()), environ);
+                  nullptr, const_cast<char **>(exec_argv.data()), envp);
   redirector->ConsumeAllSubprocessOutput(stderr_stream);
 
   if (status == 0) {

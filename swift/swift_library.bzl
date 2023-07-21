@@ -42,6 +42,10 @@ load(
     "create_linking_context_from_compilation_outputs",
 )
 load(
+    "@build_bazel_rules_swift//swift/internal:output_groups.bzl",
+    "supplemental_compilation_output_groups",
+)
+load(
     "@build_bazel_rules_swift//swift/internal:providers.bzl",
     "SwiftCompilerPluginInfo",
 )
@@ -202,12 +206,6 @@ def _swift_library_impl(ctx):
     compilation_outputs = compile_result.compilation_outputs
     supplemental_outputs = compile_result.supplemental_outputs
 
-    output_groups = {}
-    if supplemental_outputs.indexstore_directory:
-        output_groups["indexstore"] = depset([
-            supplemental_outputs.indexstore_directory,
-        ])
-
     linking_context, linking_output = (
         create_linking_context_from_compilation_outputs(
             actions = ctx.actions,
@@ -267,7 +265,9 @@ def _swift_library_impl(ctx):
             source_attributes = ["srcs"],
         ),
         compile_result.swift_info,
-        OutputGroupInfo(**output_groups),
+        OutputGroupInfo(
+            **supplemental_compilation_output_groups(supplemental_outputs)
+        ),
     ]
 
 swift_library = rule(

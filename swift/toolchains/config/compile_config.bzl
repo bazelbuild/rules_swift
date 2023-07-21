@@ -56,6 +56,7 @@ load(
     "SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP",
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
     "SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS",
+    "SWIFT_FEATURE__SUPPORTS_MACROS",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
 )
 load(":action_config.bzl", "ActionConfigInfo", "ConfigResultInfo", "add_arg")
@@ -548,6 +549,15 @@ def compile_action_configs(
         ActionConfigInfo(
             actions = [SWIFT_ACTION_COMPILE],
             configurators = [_plugins_configurator],
+        ),
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE],
+            configurators = [_macro_expansion_configurator],
+            features = [SWIFT_FEATURE__SUPPORTS_MACROS],
+            # The compiler only generates these in debug builds, unless we pass
+            # additional frontend flags. At the current time, we only want to
+            # capture these for debug builds.
+            not_features = [SWIFT_FEATURE_OPT],
         ),
 
         # swift-symbolgraph-extract doesn't yet support explicit Swift module
@@ -1399,6 +1409,15 @@ def _plugins_configurator(prerequisites, args):
     return ConfigResultInfo(
         inputs = [p.executable for p in prerequisites.plugins],
     )
+
+def _macro_expansion_configurator(prerequisites, args):
+    """Adds flags to control where macro expansions are generated."""
+    args.add(
+        prerequisites.macro_expansion_directory.path,
+        format = "-Xwrapped-swift=-macro-expansion-dir=%s",
+    )
+
+    return None
 
 def _explicit_swift_module_map_configurator(prerequisites, args, is_frontend = False):
     """Adds the explicit Swift module map file to the command line."""

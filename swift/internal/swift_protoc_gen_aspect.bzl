@@ -37,6 +37,7 @@ load(
 )
 load(":features.bzl", "configure_features")
 load(":linking.bzl", "create_linking_context_from_compilation_outputs")
+load(":output_groups.bzl", "supplemental_compilation_output_groups")
 load(
     ":proto_gen_utils.bzl",
     "proto_import_path",
@@ -290,12 +291,6 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
         compilation_outputs = compile_result.compilation_outputs
         supplemental_outputs = compile_result.supplemental_outputs
 
-        output_groups = {}
-        if supplemental_outputs.indexstore_directory:
-            output_groups["indexstore"] = depset([
-                supplemental_outputs.indexstore_directory,
-            ])
-
         linking_context, _ = (
             create_linking_context_from_compilation_outputs(
                 actions = aspect_ctx.actions,
@@ -320,7 +315,9 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
         )
 
         providers = [
-            OutputGroupInfo(**output_groups),
+            OutputGroupInfo(
+                **supplemental_compilation_output_groups(supplemental_outputs)
+            ),
             SwiftProtoCompilationInfo(
                 cc_info = cc_info,
                 swift_info = compile_result.swift_info,

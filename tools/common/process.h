@@ -18,18 +18,21 @@
 #include <string>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
+
 namespace bazel_rules_swift {
 
-// Turn our current process into a new process. Avoids fork overhead.
-// Never returns.
-void ExecProcess(const std::vector<std::string> &args);
-
 // Spawns a subprocess for given arguments args and waits for it to terminate.
-// The first argument is used for the executable path. If stdout_to_stderr is
-// set, then stdout is redirected to the stderr stream as well. Returns the exit
-// code of the spawned process.
+// The first element in args is used for the executable path. If env is nullptr,
+// then the current process's environment is used; otherwise, the new
+// environment is used. If stdout_to_stderr is set, then stdout is redirected to
+// the stderr stream as well. Returns the exit code of the spawned process.
 int RunSubProcess(const std::vector<std::string> &args,
+                  const absl::flat_hash_map<std::string, std::string> *env,
                   std::ostream &stderr_stream, bool stdout_to_stderr = false);
+
+// Returns a hash map containing the current process's environment.
+absl::flat_hash_map<std::string, std::string> GetCurrentEnvironment();
 
 }  // namespace bazel_rules_swift
 

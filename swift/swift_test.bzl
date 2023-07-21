@@ -26,6 +26,10 @@ load(
     "register_link_binary_action",
 )
 load(
+    "@build_bazel_rules_swift//swift/internal:output_groups.bzl",
+    "supplemental_compilation_output_groups",
+)
+load(
     "@build_bazel_rules_swift//swift/internal:providers.bzl",
     "SwiftCompilerPluginInfo",
 )
@@ -306,7 +310,6 @@ def _swift_test_impl(ctx):
     is_bundled = discover_tests and uses_xctest_bundles
 
     srcs = ctx.files.srcs
-    output_groups = {}
     owner_symbol_graph_dir = None
 
     deps = list(ctx.attr.deps)
@@ -349,6 +352,7 @@ def _swift_test_impl(ctx):
         module_name = derive_swift_module_name(ctx.label)
 
     module_contexts = []
+    all_supplemental_outputs = []
 
     if srcs:
         # If the `swift_test` target had sources, compile those first and then
@@ -377,12 +381,7 @@ def _swift_test_impl(ctx):
 
         module_contexts.append(compile_result.module_context)
         compilation_outputs = compile_result.compilation_outputs
-        supplemental_outputs = compile_result.supplemental_outputs
-
-        if supplemental_outputs.indexstore_directory:
-            output_groups["indexstore"] = depset([
-                supplemental_outputs.indexstore_directory,
-            ])
+        all_supplemental_outputs.append(compile_result.supplemental_outputs)
 
         swift_infos_including_owner = [compile_result.swift_info]
 
@@ -439,13 +438,9 @@ def _swift_test_impl(ctx):
                 discovery_compile_result.compilation_outputs,
             ],
         )
-        discovery_supplemental_outputs = (
-            discovery_compile_result.supplemental_outputs
+        all_supplemental_outputs.append(
+            discovery_compile_result.supplemental_outputs,
         )
-        if discovery_supplemental_outputs.indexstore_directory:
-            output_groups["indexstore"] = depset([
-                discovery_supplemental_outputs.indexstore_directory,
-            ])
 
     # If we need to run the test in an .xctest bundle, the binary must have
     # Mach-O type `MH_BUNDLE` instead of `MH_EXECUTE`.
@@ -525,7 +520,9 @@ def _swift_test_impl(ctx):
                 transitive_files = ctx.attr._apple_coverage_support.files,
             ),
         ),
-        OutputGroupInfo(**output_groups),
+        OutputGroupInfo(
+            **supplemental_compilation_output_groups(*all_supplemental_outputs)
+        ),
         coverage_common.instrumented_files_info(
             ctx,
             dependency_attributes = ["deps"],

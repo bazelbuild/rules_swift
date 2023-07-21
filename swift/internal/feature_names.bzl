@@ -171,14 +171,11 @@ SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE = "swift.use_global_module_cache"
 SWIFT_FEATURE_CACHEABLE_SWIFTMODULES = "swift.cacheable_swiftmodules"
 
 # If enabled, requests the `-enable-library-evolution` swiftc flag which is
-# required for newer features like swiftinterface file generation. If the
-# `SWIFT_FEATURES_SUPPORTS_LIBRARY_EVOLUTION` feature is not enabled, this
-# feature is a noop.
+# required for newer features like swiftinterface file generation.
 SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION = "swift.enable_library_evolution"
 
 # If enabled, requests the swiftinterface file to be built on the swiftc
-# invocation. If the `SWIFT_FEATURES_SUPPORTS_LIBRARY_EVOLUTION` feature is not
-# enabled, this feature is a noop.
+# invocation.
 SWIFT_FEATURE_EMIT_SWIFTINTERFACE = "swift.emit_swiftinterface"
 
 # If enabled, the .swiftmodule file for the affected target will not be
@@ -235,3 +232,8 @@ SWIFT_FEATURE_DISABLE_CLANG_SPI = "swift.disable_clang_spi"
 # part of the same link unit or that public symbols linked into frameworks are
 # explicitly exported via `-exported_symbols_list`.
 SWIFT_FEATURE_INTERNALIZE_AT_LINK = "swift.internalize_at_link"
+
+# A private feature that is set by the toolchain if it supports macros (Swift
+# 5.9 and above). Users should never manually enable, disable, or query this
+# feature.
+SWIFT_FEATURE__SUPPORTS_MACROS = "swift._supports_macros"

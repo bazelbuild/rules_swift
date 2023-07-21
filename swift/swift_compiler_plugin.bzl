@@ -27,6 +27,10 @@ load(
     "register_link_binary_action",
 )
 load(
+    "@build_bazel_rules_swift//swift/internal:output_groups.bzl",
+    "supplemental_compilation_output_groups",
+)
+load(
     "@build_bazel_rules_swift//swift/internal:providers.bzl",
     "SwiftCompilerPluginInfo",
 )
@@ -63,7 +67,6 @@ def _swift_compiler_plugin_impl(ctx):
 
     deps = ctx.attr.deps
     srcs = ctx.files.srcs
-    output_groups = {}
     module_contexts = []
 
     if not srcs:
@@ -107,11 +110,6 @@ def _swift_compiler_plugin_impl(ctx):
     module_contexts.append(module_context)
     compilation_outputs = compile_result.compilation_outputs
     supplemental_outputs = compile_result.supplemental_outputs
-
-    if supplemental_outputs.indexstore_directory:
-        output_groups["indexstore"] = depset([
-            supplemental_outputs.indexstore_directory,
-        ])
 
     # Apply the optional debugging outputs extension if the toolchain defines
     # one.
@@ -182,7 +180,9 @@ def _swift_compiler_plugin_impl(ctx):
                 files = ctx.files.data,
             ),
         ),
-        OutputGroupInfo(**output_groups),
+        OutputGroupInfo(
+            **supplemental_compilation_output_groups(supplemental_outputs)
+        ),
         SwiftCompilerPluginInfo(
             cc_info = CcInfo(
                 compilation_context = module_context.clang.compilation_context,

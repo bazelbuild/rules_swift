@@ -123,6 +123,11 @@ bzl_library(
 )
 
 bzl_library(
+    name = "output_groups",
+    srcs = ["output_groups.bzl"],
+)
+
+bzl_library(
     name = "package_specs",
     srcs = ["package_specs.bzl"],
 )
@@ -155,6 +160,7 @@ bzl_library(
         ":feature_names",
         ":features",
         ":linking",
+        ":output_groups",
         ":proto_gen_utils",
         ":toolchain_utils",
         ":utils",

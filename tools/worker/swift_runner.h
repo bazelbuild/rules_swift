@@ -21,6 +21,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/strings/string_view.h"
 #include "tools/common/bazel_substitutions.h"
 #include "tools/common/temp_file.h"
@@ -135,6 +136,11 @@ class SwiftRunner {
   // The arguments, post-substitution, passed to the spawner. This does not
   // include the binary path, and may be written into a response file.
   std::vector<std::string> args_;
+
+  // The environment that should be passed to the original job (but not to other
+  // jobs spawned by the worker, such as the generated header rewriter or the
+  // emit-imports job).
+  absl::flat_hash_map<std::string, std::string> job_env_;
 
   // Temporary files (e.g., rewritten response files) that should be cleaned up
   // after the driver has terminated.

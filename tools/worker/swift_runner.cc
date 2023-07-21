@@ -14,9 +14,12 @@
 
 #include "tools/worker/swift_runner.h"
 
+#include <fcntl.h>
+
 #include <fstream>
 
 #include "absl/container/btree_set.h"
+#include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
@@ -119,13 +122,14 @@ bool StartsWithXcrun(const std::vector<std::string> &args) {
 // response file and concatenating that after `tool_args` (which are passed
 // outside the response file).
 int SpawnJob(const std::vector<std::string> &tool_args,
-             const std::vector<std::string> &args, std::ostream &stderr_stream,
-             bool stdout_to_stderr) {
+             const std::vector<std::string> &args,
+             const absl::flat_hash_map<std::string, std::string> *env,
+             std::ostream &stderr_stream, bool stdout_to_stderr) {
   std::unique_ptr<TempFile> response_file = WriteResponseFile(args);
 
   std::vector<std::string> spawn_args(tool_args);
   spawn_args.push_back(absl::StrCat("@", response_file->GetPath()));
-  return RunSubProcess(spawn_args, stderr_stream, stdout_to_stderr);
+  return RunSubProcess(spawn_args, env, stderr_stream, stdout_to_stderr);
 }
 
 // Returns a value indicating whether an argument on the Swift command line
@@ -172,13 +176,15 @@ bool IsModuleIgnorableForLayeringCheck(absl::string_view module_name) {
 
 SwiftRunner::SwiftRunner(const std::vector<std::string> &args,
                          bool force_response_file)
-    : force_response_file_(force_response_file) {
+    : job_env_(GetCurrentEnvironment()),
+      force_response_file_(force_response_file) {
   ProcessArguments(args);
 }
 
 int SwiftRunner::Run(std::ostream &stderr_stream, bool stdout_to_stderr) {
   // Spawn the originally requested job with its full argument list.
-  int exit_code = SpawnJob(tool_args_, args_, stderr_stream, stdout_to_stderr);
+  int exit_code =
+      SpawnJob(tool_args_, args_, &job_env_, stderr_stream, stdout_to_stderr);
   if (exit_code != 0) {
     return exit_code;
   }
@@ -254,6 +260,28 @@ bool SwiftRunner::ProcessArgument(
       // we didn't know at analysis time.
       consumer("-file-prefix-map");
       consumer(GetCurrentDirectory() + "=.");
+      return true;
+    }
+
+    if (absl::ConsumePrefix(&trimmed_arg, "-macro-expansion-dir=")) {
+      std::string temp_dir = std::string(trimmed_arg);
+
+      // We don't have a clean way to report an error out of this function. If
+      // If creating the directory fails, then the compiler will fail later
+      // anyway.
+      MakeDirs(temp_dir, S_IRWXU).IgnoreError();
+
+      // By default, the compiler creates a directory under the system temp
+      // directory to hold macro expansions. The underlying LLVM API lets us
+      // customize this location by setting `TMPDIR` in the environment, so this
+      // lets us redirect those files to a deterministic location. A pull
+      // request like https://github.com/apple/swift/pull/67184 would let us do
+      // the same thing without this trick, but it hasn't been merged.
+      //
+      // For now, this is the only major use of `TMPDIR` by the compiler, so we
+      // can do this without other stuff that we don't want moving there. We may
+      // need to revisit this logic if that changes.
+      job_env_["TMPDIR"] = temp_dir;
       return true;
     }
 
@@ -337,7 +365,8 @@ int SwiftRunner::PerformGeneratedHeaderRewriting(std::ostream &stderr_stream,
   rewriter_tool_args.push_back("--");
   rewriter_tool_args.push_back(tool_args_[tool_binary_index]);
 
-  return SpawnJob(rewriter_tool_args, args_, stderr_stream, stdout_to_stderr);
+  return SpawnJob(rewriter_tool_args, args_, /*env=*/nullptr, stderr_stream,
+                  stdout_to_stderr);
 }
 
 int SwiftRunner::PerformLayeringCheck(std::ostream &stderr_stream,
@@ -359,8 +388,8 @@ int SwiftRunner::PerformLayeringCheck(std::ostream &stderr_stream,
   emit_imports_args.push_back("-emit-imported-modules");
   emit_imports_args.push_back("-o");
   emit_imports_args.push_back(imported_modules_path);
-  int exit_code =
-      SpawnJob(tool_args_, emit_imports_args, stderr_stream, stdout_to_stderr);
+  int exit_code = SpawnJob(tool_args_, emit_imports_args, /*env=*/nullptr,
+                           stderr_stream, stdout_to_stderr);
   if (exit_code != 0) {
     WithColor(stderr_stream, Color::kBoldRed) << std::endl << "error: ";
     WithColor(stderr_stream, Color::kBold)

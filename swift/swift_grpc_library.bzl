@@ -39,6 +39,10 @@ load(
     "create_linking_context_from_compilation_outputs",
 )
 load(
+    "@build_bazel_rules_swift//swift/internal:output_groups.bzl",
+    "supplemental_compilation_output_groups",
+)
+load(
     "@build_bazel_rules_swift//swift/internal:proto_gen_utils.bzl",
     "declare_generated_files_in_subdir",
     "proto_import_path",
@@ -320,12 +324,6 @@ def _swift_grpc_library_impl(ctx):
     compilation_outputs = compile_result.compilation_outputs
     supplemental_outputs = compile_result.supplemental_outputs
 
-    output_groups = {}
-    if supplemental_outputs.indexstore_directory:
-        output_groups["indexstore"] = depset([
-            supplemental_outputs.indexstore_directory,
-        ])
-
     linking_context, linking_output = (
         create_linking_context_from_compilation_outputs(
             actions = ctx.actions,
@@ -357,7 +355,9 @@ def _swift_grpc_library_impl(ctx):
         ),
         deps[0][SwiftProtoInfo],
         compile_result.swift_info,
-        OutputGroupInfo(**output_groups),
+        OutputGroupInfo(
+            **supplemental_compilation_output_groups(supplemental_outputs)
+        ),
     ]
 
 swift_grpc_library = rule(

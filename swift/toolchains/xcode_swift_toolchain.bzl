@@ -40,6 +40,7 @@ load(
 load(
     "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
+    "SWIFT_FEATURE__SUPPORTS_MACROS",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:features.bzl",
@@ -596,6 +597,9 @@ def _xcode_swift_toolchain_impl(ctx):
         ctx = ctx,
         target_triple = target_triple,
     ))
+
+    if _is_xcode_at_least_version(xcode_config, "15.0"):
+        requested_features.append(SWIFT_FEATURE__SUPPORTS_MACROS)
 
     env = _xcode_env(target_triple = target_triple, xcode_config = xcode_config)
     execution_requirements = xcode_config.execution_info()
