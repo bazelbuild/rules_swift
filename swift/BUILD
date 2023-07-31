@@ -2,7 +2,7 @@ load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load(
     "@bazel_skylib//rules:common_settings.bzl",
     "bool_setting",
-    "string_setting",
+    "string_flag",
 )
 load(
     "//swift/internal:build_settings.bzl",
@@ -320,10 +320,12 @@ swift_module_mapping(
 )
 
 # The value to pass to the Swift compiler for the `-cxx-interoperability-mode=`
-# flag. This cannot be set directly; it is applied by the
-# `cxx_interop_transition` by reading the `cxx_interop` attribute on compiling
-# rules like `swift_library`.
-string_setting(
+# flag. Most users should never need to set this flag directly; it is applied by
+# a transition from top-level rules like `swift_binary` to enable C++ interop
+# for their entire build graph. However, it may still be useful to manually set
+# when testing, as it would be the only way to `bazel build` a standalone
+# `swift_library` in the correct mode.
+string_flag(
     name = "cxx_interop",
     build_setting_default = "",
     visibility = ["//visibility:public"],

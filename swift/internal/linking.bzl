@@ -67,6 +67,16 @@ def binary_rule_attrs(
             requires_srcs = False,
         ),
         {
+            "cxx_interop": attr.string(
+                doc = """\
+The C++ interoperability mode to use when importing Clang modules that are
+dependencies of this Swift module.
+
+If present, this value is passed directly to the compiler using the
+`-cxx-interoperability-mode=` flag. To enable C++ interop, specify `"default"`.
+To disable it, leave this attribute empty or specify `"off"`.
+""",
+            ),
             "linkopts": attr.string_list(
                 doc = """\
 Additional linker options that should be passed to `clang`. These strings are

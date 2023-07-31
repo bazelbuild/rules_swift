@@ -9,6 +9,14 @@ load(
 
 licenses(["notice"])
 
+swift_binary(
+    name = "cxx_from_swift",
+    srcs = ["main.swift"],
+    cxx_interop = "default",
+    module_name = "main",
+    deps = [":counter"],
+)
+
 cc_library(
     name = "counter",
     srcs = ["counter.cc"],
@@ -19,12 +27,4 @@ cc_library(
 swift_interop_hint(
     name = "counter_swift_hint",
     module_name = "CounterModule",
-)
-
-swift_binary(
-    name = "cxx_from_swift",
-    srcs = ["main.swift"],
-    cxx_interop = "default",
-    module_name = "main",
-    deps = [":counter"],
 )

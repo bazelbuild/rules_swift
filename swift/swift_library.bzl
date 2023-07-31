@@ -55,10 +55,6 @@ load(
     "use_swift_toolchain",
 )
 load(
-    "@build_bazel_rules_swift//swift/internal:transitions.bzl",
-    "cxx_interop_transition",
-)
-load(
     "@build_bazel_rules_swift//swift/internal:utils.bzl",
     "compact",
     "expand_locations",
@@ -285,12 +281,8 @@ dependent for linking, but artifacts/flags required for compilation (such as
 .swiftmodule files, C headers, and search paths) will not be propagated.
 """,
             ),
-            "_allowlist_function_transition": attr.label(
-                default = "@bazel_tools//tools/allowlists/function_transition_allowlist",
-            ),
         },
     ),
-    cfg = cxx_interop_transition,
     doc = """\
 Compiles and links Swift code into a static library and Swift module.
 """,
