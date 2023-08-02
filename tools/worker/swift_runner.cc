@@ -156,7 +156,7 @@ int SwiftRunner::Run(std::ostream *stderr_stream, bool stdout_to_stderr) {
 
     if (file_prefix_pwd_is_dot_) {
       ii_args.push_back("-file-prefix-map");
-      ii_args.push_back(std::filesystem::current_path().string() + "=.");
+      ii_args.push_back(std::filesystem::current_path().string() + "=/PWD");
     }
 
     for (it = outputs.begin(); it != outputs.end(); it++) {
@@ -281,19 +281,19 @@ bool SwiftRunner::ProcessArgument(
         // Replace the $PWD with . to make the paths relative to the workspace
         // without breaking hermiticity.
         consumer("-debug-prefix-map");
-        consumer(std::filesystem::current_path().string() + "=.");
+        consumer(std::filesystem::current_path().string() + "=/PWD");
         changed = true;
       } else if (new_arg == "-coverage-prefix-pwd-is-dot") {
         // Replace the $PWD with . to make the paths relative to the workspace
         // without breaking hermiticity.
         consumer("-coverage-prefix-map");
-        consumer(std::filesystem::current_path().string() + "=.");
+        consumer(std::filesystem::current_path().string() + "=/PWD");
         changed = true;
       } else if (new_arg == "-file-prefix-pwd-is-dot") {
         // Replace the $PWD with . to make the paths relative to the workspace
         // without breaking hermiticity.
         consumer("-file-prefix-map");
-        consumer(std::filesystem::current_path().string() + "=.");
+        consumer(std::filesystem::current_path().string() + "=/PWD");
         changed = true;
       } else if (new_arg == "-ephemeral-module-cache") {
         // Create a temporary directory to hold the module cache, which will be
