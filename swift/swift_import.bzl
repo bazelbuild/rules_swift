@@ -145,9 +145,9 @@ swift_import = rule(
         {
             "archives": attr.label_list(
                 allow_empty = True,
-                allow_files = ["a"],
+                allow_files = ["a", "lo"],
                 doc = """\
-The list of `.a` files provided to Swift targets that depend on this target.
+The list of `.a` or `.lo` files provided to Swift targets that depend on this target.
 """,
                 mandatory = False,
             ),
