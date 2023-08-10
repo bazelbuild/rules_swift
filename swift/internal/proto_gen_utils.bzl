@@ -20,6 +20,18 @@ visibility([
     "@build_bazel_rules_swift//swift/...",
 ])
 
+def swift_proto_lang_toolchain_label():
+    """A `Label` for the `proto_lang_toolchain` target for Swift Protos
+
+    This data is needed for both the aspect and the rule itself, so this
+    keeps the two values in sync.
+
+    Returns:
+        A `Label` that is the `proto_lang_toolchain` target to be used for
+        `swift_proto_library`.
+    """
+    return Label("@build_bazel_rules_swift//swift/internal:proto_swift_toolchain")
+
 def declare_generated_files_in_subdir(
         name,
         actions,

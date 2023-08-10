@@ -228,6 +228,7 @@ bzl_library(
     srcs = ["swift_proto_library.bzl"],
     deps = [
         ":providers",
+        "//swift/internal:proto_gen_utils",
         "//swift/internal:swift_protoc_gen_aspect",
     ],
 )
