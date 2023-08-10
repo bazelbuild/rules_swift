@@ -42,7 +42,6 @@ load(
     ":proto_gen_utils.bzl",
     "proto_import_path",
     "register_module_mapping_write_action",
-    "swift_proto_lang_toolchain_label",
 )
 load(":toolchain_utils.bzl", "get_swift_toolchain", "use_swift_toolchain")
 load(":utils.bzl", "get_compilation_contexts")
@@ -359,7 +358,7 @@ swift_protoc_gen_aspect = aspect(
         swift_config_attrs(),
         {
             "_proto_lang_toolchain": attr.label(
-                default = swift_proto_lang_toolchain_label(),
+                default = Label("@build_bazel_rules_swift//swift/internal:proto_swift_toolchain"),
             ),
         },
     ),
