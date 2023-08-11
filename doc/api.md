@@ -135,6 +135,40 @@ A tuple containing three elements:
           will be `None`.
 
 
+<a id="swift_common.compile_module_interface"></a>
+
+## swift_common.compile_module_interface
+
+<pre>
+swift_common.compile_module_interface(<a href="#swift_common.compile_module_interface-actions">actions</a>, <a href="#swift_common.compile_module_interface-compilation_contexts">compilation_contexts</a>, <a href="#swift_common.compile_module_interface-feature_configuration">feature_configuration</a>,
+                                      <a href="#swift_common.compile_module_interface-module_name">module_name</a>, <a href="#swift_common.compile_module_interface-swiftinterface_file">swiftinterface_file</a>, <a href="#swift_common.compile_module_interface-swift_infos">swift_infos</a>, <a href="#swift_common.compile_module_interface-swift_toolchain">swift_toolchain</a>)
+</pre>
+
+Compiles a Swift module interface.
+
+**PARAMETERS**
+
+
+| Name  | Description | Default Value |
+| :------------- | :------------- | :------------- |
+| <a id="swift_common.compile_module_interface-actions"></a>actions |  The context's <code>actions</code> object.   |  none |
+| <a id="swift_common.compile_module_interface-compilation_contexts"></a>compilation_contexts |  A list of <code>CcCompilationContext</code>s that represent C/Objective-C requirements of the target being compiled, such as Swift-compatible preprocessor defines, header search paths, and so forth. These are typically retrieved from the <code>CcInfo</code> providers of a target's dependencies.   |  none |
+| <a id="swift_common.compile_module_interface-feature_configuration"></a>feature_configuration |  A feature configuration obtained from <code>swift_common.configure_features</code>.   |  none |
+| <a id="swift_common.compile_module_interface-module_name"></a>module_name |  The name of the Swift module being compiled. This must be present and valid; use <code>swift_common.derive_module_name</code> to generate a default from the target's label if needed.   |  none |
+| <a id="swift_common.compile_module_interface-swiftinterface_file"></a>swiftinterface_file |  The Swift module interface file to compile.   |  none |
+| <a id="swift_common.compile_module_interface-swift_infos"></a>swift_infos |  A list of <code>SwiftInfo</code> providers from dependencies of the target being compiled.   |  none |
+| <a id="swift_common.compile_module_interface-swift_toolchain"></a>swift_toolchain |  The <code>SwiftToolchainInfo</code> provider of the toolchain.   |  none |
+
+**RETURNS**
+
+A Swift module context (as returned by `swift_common.create_module`)
+  that contains the Swift (and potentially C/Objective-C) compilation
+  prerequisites of the compiled module. This should typically be
+  propagated by a `SwiftInfo` provider of the calling rule, and the
+  `CcCompilationContext` inside the Clang module substructure should be
+  propagated by the `CcInfo` provider of the calling rule.
+
+
 <a id="swift_common.configure_features"></a>
 
 ## swift_common.configure_features

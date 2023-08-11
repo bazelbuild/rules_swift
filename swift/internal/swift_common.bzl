@@ -32,6 +32,7 @@ load(
 load(
     ":compiling.bzl",
     "compile",
+    "compile_module_interface",
     "create_compilation_context",
     "derive_module_name",
     "precompile_clang_module",
@@ -58,6 +59,7 @@ swift_common = struct(
     cc_feature_configuration = get_cc_feature_configuration,
     compilation_attrs = swift_compilation_attrs,
     compile = compile,
+    compile_module_interface = compile_module_interface,
     configure_features = configure_features,
     create_clang_module = create_clang_module,
     create_compilation_context = create_compilation_context,

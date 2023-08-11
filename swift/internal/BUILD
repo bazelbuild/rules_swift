@@ -51,6 +51,7 @@ bzl_library(
         ":toolchain_config",
         ":utils",
         ":vfsoverlay",
+        "//swift/toolchains/config:compile_module_interface_config",
         "@bazel_skylib//lib:collections",
         "@bazel_skylib//lib:partial",
         "@bazel_skylib//lib:paths",

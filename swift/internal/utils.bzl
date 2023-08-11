@@ -133,6 +133,25 @@ def expand_make_variables(ctx, values, attribute_name):
         for value in values
     ]
 
+def get_compilation_contexts(targets):
+    """Returns the `CcCompilationContext` for each target in the given list.
+
+    As with `get_providers`, it is not an error if a target in the list does not
+    propagate `CcInfo`; those targets are simply ignored.
+
+    Args:
+        targets: A list of targets.
+
+    Returns:
+        Any `CcCompilationContext`s found in `CcInfo` providers among the
+        targets in the list.
+    """
+    return get_providers(
+        targets,
+        CcInfo,
+        lambda cc_info: cc_info.compilation_context,
+    )
+
 def get_swift_executable_for_toolchain(ctx):
     """Returns the Swift driver executable that the toolchain should use.
 
@@ -221,6 +240,52 @@ def get_providers(targets, provider, map_fn = None):
             if provider in target
         ]
     return [target[provider] for target in targets if provider in target]
+
+def merge_compilation_contexts(
+        direct_compilation_contexts = [],
+        transitive_compilation_contexts = []):
+    """Merges lists of direct and/or transitive compilation contexts.
+
+    The `cc_common.merge_compilation_contexts` function only supports merging
+    compilation contexts as direct contexts. To support merging contexts
+    transitively, they must be wrapped in `CcInfo` providers. This helper
+    function supports both cases, choosing the fast path (not wrapping) if no
+    contexts are being merged transitively.
+
+    Args:
+        direct_compilation_contexts: A list of `CcCompilationContext`s whose
+            direct fields (e.g., direct headers) should be preserved in the
+            result.
+        transitive_compilation_contexts: A list of `CcCompilationContext`s whose
+            direct fields (e.g., direct headers) should not be preserved in the
+            result. Headers in these providers will only be available in the
+            transitive `headers` field.
+
+    Returns:
+        The merged `CcCompilationContext`.
+    """
+    if not transitive_compilation_contexts:
+        # Fastest path: nothing to do but use the one direct.
+        if len(direct_compilation_contexts) == 1:
+            return direct_compilation_contexts[0]
+
+        # Fast path: Everything can be merged with the direct API.
+        return cc_common.merge_compilation_contexts(
+            compilation_contexts = direct_compilation_contexts,
+        )
+
+    # Slow path: We must wrap each compilation context in a `CcInfo` provider to
+    # get the correct direct vs. transitive behavior.
+    return cc_common.merge_cc_infos(
+        direct_cc_infos = [
+            CcInfo(compilation_context = compilation_context)
+            for compilation_context in direct_compilation_contexts
+        ],
+        cc_infos = [
+            CcInfo(compilation_context = compilation_context)
+            for compilation_context in transitive_compilation_contexts
+        ],
+    ).compilation_context
 
 def merge_runfiles(all_runfiles):
     """Merges a list of `runfiles` objects.
