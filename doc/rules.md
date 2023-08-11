@@ -242,10 +242,10 @@ swift_grpc_library(
 ## swift_import
 
 <pre>
-swift_import(<a href="#swift_import-name">name</a>, <a href="#swift_import-archives">archives</a>, <a href="#swift_import-data">data</a>, <a href="#swift_import-deps">deps</a>, <a href="#swift_import-module_name">module_name</a>, <a href="#swift_import-swiftdoc">swiftdoc</a>, <a href="#swift_import-swiftmodule">swiftmodule</a>)
+swift_import(<a href="#swift_import-name">name</a>, <a href="#swift_import-archives">archives</a>, <a href="#swift_import-data">data</a>, <a href="#swift_import-deps">deps</a>, <a href="#swift_import-module_name">module_name</a>, <a href="#swift_import-swiftdoc">swiftdoc</a>, <a href="#swift_import-swiftinterface">swiftinterface</a>, <a href="#swift_import-swiftmodule">swiftmodule</a>)
 </pre>
 
-Allows for the use of precompiled Swift modules as dependencies in other
+Allows for the use of Swift textual module interfaces and/or precompiled Swift modules as dependencies in other
 `swift_library` and `swift_binary` targets.
 
 
@@ -255,12 +255,13 @@ Allows for the use of precompiled Swift modules as dependencies in other
 | Name  | Description | Type | Mandatory | Default |
 | :------------- | :------------- | :------------- | :------------- | :------------- |
 | <a id="swift_import-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
-| <a id="swift_import-archives"></a>archives |  The list of <code>.a</code> files provided to Swift targets that depend on this target.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | required |  |
+| <a id="swift_import-archives"></a>archives |  The list of <code>.a</code> files provided to Swift targets that depend on this target.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional | <code>[]</code> |
 | <a id="swift_import-data"></a>data |  The list of files needed by this target at runtime.<br><br>Files and targets named in the <code>data</code> attribute will appear in the <code>*.runfiles</code> area of this target, if it has one. This may include data files needed by a binary or library, or other programs needed by it.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional | <code>[]</code> |
 | <a id="swift_import-deps"></a>deps |  A list of targets that are dependencies of the target being built, which will be linked into that target.<br><br>If the Swift toolchain supports implementation-only imports (<code>private_deps</code> on <code>swift_library</code>), then targets in <code>deps</code> are treated as regular (non-implementation-only) imports that are propagated both to their direct and indirect (transitive) dependents.<br><br>Allowed kinds of dependencies are:<br><br>*   <code>swift_c_module</code>, <code>swift_import</code> and <code>swift_library</code> (or anything     propagating <code>SwiftInfo</code>)<br><br>*   <code>cc_library</code> (or anything propagating <code>CcInfo</code>)<br><br>Additionally, on platforms that support Objective-C interop, <code>objc_library</code> targets (or anything propagating the <code>apple_common.Objc</code> provider) are allowed as dependencies. On platforms that do not support Objective-C interop (such as Linux), those dependencies will be **ignored.**   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional | <code>[]</code> |
 | <a id="swift_import-module_name"></a>module_name |  The name of the module represented by this target.   | String | required |  |
 | <a id="swift_import-swiftdoc"></a>swiftdoc |  The <code>.swiftdoc</code> file provided to Swift targets that depend on this target.   | <a href="https://bazel.build/concepts/labels">Label</a> | optional | <code>None</code> |
-| <a id="swift_import-swiftmodule"></a>swiftmodule |  The <code>.swiftmodule</code> file provided to Swift targets that depend on this target.   | <a href="https://bazel.build/concepts/labels">Label</a> | required |  |
+| <a id="swift_import-swiftinterface"></a>swiftinterface |  The <code>.swiftinterface</code> file that defines the module interface for this target.   | <a href="https://bazel.build/concepts/labels">Label</a> | optional | <code>None</code> |
+| <a id="swift_import-swiftmodule"></a>swiftmodule |  The <code>.swiftmodule</code> file provided to Swift targets that depend on this target.   | <a href="https://bazel.build/concepts/labels">Label</a> | optional | <code>None</code> |
 
 
 <a id="swift_library"></a>
