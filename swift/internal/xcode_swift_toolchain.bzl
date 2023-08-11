@@ -468,6 +468,7 @@ def _all_tool_configs(
         swift_action_names.COMPILE_MODULE_INTERFACE: (
             swift_toolchain_config.driver_tool_config(
                 driver_mode = "swiftc",
+                args = ["-frontend"],
                 env = env,
                 execution_requirements = execution_requirements,
                 swift_executable = swift_executable,

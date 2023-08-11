@@ -14,36 +14,33 @@
 
 """Common configuration for compile module interface actions."""
 
-load(
-    "@build_bazel_rules_swift//swift/internal:action_names.bzl",
-    "SWIFT_ACTION_COMPILE_MODULE_INTERFACE",
-)
-load(":action_config.bzl", "ActionConfigInfo", "add_arg")
+load("//swift/internal:actions.bzl", "swift_action_names")
+load("//swift/internal:toolchain_config.bzl", "swift_toolchain_config")
 
 def compile_module_interface_action_configs():
     return [
-        ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE_MODULE_INTERFACE],
-            configurators = [add_arg("-enable-library-evolution")],
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE_MODULE_INTERFACE],
+            configurators = [swift_toolchain_config.add_arg("-enable-library-evolution")],
         ),
-        ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE_MODULE_INTERFACE],
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE_MODULE_INTERFACE],
             configurators = [_emit_module_path_from_module_interface_configurator],
         ),
-        ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE_MODULE_INTERFACE],
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE_MODULE_INTERFACE],
             configurators = [
-                add_arg("-compile-module-from-interface"),
+                swift_toolchain_config.add_arg("-compile-module-from-interface"),
             ],
         ),
         # Library evolution is implied since we've already produced a
         # .swiftinterface file. So we want to unconditionally enable the flag
         # for this action.
-        ActionConfigInfo(
+        swift_toolchain_config.action_config(
             actions = [
-                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+                swift_action_names.COMPILE_MODULE_INTERFACE,
             ],
-            configurators = [add_arg("-enable-library-evolution")],
+            configurators = [swift_toolchain_config.add_arg("-enable-library-evolution")],
         ),
     ]
 

@@ -102,6 +102,10 @@ load(
     "platform_developer_framework_dir",
     "swift_developer_lib_dir",
 )
+load(
+    "//swift/toolchains/config:compile_module_interface_config.bzl",
+    "compile_module_interface_action_configs",
+)
 
 # VFS root where all .swiftmodule files will be placed when
 # SWIFT_FEATURE_VFSOVERLAY is enabled.
@@ -161,6 +165,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.PRECOMPILE_C_MODULE,
                 swift_action_names.DUMP_AST,
@@ -177,6 +182,7 @@ def compile_action_configs(
             swift_toolchain_config.action_config(
                 actions = [
                     swift_action_names.COMPILE,
+                    swift_action_names.COMPILE_MODULE_INTERFACE,
                     swift_action_names.DERIVE_FILES,
                     swift_action_names.PRECOMPILE_C_MODULE,
                     swift_action_names.DUMP_AST,
@@ -195,6 +201,7 @@ def compile_action_configs(
                 swift_toolchain_config.action_config(
                     actions = [
                         swift_action_names.COMPILE,
+                        swift_action_names.COMPILE_MODULE_INTERFACE,
                         swift_action_names.DERIVE_FILES,
                         swift_action_names.PRECOMPILE_C_MODULE,
                         swift_action_names.DUMP_AST,
@@ -214,6 +221,7 @@ def compile_action_configs(
                     swift_toolchain_config.action_config(
                         actions = [
                             swift_action_names.COMPILE,
+                            swift_action_names.COMPILE_MODULE_INTERFACE,
                             swift_action_names.DERIVE_FILES,
                             swift_action_names.PRECOMPILE_C_MODULE,
                             swift_action_names.DUMP_AST,
@@ -332,6 +340,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
             ],
             configurators = [
@@ -424,6 +433,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
             ],
             configurators = [
@@ -434,6 +444,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
             ],
             configurators = [
@@ -445,6 +456,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
             ],
             configurators = [
@@ -694,6 +706,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.PRECOMPILE_C_MODULE,
                 swift_action_names.DUMP_AST,
@@ -713,6 +726,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.DUMP_AST,
             ],
@@ -739,6 +753,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.DUMP_AST,
             ],
@@ -790,6 +805,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.PRECOMPILE_C_MODULE,
                 swift_action_names.DUMP_AST,
@@ -806,6 +822,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.PRECOMPILE_C_MODULE,
                 # swift_action_names.SYMBOL_GRAPH_EXTRACT, # TODO: Enable once supported
             ],
@@ -874,6 +891,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.DUMP_AST,
             ],
@@ -886,6 +904,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.DUMP_AST,
             ],
@@ -897,6 +916,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.DUMP_AST,
             ],
@@ -912,6 +932,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.DUMP_AST,
             ],
@@ -941,6 +962,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.PRECOMPILE_C_MODULE,
                 swift_action_names.DUMP_AST,
@@ -956,6 +978,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.PRECOMPILE_C_MODULE,
                 swift_action_names.DUMP_AST,
@@ -966,6 +989,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.PRECOMPILE_C_MODULE,
                 swift_action_names.DUMP_AST,
@@ -990,6 +1014,14 @@ def compile_action_configs(
                     "-Xfrontend",
                     "-color-diagnostics",
                 ),
+            ],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [
+                swift_action_names.COMPILE_MODULE_INTERFACE,
+            ],
+            configurators = [
+                swift_toolchain_config.add_arg("-color-diagnostics"),
             ],
         ),
 
@@ -1140,6 +1172,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.DUMP_AST,
             ],
@@ -1151,6 +1184,7 @@ def compile_action_configs(
             swift_toolchain_config.action_config(
                 actions = [
                     swift_action_names.COMPILE,
+                    swift_action_names.COMPILE_MODULE_INTERFACE,
                     swift_action_names.DERIVE_FILES,
                     swift_action_names.PRECOMPILE_C_MODULE,
                     swift_action_names.DUMP_AST,
@@ -1171,6 +1205,7 @@ def compile_action_configs(
                 # actions, or if we should advise against/forbid that.
                 actions = [
                     swift_action_names.COMPILE,
+                    swift_action_names.COMPILE_MODULE_INTERFACE,
                     swift_action_names.DERIVE_FILES,
                     swift_action_names.DUMP_AST,
                 ],
@@ -1184,6 +1219,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.PRECOMPILE_C_MODULE,
                 swift_action_names.DUMP_AST,
@@ -1204,6 +1240,7 @@ def compile_action_configs(
         ),
     )
 
+    action_configs.extend(compile_module_interface_action_configs())
     return action_configs
 
 def _output_or_file_map(output_file_map, outputs, args):
@@ -2041,6 +2078,8 @@ def compile_module_interface(
         genfiles_dir = feature_configuration._genfiles_dir,
         is_swift = True,
         module_name = module_name,
+        objc_include_paths_workaround = depset(),
+        objc_info = None,
         source_files = [swiftinterface_file],
         swiftmodule_file = swiftmodule_file,
         transitive_modules = transitive_modules,
