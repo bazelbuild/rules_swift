@@ -15,11 +15,16 @@
 """A rule that generates a Swift library from protocol buffer sources."""
 
 load(
+    "@build_bazel_rules_swift//swift/internal:proto_gen_utils.bzl",
+    "swift_proto_lang_toolchain_label",
+)
+load(
     "@build_bazel_rules_swift//swift/internal:swift_protoc_gen_aspect.bzl",
     "SwiftProtoCompilationInfo",
     "swift_protoc_gen_aspect",
 )
 load(":providers.bzl", "SwiftProtoInfo")
+load("@rules_proto//proto:defs.bzl", "ProtoInfo", "proto_common")
 
 visibility("public")
 
@@ -31,8 +36,13 @@ def _swift_proto_library_impl(ctx):
         )
 
     dep = ctx.attr.deps[0]
+    proto_info = dep[ProtoInfo]
+    proto_lang_toolchain_info = ctx.attr._proto_lang_toolchain[proto_common.ProtoLangToolchainInfo]
 
-    if not dep[ProtoInfo].direct_sources:
+    # Ensure the `swift_proto_library` is collocated with the `proto_library`.
+    proto_common.check_collocated(ctx.label, proto_info, proto_lang_toolchain_info)
+
+    if not proto_info.direct_sources:
         fail(
             "proto_library deps without srcs are not permitted. Add a " +
             "swift_proto_library for each of that proto_library's " +
@@ -80,6 +90,9 @@ Exactly one `proto_library` target (or any target that propagates a `proto`
 provider) from which the Swift library should be generated.
 """,
             providers = [ProtoInfo],
+        ),
+        "_proto_lang_toolchain": attr.label(
+            default = swift_proto_lang_toolchain_label(),
         ),
     },
     doc = """\
