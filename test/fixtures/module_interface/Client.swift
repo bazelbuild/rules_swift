@@ -14,6 +14,11 @@
 
 import ToyModule
 
-let value = ToyValue(number: 10)
-print(value.hexString)
-print(value.squared())
+@main
+struct Main {
+  static func main() {
+    let value = ToyValue(number: 10)
+    print(value.hexString)
+    print(value.squared())
+  }
+}
