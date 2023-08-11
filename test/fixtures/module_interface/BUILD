@@ -56,4 +56,5 @@ swift_library_artifact_collector(
     swiftinterface = "toy_outputs/ToyModule.swiftinterface",
     tags = FIXTURE_TAGS,
     target = ":toy_module_library",
+    target_compatible_with = ["@platforms//os:macos"],
 )
