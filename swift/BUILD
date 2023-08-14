@@ -48,6 +48,7 @@ filegroup(
     testonly = 1,
     srcs = glob(["**"]) + [
         "//swift/internal:for_bazel_tests",
+        "//swift/toolchains:for_bazel_tests",
     ],
     visibility = [
         "//:__pkg__",

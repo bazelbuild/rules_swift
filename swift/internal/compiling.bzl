@@ -94,6 +94,7 @@ load(
     "compact",
     "compilation_context_for_explicit_module_compilation",
     "get_providers",
+    "merge_compilation_contexts",
     "struct_fields",
 )
 load(":vfsoverlay.bzl", "write_vfsoverlay")
@@ -101,6 +102,10 @@ load(
     ":developer_dirs.bzl",
     "platform_developer_framework_dir",
     "swift_developer_lib_dir",
+)
+load(
+    "//swift/toolchains/config:compile_module_interface_config.bzl",
+    "compile_module_interface_action_configs",
 )
 
 # VFS root where all .swiftmodule files will be placed when
@@ -161,6 +166,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.PRECOMPILE_C_MODULE,
                 swift_action_names.DUMP_AST,
@@ -177,6 +183,7 @@ def compile_action_configs(
             swift_toolchain_config.action_config(
                 actions = [
                     swift_action_names.COMPILE,
+                    swift_action_names.COMPILE_MODULE_INTERFACE,
                     swift_action_names.DERIVE_FILES,
                     swift_action_names.PRECOMPILE_C_MODULE,
                     swift_action_names.DUMP_AST,
@@ -195,6 +202,7 @@ def compile_action_configs(
                 swift_toolchain_config.action_config(
                     actions = [
                         swift_action_names.COMPILE,
+                        swift_action_names.COMPILE_MODULE_INTERFACE,
                         swift_action_names.DERIVE_FILES,
                         swift_action_names.PRECOMPILE_C_MODULE,
                         swift_action_names.DUMP_AST,
@@ -214,6 +222,7 @@ def compile_action_configs(
                     swift_toolchain_config.action_config(
                         actions = [
                             swift_action_names.COMPILE,
+                            swift_action_names.COMPILE_MODULE_INTERFACE,
                             swift_action_names.DERIVE_FILES,
                             swift_action_names.PRECOMPILE_C_MODULE,
                             swift_action_names.DUMP_AST,
@@ -332,6 +341,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
             ],
             configurators = [
@@ -424,6 +434,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
             ],
             configurators = [
@@ -434,6 +445,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
             ],
             configurators = [
@@ -445,6 +457,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
             ],
             configurators = [
@@ -694,6 +707,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.PRECOMPILE_C_MODULE,
                 swift_action_names.DUMP_AST,
@@ -713,6 +727,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.DUMP_AST,
             ],
@@ -739,6 +754,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.DUMP_AST,
             ],
@@ -790,6 +806,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.PRECOMPILE_C_MODULE,
                 swift_action_names.DUMP_AST,
@@ -806,6 +823,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.PRECOMPILE_C_MODULE,
                 # swift_action_names.SYMBOL_GRAPH_EXTRACT, # TODO: Enable once supported
             ],
@@ -874,6 +892,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.DUMP_AST,
             ],
@@ -886,6 +905,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.DUMP_AST,
             ],
@@ -897,6 +917,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.DUMP_AST,
             ],
@@ -912,6 +933,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.DUMP_AST,
             ],
@@ -941,6 +963,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.PRECOMPILE_C_MODULE,
                 swift_action_names.DUMP_AST,
@@ -956,6 +979,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.PRECOMPILE_C_MODULE,
                 swift_action_names.DUMP_AST,
@@ -966,6 +990,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.PRECOMPILE_C_MODULE,
                 swift_action_names.DUMP_AST,
@@ -990,6 +1015,14 @@ def compile_action_configs(
                     "-Xfrontend",
                     "-color-diagnostics",
                 ),
+            ],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [
+                swift_action_names.COMPILE_MODULE_INTERFACE,
+            ],
+            configurators = [
+                swift_toolchain_config.add_arg("-color-diagnostics"),
             ],
         ),
 
@@ -1140,6 +1173,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.DUMP_AST,
             ],
@@ -1151,6 +1185,7 @@ def compile_action_configs(
             swift_toolchain_config.action_config(
                 actions = [
                     swift_action_names.COMPILE,
+                    swift_action_names.COMPILE_MODULE_INTERFACE,
                     swift_action_names.DERIVE_FILES,
                     swift_action_names.PRECOMPILE_C_MODULE,
                     swift_action_names.DUMP_AST,
@@ -1171,6 +1206,7 @@ def compile_action_configs(
                 # actions, or if we should advise against/forbid that.
                 actions = [
                     swift_action_names.COMPILE,
+                    swift_action_names.COMPILE_MODULE_INTERFACE,
                     swift_action_names.DERIVE_FILES,
                     swift_action_names.DUMP_AST,
                 ],
@@ -1184,6 +1220,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
                 swift_action_names.PRECOMPILE_C_MODULE,
                 swift_action_names.DUMP_AST,
@@ -1204,6 +1241,7 @@ def compile_action_configs(
         ),
     )
 
+    action_configs.extend(compile_module_interface_action_configs())
     return action_configs
 
 def _output_or_file_map(output_file_map, outputs, args):
@@ -1954,6 +1992,130 @@ def create_compilation_context(defines, srcs, transitive_modules):
         module_maps = tuple(module_maps),
         swiftmodules = tuple(swiftmodules),
     )
+
+def compile_module_interface(
+        *,
+        actions,
+        compilation_contexts,
+        feature_configuration,
+        module_name,
+        swiftinterface_file,
+        swift_infos,
+        swift_toolchain):
+    """Compiles a Swift module interface.
+
+    Args:
+        actions: The context's `actions` object.
+        compilation_contexts: A list of `CcCompilationContext`s that represent
+            C/Objective-C requirements of the target being compiled, such as
+            Swift-compatible preprocessor defines, header search paths, and so
+            forth. These are typically retrieved from the `CcInfo` providers of
+            a target's dependencies.
+        feature_configuration: A feature configuration obtained from
+            `swift_common.configure_features`.
+        module_name: The name of the Swift module being compiled. This must be
+            present and valid; use `swift_common.derive_module_name` to generate
+            a default from the target's label if needed.
+        swiftinterface_file: The Swift module interface file to compile.
+        swift_infos: A list of `SwiftInfo` providers from dependencies of the
+            target being compiled.
+        swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
+
+    Returns:
+        A Swift module context (as returned by `swift_common.create_module`)
+        that contains the Swift (and potentially C/Objective-C) compilation
+        prerequisites of the compiled module. This should typically be
+        propagated by a `SwiftInfo` provider of the calling rule, and the
+        `CcCompilationContext` inside the Clang module substructure should be
+        propagated by the `CcInfo` provider of the calling rule.
+    """
+    swiftmodule_file = actions.declare_file("{}.swiftmodule".format(module_name))
+
+    merged_compilation_context = merge_compilation_contexts(
+        transitive_compilation_contexts = compilation_contexts + [
+            cc_info.compilation_context
+            for cc_info in swift_toolchain.implicit_deps_providers.cc_infos
+        ],
+    )
+    merged_swift_info = create_swift_info(
+        swift_infos = (
+            swift_infos + swift_toolchain.implicit_deps_providers.swift_infos
+        ),
+    )
+
+    # Flattening this `depset` is necessary because we need to extract the
+    # module maps or precompiled modules out of structured values and do so
+    # conditionally. This should not lead to poor performance because the
+    # flattening happens only once as the action is being registered, rather
+    # than the same `depset` being flattened and re-merged multiple times up
+    # the build graph.
+    transitive_modules = merged_swift_info.transitive_modules.to_list()
+    transitive_swiftmodules = []
+    for module in transitive_modules:
+        swift_module = module.swift
+        if not swift_module:
+            continue
+        transitive_swiftmodules.append(swift_module.swiftmodule)
+
+    if is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP,
+    ):
+        explicit_swift_module_map_file = actions.declare_file(
+            "{}.swift-explicit-module-map.json".format(module_name),
+        )
+        write_explicit_swift_module_map_file(
+            actions = actions,
+            explicit_swift_module_map_file = explicit_swift_module_map_file,
+            module_contexts = transitive_modules,
+        )
+    else:
+        explicit_swift_module_map_file = None
+
+    prerequisites = struct(
+        bin_dir = feature_configuration._bin_dir,
+        cc_compilation_context = merged_compilation_context,
+        explicit_swift_module_map_file = explicit_swift_module_map_file,
+        genfiles_dir = feature_configuration._genfiles_dir,
+        is_swift = True,
+        module_name = module_name,
+        objc_include_paths_workaround = depset(),
+        objc_info = None,
+        source_files = [swiftinterface_file],
+        swiftmodule_file = swiftmodule_file,
+        transitive_modules = transitive_modules,
+        transitive_swiftmodules = transitive_swiftmodules,
+        user_compile_flags = [],
+    )
+
+    run_toolchain_action(
+        actions = actions,
+        action_name = swift_action_names.COMPILE_MODULE_INTERFACE,
+        feature_configuration = feature_configuration,
+        outputs = [swiftmodule_file],
+        prerequisites = prerequisites,
+        progress_message = "Compiling Swift module {} from textual interface".format(module_name),
+        swift_toolchain = swift_toolchain,
+    )
+
+    module_context = create_module(
+        name = module_name,
+        clang = create_clang_module(
+            compilation_context = merged_compilation_context,
+            module_map = None,
+        ),
+        is_system = is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_SYSTEM_MODULE,
+        ),
+        swift = create_swift_module(
+            swiftdoc = None,
+            swiftinterface = swiftinterface_file,
+            swiftmodule = swiftmodule_file,
+        ),
+    )
+
+    return module_context
 
 def compile(
         *,
