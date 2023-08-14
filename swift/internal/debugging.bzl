@@ -69,8 +69,8 @@ def ensure_swiftmodule_is_embedded(
         # linker.
         modulewrap_obj = derived_files.modulewrap_object(
             actions,
-            target_name = label.name,
             add_target_name_to_output_path = add_target_name_to_output_path,
+            target_name = label.name,
         )
         _register_modulewrap_action(
             actions = actions,

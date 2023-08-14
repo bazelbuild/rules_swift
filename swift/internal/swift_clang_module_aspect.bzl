@@ -258,8 +258,8 @@ def _generate_module_map(
     )
     module_map_file = derived_files.module_map(
         actions = actions,
-        target_name = target.label.name,
         add_target_name_to_output_path = add_target_name_to_output_path,
+        target_name = target.label.name,
     )
 
     # Sort dependent module names and the headers to ensure a deterministic

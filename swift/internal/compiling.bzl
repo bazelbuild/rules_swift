@@ -2306,8 +2306,8 @@ def compile(
     ):
         vfsoverlay_file = derived_files.vfsoverlay(
             actions = actions,
-            target_name = target_name,
             add_target_name_to_output_path = add_target_name_to_output_path,
+            target_name = target_name,
         )
         write_vfsoverlay(
             actions = actions,
@@ -2595,8 +2595,8 @@ def _precompile_clang_module(
 
     precompiled_module = derived_files.precompiled_module(
         actions = actions,
-        target_name = target_name,
         add_target_name_to_output_path = add_target_name_to_output_path,
+        target_name = target_name,
     )
 
     if not is_swift_generated_header:
@@ -2778,21 +2778,21 @@ def _declare_compile_outputs(
     # depending on compilation mode, like WMO vs. non-WMO).
     swiftmodule_file = derived_files.swiftmodule(
         actions = actions,
+        add_target_name_to_output_path = add_target_name_to_output_path,
         target_name = target_name,
         module_name = module_name,
-        add_target_name_to_output_path = add_target_name_to_output_path,
     )
     swiftdoc_file = derived_files.swiftdoc(
         actions = actions,
+        add_target_name_to_output_path = add_target_name_to_output_path,
         target_name = target_name,
         module_name = module_name,
-        add_target_name_to_output_path = add_target_name_to_output_path,
     )
     swiftsourceinfo_file = derived_files.swiftsourceinfo(
         actions = actions,
+        add_target_name_to_output_path = add_target_name_to_output_path,
         target_name = target_name,
         module_name = module_name,
-        add_target_name_to_output_path = add_target_name_to_output_path,
     )
 
     if are_all_features_enabled(
@@ -2804,9 +2804,9 @@ def _declare_compile_outputs(
     ):
         swiftinterface_file = derived_files.swiftinterface(
             actions = actions,
+            add_target_name_to_output_path = add_target_name_to_output_path,
             target_name = target_name,
             module_name = module_name,
-            add_target_name_to_output_path = add_target_name_to_output_path,
         )
     else:
         swiftinterface_file = None
@@ -2816,9 +2816,9 @@ def _declare_compile_outputs(
     if generated_header_name:
         generated_header = derived_files.generated_header(
             actions = actions,
+            add_target_name_to_output_path = add_target_name_to_output_path,
             target_name = target_name,
             generated_header_name = generated_header_name,
-            add_target_name_to_output_path = add_target_name_to_output_path,
         )
     else:
         generated_header = None
@@ -2845,8 +2845,8 @@ def _declare_compile_outputs(
 
         generated_module_map = derived_files.module_map(
             actions = actions,
-            target_name = target_name,
             add_target_name_to_output_path = add_target_name_to_output_path,
+            target_name = target_name,
         )
         write_module_map(
             actions = actions,
@@ -2880,14 +2880,14 @@ def _declare_compile_outputs(
         # no other partial outputs.
         object_files = [derived_files.whole_module_object_file(
             actions = actions,
-            target_name = target_name,
             add_target_name_to_output_path = add_target_name_to_output_path,
+            target_name = target_name,
         )]
         ast_files = [derived_files.ast(
             actions = actions,
+            add_target_name_to_output_path = add_target_name_to_output_path,
             target_name = target_name,
             src = srcs[0],
-            add_target_name_to_output_path = add_target_name_to_output_path,
         )]
         other_outputs = []
         output_file_map = None

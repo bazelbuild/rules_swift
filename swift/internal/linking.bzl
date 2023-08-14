@@ -132,8 +132,8 @@ def create_linking_context_from_compilation_outputs(
             )
             autolink_file = derived_files.autolink_flags(
                 actions = actions,
-                target_name = label.name,
                 add_target_name_to_output_path = add_target_name_to_output_path,
+                target_name = label.name,
             )
             register_autolink_extract_action(
                 actions = actions,

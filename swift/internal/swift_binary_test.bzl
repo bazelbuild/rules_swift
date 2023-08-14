@@ -325,8 +325,8 @@ def _create_xctest_runner(name, actions, executable, xctest_runner_template):
     """
     xctest_runner = derived_files.xctest_runner_script(
         actions = actions,
-        target_name = name,
         add_target_name_to_output_path = False,
+        target_name = name,
     )
 
     actions.expand_template(
