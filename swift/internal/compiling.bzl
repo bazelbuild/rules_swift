@@ -2000,7 +2000,8 @@ def compile_module_interface(
         module_name,
         swiftinterface_file,
         swift_infos,
-        swift_toolchain):
+        swift_toolchain,
+        swiftdoc = None):
     """Compiles a Swift module interface.
 
     Args:
@@ -2019,6 +2020,8 @@ def compile_module_interface(
         swift_infos: A list of `SwiftInfo` providers from dependencies of the
             target being compiled.
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
+        swiftdoc: An optional `.swiftdoc` file to propagate in the created
+            SwiftInfo
 
     Returns:
         A Swift module context (as returned by `swift_common.create_module`)
@@ -2108,7 +2111,7 @@ def compile_module_interface(
             feature_name = SWIFT_FEATURE_SYSTEM_MODULE,
         ),
         swift = create_swift_module(
-            swiftdoc = None,
+            swiftdoc = swiftdoc,
             swiftinterface = swiftinterface_file,
             swiftmodule = swiftmodule_file,
         ),
