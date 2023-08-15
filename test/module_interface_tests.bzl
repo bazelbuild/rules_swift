@@ -15,8 +15,28 @@
 """Tests for interoperability with `cc_library`-specific features."""
 
 load(
+    "@build_bazel_rules_swift//test/rules:action_command_line_test.bzl",
+    "make_action_command_line_test_rule",
+)
+load(
     "@bazel_skylib//rules:build_test.bzl",
     "build_test",
+)
+
+explicit_swift_module_map_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:features": [
+            "swift.use_explicit_swift_module_map",
+        ],
+    },
+)
+
+vfsoverlay_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:features": [
+            "swift.vfsoverlay",
+        ],
+    },
 )
 
 def module_interface_test_suite(name):
@@ -34,6 +54,34 @@ def module_interface_test_suite(name):
             "@build_bazel_rules_swift//test/fixtures/module_interface:client",
         ],
         tags = [name],
+    )
+
+    explicit_swift_module_map_test(
+        name = "{}_explicit_swift_module_map_test".format(name),
+        tags = [name],
+        expected_argv = [
+            "-explicit-swift-module-map-file $(BIN_DIR)/test/fixtures/module_interface/ToyModule.swift-explicit-module-map.json", ],
+        not_expected_argv = [
+            "-Xfrontend",
+        ],
+        mnemonic = "SwiftCompileModuleInterface",
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/module_interface:toy_module",
+    )
+
+    vfsoverlay_test(
+        name = "{}_vfsoverlay_test".format(name),
+        tags = [name],
+        expected_argv = [
+            "-vfsoverlay$(BIN_DIR)/test/fixtures/module_interface/ToyModule.vfsoverlay.yaml",
+            "-I/__build_bazel_rules_swift/swiftmodules",
+        ],
+        not_expected_argv = [
+            "-I$(BIN_DIR)/test/fixtures/module_interface",
+            "-explicit-swift-module-map-file",
+            "-Xfrontend",
+        ],
+        mnemonic = "SwiftCompileModuleInterface",
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/module_interface:toy_module",
     )
 
     native.test_suite(
