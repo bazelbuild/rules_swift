@@ -1718,16 +1718,13 @@ def _dependencies_swiftmodules_vfsoverlay_configurator(prerequisites, args, is_f
 
     # Bug: `swiftc` doesn't pass its `-vfsoverlay` arg to the frontend.
     # Workaround: Pass `-vfsoverlay` directly via `-Xfrontend`.
-    if is_frontend:
-        args.add(
-            "-vfsoverlay{}".format(prerequisites.vfsoverlay_file.path),
-        )
-    else:
-        args.add(
-            "-Xfrontend",
-            "-vfsoverlay{}".format(prerequisites.vfsoverlay_file.path),
-        )
-    args.add("-I{}".format(prerequisites.vfsoverlay_search_path))
+    if not is_frontend:
+        args.add("-Xfrontend")
+
+    args.add(
+        "-vfsoverlay{}".format(prerequisites.vfsoverlay_file.path),
+        "-I{}".format(prerequisites.vfsoverlay_search_path),
+    )
 
     return swift_toolchain_config.config_result(
         inputs = swiftmodules + [prerequisites.vfsoverlay_file],
