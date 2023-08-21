@@ -38,7 +38,6 @@ load(
     "SWIFT_FEATURE_OPT_USES_WMO",
     "SWIFT_FEATURE_REMAP_XCODE_PATH",
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
-    "SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE",
 )
 load(":package_specs.bzl", "label_matches_package_specs")
 load(":target_triples.bzl", "target_triples")
@@ -227,7 +226,7 @@ def is_feature_enabled(feature_configuration, feature_name):
             feature_name = feature_name,
         )
 
-def default_features_for_toolchain(ctx, target_triple):
+def default_features_for_toolchain(target_triple):
     """Enables a common set of swift features based on build configuration.
 
     We have a common set of features we'd like to enable for both
@@ -236,7 +235,6 @@ def default_features_for_toolchain(ctx, target_triple):
     what platform we're targetting (linux, macos, ios, etc.).
 
     Args:
-        ctx: Context of the swift toolchain rule building this list of features.
         target_triple: Target triple configured for our toolchain.
 
     Returns:
@@ -269,13 +267,9 @@ def default_features_for_toolchain(ctx, target_triple):
             SWIFT_FEATURE_REMAP_XCODE_PATH,
         ])
 
-        if getattr(ctx.fragments.objc, "alwayslink_by_default", False):
-            features.append(SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE)
-
     # Linux specific features
     if target_triples.unversioned_os(target_triple) == "linux":
         features.extend([
-            SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE,
             SWIFT_FEATURE_NO_GENERATED_MODULE_MAP,
         ])
 
