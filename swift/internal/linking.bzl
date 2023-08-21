@@ -25,8 +25,7 @@ load(
     "ensure_swiftmodule_is_embedded",
     "should_embed_swiftmodule_for_debugging",
 )
-load(":features.bzl", "configure_features", "get_cc_feature_configuration", "is_feature_enabled")
-load(":feature_names.bzl", "SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE")
+load(":features.bzl", "configure_features", "get_cc_feature_configuration")
 
 visibility([
     "@build_bazel_rules_swift//swift/...",
@@ -218,7 +217,7 @@ def create_linking_context_from_compilation_outputs(
         *,
         actions,
         additional_inputs = [],
-        alwayslink = False,
+        alwayslink = True,
         compilation_outputs,
         feature_configuration,
         label,
@@ -240,9 +239,11 @@ def create_linking_context_from_compilation_outputs(
         additional_inputs: A `list` of `File`s containing any additional files
             that are referenced by `user_link_flags` and therefore need to be
             propagated up to the linker.
-        alwayslink: If True, any binary that depends on the providers returned
-            by this function will link in all of the library's object files,
-            even if some contain no symbols referenced by the binary.
+        alwayslink: If `False`, any binary that depends on the providers
+            returned by this function will link in all of the library's object
+            files only if there are symbol references. See the discussion on
+            `swift_library` `alwayslink` for why that behavior could result
+            in undesired results.
         compilation_outputs: A `CcCompilationOutputs` value containing the
             object files to link. Typically, this is the second tuple element in
             the value returned by `swift_common.compile`.
@@ -275,12 +276,6 @@ def create_linking_context_from_compilation_outputs(
         cc_info.linking_context
         for cc_info in swift_toolchain.implicit_deps_providers.cc_infos
     ]
-
-    if not alwayslink:
-        alwayslink = is_feature_enabled(
-            feature_configuration = feature_configuration,
-            feature_name = SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE,
-        )
 
     debugging_linking_context = _create_embedded_debugging_linking_context(
         actions = actions,

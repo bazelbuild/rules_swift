@@ -27,7 +27,6 @@ load(
     "SWIFT_FEATURE_FULL_DEBUG_INFO",
     "SWIFT_FEATURE_INTERNALIZE_AT_LINK",
     "SWIFT_FEATURE_NO_GENERATED_MODULE_MAP",
-    "SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE",
 )
 load(":package_specs.bzl", "label_matches_package_specs")
 load(":target_triples.bzl", "target_triples")
@@ -235,13 +234,9 @@ def default_features_for_toolchain(ctx, target_triple):
     if target_triple.vendor == "apple":
         features.append(SWIFT_FEATURE_DEBUG_PREFIX_MAP)
 
-        if ctx.fragments.objc.alwayslink_by_default:
-            features.append(SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE)
-
     # Linux specific features
     if target_triples.unversioned_os(target_triple) == "linux":
         features.extend([
-            SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE,
             SWIFT_FEATURE_NO_GENERATED_MODULE_MAP,
         ])
 
