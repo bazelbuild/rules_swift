@@ -28,15 +28,11 @@ load(
     "ensure_swiftmodule_is_embedded",
     "should_embed_swiftmodule_for_debugging",
 )
-load(
-    ":developer_dirs.bzl",
-    "developer_dirs_linkopts",
-)
+load(":developer_dirs.bzl", "developer_dirs_linkopts")
 load(
     ":feature_names.bzl",
     "SWIFT_FEATURE_LLD_GC_WORKAROUND",
     "SWIFT_FEATURE_OBJC_LINK_FLAGS",
-    "SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE",
 )
 load(
     ":features.bzl",
@@ -272,7 +268,7 @@ def create_linking_context_from_compilation_outputs(
         *,
         actions,
         additional_inputs = [],
-        alwayslink = False,
+        alwayslink = True,
         compilation_outputs,
         feature_configuration,
         is_test = None,
@@ -297,9 +293,11 @@ def create_linking_context_from_compilation_outputs(
         additional_inputs: A `list` of `File`s containing any additional files
             that are referenced by `user_link_flags` and therefore need to be
             propagated up to the linker.
-        alwayslink: If True, any binary that depends on the providers returned
-            by this function will link in all of the library's object files,
-            even if some contain no symbols referenced by the binary.
+        alwayslink: If `False`, any binary that depends on the providers
+            returned by this function will link in all of the library's object
+            files only if there are symbol references. See the discussion on
+            `swift_library` `alwayslink` for why that behavior could result
+            in undesired results.
         compilation_outputs: A `CcCompilationOutputs` value containing the
             object files to link. Typically, this is the second tuple element in
             the value returned by `compile`.
@@ -360,12 +358,6 @@ def create_linking_context_from_compilation_outputs(
     )
     if autolink_linking_context:
         extra_linking_contexts.append(autolink_linking_context)
-
-    if not alwayslink:
-        alwayslink = is_feature_enabled(
-            feature_configuration = feature_configuration,
-            feature_name = SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE,
-        )
 
     if is_feature_enabled(
         feature_configuration = feature_configuration,

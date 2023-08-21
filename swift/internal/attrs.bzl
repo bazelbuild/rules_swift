@@ -297,15 +297,27 @@ and emit a `.swiftinterface` file as one of the compilation outputs.
                 mandatory = False,
             ),
             "alwayslink": attr.bool(
-                default = False,
+                default = True,
                 doc = """\
-If true, any binary that depends (directly or indirectly) on this Swift module
-will link in all the object files for the files listed in `srcs`, even if some
-contain no symbols referenced by the binary. This is useful if your code isn't
-explicitly called by code in the binary; for example, if you rely on runtime
-checks for protocol conformances added in extensions in the library but do not
-directly reference any other symbols in the object file that adds that
-conformance.
+If `False`, any binary that depends (directly or indirectly) on this Swift module
+will only link in all the object files for the files listed in `srcs` when there
+is a direct symbol reference.
+
+Swift protocol conformances don't create linker references. Likewise, if the
+Swift code has Objective-C classes/methods, their usage does not always result in
+linker references.
+
+_"All the object files"_ for this module is also somewhat fuzzy. Unlike C, C++,
+and Objective-C, where each source file results in a `.o` file; for Swift the
+number of .o files depends on the compiler options
+(`-wmo`/`-whole-module-optimization`, `-num-threads`). That makes relying on
+linker reference more fragile, and any individual .swift file in `srcs` may/may
+not get picked up based on the linker references to other files that happen to
+get batched into a single `.o` by the compiler options used.
+
+Swift Package Manager always passes the individual `.o` files to the linker
+instead of using intermediate static libraries, so it effectively is the same
+as `alwayslink = True`.
 """,
             ),
             "generated_header_name": attr.string(

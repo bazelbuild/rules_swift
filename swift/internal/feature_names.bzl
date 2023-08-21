@@ -342,10 +342,6 @@ SWIFT_FEATURE_LLD_GC_WORKAROUND = "swift.lld_gc_workaround"
 # objects if you know that isn't required.
 SWIFT_FEATURE_OBJC_LINK_FLAGS = "swift.objc_link_flag"
 
-# A private feature that is set by the toolchain if the given toolchain wants
-# all Swift compilations to always be linked.
-SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE = "swift._force_alwayslink_true"
-
 # If enabled, requests the `-enforce-exclusivity=checked` swiftc flag which
 # enables runtime checking of exclusive memory access on mutation.
 SWIFT_FEATURE_CHECKED_EXCLUSIVITY = "swift.checked_exclusivity"
