@@ -456,7 +456,6 @@ def _swift_toolchain_impl(ctx):
         features_from_swiftcopts(swiftcopts = swiftcopts)
     )
     requested_features.extend(default_features_for_toolchain(
-        ctx = ctx,
         target_triple = target_triple,
     ))
 

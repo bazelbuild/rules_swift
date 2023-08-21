@@ -181,7 +181,7 @@ def _swift_linkopts_cc_info(
     linkopts.extend([
         "-L{}".format(swift_lib_dir),
         "-L/usr/lib/swift",
-        # TODO(b/112000244): These should get added by the C++ Starlark API,
+        # TODO(b/112000244): This should get added by the C++ Starlark API,
         # but we're using the "c++-link-executable" action right now instead
         # of "objc-executable" because the latter requires additional
         # variables not provided by cc_common. Figure out how to handle this
@@ -604,7 +604,6 @@ def _xcode_swift_toolchain_impl(ctx):
     ) + wmo_features_from_swiftcopts(swiftcopts = swiftcopts)
     requested_features.extend(ctx.features)
     requested_features.extend(default_features_for_toolchain(
-        ctx = ctx,
         target_triple = target_triple,
     ))
 
