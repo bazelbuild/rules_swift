@@ -33,6 +33,12 @@ def compile_module_interface_action_configs():
                 swift_toolchain_config.add_arg("-compile-module-from-interface"),
             ],
         ),
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE_MODULE_INTERFACE],
+            configurators = [
+                # swift_toolchain_config.add_arg("-explicit-interface-module-build"),
+            ],
+        ),
         # Library evolution is implied since we've already produced a
         # .swiftinterface file. So we want to unconditionally enable the flag
         # for this action.

@@ -1113,9 +1113,10 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                # swift_action_names.COMPILE_MODULE_INTERFACE,
                 swift_action_names.DERIVE_FILES,
-                swift_action_names.PRECOMPILE_C_MODULE,
                 swift_action_names.DUMP_AST,
+                swift_action_names.PRECOMPILE_C_MODULE,
             ],
             configurators = [_module_name_configurator],
         ),
@@ -1753,7 +1754,11 @@ def _explicit_swift_module_map_configurator(prerequisites, args, is_frontend = F
 
 def _module_name_configurator(prerequisites, args):
     """Adds the module name flag to the command line."""
-    args.add("-module-name", prerequisites.module_name)
+    m = prerequisites.module_name
+
+    # if m == "PromisesSwift":
+    #     m = "Promises"
+    args.add("-module-name", m)
 
 def _package_name_configurator(prerequisites, args):
     if prerequisites.package_name:
