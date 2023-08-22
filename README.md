@@ -12,6 +12,32 @@ watchOS), they can be combined with the
 If you run into any problems with these rules, please
 [file an issue!](https://github.com/bazelbuild/rules_swift/issues/new)
 
+## Basic Examples
+
+Create a simple CLI that can run on macOS, Linux, or Windows:
+
+```bzl
+load("@build_bazel_rules_swift//swift:swift.bzl", "swift_binary")
+
+swift_binary(
+    name = "cli",
+    srcs = ["CLI.swift"],
+)
+```
+
+Create a single library target that can be used by other targets in your
+build:
+
+```bzl
+load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
+
+swift_library(
+    name = "MyLibrary",
+    srcs = ["MyLibrary.swift"],
+    tags = ["manual"],
+)
+```
+
 ## Reference Documentation
 
 [Click here](https://github.com/bazelbuild/rules_swift/tree/master/doc)
