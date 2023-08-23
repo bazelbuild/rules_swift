@@ -631,6 +631,7 @@ def _xcode_swift_toolchain_impl(ctx):
 
     swift_toolchain_info = SwiftToolchainInfo(
         action_configs = all_action_configs,
+        cc_language = "objc",
         cc_toolchain_info = cc_toolchain,
         clang_implicit_deps_providers = collect_implicit_deps_providers(
             ctx.attr.clang_implicit_deps,
