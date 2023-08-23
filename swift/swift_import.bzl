@@ -18,7 +18,6 @@ load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(
     "@build_bazel_rules_swift//swift/internal:attrs.bzl",
     "swift_common_rule_attrs",
-    "swift_toolchain_attrs",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:compiling.bzl",
@@ -141,7 +140,6 @@ def _swift_import_impl(ctx):
 swift_import = rule(
     attrs = dicts.add(
         swift_common_rule_attrs(),
-        swift_toolchain_attrs(),
         {
             "archives": attr.label_list(
                 allow_empty = True,

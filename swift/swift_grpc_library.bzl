@@ -14,11 +14,6 @@
 
 """A Swift library rule that generates gRPC services defined in protos."""
 
-load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load(
-    "@build_bazel_rules_swift//swift/internal:attrs.bzl",
-    "swift_toolchain_attrs",
-)
 load(
     "@build_bazel_rules_swift//swift/internal:compiling.bzl",
     "compile",
@@ -361,31 +356,29 @@ def _swift_grpc_library_impl(ctx):
     ]
 
 swift_grpc_library = rule(
-    attrs = dicts.add(
-        swift_toolchain_attrs(),
-        {
-            "srcs": attr.label_list(
-                doc = """\
+    attrs = {
+        "srcs": attr.label_list(
+            doc = """\
 Exactly one `proto_library` target that defines the services being generated.
 """,
-                providers = [ProtoInfo],
-            ),
-            "deps": attr.label_list(
-                doc = """\
+            providers = [ProtoInfo],
+        ),
+        "deps": attr.label_list(
+            doc = """\
 Exactly one `swift_proto_library` or `swift_grpc_library` target that contains
 the Swift protos used by the services being generated. Test stubs should depend
 on the `swift_grpc_library` implementing the service.
 """,
-                providers = [[SwiftInfo, SwiftProtoInfo]],
-            ),
-            "flavor": attr.string(
-                values = [
-                    "client",
-                    "client_stubs",
-                    "server",
-                ],
-                mandatory = True,
-                doc = """\
+            providers = [[SwiftInfo, SwiftProtoInfo]],
+        ),
+        "flavor": attr.string(
+            values = [
+                "client",
+                "client_stubs",
+                "server",
+            ],
+            mandatory = True,
+            doc = """\
 The kind of definitions that should be generated:
 
 *   `"client"` to generate client definitions.
@@ -394,37 +387,36 @@ The kind of definitions that should be generated:
 
 *   `"server"` to generate server definitions.
 """,
+        ),
+        "_mkdir_and_run": attr.label(
+            cfg = config.exec(_GENERATE_EXEC_GROUP),
+            default = Label(
+                "@build_bazel_rules_swift//tools/mkdir_and_run",
             ),
-            "_mkdir_and_run": attr.label(
-                cfg = config.exec(_GENERATE_EXEC_GROUP),
-                default = Label(
-                    "@build_bazel_rules_swift//tools/mkdir_and_run",
-                ),
-                executable = True,
+            executable = True,
+        ),
+        # TODO(b/63389580): Migrate to proto_lang_toolchain.
+        "_proto_support": attr.label_list(
+            default = [
+                Label("@com_github_grpc_grpc_swift//:SwiftGRPC"),
+                Label("@com_github_apple_swift_protobuf//:SwiftProtobuf"),
+            ],
+        ),
+        "_protoc": attr.label(
+            cfg = config.exec(_GENERATE_EXEC_GROUP),
+            default = Label(
+                "//net/proto2/compiler/public:protocol_compiler",
             ),
-            # TODO(b/63389580): Migrate to proto_lang_toolchain.
-            "_proto_support": attr.label_list(
-                default = [
-                    Label("@com_github_grpc_grpc_swift//:SwiftGRPC"),
-                    Label("@com_github_apple_swift_protobuf//:SwiftProtobuf"),
-                ],
+            executable = True,
+        ),
+        "_protoc_gen_swiftgrpc": attr.label(
+            cfg = config.exec(_GENERATE_EXEC_GROUP),
+            default = Label(
+                "@com_github_grpc_grpc_swift//:protoc-gen-swiftgrpc",
             ),
-            "_protoc": attr.label(
-                cfg = config.exec(_GENERATE_EXEC_GROUP),
-                default = Label(
-                    "//net/proto2/compiler/public:protocol_compiler",
-                ),
-                executable = True,
-            ),
-            "_protoc_gen_swiftgrpc": attr.label(
-                cfg = config.exec(_GENERATE_EXEC_GROUP),
-                default = Label(
-                    "@com_github_grpc_grpc_swift//:protoc-gen-swiftgrpc",
-                ),
-                executable = True,
-            ),
-        },
-    ),
+            executable = True,
+        ),
+    },
     doc = """\
 Generates a Swift library from gRPC services defined in protocol buffer sources.
 

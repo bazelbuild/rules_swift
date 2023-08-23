@@ -21,10 +21,6 @@ and then needs to compile them. This module provides that lower-level interface.
 """
 
 load(
-    "@build_bazel_rules_swift//swift/internal:attrs.bzl",
-    "swift_toolchain_attrs",
-)
-load(
     "@build_bazel_rules_swift//swift/internal:compiling.bzl",
     "compile",
     "compile_module_interface",
@@ -69,6 +65,5 @@ swift_common = struct(
     get_toolchain = get_swift_toolchain,
     is_enabled = is_feature_enabled,
     precompile_clang_module = precompile_clang_module,
-    toolchain_attrs = swift_toolchain_attrs,
     use_toolchain = use_swift_toolchain,
 )

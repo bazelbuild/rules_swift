@@ -26,7 +26,7 @@ load(
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 load("@rules_proto//proto:defs.bzl", "ProtoInfo", "proto_common")
-load(":attrs.bzl", "swift_config_attrs", "swift_toolchain_attrs")
+load(":attrs.bzl", "swift_config_attrs")
 load(":compiling.bzl", "compile")
 load(
     ":feature_names.bzl",
@@ -353,7 +353,6 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
 swift_protoc_gen_aspect = aspect(
     attr_aspects = ["deps"],
     attrs = dicts.add(
-        swift_toolchain_attrs(),
         swift_config_attrs(),
         {
             "_proto_lang_toolchain": attr.label(

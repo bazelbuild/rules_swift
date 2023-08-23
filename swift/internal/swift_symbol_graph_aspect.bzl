@@ -22,11 +22,9 @@ aspects; the public aspect is exported by the `swift_symbol_graph_aspect.bzl`
 file in the parent directory.
 """
 
-load(":attrs.bzl", "swift_toolchain_attrs")
 load(":features.bzl", "configure_features")
 load(":symbol_graph_extracting.bzl", "extract_symbol_graph")
 load(":toolchain_utils.bzl", "get_swift_toolchain", "use_swift_toolchain")
-load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(
     "@build_bazel_rules_swift//swift:providers.bzl",
     "SwiftInfo",
@@ -141,29 +139,26 @@ def make_swift_symbol_graph_aspect(
 
     return aspect(
         attr_aspects = ["deps"],
-        attrs = dicts.add(
-            swift_toolchain_attrs(),
-            {
-                "minimum_access_level": attr.string(
-                    default = default_minimum_access_level,
-                    doc = """\
+        attrs = {
+            "minimum_access_level": attr.string(
+                default = default_minimum_access_level,
+                doc = """\
 The minimum access level of the declarations that should be emitted in the
 symbol graphs.
 
 This value must be either `fileprivate`, `internal`, `private`, or `public`. The
 default value is {default_value}.
 """.format(
-                        default_value = default_minimum_access_level,
-                    ),
-                    values = [
-                        "fileprivate",
-                        "internal",
-                        "private",
-                        "public",
-                    ],
+                    default_value = default_minimum_access_level,
                 ),
-            },
-        ),
+                values = [
+                    "fileprivate",
+                    "internal",
+                    "private",
+                    "public",
+                ],
+            ),
+        },
         doc = doc,
         fragments = ["cpp"],
         implementation = aspect_impl,

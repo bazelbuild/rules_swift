@@ -15,10 +15,6 @@
 """Propagates unified `SwiftInfo` providers for C/Objective-C targets."""
 
 load(
-    "@build_bazel_rules_swift//swift/internal:attrs.bzl",
-    "swift_toolchain_attrs",
-)
-load(
     "@build_bazel_rules_swift//swift/internal:compiling.bzl",
     "precompile_clang_module",
 )
@@ -709,7 +705,6 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx):
 
     swift_toolchain = get_swift_toolchain(
         aspect_ctx,
-        attr = "_toolchain_for_aspect",
     )
     feature_configuration = configure_features(
         ctx = aspect_ctx,
@@ -743,9 +738,6 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx):
 
 swift_clang_module_aspect = aspect(
     attr_aspects = _MULTIPLE_TARGET_ASPECT_ATTRS + _SINGLE_TARGET_ASPECT_ATTRS,
-    attrs = swift_toolchain_attrs(
-        toolchain_attr_name = "_toolchain_for_aspect",
-    ),
     doc = """\
 Propagates unified `SwiftInfo` providers for targets that represent
 C/Objective-C modules.
