@@ -56,7 +56,6 @@ bzl_library(
         ":swift_proto_utils",
         "//swift:module_name",
         "//swift:providers",
-        "//swift:swift_common",
         "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
         "@bazel_skylib//lib:dicts",
