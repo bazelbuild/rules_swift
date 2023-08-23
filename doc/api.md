@@ -486,52 +486,6 @@ A struct containing the precompiled module and optional indexstore directory,
   or `None` if the toolchain or target does not support precompiled modules.
 
 
-<a id="swift_common.toolchain_attrs"></a>
-
-## swift_common.toolchain_attrs
-
-<pre>
-swift_common.toolchain_attrs(<a href="#swift_common.toolchain_attrs-toolchain_attr_name">toolchain_attr_name</a>)
-</pre>
-
-Returns an attribute dictionary for toolchain users.
-
-The returned dictionary contains a key with the name specified by the
-argument `toolchain_attr_name` (which defaults to the value `"_toolchain"`),
-the value of which is a BUILD API `attr.label` that references the default
-Swift toolchain. Users who are authoring custom rules can add this
-dictionary to the attributes of their own rule in order to depend on the
-toolchain and access its `SwiftToolchainInfo` provider to pass it to other
-`swift_common` functions.
-
-There is a hierarchy to the attribute sets offered by the `swift_common`
-API:
-
-1.  If you only need access to the toolchain for its tools and libraries but
-    are not doing any compilation, use `toolchain_attrs`.
-2.  If you need to invoke compilation actions but are not making the
-    resulting object files into a static or shared library, use
-    `compilation_attrs`.
-3.  If you want to provide a rule interface that is suitable as a drop-in
-    replacement for `swift_library`, use `library_rule_attrs`.
-
-Each of the attribute functions in the list above also contains the
-attributes from the earlier items in the list.
-
-
-**PARAMETERS**
-
-
-| Name  | Description | Default Value |
-| :------------- | :------------- | :------------- |
-| <a id="swift_common.toolchain_attrs-toolchain_attr_name"></a>toolchain_attr_name |  The name of the attribute that should be created that points to the toolchain. This defaults to `_toolchain`, which is sufficient for most rules; it is customizable for certain aspects where having an attribute with the same name but different values applied to a particular target causes a build crash.   |  `"_toolchain"` |
-
-**RETURNS**
-
-A new attribute dictionary that can be added to the attributes of a
-  custom build rule to provide access to the Swift toolchain.
-
-
 <a id="swift_common.use_toolchain"></a>
 
 ## swift_common.use_toolchain
