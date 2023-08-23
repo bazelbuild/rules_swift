@@ -83,7 +83,7 @@ Propagates Swift-specific information about a `proto_library`.
 ## SwiftToolchainInfo
 
 <pre>
-SwiftToolchainInfo(<a href="#SwiftToolchainInfo-action_configs">action_configs</a>, <a href="#SwiftToolchainInfo-cc_toolchain_info">cc_toolchain_info</a>, <a href="#SwiftToolchainInfo-clang_implicit_deps_providers">clang_implicit_deps_providers</a>,
+SwiftToolchainInfo(<a href="#SwiftToolchainInfo-action_configs">action_configs</a>, <a href="#SwiftToolchainInfo-cc_language">cc_language</a>, <a href="#SwiftToolchainInfo-cc_toolchain_info">cc_toolchain_info</a>, <a href="#SwiftToolchainInfo-clang_implicit_deps_providers">clang_implicit_deps_providers</a>,
                    <a href="#SwiftToolchainInfo-const_protocols_to_gather">const_protocols_to_gather</a>, <a href="#SwiftToolchainInfo-cross_import_overlays">cross_import_overlays</a>, <a href="#SwiftToolchainInfo-debug_outputs_provider">debug_outputs_provider</a>,
                    <a href="#SwiftToolchainInfo-developer_dirs">developer_dirs</a>, <a href="#SwiftToolchainInfo-entry_point_linkopts_provider">entry_point_linkopts_provider</a>, <a href="#SwiftToolchainInfo-feature_allowlists">feature_allowlists</a>,
                    <a href="#SwiftToolchainInfo-generated_header_module_implicit_deps_providers">generated_header_module_implicit_deps_providers</a>, <a href="#SwiftToolchainInfo-implicit_deps_providers">implicit_deps_providers</a>,
@@ -100,6 +100,7 @@ that use the toolchain.
 | Name  | Description |
 | :------------- | :------------- |
 | <a id="SwiftToolchainInfo-action_configs"></a>action_configs |  This field is an internal implementation detail of the build rules.    |
+| <a id="SwiftToolchainInfo-cc_language"></a>cc_language |  The `language` that should be passed to `cc_common` APIs that take it as an argument.    |
 | <a id="SwiftToolchainInfo-cc_toolchain_info"></a>cc_toolchain_info |  The `cc_common.CcToolchainInfo` provider from the Bazel C++ toolchain that this Swift toolchain depends on.    |
 | <a id="SwiftToolchainInfo-clang_implicit_deps_providers"></a>clang_implicit_deps_providers |  A `struct` with the following fields, which represent providers from targets that should be added as implicit dependencies of any precompiled explicit C/Objective-C modules:<br><br>*   `cc_infos`: A list of `CcInfo` providers from targets specified as the     toolchain's implicit dependencies. *   `objc_infos`: A list of `apple_common.Objc` providers from targets specified     as the toolchain's implicit dependencies. *   `swift_infos`: A list of `SwiftInfo` providers from targets specified as the     toolchain's implicit dependencies.<br><br>For ease of use, this field is never `None`; it will always be a valid `struct` containing the fields described above, even if those lists are empty.    |
 | <a id="SwiftToolchainInfo-const_protocols_to_gather"></a>const_protocols_to_gather |  `File`. A JSON file specifying a list of protocols for extraction of conformances' const values.    |

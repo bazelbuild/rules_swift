@@ -83,10 +83,7 @@ def configure_features(
     # for a generated header).
     unsupported_features = list(unsupported_features)
     unsupported_features.extend([
-        # Avoid making the `grep_includes` tool a requirement of Swift
-        # compilation APIs/rules that generate a header.
         "cc_include_scanning",
-        # Don't register parse-header actions for generated headers.
         "parse_headers",
     ])
 
@@ -107,6 +104,7 @@ def configure_features(
     cc_feature_configuration = cc_common.configure_features(
         ctx = ctx,
         cc_toolchain = swift_toolchain.cc_toolchain_info,
+        language = swift_toolchain.cc_language,
         requested_features = all_requestable_features,
         unsupported_features = all_unsupported_features,
     )
