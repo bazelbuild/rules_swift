@@ -520,6 +520,7 @@ def _swift_toolchain_impl(ctx):
     # assumptions that are only valid on Linux.
     swift_toolchain_info = SwiftToolchainInfo(
         action_configs = all_action_configs,
+        cc_language = None,
         cc_toolchain_info = cc_toolchain,
         clang_implicit_deps_providers = (
             collect_implicit_deps_providers([])
