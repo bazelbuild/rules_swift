@@ -24,7 +24,6 @@ file in the parent directory.
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("//swift:providers.bzl", "SwiftInfo", "SwiftSymbolGraphInfo")
-load("//swift/internal:attrs.bzl", "swift_toolchain_attrs")
 load("//swift/internal:features.bzl", "configure_features")
 load("//swift/internal:symbol_graph_extracting.bzl", "extract_symbol_graph")
 load(
@@ -148,7 +147,6 @@ def make_swift_symbol_graph_aspect(
     return aspect(
         attr_aspects = ["deps"],
         attrs = dicts.add(
-            swift_toolchain_attrs(),
             {
                 # TODO: use `attr.bool` once https://github.com/bazelbuild/bazel/issues/22809 is resolved.
                 "emit_extension_block_symbols": attr.string(

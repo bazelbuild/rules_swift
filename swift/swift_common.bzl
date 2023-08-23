@@ -20,7 +20,6 @@ example, `swift_proto_library` generates Swift source code from `.proto` files
 and then needs to compile them. This module provides that lower-level interface.
 """
 
-load("//swift/internal:attrs.bzl", "swift_toolchain_attrs")
 load(
     "//swift/internal:compiling.bzl",
     "compile",
@@ -61,6 +60,5 @@ swift_common = struct(
     get_toolchain = get_swift_toolchain,
     is_enabled = is_feature_enabled,
     precompile_clang_module = precompile_clang_module,
-    toolchain_attrs = swift_toolchain_attrs,
     use_toolchain = use_swift_toolchain,
 )
