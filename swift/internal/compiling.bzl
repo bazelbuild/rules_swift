@@ -2089,6 +2089,11 @@ def compile_module_interface(
             continue
         transitive_swiftmodules.append(swift_module.swiftmodule)
 
+    add_target_name_to_output_path = is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT,
+    )
+
     # We need this when generating the VFS overlay file and also when
     # configuring inputs for the compile action, so it's best to precompute it
     # here.
@@ -2098,6 +2103,7 @@ def compile_module_interface(
     ):
         vfsoverlay_file = derived_files.vfsoverlay(
             actions = actions,
+            add_target_name_to_output_path = add_target_name_to_output_path,
             target_name = module_name,
         )
         write_vfsoverlay(
