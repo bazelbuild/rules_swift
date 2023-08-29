@@ -10,6 +10,16 @@ load(
 )
 
 default_test = make_action_command_line_test_rule()
+
+# Test with enabled `swift.add_target_name_to_output` feature
+default_with_target_name_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:features": [
+            "swift.add_target_name_to_output",
+        ],
+    },
+)
+
 default_opt_test = make_action_command_line_test_rule(
     config_settings = {
         "//command_line_option:compilation_mode": "opt",
@@ -58,10 +68,30 @@ vfsoverlay_test = make_action_command_line_test_rule(
     },
 )
 
+# Test with enabled `swift.add_target_name_to_output` feature
+vfsoverlay_with_target_name_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:features": [
+            "swift.vfsoverlay",
+            "swift.add_target_name_to_output",
+        ],
+    },
+)
+
 explicit_swift_module_map_test = make_action_command_line_test_rule(
     config_settings = {
         "//command_line_option:features": [
             "swift.use_explicit_swift_module_map",
+        ],
+    },
+)
+
+# Test with enabled `swift.add_target_name_to_output` feature
+explicit_swift_module_map_with_target_name_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:features": [
+            "swift.use_explicit_swift_module_map",
+            "swift.add_target_name_to_output",
         ],
     },
 )
@@ -87,6 +117,18 @@ def features_test_suite(name):
         expected_argv = [
             "-emit-object",
             "-I$(BIN_DIR)/test/fixtures/basic",
+            "-Xwrapped-swift=-file-prefix-pwd-is-dot",
+        ],
+        mnemonic = "SwiftCompile",
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/basic:second",
+    )
+
+    default_with_target_name_test(
+        name = "{}_default_with_target_name_test".format(name),
+        tags = [name],
+        expected_argv = [
+            "-emit-object",
+            "-I$(BIN_DIR)/test/fixtures/basic/first",
             "-Xwrapped-swift=-file-prefix-pwd-is-dot",
         ],
         mnemonic = "SwiftCompile",
@@ -169,6 +211,21 @@ def features_test_suite(name):
         target_under_test = "@build_bazel_rules_swift//test/fixtures/basic:second",
     )
 
+    vfsoverlay_with_target_name_test(
+        name = "{}_vfsoverlay_with_target_name_test".format(name),
+        tags = [name],
+        expected_argv = [
+            "-Xfrontend -vfsoverlay$(BIN_DIR)/test/fixtures/basic/second/second.vfsoverlay.yaml",
+            "-I/__build_bazel_rules_swift/swiftmodules",
+        ],
+        not_expected_argv = [
+            "-I$(BIN_DIR)/test/fixtures/basic",
+            "-explicit-swift-module-map-file",
+        ],
+        mnemonic = "SwiftCompile",
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/basic:second",
+    )
+
     explicit_swift_module_map_test(
         name = "{}_explicit_swift_module_map_test".format(name),
         tags = [name],
@@ -177,6 +234,21 @@ def features_test_suite(name):
         ],
         not_expected_argv = [
             "-I$(BIN_DIR)/test/fixtures/basic",
+            "-I/__build_bazel_rules_swift/swiftmodules",
+            "-Xfrontend -vfsoverlay$(BIN_DIR)/test/fixtures/basic/second.vfsoverlay.yaml",
+        ],
+        mnemonic = "SwiftCompile",
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/basic:second",
+    )
+
+    explicit_swift_module_map_with_target_name_test(
+        name = "{}_explicit_swift_module_map_with_target_name_test".format(name),
+        tags = [name],
+        expected_argv = [
+            "-Xfrontend -explicit-swift-module-map-file -Xfrontend $(BIN_DIR)/test/fixtures/basic/second.swift-explicit-module-map.json",
+        ],
+        not_expected_argv = [
+            "-I$(BIN_DIR)/test/fixtures/basic/second",
             "-I/__build_bazel_rules_swift/swiftmodules",
             "-Xfrontend -vfsoverlay$(BIN_DIR)/test/fixtures/basic/second.vfsoverlay.yaml",
         ],
