@@ -175,6 +175,11 @@ def _gather_transitive_module_mappings(targets):
     ) for module_name, file_paths in unique_mappings.items()]
 
 def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
+    # When the aspect is applied to an inapplicable target, just ignore it and don't
+    # generate/propagate anything. This happens when the aspect is applied by other aspects to
+    # analyze generated Swift protos.
+    if ProtoInfo not in target:
+        return []
     swift_toolchain = get_swift_toolchain(aspect_ctx)
     proto_lang_toolchain_info = aspect_ctx.attr._proto_lang_toolchain[proto_common.ProtoLangToolchainInfo]
     target_proto_info = target[ProtoInfo]
