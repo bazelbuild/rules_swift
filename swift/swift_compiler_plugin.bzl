@@ -87,6 +87,7 @@ def _swift_compiler_plugin_impl(ctx):
         feature_configuration = feature_configuration,
         is_test = ctx.attr.testonly,
         module_name = module_name,
+        package_name = ctx.attr.package_name,
         plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),
         srcs = srcs,
         swift_toolchain = swift_toolchain,
