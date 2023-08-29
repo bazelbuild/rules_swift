@@ -2965,11 +2965,11 @@ def _declare_compile_outputs(
         # object files so that we can pass them all to the archive action.
         output_info = _declare_multiple_outputs_and_write_output_file_map(
             actions = actions,
+            add_target_name_to_output_path = add_target_name_to_output_path,
             emits_bc = emits_bc,
             split_derived_file_generation = split_derived_file_generation,
             srcs = srcs,
             target_name = target_name,
-            add_target_name_to_output_path = add_target_name_to_output_path,
         )
         object_files = output_info.object_files
         ast_files = output_info.ast_files
@@ -2990,8 +2990,8 @@ def _declare_compile_outputs(
     ):
         indexstore_directory = derived_files.indexstore_directory(
             actions = actions,
-            target_name = target_name,
             add_target_name_to_output_path = add_target_name_to_output_path,
+            target_name = target_name,
         )
     else:
         indexstore_directory = None
@@ -3003,8 +3003,8 @@ def _declare_compile_outputs(
     if (emit_symbol_graph):
         symbol_graph_directory = derived_files.symbol_graph_directory(
             actions = actions,
-            target_name = target_name,
             add_target_name_to_output_path = add_target_name_to_output_path,
+            target_name = target_name,
         )
     else:
         symbol_graph_directory = None
@@ -3027,15 +3027,16 @@ def _declare_compile_outputs(
 
 def _declare_multiple_outputs_and_write_output_file_map(
         actions,
+        add_target_name_to_output_path,
         emits_bc,
         split_derived_file_generation,
         srcs,
-        target_name,
-        add_target_name_to_output_path):
+        target_name):
     """Declares low-level outputs and writes the output map for a compilation.
 
     Args:
         actions: The object used to register actions.
+        add_target_name_to_output_path: Add target_name in output path. More info at SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT description.
         emits_bc: If `True` the compiler will generate LLVM BC files instead of
             object files.
         split_derived_file_generation: Whether objects and modules are produced
@@ -3043,7 +3044,6 @@ def _declare_multiple_outputs_and_write_output_file_map(
         srcs: The list of source files that will be compiled.
         target_name: The name (excluding package path) of the target being
             built.
-        add_target_name_to_output_path: Add target_name in output path. More info at SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT description.
 
     Returns:
         A `struct` with the following fields:
@@ -3064,15 +3064,15 @@ def _declare_multiple_outputs_and_write_output_file_map(
     """
     output_map_file = derived_files.swiftc_output_file_map(
         actions = actions,
-        target_name = target_name,
         add_target_name_to_output_path = add_target_name_to_output_path,
+        target_name = target_name,
     )
 
     if split_derived_file_generation:
         derived_files_output_map_file = derived_files.swiftc_derived_output_file_map(
             actions = actions,
-            target_name = target_name,
             add_target_name_to_output_path = add_target_name_to_output_path,
+            target_name = target_name,
         )
     else:
         derived_files_output_map_file = None
@@ -3099,9 +3099,9 @@ def _declare_multiple_outputs_and_write_output_file_map(
             # Declare the llvm bc file (there is one per source file).
             obj = derived_files.intermediate_bc_file(
                 actions = actions,
+                add_target_name_to_output_path = add_target_name_to_output_path,
                 target_name = target_name,
                 src = src,
-                add_target_name_to_output_path = add_target_name_to_output_path,
             )
             output_objs.append(obj)
             src_output_map["llvm-bc"] = obj.path
@@ -3109,18 +3109,18 @@ def _declare_multiple_outputs_and_write_output_file_map(
             # Declare the object file (there is one per source file).
             obj = derived_files.intermediate_object_file(
                 actions = actions,
+                add_target_name_to_output_path = add_target_name_to_output_path,
                 target_name = target_name,
                 src = src,
-                add_target_name_to_output_path = add_target_name_to_output_path,
             )
             output_objs.append(obj)
             src_output_map["object"] = obj.path
 
         ast = derived_files.ast(
             actions = actions,
+            add_target_name_to_output_path = add_target_name_to_output_path,
             target_name = target_name,
             src = src,
-            add_target_name_to_output_path = add_target_name_to_output_path,
         )
         ast_files.append(ast)
         src_output_map["ast-dump"] = ast.path
