@@ -145,6 +145,7 @@ The semantic package of the Swift target being built. Targets with the same
 package_name can access APIs using the 'package' access control modifier in
 Swift 5.9+.
 """,
+            ),
             "plugins": attr.label_list(
                 cfg = "exec",
                 doc = """\
