@@ -14,11 +14,11 @@
 
 """Functions for registering actions that invoke Swift tools."""
 
+load("@bazel_skylib//lib:types.bzl", "types")
 load(
     "@build_bazel_rules_swift//swift/toolchains/config:action_config.bzl",
     "ConfigResultInfo",
 )
-load("@bazel_skylib//lib:types.bzl", "types")
 load(":features.bzl", "are_all_features_enabled")
 
 visibility("private")

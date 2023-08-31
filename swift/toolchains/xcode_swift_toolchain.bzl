@@ -19,6 +19,9 @@ toolchain package. If you are looking for rules to build Swift code using this
 toolchain, see `doc/rules.md`.
 """
 
+load("@bazel_skylib//lib:dicts.bzl", "dicts")
+load("@bazel_skylib//lib:paths.bzl", "paths")
+load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain", "use_cpp_toolchain")
 load(
     "@build_bazel_rules_swift//swift:providers.bzl",
     "SwiftFeatureAllowlistInfo",
@@ -41,6 +44,7 @@ load(
     "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE__SUPPORTS_MACROS",
+    "SWIFT_FEATURE__SUPPORTS_PACKAGE_MODIFIER",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:features.bzl",
@@ -92,9 +96,6 @@ load(
     "@build_bazel_rules_swift//swift/toolchains/config:tool_config.bzl",
     "ToolConfigInfo",
 )
-load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load("@bazel_skylib//lib:paths.bzl", "paths")
-load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain", "use_cpp_toolchain")
 
 visibility("public")
 
@@ -598,7 +599,10 @@ def _xcode_swift_toolchain_impl(ctx):
     ))
 
     if _is_xcode_at_least_version(xcode_config, "15.0"):
-        requested_features.append(SWIFT_FEATURE__SUPPORTS_MACROS)
+        requested_features.extend([
+            SWIFT_FEATURE__SUPPORTS_MACROS,
+            SWIFT_FEATURE__SUPPORTS_PACKAGE_MODIFIER,
+        ])
 
     env = _xcode_env(target_triple = target_triple, xcode_config = xcode_config)
     execution_requirements = xcode_config.execution_info()

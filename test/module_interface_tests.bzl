@@ -15,12 +15,12 @@
 """Tests for interoperability with `cc_library`-specific features."""
 
 load(
-    "@build_bazel_rules_swift//test/rules:provider_test.bzl",
-    "provider_test",
-)
-load(
     "@bazel_skylib//rules:build_test.bzl",
     "build_test",
+)
+load(
+    "@build_bazel_rules_swift//test/rules:provider_test.bzl",
+    "provider_test",
 )
 
 visibility("private")

@@ -14,6 +14,8 @@
 
 """An aspect attached to `proto_library` targets to generate Swift artifacts."""
 
+load("@bazel_skylib//lib:dicts.bzl", "dicts")
+load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 load(
     "@build_bazel_rules_swift//swift:module_name.bzl",
     "derive_swift_module_name",
@@ -23,8 +25,6 @@ load(
     "SwiftInfo",
     "SwiftProtoInfo",
 )
-load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 load("@rules_proto//proto:defs.bzl", "ProtoInfo", "proto_common")
 load(":attrs.bzl", "swift_config_attrs")
 load(":compiling.bzl", "compile")

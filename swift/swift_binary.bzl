@@ -14,6 +14,7 @@
 
 """Implementation of the `swift_binary` rule."""
 
+load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(
     "@build_bazel_rules_swift//swift/internal:compiling.bzl",
     "compile",
@@ -48,7 +49,6 @@ load(
     "get_compilation_contexts",
     "get_providers",
 )
-load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(":module_name.bzl", "derive_swift_module_name")
 load(":providers.bzl", "SwiftInfo")
 

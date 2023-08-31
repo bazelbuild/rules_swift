@@ -14,11 +14,11 @@
 
 """Implementation of linking logic for Swift."""
 
+load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(
     "@build_bazel_rules_swift//swift:swift_clang_module_aspect.bzl",
     "swift_clang_module_aspect",
 )
-load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(":attrs.bzl", "swift_compilation_attrs")
 load(
     ":debugging.bzl",

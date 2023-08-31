@@ -23,8 +23,8 @@ load(
     "SwiftProtoCompilationInfo",
     "swift_protoc_gen_aspect",
 )
-load(":providers.bzl", "SwiftProtoInfo")
 load("@rules_proto//proto:defs.bzl", "ProtoInfo", "proto_common")
+load(":providers.bzl", "SwiftProtoInfo")
 
 visibility("public")
 

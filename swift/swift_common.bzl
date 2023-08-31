@@ -41,13 +41,13 @@ load(
     "extract_symbol_graph",
 )
 load(
-    "@build_bazel_rules_swift//swift/internal:transitions.bzl",
-    "cxx_interop_transition",
-)
-load(
     "@build_bazel_rules_swift//swift/internal:toolchain_utils.bzl",
     "get_swift_toolchain",
     "use_swift_toolchain",
+)
+load(
+    "@build_bazel_rules_swift//swift/internal:transitions.bzl",
+    "cxx_interop_transition",
 )
 
 visibility("public")

@@ -14,6 +14,7 @@
 
 """Propagates unified `SwiftInfo` providers for C/Objective-C targets."""
 
+load("@bazel_skylib//lib:sets.bzl", "sets")
 load(
     "@build_bazel_rules_swift//swift/internal:compiling.bzl",
     "precompile_clang_module",
@@ -47,7 +48,6 @@ load(
     "@build_bazel_rules_swift//swift/internal:utils.bzl",
     "compilation_context_for_explicit_module_compilation",
 )
-load("@bazel_skylib//lib:sets.bzl", "sets")
 load(":module_name.bzl", "derive_swift_module_name")
 load(
     ":providers.bzl",

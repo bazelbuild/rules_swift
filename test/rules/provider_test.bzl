@@ -14,17 +14,17 @@
 
 """Rules for testing the providers of a target under test."""
 
-load("@build_bazel_rules_swift//swift:providers.bzl", "SwiftInfo")
-load(
-    "@build_bazel_rules_swift//test/rules:expected_files.bzl",
-    "compare_expected_files",
-    "normalize_collection",
-)
 load("@bazel_skylib//lib:types.bzl", "types")
 load(
     "@bazel_skylib//lib:unittest.bzl",
     "analysistest",
     "unittest",
+)
+load("@build_bazel_rules_swift//swift:providers.bzl", "SwiftInfo")
+load(
+    "@build_bazel_rules_swift//test/rules:expected_files.bzl",
+    "compare_expected_files",
+    "normalize_collection",
 )
 
 visibility([

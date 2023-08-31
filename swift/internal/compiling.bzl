@@ -17,6 +17,13 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:sets.bzl", "sets")
 load(
+    "@build_bazel_rules_swift//swift:providers.bzl",
+    "SwiftInfo",
+    "create_clang_module_inputs",
+    "create_swift_module_context",
+    "create_swift_module_inputs",
+)
+load(
     ":action_names.bzl",
     "SWIFT_ACTION_COMPILE",
     "SWIFT_ACTION_COMPILE_MODULE_INTERFACE",
@@ -57,13 +64,6 @@ load(
     "struct_fields",
 )
 load(":wmo.bzl", "find_num_threads_flag_value", "is_wmo_manually_requested")
-load(
-    "@build_bazel_rules_swift//swift:providers.bzl",
-    "SwiftInfo",
-    "create_clang_module_inputs",
-    "create_swift_module_context",
-    "create_swift_module_inputs",
-)
 
 visibility([
     "@build_bazel_rules_swift//swift/...",

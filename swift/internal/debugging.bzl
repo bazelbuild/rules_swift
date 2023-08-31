@@ -14,6 +14,7 @@
 
 """Functions relating to debugging support during compilation and linking."""
 
+load("@bazel_skylib//lib:paths.bzl", "paths")
 load(":action_names.bzl", "SWIFT_ACTION_MODULEWRAP")
 load(
     ":actions.bzl",
@@ -27,7 +28,6 @@ load(
     "SWIFT_FEATURE_NO_EMBED_DEBUG_MODULE",
 )
 load(":features.bzl", "is_feature_enabled")
-load("@bazel_skylib//lib:paths.bzl", "paths")
 
 visibility("private")
 

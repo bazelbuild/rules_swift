@@ -57,6 +57,7 @@ load(
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
     "SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS",
     "SWIFT_FEATURE__SUPPORTS_MACROS",
+    "SWIFT_FEATURE__SUPPORTS_PACKAGE_MODIFIER",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
 )
 load(":action_config.bzl", "ActionConfigInfo", "ConfigResultInfo", "add_arg")
@@ -558,6 +559,11 @@ def compile_action_configs(
             # additional frontend flags. At the current time, we only want to
             # capture these for debug builds.
             not_features = [SWIFT_FEATURE_OPT],
+        ),
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE],
+            configurators = [_package_identifier_configurator],
+            features = [SWIFT_FEATURE__SUPPORTS_PACKAGE_MODIFIER],
         ),
 
         # swift-symbolgraph-extract doesn't yet support explicit Swift module
@@ -1555,6 +1561,12 @@ def _cxx_interop_configurator(prerequisites, args):
     if mode and mode != "off":
         args.add("-cxx-interoperability-mode={}".format(mode))
     return None
+
+def _package_identifier_configurator(prerequisites, args):
+    """Adds the package identifier to the action command line."""
+    label = getattr(prerequisites, "target_label", None)
+    if label:
+        args.add("-package-name", label.package)
 
 def _additional_inputs_configurator(prerequisites, _args):
     """Propagates additional input files to the action.

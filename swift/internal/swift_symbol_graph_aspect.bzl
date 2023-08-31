@@ -22,14 +22,14 @@ aspects; the public aspect is exported by the `swift_symbol_graph_aspect.bzl`
 file in the parent directory.
 """
 
-load(":features.bzl", "configure_features")
-load(":symbol_graph_extracting.bzl", "extract_symbol_graph")
-load(":toolchain_utils.bzl", "get_swift_toolchain", "use_swift_toolchain")
 load(
     "@build_bazel_rules_swift//swift:providers.bzl",
     "SwiftInfo",
     "SwiftSymbolGraphInfo",
 )
+load(":features.bzl", "configure_features")
+load(":symbol_graph_extracting.bzl", "extract_symbol_graph")
+load(":toolchain_utils.bzl", "get_swift_toolchain", "use_swift_toolchain")
 
 visibility([
     "@build_bazel_rules_swift//swift/...",
