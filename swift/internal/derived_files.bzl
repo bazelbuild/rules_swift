@@ -17,9 +17,12 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load(":utils.bzl", "owner_relative_path")
 
-def _default_path(ctx, basename):
-    target_name = ctx.label.name
-    return paths.join(target_name, basename)
+def _default_path(ctx, add_target_name_to_output_path, basename):
+    if add_target_name_to_output_path:
+        target_name = ctx.label.name
+        return paths.join(target_name, basename)
+    else:
+        return basename
 
 def _declare_file(actions, add_target_name_to_output_path, target_name, basename):
     if add_target_name_to_output_path:
