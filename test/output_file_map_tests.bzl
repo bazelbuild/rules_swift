@@ -20,10 +20,29 @@ load(
     "output_file_map_test",
 )
 
+# Test with enabled `swift.add_target_name_to_output` feature
+output_file_map_target_name_test = make_output_file_map_test_rule(
+    config_settings = {
+        "//command_line_option:features": [
+            "swift.add_target_name_to_output",
+        ],
+    },
+)
+
 output_file_map_embed_bitcode_test = make_output_file_map_test_rule(
     config_settings = {
         "//command_line_option:features": [
             "swift.emit_bc",
+        ],
+    },
+)
+
+# Test with enabled `swift.add_target_name_to_output` feature
+output_file_map_target_name_embed_bitcode_test = make_output_file_map_test_rule(
+    config_settings = {
+        "//command_line_option:features": [
+            "swift.emit_bc",
+            "swift.add_target_name_to_output",
         ],
     },
 )
@@ -35,6 +54,19 @@ output_file_map_embed_bitcode_wmo_test = make_output_file_map_test_rule(
         ],
         "//command_line_option:features": [
             "swift.emit_bc",
+        ],
+    },
+)
+
+# Test with enabled `swift.add_target_name_to_output` feature
+output_file_map_embed_target_name_bitcode_wmo_test = make_output_file_map_test_rule(
+    config_settings = {
+        "//command_line_option:swiftcopt": [
+            "-whole-module-optimization",
+        ],
+        "//command_line_option:features": [
+            "swift.emit_bc",
+            "swift.add_target_name_to_output",
         ],
     },
 )
@@ -57,6 +89,17 @@ def output_file_map_test_suite(name):
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
 
+    output_file_map_target_name_test(
+        name = "{}_target_name_default".format(name),
+        expected_mapping = {
+            "object": "test/fixtures/debug_settings/simple/simple_objs/Empty.swift.o",
+        },
+        file_entry = "test/fixtures/debug_settings/Empty.swift",
+        output_file_map = "test/fixtures/debug_settings/simple/simple.output_file_map.json",
+        tags = [name],
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+    )
+
     # In Xcode13, the bitcode file needs to be in the output file map
     # (https://github.com/bazelbuild/rules_swift/issues/682).
     output_file_map_embed_bitcode_test(
@@ -70,6 +113,17 @@ def output_file_map_test_suite(name):
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
 
+    output_file_map_target_name_embed_bitcode_test(
+        name = "{}_target_name_emit_bc".format(name),
+        expected_mapping = {
+            "llvm-bc": "test/fixtures/debug_settings/simple/simple_objs/Empty.swift.bc",
+        },
+        file_entry = "test/fixtures/debug_settings/Empty.swift",
+        output_file_map = "test/fixtures/debug_settings/simple/simple.output_file_map.json",
+        tags = [name],
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+    )
+
     output_file_map_embed_bitcode_wmo_test(
         name = "{}_emit_bc_wmo".format(name),
         expected_mapping = {
@@ -77,6 +131,17 @@ def output_file_map_test_suite(name):
         },
         file_entry = "test/fixtures/debug_settings/Empty.swift",
         output_file_map = "test/fixtures/debug_settings/simple.output_file_map.json",
+        tags = [name],
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+    )
+
+    output_file_map_embed_target_name_bitcode_wmo_test(
+        name = "{}_target_name_emit_bc_wmo".format(name),
+        expected_mapping = {
+            "llvm-bc": "test/fixtures/debug_settings/simple/simple_objs/Empty.swift.bc",
+        },
+        file_entry = "test/fixtures/debug_settings/Empty.swift",
+        output_file_map = "test/fixtures/debug_settings/simple/simple.output_file_map.json",
         tags = [name],
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
