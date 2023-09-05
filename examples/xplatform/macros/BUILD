@@ -43,14 +43,14 @@ swift_binary(
 swift_test(
     name = "stringify_macro_test",
     srcs = ["StringifyMacroTests.swift"],
+    target_compatible_with = select({
+        ":supports_macros": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = [
         ":stringify_macro",
         "@SwiftSyntax",
         "@SwiftSyntax//:SwiftSyntaxBuilder",
         "@SwiftSyntax//:SwiftSyntaxMacros",
     ],
-    target_compatible_with = select({
-        ":supports_macros": [],
-        "//conditions:default": ["@platforms//:incompatible"],
-    }),
 )
