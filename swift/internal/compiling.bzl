@@ -70,6 +70,7 @@ load(
     "SWIFT_FEATURE_USE_PCH_OUTPUT_DIR",
     "SWIFT_FEATURE_VFSOVERLAY",
     "SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS",
+    "SWIFT_FEATURE__SUPPORTS_MACROS",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
 )
 load(
@@ -953,9 +954,16 @@ def compile_action_configs(
             actions = [
                 swift_action_names.COMPILE,
                 swift_action_names.DERIVE_FILES,
-                swift_action_names.DUMP_AST,
             ],
             configurators = [_plugins_configurator],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVE_FILES,
+            ],
+            configurators = [_macro_expansion_configurator],
+            features = [SWIFT_FEATURE__SUPPORTS_MACROS],
         ),
     ])
 
@@ -1760,6 +1768,14 @@ def _plugins_configurator(prerequisites, args):
         inputs = [p.executable for p in prerequisites.plugins.to_list()],
     )
 
+def _macro_expansion_configurator(prerequisites, args):
+    """Adds flags to control where macro expansions are generated."""
+    if prerequisites.macro_expansion_directory:
+        args.add(
+            prerequisites.macro_expansion_directory.path,
+            format = "-Xwrapped-swift=-macro-expansion-dir=%s",
+        )
+
 def _explicit_swift_module_map_configurator(prerequisites, args, is_frontend = False):
     """Adds the explicit Swift module map file to the command line."""
     if is_frontend:
@@ -2325,6 +2341,7 @@ def compile(
         all_compile_outputs = compact([
             compile_outputs.swiftinterface_file,
             compile_outputs.indexstore_directory,
+            compile_outputs.macro_expansion_directory,
         ]) + compile_outputs.object_files
         all_derived_outputs = compact([
             # The `.swiftmodule` file is explicitly listed as the first output
@@ -2349,6 +2366,7 @@ def compile(
             compile_outputs.swiftsourceinfo_file,
             compile_outputs.generated_header_file,
             compile_outputs.indexstore_directory,
+            compile_outputs.macro_expansion_directory,
             compile_outputs.symbol_graph_directory,
         ]) + compile_outputs.object_files + other_outputs
         all_derived_outputs = []
@@ -2466,6 +2484,8 @@ def compile(
         **struct_fields(compile_outputs)
     )
 
+    print(prerequisites)
+
     if split_derived_file_generation:
         run_toolchain_action(
             actions = actions,
@@ -2576,6 +2596,7 @@ def compile(
         ast_files = compile_outputs.ast_files,
         indexstore = compile_outputs.indexstore_directory,
         symbol_graph = compile_outputs.symbol_graph_directory,
+        macro_expansion_directory = compile_outputs.macro_expansion_directory,
     )
 
     return module_context, cc_compilation_outputs, other_compilation_outputs
@@ -3021,11 +3042,25 @@ def _declare_compile_outputs(
     else:
         symbol_graph_directory = None
 
+    if is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE__SUPPORTS_MACROS,
+    ) and not is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_OPT,
+    ):
+        macro_expansion_directory = actions.declare_directory(
+            "{}.macro-expansions".format(target_name),
+        )
+    else:
+        macro_expansion_directory = None
+
     compile_outputs = struct(
         ast_files = ast_files,
         generated_header_file = generated_header,
         generated_module_map_file = generated_module_map,
         indexstore_directory = indexstore_directory,
+        macro_expansion_directory = macro_expansion_directory,
         symbol_graph_directory = symbol_graph_directory,
         object_files = object_files,
         output_file_map = output_file_map,
@@ -3253,6 +3288,11 @@ def output_groups_from_other_compilation_outputs(*, other_compilation_outputs):
     if other_compilation_outputs.symbol_graph:
         output_groups["swift_symbol_graph"] = depset([
             other_compilation_outputs.symbol_graph,
+        ])
+
+    if other_compilation_outputs.macro_expansion_directory:
+        output_groups["macro_expansions"] = depset([
+            other_compilation_outputs.macro_expansion_directory,
         ])
 
     return output_groups

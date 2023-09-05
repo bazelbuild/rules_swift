@@ -18,9 +18,27 @@
 #include <cassert>
 #include <iostream>
 #include <iterator>
+#include <map>
 #include <sstream>
 #include <string>
 #include <vector>
+
+extern char **environ;
+
+std::map<std::string, std::string> GetCurrentEnvironment() {
+  std::map<std::string, std::string> result;
+  char **envp = environ;
+  for (int i = 0; envp[i] != nullptr; ++i) {
+    std::string envString(envp[i]);
+    size_t equalsPos = envString.find('=');
+    if (equalsPos != std::string::npos) {
+        std::string key = envString.substr(0, equalsPos);
+        std::string value = envString.substr(equalsPos + 1);
+        result[key] = value;
+    }
+  }
+  return result;
+}
 
 #if defined(_WIN32)
 
@@ -177,6 +195,7 @@ std::string GetCommandLine(const std::vector<std::string> &arguments) {
 }  // namespace
 
 int RunSubProcess(const std::vector<std::string> &args,
+                  std::map<std::string, std::string> *env,
                   std::ostream *stderr_stream, bool stdout_to_stderr) {
   std::error_code ec;
   std::unique_ptr<WindowsIORedirector> redirector =
@@ -233,8 +252,6 @@ int RunSubProcess(const std::vector<std::string> &args,
 #include <cstring>
 #include <filesystem>
 #include <memory>
-
-extern char **environ;
 
 namespace {
 
@@ -343,6 +360,7 @@ std::vector<const char *> ConvertToCArgs(const std::vector<std::string> &args) {
 }  // namespace
 
 int RunSubProcess(const std::vector<std::string> &args,
+                  std::map<std::string, std::string> *env,
                   std::ostream *stderr_stream, bool stdout_to_stderr) {
   std::vector<const char *> exec_argv = ConvertToCArgs(args);
 
@@ -355,11 +373,37 @@ int RunSubProcess(const std::vector<std::string> &args,
     return 254;
   }
 
+  char **envp;
+  std::vector<char *> new_environ;
+
+  if (env) {
+    // Copy the environment as an array of C strings, with guaranteed cleanup
+    // below whenever we exit.
+    for (const auto &[key, value] : *env) {
+      std::string pair = key + "=" + value;
+      char* c_str = new char[pair.length() + 1];
+      std::strcpy(c_str, pair.c_str());
+      new_environ.push_back(c_str);
+    }
+
+    new_environ.push_back(nullptr);
+    envp = new_environ.data();
+  } else {
+    // If no environment was passed, use the current process's verbatim.
+    envp = environ;
+  }
+
   pid_t pid;
   int status =
       posix_spawn(&pid, args[0].c_str(), redirector->PosixSpawnFileActions(),
-                  nullptr, const_cast<char **>(exec_argv.data()), environ);
+                  nullptr, const_cast<char **>(exec_argv.data()), envp);
   redirector->ConsumeAllSubprocessOutput(stderr_stream);
+
+  for (char* envp : new_environ) {
+    if (envp) {
+      delete[] envp;
+    }
+  }
 
   if (status == 0) {
     int wait_status;
