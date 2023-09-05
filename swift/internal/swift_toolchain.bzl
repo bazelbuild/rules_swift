@@ -262,6 +262,12 @@ def _swift_unix_linkopts_cc_info(
         ),
     )
 
+def _entry_point_linkopts_provider(*, entry_point_name):
+    """Returns linkopts to customize the entry point of a binary."""
+    return struct(
+        linkopts = ["-Wl,--defsym,main={}".format(entry_point_name)],
+    )
+
 def _swift_toolchain_impl(ctx):
     toolchain_root = ctx.attr.root
     cc_toolchain = find_cpp_toolchain(ctx)
@@ -356,6 +362,7 @@ def _swift_toolchain_impl(ctx):
                 collect_implicit_deps_providers([])
             ),
             developer_dirs = [],
+            entry_point_linkopts_provider = _entry_point_linkopts_provider,
             feature_allowlists = [
                 target[SwiftFeatureAllowlistInfo]
                 for target in ctx.attr.feature_allowlists
