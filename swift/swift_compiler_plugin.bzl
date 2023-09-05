@@ -109,7 +109,6 @@ def _swift_compiler_plugin_impl(ctx):
         cc_feature_configuration = cc_feature_configuration,
         compilation_outputs = cc_compilation_outputs,
         deps = deps,
-        grep_includes = ctx.file._grep_includes,
         name = ctx.label.name,
         output_type = "executable",
         stamp = ctx.attr.stamp,

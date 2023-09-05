@@ -118,13 +118,6 @@ into the binary. Possible values are:
                 ),
                 providers = [[CcInfo]],
             ),
-            # TODO(b/119082664): Used internally only.
-            "_grep_includes": attr.label(
-                allow_single_file = True,
-                cfg = "exec",
-                default = Label("@bazel_tools//tools/cpp:grep-includes"),
-                executable = True,
-            ),
         },
     )
 
@@ -357,7 +350,6 @@ def malloc_linking_context(ctx):
     """
     malloc = ctx.attr._custom_malloc or ctx.attr.malloc
     return malloc[CcInfo].linking_context
-
 
 def new_objc_provider(
         *,
