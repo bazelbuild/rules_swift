@@ -23,7 +23,9 @@
 #include <string>
 #include <vector>
 
-extern char **environ;
+extern "C" {
+  extern char **environ;
+}
 
 std::map<std::string, std::string> GetCurrentEnvironment() {
   std::map<std::string, std::string> result;
