@@ -91,13 +91,6 @@ into the binary. Possible values are:
                 ),
                 providers = [[CcInfo]],
             ),
-            # TODO(b/119082664): Used internally only.
-            "_grep_includes": attr.label(
-                allow_single_file = True,
-                cfg = "exec",
-                default = Label("@bazel_tools//tools/cpp:grep-includes"),
-                executable = True,
-            ),
         },
     )
 
@@ -274,7 +267,6 @@ def _swift_linking_rule_impl(
         # This is already collected from `linking_context`.
         compilation_outputs = None,
         deps = ctx.attr.deps + extra_link_deps,
-        grep_includes = ctx.file._grep_includes,
         name = binary_path,
         output_type = "executable",
         owner = ctx.label,
