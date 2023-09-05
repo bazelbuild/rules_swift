@@ -3,6 +3,11 @@ load("//swift:swift_compiler_plugin.bzl", "swift_compiler_plugin")
 
 licenses(["notice"])
 
+config_setting(
+    name = "supports_macros",
+    values = {"define": "supports_macros=1"},
+)
+
 swift_library(
     name = "stringify",
     srcs = ["Stringify.swift"],
@@ -17,6 +22,10 @@ swift_compiler_plugin(
         "StringifyMacroPlugin.swift",
     ],
     module_name = "StringifyMacroPlugin",
+    target_compatible_with = select({
+        ":supports_macros": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = [
         "@SwiftSyntax",
         "@SwiftSyntax//:SwiftCompilerPlugin",
@@ -40,4 +49,8 @@ swift_test(
         "@SwiftSyntax//:SwiftSyntaxBuilder",
         "@SwiftSyntax//:SwiftSyntaxMacros",
     ],
+    target_compatible_with = select({
+        ":supports_macros": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
 )
