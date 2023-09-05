@@ -2484,8 +2484,6 @@ def compile(
         **struct_fields(compile_outputs)
     )
 
-    print(prerequisites)
-
     if split_derived_file_generation:
         run_toolchain_action(
             actions = actions,
