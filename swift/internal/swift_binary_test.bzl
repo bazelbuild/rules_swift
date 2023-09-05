@@ -17,7 +17,11 @@
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(":compiling.bzl", "output_groups_from_other_compilation_outputs")
 load(":derived_files.bzl", "derived_files")
-load(":feature_names.bzl", "SWIFT_FEATURE_BUNDLED_XCTESTS")
+load(
+    ":feature_names.bzl",
+    "SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT",
+    "SWIFT_FEATURE_BUNDLED_XCTESTS",
+)
 load(":linking.bzl", "register_link_binary_action")
 load(":providers.bzl", "SwiftToolchainInfo")
 load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
@@ -296,13 +300,14 @@ def _swift_linking_rule_impl(
 
     return cc_compilation_outputs, linking_outputs, providers
 
-def _create_xctest_runner(name, actions, executable, xctest_runner_template):
+def _create_xctest_runner(name, actions, add_target_name_to_output_path, executable, xctest_runner_template):
     """Creates a script that will launch `xctest` with the given test bundle.
 
     Args:
         name: The name of the target being built, which will be used as the
             basename of the test runner script.
         actions: The context's actions object.
+        add_target_name_to_output_path: Add target_name in output path. More info at SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT description.
         executable: The `File` representing the executable inside the `.xctest`
             bundle that should be executed.
         xctest_runner_template: The `File` that will be used as a template to
@@ -314,6 +319,7 @@ def _create_xctest_runner(name, actions, executable, xctest_runner_template):
     """
     xctest_runner = derived_files.xctest_runner_script(
         actions = actions,
+        add_target_name_to_output_path = add_target_name_to_output_path,
         target_name = name,
     )
 
@@ -335,9 +341,14 @@ def _swift_binary_impl(ctx):
         requested_features = ["static_linking_mode"],
     )
 
+    add_target_name_to_output_path = swift_common.is_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT,
+    )
+
     _, linking_outputs, providers = _swift_linking_rule_impl(
         ctx,
-        binary_path = ctx.label.name,
+        binary_path = derived_files.path(ctx, add_target_name_to_output_path, ctx.label.name),
         feature_configuration = feature_configuration,
         swift_toolchain = swift_toolchain,
     )
@@ -363,6 +374,11 @@ def _swift_test_impl(ctx):
     is_bundled = swift_common.is_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_BUNDLED_XCTESTS,
+    )
+
+    add_target_name_to_output_path = swift_common.is_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT,
     )
 
     # If we need to run the test in an .xctest bundle, the binary must have
@@ -398,6 +414,7 @@ def _swift_test_impl(ctx):
         xctest_runner = _create_xctest_runner(
             name = ctx.label.name,
             actions = ctx.actions,
+            add_target_name_to_output_path = add_target_name_to_output_path,
             executable = linking_outputs.executable,
             xctest_runner_template = ctx.file._xctest_runner_template,
         )
