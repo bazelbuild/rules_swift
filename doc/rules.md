@@ -18,7 +18,7 @@ On this page:
 
   * [swift_binary](#swift_binary)
   * [swift_c_module](#swift_c_module)
-  * [swift_feature_allowlist](#swift_feature_allowlist)
+  * [swift_compiler_plugin](#swift_compiler_plugin)
   * [swift_grpc_library](#swift_grpc_library)
   * [swift_import](#swift_import)
   * [swift_library](#swift_library)
@@ -32,8 +32,8 @@ On this page:
 ## swift_binary
 
 <pre>
-swift_binary(<a href="#swift_binary-name">name</a>, <a href="#swift_binary-copts">copts</a>, <a href="#swift_binary-data">data</a>, <a href="#swift_binary-defines">defines</a>, <a href="#swift_binary-deps">deps</a>, <a href="#swift_binary-linkopts">linkopts</a>, <a href="#swift_binary-malloc">malloc</a>, <a href="#swift_binary-module_name">module_name</a>, <a href="#swift_binary-package_name">package_name</a>, <a href="#swift_binary-srcs">srcs</a>,
-             <a href="#swift_binary-stamp">stamp</a>, <a href="#swift_binary-swiftc_inputs">swiftc_inputs</a>)
+swift_binary(<a href="#swift_binary-name">name</a>, <a href="#swift_binary-copts">copts</a>, <a href="#swift_binary-data">data</a>, <a href="#swift_binary-defines">defines</a>, <a href="#swift_binary-deps">deps</a>, <a href="#swift_binary-linkopts">linkopts</a>, <a href="#swift_binary-malloc">malloc</a>, <a href="#swift_binary-module_name">module_name</a>, <a href="#swift_binary-package_name">package_name</a>, <a href="#swift_binary-plugins">plugins</a>,
+             <a href="#swift_binary-srcs">srcs</a>, <a href="#swift_binary-stamp">stamp</a>, <a href="#swift_binary-swiftc_inputs">swiftc_inputs</a>)
 </pre>
 
 Compiles and links Swift code into an executable binary.
@@ -65,6 +65,7 @@ please use one of the platform-specific application rules in
 | <a id="swift_binary-malloc"></a>malloc |  Override the default dependency on <code>malloc</code>.<br><br>By default, Swift binaries are linked against <code>@bazel_tools//tools/cpp:malloc"</code>, which is an empty library and the resulting binary will use libc's <code>malloc</code>. This label must refer to a <code>cc_library</code> rule.   | <a href="https://bazel.build/concepts/labels">Label</a> | optional | <code>@bazel_tools//tools/cpp:malloc</code> |
 | <a id="swift_binary-module_name"></a>module_name |  The name of the Swift module being built.<br><br>If left unspecified, the module name will be computed based on the target's build label, by stripping the leading <code>//</code> and replacing <code>/</code>, <code>:</code>, and other non-identifier characters with underscores.   | String | optional | <code>""</code> |
 | <a id="swift_binary-package_name"></a>package_name |  The semantic package of the Swift target being built. Targets with the same package_name can access APIs using the 'package' access control modifier in Swift 5.9+.   | String | optional | <code>""</code> |
+| <a id="swift_binary-plugins"></a>plugins |  A list of <code>swift_compiler_plugin</code> targets that should be loaded by the compiler when compiling this module and any modules that directly depend on it.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional | <code>[]</code> |
 | <a id="swift_binary-srcs"></a>srcs |  A list of <code>.swift</code> source files that will be compiled into the library.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional | <code>[]</code> |
 | <a id="swift_binary-stamp"></a>stamp |  Enable or disable link stamping; that is, whether to encode build information into the binary. Possible values are:<br><br>* <code>stamp = 1</code>: Stamp the build information into the binary. Stamped binaries are   only rebuilt when their dependencies change. Use this if there are tests that   depend on the build information.<br><br>* <code>stamp = 0</code>: Always replace build information by constant values. This gives   good build result caching.<br><br>* <code>stamp = -1</code>: Embedding of build information is controlled by the   <code>--[no]stamp</code> flag.   | Integer | optional | <code>-1</code> |
 | <a id="swift_binary-swiftc_inputs"></a>swiftc_inputs |  Additional files that are referenced using <code>$(location ...)</code> in attributes that support location expansion.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional | <code>[]</code> |
@@ -121,25 +122,33 @@ any C++ declarations.
 | <a id="swift_c_module-system_module_map"></a>system_module_map |  The path to a system framework module map. This is mutually exclusive with <code>module_map</code>.<br><br>Variables <code>__BAZEL_XCODE_SDKROOT__</code> and <code>__BAZEL_XCODE_DEVELOPER_DIR__</code> will be substitued appropriately for, i.e.   <code>/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk</code> and <code>/Applications/Xcode.app/Contents/Developer</code> respectively.   | String | optional | <code>""</code> |
 
 
-<a id="swift_feature_allowlist"></a>
+<a id="swift_compiler_plugin"></a>
 
-## swift_feature_allowlist
+## swift_compiler_plugin
 
 <pre>
-swift_feature_allowlist(<a href="#swift_feature_allowlist-name">name</a>, <a href="#swift_feature_allowlist-managed_features">managed_features</a>, <a href="#swift_feature_allowlist-packages">packages</a>)
+swift_compiler_plugin(<a href="#swift_compiler_plugin-name">name</a>, <a href="#swift_compiler_plugin-copts">copts</a>, <a href="#swift_compiler_plugin-data">data</a>, <a href="#swift_compiler_plugin-defines">defines</a>, <a href="#swift_compiler_plugin-deps">deps</a>, <a href="#swift_compiler_plugin-linkopts">linkopts</a>, <a href="#swift_compiler_plugin-malloc">malloc</a>, <a href="#swift_compiler_plugin-module_name">module_name</a>, <a href="#swift_compiler_plugin-package_name">package_name</a>,
+                      <a href="#swift_compiler_plugin-plugins">plugins</a>, <a href="#swift_compiler_plugin-srcs">srcs</a>, <a href="#swift_compiler_plugin-stamp">stamp</a>, <a href="#swift_compiler_plugin-swiftc_inputs">swiftc_inputs</a>)
 </pre>
 
-Limits the ability to request or disable certain features to a set of packages
-(and possibly subpackages) in the workspace.
+Compiles and links a Swift compiler plugin (for example, a macro).
 
-A Swift toolchain target can reference any number (zero or more) of
-`swift_feature_allowlist` targets. The features managed by these allowlists may
-overlap. For some package _P_, a feature is allowed to be used by targets in
-that package if _P_ matches the `packages` patterns in *all* of the allowlists
-that manage that feature.
+A compiler plugin is a standalone executable that minimally implements the
+`CompilerPlugin` protocol from the `SwiftCompilerPlugin` module in swift-syntax.
+As of the time of this writing (Xcode 15.0), a compiler plugin can contain one
+or more macros, which can be associated with other Swift targets to perform
+syntax-tree-based expansions.
 
-A feature that is not managed by any allowlist is allowed to be used by any
-package.
+When a `swift_compiler_plugin` target is listed in the `plugins` attribute of a
+`swift_library`, it will be loaded by that library and any targets that directly
+depend on it. (The `plugins` attribute also exists on `swift_binary`,
+`swift_test`, and `swift_compiler_plugin` itself, to support plugins that are
+only used within those targets.)
+
+Compiler plugins also support being built as a library so that they can be
+tested. The `swift_test` rule can contain `swift_compiler_plugin` targets in its
+`deps`, and the plugin's module can be imported by the test's sources so that
+unit tests can be written against the plugin.
 
 
 **ATTRIBUTES**
@@ -147,9 +156,19 @@ package.
 
 | Name  | Description | Type | Mandatory | Default |
 | :------------- | :------------- | :------------- | :------------- | :------------- |
-| <a id="swift_feature_allowlist-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
-| <a id="swift_feature_allowlist-managed_features"></a>managed_features |  A list of feature strings that are permitted to be specified by the targets in the packages matched by the <code>packages</code> attribute. This list may include both feature names and/or negations (a name with a leading <code>-</code>); a regular feature name means that the targets in the matching packages may explicitly request that the feature be enabled, and a negated feature means that the target may explicitly request that the feature be disabled.<br><br>For example, <code>managed_features = ["foo", "-bar"]</code> means that targets in the allowlist's packages may request that feature <code>"foo"</code> be enabled and that feature <code>"bar"</code> be disabled.   | List of strings | optional | <code>[]</code> |
-| <a id="swift_feature_allowlist-packages"></a>packages |  A list of strings representing packages (possibly recursive) whose targets are allowed to enable/disable the features in <code>managed_features</code>. Each package pattern is written in the syntax used by the <code>package_group</code> function:<br><br>*   <code>//foo/bar</code>: Targets in the package <code>//foo/bar</code> but not in subpackages. *   <code>//foo/bar/...</code>: Targets in the package <code>//foo/bar</code> and any of its     subpackages. *   A leading <code>-</code> excludes packages that would otherwise have been included by     the patterns in the list.<br><br>Exclusions always take priority over inclusions; order in the list is irrelevant.   | List of strings | required |  |
+| <a id="swift_compiler_plugin-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
+| <a id="swift_compiler_plugin-copts"></a>copts |  Additional compiler options that should be passed to <code>swiftc</code>. These strings are subject to <code>$(location ...)</code> and ["Make" variable](https://docs.bazel.build/versions/master/be/make-variables.html) expansion.   | List of strings | optional | <code>[]</code> |
+| <a id="swift_compiler_plugin-data"></a>data |  The list of files needed by this target at runtime.<br><br>Files and targets named in the <code>data</code> attribute will appear in the <code>*.runfiles</code> area of this target, if it has one. This may include data files needed by a binary or library, or other programs needed by it.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional | <code>[]</code> |
+| <a id="swift_compiler_plugin-defines"></a>defines |  A list of defines to add to the compilation command line.<br><br>Note that unlike C-family languages, Swift defines do not have values; they are simply identifiers that are either defined or undefined. So strings in this list should be simple identifiers, **not** <code>name=value</code> pairs.<br><br>Each string is prepended with <code>-D</code> and added to the command line. Unlike <code>copts</code>, these flags are added for the target and every target that depends on it, so use this attribute with caution. It is preferred that you add defines directly to <code>copts</code>, only using this feature in the rare case that a library needs to propagate a symbol up to those that depend on it.   | List of strings | optional | <code>[]</code> |
+| <a id="swift_compiler_plugin-deps"></a>deps |  A list of targets that are dependencies of the target being built, which will be linked into that target.<br><br>If the Swift toolchain supports implementation-only imports (<code>private_deps</code> on <code>swift_library</code>), then targets in <code>deps</code> are treated as regular (non-implementation-only) imports that are propagated both to their direct and indirect (transitive) dependents.<br><br>Allowed kinds of dependencies are:<br><br>*   <code>swift_c_module</code>, <code>swift_import</code> and <code>swift_library</code> (or anything     propagating <code>SwiftInfo</code>)<br><br>*   <code>cc_library</code> (or anything propagating <code>CcInfo</code>)<br><br>Additionally, on platforms that support Objective-C interop, <code>objc_library</code> targets (or anything propagating the <code>apple_common.Objc</code> provider) are allowed as dependencies. On platforms that do not support Objective-C interop (such as Linux), those dependencies will be **ignored.**   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional | <code>[]</code> |
+| <a id="swift_compiler_plugin-linkopts"></a>linkopts |  Additional linker options that should be passed to <code>clang</code>. These strings are subject to <code>$(location ...)</code> expansion.   | List of strings | optional | <code>[]</code> |
+| <a id="swift_compiler_plugin-malloc"></a>malloc |  Override the default dependency on <code>malloc</code>.<br><br>By default, Swift binaries are linked against <code>@bazel_tools//tools/cpp:malloc"</code>, which is an empty library and the resulting binary will use libc's <code>malloc</code>. This label must refer to a <code>cc_library</code> rule.   | <a href="https://bazel.build/concepts/labels">Label</a> | optional | <code>@bazel_tools//tools/cpp:malloc</code> |
+| <a id="swift_compiler_plugin-module_name"></a>module_name |  The name of the Swift module being built.<br><br>If left unspecified, the module name will be computed based on the target's build label, by stripping the leading <code>//</code> and replacing <code>/</code>, <code>:</code>, and other non-identifier characters with underscores.   | String | optional | <code>""</code> |
+| <a id="swift_compiler_plugin-package_name"></a>package_name |  The semantic package of the Swift target being built. Targets with the same package_name can access APIs using the 'package' access control modifier in Swift 5.9+.   | String | optional | <code>""</code> |
+| <a id="swift_compiler_plugin-plugins"></a>plugins |  A list of <code>swift_compiler_plugin</code> targets that should be loaded by the compiler when compiling this module and any modules that directly depend on it.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional | <code>[]</code> |
+| <a id="swift_compiler_plugin-srcs"></a>srcs |  A list of <code>.swift</code> source files that will be compiled into the library.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional | <code>[]</code> |
+| <a id="swift_compiler_plugin-stamp"></a>stamp |  Enable or disable link stamping; that is, whether to encode build information into the binary. Possible values are:<br><br>* <code>stamp = 1</code>: Stamp the build information into the binary. Stamped binaries are   only rebuilt when their dependencies change. Use this if there are tests that   depend on the build information.<br><br>* <code>stamp = 0</code>: Always replace build information by constant values. This gives   good build result caching.<br><br>* <code>stamp = -1</code>: Embedding of build information is controlled by the   <code>--[no]stamp</code> flag.   | Integer | optional | <code>0</code> |
+| <a id="swift_compiler_plugin-swiftc_inputs"></a>swiftc_inputs |  Additional files that are referenced using <code>$(location ...)</code> in attributes that support location expansion.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional | <code>[]</code> |
 
 
 <a id="swift_grpc_library"></a>
@@ -270,7 +289,8 @@ Allows for the use of Swift textual module interfaces and/or precompiled Swift m
 
 <pre>
 swift_library(<a href="#swift_library-name">name</a>, <a href="#swift_library-alwayslink">alwayslink</a>, <a href="#swift_library-copts">copts</a>, <a href="#swift_library-data">data</a>, <a href="#swift_library-defines">defines</a>, <a href="#swift_library-deps">deps</a>, <a href="#swift_library-generated_header_name">generated_header_name</a>, <a href="#swift_library-generates_header">generates_header</a>,
-              <a href="#swift_library-linkopts">linkopts</a>, <a href="#swift_library-linkstatic">linkstatic</a>, <a href="#swift_library-module_name">module_name</a>, <a href="#swift_library-package_name">package_name</a>, <a href="#swift_library-private_deps">private_deps</a>, <a href="#swift_library-srcs">srcs</a>, <a href="#swift_library-swiftc_inputs">swiftc_inputs</a>)
+              <a href="#swift_library-linkopts">linkopts</a>, <a href="#swift_library-linkstatic">linkstatic</a>, <a href="#swift_library-module_name">module_name</a>, <a href="#swift_library-package_name">package_name</a>, <a href="#swift_library-plugins">plugins</a>, <a href="#swift_library-private_deps">private_deps</a>, <a href="#swift_library-srcs">srcs</a>,
+              <a href="#swift_library-swiftc_inputs">swiftc_inputs</a>)
 </pre>
 
 Compiles and links Swift code into a static library and Swift module.
@@ -293,6 +313,7 @@ Compiles and links Swift code into a static library and Swift module.
 | <a id="swift_library-linkstatic"></a>linkstatic |  If True, the Swift module will be built for static linking.  This will make all interfaces internal to the module that is being linked against and will inform the consuming module that the objects will be locally available (which may potentially avoid a PLT relocation).  Set to <code>False</code> to build a <code>.so</code> or <code>.dll</code>.   | Boolean | optional | <code>True</code> |
 | <a id="swift_library-module_name"></a>module_name |  The name of the Swift module being built.<br><br>If left unspecified, the module name will be computed based on the target's build label, by stripping the leading <code>//</code> and replacing <code>/</code>, <code>:</code>, and other non-identifier characters with underscores.   | String | optional | <code>""</code> |
 | <a id="swift_library-package_name"></a>package_name |  The semantic package of the Swift target being built. Targets with the same package_name can access APIs using the 'package' access control modifier in Swift 5.9+.   | String | optional | <code>""</code> |
+| <a id="swift_library-plugins"></a>plugins |  A list of <code>swift_compiler_plugin</code> targets that should be loaded by the compiler when compiling this module and any modules that directly depend on it.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional | <code>[]</code> |
 | <a id="swift_library-private_deps"></a>private_deps |  A list of targets that are implementation-only dependencies of the target being built. Libraries/linker flags from these dependencies will be propagated to dependent for linking, but artifacts/flags required for compilation (such as .swiftmodule files, C headers, and search paths) will not be propagated.<br><br>Allowed kinds of dependencies are:<br><br>*   <code>swift_c_module</code>, <code>swift_import</code> and <code>swift_library</code> (or anything     propagating <code>SwiftInfo</code>)<br><br>*   <code>cc_library</code> (or anything propagating <code>CcInfo</code>)<br><br>Additionally, on platforms that support Objective-C interop, <code>objc_library</code> targets (or anything propagating the <code>apple_common.Objc</code> provider) are allowed as dependencies. On platforms that do not support Objective-C interop (such as Linux), those dependencies will be **ignored.**   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional | <code>[]</code> |
 | <a id="swift_library-srcs"></a>srcs |  A list of <code>.swift</code> source files that will be compiled into the library.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | required |  |
 | <a id="swift_library-swiftc_inputs"></a>swiftc_inputs |  Additional files that are referenced using <code>$(location ...)</code> in attributes that support location expansion.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional | <code>[]</code> |
@@ -459,8 +480,8 @@ prevents unused modules from being loaded by `swiftc`.
 ## swift_test
 
 <pre>
-swift_test(<a href="#swift_test-name">name</a>, <a href="#swift_test-copts">copts</a>, <a href="#swift_test-data">data</a>, <a href="#swift_test-defines">defines</a>, <a href="#swift_test-deps">deps</a>, <a href="#swift_test-env">env</a>, <a href="#swift_test-linkopts">linkopts</a>, <a href="#swift_test-malloc">malloc</a>, <a href="#swift_test-module_name">module_name</a>, <a href="#swift_test-package_name">package_name</a>, <a href="#swift_test-srcs">srcs</a>,
-           <a href="#swift_test-stamp">stamp</a>, <a href="#swift_test-swiftc_inputs">swiftc_inputs</a>)
+swift_test(<a href="#swift_test-name">name</a>, <a href="#swift_test-copts">copts</a>, <a href="#swift_test-data">data</a>, <a href="#swift_test-defines">defines</a>, <a href="#swift_test-deps">deps</a>, <a href="#swift_test-env">env</a>, <a href="#swift_test-linkopts">linkopts</a>, <a href="#swift_test-malloc">malloc</a>, <a href="#swift_test-module_name">module_name</a>, <a href="#swift_test-package_name">package_name</a>,
+           <a href="#swift_test-plugins">plugins</a>, <a href="#swift_test-srcs">srcs</a>, <a href="#swift_test-stamp">stamp</a>, <a href="#swift_test-swiftc_inputs">swiftc_inputs</a>)
 </pre>
 
 Compiles and links Swift code into an executable test target.
@@ -524,6 +545,7 @@ bazel test //:Tests --test_filter=TestModuleName.TestClassName/testMethodName
 | <a id="swift_test-malloc"></a>malloc |  Override the default dependency on <code>malloc</code>.<br><br>By default, Swift binaries are linked against <code>@bazel_tools//tools/cpp:malloc"</code>, which is an empty library and the resulting binary will use libc's <code>malloc</code>. This label must refer to a <code>cc_library</code> rule.   | <a href="https://bazel.build/concepts/labels">Label</a> | optional | <code>@bazel_tools//tools/cpp:malloc</code> |
 | <a id="swift_test-module_name"></a>module_name |  The name of the Swift module being built.<br><br>If left unspecified, the module name will be computed based on the target's build label, by stripping the leading <code>//</code> and replacing <code>/</code>, <code>:</code>, and other non-identifier characters with underscores.   | String | optional | <code>""</code> |
 | <a id="swift_test-package_name"></a>package_name |  The semantic package of the Swift target being built. Targets with the same package_name can access APIs using the 'package' access control modifier in Swift 5.9+.   | String | optional | <code>""</code> |
+| <a id="swift_test-plugins"></a>plugins |  A list of <code>swift_compiler_plugin</code> targets that should be loaded by the compiler when compiling this module and any modules that directly depend on it.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional | <code>[]</code> |
 | <a id="swift_test-srcs"></a>srcs |  A list of <code>.swift</code> source files that will be compiled into the library.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional | <code>[]</code> |
 | <a id="swift_test-stamp"></a>stamp |  Enable or disable link stamping; that is, whether to encode build information into the binary. Possible values are:<br><br>* <code>stamp = 1</code>: Stamp the build information into the binary. Stamped binaries are   only rebuilt when their dependencies change. Use this if there are tests that   depend on the build information.<br><br>* <code>stamp = 0</code>: Always replace build information by constant values. This gives   good build result caching.<br><br>* <code>stamp = -1</code>: Embedding of build information is controlled by the   <code>--[no]stamp</code> flag.   | Integer | optional | <code>0</code> |
 | <a id="swift_test-swiftc_inputs"></a>swiftc_inputs |  Additional files that are referenced using <code>$(location ...)</code> in attributes that support location expansion.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional | <code>[]</code> |

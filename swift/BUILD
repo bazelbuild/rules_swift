@@ -24,9 +24,32 @@ bzl_library(
 )
 
 bzl_library(
+    name = "module_name",
+    srcs = ["module_name.bzl"],
+    deps = [
+        "@bazel_skylib//lib:types",
+    ],
+)
+
+bzl_library(
+    name = "swift_compiler_plugin",
+    srcs = ["swift_compiler_plugin.bzl"],
+    deps = [
+        ":module_name",
+        "//swift/internal:compiling",
+        "//swift/internal:linking",
+        "//swift/internal:providers",
+        "//swift/internal:swift_common",
+        "//swift/internal:utils",
+        "@bazel_skylib//lib:dicts",
+    ],
+)
+
+bzl_library(
     name = "swift",
     srcs = ["swift.bzl"],
     deps = [
+        ":swift_compiler_plugin",
         "//swift/internal:providers",
         "//swift/internal:swift_binary_test",
         "//swift/internal:swift_c_module",
