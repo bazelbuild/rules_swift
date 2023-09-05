@@ -211,7 +211,6 @@ def create_linking_context_from_compilation_outputs(
         additional_inputs = additional_inputs,
         disallow_static_libraries = False,
         disallow_dynamic_library = True,
-        grep_includes = None,
     )
 
 def new_objc_provider(
@@ -327,7 +326,6 @@ def register_link_binary_action(
         cc_feature_configuration,
         compilation_outputs,
         deps,
-        grep_includes,  # buildifier: disable=unused-variable
         name,
         output_type,
         owner,
@@ -349,7 +347,6 @@ def register_link_binary_action(
             files that will be passed to the linker.
         deps: A list of targets representing additional libraries that will be
             passed to the linker.
-        grep_includes: Used internally only.
         name: The name of the target being linked, which is used to derive the
             output artifact.
         output_type: A string indicating the output type; "executable" or
