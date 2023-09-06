@@ -209,6 +209,46 @@ Compiler plugins also support being built as a library so that they can be
 tested. The `swift_test` rule can contain `swift_compiler_plugin` targets in its
 `deps`, and the plugin's module can be imported by the test's sources so that
 unit tests can be written against the plugin.
+
+Example:
+
+```bzl
+# The actual macro code, using SwiftSyntax
+swift_compiler_plugin(
+    name = "Macros",
+    srcs = glob(["Macros/*.swift"]),
+    deps = [
+        "@SwiftSyntax",
+        "@SwiftSyntax//:SwiftCompilerPlugin",
+        "@SwiftSyntax//:SwiftSyntaxMacros",
+    ],
+)
+
+# A target testing the macro itself
+swift_test(
+    name = "MacrosTests",
+    srcs = glob(["MacrosTests/*.swift"]),
+    deps = [
+        ":Macros",
+        "@SwiftSyntax//:SwiftSyntaxMacrosTestSupport",
+    ],
+)
+
+# The library that defines the macro hook for use in your project
+swift_library(
+    name = "MacroLibrary",
+    srcs = glob(["MacroLibrary/*.swift"]),
+    plugins = [":Macros"],
+)
+
+# A consumer of the macro library. This doesn't have to be separate from the
+# MacroLibrary depending on what makes sense for your project's organization
+swift_library(
+    name = "MacroConsumer",
+    srcs = glob(["Sources/*.swift"]),
+    deps = [":MacroLibrary"],
+)
+```
 """,
     executable = True,
     fragments = ["cpp"],
