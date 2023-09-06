@@ -19,6 +19,14 @@ load(
     "output_groups_from_other_compilation_outputs",
 )
 load(
+    "@build_bazel_rules_swift//swift/internal:features.bzl",
+    "is_feature_enabled",
+)
+load(
+    "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
+    "SWIFT_FEATURE__SUPPORTS_MACROS",
+)
+load(
     "@build_bazel_rules_swift//swift/internal:linking.bzl",
     "binary_rule_attrs",
     "configure_features_for_binary",
@@ -51,6 +59,12 @@ def _swift_compiler_plugin_impl(ctx):
         requested_features = ctx.features,
         unsupported_features = ctx.disabled_features,
     )
+
+    if not is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE__SUPPORTS_MACROS,
+    ):
+        fail("Swift compiler plugins require Swift 5.9+")
 
     deps = ctx.attr.deps
     srcs = ctx.files.srcs
