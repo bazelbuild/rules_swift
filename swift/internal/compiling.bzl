@@ -2593,8 +2593,8 @@ def compile(
     other_compilation_outputs = struct(
         ast_files = compile_outputs.ast_files,
         indexstore = compile_outputs.indexstore_directory,
-        symbol_graph = compile_outputs.symbol_graph_directory,
         macro_expansion_directory = compile_outputs.macro_expansion_directory,
+        symbol_graph = compile_outputs.symbol_graph_directory,
     )
 
     return module_context, cc_compilation_outputs, other_compilation_outputs
