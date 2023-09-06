@@ -18,121 +18,11 @@ load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(":compiling.bzl", "output_groups_from_other_compilation_outputs")
 load(":derived_files.bzl", "derived_files")
 load(":feature_names.bzl", "SWIFT_FEATURE_BUNDLED_XCTESTS")
-load(":linking.bzl", "register_link_binary_action")
-load(":providers.bzl", "SwiftToolchainInfo")
-load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
+load(":linking.bzl", "binary_rule_attrs", "configure_features_for_binary", "register_link_binary_action")
+load(":providers.bzl", "SwiftCompilerPluginInfo", "SwiftToolchainInfo")
 load(":swift_common.bzl", "swift_common")
-load(":utils.bzl", "expand_locations")
+load(":utils.bzl", "expand_locations", "get_providers")
 load(":env_expansion.bzl", "expanded_env")
-
-def _binary_rule_attrs(stamp_default):
-    """Returns attributes common to both `swift_binary` and `swift_test`.
-
-    Args:
-        stamp_default: The default value of the `stamp` attribute.
-
-    Returns:
-        A `dict` of attributes for a binary or test rule.
-    """
-    return dicts.add(
-        swift_common.compilation_attrs(
-            additional_deps_aspects = [swift_clang_module_aspect],
-            requires_srcs = False,
-        ),
-        {
-            "linkopts": attr.string_list(
-                doc = """\
-Additional linker options that should be passed to `clang`. These strings are
-subject to `$(location ...)` expansion.
-""",
-                mandatory = False,
-            ),
-            "malloc": attr.label(
-                default = Label("@bazel_tools//tools/cpp:malloc"),
-                doc = """\
-Override the default dependency on `malloc`.
-
-By default, Swift binaries are linked against `@bazel_tools//tools/cpp:malloc"`,
-which is an empty library and the resulting binary will use libc's `malloc`.
-This label must refer to a `cc_library` rule.
-""",
-                mandatory = False,
-                providers = [[CcInfo]],
-            ),
-            "stamp": attr.int(
-                default = stamp_default,
-                doc = """\
-Enable or disable link stamping; that is, whether to encode build information
-into the binary. Possible values are:
-
-* `stamp = 1`: Stamp the build information into the binary. Stamped binaries are
-  only rebuilt when their dependencies change. Use this if there are tests that
-  depend on the build information.
-
-* `stamp = 0`: Always replace build information by constant values. This gives
-  good build result caching.
-
-* `stamp = -1`: Embedding of build information is controlled by the
-  `--[no]stamp` flag.
-""",
-                mandatory = False,
-            ),
-            # Do not add references; temporary attribute for C++ toolchain
-            # Starlark migration.
-            "_cc_toolchain": attr.label(
-                default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
-            ),
-            # A late-bound attribute denoting the value of the `--custom_malloc`
-            # command line flag (or None if the flag is not provided).
-            "_custom_malloc": attr.label(
-                default = configuration_field(
-                    fragment = "cpp",
-                    name = "custom_malloc",
-                ),
-                providers = [[CcInfo]],
-            ),
-        },
-    )
-
-def _configure_features_for_binary(
-        ctx,
-        requested_features = [],
-        unsupported_features = []):
-    """Creates and returns the feature configuration for binary linking.
-
-    This helper automatically handles common features for all Swift
-    binary-creating targets, like code coverage.
-
-    Args:
-        ctx: The rule context.
-        requested_features: Additional features that are requested for a
-            particular rule/target.
-        unsupported_features: Additional features that are unsupported for a
-            particular rule/target.
-
-    Returns:
-        The `FeatureConfiguration` that was created.
-    """
-    swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
-
-    # Combine the features from the rule context with those passed into this
-    # function.
-    requested_features = ctx.features + requested_features
-    unsupported_features = ctx.disabled_features + unsupported_features
-
-    # Enable LLVM coverage in CROSSTOOL if this is a coverage build. Note that
-    # we explicitly enable LLVM format and disable GCC format because the former
-    # is the only one that Swift supports.
-    if ctx.configuration.coverage_enabled:
-        requested_features.append("llvm_coverage_map_format")
-        unsupported_features.append("gcc_coverage_map_format")
-
-    return swift_common.configure_features(
-        ctx = ctx,
-        requested_features = requested_features,
-        swift_toolchain = swift_toolchain,
-        unsupported_features = unsupported_features,
-    )
 
 def _maybe_parse_as_library_copts(srcs):
     """Returns a list of compiler flags depending on `main.swift`'s presence.
@@ -158,7 +48,9 @@ def _swift_linking_rule_impl(
         binary_path,
         feature_configuration,
         swift_toolchain,
+        additional_linking_contexts = [],
         extra_link_deps = [],
+        extra_swift_infos = [],
         linkopts = []):
     """The shared implementation function for `swift_{binary,test}`.
 
@@ -169,8 +61,13 @@ def _swift_linking_rule_impl(
             `swift_common.configure_features`.
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain
             being used to build the target.
+        additional_linking_contexts: Additional linking contexts that provide
+            libraries or flags that should be linked into the executable.
         extra_link_deps: Additional dependencies that should be linked into the
             binary.
+        extra_swift_infos: Extra `SwiftInfo` providers that aren't contained
+            by the `deps` of the target being compiled but are required for
+            compilation.
         linkopts: Additional rule-specific flags that should be passed to the
             linker.
 
@@ -183,7 +80,7 @@ def _swift_linking_rule_impl(
     """
     additional_inputs = ctx.files.swiftc_inputs
     additional_inputs_to_linker = list(additional_inputs)
-    additional_linking_contexts = []
+    additional_linking_contexts = list(additional_linking_contexts)
     cc_feature_configuration = swift_common.cc_feature_configuration(
         feature_configuration = feature_configuration,
     )
@@ -206,10 +103,12 @@ def _swift_linking_rule_impl(
             copts = copts,
             defines = ctx.attr.defines,
             deps = ctx.attr.deps,
+            extra_swift_infos = extra_swift_infos,
             feature_configuration = feature_configuration,
             is_test = ctx.attr.testonly,
             module_name = module_name,
             package_name = ctx.attr.package_name,
+            plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),
             srcs = srcs,
             swift_toolchain = swift_toolchain,
             target_name = ctx.label.name,
@@ -330,7 +229,7 @@ def _create_xctest_runner(name, actions, executable, xctest_runner_template):
 
 def _swift_binary_impl(ctx):
     swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
-    feature_configuration = _configure_features_for_binary(
+    feature_configuration = configure_features_for_binary(
         ctx = ctx,
         requested_features = ["static_linking_mode"],
     )
@@ -355,7 +254,7 @@ def _swift_binary_impl(ctx):
 
 def _swift_test_impl(ctx):
     swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
-    feature_configuration = _configure_features_for_binary(
+    feature_configuration = configure_features_for_binary(
         ctx = ctx,
         requested_features = ["static_linking_mode"],
     )
@@ -382,9 +281,21 @@ def _swift_test_impl(ctx):
     if swizzle_absolute_xcttestsourcelocation:
         extra_link_deps.append(ctx.attr._swizzle_absolute_xcttestsourcelocation)
 
+    # We also need to collect nested providers from `SwiftCompilerPluginInfo`
+    # since we support testing those.
+    extra_swift_infos = []
+    additional_linking_contexts = []
+    for dep in ctx.attr.deps:
+        if SwiftCompilerPluginInfo in dep:
+            plugin_info = dep[SwiftCompilerPluginInfo]
+            extra_swift_infos.append(plugin_info.swift_info)
+            additional_linking_contexts.append(plugin_info.cc_info.linking_context)
+
     _, linking_outputs, providers = _swift_linking_rule_impl(
         ctx,
+        additional_linking_contexts = additional_linking_contexts,
         binary_path = binary_path,
+        extra_swift_infos = extra_swift_infos,
         extra_link_deps = extra_link_deps,
         feature_configuration = feature_configuration,
         linkopts = linkopts,
@@ -437,7 +348,10 @@ def _swift_test_impl(ctx):
     ]
 
 swift_binary = rule(
-    attrs = _binary_rule_attrs(stamp_default = -1),
+    attrs = binary_rule_attrs(
+        additional_deps_providers = [[SwiftCompilerPluginInfo]],
+        stamp_default = -1,
+    ),
     doc = """\
 Compiles and links Swift code into an executable binary.
 
@@ -460,7 +374,10 @@ please use one of the platform-specific application rules in
 
 swift_test = rule(
     attrs = dicts.add(
-        _binary_rule_attrs(stamp_default = 0),
+        binary_rule_attrs(
+            additional_deps_providers = [[SwiftCompilerPluginInfo]],
+            stamp_default = 0,
+        ),
         {
             "env": attr.string_dict(
                 doc = """

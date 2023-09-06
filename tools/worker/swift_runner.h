@@ -124,6 +124,11 @@ class SwiftRunner {
   // The arguments, post-substitution, passed to the spawner.
   std::vector<std::string> args_;
 
+  // The environment that should be passed to the original job (but not to other
+  // jobs spawned by the worker, such as the generated header rewriter or the
+  // emit-imports job).
+  std::map<std::string, std::string> job_env_;
+
   // The path to the index-import binary.
   std::string index_import_path_;
 

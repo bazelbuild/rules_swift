@@ -47,6 +47,7 @@ load(
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
     "SWIFT_FEATURE_USE_RESPONSE_FILES",
     "SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE",
+    "SWIFT_FEATURE__SUPPORTS_MACROS",
 )
 load(":features.bzl", "features_for_build_modes")
 load(":toolchain_config.bzl", "swift_toolchain_config")
@@ -522,6 +523,12 @@ def _xcode_env(target_triple, xcode_config):
         ),
     )
 
+def _entry_point_linkopts_provider(*, entry_point_name):
+    """Returns linkopts to customize the entry point of a binary."""
+    return struct(
+        linkopts = ["-Wl,-alias,_{},_main".format(entry_point_name)],
+    )
+
 def _xcode_swift_toolchain_impl(ctx):
     cpp_fragment = ctx.fragments.cpp
     apple_toolchain = apple_common.apple_toolchain()
@@ -598,6 +605,9 @@ def _xcode_swift_toolchain_impl(ctx):
     if getattr(ctx.fragments.objc, "alwayslink_by_default", False):
         requested_features.append(SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE)
 
+    if _is_xcode_at_least_version(xcode_config, "15.0"):
+        requested_features.append(SWIFT_FEATURE__SUPPORTS_MACROS)
+
     env = _xcode_env(target_triple = target_triple, xcode_config = xcode_config)
     execution_requirements = xcode_config.execution_info()
     generated_header_rewriter = resolve_optional_tool(
@@ -657,6 +667,7 @@ def _xcode_swift_toolchain_impl(ctx):
                 ctx.attr.clang_implicit_deps,
             ),
             developer_dirs = swift_toolchain_developer_paths,
+            entry_point_linkopts_provider = _entry_point_linkopts_provider,
             feature_allowlists = [
                 target[SwiftFeatureAllowlistInfo]
                 for target in ctx.attr.feature_allowlists

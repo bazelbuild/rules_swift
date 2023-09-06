@@ -242,9 +242,7 @@ SWIFT_FEATURE_CACHEABLE_SWIFTMODULES = "swift.cacheable_swiftmodules"
 SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION = "swift.supports_library_evolution"
 
 # If enabled, requests the `-enable-library-evolution` swiftc flag which is
-# required for newer features like swiftinterface file generation. If the
-# `SWIFT_FEATURES_SUPPORTS_LIBRARY_EVOLUTION` feature is not enabled, this
-# feature is a noop.
+# required for newer features like swiftinterface file generation.
 SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION = "swift.enable_library_evolution"
 
 # If enabled the compiler will produce an LLVM Bitcode BC file instead of an
@@ -252,8 +250,7 @@ SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION = "swift.enable_library_evolution"
 SWIFT_FEATURE_EMIT_BC = "swift.emit_bc"
 
 # If enabled, requests the swiftinterface file to be built on the swiftc
-# invocation. If the `SWIFT_FEATURES_SUPPORTS_LIBRARY_EVOLUTION` feature is not
-# enabled, this feature is a noop.
+# invocation.
 SWIFT_FEATURE_EMIT_SWIFTINTERFACE = "swift.emit_swiftinterface"
 
 # If enabled, the toolchain supports private deps (implementation-only imports).
@@ -334,3 +331,8 @@ SWIFT_FEATURE_OBJC_LINK_FLAGS = "swift.objc_link_flag"
 # A private feature that is set by the toolchain if the given toolchain wants
 # all Swift compilations to always be linked.
 SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE = "swift._force_alwayslink_true"
+
+# A private feature that is set by the toolchain if it supports macros (Swift
+# 5.9 and above). Users should never manually enable, disable, or query this
+# feature.
+SWIFT_FEATURE__SUPPORTS_MACROS = "swift._supports_macros"

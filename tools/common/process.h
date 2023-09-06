@@ -15,6 +15,7 @@
 #ifndef BUILD_BAZEL_RULES_SWIFT_TOOLS_WRAPPERS_PROCESS_H
 #define BUILD_BAZEL_RULES_SWIFT_TOOLS_WRAPPERS_PROCESS_H
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -23,6 +24,10 @@
 // set, then stdout is redirected to the stderr stream as well. Returns the exit
 // code of the spawned process.
 int RunSubProcess(const std::vector<std::string> &args,
+                  std::map<std::string, std::string> *env,
                   std::ostream *stderr_stream, bool stdout_to_stderr = false);
+
+// Returns a hash map containing the current process's environment.
+std::map<std::string, std::string> GetCurrentEnvironment();
 
 #endif  // BUILD_BAZEL_RULES_SWIFT_TOOLS_WRAPPERS_PROCESS_H

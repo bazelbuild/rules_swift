@@ -33,7 +33,7 @@ A C++ `FeatureConfiguration` value (see
 ## swift_common.compilation_attrs
 
 <pre>
-swift_common.compilation_attrs(<a href="#swift_common.compilation_attrs-additional_deps_aspects">additional_deps_aspects</a>, <a href="#swift_common.compilation_attrs-requires_srcs">requires_srcs</a>)
+swift_common.compilation_attrs(<a href="#swift_common.compilation_attrs-additional_deps_aspects">additional_deps_aspects</a>, <a href="#swift_common.compilation_attrs-additional_deps_providers">additional_deps_providers</a>, <a href="#swift_common.compilation_attrs-requires_srcs">requires_srcs</a>)
 </pre>
 
 Returns an attribute dictionary for rules that compile Swift code.
@@ -69,6 +69,7 @@ attributes from the earlier items in the list.
 | Name  | Description | Default Value |
 | :------------- | :------------- | :------------- |
 | <a id="swift_common.compilation_attrs-additional_deps_aspects"></a>additional_deps_aspects |  A list of additional aspects that should be applied to <code>deps</code>. Defaults to the empty list. These must be passed by the individual rules to avoid potential circular dependencies between the API and the aspects; the API loaded the aspects directly, then those aspects would not be able to load the API.   |  <code>[]</code> |
+| <a id="swift_common.compilation_attrs-additional_deps_providers"></a>additional_deps_providers |  A list of lists representing additional providers that should be allowed by the <code>deps</code> attribute of the rule.   |  <code>[]</code> |
 | <a id="swift_common.compilation_attrs-requires_srcs"></a>requires_srcs |  Indicates whether the <code>srcs</code> attribute should be marked as mandatory and non-empty. Defaults to <code>True</code>.   |  <code>True</code> |
 
 **RETURNS**
@@ -83,9 +84,9 @@ A new attribute dictionary that can be added to the attributes of a
 ## swift_common.compile
 
 <pre>
-swift_common.compile(<a href="#swift_common.compile-actions">actions</a>, <a href="#swift_common.compile-additional_inputs">additional_inputs</a>, <a href="#swift_common.compile-copts">copts</a>, <a href="#swift_common.compile-defines">defines</a>, <a href="#swift_common.compile-deps">deps</a>, <a href="#swift_common.compile-feature_configuration">feature_configuration</a>,
-                     <a href="#swift_common.compile-generated_header_name">generated_header_name</a>, <a href="#swift_common.compile-is_test">is_test</a>, <a href="#swift_common.compile-module_name">module_name</a>, <a href="#swift_common.compile-package_name">package_name</a>, <a href="#swift_common.compile-private_deps">private_deps</a>, <a href="#swift_common.compile-srcs">srcs</a>,
-                     <a href="#swift_common.compile-swift_toolchain">swift_toolchain</a>, <a href="#swift_common.compile-target_name">target_name</a>, <a href="#swift_common.compile-workspace_name">workspace_name</a>)
+swift_common.compile(<a href="#swift_common.compile-actions">actions</a>, <a href="#swift_common.compile-additional_inputs">additional_inputs</a>, <a href="#swift_common.compile-copts">copts</a>, <a href="#swift_common.compile-defines">defines</a>, <a href="#swift_common.compile-deps">deps</a>, <a href="#swift_common.compile-extra_swift_infos">extra_swift_infos</a>,
+                     <a href="#swift_common.compile-feature_configuration">feature_configuration</a>, <a href="#swift_common.compile-generated_header_name">generated_header_name</a>, <a href="#swift_common.compile-is_test">is_test</a>, <a href="#swift_common.compile-module_name">module_name</a>, <a href="#swift_common.compile-package_name">package_name</a>,
+                     <a href="#swift_common.compile-plugins">plugins</a>, <a href="#swift_common.compile-private_deps">private_deps</a>, <a href="#swift_common.compile-srcs">srcs</a>, <a href="#swift_common.compile-swift_toolchain">swift_toolchain</a>, <a href="#swift_common.compile-target_name">target_name</a>, <a href="#swift_common.compile-workspace_name">workspace_name</a>)
 </pre>
 
 Compiles a Swift module.
@@ -100,11 +101,13 @@ Compiles a Swift module.
 | <a id="swift_common.compile-copts"></a>copts |  A list of compiler flags that apply to the target being built. These flags, along with those from Bazel's Swift configuration fragment (i.e., <code>--swiftcopt</code> command line flags) are scanned to determine whether whole module optimization is being requested, which affects the nature of the output files.   |  <code>[]</code> |
 | <a id="swift_common.compile-defines"></a>defines |  Symbols that should be defined by passing <code>-D</code> to the compiler.   |  <code>[]</code> |
 | <a id="swift_common.compile-deps"></a>deps |  Non-private dependencies of the target being compiled. These targets are used as dependencies of both the Swift module being compiled and the Clang module for the generated header. These targets must propagate one of the following providers: <code>CcInfo</code>, <code>SwiftInfo</code>, or <code>apple_common.Objc</code>.   |  <code>[]</code> |
+| <a id="swift_common.compile-extra_swift_infos"></a>extra_swift_infos |  Extra <code>SwiftInfo</code> providers that aren't contained by the <code>deps</code> of the target being compiled but are required for compilation.   |  <code>[]</code> |
 | <a id="swift_common.compile-feature_configuration"></a>feature_configuration |  A feature configuration obtained from <code>swift_common.configure_features</code>.   |  none |
 | <a id="swift_common.compile-generated_header_name"></a>generated_header_name |  The name of the Objective-C generated header that should be generated for this module. If omitted, no header will be generated.   |  <code>None</code> |
 | <a id="swift_common.compile-is_test"></a>is_test |  Represents if the <code>testonly</code> value of the context.   |  none |
 | <a id="swift_common.compile-module_name"></a>module_name |  The name of the Swift module being compiled. This must be present and valid; use <code>swift_common.derive_module_name</code> to generate a default from the target's label if needed.   |  none |
 | <a id="swift_common.compile-package_name"></a>package_name |  The semantic package of the name of the Swift module being compiled.   |  none |
+| <a id="swift_common.compile-plugins"></a>plugins |  A list of <code>SwiftCompilerPluginInfo</code> providers that represent plugins that should be loaded by the compiler.   |  <code>[]</code> |
 | <a id="swift_common.compile-private_deps"></a>private_deps |  Private (implementation-only) dependencies of the target being compiled. These are only used as dependencies of the Swift module, not of the Clang module for the generated header. These targets must propagate one of the following providers: <code>CcInfo</code>, <code>SwiftInfo</code>, or <code>apple_common.Objc</code>.   |  <code>[]</code> |
 | <a id="swift_common.compile-srcs"></a>srcs |  The Swift source files to compile.   |  none |
 | <a id="swift_common.compile-swift_toolchain"></a>swift_toolchain |  The <code>SwiftToolchainInfo</code> provider of the toolchain.   |  none |
@@ -464,7 +467,7 @@ A provider whose type/layout is an implementation detail and should not
 ## swift_common.create_swift_module
 
 <pre>
-swift_common.create_swift_module(<a href="#swift_common.create_swift_module-swiftdoc">swiftdoc</a>, <a href="#swift_common.create_swift_module-swiftmodule">swiftmodule</a>, <a href="#swift_common.create_swift_module-ast_files">ast_files</a>, <a href="#swift_common.create_swift_module-defines">defines</a>, <a href="#swift_common.create_swift_module-indexstore">indexstore</a>,
+swift_common.create_swift_module(<a href="#swift_common.create_swift_module-swiftdoc">swiftdoc</a>, <a href="#swift_common.create_swift_module-swiftmodule">swiftmodule</a>, <a href="#swift_common.create_swift_module-ast_files">ast_files</a>, <a href="#swift_common.create_swift_module-defines">defines</a>, <a href="#swift_common.create_swift_module-indexstore">indexstore</a>, <a href="#swift_common.create_swift_module-plugins">plugins</a>,
                                  <a href="#swift_common.create_swift_module-swiftsourceinfo">swiftsourceinfo</a>, <a href="#swift_common.create_swift_module-swiftinterface">swiftinterface</a>, <a href="#swift_common.create_swift_module-symbol_graph">symbol_graph</a>)
 </pre>
 
@@ -480,6 +483,7 @@ Creates a value representing a Swift module use as a Swift dependency.
 | <a id="swift_common.create_swift_module-ast_files"></a>ast_files |  A list of <code>File</code>s output from the <code>DUMP_AST</code> action.   |  <code>[]</code> |
 | <a id="swift_common.create_swift_module-defines"></a>defines |  A list of defines that will be provided as <code>copts</code> to targets that depend on this module. If omitted, the empty list will be used.   |  <code>[]</code> |
 | <a id="swift_common.create_swift_module-indexstore"></a>indexstore |  A <code>File</code> representing the directory that contains the index store data generated by the compiler if the <code>"swift.index_while_building"</code> feature is enabled, otherwise this will be <code>None</code>.   |  <code>None</code> |
+| <a id="swift_common.create_swift_module-plugins"></a>plugins |  A list of <code>SwiftCompilerPluginInfo</code> providers representing compiler plugins that are required by this module and should be loaded by the compiler when this module is directly depended on.   |  <code>[]</code> |
 | <a id="swift_common.create_swift_module-swiftsourceinfo"></a>swiftsourceinfo |  The <code>.swiftsourceinfo</code> file emitted by the compiler for this module. May be <code>None</code> if no source info file was emitted.   |  <code>None</code> |
 | <a id="swift_common.create_swift_module-swiftinterface"></a>swiftinterface |  The <code>.swiftinterface</code> file emitted by the compiler for this module. May be <code>None</code> if no module interface file was emitted.   |  <code>None</code> |
 | <a id="swift_common.create_swift_module-symbol_graph"></a>symbol_graph |  A <code>File</code> representing the directory that contains the symbol graph data generated by the compiler if the <code>"swift.emit_symbol_graph"</code> feature is enabled, otherwise this will be <code>None</code>.   |  <code>None</code> |

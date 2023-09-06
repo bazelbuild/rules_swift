@@ -70,6 +70,7 @@ load(
     "SWIFT_FEATURE_USE_PCH_OUTPUT_DIR",
     "SWIFT_FEATURE_VFSOVERLAY",
     "SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS",
+    "SWIFT_FEATURE__SUPPORTS_MACROS",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
 )
 load(
@@ -949,6 +950,21 @@ def compile_action_configs(
             ],
             features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
         ),
+        swift_toolchain_config.action_config(
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVE_FILES,
+            ],
+            configurators = [_plugins_configurator],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVE_FILES,
+            ],
+            configurators = [_macro_expansion_configurator],
+            features = [SWIFT_FEATURE__SUPPORTS_MACROS],
+        ),
     ])
 
     #### Search paths for framework dependencies
@@ -1730,6 +1746,36 @@ def _dependencies_swiftmodules_vfsoverlay_configurator(prerequisites, args, is_f
         inputs = swiftmodules + [prerequisites.vfsoverlay_file],
     )
 
+def _load_executable_plugin_map_fn(plugin):
+    """Returns frontend flags to load compiler plugins."""
+    return [
+        "-load-plugin-executable",
+        "{executable}#{module_names}".format(
+            executable = plugin.executable.path,
+            module_names = ",".join(plugin.module_names.to_list()),
+        ),
+    ]
+
+def _plugins_configurator(prerequisites, args):
+    """Adds `-load-plugin-executable` flags for required plugins, if any."""
+    args.add_all(
+        prerequisites.plugins,
+        before_each = "-Xfrontend",
+        map_each = _load_executable_plugin_map_fn,
+    )
+
+    return swift_toolchain_config.config_result(
+        inputs = [p.executable for p in prerequisites.plugins.to_list()],
+    )
+
+def _macro_expansion_configurator(prerequisites, args):
+    """Adds flags to control where macro expansions are generated."""
+    if prerequisites.macro_expansion_directory:
+        args.add(
+            prerequisites.macro_expansion_directory.path,
+            format = "-Xwrapped-swift=-macro-expansion-dir=%s",
+        )
+
 def _explicit_swift_module_map_configurator(prerequisites, args, is_frontend = False):
     """Adds the explicit Swift module map file to the command line."""
     if is_frontend:
@@ -2180,11 +2226,13 @@ def compile(
         copts = [],
         defines = [],
         deps = [],
+        extra_swift_infos = [],
         feature_configuration,
         generated_header_name = None,
         is_test,
         module_name,
         package_name,
+        plugins = [],
         private_deps = [],
         srcs,
         swift_toolchain,
@@ -2208,6 +2256,9 @@ def compile(
             compiled and the Clang module for the generated header. These
             targets must propagate one of the following providers: `CcInfo`,
             `SwiftInfo`, or `apple_common.Objc`.
+        extra_swift_infos: Extra `SwiftInfo` providers that aren't contained
+            by the `deps` of the target being compiled but are required for
+            compilation.
         feature_configuration: A feature configuration obtained from
             `swift_common.configure_features`.
         is_test: Represents if the `testonly` value of the context.
@@ -2219,6 +2270,8 @@ def compile(
             a default from the target's label if needed.
         package_name: The semantic package of the name of the Swift module
             being compiled.
+        plugins: A list of `SwiftCompilerPluginInfo` providers that represent
+            plugins that should be loaded by the compiler.
         private_deps: Private (implementation-only) dependencies of the target
             being compiled. These are only used as dependencies of the Swift
             module, not of the Clang module for the generated header. These
@@ -2288,6 +2341,7 @@ def compile(
         all_compile_outputs = compact([
             compile_outputs.swiftinterface_file,
             compile_outputs.indexstore_directory,
+            compile_outputs.macro_expansion_directory,
         ]) + compile_outputs.object_files
         all_derived_outputs = compact([
             # The `.swiftmodule` file is explicitly listed as the first output
@@ -2312,6 +2366,7 @@ def compile(
             compile_outputs.swiftsourceinfo_file,
             compile_outputs.generated_header_file,
             compile_outputs.indexstore_directory,
+            compile_outputs.macro_expansion_directory,
             compile_outputs.symbol_graph_directory,
         ]) + compile_outputs.object_files + other_outputs
         all_derived_outputs = []
@@ -2334,6 +2389,8 @@ def compile(
     transitive_modules = (
         merged_providers.swift_info.transitive_modules.to_list()
     )
+    for info in extra_swift_infos:
+        transitive_modules.extend(info.transitive_modules.to_list())
 
     transitive_swiftmodules = []
     defines_set = sets.make(defines)
@@ -2388,6 +2445,17 @@ def compile(
     else:
         explicit_swift_module_map_file = None
 
+    # As of the time of this writing (Xcode 15.0), macros are the only kind of
+    # plugins that are available. Since macros do source-level transformations,
+    # we only need to load plugins directly used by the module being compiled.
+    # Plugins that are only used by transitive dependencies do *not* need to be
+    # passed; the compiler does not attempt to load them when deserializing
+    # modules.
+    used_plugins = list(plugins)
+    for module_context in transitive_modules:
+        if module_context.swift and module_context.swift.plugins:
+            used_plugins.extend(module_context.swift.plugins.to_list())
+
     prerequisites = struct(
         additional_inputs = additional_inputs,
         bin_dir = feature_configuration._bin_dir,
@@ -2404,6 +2472,7 @@ def compile(
             merged_providers.objc_include_paths_workaround
         ),
         objc_info = merged_providers.objc_info,
+        plugins = depset(used_plugins),
         source_files = srcs,
         transitive_modules = transitive_modules,
         transitive_swiftmodules = transitive_swiftmodules,
@@ -2507,6 +2576,7 @@ def compile(
             ast_files = compile_outputs.ast_files,
             defines = defines,
             indexstore = compile_outputs.indexstore_directory,
+            plugins = depset(plugins),
             swiftdoc = compile_outputs.swiftdoc_file,
             swiftinterface = compile_outputs.swiftinterface_file,
             swiftmodule = compile_outputs.swiftmodule_file,
@@ -2523,6 +2593,7 @@ def compile(
     other_compilation_outputs = struct(
         ast_files = compile_outputs.ast_files,
         indexstore = compile_outputs.indexstore_directory,
+        macro_expansion_directory = compile_outputs.macro_expansion_directory,
         symbol_graph = compile_outputs.symbol_graph_directory,
     )
 
@@ -2969,11 +3040,25 @@ def _declare_compile_outputs(
     else:
         symbol_graph_directory = None
 
+    if is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE__SUPPORTS_MACROS,
+    ) and not is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_OPT,
+    ):
+        macro_expansion_directory = actions.declare_directory(
+            "{}.macro-expansions".format(target_name),
+        )
+    else:
+        macro_expansion_directory = None
+
     compile_outputs = struct(
         ast_files = ast_files,
         generated_header_file = generated_header,
         generated_module_map_file = generated_module_map,
         indexstore_directory = indexstore_directory,
+        macro_expansion_directory = macro_expansion_directory,
         symbol_graph_directory = symbol_graph_directory,
         object_files = object_files,
         output_file_map = output_file_map,
@@ -3201,6 +3286,11 @@ def output_groups_from_other_compilation_outputs(*, other_compilation_outputs):
     if other_compilation_outputs.symbol_graph:
         output_groups["swift_symbol_graph"] = depset([
             other_compilation_outputs.symbol_graph,
+        ])
+
+    if other_compilation_outputs.macro_expansion_directory:
+        output_groups["macro_expansions"] = depset([
+            other_compilation_outputs.macro_expansion_directory,
         ])
 
     return output_groups

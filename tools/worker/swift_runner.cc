@@ -107,14 +107,16 @@ static bool StripPrefix(const std::string &prefix, std::string &str) {
 
 SwiftRunner::SwiftRunner(const std::vector<std::string> &args,
                          std::string index_import_path, bool force_response_file)
-    : index_import_path_(index_import_path),
+    : job_env_(GetCurrentEnvironment()),
+      index_import_path_(index_import_path),
       force_response_file_(force_response_file),
       is_dump_ast_(false) {
   args_ = ProcessArguments(args);
 }
 
 int SwiftRunner::Run(std::ostream *stderr_stream, bool stdout_to_stderr) {
-  int exit_code = RunSubProcess(args_, stderr_stream, stdout_to_stderr);
+  int exit_code = RunSubProcess(
+      args_, &job_env_, stderr_stream, stdout_to_stderr);
 
   if (exit_code != 0) {
     return exit_code;
@@ -135,7 +137,8 @@ int SwiftRunner::Run(std::ostream *stderr_stream, bool stdout_to_stderr) {
     rewriter_args.insert(rewriter_args.end(),
                          args_.begin() + initial_args_to_skip, args_.end());
 
-    exit_code = RunSubProcess(rewriter_args, stderr_stream, stdout_to_stderr);
+    exit_code = RunSubProcess(
+        rewriter_args, /*env=*/nullptr, stderr_stream, stdout_to_stderr);
   }
 
   auto enable_global_index_store = global_index_store_import_path_ != "";
@@ -173,8 +176,8 @@ int SwiftRunner::Run(std::ostream *stderr_stream, bool stdout_to_stderr) {
     // Copy back from the global index store to bazel's index store
     ii_args.push_back((exec_root / global_index_store_import_path_).string());
     ii_args.push_back((exec_root / index_store_path_).string());
-    exit_code =
-        RunSubProcess(ii_args, stderr_stream, /*stdout_to_stderr=*/true);
+    exit_code = RunSubProcess(
+        ii_args, /*env=*/nullptr, stderr_stream, /*stdout_to_stderr=*/true);
   }
   return exit_code;
 }
@@ -295,6 +298,10 @@ bool SwiftRunner::ProcessArgument(
         consumer("-file-prefix-map");
         consumer(std::filesystem::current_path().string() + "=.");
         changed = true;
+      } else if (StripPrefix("-macro-expansion-dir=", new_arg)) {
+        changed = true;
+        std::filesystem::create_directories(new_arg);
+        job_env_["TMPDIR"] = new_arg;
       } else if (new_arg == "-ephemeral-module-cache") {
         // Create a temporary directory to hold the module cache, which will be
         // deleted after compilation is finished.
