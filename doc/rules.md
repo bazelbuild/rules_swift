@@ -19,6 +19,7 @@ On this page:
   * [swift_binary](#swift_binary)
   * [swift_c_module](#swift_c_module)
   * [swift_compiler_plugin](#swift_compiler_plugin)
+  * [swift_feature_allowlist](#swift_feature_allowlist)
   * [swift_grpc_library](#swift_grpc_library)
   * [swift_import](#swift_import)
   * [swift_library](#swift_library)
@@ -169,6 +170,37 @@ unit tests can be written against the plugin.
 | <a id="swift_compiler_plugin-srcs"></a>srcs |  A list of <code>.swift</code> source files that will be compiled into the library.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional | <code>[]</code> |
 | <a id="swift_compiler_plugin-stamp"></a>stamp |  Enable or disable link stamping; that is, whether to encode build information into the binary. Possible values are:<br><br>* <code>stamp = 1</code>: Stamp the build information into the binary. Stamped binaries are   only rebuilt when their dependencies change. Use this if there are tests that   depend on the build information.<br><br>* <code>stamp = 0</code>: Always replace build information by constant values. This gives   good build result caching.<br><br>* <code>stamp = -1</code>: Embedding of build information is controlled by the   <code>--[no]stamp</code> flag.   | Integer | optional | <code>0</code> |
 | <a id="swift_compiler_plugin-swiftc_inputs"></a>swiftc_inputs |  Additional files that are referenced using <code>$(location ...)</code> in attributes that support location expansion.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional | <code>[]</code> |
+
+
+<a id="swift_feature_allowlist"></a>
+
+## swift_feature_allowlist
+
+<pre>
+swift_feature_allowlist(<a href="#swift_feature_allowlist-name">name</a>, <a href="#swift_feature_allowlist-managed_features">managed_features</a>, <a href="#swift_feature_allowlist-packages">packages</a>)
+</pre>
+
+Limits the ability to request or disable certain features to a set of packages
+(and possibly subpackages) in the workspace.
+
+A Swift toolchain target can reference any number (zero or more) of
+`swift_feature_allowlist` targets. The features managed by these allowlists may
+overlap. For some package _P_, a feature is allowed to be used by targets in
+that package if _P_ matches the `packages` patterns in *all* of the allowlists
+that manage that feature.
+
+A feature that is not managed by any allowlist is allowed to be used by any
+package.
+
+
+**ATTRIBUTES**
+
+
+| Name  | Description | Type | Mandatory | Default |
+| :------------- | :------------- | :------------- | :------------- | :------------- |
+| <a id="swift_feature_allowlist-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
+| <a id="swift_feature_allowlist-managed_features"></a>managed_features |  A list of feature strings that are permitted to be specified by the targets in the packages matched by the <code>packages</code> attribute. This list may include both feature names and/or negations (a name with a leading <code>-</code>); a regular feature name means that the targets in the matching packages may explicitly request that the feature be enabled, and a negated feature means that the target may explicitly request that the feature be disabled.<br><br>For example, <code>managed_features = ["foo", "-bar"]</code> means that targets in the allowlist's packages may request that feature <code>"foo"</code> be enabled and that feature <code>"bar"</code> be disabled.   | List of strings | optional | <code>[]</code> |
+| <a id="swift_feature_allowlist-packages"></a>packages |  A list of strings representing packages (possibly recursive) whose targets are allowed to enable/disable the features in <code>managed_features</code>. Each package pattern is written in the syntax used by the <code>package_group</code> function:<br><br>*   <code>//foo/bar</code>: Targets in the package <code>//foo/bar</code> but not in subpackages. *   <code>//foo/bar/...</code>: Targets in the package <code>//foo/bar</code> and any of its     subpackages. *   A leading <code>-</code> excludes packages that would otherwise have been included by     the patterns in the list.<br><br>Exclusions always take priority over inclusions; order in the list is irrelevant.   | List of strings | required |  |
 
 
 <a id="swift_grpc_library"></a>
