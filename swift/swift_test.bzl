@@ -198,6 +198,9 @@ def _generate_test_discovery_srcs(
         ):
             inputs.append(symbol_graph.symbol_graph_dir)
 
+    if not modules_to_scan:
+        fail("Failed to find any modules to inspect for tests.")
+
     # For each direct dependency/module that we have a symbol graph for (i.e.,
     # every testonly dependency), declare a `.swift` source file where the
     # discovery tool will generate an extension that lists the test entries for
