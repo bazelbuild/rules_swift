@@ -56,8 +56,10 @@ tasks:
     <<: *mac_common
     build_flags:
       - "--enable_bzlmod"
+      - "--platform_mappings=platform_mappings.empty_for_bzlmod" # TODO(bazelbuild/bazel#17127): remove when resolved
     test_flags:
       - "--enable_bzlmod"
+      - "--platform_mappings=platform_mappings.empty_for_bzlmod"
 
   macos_last_green:
     name: "Last Green Bazel"
