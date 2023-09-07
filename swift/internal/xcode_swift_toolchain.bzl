@@ -75,12 +75,23 @@ _TRIPLE_OS_TO_PLATFORM = {
     ("macos", None): apple_common.platform.macos,
     ("tvos", None): apple_common.platform.tvos_device,
     ("tvos", "simulator"): apple_common.platform.tvos_simulator,
+    # TODO: Remove getattr use once we no longer support 6.x
+    ("xros", None): getattr(apple_common.platform, "visionos_device", None),
+    ("xros", "simulator"): getattr(apple_common.platform, "visionos_simulator", None),
     ("watchos", None): apple_common.platform.watchos_device,
     ("watchos", "simulator"): apple_common.platform.watchos_simulator,
 }
 
 def _bazel_apple_platform(target_triple):
     """Returns the `apple_common.platform` value for the given target triple."""
+
+    # TODO: Remove once we no longer support 6.x
+    if target_triples.unversioned_os(target_triple) == "xros" and not hasattr(
+        apple_common.platform,
+        "visionos_device",
+    ):
+        fail("visionOS requested but your version of bazel doesn't support it")
+
     return _TRIPLE_OS_TO_PLATFORM[(
         target_triples.unversioned_os(target_triple),
         target_triple.environment,

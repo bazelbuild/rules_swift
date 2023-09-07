@@ -102,7 +102,7 @@ def _normalize_for_swift(triple, *, unversioned = False):
         A target triple struct containing the normalized triple.
     """
     os = _normalize_apple_os(triple.os, unversioned = unversioned)
-    if os.startswith(("ios", "macos", "tvos", "watchos")):
+    if os.startswith(("ios", "macos", "tvos", "visionos", "watchos")):
         return _make(
             cpu = _normalize_apple_cpu(triple.cpu),
             vendor = "apple",
@@ -163,6 +163,8 @@ def _platform_name_for_swift(triple):
         return "iphonesimulator" if is_simulator else "iphoneos"
     if os == "tvos":
         return "appletvsimulator" if is_simulator else "appletvos"
+    if os == "visionos":
+        return "visionossimulator" if is_simulator else "visionos"
     if os == "watchos":
         return "watchsimulator" if is_simulator else "watchos"
 
