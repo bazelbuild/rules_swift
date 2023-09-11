@@ -16,7 +16,14 @@
 
 #include <fcntl.h>
 
+#include <cstddef>
 #include <fstream>
+#include <functional>
+#include <memory>
+#include <ostream>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
@@ -182,8 +189,21 @@ SwiftRunner::SwiftRunner(const std::vector<std::string> &args,
 }
 
 int SwiftRunner::Run(std::ostream &stderr_stream, bool stdout_to_stderr) {
+  int exit_code = 0;
+
+  // Do the layering check before compilation. This gives a better error message
+  // in the event a Swift module is being imported that depends on a Clang
+  // module that isn't already in the transitive closure, because that will fail
+  // to compile ("cannot load underlying module for '...'").
+  if (!deps_modules_path_.empty()) {
+    exit_code = PerformLayeringCheck(stderr_stream, stdout_to_stderr);
+    if (exit_code != 0) {
+      return exit_code;
+    }
+  }
+
   // Spawn the originally requested job with its full argument list.
-  int exit_code =
+  exit_code =
       SpawnJob(tool_args_, args_, &job_env_, stderr_stream, stdout_to_stderr);
   if (exit_code != 0) {
     return exit_code;
@@ -195,10 +215,6 @@ int SwiftRunner::Run(std::ostream &stderr_stream, bool stdout_to_stderr) {
     if (exit_code != 0) {
       return exit_code;
     }
-  }
-
-  if (!deps_modules_path_.empty()) {
-    exit_code = PerformLayeringCheck(stderr_stream, stdout_to_stderr);
   }
 
   return exit_code;
