@@ -27,7 +27,6 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <stdlib.h>
-#define environ _environ
 #else
 extern "C" {
   extern char **environ;
