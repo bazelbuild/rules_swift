@@ -28,9 +28,9 @@
 #include <Windows.h>
 
 extern "C" {
-  extern char **_environ;
+  extern wchar_t **_wenviron;
 }
-#define environ _environ
+#define environ _wenviron
 #else
 extern "C" {
   extern char **environ;
@@ -39,7 +39,7 @@ extern "C" {
 
 std::map<std::string, std::string> GetCurrentEnvironment() {
   std::map<std::string, std::string> result;
-  char **envp = environ;
+  auto envp = environ;
   for (int i = 0; envp[i] != nullptr; ++i) {
     std::string envString(envp[i]);
     size_t equalsPos = envString.find('=');
