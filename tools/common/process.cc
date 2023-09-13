@@ -24,14 +24,32 @@
 #include <vector>
 
 #if defined(_WIN32)
-
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
-
-// TODO: Implement once windows supports macros
-std::map<std::string, std::string> GetCurrentEnvironment() {
-  return {};
+#include <stdlib.h>
+#define environ _environ
+#else
+extern "C" {
+  extern char **environ;
 }
+#endif
+
+std::map<std::string, std::string> GetCurrentEnvironment() {
+  std::map<std::string, std::string> result;
+  char **envp = environ;
+  for (int i = 0; envp[i] != nullptr; ++i) {
+    std::string envString(envp[i]);
+    size_t equalsPos = envString.find('=');
+    if (equalsPos != std::string::npos) {
+        std::string key = envString.substr(0, equalsPos);
+        std::string value = envString.substr(equalsPos + 1);
+        result[key] = value;
+    }
+  }
+  return result;
+}
+
+#if defined(_WIN32)
 
 namespace {
 class WindowsIORedirector {
@@ -240,26 +258,6 @@ int RunSubProcess(const std::vector<std::string> &args,
 #include <cstring>
 #include <filesystem>
 #include <memory>
-
-extern "C" {
-  extern char **environ;
-}
-
-std::map<std::string, std::string> GetCurrentEnvironment() {
-  std::map<std::string, std::string> result;
-  char **envp = environ;
-  for (int i = 0; envp[i] != nullptr; ++i) {
-    std::string envString(envp[i]);
-    size_t equalsPos = envString.find('=');
-    if (equalsPos != std::string::npos) {
-        std::string key = envString.substr(0, equalsPos);
-        std::string value = envString.substr(equalsPos + 1);
-        result[key] = value;
-    }
-  }
-  return result;
-}
-
 
 namespace {
 
