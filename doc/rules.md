@@ -19,6 +19,7 @@ On this page:
   * [swift_binary](#swift_binary)
   * [swift_c_module](#swift_c_module)
   * [swift_compiler_plugin](#swift_compiler_plugin)
+  * [universal_swift_compiler_plugin](#universal_swift_compiler_plugin)
   * [swift_feature_allowlist](#swift_feature_allowlist)
   * [swift_grpc_library](#swift_grpc_library)
   * [swift_import](#swift_import)
@@ -621,5 +622,57 @@ bazel test //:Tests --test_filter=TestModuleName.TestClassName/testMethodName
 | <a id="swift_test-srcs"></a>srcs |  A list of <code>.swift</code> source files that will be compiled into the library.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional | <code>[]</code> |
 | <a id="swift_test-stamp"></a>stamp |  Enable or disable link stamping; that is, whether to encode build information into the binary. Possible values are:<br><br>* <code>stamp = 1</code>: Stamp the build information into the binary. Stamped binaries are   only rebuilt when their dependencies change. Use this if there are tests that   depend on the build information.<br><br>* <code>stamp = 0</code>: Always replace build information by constant values. This gives   good build result caching.<br><br>* <code>stamp = -1</code>: Embedding of build information is controlled by the   <code>--[no]stamp</code> flag.   | Integer | optional | <code>0</code> |
 | <a id="swift_test-swiftc_inputs"></a>swiftc_inputs |  Additional files that are referenced using <code>$(location ...)</code> in attributes that support location expansion.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional | <code>[]</code> |
+
+
+<a id="universal_swift_compiler_plugin"></a>
+
+## universal_swift_compiler_plugin
+
+<pre>
+universal_swift_compiler_plugin(<a href="#universal_swift_compiler_plugin-name">name</a>, <a href="#universal_swift_compiler_plugin-plugin">plugin</a>)
+</pre>
+
+Wraps an existing `swift_compiler_plugin` target to produce a universal binary.
+
+This is useful to allow sharing of caches between Intel and Apple Silicon Macs
+at the cost of building everything twice.
+
+Example:
+
+```bzl
+# The actual macro code, using SwiftSyntax, as usual.
+swift_compiler_plugin(
+    name = "Macros",
+    srcs = glob(["Macros/*.swift"]),
+    deps = [
+        "@SwiftSyntax",
+        "@SwiftSyntax//:SwiftCompilerPlugin",
+        "@SwiftSyntax//:SwiftSyntaxMacros",
+    ],
+)
+
+# Wrap your compiler plugin in this universal shim.
+universal_swift_compiler_plugin(
+    name = "Macros.universal",
+    plugin = ":Macros",
+)
+
+# The library that defines the macro hook for use in your project, this
+# references the universal_swift_compiler_plugin.
+swift_library(
+    name = "MacroLibrary",
+    srcs = glob(["MacroLibrary/*.swift"]),
+    plugins = [":Macros.universal"],
+)
+```
+
+
+**ATTRIBUTES**
+
+
+| Name  | Description | Type | Mandatory | Default |
+| :------------- | :------------- | :------------- | :------------- | :------------- |
+| <a id="universal_swift_compiler_plugin-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
+| <a id="universal_swift_compiler_plugin-plugin"></a>plugin |  Target to generate a 'fat' binary from.   | <a href="https://bazel.build/concepts/labels">Label</a> | required |  |
 
 

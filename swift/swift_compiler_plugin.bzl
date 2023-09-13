@@ -340,4 +340,39 @@ universal_swift_compiler_plugin = rule(
     executable = True,
     fragments = ["cpp", "apple"],
     implementation = _universal_swift_compiler_plugin_impl,
+    doc = """\
+Wraps an existing `swift_compiler_plugin` target to produce a universal binary.
+
+This is useful to allow sharing of caches between Intel and Apple Silicon Macs
+at the cost of building everything twice.
+
+Example:
+
+```bzl
+# The actual macro code, using SwiftSyntax, as usual.
+swift_compiler_plugin(
+    name = "Macros",
+    srcs = glob(["Macros/*.swift"]),
+    deps = [
+        "@SwiftSyntax",
+        "@SwiftSyntax//:SwiftCompilerPlugin",
+        "@SwiftSyntax//:SwiftSyntaxMacros",
+    ],
+)
+
+# Wrap your compiler plugin in this universal shim.
+universal_swift_compiler_plugin(
+    name = "Macros.universal",
+    plugin = ":Macros",
+)
+
+# The library that defines the macro hook for use in your project, this
+# references the universal_swift_compiler_plugin.
+swift_library(
+    name = "MacroLibrary",
+    srcs = glob(["MacroLibrary/*.swift"]),
+    plugins = [":Macros.universal"],
+)
+```
+""",
 )
