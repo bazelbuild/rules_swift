@@ -14,8 +14,9 @@
 
 """Implementation of the `swift_compiler_plugin` rule."""
 
-load("@build_bazel_apple_support//lib:lipo.bzl", "lipo")
 load("@build_bazel_apple_support//lib:apple_support.bzl", "apple_support")
+load("@build_bazel_apple_support//lib:lipo.bzl", "lipo")
+load("@build_bazel_apple_support//lib:transitions.bzl", "macos_universal_transition")
 load(
     "@build_bazel_rules_swift//swift/internal:compiling.bzl",
     "output_groups_from_other_compilation_outputs",
@@ -257,35 +258,17 @@ swift_library(
     implementation = _swift_compiler_plugin_impl,
 )
 
-def _macos_universal_transition_impl(settings, _attr):
-    # Create a split transition from any macOS cpu to a list of all macOS cpus
-    # if settings["//command_line_option:cpu"].startswith("darwin"):
-    return [
-        {"//command_line_option:cpu": "darwin_x86_64"},
-        {"//command_line_option:cpu": "darwin_arm64"},
-    ]
-
-# else:
-#     return settings
-
-macos_universal_transition = transition(
-    implementation = _macos_universal_transition_impl,
-    inputs = ["//command_line_option:cpu"],
-    outputs = ["//command_line_option:cpu"],
-)
-
-def _abc(ctx):
+def _universal_swift_compiler_plugin_impl(ctx):
     inputs = [
-        binary.files.to_list()[0]
-        for binary in ctx.split_attr.plugin.values()
+        plugin.files.to_list()[0]
+        for plugin in ctx.split_attr.plugin.values()
     ]
 
     if not inputs:
-        fail("Target (%s) `binary` label ('%s') does not provide any " +
-             "file for universal binary" % (ctx.attr.name, ctx.attr.binary))
+        fail("Target (%s) `plugin` label ('%s') does not provide any " +
+             "file for universal binary" % (ctx.attr.name, ctx.attr.plugin))
 
     output = ctx.actions.declare_file(ctx.label.name)
-
     if len(inputs) > 1:
         lipo.create(
             actions = ctx.actions,
@@ -294,53 +277,52 @@ def _abc(ctx):
             output = output,
             xcode_config = ctx.attr._xcode_config[apple_common.XcodeVersionConfig],
         )
-
     else:
-        # FIXME prboably linux
-        fail("nio")
+        ctx.actions.symlink(target_file = inputs[0], output = output)
 
     cc_infos = []
-    swift_infos = []
+    direct_swift_modules = []
     module_name = None
+    swift_infos = []
     for plugin in ctx.split_attr.plugin.values():
         cc_infos.append(plugin[SwiftCompilerPluginInfo].cc_info)
+        direct_swift_modules.extend(plugin[SwiftCompilerPluginInfo].swift_info.direct_modules)
         module_name = plugin[SwiftCompilerPluginInfo].module_names.to_list()[0]
         swift_infos.append(plugin[SwiftCompilerPluginInfo].swift_info)
+
+    output_group_info1 = ctx.split_attr.plugin.values()[0][OutputGroupInfo]
+    output_group_info2 = ctx.split_attr.plugin.values()[1][OutputGroupInfo]
+    combined_output_group_info = {}
+    for key in output_group_info1:
+        combined_output_group_info[key] = depset(transitive = [
+            output_group_info1[key],
+            output_group_info2[key],
+        ])
+
+    transitive_runfiles = [
+        plugin[DefaultInfo].default_runfiles
+        for plugin in ctx.split_attr.plugin.values()
+    ]
 
     return [
         DefaultInfo(
             executable = output,
             files = depset([output]),
-            runfiles = ctx.runfiles(
-                collect_data = True,
-                collect_default = True,
-                # files = ctx.files.data,
-            ),
+            runfiles = ctx.runfiles().merge_all(transitive_runfiles),
         ),
-        # OutputGroupInfo(**output_groups), TODO
+        OutputGroupInfo(**combined_output_group_info),
         SwiftCompilerPluginInfo(
             cc_info = cc_common.merge_cc_infos(cc_infos = cc_infos),
             executable = output,
             module_names = depset([module_name]),
-            # swift_info = swift_common.create_swift_info(direct_swift_infos = swift_infos),
+            swift_info = swift_common.create_swift_info(
+                modules = direct_swift_modules,
+                swift_infos = swift_infos,
+            ),
         ),
-
-        # SwiftCompilerPluginInfo(
-        #     cc_info = CcInfo(
-        #         compilation_context = module_context.clang.compilation_context,
-        #         linking_context = linking_context,
-        #     ),
-        #     executable = binary_linking_outputs.executable,
-        #     module_names = depset([module_name]),
-        #     swift_info = swift_common.create_swift_info(
-        #         modules = [module_context],
-        #     ),
-        # ),
     ]
 
 universal_swift_compiler_plugin = rule(
-    # universal_swift_compiler_plugin = rule(
-    # cfg = macos_universal_transition,
     attrs = dicts.add(
         apple_support.action_required_attrs(),
         {
@@ -348,6 +330,7 @@ universal_swift_compiler_plugin = rule(
                 cfg = macos_universal_transition,
                 doc = "Target to generate a 'fat' binary from.",
                 mandatory = True,
+                providers = [SwiftCompilerPluginInfo],
             ),
             "_allowlist_function_transition": attr.label(
                 default = "@bazel_tools//tools/allowlists/function_transition_allowlist",
@@ -356,5 +339,5 @@ universal_swift_compiler_plugin = rule(
     ),
     executable = True,
     fragments = ["cpp", "apple"],
-    implementation = _abc,
+    implementation = _universal_swift_compiler_plugin_impl,
 )
