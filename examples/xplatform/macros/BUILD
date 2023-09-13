@@ -1,5 +1,5 @@
 load("//swift:swift.bzl", "swift_binary", "swift_library", "swift_test")
-load("//swift:swift_compiler_plugin.bzl", "swift_compiler_plugin")
+load("//swift:swift_compiler_plugin.bzl", "swift_compiler_plugin", "universal_swift_compiler_plugin")
 
 licenses(["notice"])
 
@@ -13,6 +13,13 @@ swift_library(
     srcs = ["Stringify.swift"],
     module_name = "Stringify",
     plugins = [":stringify_macro"],
+)
+
+swift_library(
+    name = "stringify_universal",
+    srcs = ["Stringify.swift"],
+    module_name = "StringifyUniversal",
+    plugins = [":stringify_macro_universal"],
 )
 
 swift_compiler_plugin(
@@ -34,10 +41,21 @@ swift_compiler_plugin(
     ],
 )
 
+universal_swift_compiler_plugin(
+    name = "stringify_macro_universal",
+    plugin = ":stringify_macro",
+)
+
 swift_binary(
     name = "stringify_client",
     srcs = ["StringifyClient.swift"],
     deps = [":stringify"],
+)
+
+swift_binary(
+    name = "stringify_universal_client",
+    srcs = ["StringifyUniversalClient.swift"],
+    deps = [":stringify_universal"],
 )
 
 swift_test(
