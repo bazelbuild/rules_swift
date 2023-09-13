@@ -290,14 +290,13 @@ def _universal_swift_compiler_plugin_impl(ctx):
         module_name = plugin[SwiftCompilerPluginInfo].module_names.to_list()[0]
         swift_infos.append(plugin[SwiftCompilerPluginInfo].swift_info)
 
-    output_group_info1 = ctx.split_attr.plugin.values()[0][OutputGroupInfo]
-    output_group_info2 = ctx.split_attr.plugin.values()[1][OutputGroupInfo]
+    first_output_group_info = ctx.split_attr.plugin.values()[0][OutputGroupInfo]
     combined_output_group_info = {}
-    for key in output_group_info1:
-        combined_output_group_info[key] = depset(transitive = [
-            output_group_info1[key],
-            output_group_info2[key],
-        ])
+    for key in first_output_group_info:
+        all_values = []
+        for plugin in ctx.split_attr.plugin.values():
+            all_values.append(plugin[OutputGroupInfo][key])
+        combined_output_group_info[key] = depset(transitive = all_values)
 
     transitive_runfiles = [
         plugin[DefaultInfo].default_runfiles
