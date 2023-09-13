@@ -301,7 +301,7 @@ bool SwiftRunner::ProcessArgument(
       } else if (StripPrefix("-macro-expansion-dir=", new_arg)) {
         changed = true;
         std::filesystem::create_directories(new_arg);
-        job_env_["TMPDIR"] = new_arg;
+        job_env_["TMPDIR"] = std::filesystem::absolute(new_arg);
       } else if (new_arg == "-ephemeral-module-cache") {
         // Create a temporary directory to hold the module cache, which will be
         // deleted after compilation is finished.
