@@ -42,6 +42,9 @@ bzl_library(
         "//swift/internal:swift_common",
         "//swift/internal:utils",
         "@bazel_skylib//lib:dicts",
+        "@build_bazel_apple_support//lib:apple_support",
+        "@build_bazel_apple_support//lib:lipo",
+        "@build_bazel_apple_support//lib:transitions",
     ],
 )
 

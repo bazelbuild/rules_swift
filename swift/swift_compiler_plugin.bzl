@@ -14,6 +14,9 @@
 
 """Implementation of the `swift_compiler_plugin` rule."""
 
+load("@build_bazel_apple_support//lib:apple_support.bzl", "apple_support")
+load("@build_bazel_apple_support//lib:lipo.bzl", "lipo")
+load("@build_bazel_apple_support//lib:transitions.bzl", "macos_universal_transition")
 load(
     "@build_bazel_rules_swift//swift/internal:compiling.bzl",
     "output_groups_from_other_compilation_outputs",
@@ -253,4 +256,122 @@ swift_library(
     executable = True,
     fragments = ["cpp"],
     implementation = _swift_compiler_plugin_impl,
+)
+
+def _universal_swift_compiler_plugin_impl(ctx):
+    inputs = [
+        plugin.files.to_list()[0]
+        for plugin in ctx.split_attr.plugin.values()
+    ]
+
+    if not inputs:
+        fail("Target (%s) `plugin` label ('%s') does not provide any " +
+             "file for universal binary" % (ctx.attr.name, ctx.attr.plugin))
+
+    output = ctx.actions.declare_file(ctx.label.name)
+    if len(inputs) > 1:
+        lipo.create(
+            actions = ctx.actions,
+            apple_fragment = ctx.fragments.apple,
+            inputs = inputs,
+            output = output,
+            xcode_config = ctx.attr._xcode_config[apple_common.XcodeVersionConfig],
+        )
+    else:
+        ctx.actions.symlink(target_file = inputs[0], output = output)
+
+    cc_infos = []
+    direct_swift_modules = []
+    module_name = None
+    swift_infos = []
+    for plugin in ctx.split_attr.plugin.values():
+        cc_infos.append(plugin[SwiftCompilerPluginInfo].cc_info)
+        direct_swift_modules.extend(plugin[SwiftCompilerPluginInfo].swift_info.direct_modules)
+        module_name = plugin[SwiftCompilerPluginInfo].module_names.to_list()[0]
+        swift_infos.append(plugin[SwiftCompilerPluginInfo].swift_info)
+
+    first_output_group_info = ctx.split_attr.plugin.values()[0][OutputGroupInfo]
+    combined_output_group_info = {}
+    for key in first_output_group_info:
+        all_values = []
+        for plugin in ctx.split_attr.plugin.values():
+            all_values.append(plugin[OutputGroupInfo][key])
+        combined_output_group_info[key] = depset(transitive = all_values)
+
+    transitive_runfiles = [
+        plugin[DefaultInfo].default_runfiles
+        for plugin in ctx.split_attr.plugin.values()
+    ]
+
+    return [
+        DefaultInfo(
+            executable = output,
+            files = depset([output]),
+            runfiles = ctx.runfiles().merge_all(transitive_runfiles),
+        ),
+        OutputGroupInfo(**combined_output_group_info),
+        SwiftCompilerPluginInfo(
+            cc_info = cc_common.merge_cc_infos(cc_infos = cc_infos),
+            executable = output,
+            module_names = depset([module_name]),
+            swift_info = swift_common.create_swift_info(
+                modules = direct_swift_modules,
+                swift_infos = swift_infos,
+            ),
+        ),
+    ]
+
+universal_swift_compiler_plugin = rule(
+    attrs = dicts.add(
+        apple_support.action_required_attrs(),
+        {
+            "plugin": attr.label(
+                cfg = macos_universal_transition,
+                doc = "Target to generate a 'fat' binary from.",
+                mandatory = True,
+                providers = [SwiftCompilerPluginInfo],
+            ),
+            "_allowlist_function_transition": attr.label(
+                default = "@bazel_tools//tools/allowlists/function_transition_allowlist",
+            ),
+        },
+    ),
+    executable = True,
+    fragments = ["cpp", "apple"],
+    implementation = _universal_swift_compiler_plugin_impl,
+    doc = """\
+Wraps an existing `swift_compiler_plugin` target to produce a universal binary.
+
+This is useful to allow sharing of caches between Intel and Apple Silicon Macs
+at the cost of building everything twice.
+
+Example:
+
+```bzl
+# The actual macro code, using SwiftSyntax, as usual.
+swift_compiler_plugin(
+    name = "Macros",
+    srcs = glob(["Macros/*.swift"]),
+    deps = [
+        "@SwiftSyntax",
+        "@SwiftSyntax//:SwiftCompilerPlugin",
+        "@SwiftSyntax//:SwiftSyntaxMacros",
+    ],
+)
+
+# Wrap your compiler plugin in this universal shim.
+universal_swift_compiler_plugin(
+    name = "Macros.universal",
+    plugin = ":Macros",
+)
+
+# The library that defines the macro hook for use in your project, this
+# references the universal_swift_compiler_plugin.
+swift_library(
+    name = "MacroLibrary",
+    srcs = glob(["MacroLibrary/*.swift"]),
+    plugins = [":Macros.universal"],
+)
+```
+""",
 )
