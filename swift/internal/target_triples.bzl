@@ -31,6 +31,8 @@ _TRIPLE_OS_TO_PLATFORM = {
     ("tvos", "simulator"): apple_common.platform.tvos_simulator,
     ("watchos", None): apple_common.platform.watchos_device,
     ("watchos", "simulator"): apple_common.platform.watchos_simulator,
+    ("xros", None): apple_common.platform.visionos_device,
+    ("xros", "simulator"): apple_common.platform.visionos_simulator,
 }
 
 def _bazel_apple_platform(target_triple):
@@ -129,7 +131,7 @@ def _normalize_for_swift(triple, *, unversioned = False):
     """
     os = _normalize_apple_os(triple.os, unversioned = unversioned)
 
-    if os.startswith(("ios", "macos", "tvos", "watchos")):
+    if os.startswith(("ios", "macos", "tvos", "xros", "watchos")):
         environment = _normalize_apple_environment(triple.environment)
         cpu = _normalize_apple_cpu(triple.cpu)
 
@@ -206,6 +208,8 @@ def _platform_name_for_swift(triple):
         return "appletvsimulator" if is_simulator else "appletvos"
     if os == "watchos":
         return "watchsimulator" if is_simulator else "watchos"
+    if os == "xros":
+        return "xrsimulator" if is_simulator else "xros"
 
     # Fall back to the operating system name if we aren't one of the cases
     # covered above. If more platforms need to be supported in the future, add
