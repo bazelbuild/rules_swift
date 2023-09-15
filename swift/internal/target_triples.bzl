@@ -185,6 +185,8 @@ def _platform_name_for_swift(triple):
         return "visionossimulator" if is_simulator else "visionos"
     if os == "watchos":
         return "watchsimulator" if is_simulator else "watchos"
+    if os == "xros":
+        return "xrsimulator" if is_simulator else "xros"
 
     # Fall back to the operating system name if we aren't one of the cases
     # covered above. If more platforms need to be supported in the future, add
