@@ -40,7 +40,6 @@ load(":linking.bzl", "create_linking_context_from_compilation_outputs")
 load(":output_groups.bzl", "supplemental_compilation_output_groups")
 load(
     ":proto_gen_utils.bzl",
-    "proto_import_path",
     "register_module_mapping_write_action",
     "swift_proto_lang_toolchain_label",
 )
@@ -116,32 +115,23 @@ def _build_swift_proto_info_provider(
         ),
     )
 
-def _build_module_mapping_from_srcs(target, proto_srcs, proto_source_root):
+def _build_module_mapping_from_srcs(target, proto_srcs):
     """Returns the sequence of module mapping `struct`s for the given sources.
 
     Args:
         target: The `proto_library` target whose module mapping is being
             rendered.
         proto_srcs: The `.proto` files that belong to the target.
-        proto_source_root: The source root for `proto_srcs`.
 
     Returns:
         A string containing the module mapping for the target in protobuf text
         format.
     """
 
-    # TODO: Need a way to get proto import paths to reduce the custom logic.
-    # TODO(allevato): The previous use of f.short_path here caused problems with
-    # cross-repo references; protoc-gen-swift only processes the file correctly
-    # if the workspace-relative path is used (which is the same as the
-    # short_path for same-repo references, so this issue had never been caught).
-    # However, this implies that if two repos have protos with the same
-    # workspace-relative paths, there will be a clash. Figure out what to do
-    # here; it may require an update to protoc-gen-swift?
     return struct(
         module_name = derive_swift_module_name(target.label),
         proto_file_paths = [
-            proto_import_path(f, proto_source_root)
+            proto_common.get_import_path(f)
             for f in proto_srcs
         ],
     )
@@ -210,7 +200,6 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             _build_module_mapping_from_srcs(
                 target,
                 target_proto_info.direct_sources,
-                target_proto_info.proto_source_root,
             ),
         )
     if proto_deps:
