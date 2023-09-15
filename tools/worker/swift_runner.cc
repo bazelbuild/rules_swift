@@ -301,7 +301,18 @@ bool SwiftRunner::ProcessArgument(
       } else if (StripPrefix("-macro-expansion-dir=", new_arg)) {
         changed = true;
         std::filesystem::create_directories(new_arg);
+#if __APPLE__
         job_env_["TMPDIR"] = new_arg;
+#else
+        // TEMPDIR is read by C++ but not Swift. Swift requires the temprorary
+        // directory to be an absolute path and otherwise fails (or ignores it
+        // silently on macOS) so we need to set one that Swift does not read.
+        // C++ prioritizes TMPDIR over TEMPDIR so we need to wipe out the other
+        // one. The downside is that anything else reading TMPDIR will not use
+        // the one potentially set by the user.
+        job_env_["TEMPDIR"] = new_arg;
+        job_env_.erase("TMPDIR");
+#endif
       } else if (new_arg == "-ephemeral-module-cache") {
         // Create a temporary directory to hold the module cache, which will be
         // deleted after compilation is finished.
