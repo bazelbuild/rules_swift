@@ -38,6 +38,7 @@ load(
 load(":providers.bzl", "SwiftInfo", "SwiftProtoInfo", "SwiftToolchainInfo")
 load(":swift_common.bzl", "swift_common")
 load(":utils.bzl", "get_providers")
+load(":actions.bzl", "USE_DEFAULT_SHELL_ENV")
 
 # The paths of proto files bundled with the runtime. This is mainly the well
 # known type protos, but also includes descriptor.proto to make generation of
@@ -234,6 +235,7 @@ def _register_pbswift_generate_action(
             protoc_executable,
             protoc_plugin_executable,
         ],
+        use_default_shell_env = USE_DEFAULT_SHELL_ENV,
     )
 
     return generated_files

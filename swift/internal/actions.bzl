@@ -19,6 +19,10 @@ load("@bazel_skylib//lib:types.bzl", "types")
 load(":features.bzl", "are_all_features_enabled")
 load(":toolchain_config.bzl", "swift_toolchain_config")
 
+# This is a proxy for being on bazel 7.x which has
+# --incompatible_merge_fixed_and_default_shell_env enabled by default
+USE_DEFAULT_SHELL_ENV = not hasattr(apple_common, "apple_crosstool_transition")
+
 # The names of actions currently supported by the Swift build rules.
 swift_action_names = struct(
     # Extracts a linker input file containing libraries to link from a compiled
@@ -269,5 +273,6 @@ def run_toolchain_action(
         ),
         mnemonic = mnemonic if mnemonic else action_name,
         tools = depset(tools, transitive = [tool_config.tool_inputs]),
+        use_default_shell_env = USE_DEFAULT_SHELL_ENV,
         **kwargs
     )

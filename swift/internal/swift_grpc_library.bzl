@@ -37,6 +37,7 @@ load(":providers.bzl", "SwiftInfo", "SwiftProtoInfo", "SwiftToolchainInfo")
 load(":swift_common.bzl", "swift_common")
 load(":transitions.bzl", "proto_compiler_transition")
 load(":utils.bzl", "compact", "get_providers")
+load(":actions.bzl", "USE_DEFAULT_SHELL_ENV")
 
 def _register_grpcswift_generate_action(
         label,
@@ -187,6 +188,7 @@ def _register_grpcswift_generate_action(
         mnemonic = "ProtocGenSwiftGRPC",
         outputs = generated_files,
         progress_message = "Generating Swift sources for %{label}",
+        use_default_shell_env = USE_DEFAULT_SHELL_ENV,
     )
 
     return generated_files
