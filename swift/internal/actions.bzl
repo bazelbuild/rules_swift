@@ -19,6 +19,8 @@ load("@bazel_skylib//lib:types.bzl", "types")
 load(":features.bzl", "are_all_features_enabled")
 load(":toolchain_config.bzl", "swift_toolchain_config")
 
+# This is a proxy for being on bazel 7.x which has
+# --incompatible_merge_fixed_and_default_shell_env enabled by default
 USE_DEFAULT_SHELL_ENV = not hasattr(apple_common, "apple_crosstool_transition")
 
 # The names of actions currently supported by the Swift build rules.
