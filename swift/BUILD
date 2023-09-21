@@ -65,6 +65,7 @@ bzl_library(
         "//swift/internal:linking",
         "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
+        "@bazel_skylib//lib:dicts",
         "@bazel_skylib//lib:paths",
     ],
 )
