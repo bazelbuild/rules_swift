@@ -174,6 +174,8 @@ The `.swiftmodule` file provided to Swift targets that depend on this target.
 """,
                 mandatory = False,
             ),
+            # TODO(b/301253335): Enable AEGs and add `toolchain` param once this rule starts using toolchain resolution.
+            "_use_auto_exec_groups": attr.bool(default = False),
         },
     ),
     doc = """\
