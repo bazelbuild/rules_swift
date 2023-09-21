@@ -31,6 +31,7 @@ bzl_library(
     srcs = ["actions.bzl"],
     deps = [
         ":features",
+        ":toolchain_utils",
         "//swift/toolchains/config:action_config",
         "@bazel_skylib//lib:types",
     ],
@@ -61,6 +62,7 @@ bzl_library(
         ":feature_names",
         ":features",
         ":module_maps",
+        ":toolchain_utils",
         ":utils",
         ":wmo",
         "//swift:providers",

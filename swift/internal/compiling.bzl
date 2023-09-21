@@ -55,6 +55,7 @@ load(
     "is_feature_enabled",
 )
 load(":module_maps.bzl", "write_module_map")
+load(":toolchain_utils.bzl", "SWIFT_TOOLCHAIN_TYPE")
 load(
     ":utils.bzl",
     "compact",
@@ -81,7 +82,8 @@ def compile_module_interface(
         module_name,
         swiftinterface_file,
         swift_infos,
-        swift_toolchain):
+        swift_toolchain,
+        toolchain_type = SWIFT_TOOLCHAIN_TYPE):
     """Compiles a Swift module interface.
 
     Args:
@@ -106,6 +108,8 @@ def compile_module_interface(
         swift_infos: A list of `SwiftInfo` providers from dependencies of the
             target being compiled.
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
+        toolchain_type: A toolchain type of the `swift_toolchain` which is used for
+            the proper selection of the execution platform inside `run_toolchain_action`.
 
     Returns:
         A Swift module context (as returned by `create_swift_module_context`)
@@ -188,6 +192,7 @@ def compile_module_interface(
         prerequisites = prerequisites,
         progress_message = "Compiling Swift module {} from textual interface".format(module_name),
         swift_toolchain = swift_toolchain,
+        toolchain_type = toolchain_type,
     )
 
     module_context = create_swift_module_context(
@@ -226,6 +231,7 @@ def compile(
         srcs,
         swift_infos,
         swift_toolchain,
+        toolchain_type = SWIFT_TOOLCHAIN_TYPE,
         target_name):
     """Compiles a Swift module.
 
@@ -268,6 +274,8 @@ def compile(
             these providers are used as dependencies of both the Swift module
             being compiled and the Clang module for the generated header.
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
+        toolchain_type: A toolchain type of the `swift_toolchain` which is used for
+            the proper selection of the execution platform inside `run_toolchain_action`.
         target_name: The name of the target for which the code is being
             compiled, which is used to determine unique file paths for the
             outputs.
@@ -522,6 +530,7 @@ def compile(
             swift_infos = generated_module_deps_swift_infos,
             swift_toolchain = swift_toolchain,
             target_name = target_name,
+            toolchain_type = toolchain_type,
         )
         if pcm_outputs:
             precompiled_module = pcm_outputs.pcm_file
@@ -587,6 +596,7 @@ def precompile_clang_module(
         module_name,
         swift_toolchain,
         target_name,
+        toolchain_type = SWIFT_TOOLCHAIN_TYPE,
         swift_infos = []):
     """Precompiles an explicit Clang module that is compatible with Swift.
 
@@ -613,6 +623,8 @@ def precompile_clang_module(
         target_name: The name of the target for which the code is being
             compiled, which is used to determine unique file paths for the
             outputs.
+        toolchain_type: A toolchain type of the `swift_toolchain` which is used for
+            the proper selection of the execution platform inside `run_toolchain_action`.
         swift_infos: A list of `SwiftInfo` providers representing dependencies
             required to compile this module.
 
@@ -630,6 +642,7 @@ def precompile_clang_module(
         module_name = module_name,
         swift_infos = swift_infos,
         swift_toolchain = swift_toolchain,
+        toolchain_type = toolchain_type,
         target_name = target_name,
     )
 
@@ -644,6 +657,7 @@ def _precompile_clang_module(
         module_name,
         swift_infos = [],
         swift_toolchain,
+        toolchain_type,
         target_name):
     """Precompiles an explicit Clang module that is compatible with Swift.
 
@@ -671,6 +685,8 @@ def _precompile_clang_module(
         swift_infos: A list of `SwiftInfo` providers representing dependencies
             required to compile this module.
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
+        toolchain_type: A toolchain type of the `swift_toolchain` which is used for
+            the proper selection of the execution platform inside `run_toolchain_action`.
         target_name: The name of the target for which the code is being
             compiled, which is used to determine unique file paths for the
             outputs.
@@ -765,6 +781,7 @@ def _precompile_clang_module(
         prerequisites = prerequisites,
         progress_message = "Precompiling C module {}".format(module_name),
         swift_toolchain = swift_toolchain,
+        toolchain_type = toolchain_type,
     )
 
     return struct(
