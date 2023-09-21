@@ -16,8 +16,6 @@
 
 load("@bazel_skylib//lib:types.bzl", "types")
 
-visibility("public")
-
 def derive_swift_module_name(*args):
     """Returns a derived module name from the given build label.
 
