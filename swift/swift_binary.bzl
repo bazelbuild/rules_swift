@@ -14,6 +14,7 @@
 
 """Implementation of the `swift_binary` and `swift_test` rules."""
 
+load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load(
     "//swift/internal:feature_names.bzl",
@@ -185,9 +186,15 @@ def _swift_binary_impl(ctx):
     ]
 
 swift_binary = rule(
-    attrs = binary_rule_attrs(
-        additional_deps_providers = [[SwiftCompilerPluginInfo]],
-        stamp_default = -1,
+    attrs = dicts.add(
+        binary_rule_attrs(
+            additional_deps_providers = [[SwiftCompilerPluginInfo]],
+            stamp_default = -1,
+        ),
+        {
+            # TODO(b/301253335): Enable AEGs and switch from `swift` exec_group to swift `toolchain` param.
+            "_use_auto_exec_groups": attr.bool(default = False),
+        },
     ),
     doc = """\
 Compiles and links Swift code into an executable binary.
