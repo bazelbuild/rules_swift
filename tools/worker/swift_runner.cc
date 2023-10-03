@@ -165,12 +165,12 @@ bool SkipLayeringCheckIncompatibleArgs(std::vector<std::string>::iterator &it) {
 
 // Modules that can be imported without an explicit dependency. Specifically,
 // the standard library is always provided, along with other modules that are
-// distributed as part of the standard library even though they are seprate
+// distributed as part of the standard library even though they are separate
 // modules.
 static const absl::flat_hash_set<absl::string_view>
     kModulesIgnorableForLayeringCheck = {
-        "Swift",        "SwiftOnoneSupport", "_Backtracing",
-        "_Concurrency", "_StringProcessing",
+        "Builtin",      "Swift",        "SwiftOnoneSupport",
+        "_Backtracing", "_Concurrency", "_StringProcessing",
 };
 
 // Returns true if the module can be ignored for the purposes of layering check
