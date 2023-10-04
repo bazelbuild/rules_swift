@@ -88,33 +88,6 @@ def _is_well_known_types_target(target_label):
     # This can be tweaked in the future if need be to also check the `package`.
     return target_label.workspace_name == "com_google_protobuf"
 
-def _build_swift_proto_info_provider(
-        pbswift_files,
-        transitive_module_mappings,
-        deps):
-    """Builds the `SwiftProtoInfo` provider to propagate for a proto library.
-
-    Args:
-        pbswift_files: The `.pb.swift` files that were generated for the
-            propagating target. This sequence should only contain the direct
-            sources.
-        transitive_module_mappings: A sequence of `structs` with `module_name`
-            and `proto_file_paths` fields that denote the transitive mappings
-            from `.proto` files to Swift modules.
-        deps: The direct dependencies of the propagating target, from which the
-            transitive sources will be computed.
-
-    Returns:
-        An instance of `SwiftProtoInfo`.
-    """
-    return SwiftProtoInfo(
-        module_mappings = transitive_module_mappings,
-        pbswift_files = depset(
-            direct = pbswift_files,
-            transitive = [dep[SwiftProtoInfo].pbswift_files for dep in deps],
-        ),
-    )
-
 def _build_module_mapping_from_srcs(target, proto_srcs):
     """Returns the sequence of module mapping `struct`s for the given sources.
 
@@ -136,34 +109,6 @@ def _build_module_mapping_from_srcs(target, proto_srcs):
         ],
     )
 
-def _gather_transitive_module_mappings(targets):
-    """Returns the set of transitive module mappings for the given targets.
-
-    This function eliminates duplicates among the targets so that if two or more
-    targets transitively depend on the same `proto_library`, the mapping is only
-    present in the sequence once.
-
-    Args:
-        targets: The targets whose module mappings should be returned.
-
-    Returns:
-        A sequence containing the transitive module mappings for the given
-        targets, without duplicates.
-    """
-    unique_mappings = {}
-
-    for target in targets:
-        mappings = target[SwiftProtoInfo].module_mappings
-        for mapping in mappings:
-            module_name = mapping.module_name
-            if module_name not in unique_mappings:
-                unique_mappings[module_name] = mapping.proto_file_paths
-
-    return [struct(
-        module_name = module_name,
-        proto_file_paths = file_paths,
-    ) for module_name, file_paths in unique_mappings.items()]
-
 def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
     # When the aspect is applied to an inapplicable target, just ignore it and don't
     # generate/propagate anything. This happens when the aspect is applied by other aspects to
@@ -178,9 +123,9 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
     # the bundled files, so use our own check.
     if _is_well_known_types_target(target.label):
         # WKTs bundled with the runtime.
-        pbswift_files = []
+        direct_pbswift_files = []
     else:
-        pbswift_files = proto_common.declare_generated_files(
+        direct_pbswift_files = proto_common.declare_generated_files(
             actions = aspect_ctx.actions,
             proto_info = target_proto_info,
             extension = ".pb.swift",
@@ -189,29 +134,31 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
     proto_deps = aspect_ctx.rule.attr.deps
     transitive_cc_infos = []
     transitive_swift_infos = []
+    transitive_module_mappings = []
+    transitive_pbswift_files = []
     for p in proto_deps:
         compilation_info = p[SwiftProtoCompilationInfo]
         transitive_cc_infos.append(compilation_info.cc_info)
         transitive_swift_infos.append(compilation_info.swift_info)
+        swift_proto_info = p[SwiftProtoInfo]
+        transitive_module_mappings.append(swift_proto_info.module_mappings)
+        transitive_pbswift_files.append(swift_proto_info.pbswift_files)
 
-    minimal_module_mappings = []
-    if pbswift_files:
-        minimal_module_mappings.append(
+    direct_module_mappings = []
+    if direct_pbswift_files:
+        direct_module_mappings.append(
             _build_module_mapping_from_srcs(
                 target,
                 target_proto_info.direct_sources,
             ),
         )
-    if proto_deps:
-        minimal_module_mappings.extend(
-            _gather_transitive_module_mappings(proto_deps),
-        )
+    module_mappings = depset(direct_module_mappings, transitive = transitive_module_mappings)
 
-    if pbswift_files:
+    if direct_pbswift_files:
         transitive_module_mapping_file = register_module_mapping_write_action(
             target.label.name,
             aspect_ctx.actions,
-            minimal_module_mappings,
+            module_mappings,
         )
 
         extra_args = aspect_ctx.actions.args()
@@ -226,7 +173,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             additional_args = extra_args,
             additional_inputs = depset(direct = [transitive_module_mapping_file]),
             experimental_exec_group = _GENERATE_EXEC_GROUP,
-            generated_files = pbswift_files,
+            generated_files = direct_pbswift_files,
             proto_info = target_proto_info,
             proto_lang_toolchain_info = proto_lang_toolchain_info,
         )
@@ -276,7 +223,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             copts = ["-parse-as-library"],
             feature_configuration = feature_configuration,
             module_name = module_name,
-            srcs = pbswift_files,
+            srcs = direct_pbswift_files,
             swift_infos = transitive_swift_infos,
             swift_toolchain = swift_toolchain,
             target_name = target.label.name,
@@ -336,10 +283,12 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             ),
         ]
 
-    providers.append(_build_swift_proto_info_provider(
-        pbswift_files,
-        minimal_module_mappings,
-        proto_deps,
+    providers.append(SwiftProtoInfo(
+        module_mappings = module_mappings,
+        pbswift_files = depset(
+            direct = direct_pbswift_files,
+            transitive = transitive_pbswift_files,
+        ),
     ))
 
     return providers

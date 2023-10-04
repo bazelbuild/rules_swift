@@ -86,7 +86,7 @@ def register_module_mapping_write_action(name, actions, module_mappings):
     Args:
         name: The name of the target being analyzed.
         actions: The context's actions object.
-        module_mappings: The sequence of module mapping `struct`s to be rendered.
+        module_mappings: The `depset` of module mapping `struct`s to be rendered.
             This sequence should already have duplicates removed.
 
     Returns:
@@ -96,7 +96,9 @@ def register_module_mapping_write_action(name, actions, module_mappings):
     mapping_file = actions.declare_file(
         "{}.protoc_gen_swift_modules.asciipb".format(name),
     )
-    content = "".join([_render_text_module_mapping(m) for m in module_mappings])
+    content = actions.args()
+    content.set_param_file_format("multiline")
+    content.add_all(module_mappings, map_each = _render_text_module_mapping)
 
     actions.write(
         content = content,

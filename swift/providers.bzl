@@ -142,7 +142,7 @@ SwiftProtoInfo = provider(
     doc = "Propagates Swift-specific information about a `proto_library`.",
     fields = {
         "module_mappings": """\
-`Sequence` of `struct`s. Each struct contains `module_name` and
+`Depset` of `struct`s. Each struct contains `module_name` and
 `proto_file_paths` fields that denote the transitive mappings from `.proto`
 files to Swift modules. This allows messages that reference messages in other
 libraries to import those modules in generated code.
