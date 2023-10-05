@@ -2,7 +2,6 @@ load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load(
     "@bazel_skylib//rules:common_settings.bzl",
     "bool_setting",
-    "string_flag",
 )
 load(
     "//swift/internal:build_settings.bzl",
@@ -41,7 +40,6 @@ bzl_library(
         "//swift/internal:output_groups",
         "//swift/internal:providers",
         "//swift/internal:toolchain_utils",
-        "//swift/internal:transitions",
         "//swift/internal:utils",
         "@bazel_skylib//lib:dicts",
     ],
@@ -69,13 +67,11 @@ bzl_library(
     name = "swift_common",
     srcs = ["swift_common.bzl"],
     deps = [
-        "//swift/internal:attrs",
         "//swift/internal:compiling",
         "//swift/internal:features",
         "//swift/internal:linking",
         "//swift/internal:symbol_graph_extracting",
         "//swift/internal:toolchain_utils",
-        "//swift/internal:transitions",
     ],
 )
 
@@ -90,7 +86,6 @@ bzl_library(
         "//swift/internal:output_groups",
         "//swift/internal:providers",
         "//swift/internal:toolchain_utils",
-        "//swift/internal:transitions",
         "//swift/internal:utils",
         "@bazel_skylib//lib:dicts",
     ],
@@ -189,7 +184,6 @@ bzl_library(
         "//swift/internal:output_groups",
         "//swift/internal:providers",
         "//swift/internal:toolchain_utils",
-        "//swift/internal:transitions",
         "//swift/internal:utils",
         "@bazel_skylib//lib:dicts",
         "@bazel_skylib//lib:sets",
@@ -254,7 +248,6 @@ bzl_library(
         "//swift/internal:swift_symbol_graph_aspect",
         "//swift/internal:symbol_graph_extracting",
         "//swift/internal:toolchain_utils",
-        "//swift/internal:transitions",
         "//swift/internal:utils",
         "@bazel_skylib//lib:dicts",
     ],
@@ -318,18 +311,6 @@ swift_module_mapping(
     name = "empty_module_mapping",
     aliases = {},
     visibility = ["//visibility:private"],
-)
-
-# The value to pass to the Swift compiler for the `-cxx-interoperability-mode=`
-# flag. Most users should never need to set this flag directly; it is applied by
-# a transition from top-level rules like `swift_binary` to enable C++ interop
-# for their entire build graph. However, it may still be useful to manually set
-# when testing, as it would be the only way to `bazel build` a standalone
-# `swift_library` in the correct mode.
-string_flag(
-    name = "cxx_interop",
-    build_setting_default = "",
-    visibility = ["//visibility:public"],
 )
 
 # Consumed by Bazel integration tests.

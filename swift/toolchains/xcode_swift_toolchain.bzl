@@ -644,7 +644,6 @@ def _xcode_swift_toolchain_impl(ctx):
             target[SwiftCrossImportOverlayInfo]
             for target in ctx.attr.cross_import_overlays
         ],
-        cxx_interop = ctx.attr._cxx_interop[BuildSettingInfo].value,
         debug_outputs_provider = (
             # This function unconditionally declares the output file, so we
             # should only use it if a .dSYM is being requested during the build.
@@ -777,12 +776,6 @@ configuration options that are applied to targets on a per-package basis.
 The C++ toolchain from which linking flags and other tools needed by the Swift
 toolchain (such as `clang`) will be retrieved.
 """,
-            ),
-            "_cxx_interop": attr.label(
-                default = Label(
-                    "@build_bazel_rules_swift//swift:cxx_interop",
-                ),
-                providers = [[BuildSettingInfo]],
             ),
             "_module_mapping": attr.label(
                 default = Label(

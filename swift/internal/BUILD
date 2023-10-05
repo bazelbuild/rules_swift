@@ -111,7 +111,6 @@ bzl_library(
     deps = [
         ":attrs",
         ":debugging",
-        ":feature_names",
         ":features",
         "//swift:swift_clang_module_aspect",
         "@bazel_skylib//lib:dicts",
@@ -180,12 +179,10 @@ bzl_library(
         "//swift:__pkg__",
     ],
     deps = [
-        ":attrs",
         ":features",
         ":symbol_graph_extracting",
         ":toolchain_utils",
         "//swift:providers",
-        "@bazel_skylib//lib:dicts",
     ],
 )
 
@@ -208,11 +205,6 @@ bzl_library(
 bzl_library(
     name = "toolchain_utils",
     srcs = ["toolchain_utils.bzl"],
-)
-
-bzl_library(
-    name = "transitions",
-    srcs = ["transitions.bzl"],
 )
 
 bzl_library(

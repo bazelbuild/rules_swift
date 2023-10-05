@@ -40,10 +40,6 @@ load(
     "use_swift_toolchain",
 )
 load(
-    "@build_bazel_rules_swift//swift/internal:transitions.bzl",
-    "cxx_interop_transition",
-)
-load(
     "@build_bazel_rules_swift//swift/internal:utils.bzl",
     "expand_locations",
     "get_compilation_contexts",
@@ -153,9 +149,6 @@ swift_binary = rule(
     attrs = dicts.add(
         binary_rule_attrs(stamp_default = -1),
         {
-            "_allowlist_function_transition": attr.label(
-                default = "@bazel_tools//tools/allowlists/function_transition_allowlist",
-            ),
             # TODO(b/301253335): Enable AEGs and switch from `swift` exec_group to swift `toolchain` param.
             "_use_auto_exec_groups": attr.bool(default = False),
         },
@@ -175,7 +168,6 @@ please use one of the platform-specific application rules in
 [rules_apple](https://github.com/bazelbuild/rules_apple) instead of
 `swift_binary`.
 """,
-    cfg = cxx_interop_transition,
     executable = True,
     fragments = ["cpp"],
     implementation = _swift_binary_impl,

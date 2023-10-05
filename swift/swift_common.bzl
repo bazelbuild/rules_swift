@@ -45,10 +45,6 @@ load(
     "get_swift_toolchain",
     "use_swift_toolchain",
 )
-load(
-    "@build_bazel_rules_swift//swift/internal:transitions.bzl",
-    "cxx_interop_transition",
-)
 
 visibility("public")
 
@@ -60,7 +56,6 @@ swift_common = struct(
     compile_module_interface = compile_module_interface,
     configure_features = configure_features,
     create_linking_context_from_compilation_outputs = create_linking_context_from_compilation_outputs,
-    cxx_interop_transition = cxx_interop_transition,
     extract_symbol_graph = extract_symbol_graph,
     get_toolchain = get_swift_toolchain,
     is_enabled = is_feature_enabled,

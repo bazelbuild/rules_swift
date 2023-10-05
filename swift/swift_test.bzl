@@ -48,10 +48,6 @@ load(
     "use_swift_toolchain",
 )
 load(
-    "@build_bazel_rules_swift//swift/internal:transitions.bzl",
-    "cxx_interop_transition",
-)
-load(
     "@build_bazel_rules_swift//swift/internal:utils.bzl",
     "expand_locations",
     "get_compilation_contexts",
@@ -567,9 +563,6 @@ standard executable binary that is invoked directly.
 """,
                 mandatory = False,
             ),
-            "_allowlist_function_transition": attr.label(
-                default = "@bazel_tools//tools/allowlists/function_transition_allowlist",
-            ),
             "_apple_coverage_support": attr.label(
                 cfg = "exec",
                 default = Label(
@@ -653,7 +646,6 @@ bazel test --test_filter=AModule,BModule.SomeTests,BModule.OtherTests/testX //my
         # (even one with a different toolchain).
         _DISCOVER_TESTS_EXEC_GROUP: exec_group(),
     },
-    cfg = cxx_interop_transition,
     executable = True,
     fragments = ["cpp"],
     test = True,

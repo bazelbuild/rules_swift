@@ -215,10 +215,6 @@ will be automatically injected into the dependencies of Swift compilations if
 their declaring module and bystanding module are both already declared as
 dependencies.
 """,
-        "cxx_interop": """\
-The C++ interoperability mode used by the current configuration, as set by the
-transition that reads the `cxx_interop` attribute of applicable rules.
-""",
         "debug_outputs_provider": """\
 An optional function that provides toolchain-specific logic around the handling
 of additional debug outputs for `swift_binary` and `swift_test` targets.

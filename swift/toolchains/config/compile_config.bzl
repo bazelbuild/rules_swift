@@ -805,17 +805,6 @@ def compile_action_configs(
         ),
     ]
 
-    action_configs.append(
-        ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
-                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
-                SWIFT_ACTION_PRECOMPILE_C_MODULE,
-            ],
-            configurators = [_cxx_interop_configurator],
-        ),
-    )
-
     # NOTE: The positions of these action configs in the list are important,
     # because it places the `copts` attribute ("user compile flags") after flags
     # added by the rules, and then the "additional objc" and "additional swift"
@@ -1554,13 +1543,6 @@ def _conditional_compilation_flag_configurator(prerequisites, args):
         format_each = "-D%s",
         uniquify = True,
     )
-
-def _cxx_interop_configurator(prerequisites, args):
-    """Adds the C++ interoperability mode flag to the command line."""
-    mode = getattr(prerequisites, "cxx_interop", None)
-    if mode and mode != "off":
-        args.add("-cxx-interoperability-mode={}".format(mode))
-    return None
 
 def _package_identifier_configurator(prerequisites, args):
     """Adds the package identifier to the action command line."""
