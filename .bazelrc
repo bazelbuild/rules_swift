@@ -32,7 +32,7 @@ build --host_cxxopt="-Wno-unused-function"
 # The CNIOBoringSSL library uses C++14 features like 'enable_if_t' macro support.
 # For more details on how to enable this in Bazel:
 # https://stackoverflow.com/questions/40260242/how-to-set-c-standard-version-when-build-with-bazel/43388168#43388168
-build --cxxopt='-std=c++14'
+build:linux --cxxopt='-std=c++14'
 
 # This C2K warning causes zlib to fail to compile.
 # There is an open issue about it on the zlib repository here:
