@@ -33,6 +33,7 @@ load(
 )
 load(
     "@build_bazel_rules_swift//swift/internal:providers.bzl",
+    "SwiftBinaryInfo",
     "SwiftCompilerPluginInfo",
 )
 load(
@@ -179,14 +180,16 @@ def _swift_compiler_plugin_impl(ctx):
         OutputGroupInfo(
             **supplemental_compilation_output_groups(supplemental_outputs)
         ),
-        SwiftCompilerPluginInfo(
+        SwiftBinaryInfo(
             cc_info = CcInfo(
                 compilation_context = module_context.clang.compilation_context,
                 linking_context = linking_context,
             ),
+            swift_info = compile_result.swift_info,
+        ),
+        SwiftCompilerPluginInfo(
             executable = binary_linking_outputs.executable,
             module_names = depset([module_name]),
-            swift_info = compile_result.swift_info,
         ),
     ]
 

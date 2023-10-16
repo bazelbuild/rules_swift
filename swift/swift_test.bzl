@@ -32,6 +32,7 @@ load(
 )
 load(
     "@build_bazel_rules_swift//swift/internal:providers.bzl",
+    "SwiftBinaryInfo",
     "SwiftCompilerPluginInfo",
 )
 load(
@@ -323,8 +324,8 @@ def _swift_test_impl(ctx):
     else:
         additional_link_deps = []
 
-    # We also need to collect nested providers from `SwiftCompilerPluginInfo`
-    # since we support testing those.
+    # We also need to collect nested providers from `SwiftBinaryInfo` since we
+    # support testing those.
     deps_compilation_contexts = []
     deps_swift_infos = []
     plugin_linking_contexts = []
@@ -333,8 +334,8 @@ def _swift_test_impl(ctx):
             deps_compilation_contexts.append(dep[CcInfo].compilation_context)
         if SwiftInfo in dep:
             deps_swift_infos.append(dep[SwiftInfo])
-        if SwiftCompilerPluginInfo in dep:
-            plugin_info = dep[SwiftCompilerPluginInfo]
+        if SwiftBinaryInfo in dep:
+            plugin_info = dep[SwiftBinaryInfo]
             deps_compilation_contexts.append(
                 plugin_info.cc_info.compilation_context,
             )

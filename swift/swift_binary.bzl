@@ -23,6 +23,7 @@ load(
     "@build_bazel_rules_swift//swift/internal:linking.bzl",
     "binary_rule_attrs",
     "configure_features_for_binary",
+    "create_linking_context_from_compilation_outputs",
     "malloc_linking_context",
     "register_link_binary_action",
 )
@@ -32,6 +33,7 @@ load(
 )
 load(
     "@build_bazel_rules_swift//swift/internal:providers.bzl",
+    "SwiftBinaryInfo",
     "SwiftCompilerPluginInfo",
 )
 load(
@@ -70,6 +72,7 @@ def _swift_binary_impl(ctx):
         module_name = ctx.attr.module_name
         if not module_name:
             module_name = derive_swift_module_name(ctx.label)
+        entry_point_function_name = "{}_main".format(module_name)
 
         compile_result = compile(
             actions = ctx.actions,
@@ -79,7 +82,15 @@ def _swift_binary_impl(ctx):
                 ctx,
                 ctx.attr.copts,
                 ctx.attr.swiftc_inputs,
-            ),
+            ) + [
+                # Use a custom entry point name so that the binary's code can
+                # also be linked into another process (like a test executable)
+                # without having its main function collide.
+                "-Xfrontend",
+                "-entry-point-function-name",
+                "-Xfrontend",
+                entry_point_function_name,
+            ],
             defines = ctx.attr.defines,
             feature_configuration = feature_configuration,
             module_name = module_name,
@@ -96,6 +107,8 @@ def _swift_binary_impl(ctx):
             supplemental_outputs,
         )
     else:
+        compile_result = None
+        entry_point_function_name = None
         compilation_outputs = cc_common.create_compilation_outputs()
 
     # Apply the optional debugging outputs extension if the toolchain defines
@@ -108,6 +121,20 @@ def _swift_binary_impl(ctx):
     else:
         additional_debug_outputs = []
         variables_extension = {}
+
+    binary_link_flags = expand_locations(
+        ctx,
+        ctx.attr.linkopts,
+        ctx.attr.swiftc_inputs,
+    ) + ctx.fragments.cpp.linkopts
+
+    # When linking the binary, make sure we use the correct entry point name.
+    if entry_point_function_name:
+        entry_point_linkopts = swift_toolchain.entry_point_linkopts_provider(
+            entry_point_name = entry_point_function_name,
+        ).linkopts
+    else:
+        entry_point_linkopts = []
 
     linking_outputs = register_link_binary_action(
         actions = ctx.actions,
@@ -122,15 +149,11 @@ def _swift_binary_impl(ctx):
         output_type = "executable",
         stamp = ctx.attr.stamp,
         swift_toolchain = swift_toolchain,
-        user_link_flags = expand_locations(
-            ctx,
-            ctx.attr.linkopts,
-            ctx.attr.swiftc_inputs,
-        ) + ctx.fragments.cpp.linkopts,
+        user_link_flags = binary_link_flags + entry_point_linkopts,
         variables_extension = variables_extension,
     )
 
-    return [
+    providers = [
         DefaultInfo(
             executable = linking_outputs.executable,
             files = depset(
@@ -144,6 +167,44 @@ def _swift_binary_impl(ctx):
         ),
         OutputGroupInfo(**output_groups),
     ]
+
+    # Only create a linking context and propagate `SwiftBinaryInfo` if this rule
+    # compiled something (i.e., it had sources). If it didn't, then there's
+    # nothing to allow testing against.
+    if compile_result:
+        linking_context, _ = (
+            create_linking_context_from_compilation_outputs(
+                actions = ctx.actions,
+                additional_inputs = ctx.files.swiftc_inputs,
+                alwayslink = True,
+                compilation_outputs = compilation_outputs,
+                feature_configuration = feature_configuration,
+                label = ctx.label,
+                linking_contexts = [
+                    dep[CcInfo].linking_context
+                    for dep in ctx.attr.deps
+                    if CcInfo in dep
+                ],
+                module_context = compile_result.module_context,
+                swift_toolchain = swift_toolchain,
+                # Exclude the entry point linkopts from this linking context,
+                # because it is meant to be used by other binary rules that
+                # provide their own entry point while linking this "binary" in
+                # as a library.
+                user_link_flags = binary_link_flags,
+            )
+        )
+        providers.append(SwiftBinaryInfo(
+            cc_info = CcInfo(
+                compilation_context = (
+                    compile_result.module_context.clang.compilation_context
+                ),
+                linking_context = linking_context,
+            ),
+            swift_info = compile_result.swift_info,
+        ))
+
+    return providers
 
 swift_binary = rule(
     attrs = dicts.add(
