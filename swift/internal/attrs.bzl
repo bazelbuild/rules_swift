@@ -16,7 +16,7 @@
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("//swift:providers.bzl", "SwiftInfo")
-load(":providers.bzl", "SwiftCompilerPluginInfo")
+load(":providers.bzl", "SwiftBinaryInfo", "SwiftCompilerPluginInfo")
 
 def swift_common_rule_attrs(
         additional_deps_aspects = [],
@@ -147,7 +147,7 @@ Swift 5.9+.
 A list of `swift_compiler_plugin` targets that should be loaded by the compiler
 when compiling this module and any modules that directly depend on it.
 """,
-                providers = [[SwiftCompilerPluginInfo]],
+                providers = [[SwiftBinaryInfo, SwiftCompilerPluginInfo]],
             ),
             "srcs": attr.label_list(
                 allow_empty = not requires_srcs,

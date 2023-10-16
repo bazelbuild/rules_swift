@@ -39,7 +39,11 @@ load(
     "//swift/internal:output_groups.bzl",
     "supplemental_compilation_output_groups",
 )
-load("//swift/internal:providers.bzl", "SwiftCompilerPluginInfo")
+load(
+    "//swift/internal:providers.bzl",
+    "SwiftBinaryInfo",
+    "SwiftCompilerPluginInfo",
+)
 load(
     "//swift/internal:toolchain_utils.bzl",
     "get_swift_toolchain",
@@ -196,14 +200,16 @@ def _swift_compiler_plugin_impl(ctx):
         OutputGroupInfo(
             **supplemental_compilation_output_groups(supplemental_outputs)
         ),
-        SwiftCompilerPluginInfo(
+        SwiftBinaryInfo(
             cc_info = CcInfo(
                 compilation_context = module_context.clang.compilation_context,
                 linking_context = linking_context,
             ),
+            swift_info = compile_result.swift_info,
+        ),
+        SwiftCompilerPluginInfo(
             executable = binary_linking_outputs.executable,
             module_names = depset([module_name]),
-            swift_info = compile_result.swift_info,
         ),
     ]
 
@@ -305,10 +311,10 @@ def _universal_swift_compiler_plugin_impl(ctx):
     module_name = None
     swift_infos = []
     for plugin in ctx.split_attr.plugin.values():
-        cc_infos.append(plugin[SwiftCompilerPluginInfo].cc_info)
-        direct_swift_modules.extend(plugin[SwiftCompilerPluginInfo].swift_info.direct_modules)
+        cc_infos.append(plugin[SwiftBinaryInfo].cc_info)
+        direct_swift_modules.extend(plugin[SwiftBinaryInfo].swift_info.direct_modules)
         module_name = plugin[SwiftCompilerPluginInfo].module_names.to_list()[0]
-        swift_infos.append(plugin[SwiftCompilerPluginInfo].swift_info)
+        swift_infos.append(plugin[SwiftBinaryInfo].swift_info)
 
     first_output_group_info = ctx.split_attr.plugin.values()[0][OutputGroupInfo]
     combined_output_group_info = {}
@@ -330,14 +336,16 @@ def _universal_swift_compiler_plugin_impl(ctx):
             runfiles = ctx.runfiles().merge_all(transitive_runfiles),
         ),
         OutputGroupInfo(**combined_output_group_info),
-        SwiftCompilerPluginInfo(
+        SwiftBinaryInfo(
             cc_info = cc_common.merge_cc_infos(cc_infos = cc_infos),
-            executable = output,
-            module_names = depset([module_name]),
             swift_info = SwiftInfo(
                 modules = direct_swift_modules,
                 swift_infos = swift_infos,
             ),
+        ),
+        SwiftCompilerPluginInfo(
+            executable = output,
+            module_names = depset([module_name]),
         ),
     ]
 
@@ -349,7 +357,7 @@ universal_swift_compiler_plugin = rule(
                 cfg = macos_universal_transition,
                 doc = "Target to generate a 'fat' binary from.",
                 mandatory = True,
-                providers = [SwiftCompilerPluginInfo],
+                providers = [[SwiftBinaryInfo, SwiftCompilerPluginInfo]],
             ),
             "_allowlist_function_transition": attr.label(
                 default = Label(

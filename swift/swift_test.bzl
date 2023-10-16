@@ -34,7 +34,11 @@ load(
     "//swift/internal:output_groups.bzl",
     "supplemental_compilation_output_groups",
 )
-load("//swift/internal:providers.bzl", "SwiftCompilerPluginInfo")
+load(
+    "//swift/internal:providers.bzl",
+    "SwiftBinaryInfo",
+    "SwiftCompilerPluginInfo",
+)
 load(
     "//swift/internal:swift_symbol_graph_aspect.bzl",
     "make_swift_symbol_graph_aspect",
@@ -369,8 +373,8 @@ def _swift_test_impl(ctx):
     else:
         additional_link_deps = []
 
-    # We also need to collect nested providers from `SwiftCompilerPluginInfo`
-    # since we support testing those.
+    # We also need to collect nested providers from `SwiftBinaryInfo` since we
+    # support testing those.
     deps_cc_infos = []
     deps_compilation_contexts = []
     deps_objc_infos = []
@@ -384,8 +388,8 @@ def _swift_test_impl(ctx):
             deps_objc_infos.append(dep[apple_common.Objc])
         if SwiftInfo in dep:
             deps_swift_infos.append(dep[SwiftInfo])
-        if SwiftCompilerPluginInfo in dep:
-            plugin_info = dep[SwiftCompilerPluginInfo]
+        if SwiftBinaryInfo in dep:
+            plugin_info = dep[SwiftBinaryInfo]
             deps_swift_infos.append(plugin_info.swift_info)
             additional_linking_contexts.append(
                 plugin_info.cc_info.linking_context,
