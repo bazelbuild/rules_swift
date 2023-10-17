@@ -39,6 +39,7 @@ load(
     "SWIFT_FEATURE_FASTBUILD",
     "SWIFT_FEATURE_FILE_PREFIX_MAP",
     "SWIFT_FEATURE_FULL_DEBUG_INFO",
+    "SWIFT_FEATURE_INDEX_INCLUDE_LOCALS",
     "SWIFT_FEATURE_INDEX_SYSTEM_MODULES",
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
     "SWIFT_FEATURE_INTERNALIZE_AT_LINK",
@@ -743,6 +744,14 @@ def compile_action_configs(
             actions = [SWIFT_ACTION_COMPILE],
             configurators = [_index_while_building_configurator],
             features = [SWIFT_FEATURE_INDEX_WHILE_BUILDING],
+        ),
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE],
+            configurators = [add_arg("-index-include-locals")],
+            features = [
+                SWIFT_FEATURE_INDEX_WHILE_BUILDING,
+                SWIFT_FEATURE_INDEX_INCLUDE_LOCALS,
+            ],
         ),
         ActionConfigInfo(
             actions = [SWIFT_ACTION_COMPILE],
