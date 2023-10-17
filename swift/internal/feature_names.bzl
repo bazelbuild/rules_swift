@@ -74,6 +74,12 @@ SWIFT_FEATURE_DISABLE_SYSTEM_INDEX = "swift.disable_system_index"
 # Index while building - using a global index store cache
 SWIFT_FEATURE_USE_GLOBAL_INDEX_STORE = "swift.use_global_index_store"
 
+# If enabled, indexstore data will contain local definitions and references.
+#
+# NOTE: This is only applicable if `SWIFT_FEATURE_INDEX_WHILE_BUILDING` is also
+# enabled.
+SWIFT_FEATURE_INDEX_INCLUDE_LOCALS = "swift.index_include_locals"
+
 # If enabled, indexing will be completely modular - PCMs and Swift Modules will only
 # be indexed when they are compiled. While indexing a module/PCM, none of its dependencies
 # will be indexed.

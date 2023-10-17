@@ -55,6 +55,7 @@ load(
     "SWIFT_FEATURE_FULL_DEBUG_INFO",
     "SWIFT_FEATURE_FULL_LTO",
     "SWIFT_FEATURE_GLOBAL_MODULE_CACHE_USES_TMPDIR",
+    "SWIFT_FEATURE_INDEX_INCLUDE_LOCALS",
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
     "SWIFT_FEATURE_LAYERING_CHECK",
     "SWIFT_FEATURE_MODULAR_INDEXING",
@@ -1044,6 +1045,14 @@ def compile_action_configs(
             actions = [SWIFT_ACTION_COMPILE],
             configurators = [_index_while_building_configurator],
             features = [SWIFT_FEATURE_INDEX_WHILE_BUILDING],
+        ),
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE],
+            configurators = [add_arg("-index-include-locals")],
+            features = [
+                SWIFT_FEATURE_INDEX_WHILE_BUILDING,
+                SWIFT_FEATURE_INDEX_INCLUDE_LOCALS,
+            ],
         ),
         ActionConfigInfo(
             actions = [SWIFT_ACTION_COMPILE],
