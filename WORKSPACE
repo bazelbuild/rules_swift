@@ -18,6 +18,8 @@ load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
 
 bazel_skylib_workspace()
 
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
 http_archive(
     name = "SwiftSyntax",
     sha256 = "527a5c6d19987acbb5019efa067b0fbd127e06187a0689c3f1098fd22c1a7d43",
@@ -28,8 +30,6 @@ http_archive(
 # For API doc generation
 # This is a dev dependency, users should not need to install it
 # so we declare it in the WORKSPACE
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-
 http_archive(
     name = "io_bazel_stardoc",
     sha256 = "62bd2e60216b7a6fec3ac79341aa201e0956477e7c8f6ccc286f279ad1d96432",
