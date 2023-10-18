@@ -20,6 +20,6 @@ from changes to those dependencies.
 
 | Name  | Description | Default Value |
 | :------------- | :------------- | :------------- |
-| <a id="swift_rules_dependencies-include_bzlmod_ready_dependencies"></a>include_bzlmod_ready_dependencies |  Whether or not bzlmod-ready dependencies should be included.   |  <code>True</code> |
+| <a id="swift_rules_dependencies-include_bzlmod_ready_dependencies"></a>include_bzlmod_ready_dependencies |  Whether or not bzlmod-ready dependencies should be included.   |  `True` |
 
 

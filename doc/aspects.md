@@ -30,7 +30,6 @@ providers returned by `swift_library`) because the information is needed if
 Swift is used _anywhere_ in a dependency graph, even as dependencies of other
 language rules that wouldn't know how to propagate the Swift-specific providers.
 
-
 **ASPECT ATTRIBUTES**
 
 
@@ -44,6 +43,6 @@ language rules that wouldn't know how to propagate the Swift-specific providers.
 
 | Name  | Description | Type | Mandatory | Default |
 | :------------- | :------------- | :------------- | :------------- | :------------- |
-| <a id="swift_usage_aspect-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |   |
+| <a id="swift_usage_aspect-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
 
 
