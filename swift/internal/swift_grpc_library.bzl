@@ -33,7 +33,13 @@ load(
     "proto_import_path",
     "register_module_mapping_write_action",
 )
-load(":providers.bzl", "SwiftInfo", "SwiftProtoInfo", "SwiftToolchainInfo")
+load(
+    ":providers.bzl",
+    "SwiftGRPCInfo",
+    "SwiftInfo",
+    "SwiftProtoInfo",
+    "SwiftToolchainInfo",
+)
 load(":swift_common.bzl", "swift_common")
 load(":transitions.bzl", "proto_compiler_transition")
 load(":utils.bzl", "compact", "get_providers")
@@ -334,6 +340,10 @@ def _swift_grpc_library_impl(ctx):
             linking_context = linking_context,
         ),
         deps[0][SwiftProtoInfo],
+        SwiftGRPCInfo(
+            flavor = ctx.attr.flavor,
+            direct_pbgrpc_files = generated_files,
+        ),
         swift_common.create_swift_info(
             modules = [module_context],
             swift_infos = get_providers(compile_deps, SwiftInfo),

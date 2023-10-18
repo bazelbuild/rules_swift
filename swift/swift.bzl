@@ -29,6 +29,7 @@ load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
 
 load(
     "@build_bazel_rules_swift//swift/internal:providers.bzl",
+    _SwiftGRPCInfo = "SwiftGRPCInfo",
     _SwiftInfo = "SwiftInfo",
     _SwiftProtoInfo = "SwiftProtoInfo",
     _SwiftToolchainInfo = "SwiftToolchainInfo",
@@ -90,6 +91,7 @@ load(
 )
 
 # Re-export providers.
+SwiftGRPCInfo = _SwiftGRPCInfo
 SwiftInfo = _SwiftInfo
 SwiftProtoInfo = _SwiftProtoInfo
 SwiftToolchainInfo = _SwiftToolchainInfo
