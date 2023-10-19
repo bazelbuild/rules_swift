@@ -10,6 +10,7 @@ _DOC_SRCS = {
         "swift_usage_aspect",
     ],
     "providers": [
+        "SwiftGRPCInfo",
         "SwiftInfo",
         "SwiftToolchainInfo",
         "SwiftProtoInfo",

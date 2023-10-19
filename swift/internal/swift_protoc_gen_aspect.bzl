@@ -260,6 +260,7 @@ def _build_swift_proto_info_provider(
         An instance of `SwiftProtoInfo`.
     """
     return SwiftProtoInfo(
+        direct_pbswift_files = pbswift_files,
         module_mappings = transitive_module_mappings,
         pbswift_files = depset(
             direct = pbswift_files,

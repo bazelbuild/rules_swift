@@ -62,6 +62,19 @@ the allowlist.
     },
 )
 
+SwiftGRPCInfo = provider(
+    doc = "Propagates Swift-specific information about a `swift_grpc_library`.",
+    fields = {
+        "flavor": """\
+The flavor of GRPC that was generated. E.g. server, client, or client_stubs.
+""",
+        "direct_pbgrpc_files": """\
+`Depset` of `File`s. The Swift source files (`.grpc.swift`) generated
+from the `.proto` files in direct dependencies.
+""",
+    },
+)
+
 SwiftInfo = provider(
     doc = """\
 Contains information about the compiled artifacts of a Swift module.
@@ -120,6 +133,10 @@ libraries to import those modules in generated code.
         "pbswift_files": """\
 `Depset` of `File`s. The transitive Swift source files (`.pb.swift`) generated
 from the `.proto` files.
+""",
+        "direct_pbswift_files": """\
+`list` of `File`s. The Swift source files (`.pb.swift`) generated
+from the `.proto` files in direct dependencies.
 """,
     },
 )
