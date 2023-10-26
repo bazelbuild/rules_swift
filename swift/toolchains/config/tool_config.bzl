@@ -30,7 +30,7 @@ def _tool_config_info_init(
         execution_requirements = {},
         resource_set = None,
         use_param_file = False,
-        worker_mode = None):
+        wrapped_by_worker = False):
     """Validates and initializes a new Swift toolchain tool configuration.
 
     The `driver_config` argument can be specified as a convenience that supports
@@ -68,22 +68,20 @@ def _tool_config_info_init(
             invoking actions using this tool.
         executable: The `File` or `string` denoting the tool that should be
             executed. This will be used as the `executable` argument of spawned
-            actions unless `worker_mode` is set, in which case it will be used
-            as the first argument to the worker.
+            actions unless `wrapped_by_worker` is True, in which case it will be
+            used as the first argument to the worker.
         execution_requirements: A dictionary of execution requirements that
             should be passed when creating actions with this tool.
         resource_set: The function which build resource set (mem, cpu) for local
             invocation of the action.
         use_param_file: If True, actions invoked using this tool will have their
             arguments written to a param file.
-        worker_mode: A string, or `None`, describing how the tool is invoked
-            using the build rules' worker, if at all. If `None`, the tool will
-            be invoked directly. If `"wrap"`, the tool will be wrapped in an
-            invocation of the worker but otherwise run as a single process. If
-            `"persistent"`, then the action will be launched with execution
-            requirements that indicate that Bazel should attempt to use a
-            persistent worker if the spawn strategy allows for it (starting a
-            new instance if necessary, or connecting to an existing one).
+        wrapped_by_worker: A Boolean value indicating whether the tool should be
+            wrapped inside an invocation of the build rules' worker process. If
+            False, the tool will be invoked directly. (The term "worker" is an
+            artifact from when a persistent worker was supported by the rules.
+            This is no longer the case; now "worker" just means the executable
+            that wraps Swift compiler invocations.)
 
     Returns:
         A validated dictionary with the fields of the `ToolConfigInfo` provider.
@@ -117,7 +115,7 @@ def _tool_config_info_init(
         "execution_requirements": execution_requirements,
         "resource_set": resource_set,
         "use_param_file": use_param_file,
-        "worker_mode": _validate_worker_mode(worker_mode),
+        "wrapped_by_worker": wrapped_by_worker,
     }
 
 ToolConfigInfo, _tool_config_info_init_unchecked = provider(
@@ -130,28 +128,7 @@ ToolConfigInfo, _tool_config_info_init_unchecked = provider(
         "execution_requirements",
         "resource_set",
         "use_param_file",
-        "worker_mode",
+        "wrapped_by_worker",
     ],
     init = _tool_config_info_init,
 )
-
-def _validate_worker_mode(worker_mode):
-    """Validates the `worker_mode` argument of `tool_config`.
-
-    This function fails the build if the worker mode is not None, "persistent",
-    or "wrap".
-
-    Args:
-        worker_mode: The worker mode to validate.
-
-    Returns:
-        The original worker mode, if it was valid.
-    """
-    if worker_mode != None and worker_mode not in ("persistent", "wrap"):
-        fail(
-            "The 'worker_mode' argument of " +
-            "'swift_toolchain_config.tool_config' must be either None, " +
-            "'persistent', or 'wrap'.",
-        )
-
-    return worker_mode

@@ -178,17 +178,7 @@ def run_toolchain_action(
     # tool as the executable directly.
     tools = []
     tool_executable_args = actions.args()
-    if tool_config.worker_mode:
-        # Only enable persistent workers if the toolchain supports response
-        # files, because the worker unconditionally writes its arguments into
-        # one to prevent command line overflow in this mode.
-        if (
-            tool_config.worker_mode == "persistent" and
-            tool_config.use_param_file
-        ):
-            execution_requirements["supports-workers"] = "1"
-            execution_requirements["requires-worker-protocol"] = "json"
-
+    if tool_config.wrapped_by_worker:
         executable = swift_toolchain.swift_worker
         tool_executable_args.add(tool_config.executable)
         if not types.is_string(tool_config.executable):

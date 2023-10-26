@@ -456,7 +456,7 @@ def _all_tool_configs(
             execution_requirements = execution_requirements,
             resource_set = _swift_compile_resource_set,
             use_param_file = True,
-            worker_mode = "persistent",
+            wrapped_by_worker = True,
         ),
         SWIFT_ACTION_COMPILE_MODULE_INTERFACE: ToolConfigInfo(
             additional_tools = additional_tools,
@@ -466,21 +466,21 @@ def _all_tool_configs(
             execution_requirements = execution_requirements,
             resource_set = _swift_compile_resource_set,
             use_param_file = True,
-            worker_mode = "wrap",
+            wrapped_by_worker = True,
         ),
         SWIFT_ACTION_PRECOMPILE_C_MODULE: ToolConfigInfo(
             driver_config = _driver_config(mode = "swiftc"),
             env = env,
             execution_requirements = execution_requirements,
             use_param_file = True,
-            worker_mode = "wrap",
+            wrapped_by_worker = True,
         ),
         SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT: ToolConfigInfo(
             driver_config = _driver_config(mode = "swift-symbolgraph-extract"),
             env = env,
             execution_requirements = execution_requirements,
             use_param_file = True,
-            worker_mode = "wrap",
+            wrapped_by_worker = True,
         ),
     }
 
