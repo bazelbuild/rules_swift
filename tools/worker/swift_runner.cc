@@ -407,11 +407,6 @@ int SwiftRunner::PerformLayeringCheck(std::ostream &stderr_stream,
   int exit_code = SpawnJob(tool_args_, emit_imports_args, /*env=*/nullptr,
                            stderr_stream, stdout_to_stderr);
   if (exit_code != 0) {
-    WithColor(stderr_stream, Color::kBoldRed) << std::endl << "error: ";
-    WithColor(stderr_stream, Color::kBold)
-        << "Swift compilation succeeded, but an unexpected compiler error "
-           "occurred when performing the layering check.";
-    stderr_stream << std::endl << std::endl;
     return exit_code;
   }
 
