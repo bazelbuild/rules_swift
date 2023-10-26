@@ -339,6 +339,10 @@ SWIFT_FEATURE_DISABLE_CLANG_SPI = "swift.disable_clang_spi"
 # explicitly exported via `-exported_symbols_list`.
 SWIFT_FEATURE_INTERNALIZE_AT_LINK = "swift.internalize_at_link"
 
+# If enabled, requests the `-disable-availability-checking` frontend flag.
+# This disables checking for potentially unavailable APIs.
+SWIFT_FEATURE_DISABLE_AVAILABILITY_CHECKING = "swift.disable_availability_checking"
+
 # Disables Swift sandbox which prevents issues with nested sandboxing when Swift code contains system-provided macros.
 # If enabled '#Preview' macro provided by SwiftUI fails to build and probably other system-provided macros.
 # Enabled by default for Swift 5.10+ on macOS.
