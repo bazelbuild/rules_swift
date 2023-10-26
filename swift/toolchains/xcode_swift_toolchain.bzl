@@ -607,7 +607,7 @@ def _all_tool_configs(
         execution_requirements = execution_requirements,
         resource_set = _swift_compile_resource_set,
         use_param_file = True,
-        worker_mode = "wrap",
+        wrapped_by_worker = True,
     )
 
     tool_configs = {
@@ -620,7 +620,7 @@ def _all_tool_configs(
                 env = env,
                 execution_requirements = execution_requirements,
                 use_param_file = True,
-                worker_mode = "wrap",
+                wrapped_by_worker = True,
             )
         ),
         SWIFT_ACTION_COMPILE_MODULE_INTERFACE: (
@@ -631,7 +631,7 @@ def _all_tool_configs(
                 execution_requirements = execution_requirements,
                 resource_set = _swift_compile_resource_set,
                 use_param_file = True,
-                worker_mode = "wrap",
+                wrapped_by_worker = True,
             )
         ),
         SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT: (
@@ -642,7 +642,7 @@ def _all_tool_configs(
                 env = env,
                 execution_requirements = execution_requirements,
                 use_param_file = True,
-                worker_mode = "wrap",
+                wrapped_by_worker = True,
             )
         ),
     }
@@ -654,7 +654,7 @@ def _all_tool_configs(
             env = env,
             execution_requirements = execution_requirements,
             use_param_file = True,
-            worker_mode = "wrap",
+            wrapped_by_worker = True,
         )
 
     return tool_configs

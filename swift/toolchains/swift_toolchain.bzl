@@ -142,7 +142,7 @@ def _all_tool_configs(
         driver_config = _driver_config(mode = "swiftc"),
         resource_set = _swift_compile_resource_set,
         use_param_file = True,
-        worker_mode = "wrap",
+        wrapped_by_worker = True,
         env = env,
     )
 
@@ -154,7 +154,7 @@ def _all_tool_configs(
             additional_tools = additional_tools,
             driver_config = _driver_config(mode = "swift-symbolgraph-extract"),
             use_param_file = True,
-            worker_mode = "wrap",
+            wrapped_by_worker = True,
             env = env,
         ),
     }
@@ -163,7 +163,7 @@ def _all_tool_configs(
         tool_configs[SWIFT_ACTION_AUTOLINK_EXTRACT] = ToolConfigInfo(
             additional_tools = additional_tools,
             driver_config = _driver_config(mode = "swift-autolink-extract"),
-            worker_mode = "wrap",
+            wrapped_by_worker = True,
         )
 
     if use_module_wrap:
@@ -172,7 +172,7 @@ def _all_tool_configs(
             # This must come first after the driver name.
             args = ["-modulewrap"],
             driver_config = _driver_config(mode = "swift"),
-            worker_mode = "wrap",
+            wrapped_by_worker = True,
         )
 
     return tool_configs
