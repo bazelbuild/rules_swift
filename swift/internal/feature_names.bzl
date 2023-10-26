@@ -235,6 +235,10 @@ SWIFT_FEATURE_DISABLE_CLANG_SPI = "swift.disable_clang_spi"
 # explicitly exported via `-exported_symbols_list`.
 SWIFT_FEATURE_INTERNALIZE_AT_LINK = "swift.internalize_at_link"
 
+# If enabled, requests the `-disable-availability-checking` frontend flag.
+# This disables checking for potentially unavailable APIs.
+SWIFT_FEATURE_DISABLE_AVAILABILITY_CHECKING = "swift.disable_availability_checking"
+
 # A private feature that is set by the toolchain if it supports macros (Swift
 # 5.9 and above). Users should never manually enable, disable, or query this
 # feature.
