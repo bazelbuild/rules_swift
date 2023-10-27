@@ -14,7 +14,7 @@ proto_lang_toolchain(
     command_line = "--swift_out=$(OUT)",
     mnemonic = "ProtocGenSwift",
     output_files = "multiple",
-    plugin = "@com_github_apple_swift_protobuf//:ProtoCompilerPlugin",
+    plugin = "@com_github_apple_swift_protobuf//:protoc-gen-swift",
     plugin_format_flag = "--plugin=protoc-gen-swift=%s",
     progress_message = "Generating Swift sources for %{label}",
     runtime = "@com_github_apple_swift_protobuf//:SwiftProtobuf",
