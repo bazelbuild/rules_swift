@@ -36,7 +36,7 @@ load(
     _SwiftUsageInfo = "SwiftUsageInfo",
 )
 load(
-    "@build_bazel_rules_swift//swift/internal:swift_binary_test.bzl",
+    "@build_bazel_rules_swift//swift/internal:swift_binary_test_rules.bzl",
     _swift_binary = "swift_binary",
     _swift_test = "swift_test",
 )

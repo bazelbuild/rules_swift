@@ -88,12 +88,6 @@ bzl_library(
 )
 
 bzl_library(
-    name = "env_expansion",
-    srcs = ["env_expansion.bzl"],
-    visibility = ["//swift:__subpackages__"],
-)
-
-bzl_library(
     name = "features",
     srcs = ["features.bzl"],
     visibility = ["//swift:__subpackages__"],
@@ -122,11 +116,6 @@ bzl_library(
     srcs = ["module_maps.bzl"],
     visibility = ["//swift:__subpackages__"],
     deps = ["@bazel_skylib//lib:paths"],
-)
-
-bzl_library(
-    name = "package_specs",
-    srcs = ["package_specs.bzl"],
 )
 
 bzl_library(
@@ -172,24 +161,6 @@ bzl_library(
     visibility = ["//swift:__subpackages__"],
     deps = [
         ":providers",
-    ],
-)
-
-bzl_library(
-    name = "swift_binary_test",
-    srcs = ["swift_binary_test.bzl"],
-    visibility = ["//swift:__subpackages__"],
-    deps = [
-        ":compiling",
-        ":derived_files",
-        ":env_expansion",
-        ":feature_names",
-        ":linking",
-        ":providers",
-        ":swift_common",
-        ":utils",
-        "@bazel_skylib//lib:dicts",
-        "@bazel_skylib//lib:partial",
     ],
 )
 
@@ -370,12 +341,6 @@ bzl_library(
 )
 
 bzl_library(
-    name = "transitions",
-    srcs = ["transitions.bzl"],
-    visibility = ["//swift:__subpackages__"],
-)
-
-bzl_library(
     name = "utils",
     srcs = ["utils.bzl"],
     visibility = ["//swift:__subpackages__"],
@@ -402,29 +367,6 @@ bzl_library(
         "@bazel_skylib//rules:common_settings",
         "@bazel_tools//tools/cpp:toolchain_utils.bzl",
     ],
-)
-
-bzl_library(
-    name = "explicit_module_map_file",
-    srcs = ["explicit_module_map_file.bzl"],
-)
-
-bzl_library(
-    name = "feature_names",
-    srcs = ["feature_names.bzl"],
-    visibility = ["//swift:__subpackages__"],
-)
-
-bzl_library(
-    name = "vfsoverlay",
-    srcs = ["vfsoverlay.bzl"],
-    visibility = ["//swift:__subpackages__"],
-)
-
-bzl_library(
-    name = "build_settings",
-    srcs = ["build_settings.bzl"],
-    deps = ["@bazel_skylib//rules:common_settings"],
 )
 
 # Indirection needed to prevent using `objc_library` outside of macOS
@@ -456,4 +398,70 @@ filegroup(
     visibility = [
         "//swift:__pkg__",
     ],
+)
+
+bzl_library(
+    name = "swift_binary_test_rules",
+    srcs = ["swift_binary_test_rules.bzl"],
+    visibility = ["//swift:__subpackages__"],
+    deps = [
+        ":compiling",
+        ":derived_files",
+        ":env_expansion",
+        ":feature_names",
+        ":linking",
+        ":providers",
+        ":swift_common",
+        ":utils",
+        "@bazel_skylib//lib:dicts",
+    ],
+)
+
+bzl_library(
+    name = "build_settings",
+    srcs = ["build_settings.bzl"],
+    visibility = ["//swift:__subpackages__"],
+    deps = ["@bazel_skylib//rules:common_settings"],
+)
+
+bzl_library(
+    name = "env_expansion",
+    srcs = ["env_expansion.bzl"],
+    visibility = ["//swift:__subpackages__"],
+)
+
+bzl_library(
+    name = "explicit_module_map_file",
+    srcs = ["explicit_module_map_file.bzl"],
+    visibility = ["//swift:__subpackages__"],
+)
+
+bzl_library(
+    name = "feature_names",
+    srcs = ["feature_names.bzl"],
+    visibility = ["//swift:__subpackages__"],
+)
+
+bzl_library(
+    name = "package_specs",
+    srcs = ["package_specs.bzl"],
+    visibility = ["//swift:__subpackages__"],
+)
+
+bzl_library(
+    name = "target_triples",
+    srcs = ["target_triples.bzl"],
+    visibility = ["//swift:__subpackages__"],
+)
+
+bzl_library(
+    name = "transitions",
+    srcs = ["transitions.bzl"],
+    visibility = ["//swift:__subpackages__"],
+)
+
+bzl_library(
+    name = "vfsoverlay",
+    srcs = ["vfsoverlay.bzl"],
+    visibility = ["//swift:__subpackages__"],
 )

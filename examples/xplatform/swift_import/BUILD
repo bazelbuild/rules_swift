@@ -1,3 +1,4 @@
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("//swift:swift.bzl", "swift_binary", "swift_import", "swift_library")
 load(":get_swiftmodule.bzl", "get_swiftmodule")
 
@@ -30,4 +31,11 @@ swift_library(
     name = "dep",
     srcs = ["dep.swift"],
     module_name = "dep",
+)
+
+bzl_library(
+    name = "get_swiftmodule",
+    srcs = ["get_swiftmodule.bzl"],
+    visibility = ["//visibility:public"],
+    deps = ["//swift"],
 )
