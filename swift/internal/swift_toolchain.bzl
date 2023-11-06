@@ -262,6 +262,7 @@ def _swift_unix_linkopts_cc_info(
         ),
     )
 
+# Test change
 def _entry_point_linkopts_provider(*, entry_point_name):
     """Returns linkopts to customize the entry point of a binary."""
     return struct(
