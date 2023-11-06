@@ -272,7 +272,7 @@ def _swift_toolchain_impl(ctx):
     toolchain_root = ctx.attr.root
     cc_toolchain = find_cpp_toolchain(ctx)
 
-    if cc_toolchain.compiler != "clang":
+    if "clang" not in cc_toolchain.compiler:
         fail("Swift requires the configured CC toolchain to be LLVM (clang). " +
              "Either use the locally installed LLVM by setting `CC=clang` in your environment " +
              "before invoking Bazel, or configure a Bazel LLVM CC toolchain.")
