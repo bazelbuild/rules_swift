@@ -13,3 +13,5 @@ bzl_library(
         "@bazel_skylib//lib:unittest",
     ],
 )
+
+exports_files(["swift_shell_runner.sh.template"])
