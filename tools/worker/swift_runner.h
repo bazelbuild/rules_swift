@@ -158,6 +158,12 @@ class SwiftRunner {
   // this compilation.
   std::string generated_header_rewriter_path_;
 
+  // A map containing arguments that should be passed through to additional
+  // tools that support them. Each key in the map represents the name of a
+  // recognized tool.
+  absl::flat_hash_map<std::string, std::vector<std::string>>
+      passthrough_tool_args_;
+
   // The Bazel target label that spawned the worker request, which can be used
   // in custom diagnostic messages printed by the worker.
   std::string target_label_;

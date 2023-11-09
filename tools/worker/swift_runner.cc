@@ -30,6 +30,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
 #include "tools/common/color.h"
@@ -317,6 +318,14 @@ bool SwiftRunner::ProcessArgument(
       return true;
     }
 
+    if (absl::ConsumePrefix(&trimmed_arg, "-tool-arg=")) {
+      std::pair<std::string, std::string> arg_and_value =
+          absl::StrSplit(trimmed_arg, absl::MaxSplits('=', 1));
+      passthrough_tool_args_[arg_and_value.first].push_back(
+          std::string(arg_and_value.second));
+      return true;
+    }
+
     if (absl::ConsumePrefix(&trimmed_arg, "-bazel-target-label=")) {
       target_label_ = std::string(trimmed_arg);
       return true;
@@ -378,6 +387,10 @@ int SwiftRunner::PerformGeneratedHeaderRewriting(std::ostream &stderr_stream,
 
   std::vector<std::string> rewriter_tool_args;
   rewriter_tool_args.push_back(generated_header_rewriter_path_);
+  const std::vector<std::string> &passthrough_args =
+      passthrough_tool_args_["generated_header_rewriter"];
+  rewriter_tool_args.insert(rewriter_tool_args.end(), passthrough_args.begin(),
+                            passthrough_args.end());
   rewriter_tool_args.push_back("--");
   rewriter_tool_args.push_back(tool_args_[tool_binary_index]);
 
