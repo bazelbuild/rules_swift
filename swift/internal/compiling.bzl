@@ -2022,6 +2022,52 @@ def derive_module_name(*args):
         module_name = "_" + module_name
     return module_name
 
+def derive_proto_module_name(label, omit_package, pascal_case):
+    """Returns a derived proto module name from the given build label.
+
+    For swift_proto_library and swift_grpc_library targets, 
+    the module name is derived from the corresponding proto library target.
+
+    The name computed using the following algorithm:
+    *   The package and name components of the label are considered separately.
+        All _interior_ sequences of non-identifier characters (anything other
+        than `a-z`, `A-Z`, `0-9`, and `_`) are replaced by a single underscore
+        (`_`). Any leading or trailing non-identifier characters are dropped.
+    *   If the package component is non-empty after the above transformation,
+        it is joined with the transformed name component using an underscore.
+        Otherwise, the transformed name is used by itself.
+    *   If this would result in a string that begins with a digit (`0-9`), an
+        underscore is prepended to make it identifier-safe.
+
+    This mapping is intended to be fairly predictable, but not reversible.
+
+    Args:
+        label: The `Label` of the proto_library target.
+        omit_package: Whether the label's package prefix will be omitted from the module name.
+        pascal_case: Whether the module name should be converted from snake_case to PascalCase.
+
+    Returns:
+        The module name derived from the label.
+    """
+    package = label.package
+    name = label.name
+
+    package_part = _module_name_safe(package.lstrip("//"))
+    name_part = _module_name_safe(name)
+    if package_part and not omit_package:
+        module_name = package_part + "_" + name_part
+    else:
+        module_name = name_part
+    if module_name[0].isdigit():
+        module_name = "_" + module_name
+    
+    if pascal_case:
+        module_name_components = module_name.split("_")
+        module_name_components = [c.capitalize() for c in module_name_components]
+        module_name = "".join(module_name_components)
+
+    return module_name
+
 def create_compilation_context(defines, srcs, transitive_modules):
     """Cretes a compilation context for a Swift target.
 

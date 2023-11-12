@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import examples_xplatform_grpc_echo_client_services_swift
-import examples_xplatform_grpc_echo_server_services_swift
-import examples_xplatform_grpc_echo_proto
+import EchoProto
+import EchoClientServicesSwift
+import EchoServerServicesSwift
 import GRPC
 import NIOCore
 import NIOPosix

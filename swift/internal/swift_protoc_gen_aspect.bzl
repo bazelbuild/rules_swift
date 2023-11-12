@@ -26,6 +26,8 @@ load(
     "SWIFT_FEATURE_ENABLE_TESTING",
     "SWIFT_FEATURE_GENERATE_FROM_RAW_PROTO_FILES",
     "SWIFT_FEATURE_GENERATE_PATH_TO_UNDERSCORES_FROM_PROTO_FILES",
+    "SWIFT_FEATURE_PROTO_MODULE_NAME_OMIT_PACKAGE",
+    "SWIFT_FEATURE_PROTO_MODULE_NAME_PASCAL_CASE"
 )
 load(":linking.bzl", "new_objc_provider")
 load(
@@ -268,12 +270,12 @@ def _build_swift_proto_info_provider(
         ),
     )
 
-def _build_module_mapping_from_srcs(target, proto_srcs, proto_source_root):
+def _build_module_mapping_from_srcs(module_name, proto_srcs, proto_source_root):
     """Returns the sequence of module mapping `struct`s for the given sources.
 
     Args:
-        target: The `proto_library` target whose module mapping is being
-            rendered.
+        module_name: The module name of the `proto_library` target whose 
+            module mapping is being rendered.
         proto_srcs: The `.proto` files that belong to the target.
         proto_source_root: The source root for `proto_srcs`.
 
@@ -290,7 +292,7 @@ def _build_module_mapping_from_srcs(target, proto_srcs, proto_source_root):
     # workspace-relative paths, there will be a clash. Figure out what to do
     # here; it may require an update to protoc-gen-swift?
     return struct(
-        module_name = swift_common.derive_module_name(target.label),
+        module_name = module_name,
         proto_file_paths = [
             proto_import_path(f, proto_source_root)
             for f in proto_srcs
@@ -339,11 +341,30 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
         if SwiftProtoInfo in dep
     ]
 
+    feature_configuration = swift_common.configure_features(
+        ctx = aspect_ctx,
+        requested_features = aspect_ctx.features,
+        swift_toolchain = swift_toolchain,
+        unsupported_features = [],
+    )
+
+    omit_package = swift_common.is_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_PROTO_MODULE_NAME_OMIT_PACKAGE,
+    )
+    pascal_case = swift_common.is_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_PROTO_MODULE_NAME_PASCAL_CASE,
+    )
+
+    # Derive the module name from the target label or use the tag value if provided.
+    module_name = swift_common.derive_proto_module_name(target.label, omit_package, pascal_case)
+
     minimal_module_mappings = []
     if direct_srcs:
         minimal_module_mappings.append(
             _build_module_mapping_from_srcs(
-                target,
+                module_name,
                 direct_srcs,
                 target[ProtoInfo].proto_source_root,
             ),
@@ -426,8 +447,6 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             aspect_ctx.executable._protoc_gen_swift,
             aspect_ctx.configuration.host_path_separator,
         )
-
-        module_name = swift_common.derive_module_name(target.label)
 
         module_context, cc_compilation_outputs, other_compilation_outputs = swift_common.compile(
             actions = aspect_ctx.actions,

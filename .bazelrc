@@ -42,3 +42,7 @@ build:linux --cxxopt='-std=c++14'
 # There is an open issue about it on the zlib repository here:
 # https://github.com/madler/zlib/issues/633
 build --per_file_copt="external/.*zlib.*/.*.c@-Wno-deprecated-non-prototype"
+
+# Enable features to derive proto module names in PascalCase and omit the package name.
+build --features swift.proto_module_name_omit_package
+build --features swift.proto_module_name_pascal_case

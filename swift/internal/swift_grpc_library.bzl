@@ -24,6 +24,8 @@ load(
     ":feature_names.bzl",
     "SWIFT_FEATURE_ENABLE_TESTING",
     "SWIFT_FEATURE_GENERATE_FROM_RAW_PROTO_FILES",
+    "SWIFT_FEATURE_PROTO_MODULE_NAME_OMIT_PACKAGE",
+    "SWIFT_FEATURE_PROTO_MODULE_NAME_PASCAL_CASE"
 )
 load(":linking.bzl", "new_objc_provider")
 load(
@@ -257,15 +259,24 @@ def _swift_grpc_library_impl(ctx):
         minimal_module_mappings,
     )
 
+    omit_package = swift_common.is_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_PROTO_MODULE_NAME_OMIT_PACKAGE,
+    )
+    pascal_case = swift_common.is_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_PROTO_MODULE_NAME_PASCAL_CASE,
+    )
+
     extra_module_imports = [
         # gRPC's generated code lives in another module but directly refers to
         # the proto structs. This is done so that one could generate both of
         # them in the same package, however we are not. Since we aren't
         # explicitly add an import for the proto dependencies.
-        swift_common.derive_module_name(ctx.attr.srcs[0].label),
+        swift_common.derive_proto_module_name(ctx.attr.srcs[0].label, omit_package, pascal_case),
     ]
     if ctx.attr.flavor in ["client_stubs"]:
-        extra_module_imports.append(swift_common.derive_module_name(deps[0].label))
+        extra_module_imports.append(swift_common.derive_proto_module_name(deps[0].label, omit_package, pascal_case))
 
     # Generate the Swift sources from the .proto files.
     generated_files = _register_grpcswift_generate_action(
@@ -290,7 +301,7 @@ def _swift_grpc_library_impl(ctx):
     # action.
     compile_deps = deps + ctx.attr._proto_support
 
-    module_name = swift_common.derive_module_name(ctx.label)
+    module_name = swift_common.derive_proto_module_name(ctx.label, True, True)
 
     module_context, cc_compilation_outputs, other_compilation_outputs = swift_common.compile(
         actions = ctx.actions,

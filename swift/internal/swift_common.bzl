@@ -35,6 +35,7 @@ load(
     "compile_module_interface",
     "create_compilation_context",
     "derive_module_name",
+    "derive_proto_module_name",
     "precompile_clang_module",
 )
 load(
@@ -69,6 +70,7 @@ swift_common = struct(
     create_swift_interop_info = create_swift_interop_info,
     create_swift_module = create_swift_module,
     derive_module_name = derive_module_name,
+    derive_proto_module_name = derive_proto_module_name,
     is_enabled = is_feature_enabled,
     library_rule_attrs = swift_library_rule_attrs,
     precompile_clang_module = precompile_clang_module,

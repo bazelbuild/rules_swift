@@ -16,8 +16,8 @@ import Dispatch
 import GRPC
 import NIOCore
 import NIOPosix
-import examples_xplatform_grpc_echo_proto
-import examples_xplatform_grpc_echo_server_services_swift
+import EchoProto
+import EchoServerServicesSwift
 
 /// Concrete implementation of the `EchoService` service definition.
 class EchoProvider: RulesSwift_Examples_Grpc_EchoServiceProvider {

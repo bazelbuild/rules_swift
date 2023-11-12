@@ -17,8 +17,8 @@ import SwiftProtobuf
 import GRPC
 import NIOCore
 import NIOPosix
-import examples_xplatform_grpc_echo_proto
-import examples_xplatform_grpc_echo_client_services_swift
+import EchoProto
+import EchoClientServicesSwift
 
 @main
 struct ClientMain {

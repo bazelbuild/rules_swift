@@ -58,6 +58,10 @@ swift_grpc_library(
 swift_binary(
     name = "echo_server",
     srcs = ["server_main.swift"],
+    linkopts = [
+        "-Xlinker",
+        "-ld64",
+    ],
     deps = [
         ":echo_proto_swift",
         ":echo_server_services_swift",
@@ -70,6 +74,10 @@ swift_test(
         "client_unit_test.swift",
         "main.swift",
     ],
+    linkopts = [
+        "-Xlinker",
+        "-ld64",
+    ],
     deps = [
         ":echo_client_services_swift",
         ":echo_proto_swift",
@@ -80,5 +88,9 @@ swift_test(
 swift_binary(
     name = "echo_client",
     srcs = ["client_main.swift"],
+    linkopts = [
+        "-Xlinker",
+        "-ld64",
+    ],
     deps = [":echo_client_services_swift"],
 )
