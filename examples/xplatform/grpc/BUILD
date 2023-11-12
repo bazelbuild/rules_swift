@@ -41,6 +41,10 @@ swift_proto_library(
 swift_grpc_library(
     name = "echo_client_services_swift",
     srcs = [":echo_proto"],
+    features = [
+        "swift.proto_module_name_omit_package",
+        "swift.proto_module_name_pascal_case",
+    ],
     flavor = "client",
     deps = [":echo_proto_swift"],
 )
@@ -48,6 +52,10 @@ swift_grpc_library(
 swift_grpc_library(
     name = "echo_client_test_stubs_swift",
     srcs = [":echo_proto"],
+    features = [
+        "swift.proto_module_name_omit_package",
+        "swift.proto_module_name_pascal_case",
+    ],
     flavor = "client_stubs",
     deps = [":echo_client_services_swift"],
 )
