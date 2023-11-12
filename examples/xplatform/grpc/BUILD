@@ -24,6 +24,10 @@ licenses(["notice"])
 proto_library(
     name = "echo_proto",
     srcs = ["echo.proto"],
+    features = [
+        "swift.proto_module_name_omit_package",
+        "swift.proto_module_name_pascal_case",
+    ],
     deps = [
         "@com_google_protobuf//:any_proto",
     ],
@@ -51,6 +55,10 @@ swift_grpc_library(
 swift_grpc_library(
     name = "echo_server_services_swift",
     srcs = [":echo_proto"],
+    features = [
+        "swift.proto_module_name_omit_package",
+        "swift.proto_module_name_pascal_case",
+    ],
     flavor = "server",
     deps = [":echo_proto_swift"],
 )
