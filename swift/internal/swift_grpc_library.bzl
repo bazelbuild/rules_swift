@@ -301,7 +301,7 @@ def _swift_grpc_library_impl(ctx):
     # action.
     compile_deps = deps + ctx.attr._proto_support
 
-    module_name = swift_common.derive_proto_module_name(ctx.label, True, True)
+    module_name = swift_common.derive_proto_module_name(ctx.label, omit_package, pascal_case)
 
     module_context, cc_compilation_outputs, other_compilation_outputs = swift_common.compile(
         actions = ctx.actions,
