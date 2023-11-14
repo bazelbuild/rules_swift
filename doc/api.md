@@ -533,6 +533,47 @@ This mapping is intended to be fairly predictable, but not reversible.
 The module name derived from the label.
 
 
+<a id="swift_common.derive_proto_module_name"></a>
+
+## swift_common.derive_proto_module_name
+
+<pre>
+swift_common.derive_proto_module_name(<a href="#swift_common.derive_proto_module_name-label">label</a>, <a href="#swift_common.derive_proto_module_name-omit_package">omit_package</a>, <a href="#swift_common.derive_proto_module_name-pascal_case">pascal_case</a>)
+</pre>
+
+Returns a derived proto module name from the given build label.
+
+For swift_proto_library and swift_grpc_library targets,
+the module name is derived from the corresponding proto library target.
+
+The name computed using the following algorithm:
+*   The package and name components of the label are considered separately.
+    All _interior_ sequences of non-identifier characters (anything other
+    than `a-z`, `A-Z`, `0-9`, and `_`) are replaced by a single underscore
+    (`_`). Any leading or trailing non-identifier characters are dropped.
+*   If the package component is non-empty after the above transformation,
+    it is joined with the transformed name component using an underscore.
+    Otherwise, the transformed name is used by itself.
+*   If this would result in a string that begins with a digit (`0-9`), an
+    underscore is prepended to make it identifier-safe.
+
+This mapping is intended to be fairly predictable, but not reversible.
+
+
+**PARAMETERS**
+
+
+| Name  | Description | Default Value |
+| :------------- | :------------- | :------------- |
+| <a id="swift_common.derive_proto_module_name-label"></a>label |  The `Label` of the proto_library target.   |  none |
+| <a id="swift_common.derive_proto_module_name-omit_package"></a>omit_package |  Whether the label's package prefix will be omitted from the module name.   |  none |
+| <a id="swift_common.derive_proto_module_name-pascal_case"></a>pascal_case |  Whether the module name should be converted from snake_case to PascalCase.   |  none |
+
+**RETURNS**
+
+The module name derived from the label.
+
+
 <a id="swift_common.is_enabled"></a>
 
 ## swift_common.is_enabled
