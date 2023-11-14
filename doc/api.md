@@ -546,7 +546,7 @@ Returns a derived proto module name from the given build label.
 For swift_proto_library and swift_grpc_library targets,
 the module name is derived from the corresponding proto library target.
 
-The name computed using the following algorithm:
+The name is computed using the following algorithm:
 *   The package and name components of the label are considered separately.
     All _interior_ sequences of non-identifier characters (anything other
     than `a-z`, `A-Z`, `0-9`, and `_`) are replaced by a single underscore
