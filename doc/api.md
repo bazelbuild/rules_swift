@@ -546,18 +546,14 @@ Returns a derived proto module name from the given build label.
 For swift_proto_library and swift_grpc_library targets,
 the module name is derived from the corresponding proto library target.
 
-The name is computed using the following algorithm:
-*   The package and name components of the label are considered separately.
-    All _interior_ sequences of non-identifier characters (anything other
-    than `a-z`, `A-Z`, `0-9`, and `_`) are replaced by a single underscore
-    (`_`). Any leading or trailing non-identifier characters are dropped.
-*   If the package component is non-empty after the above transformation,
-    it is joined with the transformed name component using an underscore.
-    Otherwise, the transformed name is used by itself.
-*   If this would result in a string that begins with a digit (`0-9`), an
-    underscore is prepended to make it identifier-safe.
+The name is computed according to the same algorithm as described in derive_module_name,
+with the additional capability to omit the package name and convert to PascalCase.
 
-This mapping is intended to be fairly predictable, but not reversible.
+Example:
+Given label: //package:target and (omit_package, pascal_case), the module name will be:
+(False, False): "package_target"
+(False, True): "PackageTarget"
+(True, True): "Target"
 
 
 **PARAMETERS**
