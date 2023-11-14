@@ -2025,7 +2025,7 @@ def derive_module_name(*args):
 def derive_proto_module_name(label, omit_package, pascal_case):
     """Returns a derived proto module name from the given build label.
 
-    For swift_proto_library and swift_grpc_library targets, 
+    For swift_proto_library and swift_grpc_library targets,
     the module name is derived from the corresponding proto library target.
 
     The name computed using the following algorithm:
@@ -2060,7 +2060,7 @@ def derive_proto_module_name(label, omit_package, pascal_case):
         module_name = name_part
     if module_name[0].isdigit():
         module_name = "_" + module_name
-    
+
     if pascal_case:
         module_name_components = module_name.split("_")
         module_name_components = [c.capitalize() for c in module_name_components]

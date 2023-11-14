@@ -27,7 +27,7 @@ load(
     "SWIFT_FEATURE_GENERATE_FROM_RAW_PROTO_FILES",
     "SWIFT_FEATURE_GENERATE_PATH_TO_UNDERSCORES_FROM_PROTO_FILES",
     "SWIFT_FEATURE_PROTO_MODULE_NAME_OMIT_PACKAGE",
-    "SWIFT_FEATURE_PROTO_MODULE_NAME_PASCAL_CASE"
+    "SWIFT_FEATURE_PROTO_MODULE_NAME_PASCAL_CASE",
 )
 load(":linking.bzl", "new_objc_provider")
 load(
@@ -274,7 +274,7 @@ def _build_module_mapping_from_srcs(module_name, proto_srcs, proto_source_root):
     """Returns the sequence of module mapping `struct`s for the given sources.
 
     Args:
-        module_name: The module name of the `proto_library` target whose 
+        module_name: The module name of the `proto_library` target whose
             module mapping is being rendered.
         proto_srcs: The `.proto` files that belong to the target.
         proto_source_root: The source root for `proto_srcs`.
