@@ -12,4 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-print("Hello, world!")
+public enum HelloWorldGreetings {
+    public static let greeting = "Hello, world!"
+}
+
+print(HelloWorldGreetings.greeting)

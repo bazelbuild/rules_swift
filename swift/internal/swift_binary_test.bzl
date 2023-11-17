@@ -19,9 +19,9 @@ load(":compiling.bzl", "output_groups_from_other_compilation_outputs")
 load(":derived_files.bzl", "derived_files")
 load(":feature_names.bzl", "SWIFT_FEATURE_BUNDLED_XCTESTS")
 load(":linking.bzl", "binary_rule_attrs", "configure_features_for_binary", "register_link_binary_action")
-load(":providers.bzl", "SwiftCompilerPluginInfo", "SwiftToolchainInfo")
+load(":providers.bzl", "SwiftCompilerPluginInfo", "SwiftInfo", "SwiftToolchainInfo")
 load(":swift_common.bzl", "swift_common")
-load(":utils.bzl", "expand_locations", "get_providers")
+load(":utils.bzl", "compact", "expand_locations", "get_providers")
 load(":env_expansion.bzl", "expanded_env")
 
 def _maybe_parse_as_library_copts(srcs):
@@ -84,8 +84,11 @@ def _swift_linking_rule_impl(
     cc_feature_configuration = swift_common.cc_feature_configuration(
         feature_configuration = feature_configuration,
     )
+    deps = ctx.attr.deps
     srcs = ctx.files.srcs
     user_link_flags = list(linkopts)
+    output_files = []
+    providers = []
 
     # If the rule has sources, compile those first and collect the outputs to
     # be passed to the linker.
@@ -102,7 +105,7 @@ def _swift_linking_rule_impl(
             additional_inputs = additional_inputs,
             copts = copts,
             defines = ctx.attr.defines,
-            deps = ctx.attr.deps,
+            deps = deps,
             extra_swift_infos = extra_swift_infos,
             feature_configuration = feature_configuration,
             is_test = ctx.attr.testonly,
@@ -118,7 +121,7 @@ def _swift_linking_rule_impl(
             other_compilation_outputs = other_compilation_outputs,
         )
 
-        linking_context, _ = swift_common.create_linking_context_from_compilation_outputs(
+        linking_context, srcs_linking_output = swift_common.create_linking_context_from_compilation_outputs(
             actions = ctx.actions,
             alwayslink = True,
             compilation_outputs = cc_compilation_outputs,
@@ -127,16 +130,36 @@ def _swift_linking_rule_impl(
             label = ctx.label,
             linking_contexts = [
                 dep[CcInfo].linking_context
-                for dep in ctx.attr.deps
+                for dep in deps
                 if CcInfo in dep
             ],
             module_context = module_context,
             swift_toolchain = swift_toolchain,
         )
         additional_linking_contexts.append(linking_context)
+        output_files += compact([
+            module_context.clang.precompiled_module,
+            module_context.swift.swiftdoc,
+            module_context.swift.swiftinterface,
+            module_context.swift.swiftmodule,
+            module_context.swift.swiftsourceinfo,
+            srcs_linking_output.library_to_link.static_library,
+            srcs_linking_output.library_to_link.pic_static_library,
+        ])
+        providers += [
+            CcInfo(
+                compilation_context = module_context.clang.compilation_context,
+                linking_context = linking_context,
+            ),
+            coverage_common.instrumented_files_info(
+                ctx,
+                dependency_attributes = ["deps", "private_deps"],
+                extensions = ["swift"],
+                source_attributes = ["srcs"],
+            ),
+        ]
     else:
         module_context = None
-        cc_compilation_outputs = cc_common.create_compilation_outputs()
         output_groups = {}
 
     # Collect linking contexts from any of the toolchain's implicit
@@ -158,14 +181,14 @@ def _swift_linking_rule_impl(
     ))
     user_link_flags.extend(ctx.fragments.cpp.linkopts)
 
-    linking_outputs = register_link_binary_action(
+    binary_linking_output = register_link_binary_action(
         actions = ctx.actions,
         additional_inputs = additional_inputs_to_linker,
         additional_linking_contexts = additional_linking_contexts,
         cc_feature_configuration = cc_feature_configuration,
         # This is already collected from `linking_context`.
         compilation_outputs = None,
-        deps = ctx.attr.deps + extra_link_deps,
+        deps = deps + extra_link_deps,
         name = binary_path,
         output_type = "executable",
         owner = ctx.label,
@@ -174,26 +197,17 @@ def _swift_linking_rule_impl(
         user_link_flags = user_link_flags,
     )
 
-    if module_context:
-        modules = [
-            swift_common.create_module(
-                name = module_context.name,
-                compilation_context = module_context.compilation_context,
-                # The rest of the fields are intentionally ommited, as we only
-                # want to expose the compilation_context
-            ),
-        ]
-    else:
-        modules = []
-
-    providers = [
+    providers += [
         OutputGroupInfo(**output_groups),
         swift_common.create_swift_info(
-            modules = modules,
+            modules = compact([module_context]),
+            # Note that private_deps are explicitly omitted here; they should
+            # not propagate.
+            swift_infos = get_providers(deps, SwiftInfo),
         ),
     ]
 
-    return cc_compilation_outputs, linking_outputs, providers
+    return binary_linking_output, providers, output_files
 
 def _create_xctest_runner(name, actions, executable, xctest_runner_template):
     """Creates a script that will launch `xctest` with the given test bundle.
@@ -234,7 +248,7 @@ def _swift_binary_impl(ctx):
         requested_features = ["static_linking_mode"],
     )
 
-    _, linking_outputs, providers = _swift_linking_rule_impl(
+    linking_outputs, providers, output_files = _swift_linking_rule_impl(
         ctx,
         binary_path = ctx.label.name,
         feature_configuration = feature_configuration,
@@ -243,6 +257,7 @@ def _swift_binary_impl(ctx):
 
     return providers + [
         DefaultInfo(
+            files = depset(direct = [linking_outputs.executable] + output_files),
             executable = linking_outputs.executable,
             runfiles = ctx.runfiles(
                 collect_data = True,
@@ -291,7 +306,7 @@ def _swift_test_impl(ctx):
             extra_swift_infos.append(plugin_info.swift_info)
             additional_linking_contexts.append(plugin_info.cc_info.linking_context)
 
-    _, linking_outputs, providers = _swift_linking_rule_impl(
+    linking_outputs, providers, _ = _swift_linking_rule_impl(
         ctx,
         additional_linking_contexts = additional_linking_contexts,
         binary_path = binary_path,
@@ -334,12 +349,6 @@ def _swift_test_impl(ctx):
                 files = ctx.files.data + additional_test_outputs,
                 transitive_files = ctx.attr._apple_coverage_support.files,
             ),
-        ),
-        coverage_common.instrumented_files_info(
-            ctx,
-            dependency_attributes = ["deps"],
-            extensions = ["swift"],
-            source_attributes = ["srcs"],
         ),
         testing.ExecutionInfo(
             swift_toolchain.test_configuration.execution_requirements,
