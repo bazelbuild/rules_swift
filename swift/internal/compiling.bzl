@@ -2017,7 +2017,6 @@ def derive_module_name(label, omit_package, pascal_case):
         module_name = "_" + module_name
 
     if pascal_case:
-
         # A map of known initialisms capitalized by Apple in module names and type / method definitions.
         known_initialisms = {
             "api": "API",
