@@ -23,9 +23,9 @@ load(
 )
 load(
     "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
-    "SWIFT_FEATURE__SUPPORTS_MACROS",
     "SWIFT_FEATURE_DERIVED_MODULE_NAME_OMIT_PACKAGE",
     "SWIFT_FEATURE_DERIVED_MODULE_NAME_PASCAL_CASE",
+    "SWIFT_FEATURE__SUPPORTS_MACROS",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:features.bzl",

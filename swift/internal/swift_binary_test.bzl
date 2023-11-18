@@ -90,7 +90,6 @@ def _swift_linking_rule_impl(
     # If the rule has sources, compile those first and collect the outputs to
     # be passed to the linker.
     if srcs:
-
         # Determine the module name:
         omit_package = swift_common.is_enabled(
             feature_configuration = feature_configuration,

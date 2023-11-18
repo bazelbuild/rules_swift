@@ -27,11 +27,11 @@ load(
 )
 load(
     ":feature_names.bzl",
+    "SWIFT_FEATURE_DERIVED_MODULE_NAME_OMIT_PACKAGE",
+    "SWIFT_FEATURE_DERIVED_MODULE_NAME_PASCAL_CASE",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS",
-    "SWIFT_FEATURE_DERIVED_MODULE_NAME_OMIT_PACKAGE",
-    "SWIFT_FEATURE_DERIVED_MODULE_NAME_PASCAL_CASE",
 )
 load(":linking.bzl", "new_objc_provider")
 load(":providers.bzl", "SwiftCompilerPluginInfo", "SwiftInfo", "SwiftToolchainInfo")
