@@ -331,12 +331,12 @@ SWIFT_FEATURE_OBJC_LINK_FLAGS = "swift.objc_link_flag"
 # Omit the package name when deriving the module name.
 # E.g. //package:some_library would normally have the module name "package_some_library"
 # With this feature enabled, the module name would be "some_library".
-SWIFT_FEATURE_DERIVED_MODULE_NAME_OMIT_PACKAGE = "swift.derive_module_name_omit_package"
+SWIFT_FEATURE_DERIVED_MODULE_NAME_OMIT_PACKAGE = "swift.derived_module_name_omit_package"
 
 # Convert to PascalCase when deriving the module name.
 # E.g. //package:some_library would normally have the snake_case module name "package_some_library"
 # With this feature enabled, the module name would be "PackageSomeLibrary".
-SWIFT_FEATURE_DERIVED_MODULE_NAME_PASCAL_CASE = "swift.derive_module_name_pascal_case"
+SWIFT_FEATURE_DERIVED_MODULE_NAME_PASCAL_CASE = "swift.derived_module_name_pascal_case"
 
 # A private feature that is set by the toolchain if the given toolchain wants
 # all Swift compilations to always be linked.
