@@ -15,10 +15,12 @@
 """Propagates unified `SwiftInfo` providers for C/Objective-C targets."""
 
 load(":attrs.bzl", "swift_toolchain_attrs")
-load(":compiling.bzl", "precompile_clang_module")
+load(":compiling.bzl", "derive_module_name", "precompile_clang_module")
 load(":derived_files.bzl", "derived_files")
 load(
     ":feature_names.bzl",
+    "SWIFT_FEATURE_DERIVED_MODULE_NAME_OMIT_PACKAGE",
+    "SWIFT_FEATURE_DERIVED_MODULE_NAME_PASCAL_CASE",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS",
 )
@@ -402,15 +404,15 @@ def _module_info_for_target(
     module_map_file = None
 
     # Derive the module name:
-    omit_package = swift_common.is_enabled(
+    omit_package = is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_DERIVED_MODULE_NAME_OMIT_PACKAGE,
     )
-    pascal_case = swift_common.is_enabled(
+    pascal_case = is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_DERIVED_MODULE_NAME_PASCAL_CASE,
     )
-    derived_module_name = swift_common.derive_module_name(target.label, omit_package, pascal_case)
+    derived_module_name = derive_module_name(target.label, omit_package, pascal_case)
 
     # TODO: Remove once we cherry-pick the `swift_interop_hint` rule
     if not module_name and aspect_ctx.rule.kind == "cc_library":
@@ -612,26 +614,17 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx):
         swift_toolchain = swift_toolchain,
         unsupported_features = unsupported_features,
     )
-    omit_package = swift_common.is_enabled(
+    omit_package = is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_DERIVED_MODULE_NAME_OMIT_PACKAGE,
     )
-    pascal_case = swift_common.is_enabled(
+    pascal_case = is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_DERIVED_MODULE_NAME_PASCAL_CASE,
     )
-    derived_module_name = swift_common.derive_module_name(target.label, omit_package, pascal_case)
+    derived_module_name = derive_module_name(target.label, omit_package, pascal_case)
 
     if _SwiftInteropInfo in target:
-        omit_package = swift_common.is_enabled(
-            feature_configuration = feature_configuration,
-            feature_name = SWIFT_FEATURE_DERIVED_MODULE_NAME_OMIT_PACKAGE,
-        )
-        pascal_case = swift_common.is_enabled(
-            feature_configuration = feature_configuration,
-            feature_name = SWIFT_FEATURE_DERIVED_MODULE_NAME_PASCAL_CASE,
-        )
-
         interop_info = target[_SwiftInteropInfo]
         module_map_file = interop_info.module_map
         module_name = (

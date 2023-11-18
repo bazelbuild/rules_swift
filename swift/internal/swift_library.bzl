@@ -143,7 +143,7 @@ def _swift_library_impl(ctx):
     )
     module_name = ctx.attr.module_name
     if not module_name:
-        module_name = swift_common.derive_module_name(target.label, omit_package, pascal_case)
+        module_name = swift_common.derive_module_name(ctx.label, omit_package, pascal_case)
 
     if swift_common.is_enabled(
         feature_configuration = feature_configuration,

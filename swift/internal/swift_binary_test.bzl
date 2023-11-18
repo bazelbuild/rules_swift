@@ -17,7 +17,12 @@
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(":compiling.bzl", "output_groups_from_other_compilation_outputs")
 load(":derived_files.bzl", "derived_files")
-load(":feature_names.bzl", "SWIFT_FEATURE_BUNDLED_XCTESTS")
+load(
+    ":feature_names.bzl",
+    "SWIFT_FEATURE_BUNDLED_XCTESTS",
+    "SWIFT_FEATURE_DERIVED_MODULE_NAME_OMIT_PACKAGE",
+    "SWIFT_FEATURE_DERIVED_MODULE_NAME_PASCAL_CASE",
+)
 load(":linking.bzl", "binary_rule_attrs", "configure_features_for_binary", "register_link_binary_action")
 load(":providers.bzl", "SwiftCompilerPluginInfo", "SwiftToolchainInfo")
 load(":swift_common.bzl", "swift_common")

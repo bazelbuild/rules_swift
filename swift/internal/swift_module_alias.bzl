@@ -53,7 +53,7 @@ def _swift_module_alias_impl(ctx):
     )
     module_name = ctx.attr.module_name
     if not module_name:
-        module_name = swift_common.derive_module_name(target.label, omit_package, pascal_case)
+        module_name = swift_common.derive_module_name(ctx.label, omit_package, pascal_case)
 
     # Generate a source file that imports each of the deps using `@_exported`.
     reexport_src = derived_files.reexport_modules_src(
