@@ -2017,8 +2017,19 @@ def derive_module_name(label, omit_package, pascal_case):
         module_name = "_" + module_name
 
     if pascal_case:
+
+        # A map of known initialisms capitalized by Apple in module names and type / method definitions.
+        known_initialisms = {
+            "api": "API",
+            "sql": "SQL",
+            "id": "ID",
+            "grpc": "GRPC",
+            "url": "URL",
+            "ui": "UI",
+        }
+
         module_name_components = module_name.split("_")
-        module_name_components = [c.capitalize() for c in module_name_components]
+        module_name_components = [known_initialisms[c.lower()] if c in known_initialisms else c.capitalize() for c in module_name_components]
         module_name = "".join(module_name_components)
 
     return module_name
