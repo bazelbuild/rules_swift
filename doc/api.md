@@ -500,7 +500,7 @@ A `struct` containing the `ast_files`, `defines`, `indexstore,
 ## swift_common.derive_module_name
 
 <pre>
-swift_common.derive_module_name(<a href="#swift_common.derive_module_name-args">args</a>)
+swift_common.derive_module_name(<a href="#swift_common.derive_module_name-label">label</a>, <a href="#swift_common.derive_module_name-omit_package">omit_package</a>, <a href="#swift_common.derive_module_name-pascal_case">pascal_case</a>)
 </pre>
 
 Returns a derived module name from the given build label.
@@ -519,35 +519,7 @@ is computed using the following algorithm:
     underscore is prepended to make it identifier-safe.
 
 This mapping is intended to be fairly predictable, but not reversible.
-
-
-**PARAMETERS**
-
-
-| Name  | Description | Default Value |
-| :------------- | :------------- | :------------- |
-| <a id="swift_common.derive_module_name-args"></a>args |  Either a single argument of type `Label`, or two arguments of type `str` where the first argument is the package name and the second argument is the target name.   |  none |
-
-**RETURNS**
-
-The module name derived from the label.
-
-
-<a id="swift_common.derive_proto_module_name"></a>
-
-## swift_common.derive_proto_module_name
-
-<pre>
-swift_common.derive_proto_module_name(<a href="#swift_common.derive_proto_module_name-label">label</a>, <a href="#swift_common.derive_proto_module_name-omit_package">omit_package</a>, <a href="#swift_common.derive_proto_module_name-pascal_case">pascal_case</a>)
-</pre>
-
-Returns a derived proto module name from the given build label.
-
-For swift_proto_library and swift_grpc_library targets,
-the module name is derived from the corresponding proto library target.
-
-The name is computed according to the same algorithm as described in derive_module_name,
-with the additional capability to omit the package name and convert to PascalCase.
+You can also use the omit_package and pascal_case flags to omit the package name and convert to PascalCase.
 
 Example:
 Given label: //package:target and (omit_package, pascal_case), the module name will be:
@@ -561,9 +533,9 @@ Given label: //package:target and (omit_package, pascal_case), the module name w
 
 | Name  | Description | Default Value |
 | :------------- | :------------- | :------------- |
-| <a id="swift_common.derive_proto_module_name-label"></a>label |  The `Label` of the proto_library target.   |  none |
-| <a id="swift_common.derive_proto_module_name-omit_package"></a>omit_package |  Whether the label's package prefix will be omitted from the module name.   |  none |
-| <a id="swift_common.derive_proto_module_name-pascal_case"></a>pascal_case |  Whether the module name should be converted from snake_case to PascalCase.   |  none |
+| <a id="swift_common.derive_module_name-label"></a>label |  The `Label` of the library target.   |  none |
+| <a id="swift_common.derive_module_name-omit_package"></a>omit_package |  Whether the label's package prefix will be omitted from the module name.   |  none |
+| <a id="swift_common.derive_module_name-pascal_case"></a>pascal_case |  Whether the module name should be converted from snake_case to PascalCase.   |  none |
 
 **RETURNS**
 

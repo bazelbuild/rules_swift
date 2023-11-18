@@ -1971,7 +1971,7 @@ def _module_name_safe(string):
 
     return result
 
-def derive_module_name(*args):
+def derive_module_name(label, omit_package, pascal_case):
     """Returns a derived module name from the given build label.
 
     For targets whose module name is not explicitly specified, the module name
@@ -1988,48 +1988,7 @@ def derive_module_name(*args):
         underscore is prepended to make it identifier-safe.
 
     This mapping is intended to be fairly predictable, but not reversible.
-
-    Args:
-        *args: Either a single argument of type `Label`, or two arguments of
-            type `str` where the first argument is the package name and the
-            second argument is the target name.
-
-    Returns:
-        The module name derived from the label.
-    """
-    if (len(args) == 1 and
-        hasattr(args[0], "package") and
-        hasattr(args[0], "name")):
-        label = args[0]
-        package = label.package
-        name = label.name
-    elif (len(args) == 2 and
-          types.is_string(args[0]) and
-          types.is_string(args[1])):
-        package = args[0]
-        name = args[1]
-    else:
-        fail("derive_module_name may only be called with a single argument " +
-             "of type 'Label' or two arguments of type 'str'.")
-
-    package_part = _module_name_safe(package.lstrip("//"))
-    name_part = _module_name_safe(name)
-    if package_part:
-        module_name = package_part + "_" + name_part
-    else:
-        module_name = name_part
-    if module_name[0].isdigit():
-        module_name = "_" + module_name
-    return module_name
-
-def derive_proto_module_name(label, omit_package, pascal_case):
-    """Returns a derived proto module name from the given build label.
-
-    For swift_proto_library and swift_grpc_library targets,
-    the module name is derived from the corresponding proto library target.
-
-    The name is computed according to the same algorithm as described in derive_module_name,
-    with the additional capability to omit the package name and convert to PascalCase.
+    You can also use the omit_package and pascal_case flags to omit the package name and convert to PascalCase.
 
     Example:
     Given label: //package:target and (omit_package, pascal_case), the module name will be:
@@ -2038,7 +1997,7 @@ def derive_proto_module_name(label, omit_package, pascal_case):
     (True, True): "Target"
 
     Args:
-        label: The `Label` of the proto_library target.
+        label: The `Label` of the library target.
         omit_package: Whether the label's package prefix will be omitted from the module name.
         pascal_case: Whether the module name should be converted from snake_case to PascalCase.
 

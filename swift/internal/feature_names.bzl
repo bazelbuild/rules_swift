@@ -328,15 +328,15 @@ SWIFT_FEATURE_LLD_GC_WORKAROUND = "swift.lld_gc_workaround"
 # objects if you know that isn't required.
 SWIFT_FEATURE_OBJC_LINK_FLAGS = "swift.objc_link_flag"
 
-# Omit the package name when deriving the proto module name.
-# E.g. //package:some_proto_library would normally have the module name "package_some_proto_library"
-# With this feature enabled, the module name would be "some_proto_library".
-SWIFT_FEATURE_PROTO_MODULE_NAME_OMIT_PACKAGE = "swift.proto_module_name_omit_package"
+# Omit the package name when deriving the module name.
+# E.g. //package:some_library would normally have the module name "package_some_library"
+# With this feature enabled, the module name would be "some_library".
+SWIFT_FEATURE_DERIVED_MODULE_NAME_OMIT_PACKAGE = "swift.derive_module_name_omit_package"
 
-# Convert to PascalCase when deriving the proto module name.
-# E.g. //package:some_proto_library would normally have the snake_case module name "package_some_proto_library"
-# With this feature enabled, the module name would be "PackageSomeProtoLibrary".
-SWIFT_FEATURE_PROTO_MODULE_NAME_PASCAL_CASE = "swift.proto_module_name_pascal_case"
+# Convert to PascalCase when deriving the module name.
+# E.g. //package:some_library would normally have the snake_case module name "package_some_library"
+# With this feature enabled, the module name would be "PackageSomeLibrary".
+SWIFT_FEATURE_DERIVED_MODULE_NAME_PASCAL_CASE = "swift.derive_module_name_pascal_case"
 
 # A private feature that is set by the toolchain if the given toolchain wants
 # all Swift compilations to always be linked.

@@ -26,8 +26,8 @@ load(
     "SWIFT_FEATURE_ENABLE_TESTING",
     "SWIFT_FEATURE_GENERATE_FROM_RAW_PROTO_FILES",
     "SWIFT_FEATURE_GENERATE_PATH_TO_UNDERSCORES_FROM_PROTO_FILES",
-    "SWIFT_FEATURE_PROTO_MODULE_NAME_OMIT_PACKAGE",
-    "SWIFT_FEATURE_PROTO_MODULE_NAME_PASCAL_CASE",
+    "SWIFT_FEATURE_DERIVED_MODULE_NAME_OMIT_PACKAGE",
+    "SWIFT_FEATURE_DERIVED_MODULE_NAME_PASCAL_CASE",
 )
 load(":linking.bzl", "new_objc_provider")
 load(
@@ -341,24 +341,22 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
         if SwiftProtoInfo in dep
     ]
 
+    # Configure the features and derive the module name:
     feature_configuration = swift_common.configure_features(
         ctx = aspect_ctx,
         requested_features = aspect_ctx.features,
         swift_toolchain = swift_toolchain,
         unsupported_features = [],
     )
-
     omit_package = swift_common.is_enabled(
         feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_PROTO_MODULE_NAME_OMIT_PACKAGE,
+        feature_name = SWIFT_FEATURE_DERIVED_MODULE_NAME_OMIT_PACKAGE,
     )
     pascal_case = swift_common.is_enabled(
         feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_PROTO_MODULE_NAME_PASCAL_CASE,
+        feature_name = SWIFT_FEATURE_DERIVED_MODULE_NAME_PASCAL_CASE,
     )
-
-    # Derive the module name from the target label or use the tag value if provided.
-    module_name = swift_common.derive_proto_module_name(target.label, omit_package, pascal_case)
+    module_name = swift_common.derive_module_name(target.label, omit_package, pascal_case)
 
     minimal_module_mappings = []
     if direct_srcs:

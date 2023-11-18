@@ -170,7 +170,7 @@ def create_swift_interop_info(
         unsupported_features = unsupported_features,
     )
 
-def _tagged_target_module_name(label, tags):
+def _tagged_target_module_name(derived_module_name, tags):
     """Returns the module name of a `swift_module`-tagged target.
 
     The `swift_module` tag may take one of two forms:
@@ -189,8 +189,7 @@ def _tagged_target_module_name(label, tags):
     list.
 
     Args:
-        label: The target label from which a module name should be derived, if
-            necessary.
+        derived_module_name: The default module name derived from the target label.
         tags: The list of tags from the `cc_library` target to which the aspect
             is being applied.
 
@@ -203,7 +202,7 @@ def _tagged_target_module_name(label, tags):
     module_name = None
     for tag in tags:
         if tag == "swift_module":
-            module_name = derive_module_name(label)
+            module_name = derived_module_name
         elif tag.startswith("swift_module="):
             _, _, module_name = tag.partition("=")
     return module_name
@@ -402,12 +401,23 @@ def _module_info_for_target(
     attr = aspect_ctx.rule.attr
     module_map_file = None
 
+    # Derive the module name:
+    omit_package = swift_common.is_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_DERIVED_MODULE_NAME_OMIT_PACKAGE,
+    )
+    pascal_case = swift_common.is_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_DERIVED_MODULE_NAME_PASCAL_CASE,
+    )
+    derived_module_name = swift_common.derive_module_name(target.label, omit_package, pascal_case)
+
     # TODO: Remove once we cherry-pick the `swift_interop_hint` rule
     if not module_name and aspect_ctx.rule.kind == "cc_library":
         # For all other targets, there is no mechanism to provide a custom
         # module map, and we only generate one if the target is tagged.
         module_name = _tagged_target_module_name(
-            label = target.label,
+            derived_module_name = derived_module_name,
             tags = attr.tags,
         )
         if not module_name:
@@ -424,7 +434,7 @@ def _module_info_for_target(
         # was some other `Objc`-providing target, derive the module name
         # now.
         if not module_name:
-            module_name = derive_module_name(target.label)
+            module_name = derived_module_name
 
     # If we didn't get a module map above, generate it now.
     if not module_map_file:
@@ -594,11 +604,38 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx):
     requested_features = aspect_ctx.features
     unsupported_features = aspect_ctx.disabled_features
 
+    # Configure the features and derive the module name:
+    swift_toolchain = aspect_ctx.attr._toolchain_for_aspect[SwiftToolchainInfo]
+    feature_configuration = configure_features(
+        ctx = aspect_ctx,
+        requested_features = requested_features,
+        swift_toolchain = swift_toolchain,
+        unsupported_features = unsupported_features,
+    )
+    omit_package = swift_common.is_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_DERIVED_MODULE_NAME_OMIT_PACKAGE,
+    )
+    pascal_case = swift_common.is_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_DERIVED_MODULE_NAME_PASCAL_CASE,
+    )
+    derived_module_name = swift_common.derive_module_name(target.label, omit_package, pascal_case)
+
     if _SwiftInteropInfo in target:
+        omit_package = swift_common.is_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_DERIVED_MODULE_NAME_OMIT_PACKAGE,
+        )
+        pascal_case = swift_common.is_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_DERIVED_MODULE_NAME_PASCAL_CASE,
+        )
+
         interop_info = target[_SwiftInteropInfo]
         module_map_file = interop_info.module_map
         module_name = (
-            interop_info.module_name or derive_module_name(target.label)
+            interop_info.module_name or derived_module_name
         )
         swift_infos = interop_info.swift_infos
         requested_features.extend(interop_info.requested_features)
@@ -618,14 +655,6 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx):
             if dep:
                 deps.append(dep)
         swift_infos = get_providers(deps, SwiftInfo)
-
-    swift_toolchain = aspect_ctx.attr._toolchain_for_aspect[SwiftToolchainInfo]
-    feature_configuration = configure_features(
-        ctx = aspect_ctx,
-        requested_features = requested_features,
-        swift_toolchain = swift_toolchain,
-        unsupported_features = unsupported_features,
-    )
 
     if (
         _SwiftInteropInfo in target or

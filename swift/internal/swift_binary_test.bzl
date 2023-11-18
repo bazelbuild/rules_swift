@@ -90,9 +90,19 @@ def _swift_linking_rule_impl(
     # If the rule has sources, compile those first and collect the outputs to
     # be passed to the linker.
     if srcs:
+
+        # Determine the module name:
+        omit_package = swift_common.is_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_DERIVED_MODULE_NAME_OMIT_PACKAGE,
+        )
+        pascal_case = swift_common.is_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_DERIVED_MODULE_NAME_PASCAL_CASE,
+        )
         module_name = ctx.attr.module_name
         if not module_name:
-            module_name = swift_common.derive_module_name(ctx.label)
+            module_name = swift_common.derive_module_name(ctx.label, omit_package, pascal_case)
 
         copts = expand_locations(ctx, ctx.attr.copts, ctx.attr.swiftc_inputs) + \
                 _maybe_parse_as_library_copts(srcs)

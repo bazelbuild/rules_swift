@@ -22,12 +22,14 @@ load(
     "output_groups_from_other_compilation_outputs",
 )
 load(
-    "@build_bazel_rules_swift//swift/internal:features.bzl",
-    "is_feature_enabled",
-)
-load(
     "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE__SUPPORTS_MACROS",
+    "SWIFT_FEATURE_DERIVED_MODULE_NAME_OMIT_PACKAGE",
+    "SWIFT_FEATURE_DERIVED_MODULE_NAME_PASCAL_CASE",
+)
+load(
+    "@build_bazel_rules_swift//swift/internal:features.bzl",
+    "is_feature_enabled",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:linking.bzl",
@@ -48,7 +50,6 @@ load(
     "get_providers",
 )
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load(":module_name.bzl", "derive_swift_module_name")
 load(
     "@build_bazel_rules_swift//swift/internal:swift_common.bzl",
     "swift_common",
@@ -57,11 +58,23 @@ load(
 def _swift_compiler_plugin_impl(ctx):
     swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
 
+    # Configure the features and derive the module name:
     feature_configuration = configure_features_for_binary(
         ctx = ctx,
         requested_features = ctx.features,
         unsupported_features = ctx.disabled_features,
     )
+    omit_package = swift_common.is_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_DERIVED_MODULE_NAME_OMIT_PACKAGE,
+    )
+    pascal_case = swift_common.is_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_DERIVED_MODULE_NAME_PASCAL_CASE,
+    )
+    module_name = ctx.attr.module_name
+    if not module_name:
+        module_name = swift_common.derive_module_name(ctx.label, omit_package, pascal_case)
 
     if not is_feature_enabled(
         feature_configuration = feature_configuration,
@@ -75,9 +88,6 @@ def _swift_compiler_plugin_impl(ctx):
     if not srcs:
         fail("A compiler plugin must have at least one file in 'srcs'.")
 
-    module_name = ctx.attr.module_name
-    if not module_name:
-        module_name = derive_swift_module_name(ctx.label)
     entry_point_function_name = "{}_main".format(module_name)
 
     module_context, cc_compilation_outputs, other_compilation_outputs = swift_common.compile(

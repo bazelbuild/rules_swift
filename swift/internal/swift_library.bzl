@@ -30,6 +30,8 @@ load(
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS",
+    "SWIFT_FEATURE_DERIVED_MODULE_NAME_OMIT_PACKAGE",
+    "SWIFT_FEATURE_DERIVED_MODULE_NAME_PASCAL_CASE",
 )
 load(":linking.bzl", "new_objc_provider")
 load(":providers.bzl", "SwiftCompilerPluginInfo", "SwiftInfo", "SwiftToolchainInfo")
@@ -123,10 +125,7 @@ def _swift_library_impl(ctx):
         extra_features.append(SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION)
         extra_features.append(SWIFT_FEATURE_EMIT_SWIFTINTERFACE)
 
-    module_name = ctx.attr.module_name
-    if not module_name:
-        module_name = swift_common.derive_module_name(ctx.label)
-
+    # Configure the features and derive the module name:
     swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
     feature_configuration = swift_common.configure_features(
         ctx = ctx,
@@ -134,6 +133,17 @@ def _swift_library_impl(ctx):
         swift_toolchain = swift_toolchain,
         unsupported_features = ctx.disabled_features,
     )
+    omit_package = swift_common.is_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_DERIVED_MODULE_NAME_OMIT_PACKAGE,
+    )
+    pascal_case = swift_common.is_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_DERIVED_MODULE_NAME_PASCAL_CASE,
+    )
+    module_name = ctx.attr.module_name
+    if not module_name:
+        module_name = swift_common.derive_module_name(target.label, omit_package, pascal_case)
 
     if swift_common.is_enabled(
         feature_configuration = feature_configuration,

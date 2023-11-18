@@ -17,6 +17,11 @@
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(":compiling.bzl", "output_groups_from_other_compilation_outputs")
 load(":derived_files.bzl", "derived_files")
+load(
+    ":feature_names.bzl",
+    "SWIFT_FEATURE_DERIVED_MODULE_NAME_OMIT_PACKAGE",
+    "SWIFT_FEATURE_DERIVED_MODULE_NAME_PASCAL_CASE",
+)
 load(":linking.bzl", "new_objc_provider")
 load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
 load(":swift_common.bzl", "swift_common")
@@ -30,9 +35,25 @@ def _swift_module_alias_impl(ctx):
         for module in dep[SwiftInfo].direct_modules
     }
 
+    # Configure the features and derive the module name:
+    swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
+    feature_configuration = swift_common.configure_features(
+        ctx = ctx,
+        requested_features = ctx.features,
+        swift_toolchain = swift_toolchain,
+        unsupported_features = ctx.disabled_features,
+    )
+    omit_package = swift_common.is_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_DERIVED_MODULE_NAME_OMIT_PACKAGE,
+    )
+    pascal_case = swift_common.is_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_DERIVED_MODULE_NAME_PASCAL_CASE,
+    )
     module_name = ctx.attr.module_name
     if not module_name:
-        module_name = swift_common.derive_module_name(ctx.label)
+        module_name = swift_common.derive_module_name(target.label, omit_package, pascal_case)
 
     # Generate a source file that imports each of the deps using `@_exported`.
     reexport_src = derived_files.reexport_modules_src(
@@ -45,14 +66,6 @@ def _swift_module_alias_impl(ctx):
             for module in module_mapping.keys()
         ]),
         output = reexport_src,
-    )
-
-    swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
-    feature_configuration = swift_common.configure_features(
-        ctx = ctx,
-        requested_features = ctx.features,
-        swift_toolchain = swift_toolchain,
-        unsupported_features = ctx.disabled_features,
     )
 
     module_context, compilation_outputs, other_compilation_outputs = swift_common.compile(
