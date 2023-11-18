@@ -15,7 +15,7 @@
 """Propagates unified `SwiftInfo` providers for C/Objective-C targets."""
 
 load(":attrs.bzl", "swift_toolchain_attrs")
-load(":compiling.bzl", "derive_module_name", "precompile_clang_module")
+load(":compiling.bzl", "precompile_clang_module")
 load(":derived_files.bzl", "derived_files")
 load(
     ":feature_names.bzl",
