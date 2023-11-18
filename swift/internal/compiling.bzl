@@ -1971,7 +1971,7 @@ def _module_name_safe(string):
 
     return result
 
-def derive_module_name(label, omit_package, pascal_case):
+def derive_module_name(label, omit_package=False, pascal_case=False):
     """Returns a derived module name from the given build label.
 
     For targets whose module name is not explicitly specified, the module name
