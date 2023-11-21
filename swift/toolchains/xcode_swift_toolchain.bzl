@@ -21,6 +21,7 @@ toolchain, see `doc/rules.md`.
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain", "use_cpp_toolchain")
 load(
     "@build_bazel_rules_swift//swift:providers.bzl",
@@ -561,6 +562,11 @@ def _xcode_swift_toolchain_impl(ctx):
 
     xcode_config = ctx.attr._xcode_config[apple_common.XcodeVersionConfig]
 
+    # TODO: b/312204041 - Remove the use of the `swift` fragment once we've
+    # migrated the `--swiftcopt` flag via `--flag_alias`.
+    swiftcopts = (
+        ctx.fragments.swift.copts() + ctx.attr._copts[BuildSettingInfo].value
+    )
     swift_linkopts_cc_info = _swift_linkopts_cc_info(
         apple_toolchain = apple_toolchain,
         target_triple = target_triple,
@@ -591,7 +597,7 @@ def _xcode_swift_toolchain_impl(ctx):
     requested_features = features_for_build_modes(
         ctx,
         cpp_fragment = cpp_fragment,
-    ) + wmo_features_from_swiftcopts(swiftcopts = ctx.fragments.swift.copts())
+    ) + wmo_features_from_swiftcopts(swiftcopts = swiftcopts)
     requested_features.extend(ctx.features)
     requested_features.extend(default_features_for_toolchain(
         ctx = ctx,
@@ -625,7 +631,7 @@ def _xcode_swift_toolchain_impl(ctx):
             ctx.fragments.cpp,
             ctx.fragments.objc,
         ),
-        additional_swiftc_copts = ctx.fragments.swift.copts(),
+        additional_swiftc_copts = swiftcopts,
         apple_toolchain = apple_toolchain,
         generated_header_rewriter = generated_header_rewriter,
         needs_resource_directory = swift_executable or toolchain_root,
@@ -775,6 +781,13 @@ configuration options that are applied to targets on a per-package basis.
                 doc = """\
 The C++ toolchain from which linking flags and other tools needed by the Swift
 toolchain (such as `clang`) will be retrieved.
+""",
+            ),
+            "_copts": attr.label(
+                default = Label("@build_bazel_rules_swift//swift:copt"),
+                doc = """\
+The label of the `string_list` containing additional flags that should be passed
+to the compiler.
 """,
             ),
             "_module_mapping": attr.label(

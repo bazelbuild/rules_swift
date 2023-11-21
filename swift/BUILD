@@ -2,6 +2,7 @@ load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load(
     "@bazel_skylib//rules:common_settings.bzl",
     "bool_setting",
+    "string_list_flag",
 )
 load(
     "//swift/internal:build_settings.bzl",
@@ -266,6 +267,15 @@ swift_interop_hint(
 swift_interop_hint(
     name = "no_module",
     suppressed = True,
+    visibility = ["//visibility:public"],
+)
+
+# Additional Swift compiler flags that will be applied to all `SwiftCompile`
+# actions in non-execution configurations (but not module interface compile
+# actions or Clang module compile actions).
+string_list_flag(
+    name = "copt",
+    build_setting_default = [],
     visibility = ["//visibility:public"],
 )
 
