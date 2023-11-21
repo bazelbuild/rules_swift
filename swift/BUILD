@@ -316,6 +316,7 @@ filegroup(
 repeatable_string_flag(
     name = "copt",
     build_setting_default = [],
+    visibility = ["//visibility:public"],
 )
 
 # Additional Swift compiler flags that will be applied to all `SwiftCompile`
@@ -324,6 +325,7 @@ repeatable_string_flag(
 repeatable_string_flag(
     name = "exec_copt",
     build_setting_default = [],
+    visibility = ["//visibility:public"],
 )
 
 # An aspect hint that enables module map generation for a non-Swift,
