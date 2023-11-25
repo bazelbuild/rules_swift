@@ -1,0 +1,18 @@
+load(
+    "//proto:compiler.bzl",
+    "swift_proto_compiler",
+)
+
+swift_proto_compiler(
+    name = "swift_proto",
+    visibility = ["//visibility:public"],
+    deps = []
+)
+
+swift_proto_compiler(
+    name = "swift_grpc",
+    plugin = "//tools/protoc_wrapper:protoc-gen-grpc-swift",
+    plugin_name = "swiftgrpc",
+    visibility = ["//visibility:public"],
+    deps = []
+)
