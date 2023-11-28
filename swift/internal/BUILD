@@ -424,6 +424,7 @@ bzl_library(
 bzl_library(
     name = "build_settings",
     srcs = ["build_settings.bzl"],
+    deps = ["@bazel_skylib//rules:common_settings"],
 )
 
 # Indirection needed to prevent using `objc_library` outside of macOS

@@ -1,13 +1,9 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
-load(
-    "@bazel_skylib//rules:common_settings.bzl",
-    "bool_flag",
-    "bool_setting",
-)
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag", "bool_setting")
 load(
     "//swift/internal:build_settings.bzl",
-    "accumulating_string_list_flag",
     "per_module_swiftcopt_flag",
+    "repeatable_string_flag",
 )
 
 package(default_visibility = ["//visibility:public"])
@@ -89,7 +85,7 @@ filegroup(
 # Additional Swift compiler flags that will be applied to all `SwiftCompile`
 # actions in non-execution configurations (but not module interface compile
 # actions or Clang module compile actions).
-accumulating_string_list_flag(
+repeatable_string_flag(
     name = "copt",
     build_setting_default = [],
     visibility = ["//visibility:public"],
@@ -98,7 +94,7 @@ accumulating_string_list_flag(
 # Additional Swift compiler flags that will be applied to all `SwiftCompile`
 # actions in execution configurations (but not module interface compile
 # actions or Clang module compile actions).
-accumulating_string_list_flag(
+repeatable_string_flag(
     name = "exec_copt",
     build_setting_default = [],
     visibility = ["//visibility:public"],
