@@ -14,9 +14,28 @@
 
 """Custom build settings rules for Swift rules."""
 
+load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
+
 visibility([
     "@build_bazel_rules_swift//swift/...",
 ])
+
+def _repeatable_string_flag_impl(ctx):
+    return BuildSettingInfo(value = ctx.build_setting_value)
+
+repeatable_string_flag = rule(
+    build_setting = config.string_list(
+        flag = True,
+        repeatable = True,
+    ),
+    doc = """\
+A string-valued flag that can occur on the command line multiple times, used for
+flags like `copt`. This allows flags to be stacked in `--config`s (rather than
+overwriting previous occurrences) and also makes no assumption about the values
+of the flags (comma-splitting does not occur).
+""",
+    implementation = _repeatable_string_flag_impl,
+)
 
 PerModuleSwiftCoptSettingInfo = provider(
     doc = "A provider for the parsed per-swiftmodule swift copts.",

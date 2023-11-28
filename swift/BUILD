@@ -1,12 +1,9 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
-load(
-    "@bazel_skylib//rules:common_settings.bzl",
-    "bool_setting",
-    "string_list_flag",
-)
+load("@bazel_skylib//rules:common_settings.bzl", "bool_setting")
 load(
     "//swift/internal:build_settings.bzl",
     "per_module_swiftcopt_flag",
+    "repeatable_string_flag",
 )
 load(":swift_interop_hint.bzl", "swift_interop_hint")
 load(":swift_module_mapping.bzl", "swift_module_mapping")
@@ -273,7 +270,7 @@ swift_interop_hint(
 # Additional Swift compiler flags that will be applied to all `SwiftCompile`
 # actions in non-execution configurations (but not module interface compile
 # actions or Clang module compile actions).
-string_list_flag(
+repeatable_string_flag(
     name = "copt",
     build_setting_default = [],
     visibility = ["//visibility:public"],
