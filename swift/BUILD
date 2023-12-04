@@ -3,6 +3,7 @@ load("@bazel_skylib//rules:common_settings.bzl", "bool_flag", "bool_setting")
 load(
     "//swift/internal:build_settings.bzl",
     "per_module_swiftcopt_flag",
+    "repeatable_string_flag",
 )
 
 package(default_visibility = ["//visibility:public"])
@@ -79,6 +80,24 @@ filegroup(
     visibility = [
         "//:__pkg__",
     ],
+)
+
+# Additional Swift compiler flags that will be applied to all `SwiftCompile`
+# actions in non-execution configurations (but not module interface compile
+# actions or Clang module compile actions).
+repeatable_string_flag(
+    name = "copt",
+    build_setting_default = [],
+    visibility = ["//visibility:public"],
+)
+
+# Additional Swift compiler flags that will be applied to all `SwiftCompile`
+# actions in execution configurations (but not module interface compile
+# actions or Clang module compile actions).
+repeatable_string_flag(
+    name = "exec_copt",
+    build_setting_default = [],
+    visibility = ["//visibility:public"],
 )
 
 # User settable flag that specifies additional Swift copts on a per-swiftmodule basis.
