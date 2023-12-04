@@ -13,8 +13,12 @@ swift_proto_compiler(
 
 swift_proto_compiler(
     name = "swift_grpc",
+    protoc = "//tools/protoc_wrapper:protoc",
     plugin = "//tools/protoc_wrapper:protoc-gen-grpc-swift",
     plugin_name = "swiftgrpc",
+    plugin_options = {
+        "Visibility": "Public",
+    },
     suffixes = [".grpc.swift"],
     deps = [
         "@com_github_grpc_grpc_swift//:GRPC",
