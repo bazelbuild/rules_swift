@@ -1,0 +1,35 @@
+load("@rules_proto//proto:defs.bzl", "proto_library")
+load("//proto:swift_proto_library.bzl", "new_swift_proto_library")
+
+proto_library(
+    name = "service_proto",
+    srcs = ["service.proto"],
+)
+
+new_swift_proto_library(
+    name = "service_swift_proto",
+    protos = [":service_proto"],
+    deps = ["//examples/xplatform/new_grpc/service/messages:messages_swift_proto"],
+    compilers = ["//proto:swift_grpc"],
+)
+
+# swift_grpc_library(
+#     name = "echo_client_services_swift",
+#     srcs = [":echo_proto"],
+#     flavor = "client",
+#     deps = [":echo_proto_swift"],
+# )
+
+# swift_grpc_library(
+#     name = "echo_client_test_stubs_swift",
+#     srcs = [":echo_proto"],
+#     flavor = "client_stubs",
+#     deps = [":echo_client_services_swift"],
+# )
+
+# swift_grpc_library(
+#     name = "echo_server_services_swift",
+#     srcs = [":echo_proto"],
+#     flavor = "server",
+#     deps = [":echo_proto_swift"],
+# )

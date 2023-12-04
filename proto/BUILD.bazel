@@ -1,18 +1,23 @@
 load(
-    "//proto:compiler.bzl",
+    "//proto:swift_proto_compiler.bzl",
     "swift_proto_compiler",
 )
 
 swift_proto_compiler(
     name = "swift_proto",
+    deps = [
+        "@com_github_apple_swift_protobuf//:SwiftProtobuf",
+    ],
     visibility = ["//visibility:public"],
-    deps = []
 )
 
 swift_proto_compiler(
     name = "swift_grpc",
     plugin = "//tools/protoc_wrapper:protoc-gen-grpc-swift",
     plugin_name = "swiftgrpc",
+    suffixes = [".grpc.swift"],
+    deps = [
+        "@com_github_grpc_grpc_swift//:GRPC",
+    ],
     visibility = ["//visibility:public"],
-    deps = []
 )

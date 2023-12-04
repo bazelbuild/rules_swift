@@ -10,61 +10,13 @@
 # 3.  Run the `echo_client` binary in the same terminal. It will send a request
 #     to this service and then print the response that it received.
 
-load("@rules_proto//proto:defs.bzl", "proto_library")
 load(
     "//swift:swift.bzl",
     "swift_binary",
-    "swift_grpc_library",
-    "swift_proto_library",
     "swift_test",
 )
-load("//proto:def.bzl", "new_swift_proto_library")
 
 licenses(["notice"])
-
-proto_library(
-    name = "example_proto",
-    srcs = ["example.proto"],
-)
-
-new_swift_proto_library(
-    name = "example_swift_proto",
-    protos = [":example_proto"],
-)
-
-proto_library(
-    name = "echo_proto",
-    srcs = ["echo.proto"],
-    deps = [
-        "@com_google_protobuf//:any_proto",
-    ],
-)
-
-swift_proto_library(
-    name = "echo_proto_swift",
-    deps = [":echo_proto"],
-)
-
-swift_grpc_library(
-    name = "echo_client_services_swift",
-    srcs = [":echo_proto"],
-    flavor = "client",
-    deps = [":echo_proto_swift"],
-)
-
-swift_grpc_library(
-    name = "echo_client_test_stubs_swift",
-    srcs = [":echo_proto"],
-    flavor = "client_stubs",
-    deps = [":echo_client_services_swift"],
-)
-
-swift_grpc_library(
-    name = "echo_server_services_swift",
-    srcs = [":echo_proto"],
-    flavor = "server",
-    deps = [":echo_proto_swift"],
-)
 
 swift_binary(
     name = "echo_server",

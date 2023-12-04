@@ -40,32 +40,34 @@ SwiftProtoCompilerInfo = provider(
     fields = {
         "compile": """A function with the signature:
 
-    def compile(ctx, compiler, proto_infos, imports, importpath)
+    def compile(ctx, compiler_info, proto_infos, imports)
 
 Where:
 - ctx is the rule's context
-- compiler is this SwiftProtoCompilerInfo
+- compiler_info is this SwiftProtoCompilerInfo provider
 - proto_infos is a list of ProtoInfo providers for proto_infos to compile
-- imports is a depset of strings mapping proto import paths to Swift import paths
-- importpath is the import path of the Swift library being generated
+- imports is a depset of strings mapping proto import paths to Swift module names
 
 The function should declare output .swift files and actions to generate them.
 It should return a list of .swift Files to be compiled by the Go compiler.
 """,
         "deps": """List of targets providing SwiftInfo and CcInfo.
 These are added as implicit dependencies for any swift_proto_library using this
-compiler. Typically, these are Well Known Types and proto runtime libraries.
+compiler. Typically, these are proto runtime libraries.
+
+Well Known Types should be added as dependencies of the swift_proto_library
+targets as needed to avoid compiling them unnecessarily.
 """,
         "internal": "Opaque value containing data used by compile.",
     },
 )
 
-def swift_proto_compile(ctx, compiler, proto_infos, imports):
+def swift_proto_compile(ctx, compiler_info, proto_infos, imports):
     """Invokes protoc to generate Swift sources for a given set of proto info providers.
 
     Args:
         ctx: the rule's context
-        compiler: a SwiftProtoCompilerInfo provider.
+        compiler_info: a SwiftProtoCompilerInfo provider.
         proto_infos: list of ProtoInfo providers to compile.
         imports: depset of dictionaries mapping proto paths to module names
 
@@ -98,7 +100,7 @@ def swift_proto_compile(ctx, compiler, proto_infos, imports):
             proto_paths[path] = proto_src
 
             # Declare the proto file that will be generated:
-            suffixes = compiler.internal.suffixes
+            suffixes = compiler_info.internal.suffixes
             for suffix in suffixes:
                 swift_src_path = paths.replace_extension(proto_src.path, suffix)
                 swift_src = ctx.actions.declare_file(swift_src_path)
@@ -143,23 +145,22 @@ def swift_proto_compile(ctx, compiler, proto_infos, imports):
 
     # Build the arguments for protoc:
     args = ctx.actions.args()
-    args.add("--plugin=protoc-gen-" + compiler.internal.plugin_name + "=" + compiler.internal.plugin.path)
-    for plugin_option in compiler.internal.plugin_options:
-        plugin_option_value = compiler.internal.plugin_options[plugin_option]
-        args.add("--" + compiler.internal.plugin_name + "_opt=" + plugin_option + "=" + plugin_option_value)
-    args.add("--" + compiler.internal.plugin_name + "_opt=ProtoPathModuleMappings=" + module_mappings_file.path)
-    args.add("--" + compiler.internal.plugin_name + "_out=" + out_path)
+    args.add("--plugin=protoc-gen-" + compiler_info.internal.plugin_name + "=" + compiler_info.internal.plugin.path)
+    for plugin_option in compiler_info.internal.plugin_options:
+        plugin_option_value = compiler_info.internal.plugin_options[plugin_option]
+        args.add("--" + compiler_info.internal.plugin_name + "_opt=" + plugin_option + "=" + plugin_option_value)
+    args.add("--" + compiler_info.internal.plugin_name + "_opt=ProtoPathModuleMappings=" + module_mappings_file.path)
+    args.add("--" + compiler_info.internal.plugin_name + "_out=" + out_path)
     args.add_all(transitive_descriptor_sets, before_each = "--descriptor_set_in")
     args.add_all(proto_paths.keys())
     args.use_param_file("--param=%s")
-    print("args: ", args)
 
     # Run protoc:
     ctx.actions.run(
         inputs = depset(
             direct = [
-                compiler.internal.protoc,
-                compiler.internal.plugin,
+                compiler_info.internal.protoc,
+                compiler_info.internal.plugin,
                 module_mappings_file,
             ],
             transitive = [transitive_descriptor_sets],
@@ -167,7 +168,7 @@ def swift_proto_compile(ctx, compiler, proto_infos, imports):
         outputs = swift_srcs,
         progress_message = "Generating into %s" % swift_srcs[0].dirname,
         mnemonic = "SwiftProtocGen",
-        executable = compiler.internal.protoc,
+        executable = compiler_info.internal.protoc,
         arguments = [args],
     )
 
@@ -182,7 +183,7 @@ def _swift_proto_compiler_impl(ctx):
             deps = ctx.attr.deps,
             compile = swift_proto_compile,
             internal = struct(
-                protoc = ctx.executable._protoc,
+                protoc = ctx.executable.protoc,
                 plugin = ctx.executable.plugin,
                 plugin_name = ctx.attr.plugin_name,
                 plugin_options = ctx.attr.plugin_options,
@@ -208,7 +209,7 @@ swift_proto_compiler = rule(
             "suffixes": attr.string_list(
                 default = [".pb.swift"],
                 doc = """\
-                Suffix used for swift files generated from protos.
+                Suffix used for Swift files generated by the plugin from protos.
 
                 E.g.
                 foo.proto => foo.pb.swift
@@ -216,6 +217,23 @@ swift_proto_compiler = rule(
 
                 Each compiler target should configure this based on the suffix applied to the generated files.
                 """,
+            ),
+            "protoc": attr.label(
+                default = "//tools/protoc_wrapper:protoc",
+                doc = """\
+                A proto compiler executable binary.
+                
+                E.g.
+                "//tools/protoc_wrapper:protoc"
+
+                We provide two compiler targets:
+                "//proto:swift_proto"
+                "//proto:swift_grpc"
+
+                These targets use this attribute to configure protoc with their respective proto compiler.
+                """,
+                cfg = "exec",
+                executable = True,
             ),
             "plugin": attr.label(
                 default = "//tools/protoc_wrapper:ProtoCompilerPlugin",
@@ -274,19 +292,6 @@ swift_proto_compiler = rule(
                   --NAME_opt=Visibility=Public \
                   --NAME_opt=FileNaming=FullPath
                 """,
-            ),
-            # TODO: rules_go created a Go binary which invokes protoc (passed as an input + CLI argument).
-            # This generated the files in a temporary directory and then copied them to the desired location.
-            # It seemed like this was primarily to work around Windows path issues, so hopefully it's not necessary here.
-            # "_swift_protoc": attr.label(
-            #     executable = True,
-            #     cfg = "exec",
-            #     default = "//go/tools/builders:go-protoc",
-            # ),
-            "_protoc": attr.label(
-                cfg = "exec",
-                default = "//tools/protoc_wrapper:protoc",
-                executable = True,
             ),
         }
     ),

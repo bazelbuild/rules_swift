@@ -1,8 +1,0 @@
-syntax = "proto3";
-
-package new_grpc;
-
-message Person {
-  string name = 1;
-  int32 age = 2;
-}
