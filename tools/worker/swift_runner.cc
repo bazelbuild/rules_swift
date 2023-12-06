@@ -148,13 +148,15 @@ int SpawnJob(const std::vector<std::string> &tool_args,
 bool SkipLayeringCheckIncompatibleArgs(std::vector<std::string>::iterator &it) {
   if (*it == "-emit-module" || *it == "-emit-module-interface" ||
       *it == "-emit-object" || *it == "-emit-objc-header" ||
+      *it == "-emit-const-values" || *it == "-wmo" ||
       *it == "-whole-module-optimization") {
     // Skip just this argument.
     return true;
   }
   if (*it == "-o" || *it == "-output-file-map" || *it == "-emit-module-path" ||
       *it == "-emit-module-interface-path" || *it == "-emit-objc-header-path" ||
-      *it == "-emit-clang-header-path" || *it == "-num-threads") {
+      *it == "-emit-clang-header-path" || *it == "-emit-const-values-path" ||
+      *it == "-num-threads") {
     // This flag has a value after it that we also need to skip.
     ++it;
     return true;

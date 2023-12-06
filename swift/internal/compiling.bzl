@@ -305,6 +305,10 @@ def compile(
         *   `supplemental_outputs`: A `struct` representing supplemental,
             optional outputs. Its fields are:
 
+            *   `const_values_files`: A list of `File`s that contains JSON
+                representations of constant values extracted from the source
+                files, if requested via a direct dependency.
+
             *   `indexstore_directory`: A directory-type `File` that represents
                 the indexstore output files created when the feature
                 `swift.index_while_building` is enabled.
@@ -335,37 +339,6 @@ def compile(
         swift_toolchain.generated_header_module_implicit_deps_providers.swift_infos
     )
 
-    compile_outputs = _declare_compile_outputs(
-        srcs = srcs,
-        actions = actions,
-        feature_configuration = feature_configuration,
-        generated_header_name = generated_header_name,
-        generated_module_deps_swift_infos = generated_module_deps_swift_infos,
-        module_name = module_name,
-        target_name = target_name,
-        user_compile_flags = copts,
-    )
-    all_compile_outputs = compact([
-        # The `.swiftmodule` file is explicitly listed as the first output
-        # because it will always exist and because Bazel uses it as a key for
-        # various things (such as the filename prefix for param files generated
-        # for that action). This guarantees some predictability.
-        compile_outputs.swiftmodule_file,
-        compile_outputs.swiftdoc_file,
-        compile_outputs.swiftinterface_file,
-        compile_outputs.swiftsourceinfo_file,
-        compile_outputs.generated_header_file,
-        compile_outputs.indexstore_directory,
-        compile_outputs.macro_expansion_directory,
-    ]) + compile_outputs.object_files
-
-    merged_compilation_context = merge_compilation_contexts(
-        transitive_compilation_contexts = compilation_contexts + [
-            cc_info.compilation_context
-            for cc_info in swift_toolchain.implicit_deps_providers.cc_infos
-        ],
-    )
-
     # These are the `SwiftInfo` providers that will be merged with the compiled
     # module context and returned as the `swift_info` field of this function's
     # result. Note that private deps are explicitly not included here, as they
@@ -393,6 +366,44 @@ def compile(
     # than the same `depset` being flattened and re-merged multiple times up
     # the build graph.
     transitive_modules = merged_swift_info.transitive_modules.to_list()
+
+    const_gather_protocols_file = _maybe_create_const_protocols_file(
+        actions = actions,
+        swift_infos = all_swift_infos,
+        target_name = target_name,
+    )
+
+    compile_outputs = _declare_compile_outputs(
+        srcs = srcs,
+        actions = actions,
+        extract_const_values = bool(const_gather_protocols_file),
+        feature_configuration = feature_configuration,
+        generated_header_name = generated_header_name,
+        generated_module_deps_swift_infos = generated_module_deps_swift_infos,
+        module_name = module_name,
+        target_name = target_name,
+        user_compile_flags = copts,
+    )
+    all_compile_outputs = compact([
+        # The `.swiftmodule` file is explicitly listed as the first output
+        # because it will always exist and because Bazel uses it as a key for
+        # various things (such as the filename prefix for param files generated
+        # for that action). This guarantees some predictability.
+        compile_outputs.swiftmodule_file,
+        compile_outputs.swiftdoc_file,
+        compile_outputs.swiftinterface_file,
+        compile_outputs.swiftsourceinfo_file,
+        compile_outputs.generated_header_file,
+        compile_outputs.indexstore_directory,
+        compile_outputs.macro_expansion_directory,
+    ]) + compile_outputs.object_files + compile_outputs.const_values_files
+
+    merged_compilation_context = merge_compilation_contexts(
+        transitive_compilation_contexts = compilation_contexts + [
+            cc_info.compilation_context
+            for cc_info in swift_toolchain.implicit_deps_providers.cc_infos
+        ],
+    )
 
     transitive_swiftmodules = []
     defines_set = sets.make(defines)
@@ -469,6 +480,7 @@ def compile(
         ),
         bin_dir = feature_configuration._bin_dir,
         cc_compilation_context = merged_compilation_context,
+        const_gather_protocols_file = const_gather_protocols_file,
         defines = sets.to_list(defines_set),
         deps_modules_file = deps_modules_file,
         explicit_swift_module_map_file = explicit_swift_module_map_file,
@@ -573,6 +585,7 @@ def compile(
         module_context = module_context,
         compilation_outputs = compilation_outputs,
         supplemental_outputs = struct(
+            const_values_files = compile_outputs.const_values_files,
             indexstore_directory = compile_outputs.indexstore_directory,
             macro_expansion_directory = (
                 compile_outputs.macro_expansion_directory
@@ -897,6 +910,7 @@ def _cross_imported_swift_infos(*, swift_toolchain, user_swift_infos):
 def _declare_compile_outputs(
         *,
         actions,
+        extract_const_values,
         feature_configuration,
         generated_header_name,
         generated_module_deps_swift_infos,
@@ -908,6 +922,8 @@ def _declare_compile_outputs(
 
     Args:
         actions: The object used to register actions.
+        extract_const_values: A Boolean value indicating whether constant values
+            should be extracted during this compilation.
         feature_configuration: A feature configuration obtained from
             `swift_common.configure_features`.
         generated_header_name: The desired name of the generated header for this
@@ -1020,6 +1036,9 @@ def _declare_compile_outputs(
         # declare the output file that the compiler will generate and there are
         # no other partial outputs.
         object_files = [actions.declare_file("{}.o".format(target_name))]
+        const_values_files = [
+            actions.declare_file("{}.swiftconstvalues".format(target_name)),
+        ]
         output_file_map = None
         # TODO(b/147451378): Support indexing even with a single object file.
 
@@ -1028,11 +1047,14 @@ def _declare_compile_outputs(
         # object files so that we can pass them all to the archive action.
         output_info = _declare_multiple_outputs_and_write_output_file_map(
             actions = actions,
+            extract_const_values = extract_const_values,
+            is_wmo = output_nature.is_wmo,
             srcs = srcs,
             target_name = target_name,
             include_index_unit_paths = include_index_unit_paths,
         )
         object_files = output_info.object_files
+        const_values_files = output_info.const_values_files
         output_file_map = output_info.output_file_map
 
     if is_feature_enabled(
@@ -1049,6 +1071,7 @@ def _declare_compile_outputs(
         macro_expansion_directory = None
 
     return struct(
+        const_values_files = const_values_files,
         generated_header_file = generated_header,
         generated_module_map_file = generated_module_map,
         indexstore_directory = indexstore_directory,
@@ -1061,16 +1084,17 @@ def _declare_compile_outputs(
         swiftsourceinfo_file = swiftsourceinfo_file,
     )
 
-def _declare_per_source_object_file(actions, target_name, src):
-    """Declares a file for a per-source object file during compilation.
+def _declare_per_source_output_file(actions, extension, target_name, src):
+    """Declares a file for a per-source output file during compilation.
 
     These files are produced when the compiler is invoked with multiple frontend
-    invocations (i.e., whole module optimization disabled); in that case, there
-    is a `.o` file produced for each source file, rather than a single `.o` for
-    the entire module.
+    invocations (i.e., whole module optimization disabled), when it is expected
+    that certain outputs (such as object files) produce one output per source
+    file rather than one for the entire module.
 
     Args:
         actions: The context's actions object.
+        extension: The output file's extension, without a leading dot.
         target_name: The name of the target being built.
         src: A `File` representing the source file being compiled.
 
@@ -1083,11 +1107,13 @@ def _declare_per_source_object_file(actions, target_name, src):
     dirname = paths.join(objs_dir, paths.dirname(owner_rel_path))
 
     return actions.declare_file(
-        paths.join(dirname, "{}.o".format(basename)),
+        paths.join(dirname, "{}.{}".format(basename, extension)),
     )
 
 def _declare_multiple_outputs_and_write_output_file_map(
         actions,
+        extract_const_values,
+        is_wmo,
         srcs,
         target_name,
         include_index_unit_paths):
@@ -1095,6 +1121,10 @@ def _declare_multiple_outputs_and_write_output_file_map(
 
     Args:
         actions: The object used to register actions.
+        extract_const_values: A Boolean value indicating whether constant values
+            should be extracted during this compilation.
+        is_wmo: A Boolean value indicating whether whole-module-optimization was
+            requested.
         srcs: The list of source files that will be compiled.
         target_name: The name (excluding package path) of the target being
             built.
@@ -1118,14 +1148,24 @@ def _declare_multiple_outputs_and_write_output_file_map(
     # The output map data, which is keyed by source path and will be written to
     # `output_map_file`.
     output_map = {}
+    whole_module_map = {}
 
-    # Object files that will be used to build the archive.
+    # Output files that will be emitted by the compiler.
     output_objs = []
+    const_values_files = []
+
+    if extract_const_values and is_wmo:
+        const_value_file = actions.declare_file(
+            "{}.swiftconstvalues".format(target_name),
+        )
+        const_values_files.append(const_value_file)
+        whole_module_map["const-values"] = const_value_file.path
 
     for src in srcs:
         # Declare the object file (there is one per source file).
-        obj = _declare_per_source_object_file(
+        obj = _declare_per_source_output_file(
             actions = actions,
+            extension = "o",
             target_name = target_name,
             src = src,
         )
@@ -1135,7 +1175,21 @@ def _declare_multiple_outputs_and_write_output_file_map(
         }
         if include_index_unit_paths:
             file_outputs["index-unit-output-path"] = obj.path
+
+        if extract_const_values and not is_wmo:
+            const_values_file = _declare_per_source_output_file(
+                actions = actions,
+                extension = "swiftconstvalues",
+                target_name = target_name,
+                src = src,
+            )
+            const_values_files.append(const_values_file)
+            file_outputs["const-values"] = const_values_file.path
+
         output_map[src.path] = file_outputs
+
+    if whole_module_map:
+        output_map[""] = whole_module_map
 
     actions.write(
         content = json.encode(output_map),
@@ -1143,6 +1197,7 @@ def _declare_multiple_outputs_and_write_output_file_map(
     )
 
     return struct(
+        const_values_files = const_values_files,
         object_files = output_objs,
         output_file_map = output_map_file,
     )
@@ -1193,6 +1248,7 @@ def _emitted_output_nature(feature_configuration, user_compile_flags):
         *   `emits_multiple_objects`: `True` if the Swift frontend emits an
             object file per source file, instead of a single object file for the
             whole module, in a compilation action with the given flags.
+        *   `is_wmo`: `True` if whole-module-optimization was requested.
     """
     is_wmo = (
         is_feature_enabled(
@@ -1215,7 +1271,10 @@ def _emitted_output_nature(feature_configuration, user_compile_flags):
         feature_name = SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS,
     ) or find_num_threads_flag_value(user_compile_flags) == 1
 
-    return struct(emits_multiple_objects = not (is_wmo and is_single_threaded))
+    return struct(
+        emits_multiple_objects = not (is_wmo and is_single_threaded),
+        is_wmo = is_wmo,
+    )
 
 def _write_deps_modules_file(
         actions,
@@ -1242,3 +1301,39 @@ def _write_deps_modules_file(
         content = deps_mapping,
         output = deps_modules_file,
     )
+
+def _maybe_create_const_protocols_file(actions, swift_infos, target_name):
+    """Create the const extraction protocols file, if necessary.
+
+    Args:
+        actions: The object used to register actions.
+        swift_infos: A list of `SwiftInfo` providers describing the dependencies
+            of the code being compiled.
+        target_name: The name of the build target, which is used to generate
+            output file names.
+
+    Returns:
+        A file passed as an input to the compiler that lists the protocols whose
+        conforming types should have values extracted.
+    """
+    const_gather_protocols = []
+    for swift_info in swift_infos:
+        for module_context in swift_info.direct_modules:
+            const_gather_protocols.extend(
+                module_context.const_gather_protocols,
+            )
+
+    # If there are no protocols to extract, return early.
+    if not const_gather_protocols:
+        return None
+
+    # Create the input file to the compiler, which contains a JSON array of
+    # protocol names.
+    const_gather_protocols_file = actions.declare_file(
+        "{}_const_extract_protocols.json".format(target_name),
+    )
+    actions.write(
+        content = json.encode(const_gather_protocols),
+        output = const_gather_protocols_file,
+    )
+    return const_gather_protocols_file

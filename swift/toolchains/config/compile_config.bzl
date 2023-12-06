@@ -190,6 +190,12 @@ def compile_action_configs(
             configurators = [add_arg("-enforce-exclusivity=checked")],
             features = [SWIFT_FEATURE_CHECKED_EXCLUSIVITY],
         ),
+
+        # Configure constant value extraction.
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE],
+            configurators = [_constant_value_extraction_configurator],
+        ),
     ]
 
     if generated_header_rewriter:
@@ -1568,6 +1574,23 @@ def _package_identifier_configurator(prerequisites, args):
     label = getattr(prerequisites, "target_label", None)
     if label:
         args.add("-package-name", label.package)
+
+def _constant_value_extraction_configurator(prerequisites, args):
+    """Adds flags related to constant value extraction to the command line."""
+    if not prerequisites.const_gather_protocols_file:
+        return None
+
+    args.add("-emit-const-values")
+    args.add_all(
+        [
+            "-const-gather-protocols-file",
+            prerequisites.const_gather_protocols_file,
+        ],
+        before_each = "-Xfrontend",
+    )
+    return ConfigResultInfo(
+        inputs = [prerequisites.const_gather_protocols_file],
+    )
 
 def _additional_inputs_configurator(prerequisites, _args):
     """Propagates additional input files to the action.

@@ -32,16 +32,21 @@ def supplemental_compilation_output_groups(*supplemental_outputs):
     """
     indexstore_files = []
     macro_expansions_files = []
+    const_values_files = []
 
     for outputs in supplemental_outputs:
         if outputs.indexstore_directory:
             indexstore_files.append(outputs.indexstore_directory)
         if outputs.macro_expansion_directory:
             macro_expansions_files.append(outputs.macro_expansion_directory)
+        if outputs.const_values_files:
+            const_values_files.extend(outputs.const_values_files)
 
     output_groups = {}
     if indexstore_files:
         output_groups["indexstore"] = depset(indexstore_files)
     if macro_expansions_files:
         output_groups["macro_expansions"] = depset(macro_expansions_files)
+    if const_values_files:
+        output_groups["const_values"] = depset(const_values_files)
     return output_groups

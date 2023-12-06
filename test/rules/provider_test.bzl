@@ -73,6 +73,12 @@ def _evaluate_field(env, source, field):
         component that was not the final component, then the special value
         `_EVALUATE_FIELD_FAILED` is returned.
     """
+
+    def evaluate_component(source, component):
+        if types.is_dict(source):
+            return source.get(component)
+        return getattr(source, component, None)
+
     components = field.split(".")
 
     for component in components:
@@ -101,7 +107,7 @@ def _evaluate_field(env, source, field):
                     flattened.extend(item)
                 else:
                     flattened.append(item)
-            source = [getattr(item, component, None) for item in flattened]
+            source = [evaluate_component(item, component) for item in flattened]
             if filter_nones:
                 source = [item for item in source if item != None]
         else:
@@ -115,7 +121,7 @@ def _evaluate_field(env, source, field):
                 )
                 return _EVALUATE_FIELD_FAILED
 
-            source = getattr(source, component, None)
+            source = evaluate_component(source, component)
             if filter_nones:
                 source = normalize_collection(source)
                 if types.is_list(source):
@@ -157,6 +163,8 @@ def _lookup_provider_by_name(env, target, provider_name):
         provider = CcInfo
     elif provider_name == "DefaultInfo":
         provider = DefaultInfo
+    elif provider_name == "OutputGroupInfo":
+        provider = OutputGroupInfo
     elif provider_name == "SwiftInfo":
         provider = SwiftInfo
 
@@ -279,6 +287,7 @@ Currently, only the following providers are recognized:
 
 *   `CcInfo`
 *   `DefaultInfo`
+*   `OutputGroupInfo`
 *   `SwiftInfo`
 """,
             ),
@@ -314,6 +323,10 @@ evaluated on every item in that list, not on the list itself. Likewise, if such
 a field path component is followed by `!`, then any `None` elements that may
 have resulted during evaluation will be removed from the list before evaluating
 the next component.
+
+If a value along the field path is a dictionary and the next component
+is a valid key in that dictionary, then the value of that dictionary key is
+retrieved instead of it being treated as a struct field access.
 """,
             ),
             "provider": attr.string(
@@ -326,6 +339,7 @@ Currently, only the following providers are recognized:
 
 *   `CcInfo`
 *   `DefaultInfo`
+*   `OutputGroupInfo`
 *   `SwiftInfo`
 """,
             ),
