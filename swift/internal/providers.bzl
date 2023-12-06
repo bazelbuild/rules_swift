@@ -314,6 +314,7 @@ def create_module(
         *,
         name,
         clang = None,
+        const_gather_protocols = [],
         compilation_context = None,
         is_system = False,
         swift = None):
@@ -341,6 +342,9 @@ def create_module(
             contains artifacts related to Clang modules, such as a module map or
             precompiled module. This may be `None` if the module is a pure Swift
             module with no generated Objective-C interface.
+        const_gather_protocols: A list of protocol names from which constant
+            values should be extracted from source code that takes this module
+            as a *direct* dependency.
         compilation_context: A value returned from
             `swift_common.create_compilation_context` that contains the
             context needed to compile the module being built. This may be `None`
@@ -371,6 +375,7 @@ def create_module(
     """
     return struct(
         clang = clang,
+        const_gather_protocols = tuple(const_gather_protocols),
         compilation_context = compilation_context,
         is_system = is_system,
         name = name,
