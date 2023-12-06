@@ -245,7 +245,7 @@ def compile_action_configs(
             features = [SWIFT_FEATURE_CHECKED_EXCLUSIVITY],
         ),
 
-        # Configure Const value extraction.
+        # Configure constant value extraction.
         ActionConfigInfo(
             actions = [SWIFT_ACTION_COMPILE],
             configurators = [_constant_value_extraction_configurator],
@@ -2009,19 +2009,19 @@ def _conditional_compilation_flag_configurator(prerequisites, args):
 
 def _constant_value_extraction_configurator(prerequisites, args):
     """Adds flags related to constant value extraction to the command line."""
-    if not prerequisites.const_protocols_to_gather_file:
+    if not prerequisites.const_gather_protocols_file:
         return None
 
     args.add("-emit-const-values-path", prerequisites.const_values_files[0])
     args.add_all(
         [
             "-const-gather-protocols-file",
-            prerequisites.const_protocols_to_gather_file,
+            prerequisites.const_gather_protocols_file,
         ],
         before_each = "-Xfrontend",
     )
     return ConfigResultInfo(
-        inputs = [prerequisites.const_protocols_to_gather_file],
+        inputs = [prerequisites.const_gather_protocols_file],
     )
 
 def _additional_inputs_configurator(prerequisites, _args):

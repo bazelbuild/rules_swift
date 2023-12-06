@@ -285,6 +285,7 @@ Currently, only the following providers are recognized:
 
 *   `CcInfo`
 *   `DefaultInfo`
+*   `OutputGroupInfo`
 *   `SwiftInfo`
 *   `apple_common.Objc`
 """,

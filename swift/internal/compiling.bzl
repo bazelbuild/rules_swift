@@ -443,6 +443,38 @@ def compile(
         swift_toolchain.generated_header_module_implicit_deps_providers.swift_infos
     )
 
+    # These are the `SwiftInfo` providers that will be merged with the compiled
+    # module context and returned as the `swift_info` field of this function's
+    # result. Note that private deps are explicitly not included here, as they
+    # are not supposed to be propagated.
+    #
+    # TODO(allevato): It would potentially clean things up if we included the
+    # toolchain's implicit dependencies here as well. Do this and make sure it
+    # doesn't break anything unexpected.
+    swift_infos_to_propagate = swift_infos + _cross_imported_swift_infos(
+        swift_toolchain = swift_toolchain,
+        user_swift_infos = swift_infos + private_swift_infos,
+    )
+
+    all_swift_infos = (
+        swift_infos_to_propagate +
+        private_swift_infos +
+        swift_toolchain.implicit_deps_providers.swift_infos
+    )
+    merged_swift_info = SwiftInfo(swift_infos = all_swift_infos)
+
+    # Flattening this `depset` is necessary because we need to extract the
+    # module maps or precompiled modules out of structured values and do so
+    # conditionally. This should not lead to poor performance because the
+    # flattening happens only once as the action is being registered, rather
+    # than the same `depset` being flattened and re-merged multiple times up
+    # the build graph.
+    transitive_modules = merged_swift_info.transitive_modules.to_list()
+    for info in extra_swift_infos:
+        transitive_modules.extend(info.transitive_modules.to_list())
+
+    const_gather_protocols_file = swift_toolchain.const_protocols_to_gather
+
     # Determine if `.swiftdoc` and `.swiftsourceinfo` files should be included.
     include_swiftdoc = is_feature_enabled(
         feature_configuration = feature_configuration,
@@ -453,12 +485,10 @@ def compile(
         feature_name = SWIFT_FEATURE_EMIT_SWIFTSOURCEINFO,
     )
 
-    const_protocols_to_gather_file = swift_toolchain.const_protocols_to_gather
-
-    compile_outputs, other_outputs = _declare_compile_outputs(
+    compile_outputs = _declare_compile_outputs(
         srcs = srcs,
         actions = actions,
-        extract_const_values = bool(const_protocols_to_gather_file),
+        extract_const_values = bool(const_gather_protocols_file),
         feature_configuration = feature_configuration,
         generated_header_name = generated_header_name,
         generated_module_deps_swift_infos = generated_module_deps_swift_infos,
@@ -488,7 +518,7 @@ def compile(
             # for that action). This guarantees some predictability.
             compile_outputs.swiftmodule_file,
             compile_outputs.generated_header_file,
-        ]) + other_outputs
+        ])
         if include_swiftdoc:
             all_derived_outputs.append(compile_outputs.swiftdoc_file)
         if include_swiftsourceinfo:
@@ -505,7 +535,7 @@ def compile(
             compile_outputs.generated_header_file,
             compile_outputs.indexstore_directory,
             compile_outputs.macro_expansion_directory,
-        ]) + compile_outputs.object_files + compile_outputs.const_values_files + other_outputs
+        ]) + compile_outputs.object_files + compile_outputs.const_values_files
         if include_swiftdoc:
             all_compile_outputs.append(compile_outputs.swiftdoc_file)
         if include_swiftsourceinfo:
@@ -527,37 +557,6 @@ def compile(
     merged_objc_info = apple_common.new_objc_provider(
         providers = objc_infos + swift_toolchain.implicit_deps_providers.objc_infos,
     )
-
-    # These are the `SwiftInfo` providers that will be merged with the compiled
-    # module context and returned as the `swift_info` field of this function's
-    # result. Note that private deps are explicitly not included here, as they
-    # are not supposed to be propagated.
-    #
-    # TODO(allevato): It would potentially clean things up if we included the
-    # toolchain's implicit dependencies here as well. Do this and make sure it
-    # doesn't break anything unexpected.
-    swift_infos_to_propagate = swift_infos + _cross_imported_swift_infos(
-        swift_toolchain = swift_toolchain,
-        user_swift_infos = swift_infos + private_swift_infos,
-    )
-
-    all_swift_infos = (
-        swift_infos_to_propagate +
-        private_swift_infos +
-        swift_toolchain.implicit_deps_providers.swift_infos
-    )
-
-    merged_swift_info = SwiftInfo(swift_infos = all_swift_infos)
-
-    # Flattening this `depset` is necessary because we need to extract the
-    # module maps or precompiled modules out of structured values and do so
-    # conditionally. This should not lead to poor performance because the
-    # flattening happens only once as the action is being registered, rather
-    # than the same `depset` being flattened and re-merged multiple times up
-    # the build graph.
-    transitive_modules = merged_swift_info.transitive_modules.to_list()
-    for info in extra_swift_infos:
-        transitive_modules.extend(info.transitive_modules.to_list())
 
     transitive_swiftmodules = []
     defines_set = sets.make(defines)
@@ -645,7 +644,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         ),
         bin_dir = feature_configuration._bin_dir,
         cc_compilation_context = merged_cc_info.compilation_context,
-        const_protocols_to_gather_file = const_protocols_to_gather_file,
+        const_gather_protocols_file = const_gather_protocols_file,
         cc_linking_context = merged_cc_info.linking_context,
         defines = sets.to_list(defines_set),
         explicit_swift_module_map_file = explicit_swift_module_map_file,
@@ -1167,13 +1166,8 @@ def _declare_compile_outputs(
             will be used or not.
 
     Returns:
-        A tuple containing two elements:
-
-        *   A `struct` that should be merged into the `prerequisites` of the
-            compilation action.
-        *   A list of `File`s that represent additional inputs that are not
-            needed as configurator prerequisites nor are processed further but
-            which should also be tracked as outputs of the compilation action.
+        A `struct` that should be merged into the `prerequisites` of the
+        compilation action.
     """
 
     add_target_name_to_output_path = is_feature_enabled(
@@ -1310,12 +1304,14 @@ def _declare_compile_outputs(
         # declare the output file that the compiler will generate and there are
         # no other partial outputs.
         object_files = [actions.declare_file("{}.o".format(target_name))]
-        ast_files = [_declare_per_source_ast_file(
-            actions = actions,
-            target_name = target_name,
-            src = srcs[0],
-        )]
-        other_outputs = []
+        ast_files = [
+            _declare_per_source_output_file(
+                actions = actions,
+                extension = "ast",
+                target_name = target_name,
+                src = srcs[0],
+            ),
+        ]
         const_values_files = [
             actions.declare_file("{}.swiftconstvalues".format(target_name)),
         ]
@@ -1362,7 +1358,6 @@ def _declare_compile_outputs(
         )
         object_files = output_info.object_files
         ast_files = output_info.ast_files
-        other_outputs = output_info.other_outputs
         const_values_files = output_info.const_values_files
         output_file_map = output_info.output_file_map
         derived_files_output_file_map = output_info.derived_files_output_file_map
@@ -1393,99 +1388,32 @@ def _declare_compile_outputs(
         swiftmodule_file = swiftmodule_file,
         swiftsourceinfo_file = swiftsourceinfo_file,
     )
-    return compile_outputs, other_outputs
+    return compile_outputs
 
-def _intermediate_frontend_file_path(target_name, src):
-    """Returns the path to the directory for intermediate compile outputs.
+def _declare_per_source_output_file(actions, extension, target_name, src):
+    """Declares a file for a per-source output file during compilation.
 
-    This is a helper function and is not exported in the `derived_files` module.
+    These files are produced when the compiler is invoked with multiple frontend
+    invocations (i.e., whole module optimization disabled), when it is expected
+    that certain outputs (such as object files) produce one output per source
+    file rather than one for the entire module.
 
     Args:
-        target_name: The name of hte target being built.
-        src: A `File` representing the source file whose intermediate frontend
-            artifacts path should be returned.
+        actions: The context's actions object.
+        extension: The output file's extension, without a leading dot.
+        target_name: The name of the target being built.
+        src: A `File` representing the source file being compiled.
 
     Returns:
-        The path to the directory where intermediate artifacts for the given
-        target and source file should be stored.
+        The declared `File`.
     """
     objs_dir = "{}_objs".format(target_name)
-
     owner_rel_path = owner_relative_path(src).replace(" ", "__SPACE__")
-    safe_name = paths.basename(owner_rel_path)
+    basename = paths.basename(owner_rel_path)
+    dirname = paths.join(objs_dir, paths.dirname(owner_rel_path))
 
-    return paths.join(objs_dir, paths.dirname(owner_rel_path)), safe_name
-
-def _declare_per_source_ast_file(*, actions, target_name, src):
-    """Declares a file for an ast file during compilation.
-
-    Args:
-        actions: The context's actions object.
-        target_name: The name of the target being built.
-        src: A `File` representing the source file being compiled.
-
-    Returns:
-        The declared `File` where the given src's AST will be dumped to.
-    """
-    dirname, basename = _intermediate_frontend_file_path(target_name, src)
-    return actions.declare_file(paths.join(dirname, "{}.ast".format(basename)))
-
-def _declare_per_source_bc_file(*, actions, target_name, src):
-    """Declares a file for a per-source llvm bc file during compilation.
-
-    Args:
-        actions: The context's actions object.
-        target_name: The name of the target being built.
-        src: A `File` representing the source file being compiled.
-
-    Returns:
-        The declared `File`.
-    """
-    dirname, basename = _intermediate_frontend_file_path(target_name, src)
-    return actions.declare_file(paths.join(dirname, "{}.bc".format(basename)))
-
-def _declare_per_source_object_file(*, actions, target_name, src):
-    """Declares a file for a per-source object file during compilation.
-
-    These files are produced when the compiler is invoked with multiple frontend
-    invocations (i.e., whole module optimization disabled); in that case, there
-    is a `.o` file produced for each source file, rather than a single `.o` for
-    the entire module.
-
-    Args:
-        actions: The context's actions object.
-        target_name: The name of the target being built.
-        src: A `File` representing the source file being compiled.
-
-    Returns:
-        The declared `File`.
-    """
-    dirname, basename = _intermediate_frontend_file_path(target_name, src)
-    return actions.declare_file(paths.join(dirname, "{}.o".format(basename)))
-
-def _intermediate_per_source_swift_const_values_file(
-        *,
-        actions,
-        target_name,
-        src):
-    """Declares a file for a per-source Swift const values file during compilation.
-
-    These files are produced when the compiler is invoked with multiple frontend
-    invocations (i.e., whole module optimization disabled); in that case, there
-    is a `.swiftconstvalues` file produced for each source file, rather than a single
-    `.swiftconstvalues` for the entire module.
-
-    Args:
-        actions: The context's actions object.
-        target_name: The name of the target being built.
-        src: A `File` representing the source file being compiled.
-
-    Returns:
-        The declared `File`.
-    """
-    dirname, basename = _intermediate_frontend_file_path(target_name, src)
     return actions.declare_file(
-        paths.join(dirname, "{}.swiftconstvalues".format(basename)),
+        paths.join(dirname, "{}.{}".format(basename, extension)),
     )
 
 def _declare_multiple_outputs_and_write_output_file_map(
@@ -1518,19 +1446,16 @@ def _declare_multiple_outputs_and_write_output_file_map(
     Returns:
         A `struct` with the following fields:
 
-        *   `object_files`: A list of object files that were declared and
-            recorded in the output file map, which should be tracked as outputs
-            of the compilation action.
-        *   `other_outputs`: A list of additional output files that were
-            declared and recorded in the output file map, which should be
-            tracked as outputs of the compilation action.
-        *   `output_file_map`: A `File` that represents the output file map that
-            was written and that should be passed as an input to the compilation
-            action via the `-output-file-map` flag.
         *   `derived_files_output_file_map`: A `File` that represents the
             output file map that should be passed to derived file generation
             actions instead of the default `output_file_map` that is used for
             producing objects only.
+        *   `object_files`: A list of object files that were declared and
+            recorded in the output file map, which should be tracked as outputs
+            of the compilation action.
+        *   `output_file_map`: A `File` that represents the output file map that
+            was written and that should be passed as an input to the compilation
+            action via the `-output-file-map` flag.
     """
     output_map_file = actions.declare_file(
         "{}.output_file_map.json".format(target_name),
@@ -1544,21 +1469,14 @@ def _declare_multiple_outputs_and_write_output_file_map(
         derived_files_output_map_file = None
 
     # The output map data, which is keyed by source path and will be written to
-    # `output_map_file` and `derived_files_output_map_file`.
+    # `output_map_file`.
     output_map = {}
     whole_module_map = {}
-    derived_files_output_map = {}
 
     # Output files that will be emitted by the compiler.
+    ast_files = []
     output_objs = []
     const_values_files = []
-
-    # Additional files, such as partial Swift modules, that must be declared as
-    # action outputs although they are not processed further.
-    other_outputs = []
-
-    # AST files that are available in the swift_ast_file output group
-    ast_files = []
 
     if extract_const_values and is_wmo:
         const_values_file = actions.declare_file(
@@ -1568,47 +1486,55 @@ def _declare_multiple_outputs_and_write_output_file_map(
         whole_module_map["const-values"] = const_values_file.path
 
     for src in srcs:
-        src_output_map = {}
+        file_outputs = {}
 
-        if extract_const_values and not is_wmo:
-            const_values_file = _intermediate_per_source_swift_const_values_file(
-                actions = actions,
-                target_name = target_name,
-                src = src,
-            )
-            const_values_files.append(const_values_file)
-            src_output_map["const-values"] = const_values_file.path
-
-        if emits_bc:
-            # Declare the llvm bc file (there is one per source file).
-            obj = _declare_per_source_bc_file(
-                actions = actions,
-                target_name = target_name,
-                src = src,
-            )
-            output_objs.append(obj)
-            src_output_map["llvm-bc"] = obj.path
-        else:
-            # Declare the object file (there is one per source file).
-            obj = _declare_per_source_object_file(
-                actions = actions,
-                target_name = target_name,
-                src = src,
-            )
-            output_objs.append(obj)
-            src_output_map["object"] = obj.path
-
-        if include_index_unit_paths:
-            src_output_map["index-unit-output-path"] = obj.path
-
-        ast = _declare_per_source_ast_file(
+        ast = _declare_per_source_output_file(
             actions = actions,
+            extension = "ast",
             target_name = target_name,
             src = src,
         )
         ast_files.append(ast)
-        src_output_map["ast-dump"] = ast.path
-        output_map[src.path] = struct(**src_output_map)
+        file_outputs["ast-dump"] = ast.path
+
+        if emits_bc:
+            # Declare the llvm bc file (there is one per source file).
+            obj = _declare_per_source_output_file(
+                actions = actions,
+                extension = "bc",
+                target_name = target_name,
+                src = src,
+            )
+            output_objs.append(obj)
+            file_outputs["llvm-bc"] = obj.path
+        else:
+            # Declare the object file (there is one per source file).
+            obj = _declare_per_source_output_file(
+                actions = actions,
+                extension = "o",
+                target_name = target_name,
+                src = src,
+            )
+            output_objs.append(obj)
+            file_outputs["object"] = obj.path
+
+        if include_index_unit_paths:
+            file_outputs["index-unit-output-path"] = obj.path
+
+        if extract_const_values and not is_wmo:
+            const_values_file = _declare_per_source_output_file(
+                actions = actions,
+                extension = "swiftconstvalues",
+                target_name = target_name,
+                src = src,
+            )
+            const_values_files.append(const_values_file)
+            file_outputs["const-values"] = const_values_file.path
+
+        output_map[src.path] = file_outputs
+
+    if whole_module_map:
+        output_map[""] = whole_module_map
 
     actions.write(
         content = json.encode(struct(**output_map)),
@@ -1617,17 +1543,16 @@ def _declare_multiple_outputs_and_write_output_file_map(
 
     if split_derived_file_generation:
         actions.write(
-            content = json.encode(struct(**derived_files_output_map)),
+            content = "{}",
             output = derived_files_output_map_file,
         )
 
     return struct(
-        const_values_files = const_values_files,
         ast_files = ast_files,
-        object_files = output_objs,
-        other_outputs = other_outputs,
-        output_file_map = output_map_file,
+        const_values_files = const_values_files,
         derived_files_output_file_map = derived_files_output_map_file,
+        object_files = output_objs,
+        output_file_map = output_map_file,
     )
 
 def _declare_target_scoped_file(
