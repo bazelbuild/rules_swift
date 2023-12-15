@@ -110,11 +110,6 @@ def _build_module_mapping_from_srcs(target, proto_srcs):
     )
 
 def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
-    # When the aspect is applied to an inapplicable target, just ignore it and don't
-    # generate/propagate anything. This happens when the aspect is applied by other aspects to
-    # analyze generated Swift protos.
-    if ProtoInfo not in target:
-        return []
     swift_toolchain = get_swift_toolchain(aspect_ctx)
     proto_lang_toolchain_info = aspect_ctx.attr._proto_lang_toolchain[proto_common.ProtoLangToolchainInfo]
     target_proto_info = target[ProtoInfo]
@@ -320,6 +315,7 @@ detail of the `swift_proto_library` rule.
         # platform that supports it (even one with a different toolchain).
         _GENERATE_EXEC_GROUP: exec_group(),
     },
+    provides = [SwiftProtoInfo],
     fragments = ["cpp"],
     implementation = _swift_protoc_gen_aspect_impl,
     toolchains = use_swift_toolchain(),
