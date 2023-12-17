@@ -68,7 +68,7 @@ def _get_module_name(attr, target_label):
         module_name = swift_common.derive_module_name(target_label)
     return module_name
 
-def _get_imports(aspect_ctx, module_name):
+def _get_imports(attr, module_name):
     """Creates a depset of proto sources, ProtoInfo providers, and module names.
 
     The direct dependencies come from the protos attribute,
@@ -77,18 +77,16 @@ def _get_imports(aspect_ctx, module_name):
     protos attributes.
     """
 
-    # Extract the proto deps:
-    proto_deps = getattr(aspect_ctx.attr, "protos", [])
-
     # Collect the direct proto source files from the proto deps:
+    proto_deps = getattr(attr, "protos", [])
     direct_imports = dict()
     for proto_dep in proto_deps:
         for proto_src in proto_dep[ProtoInfo].check_deps_sources.to_list():
             path = proto_path(proto_src, proto_dep[ProtoInfo])
             direct_imports["{}={}".format(path, module_name)] = True
 
-    # Collect the transitive proto source files from the deps:
-    deps = getattr(aspect_ctx.attr, "deps", [])
+    # Collect the transitive proto source files from the aspect-augmented deps:
+    deps = getattr(attr, "deps", [])
     transitive_imports = [
         dep[SwiftProtoImportInfo].imports
         for dep in deps
@@ -102,7 +100,7 @@ def _get_imports(aspect_ctx, module_name):
 
 def _swift_proto_library_aspect_impl(target, aspect_ctx):
     module_name = _get_module_name(aspect_ctx.rule.attr, target.label)
-    imports = _get_imports(aspect_ctx, module_name)
+    imports = _get_imports(aspect_ctx.rule.attr, module_name)
     return [SwiftProtoImportInfo(imports = imports)]
 
 _swift_proto_library_aspect = aspect(
@@ -132,7 +130,7 @@ def _swift_proto_library_impl(ctx):
 
     # Get the module name and gather the depset of imports and module names:
     module_name = _get_module_name(ctx.attr, ctx.label)
-    imports = _get_imports(ctx, module_name)
+    imports = _get_imports(ctx.attr, module_name)
 
     # Use the proto compiler to compile the swift sources for the proto deps:
     compiler_deps = []

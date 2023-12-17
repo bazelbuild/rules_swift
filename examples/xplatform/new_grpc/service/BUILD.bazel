@@ -4,10 +4,12 @@ load("//proto:swift_proto_library.bzl", "new_swift_proto_library")
 proto_library(
     name = "service_proto",
     srcs = ["service.proto"],
+    deps = ["//examples/xplatform/new_grpc/service/messages:messages_proto"],
 )
 
 new_swift_proto_library(
     name = "service_swift_proto",
+    module_name = "Service",
     protos = [":service_proto"],
     deps = ["//examples/xplatform/new_grpc/service/messages:messages_swift_proto"],
     compilers = ["//proto:swift_grpc"],
