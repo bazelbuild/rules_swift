@@ -17,10 +17,6 @@ Defines a rule for compiling Swift source files from proto_libraries.
 """
 
 load(
-    "@bazel_skylib//lib:dicts.bzl", 
-    "dicts",
-)
-load(
     "@bazel_skylib//lib:paths.bzl", 
     "paths",
 )
@@ -32,7 +28,6 @@ load(
 load(
     "//swift:swift.bzl",
     "SwiftInfo",
-    "swift_common",
 )
 
 SwiftProtoCompilerInfo = provider(
@@ -199,105 +194,100 @@ def _swift_proto_compiler_impl(ctx):
 
 swift_proto_compiler = rule(
     implementation = _swift_proto_compiler_impl,
-    attrs = dicts.add(
-        swift_common.toolchain_attrs(),
-        {
-            "deps": attr.label_list(
-                default = [],
-                doc = """\
-                List of targets providing SwiftInfo and CcInfo.
-                These are added as implicit dependencies for any swift_proto_library using this
-                compiler. Typically, these are Well Known Types and proto runtime libraries.
-                """,
-                providers = [SwiftInfo],
-            ),
-            "protoc": attr.label(
-                default = "//tools/protoc_wrapper:protoc",
-                doc = """\
-                A proto compiler executable binary.
-                
-                E.g.
-                "//tools/protoc_wrapper:protoc"
+    attrs = {
+        "deps": attr.label_list(
+            default = [],
+            doc = """\
+            List of targets providing SwiftInfo and CcInfo.
+            These are added as implicit dependencies for any swift_proto_library using this
+            compiler. Typically, these are Well Known Types and proto runtime libraries.
+            """,
+            providers = [SwiftInfo],
+        ),
+        "protoc": attr.label(
+            doc = """\
+            A proto compiler executable binary.
+            
+            E.g.
+            "//tools/protoc_wrapper:protoc"
 
-                We provide two compiler targets:
-                "//proto:swift_proto"
-                "//proto:swift_grpc"
+            We provide two compiler targets:
+            "//proto:swift_proto"
+            "//proto:swift_grpc"
 
-                These targets use this attribute to configure protoc with their respective proto compiler.
-                """,
-                cfg = "exec",
-                executable = True,
-            ),
-            "plugin": attr.label(
-                default = "//tools/protoc_wrapper:ProtoCompilerPlugin",
-                doc = """\
-                A proto compiler plugin executable binary.
-                
-                E.g.
-                "//tools/protoc_wrapper:protoc-gen-grpc-swift"
-                "//tools/protoc_wrapper:ProtoCompilerPlugin"
+            These targets use this attribute to configure protoc with their respective proto compiler.
+            """,
+            mandatory = True,
+            executable = True,
+            cfg = "exec",
+        ),
+        "plugin": attr.label(
+            doc = """\
+            A proto compiler plugin executable binary.
+            
+            E.g.
+            "//tools/protoc_wrapper:protoc-gen-grpc-swift"
+            "//tools/protoc_wrapper:ProtoCompilerPlugin"
 
-                We provide two compiler targets:
-                "//proto:swift_proto"
-                "//proto:swift_grpc"
+            We provide two compiler targets:
+            "//proto:swift_proto"
+            "//proto:swift_grpc"
 
-                These targets use this attribute to configure protoc with their respective plugins.
-                """,
-                executable = True,
-                cfg = "exec",
-            ),
-            "plugin_name": attr.string(
-                default = "swift",
-                doc = """\
-                Name of the proto compiler plugin passed to protoc.
+            These targets use this attribute to configure protoc with their respective plugins.
+            """,
+            mandatory = True,
+            executable = True,
+            cfg = "exec",
+        ),
+        "plugin_name": attr.string(
+            doc = """\
+            Name of the proto compiler plugin passed to protoc.
 
-                E.g.
-                protoc --plugin=protoc-gen-NAME=path/to/plugin/binary
+            E.g.
+            protoc --plugin=protoc-gen-NAME=path/to/plugin/binary
 
-                This name will be used to prefix the option and output directory arguments.
+            This name will be used to prefix the option and output directory arguments.
 
-                E.g.
-                protoc --plugin=protoc-gen-NAME=path/to/mybinary --NAME_out=OUT_DIR --NAME_opt=Visibility=Public
+            E.g.
+            protoc --plugin=protoc-gen-NAME=path/to/mybinary --NAME_out=OUT_DIR --NAME_opt=Visibility=Public
 
-                See the protobuf API reference for more information: 
-                https://protobuf.dev/reference/cpp/api-docs/google.protobuf.compiler.plugin
-                """,
-            ),
-            "plugin_options": attr.string_dict(
-                default = {
-                    "Visibility": "Public",
-                },
-                doc = """\
-                Dictionary of plugin options passed to the plugin.
+            See the protobuf API reference for more information: 
+            https://protobuf.dev/reference/cpp/api-docs/google.protobuf.compiler.plugin
+            """,
+            mandatory = True,
+        ),
+        "plugin_options": attr.string_dict(
+            doc = """\
+            Dictionary of plugin options passed to the plugin.
 
-                These are prefixed with the plugin_name + "_opt".
+            These are prefixed with the plugin_name + "_opt".
 
-                E.g.
-                plugin_name = "swift"
-                plugin_options = {
-                    "Visibility": "Public",
-                    "FileNaming": "FullPath",
-                }
+            E.g.
+            plugin_name = "swift"
+            plugin_options = {
+                "Visibility": "Public",
+                "FileNaming": "FullPath",
+            }
 
-                Would be passed to protoc as:
-                protoc \
-                  --plugin=protoc-gen-NAME=path/to/plugin/binary \
-                  --NAME_opt=Visibility=Public \
-                  --NAME_opt=FileNaming=FullPath
-                """,
-            ),
-            "suffixes": attr.string_list(
-                default = [".pb.swift"],
-                doc = """\
-                Suffix used for Swift files generated by the plugin from protos.
+            Would be passed to protoc as:
+            protoc \
+                --plugin=protoc-gen-NAME=path/to/plugin/binary \
+                --NAME_opt=Visibility=Public \
+                --NAME_opt=FileNaming=FullPath
+            """,
+            mandatory = True,
+        ),
+        "suffixes": attr.string_list(
+            doc = """\
+            Suffix used for Swift files generated by the plugin from protos.
 
-                E.g.
-                foo.proto => foo.pb.swift
-                foo_service.proto => foo.grpc.swift
+            E.g.
+            foo.proto => foo.pb.swift
+            foo_service.proto => foo.grpc.swift
 
-                Each compiler target should configure this based on the suffix applied to the generated files.
-                """,
-            ),
-        }
-    ),
+            Each compiler target should configure this based on the suffix applied to the generated files.
+            """,
+            mandatory = True,
+        ),
+    },
 )
