@@ -47,6 +47,7 @@ def make_grpc_swift_proto_compiler(name, variants, plugin_options = BASE_PLUGIN_
         plugin_options: Additional options to pass to the plugin.
     """
 
+    # Merge the plugin options to include the variants:
     merged_plugin_options = dicts.add(
         plugin_options, 
         {variant : "false" for variant in GRPC_VARIANTS},

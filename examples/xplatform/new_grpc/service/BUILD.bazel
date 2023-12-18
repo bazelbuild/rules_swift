@@ -29,6 +29,11 @@ new_swift_proto_library(
     protos = [":service_proto"],
     deps = [
         "//examples/xplatform/new_grpc/service/service_messages:service_messages_swift_proto",
+    ],
+    additional_plugin_options = {
+        "ExtraModuleImports": "ServiceClient",
+    },
+    compiler_deps = [
         "//examples/xplatform/new_grpc/service:service_client_swift_proto",
     ],
     compilers = ["//proto:swift_test_client_grpc"],

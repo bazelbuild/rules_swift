@@ -17,6 +17,10 @@ Defines a rule for compiling Swift source files from proto_libraries.
 """
 
 load(
+    "@bazel_skylib//lib:dicts.bzl", 
+    "dicts",
+)
+load(
     "@bazel_skylib//lib:paths.bzl", 
     "paths",
 )
@@ -35,11 +39,12 @@ SwiftProtoCompilerInfo = provider(
     fields = {
         "compile": """A function with the signature:
 
-    def compile(ctx, compiler_info, proto_infos, imports)
+    def compile(ctx, swift_proto_compiler_info, proto_infos, imports)
 
 Where:
 - ctx is the rule's context
-- compiler_info is this SwiftProtoCompilerInfo provider
+- swift_proto_compiler_info is this SwiftProtoCompilerInfo provider
+- additional_plugin_options additional options to pass to the plugin
 - proto_infos is a list of ProtoInfo providers for proto_infos to compile
 - imports is a depset of strings mapping proto import paths to Swift module names
 
@@ -57,12 +62,13 @@ targets as needed to avoid compiling them unnecessarily.
     },
 )
 
-def swift_proto_compile(ctx, compiler_info, proto_infos, imports):
+def _swift_proto_compile(ctx, swift_proto_compiler_info,additional_plugin_options, proto_infos, imports):
     """Invokes protoc to generate Swift sources for a given set of proto info providers.
 
     Args:
-        ctx: the rule's context
-        compiler_info: a SwiftProtoCompilerInfo provider.
+        ctx: the swift proto library rule's context
+        swift_proto_compiler_info: a SwiftProtoCompilerInfo provider.
+        additional_plugin_options: additional options passed to the plugin from the rule
         proto_infos: list of ProtoInfo providers to compile.
         imports: depset of dictionaries mapping proto paths to module names
 
@@ -97,16 +103,17 @@ def swift_proto_compile(ctx, compiler_info, proto_infos, imports):
             proto_paths[path] = proto_src
 
             # Declare the proto file that will be generated:
-            suffixes = compiler_info.internal.suffixes
+            suffixes = swift_proto_compiler_info.internal.suffixes
             for suffix in suffixes:
-                swift_src_path = paths.replace_extension(proto_src.path, suffix)
+                swift_src_path_without_label_name = paths.replace_extension(path, suffix)
+                swift_src_path = paths.join(ctx.label.name, swift_src_path_without_label_name)
                 swift_src = ctx.actions.declare_file(swift_src_path)
                 swift_srcs.append(swift_src)
             
                 # Grab the output path directory:
                 if output_directory_path == None:
                     full_swift_src_path = swift_srcs[0].path
-                    output_directory_path = full_swift_src_path.removesuffix("/" + swift_src_path)
+                    output_directory_path = full_swift_src_path.removesuffix("/" + swift_src_path_without_label_name)
     transitive_descriptor_sets = depset(direct = [], transitive = transitive_descriptor_sets_list)
 
     # Merge all of the proto paths to module name mappings from the imports depset:
@@ -140,27 +147,41 @@ def swift_proto_compile(ctx, compiler_info, proto_infos, imports):
         module_mappings.append(module_mapping)
     module_mappings_file = register_module_mapping_write_action(ctx.label.name, ctx.actions, module_mappings)
 
-    # Join the transitive descriptor sets into a single argument separated by colons:
-    descriptor_set_in_arg = ":".join([f.path for f in transitive_descriptor_sets.to_list()])
-
     # Build the arguments for protoc:
     args = ctx.actions.args()
-    args.add("--plugin=protoc-gen-" + compiler_info.internal.plugin_name + "=" + compiler_info.internal.plugin.path)
-    for plugin_option in compiler_info.internal.plugin_options:
-        plugin_option_value = compiler_info.internal.plugin_options[plugin_option]
-        args.add("--" + compiler_info.internal.plugin_name + "_opt=" + plugin_option + "=" + plugin_option_value)
-    args.add("--" + compiler_info.internal.plugin_name + "_opt=ProtoPathModuleMappings=" + module_mappings_file.path)
-    args.add("--" + compiler_info.internal.plugin_name + "_out=" + output_directory_path)
-    args.add("--descriptor_set_in=" + descriptor_set_in_arg)
-    args.add_all(proto_paths.keys())
     args.use_param_file("--param=%s")
+
+    # Add the plugin argument with the provided name to namespace all of the options:
+    args.add("--plugin=protoc-gen-" + swift_proto_compiler_info.internal.plugin_name + "=" + swift_proto_compiler_info.internal.plugin.path)
+
+    # Overlay the additional plugin options on top of the default plugin options:
+    plugin_options = dicts.add(
+        swift_proto_compiler_info.internal.plugin_options,
+        additional_plugin_options
+    )
+    for plugin_option in plugin_options:
+        plugin_option_value = plugin_options[plugin_option]
+        args.add("--" + swift_proto_compiler_info.internal.plugin_name + "_opt=" + plugin_option + "=" + plugin_option_value)
+
+    # Add the module mapping file argument:
+    args.add("--" + swift_proto_compiler_info.internal.plugin_name + "_opt=ProtoPathModuleMappings=" + module_mappings_file.path)
+
+    # Add the output directory argument:
+    args.add("--" + swift_proto_compiler_info.internal.plugin_name + "_out=" + output_directory_path)
+
+    # Join the transitive descriptor sets into a single argument separated by colons:
+    descriptor_set_in_arg = ":".join([f.path for f in transitive_descriptor_sets.to_list()])
+    args.add("--descriptor_set_in=" + descriptor_set_in_arg)
+
+    # Finally, add the proto paths:
+    args.add_all(proto_paths.keys())
 
     # Run protoc:
     ctx.actions.run(
         inputs = depset(
             direct = [
-                compiler_info.internal.protoc,
-                compiler_info.internal.plugin,
+                swift_proto_compiler_info.internal.protoc,
+                swift_proto_compiler_info.internal.plugin,
                 module_mappings_file,
             ],
             transitive = [transitive_descriptor_sets],
@@ -168,7 +189,7 @@ def swift_proto_compile(ctx, compiler_info, proto_infos, imports):
         outputs = swift_srcs,
         progress_message = "Generating into %s" % swift_srcs[0].dirname,
         mnemonic = "SwiftProtocGen",
-        executable = compiler_info.internal.protoc,
+        executable = swift_proto_compiler_info.internal.protoc,
         arguments = [args],
     )
 
@@ -181,7 +202,7 @@ def _swift_proto_compiler_impl(ctx):
     return [
         SwiftProtoCompilerInfo(
             deps = ctx.attr.deps,
-            compile = swift_proto_compile,
+            compile = _swift_proto_compile,
             internal = struct(
                 protoc = ctx.executable.protoc,
                 plugin = ctx.executable.plugin,

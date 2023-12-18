@@ -40,6 +40,7 @@ load(
     "SwiftToolchainInfo",
 )
 # TODO: Should I re-export these through swift_common? Or move the new rules into swift/internal?
+load("//swift/internal:attrs.bzl", "swift_deps_attr")
 load("//swift/internal:compiling.bzl", "output_groups_from_other_compilation_outputs")
 load("//swift/internal:linking.bzl", "new_objc_provider")
 load("//swift/internal:utils.bzl", "compact", "get_providers")
@@ -133,14 +134,15 @@ def _swift_proto_library_impl(ctx):
     imports = _get_imports(ctx.attr, module_name)
 
     # Use the proto compiler to compile the swift sources for the proto deps:
-    compiler_deps = []
+    compiler_deps = [d for d in ctx.attr.compiler_deps]
     generated_swift_srcs = []
-    for compiler_target in ctx.attr.compilers:
-        compiler_info = compiler_target[SwiftProtoCompilerInfo]
-        compiler_deps.extend(compiler_info.deps)
-        generated_swift_srcs.extend(compiler_info.compile(
+    for swift_proto_compiler_target in ctx.attr.compilers:
+        swift_proto_compiler_info = swift_proto_compiler_target[SwiftProtoCompilerInfo]
+        compiler_deps.extend(swift_proto_compiler_info.deps)
+        generated_swift_srcs.extend(swift_proto_compiler_info.compile(
             ctx,
-            compiler_info = compiler_info,
+            swift_proto_compiler_info = swift_proto_compiler_info,
+            additional_plugin_options = ctx.attr.additional_plugin_options,
             proto_infos = [d[ProtoInfo] for d in ctx.attr.protos],
             imports = imports,
         ))
@@ -250,14 +252,30 @@ new_swift_proto_library = rule(
         {
             "protos": attr.label_list(
                 doc = """\
-                Exactly one `proto_library` target (or any target that propagates a `proto`
-                provider) from which the Swift library should be generated.
+                Exactly one `proto_library` target from which the Swift library should be generated.
                 """,
                 providers = [ProtoInfo],
             ),
+            "compiler_deps": swift_deps_attr(
+                aspects = [
+                    swift_clang_module_aspect,
+                ],
+                default = [],
+                doc = """\
+                A list of targets that are dependencies of the target being built, which will be
+                linked into that target, but will be ignored by the proto compiler.
+                """,
+            ),
             "compilers": attr.label_list(
-                providers = [SwiftProtoCompilerInfo],
                 default = ["//proto:swift_proto"],
+                providers = [SwiftProtoCompilerInfo],
+            ),
+            "additional_plugin_options": attr.string_dict(
+                default = {},
+                doc = """\
+                Dictionary of additional proto compiler plugin options for this target.
+                See the documentation of plugin_options on swift_proto_compiler for more information.
+                """,
             ),
         },
     ),
