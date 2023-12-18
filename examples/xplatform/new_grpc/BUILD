@@ -22,8 +22,8 @@ swift_binary(
     name = "echo_server",
     srcs = ["server_main.swift"],
     deps = [
-        ":echo_proto_swift",
-        ":echo_server_services_swift",
+        "//examples/xplatform/new_grpc/service:service_server_swift_proto",
+        "//examples/xplatform/new_grpc/service/service_messages:service_messages_swift_proto",
     ],
 )
 
@@ -34,14 +34,17 @@ swift_test(
         "main.swift",
     ],
     deps = [
-        ":echo_client_services_swift",
-        ":echo_proto_swift",
-        ":echo_server_services_swift",
+        "//examples/xplatform/new_grpc/service:service_client_swift_proto",
+        "//examples/xplatform/new_grpc/service:service_server_swift_proto",
+        "//examples/xplatform/new_grpc/service/service_messages:service_messages_swift_proto",
     ],
 )
 
 swift_binary(
     name = "echo_client",
     srcs = ["client_main.swift"],
-    deps = [":echo_client_services_swift"],
+    deps = [
+        "//examples/xplatform/new_grpc/service:service_client_swift_proto",
+        "//examples/xplatform/new_grpc/service/service_messages:service_messages_swift_proto",
+    ],
 )

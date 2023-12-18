@@ -16,12 +16,12 @@ import Dispatch
 import GRPC
 import NIOCore
 import NIOPosix
-import examples_xplatform_grpc_echo_proto
-import examples_xplatform_grpc_echo_server_services_swift
+import ServiceMessages
+import ServiceServer
 
 /// Concrete implementation of the `EchoService` service definition.
-class EchoProvider: RulesSwift_Examples_Grpc_EchoServiceProvider {
-  var interceptors: RulesSwift_Examples_Grpc_EchoServiceServerInterceptorFactoryProtocol?
+class EchoProvider: Service_EchoServiceProvider {
+  var interceptors: Service_EchoServiceServerInterceptorFactoryProtocol?
 
   /// Called when the server receives a request for the `EchoService.Echo` method.
   ///
@@ -29,9 +29,9 @@ class EchoProvider: RulesSwift_Examples_Grpc_EchoServiceProvider {
   ///   - request: The message containing the request parameters.
   ///   - context: Information about the current session.
   /// - Returns: The response that will be sent back to the client.
-  func echo(request: RulesSwift_Examples_Grpc_EchoRequest,
-            context: StatusOnlyCallContext) -> EventLoopFuture<RulesSwift_Examples_Grpc_EchoResponse> {
-    return context.eventLoop.makeSucceededFuture(RulesSwift_Examples_Grpc_EchoResponse.with {
+  func echo(request: ServiceMessages_EchoRequest,
+            context: StatusOnlyCallContext) -> EventLoopFuture<ServiceMessages_EchoResponse> {
+    return context.eventLoop.makeSucceededFuture(ServiceMessages_EchoResponse.with {
       $0.contents = "You sent: \(request.contents)"
     })
   }

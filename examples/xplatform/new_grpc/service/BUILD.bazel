@@ -13,6 +13,7 @@ new_swift_proto_library(
     protos = [":service_proto"],
     deps = ["//examples/xplatform/new_grpc/service/service_messages:service_messages_swift_proto"],
     compilers = ["//proto:swift_server_grpc"],
+    visibility = ["//visibility:public"],
 )
 
 new_swift_proto_library(
@@ -21,6 +22,7 @@ new_swift_proto_library(
     protos = [":service_proto"],
     deps = ["//examples/xplatform/new_grpc/service/service_messages:service_messages_swift_proto"],
     compilers = ["//proto:swift_client_grpc"],
+    visibility = ["//visibility:public"],
 )
 
 new_swift_proto_library(
@@ -37,4 +39,5 @@ new_swift_proto_library(
         "//examples/xplatform/new_grpc/service:service_client_swift_proto",
     ],
     compilers = ["//proto:swift_test_client_grpc"],
+    visibility = ["//visibility:public"],
 )

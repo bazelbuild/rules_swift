@@ -17,8 +17,8 @@ import SwiftProtobuf
 import GRPC
 import NIOCore
 import NIOPosix
-import examples_xplatform_grpc_echo_proto
-import examples_xplatform_grpc_echo_client_services_swift
+import ServiceMessages
+import ServiceClient
 
 @main
 struct ClientMain {
@@ -41,13 +41,13 @@ struct ClientMain {
     )
 
     // Initialize the client using the same address the server is started on.
-    let client = RulesSwift_Examples_Grpc_EchoServiceNIOClient(channel: channel)
+    let client = Service_EchoServiceNIOClient(channel: channel)
 
     // Construct a request to the echo service.
-    let request = RulesSwift_Examples_Grpc_EchoRequest.with {
+    let request = ServiceMessages_EchoRequest.with {
       $0.contents = "Hello, world!"
       let timestamp = Google_Protobuf_Timestamp(date: Date())
-      $0.extra = try! Google_Protobuf_Any(message: timestamp)
+      // $0.extra = try! Google_Protobuf_Any(message: timestamp)
     }
 
     let call = client.echo(request)

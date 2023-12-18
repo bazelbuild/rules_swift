@@ -12,27 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import examples_xplatform_grpc_echo_client_services_swift
-import examples_xplatform_grpc_echo_server_services_swift
-import examples_xplatform_grpc_echo_proto
+import ServiceMessages
+import ServiceClient
+import ServiceServer
 import GRPC
 import NIOCore
 import NIOPosix
 import XCTest
 
-public class EchoServiceProvider: RulesSwift_Examples_Grpc_EchoServiceProvider {
-  public let interceptors: RulesSwift_Examples_Grpc_EchoServiceServerInterceptorFactoryProtocol?
+public class EchoServiceProvider: Service_EchoServiceProvider {
+  public let interceptors: Service_EchoServiceServerInterceptorFactoryProtocol?
 
-  public init(interceptors: RulesSwift_Examples_Grpc_EchoServiceServerInterceptorFactoryProtocol? = nil) {
+  public init(interceptors: Service_EchoServiceServerInterceptorFactoryProtocol? = nil) {
     self.interceptors = interceptors
   }
 
   public func echo(
-    request: RulesSwift_Examples_Grpc_EchoRequest, 
+    request: ServiceMessages_EchoRequest, 
     context: StatusOnlyCallContext) 
-    -> EventLoopFuture<RulesSwift_Examples_Grpc_EchoResponse> 
+    -> EventLoopFuture<ServiceMessages_EchoResponse> 
   {
-    let response = RulesSwift_Examples_Grpc_EchoResponse.with {
+    let response = ServiceMessages_EchoResponse.with {
       $0.contents = request.contents
     }
     return context.eventLoop.makeSucceededFuture(response)
@@ -80,7 +80,7 @@ class ClientUnitTest: XCTestCase {
 
   func testGetWithRealClientAndServer() throws {
     let channel = try self.setUpServerAndChannel()
-    let client = RulesSwift_Examples_Grpc_EchoServiceNIOClient(channel: channel)
+    let client = Service_EchoServiceNIOClient(channel: channel)
 
     let completed = self.expectation(description: "'Get' completed")
 
