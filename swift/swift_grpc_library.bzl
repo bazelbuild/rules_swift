@@ -21,13 +21,11 @@ load(
 load(
     "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_ENABLE_TESTING",
-    "SWIFT_FEATURE_GENERATE_FROM_RAW_PROTO_FILES",
     "SWIFT_FEATURE_LAYERING_CHECK_SWIFT",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:features.bzl",
     "configure_features",
-    "is_feature_enabled",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:linking.bzl",
@@ -69,7 +67,6 @@ def _register_grpcswift_generate_action(
         proto_source_root,
         transitive_descriptor_sets,
         module_mapping_file,
-        generate_from_proto_sources,
         mkdir_and_run,
         protoc_executable,
         protoc_plugin_executable,
@@ -90,10 +87,6 @@ def _register_grpcswift_generate_action(
             target being analyzed. May be `None`, in which case no module
             mapping will be passed (the case for leaf nodes in the dependency
             graph).
-        generate_from_proto_sources: True/False for is generation should happen
-            from proto source file vs just via the DescriptorSets. The Sets
-            don't have source info, so the generated sources won't have
-            comments (https://github.com/bazelbuild/bazel/issues/9337).
         mkdir_and_run: The `File` representing the `mkdir_and_run` executable.
         protoc_executable: The `File` representing the `protoc` executable.
         protoc_plugin_executable: The `File` representing the `protoc` plugin
@@ -167,26 +160,12 @@ def _register_grpcswift_generate_action(
         omit_if_empty = True,
     )
 
-    if generate_from_proto_sources:
-        # ProtoCompileActionBuilder.java's XPAND_TRANSITIVE_PROTO_PATH_FLAGS
-        # leaves this off also.
-        if proto_source_root != ".":
-            protoc_args.add(proto_source_root, format = "--proto_path=%s")
-
-        # Follow ProtoCompileActionBuilder.java's
-        # ExpandImportArgsFn::expandToCommandLine() logic and provide a mapping
-        # for each file to the proto path.
-        for f in direct_srcs:
-            protoc_args.add("-I%s=%s" % (proto_import_path(f, proto_source_root), f.path))
-
     protoc_args.add_all([
         proto_import_path(f, proto_source_root)
         for f in direct_srcs
     ])
 
     additional_command_inputs = []
-    if generate_from_proto_sources:
-        additional_command_inputs.extend(direct_srcs)
     if module_mapping_file:
         additional_command_inputs.append(module_mapping_file)
 
@@ -241,29 +220,13 @@ def _swift_grpc_library_impl(ctx):
         unsupported_features = unsupported_features,
     )
 
-    generate_from_proto_sources = is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_GENERATE_FROM_RAW_PROTO_FILES,
-    )
-
     srcs_proto_info = ctx.attr.srcs[0][ProtoInfo]
 
     # Only the files for direct sources should be generated, but the
     # transitive descriptor sets are still need to be able to parse/load
     # those descriptors.
     direct_srcs = srcs_proto_info.direct_sources
-    if generate_from_proto_sources:
-        # Take the transitive descriptor sets from the proto_library deps,
-        # so the direct sources won't be in any descriptor sets to reduce
-        # the input to the action (and what protoc has to parse).
-        direct_descriptor_set = srcs_proto_info.direct_descriptor_set
-        transitive_descriptor_sets = depset(direct = [
-            x
-            for x in srcs_proto_info.transitive_descriptor_sets.to_list()
-            if x != direct_descriptor_set
-        ])
-    else:
-        transitive_descriptor_sets = srcs_proto_info.transitive_descriptor_sets
+    transitive_descriptor_sets = srcs_proto_info.transitive_descriptor_sets
 
     deps = ctx.attr.deps
 
@@ -286,7 +249,6 @@ def _swift_grpc_library_impl(ctx):
         srcs_proto_info.proto_source_root,
         transitive_descriptor_sets,
         transitive_module_mapping_file,
-        generate_from_proto_sources,
         ctx.executable._mkdir_and_run,
         ctx.executable._protoc,
         ctx.executable._protoc_gen_swiftgrpc,

@@ -193,20 +193,6 @@ SWIFT_FEATURE_EMIT_SWIFTINTERFACE = "swift.emit_swiftinterface"
 # system command line limit.
 SWIFT_FEATURE_NO_EMBED_DEBUG_MODULE = "swift.no_embed_debug_module"
 
-# If enabled, the toolchain will directly generate from the raw proto files
-# and not from the DescriptorSets.
-#
-# The DescriptorSets ProtoInfo exposes don't have source info, so comments in
-# the .proto files don't get carried over to the generated Swift sources as
-# documentation comments. https://github.com/bazelbuild/bazel/issues/9337
-# is open to attempt to get that, but this provides a way to opt into forcing
-# it.
-#
-# This does come with a minor risk for cross repository and/or generated proto
-# files where the protoc command line might not be crafted correctly, so it
-# remains opt in.
-SWIFT_FEATURE_GENERATE_FROM_RAW_PROTO_FILES = "swift.generate_from_raw_proto_files"
-
 # A private feature that is set by the toolchain if a flag enabling WMO was
 # passed on the command line using `--swiftcopt`. Users should never manually
 # enable, disable, or query this feature.
