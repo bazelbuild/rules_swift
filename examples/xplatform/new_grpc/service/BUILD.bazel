@@ -9,29 +9,24 @@ proto_library(
 
 swift_proto_library(
     name = "service_server_swift_proto",
+    compilers = ["//proto:swift_server_grpc"],
     module_name = "ServiceServer",
     protos = [":service_proto"],
-    deps = ["//examples/xplatform/new_grpc/service/service_messages:service_messages_swift_proto"],
-    compilers = ["//proto:swift_server_grpc"],
     visibility = ["//visibility:public"],
+    deps = ["//examples/xplatform/new_grpc/service/service_messages:service_messages_swift_proto"],
 )
 
 swift_proto_library(
     name = "service_client_swift_proto",
+    compilers = ["//proto:swift_client_grpc"],
     module_name = "ServiceClient",
     protos = [":service_proto"],
-    deps = ["//examples/xplatform/new_grpc/service/service_messages:service_messages_swift_proto"],
-    compilers = ["//proto:swift_client_grpc"],
     visibility = ["//visibility:public"],
+    deps = ["//examples/xplatform/new_grpc/service/service_messages:service_messages_swift_proto"],
 )
 
 swift_proto_library(
     name = "service_test_client_swift_proto",
-    module_name = "ServiceTestClient",
-    protos = [":service_proto"],
-    deps = [
-        "//examples/xplatform/new_grpc/service/service_messages:service_messages_swift_proto",
-    ],
     additional_plugin_options = {
         "ExtraModuleImports": "ServiceClient",
     },
@@ -39,5 +34,10 @@ swift_proto_library(
         "//examples/xplatform/new_grpc/service:service_client_swift_proto",
     ],
     compilers = ["//proto:swift_test_client_grpc"],
+    module_name = "ServiceTestClient",
+    protos = [":service_proto"],
     visibility = ["//visibility:public"],
+    deps = [
+        "//examples/xplatform/new_grpc/service/service_messages:service_messages_swift_proto",
+    ],
 )

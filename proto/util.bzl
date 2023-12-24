@@ -24,7 +24,7 @@ load(
 def proto_path(proto_src, proto_info):
     """Derives the string used to import the proto. 
 
-    This is the proto source path within its repository, 
+    This is the proto source path within its repository,
     adjusted by import_prefix and strip_import_prefix.
 
     Args:

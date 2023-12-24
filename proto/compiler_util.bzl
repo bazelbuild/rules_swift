@@ -17,12 +17,12 @@ Utilities for proto compiler rules.
 """
 
 load(
-    "@bazel_skylib//lib:dicts.bzl", 
+    "@bazel_skylib//lib:dicts.bzl",
     "dicts",
 )
 load(
     "//proto:swift_proto_compiler.bzl",
-    "swift_proto_compiler"
+    "swift_proto_compiler",
 )
 
 BASE_PLUGIN_OPTIONS = {
@@ -36,8 +36,8 @@ GRPC_VARIANT_SERVER = "Server"
 GRPC_VARIANT_CLIENT = "Client"
 GRPC_VARIANT_TEST_CLIENT = "TestClient"
 GRPC_VARIANTS = [
-    GRPC_VARIANT_SERVER, 
-    GRPC_VARIANT_CLIENT, 
+    GRPC_VARIANT_SERVER,
+    GRPC_VARIANT_CLIENT,
     GRPC_VARIANT_TEST_CLIENT,
 ]
 
@@ -52,8 +52,8 @@ def make_grpc_swift_proto_compiler(name, variants, plugin_options = BASE_PLUGIN_
 
     # Merge the plugin options to include the variants:
     merged_plugin_options = dicts.add(
-        plugin_options, 
-        {variant : "false" for variant in GRPC_VARIANTS},
+        plugin_options,
+        {variant: "false" for variant in GRPC_VARIANTS},
     )
     for variant in variants:
         merged_plugin_options[variant] = "true"

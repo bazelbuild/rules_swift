@@ -1,49 +1,52 @@
 load(
     "//proto:compiler_util.bzl",
-    "make_grpc_swift_proto_compiler",
     "BASE_PLUGIN_OPTIONS",
-    "GRPC_VARIANT_SERVER",
     "GRPC_VARIANT_CLIENT",
-    "GRPC_VARIANT_TEST_CLIENT"
+    "GRPC_VARIANT_SERVER",
+    "GRPC_VARIANT_TEST_CLIENT",
+    "make_grpc_swift_proto_compiler",
 )
 load(
     "//proto:swift_proto_compiler.bzl",
-    "swift_proto_compiler"
+    "swift_proto_compiler",
 )
 
 # Swift Proto
 
 swift_proto_compiler(
     name = "swift_proto",
-    protoc = "//tools/protoc_wrapper:protoc",
     plugin = "//tools/protoc_wrapper:ProtoCompilerPlugin",
     plugin_name = "swift",
     plugin_options = BASE_PLUGIN_OPTIONS,
+    protoc = "//tools/protoc_wrapper:protoc",
     suffixes = [".pb.swift"],
+    visibility = ["//visibility:public"],
     deps = [
         "@com_github_apple_swift_protobuf//:SwiftProtobuf",
     ],
-    visibility = ["//visibility:public"],
 )
 
 # Swift GRPC
 
 make_grpc_swift_proto_compiler(
-    name = "swift_grpc", 
-    variants = [GRPC_VARIANT_SERVER, GRPC_VARIANT_CLIENT],
+    name = "swift_grpc",
+    variants = [
+        GRPC_VARIANT_SERVER,
+        GRPC_VARIANT_CLIENT,
+    ],
 )
 
 make_grpc_swift_proto_compiler(
-    name = "swift_server_grpc", 
+    name = "swift_server_grpc",
     variants = [GRPC_VARIANT_SERVER],
 )
 
 make_grpc_swift_proto_compiler(
-    name = "swift_client_grpc", 
+    name = "swift_client_grpc",
     variants = [GRPC_VARIANT_CLIENT],
 )
 
 make_grpc_swift_proto_compiler(
-    name = "swift_test_client_grpc", 
+    name = "swift_test_client_grpc",
     variants = [GRPC_VARIANT_TEST_CLIENT],
 )

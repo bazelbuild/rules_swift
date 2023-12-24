@@ -52,8 +52,8 @@ swift_test(
 swift_test(
     name = "echo_test_client_unit_test",
     srcs = [
-        "test_client_unit_test.swift",
         "main.swift",
+        "test_client_unit_test.swift",
     ],
     deps = [
         "//examples/xplatform/new_grpc/service:service_client_swift_proto",

@@ -17,7 +17,7 @@ Defines a rule that generates a Swift library from protocol buffer sources.
 """
 
 load(
-    "@bazel_skylib//lib:dicts.bzl", 
+    "@bazel_skylib//lib:dicts.bzl",
     "dicts",
 )
 load(
@@ -25,7 +25,7 @@ load(
     "ProtoInfo",
 )
 load(
-    "//proto:swift_proto_compiler.bzl", 
+    "//proto:swift_proto_compiler.bzl",
     "SwiftProtoCompilerInfo",
 )
 load(
@@ -34,11 +34,12 @@ load(
 )
 load(
     "//swift:swift.bzl",
-    "swift_common",
-    "swift_clang_module_aspect",
     "SwiftInfo",
     "SwiftToolchainInfo",
+    "swift_clang_module_aspect",
+    "swift_common",
 )
+
 # TODO: Should I re-export these through swift_common? Or move the new rules into swift/internal?
 load("//swift/internal:attrs.bzl", "swift_deps_attr")
 load("//swift/internal:compiling.bzl", "output_groups_from_other_compilation_outputs")
@@ -52,8 +53,8 @@ SwiftProtoImportInfo = provider(
     Information aggregated by the Swift proto library aspect.
     """,
     fields = {
-        "imports": "Depset of proto source files from the ProtoInfo providers in the protos attributes of swift_proto_library dependencies."
-    }
+        "imports": "Depset of proto source files from the ProtoInfo providers in the protos attributes of swift_proto_library dependencies.",
+    },
 )
 
 # Private
@@ -61,7 +62,7 @@ SwiftProtoImportInfo = provider(
 def _get_module_name(attr, target_label):
     """Gets the module name from the given attributes and target label.
 
-    Uses the module name from the attribute if provided, 
+    Uses the module name from the attribute if provided,
     or failing this, falls back to the derived module name.
     """
     module_name = attr.module_name
@@ -113,13 +114,12 @@ _swift_proto_library_aspect = aspect(
     Traverses the deps attributes of the swift_proto_library targets,
     and creates a depset from their respective protos attributes as well as their
     module names.
-    """
+    """,
 )
 
 # Rule
 
 def _swift_proto_library_impl(ctx):
-
     # Extract the swift toolchain and configure the features:
     swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
     feature_configuration = swift_common.configure_features(
@@ -238,7 +238,7 @@ swift_proto_library = rule(
                 _swift_proto_library_aspect,
                 swift_clang_module_aspect,
             ],
-            requires_srcs = False
+            requires_srcs = False,
         ),
         {
             "protos": attr.label_list(

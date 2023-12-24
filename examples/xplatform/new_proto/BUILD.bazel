@@ -1,5 +1,5 @@
 load(
-    "@rules_proto//proto:defs.bzl", 
+    "@rules_proto//proto:defs.bzl",
     "proto_library",
 )
 load(
@@ -37,10 +37,10 @@ proto_library(
 
 swift_proto_library(
     name = "example_path_to_underscores_proto_swift",
-    protos = [":example_path_to_underscores_proto"],
     additional_plugin_options = {
         "FileNaming": "PathToUnderscores",
-    }
+    },
+    protos = [":example_path_to_underscores_proto"],
 )
 
 swift_binary(

@@ -17,11 +17,11 @@ Defines a rule for compiling Swift source files from proto_libraries.
 """
 
 load(
-    "@bazel_skylib//lib:dicts.bzl", 
+    "@bazel_skylib//lib:dicts.bzl",
     "dicts",
 )
 load(
-    "@bazel_skylib//lib:paths.bzl", 
+    "@bazel_skylib//lib:paths.bzl",
     "paths",
 )
 load(
@@ -62,7 +62,7 @@ targets as needed to avoid compiling them unnecessarily.
     },
 )
 
-def _swift_proto_compile(ctx, swift_proto_compiler_info,additional_plugin_options, proto_infos, imports):
+def _swift_proto_compile(ctx, swift_proto_compiler_info, additional_plugin_options, proto_infos, imports):
     """Invokes protoc to generate Swift sources for a given set of proto info providers.
 
     Args:
@@ -79,7 +79,7 @@ def _swift_proto_compile(ctx, swift_proto_compiler_info,additional_plugin_option
     # Overlay the additional plugin options on top of the default plugin options:
     plugin_options = dicts.add(
         swift_proto_compiler_info.internal.plugin_options,
-        additional_plugin_options
+        additional_plugin_options,
     )
 
     # Declare the swift files that will be generated:
@@ -88,14 +88,12 @@ def _swift_proto_compile(ctx, swift_proto_compiler_info,additional_plugin_option
     proto_paths = {}
     transitive_descriptor_sets_list = []
     for proto_info in proto_infos:
-
         # Collect the transitive descriptor sets from the proto infos:
         transitive_descriptor_sets_list.append(proto_info.transitive_descriptor_sets)
 
         # Iterate over the proto sources in the proto info to gather information
         # about their proto sources and declare the swift files that will be generated:
         for proto_src in proto_info.check_deps_sources.to_list():
-
             # Derive the proto path:
             path = proto_path(proto_src, proto_info)
             if path in proto_paths:
@@ -128,7 +126,7 @@ def _swift_proto_compile(ctx, swift_proto_compiler_info,additional_plugin_option
                 swift_src_path = paths.join(ctx.label.name, swift_src_path_without_label_name)
                 swift_src = ctx.actions.declare_file(swift_src_path)
                 swift_srcs.append(swift_src)
-            
+
                 # Grab the output path directory:
                 if output_directory_path == None:
                     full_swift_src_path = swift_srcs[0].path
@@ -154,7 +152,7 @@ def _swift_proto_compile(ctx, swift_proto_compiler_info,additional_plugin_option
         module_proto_paths = module_names_to_proto_paths[module_name] if module_name in module_names_to_proto_paths else []
         module_proto_paths.append(path)
         module_names_to_proto_paths[module_name] = module_proto_paths
-    
+
     # Write the module mappings to a file:
     module_mappings = []
     for module_name in sorted(module_names_to_proto_paths.keys()):
