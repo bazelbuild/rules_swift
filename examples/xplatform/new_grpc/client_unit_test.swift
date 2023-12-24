@@ -39,7 +39,7 @@ public class EchoServiceProvider: Service_EchoServiceProvider {
   }
 }
 
-class ClientUnitTest: XCTestCase {
+class UnitTest: XCTestCase {
 
   private var group: MultiThreadedEventLoopGroup?
   private var server: Server?

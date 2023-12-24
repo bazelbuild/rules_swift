@@ -20,7 +20,7 @@ import NIOCore
 import NIOPosix
 import XCTest
 
-class TestClientUnitTest: XCTestCase {
+class UnitTest: XCTestCase {
   func testGetWithFakeClient() throws {
 
     // Set up the fake contents:

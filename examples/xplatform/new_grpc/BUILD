@@ -39,8 +39,8 @@ swift_binary(
 swift_test(
     name = "echo_client_unit_test",
     srcs = [
-        "client_unit_test.swift",
         "main.swift",
+        "client_unit_test.swift",
     ],
     deps = [
         "//examples/xplatform/new_grpc/service:service_client_swift_proto",
