@@ -25,13 +25,13 @@ load(
     "paths",
 )
 load(
-    "//swift/proto:util.bzl",
-    "proto_path",
-    "register_module_mapping_write_action",
+    "//swift/internal:providers.bzl",
+    "SwiftInfo",
 )
 load(
-    "//swift:swift.bzl",
-    "SwiftInfo",
+    ":util.bzl",
+    "proto_path",
+    "register_module_mapping_write_action",
 )
 
 SwiftProtoCompilerInfo = provider(

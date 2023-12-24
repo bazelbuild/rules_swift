@@ -25,26 +25,43 @@ load(
     "ProtoInfo",
 )
 load(
-    "//swift/proto:swift_proto_compiler.bzl",
+    "//swift/internal:attrs.bzl", 
+    "swift_deps_attr",
+)
+load(
+    "//swift/internal:compiling.bzl", 
+    "output_groups_from_other_compilation_outputs",
+)
+load(
+    "//swift/internal:linking.bzl", 
+    "new_objc_provider",
+)
+load(
+    "//swift/internal:providers.bzl",
+    "SwiftInfo",
+    "SwiftToolchainInfo",
+)
+load(
+    "//swift/internal:swift_clang_module_aspect.bzl", 
+    "swift_clang_module_aspect",
+)
+load(
+    "//swift/internal:swift_common.bzl",
+    "swift_common",
+)
+load(
+    "//swift/internal:utils.bzl", 
+    "compact", 
+    "get_providers",
+)
+load(
+    ":swift_proto_compiler.bzl",
     "SwiftProtoCompilerInfo",
 )
 load(
-    "//swift/proto:util.bzl",
+    ":util.bzl",
     "proto_path",
 )
-load(
-    "//swift:swift.bzl",
-    "SwiftInfo",
-    "SwiftToolchainInfo",
-    "swift_clang_module_aspect",
-    "swift_common",
-)
-
-# TODO: Should I re-export these through swift_common? Or move the new rules into swift/internal?
-load("//swift/internal:attrs.bzl", "swift_deps_attr")
-load("//swift/internal:compiling.bzl", "output_groups_from_other_compilation_outputs")
-load("//swift/internal:linking.bzl", "new_objc_provider")
-load("//swift/internal:utils.bzl", "compact", "get_providers")
 
 # Provider
 

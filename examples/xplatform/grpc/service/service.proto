@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package service;
 
-import "examples/xplatform/new_grpc/service/service_messages/service_messages.proto";
+import "examples/xplatform/grpc/service/service_messages/service_messages.proto";
 
 service EchoService {
   rpc Echo(service_messages.EchoRequest) returns (service_messages.EchoResponse);

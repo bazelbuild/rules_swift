@@ -31,7 +31,7 @@ BASE_PLUGIN_OPTIONS = {
 
 # NOTE: As of Swift 5.6, the TestClient flavor is deprecated in grpc-swift.
 # This is because they are not sendable and needed to be marked as unchecked sendable for async/await.
-# In the next major version of rules_swift, we should consider dropping support for them.
+# We might just want to drop support for it during this migration.
 GRPC_VARIANT_SERVER = "Server"
 GRPC_VARIANT_CLIENT = "Client"
 GRPC_VARIANT_TEST_CLIENT = "TestClient"

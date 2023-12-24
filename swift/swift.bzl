@@ -33,10 +33,18 @@ load(
     _universal_swift_compiler_plugin = "universal_swift_compiler_plugin",
 )
 load(
+    "@build_bazel_rules_swift//swift/deprecated_proto:swift_grpc_library.bzl",
+    _deprecated_swift_grpc_library = "swift_grpc_library",
+)
+load(
+    "@build_bazel_rules_swift//swift/deprecated_proto:swift_proto_library.bzl",
+    _deprecated_swift_proto_library = "swift_proto_library",
+)
+load(
     "@build_bazel_rules_swift//swift/internal:providers.bzl",
-    _SwiftGRPCInfo = "SwiftGRPCInfo",
+    _DeprecatedSwiftGRPCInfo = "SwiftGRPCInfo",
+    _DeprecatedSwiftProtoInfo = "SwiftProtoInfo",
     _SwiftInfo = "SwiftInfo",
-    _SwiftProtoInfo = "SwiftProtoInfo",
     _SwiftToolchainInfo = "SwiftToolchainInfo",
     _SwiftUsageInfo = "SwiftUsageInfo",
 )
@@ -62,10 +70,6 @@ load(
     _swift_feature_allowlist = "swift_feature_allowlist",
 )
 load(
-    "@build_bazel_rules_swift//swift/internal:swift_grpc_library.bzl",
-    _swift_grpc_library = "swift_grpc_library",
-)
-load(
     "@build_bazel_rules_swift//swift/internal:swift_import.bzl",
     _swift_import = "swift_import",
 )
@@ -86,18 +90,20 @@ load(
     _swift_package_configuration = "swift_package_configuration",
 )
 load(
-    "@build_bazel_rules_swift//swift/internal:swift_proto_library.bzl",
-    _swift_proto_library = "swift_proto_library",
-)
-load(
     "@build_bazel_rules_swift//swift/internal:swift_usage_aspect.bzl",
     _swift_usage_aspect = "swift_usage_aspect",
 )
+load(
+    "@build_bazel_rules_swift//swift/proto:swift_proto_compiler.bzl",
+    _swift_proto_compiler = "swift_proto_compiler",
+)
+load(
+    "@build_bazel_rules_swift//swift/proto:swift_proto_library.bzl",
+    _swift_proto_library = "swift_proto_library",
+)
 
 # Re-export providers.
-SwiftGRPCInfo = _SwiftGRPCInfo
 SwiftInfo = _SwiftInfo
-SwiftProtoInfo = _SwiftProtoInfo
 SwiftToolchainInfo = _SwiftToolchainInfo
 SwiftUsageInfo = _SwiftUsageInfo
 
@@ -110,14 +116,22 @@ swift_c_module = _swift_c_module
 swift_compiler_plugin = _swift_compiler_plugin
 universal_swift_compiler_plugin = _universal_swift_compiler_plugin
 swift_feature_allowlist = _swift_feature_allowlist
-swift_grpc_library = _swift_grpc_library
 swift_import = _swift_import
 swift_library = _swift_library
 swift_library_group = _swift_library_group
 swift_module_alias = _swift_module_alias
 swift_package_configuration = _swift_package_configuration
-swift_proto_library = _swift_proto_library
 swift_test = _swift_test
+
+# Deprecated swift proto rules:
+swift_proto_library = _deprecated_swift_proto_library
+swift_grpc_library = _deprecated_swift_grpc_library
+SwiftProtoInfo = _DeprecatedSwiftProtoInfo
+SwiftGRPCInfo = _DeprecatedSwiftGRPCInfo
+
+# New swift proto rule:
+swift_proto_compiler = _swift_proto_compiler
+new_swift_proto_library = _swift_proto_library
 
 # Re-export public aspects.
 swift_clang_module_aspect = _swift_clang_module_aspect

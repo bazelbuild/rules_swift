@@ -14,8 +14,8 @@
 
 import Foundation
 import SwiftProtobuf
-import examples_xplatform_proto_example_path_to_underscores_proto
-import examples_xplatform_proto_example_proto
+import examples_xplatform_proto_example_path_to_underscores_proto_swift
+import examples_xplatform_proto_example_proto_swift
 
 let person = RulesSwift_Examples_Person.with {
   $0.name = "Firstname Lastname"

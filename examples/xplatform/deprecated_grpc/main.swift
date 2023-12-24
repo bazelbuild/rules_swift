@@ -2,6 +2,6 @@
 import XCTest
 
 XCTMain([
-  testCase(UnitTest.allTests),
+  testCase(ClientUnitTest.allTests),
 ])
 #endif

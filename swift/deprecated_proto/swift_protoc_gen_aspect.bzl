@@ -14,21 +14,65 @@
 
 """An aspect attached to `proto_library` targets to generate Swift artifacts."""
 
+<<<<<<< HEAD:swift/internal/swift_protoc_gen_aspect.bzl
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 load("@rules_proto//proto:defs.bzl", "ProtoInfo")
 load(":actions.bzl", "USE_DEFAULT_SHELL_ENV")
 load(":attrs.bzl", "swift_config_attrs")
 load(":compiling.bzl", "output_groups_from_other_compilation_outputs")
+=======
+>>>>>>> daf0e0a (Move code into deprecated directory):swift/deprecated_proto/swift_protoc_gen_aspect.bzl
 load(
-    ":feature_names.bzl",
+    "@bazel_skylib//lib:dicts.bzl", 
+    "dicts",
+)
+load(
+    "@bazel_skylib//rules:common_settings.bzl", 
+    "BuildSettingInfo",
+)
+load(
+    "@rules_proto//proto:defs.bzl", 
+    "ProtoInfo",
+)
+load(
+    "//swift/internal:actions.bzl", 
+    "USE_DEFAULT_SHELL_ENV",
+)
+load(
+    "//swift/internal:attrs.bzl", 
+    "swift_config_attrs",
+)
+load(
+    "//swift/internal:compiling.bzl",
+    "output_groups_from_other_compilation_outputs",
+)
+load(
+    "//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_ENABLE_TESTING",
     "SWIFT_FEATURE_GENERATE_FROM_RAW_PROTO_FILES",
     "SWIFT_FEATURE_GENERATE_PATH_TO_UNDERSCORES_FROM_PROTO_FILES",
 )
-load(":linking.bzl", "new_objc_provider")
+load(
+    "//swift/internal:linking.bzl", 
+    "new_objc_provider",
+)
+load(
+    "//swift/internal:providers.bzl", 
+    "SwiftInfo",
+    "SwiftProtoInfo", 
+    "SwiftToolchainInfo",
+)
+load(
+    "//swift/internal:swift_common.bzl",
+    "swift_common",
+)
+load(
+    "//swift/internal:utils.bzl",
+    "get_providers",
+)
 load(
     ":proto_gen_utils.bzl",
     "declare_generated_files",
@@ -36,9 +80,6 @@ load(
     "proto_import_path",
     "register_module_mapping_write_action",
 )
-load(":providers.bzl", "SwiftInfo", "SwiftProtoInfo", "SwiftToolchainInfo")
-load(":swift_common.bzl", "swift_common")
-load(":utils.bzl", "get_providers")
 
 # The paths of proto files bundled with the runtime. This is mainly the well
 # known type protos, but also includes descriptor.proto to make generation of

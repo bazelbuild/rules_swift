@@ -119,16 +119,6 @@ bzl_library(
 )
 
 bzl_library(
-    name = "proto_gen_utils",
-    srcs = ["proto_gen_utils.bzl"],
-    visibility = ["//swift:__subpackages__"],
-    deps = [
-        ":utils",
-        "@bazel_skylib//lib:paths",
-    ],
-)
-
-bzl_library(
     name = "providers",
     srcs = ["providers.bzl"],
     visibility = ["//swift:__subpackages__"],
@@ -191,24 +181,6 @@ bzl_library(
         ":linking",
         ":providers",
         ":swift_clang_module_aspect",
-    ],
-)
-
-bzl_library(
-    name = "swift_grpc_library",
-    srcs = ["swift_grpc_library.bzl"],
-    visibility = ["//swift:__subpackages__"],
-    deps = [
-        ":compiling",
-        ":feature_names",
-        ":linking",
-        ":proto_gen_utils",
-        ":providers",
-        ":swift_common",
-        ":transitions",
-        ":utils",
-        "@bazel_skylib//lib:dicts",
-        "@rules_proto//proto:defs",
     ],
 )
 
@@ -284,36 +256,6 @@ bzl_library(
     ],
 )
 
-bzl_library(
-    name = "swift_proto_library",
-    srcs = ["swift_proto_library.bzl"],
-    visibility = ["//swift:__subpackages__"],
-    deps = [
-        ":providers",
-        ":swift_protoc_gen_aspect",
-        ":transitions",
-        "@rules_proto//proto:defs",
-    ],
-)
-
-bzl_library(
-    name = "swift_protoc_gen_aspect",
-    srcs = ["swift_protoc_gen_aspect.bzl"],
-    visibility = ["//swift:__subpackages__"],
-    deps = [
-        ":attrs",
-        ":compiling",
-        ":feature_names",
-        ":linking",
-        ":proto_gen_utils",
-        ":providers",
-        ":swift_common",
-        ":utils",
-        "@bazel_skylib//lib:dicts",
-        "@bazel_skylib//rules:common_settings",
-        "@rules_proto//proto:defs",
-    ],
-)
 
 bzl_library(
     name = "swift_toolchain",

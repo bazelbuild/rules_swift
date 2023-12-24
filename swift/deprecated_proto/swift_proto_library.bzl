@@ -14,16 +14,27 @@
 
 """A rule that generates a Swift library from protocol buffer sources."""
 
-load("@rules_proto//proto:defs.bzl", "ProtoInfo")
-load(":providers.bzl", "SwiftInfo", "SwiftProtoInfo")
+load(
+    "@rules_proto//proto:defs.bzl", 
+    "ProtoInfo",
+)
+load(
+    "//swift/internal:providers.bzl", 
+    "SwiftInfo", 
+    "SwiftProtoInfo",
+)
 load(
     ":swift_protoc_gen_aspect.bzl",
     "SwiftProtoCcInfo",
     "swift_protoc_gen_aspect",
 )
-load(":transitions.bzl", "proto_compiler_transition")
+load(
+    ":transitions.bzl",
+    "proto_compiler_transition",
+)
 
 def _swift_proto_library_impl(ctx):
+    print("WARNING: This rule is deprecated. See doc/proto_migration.md for more information.")  # buildifier: disable=print
     if len(ctx.attr.deps) != 1:
         fail(
             "You must list exactly one target in the deps attribute.",

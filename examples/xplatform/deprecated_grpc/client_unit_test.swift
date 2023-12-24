@@ -12,34 +12,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import ServiceMessages
-import ServiceClient
-import ServiceServer
+import examples_xplatform_deprecated_grpc_echo_client_services_swift
+import examples_xplatform_deprecated_grpc_echo_server_services_swift
+import examples_xplatform_deprecated_grpc_echo_proto
 import GRPC
 import NIOCore
 import NIOPosix
 import XCTest
 
-public class EchoServiceProvider: Service_EchoServiceProvider {
-  public let interceptors: Service_EchoServiceServerInterceptorFactoryProtocol?
+public class EchoServiceProvider: RulesSwift_Examples_Grpc_EchoServiceProvider {
+  public let interceptors: RulesSwift_Examples_Grpc_EchoServiceServerInterceptorFactoryProtocol?
 
-  public init(interceptors: Service_EchoServiceServerInterceptorFactoryProtocol? = nil) {
+  public init(interceptors: RulesSwift_Examples_Grpc_EchoServiceServerInterceptorFactoryProtocol? = nil) {
     self.interceptors = interceptors
   }
 
   public func echo(
-    request: ServiceMessages_EchoRequest, 
+    request: RulesSwift_Examples_Grpc_EchoRequest, 
     context: StatusOnlyCallContext) 
-    -> EventLoopFuture<ServiceMessages_EchoResponse> 
+    -> EventLoopFuture<RulesSwift_Examples_Grpc_EchoResponse> 
   {
-    let response = ServiceMessages_EchoResponse.with {
+    let response = RulesSwift_Examples_Grpc_EchoResponse.with {
       $0.contents = request.contents
     }
     return context.eventLoop.makeSucceededFuture(response)
   }
 }
 
-class UnitTest: XCTestCase {
+class ClientUnitTest: XCTestCase {
 
   private var group: MultiThreadedEventLoopGroup?
   private var server: Server?
@@ -80,7 +80,7 @@ class UnitTest: XCTestCase {
 
   func testGetWithRealClientAndServer() throws {
     let channel = try self.setUpServerAndChannel()
-    let client = Service_EchoServiceNIOClient(channel: channel)
+    let client = RulesSwift_Examples_Grpc_EchoServiceNIOClient(channel: channel)
 
     let completed = self.expectation(description: "'Get' completed")
 

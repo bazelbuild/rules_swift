@@ -1,4 +1,4 @@
-load("//swift/proto:swift_proto_library.bzl", "swift_proto_library")
+load("//swift:swift.bzl", swift_proto_library = "new_swift_proto_library")
 
 proto_library(
     name = "service_messages_proto",
