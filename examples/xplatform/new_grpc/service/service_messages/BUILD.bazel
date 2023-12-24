@@ -1,12 +1,15 @@
-load("//proto:swift_proto_library.bzl", "new_swift_proto_library")
+load("//proto:swift_proto_library.bzl", "swift_proto_library")
 
 proto_library(
     name = "service_messages_proto",
     srcs = ["service_messages.proto"],
+    deps = [
+        "@com_google_protobuf//:any_proto",
+    ],
     visibility = ["//visibility:public"],
 )
 
-new_swift_proto_library(
+swift_proto_library(
     name = "service_messages_swift_proto",
     module_name = "ServiceMessages",
     protos = [":service_messages_proto"],

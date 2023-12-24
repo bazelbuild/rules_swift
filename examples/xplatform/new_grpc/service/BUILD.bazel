@@ -1,5 +1,5 @@
 load("@rules_proto//proto:defs.bzl", "proto_library")
-load("//proto:swift_proto_library.bzl", "new_swift_proto_library")
+load("//proto:swift_proto_library.bzl", "swift_proto_library")
 
 proto_library(
     name = "service_proto",
@@ -7,7 +7,7 @@ proto_library(
     deps = ["//examples/xplatform/new_grpc/service/service_messages:service_messages_proto"],
 )
 
-new_swift_proto_library(
+swift_proto_library(
     name = "service_server_swift_proto",
     module_name = "ServiceServer",
     protos = [":service_proto"],
@@ -16,7 +16,7 @@ new_swift_proto_library(
     visibility = ["//visibility:public"],
 )
 
-new_swift_proto_library(
+swift_proto_library(
     name = "service_client_swift_proto",
     module_name = "ServiceClient",
     protos = [":service_proto"],
@@ -25,7 +25,7 @@ new_swift_proto_library(
     visibility = ["//visibility:public"],
 )
 
-new_swift_proto_library(
+swift_proto_library(
     name = "service_test_client_swift_proto",
     module_name = "ServiceTestClient",
     protos = [":service_proto"],

@@ -66,6 +66,8 @@ def register_module_mapping_write_action(label, actions, module_mappings):
     )
     content = "".join([_render_text_module_mapping(m) for m in module_mappings])
 
+    print("module mappings: ", content)
+
     actions.write(
         content = content,
         output = mapping_file,

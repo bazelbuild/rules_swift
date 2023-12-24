@@ -29,6 +29,9 @@ BASE_PLUGIN_OPTIONS = {
     "Visibility": "Public",
 }
 
+# NOTE: As of Swift 5.6, the TestClient flavor is deprecated in grpc-swift.
+# This is because they are not sendable and needed to be marked as unchecked sendable for async/await.
+# In the next major version of rules_swift, we should consider dropping support for them.
 GRPC_VARIANT_SERVER = "Server"
 GRPC_VARIANT_CLIENT = "Client"
 GRPC_VARIANT_TEST_CLIENT = "TestClient"
@@ -63,6 +66,7 @@ def make_grpc_swift_proto_compiler(name, variants, plugin_options = BASE_PLUGIN_
         plugin_options = merged_plugin_options,
         suffixes = [".grpc.swift"],
         deps = [
+            "@com_github_apple_swift_protobuf//:SwiftProtobuf",
             "@com_github_grpc_grpc_swift//:GRPC",
         ],
         visibility = ["//visibility:public"],

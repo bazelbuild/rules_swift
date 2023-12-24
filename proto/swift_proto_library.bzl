@@ -150,15 +150,6 @@ def _swift_proto_library_impl(ctx):
     # Collect the dependencies for the compile action:
     deps = ctx.attr.deps + compiler_deps
 
-    # TODO: Figure out how to add deps from the compiler configuration.
-    # We will likely need the proto / grpc library like "@com_github_grpc_grpc_swift//:GRPC"
-    # or "@com_github_apple_swift_protobuf//:SwiftProtobuf"
-    # The compiler can be configured to hold this so it can be swapped out and
-    # the swift_proto_library targets don't have to show it.
-
-    # TODO: Figure out how to handle well-known-types like "any", "timestamp", "empty" etc.
-    # See rules_go //proto/wkt:well_known_types.bzl
-
     # Compile the generated Swift source files as a module:
     module_context, cc_compilation_outputs, other_compilation_outputs = swift_common.compile(
         actions = ctx.actions,
@@ -240,7 +231,7 @@ def _swift_proto_library_impl(ctx):
 
     return providers
 
-new_swift_proto_library = rule(
+swift_proto_library = rule(
     attrs = dicts.add(
         swift_common.library_rule_attrs(
             additional_deps_aspects = [

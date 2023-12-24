@@ -47,7 +47,7 @@ struct ClientMain {
     let request = ServiceMessages_EchoRequest.with {
       $0.contents = "Hello, world!"
       let timestamp = Google_Protobuf_Timestamp(date: Date())
-      // $0.extra = try! Google_Protobuf_Any(message: timestamp)
+      $0.extra = try! Google_Protobuf_Any(message: timestamp)
     }
 
     let call = client.echo(request)
