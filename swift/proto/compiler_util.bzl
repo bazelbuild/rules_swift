@@ -21,7 +21,7 @@ load(
     "dicts",
 )
 load(
-    "//proto:swift_proto_compiler.bzl",
+    "//swift/proto:swift_proto_compiler.bzl",
     "swift_proto_compiler",
 )
 

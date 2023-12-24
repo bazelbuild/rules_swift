@@ -25,7 +25,7 @@ load(
     "paths",
 )
 load(
-    "//proto:util.bzl",
+    "//swift/proto:util.bzl",
     "proto_path",
     "register_module_mapping_write_action",
 )
@@ -243,8 +243,8 @@ swift_proto_compiler = rule(
             "//tools/protoc_wrapper:protoc"
 
             We provide two compiler targets:
-            "//proto:swift_proto"
-            "//proto:swift_grpc"
+            "//swift/proto:swift_proto"
+            "//swift/proto:swift_grpc"
 
             These targets use this attribute to configure protoc with their respective proto compiler.
             """,
@@ -261,8 +261,8 @@ swift_proto_compiler = rule(
             "//tools/protoc_wrapper:ProtoCompilerPlugin"
 
             We provide two compiler targets:
-            "//proto:swift_proto"
-            "//proto:swift_grpc"
+            "//swift/proto:swift_proto"
+            "//swift/proto:swift_grpc"
 
             These targets use this attribute to configure protoc with their respective plugins.
             """,

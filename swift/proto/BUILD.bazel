@@ -1,5 +1,5 @@
 load(
-    "//proto:compiler_util.bzl",
+    "//swift/proto:compiler_util.bzl",
     "BASE_PLUGIN_OPTIONS",
     "GRPC_VARIANT_CLIENT",
     "GRPC_VARIANT_SERVER",
@@ -7,7 +7,7 @@ load(
     "make_grpc_swift_proto_compiler",
 )
 load(
-    "//proto:swift_proto_compiler.bzl",
+    "//swift/proto:swift_proto_compiler.bzl",
     "swift_proto_compiler",
 )
 
