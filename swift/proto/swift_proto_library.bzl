@@ -25,15 +25,15 @@ load(
     "ProtoInfo",
 )
 load(
-    "//swift/internal:attrs.bzl", 
+    "//swift/internal:attrs.bzl",
     "swift_deps_attr",
 )
 load(
-    "//swift/internal:compiling.bzl", 
+    "//swift/internal:compiling.bzl",
     "output_groups_from_other_compilation_outputs",
 )
 load(
-    "//swift/internal:linking.bzl", 
+    "//swift/internal:linking.bzl",
     "new_objc_provider",
 )
 load(
@@ -42,7 +42,7 @@ load(
     "SwiftToolchainInfo",
 )
 load(
-    "//swift/internal:swift_clang_module_aspect.bzl", 
+    "//swift/internal:swift_clang_module_aspect.bzl",
     "swift_clang_module_aspect",
 )
 load(
@@ -50,8 +50,8 @@ load(
     "swift_common",
 )
 load(
-    "//swift/internal:utils.bzl", 
-    "compact", 
+    "//swift/internal:utils.bzl",
+    "compact",
     "get_providers",
 )
 load(

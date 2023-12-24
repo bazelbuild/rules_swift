@@ -15,12 +15,12 @@
 """A rule that generates a Swift library from protocol buffer sources."""
 
 load(
-    "@rules_proto//proto:defs.bzl", 
+    "@rules_proto//proto:defs.bzl",
     "ProtoInfo",
 )
 load(
-    "//swift/internal:providers.bzl", 
-    "SwiftInfo", 
+    "//swift/internal:providers.bzl",
+    "SwiftInfo",
     "SwiftProtoInfo",
 )
 load(

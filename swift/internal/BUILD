@@ -256,7 +256,6 @@ bzl_library(
     ],
 )
 
-
 bzl_library(
     name = "swift_toolchain",
     srcs = ["swift_toolchain.bzl"],

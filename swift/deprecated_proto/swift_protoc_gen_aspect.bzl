@@ -24,23 +24,23 @@ load(":compiling.bzl", "output_groups_from_other_compilation_outputs")
 =======
 >>>>>>> daf0e0a (Move code into deprecated directory):swift/deprecated_proto/swift_protoc_gen_aspect.bzl
 load(
-    "@bazel_skylib//lib:dicts.bzl", 
+    "@bazel_skylib//lib:dicts.bzl",
     "dicts",
 )
 load(
-    "@bazel_skylib//rules:common_settings.bzl", 
+    "@bazel_skylib//rules:common_settings.bzl",
     "BuildSettingInfo",
 )
 load(
-    "@rules_proto//proto:defs.bzl", 
+    "@rules_proto//proto:defs.bzl",
     "ProtoInfo",
 )
 load(
-    "//swift/internal:actions.bzl", 
+    "//swift/internal:actions.bzl",
     "USE_DEFAULT_SHELL_ENV",
 )
 load(
-    "//swift/internal:attrs.bzl", 
+    "//swift/internal:attrs.bzl",
     "swift_config_attrs",
 )
 load(
@@ -56,13 +56,13 @@ load(
     "SWIFT_FEATURE_GENERATE_PATH_TO_UNDERSCORES_FROM_PROTO_FILES",
 )
 load(
-    "//swift/internal:linking.bzl", 
+    "//swift/internal:linking.bzl",
     "new_objc_provider",
 )
 load(
-    "//swift/internal:providers.bzl", 
+    "//swift/internal:providers.bzl",
     "SwiftInfo",
-    "SwiftProtoInfo", 
+    "SwiftProtoInfo",
     "SwiftToolchainInfo",
 )
 load(

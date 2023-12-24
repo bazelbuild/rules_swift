@@ -5,7 +5,7 @@ load(
 load(
     "//swift:swift.bzl",
     "swift_binary",
-    swift_proto_library = "new_swift_proto_library"
+    swift_proto_library = "new_swift_proto_library",
 )
 
 licenses(["notice"])
