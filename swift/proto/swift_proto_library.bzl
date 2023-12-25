@@ -39,6 +39,7 @@ load(
 load(
     "//swift/internal:providers.bzl",
     "SwiftInfo",
+    "SwiftProtoInfo",
     "SwiftToolchainInfo",
 )
 load(
@@ -227,6 +228,10 @@ def _swift_proto_library_impl(ctx):
         swift_common.create_swift_info(
             modules = [module_context],
             swift_infos = get_providers(deps, SwiftInfo),
+        ),
+        SwiftProtoInfo(
+            module_name = module_name,
+            generated_swift_srcs = generated_swift_srcs,
         ),
     ]
 

@@ -61,7 +61,8 @@ has reasonable defaults for any fields not explicitly set.
 ## SwiftProtoInfo
 
 <pre>
-SwiftProtoInfo(<a href="#SwiftProtoInfo-module_mappings">module_mappings</a>, <a href="#SwiftProtoInfo-pbswift_files">pbswift_files</a>, <a href="#SwiftProtoInfo-direct_pbswift_files">direct_pbswift_files</a>)
+SwiftProtoInfo(<a href="#SwiftProtoInfo-module_name">module_name</a>, <a href="#SwiftProtoInfo-generated_swift_srcs">generated_swift_srcs</a>, <a href="#SwiftProtoInfo-module_mappings">module_mappings</a>, <a href="#SwiftProtoInfo-pbswift_files">pbswift_files</a>,
+               <a href="#SwiftProtoInfo-direct_pbswift_files">direct_pbswift_files</a>)
 </pre>
 
 Propagates Swift-specific information about a `proto_library`.
@@ -71,9 +72,11 @@ Propagates Swift-specific information about a `proto_library`.
 
 | Name  | Description |
 | :------------- | :------------- |
-| <a id="SwiftProtoInfo-module_mappings"></a>module_mappings |  `Sequence` of `struct`s. Each struct contains `module_name` and `proto_file_paths` fields that denote the transitive mappings from `.proto` files to Swift modules. This allows messages that reference messages in other libraries to import those modules in generated code.    |
-| <a id="SwiftProtoInfo-pbswift_files"></a>pbswift_files |  `Depset` of `File`s. The transitive Swift source files (`.pb.swift`) generated from the `.proto` files.    |
-| <a id="SwiftProtoInfo-direct_pbswift_files"></a>direct_pbswift_files |  `list` of `File`s. The Swift source files (`.pb.swift`) generated from the `.proto` files in direct dependencies.    |
+| <a id="SwiftProtoInfo-module_name"></a>module_name |  The name of the Swift module compiled from the protos.    |
+| <a id="SwiftProtoInfo-generated_swift_srcs"></a>generated_swift_srcs |  The `list` of Swift `File`s generated from the protos.    |
+| <a id="SwiftProtoInfo-module_mappings"></a>module_mappings |  DEPRECATED - `Sequence` of `struct`s. Each struct contains `module_name` and `proto_file_paths` fields that denote the transitive mappings from `.proto` files to Swift modules. This allows messages that reference messages in other libraries to import those modules in generated code.    |
+| <a id="SwiftProtoInfo-pbswift_files"></a>pbswift_files |  DEPRECATED - `Depset` of `File`s. The transitive Swift source files (`.pb.swift`) generated from the `.proto` files.    |
+| <a id="SwiftProtoInfo-direct_pbswift_files"></a>direct_pbswift_files |  DEPRECATED - `list` of `File`s. The Swift source files (`.pb.swift`) generated from the `.proto` files in direct dependencies.    |
 
 
 <a id="SwiftToolchainInfo"></a>

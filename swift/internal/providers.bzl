@@ -124,18 +124,24 @@ the set of packages (possibly recursive) to which this configuration is applied.
 SwiftProtoInfo = provider(
     doc = "Propagates Swift-specific information about a `proto_library`.",
     fields = {
+        "module_name": """\
+The name of the Swift module compiled from the protos.
+""",
+        "generated_swift_srcs": """\
+The `list` of Swift `File`s generated from the protos.
+""",
         "module_mappings": """\
-`Sequence` of `struct`s. Each struct contains `module_name` and
+DEPRECATED - `Sequence` of `struct`s. Each struct contains `module_name` and
 `proto_file_paths` fields that denote the transitive mappings from `.proto`
 files to Swift modules. This allows messages that reference messages in other
 libraries to import those modules in generated code.
 """,
         "pbswift_files": """\
-`Depset` of `File`s. The transitive Swift source files (`.pb.swift`) generated
+DEPRECATED - `Depset` of `File`s. The transitive Swift source files (`.pb.swift`) generated
 from the `.proto` files.
 """,
         "direct_pbswift_files": """\
-`list` of `File`s. The Swift source files (`.pb.swift`) generated
+DEPRECATED - `list` of `File`s. The Swift source files (`.pb.swift`) generated
 from the `.proto` files in direct dependencies.
 """,
     },

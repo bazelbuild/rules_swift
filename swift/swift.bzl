@@ -43,7 +43,7 @@ load(
 load(
     "@build_bazel_rules_swift//swift/internal:providers.bzl",
     _DeprecatedSwiftGRPCInfo = "SwiftGRPCInfo",
-    _DeprecatedSwiftProtoInfo = "SwiftProtoInfo",
+    _SwiftProtoInfo = "SwiftProtoInfo",
     _SwiftInfo = "SwiftInfo",
     _SwiftToolchainInfo = "SwiftToolchainInfo",
     _SwiftUsageInfo = "SwiftUsageInfo",
@@ -103,6 +103,7 @@ load(
 )
 
 # Re-export providers.
+SwiftProtoInfo = _SwiftProtoInfo
 SwiftInfo = _SwiftInfo
 SwiftToolchainInfo = _SwiftToolchainInfo
 SwiftUsageInfo = _SwiftUsageInfo
@@ -126,7 +127,6 @@ swift_test = _swift_test
 # Deprecated swift proto rules:
 swift_proto_library = _deprecated_swift_proto_library
 swift_grpc_library = _deprecated_swift_grpc_library
-SwiftProtoInfo = _DeprecatedSwiftProtoInfo
 SwiftGRPCInfo = _DeprecatedSwiftGRPCInfo
 
 # New swift proto rule:
