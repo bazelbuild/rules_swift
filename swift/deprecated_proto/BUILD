@@ -15,17 +15,17 @@ bzl_library(
 bzl_library(
     name = "swift_proto_library",
     srcs = ["swift_proto_library.bzl"],
+    deprecation = """\
+    This rule is deprecated in favor of the unified new_swift_proto_library rule.
+    See doc/proto_migration.md for details on how to migrate.
+    """,
+    visibility = ["//swift:__subpackages__"],
     deps = [
         ":swift_protoc_gen_aspect",
         ":transitions",
         "//swift/internal:providers",
         "@rules_proto//proto:defs",
     ],
-    deprecation = """\
-    This rule is deprecated in favor of the unified new_swift_proto_library rule.
-    See doc/proto_migration.md for details on how to migrate.
-    """,
-    visibility = ["//swift:__subpackages__"],
 )
 
 bzl_library(
@@ -50,6 +50,11 @@ bzl_library(
 bzl_library(
     name = "swift_grpc_library",
     srcs = ["swift_grpc_library.bzl"],
+    deprecation = """\
+    This rule is deprecated in favor of the unified new_swift_proto_library rule.
+    See doc/proto_migration.md for details on how to migrate.
+    """,
+    visibility = ["//swift:__subpackages__"],
     deps = [
         ":proto_gen_utils",
         ":transitions",
@@ -62,11 +67,6 @@ bzl_library(
         "@bazel_skylib//lib:dicts",
         "@rules_proto//proto:defs",
     ],
-    deprecation = """\
-    This rule is deprecated in favor of the unified new_swift_proto_library rule.
-    See doc/proto_migration.md for details on how to migrate.
-    """,
-    visibility = ["//swift:__subpackages__"],
 )
 
 bzl_library(
