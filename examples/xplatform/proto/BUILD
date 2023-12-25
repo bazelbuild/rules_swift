@@ -3,9 +3,12 @@ load(
     "proto_library",
 )
 load(
+    "//proto:proto.bzl", 
+    "swift_proto_library",
+)
+load(
     "//swift:swift.bzl",
     "swift_binary",
-    swift_proto_library = "new_swift_proto_library",
 )
 
 licenses(["notice"])

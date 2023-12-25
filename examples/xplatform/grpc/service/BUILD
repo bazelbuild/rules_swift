@@ -1,5 +1,5 @@
 load("@rules_proto//proto:defs.bzl", "proto_library")
-load("//swift:swift.bzl", swift_proto_library = "new_swift_proto_library")
+load("//proto:proto.bzl", "swift_proto_library")
 
 proto_library(
     name = "service_proto",
@@ -9,7 +9,7 @@ proto_library(
 
 swift_proto_library(
     name = "service_server_swift_proto",
-    compilers = ["//swift/proto/compilers:swift_server_grpc"],
+    compilers = ["//proto/compilers:swift_server_grpc"],
     module_name = "ServiceServer",
     protos = [":service_proto"],
     visibility = ["//visibility:public"],
@@ -18,7 +18,7 @@ swift_proto_library(
 
 swift_proto_library(
     name = "service_client_swift_proto",
-    compilers = ["//swift/proto/compilers:swift_client_grpc"],
+    compilers = ["//proto/compilers:swift_client_grpc"],
     module_name = "ServiceClient",
     protos = [":service_proto"],
     visibility = ["//visibility:public"],
@@ -33,7 +33,7 @@ swift_proto_library(
     compiler_deps = [
         "//examples/xplatform/grpc/service:service_client_swift_proto",
     ],
-    compilers = ["//swift/proto/compilers:swift_test_client_grpc"],
+    compilers = ["//proto/compilers:swift_test_client_grpc"],
     module_name = "ServiceTestClient",
     protos = [":service_proto"],
     visibility = ["//visibility:public"],
