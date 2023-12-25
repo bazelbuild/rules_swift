@@ -158,7 +158,88 @@ If you wish, you may set the module_name attribute on the new_swift_proto_librar
 
 ## 2. swift_grpc_library to new_swift_proto_library
 
-TODO
+Given the following proto_library target where echo.proto contains the definition
+for the Echo service with an RPC named Echo which takes an EchoRequest and returns an EchoResponse:
+
+```
+proto_library(
+    name = "echo_proto",
+    srcs = ["echo.proto"],
+)
+```
+
+With the following deprecated swift_proto_library and swift_grpc_library targets:
+
+```
+swift_proto_library(
+    name = "echo_proto_swift",
+    deps = [":echo_proto"],
+)
+
+swift_grpc_library(
+    name = "echo_client_services_swift",
+    srcs = [":echo_proto"],
+    flavor = "client",
+    deps = [":echo_proto_swift"],
+)
+
+swift_grpc_library(
+    name = "echo_client_test_stubs_swift",
+    srcs = [":echo_proto"],
+    flavor = "client_stubs",
+    deps = [":echo_client_services_swift"],
+)
+
+swift_grpc_library(
+    name = "echo_server_services_swift",
+    srcs = [":echo_proto"],
+    flavor = "server",
+    deps = [":echo_proto_swift"],
+)
+```
+
+These can be migrated to the following new_swift_proto_library targets:
+
+```
+new_swift_proto_library(
+    name = "service_server_swift_proto",
+    compilers = ["//swift/proto/compilers:swift_server_grpc"],
+    protos = [":echo_proto"],
+)
+
+new_swift_proto_library(
+    name = "service_client_swift_proto",
+    compilers = ["//swift/proto/compilers:swift_client_grpc"],
+    protos = [":echo_proto"],
+)
+
+swift_proto_library(
+    name = "service_test_client_swift_proto",
+    additional_plugin_options = {
+        "ExtraModuleImports": "examples_xplatform_grpc_service_client_swift_proto",
+    },
+    compiler_deps = [
+        "//examples/xplatform/grpc/service:service_client_swift_proto",
+    ],
+    compilers = ["//swift/proto/compilers:swift_test_client_grpc"],
+    protos = [":echo_proto"],
+)
+```
+
+Note here that we don't need the intermediate swift_proto_library target, 
+and that we must pass a swift_proto_compiler target via the compilers attribute
+which is configured with a grpc-swift protoc plugin.
+
+Also note that the client_stubs flavor uses the test_client grpc compiler and
+requires additional plugin options and compiler dependencies.
+
+This configuration was added to ensure continuity of rule capabilities,
+but when possible we recommend migrating off of these targets. 
+This is because TestClient protoc plugin option was deprecated with Swift 5.6,
+as the test clients do not conform to Sendable.
+This capability may be removed in a future major version update.
+
+The alternative recommended by the grpc-swift authors is to register a mock server on localhost.
 
 ## F.A.Q.
 
