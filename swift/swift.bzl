@@ -43,8 +43,8 @@ load(
 load(
     "@build_bazel_rules_swift//swift/internal:providers.bzl",
     _DeprecatedSwiftGRPCInfo = "SwiftGRPCInfo",
-    _SwiftProtoInfo = "SwiftProtoInfo",
     _SwiftInfo = "SwiftInfo",
+    _SwiftProtoInfo = "SwiftProtoInfo",
     _SwiftToolchainInfo = "SwiftToolchainInfo",
     _SwiftUsageInfo = "SwiftUsageInfo",
 )
