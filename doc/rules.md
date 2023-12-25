@@ -319,6 +319,10 @@ package.
 swift_grpc_library(<a href="#swift_grpc_library-name">name</a>, <a href="#swift_grpc_library-deps">deps</a>, <a href="#swift_grpc_library-srcs">srcs</a>, <a href="#swift_grpc_library-flavor">flavor</a>)
 </pre>
 
+DEPRECATED -- Please use new_swift_proto_library rule instead.
+This rule will be removed in the next rules_swift major version update.
+If you're already using this rule, see doc/proto_migration.md for infomation on how to migrate.
+
 Generates a Swift library from gRPC services defined in protocol buffer sources.
 
 There should be one `swift_grpc_library` for any `proto_library` that defines
@@ -573,6 +577,10 @@ swift_proto_compiler(<a href="#swift_proto_compiler-name">name</a>, <a href="#sw
 <pre>
 swift_proto_library(<a href="#swift_proto_library-name">name</a>, <a href="#swift_proto_library-deps">deps</a>)
 </pre>
+
+DEPRECATED -- Please use new_swift_proto_library rule instead.
+This rule will be removed in the next rules_swift major version update.
+If you're already using this rule, see doc/proto_migration.md for infomation on how to migrate.
 
 Generates a Swift library from protocol buffer sources.
 

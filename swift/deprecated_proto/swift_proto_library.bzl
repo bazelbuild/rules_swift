@@ -34,7 +34,7 @@ load(
 )
 
 def _swift_proto_library_impl(ctx):
-    print("WARNING: This rule is deprecated. See doc/proto_migration.md for more information.")  # buildifier: disable=print
+    print("WARNING: This rule is deprecated. See doc/proto_migration.md for more information.") # buildifier: disable=print
     if len(ctx.attr.deps) != 1:
         fail(
             "You must list exactly one target in the deps attribute.",
@@ -98,6 +98,10 @@ provider) from which the Swift library should be generated.
     },
     cfg = proto_compiler_transition,
     doc = """\
+DEPRECATED -- Please use new_swift_proto_library rule instead.
+This rule will be removed in the next rules_swift major version update.
+If you're already using this rule, see doc/proto_migration.md for infomation on how to migrate.
+
 Generates a Swift library from protocol buffer sources.
 
 There should be one `swift_proto_library` for any `proto_library` that you wish

@@ -228,7 +228,7 @@ def _register_grpcswift_generate_action(
     return generated_files
 
 def _swift_grpc_library_impl(ctx):
-    print("WARNING: This rule is deprecated. See doc/proto_migration.md for more information.")  # buildifier: disable=print
+    print("WARNING: This rule is deprecated. See doc/proto_migration.md for more information.") # buildifier: disable=print
 
     if len(ctx.attr.deps) != 1:
         fail(
@@ -467,6 +467,10 @@ Exactly one `proto_library` target that defines the services being generated.
     ),
     cfg = proto_compiler_transition,
     doc = """\
+DEPRECATED -- Please use new_swift_proto_library rule instead.
+This rule will be removed in the next rules_swift major version update.
+If you're already using this rule, see doc/proto_migration.md for infomation on how to migrate.
+
 Generates a Swift library from gRPC services defined in protocol buffer sources.
 
 There should be one `swift_grpc_library` for any `proto_library` that defines
