@@ -3,12 +3,6 @@ load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 licenses(["notice"])
 
 bzl_library(
-    name = "transitions",
-    srcs = ["transitions.bzl"],
-    visibility = ["//swift:__subpackages__"],
-)
-
-bzl_library(
     name = "proto_gen_utils",
     srcs = ["proto_gen_utils.bzl"],
     visibility = ["//swift:__subpackages__"],
@@ -69,4 +63,10 @@ bzl_library(
         "@bazel_skylib//lib:dicts",
         "@rules_proto//proto:defs",
     ],
+)
+
+bzl_library(
+    name = "transitions",
+    srcs = ["transitions.bzl"],
+    visibility = ["//visibility:public"],
 )

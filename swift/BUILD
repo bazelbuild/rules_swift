@@ -49,19 +49,21 @@ bzl_library(
     srcs = ["swift.bzl"],
     deps = [
         ":swift_compiler_plugin",
+        "//swift/deprecated_proto:swift_grpc_library",
+        "//swift/deprecated_proto:swift_proto_library",
         "//swift/internal:providers",
         "//swift/internal:swift_binary_test_rules",
         "//swift/internal:swift_c_module",
         "//swift/internal:swift_common",
         "//swift/internal:swift_feature_allowlist",
-        "//swift/internal:swift_grpc_library",
         "//swift/internal:swift_import",
         "//swift/internal:swift_library",
         "//swift/internal:swift_library_group",
         "//swift/internal:swift_module_alias",
         "//swift/internal:swift_package_configuration",
-        "//swift/internal:swift_proto_library",
         "//swift/internal:swift_usage_aspect",
+        "//swift/proto:swift_proto_compiler",
+        "//swift/proto:swift_proto_library",
     ],
 )
 

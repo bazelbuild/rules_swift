@@ -29,7 +29,7 @@ load(
     "SwiftInfo",
 )
 load(
-    ":util.bzl",
+    ":swift_proto_utils.bzl",
     "proto_path",
     "register_module_mapping_write_action",
 )

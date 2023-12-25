@@ -1,52 +1,49 @@
-load(
-    "//swift/proto:compiler_util.bzl",
-    "BASE_PLUGIN_OPTIONS",
-    "GRPC_VARIANT_CLIENT",
-    "GRPC_VARIANT_SERVER",
-    "GRPC_VARIANT_TEST_CLIENT",
-    "make_grpc_swift_proto_compiler",
-)
-load(
-    "//swift/proto:swift_proto_compiler.bzl",
-    "swift_proto_compiler",
-)
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 
-# Swift Proto
+licenses(["notice"])
 
-swift_proto_compiler(
-    name = "swift_proto",
-    plugin = "//tools/protoc_wrapper:ProtoCompilerPlugin",
-    plugin_name = "swift",
-    plugin_options = BASE_PLUGIN_OPTIONS,
-    protoc = "//tools/protoc_wrapper:protoc",
-    suffixes = [".pb.swift"],
-    visibility = ["//visibility:public"],
+# swift_proto_utils
+
+bzl_library(
+    name = "swift_proto_utils",
+    srcs = ["swift_proto_utils.bzl"],
+    visibility = ["//swift:__subpackages__"],
     deps = [
-        "@com_github_apple_swift_protobuf//:SwiftProtobuf",
+        "@bazel_skylib//lib:paths",
     ],
 )
 
-# Swift GRPC
+# swift_proto_compiler
 
-make_grpc_swift_proto_compiler(
-    name = "swift_grpc",
-    variants = [
-        GRPC_VARIANT_SERVER,
-        GRPC_VARIANT_CLIENT,
+bzl_library(
+    name = "swift_proto_compiler",
+    srcs = ["swift_proto_compiler.bzl"],
+    visibility = ["//swift:__subpackages__"],
+    deps = [
+        ":swift_proto_utils",
+        "//swift/internal:providers",
+        "@bazel_skylib//lib:dicts",
+        "@bazel_skylib//lib:paths",
     ],
 )
 
-make_grpc_swift_proto_compiler(
-    name = "swift_server_grpc",
-    variants = [GRPC_VARIANT_SERVER],
-)
+# swift_grpc_library
 
-make_grpc_swift_proto_compiler(
-    name = "swift_client_grpc",
-    variants = [GRPC_VARIANT_CLIENT],
-)
-
-make_grpc_swift_proto_compiler(
-    name = "swift_test_client_grpc",
-    variants = [GRPC_VARIANT_TEST_CLIENT],
+bzl_library(
+    name = "swift_proto_library",
+    srcs = ["swift_proto_library.bzl"],
+    visibility = ["//swift:__subpackages__"],
+    deps = [
+        ":swift_proto_compiler",
+        ":swift_proto_utils",
+        "//swift/internal:attrs",
+        "//swift/internal:compiling",
+        "//swift/internal:linking",
+        "//swift/internal:providers",
+        "//swift/internal:swift_clang_module_aspect",
+        "//swift/internal:swift_common",
+        "//swift/internal:utils",
+        "@bazel_skylib//lib:dicts",
+        "@rules_proto//proto:defs",
+    ],
 )

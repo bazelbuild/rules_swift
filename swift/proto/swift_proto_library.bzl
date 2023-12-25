@@ -59,7 +59,7 @@ load(
     "SwiftProtoCompilerInfo",
 )
 load(
-    ":util.bzl",
+    ":swift_proto_utils.bzl",
     "proto_path",
 )
 
@@ -275,7 +275,7 @@ swift_proto_library = rule(
                 """,
             ),
             "compilers": attr.label_list(
-                default = ["//swift/proto:swift_proto"],
+                default = ["//swift/proto/compilers:swift_proto"],
                 providers = [SwiftProtoCompilerInfo],
             ),
             "additional_plugin_options": attr.string_dict(

@@ -410,12 +410,6 @@ bzl_library(
 )
 
 bzl_library(
-    name = "transitions",
-    srcs = ["transitions.bzl"],
-    visibility = ["//swift:__subpackages__"],
-)
-
-bzl_library(
     name = "vfsoverlay",
     srcs = ["vfsoverlay.bzl"],
     visibility = ["//swift:__subpackages__"],

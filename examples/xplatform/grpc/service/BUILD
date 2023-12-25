@@ -9,7 +9,7 @@ proto_library(
 
 swift_proto_library(
     name = "service_server_swift_proto",
-    compilers = ["//swift/proto:swift_server_grpc"],
+    compilers = ["//swift/proto/compilers:swift_server_grpc"],
     module_name = "ServiceServer",
     protos = [":service_proto"],
     visibility = ["//visibility:public"],
@@ -18,7 +18,7 @@ swift_proto_library(
 
 swift_proto_library(
     name = "service_client_swift_proto",
-    compilers = ["//swift/proto:swift_client_grpc"],
+    compilers = ["//swift/proto/compilers:swift_client_grpc"],
     module_name = "ServiceClient",
     protos = [":service_proto"],
     visibility = ["//visibility:public"],
@@ -33,7 +33,7 @@ swift_proto_library(
     compiler_deps = [
         "//examples/xplatform/grpc/service:service_client_swift_proto",
     ],
-    compilers = ["//swift/proto:swift_test_client_grpc"],
+    compilers = ["//swift/proto/compilers:swift_test_client_grpc"],
     module_name = "ServiceTestClient",
     protos = [":service_proto"],
     visibility = ["//visibility:public"],
