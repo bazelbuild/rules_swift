@@ -3,7 +3,7 @@ load(
     "proto_library",
 )
 load(
-    "//proto:proto.bzl", 
+    "//proto:proto.bzl",
     "swift_proto_library",
 )
 load(
