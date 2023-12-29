@@ -280,7 +280,7 @@ swift_proto_library = rule(
                 """,
             ),
             "compilers": attr.label_list(
-                default = ["//swift/proto/compilers:swift_proto"],
+                default = ["//proto/compilers:swift_proto"],
                 providers = [SwiftProtoCompilerInfo],
             ),
             "additional_plugin_options": attr.string_dict(
