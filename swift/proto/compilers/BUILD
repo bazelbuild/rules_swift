@@ -30,14 +30,6 @@ swift_proto_compiler(
 # Swift GRPC
 
 make_grpc_swift_proto_compiler(
-    name = "swift_grpc",
-    variants = [
-        GRPC_VARIANT_SERVER,
-        GRPC_VARIANT_CLIENT,
-    ],
-)
-
-make_grpc_swift_proto_compiler(
     name = "swift_server_proto",
     variants = [GRPC_VARIANT_SERVER],
 )
