@@ -7,25 +7,19 @@ alias(
 )
 
 alias(
-    name = "swift_grpc",
-    actual = "//swift/proto/compilers:swift_grpc",
+    name = "swift_server_proto",
+    actual = "//swift/proto/compilers:swift_server_proto",
     visibility = ["//visibility:public"],
 )
 
 alias(
-    name = "swift_server_grpc",
-    actual = "//swift/proto/compilers:swift_server_grpc",
+    name = "swift_client_proto",
+    actual = "//swift/proto/compilers:swift_client_proto",
     visibility = ["//visibility:public"],
 )
 
 alias(
-    name = "swift_client_grpc",
-    actual = "//swift/proto/compilers:swift_client_grpc",
-    visibility = ["//visibility:public"],
-)
-
-alias(
-    name = "swift_test_client_grpc",
-    actual = "//swift/proto/compilers:swift_test_client_grpc",
+    name = "swift_test_client_proto",
+    actual = "//swift/proto/compilers:swift_test_client_proto",
     visibility = ["//visibility:public"],
 )

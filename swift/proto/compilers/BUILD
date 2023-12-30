@@ -38,17 +38,17 @@ make_grpc_swift_proto_compiler(
 )
 
 make_grpc_swift_proto_compiler(
-    name = "swift_server_grpc",
+    name = "swift_server_proto",
     variants = [GRPC_VARIANT_SERVER],
 )
 
 make_grpc_swift_proto_compiler(
-    name = "swift_client_grpc",
+    name = "swift_client_proto",
     variants = [GRPC_VARIANT_CLIENT],
 )
 
 make_grpc_swift_proto_compiler(
-    name = "swift_test_client_grpc",
+    name = "swift_test_client_proto",
     variants = [GRPC_VARIANT_TEST_CLIENT],
 )
 

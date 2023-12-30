@@ -203,13 +203,13 @@ These can be migrated to the following new_swift_proto_library targets:
 ```
 new_swift_proto_library(
     name = "service_server_swift_proto",
-    compilers = ["//swift/proto/compilers:swift_server_grpc"],
+    compilers = ["//swift/proto/compilers:swift_server_proto"],
     protos = [":echo_proto"],
 )
 
 new_swift_proto_library(
     name = "service_client_swift_proto",
-    compilers = ["//swift/proto/compilers:swift_client_grpc"],
+    compilers = ["//swift/proto/compilers:swift_client_proto"],
     protos = [":echo_proto"],
 )
 
@@ -221,7 +221,7 @@ swift_proto_library(
     compiler_deps = [
         "//examples/xplatform/grpc/service:service_client_swift_proto",
     ],
-    compilers = ["//swift/proto/compilers:swift_test_client_grpc"],
+    compilers = ["//swift/proto/compilers:swift_test_client_proto"],
     protos = [":echo_proto"],
 )
 ```
