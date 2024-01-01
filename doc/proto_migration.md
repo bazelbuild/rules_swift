@@ -1,8 +1,8 @@
 # Overview
 
 This document aims to provide context to future contributors on why we decided to rewrite
-the swift_proto_library and swift_grpc_library rules into the new_swift_proto_library rule,
-as well as a guide for consumers of the deprecated rules to migrate to the new_swift_proto_library rule.
+the swift_proto_library and swift_grpc_library rules into the new swift_proto_library rule,
+as well as a guide for consumers of the deprecated rules to migrate to the new swift_proto_library rule.
 
 On this page:
   * [Why rewrite?](#why-rewrite)
@@ -10,13 +10,13 @@ On this page:
 
 ## Why rewrite?
 
-The new swift_proto_library rule was created to address several issues with the previous
+The new swift_proto_library rule was created to address several issues with the old
 swift_proto_library and swift_grpc_library rules which would be difficult if not impossible 
 to fix while maintaining full backwards compatibility.
 
 ### 1. swift_protoc_gen_aspect
 
-Firstly, the previous swift_proto_library rule used the aspect which traversed its direct 
+Firstly, the old swift_proto_library rule used the aspect which traversed its direct 
 proto_library dependencies and their transitive graph of proto_library dependencies,
 and compiled all of these into swift modules. 
 
@@ -29,7 +29,7 @@ Additionally, this aspect meant that the module name and other compilation optio
 since the aspect needed to be able to determine all of this information by just looking at the providers of the proto_library targets.
 
 This lack of flexibility was extremely frustrating, especially for consumers who wanted to assign "Swift-like" module names
-to the swift proto library modules. 
+to the swift_proto_library modules. 
 
 Using the deprecated_grpc example in this repository to demonstrate,
 consumers had to import the generated service swift proto module with:
@@ -38,7 +38,7 @@ consumers had to import the generated service swift proto module with:
 import examples_xplatform_deprecated_grpc_echo_server_services_swift
 ```
 
-But with the new_swift_proto_library rule, 
+But with the new swift_proto_library rule, 
 they can assign an arbitrary module name to the target and import it with:
 
 ```
@@ -46,7 +46,7 @@ import ServiceServer
 ```
 
 This removes the guesswork of trying to determine what the module name will be,
-and it allow engineers to work with the new_swift_proto_library targets exactly the same
+and it allow engineers to work with the new swift_proto_library targets exactly the same
 way they would if these were swift_library targets they had written by hand,
 except the source files are generated for them.
 
@@ -70,12 +70,12 @@ targets defined in this repository which were dependencies of those rules.
 This meant that consumers could *either* use the Swift package dependencies *or*
 swift_proto_library / swift_grpc_library but not both or else they would encounter linker errors.
 
-The new_swift_proto_library rule is completely configurable in terms of:
+The new swift_proto_library rule is completely configurable in terms of:
 - the proto compiler target
 - the proto compiler plugin target(s)
 - the swift compile-time dependency target(s)
 This is accomplished with a new swift_proto_compiler rule 
-which is passed as an attribute to the new_swift_proto_library rule.
+which is passed as an attribute to the new swift_proto_library rule.
 
 The swift_proto_compiler rule represents the combination of a protoc binary,
 protoc plugin binary (e.g. the SwiftProtobuf or grpc-swift protoc plugin),
@@ -83,14 +83,14 @@ and the set of options passed to the protoc plugin.
 
 We provide pre-configured swift_proto_compiler targets for:
 - swift protos
-- swift server grpc protos
-- swift client grpc protos
+- swift server protos
+- swift client protos
 
 And 3rd parties are welcome to create their own, configured based on their needs.
 In the case of rules_swift_package_manager, this will enable the creation of a swift_proto_compiler target
 configured to use the same dependencies as the other Swift packages.
 
-Finally, this allows us to only have a single, new_swift_proto_library rule in lieu of the two
+Finally, this allows us to only have a single, new swift_proto_library rule in lieu of the two
 swift_proto_library and swift_grpc_library rules because the only real difference between them
 is the plugin being passed to protoc and the options being passed to that plugin.
 
@@ -100,10 +100,10 @@ NOTE: If you leveraged the capability of the the deprecated swift_proto_library
 to generate the protos for multiple proto_library targets from a single swift_proto_library target, 
 you will need to create additional targets for a 1:1 mapping of proto_library targets to swift_proto_library targets.
 
-## 1. swift_proto_library to new_swift_proto_library
+## 1. swift_proto_library
 
 Given two proto_library targets for foo.proto and bar.proto,
-where bar.proto depends on foo.proto and the api.proto from the well known types.
+where bar.proto depends on foo.proto and the api.proto from the well known types:
 
 ```
 proto_library(
@@ -121,7 +121,7 @@ proto_library(
 )
 ```
 
-Which had the deprecated swift_proto_library targets:
+Which had the old swift_proto_library targets:
 
 ```
 swift_proto_library(
@@ -135,36 +135,36 @@ swift_proto_library(
 )
 ```
 
-These can be migrated to the following new_swift_proto_library targets:
+These can be migrated to the following new swift_proto_library targets:
 
 ```
-new_swift_proto_library(
+swift_proto_library(
     name = "foo_swift_proto",
     protos = [":foo_proto"],
 )
 
-new_swift_proto_library(
+swift_proto_library(
     name = "bar_swift_proto",
     protos = [":bar_proto"],
     deps = [":foo_swift_proto"]
 )
 ```
 
-Note that you must declare deps between the new_swift_proto_library targets parallel to those between the proto_library targets,
+Note that you must declare deps between the new swift_proto_library targets parallel to those between the proto_library targets,
 and that the autogenerated Swift module names of the new targets are derived from the target labels of the swift_proto_library targets,
-not the proto_library targets as before. 
+not the proto_library targets as before.
 
-If you wish, you may set the module_name attribute on the new_swift_proto_library targets as you would any other swift_library target.
+If you wish, you may set the module_name attribute on the new swift_proto_library targets as you would any other swift_library target.
 
-## 2. swift_grpc_library to new_swift_proto_library
+## 2. swift_grpc_library
 
-Given the following proto_library target where echo.proto contains the definition
+Given the following proto_library target where service.proto contains the definition
 for the Echo service with an RPC named Echo which takes an EchoRequest and returns an EchoResponse:
 
 ```
 proto_library(
-    name = "echo_proto",
-    srcs = ["echo.proto"],
+    name = "service_proto",
+    srcs = ["service.proto"],
 )
 ```
 
@@ -172,45 +172,45 @@ With the following deprecated swift_proto_library and swift_grpc_library targets
 
 ```
 swift_proto_library(
-    name = "echo_proto_swift",
-    deps = [":echo_proto"],
+    name = "service_proto_swift",
+    deps = [":service_proto"],
 )
 
 swift_grpc_library(
-    name = "echo_client_services_swift",
-    srcs = [":echo_proto"],
+    name = "service_client_services_swift",
+    srcs = [":service_proto"],
     flavor = "client",
-    deps = [":echo_proto_swift"],
+    deps = [":service_proto_swift"],
 )
 
 swift_grpc_library(
-    name = "echo_client_test_stubs_swift",
-    srcs = [":echo_proto"],
+    name = "service_client_test_stubs_swift",
+    srcs = [":service_proto"],
     flavor = "client_stubs",
-    deps = [":echo_client_services_swift"],
+    deps = [":service_client_services_swift"],
 )
 
 swift_grpc_library(
-    name = "echo_server_services_swift",
-    srcs = [":echo_proto"],
+    name = "service_server_services_swift",
+    srcs = [":service_proto"],
     flavor = "server",
-    deps = [":echo_proto_swift"],
+    deps = [":service_proto_swift"],
 )
 ```
 
-These can be migrated to the following new_swift_proto_library targets:
+These can be migrated to the following new swift_proto_library targets:
 
 ```
-new_swift_proto_library(
+swift_proto_library(
     name = "service_server_swift_proto",
-    compilers = ["//swift/proto/compilers:swift_server_proto"],
-    protos = [":echo_proto"],
+    compilers = ["@build_bazel_rules_swift//proto/compilers:swift_server_proto"],
+    protos = [":service_proto"],
 )
 
-new_swift_proto_library(
+swift_proto_library(
     name = "service_client_swift_proto",
-    compilers = ["//swift/proto/compilers:swift_client_proto"],
-    protos = [":echo_proto"],
+    compilers = ["@build_bazel_rules_swift//proto/compilers:swift_client_proto"],
+    protos = [":service_proto"],
 )
 
 swift_proto_library(
@@ -219,10 +219,10 @@ swift_proto_library(
         "ExtraModuleImports": "examples_xplatform_grpc_service_client_swift_proto",
     },
     compiler_deps = [
-        "//examples/xplatform/grpc/service:service_client_swift_proto",
+        ":service_client_swift_proto",
     ],
-    compilers = ["//swift/proto/compilers:swift_test_client_proto"],
-    protos = [":echo_proto"],
+    compilers = ["@build_bazel_rules_swift//proto/compilers:swift_test_client_proto"],
+    protos = [":service_proto"],
 )
 ```
 
@@ -230,8 +230,8 @@ Note here that we don't need the intermediate swift_proto_library target,
 and that we must pass a swift_proto_compiler target via the compilers attribute
 which is configured with a grpc-swift protoc plugin.
 
-Also note that the client_stubs flavor uses the test_client grpc compiler and
-requires additional plugin options and compiler dependencies.
+Also note that the client_stubs flavor uses the swift_test_client_proto grpc compiler 
+and requires additional plugin options and compiler dependencies.
 
 This configuration was added to ensure continuity of rule capabilities,
 but when possible we recommend migrating off of these targets. 
