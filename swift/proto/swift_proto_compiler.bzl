@@ -195,7 +195,7 @@ def _swift_proto_compile(ctx, swift_proto_compiler_info, additional_plugin_optio
     # Add the output directory argument:
     output_directory_argument = "--{}_out={}".format(
         swift_proto_compiler_info.internal.plugin_name,
-        output_directory_path
+        output_directory_path,
     )
     arguments.add(output_directory_argument)
 
