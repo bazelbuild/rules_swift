@@ -439,23 +439,28 @@ def new_objc_provider(
     ):
         extra_linkopts.append("-ObjC")
 
-    return apple_common.new_objc_provider(
-        force_load_library = depset(
+    kwargs = {
+        "force_load_library": depset(
             force_load_libraries,
             order = "topological",
         ),
-        library = depset(
+        "library": depset(
             direct_libraries,
             transitive = transitive_cc_libs,
             order = "topological",
         ),
-        link_inputs = depset(additional_link_inputs + debug_link_inputs),
-        linkopt = depset(user_link_flags + extra_linkopts),
-        providers = get_providers(
+        "link_inputs": depset(additional_link_inputs + debug_link_inputs),
+        "linkopt": depset(user_link_flags + extra_linkopts),
+        "providers": get_providers(
             deps,
             apple_common.Objc,
         ) + additional_objc_infos,
-    )
+    }
+    empty_provider = apple_common.new_objc_provider()
+    for key in dict(kwargs):
+        if not hasattr(empty_provider, key):
+            kwargs.pop(key, None)
+    return apple_common.new_objc_provider(**kwargs)
 
 def register_link_binary_action(
         actions,
@@ -514,32 +519,37 @@ def register_link_binary_action(
         if apple_common.Objc in dep:
             objc = dep[apple_common.Objc]
 
+            def get_objc_list(objc, attr):
+                return getattr(objc, attr, depset([])).to_list()
+
             # We don't need to handle the `objc.sdk_framework` field here
             # because those values have also been put into the user link flags
             # of a CcInfo, but the others don't seem to have been.
             dep_link_flags = [
                 "-l{}".format(dylib)
-                for dylib in objc.sdk_dylib.to_list()
+                for dylib in get_objc_list(objc, "sdk_dylib")
             ]
             dep_link_flags.extend([
                 "-F{}".format(path)
-                for path in objc.dynamic_framework_paths.to_list()
+                for path in get_objc_list(objc, "dynamic_framework_paths")
             ])
             dep_link_flags.extend(collections.before_each(
                 "-framework",
-                objc.dynamic_framework_names.to_list(),
+                get_objc_list(objc, "dynamic_framework_names"),
             ))
             dep_link_flags.extend([
                 "-F{}".format(path)
-                for path in objc.static_framework_paths.to_list()
+                for path in get_objc_list(objc, "static_framework_paths")
             ])
             dep_link_flags.extend(collections.before_each(
                 "-framework",
-                objc.static_framework_names.to_list(),
+                get_objc_list(objc, "static_framework_names"),
             ))
 
             is_bazel_6 = hasattr(apple_common, "link_multi_arch_static_library")
-            if is_bazel_6:
+            if not hasattr(objc, "static_framework_file"):
+                additional_inputs = depset([])
+            elif is_bazel_6:
                 additional_inputs = objc.static_framework_file
             else:
                 additional_inputs = depset(

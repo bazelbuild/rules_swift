@@ -243,6 +243,10 @@ def _swift_linkopts_providers(
         "-Wl,-rpath,/usr/lib/swift",
     ])
 
+    objc_info = apple_common.new_objc_provider()
+    if hasattr(objc_info, "linkopt"):
+        objc_info = apple_common.new_objc_provider(linkopt = depset(linkopts))
+
     return struct(
         cc_info = CcInfo(
             linking_context = cc_common.create_linking_context(
@@ -254,7 +258,7 @@ def _swift_linkopts_providers(
                 ]),
             ),
         ),
-        objc_info = apple_common.new_objc_provider(linkopt = depset(linkopts)),
+        objc_info = objc_info,
     )
 
 def _resource_directory_configurator(developer_dir, _prerequisites, args):
