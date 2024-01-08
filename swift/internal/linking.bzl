@@ -45,6 +45,9 @@ load(":providers.bzl", "SwiftToolchainInfo")
 load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 load(":utils.bzl", "get_providers")
 
+# TODO: Remove once we drop bazel 7.x
+_OBJC_PROVIDER_LINKING = hasattr(apple_common.new_objc_provider(), "linkopt")
+
 def binary_rule_attrs(
         *,
         additional_deps_providers = [],
@@ -440,26 +443,27 @@ def new_objc_provider(
         extra_linkopts.append("-ObjC")
 
     kwargs = {
-        "force_load_library": depset(
-            force_load_libraries,
-            order = "topological",
-        ),
-        "library": depset(
-            direct_libraries,
-            transitive = transitive_cc_libs,
-            order = "topological",
-        ),
-        "link_inputs": depset(additional_link_inputs + debug_link_inputs),
-        "linkopt": depset(user_link_flags + extra_linkopts),
         "providers": get_providers(
             deps,
             apple_common.Objc,
         ) + additional_objc_infos,
     }
-    empty_provider = apple_common.new_objc_provider()
-    for key in dict(kwargs):
-        if not hasattr(empty_provider, key):
-            kwargs.pop(key, None)
+
+    if _OBJC_PROVIDER_LINKING:
+        kwargs = dicts.add(kwargs, {
+            "force_load_library": depset(
+                force_load_libraries,
+                order = "topological",
+            ),
+            "library": depset(
+                direct_libraries,
+                transitive = transitive_cc_libs,
+                order = "topological",
+            ),
+            "link_inputs": depset(additional_link_inputs + debug_link_inputs),
+            "linkopt": depset(user_link_flags + extra_linkopts),
+        })
+
     return apple_common.new_objc_provider(**kwargs)
 
 def register_link_binary_action(
