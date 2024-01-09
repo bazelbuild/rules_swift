@@ -34,11 +34,7 @@ load(
     "//swift/internal:output_groups.bzl",
     "supplemental_compilation_output_groups",
 )
-load(
-    "//swift/internal:providers.bzl",
-    "SwiftBinaryInfo",
-    "SwiftCompilerPluginInfo",
-)
+load("//swift/internal:providers.bzl", "SwiftCompilerPluginInfo")
 load(
     "//swift/internal:swift_symbol_graph_aspect.bzl",
     "make_swift_symbol_graph_aspect",
@@ -58,6 +54,7 @@ load(
 load(":module_name.bzl", "derive_swift_module_name")
 load(
     ":providers.bzl",
+    "SwiftBinaryInfo",
     "SwiftInfo",
     "SwiftSymbolGraphInfo",
     "create_swift_module_context",

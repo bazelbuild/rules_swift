@@ -39,11 +39,7 @@ load(
     "//swift/internal:output_groups.bzl",
     "supplemental_compilation_output_groups",
 )
-load(
-    "//swift/internal:providers.bzl",
-    "SwiftBinaryInfo",
-    "SwiftCompilerPluginInfo",
-)
+load("//swift/internal:providers.bzl", "SwiftCompilerPluginInfo")
 load(
     "//swift/internal:toolchain_utils.bzl",
     "get_swift_toolchain",
@@ -55,7 +51,7 @@ load(
     "get_providers",
 )
 load(":module_name.bzl", "derive_swift_module_name")
-load(":providers.bzl", "SwiftInfo")
+load(":providers.bzl", "SwiftBinaryInfo", "SwiftInfo")
 
 def _swift_compiler_plugin_impl(ctx):
     swift_toolchain = get_swift_toolchain(ctx)
