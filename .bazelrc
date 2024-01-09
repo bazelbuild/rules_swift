@@ -42,3 +42,5 @@ build:linux --cxxopt='-std=c++14'
 # There is an open issue about it on the zlib repository here:
 # https://github.com/madler/zlib/issues/633
 build --per_file_copt="external/.*zlib.*/.*.c@-Wno-deprecated-non-prototype"
+
+build --incompatible_disallow_empty_glob
