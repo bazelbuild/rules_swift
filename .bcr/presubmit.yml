@@ -26,3 +26,4 @@ tasks:
     platform: macos
     build_targets:
     - "@rules_swift//examples/apple/..."
+    - "--repo_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1"
