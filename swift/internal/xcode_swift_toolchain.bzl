@@ -67,6 +67,9 @@ load(
     "resolve_optional_tool",
 )
 
+# TODO: Remove once we drop bazel 7.x
+_OBJC_PROVIDER_LINKING = hasattr(apple_common.new_objc_provider(), "linkopt")
+
 # Maps (operating system, environment) pairs from target triples to the legacy
 # Bazel core `apple_common.platform` values, since we still use some APIs that
 # require these.
@@ -243,6 +246,11 @@ def _swift_linkopts_providers(
         "-Wl,-rpath,/usr/lib/swift",
     ])
 
+    if _OBJC_PROVIDER_LINKING:
+        objc_info = apple_common.new_objc_provider(linkopt = depset(linkopts))
+    else:
+        objc_info = apple_common.new_objc_provider()
+
     return struct(
         cc_info = CcInfo(
             linking_context = cc_common.create_linking_context(
@@ -254,7 +262,7 @@ def _swift_linkopts_providers(
                 ]),
             ),
         ),
-        objc_info = apple_common.new_objc_provider(linkopt = depset(linkopts)),
+        objc_info = objc_info,
     )
 
 def _resource_directory_configurator(developer_dir, _prerequisites, args):

@@ -1709,11 +1709,27 @@ def _frameworks_disable_autolink_configurator(prerequisites, args):
     errors since when linking the framework it will be passed directly as a
     library.
     """
-    args.add_all(
-        # TODO: This needs to come from CcInfo at some point
-        depset(transitive = [prerequisites.objc_info.imported_library, prerequisites.objc_info.dynamic_framework_file]),
-        map_each = _disable_autolink_framework_copts,
-    )
+    if hasattr(prerequisites.objc_info, "dynamic_framework_file"):
+        args.add_all(
+            depset(transitive = [prerequisites.objc_info.imported_library, prerequisites.objc_info.dynamic_framework_file]),
+            map_each = _disable_autolink_framework_copts,
+        )
+    else:
+        libraries = []
+        inputs = prerequisites.cc_linking_context.linker_inputs.to_list()
+        for linker_input in inputs:
+            for library in linker_input.libraries:
+                if library.dynamic_library:
+                    libraries.append(library.dynamic_library)
+                if library.static_library:
+                    libraries.append(library.static_library)
+                if library.pic_static_library:
+                    libraries.append(library.pic_static_library)
+
+        args.add_all(
+            depset(transitive = [depset(libraries)]),
+            map_each = _disable_autolink_framework_copts,
+        )
 
 def _dependencies_swiftmodules_configurator(prerequisites, args):
     """Adds `.swiftmodule` files from deps to search paths and action inputs."""
@@ -2460,6 +2476,7 @@ def compile(
         additional_inputs = additional_inputs,
         bin_dir = feature_configuration._bin_dir,
         cc_compilation_context = merged_providers.cc_info.compilation_context,
+        cc_linking_context = merged_providers.cc_info.linking_context,
         defines = sets.to_list(defines_set),
         explicit_swift_module_map_file = explicit_swift_module_map_file,
         developer_dirs = swift_toolchain.developer_dirs,
