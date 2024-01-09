@@ -99,9 +99,25 @@ def configure_features(
         "parse_headers",
     ])
 
+    # HACK: This is the only way today to check whether the caller is inside an
+    # aspect. We have to do this because accessing `ctx.aspect_ids` halts the
+    # build if called from outside an aspect, but we can't use `hasattr` to
+    # check if it's safe because the attribute is always present on both rule
+    # and aspect contexts.
+    # TODO: b/319132714 - Replace this with a real API.
+    is_aspect = repr(ctx).startswith("<aspect context ")
+    if is_aspect and ctx.aspect_ids:
+        # It doesn't appear to be documented anywhere, but according to the
+        # Bazel team, the last element in this list is the currently running
+        # aspect.
+        aspect_id = ctx.aspect_ids[len(ctx.aspect_ids) - 1]
+    else:
+        aspect_id = None
+
     if swift_toolchain.feature_allowlists:
         _check_allowlists(
             allowlists = swift_toolchain.feature_allowlists,
+            aspect_id = aspect_id,
             label = ctx.label,
             requested_features = requested_features,
             unsupported_features = unsupported_features,
@@ -243,6 +259,7 @@ def default_features_for_toolchain(ctx, target_triple):
 def _check_allowlists(
         *,
         allowlists,
+        aspect_id,
         label,
         requested_features,
         unsupported_features):
@@ -255,6 +272,9 @@ def _check_allowlists(
     Args:
         allowlists: A list of `SwiftFeatureAllowlistInfo` providers that will be
             checked.
+        aspect_id: The identifier of the currently running aspect that has been
+            applied to the target that is creating the feature configuration, or
+            `None` if it is not being called from an aspect.
         label: The label of the target being checked against the allowlist.
         requested_features: The list of features to be enabled. This is
             typically obtained using the `ctx.features` field in a rule
@@ -272,6 +292,11 @@ def _check_allowlists(
         for feature_string in features_to_check:
             # Any feature not managed by the allowlist is allowed by default.
             if feature_string not in allowlist.managed_features:
+                continue
+
+            # If the current aspect is permitted by the allowlist, we can allow
+            # the usage without looking at the package specs.
+            if aspect_id in allowlist.aspect_ids:
                 continue
 
             if not label_matches_package_specs(

@@ -24,8 +24,8 @@ visibility("public")
 
 SwiftFeatureAllowlistInfo = provider(
     doc = """\
-Describes a set of features and the packages that are allowed to request or
-disable them.
+Describes a set of features and the packages and aspects that are allowed to
+request or disable them.
 
 This provider is an internal implementation detail of the rules; users should
 not rely on it or assume that its structure is stable.
@@ -34,6 +34,11 @@ not rely on it or assume that its structure is stable.
         "allowlist_label": """\
 A string containing the label of the `swift_feature_allowlist` target that
 created this provider.
+""",
+        "aspect_ids": """\
+A list of strings representing identifiers of aspects that are allowed to
+request or disable a feature managed by the allowlist, even when the target the
+aspect is being applied to does not match `package_specs`.
 """,
         "managed_features": """\
 A list of strings representing feature names or their negations that packages in
