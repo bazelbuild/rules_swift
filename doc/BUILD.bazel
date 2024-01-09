@@ -1,5 +1,7 @@
-load("@bazel_skylib//rules:write_file.bzl", "write_file")
+load("@bazel_gazelle//:def.bzl", "gazelle", "gazelle_binary")
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("@bazel_skylib//rules:diff_test.bzl", "diff_test")
+load("@bazel_skylib//rules:write_file.bzl", "write_file")
 load("@io_bazel_stardoc//stardoc:stardoc.bzl", "stardoc")
 
 _DOC_SRCS = {
@@ -156,4 +158,26 @@ sh_binary(
     name = "update",
     srcs = ["update.sh"],
     data = [file + ".md_" for file in _DOC_SRCS.keys() + ["setup"]],
+)
+
+gazelle(
+    name = "gazelle",
+    gazelle = ":gazelle_bin",
+    visibility = ["//visibility:private"],
+)
+
+gazelle_binary(
+    name = "gazelle_bin",
+    languages = [
+        "@bazel_skylib_gazelle_plugin//bzl",
+    ],
+    visibility = ["//visibility:private"],
+)
+
+# Have to keep since bazel doesn't propagate a bzl_library for these files
+# gazelle:ignore
+bzl_library(
+    name = "bazel_tools_bzl",
+    srcs = ["@bazel_tools//tools:bzl_srcs"],
+    visibility = ["//swift:__pkg__"],
 )

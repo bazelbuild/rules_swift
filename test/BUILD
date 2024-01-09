@@ -58,17 +58,15 @@ test_suite(
     name = "all_tests",
 )
 
-bzl_library(
-    name = "starlark_tests_bzls",
-    srcs = glob(["*.bzl"]),
-    deps = [
-        "//test/fixtures:starlark_tests_bzls",
-        "//test/rules:starlark_tests_bzls",
-    ],
-)
-
 bzl_test(
     name = "swift_bzl_test",
     src = "swift_bzl_macro.bzl",
+    deps = ["//swift"],
+)
+
+bzl_library(
+    name = "swift_bzl_macro",
+    srcs = ["swift_bzl_macro.bzl"],
+    visibility = ["//visibility:private"],
     deps = ["//swift"],
 )

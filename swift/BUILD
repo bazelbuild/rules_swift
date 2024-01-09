@@ -11,15 +11,10 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])
 
 bzl_library(
-    name = "bazel_tools_bzl",
-    srcs = ["@bazel_tools//tools:bzl_srcs"],
-)
-
-bzl_library(
     name = "repositories",
     srcs = ["repositories.bzl"],
     deps = [
-        ":bazel_tools_bzl",
+        "//doc:bazel_tools_bzl",
         "//swift/internal:swift_autoconfiguration",
     ],
 )
@@ -55,7 +50,7 @@ bzl_library(
     deps = [
         ":swift_compiler_plugin",
         "//swift/internal:providers",
-        "//swift/internal:swift_binary_test",
+        "//swift/internal:swift_binary_test_rules",
         "//swift/internal:swift_c_module",
         "//swift/internal:swift_common",
         "//swift/internal:swift_feature_allowlist",
@@ -151,4 +146,19 @@ label_flag(
 filegroup(
     name = "empty",
     visibility = ["//visibility:private"],
+)
+
+bzl_library(
+    name = "extensions",
+    srcs = ["extensions.bzl"],
+    deps = [":repositories"],
+)
+
+bzl_library(
+    name = "extras",
+    srcs = ["extras.bzl"],
+    deps = [
+        "@build_bazel_apple_support//lib:repositories",
+        "@rules_proto//proto:repositories",
+    ],
 )
