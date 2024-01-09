@@ -32,7 +32,6 @@ load(
 )
 load(
     "@build_bazel_rules_swift//swift/internal:providers.bzl",
-    "SwiftBinaryInfo",
     "SwiftCompilerPluginInfo",
 )
 load(
@@ -55,7 +54,7 @@ load(
     "get_providers",
 )
 load(":module_name.bzl", "derive_swift_module_name")
-load(":providers.bzl", "SwiftInfo", "SwiftSymbolGraphInfo")
+load(":providers.bzl", "SwiftBinaryInfo", "SwiftInfo", "SwiftSymbolGraphInfo")
 
 visibility("public")
 

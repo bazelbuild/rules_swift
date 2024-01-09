@@ -22,6 +22,40 @@ users who just load these providers to inspect and/or repropagate them.
 
 visibility("public")
 
+SwiftBinaryInfo = provider(
+    doc = """
+Information about a binary target's module.
+
+`swift_binary` and `swift_compiler_plugin` propagate this provider that wraps
+`CcInfo` and `SwiftInfo` providers, instead of propagating them directly, so
+that `swift_test` targets can depend on those binaries and test their modules
+(similar to what Swift Package Manager allows) without allowing any
+`swift_library` to depend on an arbitrary binary.
+
+Aside from these use cases, this provider should only be consumed by clients
+like IDEs, debuggers, and other language tooling that need access to the Swift
+module produced by compiling a binary target. Other uses are unsupported.
+""",
+    fields = {
+        "cc_info": """\
+A `CcInfo` provider containing the binary's code compiled as a static library,
+which is suitable for linking into a `swift_test` so that unit tests can be
+written against it.
+
+Notably, this `CcInfo`'s linking context does *not* contain the linker flags
+used to alias the `main` entry point function, because the purpose of this
+provider is to allow it to be linked into another binary that would provide its
+own entry point instead.
+""",
+        "swift_info": """\
+A `SwiftInfo` provider representing the Swift module created by compiling the
+target. This is used specifically by `swift_test` to allow test code to depend
+on the binary's module without making it possible for arbitrary libraries or
+binaries to depend on other binaries.
+""",
+    },
+)
+
 SwiftFeatureAllowlistInfo = provider(
     doc = """\
 Describes a set of features and the packages and aspects that are allowed to
