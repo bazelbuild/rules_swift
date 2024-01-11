@@ -265,15 +265,21 @@ def compile_action_configs(
     ]
 
     if generated_header_rewriter:
-        # Only add the generated header rewriter to the command line only if the
-        # toolchain provides one, the relevant feature is requested, and the
-        # particular compilation action is generating a header.
+        # Only add the generated header rewriter to the command line and to the
+        # action's tool inputs only if the toolchain provides one, the relevant
+        # feature is requested, and the particular compilation action is
+        # generating a header.
         def generated_header_rewriter_configurator(prerequisites, args):
+            additional_tools = []
             if prerequisites.generated_header_file:
+                additional_tools.append(depset([generated_header_rewriter]))
                 args.add(
                     generated_header_rewriter,
                     format = "-Xwrapped-swift=-generated-header-rewriter=%s",
                 )
+            return ConfigResultInfo(
+                additional_tools = additional_tools,
+            )
 
         action_configs.append(
             ActionConfigInfo(

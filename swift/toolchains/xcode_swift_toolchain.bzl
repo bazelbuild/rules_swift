@@ -490,7 +490,6 @@ def _all_tool_configs(
         custom_toolchain,
         env,
         execution_requirements,
-        generated_header_rewriter,
         swift_executable,
         toolchain_root):
     """Returns the tool configurations for the Swift toolchain.
@@ -500,8 +499,6 @@ def _all_tool_configs(
             one was requested.
         env: The environment variables to set when launching tools.
         execution_requirements: The execution requirements for tools.
-        generated_header_rewriter: The optional executable that will be invoked
-            after compilation to rewrite the generated header.
         swift_executable: A custom Swift driver executable to be used during the
             build, if provided.
         toolchain_root: The root directory of the toolchain, if provided.
@@ -525,9 +522,6 @@ def _all_tool_configs(
         }
 
     tool_config = ToolConfigInfo(
-        additional_tools = (
-            [generated_header_rewriter] if generated_header_rewriter else []
-        ),
         driver_config = _driver_config(mode = "swiftc"),
         env = env,
         execution_requirements = execution_requirements,
@@ -551,9 +545,6 @@ def _all_tool_configs(
         ),
         SWIFT_ACTION_COMPILE_MODULE_INTERFACE: (
             ToolConfigInfo(
-                additional_tools = (
-                    [generated_header_rewriter] if generated_header_rewriter else []
-                ),
                 driver_config = _driver_config(mode = "swiftc"),
                 args = ["-frontend"],
                 env = env,
@@ -739,7 +730,6 @@ def _xcode_swift_toolchain_impl(ctx):
         custom_toolchain = custom_toolchain,
         env = env,
         execution_requirements = execution_requirements,
-        generated_header_rewriter = generated_header_rewriter,
         swift_executable = swift_executable,
         toolchain_root = toolchain_root,
     )
@@ -897,8 +887,7 @@ generated header.
 
 This tool is expected to have a command line interface such that the Swift
 compiler invocation is passed to it following a `"--"` argument, and any
-arguments preceding the `"--"` can be defined by the tool itself (however, at
-this time the worker does not support passing additional flags to the tool).
+arguments preceding the `"--"` can be defined by the tool itself.
 """,
                 executable = True,
             ),
