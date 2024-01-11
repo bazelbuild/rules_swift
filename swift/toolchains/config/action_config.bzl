@@ -123,10 +123,16 @@ def _action_config_init(
         "not_features": _normalize_action_config_features(not_features),
     }
 
-def _config_result_init(*, inputs = [], transitive_inputs = []):
+def _config_result_init(
+        *,
+        additional_tools = [],
+        inputs = [],
+        transitive_inputs = []):
     """Validates and initializes an action configurator result.
 
     Args:
+        additional_tools: A list of `depset`s of `File`s that should be passed
+            as additional tool inputs to the action being configured.
         inputs: A list of `File`s that should be passed as inputs to the action
             being configured.
         transitive_inputs: A list of `depset`s of `File`s that should be passed
@@ -136,6 +142,7 @@ def _config_result_init(*, inputs = [], transitive_inputs = []):
         A new config result that can be returned from a configurator.
     """
     return {
+        "additional_tools": additional_tools,
         "inputs": inputs,
         "transitive_inputs": transitive_inputs,
     }
@@ -189,8 +196,9 @@ ActionConfigInfo, _action_config_init_unchecked = provider(
 ConfigResultInfo, _config_result_init_unchecked = provider(
     doc = "The inputs required by an action configurator.",
     fields = [
-        "inputs",
-        "transitive_inputs",
+        "additional_tools",  # List[depset[File]]
+        "inputs",  # list[File]
+        "transitive_inputs",  # List[depset[File]]
     ],
     init = _config_result_init,
 )

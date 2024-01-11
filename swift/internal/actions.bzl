@@ -46,6 +46,7 @@ def _apply_action_configs(
         A `ConfigResultInfo` value that contains the files that are required
         inputs of the action, as determined by the configurators.
     """
+    additional_tools = []
     inputs = []
     transitive_inputs = []
 
@@ -84,26 +85,32 @@ def _apply_action_configs(
                     should_apply_configurators = False
                     break
 
+        if not should_apply_configurators:
+            continue
+
         # If one of the feature lists is completely satisfied, invoke the
         # configurators.
-        if should_apply_configurators:
-            for configurator in action_config.configurators:
-                action_inputs = configurator(prerequisites, args)
+        for configurator in action_config.configurators:
+            action_inputs = configurator(prerequisites, args)
 
-                # If we create an action configurator from a lambda that calls
-                # `Args.add*`, the result will be the `Args` objects (rather
-                # than `None`) because those methods return the same `Args`
-                # object for chaining. We can guard against this (and possibly
-                # other errors) by checking that the value is a struct. If it
-                # is, then it's not `None` and it probably came from the
-                # provider used by `ConfigResultInfo`. If it's some other kind
-                # of struct, then we'll error out trying to access the fields.
-                if type(action_inputs) == "struct":
-                    inputs.extend(action_inputs.inputs)
-                    transitive_inputs.extend(action_inputs.transitive_inputs)
+            # If we create an action configurator from a lambda that calls
+            # `Args.add*`, the result will be the `Args` objects (rather than
+            # `None`) because those methods return the same `Args` object for
+            # chaining. We can guard against this (and possibly other errors) by
+            # checking that the value is a struct. If it is, then it's not
+            # `None` and it probably came from the provider used by
+            # `ConfigResultInfo`. If it's some other kind of struct, then we'll
+            # error out trying to access the fields.
+            if not type(action_inputs) == "struct":
+                continue
+
+            additional_tools.extend(action_inputs.additional_tools)
+            inputs.extend(action_inputs.inputs)
+            transitive_inputs.extend(action_inputs.transitive_inputs)
 
     # Merge the action results into a single result that we return.
     return ConfigResultInfo(
+        additional_tools = additional_tools,
         inputs = inputs,
         transitive_inputs = transitive_inputs,
     )
@@ -214,7 +221,10 @@ def run_toolchain_action(
             transitive = action_inputs.transitive_inputs,
         ),
         mnemonic = mnemonic if mnemonic else action_name,
-        tools = tools,
+        tools = depset(
+            tools,
+            transitive = action_inputs.additional_tools,
+        ),
         resource_set = tool_config.resource_set,
         **kwargs
     )

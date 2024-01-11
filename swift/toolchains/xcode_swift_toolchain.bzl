@@ -448,10 +448,8 @@ def _all_tool_configs(
             "toolchain_root": toolchain_root,
         }
 
-    additional_tools = [generated_header_rewriter] if generated_header_rewriter else []
     return {
         SWIFT_ACTION_COMPILE: ToolConfigInfo(
-            additional_tools = additional_tools,
             driver_config = _driver_config(mode = "swiftc"),
             env = env,
             execution_requirements = execution_requirements,
@@ -460,7 +458,6 @@ def _all_tool_configs(
             wrapped_by_worker = True,
         ),
         SWIFT_ACTION_COMPILE_MODULE_INTERFACE: ToolConfigInfo(
-            additional_tools = additional_tools,
             driver_config = _driver_config(mode = "swiftc"),
             args = ["-frontend"],
             env = env,
@@ -753,8 +750,7 @@ generated header.
 
 This tool is expected to have a command line interface such that the Swift
 compiler invocation is passed to it following a `"--"` argument, and any
-arguments preceding the `"--"` can be defined by the tool itself (however, at
-this time the worker does not support passing additional flags to the tool).
+arguments preceding the `"--"` can be defined by the tool itself.
 """,
                 executable = True,
             ),
