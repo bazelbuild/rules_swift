@@ -62,6 +62,7 @@ load(
     "SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_SUPPORTS_SYSTEM_MODULE_FLAG",
     "SWIFT_FEATURE_SYSTEM_MODULE",
+    "SWIFT_FEATURE_TREAT_WARNINGS_AS_ERRORS",
     "SWIFT_FEATURE_USE_C_MODULES",
     "SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP",
     "SWIFT_FEATURE_USE_GLOBAL_INDEX_STORE",
@@ -525,6 +526,19 @@ def compile_action_configs(
                 swift_toolchain_config.add_arg("-enable-testing"),
             ],
             features = [SWIFT_FEATURE_ENABLE_TESTING],
+        ),
+
+        # Enable warnings-as-errors if requested.
+        swift_toolchain_config.action_config(
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVE_FILES,
+                swift_action_names.DUMP_AST,
+            ],
+            configurators = [
+                swift_toolchain_config.add_arg("-warnings-as-errors"),
+            ],
+            features = [SWIFT_FEATURE_TREAT_WARNINGS_AS_ERRORS],
         ),
 
         # Set Developer Framework search paths

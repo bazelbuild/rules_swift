@@ -336,3 +336,6 @@ SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE = "swift._force_alwayslink_true"
 # 5.9 and above). Users should never manually enable, disable, or query this
 # feature.
 SWIFT_FEATURE__SUPPORTS_MACROS = "swift._supports_macros"
+
+# Pass -warnings-as-errors to the compiler.
+SWIFT_FEATURE_TREAT_WARNINGS_AS_ERRORS = "swift.treat_warnings_as_errors"
