@@ -187,7 +187,7 @@ def _all_action_configs(os, arch, target_triple, sdkroot, xctest_version, additi
         sdkroot: The path to the SDK that we should use to build against.
         xctest_version: The version of XCTest to use.
         additional_swiftc_copts: Additional Swift compiler flags obtained from
-            the `swift` configuration fragment.
+            the `.../swift:copt` build setting.
 
     Returns:
         A list of action configurations for the toolchain.

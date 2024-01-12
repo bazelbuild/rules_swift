@@ -337,7 +337,7 @@ def _all_action_configs(
             from the `objc` configuration fragment (and legacy flags that were
             previously passed directly by Bazel).
         additional_swiftc_copts: Additional Swift compiler flags obtained from
-            the `swift` configuration fragment.
+            the `.../swift:copt` build setting.
         apple_toolchain: The `apple_common.apple_toolchain()` object.
         generated_header_rewriter: An executable that will be invoked after
             compilation to rewrite the generated header, or None if this is not
