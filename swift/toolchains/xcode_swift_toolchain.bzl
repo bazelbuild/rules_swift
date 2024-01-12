@@ -272,7 +272,7 @@ def _all_action_configs(
             from the `objc` configuration fragment (and legacy flags that were
             previously passed directly by Bazel).
         additional_swiftc_copts: Additional Swift compiler flags obtained from
-            the `swift` configuration fragment.
+            the `.../swift:copt` build setting.
         apple_toolchain: The `apple_common.apple_toolchain()` object.
         generated_header_rewriter: An executable that will be invoked after
             compilation to rewrite the generated header, or None if this is not
@@ -559,11 +559,7 @@ def _xcode_swift_toolchain_impl(ctx):
 
     xcode_config = ctx.attr._xcode_config[apple_common.XcodeVersionConfig]
 
-    # TODO: b/312204041 - Remove the use of the `swift` fragment once we've
-    # migrated the `--swiftcopt` flag via `--flag_alias`.
-    swiftcopts = (
-        ctx.fragments.swift.copts() + ctx.attr._copts[BuildSettingInfo].value
-    )
+    swiftcopts = ctx.attr._copts[BuildSettingInfo].value
     swift_linkopts_cc_info = _swift_linkopts_cc_info(
         apple_toolchain = apple_toolchain,
         target_triple = target_triple,
@@ -818,7 +814,6 @@ for incremental compilation using a persistent mode.
     fragments = [
         "cpp",
         "objc",
-        "swift",
     ],
     toolchains = use_cpp_toolchain(),
     implementation = _xcode_swift_toolchain_impl,
