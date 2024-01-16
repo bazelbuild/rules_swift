@@ -53,6 +53,7 @@ load(
     "are_all_features_enabled",
     "get_cc_feature_configuration",
     "is_feature_enabled",
+    "upcoming_and_experimental_features",
 )
 load(":module_maps.bzl", "write_module_map")
 load(":toolchain_utils.bzl", "SWIFT_TOOLCHAIN_TYPE")
@@ -472,6 +473,9 @@ def compile(
             if module_context.swift and module_context.swift.plugins:
                 used_plugins.extend(module_context.swift.plugins)
 
+    upcoming_features, experimental_features = upcoming_and_experimental_features(
+        feature_configuration = feature_configuration,
+    )
     prerequisites = struct(
         additional_inputs = additional_inputs,
         always_include_headers = is_feature_enabled(
@@ -483,6 +487,7 @@ def compile(
         const_gather_protocols_file = const_gather_protocols_file,
         defines = sets.to_list(defines_set),
         deps_modules_file = deps_modules_file,
+        experimental_features = experimental_features,
         explicit_swift_module_map_file = explicit_swift_module_map_file,
         genfiles_dir = feature_configuration._genfiles_dir,
         is_swift = True,
@@ -493,6 +498,7 @@ def compile(
         target_label = feature_configuration._label,
         transitive_modules = transitive_modules,
         transitive_swiftmodules = transitive_swiftmodules,
+        upcoming_features = upcoming_features,
         user_compile_flags = copts,
         # Merge the compile outputs into the prerequisites.
         **struct_fields(compile_outputs)

@@ -60,6 +60,7 @@ load(
     "SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS",
     "SWIFT_FEATURE__SUPPORTS_MACROS",
     "SWIFT_FEATURE__SUPPORTS_PACKAGE_MODIFIER",
+    "SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
 )
 load(":action_config.bzl", "ActionConfigInfo", "ConfigResultInfo", "add_arg")
@@ -834,6 +835,15 @@ def compile_action_configs(
                 SWIFT_FEATURE_DISABLE_AVAILABILITY_CHECKING,
             ],
         ),
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_COMPILE,
+            ],
+            configurators = [_upcoming_and_experimental_features_configurator],
+            features = [
+                SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES,
+            ],
+        ),
     ]
 
     # NOTE: The positions of these action configs in the list are important,
@@ -1596,6 +1606,17 @@ def _constant_value_extraction_configurator(prerequisites, args):
     )
     return ConfigResultInfo(
         inputs = [prerequisites.const_gather_protocols_file],
+    )
+
+def _upcoming_and_experimental_features_configurator(prerequisites, args):
+    """Adds upcoming and experimental features to the command line."""
+    args.add_all(
+        prerequisites.upcoming_features,
+        before_each = "-enable-upcoming-feature",
+    )
+    args.add_all(
+        prerequisites.experimental_features,
+        before_each = "-enable-experimental-feature",
     )
 
 def _additional_inputs_configurator(prerequisites, _args):

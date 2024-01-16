@@ -46,6 +46,7 @@ load(
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE__SUPPORTS_MACROS",
     "SWIFT_FEATURE__SUPPORTS_PACKAGE_MODIFIER",
+    "SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:features.bzl",
@@ -596,6 +597,9 @@ def _xcode_swift_toolchain_impl(ctx):
         ctx = ctx,
         target_triple = target_triple,
     ))
+
+    if _is_xcode_at_least_version(xcode_config, "14.3"):
+        requested_features.append(SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES)
 
     if _is_xcode_at_least_version(xcode_config, "15.0"):
         requested_features.extend([
