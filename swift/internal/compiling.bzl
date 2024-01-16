@@ -63,6 +63,7 @@ load(
     "are_all_features_enabled",
     "get_cc_feature_configuration",
     "is_feature_enabled",
+    "upcoming_and_experimental_features",
 )
 load(":module_maps.bzl", "write_module_map")
 load(
@@ -623,6 +624,9 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
 """)  # buildifier: disable=print
         include_dev_srch_paths_value = is_test
 
+    upcoming_features, experimental_features = upcoming_and_experimental_features(
+        feature_configuration = feature_configuration,
+    )
     prerequisites = struct(
         additional_inputs = additional_inputs,
         always_include_headers = is_feature_enabled(
@@ -634,8 +638,9 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         const_gather_protocols_file = const_gather_protocols_file,
         cc_linking_context = merged_cc_info.linking_context,
         defines = sets.to_list(defines_set),
-        explicit_swift_module_map_file = explicit_swift_module_map_file,
         developer_dirs = swift_toolchain.developer_dirs,
+        experimental_features = experimental_features,
+        explicit_swift_module_map_file = explicit_swift_module_map_file,
         genfiles_dir = feature_configuration._genfiles_dir,
         include_dev_srch_paths = include_dev_srch_paths_value,
         is_swift = True,
@@ -648,6 +653,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         target_label = feature_configuration._label,
         transitive_modules = transitive_modules,
         transitive_swiftmodules = transitive_swiftmodules,
+        upcoming_features = upcoming_features,
         user_compile_flags = copts,
         vfsoverlay_file = vfsoverlay_file,
         vfsoverlay_search_path = _SWIFTMODULES_VFS_ROOT,
