@@ -281,6 +281,33 @@ def default_features_for_toolchain(ctx, target_triple):
 
     return features
 
+def upcoming_and_experimental_features(feature_configuration):
+    """Extracts the upcoming and experimental feature names from the config.
+
+    Args:
+        feature_configuration: The Swift feature configuration.
+
+    Returns:
+        A tuple containing the following elements:
+
+        1.  The `list` of requested upcoming features (with the
+            `swift.upcoming.` prefix removed).
+        2.  The `list` of requested experimental features (with the
+            `swift.experimental.` prefix removed).
+    """
+    upcoming_prefix = "swift.upcoming."
+    experimental_prefix = "swift.experimental."
+    upcoming = []
+    experimental = []
+
+    for feature in feature_configuration._enabled_features:
+        if feature.startswith(upcoming_prefix):
+            upcoming.append(feature[len(upcoming_prefix):])
+        elif feature.startswith(experimental_prefix):
+            experimental.append(feature[len(experimental_prefix):])
+
+    return (upcoming, experimental)
+
 def _check_allowlists(
         *,
         allowlists,
