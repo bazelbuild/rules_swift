@@ -295,7 +295,7 @@ def _swift_toolchain_impl(ctx):
         )
 
     # TODO: Remove once we drop bazel 7.x support
-    if bazel_features.cc.swift_fragment_removed:
+    if not bazel_features.cc.swift_fragment_removed:
         swiftcopts = list(ctx.fragments.swift.copts())
     else:
         swiftcopts = []
