@@ -130,8 +130,6 @@ def _parse(triple_string):
             it was present. This component may be `None`.
     """
     components = triple_string.split("-")
-    if len(components) < 3:
-        fail("Invalid target triple: {}, this likely means you're using the wrong CC toolchain, make sure you include apple_support in your project".format(triple_string))
     return _make(
         cpu = components[0],
         vendor = components[1],
