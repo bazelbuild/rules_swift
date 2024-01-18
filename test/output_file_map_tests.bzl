@@ -30,7 +30,7 @@ output_file_map_embed_bitcode_test = make_output_file_map_test_rule(
 
 output_file_map_embed_bitcode_wmo_test = make_output_file_map_test_rule(
     config_settings = {
-        "//command_line_option:swiftcopt": [
+        str(Label("@build_bazel_rules_swift//swift:copt")): [
             "-whole-module-optimization",
         ],
         "//command_line_option:features": [

@@ -27,7 +27,7 @@ split_swiftmodule_provider_test = make_provider_test_rule(
 )
 split_swiftmodule_wmo_test = make_action_command_line_test_rule(
     config_settings = {
-        "//command_line_option:swiftcopt": [
+        str(Label("@build_bazel_rules_swift//swift:copt")): [
             "-whole-module-optimization",
         ],
         "//command_line_option:features": [
@@ -37,7 +37,7 @@ split_swiftmodule_wmo_test = make_action_command_line_test_rule(
 )
 split_swiftmodule_wmo_provider_test = make_provider_test_rule(
     config_settings = {
-        "//command_line_option:swiftcopt": [
+        str(Label("@build_bazel_rules_swift//swift:copt")): [
             "-whole-module-optimization",
         ],
         "//command_line_option:features": [
@@ -47,7 +47,7 @@ split_swiftmodule_wmo_provider_test = make_provider_test_rule(
 )
 split_swiftmodule_skip_function_bodies_test = make_action_command_line_test_rule(
     config_settings = {
-        "//command_line_option:swiftcopt": [
+        str(Label("@build_bazel_rules_swift//swift:copt")): [
             "-whole-module-optimization",
         ],
         "//command_line_option:features": [
@@ -74,7 +74,7 @@ split_swiftmodule_bitcode_test = make_action_command_line_test_rule(
 )
 split_swiftmodule_copts_test = make_action_command_line_test_rule(
     config_settings = {
-        "//command_line_option:swiftcopt": [
+        str(Label("@build_bazel_rules_swift//swift:copt")): [
             "-DHELLO",
         ],
         "//command_line_option:objccopt": [
