@@ -19,6 +19,7 @@ toolchain package. If you are looking for rules to build Swift code using this
 toolchain, see `swift.bzl`.
 """
 
+load("@bazel_features//:features.bzl", "bazel_features")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
@@ -293,9 +294,12 @@ def _swift_toolchain_impl(ctx):
             toolchain_root,
         )
 
-    # TODO: b/312204041 - Remove the use of the `swift` fragment once we've
-    # migrated the `--swiftcopt` flag via `--flag_alias`.
-    swiftcopts = list(ctx.fragments.swift.copts())
+    # TODO: Remove once we drop bazel 7.x support
+    if hasattr(ctx.fragments, "swift"):
+        swiftcopts = list(ctx.fragments.swift.copts())
+    else:
+        swiftcopts = []
+
     if "-exec-" in ctx.bin_dir.path:
         swiftcopts.extend(ctx.attr._exec_copts[BuildSettingInfo].value)
     else:
@@ -505,7 +509,7 @@ The version of XCTest that the toolchain packages.
         },
     ),
     doc = "Represents a Swift compiler toolchain.",
-    fragments = ["swift"],
+    fragments = [] if bazel_features.cc.swift_fragment_removed else ["swift"],
     toolchains = ["@bazel_tools//tools/cpp:toolchain_type"],
     incompatible_use_toolchain_transition = True,
     implementation = _swift_toolchain_impl,

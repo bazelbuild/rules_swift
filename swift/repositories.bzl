@@ -81,6 +81,14 @@ def swift_rules_dependencies(include_bzlmod_ready_dependencies = True):
             build_file = "@build_bazel_rules_swift//third_party:com_github_nlohmann_json/BUILD.overlay",
         )
 
+        _maybe(
+            http_archive,
+            name = "bazel_features",
+            sha256 = "53182a68f172a2af4ad37051f82201e222bc19f7a40825b877da3ff4c922b9e0",
+            strip_prefix = "bazel_features-1.3.0",
+            url = "https://github.com/bazel-contrib/bazel_features/releases/download/v1.3.0/bazel_features-v1.3.0.tar.gz",
+        )
+
     _maybe(
         http_archive,
         name = "com_github_apple_swift_protobuf",

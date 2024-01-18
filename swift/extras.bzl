@@ -16,6 +16,7 @@
 dependencies of the Swift rules.
 """
 
+load("@bazel_features//:deps.bzl", "bazel_features_deps")
 load("@build_bazel_apple_support//lib:repositories.bzl", "apple_support_dependencies")
 load(
     "@rules_proto//proto:repositories.bzl",
@@ -37,3 +38,5 @@ def swift_rules_extra_dependencies():
     rules_proto_dependencies()
 
     rules_proto_toolchains()
+
+    bazel_features_deps()
