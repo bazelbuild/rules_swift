@@ -19,12 +19,12 @@ toolchain package. If you are looking for rules to build Swift code using this
 toolchain, see `swift.bzl`.
 """
 
+load("@bazel_features//:features.bzl", "bazel_features")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:partial.bzl", "partial")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
-load("@bazel_features//:features.bzl", "bazel_features")
 load(":actions.bzl", "swift_action_names")
 load(":attrs.bzl", "swift_toolchain_driver_attrs")
 load(":compiling.bzl", "compile_action_configs", "features_from_swiftcopts")

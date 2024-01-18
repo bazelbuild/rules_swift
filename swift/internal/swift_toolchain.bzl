@@ -19,6 +19,7 @@ toolchain package. If you are looking for rules to build Swift code using this
 toolchain, see `swift.bzl`.
 """
 
+load("@bazel_features//:features.bzl", "bazel_features")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
