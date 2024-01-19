@@ -10,12 +10,14 @@ licenses(["notice"])
 swift_library(
     name = "first",
     srcs = ["first.swift"],
+    module_name = "first",
     tags = FIXTURE_TAGS,
 )
 
 swift_library(
     name = "second",
     srcs = ["second.swift"],
+    module_name = "second",
     tags = FIXTURE_TAGS,
     deps = ["first"],
 )
