@@ -44,6 +44,12 @@ tasks:
     name: "6.x LTS"
     bazel: 6.x
     <<: *mac_common
+    build_flags:
+      # Bazel 6.x has dependencies that produce warnings now
+      - "--features=-treat_warnings_as_errors"
+    test_flags:
+      # Bazel 6.x has dependencies that produce warnings now
+      - "--features=-treat_warnings_as_errors"
 
   macos_latest:
     name: "Current LTS"
@@ -54,12 +60,6 @@ tasks:
     name: "Current LTS using bzlmod"
     bazel: latest
     <<: *mac_common
-    build_flags:
-      - "--enable_bzlmod"
-      - "--platform_mappings=platform_mappings_bzlmod"
-    test_flags:
-      - "--enable_bzlmod"
-      - "--platform_mappings=platform_mappings_bzlmod"
 
   macos_last_green:
     name: "Last Green Bazel"
