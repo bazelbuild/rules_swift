@@ -3,8 +3,8 @@ x_defaults:
   # YAML has a feature for "repeated nodes", BazelCI is fine with extra nodes
   # it doesn't know about; so that is used to avoid repeating common subparts.
   mac_common: &mac_common
-    platform: macos
-    xcode_version: "14.2"
+    platform: macos_arm64
+    xcode_version: "15.1"
     build_targets:
       - "//examples/..."
     test_targets:
