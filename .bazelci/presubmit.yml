@@ -44,6 +44,14 @@ tasks:
     name: "6.x LTS"
     bazel: 6.x
     <<: *mac_common
+    build_flags:
+      # Bazel 6.x has dependencies that produce warnings now
+      # TODO: Remove once latest is Bazel 7+
+      - "--features=-treat_warnings_as_errors"
+    test_flags:
+      # Bazel 6.x has dependencies that produce warnings now
+      # TODO: Remove once latest is Bazel 7+
+      - "--features=-treat_warnings_as_errors"
 
   macos_latest:
     name: "Current LTS"
