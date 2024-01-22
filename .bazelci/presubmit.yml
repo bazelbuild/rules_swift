@@ -40,9 +40,9 @@ x_defaults:
       - "//tools/..."
 
 tasks:
-  macos_lts:
-    name: "Previous LTS"
-    bazel: latest-1
+  macos_6:
+    name: "6.x LTS"
+    bazel: 6.x
     <<: *mac_common
 
   macos_latest:
