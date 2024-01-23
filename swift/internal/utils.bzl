@@ -410,7 +410,7 @@ def struct_fields(s):
         if field not in ("to_json", "to_proto")
     }
 
-def include_dev_srch_paths(ctx):
+def include_developer_search_paths(ctx):
     """Determines whether to include developer search paths.
 
     Args:

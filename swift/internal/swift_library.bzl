@@ -44,6 +44,7 @@ load(
     "expand_locations",
     "expand_make_variables",
     "get_providers",
+    "include_developer_search_paths",
 )
 
 def _maybe_parse_as_library_copts(srcs):
@@ -172,6 +173,8 @@ def _swift_library_impl(ctx):
             attr = "generated_header_name",
         )
 
+    include_dev_srch_paths = include_developer_search_paths(ctx)
+
     module_context, cc_compilation_outputs, other_compilation_outputs = swift_common.compile(
         actions = ctx.actions,
         additional_inputs = additional_inputs,
@@ -180,7 +183,7 @@ def _swift_library_impl(ctx):
         deps = deps,
         feature_configuration = feature_configuration,
         generated_header_name = generated_header_name,
-        is_test = ctx.attr.testonly,
+        is_test = include_dev_srch_paths,
         module_name = module_name,
         package_name = ctx.attr.package_name,
         plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),
@@ -198,7 +201,7 @@ def _swift_library_impl(ctx):
             alwayslink = ctx.attr.alwayslink,
             compilation_outputs = cc_compilation_outputs,
             feature_configuration = feature_configuration,
-            is_test = ctx.attr.testonly,
+            is_test = include_dev_srch_paths,
             label = ctx.label,
             linking_contexts = [
                 dep[CcInfo].linking_context
