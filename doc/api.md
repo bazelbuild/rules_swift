@@ -34,7 +34,7 @@ A C++ `FeatureConfiguration` value (see
 
 <pre>
 swift_common.compilation_attrs(<a href="#swift_common.compilation_attrs-additional_deps_aspects">additional_deps_aspects</a>, <a href="#swift_common.compilation_attrs-additional_deps_providers">additional_deps_providers</a>, <a href="#swift_common.compilation_attrs-requires_srcs">requires_srcs</a>,
-                               <a href="#swift_common.compilation_attrs-include_always_include_developer_search_paths">include_always_include_developer_search_paths</a>)
+                               <a href="#swift_common.compilation_attrs-include_dev_srch_paths_attrib">include_dev_srch_paths_attrib</a>)
 </pre>
 
 Returns an attribute dictionary for rules that compile Swift code.
@@ -72,7 +72,7 @@ attributes from the earlier items in the list.
 | <a id="swift_common.compilation_attrs-additional_deps_aspects"></a>additional_deps_aspects |  A list of additional aspects that should be applied to `deps`. Defaults to the empty list. These must be passed by the individual rules to avoid potential circular dependencies between the API and the aspects; the API loaded the aspects directly, then those aspects would not be able to load the API.   |  `[]` |
 | <a id="swift_common.compilation_attrs-additional_deps_providers"></a>additional_deps_providers |  A list of lists representing additional providers that should be allowed by the `deps` attribute of the rule.   |  `[]` |
 | <a id="swift_common.compilation_attrs-requires_srcs"></a>requires_srcs |  Indicates whether the `srcs` attribute should be marked as mandatory and non-empty. Defaults to `True`.   |  `True` |
-| <a id="swift_common.compilation_attrs-include_always_include_developer_search_paths"></a>include_always_include_developer_search_paths |  <p align="center"> - </p>   |  `False` |
+| <a id="swift_common.compilation_attrs-include_dev_srch_paths_attrib"></a>include_dev_srch_paths_attrib |  A `bool` that indicates whether to include the `always_include_developer_search_paths` attribute.   |  `False` |
 
 **RETURNS**
 

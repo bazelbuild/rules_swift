@@ -50,7 +50,7 @@ def swift_compilation_attrs(
         additional_deps_aspects = [],
         additional_deps_providers = [],
         requires_srcs = True,
-        include_always_include_developer_search_paths = False):
+        include_dev_srch_paths_attrib = False):
     """Returns an attribute dictionary for rules that compile Swift code.
 
     The returned dictionary contains the subset of attributes that are shared by
@@ -88,6 +88,8 @@ def swift_compilation_attrs(
             rule.
         requires_srcs: Indicates whether the `srcs` attribute should be marked
             as mandatory and non-empty. Defaults to `True`.
+        include_dev_srch_paths_attrib: A `bool` that indicates whether to
+            include the `always_include_developer_search_paths` attribute.
 
     Returns:
         A new attribute dictionary that can be added to the attributes of a
@@ -173,7 +175,7 @@ the target as `testonly = True`.
 """,
                 mandatory = False,
             ),
-        } if include_always_include_developer_search_paths else {},
+        } if include_dev_srch_paths_attrib else {},
     )
 
 def swift_config_attrs():
@@ -282,6 +284,7 @@ def swift_library_rule_attrs(
         swift_compilation_attrs(
             additional_deps_aspects = additional_deps_aspects,
             requires_srcs = requires_srcs,
+            include_dev_srch_paths_attrib = True,
         ),
         swift_config_attrs(),
         {
