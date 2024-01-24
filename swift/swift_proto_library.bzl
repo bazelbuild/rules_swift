@@ -42,6 +42,10 @@ def _swift_proto_library_impl(ctx):
     # Ensure the `swift_proto_library` is collocated with the `proto_library`.
     proto_common.check_collocated(ctx.label, proto_info, proto_lang_toolchain_info)
 
+    # https://bazel.build/reference/be/protocol-buffer#proto_library.srcs
+    # documents the idea of a `proto_library` with no `srcs` as a way to alias
+    # or re-export some other targets, but we don't want to have to create a
+    # Swift Module for this case, so we don't allow it.
     if not proto_info.direct_sources:
         fail(
             "proto_library deps without srcs are not permitted. Add a " +

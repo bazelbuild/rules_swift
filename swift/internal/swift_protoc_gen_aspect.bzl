@@ -269,14 +269,22 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
         # transitive `proto_library` graph so the merging behavior is needed
         # for things that depend on such targets.
 
-        providers = [
-            SwiftProtoCompilationInfo(
-                cc_info = cc_common.merge_cc_infos(
-                    cc_infos = transitive_cc_infos,
+        if len(transitive_cc_infos) == 1 and len(transitive_swift_infos) == 1:
+            providers = [
+                SwiftProtoCompilationInfo(
+                    cc_info = transitive_cc_infos[0],
+                    swift_info = transitive_swift_infos[0],
                 ),
-                swift_info = SwiftInfo(swift_infos = transitive_swift_infos),
-            ),
-        ]
+            ]
+        else:
+            providers = [
+                SwiftProtoCompilationInfo(
+                    cc_info = cc_common.merge_cc_infos(
+                        cc_infos = transitive_cc_infos,
+                    ),
+                    swift_info = SwiftInfo(swift_infos = transitive_swift_infos),
+                ),
+            ]
 
     providers.append(SwiftProtoInfo(
         module_mappings = module_mappings,
