@@ -1,4 +1,4 @@
-load("//swift:swift.bzl", "swift_library")
+load("//swift:swift.bzl", "swift_library", "swift_library_group")
 load("//test/fixtures:common.bzl", "FIXTURE_TAGS")
 
 package(
@@ -14,10 +14,16 @@ swift_library(
     tags = FIXTURE_TAGS,
 )
 
+swift_library_group(
+    name = "library_group",
+    tags = FIXTURE_TAGS,
+    deps = ["first"],
+)
+
 swift_library(
     name = "second",
     srcs = ["second.swift"],
     module_name = "second",
     tags = FIXTURE_TAGS,
-    deps = ["first"],
+    deps = ["library_group"],
 )
