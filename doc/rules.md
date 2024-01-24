@@ -394,7 +394,11 @@ swift_library_group(<a href="#swift_library_group-name">name</a>, <a href="#swif
 </pre>
 
 Groups Swift compatible libraries (e.g. `swift_library` and `objc_library`).
-Can be used anywhere a `swift_library` can be used.
+The target can be used anywhere a `swift_library` can be used. It behaves
+similar to source-less `{cc,obj}_library` targets.
+
+Unlike `swift_module_alias`, a new module isn't created for this target, you
+need to import the grouped libraries directly.
 
 **ATTRIBUTES**
 
