@@ -57,6 +57,7 @@ bzl_library(
         "//swift/internal:swift_grpc_library",
         "//swift/internal:swift_import",
         "//swift/internal:swift_library",
+        "//swift/internal:swift_library_group",
         "//swift/internal:swift_module_alias",
         "//swift/internal:swift_package_configuration",
         "//swift/internal:swift_proto_library",

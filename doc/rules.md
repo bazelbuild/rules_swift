@@ -23,6 +23,7 @@ On this page:
   * [swift_grpc_library](#swift_grpc_library)
   * [swift_import](#swift_import)
   * [swift_library](#swift_library)
+  * [swift_library_group](#swift_library_group)
   * [swift_module_alias](#swift_module_alias)
   * [swift_package_configuration](#swift_package_configuration)
   * [swift_proto_library](#swift_proto_library)
@@ -382,6 +383,30 @@ Compiles and links Swift code into a static library and Swift module.
 | <a id="swift_library-plugins"></a>plugins |  A list of `swift_compiler_plugin` targets that should be loaded by the compiler when compiling this module and any modules that directly depend on it.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 | <a id="swift_library-private_deps"></a>private_deps |  A list of targets that are implementation-only dependencies of the target being built. Libraries/linker flags from these dependencies will be propagated to dependent for linking, but artifacts/flags required for compilation (such as .swiftmodule files, C headers, and search paths) will not be propagated.<br><br>Allowed kinds of dependencies are:<br><br>*   `swift_c_module`, `swift_import` and `swift_library` (or anything     propagating `SwiftInfo`)<br><br>*   `cc_library` (or anything propagating `CcInfo`)<br><br>Additionally, on platforms that support Objective-C interop, `objc_library` targets (or anything propagating the `apple_common.Objc` provider) are allowed as dependencies. On platforms that do not support Objective-C interop (such as Linux), those dependencies will be **ignored.**   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 | <a id="swift_library-swiftc_inputs"></a>swiftc_inputs |  Additional files that are referenced using `$(location ...)` in attributes that support location expansion.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
+
+
+<a id="swift_library_group"></a>
+
+## swift_library_group
+
+<pre>
+swift_library_group(<a href="#swift_library_group-name">name</a>, <a href="#swift_library_group-deps">deps</a>)
+</pre>
+
+Groups Swift compatible libraries (e.g. `swift_library` and `objc_library`).
+The target can be used anywhere a `swift_library` can be used. It behaves
+similar to source-less `{cc,obj}_library` targets.
+
+Unlike `swift_module_alias`, a new module isn't created for this target, you
+need to import the grouped libraries directly.
+
+**ATTRIBUTES**
+
+
+| Name  | Description | Type | Mandatory | Default |
+| :------------- | :------------- | :------------- | :------------- | :------------- |
+| <a id="swift_library_group-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
+| <a id="swift_library_group-deps"></a>deps |  A list of targets that should be included in the group.<br><br>Allowed kinds of dependencies are:<br><br>*   `swift_c_module`, `swift_import` and `swift_library` (or anything     propagating `SwiftInfo`)<br><br>*   `cc_library` (or anything propagating `CcInfo`)<br><br>Additionally, on platforms that support Objective-C interop, `objc_library` targets (or anything propagating the `apple_common.Objc` provider) are allowed as dependencies. On platforms that do not support Objective-C interop (such as Linux), those dependencies will be **ignored.**   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 
 
 <a id="swift_module_alias"></a>

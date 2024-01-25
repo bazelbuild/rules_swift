@@ -27,6 +27,7 @@ _DOC_SRCS = {
         "swift_grpc_library",
         "swift_import",
         "swift_library",
+        "swift_library_group",
         "swift_module_alias",
         "swift_package_configuration",
         "swift_proto_library",

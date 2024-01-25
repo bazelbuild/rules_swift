@@ -74,6 +74,10 @@ load(
     _swift_library = "swift_library",
 )
 load(
+    "@build_bazel_rules_swift//swift/internal:swift_library_group.bzl",
+    _swift_library_group = "swift_library_group",
+)
+load(
     "@build_bazel_rules_swift//swift/internal:swift_module_alias.bzl",
     _swift_module_alias = "swift_module_alias",
 )
@@ -109,6 +113,7 @@ swift_feature_allowlist = _swift_feature_allowlist
 swift_grpc_library = _swift_grpc_library
 swift_import = _swift_import
 swift_library = _swift_library
+swift_library_group = _swift_library_group
 swift_module_alias = _swift_module_alias
 swift_package_configuration = _swift_package_configuration
 swift_proto_library = _swift_proto_library

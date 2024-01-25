@@ -246,6 +246,20 @@ bzl_library(
 )
 
 bzl_library(
+    name = "swift_library_group",
+    srcs = ["swift_library_group.bzl"],
+    visibility = ["//swift:__subpackages__"],
+    deps = [
+        ":attrs",
+        ":providers",
+        ":swift_clang_module_aspect",
+        ":swift_common",
+        ":utils",
+        "@bazel_skylib//lib:dicts",
+    ],
+)
+
+bzl_library(
     name = "swift_module_alias",
     srcs = ["swift_module_alias.bzl"],
     visibility = ["//swift:__subpackages__"],
