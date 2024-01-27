@@ -51,8 +51,7 @@ _OBJC_PROVIDER_LINKING = hasattr(apple_common.new_objc_provider(), "linkopt")
 def binary_rule_attrs(
         *,
         additional_deps_providers = [],
-        stamp_default,
-        include_dev_srch_paths_attrib = False):
+        stamp_default):
     """Returns attributes common to both `swift_binary` and `swift_test`.
 
     Args:
@@ -60,8 +59,6 @@ def binary_rule_attrs(
             providers that should be allowed by the `deps` attribute of the
             rule.
         stamp_default: The default value of the `stamp` attribute.
-        include_dev_srch_paths_attrib: A `bool` that indicates whether to
-            include the `always_include_developer_search_paths` attribute.
 
     Returns:
         A `dict` of attributes for a binary or test rule.
@@ -71,7 +68,6 @@ def binary_rule_attrs(
             additional_deps_aspects = [swift_clang_module_aspect],
             additional_deps_providers = additional_deps_providers,
             requires_srcs = False,
-            include_dev_srch_paths_attrib = include_dev_srch_paths_attrib,
         ),
         {
             "linkopts": attr.string_list(

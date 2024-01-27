@@ -353,7 +353,6 @@ swift_binary = rule(
     attrs = binary_rule_attrs(
         additional_deps_providers = [[SwiftCompilerPluginInfo]],
         stamp_default = -1,
-        include_dev_srch_paths_attrib = True,
     ),
     doc = """\
 Compiles and links Swift code into an executable binary.
