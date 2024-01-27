@@ -5,10 +5,10 @@ This example demonstrates the use of the `swift_library_group` rule and the
 
 ## Scenario
 
-The scenario is that a developer provides a suite of utility modules that they would like to provide
-as a single Bazel dependency. One module, `TestHelpers`, provides a custom assertion syntax for
-`XCTest` tests. The other module, `StringHelpers`, provides some helpers for generating string
-values. They should be made available to clients using a single target, `Helpers`.
+The scenario is a developer provides a suite of utility modules that they would like to provide as a
+single Bazel dependency. One module, `TestHelpers`, provides a custom assertion syntax for `XCTest`
+tests. The other module, `StringHelpers`, provides functions for generating string values. They
+should be made available to clients using a single target, `Helpers`.
 
 ## Combine Swift modules using `swift_library`
 
@@ -38,10 +38,9 @@ to be availble during compilation.
 In short, prefer marking your target as `testonly`, if you import `XCTest`. The
 `always_include_developer_search_paths` attribute was added to support Swift packages
 that provide test and non-test dependencies in a single Swift product or Swift target. Marking the
-Bazel targets that represent these Swift products/targets makes them unusable in non-test scenarios.
+corresponding Bazel targets `testonly` makes them unusable in non-test scenarios.
 
 ### Should I combine test and non-test Swift modules?
 
-No. Prefer keeping test-specific code separate from non-test code. As The
-Offspring told us ["You gotta keep 'em
-separated"](https://youtu.be/1jOk8dk-qaU?si=G73P7X7hf6HDluVG).
+Typically, no. Prefer keeping test-specific code separate from non-test code. As The Offspring told
+us ["You gotta keep 'em separated"](https://youtu.be/1jOk8dk-qaU?si=G73P7X7hf6HDluVG).
