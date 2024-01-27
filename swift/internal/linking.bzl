@@ -17,8 +17,8 @@
 load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(":actions.bzl", "is_action_enabled", "swift_action_names")
-load(":attrs.bzl", "swift_compilation_attrs")
 load(":autolinking.bzl", "register_autolink_extract_action")
+load(":attrs.bzl", "swift_compilation_attrs")
 load(
     ":debugging.bzl",
     "ensure_swiftmodule_is_embedded",
@@ -26,8 +26,10 @@ load(
 )
 load(":derived_files.bzl", "derived_files")
 load(
-    ":developer_dirs.bzl",
-    "developer_dirs_linkopts",
+    ":features.bzl",
+    "configure_features",
+    "get_cc_feature_configuration",
+    "is_feature_enabled",
 )
 load(
     ":feature_names.bzl",
@@ -36,10 +38,8 @@ load(
     "SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE",
 )
 load(
-    ":features.bzl",
-    "configure_features",
-    "get_cc_feature_configuration",
-    "is_feature_enabled",
+    ":developer_dirs.bzl",
+    "developer_dirs_linkopts",
 )
 load(":providers.bzl", "SwiftToolchainInfo")
 load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
