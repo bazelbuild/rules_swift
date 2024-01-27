@@ -1,7 +1,7 @@
 # Overview
 
 This document aims to provide context to future contributors on why we decided to rewrite
-the swift_proto_library and swift_grpc_library rules into the new swift_proto_library rule,
+the `swift_proto_library` and `swift_grpc_library` rules into the new `swift_proto_library` rule,
 as well as a guide for consumers of the deprecated rules to migrate to the new swift_proto_library rule.
 
 On this page:
