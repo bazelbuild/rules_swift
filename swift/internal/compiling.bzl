@@ -20,13 +20,22 @@ load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:sets.bzl", "sets")
 load("@bazel_skylib//lib:types.bzl", "types")
 load(
+    "//swift/toolchains/config:compile_module_interface_config.bzl",
+    "compile_module_interface_action_configs",
+)
+load(
     ":actions.bzl",
     "is_action_enabled",
     "run_toolchain_action",
     "swift_action_names",
 )
-load(":explicit_module_map_file.bzl", "write_explicit_swift_module_map_file")
 load(":derived_files.bzl", "derived_files")
+load(
+    ":developer_dirs.bzl",
+    "platform_developer_framework_dir",
+    "swift_developer_lib_dir",
+)
+load(":explicit_module_map_file.bzl", "write_explicit_swift_module_map_file")
 load(
     ":feature_names.bzl",
     "SWIFT_FEATURE_CACHEABLE_SWIFTMODULES",
@@ -99,15 +108,6 @@ load(
     "struct_fields",
 )
 load(":vfsoverlay.bzl", "write_vfsoverlay")
-load(
-    ":developer_dirs.bzl",
-    "platform_developer_framework_dir",
-    "swift_developer_lib_dir",
-)
-load(
-    "//swift/toolchains/config:compile_module_interface_config.bzl",
-    "compile_module_interface_action_configs",
-)
 
 # VFS root where all .swiftmodule files will be placed when
 # SWIFT_FEATURE_VFSOVERLAY is enabled.

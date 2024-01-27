@@ -14,9 +14,10 @@
 
 """An aspect attached to `proto_library` targets to generate Swift artifacts."""
 
-load("@rules_proto//proto:defs.bzl", "ProtoInfo")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
+load("@rules_proto//proto:defs.bzl", "ProtoInfo")
+load(":actions.bzl", "USE_DEFAULT_SHELL_ENV")
 load(":attrs.bzl", "swift_config_attrs")
 load(":compiling.bzl", "output_groups_from_other_compilation_outputs")
 load(
@@ -38,7 +39,6 @@ load(
 load(":providers.bzl", "SwiftInfo", "SwiftProtoInfo", "SwiftToolchainInfo")
 load(":swift_common.bzl", "swift_common")
 load(":utils.bzl", "get_providers")
-load(":actions.bzl", "USE_DEFAULT_SHELL_ENV")
 
 # The paths of proto files bundled with the runtime. This is mainly the well
 # known type protos, but also includes descriptor.proto to make generation of

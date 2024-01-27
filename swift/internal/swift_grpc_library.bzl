@@ -14,8 +14,9 @@
 
 """A Swift library rule that generates gRPC services defined in protos."""
 
-load("@rules_proto//proto:defs.bzl", "ProtoInfo")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
+load("@rules_proto//proto:defs.bzl", "ProtoInfo")
+load(":actions.bzl", "USE_DEFAULT_SHELL_ENV")
 load(
     ":compiling.bzl",
     "output_groups_from_other_compilation_outputs",
@@ -43,7 +44,6 @@ load(
 load(":swift_common.bzl", "swift_common")
 load(":transitions.bzl", "proto_compiler_transition")
 load(":utils.bzl", "compact", "get_providers")
-load(":actions.bzl", "USE_DEFAULT_SHELL_ENV")
 
 def _register_grpcswift_generate_action(
         label,

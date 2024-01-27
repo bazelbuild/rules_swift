@@ -14,6 +14,7 @@
 
 """Implementation of the `swift_compiler_plugin` rule."""
 
+load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@build_bazel_apple_support//lib:apple_support.bzl", "apple_support")
 load("@build_bazel_apple_support//lib:lipo.bzl", "lipo")
 load("@build_bazel_apple_support//lib:transitions.bzl", "macos_universal_transition")
@@ -22,12 +23,12 @@ load(
     "output_groups_from_other_compilation_outputs",
 )
 load(
-    "@build_bazel_rules_swift//swift/internal:features.bzl",
-    "is_feature_enabled",
-)
-load(
     "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE__SUPPORTS_MACROS",
+)
+load(
+    "@build_bazel_rules_swift//swift/internal:features.bzl",
+    "is_feature_enabled",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:linking.bzl",
@@ -43,16 +44,15 @@ load(
     "SwiftToolchainInfo",
 )
 load(
+    "@build_bazel_rules_swift//swift/internal:swift_common.bzl",
+    "swift_common",
+)
+load(
     "@build_bazel_rules_swift//swift/internal:utils.bzl",
     "expand_locations",
     "get_providers",
 )
-load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(":module_name.bzl", "derive_swift_module_name")
-load(
-    "@build_bazel_rules_swift//swift/internal:swift_common.bzl",
-    "swift_common",
-)
 
 def _swift_compiler_plugin_impl(ctx):
     swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]

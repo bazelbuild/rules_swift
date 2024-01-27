@@ -14,7 +14,6 @@
 
 """Rules for testing the providers of a target under test."""
 
-load("@build_bazel_rules_swift//swift:swift.bzl", "SwiftInfo")
 load("@bazel_skylib//lib:types.bzl", "types")
 load(
     "@bazel_skylib//lib:unittest.bzl",
@@ -22,6 +21,7 @@ load(
     "asserts",
     "unittest",
 )
+load("@build_bazel_rules_swift//swift:swift.bzl", "SwiftInfo")
 
 # A sentinel value returned by `_evaluate_field` when a `None` value is
 # encountered during the evaluation of a dotted path on any component other than

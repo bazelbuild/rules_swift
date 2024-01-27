@@ -28,6 +28,11 @@ load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
 """
 
 load(
+    "@build_bazel_rules_swift//swift:swift_compiler_plugin.bzl",
+    _swift_compiler_plugin = "swift_compiler_plugin",
+    _universal_swift_compiler_plugin = "universal_swift_compiler_plugin",
+)
+load(
     "@build_bazel_rules_swift//swift/internal:providers.bzl",
     _SwiftGRPCInfo = "SwiftGRPCInfo",
     _SwiftInfo = "SwiftInfo",
@@ -51,11 +56,6 @@ load(
 load(
     "@build_bazel_rules_swift//swift/internal:swift_common.bzl",
     _swift_common = "swift_common",
-)
-load(
-    "@build_bazel_rules_swift//swift:swift_compiler_plugin.bzl",
-    _swift_compiler_plugin = "swift_compiler_plugin",
-    _universal_swift_compiler_plugin = "universal_swift_compiler_plugin",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:swift_feature_allowlist.bzl",
