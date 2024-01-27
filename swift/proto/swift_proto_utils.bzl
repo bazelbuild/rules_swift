@@ -25,7 +25,7 @@ def proto_path(proto_src, proto_info):
     """Derives the string used to import the proto. 
 
     This is the proto source path within its repository,
-    adjusted by import_prefix and strip_import_prefix.
+    adjusted by `import_prefix` and `strip_import_prefix`.
 
     Args:
         proto_src: the proto source File.

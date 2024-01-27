@@ -265,9 +265,18 @@ swift_proto_library = rule(
         {
             "protos": attr.label_list(
                 doc = """\
-                Exactly one `proto_library` target from which the Swift library should be generated.
+                Exactly one `proto_library` target (or a target producing `ProtoInfo`),
+                from which the Swift library should be generated.
                 """,
                 providers = [ProtoInfo],
+            ),
+            "compilers": attr.label_list(
+                default = ["//proto/compilers:swift_proto"],
+                doc = """\
+                Exactly one `swift_proto_compiler` target (or a target producing `SwiftProtoCompilerInfo`),
+                from which the Swift protos will be generated.
+                """,
+                providers = [SwiftProtoCompilerInfo],
             ),
             "compiler_deps": swift_deps_attr(
                 aspects = [
@@ -275,19 +284,16 @@ swift_proto_library = rule(
                 ],
                 default = [],
                 doc = """\
-                A list of targets that are dependencies of the target being built, which will be
-                linked into that target, but will be ignored by the proto compiler.
+                A list of targets that are compile-time dependencies of the target being built, 
+                but will be ignored by the Swift proto compiler.
                 """,
-            ),
-            "compilers": attr.label_list(
-                default = ["//proto/compilers:swift_proto"],
-                providers = [SwiftProtoCompilerInfo],
             ),
             "additional_plugin_options": attr.string_dict(
                 default = {},
                 doc = """\
                 Dictionary of additional proto compiler plugin options for this target.
-                See the documentation of plugin_options on swift_proto_compiler for more information.
+                These are applied on top of the default `plugin_options` for the compiler plugin.
+                See the documentation of `plugin_options` on `swift_proto_compiler` for more information.
                 """,
             ),
         },
