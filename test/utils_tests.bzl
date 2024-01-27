@@ -1,6 +1,8 @@
 """Tests for `utils` module."""
 
 load("@bazel_skylib//lib:unittest.bzl", "asserts", "unittest")
+
+# buildifier: disable=bzl-visibility
 load("//swift/internal:utils.bzl", "include_developer_search_paths")
 
 def _include_developer_search_paths_test(ctx):
