@@ -16,12 +16,12 @@
 
 load("@rules_proto//proto:defs.bzl", "ProtoInfo")
 load(":providers.bzl", "SwiftInfo", "SwiftProtoInfo")
-load(":transitions.bzl", "proto_compiler_transition")
 load(
     ":swift_protoc_gen_aspect.bzl",
     "SwiftProtoCcInfo",
     "swift_protoc_gen_aspect",
 )
+load(":transitions.bzl", "proto_compiler_transition")
 
 def _swift_proto_library_impl(ctx):
     if len(ctx.attr.deps) != 1:

@@ -14,6 +14,9 @@
 
 """Implementation of the `swift_library` rule."""
 
+load("@bazel_skylib//lib:dicts.bzl", "dicts")
+load("@bazel_skylib//lib:sets.bzl", "sets")
+load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 load(":attrs.bzl", "swift_deps_attr")
 load(
     ":build_settings.bzl",
@@ -42,9 +45,6 @@ load(
     "expand_make_variables",
     "get_providers",
 )
-load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load("@bazel_skylib//lib:sets.bzl", "sets")
-load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 
 def _maybe_parse_as_library_copts(srcs):
     """Returns a list of compiler flags depending on `main.swift`'s presence.

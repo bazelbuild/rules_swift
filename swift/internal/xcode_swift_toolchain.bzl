@@ -52,7 +52,6 @@ load(
     "SWIFT_FEATURE__SUPPORTS_MACROS",
 )
 load(":features.bzl", "features_for_build_modes")
-load(":toolchain_config.bzl", "swift_toolchain_config")
 load(
     ":providers.bzl",
     "SwiftFeatureAllowlistInfo",
@@ -61,6 +60,7 @@ load(
     "SwiftToolchainInfo",
 )
 load(":target_triples.bzl", "target_triples")
+load(":toolchain_config.bzl", "swift_toolchain_config")
 load(
     ":utils.bzl",
     "collect_implicit_deps_providers",

@@ -15,12 +15,12 @@
 """Tests for interoperability with `cc_library`-specific features."""
 
 load(
-    "@build_bazel_rules_swift//test/rules:action_command_line_test.bzl",
-    "make_action_command_line_test_rule",
-)
-load(
     "@bazel_skylib//rules:build_test.bzl",
     "build_test",
+)
+load(
+    "@build_bazel_rules_swift//test/rules:action_command_line_test.bzl",
+    "make_action_command_line_test_rule",
 )
 
 explicit_swift_module_map_test = make_action_command_line_test_rule(

@@ -14,12 +14,12 @@
 
 """Implementation of the `swift_c_module` rule."""
 
+load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(":attrs.bzl", "swift_toolchain_attrs")
 load(":feature_names.bzl", "SWIFT_FEATURE_SYSTEM_MODULE")
 load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
 load(":swift_common.bzl", "swift_common")
 load(":utils.bzl", "merge_runfiles")
-load("@bazel_skylib//lib:dicts.bzl", "dicts")
 
 def _swift_c_module_impl(ctx):
     if (
