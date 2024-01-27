@@ -103,15 +103,6 @@ def swift_compilation_attrs(
         ),
         swift_toolchain_attrs(),
         {
-            "srcs": attr.label_list(
-                allow_empty = not requires_srcs,
-                allow_files = ["swift"],
-                doc = """\
-A list of `.swift` source files that will be compiled into the library.
-""",
-                flags = ["DIRECT_COMPILE_TIME_INPUT"],
-                mandatory = requires_srcs,
-            ),
             "copts": attr.string_list(
                 doc = """\
 Additional compiler options that should be passed to `swiftc`. These strings are
@@ -156,6 +147,15 @@ A list of `swift_compiler_plugin` targets that should be loaded by the compiler
 when compiling this module and any modules that directly depend on it.
 """,
                 providers = [[SwiftCompilerPluginInfo]],
+            ),
+            "srcs": attr.label_list(
+                allow_empty = not requires_srcs,
+                allow_files = ["swift"],
+                doc = """\
+A list of `.swift` source files that will be compiled into the library.
+""",
+                flags = ["DIRECT_COMPILE_TIME_INPUT"],
+                mandatory = requires_srcs,
             ),
             "swiftc_inputs": attr.label_list(
                 allow_files = True,
@@ -288,13 +288,6 @@ def swift_library_rule_attrs(
         ),
         swift_config_attrs(),
         {
-            "linkopts": attr.string_list(
-                doc = """\
-Additional linker options that should be passed to the linker for the binary
-that depends on this target. These strings are subject to `$(location ...)`
-and ["Make" variable](https://docs.bazel.build/versions/master/be/make-variables.html) expansion.
-""",
-            ),
             "alwayslink": attr.bool(
                 default = False,
                 doc = """\
@@ -335,6 +328,13 @@ build graph and, when explicit modules are enabled, extra actions must be
 executed to compile the Objective-C module for the generated header.
 """,
                 mandatory = False,
+            ),
+            "linkopts": attr.string_list(
+                doc = """\
+Additional linker options that should be passed to the linker for the binary
+that depends on this target. These strings are subject to `$(location ...)`
+and ["Make" variable](https://docs.bazel.build/versions/master/be/make-variables.html) expansion.
+""",
             ),
             "linkstatic": attr.bool(
                 default = True,
