@@ -1,4 +1,12 @@
 public extension String {
+    static let lowerAlpha = "abcdefghijklmnopqrstuvwxyz"
+    static let upperAlpha: String = .lowerAlpha.uppercased()
+    static let numeric = "0123456789"
+    static let lowerAlphaNumeric: String = .lowerAlpha + .numeric
+    static let upperAlphaNumeric: String = .upperAlpha + .numeric
+    static let allAlpha: String = .lowerAlpha + .upperAlpha
+    static let allAlphaNumeric: String = .allAlpha + .numeric
+
     /// Specifies the type of random string that should be generated.
     enum RandomStringMode {
         case upperAlpha
@@ -12,17 +20,17 @@ public extension String {
         public var letters: String {
             switch self {
             case .upperAlpha:
-                return "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                return .upperAlpha
             case .lowerAlpha:
-                return "abcdefghijklmnopqrstuvwxyz"
+                return .lowerAlpha
             case .upperAlphaNumeric:
-                return "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+                return .upperAlphaNumeric
             case .lowerAlphaNumeric:
-                return "abcdefghijklmnopqrstuvwxyz0123456789"
+                return .lowerAlphaNumeric
             case .alpha:
-                return "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                return .allAlpha
             case .alphaNumeric:
-                return "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+                return .allAlphaNumeric
             }
         }
     }
