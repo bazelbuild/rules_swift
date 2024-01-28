@@ -84,6 +84,12 @@ provider) from which the Swift library should be generated.
                 "@bazel_tools//tools/allowlists/function_transition_allowlist",
             ),
         ),
+        # TODO(b/63389580): Migrate to proto_lang_toolchain.
+        "_proto_support": attr.label_list(
+            default = [
+                Label("@com_github_apple_swift_protobuf//:SwiftProtobuf"),
+            ],
+        ),
     },
     cfg = proto_compiler_transition,
     doc = """\
