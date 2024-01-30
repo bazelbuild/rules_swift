@@ -283,8 +283,8 @@ def swift_library_rule_attrs(
     return dicts.add(
         swift_compilation_attrs(
             additional_deps_aspects = additional_deps_aspects,
-            requires_srcs = requires_srcs,
             include_dev_srch_paths_attrib = True,
+            requires_srcs = requires_srcs,
         ),
         swift_config_attrs(),
         {
