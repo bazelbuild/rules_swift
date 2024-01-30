@@ -49,8 +49,8 @@ indirect (transitive) dependents.
 def swift_compilation_attrs(
         additional_deps_aspects = [],
         additional_deps_providers = [],
-        requires_srcs = True,
-        include_dev_srch_paths_attrib = False):
+        include_dev_srch_paths_attrib = False,
+        requires_srcs = True):
     """Returns an attribute dictionary for rules that compile Swift code.
 
     The returned dictionary contains the subset of attributes that are shared by
@@ -86,10 +86,10 @@ def swift_compilation_attrs(
         additional_deps_providers: A list of lists representing additional
             providers that should be allowed by the `deps` attribute of the
             rule.
-        requires_srcs: Indicates whether the `srcs` attribute should be marked
-            as mandatory and non-empty. Defaults to `True`.
         include_dev_srch_paths_attrib: A `bool` that indicates whether to
             include the `always_include_developer_search_paths` attribute.
+        requires_srcs: Indicates whether the `srcs` attribute should be marked
+            as mandatory and non-empty. Defaults to `True`.
 
     Returns:
         A new attribute dictionary that can be added to the attributes of a
