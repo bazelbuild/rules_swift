@@ -169,7 +169,7 @@ support location expansion.
             "always_include_developer_search_paths": attr.bool(
                 default = False,
                 doc = """\
-If True, the developer framework search paths will be added to the compilation 
+If `True`, the developer framework search paths will be added to the compilation 
 command. This enables a Swift module to access `XCTest` without having to mark 
 the target as `testonly = True`.
 """,
