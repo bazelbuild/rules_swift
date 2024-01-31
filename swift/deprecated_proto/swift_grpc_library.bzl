@@ -14,12 +14,6 @@
 
 """A Swift library rule that generates gRPC services defined in protos."""
 
-<<<<<<< HEAD:swift/internal/swift_grpc_library.bzl
-load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load("@rules_proto//proto:defs.bzl", "ProtoInfo")
-load(":actions.bzl", "USE_DEFAULT_SHELL_ENV")
-=======
->>>>>>> daf0e0a (Move code into deprecated directory):swift/deprecated_proto/swift_grpc_library.bzl
 load(
     "@bazel_skylib//lib:dicts.bzl",
     "dicts",
