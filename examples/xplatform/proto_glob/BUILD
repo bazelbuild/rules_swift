@@ -1,0 +1,33 @@
+load(
+    "@rules_proto//proto:defs.bzl",
+    "proto_library",
+)
+load(
+    "//proto:proto.bzl",
+    "swift_proto_library",
+)
+load(
+    "//swift:swift.bzl",
+    "swift_binary",
+)
+
+proto_library(
+    name = "proto_glob",
+    srcs = glob(["**/*.proto"]),
+)
+
+swift_proto_library(
+    name = "proto_glob_swift",
+    additional_plugin_options = {
+        "FileNaming": "PathToUnderscores",
+    },
+    protos = [":proto_glob"],
+)
+
+swift_binary(
+    name = "proto_glob_example",
+    srcs = ["main.swift"],
+    deps = [
+        ":proto_glob_swift",
+    ],
+)
