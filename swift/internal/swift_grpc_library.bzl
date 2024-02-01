@@ -297,7 +297,7 @@ def _swift_grpc_library_impl(ctx):
         copts = ["-parse-as-library"],
         deps = compile_deps,
         feature_configuration = feature_configuration,
-        is_test = ctx.attr.testonly,
+        include_dev_srch_paths = ctx.attr.testonly,
         module_name = module_name,
         package_name = None,
         srcs = generated_files,
@@ -311,7 +311,7 @@ def _swift_grpc_library_impl(ctx):
             actions = ctx.actions,
             compilation_outputs = cc_compilation_outputs,
             feature_configuration = feature_configuration,
-            is_test = ctx.attr.testonly,
+            include_dev_srch_paths = ctx.attr.testonly,
             label = ctx.label,
             linking_contexts = [
                 dep[CcInfo].linking_context
@@ -372,12 +372,6 @@ swift_grpc_library = rule(
     attrs = dicts.add(
         swift_common.toolchain_attrs(),
         {
-            "srcs": attr.label_list(
-                doc = """\
-Exactly one `proto_library` target that defines the services being generated.
-""",
-                providers = [ProtoInfo],
-            ),
             "deps": attr.label_list(
                 doc = """\
 Exactly one `swift_proto_library` or `swift_grpc_library` target that contains
@@ -402,6 +396,12 @@ The kind of definitions that should be generated:
 
 *   `"server"` to generate server definitions.
 """,
+            ),
+            "srcs": attr.label_list(
+                doc = """\
+Exactly one `proto_library` target that defines the services being generated.
+""",
+                providers = [ProtoInfo],
             ),
             "_allowlist_function_transition": attr.label(
                 default = Label(

@@ -183,7 +183,7 @@ def _swift_library_impl(ctx):
         deps = deps,
         feature_configuration = feature_configuration,
         generated_header_name = generated_header_name,
-        is_test = include_dev_srch_paths,
+        include_dev_srch_paths = include_dev_srch_paths,
         module_name = module_name,
         package_name = ctx.attr.package_name,
         plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),
@@ -201,7 +201,7 @@ def _swift_library_impl(ctx):
             alwayslink = ctx.attr.alwayslink,
             compilation_outputs = cc_compilation_outputs,
             feature_configuration = feature_configuration,
-            is_test = include_dev_srch_paths,
+            include_dev_srch_paths = include_dev_srch_paths,
             label = ctx.label,
             linking_contexts = [
                 dep[CcInfo].linking_context

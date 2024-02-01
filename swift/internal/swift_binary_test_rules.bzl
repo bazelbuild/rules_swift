@@ -107,7 +107,7 @@ def _swift_linking_rule_impl(
             deps = ctx.attr.deps,
             extra_swift_infos = extra_swift_infos,
             feature_configuration = feature_configuration,
-            is_test = include_dev_srch_paths,
+            include_dev_srch_paths = include_dev_srch_paths,
             module_name = module_name,
             package_name = ctx.attr.package_name,
             plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),
@@ -125,7 +125,7 @@ def _swift_linking_rule_impl(
             alwayslink = True,
             compilation_outputs = cc_compilation_outputs,
             feature_configuration = feature_configuration,
-            is_test = include_dev_srch_paths,
+            include_dev_srch_paths = include_dev_srch_paths,
             label = ctx.label,
             linking_contexts = [
                 dep[CcInfo].linking_context

@@ -60,7 +60,7 @@ def _swift_module_alias_impl(ctx):
         copts = ["-parse-as-library"],
         deps = deps,
         feature_configuration = feature_configuration,
-        is_test = ctx.attr.testonly,
+        include_dev_srch_paths = ctx.attr.testonly,
         module_name = module_name,
         package_name = None,
         srcs = [reexport_src],
@@ -74,7 +74,7 @@ def _swift_module_alias_impl(ctx):
             actions = ctx.actions,
             compilation_outputs = compilation_outputs,
             feature_configuration = feature_configuration,
-            is_test = ctx.attr.testonly,
+            include_dev_srch_paths = ctx.attr.testonly,
             label = ctx.label,
             linking_contexts = [
                 dep[CcInfo].linking_context
@@ -135,6 +135,14 @@ swift_module_alias = rule(
     attrs = dicts.add(
         swift_common.toolchain_attrs(),
         {
+            "deps": attr.label_list(
+                doc = """\
+A list of targets that are dependencies of the target being built, which will be
+linked into that target. Allowed kinds are `swift_import` and `swift_library`
+(or anything else propagating `SwiftInfo`).
+""",
+                providers = [[SwiftInfo]],
+            ),
             "module_name": attr.string(
                 doc = """\
 The name of the Swift module being built.
@@ -143,14 +151,6 @@ If left unspecified, the module name will be computed based on the target's
 build label, by stripping the leading `//` and replacing `/`, `:`, and other
 non-identifier characters with underscores.
 """,
-            ),
-            "deps": attr.label_list(
-                doc = """\
-A list of targets that are dependencies of the target being built, which will be
-linked into that target. Allowed kinds are `swift_import` and `swift_library`
-(or anything else propagating `SwiftInfo`).
-""",
-                providers = [[SwiftInfo]],
             ),
         },
     ),

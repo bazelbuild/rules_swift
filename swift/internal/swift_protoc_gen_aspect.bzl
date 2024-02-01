@@ -434,7 +434,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             copts = ["-parse-as-library"],
             deps = proto_deps + support_deps,
             feature_configuration = feature_configuration,
-            is_test = False,
+            include_dev_srch_paths = False,
             module_name = module_name,
             package_name = None,
             srcs = pbswift_files,
@@ -448,7 +448,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
                 actions = aspect_ctx.actions,
                 compilation_outputs = cc_compilation_outputs,
                 feature_configuration = feature_configuration,
-                is_test = False,
+                include_dev_srch_paths = False,
                 label = target.label,
                 linking_contexts = [
                     dep[CcInfo].linking_context
