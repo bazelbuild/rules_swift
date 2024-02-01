@@ -1410,7 +1410,7 @@ def _add_developer_swift_imports(developer_dirs, args):
 
 def _non_pcm_developer_framework_paths_configurator(prerequisites, args):
     """ Adds developer frameworks flags to the command line. """
-    if prerequisites.is_test:
+    if prerequisites.include_dev_srch_paths:
         args.add_all(
             [
                 developer_dir.path
@@ -1426,7 +1426,7 @@ def _non_pcm_developer_framework_paths_configurator(prerequisites, args):
 # PCM version of the logic above
 def _pcm_developer_framework_paths_configurator(prerequisites, args):
     """ Adds developer frameworks flags to the command line. """
-    if prerequisites.is_test:
+    if prerequisites.include_dev_srch_paths:
         args.add_all(
             [
                 developer_dir.path
@@ -2511,7 +2511,7 @@ one, preferring `include_dev_srch_paths`.\
         developer_dirs = swift_toolchain.developer_dirs,
         genfiles_dir = feature_configuration._genfiles_dir,
         is_swift = True,
-        is_test = include_dev_srch_paths_value,
+        include_dev_srch_paths = include_dev_srch_paths_value,
         module_name = module_name,
         package_name = package_name,
         objc_include_paths_workaround = (
@@ -2789,7 +2789,7 @@ def _precompile_clang_module(
         genfiles_dir = feature_configuration._genfiles_dir,
         is_swift = False,
         is_swift_generated_header = is_swift_generated_header,
-        is_test = False,
+        include_dev_srch_paths = False,
         module_name = module_name,
         package_name = None,
         objc_include_paths_workaround = depset(),
