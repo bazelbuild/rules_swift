@@ -2292,7 +2292,8 @@ def compile(
             compilation.
         feature_configuration: A feature configuration obtained from
             `swift_common.configure_features`.
-        is_test: Deprecated. Use the `include_dev_srch_paths` attribute instead.
+        is_test: Deprecated. This argument will be removed in the next major
+            release. Use the `include_dev_srch_paths` attribute instead.
             Represents if the `testonly` value of the context.
         include_dev_srch_paths: A `bool` that indicates whether the developer
             framework search paths will be added to the compilation command.
@@ -2499,6 +2500,10 @@ one, preferring `include_dev_srch_paths`.\
     if include_dev_srch_paths != None:
         include_dev_srch_paths_value = include_dev_srch_paths
     elif is_test != None:
+        print("""\
+WARNING: swift_common.compile(is_test = ...) is deprecated. Update your rules \
+to use swift_common.compile(include_dev_srch_paths = ...) instead.\
+""")  # buildifier: disable=print
         include_dev_srch_paths_value = is_test
 
     prerequisites = struct(
