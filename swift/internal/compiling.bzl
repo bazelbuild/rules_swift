@@ -122,9 +122,9 @@ _DEFAULT_WMO_THREAD_COUNT = 12
 # Swift command line flags that enable whole module optimization. (This
 # dictionary is used as a set for quick lookup; the values are irrelevant.)
 _WMO_FLAGS = {
-    "-wmo": True,
-    "-whole-module-optimization": True,
     "-force-single-frontend-invocation": True,
+    "-whole-module-optimization": True,
+    "-wmo": True,
 }
 
 def compile_action_configs(
@@ -2259,7 +2259,8 @@ def compile(
         extra_swift_infos = [],
         feature_configuration,
         generated_header_name = None,
-        is_test,
+        is_test = None,
+        include_dev_srch_paths = None,
         module_name,
         package_name,
         plugins = [],
@@ -2291,7 +2292,10 @@ def compile(
             compilation.
         feature_configuration: A feature configuration obtained from
             `swift_common.configure_features`.
-        is_test: Represents if the `testonly` value of the context.
+        is_test: Deprecated. Use the `include_dev_srch_paths` attribute instead.
+            Represents if the `testonly` value of the context.
+        include_dev_srch_paths: A `bool` that indicates whether the developer
+            framework search paths will be added to the compilation command.
         generated_header_name: The name of the Objective-C generated header that
             should be generated for this module. If omitted, no header will be
             generated.
@@ -2486,6 +2490,17 @@ def compile(
         if module_context.swift and module_context.swift.plugins:
             used_plugins.extend(module_context.swift.plugins.to_list())
 
+    if include_dev_srch_paths != None and is_test != None:
+        fail("""\
+Both `include_dev_srch_paths` and `is_test` cannot be specified. Please select \
+one, preferring `include_dev_srch_paths`.\
+""")
+    include_dev_srch_paths_value = False
+    if include_dev_srch_paths != None:
+        include_dev_srch_paths_value = include_dev_srch_paths
+    elif is_test != None:
+        include_dev_srch_paths_value = is_test
+
     prerequisites = struct(
         additional_inputs = additional_inputs,
         bin_dir = feature_configuration._bin_dir,
@@ -2496,7 +2511,7 @@ def compile(
         developer_dirs = swift_toolchain.developer_dirs,
         genfiles_dir = feature_configuration._genfiles_dir,
         is_swift = True,
-        is_test = is_test,
+        is_test = include_dev_srch_paths_value,
         module_name = module_name,
         package_name = package_name,
         objc_include_paths_workaround = (

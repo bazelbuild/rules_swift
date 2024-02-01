@@ -87,8 +87,9 @@ A new attribute dictionary that can be added to the attributes of a
 
 <pre>
 swift_common.compile(<a href="#swift_common.compile-actions">actions</a>, <a href="#swift_common.compile-additional_inputs">additional_inputs</a>, <a href="#swift_common.compile-copts">copts</a>, <a href="#swift_common.compile-defines">defines</a>, <a href="#swift_common.compile-deps">deps</a>, <a href="#swift_common.compile-extra_swift_infos">extra_swift_infos</a>,
-                     <a href="#swift_common.compile-feature_configuration">feature_configuration</a>, <a href="#swift_common.compile-generated_header_name">generated_header_name</a>, <a href="#swift_common.compile-is_test">is_test</a>, <a href="#swift_common.compile-module_name">module_name</a>, <a href="#swift_common.compile-package_name">package_name</a>,
-                     <a href="#swift_common.compile-plugins">plugins</a>, <a href="#swift_common.compile-private_deps">private_deps</a>, <a href="#swift_common.compile-srcs">srcs</a>, <a href="#swift_common.compile-swift_toolchain">swift_toolchain</a>, <a href="#swift_common.compile-target_name">target_name</a>, <a href="#swift_common.compile-workspace_name">workspace_name</a>)
+                     <a href="#swift_common.compile-feature_configuration">feature_configuration</a>, <a href="#swift_common.compile-generated_header_name">generated_header_name</a>, <a href="#swift_common.compile-is_test">is_test</a>, <a href="#swift_common.compile-include_dev_srch_paths">include_dev_srch_paths</a>,
+                     <a href="#swift_common.compile-module_name">module_name</a>, <a href="#swift_common.compile-package_name">package_name</a>, <a href="#swift_common.compile-plugins">plugins</a>, <a href="#swift_common.compile-private_deps">private_deps</a>, <a href="#swift_common.compile-srcs">srcs</a>, <a href="#swift_common.compile-swift_toolchain">swift_toolchain</a>,
+                     <a href="#swift_common.compile-target_name">target_name</a>, <a href="#swift_common.compile-workspace_name">workspace_name</a>)
 </pre>
 
 Compiles a Swift module.
@@ -106,7 +107,8 @@ Compiles a Swift module.
 | <a id="swift_common.compile-extra_swift_infos"></a>extra_swift_infos |  Extra `SwiftInfo` providers that aren't contained by the `deps` of the target being compiled but are required for compilation.   |  `[]` |
 | <a id="swift_common.compile-feature_configuration"></a>feature_configuration |  A feature configuration obtained from `swift_common.configure_features`.   |  none |
 | <a id="swift_common.compile-generated_header_name"></a>generated_header_name |  The name of the Objective-C generated header that should be generated for this module. If omitted, no header will be generated.   |  `None` |
-| <a id="swift_common.compile-is_test"></a>is_test |  Represents if the `testonly` value of the context.   |  none |
+| <a id="swift_common.compile-is_test"></a>is_test |  Deprecated. Use the `include_dev_srch_paths` attribute instead. Represents if the `testonly` value of the context.   |  `None` |
+| <a id="swift_common.compile-include_dev_srch_paths"></a>include_dev_srch_paths |  A `bool` that indicates whether the developer framework search paths will be added to the compilation command.   |  `None` |
 | <a id="swift_common.compile-module_name"></a>module_name |  The name of the Swift module being compiled. This must be present and valid; use `swift_common.derive_module_name` to generate a default from the target's label if needed.   |  none |
 | <a id="swift_common.compile-package_name"></a>package_name |  The semantic package of the name of the Swift module being compiled.   |  none |
 | <a id="swift_common.compile-plugins"></a>plugins |  A list of `SwiftCompilerPluginInfo` providers that represent plugins that should be loaded by the compiler.   |  `[]` |
