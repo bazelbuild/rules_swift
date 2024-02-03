@@ -171,7 +171,8 @@ def create_linking_context_from_compilation_outputs(
         alwayslink = False,
         compilation_outputs,
         feature_configuration,
-        is_test,
+        is_test = None,
+        include_dev_srch_paths = None,
         label,
         linking_contexts = [],
         module_context,
@@ -200,7 +201,11 @@ def create_linking_context_from_compilation_outputs(
             the value returned by `swift_common.compile`.
         feature_configuration: A feature configuration obtained from
             `swift_common.configure_features`.
-        is_test: Represents if the `testonly` value of the context.
+        is_test: Deprecated. This argument will be removed in the next major
+            release. Use the `include_dev_srch_paths` attribute instead.
+            Represents if the `testonly` value of the context.
+        include_dev_srch_paths: A `bool` that indicates whether the developer
+            framework search paths will be added to the compilation command.
         label: The `Label` of the target being built. This is used as the owner
             of the linker inputs created for post-compile actions (if any), and
             the label's name component also determines the name of the artifact
@@ -320,7 +325,24 @@ def create_linking_context_from_compilation_outputs(
     if not name:
         name = label.name
 
-    if is_test:
+    if include_dev_srch_paths != None and is_test != None:
+        fail("""\
+Both `include_dev_srch_paths` and `is_test` cannot be specified. Please select \
+one, preferring `include_dev_srch_paths`.\
+""")
+    include_dev_srch_paths_value = False
+    if include_dev_srch_paths != None:
+        include_dev_srch_paths_value = include_dev_srch_paths
+    elif is_test != None:
+        print("""\
+WARNING: swift_common.create_linking_context_from_compilation_outputs(is_test \
+= ...) is deprecated. Update your rules to use swift_common.\
+create_linking_context_from_compilation_outputs(include_dev_srch_paths = ...) \
+instead.\
+""")  # buildifier: disable=print
+        include_dev_srch_paths_value = is_test
+
+    if include_dev_srch_paths_value:
         developer_paths_linkopts = developer_dirs_linkopts(swift_toolchain.developer_dirs)
     else:
         developer_paths_linkopts = []

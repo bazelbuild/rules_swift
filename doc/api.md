@@ -33,7 +33,8 @@ A C++ `FeatureConfiguration` value (see
 ## swift_common.compilation_attrs
 
 <pre>
-swift_common.compilation_attrs(<a href="#swift_common.compilation_attrs-additional_deps_aspects">additional_deps_aspects</a>, <a href="#swift_common.compilation_attrs-additional_deps_providers">additional_deps_providers</a>, <a href="#swift_common.compilation_attrs-requires_srcs">requires_srcs</a>)
+swift_common.compilation_attrs(<a href="#swift_common.compilation_attrs-additional_deps_aspects">additional_deps_aspects</a>, <a href="#swift_common.compilation_attrs-additional_deps_providers">additional_deps_providers</a>,
+                               <a href="#swift_common.compilation_attrs-include_dev_srch_paths_attrib">include_dev_srch_paths_attrib</a>, <a href="#swift_common.compilation_attrs-requires_srcs">requires_srcs</a>)
 </pre>
 
 Returns an attribute dictionary for rules that compile Swift code.
@@ -70,6 +71,7 @@ attributes from the earlier items in the list.
 | :------------- | :------------- | :------------- |
 | <a id="swift_common.compilation_attrs-additional_deps_aspects"></a>additional_deps_aspects |  A list of additional aspects that should be applied to `deps`. Defaults to the empty list. These must be passed by the individual rules to avoid potential circular dependencies between the API and the aspects; the API loaded the aspects directly, then those aspects would not be able to load the API.   |  `[]` |
 | <a id="swift_common.compilation_attrs-additional_deps_providers"></a>additional_deps_providers |  A list of lists representing additional providers that should be allowed by the `deps` attribute of the rule.   |  `[]` |
+| <a id="swift_common.compilation_attrs-include_dev_srch_paths_attrib"></a>include_dev_srch_paths_attrib |  A `bool` that indicates whether to include the `always_include_developer_search_paths` attribute.   |  `False` |
 | <a id="swift_common.compilation_attrs-requires_srcs"></a>requires_srcs |  Indicates whether the `srcs` attribute should be marked as mandatory and non-empty. Defaults to `True`.   |  `True` |
 
 **RETURNS**
@@ -85,8 +87,9 @@ A new attribute dictionary that can be added to the attributes of a
 
 <pre>
 swift_common.compile(<a href="#swift_common.compile-actions">actions</a>, <a href="#swift_common.compile-additional_inputs">additional_inputs</a>, <a href="#swift_common.compile-copts">copts</a>, <a href="#swift_common.compile-defines">defines</a>, <a href="#swift_common.compile-deps">deps</a>, <a href="#swift_common.compile-extra_swift_infos">extra_swift_infos</a>,
-                     <a href="#swift_common.compile-feature_configuration">feature_configuration</a>, <a href="#swift_common.compile-generated_header_name">generated_header_name</a>, <a href="#swift_common.compile-is_test">is_test</a>, <a href="#swift_common.compile-module_name">module_name</a>, <a href="#swift_common.compile-package_name">package_name</a>,
-                     <a href="#swift_common.compile-plugins">plugins</a>, <a href="#swift_common.compile-private_deps">private_deps</a>, <a href="#swift_common.compile-srcs">srcs</a>, <a href="#swift_common.compile-swift_toolchain">swift_toolchain</a>, <a href="#swift_common.compile-target_name">target_name</a>, <a href="#swift_common.compile-workspace_name">workspace_name</a>)
+                     <a href="#swift_common.compile-feature_configuration">feature_configuration</a>, <a href="#swift_common.compile-generated_header_name">generated_header_name</a>, <a href="#swift_common.compile-is_test">is_test</a>, <a href="#swift_common.compile-include_dev_srch_paths">include_dev_srch_paths</a>,
+                     <a href="#swift_common.compile-module_name">module_name</a>, <a href="#swift_common.compile-package_name">package_name</a>, <a href="#swift_common.compile-plugins">plugins</a>, <a href="#swift_common.compile-private_deps">private_deps</a>, <a href="#swift_common.compile-srcs">srcs</a>, <a href="#swift_common.compile-swift_toolchain">swift_toolchain</a>,
+                     <a href="#swift_common.compile-target_name">target_name</a>, <a href="#swift_common.compile-workspace_name">workspace_name</a>)
 </pre>
 
 Compiles a Swift module.
@@ -104,7 +107,8 @@ Compiles a Swift module.
 | <a id="swift_common.compile-extra_swift_infos"></a>extra_swift_infos |  Extra `SwiftInfo` providers that aren't contained by the `deps` of the target being compiled but are required for compilation.   |  `[]` |
 | <a id="swift_common.compile-feature_configuration"></a>feature_configuration |  A feature configuration obtained from `swift_common.configure_features`.   |  none |
 | <a id="swift_common.compile-generated_header_name"></a>generated_header_name |  The name of the Objective-C generated header that should be generated for this module. If omitted, no header will be generated.   |  `None` |
-| <a id="swift_common.compile-is_test"></a>is_test |  Represents if the `testonly` value of the context.   |  none |
+| <a id="swift_common.compile-is_test"></a>is_test |  Deprecated. This argument will be removed in the next major release. Use the `include_dev_srch_paths` attribute instead. Represents if the `testonly` value of the context.   |  `None` |
+| <a id="swift_common.compile-include_dev_srch_paths"></a>include_dev_srch_paths |  A `bool` that indicates whether the developer framework search paths will be added to the compilation command.   |  `None` |
 | <a id="swift_common.compile-module_name"></a>module_name |  The name of the Swift module being compiled. This must be present and valid; use `swift_common.derive_module_name` to generate a default from the target's label if needed.   |  none |
 | <a id="swift_common.compile-package_name"></a>package_name |  The semantic package of the name of the Swift module being compiled.   |  none |
 | <a id="swift_common.compile-plugins"></a>plugins |  A list of `SwiftCompilerPluginInfo` providers that represent plugins that should be loaded by the compiler.   |  `[]` |
@@ -291,7 +295,8 @@ A `struct` containing four fields:
 <pre>
 swift_common.create_linking_context_from_compilation_outputs(<a href="#swift_common.create_linking_context_from_compilation_outputs-actions">actions</a>, <a href="#swift_common.create_linking_context_from_compilation_outputs-additional_inputs">additional_inputs</a>, <a href="#swift_common.create_linking_context_from_compilation_outputs-alwayslink">alwayslink</a>,
                                                              <a href="#swift_common.create_linking_context_from_compilation_outputs-compilation_outputs">compilation_outputs</a>,
-                                                             <a href="#swift_common.create_linking_context_from_compilation_outputs-feature_configuration">feature_configuration</a>, <a href="#swift_common.create_linking_context_from_compilation_outputs-is_test">is_test</a>, <a href="#swift_common.create_linking_context_from_compilation_outputs-label">label</a>,
+                                                             <a href="#swift_common.create_linking_context_from_compilation_outputs-feature_configuration">feature_configuration</a>, <a href="#swift_common.create_linking_context_from_compilation_outputs-is_test">is_test</a>,
+                                                             <a href="#swift_common.create_linking_context_from_compilation_outputs-include_dev_srch_paths">include_dev_srch_paths</a>, <a href="#swift_common.create_linking_context_from_compilation_outputs-label">label</a>,
                                                              <a href="#swift_common.create_linking_context_from_compilation_outputs-linking_contexts">linking_contexts</a>, <a href="#swift_common.create_linking_context_from_compilation_outputs-module_context">module_context</a>, <a href="#swift_common.create_linking_context_from_compilation_outputs-name">name</a>,
                                                              <a href="#swift_common.create_linking_context_from_compilation_outputs-swift_toolchain">swift_toolchain</a>, <a href="#swift_common.create_linking_context_from_compilation_outputs-user_link_flags">user_link_flags</a>)
 </pre>
@@ -316,7 +321,8 @@ command line parameters file, those actions will be created here.
 | <a id="swift_common.create_linking_context_from_compilation_outputs-alwayslink"></a>alwayslink |  If True, any binary that depends on the providers returned by this function will link in all of the library's object files, even if some contain no symbols referenced by the binary.   |  `False` |
 | <a id="swift_common.create_linking_context_from_compilation_outputs-compilation_outputs"></a>compilation_outputs |  A `CcCompilationOutputs` value containing the object files to link. Typically, this is the second tuple element in the value returned by `swift_common.compile`.   |  none |
 | <a id="swift_common.create_linking_context_from_compilation_outputs-feature_configuration"></a>feature_configuration |  A feature configuration obtained from `swift_common.configure_features`.   |  none |
-| <a id="swift_common.create_linking_context_from_compilation_outputs-is_test"></a>is_test |  Represents if the `testonly` value of the context.   |  none |
+| <a id="swift_common.create_linking_context_from_compilation_outputs-is_test"></a>is_test |  Deprecated. This argument will be removed in the next major release. Use the `include_dev_srch_paths` attribute instead. Represents if the `testonly` value of the context.   |  `None` |
+| <a id="swift_common.create_linking_context_from_compilation_outputs-include_dev_srch_paths"></a>include_dev_srch_paths |  A `bool` that indicates whether the developer framework search paths will be added to the compilation command.   |  `None` |
 | <a id="swift_common.create_linking_context_from_compilation_outputs-label"></a>label |  The `Label` of the target being built. This is used as the owner of the linker inputs created for post-compile actions (if any), and the label's name component also determines the name of the artifact unless it is overridden by the `name` argument.   |  none |
 | <a id="swift_common.create_linking_context_from_compilation_outputs-linking_contexts"></a>linking_contexts |  A `list` of `CcLinkingContext`s containing libraries from dependencies.   |  `[]` |
 | <a id="swift_common.create_linking_context_from_compilation_outputs-module_context"></a>module_context |  The module context returned by `swift_common.compile` containing information about the Swift module that was compiled. Typically, this is the first tuple element in the value returned by `swift_common.compile`.   |  none |

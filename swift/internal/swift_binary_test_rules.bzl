@@ -22,7 +22,7 @@ load(":feature_names.bzl", "SWIFT_FEATURE_BUNDLED_XCTESTS")
 load(":linking.bzl", "binary_rule_attrs", "configure_features_for_binary", "register_link_binary_action")
 load(":providers.bzl", "SwiftCompilerPluginInfo", "SwiftToolchainInfo")
 load(":swift_common.bzl", "swift_common")
-load(":utils.bzl", "expand_locations", "get_providers")
+load(":utils.bzl", "expand_locations", "get_providers", "include_developer_search_paths")
 
 def _maybe_parse_as_library_copts(srcs):
     """Returns a list of compiler flags depending on `main.swift`'s presence.
@@ -97,6 +97,8 @@ def _swift_linking_rule_impl(
         copts = expand_locations(ctx, ctx.attr.copts, ctx.attr.swiftc_inputs) + \
                 _maybe_parse_as_library_copts(srcs)
 
+        include_dev_srch_paths = include_developer_search_paths(ctx)
+
         module_context, cc_compilation_outputs, other_compilation_outputs = swift_common.compile(
             actions = ctx.actions,
             additional_inputs = additional_inputs,
@@ -105,7 +107,7 @@ def _swift_linking_rule_impl(
             deps = ctx.attr.deps,
             extra_swift_infos = extra_swift_infos,
             feature_configuration = feature_configuration,
-            is_test = ctx.attr.testonly,
+            include_dev_srch_paths = include_dev_srch_paths,
             module_name = module_name,
             package_name = ctx.attr.package_name,
             plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),
@@ -123,7 +125,7 @@ def _swift_linking_rule_impl(
             alwayslink = True,
             compilation_outputs = cc_compilation_outputs,
             feature_configuration = feature_configuration,
-            is_test = ctx.attr.testonly,
+            include_dev_srch_paths = include_dev_srch_paths,
             label = ctx.label,
             linking_contexts = [
                 dep[CcInfo].linking_context

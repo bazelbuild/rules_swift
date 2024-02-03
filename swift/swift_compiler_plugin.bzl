@@ -102,7 +102,7 @@ def _swift_compiler_plugin_impl(ctx):
         defines = ctx.attr.defines,
         deps = deps,
         feature_configuration = feature_configuration,
-        is_test = ctx.attr.testonly,
+        include_dev_srch_paths = ctx.attr.testonly,
         module_name = module_name,
         package_name = ctx.attr.package_name,
         plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),
@@ -152,7 +152,7 @@ def _swift_compiler_plugin_impl(ctx):
             compilation_outputs = cc_compilation_outputs,
             feature_configuration = feature_configuration,
             label = ctx.label,
-            is_test = ctx.attr.testonly,
+            include_dev_srch_paths = ctx.attr.testonly,
             linking_contexts = [
                 dep[CcInfo].linking_context
                 for dep in deps
