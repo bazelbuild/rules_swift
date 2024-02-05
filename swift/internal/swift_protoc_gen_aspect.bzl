@@ -38,11 +38,7 @@ load(
 load(":features.bzl", "configure_features")
 load(":linking.bzl", "create_linking_context_from_compilation_outputs")
 load(":output_groups.bzl", "supplemental_compilation_output_groups")
-load(
-    ":proto_gen_utils.bzl",
-    "register_module_mapping_write_action",
-    "swift_proto_lang_toolchain_label",
-)
+load(":proto_gen_utils.bzl", "swift_proto_lang_toolchain_label")
 load(":toolchain_utils.bzl", "get_swift_toolchain", "use_swift_toolchain")
 load(":utils.bzl", "get_compilation_contexts")
 
@@ -109,6 +105,61 @@ def _build_module_mapping_from_srcs(target, proto_srcs):
         ],
     )
 
+def _register_module_mapping_write_action(name, actions, module_mappings):
+    """Registers an action that generates a module mapping for a proto library.
+
+    Args:
+        name: The name of the target being analyzed.
+        actions: The context's actions object.
+        module_mappings: The `depset` of module mapping `struct`s to be rendered.
+            This sequence should already have duplicates removed.
+
+    Returns:
+        The `File` representing the module mapping that will be generated in
+        protobuf text format.
+    """
+    mapping_file = actions.declare_file(
+        "{}.protoc_gen_swift_modules.asciipb".format(name),
+    )
+    content = actions.args()
+    content.set_param_file_format("multiline")
+    content.add_all(module_mappings, map_each = _render_text_module_mapping)
+
+    actions.write(
+        content = content,
+        output = mapping_file,
+    )
+
+    return mapping_file
+
+def _render_text_module_mapping(mapping):
+    """Renders the text format proto for a module mapping.
+
+    Args:
+        mapping: A single module mapping `struct`.
+
+    Returns:
+        A string containing the module mapping for the target in protobuf text
+        format.
+    """
+    module_name = mapping.module_name
+    proto_file_paths = mapping.proto_file_paths
+
+    content = "mapping {\n"
+    content += '  module_name: "%s"\n' % module_name
+    if len(proto_file_paths) == 1:
+        content += '  proto_file_path: "%s"\n' % proto_file_paths[0]
+    else:
+        # Use list form to avoid parsing and looking up the field name for each
+        # entry.
+        content += '  proto_file_path: [\n    "%s"' % proto_file_paths[0]
+        for path in proto_file_paths[1:]:
+            content += ',\n    "%s"' % path
+        content += "\n  ]\n"
+    content += "}\n"
+
+    return content
+
 def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
     swift_toolchain = get_swift_toolchain(aspect_ctx)
     proto_lang_toolchain_info = aspect_ctx.attr._proto_lang_toolchain[proto_common.ProtoLangToolchainInfo]
@@ -150,7 +201,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
     module_mappings = depset(direct_module_mappings, transitive = transitive_module_mappings)
 
     if direct_pbswift_files:
-        transitive_module_mapping_file = register_module_mapping_write_action(
+        transitive_module_mapping_file = _register_module_mapping_write_action(
             target.label.name,
             aspect_ctx.actions,
             module_mappings,

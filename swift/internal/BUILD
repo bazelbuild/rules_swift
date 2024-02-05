@@ -137,7 +137,6 @@ bzl_library(
 bzl_library(
     name = "proto_gen_utils",
     srcs = ["proto_gen_utils.bzl"],
-    deps = ["@bazel_skylib//lib:paths"],
 )
 
 bzl_library(

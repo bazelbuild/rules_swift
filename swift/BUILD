@@ -117,25 +117,6 @@ bzl_library(
 )
 
 bzl_library(
-    name = "swift_grpc_library",
-    srcs = ["swift_grpc_library.bzl"],
-    deps = [
-        ":module_name",
-        ":providers",
-        "//swift/internal:attrs",
-        "//swift/internal:compiling",
-        "//swift/internal:feature_names",
-        "//swift/internal:features",
-        "//swift/internal:linking",
-        "//swift/internal:output_groups",
-        "//swift/internal:proto_gen_utils",
-        "//swift/internal:toolchain_utils",
-        "//swift/internal:utils",
-        "@bazel_skylib//lib:dicts",
-    ],
-)
-
-bzl_library(
     name = "swift_import",
     srcs = ["swift_import.bzl"],
     deps = [
