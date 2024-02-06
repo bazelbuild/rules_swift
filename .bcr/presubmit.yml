@@ -4,11 +4,15 @@ shell_commands: &shell_commands
 - "curl https://download.swift.org/swift-${SWIFT_VERSION}-release/ubuntu2004/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu20.04.tar.gz | tar xvz --strip-components=1 -C $SWIFT_HOME"
 
 matrix:
+  bazel:
+  - 7.x
+  - last_green
   platform:
   - ubuntu2004
 tasks:
   verify_targets:
     name: Verify build targets
+    bazel: ${{ bazel }}
     platform: ${{ platform }}
     environment:
       CC: "clang"
@@ -23,6 +27,7 @@ tasks:
     - "-@rules_swift//examples/xplatform/grpc/..." # TODO: Fix grpc on Linux
   verify_targets_macos:
     name: Verify build targets
+    bazel: ${{ bazel }}
     platform: macos
     build_targets:
     - "@rules_swift//examples/apple/..."
