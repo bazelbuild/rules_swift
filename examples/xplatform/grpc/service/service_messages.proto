@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package service_messages;
+package service;
 
 import "google/protobuf/any.proto";
 

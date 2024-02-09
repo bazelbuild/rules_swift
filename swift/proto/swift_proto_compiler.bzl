@@ -82,9 +82,20 @@ def _swift_proto_compile(ctx, swift_proto_compiler_info, additional_plugin_optio
         additional_plugin_options,
     )
 
-    # Declare the swift files that will be generated:
+    # Some protoc plugins like protoc-gen-grpc-swift only generate swift files for a subset of the protos.
+    # We can't inspect the proto contents to determine which ones will actually be generated.
+    # This is a problem for Bazel which requires every declared file to actually be created.
+    # To avoid this, we first generate the protos into a temporary declared directory, 
+    # and then follow this up with a shell action to copy the generated files to the declared paths,
+    # before finally touching all of the paths to ensure we at least have a blank Swift file for those.
+
+    # Declare the temporary output directory and define the temporary and permanent output paths:
+    permanent_output_directory_path = None
+    temporary_output_directory_path = paths.join(ctx.label.name, swift_proto_compiler_info.internal.plugin_name, "tmp")
+    temporary_output_directory = ctx.actions.declare_directory(temporary_output_directory_path)
+
+    # Declare the Swift files that will be generated:
     swift_srcs = []
-    output_directory_path = None
     proto_paths = {}
     transitive_descriptor_sets_list = []
     for proto_info in proto_infos:
@@ -109,28 +120,28 @@ def _swift_proto_compile(ctx, swift_proto_compiler_info, additional_plugin_optio
             # Declare the proto file that will be generated:
             suffixes = swift_proto_compiler_info.internal.suffixes
             for suffix in suffixes:
-                swift_src_path_without_label_name = paths.replace_extension(path, suffix)
+                output_directory_relative_swift_src_path = paths.replace_extension(path, suffix)
 
                 # Apply the file naming option to the path:
                 file_naming_plugin_option = plugin_options["FileNaming"] if "FileNaming" in plugin_options else "FullPath"
                 if file_naming_plugin_option == "PathToUnderscores":
-                    swift_src_path_without_label_name = swift_src_path_without_label_name.replace("/", "_")
+                    output_directory_relative_swift_src_path = output_directory_relative_swift_src_path.replace("/", "_")
                 elif file_naming_plugin_option == "DropPath":
-                    swift_src_path_without_label_name = paths.basename(swift_src_path_without_label_name)
+                    output_directory_relative_swift_src_path = paths.basename(output_directory_relative_swift_src_path)
                 elif file_naming_plugin_option == "FullPath":
                     # This is the default behavior and it leaves the path as-is.
                     pass
                 else:
                     fail("unknown file naming plugin option: ", file_naming_plugin_option)
 
-                swift_src_path = paths.join(ctx.label.name, swift_src_path_without_label_name)
+                swift_src_path = paths.join(ctx.label.name, output_directory_relative_swift_src_path)
                 swift_src = ctx.actions.declare_file(swift_src_path)
                 swift_srcs.append(swift_src)
 
                 # Grab the output path directory:
-                if output_directory_path == None:
+                if permanent_output_directory_path == None:
                     full_swift_src_path = swift_srcs[0].path
-                    output_directory_path = full_swift_src_path.removesuffix("/" + swift_src_path_without_label_name)
+                    permanent_output_directory_path = full_swift_src_path.removesuffix("/" + output_directory_relative_swift_src_path)
     transitive_descriptor_sets = depset(direct = [], transitive = transitive_descriptor_sets_list)
 
     # Merge all of the proto paths to module name mappings from the imports depset:
@@ -195,7 +206,7 @@ def _swift_proto_compile(ctx, swift_proto_compiler_info, additional_plugin_optio
     # Add the output directory argument:
     output_directory_argument = "--{}_out={}".format(
         swift_proto_compiler_info.internal.plugin_name,
-        output_directory_path,
+        temporary_output_directory.path,
     )
     arguments.add(output_directory_argument)
 
@@ -207,7 +218,7 @@ def _swift_proto_compile(ctx, swift_proto_compiler_info, additional_plugin_optio
     # Finally, add the proto paths:
     arguments.add_all(proto_paths.keys())
 
-    # Run protoc:
+    # Run the protoc action:
     ctx.actions.run(
         inputs = depset(
             direct = [
@@ -217,11 +228,34 @@ def _swift_proto_compile(ctx, swift_proto_compiler_info, additional_plugin_optio
             ],
             transitive = [transitive_descriptor_sets],
         ),
-        outputs = swift_srcs,
-        progress_message = "Generating into %s" % swift_srcs[0].dirname,
+        outputs = [temporary_output_directory],
+        progress_message = "Generating protos into %s" % temporary_output_directory.path,
         mnemonic = "SwiftProtocGen",
         executable = swift_proto_compiler_info.internal.protoc,
         arguments = [arguments],
+    )
+
+    # Expand the copy Swift sources template:
+    copy_swift_sources_file_path = paths.join(ctx.label.name, swift_proto_compiler_info.internal.plugin_name, "copy_swift_sources.sh")
+    copy_swift_sources_file = ctx.actions.declare_file(copy_swift_sources_file_path)
+    ctx.actions.expand_template(
+        template = swift_proto_compiler_info.internal.copy_swift_sources_template,
+        output = copy_swift_sources_file,
+        substitutions = {
+            "{temporary_output_directory_path}": temporary_output_directory.path,
+            "{permanent_output_directory_path}": permanent_output_directory_path,
+            "{swift_source_file_paths}": " ".join([src.path for src in swift_srcs]),
+        },
+        is_executable = True,
+    )
+    
+    # Run the copy swift sources action:
+    ctx.actions.run(
+        inputs = depset([temporary_output_directory]),
+        outputs = swift_srcs,
+        progress_message = "Copying protos into %s" % permanent_output_directory_path,
+        mnemonic = "CopySwiftSources",
+        executable = copy_swift_sources_file,
     )
 
     return swift_srcs
@@ -237,6 +271,7 @@ def _swift_proto_compiler_impl(ctx):
                 plugin_name = ctx.attr.plugin_name,
                 plugin_options = ctx.attr.plugin_options,
                 suffixes = ctx.attr.suffixes,
+                copy_swift_sources_template = ctx.file._copy_swift_sources_template
             ),
         ),
     ]
@@ -349,6 +384,10 @@ swift_proto_compiler = rule(
             Each compiler target should configure this based on the suffix applied to the generated files.
             """,
             mandatory = True,
+        ),
+        "_copy_swift_sources_template": attr.label(
+            default = ":copy_swift_sources.sh.tpl",
+            allow_single_file = True,
         ),
     },
 )

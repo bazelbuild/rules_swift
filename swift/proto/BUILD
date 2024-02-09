@@ -2,6 +2,8 @@ load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 
 licenses(["notice"])
 
+exports_files(["copy_swift_sources.sh.tpl"])
+
 # swift_proto_utils
 
 bzl_library(
