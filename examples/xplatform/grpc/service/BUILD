@@ -36,8 +36,6 @@ swift_proto_library(
 
 swift_proto_library(
     name = "service_test_client_swift_proto",
-    module_name = "ServiceTestClient",
-    protos = [":service_proto"],
     additional_compiler_deps = [
         "//examples/xplatform/grpc/service:service_client_swift_proto",
     ],
@@ -47,5 +45,7 @@ swift_proto_library(
     compilers = [
         "//proto/compilers:swift_test_client_proto",
     ],
+    module_name = "ServiceTestClient",
+    protos = [":service_proto"],
     visibility = ["//visibility:public"],
 )

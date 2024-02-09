@@ -54,9 +54,9 @@ GRPC_PLUGIN_OPTION_ALLOWLIST = PROTO_PLUGIN_OPTION_ALLOWLIST + [
 # We might just want to drop support for it during this migration.
 
 def make_grpc_swift_proto_compiler(
-    name, 
-    variants, 
-    plugin_options = PROTO_PLUGIN_OPTIONS):
+        name,
+        variants,
+        plugin_options = PROTO_PLUGIN_OPTIONS):
     """Generates a GRPC swift_proto_compiler target for the given variants.
 
     Args:

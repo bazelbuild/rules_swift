@@ -74,7 +74,7 @@ def _swift_proto_compile(ctx, swift_proto_compiler_info, additional_plugin_optio
 
     # Create a dictionary of the allowed plugin options for faster lookup:
     plugin_option_allowlist = swift_proto_compiler_info.internal.plugin_option_allowlist
-    allowed_plugin_options = { plugin_option : True for plugin_option in plugin_option_allowlist }
+    allowed_plugin_options = {plugin_option: True for plugin_option in plugin_option_allowlist}
 
     # Overlay the additional plugin options on top of the default plugin options,
     # filtering out any that are unsupported by the plugin.
