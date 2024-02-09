@@ -5,7 +5,8 @@ load(
 )
 load(
     "//swift/proto/compilers:swift_proto_compiler_macros.bzl",
-    "BASE_PLUGIN_OPTIONS",
+    "PROTO_PLUGIN_OPTION_ALLOWLIST",
+    "PROTO_PLUGIN_OPTIONS",
     "GRPC_VARIANT_CLIENT",
     "GRPC_VARIANT_SERVER",
     "GRPC_VARIANT_TEST_CLIENT",
@@ -18,7 +19,8 @@ swift_proto_compiler(
     name = "swift_proto",
     plugin = "//tools/protoc_wrapper:ProtoCompilerPlugin",
     plugin_name = "swift",
-    plugin_options = BASE_PLUGIN_OPTIONS,
+    plugin_option_allowlist = PROTO_PLUGIN_OPTION_ALLOWLIST,
+    plugin_options = PROTO_PLUGIN_OPTIONS,
     protoc = "//tools/protoc_wrapper:protoc",
     suffixes = [".pb.swift"],
     visibility = ["//visibility:public"],

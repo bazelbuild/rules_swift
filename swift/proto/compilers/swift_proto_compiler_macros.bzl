@@ -25,13 +25,15 @@ load(
     "swift_proto_compiler",
 )
 
-BASE_PLUGIN_OPTIONS = {
+# NOTE: The ProtoPathModuleMappings option is set internally for all plugins.
+# This is used to inform the plugins which Swift module the generated code for each plugin is located in.
+PROTO_PLUGIN_OPTION_ALLOWLIST = [
+    "FileNaming",
+    "Visibility",
+]
+PROTO_PLUGIN_OPTIONS = {
     "Visibility": "Public",
 }
-
-# NOTE: As of Swift 5.6, the TestClient flavor is deprecated in grpc-swift.
-# This is because they are not sendable and needed to be marked as unchecked sendable for async/await.
-# We might just want to drop support for it during this migration.
 GRPC_VARIANT_SERVER = "Server"
 GRPC_VARIANT_CLIENT = "Client"
 GRPC_VARIANT_TEST_CLIENT = "TestClient"
@@ -40,8 +42,21 @@ GRPC_VARIANTS = [
     GRPC_VARIANT_CLIENT,
     GRPC_VARIANT_TEST_CLIENT,
 ]
+GRPC_PLUGIN_OPTION_ALLOWLIST = PROTO_PLUGIN_OPTION_ALLOWLIST + [
+    "KeepMethodCasing",
+    "ExtraModuleImports",
+    "GRPCModuleName",
+    "SwiftProtobufModuleName",
+] + GRPC_VARIANTS
 
-def make_grpc_swift_proto_compiler(name, variants, plugin_options = BASE_PLUGIN_OPTIONS):
+# NOTE: As of Swift 5.6, the TestClient flavor is deprecated in grpc-swift.
+# This is because they are not sendable and needed to be marked as unchecked sendable for async/await.
+# We might just want to drop support for it during this migration.
+
+def make_grpc_swift_proto_compiler(
+    name, 
+    variants, 
+    plugin_options = PROTO_PLUGIN_OPTIONS):
     """Generates a GRPC swift_proto_compiler target for the given variants.
 
     Args:
@@ -62,7 +77,8 @@ def make_grpc_swift_proto_compiler(name, variants, plugin_options = BASE_PLUGIN_
         name = name,
         protoc = "//tools/protoc_wrapper:protoc",
         plugin = "//tools/protoc_wrapper:protoc-gen-grpc-swift",
-        plugin_name = "swiftgrpc",
+        plugin_name = name.removesuffix("_proto"),
+        plugin_option_allowlist = GRPC_PLUGIN_OPTION_ALLOWLIST,
         plugin_options = merged_plugin_options,
         suffixes = [".grpc.swift"],
         deps = [

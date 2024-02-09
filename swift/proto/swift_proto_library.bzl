@@ -54,6 +54,7 @@ load(
     "//swift/internal:utils.bzl",
     "compact",
     "get_providers",
+    "include_developer_search_paths",
 )
 load(
     ":swift_proto_compiler.bzl",
@@ -152,7 +153,7 @@ def _swift_proto_library_impl(ctx):
     imports = _get_imports(ctx.attr, module_name)
 
     # Use the proto compiler to compile the swift sources for the proto deps:
-    compiler_deps = [d for d in ctx.attr.compiler_deps]
+    compiler_deps = [d for d in ctx.attr.additional_compiler_deps]
     generated_swift_srcs = []
     for swift_proto_compiler_target in ctx.attr.compilers:
         swift_proto_compiler_info = swift_proto_compiler_target[SwiftProtoCompilerInfo]
@@ -169,12 +170,13 @@ def _swift_proto_library_impl(ctx):
     deps = ctx.attr.deps + compiler_deps
 
     # Compile the generated Swift source files as a module:
+    include_dev_srch_paths = include_developer_search_paths(ctx)
     module_context, cc_compilation_outputs, other_compilation_outputs = swift_common.compile(
         actions = ctx.actions,
         copts = ["-parse-as-library"],
         deps = deps,
         feature_configuration = feature_configuration,
-        is_test = ctx.attr.testonly,
+        include_dev_srch_paths = include_dev_srch_paths,
         module_name = module_name,
         package_name = None,
         srcs = generated_swift_srcs,
@@ -189,7 +191,7 @@ def _swift_proto_library_impl(ctx):
             actions = ctx.actions,
             compilation_outputs = cc_compilation_outputs,
             feature_configuration = feature_configuration,
-            is_test = ctx.attr.testonly,
+            include_dev_srch_paths = include_dev_srch_paths,
             label = ctx.label,
             linking_contexts = [
                 dep[CcInfo].linking_context
@@ -273,19 +275,19 @@ swift_proto_library = rule(
             "compilers": attr.label_list(
                 default = ["//proto/compilers:swift_proto"],
                 doc = """\
-                Exactly one `swift_proto_compiler` target (or a target producing `SwiftProtoCompilerInfo`),
+                One or more `swift_proto_compiler` target (or a target producing `SwiftProtoCompilerInfo`),
                 from which the Swift protos will be generated.
                 """,
                 providers = [SwiftProtoCompilerInfo],
             ),
-            "compiler_deps": swift_deps_attr(
+            "additional_compiler_deps": swift_deps_attr(
                 aspects = [
                     swift_clang_module_aspect,
                 ],
                 default = [],
                 doc = """\
-                A list of targets that are compile-time dependencies of the target being built, 
-                but will be ignored by the Swift proto compiler.
+                List of additional dependencies required by the generated Swift code at compile time, 
+                but ignored by the Swift proto compiler.
                 """,
             ),
             "additional_plugin_options": attr.string_dict(
