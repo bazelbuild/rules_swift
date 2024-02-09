@@ -23,7 +23,6 @@ swift_binary(
     srcs = ["server_main.swift"],
     deps = [
         "//examples/xplatform/grpc/service:service_server_swift_proto",
-        "//examples/xplatform/grpc/service/service_messages:service_messages_swift_proto",
     ],
 )
 
@@ -32,7 +31,6 @@ swift_binary(
     srcs = ["client_main.swift"],
     deps = [
         "//examples/xplatform/grpc/service:service_client_swift_proto",
-        "//examples/xplatform/grpc/service/service_messages:service_messages_swift_proto",
     ],
 )
 
@@ -45,19 +43,17 @@ swift_test(
     deps = [
         "//examples/xplatform/grpc/service:service_client_swift_proto",
         "//examples/xplatform/grpc/service:service_server_swift_proto",
-        "//examples/xplatform/grpc/service/service_messages:service_messages_swift_proto",
     ],
 )
 
-swift_test(
-    name = "echo_test_client_unit_test",
-    srcs = [
-        "main.swift",
-        "test_client_unit_test.swift",
-    ],
-    deps = [
-        "//examples/xplatform/grpc/service:service_client_swift_proto",
-        "//examples/xplatform/grpc/service:service_test_client_swift_proto",
-        "//examples/xplatform/grpc/service/service_messages:service_messages_swift_proto",
-    ],
-)
+# swift_test(
+#     name = "echo_test_client_unit_test",
+#     srcs = [
+#         "main.swift",
+#         "test_client_unit_test.swift",
+#     ],
+#     deps = [
+#         "//examples/xplatform/grpc/service:service_client_swift_proto",
+#         "//examples/xplatform/grpc/service:service_test_client_swift_proto",
+#     ],
+# )

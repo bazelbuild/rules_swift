@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import ServiceMessages
 import ServiceClient
 import ServiceServer
 import GRPC
@@ -28,11 +27,11 @@ public class EchoServiceProvider: Service_EchoServiceProvider {
   }
 
   public func echo(
-    request: ServiceMessages_EchoRequest, 
+    request: ServiceServer.Service_EchoRequest, 
     context: StatusOnlyCallContext) 
-    -> EventLoopFuture<ServiceMessages_EchoResponse> 
+    -> EventLoopFuture<ServiceServer.Service_EchoResponse> 
   {
-    let response = ServiceMessages_EchoResponse.with {
+    let response = ServiceServer.Service_EchoResponse.with {
       $0.contents = request.contents
     }
     return context.eventLoop.makeSucceededFuture(response)

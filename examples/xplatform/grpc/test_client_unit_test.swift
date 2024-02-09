@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import ServiceMessages
 import ServiceClient
 import ServiceTestClient
 import GRPC
@@ -25,7 +24,7 @@ class UnitTest: XCTestCase {
 
     // Set up the fake contents:
     let fakeContents = "Response"
-    let fakeResponse = ServiceMessages_EchoResponse.with {
+    let fakeResponse = Service_EchoResponse.with {
       $0.contents = fakeContents
     }
     let fakeClient = Service_EchoServiceTestClient()

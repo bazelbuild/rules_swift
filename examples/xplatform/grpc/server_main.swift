@@ -16,7 +16,6 @@ import Dispatch
 import GRPC
 import NIOCore
 import NIOPosix
-import ServiceMessages
 import ServiceServer
 
 /// Concrete implementation of the `EchoService` service definition.
@@ -29,9 +28,9 @@ class EchoProvider: Service_EchoServiceProvider {
   ///   - request: The message containing the request parameters.
   ///   - context: Information about the current session.
   /// - Returns: The response that will be sent back to the client.
-  func echo(request: ServiceMessages_EchoRequest,
-            context: StatusOnlyCallContext) -> EventLoopFuture<ServiceMessages_EchoResponse> {
-    return context.eventLoop.makeSucceededFuture(ServiceMessages_EchoResponse.with {
+  func echo(request: Service_EchoRequest,
+            context: StatusOnlyCallContext) -> EventLoopFuture<Service_EchoResponse> {
+    return context.eventLoop.makeSucceededFuture(Service_EchoResponse.with {
       $0.contents = "You sent: \(request.contents)"
     })
   }

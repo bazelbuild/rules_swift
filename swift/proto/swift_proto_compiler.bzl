@@ -85,7 +85,7 @@ def _swift_proto_compile(ctx, swift_proto_compiler_info, additional_plugin_optio
     # Some protoc plugins like protoc-gen-grpc-swift only generate swift files for a subset of the protos.
     # We can't inspect the proto contents to determine which ones will actually be generated.
     # This is a problem for Bazel which requires every declared file to actually be created.
-    # To avoid this, we first generate the protos into a temporary declared directory, 
+    # To avoid this, we first generate the protos into a temporary declared directory,
     # and then follow this up with a shell action to copy the generated files to the declared paths,
     # before finally touching all of the paths to ensure we at least have a blank Swift file for those.
 
@@ -248,7 +248,7 @@ def _swift_proto_compile(ctx, swift_proto_compiler_info, additional_plugin_optio
         },
         is_executable = True,
     )
-    
+
     # Run the copy swift sources action:
     ctx.actions.run(
         inputs = depset([temporary_output_directory]),
@@ -271,7 +271,7 @@ def _swift_proto_compiler_impl(ctx):
                 plugin_name = ctx.attr.plugin_name,
                 plugin_options = ctx.attr.plugin_options,
                 suffixes = ctx.attr.suffixes,
-                copy_swift_sources_template = ctx.file._copy_swift_sources_template
+                copy_swift_sources_template = ctx.file._copy_swift_sources_template,
             ),
         ),
     ]
