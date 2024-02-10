@@ -96,14 +96,15 @@ def _swift_proto_compile(ctx, swift_proto_compiler_info, additional_plugin_optio
     # before finally touching all of the paths to ensure we at least have a blank Swift file for those.
 
     # Declare the temporary output directory and define the temporary and permanent output paths:
-    permanent_output_directory_path = None
-    temporary_output_directory_path = paths.join(ctx.label.name, swift_proto_compiler_info.internal.plugin_name, "tmp")
-    temporary_output_directory = ctx.actions.declare_directory(temporary_output_directory_path)
+    target_relative_permanent_output_directory_path = paths.join(ctx.label.name, "gen")
+    target_relative_temporary_output_directory_path = paths.join(ctx.label.name, swift_proto_compiler_info.internal.plugin_name, "tmp")
+    temporary_output_directory = ctx.actions.declare_directory(target_relative_temporary_output_directory_path)
 
     # Declare the Swift files that will be generated:
     swift_srcs = []
     proto_paths = {}
     transitive_descriptor_sets_list = []
+    permanent_output_directory_path = None
     for proto_info in proto_infos:
         # Collect the transitive descriptor sets from the proto infos:
         transitive_descriptor_sets_list.append(proto_info.transitive_descriptor_sets)
@@ -140,11 +141,11 @@ def _swift_proto_compile(ctx, swift_proto_compiler_info, additional_plugin_optio
                 else:
                     fail("unknown file naming plugin option: ", file_naming_plugin_option)
 
-                swift_src_path = paths.join(ctx.label.name, output_directory_relative_swift_src_path)
+                swift_src_path = paths.join(target_relative_permanent_output_directory_path, output_directory_relative_swift_src_path)
                 swift_src = ctx.actions.declare_file(swift_src_path)
                 swift_srcs.append(swift_src)
 
-                # Grab the output path directory:
+                # Grab the permanent output directory path:
                 if permanent_output_directory_path == None:
                     full_swift_src_path = swift_srcs[0].path
                     permanent_output_directory_path = full_swift_src_path.removesuffix("/" + output_directory_relative_swift_src_path)
