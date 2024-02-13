@@ -414,7 +414,6 @@ def _all_tool_configs(
         custom_toolchain,
         env,
         execution_requirements,
-        generated_header_rewriter,
         swift_executable,
         toolchain_root):
     """Returns the tool configurations for the Swift toolchain.
@@ -424,9 +423,6 @@ def _all_tool_configs(
             one was requested.
         env: The environment variables to set when launching tools.
         execution_requirements: The execution requirements for tools.
-        generated_header_rewriter: An executable that will be invoked after
-            compilation to rewrite the generated header, or None it not
-            needed.
         swift_executable: A custom Swift driver executable to be used during the
             build, if provided.
         toolchain_root: The root directory of the toolchain, if provided.
@@ -618,7 +614,6 @@ def _xcode_swift_toolchain_impl(ctx):
         custom_toolchain = custom_toolchain,
         env = env,
         execution_requirements = execution_requirements,
-        generated_header_rewriter = generated_header_rewriter,
         swift_executable = swift_executable,
         toolchain_root = toolchain_root,
     )
