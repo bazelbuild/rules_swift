@@ -42,7 +42,7 @@ def xctest_runner_test_suite(name, tags = []):
         expected_return_code = 1,
         expected_logs = [
             "Executed 0 tests, with 0 failures",
-            "error: no tests were executed",
+            "ERROR: No tests were executed",
         ],
         tags = all_tags,
         target_under_test = "//test/fixtures/xctest_runner:EmptyUnitTests",

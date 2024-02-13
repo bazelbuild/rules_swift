@@ -43,6 +43,12 @@ struct TestDiscoverer: ParsableCommand {
   @Option(help: "The path to the '.swift' file where the main test runner should be generated.")
   var mainOutput: String
 
+  @Flag(help: """
+    If true, tests are discovered by asking the Objective-C runtime instead of scanning symbol \
+    graphs.
+    """)
+  var objcTestDiscovery: Bool = false
+
   @Option(
     help: .init(
       """
@@ -54,11 +60,28 @@ struct TestDiscoverer: ParsableCommand {
   var moduleOutput: [ModuleOutput] = []
 
   func validate() throws {
-    guard !moduleOutput.isEmpty else {
-      throw ValidationError("At least one '--module-output' must be provided.")
-    }
-    guard !symbolGraphDirectories.isEmpty else {
-      throw ValidationError("At least one symbol graph directory must be provided.")
+    if objcTestDiscovery {
+      guard moduleOutput.isEmpty else {
+        throw ValidationError(
+          "'--module-output' cannot be provided if '--objc-test-discovery' is passed.")
+      }
+      guard symbolGraphDirectories.isEmpty else {
+        throw ValidationError(
+          "No symbol graph directories can be provided if '--objc-test-discovery' is passed.")
+      }
+    } else {
+      guard !moduleOutput.isEmpty else {
+        throw ValidationError("""
+          At least one '--module-output' must be provided if '--objc-test-discovery' is not \
+          passed.
+          """)
+      }
+      guard !symbolGraphDirectories.isEmpty else {
+        throw ValidationError("""
+          At least one symbol graph directory must be provided if '--objc-test-discovery' is not \
+          passed.
+          """)
+      }
     }
   }
 
@@ -80,15 +103,20 @@ struct TestDiscoverer: ParsableCommand {
       }
     }
 
-    // For each module, print the list of test entries that were discovered in a source file that
-    // extends that module.
-    let testPrinter = TestPrinter(discoveredTests: collector.discoveredTests())
-    for output in moduleOutput {
-      testPrinter.printTestEntries(forModule: output.moduleName, toFileAt: output.outputURL)
-    }
-
-    // Print the runner source file, which implements the `@main` type that executes the tests.
     let mainFileURL = URL(fileURLWithPath: mainOutput)
-    testPrinter.printTestRunner(toFileAt: mainFileURL)
+    if objcTestDiscovery {
+      // Print the runner source file, which implements the `@main` type that executes the tests.
+      let testPrinter = ObjcTestPrinter()
+      testPrinter.printTestRunner(toFileAt: mainFileURL)
+    } else {
+      // For each module, print the list of test entries that were discovered in a source file that
+      // extends that module.
+      let testPrinter = SymbolGraphTestPrinter(discoveredTests: collector.discoveredTests())
+      for output in moduleOutput {
+        testPrinter.printTestEntries(forModule: output.moduleName, toFileAt: output.outputURL)
+      }
+      // Print the runner source file, which implements the `@main` type that executes the tests.
+      testPrinter.printTestRunner(toFileAt: mainFileURL)
+    }
   }
 }

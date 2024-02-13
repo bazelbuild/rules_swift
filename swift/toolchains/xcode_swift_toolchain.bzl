@@ -45,6 +45,7 @@ load(
     "SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT",
 )
 load("//swift/internal:attrs.bzl", "swift_toolchain_driver_attrs")
+load("//swift/internal:developer_dirs.bzl", "swift_developer_lib_dir")
 load(
     "//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_COVERAGE",
@@ -71,6 +72,7 @@ load("//swift/internal:target_triples.bzl", "target_triples")
 load(
     "//swift/internal:utils.bzl",
     "collect_implicit_deps_providers",
+    "compact",
     "get_swift_executable_for_toolchain",
 )
 load("//swift/internal:wmo.bzl", "wmo_features_from_swiftcopts")
@@ -199,6 +201,56 @@ def _swift_linkopts_cc_info(
                 ),
             ]),
         ),
+    )
+
+def _test_linking_context(apple_toolchain, target_triple, toolchain_label):
+    """Returns a `CcLinkingContext` containing linker flags for test binaries.
+
+    Args:
+        apple_toolchain: The `apple_common.apple_toolchain()` object.
+        target_triple: The target triple `struct`.
+        toolchain_label: The label of the Swift toolchain that will act as the
+            owner of the linker input propagating the flags.
+
+    Returns:
+        A `CcLinkingContext` that will provide linker flags to `swift_test`
+        binaries.
+    """
+    platform_developer_framework_dir = _platform_developer_framework_dir(
+        apple_toolchain,
+        target_triple,
+    )
+
+    # Weakly link to XCTest. It's possible that machine that links the test
+    # binary will have Xcode installed at a different path than the machine that
+    # runs the binary. To handle this, the binary `dlopen`s XCTest at startup
+    # using the path Bazel passes in the test action's environment.
+    linkopts = [
+        "-Wl,-weak_framework,XCTest",
+        "-Wl,-weak-lXCTestSwiftSupport",
+    ]
+
+    if platform_developer_framework_dir:
+        linkopts.extend([
+            "-Wl,-rpath,{}".format(path)
+            for path in compact([
+                swift_developer_lib_dir([
+                    struct(
+                        developer_path_label = "platform",
+                        path = platform_developer_framework_dir,
+                    ),
+                ]),
+                platform_developer_framework_dir,
+            ])
+        ])
+
+    return cc_common.create_linking_context(
+        linker_inputs = depset([
+            cc_common.create_linker_input(
+                owner = toolchain_label,
+                user_link_flags = depset(linkopts),
+            ),
+        ]),
     )
 
 def _make_resource_directory_configurator(developer_dir):
@@ -563,6 +615,12 @@ def _xcode_swift_toolchain_impl(ctx):
     else:
         swiftcopts.extend(ctx.attr._copts[BuildSettingInfo].value)
 
+    test_linking_context = _test_linking_context(
+        apple_toolchain = apple_toolchain,
+        target_triple = target_triple,
+        toolchain_label = ctx.label,
+    )
+
     # `--define=SWIFT_USE_TOOLCHAIN_ROOT=<path>` is a rapid development feature
     # that lets you build *just* a custom `swift` driver (and `swiftc`
     # symlink), rather than a full toolchain, and point compilation actions at
@@ -714,9 +772,11 @@ def _xcode_swift_toolchain_impl(ctx):
         swift_worker = ctx.attr._worker[DefaultInfo].files_to_run,
         const_protocols_to_gather = ctx.file.const_protocols_to_gather,
         test_configuration = struct(
+            binary_name = "{bundle_name}.xctest/Contents/MacOS/{name}",
             env = env,
             execution_requirements = execution_requirements,
-            uses_xctest_bundles = True,
+            objc_test_discovery = True,
+            test_linking_contexts = [test_linking_context],
         ),
         tool_configs = all_tool_configs,
         unsupported_features = ctx.disabled_features + [

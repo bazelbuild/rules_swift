@@ -847,7 +847,30 @@ test discovery:
 
 See the documentation of the `discover_tests` attribute for more information
 about how this behavior affects the rule's outputs.
-```
+
+### Test Bundles
+
+The `swift_test` rule always produces a standard executable binary. This is true
+even when targeting macOS, where the typical practice is to use a Mach-O bundle
+binary. However, when targeting macOS, the executable binary is still generated
+inside a bundle-like directory structure: `{name}.xctest/Contents/MacOS/{name}`.
+This allows tests to still work if they contain logic that looks for the path to
+their bundle.
+
+### Test Filtering
+
+`swift_test` supports Bazel's `--test_filter` flag on all platforms (i.e., Apple
+and Linux), which can be used to run only a subset of tests. The test filter can
+be a test name of the form `ClassName/MethodName` or a regular expression that
+matches names of that form.
+
+For example,
+
+*   `--test_filter='ArrayTests/testAppend'` would only run the test method
+    `testAppend` in the `ArrayTests` class.
+
+*   `--test_filter='ArrayTests/test(App.*|Ins.*)'` would run all test methods
+    starting with `testApp` or `testIns` in the `ArrayTests` class.
 
 ### Xcode Integration
 
@@ -857,24 +880,6 @@ have the paths made absolute via swizzling by enabling the
 `"apple.swizzle_absolute_xcttestsourcelocation"` feature. You'll also need to
 set the `BUILD_WORKSPACE_DIRECTORY` environment variable in your scheme to the
 root of your workspace (i.e. `$(SRCROOT)`).
-
-### Test Filtering
-
-`swift_test` supports Bazel's `--test_filter` flag on all platforms (i.e., Apple
-and Linux), which can be used to run only a subset of tests. The expected filter
-format is the same as Xcode's `xctest` tool:
-
-*   `ModuleName`: Run only the test classes/methods in module `ModuleName`.
-*   `ModuleName.ClassName`: Run only the test methods in class
-    `ModuleName.ClassName`.
-*   `ModuleName.ClassName/testMethodName`: Run only the method `testMethodName`
-    in class `ModuleName.ClassName`.
-
-Multiple such filters can be separated by commas. For example:
-
-```shell
-bazel test --test_filter=AModule,BModule.SomeTests,BModule.OtherTests/testX //my/package/...
-```
 
 **ATTRIBUTES**
 
@@ -887,7 +892,7 @@ bazel test --test_filter=AModule,BModule.SomeTests,BModule.OtherTests/testX //my
 | <a id="swift_test-data"></a>data |  The list of files needed by this target at runtime.<br><br>Files and targets named in the `data` attribute will appear in the `*.runfiles` area of this target, if it has one. This may include data files needed by a binary or library, or other programs needed by it.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 | <a id="swift_test-copts"></a>copts |  Additional compiler options that should be passed to `swiftc`. These strings are subject to `$(location ...)` and ["Make" variable](https://docs.bazel.build/versions/master/be/make-variables.html) expansion.   | List of strings | optional |  `[]`  |
 | <a id="swift_test-defines"></a>defines |  A list of defines to add to the compilation command line.<br><br>Note that unlike C-family languages, Swift defines do not have values; they are simply identifiers that are either defined or undefined. So strings in this list should be simple identifiers, **not** `name=value` pairs.<br><br>Each string is prepended with `-D` and added to the command line. Unlike `copts`, these flags are added for the target and every target that depends on it, so use this attribute with caution. It is preferred that you add defines directly to `copts`, only using this feature in the rare case that a library needs to propagate a symbol up to those that depend on it.   | List of strings | optional |  `[]`  |
-| <a id="swift_test-discover_tests"></a>discover_tests |  Determines whether or not tests are automatically discovered in the binary. The default value is `True`.<br><br>If tests are discovered, then you should not provide your own `main` entry point in the `swift_test` binary; the test runtime provides the entry point for you. If you set this attribute to `False`, then you are responsible for providing your own `main`. This allows you to write tests that use a framework other than Apple's `XCTest`. The only requirement of such a test is that it terminate with a zero exit code for success or a non-zero exit code for failure.<br><br>Additionally, on Apple platforms, test discovery is handled by the Objective-C runtime and the output of a `swift_test` rule is an `.xctest` bundle that is invoked using the `xctest` tool in Xcode. If this attribute is used to disable test discovery, then the output of the `swift_test` rule will instead be a standard executable binary that is invoked directly.   | Boolean | optional |  `True`  |
+| <a id="swift_test-discover_tests"></a>discover_tests |  Determines whether or not tests are automatically discovered in the binary. The default value is `True`.<br><br>Tests are discovered in a platform-specific manner. On Apple platforms, they are found using the XCTest framework's `XCTestSuite.default` accessor, which uses the Objective-C runtime to dynamically discover tests. On non-Apple platforms, discovery uses symbol graphs generated from dependencies to find classes and methods written in XCTest's style.<br><br>If tests are discovered, then you should not provide your own `main` entry point in the `swift_test` binary; the test runtime provides the entry point for you. If you set this attribute to `False`, then you are responsible for providing your own `main`. This allows you to write tests that use a framework other than Apple's `XCTest`. The only requirement of such a test is that it terminate with a zero exit code for success or a non-zero exit code for failure.   | Boolean | optional |  `True`  |
 | <a id="swift_test-env"></a>env |  Dictionary of environment variables that should be set during the test execution.   | <a href="https://bazel.build/rules/lib/dict">Dictionary: String -> String</a> | optional |  `{}`  |
 | <a id="swift_test-linkopts"></a>linkopts |  Additional linker options that should be passed to `clang`. These strings are subject to `$(location ...)` expansion.   | List of strings | optional |  `[]`  |
 | <a id="swift_test-malloc"></a>malloc |  Override the default dependency on `malloc`.<br><br>By default, Swift binaries are linked against `@bazel_tools//tools/cpp:malloc"`, which is an empty library and the resulting binary will use libc's `malloc`. This label must refer to a `cc_library` rule.   | <a href="https://bazel.build/concepts/labels">Label</a> | optional |  `"@bazel_tools//tools/cpp:malloc"`  |
