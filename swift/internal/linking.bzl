@@ -365,8 +365,8 @@ def register_link_binary_action(
         deps,
         feature_configuration,
         label,
-        name,
         module_contexts = [],
+        name = None,
         output_type,
         stamp,
         swift_toolchain,
@@ -394,8 +394,8 @@ def register_link_binary_action(
             compilation of the sources in the binary target, which are embedded
             in the binary for debugging if this is a debug build. This list may
             be empty if the target had no sources of its own.
-        name: The name of the target being linked, which is used to derive the
-            output artifact.
+        name: If provided, the name of the output file to generate. If not
+            provided, the name of `label` will be used.
         output_type: A string indicating the output type; "executable" or
             "dynamic_library".
         stamp: A tri-state value (-1, 0, or 1) that specifies whether link
@@ -433,6 +433,9 @@ def register_link_binary_action(
         )
         if debugging_linking_context:
             linking_contexts.append(debugging_linking_context)
+
+    if not name:
+        name = label.name
 
     autolink_linking_context = _create_autolink_linking_context(
         actions = actions,
