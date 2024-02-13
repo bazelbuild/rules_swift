@@ -320,6 +320,7 @@ def register_link_binary_action(
         feature_configuration,
         label,
         module_contexts = [],
+        name = None,
         output_type,
         stamp,
         swift_toolchain,
@@ -342,11 +343,13 @@ def register_link_binary_action(
             passed to the linker.
         feature_configuration: The Swift feature configuration.
         label: The label of the target being linked, whose name is used to
-            derive the output artifact.
+            derive the output artifact if the `name` argument is not provided.
         module_contexts: A list of module contexts resulting from the
             compilation of the sources in the binary target, which are embedded
             in the binary for debugging if this is a debug build. This list may
             be empty if the target had no sources of its own.
+        name: If provided, the name of the output file to generate. If not
+            provided, the name of `label` will be used.
         output_type: A string indicating the output type; "executable" or
             "dynamic_library".
         stamp: A tri-state value (-1, 0, or 1) that specifies whether link
@@ -397,7 +400,7 @@ def register_link_binary_action(
         feature_configuration = get_cc_feature_configuration(
             feature_configuration,
         ),
-        name = label.name,
+        name = name if name else label.name,
         user_link_flags = user_link_flags,
         linking_contexts = linking_contexts,
         link_deps_statically = True,

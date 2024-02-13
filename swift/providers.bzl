@@ -349,14 +349,21 @@ compiles).
         "test_configuration": """\
 `Struct` containing the following fields:
 
+*   `binary_name`: A template string used to compute the name of the output
+    binary for `swift_test` rules. Any occurrences of the string `"{name}"` will
+    be substituted by the name of the target.
+
 *   `env`: A `dict` of environment variables to be set when running tests
     that were built with this toolchain.
 
 *   `execution_requirements`: A `dict` of execution requirements for tests
     that were built with this toolchain.
 
-*   `uses_xctest_bundles`: A Boolean value indicating whether test targets
-    should emit `.xctest` bundles that are launched with the `xctest` tool.
+*   `objc_test_discovery`: A Boolean value indicating whether test targets
+    should discover tests dynamically using the Objective-C runtime.
+
+*   `test_linking_contexts`: A list of `CcLinkingContext`s that provide
+    additional flags to use when linking test binaries.
 
 This is used, for example, with Xcode-based toolchains to ensure that the
 `xctest` helper and coverage tools are found in the correct developer

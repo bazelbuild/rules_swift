@@ -7,10 +7,12 @@ swift_binary(
     name = "test_discoverer",
     srcs = [
         "DiscoveredTests.swift",
+        "ObjcTestPrinter.swift",
         "SymbolCollector.swift",
+        "SymbolGraphTestPrinter.swift",
         "SymbolKitExtensions.swift",
         "TestDiscoverer.swift",
-        "TestPrinter.swift",
+        "TestPrinterCommon.swift",
     ],
     visibility = ["//visibility:public"],
 )

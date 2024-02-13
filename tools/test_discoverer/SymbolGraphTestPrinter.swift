@@ -1,4 +1,4 @@
-// Copyright 2022 The Bazel Authors. All rights reserved.
+// Copyright 2024 The Bazel Authors. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,16 +13,6 @@
 // limitations under the License.
 
 import Foundation
-
-private let availabilityAttribute = """
-  @available(*, deprecated, message: "Not actually deprecated. Marked as deprecated to allow \
-  inclusion of deprecated tests (which test deprecated functionality) without warnings.")
-  """
-
-/// Creates a text file with the given contents at a file URL.
-private func createTextFile(at url: URL, contents: String) {
-  FileManager.default.createFile(atPath: url.path, contents: contents.data(using: .utf8)!)
-}
 
 /// Returns a Swift expression used to populate the function references in the `XCTestCaseEntry`
 /// array for the given test method.
@@ -51,7 +41,7 @@ private func allTestsIdentifier(for module: DiscoveredTests.Module) -> String {
 
 /// Prints discovered test entries and a test runner as Swift source code to be compiled in order to
 /// run the tests.
-struct TestPrinter {
+struct SymbolGraphTestPrinter {
   /// The discovered tests whose entries and runner should be printed as Swift source code.
   let discoveredTests: DiscoveredTests
 
@@ -109,21 +99,19 @@ struct TestPrinter {
     contents += """
 
       \(availabilityAttribute)
-      func \(allTestsIdentifier(for: discoveredModule))() -> [XCTestCaseEntry] {
-        return [
+      func collect\(allTestsIdentifier(for: discoveredModule))(into collector: inout ShardingFilteringTestCollector) {
 
       """
 
     for className in sortedClassNames {
       let testClass = discoveredModule.classes[className]!
       contents += """
-            testCase(\(className).\(allTestsIdentifier(for: testClass))),
+          collector.addTests("\(className)", \(className).\(allTestsIdentifier(for: testClass)))
 
         """
     }
 
     contents += """
-        ]
       }
 
       """
@@ -151,38 +139,81 @@ struct TestPrinter {
       \(availabilityAttribute)
       struct Runner {
         static func main() {
-          var tests = [XCTestCaseEntry]()
+          if let xmlObserver = BazelXMLTestObserver.default {
+            XCTestObservationCenter.shared.addTestObserver(xmlObserver)
+          }
+          do {
+            var testCollector = try ShardingFilteringTestCollector()
 
       """
 
     for moduleName in discoveredTests.modules.keys.sorted() {
       let module = discoveredTests.modules[moduleName]!
       contents += """
-            tests += \(allTestsIdentifier(for: module))()
+              collect\(allTestsIdentifier(for: module))(into: &testCollector)
 
         """
     }
 
-    // Bazel's `--test_filter` flag is passed to the test binary via the `TESTBRIDGE_TEST_ONLY`
-    // environment variable. Below, we read that value if it is present and pass it to `XCTMain`,
-    // where it behaves the same as the `-XCTest` flag value in Xcode's `xctest` tool.
-    //
-    // Note that `XCTMain` treats `arguments` as an actual command line, meaning that `arguments[0]`
-    // is expected to be the binary's path. So we only do the test filter logic if we've already
-    // been passed no other arguments. This lets the test binary still support other XCTest flags
-    // like `--list-tests` or `--dump-tests-json` if the user wishes to use those directly.
+    // We don't pass the test filter as an argument because we've already filtered the tests in the
+    // collector; this lets us do better filtering (i.e., regexes) than XCTest itself allows.
     contents += """
-          if let xmlObserver = BazelXMLTestObserver.default {
-            XCTestObservationCenter.shared.addTestObserver(xmlObserver)
+            XCTMain(testCollector.testsToRun)
+          } catch {
+            print("ERROR: \\(error); exiting.")
+            exit(1)
           }
+        }
+      }
 
-          var arguments = CommandLine.arguments
-          if arguments.count == 1,
-            let testFilter = ProcessInfo.processInfo.environment["TESTBRIDGE_TEST_ONLY"]
-          {
-            arguments.append(testFilter)
+      """
+
+    contents += createShardingFilteringTestCollector(
+      extraProperties: "private(set) var testsToRun: [XCTestCaseEntry] = []\n")
+    contents += """
+      extension ShardingFilteringTestCollector {
+        mutating func addTests<T: XCTestCase>(
+          _ suiteName: String,
+          _ tests: [(String, (T) -> () -> Void)]
+        ) {
+          guard shardCount != 0 || filter != nil else {
+            // If we're not sharding or filtering, just add all the tests.
+            testsToRun.append(testCase(tests))
+            return
           }
-          XCTMain(tests, arguments: arguments)
+          var shardTests: [(String, (T) -> () -> Void)] = []
+          for test in tests {
+            guard isIncludedByFilter("\\(suiteName)/\\(test.0)") else {
+              continue
+            }
+            if seenTestCount % shardCount == shardIndex {
+              shardTests.append(test)
+            }
+            seenTestCount += 1
+          }
+          testsToRun.append(testCase(shardTests))
+        }
+
+        mutating func addTests<T: XCTestCase>(
+          _ suiteName: String,
+          _ tests: [(String, (T) -> () throws -> Void)]
+        ) {
+          guard shardCount != 0 || filter != nil else {
+            // If we're not sharding or filtering, just add all the tests.
+            testsToRun.append(testCase(tests))
+            return
+          }
+          var shardTests: [(String, (T) -> () throws -> Void)] = []
+          for test in tests {
+            guard isIncludedByFilter("\\(suiteName)/\\(test.0)") else {
+              continue
+            }
+            if seenTestCount % shardCount == shardIndex {
+              shardTests.append(test)
+            }
+            seenTestCount += 1
+          }
+          testsToRun.append(testCase(shardTests))
         }
       }
 

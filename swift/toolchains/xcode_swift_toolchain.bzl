@@ -230,6 +230,43 @@ def _swift_linkopts_cc_info(
         ),
     )
 
+def _test_linking_context(apple_toolchain, target_triple, toolchain_label):
+    """Returns a `CcLinkingContext` containing linker flags for test binaries.
+
+    Args:
+        apple_toolchain: The `apple_common.apple_toolchain()` object.
+        target_triple: The target triple `struct`.
+        toolchain_label: The label of the Swift toolchain that will act as the
+            owner of the linker input propagating the flags.
+
+    Returns:
+        A `CcLinkingContext` that will provide linker flags to `swift_test`
+        binaries.
+    """
+    platform_developer_framework_dir = _platform_developer_framework_dir(
+        apple_toolchain,
+        target_triple,
+    )
+
+    linkopts = []
+    if platform_developer_framework_dir:
+        linkopts.extend([
+            "-Wl,-rpath,{}".format(path)
+            for path in compact([
+                _swift_developer_lib_dir(platform_developer_framework_dir),
+                platform_developer_framework_dir,
+            ])
+        ])
+
+    return cc_common.create_linking_context(
+        linker_inputs = depset([
+            cc_common.create_linker_input(
+                owner = toolchain_label,
+                user_link_flags = depset(linkopts),
+            ),
+        ]),
+    )
+
 def _make_resource_directory_configurator(developer_dir):
     """Makes a configurator for resource-directory-related compiler flags.
 
@@ -562,6 +599,11 @@ def _xcode_swift_toolchain_impl(ctx):
         target_triple = target_triple,
         toolchain_label = ctx.label,
     )
+    test_linking_context = _test_linking_context(
+        apple_toolchain = apple_toolchain,
+        target_triple = target_triple,
+        toolchain_label = ctx.label,
+    )
 
     # `--define=SWIFT_USE_TOOLCHAIN_ROOT=<path>` is a rapid development feature
     # that lets you build *just* a custom `swift` driver (and `swiftc`
@@ -671,9 +713,11 @@ def _xcode_swift_toolchain_impl(ctx):
         requested_features = requested_features,
         swift_worker = ctx.executable._worker,
         test_configuration = struct(
+            binary_name = "{name}.xctest/Contents/MacOS/{name}",
             env = env,
             execution_requirements = execution_requirements,
-            uses_xctest_bundles = True,
+            objc_test_discovery = True,
+            test_linking_contexts = [test_linking_context],
         ),
         tool_configs = all_tool_configs,
         unsupported_features = ctx.disabled_features + [
