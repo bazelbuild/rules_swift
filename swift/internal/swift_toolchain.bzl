@@ -274,11 +274,6 @@ def _swift_toolchain_impl(ctx):
     toolchain_root = ctx.attr.root
     cc_toolchain = find_cpp_toolchain(ctx)
 
-    if "clang" not in cc_toolchain.compiler:
-        fail("Swift requires the configured CC toolchain to be LLVM (clang). " +
-             "Either use the locally installed LLVM by setting `CC=clang` in your environment " +
-             "before invoking Bazel, or configure a Bazel LLVM CC toolchain.")
-
     if ctx.attr.os == "windows":
         swift_linkopts_cc_info = _swift_windows_linkopts_cc_info(
             ctx.attr.arch,
@@ -450,7 +445,7 @@ configuration options that are applied to targets on a per-package basis.
                 allow_single_file = True,
             ),
             "_cc_toolchain": attr.label(
-                default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
+                default = Label("@build_bazel_rules_swift_local_cc_config//:toolchain"),
                 doc = """\
 The C++ toolchain from which other tools needed by the Swift toolchain (such as
 `clang` and `ar`) will be retrieved.

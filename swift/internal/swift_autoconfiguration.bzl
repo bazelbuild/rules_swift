@@ -24,6 +24,12 @@ should be loaded here. Do not load anything else, even common libraries like
 Skylib.
 """
 
+load("@bazel_tools//tools/cpp:unix_cc_configure.bzl", "configure_unix_toolchain")
+load("@bazel_tools//tools/cpp:windows_cc_configure.bzl", "configure_windows_toolchain")
+load(
+    "@bazel_tools//tools/cpp:lib_cc_configure.bzl",
+    "get_cpu_value",
+)
 load(
     "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_CODEVIEW_DEBUG_INFO",
@@ -256,6 +262,63 @@ def _normalized_linux_cpu(cpu):
         return "x86_64"
     return cpu
 
+def _toolchain_root(repository_ctx):
+    path_to_swiftc = repository_ctx.which("swiftc")
+    if not path_to_swiftc:
+        fail("No 'swiftc' executable found in $PATH")
+    return path_to_swiftc.dirname
+
+def _create_xcode_cc_toolchain(repository_ctx):
+    """Creates BUILD alias for the C++ toolchain provided by apple_support
+
+    Args:
+      repository_ctx: The repository rule context.
+    """
+
+    repository_ctx.file("BUILD", """
+alias(
+    name = "toolchain",
+    actual = "@local_config_apple_cc//:toolchain",
+    visibility = ["//visibility:public"]
+)
+        """)
+
+def _toolchain_overriden_tools(toolchain_root, extension = ""):
+    tools = {
+        "ld": toolchain_root.get_child("lld" + extension),
+        "llvm-cov": toolchain_root.get_child("llvm-cov" + extension),
+        "llvm-profdata": toolchain_root.get_child("llvm-profdata" + extension),
+        "cpp": toolchain_root.get_child("clang-cpp" + extension),
+        "gcc": toolchain_root.get_child("clang" + extension),
+    }
+
+    # llvm-ar is not shipped before Swift 5.8
+    ar = toolchain_root.get_child("llvm-ar" + extension)
+    if ar.exists:
+        tools["ar"] = ar
+    return tools
+
+def _create_linux_cc_toolchain(repository_ctx):
+    """Creates BUILD targets for the Swift-provided C++ toolchain on Linux.
+
+    Args:
+      repository_ctx: The repository rule context.
+    """
+
+    toolchain_root = _toolchain_root(repository_ctx)
+    cpu = get_cpu_value(repository_ctx)
+    configure_unix_toolchain(repository_ctx, cpu, overriden_tools = _toolchain_overriden_tools(toolchain_root))
+
+def _create_windows_cc_toolchain(repository_ctx):
+    """Creates BUILD targets for the Swift-provided C++ toolchain on Windows.
+
+    Args:
+      repository_ctx: The repository rule context.
+    """
+
+    toolchain_root = _toolchain_root(repository_ctx)
+    configure_windows_toolchain(repository_ctx, overriden_tools = _toolchain_overriden_tools(toolchain_root, ".exe"))
+
 def _create_linux_toolchain(repository_ctx):
     """Creates BUILD targets for the Swift toolchain on Linux.
 
@@ -266,6 +329,7 @@ def _create_linux_toolchain(repository_ctx):
     if not path_to_swiftc:
         fail("No 'swiftc' executable found in $PATH")
 
+    toolchain_root = _toolchain_root(repository_ctx)
     root = path_to_swiftc.dirname.dirname
     feature_values = _compute_feature_values(repository_ctx, path_to_swiftc)
     version_file = _write_swift_version(repository_ctx, path_to_swiftc)
@@ -306,6 +370,7 @@ swift_toolchain(
                 for feature in feature_values
             ]),
             root = root,
+            toolchain_root = toolchain_root,
             version_file = version_file,
         ),
     )
@@ -421,10 +486,16 @@ swift_toolchain(
         ),
     )
 
+def _swift_cc_autoconfiguration_impl(repository_ctx):
+    os_name = repository_ctx.os.name.lower()
+    if os_name.startswith("mac os"):
+        _create_xcode_cc_toolchain(repository_ctx)
+    elif os_name.startswith("windows"):
+        _create_windows_cc_toolchain(repository_ctx)
+    else:
+        _create_linux_cc_toolchain(repository_ctx)
+
 def _swift_autoconfiguration_impl(repository_ctx):
-    # TODO(allevato): This is expedient and fragile. Use the
-    # platforms/toolchains APIs instead to define proper toolchains, and make it
-    # possible to support non-Xcode toolchains on macOS as well.
     os_name = repository_ctx.os.name.lower()
     if os_name.startswith("mac os"):
         _create_xcode_toolchain(repository_ctx)
@@ -432,6 +503,12 @@ def _swift_autoconfiguration_impl(repository_ctx):
         _create_windows_toolchain(repository_ctx)
     else:
         _create_linux_toolchain(repository_ctx)
+
+swift_cc_autoconfiguration = repository_rule(
+    environ = ["PATH"],
+    implementation = _swift_cc_autoconfiguration_impl,
+    local = True,
+)
 
 swift_autoconfiguration = repository_rule(
     environ = ["CC", "PATH", "ProgramData", "Path"],

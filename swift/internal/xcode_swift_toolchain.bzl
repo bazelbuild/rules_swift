@@ -800,7 +800,7 @@ configuration options that are applied to targets on a per-package basis.
                 providers = [[SwiftPackageConfigurationInfo]],
             ),
             "_cc_toolchain": attr.label(
-                default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
+                default = Label("@build_bazel_rules_swift_local_cc_config//:toolchain"),
                 doc = """\
 The C++ toolchain from which linking flags and other tools needed by the Swift
 toolchain (such as `clang`) will be retrieved.
