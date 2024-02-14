@@ -75,10 +75,14 @@ func createShardingFilteringTestCollector(extraProperties: String = "") -> Strin
       private func isIncludedByFilter(_ testName: String) -> Bool {
         guard let filter = self.filter else { return true }
         do {
-          return try filter.wholeMatch(in: testName) != nil
+          return try filter.firstMatch(in: testName) != nil
         } catch {
           return false
         }
+      }
+
+      private func isIncludedInShard() -> Bool {
+        return shardCount == 0 || seenTestCount % shardCount == shardIndex
       }
     }
 

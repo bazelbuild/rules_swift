@@ -67,7 +67,7 @@ struct ObjcTestPrinter {
               guard isIncludedByFilter(nameForFiltering(of: test)) else {
                 break
               }
-              if seenTestCount % shardCount == shardIndex {
+              if isIncludedInShard() {
                 shardedSuite.addTest(test)
               }
               seenTestCount += 1
