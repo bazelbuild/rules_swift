@@ -28,12 +28,33 @@ proto_library(
     ],
 )
 
+proto_library(
+    name = "message_3_proto",
+    srcs = [
+        "message_3.proto",
+    ],
+    deps = [
+        ":message_2_proto",
+    ],
+)
+
 swift_proto_library(
-    name = "messages_swift_proto",
-    module_name = "Messages",
+    name = "messages_1_2_swift_proto",
+    module_name = "Messages_1_2",
     protos = [
         ":message_1_proto",
         ":message_2_proto",
+    ],
+)
+
+swift_proto_library(
+    name = "messages_3_swift_proto",
+    module_name = "Messages_3",
+    protos = [
+        ":message_3_proto",
+    ],
+    deps = [
+        ":messages_1_2_swift_proto",
     ],
 )
 
@@ -43,6 +64,7 @@ swift_binary(
         "main.swift",
     ],
     deps = [
-        ":messages_swift_proto",
+        ":messages_1_2_swift_proto",
+        ":messages_3_swift_proto",
     ],
 )
