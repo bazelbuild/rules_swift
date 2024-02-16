@@ -44,28 +44,15 @@ def _action_command_line_test_impl(ctx):
         )
         return analysistest.end(env)
     if len(matching_actions) != 1:
-        # This is a hack to avoid CppLink meaning binary linking and static
-        # library archiving https://github.com/bazelbuild/bazel/pull/15060
-        if mnemonic == "CppLink" and len(matching_actions) == 2:
-            matching_actions = [
-                action
-                for action in matching_actions
-                if action.argv[0] not in [
-                    "/usr/bin/ar",
-                    "external/local_config_cc/libtool",
-                    "external/local_config_apple_cc/libtool",
-                ]
-            ]
-        if len(matching_actions) != 1:
-            unittest.fail(
-                env,
-                ("Expected exactly one action with the mnemonic '{}', " +
-                 "but found {}.").format(
-                    mnemonic,
-                    len(matching_actions),
-                ),
-            )
-            return analysistest.end(env)
+        unittest.fail(
+            env,
+            ("Expected exactly one action with the mnemonic '{}', " +
+             "but found {}.").format(
+                mnemonic,
+                len(matching_actions),
+            ),
+        )
+        return analysistest.end(env)
 
     action = matching_actions[0]
     message_prefix = "In {} action for target '{}', ".format(
