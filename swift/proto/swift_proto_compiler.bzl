@@ -264,8 +264,8 @@ swift_proto_compiler = rule(
             default = [],
             doc = """\
             List of targets providing SwiftInfo and CcInfo.
-            These are added as implicit dependencies for any swift_proto_library using this
-            compiler. Typically, these are Well Known Types and proto runtime libraries.
+            Added as implicit dependencies for any swift_proto_library using this compiler.
+            Typically, these are Well Known Types and proto runtime libraries.
             """,
             providers = [SwiftInfo],
         ),
