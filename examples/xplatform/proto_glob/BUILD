@@ -18,7 +18,7 @@ proto_library(
 
 swift_proto_library(
     name = "proto_glob_swift",
-    additional_plugin_options = {
+    additional_compiler_info = {
         "FileNaming": "PathToUnderscores",
     },
     protos = [":proto_glob"],

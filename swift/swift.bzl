@@ -44,6 +44,8 @@ load(
     "@build_bazel_rules_swift//swift/internal:providers.bzl",
     _DeprecatedSwiftGRPCInfo = "SwiftGRPCInfo",
     _SwiftInfo = "SwiftInfo",
+    _SwiftProtoCompilerInfo = "SwiftProtoCompilerInfo",
+    _SwiftProtoImportInfo = "SwiftProtoImportInfo",
     _SwiftProtoInfo = "SwiftProtoInfo",
     _SwiftToolchainInfo = "SwiftToolchainInfo",
     _SwiftUsageInfo = "SwiftUsageInfo",
@@ -129,7 +131,9 @@ swift_proto_library = _deprecated_swift_proto_library
 swift_grpc_library = _deprecated_swift_grpc_library
 SwiftGRPCInfo = _DeprecatedSwiftGRPCInfo
 
-# New swift proto rule:
+# Swift proto rule:
+SwiftProtoImportInfo = _SwiftProtoImportInfo
+SwiftProtoCompilerInfo = _SwiftProtoCompilerInfo
 swift_proto_compiler = _swift_proto_compiler
 new_swift_proto_library = _swift_proto_library
 

@@ -37,7 +37,7 @@ proto_library(
 
 swift_proto_library(
     name = "example_path_to_underscores_proto_swift",
-    additional_plugin_options = {
+    additional_compiler_info = {
         "FileNaming": "PathToUnderscores",
     },
     protos = [":example_path_to_underscores_proto"],

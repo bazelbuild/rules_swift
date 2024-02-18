@@ -39,6 +39,8 @@ load(
 load(
     "//swift/internal:providers.bzl",
     "SwiftInfo",
+    "SwiftProtoCompilerInfo",
+    "SwiftProtoImportInfo",
     "SwiftProtoInfo",
     "SwiftToolchainInfo",
 )
@@ -57,23 +59,8 @@ load(
     "include_developer_search_paths",
 )
 load(
-    ":swift_proto_compiler.bzl",
-    "SwiftProtoCompilerInfo",
-)
-load(
     ":swift_proto_utils.bzl",
     "proto_path",
-)
-
-# Provider
-
-SwiftProtoImportInfo = provider(
-    doc = """
-    Information aggregated by the Swift proto library aspect.
-    """,
-    fields = {
-        "imports": "Depset of proto source files from the ProtoInfo providers in the protos attributes of swift_proto_library dependencies.",
-    },
 )
 
 # Private
@@ -157,11 +144,11 @@ def _swift_proto_library_impl(ctx):
     generated_swift_srcs = []
     for swift_proto_compiler_target in ctx.attr.compilers:
         swift_proto_compiler_info = swift_proto_compiler_target[SwiftProtoCompilerInfo]
-        compiler_deps.extend(swift_proto_compiler_info.deps)
+        compiler_deps.extend(swift_proto_compiler_info.compiler_deps)
         generated_swift_srcs.extend(swift_proto_compiler_info.compile(
             ctx,
             swift_proto_compiler_info = swift_proto_compiler_info,
-            additional_plugin_options = ctx.attr.additional_plugin_options,
+            additional_compiler_info = ctx.attr.additional_compiler_info,
             proto_infos = [d[ProtoInfo] for d in ctx.attr.protos],
             imports = imports,
         ))
@@ -287,21 +274,21 @@ swift_proto_library = rule(
                 default = [],
                 doc = """\
                 List of additional dependencies required by the generated Swift code at compile time, 
-                but ignored by the Swift proto compiler.
+                but ignored by the aspect that collects the transitive `SwiftProtoImportInfo` providers.
                 """,
             ),
-            "additional_plugin_options": attr.string_dict(
+            "additional_compiler_info": attr.string_dict(
                 default = {},
                 doc = """\
-                Dictionary of additional proto compiler plugin options for this target.
-                These are applied on top of the default `plugin_options` for the compiler plugin.
-                See the documentation of `plugin_options` on `swift_proto_compiler` for more information.
+                Dictionary of additional information passed to the compiler targets.
+                See the documentation of the respective compiler rules for more information
+                on which fields are accepted and how they are used.
                 """,
             ),
         },
     ),
     doc = """\
-    Generates a Swift library from protocol buffer sources.
+    Generates a Swift static library from one or more targets producing `ProtoInfo`.
 
     ```python
     proto_library(
@@ -315,9 +302,8 @@ swift_proto_library = rule(
     )
     ```
 
-    You should have one proto_library and one swift_proto_library per proto package.
-    If your protos depend on protos from other packages, add a dependency between
-    the swift_proto_library targets which mirrors the dependency between the proto targets.
+    If your protos depend on protos from other targets, add dependencies between the 
+    swift_proto_library targets which mirror the dependencies between the proto targets.
 
     ```python
     proto_library(

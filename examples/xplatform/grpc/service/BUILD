@@ -39,7 +39,7 @@ swift_proto_library(
     additional_compiler_deps = [
         "//examples/xplatform/grpc/service:service_client_swift_proto",
     ],
-    additional_plugin_options = {
+    additional_compiler_info = {
         "ExtraModuleImports": "ServiceClient",
     },
     compilers = [

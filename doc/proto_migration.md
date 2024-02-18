@@ -218,7 +218,7 @@ swift_proto_library(
 
 swift_proto_library(
     name = "service_test_client_swift_proto",
-    additional_plugin_options = {
+    additional_compiler_info = {
         "ExtraModuleImports": "examples_xplatform_grpc_service_client_swift_proto",
     },
     compiler_deps = [
