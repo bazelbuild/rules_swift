@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-Defines a rule for compiling Swift source files from proto_libraries.
+Defines a rule for compiling Swift source files from ProtoInfo providers.
 """
 
 load(
@@ -97,7 +97,7 @@ def _swift_proto_compile(ctx, swift_proto_compiler_info, additional_compiler_inf
                 continue
             proto_paths[path] = proto_src
 
-            # Declare the proto file that will be generated:
+            # Declare the Swift source files that will be generated:
             suffixes = swift_proto_compiler_info.internal.suffixes
             for suffix in suffixes:
                 output_directory_relative_swift_src_path = paths.replace_extension(path, suffix)

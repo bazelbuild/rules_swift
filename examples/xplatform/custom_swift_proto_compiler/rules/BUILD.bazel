@@ -1,0 +1,6 @@
+
+sh_binary(
+    name = "custom_swift_proto_compiler",
+    srcs = ["custom_swift_proto_compiler.sh"],
+    visibility = ["//examples/xplatform/custom_swift_proto_compiler/rules:__subpackages__"],
+)
