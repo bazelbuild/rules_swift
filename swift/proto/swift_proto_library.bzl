@@ -40,7 +40,6 @@ load(
     "//swift/internal:providers.bzl",
     "SwiftInfo",
     "SwiftProtoCompilerInfo",
-    "SwiftProtoImportInfo",
     "SwiftProtoInfo",
     "SwiftToolchainInfo",
 )
@@ -59,7 +58,7 @@ load(
     "include_developer_search_paths",
 )
 load(
-    "//swift/proto/internal:swift_proto_utils.bzl",
+    "//swift/proto:swift_proto_utils.bzl",
     "proto_path",
 )
 
@@ -76,7 +75,7 @@ def _get_module_name(attr, target_label):
         module_name = swift_common.derive_module_name(target_label)
     return module_name
 
-def _get_imports(attr, module_name):
+def _get_module_mappings(attr, module_name):
     """Creates a depset of proto sources, ProtoInfo providers, and module names.
 
     The direct dependencies come from the protos attribute,
@@ -87,41 +86,22 @@ def _get_imports(attr, module_name):
 
     # Collect the direct proto source files from the proto deps:
     proto_deps = getattr(attr, "protos", [])
-    direct_imports = dict()
+    direct_module_mappings = dict()
     for proto_dep in proto_deps:
         for proto_src in proto_dep[ProtoInfo].check_deps_sources.to_list():
             path = proto_path(proto_src, proto_dep[ProtoInfo])
-            direct_imports["{}={}".format(path, module_name)] = True
+            direct_module_mappings["{}={}".format(path, module_name)] = True
 
     # Collect the transitive proto source files from the aspect-augmented deps:
     deps = getattr(attr, "deps", [])
-    transitive_imports = [
-        dep[SwiftProtoImportInfo].imports
+    transitive_module_mappings = [
+        dep[SwiftProtoInfo].module_mappings
         for dep in deps
-        if SwiftProtoImportInfo in dep
+        if SwiftProtoInfo in dep
     ]
 
     # Create a depset of the direct + transitive proto imports:
-    return depset(direct = direct_imports.keys(), transitive = transitive_imports)
-
-# Aspect
-
-def _swift_proto_library_aspect_impl(target, aspect_ctx):
-    module_name = _get_module_name(aspect_ctx.rule.attr, target.label)
-    imports = _get_imports(aspect_ctx.rule.attr, module_name)
-    return [SwiftProtoImportInfo(imports = imports)]
-
-_swift_proto_library_aspect = aspect(
-    _swift_proto_library_aspect_impl,
-    attr_aspects = [
-        "deps",
-    ],
-    doc = """\
-    Traverses the deps attributes of the swift_proto_library targets,
-    and creates a depset from their respective protos attributes as well as their
-    module names.
-    """,
-)
+    return depset(direct = direct_module_mappings.keys(), transitive = transitive_module_mappings)
 
 # Rule
 
@@ -137,7 +117,7 @@ def _swift_proto_library_impl(ctx):
 
     # Get the module name and gather the depset of imports and module names:
     module_name = _get_module_name(ctx.attr, ctx.label)
-    imports = _get_imports(ctx.attr, module_name)
+    module_mappings = _get_module_mappings(ctx.attr, module_name)
 
     # Use the proto compiler to compile the swift sources for the proto deps:
     compiler_deps = [d for d in ctx.attr.additional_compiler_deps]
@@ -150,7 +130,7 @@ def _swift_proto_library_impl(ctx):
             swift_proto_compiler_info = swift_proto_compiler_info,
             additional_compiler_info = ctx.attr.additional_compiler_info,
             proto_infos = [d[ProtoInfo] for d in ctx.attr.protos],
-            imports = imports,
+            module_mappings = module_mappings,
         ))
 
     # Collect the dependencies for the compile action:
@@ -220,7 +200,12 @@ def _swift_proto_library_impl(ctx):
         ),
         SwiftProtoInfo(
             module_name = module_name,
-            generated_swift_srcs = generated_swift_srcs,
+            module_mappings = module_mappings,
+            direct_pbswift_files = generated_swift_srcs,
+            pbswift_files = depset(
+                direct = generated_swift_srcs,
+                transitive = [dep[SwiftProtoInfo].pbswift_files for dep in deps if SwiftProtoInfo in dep],
+            ),
         ),
     ]
 
@@ -246,7 +231,6 @@ swift_proto_library = rule(
     attrs = dicts.add(
         swift_common.library_rule_attrs(
             additional_deps_aspects = [
-                _swift_proto_library_aspect,
                 swift_clang_module_aspect,
             ],
             requires_srcs = False,
@@ -274,7 +258,7 @@ from which the Swift protos will be generated.
                 default = [],
                 doc = """\
 List of additional dependencies required by the generated Swift code at compile time, 
-but ignored by the aspect that collects the transitive `SwiftProtoImportInfo` providers.
+whose SwiftProtoInfo will be ignored.
 """,
             ),
             "additional_compiler_info": attr.string_dict(

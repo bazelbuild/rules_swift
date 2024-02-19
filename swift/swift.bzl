@@ -45,7 +45,6 @@ load(
     _DeprecatedSwiftGRPCInfo = "SwiftGRPCInfo",
     _SwiftInfo = "SwiftInfo",
     _SwiftProtoCompilerInfo = "SwiftProtoCompilerInfo",
-    _SwiftProtoImportInfo = "SwiftProtoImportInfo",
     _SwiftProtoInfo = "SwiftProtoInfo",
     _SwiftToolchainInfo = "SwiftToolchainInfo",
     _SwiftUsageInfo = "SwiftUsageInfo",
@@ -104,7 +103,7 @@ load(
     _swift_proto_library = "swift_proto_library",
 )
 load(
-    "@build_bazel_rules_swift//swift/proto/internal:swift_proto_utils.bzl",
+    "@build_bazel_rules_swift//swift/proto:swift_proto_utils.bzl",
     _swift_proto_common = "swift_proto_common",
 )
 
@@ -136,7 +135,6 @@ swift_grpc_library = _deprecated_swift_grpc_library
 SwiftGRPCInfo = _DeprecatedSwiftGRPCInfo
 
 # Swift proto rule:
-SwiftProtoImportInfo = _SwiftProtoImportInfo
 SwiftProtoCompilerInfo = _SwiftProtoCompilerInfo
 swift_proto_compiler = _swift_proto_compiler
 new_swift_proto_library = _swift_proto_library
