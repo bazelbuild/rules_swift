@@ -254,15 +254,15 @@ swift_proto_library = rule(
         {
             "protos": attr.label_list(
                 doc = """\
-Exactly one `proto_library` target (or a target producing `ProtoInfo`),
-from which the Swift library should be generated.
+A list of `proto_library` targets (or targets producing `ProtoInfo`),
+from which the Swift source files should be generated.
 """,
                 providers = [ProtoInfo],
             ),
             "compilers": attr.label_list(
                 default = ["//proto/compilers:swift_proto"],
                 doc = """\
-One or more `swift_proto_compiler` target (or a target producing `SwiftProtoCompilerInfo`),
+One or more `swift_proto_compiler` target (or targets producing `SwiftProtoCompilerInfo`),
 from which the Swift protos will be generated.
 """,
                 providers = [SwiftProtoCompilerInfo],
