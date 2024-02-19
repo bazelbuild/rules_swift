@@ -246,3 +246,19 @@ The alternative recommended by the `grpc-swift` authors is to register a mock se
 
 As consumers raise questions during their migrations to the new `swift_proto_library` rule,
 we will add their answers here as a reference.
+
+### Can I group protos to reduce number of modules?
+
+Yes, the new rule does not enforce any specific mapping of protos or proto packages to swift modules.
+You can compile each proto into a separate swift module, group protos into modules based on packages,
+or just compile all of your protos into one large module. 
+
+### Can I use a completely custom protobuf compiler?
+
+Yes, you can use an arbitrary non-protoc Swift protobuf compiler by implementing your own rule 
+which provides `SwiftProtoCompilerInfo`, and passing this to the `swift_proto_library` target's
+`compilers` attribute. 
+
+The only real requirement is that it has a function wich accepts a list of `ProtoInfo` providers,
+and produces a list Swift source files from these which the `swift_proto_library` rule compiles.
+See `//examples/xplatform/custom_swift_proto_compiler/compile` for an example of how to do this.
