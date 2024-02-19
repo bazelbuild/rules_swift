@@ -254,17 +254,17 @@ swift_proto_library = rule(
         {
             "protos": attr.label_list(
                 doc = """\
-                Exactly one `proto_library` target (or a target producing `ProtoInfo`),
-                from which the Swift library should be generated.
-                """,
+Exactly one `proto_library` target (or a target producing `ProtoInfo`),
+from which the Swift library should be generated.
+""",
                 providers = [ProtoInfo],
             ),
             "compilers": attr.label_list(
                 default = ["//proto/compilers:swift_proto"],
                 doc = """\
-                One or more `swift_proto_compiler` target (or a target producing `SwiftProtoCompilerInfo`),
-                from which the Swift protos will be generated.
-                """,
+One or more `swift_proto_compiler` target (or a target producing `SwiftProtoCompilerInfo`),
+from which the Swift protos will be generated.
+""",
                 providers = [SwiftProtoCompilerInfo],
             ),
             "additional_compiler_deps": swift_deps_attr(
@@ -273,52 +273,58 @@ swift_proto_library = rule(
                 ],
                 default = [],
                 doc = """\
-                List of additional dependencies required by the generated Swift code at compile time, 
-                but ignored by the aspect that collects the transitive `SwiftProtoImportInfo` providers.
-                """,
+List of additional dependencies required by the generated Swift code at compile time, 
+but ignored by the aspect that collects the transitive `SwiftProtoImportInfo` providers.
+""",
             ),
             "additional_compiler_info": attr.string_dict(
                 default = {},
                 doc = """\
-                Dictionary of additional information passed to the compiler targets.
-                See the documentation of the respective compiler rules for more information
-                on which fields are accepted and how they are used.
-                """,
+Dictionary of additional information passed to the compiler targets.
+See the documentation of the respective compiler rules for more information
+on which fields are accepted and how they are used.
+""",
             ),
         },
     ),
     doc = """\
-    Generates a Swift static library from one or more targets producing `ProtoInfo`.
+Generates a Swift static library from one or more targets producing `ProtoInfo`.
 
-    ```python
-    proto_library(
-        name = "foo",
-        srcs = ["foo.proto"],
-    )
+```python
+load("//proto:proto.bzl", "swift_proto_library")
+load("@rules_proto//proto:defs.bzl", "proto_library")
 
-    swift_proto_library(
-        name = "foo_swift",
-        protos = [":foo"],
-    )
-    ```
+proto_library(
+    name = "foo",
+    srcs = ["foo.proto"],
+)
 
-    If your protos depend on protos from other targets, add dependencies between the 
-    swift_proto_library targets which mirror the dependencies between the proto targets.
+swift_proto_library(
+    name = "foo_swift",
+    protos = [":foo"],
+)
+```
 
-    ```python
-    proto_library(
-        name = "bar",
-        srcs = ["bar.proto"],
-        deps = [":foo"],
-    )
+If your protos depend on protos from other targets, add dependencies between the 
+swift_proto_library targets which mirror the dependencies between the proto targets.
 
-    swift_proto_library(
-        name = "bar_swift",
-        protos = [":bar"],
-        deps = [":foo_swift"],
-    )
-    ```
-    """,
+```python
+load("//proto:proto.bzl", "swift_proto_library")
+load("@rules_proto//proto:defs.bzl", "proto_library")
+
+proto_library(
+    name = "bar",
+    srcs = ["bar.proto"],
+    deps = [":foo"],
+)
+
+swift_proto_library(
+    name = "bar_swift",
+    protos = [":bar"],
+    deps = [":foo_swift"],
+)
+```
+""",
     fragments = ["cpp"],
     implementation = _swift_proto_library_impl,
 )

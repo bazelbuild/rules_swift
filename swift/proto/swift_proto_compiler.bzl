@@ -263,115 +263,105 @@ swift_proto_compiler = rule(
         "deps": attr.label_list(
             default = [],
             doc = """\
-            List of targets providing SwiftInfo and CcInfo.
-            Added as implicit dependencies for any swift_proto_library using this compiler.
-            Typically, these are Well Known Types and proto runtime libraries.
-            """,
+List of targets providing SwiftInfo and CcInfo.
+Added as implicit dependencies for any swift_proto_library using this compiler.
+Typically, these are Well Known Types and proto runtime libraries.
+""",
             providers = [SwiftInfo],
         ),
         "protoc": attr.label(
             doc = """\
-            A proto compiler executable binary.
-            
-            E.g.
-            "//tools/protoc_wrapper:protoc"
+A proto compiler executable binary.
 
-            We provide two compiler targets:
-            "//swift/proto:swift_proto"
-            "//swift/proto:swift_grpc"
-
-            These targets use this attribute to configure protoc with their respective proto compiler.
-            """,
+E.g.
+"//tools/protoc_wrapper:protoc"
+""",
             mandatory = True,
             executable = True,
             cfg = "exec",
         ),
         "plugin": attr.label(
             doc = """\
-            A proto compiler plugin executable binary.
-            
-            E.g.
-            "//tools/protoc_wrapper:protoc-gen-grpc-swift"
-            "//tools/protoc_wrapper:ProtoCompilerPlugin"
+A proto compiler plugin executable binary.
 
-            We provide two compiler targets:
-            "//swift/proto:swift_proto"
-            "//swift/proto:swift_grpc"
-
-            These targets use this attribute to configure protoc with their respective plugins.
-            """,
+For example:
+"//tools/protoc_wrapper:protoc-gen-grpc-swift"
+"//tools/protoc_wrapper:ProtoCompilerPlugin"
+""",
             mandatory = True,
             executable = True,
             cfg = "exec",
         ),
         "plugin_name": attr.string(
             doc = """\
-            Name of the proto compiler plugin passed to protoc. E.g.:
+Name of the proto compiler plugin passed to protoc. 
 
-            ```
-            protoc \
-                --plugin=protoc-gen-NAME=path/to/plugin/binary
-            ```
+For example:
 
-            This name will be used to prefix the option and output directory arguments. E.g.:
+```
+protoc \
+    --plugin=protoc-gen-NAME=path/to/plugin/binary
+```
 
-            ```
-            protoc \
-                --plugin=protoc-gen-NAME=path/to/mybinary \
-                --NAME_out=OUT_DIR \
-                --NAME_opt=Visibility=Public
-            ```
+This name will be used to prefix the option and output directory arguments. E.g.:
 
-            See the [protobuf API reference](https://protobuf.dev/reference/cpp/api-docs/google.protobuf.compiler.plugin) for more information.
-            """,
+```
+protoc \
+    --plugin=protoc-gen-NAME=path/to/mybinary \
+    --NAME_out=OUT_DIR \
+    --NAME_opt=Visibility=Public
+```
+
+See the [protobuf API reference](https://protobuf.dev/reference/cpp/api-docs/google.protobuf.compiler.plugin) for more information.
+""",
             mandatory = True,
         ),
         "plugin_option_allowlist": attr.string_list(
             doc = """\
-            Allowlist of options allowed by the plugin.
-            This is used to filter out any irrelevant plugin options passed down to the compiler from the library,
-            which is especially useful when using multiple plugins in combination like GRPC and SwiftProtobuf.
-            """,
+Allowlist of options allowed by the plugin.
+This is used to filter out any irrelevant plugin options passed down to the compiler from the library,
+which is especially useful when using multiple plugins in combination like GRPC and SwiftProtobuf.
+""",
             mandatory = True,
         ),
         "plugin_options": attr.string_dict(
             doc = """\
-            Dictionary of plugin options passed to the plugin.
+Dictionary of plugin options passed to the plugin.
 
-            These are prefixed with the plugin_name + "_opt". E.g.:
+These are prefixed with the plugin_name + "_opt". E.g.:
 
-            ```
-            plugin_name = "swift"
-            plugin_options = {
-                "Visibility": "Public",
-                "FileNaming": "FullPath",
-            }
-            ```
+```
+plugin_name = "swift"
+plugin_options = {
+    "Visibility": "Public",
+    "FileNaming": "FullPath",
+}
+```
 
-            Would be passed to protoc as:
+Would be passed to protoc as:
 
-            ```
-            protoc \
-                --plugin=protoc-gen-NAME=path/to/plugin/binary \
-                --NAME_opt=Visibility=Public \
-                --NAME_opt=FileNaming=FullPath
-            ```
-            """,
+```
+protoc \
+    --plugin=protoc-gen-NAME=path/to/plugin/binary \
+    --NAME_opt=Visibility=Public \
+    --NAME_opt=FileNaming=FullPath
+```
+""",
             mandatory = True,
         ),
         "suffixes": attr.string_list(
             doc = """\
-            Suffix used for Swift files generated by the plugin from protos.
+Suffix used for Swift files generated by the plugin from protos.
 
-            E.g.
+E.g.
 
-            ```
-            foo.proto => foo.pb.swift
-            foo_service.proto => foo.grpc.swift
-            ```
+```
+foo.proto => foo.pb.swift
+foo_service.proto => foo.grpc.swift
+```
 
-            Each compiler target should configure this based on the suffix applied to the generated files.
-            """,
+Each compiler target should configure this based on the suffix applied to the generated files.
+""",
             mandatory = True,
         ),
         "_copy_swift_sources_template": attr.label(
