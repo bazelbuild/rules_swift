@@ -61,7 +61,7 @@ Specifically, this issue came to a head when implementing support for proto targ
 `rules_swift_package_manager`. There was a lengthy slack conversation here on the topic:
 https://bazelbuild.slack.com/archives/CD3QY5C2X/p1692055426375909
 
-The problem was that some Swift packages like Firebase have package dependencies on protobuf
+The problem was that some Swift packages have package dependencies on protobuf
 libraries which contain the same code (though perhaps a different version) as the protobuf
 targets defined in this repository which were dependencies of those rules.
 
