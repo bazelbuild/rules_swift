@@ -26,7 +26,7 @@ load(
     "SwiftProtoCompilerInfo",
 )
 load(
-    "//swift/proto:swift_proto_utils.bzl",
+    "//swift/proto/internal:swift_proto_utils.bzl",
     "proto_path",
 )
 

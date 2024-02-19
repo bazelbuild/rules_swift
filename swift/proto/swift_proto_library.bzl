@@ -59,7 +59,7 @@ load(
     "include_developer_search_paths",
 )
 load(
-    ":swift_proto_utils.bzl",
+    "//swift/proto/internal:swift_proto_utils.bzl",
     "proto_path",
 )
 

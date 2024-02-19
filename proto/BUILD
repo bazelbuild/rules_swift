@@ -6,6 +6,6 @@ bzl_library(
     name = "proto",
     srcs = ["proto.bzl"],
     deps = [
-        "//swift:swift",
+        "//swift",
     ],
 )
