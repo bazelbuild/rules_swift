@@ -100,3 +100,9 @@ def _render_text_module_mapping(mapping):
     content += "}\n"
 
     return content
+
+# The exported `swift_proto_common` module, which defines the public API
+# for rules that compile Swift protos.
+swift_proto_common = struct(
+    proto_path = proto_path,
+)

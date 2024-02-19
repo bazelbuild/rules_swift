@@ -103,6 +103,10 @@ load(
     "@build_bazel_rules_swift//swift/proto:swift_proto_library.bzl",
     _swift_proto_library = "swift_proto_library",
 )
+load(
+    "@build_bazel_rules_swift//swift/proto/internal:swift_proto_utils.bzl",
+    _swift_proto_common = "swift_proto_common",
+)
 
 # Re-export providers.
 SwiftProtoInfo = _SwiftProtoInfo
@@ -136,6 +140,7 @@ SwiftProtoImportInfo = _SwiftProtoImportInfo
 SwiftProtoCompilerInfo = _SwiftProtoCompilerInfo
 swift_proto_compiler = _swift_proto_compiler
 new_swift_proto_library = _swift_proto_library
+swift_proto_common = _swift_proto_common
 
 # Re-export public aspects.
 swift_clang_module_aspect = _swift_clang_module_aspect

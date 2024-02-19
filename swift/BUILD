@@ -64,6 +64,7 @@ bzl_library(
         "//swift/internal:swift_usage_aspect",
         "//swift/proto:swift_proto_compiler",
         "//swift/proto:swift_proto_library",
+        "//swift/proto/internal:swift_proto_utils",
     ],
 )
 

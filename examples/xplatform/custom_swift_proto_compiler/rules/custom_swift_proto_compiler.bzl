@@ -21,13 +21,10 @@ load(
     "paths",
 )
 load(
-    "//swift/internal:providers.bzl",
+    "//swift:swift.bzl",
     "SwiftInfo",
     "SwiftProtoCompilerInfo",
-)
-load(
-    "//swift/proto/internal:swift_proto_utils.bzl",
-    "proto_path",
+    "swift_proto_common",
 )
 
 def _custom_swift_proto_compile(ctx, swift_proto_compiler_info, additional_compiler_info, proto_infos, imports):
@@ -55,7 +52,7 @@ def _custom_swift_proto_compile(ctx, swift_proto_compiler_info, additional_compi
         # about their proto sources and declare the swift files that will be generated:
         for proto_src in proto_info.check_deps_sources.to_list():
             # Derive the proto path:
-            path = proto_path(proto_src, proto_info)
+            path = swift_proto_common.proto_path(proto_src, proto_info)
             if path in proto_paths:
                 if proto_paths[path] != proto_src:
                     fail("proto files {} and {} have the same import path, {}".format(
@@ -128,7 +125,7 @@ custom_swift_proto_compiler = rule(
             doc = """\
             A proto compiler executable binary.
             """,
-            default = "//examples/xplatform/custom_swift_proto_compiler/rules:custom_swift_proto_compiler",
+            default = "//examples/xplatform/custom_swift_proto_compiler/rules:custom_proto_compiler",
             executable = True,
             cfg = "exec",
         ),
