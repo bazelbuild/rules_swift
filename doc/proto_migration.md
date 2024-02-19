@@ -24,7 +24,7 @@ This meant that a single `swift_proto_library` target could generate and and com
 for *all* of the `proto_library` targets in potentially a very large dependency graph,
 which could span across multiple repositories.
 
-In practice, though, consumers typically preferred to have a 1:1 mapping of `proto_library` to `swift_proto_library` targets.
+In practice, though, consumers typically preferred to have more control over the mapping of `proto_library` to `swift_proto_library` targets.
 Additionally, this aspect meant that the module name and other compilation options could not be configured on a per-target basis,
 since the aspect needed to be able to determine all of this information by just looking at the providers of the `proto_library` targets.
 
