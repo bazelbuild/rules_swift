@@ -5,8 +5,8 @@ load(
 
 swift_proto_library(
     name = "example_proto_swift",
-    protos = ["//examples/xplatform/custom_swift_proto_compiler/protos:example_proto"],
     compilers = [
-        "//examples/xplatform/custom_swift_proto_compiler/compiler"
-    ]
+        "//examples/xplatform/custom_swift_proto_compiler/compiler",
+    ],
+    protos = ["//examples/xplatform/custom_swift_proto_compiler/protos:example_proto"],
 )
