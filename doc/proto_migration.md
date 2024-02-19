@@ -28,8 +28,6 @@ In practice, though, consumers typically preferred to have more control over the
 Additionally, this aspect meant that the module name and other compilation options could not be configured on a per-target basis,
 since the aspect needed to be able to determine all of this information by just looking at the providers of the `proto_library` targets.
 
-This lack of flexibility was extremely frustrating, especially for consumers who wanted to assign "Swift-like" module names
-to the `swift_proto_library` modules. 
 
 Using the `deprecated_grpc` example in this repository to demonstrate,
 consumers had to import the generated service swift proto module with:
