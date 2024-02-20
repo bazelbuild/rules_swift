@@ -110,6 +110,7 @@ load(
     "get_providers",
     "merge_compilation_contexts",
     "struct_fields",
+    "owner_relative_path",
 )
 load(":vfsoverlay.bzl", "write_vfsoverlay")
 
@@ -394,6 +395,7 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
+                swift_action_names.DERIVE_FILES,
             ],
             configurators = [_constant_value_extraction_configurator],
         ),
@@ -2709,6 +2711,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
             swiftinterface = compile_outputs.swiftinterface_file,
             swiftmodule = compile_outputs.swiftmodule_file,
             swiftsourceinfo = compile_outputs.swiftsourceinfo_file,
+            const_gather_protocols = compile_outputs.const_values_files,
             symbol_graph = compile_outputs.symbol_graph_directory,
         ),
     )
@@ -3330,6 +3333,7 @@ def _declare_multiple_outputs_and_write_output_file_map(
 
     # AST files that are available in the swift_ast_file output group
     ast_files = []
+
     if extract_const_values and is_wmo:
         const_value_file = actions.declare_file(
             "{}.swiftconstvalues".format(target_name),
@@ -3339,6 +3343,17 @@ def _declare_multiple_outputs_and_write_output_file_map(
 
     for src in srcs:
         src_output_map = {}
+
+        if extract_const_values and not is_wmo:
+            objs_dir = "{}_objs".format(target_name)
+            owner_rel_path = owner_relative_path(src).replace(" ", "__SPACE__")
+            basename = paths.basename(src.path)
+            dirname = paths.join(objs_dir, paths.dirname(owner_rel_path))
+            const_values_file = actions.declare_file(
+                paths.join(dirname, "{}.swiftconstvalues".format(basename))
+            )
+            const_values_files.append(const_values_file)
+            src_output_map["const-values"] = const_values_file.path
 
         if emits_bc:
             # Declare the llvm bc file (there is one per source file).
@@ -3464,10 +3479,9 @@ def output_groups_from_other_compilation_outputs(*, other_compilation_outputs):
         ])
 
     if other_compilation_outputs.const_values_files:
-        if other_compilation_outputs.const_values_files:
-            output_groups["const_values"] = depset([
-                other_compilation_outputs.const_values_files,
-            ])
+        output_groups["const_values"] = depset(
+            other_compilation_outputs.const_values_files,
+        )
 
     return output_groups
 
@@ -3635,6 +3649,20 @@ def _maybe_create_const_protocols_file(actions, swift_infos, target_name):
                 module_context.const_gather_protocols,
             )
 
+    # TODO: remove hack, I picked these from Xcode.
+    # Not sure how rules_apple should pass these.
+    const_gather_protocols = [
+        "AppIntent",
+        "EntityQuery",
+        "AppEntity",
+        "TransientEntity",
+        "AppEnum",
+        "AppShortcutProviding",
+        "AppShortcutsProvider",
+        "AnyResolverProviding",
+        "AppIntentsPackage",
+        "DynamicOptionsProvider"
+    ]
     # If there are no protocols to extract, return early.
     if not const_gather_protocols:
         return None
