@@ -109,8 +109,8 @@ load(
     "compilation_context_for_explicit_module_compilation",
     "get_providers",
     "merge_compilation_contexts",
-    "struct_fields",
     "owner_relative_path",
+    "struct_fields",
 )
 load(":vfsoverlay.bzl", "write_vfsoverlay")
 
@@ -3350,7 +3350,7 @@ def _declare_multiple_outputs_and_write_output_file_map(
             basename = paths.basename(src.path)
             dirname = paths.join(objs_dir, paths.dirname(owner_rel_path))
             const_values_file = actions.declare_file(
-                paths.join(dirname, "{}.swiftconstvalues".format(basename))
+                paths.join(dirname, "{}.swiftconstvalues".format(basename)),
             )
             const_values_files.append(const_values_file)
             src_output_map["const-values"] = const_values_file.path
@@ -3661,8 +3661,9 @@ def _maybe_create_const_protocols_file(actions, swift_infos, target_name):
         "AppShortcutsProvider",
         "AnyResolverProviding",
         "AppIntentsPackage",
-        "DynamicOptionsProvider"
+        "DynamicOptionsProvider",
     ]
+
     # If there are no protocols to extract, return early.
     if not const_gather_protocols:
         return None
