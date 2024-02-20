@@ -65,6 +65,7 @@ def _evaluate_field(env, source, field):
         component that was not the final component, then the special value
         `_EVALUATE_FIELD_FAILED` is returned.
     """
+
     def evaluate_component(source, component):
         if types.is_dict(source):
             return source.get(component)
