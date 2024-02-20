@@ -85,11 +85,10 @@ def _custom_swift_proto_compile(ctx, swift_proto_compiler_info, additional_compi
     # Run the compiler action:
     ctx.actions.run(
         inputs = depset(
-            direct = [
-                swift_proto_compiler_info.internal.compiler,
-            ],
+            direct = [],
             transitive = [transitive_proto_srcs],
         ),
+        tools = [swift_proto_compiler_info.internal.tools],
         outputs = swift_srcs,
         mnemonic = "SwiftProtocGen",
         executable = swift_proto_compiler_info.internal.compiler,
@@ -105,6 +104,7 @@ def _custom_swift_proto_compiler_impl(ctx):
             compiler_deps = ctx.attr.deps,
             internal = struct(
                 compiler = ctx.executable._compiler,
+                tools = ctx.attr._compiler[DefaultInfo].files_to_run,
             ),
         ),
     ]
@@ -129,5 +129,13 @@ custom_swift_proto_compiler = rule(
             executable = True,
             cfg = "exec",
         ),
+        # "_plugin": attr.label(
+        #     doc = """\
+        #     A proto compiler executable binary plugin.
+        #     """,
+        #     default = "//examples/xplatform/custom_swift_proto_compiler/rules:custom_proto_compiler_plugin",
+        #     executable = True,
+        #     cfg = "exec",
+        # ),
     },
 )
