@@ -124,35 +124,7 @@ def _swift_proto_compile(ctx, swift_proto_compiler_info, additional_compiler_inf
                     permanent_output_directory_path = full_swift_src_path.removesuffix("/" + output_directory_relative_swift_src_path)
     transitive_descriptor_sets = depset(direct = [], transitive = transitive_descriptor_sets_list)
 
-    # Merge all of the proto paths to module name mappings from the imports depset:
-    merged_proto_paths_to_module_names = {}
-    module_names_to_proto_paths = {}
-    for path_to_module_name in module_mappings.to_list():
-        components = path_to_module_name.split("=")
-        path = components[0]
-        module_name = components[1]
-
-        # Ensure there are no conflicts between path to module name mappings,
-        # and avoid adding duplicate proto paths to the lists:
-        if path in merged_proto_paths_to_module_names:
-            if merged_proto_paths_to_module_names[path] != module_name:
-                fail("Conflicting module names for proto path: ", path)
-            continue
-
-        merged_proto_paths_to_module_names[path] = module_name
-        module_proto_paths = module_names_to_proto_paths[module_name] if module_name in module_names_to_proto_paths else []
-        module_proto_paths.append(path)
-        module_names_to_proto_paths[module_name] = module_proto_paths
-
     # Write the module mappings to a file:
-    module_mappings = []
-    for module_name in sorted(module_names_to_proto_paths.keys()):
-        proto_file_paths = sorted(module_names_to_proto_paths[module_name])
-        module_mapping = struct(
-            module_name = module_name,
-            proto_file_paths = proto_file_paths,
-        )
-        module_mappings.append(module_mapping)
     module_mappings_file = register_module_mapping_write_action(ctx.label.name, ctx.actions, module_mappings)
 
     # Build the arguments for protoc:

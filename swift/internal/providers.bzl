@@ -160,13 +160,10 @@ SwiftProtoInfo = provider(
 The name of the Swift module compiled from the `swift_proto_library` which produced this provider.
 """,
         "module_mappings": """\
-`depset` of `string`s. The mapping of proto paths to Swift module names.
-The strings have the format `[proto_path]=[module_name]`.
-This allows protos that reference protos in other modules to import them in generated code.
-
-In the deprecated rules, this instead contains a `list` of `struct`s. 
-Each struct contains `module_name` and `proto_file_paths` fields that denote
-the transitive mappings from `.proto` files to Swift modules.
+`list` of `struct`s. Each struct contains `module_name` and
+`proto_file_paths` fields that denote the transitive mappings from `.proto`
+files to Swift modules. This allows messages that reference messages in other
+libraries to import those modules in generated code.
 """,
         "direct_pbswift_files": """\
 `list` of `File`s. The Swift source files (e.g. `.pb.swift`) generated from the 

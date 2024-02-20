@@ -72,7 +72,7 @@ Propagates Swift-specific information about a `proto_library`.
 | Name  | Description |
 | :------------- | :------------- |
 | <a id="SwiftProtoInfo-module_name"></a>module_name |  The name of the Swift module compiled from the `swift_proto_library` which produced this provider.    |
-| <a id="SwiftProtoInfo-module_mappings"></a>module_mappings |  `depset` of `string`s. The mapping of proto paths to Swift module names. The strings have the format `[proto_path]=[module_name]`. This allows protos that reference protos in other modules to import them in generated code.<br><br>In the deprecated rules, this instead contains a `list` of `struct`s. Each struct contains `module_name` and `proto_file_paths` fields that denote the transitive mappings from `.proto` files to Swift modules.    |
+| <a id="SwiftProtoInfo-module_mappings"></a>module_mappings |  `list` of `struct`s. Each struct contains `module_name` and `proto_file_paths` fields that denote the transitive mappings from `.proto` files to Swift modules. This allows messages that reference messages in other libraries to import those modules in generated code.    |
 | <a id="SwiftProtoInfo-direct_pbswift_files"></a>direct_pbswift_files |  `list` of `File`s. The Swift source files (e.g. `.pb.swift`) generated from the `ProtoInfo` providers of the direct proto dependencies of the `swift_proto_library` target.    |
 | <a id="SwiftProtoInfo-pbswift_files"></a>pbswift_files |  `depset` of `File`s. The Swift source files (e.g. `.pb.swift`) generated from the `ProtoInfo` providers of the direct and transitive transitive proto dependencies of the `swift_proto_library` target.    |
 

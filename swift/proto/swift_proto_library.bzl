@@ -76,32 +76,34 @@ def _get_module_name(attr, target_label):
     return module_name
 
 def _get_module_mappings(attr, module_name):
-    """Creates a depset of proto sources, ProtoInfo providers, and module names.
-
-    The direct dependencies come from the protos attribute,
-    and the transitive dependencies come from an aspect over the deps attribute,
-    which extracts those same direct dependencies from the dependencies respective
-    protos attributes.
+    """Gets module mappings from the ProtoInfo and SwiftProtoInfo providers.
     """
 
-    # Collect the direct proto source files from the proto deps:
+    # Collect the direct proto source files from the proto deps and build the module mapping:
     proto_deps = getattr(attr, "protos", [])
-    direct_module_mappings = dict()
+    direct_proto_file_paths = []
     for proto_dep in proto_deps:
-        for proto_src in proto_dep[ProtoInfo].check_deps_sources.to_list():
-            path = proto_path(proto_src, proto_dep[ProtoInfo])
-            direct_module_mappings["{}={}".format(path, module_name)] = True
+        proto_info = proto_dep[ProtoInfo]
+        proto_file_paths = [
+            proto_path(proto_src, proto_info)
+            for proto_src in proto_info.check_deps_sources.to_list()
+        ]
+        direct_proto_file_paths.extend(proto_file_paths)
+    module_mapping = struct(
+        module_name = module_name,
+        proto_file_paths = direct_proto_file_paths,
+    )
 
-    # Collect the transitive proto source files from the aspect-augmented deps:
+    # Collect the transitive module mappings:
     deps = getattr(attr, "deps", [])
-    transitive_module_mappings = [
-        dep[SwiftProtoInfo].module_mappings
-        for dep in deps
-        if SwiftProtoInfo in dep
-    ]
+    transitive_module_mappings = []
+    for dep in deps:
+        if not SwiftProtoInfo in dep:
+            continue
+        transitive_module_mappings.extend(dep[SwiftProtoInfo].module_mappings)
 
-    # Create a depset of the direct + transitive proto imports:
-    return depset(direct = direct_module_mappings.keys(), transitive = transitive_module_mappings)
+    # Create a list combining the direct + transitive module mappings:
+    return [module_mapping] + transitive_module_mappings
 
 # Rule
 
