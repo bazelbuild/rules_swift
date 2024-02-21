@@ -339,3 +339,8 @@ SWIFT_FEATURE__SUPPORTS_MACROS = "swift._supports_macros"
 
 # Pass -warnings-as-errors to the compiler.
 SWIFT_FEATURE_TREAT_WARNINGS_AS_ERRORS = "swift.treat_warnings_as_errors"
+
+# A private feature that is set by the toolchain if it supports constant values
+# extraction. Users should never manually enable, disable, or query this
+# feature.
+SWIFT_FEATURE__SUPPORTS_CONST_VALUE_EXTRACTION = "swift._supports_const_value_extraction"

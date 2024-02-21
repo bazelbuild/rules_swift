@@ -82,6 +82,7 @@ load(
     "SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS",
     "SWIFT_FEATURE__SUPPORTS_MACROS",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
+    "SWIFT_FEATURE__SUPPORTS_CONST_VALUE_EXTRACTION",
 )
 load(
     ":features.bzl",
@@ -383,6 +384,7 @@ def compile_action_configs(
                 swift_action_names.DERIVE_FILES,
             ],
             configurators = [_constant_value_extraction_configurator],
+            features = [SWIFT_FEATURE__SUPPORTS_CONST_VALUE_EXTRACTION],
         ),
     ]
 
@@ -2384,11 +2386,17 @@ def compile(
         swift_toolchain.generated_header_module_implicit_deps_providers.swift_infos
     )
 
-    const_gather_protocols_file = _maybe_create_const_protocols_file(
-        actions = actions,
-        swift_infos = generated_module_deps_swift_infos,
-        target_name = target_name,
-    )
+    if is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE__SUPPORTS_CONST_VALUE_EXTRACTION,
+    ):
+        const_gather_protocols_file = _maybe_create_const_protocols_file(
+            actions = actions,
+            swift_infos = generated_module_deps_swift_infos,
+            target_name = target_name,
+        )
+    else:
+        const_gather_protocols_file = []
 
     compile_outputs, other_outputs = _declare_compile_outputs(
         srcs = srcs,
