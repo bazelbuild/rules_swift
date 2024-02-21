@@ -84,9 +84,9 @@ load(
     "SWIFT_FEATURE_USE_PCH_OUTPUT_DIR",
     "SWIFT_FEATURE_VFSOVERLAY",
     "SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS",
+    "SWIFT_FEATURE__SUPPORTS_CONST_VALUE_EXTRACTION",
     "SWIFT_FEATURE__SUPPORTS_MACROS",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
-    "SWIFT_FEATURE__SUPPORTS_CONST_VALUE_EXTRACTION",
 )
 load(
     ":features.bzl",
@@ -3647,6 +3647,7 @@ def _emitted_output_nature(feature_configuration, user_compile_flags):
 
 def _maybe_create_const_protocols_file(actions, swift_infos, target_name):
     """Create the const extraction protocols file, if necessary.
+
     Args:
         actions: The object used to register actions.
         swift_infos: A list of `SwiftInfo` providers describing the dependencies
