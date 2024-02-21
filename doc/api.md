@@ -328,7 +328,8 @@ A tuple of `(CcLinkingContext, CcLinkingOutputs)` containing the linking
 ## swift_common.create_module
 
 <pre>
-swift_common.create_module(<a href="#swift_common.create_module-name">name</a>, <a href="#swift_common.create_module-clang">clang</a>, <a href="#swift_common.create_module-compilation_context">compilation_context</a>, <a href="#swift_common.create_module-is_system">is_system</a>, <a href="#swift_common.create_module-swift">swift</a>)
+swift_common.create_module(<a href="#swift_common.create_module-name">name</a>, <a href="#swift_common.create_module-clang">clang</a>, <a href="#swift_common.create_module-const_gather_protocols">const_gather_protocols</a>, <a href="#swift_common.create_module-compilation_context">compilation_context</a>, <a href="#swift_common.create_module-is_system">is_system</a>,
+                           <a href="#swift_common.create_module-swift">swift</a>)
 </pre>
 
 Creates a value containing Clang/Swift module artifacts of a dependency.
@@ -357,6 +358,7 @@ the set of transitive module names that are propagated by dependencies
 | :------------- | :------------- | :------------- |
 | <a id="swift_common.create_module-name"></a>name |  The name of the module.   |  none |
 | <a id="swift_common.create_module-clang"></a>clang |  A value returned by `swift_common.create_clang_module` that contains artifacts related to Clang modules, such as a module map or precompiled module. This may be `None` if the module is a pure Swift module with no generated Objective-C interface.   |  `None` |
+| <a id="swift_common.create_module-const_gather_protocols"></a>const_gather_protocols |  A list of protocol names from which constant values should be extracted from source code that takes this module as a *direct* dependency.   |  `[]` |
 | <a id="swift_common.create_module-compilation_context"></a>compilation_context |  A value returned from `swift_common.create_compilation_context` that contains the context needed to compile the module being built. This may be `None` if the module wasn't compiled from sources.   |  `None` |
 | <a id="swift_common.create_module-is_system"></a>is_system |  Indicates whether the module is a system module. The default value is `False`. System modules differ slightly from non-system modules in the way that they are passed to the compiler. For example, non-system modules have their Clang module maps passed to the compiler in both implicit and explicit module builds. System modules, on the other hand, do not have their module maps passed to the compiler in implicit module builds because there is currently no way to indicate that modules declared in a file passed via `-fmodule-map-file` should be treated as system modules even if they aren't declared with the `[system]` attribute, and some system modules may not build cleanly with respect to warnings otherwise. Therefore, it is assumed that any module with `is_system == True` must be able to be found using import search paths in order for implicit module builds to succeed.   |  `False` |
 | <a id="swift_common.create_module-swift"></a>swift |  A value returned by `swift_common.create_swift_module` that contains artifacts related to Swift modules, such as the `.swiftmodule`, `.swiftdoc`, and/or `.swiftinterface` files emitted by the compiler. This may be `None` if the module is a pure C/Objective-C module.   |  `None` |
