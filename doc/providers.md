@@ -113,18 +113,3 @@ that use the toolchain.
 | <a id="SwiftToolchainInfo-unsupported_features"></a>unsupported_features |  `List` of `string`s. Features that should be implicitly disabled by default for targets built using this toolchain, unless overridden by the user by listing them in the `features` attribute of a target/package or in the `--features` command line flag.<br><br>These features determine various compilation and debugging behaviors of the Swift build rules, and they are also passed to the C++ APIs used when linking (so features defined in CROSSTOOL may be used here).    |
 
 
-<a id="SwiftUsageInfo"></a>
-
-## SwiftUsageInfo
-
-<pre>
-SwiftUsageInfo()
-</pre>
-
-A provider that indicates that Swift was used by a target or any target that it
-depends on.
-
-**FIELDS**
-
-
-
