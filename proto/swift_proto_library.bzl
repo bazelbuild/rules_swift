@@ -31,30 +31,37 @@ load(
 load(
     "//swift:swift.bzl",
     "SwiftInfo",
+    "SwiftProtoCompilerInfo",
+    "SwiftProtoInfo",
     "SwiftToolchainInfo",
     "swift_common",
 )
+
+# buildifier: disable=bzl-visibility
 load(
     "//swift/internal:attrs.bzl",
     "swift_deps_attr",
 )
+
+# buildifier: disable=bzl-visibility
 load(
     "//swift/internal:compiling.bzl",
     "output_groups_from_other_compilation_outputs",
 )
+
+# buildifier: disable=bzl-visibility
 load(
     "//swift/internal:linking.bzl",
     "new_objc_provider",
 )
-load(
-    "//swift/internal:providers.bzl",
-    "SwiftProtoCompilerInfo",
-    "SwiftProtoInfo",
-)
+
+# buildifier: disable=bzl-visibility
 load(
     "//swift/internal:swift_clang_module_aspect.bzl",
     "swift_clang_module_aspect",
 )
+
+# buildifier: disable=bzl-visibility
 load(
     "//swift/internal:utils.bzl",
     "compact",

@@ -22,8 +22,8 @@ load(
 )
 load(
     "//proto:proto.bzl",
-    "swift_proto_common",
     "SwiftProtoCompilerInfo",
+    "swift_proto_common",
 )
 load(
     "//swift:swift.bzl",

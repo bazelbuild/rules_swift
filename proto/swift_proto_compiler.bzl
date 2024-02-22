@@ -31,9 +31,6 @@ load(
 load(
     "//swift:swift.bzl",
     "SwiftInfo",
-)
-load(
-    "//swift/internal:providers.bzl",
     "SwiftProtoCompilerInfo",
 )
 
