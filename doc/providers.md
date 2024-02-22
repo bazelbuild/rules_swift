@@ -7,30 +7,30 @@ with the Swift build rules as needed.
 
 On this page:
 
-  * [SwiftGRPCInfo](#SwiftGRPCInfo)
   * [SwiftInfo](#SwiftInfo)
   * [SwiftToolchainInfo](#SwiftToolchainInfo)
   * [SwiftProtoCompilerInfo](#SwiftProtoCompilerInfo)
   * [SwiftProtoInfo](#SwiftProtoInfo)
   * [SwiftUsageInfo](#SwiftUsageInfo)
+  * [DeprecatedSwiftGRPCInfo](#DeprecatedSwiftGRPCInfo)
 
-<a id="SwiftGRPCInfo"></a>
+<a id="DeprecatedSwiftGRPCInfo"></a>
 
-## SwiftGRPCInfo
+## DeprecatedSwiftGRPCInfo
 
 <pre>
-SwiftGRPCInfo(<a href="#SwiftGRPCInfo-flavor">flavor</a>, <a href="#SwiftGRPCInfo-direct_pbgrpc_files">direct_pbgrpc_files</a>)
+DeprecatedSwiftGRPCInfo(<a href="#DeprecatedSwiftGRPCInfo-flavor">flavor</a>, <a href="#DeprecatedSwiftGRPCInfo-direct_pbgrpc_files">direct_pbgrpc_files</a>)
 </pre>
 
-Propagates Swift-specific information about a `swift_grpc_library`.
+DEPRECATED -- Propagates Swift-specific information about a `swift_grpc_library`.
 
 **FIELDS**
 
 
 | Name  | Description |
 | :------------- | :------------- |
-| <a id="SwiftGRPCInfo-flavor"></a>flavor |  The flavor of GRPC that was generated. E.g. server, client, or client_stubs.    |
-| <a id="SwiftGRPCInfo-direct_pbgrpc_files"></a>direct_pbgrpc_files |  `Depset` of `File`s. The Swift source files (`.grpc.swift`) generated from the `.proto` files in direct dependencies.    |
+| <a id="DeprecatedSwiftGRPCInfo-flavor"></a>flavor |  The flavor of GRPC that was generated. E.g. server, client, or client_stubs.    |
+| <a id="DeprecatedSwiftGRPCInfo-direct_pbgrpc_files"></a>direct_pbgrpc_files |  `Depset` of `File`s. The Swift source files (`.grpc.swift`) generated from the `.proto` files in direct dependencies.    |
 
 
 <a id="SwiftInfo"></a>

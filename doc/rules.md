@@ -1,10 +1,8 @@
 <!-- Generated with Stardoc, Do Not Edit! -->
 
-Re-exported symbols for consumption from stardoc.
+Documentation for rules_swift.
 On this page:
 
-  * [deprecated_swift_grpc_library](#deprecated_swift_grpc_library)
-  * [deprecated_swift_proto_library](#deprecated_swift_proto_library)
   * [swift_proto_library](#swift_proto_library)
   * [swift_proto_compiler](#swift_proto_compiler)
   * [swift_binary](#swift_binary)
@@ -18,6 +16,8 @@ On this page:
   * [swift_module_alias](#swift_module_alias)
   * [swift_package_configuration](#swift_package_configuration)
   * [swift_test](#swift_test)
+  * [deprecated_swift_grpc_library](#deprecated_swift_grpc_library)
+  * [deprecated_swift_proto_library](#deprecated_swift_proto_library)
 
 <a id="deprecated_swift_grpc_library"></a>
 

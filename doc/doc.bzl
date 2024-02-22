@@ -29,7 +29,7 @@ load(
 load(
     "//swift:swift.bzl",
     # providers
-    _SwiftGRPCInfo = "SwiftGRPCInfo",
+    _DeprecatedSwiftGRPCInfo = "SwiftGRPCInfo",
     _SwiftInfo = "SwiftInfo",
     _SwiftToolchainInfo = "SwiftToolchainInfo",
     _SwiftUsageInfo = "SwiftUsageInfo",
@@ -65,7 +65,7 @@ swift_proto_library = _swift_proto_library
 # swift symbols
 swift_common = _swift_common
 swift_usage_aspect = _swift_usage_aspect
-SwiftGRPCInfo = _SwiftGRPCInfo
+DeprecatedSwiftGRPCInfo = _DeprecatedSwiftGRPCInfo
 SwiftInfo = _SwiftInfo
 SwiftToolchainInfo = _SwiftToolchainInfo
 SwiftUsageInfo = _SwiftUsageInfo

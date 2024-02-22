@@ -12,16 +12,14 @@ _DOC_SRCS = {
         "swift_usage_aspect",
     ],
     "providers": [
-        "SwiftGRPCInfo",
         "SwiftInfo",
         "SwiftToolchainInfo",
         "SwiftProtoCompilerInfo",
         "SwiftProtoInfo",
         "SwiftUsageInfo",
+        "DeprecatedSwiftGRPCInfo",
     ],
     "rules": [
-        "deprecated_swift_grpc_library",
-        "deprecated_swift_proto_library",
         "swift_proto_library",
         "swift_proto_compiler",
         "swift_binary",
@@ -35,6 +33,8 @@ _DOC_SRCS = {
         "swift_module_alias",
         "swift_package_configuration",
         "swift_test",
+        "deprecated_swift_grpc_library",
+        "deprecated_swift_proto_library",
     ],
 }
 

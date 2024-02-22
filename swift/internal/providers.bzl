@@ -63,7 +63,7 @@ the allowlist.
 )
 
 SwiftGRPCInfo = provider(
-    doc = "Propagates Swift-specific information about a `swift_grpc_library`.",
+    doc = "DEPRECATED -- Propagates Swift-specific information about a `swift_grpc_library`.",
     fields = {
         "flavor": """\
 The flavor of GRPC that was generated. E.g. server, client, or client_stubs.
