@@ -248,7 +248,7 @@ from which the Swift source files should be generated.
             "compilers": attr.label_list(
                 default = ["//proto/compilers:swift_proto"],
                 doc = """\
-One or more `swift_proto_compiler` target (or targets producing `SwiftProtoCompilerInfo`),
+One or more `swift_proto_compiler` targets (or targets producing `SwiftProtoCompilerInfo`),
 from which the Swift protos will be generated.
 """,
                 providers = [SwiftProtoCompilerInfo],
