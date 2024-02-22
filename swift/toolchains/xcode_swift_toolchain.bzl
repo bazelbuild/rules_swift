@@ -248,7 +248,15 @@ def _test_linking_context(apple_toolchain, target_triple, toolchain_label):
         target_triple,
     )
 
-    linkopts = []
+    # Weakly link to XCTest. It's possible that machine that links the test
+    # binary will have Xcode installed at a different path than the machine that
+    # runs the binary. To handle this, the binary `dlopen`s XCTest at startup
+    # using the path Bazel passes in the test action's environment.
+    linkopts = [
+        "-Wl,-weak_framework,XCTest",
+        "-Wl,-weak-lXCTestSwiftSupport",
+    ]
+
     if platform_developer_framework_dir:
         linkopts.extend([
             "-Wl,-rpath,{}".format(path)

@@ -31,6 +31,7 @@ struct ObjcTestPrinter {
       \(availabilityAttribute)
       struct Runner {
         static func main() {
+          loadXCTest()
           if let xmlObserver = BazelXMLTestObserver.default {
             XCTestObservationCenter.shared.addTestObserver(xmlObserver)
           }
@@ -38,10 +39,42 @@ struct ObjcTestPrinter {
             var testCollector = try ShardingFilteringTestCollector()
             let shardedSuite = testCollector.shard(XCTestSuite.default)
             shardedSuite.run()
+            if let testRun = shardedSuite.testRun {
+              exit(testRun.totalFailureCount == 0 ? EXIT_SUCCESS : EXIT_FAILURE)
+            }
           } catch {
             print("ERROR: \\(error); exiting.")
             exit(1)
           }
+        }
+      }
+
+      private func loadXCTest() {
+        // We weakly linked to XCTest.framework and the Swift support dylib because the machine
+        // that links the test binary might not be the same that runs it, and they might have Xcode
+        // installed at different paths. Find the path that Bazel says they're installed at on
+        // *this* machine and load them.
+        guard let sdkRoot = ProcessInfo.processInfo.environment["SDKROOT"] else {
+          print("ERROR: Bazel must set the SDKROOT in order to find XCTest")
+          exit(1)
+        }
+        let sdkRootURL = URL(fileURLWithPath: sdkRoot)
+        let platformDeveloperPath = sdkRootURL  // .../Developer/SDKs/MacOSX.sdk
+          .deletingLastPathComponent()  // .../Developer/SDKs
+          .deletingLastPathComponent()  // .../Developer
+        let xcTestPath = platformDeveloperPath
+          .appendingPathComponent("Library/Frameworks/XCTest.framework/XCTest")
+          .path
+        guard dlopen(xcTestPath, RTLD_NOW) != nil else {
+          print("ERROR: dlopen(\\"\\(xcTestPath)\\") failed")
+          exit(1)
+        }
+        let xcTestSwiftSupportPath = platformDeveloperPath
+          .appendingPathComponent("usr/lib/libXCTestSwiftSupport.dylib")
+          .path
+        guard dlopen(xcTestSwiftSupportPath, RTLD_NOW) != nil else {
+          print("ERROR: dlopen(\\"\\(xcTestSwiftSupportPath)\\") failed")
+          exit(1)
         }
       }
 
