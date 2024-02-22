@@ -17,20 +17,8 @@ sh_binary(
 )
 
 bzl_library(
-    name = "swift_proto_compiler",
-    visibility = ["//examples/xplatform/custom_swift_proto_compiler:__subpackages__"],
-    deps = [
-        "//swift",
-        "@bazel_skylib//lib:paths",
-    ],
-)
-
-bzl_library(
     name = "custom_swift_proto_compiler",
     srcs = ["custom_swift_proto_compiler.bzl"],
     visibility = ["//visibility:public"],
-    deps = [
-        "//swift",
-        "@bazel_skylib//lib:paths",
-    ],
+    deps = ["@bazel_skylib//lib:paths"],
 )

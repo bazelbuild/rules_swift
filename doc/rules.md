@@ -1,20 +1,12 @@
 <!-- Generated with Stardoc, Do Not Edit! -->
 
-BUILD rules to define Swift libraries and executable binaries.
-
-This file is the public interface that users should import to use the Swift
-rules. Do not import definitions from the `internal` subdirectory directly.
-
-To use the Swift build rules in your BUILD files, load them from
-`@build_bazel_rules_swift//swift:swift.bzl`.
-
-For example:
-
-```build
-load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
-```
+Re-exported symbols for consumption from stardoc.
 On this page:
 
+  * [deprecated_swift_grpc_library](#deprecated_swift_grpc_library)
+  * [deprecated_swift_proto_library](#deprecated_swift_proto_library)
+  * [swift_proto_library](#swift_proto_library)
+  * [swift_proto_compiler](#swift_proto_compiler)
   * [swift_binary](#swift_binary)
   * [swift_c_module](#swift_c_module)
   * [swift_compiler_plugin](#swift_compiler_plugin)
@@ -25,57 +17,82 @@ On this page:
   * [swift_library_group](#swift_library_group)
   * [swift_module_alias](#swift_module_alias)
   * [swift_package_configuration](#swift_package_configuration)
-  * [swift_grpc_library](#swift_grpc_library)
-  * [swift_proto_library](#swift_proto_library)
-  * [swift_proto_compiler](#swift_proto_compiler)
-  * [new_swift_proto_library](#new_swift_proto_library)
   * [swift_test](#swift_test)
 
-<a id="new_swift_proto_library"></a>
+<a id="deprecated_swift_grpc_library"></a>
 
-## new_swift_proto_library
+## deprecated_swift_grpc_library
 
 <pre>
-new_swift_proto_library(<a href="#new_swift_proto_library-name">name</a>, <a href="#new_swift_proto_library-deps">deps</a>, <a href="#new_swift_proto_library-srcs">srcs</a>, <a href="#new_swift_proto_library-data">data</a>, <a href="#new_swift_proto_library-additional_compiler_deps">additional_compiler_deps</a>, <a href="#new_swift_proto_library-additional_compiler_info">additional_compiler_info</a>,
-                        <a href="#new_swift_proto_library-always_include_developer_search_paths">always_include_developer_search_paths</a>, <a href="#new_swift_proto_library-alwayslink">alwayslink</a>, <a href="#new_swift_proto_library-compilers">compilers</a>, <a href="#new_swift_proto_library-copts">copts</a>, <a href="#new_swift_proto_library-defines">defines</a>,
-                        <a href="#new_swift_proto_library-generated_header_name">generated_header_name</a>, <a href="#new_swift_proto_library-generates_header">generates_header</a>, <a href="#new_swift_proto_library-linkopts">linkopts</a>, <a href="#new_swift_proto_library-linkstatic">linkstatic</a>, <a href="#new_swift_proto_library-module_name">module_name</a>,
-                        <a href="#new_swift_proto_library-package_name">package_name</a>, <a href="#new_swift_proto_library-plugins">plugins</a>, <a href="#new_swift_proto_library-protos">protos</a>, <a href="#new_swift_proto_library-swiftc_inputs">swiftc_inputs</a>)
+deprecated_swift_grpc_library(<a href="#deprecated_swift_grpc_library-name">name</a>, <a href="#deprecated_swift_grpc_library-deps">deps</a>, <a href="#deprecated_swift_grpc_library-srcs">srcs</a>, <a href="#deprecated_swift_grpc_library-flavor">flavor</a>)
 </pre>
 
-Generates a Swift static library from one or more targets producing `ProtoInfo`.
+DEPRECATED -- Please use new_swift_proto_library rule instead.
+This rule will be removed in the next rules_swift major version update.
+If you're already using this rule, see doc/proto_migration.md for infomation on how to migrate.
+
+Generates a Swift library from gRPC services defined in protocol buffer sources.
+
+There should be one `swift_grpc_library` for any `proto_library` that defines
+services. A target based on this rule can be used as a dependency anywhere that
+a `swift_library` can be used.
+
+We recommend that `swift_grpc_library` targets be located in the same package as
+the `proto_library` and `swift_proto_library` targets they depend on. For more
+best practices around the use of Swift protocol buffer build rules, see the
+documentation for `swift_proto_library`.
+
+#### Defining Build Targets for Services
+
+Note that `swift_grpc_library` only generates the gRPC service interfaces (the
+`service` definitions) from the `.proto` files. Any messages defined in the same
+`.proto` file must be generated using a `swift_proto_library` target. Thus, the
+typical structure of a Swift gRPC library is similar to the following:
 
 ```python
-load("//proto:proto.bzl", "swift_proto_library")
-load("@rules_proto//proto:defs.bzl", "proto_library")
-
 proto_library(
-    name = "foo",
-    srcs = ["foo.proto"],
+    name = "my_protos",
+    srcs = ["my_protos.proto"],
 )
 
+# Generate Swift types from the protos.
 swift_proto_library(
-    name = "foo_swift",
-    protos = [":foo"],
-)
-```
-
-If your protos depend on protos from other targets, add dependencies between the
-swift_proto_library targets which mirror the dependencies between the proto targets.
-
-```python
-load("//proto:proto.bzl", "swift_proto_library")
-load("@rules_proto//proto:defs.bzl", "proto_library")
-
-proto_library(
-    name = "bar",
-    srcs = ["bar.proto"],
-    deps = [":foo"],
+    name = "my_protos_swift",
+    deps = [":my_protos"],
 )
 
-swift_proto_library(
-    name = "bar_swift",
-    protos = [":bar"],
-    deps = [":foo_swift"],
+# Generate Swift types from the services.
+swift_grpc_library(
+    name = "my_protos_client_services_swift",
+
+    # The `srcs` attribute points to the `proto_library` containing the service
+    # definitions...
+    srcs = [":my_protos"],
+
+    # ...the `flavor` attribute specifies the kind of definitions to generate...
+    flavor = "client",
+
+    # ...and the `deps` attribute points to the `swift_proto_library` that was
+    # generated from the same `proto_library` and which contains the messages
+    # used by those services.
+    deps = [":my_protos_swift"],
+)
+
+# Generate test stubs from swift services.
+swift_grpc_library(
+    name = "my_protos_client_stubs_swift",
+
+    # The `srcs` attribute points to the `proto_library` containing the service
+    # definitions...
+    srcs = [":my_protos"],
+
+    # ...the `flavor` attribute specifies the kind of definitions to generate...
+    flavor = "client_stubs",
+
+    # ...and the `deps` attribute points to the `swift_grpc_library` that was
+    # generated from the same `proto_library` and which contains the service
+    # implementation.
+    deps = [":my_protos_client_services_swift"],
 )
 ```
 
@@ -84,26 +101,106 @@ swift_proto_library(
 
 | Name  | Description | Type | Mandatory | Default |
 | :------------- | :------------- | :------------- | :------------- | :------------- |
-| <a id="new_swift_proto_library-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
-| <a id="new_swift_proto_library-deps"></a>deps |  A list of targets that are dependencies of the target being built, which will be linked into that target.<br><br>If the Swift toolchain supports implementation-only imports (`private_deps` on `swift_library`), then targets in `deps` are treated as regular (non-implementation-only) imports that are propagated both to their direct and indirect (transitive) dependents.<br><br>Allowed kinds of dependencies are:<br><br>*   `swift_c_module`, `swift_import` and `swift_library` (or anything     propagating `SwiftInfo`)<br><br>*   `cc_library` (or anything propagating `CcInfo`)<br><br>Additionally, on platforms that support Objective-C interop, `objc_library` targets (or anything propagating the `apple_common.Objc` provider) are allowed as dependencies. On platforms that do not support Objective-C interop (such as Linux), those dependencies will be **ignored.**   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
-| <a id="new_swift_proto_library-srcs"></a>srcs |  A list of `.swift` source files that will be compiled into the library.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
-| <a id="new_swift_proto_library-data"></a>data |  The list of files needed by this target at runtime.<br><br>Files and targets named in the `data` attribute will appear in the `*.runfiles` area of this target, if it has one. This may include data files needed by a binary or library, or other programs needed by it.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
-| <a id="new_swift_proto_library-additional_compiler_deps"></a>additional_compiler_deps |  List of additional dependencies required by the generated Swift code at compile time, whose SwiftProtoInfo will be ignored.<br><br>Allowed kinds of dependencies are:<br><br>*   `swift_c_module`, `swift_import` and `swift_library` (or anything     propagating `SwiftInfo`)<br><br>*   `cc_library` (or anything propagating `CcInfo`)<br><br>Additionally, on platforms that support Objective-C interop, `objc_library` targets (or anything propagating the `apple_common.Objc` provider) are allowed as dependencies. On platforms that do not support Objective-C interop (such as Linux), those dependencies will be **ignored.**   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
-| <a id="new_swift_proto_library-additional_compiler_info"></a>additional_compiler_info |  Dictionary of additional information passed to the compiler targets. See the documentation of the respective compiler rules for more information on which fields are accepted and how they are used.   | <a href="https://bazel.build/rules/lib/dict">Dictionary: String -> String</a> | optional |  `{}`  |
-| <a id="new_swift_proto_library-always_include_developer_search_paths"></a>always_include_developer_search_paths |  If `True`, the developer framework search paths will be added to the compilation command. This enables a Swift module to access `XCTest` without having to mark the target as `testonly = True`.   | Boolean | optional |  `False`  |
-| <a id="new_swift_proto_library-alwayslink"></a>alwayslink |  If true, any binary that depends (directly or indirectly) on this Swift module will link in all the object files for the files listed in `srcs`, even if some contain no symbols referenced by the binary. This is useful if your code isn't explicitly called by code in the binary; for example, if you rely on runtime checks for protocol conformances added in extensions in the library but do not directly reference any other symbols in the object file that adds that conformance.   | Boolean | optional |  `False`  |
-| <a id="new_swift_proto_library-compilers"></a>compilers |  One or more `swift_proto_compiler` target (or targets producing `SwiftProtoCompilerInfo`), from which the Swift protos will be generated.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `["@build_bazel_rules_swift//proto/compilers:swift_proto"]`  |
-| <a id="new_swift_proto_library-copts"></a>copts |  Additional compiler options that should be passed to `swiftc`. These strings are subject to `$(location ...)` and ["Make" variable](https://docs.bazel.build/versions/master/be/make-variables.html) expansion.   | List of strings | optional |  `[]`  |
-| <a id="new_swift_proto_library-defines"></a>defines |  A list of defines to add to the compilation command line.<br><br>Note that unlike C-family languages, Swift defines do not have values; they are simply identifiers that are either defined or undefined. So strings in this list should be simple identifiers, **not** `name=value` pairs.<br><br>Each string is prepended with `-D` and added to the command line. Unlike `copts`, these flags are added for the target and every target that depends on it, so use this attribute with caution. It is preferred that you add defines directly to `copts`, only using this feature in the rare case that a library needs to propagate a symbol up to those that depend on it.   | List of strings | optional |  `[]`  |
-| <a id="new_swift_proto_library-generated_header_name"></a>generated_header_name |  The name of the generated Objective-C interface header. This name must end with a `.h` extension and cannot contain any path separators.<br><br>If this attribute is not specified, then the default behavior is to name the header `${target_name}-Swift.h`.<br><br>This attribute is ignored if the toolchain does not support generating headers.   | String | optional |  `""`  |
-| <a id="new_swift_proto_library-generates_header"></a>generates_header |  If True, an Objective-C header will be generated for this target, in the same build package where the target is defined. By default, the name of the header is `${target_name}-Swift.h`; this can be changed using the `generated_header_name` attribute.<br><br>Targets should only set this attribute to True if they export Objective-C APIs. A header generated for a target that does not export Objective-C APIs will be effectively empty (except for a large amount of prologue and epilogue code) and this is generally wasteful because the extra file needs to be propagated in the build graph and, when explicit modules are enabled, extra actions must be executed to compile the Objective-C module for the generated header.   | Boolean | optional |  `False`  |
-| <a id="new_swift_proto_library-linkopts"></a>linkopts |  Additional linker options that should be passed to the linker for the binary that depends on this target. These strings are subject to `$(location ...)` and ["Make" variable](https://docs.bazel.build/versions/master/be/make-variables.html) expansion.   | List of strings | optional |  `[]`  |
-| <a id="new_swift_proto_library-linkstatic"></a>linkstatic |  If True, the Swift module will be built for static linking.  This will make all interfaces internal to the module that is being linked against and will inform the consuming module that the objects will be locally available (which may potentially avoid a PLT relocation).  Set to `False` to build a `.so` or `.dll`.   | Boolean | optional |  `True`  |
-| <a id="new_swift_proto_library-module_name"></a>module_name |  The name of the Swift module being built.<br><br>If left unspecified, the module name will be computed based on the target's build label, by stripping the leading `//` and replacing `/`, `:`, and other non-identifier characters with underscores.   | String | optional |  `""`  |
-| <a id="new_swift_proto_library-package_name"></a>package_name |  The semantic package of the Swift target being built. Targets with the same package_name can access APIs using the 'package' access control modifier in Swift 5.9+.   | String | optional |  `""`  |
-| <a id="new_swift_proto_library-plugins"></a>plugins |  A list of `swift_compiler_plugin` targets that should be loaded by the compiler when compiling this module and any modules that directly depend on it.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
-| <a id="new_swift_proto_library-protos"></a>protos |  A list of `proto_library` targets (or targets producing `ProtoInfo`), from which the Swift source files should be generated.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
-| <a id="new_swift_proto_library-swiftc_inputs"></a>swiftc_inputs |  Additional files that are referenced using `$(location ...)` in attributes that support location expansion.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
+| <a id="deprecated_swift_grpc_library-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
+| <a id="deprecated_swift_grpc_library-deps"></a>deps |  Exactly one `swift_proto_library` or `swift_grpc_library` target that contains the Swift protos used by the services being generated. Test stubs should depend on the `swift_grpc_library` implementing the service.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
+| <a id="deprecated_swift_grpc_library-srcs"></a>srcs |  Exactly one `proto_library` target that defines the services being generated.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
+| <a id="deprecated_swift_grpc_library-flavor"></a>flavor |  The kind of definitions that should be generated:<br><br>*   `"client"` to generate client definitions.<br><br>*   `"client_stubs"` to generate client test stubs.<br><br>*   `"server"` to generate server definitions.   | String | required |  |
+
+
+<a id="deprecated_swift_proto_library"></a>
+
+## deprecated_swift_proto_library
+
+<pre>
+deprecated_swift_proto_library(<a href="#deprecated_swift_proto_library-name">name</a>, <a href="#deprecated_swift_proto_library-deps">deps</a>)
+</pre>
+
+DEPRECATED -- Please use new_swift_proto_library rule instead.
+This rule will be removed in the next rules_swift major version update.
+If you're already using this rule, see doc/proto_migration.md for infomation on how to migrate.
+
+Generates a Swift library from protocol buffer sources.
+
+There should be one `swift_proto_library` for any `proto_library` that you wish
+to depend on. A target based on this rule can be used as a dependency anywhere
+that a `swift_library` can be used.
+
+A `swift_proto_library` target only creates a Swift module if the
+`proto_library` on which it depends has a non-empty `srcs` attribute. If the
+`proto_library` does not contain `srcs`, then no module is produced, but the
+`swift_proto_library` still propagates the modules of its non-empty dependencies
+so that those generated protos can be used by depending on the
+`swift_proto_library` of the "collector" target.
+
+Note that the module name of the Swift library produced by this rule (if any) is
+based on the name of the `proto_library` target, *not* the name of the
+`swift_proto_library` target. In other words, if the following BUILD file were
+located in `//my/pkg`, the target would create a Swift module named
+`my_pkg_foo`:
+
+```python
+proto_library(
+    name = "foo",
+    srcs = ["foo.proto"],
+)
+
+swift_proto_library(
+    name = "foo_swift",
+    deps = [":foo"],
+)
+```
+
+Because the Swift modules are generated from an aspect that is applied to the
+`proto_library` targets, the module name and other compilation flags for the
+resulting Swift modules cannot be changed.
+
+#### Tip: Where to locate `swift_proto_library` targets
+
+Convention is to put the `swift_proto_library` in the same `BUILD` file as the
+`proto_library` it is generating for (just like all the other
+`LANG_proto_library` rules). This lets anyone needing the protos in Swift share
+the single rule as well as making it easier to realize what proto files are in
+use in what contexts.
+
+This is not a requirement, however, as it may not be possible for Bazel
+workspaces that create `swift_proto_library` targets that depend on
+`proto_library` targets from different repositories.
+
+#### Tip: Avoid `import` only `.proto` files
+
+Avoid creating a `.proto` file that just contains `import` directives of all the
+other `.proto` files you need. While this does _group_ the protos into this new
+target, it comes with some high costs. This causes the proto compiler to parse
+all those files and invoke the generator for an otherwise empty source file.
+That empty source file then has to get compiled, but it will have dependencies
+on the full deps chain of the imports (recursively). The Swift compiler must
+load all of these module dependencies, which can be fairly slow if there are
+many of them, so this method of grouping via a `.proto` file actually ends up
+creating build steps that slow down the build.
+
+#### Tip: Resolving unused import warnings
+
+If you see warnings like the following during your build:
+
+```
+path/file.proto: warning: Import other/path/file.proto but not used.
+```
+
+The proto compiler is letting you know that you have an `import` statement
+loading a file from which nothing is used, so it is wasted work. The `import`
+can be removed (in this case, `import other/path/file.proto` could be removed
+from `path/file.proto`). These warnings can also mean that the `proto_library`
+has `deps` that aren't needed. Removing those along with the `import`
+statement(s) will speed up downstream Swift compilation actions, because it
+prevents unused modules from being loaded by `swiftc`.
+
+**ATTRIBUTES**
+
+
+| Name  | Description | Type | Mandatory | Default |
+| :------------- | :------------- | :------------- | :------------- | :------------- |
+| <a id="deprecated_swift_proto_library-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
+| <a id="deprecated_swift_proto_library-deps"></a>deps |  Exactly one `proto_library` target (or any target that propagates a `proto` provider) from which the Swift library should be generated.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 
 
 <a id="swift_binary"></a>
@@ -317,94 +414,6 @@ package.
 | <a id="swift_feature_allowlist-packages"></a>packages |  A list of strings representing packages (possibly recursive) whose targets are allowed to enable/disable the features in `managed_features`. Each package pattern is written in the syntax used by the `package_group` function:<br><br>*   `//foo/bar`: Targets in the package `//foo/bar` but not in subpackages. *   `//foo/bar/...`: Targets in the package `//foo/bar` and any of its     subpackages. *   A leading `-` excludes packages that would otherwise have been included by     the patterns in the list.<br><br>Exclusions always take priority over inclusions; order in the list is irrelevant.   | List of strings | required |  |
 
 
-<a id="swift_grpc_library"></a>
-
-## swift_grpc_library
-
-<pre>
-swift_grpc_library(<a href="#swift_grpc_library-name">name</a>, <a href="#swift_grpc_library-deps">deps</a>, <a href="#swift_grpc_library-srcs">srcs</a>, <a href="#swift_grpc_library-flavor">flavor</a>)
-</pre>
-
-DEPRECATED -- Please use new_swift_proto_library rule instead.
-This rule will be removed in the next rules_swift major version update.
-If you're already using this rule, see doc/proto_migration.md for infomation on how to migrate.
-
-Generates a Swift library from gRPC services defined in protocol buffer sources.
-
-There should be one `swift_grpc_library` for any `proto_library` that defines
-services. A target based on this rule can be used as a dependency anywhere that
-a `swift_library` can be used.
-
-We recommend that `swift_grpc_library` targets be located in the same package as
-the `proto_library` and `swift_proto_library` targets they depend on. For more
-best practices around the use of Swift protocol buffer build rules, see the
-documentation for `swift_proto_library`.
-
-#### Defining Build Targets for Services
-
-Note that `swift_grpc_library` only generates the gRPC service interfaces (the
-`service` definitions) from the `.proto` files. Any messages defined in the same
-`.proto` file must be generated using a `swift_proto_library` target. Thus, the
-typical structure of a Swift gRPC library is similar to the following:
-
-```python
-proto_library(
-    name = "my_protos",
-    srcs = ["my_protos.proto"],
-)
-
-# Generate Swift types from the protos.
-swift_proto_library(
-    name = "my_protos_swift",
-    deps = [":my_protos"],
-)
-
-# Generate Swift types from the services.
-swift_grpc_library(
-    name = "my_protos_client_services_swift",
-
-    # The `srcs` attribute points to the `proto_library` containing the service
-    # definitions...
-    srcs = [":my_protos"],
-
-    # ...the `flavor` attribute specifies the kind of definitions to generate...
-    flavor = "client",
-
-    # ...and the `deps` attribute points to the `swift_proto_library` that was
-    # generated from the same `proto_library` and which contains the messages
-    # used by those services.
-    deps = [":my_protos_swift"],
-)
-
-# Generate test stubs from swift services.
-swift_grpc_library(
-    name = "my_protos_client_stubs_swift",
-
-    # The `srcs` attribute points to the `proto_library` containing the service
-    # definitions...
-    srcs = [":my_protos"],
-
-    # ...the `flavor` attribute specifies the kind of definitions to generate...
-    flavor = "client_stubs",
-
-    # ...and the `deps` attribute points to the `swift_grpc_library` that was
-    # generated from the same `proto_library` and which contains the service
-    # implementation.
-    deps = [":my_protos_client_services_swift"],
-)
-```
-
-**ATTRIBUTES**
-
-
-| Name  | Description | Type | Mandatory | Default |
-| :------------- | :------------- | :------------- | :------------- | :------------- |
-| <a id="swift_grpc_library-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
-| <a id="swift_grpc_library-deps"></a>deps |  Exactly one `swift_proto_library` or `swift_grpc_library` target that contains the Swift protos used by the services being generated. Test stubs should depend on the `swift_grpc_library` implementing the service.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
-| <a id="swift_grpc_library-srcs"></a>srcs |  Exactly one `proto_library` target that defines the services being generated.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
-| <a id="swift_grpc_library-flavor"></a>flavor |  The kind of definitions that should be generated:<br><br>*   `"client"` to generate client definitions.<br><br>*   `"client_stubs"` to generate client test stubs.<br><br>*   `"server"` to generate server definitions.   | String | required |  |
-
-
 <a id="swift_import"></a>
 
 ## swift_import
@@ -583,33 +592,18 @@ swift_proto_compiler(<a href="#swift_proto_compiler-name">name</a>, <a href="#sw
 ## swift_proto_library
 
 <pre>
-swift_proto_library(<a href="#swift_proto_library-name">name</a>, <a href="#swift_proto_library-deps">deps</a>)
+swift_proto_library(<a href="#swift_proto_library-name">name</a>, <a href="#swift_proto_library-deps">deps</a>, <a href="#swift_proto_library-srcs">srcs</a>, <a href="#swift_proto_library-data">data</a>, <a href="#swift_proto_library-additional_compiler_deps">additional_compiler_deps</a>, <a href="#swift_proto_library-additional_compiler_info">additional_compiler_info</a>,
+                    <a href="#swift_proto_library-always_include_developer_search_paths">always_include_developer_search_paths</a>, <a href="#swift_proto_library-alwayslink">alwayslink</a>, <a href="#swift_proto_library-compilers">compilers</a>, <a href="#swift_proto_library-copts">copts</a>, <a href="#swift_proto_library-defines">defines</a>,
+                    <a href="#swift_proto_library-generated_header_name">generated_header_name</a>, <a href="#swift_proto_library-generates_header">generates_header</a>, <a href="#swift_proto_library-linkopts">linkopts</a>, <a href="#swift_proto_library-linkstatic">linkstatic</a>, <a href="#swift_proto_library-module_name">module_name</a>,
+                    <a href="#swift_proto_library-package_name">package_name</a>, <a href="#swift_proto_library-plugins">plugins</a>, <a href="#swift_proto_library-protos">protos</a>, <a href="#swift_proto_library-swiftc_inputs">swiftc_inputs</a>)
 </pre>
 
-DEPRECATED -- Please use new_swift_proto_library rule instead.
-This rule will be removed in the next rules_swift major version update.
-If you're already using this rule, see doc/proto_migration.md for infomation on how to migrate.
-
-Generates a Swift library from protocol buffer sources.
-
-There should be one `swift_proto_library` for any `proto_library` that you wish
-to depend on. A target based on this rule can be used as a dependency anywhere
-that a `swift_library` can be used.
-
-A `swift_proto_library` target only creates a Swift module if the
-`proto_library` on which it depends has a non-empty `srcs` attribute. If the
-`proto_library` does not contain `srcs`, then no module is produced, but the
-`swift_proto_library` still propagates the modules of its non-empty dependencies
-so that those generated protos can be used by depending on the
-`swift_proto_library` of the "collector" target.
-
-Note that the module name of the Swift library produced by this rule (if any) is
-based on the name of the `proto_library` target, *not* the name of the
-`swift_proto_library` target. In other words, if the following BUILD file were
-located in `//my/pkg`, the target would create a Swift module named
-`my_pkg_foo`:
+Generates a Swift static library from one or more targets producing `ProtoInfo`.
 
 ```python
+load("//proto:proto.bzl", "swift_proto_library")
+load("@rules_proto//proto:defs.bzl", "proto_library")
+
 proto_library(
     name = "foo",
     srcs = ["foo.proto"],
@@ -617,53 +611,29 @@ proto_library(
 
 swift_proto_library(
     name = "foo_swift",
-    deps = [":foo"],
+    protos = [":foo"],
 )
 ```
 
-Because the Swift modules are generated from an aspect that is applied to the
-`proto_library` targets, the module name and other compilation flags for the
-resulting Swift modules cannot be changed.
+If your protos depend on protos from other targets, add dependencies between the
+swift_proto_library targets which mirror the dependencies between the proto targets.
 
-#### Tip: Where to locate `swift_proto_library` targets
+```python
+load("//proto:proto.bzl", "swift_proto_library")
+load("@rules_proto//proto:defs.bzl", "proto_library")
 
-Convention is to put the `swift_proto_library` in the same `BUILD` file as the
-`proto_library` it is generating for (just like all the other
-`LANG_proto_library` rules). This lets anyone needing the protos in Swift share
-the single rule as well as making it easier to realize what proto files are in
-use in what contexts.
+proto_library(
+    name = "bar",
+    srcs = ["bar.proto"],
+    deps = [":foo"],
+)
 
-This is not a requirement, however, as it may not be possible for Bazel
-workspaces that create `swift_proto_library` targets that depend on
-`proto_library` targets from different repositories.
-
-#### Tip: Avoid `import` only `.proto` files
-
-Avoid creating a `.proto` file that just contains `import` directives of all the
-other `.proto` files you need. While this does _group_ the protos into this new
-target, it comes with some high costs. This causes the proto compiler to parse
-all those files and invoke the generator for an otherwise empty source file.
-That empty source file then has to get compiled, but it will have dependencies
-on the full deps chain of the imports (recursively). The Swift compiler must
-load all of these module dependencies, which can be fairly slow if there are
-many of them, so this method of grouping via a `.proto` file actually ends up
-creating build steps that slow down the build.
-
-#### Tip: Resolving unused import warnings
-
-If you see warnings like the following during your build:
-
+swift_proto_library(
+    name = "bar_swift",
+    protos = [":bar"],
+    deps = [":foo_swift"],
+)
 ```
-path/file.proto: warning: Import other/path/file.proto but not used.
-```
-
-The proto compiler is letting you know that you have an `import` statement
-loading a file from which nothing is used, so it is wasted work. The `import`
-can be removed (in this case, `import other/path/file.proto` could be removed
-from `path/file.proto`). These warnings can also mean that the `proto_library`
-has `deps` that aren't needed. Removing those along with the `import`
-statement(s) will speed up downstream Swift compilation actions, because it
-prevents unused modules from being loaded by `swiftc`.
 
 **ATTRIBUTES**
 
@@ -671,7 +641,25 @@ prevents unused modules from being loaded by `swiftc`.
 | Name  | Description | Type | Mandatory | Default |
 | :------------- | :------------- | :------------- | :------------- | :------------- |
 | <a id="swift_proto_library-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
-| <a id="swift_proto_library-deps"></a>deps |  Exactly one `proto_library` target (or any target that propagates a `proto` provider) from which the Swift library should be generated.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
+| <a id="swift_proto_library-deps"></a>deps |  A list of targets that are dependencies of the target being built, which will be linked into that target.<br><br>If the Swift toolchain supports implementation-only imports (`private_deps` on `swift_library`), then targets in `deps` are treated as regular (non-implementation-only) imports that are propagated both to their direct and indirect (transitive) dependents.<br><br>Allowed kinds of dependencies are:<br><br>*   `swift_c_module`, `swift_import` and `swift_library` (or anything     propagating `SwiftInfo`)<br><br>*   `cc_library` (or anything propagating `CcInfo`)<br><br>Additionally, on platforms that support Objective-C interop, `objc_library` targets (or anything propagating the `apple_common.Objc` provider) are allowed as dependencies. On platforms that do not support Objective-C interop (such as Linux), those dependencies will be **ignored.**   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
+| <a id="swift_proto_library-srcs"></a>srcs |  A list of `.swift` source files that will be compiled into the library.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
+| <a id="swift_proto_library-data"></a>data |  The list of files needed by this target at runtime.<br><br>Files and targets named in the `data` attribute will appear in the `*.runfiles` area of this target, if it has one. This may include data files needed by a binary or library, or other programs needed by it.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
+| <a id="swift_proto_library-additional_compiler_deps"></a>additional_compiler_deps |  List of additional dependencies required by the generated Swift code at compile time, whose SwiftProtoInfo will be ignored.<br><br>Allowed kinds of dependencies are:<br><br>*   `swift_c_module`, `swift_import` and `swift_library` (or anything     propagating `SwiftInfo`)<br><br>*   `cc_library` (or anything propagating `CcInfo`)<br><br>Additionally, on platforms that support Objective-C interop, `objc_library` targets (or anything propagating the `apple_common.Objc` provider) are allowed as dependencies. On platforms that do not support Objective-C interop (such as Linux), those dependencies will be **ignored.**   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
+| <a id="swift_proto_library-additional_compiler_info"></a>additional_compiler_info |  Dictionary of additional information passed to the compiler targets. See the documentation of the respective compiler rules for more information on which fields are accepted and how they are used.   | <a href="https://bazel.build/rules/lib/dict">Dictionary: String -> String</a> | optional |  `{}`  |
+| <a id="swift_proto_library-always_include_developer_search_paths"></a>always_include_developer_search_paths |  If `True`, the developer framework search paths will be added to the compilation command. This enables a Swift module to access `XCTest` without having to mark the target as `testonly = True`.   | Boolean | optional |  `False`  |
+| <a id="swift_proto_library-alwayslink"></a>alwayslink |  If true, any binary that depends (directly or indirectly) on this Swift module will link in all the object files for the files listed in `srcs`, even if some contain no symbols referenced by the binary. This is useful if your code isn't explicitly called by code in the binary; for example, if you rely on runtime checks for protocol conformances added in extensions in the library but do not directly reference any other symbols in the object file that adds that conformance.   | Boolean | optional |  `False`  |
+| <a id="swift_proto_library-compilers"></a>compilers |  One or more `swift_proto_compiler` target (or targets producing `SwiftProtoCompilerInfo`), from which the Swift protos will be generated.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `["@rules_swift//proto/compilers:swift_proto"]`  |
+| <a id="swift_proto_library-copts"></a>copts |  Additional compiler options that should be passed to `swiftc`. These strings are subject to `$(location ...)` and ["Make" variable](https://docs.bazel.build/versions/master/be/make-variables.html) expansion.   | List of strings | optional |  `[]`  |
+| <a id="swift_proto_library-defines"></a>defines |  A list of defines to add to the compilation command line.<br><br>Note that unlike C-family languages, Swift defines do not have values; they are simply identifiers that are either defined or undefined. So strings in this list should be simple identifiers, **not** `name=value` pairs.<br><br>Each string is prepended with `-D` and added to the command line. Unlike `copts`, these flags are added for the target and every target that depends on it, so use this attribute with caution. It is preferred that you add defines directly to `copts`, only using this feature in the rare case that a library needs to propagate a symbol up to those that depend on it.   | List of strings | optional |  `[]`  |
+| <a id="swift_proto_library-generated_header_name"></a>generated_header_name |  The name of the generated Objective-C interface header. This name must end with a `.h` extension and cannot contain any path separators.<br><br>If this attribute is not specified, then the default behavior is to name the header `${target_name}-Swift.h`.<br><br>This attribute is ignored if the toolchain does not support generating headers.   | String | optional |  `""`  |
+| <a id="swift_proto_library-generates_header"></a>generates_header |  If True, an Objective-C header will be generated for this target, in the same build package where the target is defined. By default, the name of the header is `${target_name}-Swift.h`; this can be changed using the `generated_header_name` attribute.<br><br>Targets should only set this attribute to True if they export Objective-C APIs. A header generated for a target that does not export Objective-C APIs will be effectively empty (except for a large amount of prologue and epilogue code) and this is generally wasteful because the extra file needs to be propagated in the build graph and, when explicit modules are enabled, extra actions must be executed to compile the Objective-C module for the generated header.   | Boolean | optional |  `False`  |
+| <a id="swift_proto_library-linkopts"></a>linkopts |  Additional linker options that should be passed to the linker for the binary that depends on this target. These strings are subject to `$(location ...)` and ["Make" variable](https://docs.bazel.build/versions/master/be/make-variables.html) expansion.   | List of strings | optional |  `[]`  |
+| <a id="swift_proto_library-linkstatic"></a>linkstatic |  If True, the Swift module will be built for static linking.  This will make all interfaces internal to the module that is being linked against and will inform the consuming module that the objects will be locally available (which may potentially avoid a PLT relocation).  Set to `False` to build a `.so` or `.dll`.   | Boolean | optional |  `True`  |
+| <a id="swift_proto_library-module_name"></a>module_name |  The name of the Swift module being built.<br><br>If left unspecified, the module name will be computed based on the target's build label, by stripping the leading `//` and replacing `/`, `:`, and other non-identifier characters with underscores.   | String | optional |  `""`  |
+| <a id="swift_proto_library-package_name"></a>package_name |  The semantic package of the Swift target being built. Targets with the same package_name can access APIs using the 'package' access control modifier in Swift 5.9+.   | String | optional |  `""`  |
+| <a id="swift_proto_library-plugins"></a>plugins |  A list of `swift_compiler_plugin` targets that should be loaded by the compiler when compiling this module and any modules that directly depend on it.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
+| <a id="swift_proto_library-protos"></a>protos |  A list of `proto_library` targets (or targets producing `ProtoInfo`), from which the Swift source files should be generated.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
+| <a id="swift_proto_library-swiftc_inputs"></a>swiftc_inputs |  Additional files that are referenced using `$(location ...)` in attributes that support location expansion.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 
 
 <a id="swift_test"></a>

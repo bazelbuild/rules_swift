@@ -392,7 +392,7 @@ def _swift_grpc_library_impl(ctx):
 
     return providers
 
-swift_grpc_library = rule(
+deprecated_swift_grpc_library = rule(
     attrs = dicts.add(
         swift_common.toolchain_attrs(),
         {

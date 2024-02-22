@@ -15,10 +15,15 @@ _DOC_SRCS = {
         "SwiftGRPCInfo",
         "SwiftInfo",
         "SwiftToolchainInfo",
+        "SwiftProtoCompilerInfo",
         "SwiftProtoInfo",
         "SwiftUsageInfo",
     ],
     "rules": [
+        "deprecated_swift_grpc_library",
+        "deprecated_swift_proto_library",
+        "swift_proto_library",
+        "swift_proto_compiler",
         "swift_binary",
         "swift_c_module",
         "swift_compiler_plugin",
@@ -29,10 +34,6 @@ _DOC_SRCS = {
         "swift_library_group",
         "swift_module_alias",
         "swift_package_configuration",
-        "swift_grpc_library",
-        "swift_proto_library",
-        "swift_proto_compiler",
-        "new_swift_proto_library",
         "swift_test",
     ],
 }
@@ -114,9 +115,9 @@ write_file(
         name = file + "_doc",
         out = file + ".md_",
         header_template = file + "_header.vm",
-        input = "//swift:swift.bzl",
+        input = "//doc:doc.bzl",
         symbol_names = symbols,
-        deps = ["//swift"],
+        deps = ["//doc"],
     )
     for [
         file,
@@ -183,4 +184,15 @@ bzl_library(
     name = "bazel_tools_bzl",
     srcs = ["@bazel_tools//tools:bzl_srcs"],
     visibility = ["//swift:__pkg__"],
+)
+
+# gazelle:ignore
+bzl_library(
+    name = "doc",
+    srcs = ["//doc:doc.bzl"],
+    visibility = ["//doc:__pkg__"],
+    deps = [
+        "//proto",
+        "//swift",
+    ],
 )

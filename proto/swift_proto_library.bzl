@@ -25,6 +25,16 @@ load(
     "ProtoInfo",
 )
 load(
+    "//proto:swift_proto_common.bzl",
+    "swift_proto_common",
+)
+load(
+    "//swift:swift.bzl",
+    "SwiftInfo",
+    "SwiftToolchainInfo",
+    "swift_common",
+)
+load(
     "//swift/internal:attrs.bzl",
     "swift_deps_attr",
 )
@@ -38,28 +48,18 @@ load(
 )
 load(
     "//swift/internal:providers.bzl",
-    "SwiftInfo",
     "SwiftProtoCompilerInfo",
     "SwiftProtoInfo",
-    "SwiftToolchainInfo",
 )
 load(
     "//swift/internal:swift_clang_module_aspect.bzl",
     "swift_clang_module_aspect",
 )
 load(
-    "//swift/internal:swift_common.bzl",
-    "swift_common",
-)
-load(
     "//swift/internal:utils.bzl",
     "compact",
     "get_providers",
     "include_developer_search_paths",
-)
-load(
-    "//swift/proto:swift_proto_utils.bzl",
-    "proto_path",
 )
 
 # Private
@@ -85,7 +85,7 @@ def _get_module_mappings(attr, module_name):
     for proto_dep in proto_deps:
         proto_info = proto_dep[ProtoInfo]
         proto_file_paths = [
-            proto_path(proto_src, proto_info)
+            swift_proto_common.proto_path(proto_src, proto_info)
             for proto_src in proto_info.check_deps_sources.to_list()
         ]
         direct_proto_file_paths.extend(proto_file_paths)
@@ -277,8 +277,8 @@ on which fields are accepted and how they are used.
 Generates a Swift static library from one or more targets producing `ProtoInfo`.
 
 ```python
-load("//proto:proto.bzl", "swift_proto_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
+load("//proto:proto.bzl", "swift_proto_library")
 
 proto_library(
     name = "foo",
@@ -295,8 +295,8 @@ If your protos depend on protos from other targets, add dependencies between the
 swift_proto_library targets which mirror the dependencies between the proto targets.
 
 ```python
-load("//proto:proto.bzl", "swift_proto_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
+load("//proto:proto.bzl", "swift_proto_library")
 
 proto_library(
     name = "bar",

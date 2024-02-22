@@ -17,7 +17,10 @@ bzl_library(
 bzl_library(
     name = "attrs",
     srcs = ["attrs.bzl"],
-    visibility = ["//swift:__subpackages__"],
+    visibility = [
+        "//proto:__subpackages__",
+        "//swift:__subpackages__",
+    ],
     deps = [
         ":providers",
         "@bazel_skylib//lib:dicts",
@@ -37,7 +40,10 @@ bzl_library(
 bzl_library(
     name = "compiling",
     srcs = ["compiling.bzl"],
-    visibility = ["//swift:__subpackages__"],
+    visibility = [
+        "//proto:__subpackages__",
+        "//swift:__subpackages__",
+    ],
     deps = [
         ":actions",
         ":autolinking",
@@ -102,7 +108,10 @@ bzl_library(
 bzl_library(
     name = "linking",
     srcs = ["linking.bzl"],
-    visibility = ["//swift:__subpackages__"],
+    visibility = [
+        "//proto:__subpackages__",
+        "//swift:__subpackages__",
+    ],
     deps = [
         ":derived_files",
         "@bazel_skylib//lib:collections",
@@ -157,7 +166,10 @@ bzl_library(
 bzl_library(
     name = "swift_clang_module_aspect",
     srcs = ["swift_clang_module_aspect.bzl"],
-    visibility = ["//swift:__subpackages__"],
+    visibility = [
+        "//proto:__subpackages__",
+        "//swift:__subpackages__",
+    ],
     deps = [
         ":attrs",
         ":compiling",
@@ -298,7 +310,10 @@ bzl_library(
 bzl_library(
     name = "utils",
     srcs = ["utils.bzl"],
-    visibility = ["//swift:__subpackages__"],
+    visibility = [
+        "//proto:__subpackages__",
+        "//swift:__subpackages__",
+    ],
     deps = ["@bazel_skylib//lib:paths"],
 )
 

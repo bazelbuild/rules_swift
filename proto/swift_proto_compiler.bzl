@@ -21,14 +21,20 @@ load(
     "paths",
 )
 load(
-    "//swift/internal:providers.bzl",
-    "SwiftInfo",
-    "SwiftProtoCompilerInfo",
+    "//proto:swift_proto_common.bzl",
+    "swift_proto_common",
 )
 load(
-    "//swift/proto:swift_proto_utils.bzl",
-    "proto_path",
+    "//proto:swift_proto_utils.bzl",
     "register_module_mapping_write_action",
+)
+load(
+    "//swift:swift.bzl",
+    "SwiftInfo",
+)
+load(
+    "//swift/internal:providers.bzl",
+    "SwiftProtoCompilerInfo",
 )
 
 def _swift_proto_compile(ctx, swift_proto_compiler_info, additional_compiler_info, proto_infos, module_mappings):
@@ -86,7 +92,7 @@ def _swift_proto_compile(ctx, swift_proto_compiler_info, additional_compiler_inf
         # about their proto sources and declare the swift files that will be generated:
         for proto_src in proto_info.check_deps_sources.to_list():
             # Derive the proto path:
-            path = proto_path(proto_src, proto_info)
+            path = swift_proto_common.proto_path(proto_src, proto_info)
             if path in proto_paths:
                 if proto_paths[path] != proto_src:
                     fail("proto files {} and {} have the same import path, {}".format(
@@ -337,7 +343,7 @@ Each compiler target should configure this based on the suffix applied to the ge
             mandatory = True,
         ),
         "_copy_swift_sources_template": attr.label(
-            default = ":copy_swift_sources.sh.tpl",
+            default = "//proto:copy_swift_sources.sh.tpl",
             allow_single_file = True,
         ),
     },

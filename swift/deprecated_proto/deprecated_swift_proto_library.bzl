@@ -80,7 +80,7 @@ def _swift_proto_library_impl(ctx):
 
     return providers
 
-swift_proto_library = rule(
+deprecated_swift_proto_library = rule(
     attrs = {
         "deps": attr.label_list(
             aspects = [swift_protoc_gen_aspect],

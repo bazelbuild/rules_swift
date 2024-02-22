@@ -21,10 +21,13 @@ load(
     "paths",
 )
 load(
+    "//proto:proto.bzl",
+    "swift_proto_common",
+    "SwiftProtoCompilerInfo",
+)
+load(
     "//swift:swift.bzl",
     "SwiftInfo",
-    "SwiftProtoCompilerInfo",
-    "swift_proto_common",
 )
 
 def _custom_swift_proto_compile(ctx, swift_proto_compiler_info, additional_compiler_info, proto_infos, module_mappings):
@@ -129,13 +132,5 @@ custom_swift_proto_compiler = rule(
             executable = True,
             cfg = "exec",
         ),
-        # "_plugin": attr.label(
-        #     doc = """\
-        #     A proto compiler executable binary plugin.
-        #     """,
-        #     default = "//examples/xplatform/custom_swift_proto_compiler/rules:custom_proto_compiler_plugin",
-        #     executable = True,
-        #     cfg = "exec",
-        # ),
     },
 )

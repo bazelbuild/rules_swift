@@ -33,12 +33,12 @@ load(
     _universal_swift_compiler_plugin = "universal_swift_compiler_plugin",
 )
 load(
-    "@build_bazel_rules_swift//swift/deprecated_proto:swift_grpc_library.bzl",
-    _deprecated_swift_grpc_library = "swift_grpc_library",
+    "@build_bazel_rules_swift//swift/deprecated_proto:deprecated_swift_grpc_library.bzl",
+    _deprecated_swift_grpc_library = "deprecated_swift_grpc_library",
 )
 load(
-    "@build_bazel_rules_swift//swift/deprecated_proto:swift_proto_library.bzl",
-    _deprecated_swift_proto_library = "swift_proto_library",
+    "@build_bazel_rules_swift//swift/deprecated_proto:deprecated_swift_proto_library.bzl",
+    _deprecated_swift_proto_library = "deprecated_swift_proto_library",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:providers.bzl",
@@ -94,22 +94,11 @@ load(
     "@build_bazel_rules_swift//swift/internal:swift_usage_aspect.bzl",
     _swift_usage_aspect = "swift_usage_aspect",
 )
-load(
-    "@build_bazel_rules_swift//swift/proto:swift_proto_compiler.bzl",
-    _swift_proto_compiler = "swift_proto_compiler",
-)
-load(
-    "@build_bazel_rules_swift//swift/proto:swift_proto_library.bzl",
-    _swift_proto_library = "swift_proto_library",
-)
-load(
-    "@build_bazel_rules_swift//swift/proto:swift_proto_utils.bzl",
-    _swift_proto_common = "swift_proto_common",
-)
 
 # Re-export providers.
-SwiftProtoInfo = _SwiftProtoInfo
 SwiftInfo = _SwiftInfo
+SwiftProtoCompilerInfo = _SwiftProtoCompilerInfo
+SwiftProtoInfo = _SwiftProtoInfo
 SwiftToolchainInfo = _SwiftToolchainInfo
 SwiftUsageInfo = _SwiftUsageInfo
 
@@ -130,15 +119,11 @@ swift_package_configuration = _swift_package_configuration
 swift_test = _swift_test
 
 # Deprecated swift proto rules:
+deprecated_swift_proto_library = _deprecated_swift_proto_library
+deprecated_swift_grpc_library = _deprecated_swift_grpc_library
 swift_proto_library = _deprecated_swift_proto_library
 swift_grpc_library = _deprecated_swift_grpc_library
 SwiftGRPCInfo = _DeprecatedSwiftGRPCInfo
-
-# Swift proto rule:
-SwiftProtoCompilerInfo = _SwiftProtoCompilerInfo
-swift_proto_compiler = _swift_proto_compiler
-new_swift_proto_library = _swift_proto_library
-swift_proto_common = _swift_proto_common
 
 # Re-export public aspects.
 swift_clang_module_aspect = _swift_clang_module_aspect
