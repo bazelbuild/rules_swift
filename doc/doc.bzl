@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Re-exported symbols for consumption from stardoc.
+"""Documentation for rules_swift.
 """
 
 load(
@@ -52,6 +52,8 @@ load(
     _swift_usage_aspect = "swift_usage_aspect",
     _universal_swift_compiler_plugin = "universal_swift_compiler_plugin",
 )
+
+# The following are re-exported symbols for consumption from stardoc.
 
 # proto symbols
 swift_proto_common = _swift_proto_common
