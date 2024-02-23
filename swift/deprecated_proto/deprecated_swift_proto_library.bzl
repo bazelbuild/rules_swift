@@ -14,16 +14,27 @@
 
 """A rule that generates a Swift library from protocol buffer sources."""
 
-load("@rules_proto//proto:defs.bzl", "ProtoInfo")
-load(":providers.bzl", "SwiftInfo", "SwiftProtoInfo")
+load(
+    "@rules_proto//proto:defs.bzl",
+    "ProtoInfo",
+)
+load(
+    "//swift/internal:providers.bzl",
+    "SwiftInfo",
+    "SwiftProtoInfo",
+)
 load(
     ":swift_protoc_gen_aspect.bzl",
     "SwiftProtoCcInfo",
     "swift_protoc_gen_aspect",
 )
-load(":transitions.bzl", "proto_compiler_transition")
+load(
+    ":transitions.bzl",
+    "proto_compiler_transition",
+)
 
 def _swift_proto_library_impl(ctx):
+    print("WARNING: This rule is deprecated. See [the proto migration doc](proto_migration.md) for more information.")  # buildifier: disable=print
     if len(ctx.attr.deps) != 1:
         fail(
             "You must list exactly one target in the deps attribute.",
@@ -69,7 +80,7 @@ def _swift_proto_library_impl(ctx):
 
     return providers
 
-swift_proto_library = rule(
+deprecated_swift_proto_library = rule(
     attrs = {
         "deps": attr.label_list(
             aspects = [swift_protoc_gen_aspect],
@@ -87,6 +98,10 @@ provider) from which the Swift library should be generated.
     },
     cfg = proto_compiler_transition,
     doc = """\
+DEPRECATED -- Please use the swift_proto_library rule defined in //proto:proto.bzl instead.
+This rule will be removed in the next rules_swift major version update.
+If you're already using this rule, see [the proto migration doc](proto_migration.md) for infomation on how to migrate.
+
 Generates a Swift library from protocol buffer sources.
 
 There should be one `swift_proto_library` for any `proto_library` that you wish

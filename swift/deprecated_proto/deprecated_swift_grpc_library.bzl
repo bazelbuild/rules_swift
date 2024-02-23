@@ -14,19 +14,47 @@
 
 """A Swift library rule that generates gRPC services defined in protos."""
 
-load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load("@rules_proto//proto:defs.bzl", "ProtoInfo")
-load(":actions.bzl", "USE_DEFAULT_SHELL_ENV")
 load(
-    ":compiling.bzl",
+    "@bazel_skylib//lib:dicts.bzl",
+    "dicts",
+)
+load(
+    "@rules_proto//proto:defs.bzl",
+    "ProtoInfo",
+)
+load(
+    "//swift/internal:actions.bzl",
+    "USE_DEFAULT_SHELL_ENV",
+)
+load(
+    "//swift/internal:compiling.bzl",
     "output_groups_from_other_compilation_outputs",
 )
 load(
-    ":feature_names.bzl",
+    "//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_ENABLE_TESTING",
     "SWIFT_FEATURE_GENERATE_FROM_RAW_PROTO_FILES",
 )
-load(":linking.bzl", "new_objc_provider")
+load(
+    "//swift/internal:linking.bzl",
+    "new_objc_provider",
+)
+load(
+    "//swift/internal:providers.bzl",
+    "SwiftGRPCInfo",
+    "SwiftInfo",
+    "SwiftProtoInfo",
+    "SwiftToolchainInfo",
+)
+load(
+    "//swift/internal:swift_common.bzl",
+    "swift_common",
+)
+load(
+    "//swift/internal:utils.bzl",
+    "compact",
+    "get_providers",
+)
 load(
     ":proto_gen_utils.bzl",
     "declare_generated_files",
@@ -35,15 +63,9 @@ load(
     "register_module_mapping_write_action",
 )
 load(
-    ":providers.bzl",
-    "SwiftGRPCInfo",
-    "SwiftInfo",
-    "SwiftProtoInfo",
-    "SwiftToolchainInfo",
+    ":transitions.bzl",
+    "proto_compiler_transition",
 )
-load(":swift_common.bzl", "swift_common")
-load(":transitions.bzl", "proto_compiler_transition")
-load(":utils.bzl", "compact", "get_providers")
 
 def _register_grpcswift_generate_action(
         label,
@@ -200,6 +222,8 @@ def _register_grpcswift_generate_action(
     return generated_files
 
 def _swift_grpc_library_impl(ctx):
+    print("WARNING: This rule is deprecated. See [the proto migration doc](proto_migration.md) for more information.")  # buildifier: disable=print
+
     if len(ctx.attr.deps) != 1:
         fail(
             "You must list exactly one target in the deps attribute.",
@@ -368,7 +392,7 @@ def _swift_grpc_library_impl(ctx):
 
     return providers
 
-swift_grpc_library = rule(
+deprecated_swift_grpc_library = rule(
     attrs = dicts.add(
         swift_common.toolchain_attrs(),
         {
@@ -437,6 +461,10 @@ Exactly one `proto_library` target that defines the services being generated.
     ),
     cfg = proto_compiler_transition,
     doc = """\
+DEPRECATED -- Please use the swift_proto_library rule defined in //proto:proto.bzl instead.
+This rule will be removed in the next rules_swift major version update.
+If you're already using this rule, see [the proto migration doc](proto_migration.md) for infomation on how to migrate.
+
 Generates a Swift library from gRPC services defined in protocol buffer sources.
 
 There should be one `swift_grpc_library` for any `proto_library` that defines

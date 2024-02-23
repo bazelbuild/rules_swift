@@ -1,0 +1,51 @@
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+
+package(default_visibility = ["//visibility:public"])
+
+exports_files(["copy_swift_sources.sh.tpl"])
+
+bzl_library(
+    name = "swift_proto_utils",
+    srcs = ["swift_proto_utils.bzl"],
+    deps = ["@bazel_skylib//lib:paths"],
+)
+
+bzl_library(
+    name = "swift_proto_common",
+    srcs = ["swift_proto_common.bzl"],
+    deps = [":swift_proto_utils"],
+)
+
+bzl_library(
+    name = "swift_proto_compiler",
+    srcs = ["swift_proto_compiler.bzl"],
+    deps = [
+        ":swift_proto_utils",
+        "@bazel_skylib//lib:paths",
+    ],
+)
+
+bzl_library(
+    name = "swift_proto_library",
+    srcs = ["swift_proto_library.bzl"],
+    deps = [
+        "//swift/internal:attrs",
+        "//swift/internal:compiling",
+        "//swift/internal:linking",
+        "//swift/internal:swift_clang_module_aspect",
+        "//swift/internal:utils",
+        "@bazel_skylib//lib:dicts",
+        "@rules_proto//proto:defs",
+    ],
+)
+
+bzl_library(
+    name = "proto",
+    srcs = ["proto.bzl"],
+    deps = [
+        ":swift_proto_common",
+        ":swift_proto_compiler",
+        ":swift_proto_library",
+        "//swift",
+    ],
+)
