@@ -12,7 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Documentation for rules_swift.
+"""Bazel rules to define Swift libraries and executable binaries.
+
+Users should load these rules from one or both of the following Bazel files:
+
+```build
+@build_bazel_rules_swift//swift:swift.bzl
+@build_bazel_rules_swift//proto:proto.bzl
+```
+
+Do not import definitions from the `internal` subdirectory directly.
+
+For example:
+
+```build
+load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
+load("@build_bazel_rules_swift//proto:proto.bzl", "swift_proto_library")
+```
 """
 
 load(

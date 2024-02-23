@@ -1,10 +1,24 @@
 <!-- Generated with Stardoc, Do Not Edit! -->
 
-Documentation for rules_swift.
+Bazel rules to define Swift libraries and executable binaries.
+
+Users should load these rules from one or both of the following Bazel files:
+
+```build
+@build_bazel_rules_swift//swift:swift.bzl
+@build_bazel_rules_swift//proto:proto.bzl
+```
+
+Do not import definitions from the `internal` subdirectory directly.
+
+For example:
+
+```build
+load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
+load("@build_bazel_rules_swift//proto:proto.bzl", "swift_proto_library")
+```
 On this page:
 
-  * [swift_proto_library](#swift_proto_library)
-  * [swift_proto_compiler](#swift_proto_compiler)
   * [swift_binary](#swift_binary)
   * [swift_c_module](#swift_c_module)
   * [swift_compiler_plugin](#swift_compiler_plugin)
@@ -16,6 +30,8 @@ On this page:
   * [swift_module_alias](#swift_module_alias)
   * [swift_package_configuration](#swift_package_configuration)
   * [swift_test](#swift_test)
+  * [swift_proto_library](#swift_proto_library)
+  * [swift_proto_compiler](#swift_proto_compiler)
   * [deprecated_swift_grpc_library](#deprecated_swift_grpc_library)
   * [deprecated_swift_proto_library](#deprecated_swift_proto_library)
 

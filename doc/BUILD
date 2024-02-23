@@ -20,8 +20,6 @@ _DOC_SRCS = {
         "DeprecatedSwiftGRPCInfo",
     ],
     "rules": [
-        "swift_proto_library",
-        "swift_proto_compiler",
         "swift_binary",
         "swift_c_module",
         "swift_compiler_plugin",
@@ -33,6 +31,8 @@ _DOC_SRCS = {
         "swift_module_alias",
         "swift_package_configuration",
         "swift_test",
+        "swift_proto_library",
+        "swift_proto_compiler",
         "deprecated_swift_grpc_library",
         "deprecated_swift_proto_library",
     ],
