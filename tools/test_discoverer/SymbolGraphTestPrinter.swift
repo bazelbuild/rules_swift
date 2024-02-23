@@ -186,7 +186,7 @@ struct SymbolGraphTestPrinter {
             guard isIncludedByFilter("\\(suiteName)/\\(test.0)") else {
               continue
             }
-            if seenTestCount % shardCount == shardIndex {
+            if isIncludedInShard() {
               shardTests.append(test)
             }
             seenTestCount += 1
