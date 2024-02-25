@@ -25,69 +25,154 @@ load(
     "ProtoInfo",
 )
 load(
-    "//swift/internal:attrs.bzl",
-    "swift_config_attrs",
+    "//proto:swift_proto_utils.bzl",
+    "generate_module_mappings",
+    "compile_protos_for_target",
 )
 load(
-    "//swift/internal:providers.bzl",
+    "//swift:swift.bzl",
     "SwiftInfo",
     "SwiftProtoCompilerInfo",
     "SwiftProtoInfo",
-    "SwiftToolchainInfo",
-)
-load(
-    "//swift/internal:swift_common.bzl",
     "swift_common",
+)
+
+# buildifier: disable=bzl-visibility
+load(
+    "//swift/internal:swift_clang_module_aspect.bzl",
+    "swift_clang_module_aspect",
 )
 
 # _swift_proto_library_group_aspect
 
 def _swift_proto_library_group_aspect_impl(target, aspect_ctx):
-    print("target: {}".format(target.label))
-    print("rule: {}".format(aspect_ctx.rule))
-    pass
-    # module_name = _get_module_name(aspect_ctx.rule.attr, target.label)
-    # imports = _get_imports(aspect_ctx.rule.attr, module_name)
-    # return [SwiftProtoImportInfo(imports = imports)]
+
+    # Get the module name and generate the module mappings:
+    module_name = swift_common.derive_module_name(target.label)
+    proto_infos = [target[ProtoInfo]]
+    module_mappings = generate_module_mappings(
+        module_name,
+        proto_infos,
+        getattr(aspect_ctx.rule.attr, "deps", []),
+    )
+
+    # Compile the protos for the target:
+    _, output_group_info, cc_info, swift_info, swift_proto_info, objc_info = compile_protos_for_target(
+        aspect_ctx,
+        aspect_ctx.rule.attr,
+        target.label,
+        module_name,
+        proto_infos,
+        module_mappings,
+        aspect_ctx.attr._compilers,
+    )
+
+    return [
+        output_group_info,
+        cc_info,
+        swift_info,
+        swift_proto_info,
+        objc_info
+    ]
 
 _swift_proto_library_group_aspect = aspect(
-    _swift_proto_library_group_aspect_impl,
-    attr_aspects = [
-        "deps",
-    ],
+    attr_aspects = ["deps"],
     attrs = dicts.add(
         swift_common.toolchain_attrs(),
-        swift_config_attrs(),
+        {
+            "_compilers": attr.label_list(
+                default = ["//proto/compilers:swift_proto"],
+                doc = """\
+One or more `swift_proto_compiler` targets (or targets producing `SwiftProtoCompilerInfo`),
+from which the Swift protos will be generated.
+""",
+                providers = [SwiftProtoCompilerInfo],
+            ),
+        }
     ),
     doc = """\
-    Generates and compiles Swift sources from targets propagating `ProtoInfo` providers.
+    Gathers all of the transitive ProtoInfo providers along the deps attribute
     """,
     fragments = ["cpp"],
+    implementation = _swift_proto_library_group_aspect_impl,
 )
 
 # swift_proto_library_group
 
 def _swift_proto_library_group_impl(ctx):
-    pass
+
+    # Compile each target into a different swift module:
+    cc_infos = []
+    swift_infos = []
+    swift_proto_infos = []
+    objc_infos = []
+    for proto_target in ctx.attr.protos:
+        if CcInfo in proto_target:
+            cc_infos.append(proto_target[CcInfo])
+        if SwiftInfo in proto_target:
+            swift_infos.append(proto_target[SwiftInfo])
+        if SwiftProtoInfo in proto_target:
+            swift_proto_infos.append(proto_target[SwiftProtoInfo])
+        if apple_common.Objc in proto_target:
+            objc_infos.append(proto_target[apple_common.Objc])
+
+    # Merge the providers:
+    cc_info = cc_common.merge_cc_infos(
+        direct_cc_infos = cc_infos
+    )
+    swift_info = swift_common.create_swift_info(
+        swift_infos = swift_infos,
+    )
+    objc_info = apple_common.new_objc_provider(
+        providers = objc_infos,
+    )
+    direct_pbswift_files = []
+    module_mappings = []
+    for swift_proto_info in swift_proto_infos:
+        direct_pbswift_files.extend(swift_proto_info.direct_pbswift_files)
+        module_mappings.extend(swift_proto_info.module_mappings)
+    swift_proto_info = SwiftProtoInfo(
+        direct_pbswift_files = direct_pbswift_files,
+        module_mappings = module_mappings,
+        pbswift_files = depset(direct_pbswift_files),
+    )
+    default_info = DefaultInfo(
+        files = depset(
+            direct = [
+                module.swift.swiftmodule
+                for module in swift_info.direct_modules
+            ],
+            transitive = [swift_proto_info.pbswift_files],
+        )
+    )
+    
+    return [
+        default_info,
+        cc_info,
+        swift_info,
+        swift_proto_info,
+        objc_info
+    ]
 
 swift_proto_library_group = rule(
-    attrs =  {
-        "protos": attr.label_list(
-            doc = """\
+    attrs = dicts.add(
+        swift_common.library_rule_attrs(
+            additional_deps_aspects = [
+                swift_clang_module_aspect,
+            ],
+            requires_srcs = False,
+        ),
+        {
+            "protos": attr.label_list(
+                doc = """\
 A list of `proto_library` targets (or targets producing `ProtoInfo`),
 from which the Swift source files should be generated.
 """,
-            aspects = [_swift_proto_library_group_aspect],
-            providers = [ProtoInfo],
-        ),
-        "compilers": attr.label_list(
-            default = ["//proto/compilers:swift_proto"],
-            doc = """\
-One or more `swift_proto_compiler` target (or targets producing `SwiftProtoCompilerInfo`),
-from which the Swift protos will be generated.
-""",
-            providers = [SwiftProtoCompilerInfo],
-        ),
-    },
+                aspects = [_swift_proto_library_group_aspect],
+                providers = [ProtoInfo],
+            ),
+        },
+    ),
+    fragments = ["cpp"],
     implementation = _swift_proto_library_group_impl,
 )

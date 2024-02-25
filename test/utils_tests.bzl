@@ -66,7 +66,7 @@ testonly is true, always_include_developer_search_paths is true\
     ]
     for t in tests:
         ctx = struct(attr = t.attr)
-        actual = include_developer_search_paths(ctx)
+        actual = include_developer_search_paths(ctx.attr)
         asserts.equals(env, t.exp, actual, t.msg)
 
     return unittest.end(env)

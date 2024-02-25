@@ -25,17 +25,13 @@ load(
     "ProtoInfo",
 )
 load(
-    "//proto:swift_proto_common.bzl",
-    "swift_proto_common",
-)
-load(
     "//proto:swift_proto_utils.bzl",
+    "generate_module_mappings",
     "compile_protos_for_target",
 )
 load(
     "//swift:swift.bzl",
     "SwiftProtoCompilerInfo",
-    "SwiftProtoInfo",
     "swift_common",
 )
 
@@ -51,7 +47,6 @@ load(
     "swift_clang_module_aspect",
 )
 
-
 # Private
 
 def _get_module_name(attr, target_label):
@@ -65,49 +60,30 @@ def _get_module_name(attr, target_label):
         module_name = swift_common.derive_module_name(target_label)
     return module_name
 
-def _get_module_mappings(attr, module_name):
-    """Gets module mappings from the ProtoInfo and SwiftProtoInfo providers.
-    """
-
-    # Collect the direct proto source files from the proto deps and build the module mapping:
-    proto_deps = getattr(attr, "protos", [])
-    direct_proto_file_paths = []
-    for proto_dep in proto_deps:
-        proto_info = proto_dep[ProtoInfo]
-        proto_file_paths = [
-            swift_proto_common.proto_path(proto_src, proto_info)
-            for proto_src in proto_info.check_deps_sources.to_list()
-        ]
-        direct_proto_file_paths.extend(proto_file_paths)
-    module_mapping = struct(
-        module_name = module_name,
-        proto_file_paths = direct_proto_file_paths,
-    )
-
-    # Collect the transitive module mappings:
-    deps = getattr(attr, "deps", [])
-    transitive_module_mappings = []
-    for dep in deps:
-        if not SwiftProtoInfo in dep:
-            continue
-        transitive_module_mappings.extend(dep[SwiftProtoInfo].module_mappings)
-
-    # Create a list combining the direct + transitive module mappings:
-    return [module_mapping] + transitive_module_mappings
-
 # Rule
 
 def _swift_proto_library_impl(ctx):
-    # Get the module name and gather the depset of imports and module names:
+
+    # Get the module name and generate the module mappings:
     module_name = _get_module_name(ctx.attr, ctx.label)
-    module_mappings = _get_module_mappings(ctx.attr, module_name)
+    proto_infos = [d[ProtoInfo] for d in ctx.attr.protos]
+    module_mappings = generate_module_mappings(
+        module_name,
+        proto_infos,
+        getattr(ctx.attr, "deps", []),
+    )
 
     # Compile the protos for the target:
     default_info, output_group_info, cc_info, swift_info, swift_proto_info, objc_info = compile_protos_for_target(
         ctx,
+        ctx.attr,
+        ctx.label,
         module_name,
-        [d[ProtoInfo] for d in ctx.attr.protos],
+        proto_infos,
         module_mappings,
+        ctx.attr.compilers,
+        ctx.attr.deps + ctx.attr.additional_compiler_deps,
+        ctx.attr.additional_compiler_info,
     )
 
     return [
