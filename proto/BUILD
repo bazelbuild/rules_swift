@@ -40,12 +40,24 @@ bzl_library(
 )
 
 bzl_library(
+    name = "swift_proto_library_group",
+    srcs = ["swift_proto_library_group.bzl"],
+    deps = [
+        ":swift_proto_utils",
+        "//swift",
+        "@bazel_skylib//lib:dicts",
+        "@rules_proto//proto:defs",
+    ],
+)
+
+bzl_library(
     name = "proto",
     srcs = ["proto.bzl"],
     deps = [
         ":swift_proto_common",
         ":swift_proto_compiler",
         ":swift_proto_library",
+        ":swift_proto_library_group",
         "//swift",
     ],
 )
