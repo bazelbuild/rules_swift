@@ -214,7 +214,6 @@ def generate_swift_protos_for_target(
         all_compiler_deps.extend(swift_proto_compiler_info.compiler_deps)
         generated_swift_srcs.extend(swift_proto_compiler_info.compile(
             ctx = ctx,
-            target_label = target_label,
             swift_proto_compiler_info = swift_proto_compiler_info,
             additional_compiler_info = additional_compiler_info,
             proto_infos = proto_infos,
@@ -244,7 +243,6 @@ def compile_swift_protos_for_target(
     Returns: 
         module_context, other_compilation_outputs, linking_context, linking_output
     """
-    print("compiling swift source files for target: ", target_label)
 
     # Extract the swift toolchain and configure the features:
     swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]

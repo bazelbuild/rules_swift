@@ -34,15 +34,14 @@ load(
     "SwiftProtoCompilerInfo",
 )
 
-def _swift_proto_compile(ctx, target_label, swift_proto_compiler_info, additional_compiler_info, proto_infos, module_mappings):
+def _swift_proto_compile(ctx, swift_proto_compiler_info, additional_compiler_info, proto_infos, module_mappings):
     """Compiles Swift source files from `ProtoInfo` providers.
 
     Args:
         ctx: The context of the aspect or rule.
-        target_label: The label of the target for which the module is being compiled.
         swift_proto_compiler_info: The `SwiftProtoCompilerInfo` provider.
         additional_compiler_info: information passed from the `swift_proto_library` target to the compiler
-        proto_infos: The list of `ProtoInfo` providers to compile
+        proto_infos: the list of `ProtoInfo` providers to compile
         module_mappings: the module_mappings field of the `SwiftProtoInfo` for the `swift_proto_library` target
 
     Returns:
@@ -73,8 +72,8 @@ def _swift_proto_compile(ctx, target_label, swift_proto_compiler_info, additiona
     # before finally touching all of the paths to ensure we at least have a blank Swift file for those.
 
     # Declare the temporary output directory and define the temporary and permanent output paths:
-    target_relative_permanent_output_directory_path = paths.join(target_label.name, "gen")
-    target_relative_temporary_output_directory_path = paths.join(target_label.name, swift_proto_compiler_info.internal.plugin_name, "tmp")
+    target_relative_permanent_output_directory_path = paths.join(ctx.label.name, "gen")
+    target_relative_temporary_output_directory_path = paths.join(ctx.label.name, swift_proto_compiler_info.internal.plugin_name, "tmp")
     temporary_output_directory = ctx.actions.declare_directory(target_relative_temporary_output_directory_path)
 
     # Declare the Swift files that will be generated:
@@ -129,7 +128,7 @@ def _swift_proto_compile(ctx, target_label, swift_proto_compiler_info, additiona
     transitive_descriptor_sets = depset(direct = [], transitive = transitive_descriptor_sets_list)
 
     # Write the module mappings to a file:
-    module_mappings_file = register_module_mapping_write_action(target_label, ctx.actions, module_mappings)
+    module_mappings_file = register_module_mapping_write_action(ctx.label, ctx.actions, module_mappings)
 
     # Build the arguments for protoc:
     arguments = ctx.actions.args()
@@ -192,7 +191,7 @@ def _swift_proto_compile(ctx, target_label, swift_proto_compiler_info, additiona
     )
 
     # Expand the copy Swift sources template:
-    copy_swift_sources_file_path = paths.join(target_label.name, swift_proto_compiler_info.internal.plugin_name, "copy_swift_sources.sh")
+    copy_swift_sources_file_path = paths.join(ctx.label.name, swift_proto_compiler_info.internal.plugin_name, "copy_swift_sources.sh")
     copy_swift_sources_file = ctx.actions.declare_file(copy_swift_sources_file_path)
     ctx.actions.expand_template(
         template = swift_proto_compiler_info.internal.copy_swift_sources_template,
@@ -215,8 +214,6 @@ def _swift_proto_compile(ctx, target_label, swift_proto_compiler_info, additiona
     )
 
     return swift_srcs
-
-# rule
 
 def _swift_proto_compiler_impl(ctx):
     return [
