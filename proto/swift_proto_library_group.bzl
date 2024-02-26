@@ -124,6 +124,68 @@ from which the Swift source files should be generated.
             providers = [ProtoInfo],
         ),
     },
+    doc = """\
+Generates a collection of Swift static library from a target producing `ProtoInfo` and its dependencies.
+
+This rule is intended to facilitate migration from the deprecated swift proto library rules to the new ones.
+Unlike swift_proto_library which is a drop-in-replacement for swift_library, 
+this rule uses an aspect over the direct proto library dependency and its transitive dependencies,
+compiling each into a swift static library.
+
+For example, in the following targets, the proto_library_group_swift_proto target only depends on
+package_2_proto target, and this transitively depends on package_1_proto.
+When used as a dependency from a swift_library or swift_binary target, 
+two modules generated from these proto library targets are visible. 
+
+Because these are derived from the proto library targets via an aspect, though,
+you cannot customize many of the attributes including the swift proto compiler targets or
+the module names. The module names are derived from the proto library names. 
+
+In this case, the module names are:
+```
+import examples_xplatform_proto_library_group_package_1_package_1_proto
+import examples_xplatform_proto_library_group_package_2_package_2_proto
+```
+
+For this reason, we would encourage new consumers of the proto rules to use
+`swift_proto_library` when possible.
+
+```python
+proto_library(
+    name = "package_1_proto",
+    srcs = glob(["*.proto"]),
+    visibility = ["//visibility:public"],
+)
+
+...
+
+proto_library(
+    name = "package_2_proto",
+    srcs = glob(["*.proto"]),
+    visibility = ["//visibility:public"],
+    deps = ["//examples/xplatform/proto_library_group/package_1:package_1_proto"],
+)
+
+...
+
+swift_proto_library_group(
+    name = "proto_library_group_swift_proto",
+    deps = [
+        "//examples/xplatform/proto_library_group/package_2:package_2_proto",
+    ],
+)
+
+...
+
+swift_binary(
+    name = "proto_library_group_example",
+    srcs = ["main.swift"],
+    deps = [
+        ":proto_library_group_swift_proto",
+    ],
+)
+```
+""",
     fragments = ["cpp"],
     implementation = _swift_proto_library_group_impl,
 )

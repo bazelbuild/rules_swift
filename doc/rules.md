@@ -32,6 +32,7 @@ On this page:
   * [swift_test](#swift_test)
   * [swift_proto_library](#swift_proto_library)
   * [swift_proto_compiler](#swift_proto_compiler)
+  * [swift_proto_library_group](#swift_proto_library_group)
   * [deprecated_swift_grpc_library](#deprecated_swift_grpc_library)
   * [deprecated_swift_proto_library](#deprecated_swift_proto_library)
 
@@ -676,6 +677,84 @@ swift_proto_library(
 | <a id="swift_proto_library-plugins"></a>plugins |  A list of `swift_compiler_plugin` targets that should be loaded by the compiler when compiling this module and any modules that directly depend on it.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 | <a id="swift_proto_library-protos"></a>protos |  A list of `proto_library` targets (or targets producing `ProtoInfo`), from which the Swift source files should be generated.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 | <a id="swift_proto_library-swiftc_inputs"></a>swiftc_inputs |  Additional files that are referenced using `$(location ...)` in attributes that support location expansion.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
+
+
+<a id="swift_proto_library_group"></a>
+
+## swift_proto_library_group
+
+<pre>
+swift_proto_library_group(<a href="#swift_proto_library_group-name">name</a>, <a href="#swift_proto_library_group-deps">deps</a>)
+</pre>
+
+Generates a collection of Swift static library from a target producing `ProtoInfo` and its dependencies.
+
+This rule is intended to facilitate migration from the deprecated swift proto library rules to the new ones.
+Unlike swift_proto_library which is a drop-in-replacement for swift_library,
+this rule uses an aspect over the direct proto library dependency and its transitive dependencies,
+compiling each into a swift static library.
+
+For example, in the following targets, the proto_library_group_swift_proto target only depends on
+package_2_proto target, and this transitively depends on package_1_proto.
+When used as a dependency from a swift_library or swift_binary target,
+two modules generated from these proto library targets are visible.
+
+Because these are derived from the proto library targets via an aspect, though,
+you cannot customize many of the attributes including the swift proto compiler targets or
+the module names. The module names are derived from the proto library names.
+
+In this case, the module names are:
+```
+import examples_xplatform_proto_library_group_package_1_package_1_proto
+import examples_xplatform_proto_library_group_package_2_package_2_proto
+```
+
+For this reason, we would encourage new consumers of the proto rules to use
+`swift_proto_library` when possible.
+
+```python
+proto_library(
+    name = "package_1_proto",
+    srcs = glob(["*.proto"]),
+    visibility = ["//visibility:public"],
+)
+
+...
+
+proto_library(
+    name = "package_2_proto",
+    srcs = glob(["*.proto"]),
+    visibility = ["//visibility:public"],
+    deps = ["//examples/xplatform/proto_library_group/package_1:package_1_proto"],
+)
+
+...
+
+swift_proto_library_group(
+    name = "proto_library_group_swift_proto",
+    deps = [
+        "//examples/xplatform/proto_library_group/package_2:package_2_proto",
+    ],
+)
+
+...
+
+swift_binary(
+    name = "proto_library_group_example",
+    srcs = ["main.swift"],
+    deps = [
+        ":proto_library_group_swift_proto",
+    ],
+)
+```
+
+**ATTRIBUTES**
+
+
+| Name  | Description | Type | Mandatory | Default |
+| :------------- | :------------- | :------------- | :------------- | :------------- |
+| <a id="swift_proto_library_group-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
+| <a id="swift_proto_library_group-deps"></a>deps |  Exactly one `proto_library` target (or target producing `ProtoInfo`), from which the Swift source files should be generated.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 
 
 <a id="swift_test"></a>
