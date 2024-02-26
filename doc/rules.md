@@ -684,7 +684,7 @@ swift_proto_library(
 ## swift_proto_library_group
 
 <pre>
-swift_proto_library_group(<a href="#swift_proto_library_group-name">name</a>, <a href="#swift_proto_library_group-deps">deps</a>)
+swift_proto_library_group(<a href="#swift_proto_library_group-name">name</a>, <a href="#swift_proto_library_group-proto">proto</a>)
 </pre>
 
 Generates a collection of Swift static library from a target producing `ProtoInfo` and its dependencies.
@@ -732,9 +732,7 @@ proto_library(
 
 swift_proto_library_group(
     name = "proto_library_group_swift_proto",
-    deps = [
-        "//examples/xplatform/proto_library_group/package_2:package_2_proto",
-    ],
+    proto = "//examples/xplatform/proto_library_group/package_2:package_2_proto",
 )
 
 ...
@@ -754,7 +752,7 @@ swift_binary(
 | Name  | Description | Type | Mandatory | Default |
 | :------------- | :------------- | :------------- | :------------- | :------------- |
 | <a id="swift_proto_library_group-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
-| <a id="swift_proto_library_group-deps"></a>deps |  Exactly one `proto_library` target (or target producing `ProtoInfo`), from which the Swift source files should be generated.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
+| <a id="swift_proto_library_group-proto"></a>proto |  Exactly one `proto_library` target (or target producing `ProtoInfo`), from which the Swift source files should be generated.   | <a href="https://bazel.build/concepts/labels">Label</a> | required |  |
 
 
 <a id="swift_test"></a>

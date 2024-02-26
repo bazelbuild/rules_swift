@@ -86,16 +86,10 @@ from which the Swift protos will be generated.
 # swift_proto_library_group
 
 def _swift_proto_library_group_impl(ctx):
-    if len(ctx.attr.deps) != 1:
-        fail(
-            "You must list exactly one target in the deps attribute.",
-            attr = "deps",
-        )
-
-    dep = ctx.attr.deps[0]
-    proto_cc_info = dep[SwiftProtoCcInfo]
-    swift_info = dep[SwiftInfo]
-    swift_proto_info = dep[SwiftProtoInfo]
+    proto_target = ctx.attr.proto
+    proto_cc_info = proto_target[SwiftProtoCcInfo]
+    swift_info = proto_target[SwiftInfo]
+    swift_proto_info = proto_target[SwiftProtoInfo]
 
     return [
         DefaultInfo(
@@ -115,13 +109,14 @@ def _swift_proto_library_group_impl(ctx):
 
 swift_proto_library_group = rule(
     attrs = {
-        "deps": attr.label_list(
+        "proto": attr.label(
             aspects = [_swift_proto_library_group_aspect],
             doc = """\
 Exactly one `proto_library` target (or target producing `ProtoInfo`),
 from which the Swift source files should be generated.
 """,
             providers = [ProtoInfo],
+            mandatory = True,
         ),
     },
     doc = """\
@@ -170,9 +165,7 @@ proto_library(
 
 swift_proto_library_group(
     name = "proto_library_group_swift_proto",
-    deps = [
-        "//examples/xplatform/proto_library_group/package_2:package_2_proto",
-    ],
+    proto = "//examples/xplatform/proto_library_group/package_2:package_2_proto",
 )
 
 ...
