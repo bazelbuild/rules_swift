@@ -128,8 +128,6 @@ def _swift_proto_compile(ctx, target_label, swift_proto_compiler_info, additiona
                     permanent_output_directory_path = full_swift_src_path.removesuffix("/" + output_directory_relative_swift_src_path)
     transitive_descriptor_sets = depset(direct = [], transitive = transitive_descriptor_sets_list)
 
-    print("Generating swift srcs: ", swift_srcs)
-
     # Write the module mappings to a file:
     module_mappings_file = register_module_mapping_write_action(target_label, ctx.actions, module_mappings)
 
@@ -175,8 +173,6 @@ def _swift_proto_compile(ctx, target_label, swift_proto_compiler_info, additiona
 
     # Finally, add the proto paths:
     arguments.add_all(proto_paths.keys())
-
-    print("arguments: ", arguments)
 
     # Run the protoc action:
     ctx.actions.run(
