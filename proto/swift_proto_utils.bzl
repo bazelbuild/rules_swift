@@ -223,6 +223,7 @@ def compile_swift_protos_for_target(
     attr,
     target_label,
     module_name,
+    module_mappings,
     generated_swift_srcs,
     compiler_deps,
     ):
@@ -233,6 +234,7 @@ def compile_swift_protos_for_target(
         attr: The attributes of the target for which the module is being compiled.
         target_label: The label of the target for which the module is being compiled.
         module_name: The name of the Swift module that should be compiled from the protos.
+        module_mappings: List of module mapping structs assigning proto paths to Swift modules.
         generated_swift_srcs: The Swift source files generated from the protos. 
         compiler_deps: List of dependencies to pass to the Swift compiler.
     
@@ -282,34 +284,6 @@ def compile_swift_protos_for_target(
             swift_toolchain = swift_toolchain,
         )
     )
-
-    return module_context, other_compilation_outputs, linking_context, linking_output
-
-def aggregate_providers(
-    ctx,
-    module_mappings,
-    generated_swift_srcs,
-    compiler_deps,
-    module_context,
-    other_compilation_outputs,
-    linking_context,
-    linking_output,
-):
-    """ Aggregates the providers from the dependencies and compiler / linker artifacts.
-
-    Args:
-        ctx: The context of the aspect or rule.
-        module_mappings: List of module mapping structs assigning proto paths to Swift modules.
-        generated_swift_srcs: The Swift source files that were generated from the protos.
-        compiler_deps: List of targets which are dependencies passed to the compiler.
-        module_context: The module context.
-        other_compilation_outputs: The other compilation outputs.
-        linking_context: The linking context.
-        linking_output: The linking output.
-    
-    Returns: 
-        direct_output_group_info, direct_swift_proto_cc_info, direct_swift_info, direct_swift_proto_info
-    """
 
     # Extract the swift toolchain and configure the features:
     swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]

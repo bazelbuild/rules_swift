@@ -29,7 +29,6 @@ load(
     "generate_module_mappings",
     "generate_swift_protos_for_target",
     "compile_swift_protos_for_target",
-    "aggregate_providers",
 )
 load(
     "//swift:swift.bzl",
@@ -88,26 +87,14 @@ def _swift_proto_library_impl(ctx):
     )
 
     # Compile the source files to a module:
-    all_deps = compiler_deps + ctx.attr.deps + ctx.attr.additional_compiler_deps
-    module_context, other_compilation_outputs, linking_context, linking_output = compile_swift_protos_for_target(
+    direct_output_group_info, direct_proto_cc_info, direct_swift_info, direct_swift_proto_info = compile_swift_protos_for_target(
         ctx,
         ctx.attr,
         ctx.label,
         module_name,
-        generated_swift_srcs,
-        all_deps,
-    )
-
-    # Aggregate the providers:
-    direct_output_group_info, direct_proto_cc_info, direct_swift_info, direct_swift_proto_info = aggregate_providers(
-        ctx,
         module_mappings,
         generated_swift_srcs,
-        all_deps,
-        module_context,
-        other_compilation_outputs,
-        linking_context,
-        linking_output,
+        compiler_deps + ctx.attr.deps + ctx.attr.additional_compiler_deps,
     )
 
     return [

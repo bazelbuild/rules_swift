@@ -30,7 +30,6 @@ load(
     "generate_module_mappings",
     "generate_swift_protos_for_target",
     "compile_swift_protos_for_target",
-    "aggregate_providers",
 )
 load(
     "//swift:swift.bzl",
@@ -64,26 +63,14 @@ def _swift_proto_library_group_aspect_impl(target, aspect_ctx):
     )
 
     # Compile the source files to a module:
-    all_deps = compiler_deps + aspect_ctx.rule.attr.deps
-    module_context, other_compilation_outputs, linking_context, linking_output = compile_swift_protos_for_target(
+    direct_output_group_info, direct_proto_cc_info, direct_swift_info, direct_swift_proto_info = compile_swift_protos_for_target(
         aspect_ctx,
         aspect_ctx.rule.attr,
         target.label,
         module_name,
-        generated_swift_srcs,
-        all_deps,
-    )
-
-    # Aggregate the providers:
-    direct_output_group_info, direct_proto_cc_info, direct_swift_info, direct_swift_proto_info = aggregate_providers(
-        aspect_ctx,
         module_mappings,
         generated_swift_srcs,
-        all_deps,
-        module_context,
-        other_compilation_outputs,
-        linking_context,
-        linking_output,
+        compiler_deps + aspect_ctx.rule.attr.deps,
     )
 
     return [
