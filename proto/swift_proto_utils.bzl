@@ -44,7 +44,6 @@ load(
 # buildifier: disable=bzl-visibility
 load(
     "//swift/internal:utils.bzl",
-    "compact",
     "get_providers",
     "include_developer_search_paths",
 )
@@ -76,12 +75,11 @@ def proto_path(proto_src, proto_info):
         return proto_src.path
     return proto_src.path[len(prefix):]
 
-def register_module_mapping_write_action(target_label, actions, module_mappings):
+def register_module_mapping_write_action(ctx, module_mappings):
     """Registers an action that generates a module mapping for a proto library.
 
     Args:
-        target_label: The label of the target being analyzed.
-        actions: The context's actions object.
+        ctx: Context of the aspect or rule.
         module_mappings: The sequence of module mapping `struct`s to be rendered.
             This sequence should already have duplicates removed.
 
@@ -89,12 +87,12 @@ def register_module_mapping_write_action(target_label, actions, module_mappings)
         The `File` representing the module mapping that will be generated in
         protobuf text format.
     """
-    mapping_file = actions.declare_file(
-        "{}.protoc_gen_swift_modules.asciipb".format(target_label.name),
+    mapping_file = ctx.actions.declare_file(
+        "{}.protoc_gen_swift_modules.asciipb".format(ctx.label.name),
     )
     content = "".join([_render_text_module_mapping(m) for m in module_mappings])
 
-    actions.write(
+    ctx.actions.write(
         content = content,
         output = mapping_file,
     )
@@ -186,7 +184,6 @@ This provider is an implementation detail not meant to be used by clients.
 
 def generate_swift_protos_for_target(
     ctx,
-    target_label,
     proto_infos,
     module_mappings,
     compilers,
@@ -196,7 +193,6 @@ def generate_swift_protos_for_target(
 
     Args:
         ctx: Context of the aspect or rule.
-        target_label: Label of the target for which the Swift source files are being compiled.
         proto_infos: List of `ProtoInfo` providers to compile into Swift source files.
         module_mappings: List of module mapping structs assigning proto paths to Swift modules.
         compilers: List of swift_proto_compiler targets (or targets propagating `SwiftProtoCompilerInfo` providers).

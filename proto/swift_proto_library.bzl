@@ -81,7 +81,6 @@ def _swift_proto_library_impl(ctx):
     # Compile the protos to source files:
     compiler_deps, generated_swift_srcs = generate_swift_protos_for_target(
         ctx,
-        ctx.label,
         proto_infos,
         module_mappings,
         ctx.attr.compilers,

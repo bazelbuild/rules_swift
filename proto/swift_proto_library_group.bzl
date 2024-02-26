@@ -58,7 +58,6 @@ def _swift_proto_library_group_aspect_impl(target, aspect_ctx):
     # Compile the protos to source files:
     compiler_deps, generated_swift_srcs = generate_swift_protos_for_target(
         aspect_ctx,
-        target.label,
         proto_infos,
         module_mappings,
         aspect_ctx.attr._compilers,
