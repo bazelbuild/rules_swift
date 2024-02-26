@@ -127,7 +127,7 @@ def _render_text_module_mapping(mapping):
 
     return content
 
-def generate_module_mappings(module_name, proto_infos, transitive_swift_proto_deps):
+def _generate_module_mappings(module_name, proto_infos, transitive_swift_proto_deps):
     """Generates module mappings from ProtoInfo and SwiftProtoInfo providers.
 
     Args:
@@ -182,50 +182,16 @@ This provider is an implementation detail not meant to be used by clients.
     },
 )
 
-def generate_swift_protos_for_target(
-    ctx,
-    proto_infos,
-    module_mappings,
-    compilers,
-    additional_compiler_info = {}
-):
-    """ Compiles the proto source files from the given ProtoInfo provider into Swift source files.
-
-    Args:
-        ctx: Context of the aspect or rule.
-        proto_infos: List of `ProtoInfo` providers to compile into Swift source files.
-        module_mappings: List of module mapping structs assigning proto paths to Swift modules.
-        compilers: List of swift_proto_compiler targets (or targets propagating `SwiftProtoCompilerInfo` providers).
-        additional_compiler_info: Dictionary of additional information passed to the Swift proto compiler.
-    
-    Returns: 
-        all_compiler_deps, generated_swift_srcs
-    """
-
-    # Use the proto compiler to compile the swift sources for the proto deps:
-    all_compiler_deps = []
-    generated_swift_srcs = []
-    for swift_proto_compiler_target in compilers:
-        swift_proto_compiler_info = swift_proto_compiler_target[SwiftProtoCompilerInfo]
-        all_compiler_deps.extend(swift_proto_compiler_info.compiler_deps)
-        generated_swift_srcs.extend(swift_proto_compiler_info.compile(
-            ctx = ctx,
-            swift_proto_compiler_info = swift_proto_compiler_info,
-            additional_compiler_info = additional_compiler_info,
-            proto_infos = proto_infos,
-            module_mappings = module_mappings,
-        ))
-    
-    return all_compiler_deps, generated_swift_srcs
-
 def compile_swift_protos_for_target(
     ctx,
     attr,
     target_label,
     module_name,
-    module_mappings,
-    generated_swift_srcs,
-    compiler_deps,
+    proto_infos,
+    swift_proto_compilers,
+    swift_proto_deps,
+    additional_swift_proto_compiler_info = {},
+    additional_compiler_deps = [],
     ):
     """ Compiles the Swift source files into a module.
 
@@ -234,13 +200,36 @@ def compile_swift_protos_for_target(
         attr: The attributes of the target for which the module is being compiled.
         target_label: The label of the target for which the module is being compiled.
         module_name: The name of the Swift module that should be compiled from the protos.
-        module_mappings: List of module mapping structs assigning proto paths to Swift modules.
-        generated_swift_srcs: The Swift source files generated from the protos. 
-        compiler_deps: List of dependencies to pass to the Swift compiler.
+        swift_proto_compilers: List of targets propagating `SwiftProtoCompiler` providers.
+        proto_infos: List of `ProtoInfo` providers to compile into Swift source files.
+        swift_proto_deps: List of targets propagating `SwiftProtoInfo` providers.
+        additional_swift_proto_compiler_info: Dictionary of additional information passed to the Swift proto compiler.
+        additional_compiler_deps: Additional dependencies passed directly to the Swift compiler.
     
     Returns: 
         module_context, other_compilation_outputs, linking_context, linking_output
     """
+
+    # Generate the module mappings:
+    module_mappings = _generate_module_mappings(
+        module_name,
+        proto_infos,
+        swift_proto_deps,
+    )
+
+    # Use the proto compiler to compile the swift sources for the proto deps:
+    compiler_deps = swift_proto_deps + additional_compiler_deps
+    generated_swift_srcs = []
+    for swift_proto_compiler_target in swift_proto_compilers:
+        swift_proto_compiler_info = swift_proto_compiler_target[SwiftProtoCompilerInfo]
+        compiler_deps.extend(swift_proto_compiler_info.compiler_deps)
+        generated_swift_srcs.extend(swift_proto_compiler_info.compile(
+            ctx = ctx,
+            swift_proto_compiler_info = swift_proto_compiler_info,
+            additional_compiler_info = additional_swift_proto_compiler_info,
+            proto_infos = proto_infos,
+            module_mappings = module_mappings,
+        ))
 
     # Extract the swift toolchain and configure the features:
     swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]

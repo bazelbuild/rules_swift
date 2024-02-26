@@ -26,8 +26,6 @@ load(
 )
 load(
     "//proto:swift_proto_utils.bzl",
-    "generate_module_mappings",
-    "generate_swift_protos_for_target",
     "compile_swift_protos_for_target",
 )
 load(
@@ -67,24 +65,6 @@ def _swift_proto_library_impl(ctx):
 
     # Get the module name and generate the module mappings:
     module_name = _get_module_name(ctx.attr, ctx.label)
-    proto_infos = [d[ProtoInfo] for d in ctx.attr.protos]
-    deps = getattr(ctx.attr, "deps", [])
-
-    # Generate the module mappings:
-    module_mappings = generate_module_mappings(
-        module_name,
-        proto_infos,
-        deps,
-    )
-
-    # Compile the protos to source files:
-    compiler_deps, generated_swift_srcs = generate_swift_protos_for_target(
-        ctx,
-        proto_infos,
-        module_mappings,
-        ctx.attr.compilers,
-        ctx.attr.additional_compiler_info,
-    )
 
     # Compile the source files to a module:
     direct_output_group_info, direct_proto_cc_info, direct_swift_info, direct_swift_proto_info = compile_swift_protos_for_target(
@@ -92,9 +72,11 @@ def _swift_proto_library_impl(ctx):
         ctx.attr,
         ctx.label,
         module_name,
-        module_mappings,
-        generated_swift_srcs,
-        compiler_deps + ctx.attr.deps + ctx.attr.additional_compiler_deps,
+        [d[ProtoInfo] for d in ctx.attr.protos],
+        ctx.attr.compilers,
+        ctx.attr.deps,
+        ctx.attr.additional_compiler_info,
+        ctx.attr.additional_compiler_deps,
     )
 
     return [

@@ -27,8 +27,6 @@ load(
 load(
     "//proto:swift_proto_utils.bzl",
     "SwiftProtoCcInfo",
-    "generate_module_mappings",
-    "generate_swift_protos_for_target",
     "compile_swift_protos_for_target",
 )
 load(
@@ -45,22 +43,6 @@ def _swift_proto_library_group_aspect_impl(target, aspect_ctx):
 
     # Get the module name and generate the module mappings:
     module_name = swift_common.derive_module_name(target.label)
-    proto_infos = [target[ProtoInfo]]
-
-    # Generate the module mappings:
-    module_mappings = generate_module_mappings(
-        module_name,
-        proto_infos,
-        aspect_ctx.rule.attr.deps,
-    )
-
-    # Compile the protos to source files:
-    compiler_deps, generated_swift_srcs = generate_swift_protos_for_target(
-        aspect_ctx,
-        proto_infos,
-        module_mappings,
-        aspect_ctx.attr._compilers,
-    )
 
     # Compile the source files to a module:
     direct_output_group_info, direct_proto_cc_info, direct_swift_info, direct_swift_proto_info = compile_swift_protos_for_target(
@@ -68,9 +50,9 @@ def _swift_proto_library_group_aspect_impl(target, aspect_ctx):
         aspect_ctx.rule.attr,
         target.label,
         module_name,
-        module_mappings,
-        generated_swift_srcs,
-        compiler_deps + aspect_ctx.rule.attr.deps,
+        [target[ProtoInfo]],
+        aspect_ctx.attr._compilers,
+        aspect_ctx.rule.attr.deps,
     )
 
     return [
