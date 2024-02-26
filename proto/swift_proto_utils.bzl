@@ -134,7 +134,7 @@ def _generate_module_mappings(module_name, proto_infos, transitive_swift_proto_d
         module_name: Name of the module the direct proto dependencies will be compiled into.
         proto_infos: List of ProtoInfo providers for the direct proto dependencies.
         transitive_swift_proto_deps: Transitive dependencies propagating SwiftProtoInfo providers.
-        
+
     Returns:
         List of module mappings.
     """
@@ -162,7 +162,6 @@ def _generate_module_mappings(module_name, proto_infos, transitive_swift_proto_d
     # Create a list combining the direct + transitive module mappings:
     return [module_mapping] + transitive_module_mappings
 
-
 SwiftProtoCcInfo = provider(
     doc = """\
 Wraps a `CcInfo` provider added to a `proto_library` by the Swift proto aspect.
@@ -183,16 +182,15 @@ This provider is an implementation detail not meant to be used by clients.
 )
 
 def compile_swift_protos_for_target(
-    ctx,
-    attr,
-    target_label,
-    module_name,
-    proto_infos,
-    swift_proto_compilers,
-    swift_proto_deps,
-    additional_swift_proto_compiler_info = {},
-    additional_compiler_deps = [],
-    ):
+        ctx,
+        attr,
+        target_label,
+        module_name,
+        proto_infos,
+        swift_proto_compilers,
+        swift_proto_deps,
+        additional_swift_proto_compiler_info = {},
+        additional_compiler_deps = []):
     """ Compiles the Swift source files into a module.
 
     Args:
@@ -205,8 +203,8 @@ def compile_swift_protos_for_target(
         swift_proto_deps: List of targets propagating `SwiftProtoInfo` providers.
         additional_swift_proto_compiler_info: Dictionary of additional information passed to the Swift proto compiler.
         additional_compiler_deps: Additional dependencies passed directly to the Swift compiler.
-    
-    Returns: 
+
+    Returns:
         module_context, other_compilation_outputs, linking_context, linking_output
     """
 
@@ -315,7 +313,7 @@ def compile_swift_protos_for_target(
             CcInfo(
                 compilation_context = module_context.clang.compilation_context,
                 linking_context = linking_context,
-            )
+            ),
         ],
         cc_infos = transitive_cc_infos,
     )

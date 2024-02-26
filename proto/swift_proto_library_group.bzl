@@ -40,7 +40,6 @@ load(
 # _swift_proto_library_group_aspect
 
 def _swift_proto_library_group_aspect_impl(target, aspect_ctx):
-
     # Get the module name and generate the module mappings:
     module_name = swift_common.derive_module_name(target.label)
 
@@ -56,8 +55,8 @@ def _swift_proto_library_group_aspect_impl(target, aspect_ctx):
     )
 
     return [
-        direct_output_group_info, 
-        direct_proto_cc_info, 
+        direct_output_group_info,
+        direct_proto_cc_info,
         direct_swift_info,
         direct_swift_proto_info,
     ]
@@ -75,7 +74,7 @@ from which the Swift protos will be generated.
 """,
                 providers = [SwiftProtoCompilerInfo],
             ),
-        }
+        },
     ),
     doc = """\
     Gathers all of the transitive ProtoInfo providers along the deps attribute

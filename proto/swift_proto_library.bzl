@@ -62,7 +62,6 @@ def _get_module_name(attr, target_label):
 # Rule
 
 def _swift_proto_library_impl(ctx):
-
     # Get the module name and generate the module mappings:
     module_name = _get_module_name(ctx.attr, ctx.label)
 
