@@ -32,11 +32,6 @@ apply_mapping = rule(
     attrs = {
         "mapping": attr.label(),
         "target": attr.label(cfg = apply_mapping_transition),
-        "_allowlist_function_transition": attr.label(
-            default = Label(
-                "@bazel_tools//tools/allowlists/function_transition_allowlist",
-            ),
-        ),
     },
     implementation = _apply_mapping_impl,
 )
