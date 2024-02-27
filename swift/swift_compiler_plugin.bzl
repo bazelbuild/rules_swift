@@ -354,11 +354,6 @@ universal_swift_compiler_plugin = rule(
                 mandatory = True,
                 providers = [[SwiftBinaryInfo, SwiftCompilerPluginInfo]],
             ),
-            "_allowlist_function_transition": attr.label(
-                default = Label(
-                    "@bazel_tools//tools/allowlists/function_transition_allowlist",
-                ),
-            ),
             # TODO(b/301253335): Enable AEGs and switch from `swift` exec_group to swift `toolchain` param.
             "_use_auto_exec_groups": attr.bool(default = False),
         },

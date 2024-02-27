@@ -133,11 +133,6 @@ def _swift_proto_library_group_impl(ctx):
 
 swift_proto_library_group = rule(
     attrs = {
-        "_allowlist_function_transition": attr.label(
-            default = Label(
-                "@bazel_tools//tools/allowlists/function_transition_allowlist",
-            ),
-        ),
         "compiler": attr.label(
             default = Label("//proto/compilers:swift_proto"),
             doc = """\
