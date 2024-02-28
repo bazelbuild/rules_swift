@@ -11,6 +11,20 @@ package(
 
 proto_lang_toolchain(
     name = "proto_swift_toolchain",
+    blacklisted_protos = [
+        # keep sorted
+        "@com_google_protobuf//:any_proto",
+        "@com_google_protobuf//:api_proto",
+        "@com_google_protobuf//:descriptor_proto",
+        "@com_google_protobuf//:duration_proto",
+        "@com_google_protobuf//:empty_proto",
+        "@com_google_protobuf//:field_mask_proto",
+        "@com_google_protobuf//:source_context_proto",
+        "@com_google_protobuf//:struct_proto",
+        "@com_google_protobuf//:timestamp_proto",
+        "@com_google_protobuf//:type_proto",
+        "@com_google_protobuf//:wrappers_proto",
+    ],
     command_line = "--swift_out=$(OUT)",
     mnemonic = "ProtocGenSwift",
     output_files = "multiple",

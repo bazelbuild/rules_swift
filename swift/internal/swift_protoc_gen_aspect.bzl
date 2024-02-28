@@ -70,19 +70,35 @@ This provider is an implementation detail not meant to be used by clients.
 # Name of the execution group used for `ProtocGenSwift` actions.
 _GENERATE_EXEC_GROUP = "generate"
 
-def _is_well_known_types_target(target_label):
-    """Checks if the given label is an WKT target..
+def _compute_generated_files(
+        *,
+        actions,
+        proto_info,
+        proto_lang_toolchain_info):
+    """Checks if the target has sources to generate from.
 
     Args:
-        target_label: A Label for the target.
+        actions: The ctx.actions to use for declaring the files.
+        proto_info: A targets `ProtoInfo`.
+        proto_lang_toolchain_info: The `ProtoLangToolchainInfo` for Swift Proto support.
 
     Returns:
-        `True` if the Label seems to be a WKT target.
+        The list of `File`s that will be generated
     """
+    files_to_skip = proto_lang_toolchain_info.provided_proto_sources
 
-    # Keeping this simple, anything in their WORKSPACE we'll treat as a WKT.
-    # This can be tweaked in the future if need be to also check the `package`.
-    return target_label.workspace_name == "com_google_protobuf"
+    # NOTE: The `proto_common.declare_generated_files()` doesn't filter the files against
+    # the Toolchain's `provided_proto_sources`, so to filter out the WKTS, just bail the
+    # first file is a match. That generally covers the WKTs targets.
+    direct_srcs = proto_info.direct_sources
+    if direct_srcs and direct_srcs[0] in files_to_skip:
+        return []
+
+    return proto_common.declare_generated_files(
+        actions = actions,
+        proto_info = proto_info,
+        extension = ".pb.swift",
+    )
 
 def _build_module_mapping_from_srcs(target, proto_srcs):
     """Returns the sequence of module mapping `struct`s for the given sources.
@@ -165,17 +181,11 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
     proto_lang_toolchain_info = aspect_ctx.attr._proto_lang_toolchain[proto_common.ProtoLangToolchainInfo]
     target_proto_info = target[ProtoInfo]
 
-    # TODO: `proto_common` doesn't have non-experimental apis for filtering out
-    # the bundled files, so use our own check.
-    if _is_well_known_types_target(target.label):
-        # WKTs bundled with the runtime.
-        direct_pbswift_files = []
-    else:
-        direct_pbswift_files = proto_common.declare_generated_files(
-            actions = aspect_ctx.actions,
-            proto_info = target_proto_info,
-            extension = ".pb.swift",
-        )
+    direct_pbswift_files = _compute_generated_files(
+        actions = aspect_ctx.actions,
+        proto_info = target_proto_info,
+        proto_lang_toolchain_info = proto_lang_toolchain_info,
+    )
 
     proto_deps = aspect_ctx.rule.attr.deps
     transitive_cc_infos = []
