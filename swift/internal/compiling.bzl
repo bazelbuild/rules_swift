@@ -396,7 +396,6 @@ def compile_action_configs(
         swift_toolchain_config.action_config(
             actions = [
                 swift_action_names.COMPILE,
-                swift_action_names.DERIVE_FILES,
             ],
             configurators = [_constant_value_extraction_configurator],
             features = [SWIFT_FEATURE__SUPPORTS_CONST_VALUE_EXTRACTION],
@@ -2001,7 +2000,7 @@ def _constant_value_extraction_configurator(prerequisites, args):
     if not prerequisites.const_gather_protocols_file:
         return None
 
-    args.add("-emit-const-values")
+    args.add("-emit-const-values-path", prerequisites.const_values_files[0])
     args.add_all(
         [
             "-const-gather-protocols-file",
