@@ -29,10 +29,10 @@ swift_proto_library(
     ],
     module_name = "ServiceServer",
     protos = [":service_proto"],
+    visibility = ["//visibility:public"],
     deps = [
         "//examples/xplatform/proto_library_group/service:proto_library_group_swift_proto",
     ],
-    visibility = ["//visibility:public"],
 )
 
 swift_proto_library(
@@ -42,8 +42,8 @@ swift_proto_library(
     ],
     module_name = "ServiceClient",
     protos = [":service_proto"],
+    visibility = ["//visibility:public"],
     deps = [
         "//examples/xplatform/proto_library_group/service:proto_library_group_swift_proto",
     ],
-    visibility = ["//visibility:public"],
 )
