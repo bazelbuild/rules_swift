@@ -148,7 +148,7 @@ def _generate_module_mappings(module_name, proto_infos, transitive_swift_proto_d
             for proto_src in proto_info.check_deps_sources.to_list()
         ]
         direct_proto_file_paths.extend([
-            proto_path 
+            proto_path
             for proto_path in proto_file_paths
             if proto_path not in bundled_proto_paths
         ])

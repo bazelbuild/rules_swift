@@ -143,7 +143,7 @@ def _swift_proto_compile(ctx, swift_proto_compiler_info, additional_compiler_inf
             arguments = [arguments],
             outputs = [temporary_output_directory],
         )
-        
+
         empty_file = ctx.actions.declare_file(paths.join(target_relative_permanent_output_directory_path, "Empty.swift"))
         ctx.actions.write(empty_file, "")
         return [empty_file]
