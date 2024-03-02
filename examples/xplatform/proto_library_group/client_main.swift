@@ -17,6 +17,7 @@ import SwiftProtobuf
 import GRPC
 import NIOCore
 import NIOPosix
+import examples_xplatform_proto_library_group_request_request_proto
 import ServiceClient
 
 @main
@@ -43,8 +44,8 @@ struct ClientMain {
     let client = Service_EchoServiceNIOClient(channel: channel)
 
     // Construct a request to the echo service.
-    let request = Service_EchoRequest.with {
-      $0.contents = "Hello, world!"
+    let request = Request_Request.with {
+      $0.message = "Hello, world!"
       let timestamp = Google_Protobuf_Timestamp(date: Date())
       $0.extra = try! Google_Protobuf_Any(message: timestamp)
     }
@@ -54,7 +55,8 @@ struct ClientMain {
     // Make the remote method call and print the response we receive.
     do {
       let response = try call.response.wait()
-      print(response.contents)
+      print(response.request.message)
+      print(response.request.extra)
     } catch {
       print("Echo failed: \(error)")
     }

@@ -127,13 +127,14 @@ def _render_text_module_mapping(mapping):
 
     return content
 
-def _generate_module_mappings(module_name, proto_infos, transitive_swift_proto_deps):
+def _generate_module_mappings(module_name, proto_infos, transitive_swift_proto_deps, bundled_proto_paths):
     """Generates module mappings from ProtoInfo and SwiftProtoInfo providers.
 
     Args:
         module_name: Name of the module the direct proto dependencies will be compiled into.
         proto_infos: List of ProtoInfo providers for the direct proto dependencies.
         transitive_swift_proto_deps: Transitive dependencies propagating SwiftProtoInfo providers.
+        bundled_proto_paths: Set (dict) of proto paths bundled with the runtime.
 
     Returns:
         List of module mappings.
@@ -146,7 +147,11 @@ def _generate_module_mappings(module_name, proto_infos, transitive_swift_proto_d
             proto_path(proto_src, proto_info)
             for proto_src in proto_info.check_deps_sources.to_list()
         ]
-        direct_proto_file_paths.extend(proto_file_paths)
+        direct_proto_file_paths.extend([
+            proto_path 
+            for proto_path in proto_file_paths
+            if proto_path not in bundled_proto_paths
+        ])
     module_mapping = struct(
         module_name = module_name,
         proto_file_paths = direct_proto_file_paths,
@@ -160,7 +165,9 @@ def _generate_module_mappings(module_name, proto_infos, transitive_swift_proto_d
         transitive_module_mappings.extend(dep[SwiftProtoInfo].module_mappings)
 
     # Create a list combining the direct + transitive module mappings:
-    return [module_mapping] + transitive_module_mappings
+    if len(direct_proto_file_paths) > 0:
+        return [module_mapping] + transitive_module_mappings
+    return transitive_module_mappings
 
 SwiftProtoCcInfo = provider(
     doc = """\
@@ -208,11 +215,20 @@ def compile_swift_protos_for_target(
         module_context, other_compilation_outputs, linking_context, linking_output
     """
 
+    # Create a map of bundled proto paths for faster lookup:
+    bundled_proto_paths = {}
+    for swift_proto_compiler_target in swift_proto_compilers:
+        swift_proto_compiler_info = swift_proto_compiler_target[SwiftProtoCompilerInfo]
+        compiler_bundled_proto_paths = getattr(swift_proto_compiler_info.internal, "bundled_proto_paths", [])
+        for bundled_proto_path in compiler_bundled_proto_paths:
+            bundled_proto_paths[bundled_proto_path] = True
+
     # Generate the module mappings:
     module_mappings = _generate_module_mappings(
         module_name,
         proto_infos,
         swift_proto_deps,
+        bundled_proto_paths,
     )
 
     # Use the proto compiler to compile the swift sources for the proto deps:

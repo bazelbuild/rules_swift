@@ -18,6 +18,7 @@ proto_library(
 
 swift_proto_library_group(
     name = "proto_library_group_swift_proto",
+    compiler = "//proto/compilers:swift_proto",
     proto = "//examples/xplatform/proto_library_group/response:response_proto",
 )
 

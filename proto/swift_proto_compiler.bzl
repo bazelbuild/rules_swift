@@ -76,6 +76,11 @@ def _swift_proto_compile(ctx, swift_proto_compiler_info, additional_compiler_inf
     target_relative_temporary_output_directory_path = paths.join(ctx.label.name, swift_proto_compiler_info.internal.plugin_name, "tmp")
     temporary_output_directory = ctx.actions.declare_directory(target_relative_temporary_output_directory_path)
 
+    # Create a map of bundled proto paths for faster lookup:
+    bundled_proto_paths = {}
+    for bundled_proto_path in swift_proto_compiler_info.internal.bundled_proto_paths:
+        bundled_proto_paths[bundled_proto_path] = True
+
     # Declare the Swift files that will be generated:
     swift_srcs = []
     proto_paths = {}
@@ -90,6 +95,8 @@ def _swift_proto_compile(ctx, swift_proto_compiler_info, additional_compiler_inf
         for proto_src in proto_info.check_deps_sources.to_list():
             # Derive the proto path:
             path = swift_proto_common.proto_path(proto_src, proto_info)
+            if path in bundled_proto_paths:
+                continue
             if path in proto_paths:
                 if proto_paths[path] != proto_src:
                     fail("proto files {} and {} have the same import path, {}".format(
@@ -126,6 +133,20 @@ def _swift_proto_compile(ctx, swift_proto_compiler_info, additional_compiler_inf
                     full_swift_src_path = swift_srcs[0].path
                     permanent_output_directory_path = full_swift_src_path.removesuffix("/" + output_directory_relative_swift_src_path)
     transitive_descriptor_sets = depset(direct = [], transitive = transitive_descriptor_sets_list)
+
+    # If the generated swift sources are empty, create an empty directory and file to satisfy bazel and the compiler:
+    if len(swift_srcs) == 0:
+        arguments = ctx.actions.args()
+        arguments.add(temporary_output_directory.path)
+        ctx.actions.run_shell(
+            command = "mkdirall",
+            arguments = [arguments],
+            outputs = [temporary_output_directory],
+        )
+        
+        empty_file = ctx.actions.declare_file(paths.join(target_relative_permanent_output_directory_path, "Empty.swift"))
+        ctx.actions.write(empty_file, "")
+        return [empty_file]
 
     # Write the module mappings to a file:
     module_mappings_file = register_module_mapping_write_action(ctx, module_mappings)
@@ -221,6 +242,7 @@ def _swift_proto_compiler_impl(ctx):
             compile = _swift_proto_compile,
             compiler_deps = ctx.attr.deps,
             internal = struct(
+                bundled_proto_paths = ctx.attr.bundled_proto_paths,
                 protoc = ctx.executable.protoc,
                 plugin = ctx.executable.plugin,
                 plugin_name = ctx.attr.plugin_name,
@@ -243,6 +265,24 @@ Added as implicit dependencies for any swift_proto_library using this compiler.
 Typically, these are Well Known Types and proto runtime libraries.
 """,
             providers = [SwiftInfo],
+        ),
+        "bundled_proto_paths": attr.string_list(
+            doc = """\
+List of proto paths for which to skip generation because they're bundled in runtime.
+""",
+            default = [
+                "google/protobuf/any.proto",
+                "google/protobuf/api.proto",
+                "google/protobuf/descriptor.proto",
+                "google/protobuf/duration.proto",
+                "google/protobuf/empty.proto",
+                "google/protobuf/field_mask.proto",
+                "google/protobuf/source_context.proto",
+                "google/protobuf/struct.proto",
+                "google/protobuf/timestamp.proto",
+                "google/protobuf/type.proto",
+                "google/protobuf/wrappers.proto",
+            ],
         ),
         "protoc": attr.label(
             doc = """\

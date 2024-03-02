@@ -50,7 +50,7 @@ def _swift_proto_library_group_aspect_impl(target, aspect_ctx):
         target.label,
         module_name,
         [target[ProtoInfo]],
-        aspect_ctx.attr._compilers,
+        [aspect_ctx.attr._compiler],
         aspect_ctx.rule.attr.deps,
     )
 
@@ -66,10 +66,10 @@ _swift_proto_library_group_aspect = aspect(
     attrs = dicts.add(
         swift_common.toolchain_attrs(),
         {
-            "_compilers": attr.label_list(
-                default = ["//proto/compilers:swift_proto"],
+            "_compiler": attr.label(
+                default = "//proto:_swift_proto_compiler",
                 doc = """\
-One or more `swift_proto_compiler` targets (or targets producing `SwiftProtoCompilerInfo`),
+A `swift_proto_compiler` target (or target producing `SwiftProtoCompilerInfo`),
 from which the Swift protos will be generated.
 """,
                 providers = [SwiftProtoCompilerInfo],
@@ -81,6 +81,17 @@ from which the Swift protos will be generated.
     """,
     fragments = ["cpp"],
     implementation = _swift_proto_library_group_aspect_impl,
+)
+
+# _swift_proto_compiler_transition
+
+def _swift_proto_compiler_transition_impl(_, attr):
+    return {"//proto:_swift_proto_compiler": attr.compiler}
+
+_swift_proto_compiler_transition = transition(
+    implementation = _swift_proto_compiler_transition_impl,
+    inputs = [],
+    outputs = ["//proto:_swift_proto_compiler"],
 )
 
 # swift_proto_library_group
@@ -118,7 +129,19 @@ from which the Swift source files should be generated.
             providers = [ProtoInfo],
             mandatory = True,
         ),
+        "compiler": attr.label(
+            default = "//proto/compilers:swift_proto",
+            doc = """\
+A `swift_proto_compiler` target (or target producing `SwiftProtoCompilerInfo`),
+from which the Swift protos will be generated.
+""",
+            providers = [SwiftProtoCompilerInfo],
+        ),
+        "_allowlist_function_transition": attr.label(
+            default = "@bazel_tools//tools/allowlists/function_transition_allowlist",
+        ),
     },
+    cfg = _swift_proto_compiler_transition,
     doc = """\
 Generates a collection of Swift static library from a target producing `ProtoInfo` and its dependencies.
 

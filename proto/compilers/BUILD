@@ -13,6 +13,8 @@ load(
     "make_grpc_swift_proto_compiler",
 )
 
+package(default_visibility = ["//visibility:public"])
+
 # swift_proto_compiler
 
 swift_proto_compiler(

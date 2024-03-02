@@ -1,21 +1,33 @@
 load(
-    "//proto:proto.bzl",
-    "swift_proto_library_group",
-)
-load(
     "//swift:swift.bzl",
     "swift_binary",
-)
-
-swift_proto_library_group(
-    name = "proto_library_group_swift_proto",
-    proto = "//examples/xplatform/proto_library_group/response:response_proto",
+    "swift_test",
 )
 
 swift_binary(
-    name = "proto_library_group_example",
-    srcs = ["main.swift"],
+    name = "echo_server",
+    srcs = ["server_main.swift"],
     deps = [
-        ":proto_library_group_swift_proto",
+        "//examples/xplatform/proto_library_group/service:service_server_swift_proto",
+    ],
+)
+
+swift_binary(
+    name = "echo_client",
+    srcs = ["client_main.swift"],
+    deps = [
+        "//examples/xplatform/proto_library_group/service:service_client_swift_proto",
+    ],
+)
+
+swift_test(
+    name = "echo_client_unit_test",
+    srcs = [
+        "client_unit_test.swift",
+        "main.swift",
+    ],
+    deps = [
+        "//examples/xplatform/proto_library_group/service:service_client_swift_proto",
+        "//examples/xplatform/proto_library_group/service:service_server_swift_proto",
     ],
 )

@@ -39,6 +39,12 @@ bzl_library(
     ],
 )
 
+label_setting(
+    name = "_swift_proto_compiler",
+    build_setting_default = "//proto/compilers:swift_proto",
+    visibility = ["//proto:__pkg__"],
+)
+
 bzl_library(
     name = "swift_proto_library_group",
     srcs = ["swift_proto_library_group.bzl"],

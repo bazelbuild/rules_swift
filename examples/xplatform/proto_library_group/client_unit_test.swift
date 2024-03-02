@@ -12,12 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import ServiceClient
-import ServiceServer
 import GRPC
 import NIOCore
 import NIOPosix
 import XCTest
+import examples_xplatform_proto_library_group_request_request_proto
+import examples_xplatform_proto_library_group_response_response_proto
+import ServiceClient
+import ServiceServer
 
 public class EchoServiceProvider: Service_EchoServiceProvider {
   public let interceptors: Service_EchoServiceServerInterceptorFactoryProtocol?
@@ -27,12 +29,12 @@ public class EchoServiceProvider: Service_EchoServiceProvider {
   }
 
   public func echo(
-    request: ServiceServer.Service_EchoRequest, 
+    request: Request_Request, 
     context: StatusOnlyCallContext) 
-    -> EventLoopFuture<ServiceServer.Service_EchoResponse> 
+    -> EventLoopFuture<Response_Response> 
   {
-    let response = ServiceServer.Service_EchoResponse.with {
-      $0.contents = request.contents
+    let response = Response_Response.with {
+      $0.request = request
     }
     return context.eventLoop.makeSucceededFuture(response)
   }
@@ -83,11 +85,11 @@ class UnitTest: XCTestCase {
 
     let completed = self.expectation(description: "'Get' completed")
 
-    let call = client.echo(.with { $0.contents = "Hello" })
+    let call = client.echo(.with { $0.message = "Hello" })
     call.response.whenComplete { result in
       switch result {
       case let .success(response):
-        XCTAssertEqual(response.contents, "Hello")
+        XCTAssertEqual(response.request.message, "Hello")
       case let .failure(error):
         XCTFail("Unexpected error \(error)")
       }
