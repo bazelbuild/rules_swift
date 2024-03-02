@@ -753,7 +753,7 @@ swift_binary(
 | Name  | Description | Type | Mandatory | Default |
 | :------------- | :------------- | :------------- | :------------- | :------------- |
 | <a id="swift_proto_library_group-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
-| <a id="swift_proto_library_group-compiler"></a>compiler |  A `swift_proto_compiler` target (or target producing `SwiftProtoCompilerInfo`), from which the Swift protos will be generated.   | <a href="https://bazel.build/concepts/labels">Label</a> | optional |  `"@rules_swift//proto/compilers:swift_proto"`  |
+| <a id="swift_proto_library_group-compiler"></a>compiler |  A `swift_proto_compiler` target (or target producing `SwiftProtoCompilerInfo`), from which the Swift protos will be generated.   | <a href="https://bazel.build/concepts/labels">Label</a> | optional |  `"@build_bazel_rules_swift//proto/compilers:swift_proto"`  |
 | <a id="swift_proto_library_group-proto"></a>proto |  Exactly one `proto_library` target (or target producing `ProtoInfo`), from which the Swift source files should be generated.   | <a href="https://bazel.build/concepts/labels">Label</a> | required |  |
 
 
