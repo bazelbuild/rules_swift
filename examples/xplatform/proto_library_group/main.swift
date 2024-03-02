@@ -1,14 +1,14 @@
 import Foundation
 import SwiftProtobuf
-import examples_xplatform_proto_library_group_package_1_package_1_proto
-import examples_xplatform_proto_library_group_package_2_package_2_proto
+import examples_xplatform_proto_library_group_request_request_proto
+import examples_xplatform_proto_library_group_response_response_proto
 
-let message1 = Package1_Message1.with {
+let request = Request_Request.with {
     $0.query = "Message1"
 }
-let message2 = Package2_Message2.with {
-    $0.message1 = message1
+let response = Response_Response.with {
+    $0.request = request
 }
 
-print(message1)
-print(message2)
+print(request)
+print(response)

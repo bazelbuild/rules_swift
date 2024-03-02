@@ -9,7 +9,7 @@ load(
 
 swift_proto_library_group(
     name = "proto_library_group_swift_proto",
-    proto = "//examples/xplatform/proto_library_group/package_2:package_2_proto",
+    proto = "//examples/xplatform/proto_library_group/response:response_proto",
 )
 
 swift_binary(

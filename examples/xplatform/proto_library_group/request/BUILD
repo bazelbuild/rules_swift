@@ -4,7 +4,7 @@ load(
 )
 
 proto_library(
-    name = "package_1_proto",
+    name = "request_proto",
     srcs = glob(["*.proto"]),
     visibility = ["//visibility:public"],
 )

@@ -4,8 +4,8 @@ load(
 )
 
 proto_library(
-    name = "package_2_proto",
+    name = "response_proto",
     srcs = glob(["*.proto"]),
     visibility = ["//visibility:public"],
-    deps = ["//examples/xplatform/proto_library_group/package_1:package_1_proto"],
+    deps = ["//examples/xplatform/proto_library_group/request:request_proto"],
 )
