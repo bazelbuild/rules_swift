@@ -110,7 +110,6 @@ load(
     "compilation_context_for_explicit_module_compilation",
     "get_providers",
     "merge_compilation_contexts",
-    "owner_relative_path",
     "struct_fields",
 )
 load(":vfsoverlay.bzl", "write_vfsoverlay")
@@ -3179,9 +3178,10 @@ def _declare_compile_outputs(
             src = srcs[0],
         )]
         other_outputs = []
-        const_values_files = [
-            actions.declare_file("{}.swiftconstvalues".format(target_name)),
-        ]
+        const_values_files = [derived_files.swift_const_values_file(
+            actions = actions,
+            target_name = target_name,
+        )]
         output_file_map = None
         derived_files_output_file_map = None
     else:
@@ -3349,22 +3349,21 @@ def _declare_multiple_outputs_and_write_output_file_map(
     ast_files = []
 
     if extract_const_values and is_wmo:
-        const_value_file = actions.declare_file(
-            "{}.swiftconstvalues".format(target_name),
+        const_values_file = derived_files.swift_const_values_file(
+            actions = actions,
+            target_name = target_name,
         )
-        const_values_files.append(const_value_file)
-        whole_module_map["const-values"] = const_value_file.path
+        const_values_files.append(const_values_file)
+        whole_module_map["const-values"] = const_values_file.path
 
     for src in srcs:
         src_output_map = {}
 
         if extract_const_values and not is_wmo:
-            objs_dir = "{}_objs".format(target_name)
-            owner_rel_path = owner_relative_path(src).replace(" ", "__SPACE__")
-            basename = paths.basename(src.path)
-            dirname = paths.join(objs_dir, paths.dirname(owner_rel_path))
-            const_values_file = actions.declare_file(
-                paths.join(dirname, "{}.swiftconstvalues".format(basename)),
+            const_values_file = derived_files.intermediate_swift_const_values_file(
+                actions = actions,
+                target_name = target_name,
+                src = src,
             )
             const_values_files.append(const_values_file)
             src_output_map["const-values"] = const_values_file.path

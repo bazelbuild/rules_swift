@@ -500,6 +500,39 @@ def _whole_module_object_file(actions, add_target_name_to_output_path, target_na
         "{}.o".format(target_name),
     )
 
+def _swift_const_values_file(actions, target_name):
+    """Declares a file for the Swift const values.
+
+    Args:
+        actions: The context's actions object.
+        target_name: The name of the target being built.
+
+    Returns:
+        The declared `File`.
+    """
+    return actions.declare_file("{}.swiftconstvalues".format(target_name))
+
+def _intermediate_swift_const_values_file(actions, target_name, src):
+    """Declares a file for an intermediate Swift const values file during compilation.
+
+    These files are produced when the compiler is invoked with multiple frontend
+    invocations (i.e., whole module optimization disabled); in that case, there
+    is a `.swiftconstvalues` file produced for each source file, rather than a single
+    `.swiftconstvalues` for the entire module.
+
+    Args:
+        actions: The context's actions object.
+        target_name: The name of the target being built.
+        src: A `File` representing the source file being compiled.
+
+    Returns:
+        The declared `File`.
+    """
+    dirname, basename = _intermediate_frontend_file_path(target_name, src)
+    return actions.declare_file(
+        paths.join(dirname, "{}.swiftconstvalues".format(basename)),
+    )
+
 def _xctest_runner_script(actions, add_target_name_to_output_path, target_name):
     """Declares a file for the script that runs an `.xctest` bundle on Darwin.
 
@@ -525,6 +558,7 @@ derived_files = struct(
     indexstore_directory = _indexstore_directory,
     intermediate_bc_file = _intermediate_bc_file,
     intermediate_object_file = _intermediate_object_file,
+    intermediate_swift_const_values_file = _intermediate_swift_const_values_file,
     module_map = _module_map,
     modulewrap_object = _modulewrap_object,
     path = _default_path,
@@ -541,6 +575,7 @@ derived_files = struct(
     symbol_graph_directory = _symbol_graph_directory,
     vfsoverlay = _vfsoverlay,
     whole_module_object_file = _whole_module_object_file,
+    swift_const_values_file = _swift_const_values_file,
     xctest_runner_script = _xctest_runner_script,
     generated_header = _declare_validated_generated_header,
 )
