@@ -638,8 +638,6 @@ def _xcode_swift_toolchain_impl(ctx):
 
     if _is_xcode_at_least_version(xcode_config, "15.0"):
         requested_features.append(SWIFT_FEATURE__SUPPORTS_MACROS)
-
-    if _is_xcode_at_least_version(xcode_config, "15.3"):
         requested_features.append(SWIFT_FEATURE__SUPPORTS_CONST_VALUE_EXTRACTION)
 
     env = _xcode_env(target_triple = target_triple, xcode_config = xcode_config)
