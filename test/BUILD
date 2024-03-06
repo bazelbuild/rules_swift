@@ -3,6 +3,7 @@ load(":ast_file_tests.bzl", "ast_file_test_suite")
 load(":bzl_test.bzl", "bzl_test")
 load(":cc_library_tests.bzl", "cc_library_test_suite")
 load(":compiler_arguments_tests.bzl", "compiler_arguments_test_suite")
+load(":const_values_tests.bzl", "const_values_test_suite")
 load(":coverage_settings_tests.bzl", "coverage_settings_test_suite")
 load(":debug_settings_tests.bzl", "debug_settings_test_suite")
 load(":features_tests.bzl", "features_test_suite")
@@ -29,6 +30,8 @@ ast_file_test_suite(name = "ast_file")
 compiler_arguments_test_suite(name = "compiler_arguments")
 
 cc_library_test_suite(name = "cc_library")
+
+const_values_test_suite(name = "const_values")
 
 coverage_settings_test_suite(name = "coverage_settings")
 
