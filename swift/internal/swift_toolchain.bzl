@@ -397,6 +397,7 @@ def _swift_toolchain_impl(ctx):
             requested_features = requested_features,
             root_dir = toolchain_root,
             swift_worker = ctx.attr._worker[DefaultInfo].files_to_run,
+            const_gather_protocols = ctx.file.const_gather_protocols,
             test_configuration = struct(
                 env = env,
                 execution_requirements = {},
@@ -482,6 +483,14 @@ An executable that wraps Swift compiler invocations and also provides support
 for incremental compilation using a persistent mode.
 """,
                 executable = True,
+            ),
+            "const_gather_protocols": attr.label(
+                default = Label("@build_bazel_rules_swift//swift/toolchains/config:const_extract_protocols.json"),
+                allow_single_file = True,
+                doc = """\
+The label of the file specifying a list of protocols for extraction of conformances'
+const values.
+""",
             ),
             "env": attr.string_dict(
                 doc = """\

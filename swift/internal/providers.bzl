@@ -197,6 +197,10 @@ C/Objective-C modules:
 For ease of use, this field is never `None`; it will always be a valid `struct`
 containing the fields described above, even if those lists are empty.
 """,
+        "const_gather_protocols": """\
+`File`. A JSON file specifying a list of protocols for extraction of
+conformances' const values.
+""",
         "developer_dirs": """
 A list of `structs` containing the following fields:\
 *   `developer_path_label`: A `string` representing the type of developer path.

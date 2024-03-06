@@ -717,6 +717,7 @@ def _xcode_swift_toolchain_impl(ctx):
             ],
             requested_features = requested_features,
             swift_worker = ctx.attr._worker[DefaultInfo].files_to_run,
+            const_gather_protocols = ctx.file.const_gather_protocols,
             test_configuration = struct(
                 env = env,
                 execution_requirements = execution_requirements,
@@ -795,6 +796,14 @@ A list of `swift_package_configuration` targets that specify additional compiler
 configuration options that are applied to targets on a per-package basis.
 """,
                 providers = [[SwiftPackageConfigurationInfo]],
+            ),
+            "const_gather_protocols": attr.label(
+                default = Label("@build_bazel_rules_swift//swift/toolchains/config:const_extract_protocols.json"),
+                allow_single_file = True,
+                doc = """\
+The label of the file specifying a list of protocols for extraction of conformances'
+const values.
+""",
             ),
             "_cc_toolchain": attr.label(
                 default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),

@@ -2425,11 +2425,7 @@ def compile(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE__SUPPORTS_CONST_VALUE_EXTRACTION,
     ):
-        const_gather_protocols_file = _maybe_create_const_protocols_file(
-            actions = actions,
-            swift_infos = generated_module_deps_swift_infos,
-            target_name = target_name,
-        )
+        const_gather_protocols_file = swift_toolchain.const_gather_protocols
     else:
         const_gather_protocols_file = []
 
@@ -3642,56 +3638,6 @@ def _emitted_output_nature(feature_configuration, user_compile_flags):
         emits_multiple_objects = not (is_wmo and is_single_threaded),
         is_wmo = is_wmo,
     )
-
-def _maybe_create_const_protocols_file(actions, swift_infos, target_name):
-    """Create the const extraction protocols file, if necessary.
-
-    Args:
-        actions: The object used to register actions.
-        swift_infos: A list of `SwiftInfo` providers describing the dependencies
-            of the code being compiled.
-        target_name: The name of the build target, which is used to generate
-            output file names.
-    Returns:
-        A file passed as an input to the compiler that lists the protocols whose
-        conforming types should have values extracted.
-    """
-    const_gather_protocols = []
-    for swift_info in swift_infos:
-        for module_context in swift_info.direct_modules:
-            const_gather_protocols.extend(
-                module_context.const_gather_protocols,
-            )
-
-    # TODO: remove hack, I picked these from Xcode.
-    # Not sure how rules_apple should pass these.
-    const_gather_protocols = [
-        "AppIntent",
-        "EntityQuery",
-        "AppEntity",
-        "TransientEntity",
-        "AppEnum",
-        "AppShortcutProviding",
-        "AppShortcutsProvider",
-        "AnyResolverProviding",
-        "AppIntentsPackage",
-        "DynamicOptionsProvider",
-    ]
-
-    # If there are no protocols to extract, return early.
-    if not const_gather_protocols:
-        return None
-
-    # Create the input file to the compiler, which contains a JSON array of
-    # protocol names.
-    const_gather_protocols_file = actions.declare_file(
-        "{}_const_extract_protocols.json".format(target_name),
-    )
-    actions.write(
-        content = json.encode(const_gather_protocols),
-        output = const_gather_protocols_file,
-    )
-    return const_gather_protocols_file
 
 def _exclude_swift_incompatible_define(define):
     """A `map_each` helper that excludes a define if it is not Swift-compatible.

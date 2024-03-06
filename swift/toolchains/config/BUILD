@@ -7,6 +7,8 @@ package(
     ],
 )
 
+exports_files(["const_extract_protocols.json"])
+
 bzl_library(
     name = "compile_module_interface_config",
     srcs = ["compile_module_interface_config.bzl"],
