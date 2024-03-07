@@ -51,7 +51,7 @@ bzl_library(
     srcs = ["swift_proto_compiler_macros.bzl"],
     visibility = ["//visibility:public"],
     deps = [
-        "//swift/proto:swift_proto_compiler",
+        "//proto:swift_proto_compiler",
         "@bazel_skylib//lib:dicts",
     ],
 )
