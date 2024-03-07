@@ -97,7 +97,7 @@ def _swift_linking_rule_impl(
         copts = expand_locations(ctx, ctx.attr.copts, ctx.attr.swiftc_inputs) + \
                 _maybe_parse_as_library_copts(srcs)
 
-        include_dev_srch_paths = include_developer_search_paths(ctx)
+        include_dev_srch_paths = include_developer_search_paths(ctx.attr)
 
         module_context, cc_compilation_outputs, other_compilation_outputs = swift_common.compile(
             actions = ctx.actions,

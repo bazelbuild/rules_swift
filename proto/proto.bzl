@@ -27,6 +27,10 @@ load(
     _swift_proto_library = "swift_proto_library",
 )
 load(
+    "//proto:swift_proto_library_group.bzl",
+    _swift_proto_library_group = "swift_proto_library_group",
+)
+load(
     "//swift:swift.bzl",
     _SwiftProtoCompilerInfo = "SwiftProtoCompilerInfo",
     _SwiftProtoInfo = "SwiftProtoInfo",
@@ -39,6 +43,7 @@ SwiftProtoInfo = _SwiftProtoInfo
 # Export rules:
 swift_proto_compiler = _swift_proto_compiler
 swift_proto_library = _swift_proto_library
+swift_proto_library_group = _swift_proto_library_group
 
 # Export modules:
 swift_proto_common = _swift_proto_common
