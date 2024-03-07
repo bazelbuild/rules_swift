@@ -30,6 +30,12 @@ x_defaults:
       - "//examples/..."
       - "//test/..."
       - "-//examples/apple/..."
+      # The following tests require Swift >5.8.
+      - "-//test:const_values_empty_const_values_multiple_files"
+      - "-//test:const_values_empty_const_values_single_file"
+      - "-//test:const_values_expected_argv"
+      - "-//test:const_values_wmo_single_values_file"
+      - "-//test:output_file_map_default"
   windows_common: &windows_common
     platform: windows
     build_flags:
