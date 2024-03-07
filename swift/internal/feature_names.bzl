@@ -253,6 +253,10 @@ SWIFT_FEATURE_EMIT_BC = "swift.emit_bc"
 # invocation.
 SWIFT_FEATURE_EMIT_SWIFTINTERFACE = "swift.emit_swiftinterface"
 
+# If enabled, requests the private swiftinterface file to be built on the
+# swiftc invocation.
+SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE = "swift.emit_private_swiftinterface"
+
 # If enabled, the toolchain supports private deps (implementation-only imports).
 # This allows Bazel to avoid propagating swiftmodules of such dependencies
 # higher in the dependency graph than they need to be.

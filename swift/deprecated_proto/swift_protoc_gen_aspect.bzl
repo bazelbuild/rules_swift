@@ -40,6 +40,7 @@ load(
 )
 load(
     "//swift/internal:feature_names.bzl",
+    "SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_ENABLE_TESTING",
@@ -405,6 +406,10 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
         if aspect_ctx.attr._config_emit_swiftinterface[BuildSettingInfo].value:
             extra_features.append(SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION)
             extra_features.append(SWIFT_FEATURE_EMIT_SWIFTINTERFACE)
+
+        if aspect_ctx.attr._config_emit_private_swiftinterface[BuildSettingInfo].value:
+            extra_features.append(SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION)
+            extra_features.append(SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE)
 
         # Compile the generated Swift sources and produce a static library and a
         # .swiftmodule as outputs. In addition to the other proto deps, we also

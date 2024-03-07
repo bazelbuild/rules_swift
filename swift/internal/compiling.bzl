@@ -47,6 +47,7 @@ load(
     "SWIFT_FEATURE_DISABLE_SYSTEM_INDEX",
     "SWIFT_FEATURE_EMIT_BC",
     "SWIFT_FEATURE_EMIT_C_MODULE",
+    "SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
     "SWIFT_FEATURE_EMIT_SYMBOL_GRAPH",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
@@ -361,6 +362,17 @@ def compile_action_configs(
             features = [
                 SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION,
                 SWIFT_FEATURE_EMIT_SWIFTINTERFACE,
+            ],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVE_FILES,
+            ],
+            configurators = [_emit_private_module_interface_path_configurator],
+            features = [
+                SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION,
+                SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE,
             ],
         ),
 
@@ -1350,6 +1362,10 @@ def _emit_module_path_configurator(prerequisites, args):
 def _emit_module_interface_path_configurator(prerequisites, args):
     """Adds the `.swiftinterface` output path to the command line."""
     args.add("-emit-module-interface-path", prerequisites.swiftinterface_file)
+
+def _emit_private_module_interface_path_configurator(prerequisites, args):
+    """Adds the `.private.swiftinterface` output path to the command line."""
+    args.add("-emit-private-module-interface-path", prerequisites.private_swiftinterface_file)
 
 def _emit_objc_header_path_configurator(prerequisites, args):
     """Adds the generated header output path to the command line."""
@@ -2375,6 +2391,7 @@ def compile(
     if split_derived_file_generation:
         all_compile_outputs = compact([
             compile_outputs.swiftinterface_file,
+            compile_outputs.private_swiftinterface_file,
             compile_outputs.indexstore_directory,
             compile_outputs.macro_expansion_directory,
         ]) + compile_outputs.object_files
@@ -2398,6 +2415,7 @@ def compile(
             compile_outputs.swiftmodule_file,
             compile_outputs.swiftdoc_file,
             compile_outputs.swiftinterface_file,
+            compile_outputs.private_swiftinterface_file,
             compile_outputs.swiftsourceinfo_file,
             compile_outputs.generated_header_file,
             compile_outputs.indexstore_directory,
@@ -2628,6 +2646,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
             defines = defines,
             indexstore = compile_outputs.indexstore_directory,
             plugins = depset(plugins),
+            private_swiftinterface = compile_outputs.private_swiftinterface_file,
             swiftdoc = compile_outputs.swiftdoc_file,
             swiftinterface = compile_outputs.swiftinterface_file,
             swiftmodule = compile_outputs.swiftmodule_file,
@@ -2964,6 +2983,20 @@ def _declare_compile_outputs(
     else:
         swiftinterface_file = None
 
+    if are_all_features_enabled(
+        feature_configuration = feature_configuration,
+        feature_names = [
+            SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION,
+            SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE,
+        ],
+    ):
+        private_swiftinterface_file = derived_files.private_swiftinterface(
+            actions = actions,
+            module_name = module_name,
+        )
+    else:
+        private_swiftinterface_file = None
+
     # If requested, generate the Swift header for this library so that it can be
     # included by Objective-C code that depends on it.
     if generated_header_name:
@@ -3110,6 +3143,7 @@ def _declare_compile_outputs(
         generated_module_map_file = generated_module_map,
         indexstore_directory = indexstore_directory,
         macro_expansion_directory = macro_expansion_directory,
+        private_swiftinterface_file = private_swiftinterface_file,
         symbol_graph_directory = symbol_graph_directory,
         object_files = object_files,
         output_file_map = output_file_map,

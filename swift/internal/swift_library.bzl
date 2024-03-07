@@ -30,6 +30,7 @@ load(
 )
 load(
     ":feature_names.bzl",
+    "SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS",
@@ -123,6 +124,10 @@ def _swift_library_impl(ctx):
     if ctx.attr._config_emit_swiftinterface[BuildSettingInfo].value:
         extra_features.append(SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION)
         extra_features.append(SWIFT_FEATURE_EMIT_SWIFTINTERFACE)
+
+    if ctx.attr._config_emit_private_swiftinterface[BuildSettingInfo].value:
+        extra_features.append(SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION)
+        extra_features.append(SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE)
 
     module_name = ctx.attr.module_name
     if not module_name:
@@ -228,6 +233,7 @@ def _swift_library_impl(ctx):
         module_context.clang.precompiled_module,
         module_context.swift.swiftdoc,
         module_context.swift.swiftinterface,
+        module_context.swift.private_swiftinterface,
         module_context.swift.swiftmodule,
         module_context.swift.swiftsourceinfo,
         linking_output.library_to_link.static_library,

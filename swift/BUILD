@@ -109,6 +109,12 @@ bool_setting(
     build_setting_default = False,
 )
 
+# Configuration setting for enabling the generation of private swiftinterface files (e.g. those for `@_spi`).
+bool_setting(
+    name = "emit_private_swiftinterface",
+    build_setting_default = False,
+)
+
 # NOTE: Enabling this flag will transition --proto_compiler to
 # //tools/protoc_wrapper:protoc for swift_grpc_library and swift_proto_library,
 # unless you set --proto_compiler manually.

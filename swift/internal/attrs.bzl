@@ -169,8 +169,8 @@ support location expansion.
             "always_include_developer_search_paths": attr.bool(
                 default = False,
                 doc = """\
-If `True`, the developer framework search paths will be added to the compilation 
-command. This enables a Swift module to access `XCTest` without having to mark 
+If `True`, the developer framework search paths will be added to the compilation
+command. This enables a Swift module to access `XCTest` without having to mark
 the target as `testonly = True`.
 """,
                 mandatory = False,
@@ -186,6 +186,9 @@ def swift_config_attrs():
         configuration settings.
     """
     return {
+        "_config_emit_private_swiftinterface": attr.label(
+            default = "@build_bazel_rules_swift//swift:emit_private_swiftinterface",
+        ),
         "_config_emit_swiftinterface": attr.label(
             default = "@build_bazel_rules_swift//swift:emit_swiftinterface",
         ),
