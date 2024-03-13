@@ -266,6 +266,18 @@ def _swiftinterface(actions, module_name):
     """
     return actions.declare_file("{}.swiftinterface".format(module_name))
 
+def _private_swiftinterface(actions, module_name):
+    """Declares a file for the private Swift interface created by a compilation rule.
+
+    Args:
+        actions: The context's actions object.
+        module_name: The name of the module being built.
+
+    Returns:
+        The declared `File`.
+    """
+    return actions.declare_file("{}.private.swiftinterface".format(module_name))
+
 def _swiftmodule(actions, module_name):
     """Declares a file for the Swift module created by a compilation rule.
 
@@ -344,6 +356,7 @@ derived_files = struct(
     module_map = _module_map,
     modulewrap_object = _modulewrap_object,
     precompiled_module = _precompiled_module,
+    private_swiftinterface = _private_swiftinterface,
     reexport_modules_src = _reexport_modules_src,
     static_archive = _static_archive,
     swiftc_output_file_map = _swiftc_output_file_map,

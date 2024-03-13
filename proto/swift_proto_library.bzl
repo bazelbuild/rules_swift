@@ -185,6 +185,7 @@ def _swift_proto_library_impl(ctx):
             files = depset(compact([
                 module_context.swift.swiftdoc,
                 module_context.swift.swiftinterface,
+                module_context.swift.private_swiftinterface,
                 module_context.swift.swiftmodule,
                 module_context.swift.swiftsourceinfo,
                 linking_output.library_to_link.static_library,
@@ -266,7 +267,7 @@ from which the Swift protos will be generated.
                 ],
                 default = [],
                 doc = """\
-List of additional dependencies required by the generated Swift code at compile time, 
+List of additional dependencies required by the generated Swift code at compile time,
 whose SwiftProtoInfo will be ignored.
 """,
             ),
@@ -298,7 +299,7 @@ swift_proto_library(
 )
 ```
 
-If your protos depend on protos from other targets, add dependencies between the 
+If your protos depend on protos from other targets, add dependencies between the
 swift_proto_library targets which mirror the dependencies between the proto targets.
 
 ```python

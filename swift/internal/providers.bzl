@@ -141,7 +141,7 @@ Returns:
 """,
         "compiler_deps": """\
 List of targets providing SwiftInfo and CcInfo.
-These are added as dependencies to the swift compile action of the swift_proto_library. 
+These are added as dependencies to the swift compile action of the swift_proto_library.
 Typically these are proto runtime libraries.
 
 Well Known Types should be added as dependencies of the swift_proto_library
@@ -166,12 +166,12 @@ files to Swift modules. This allows messages that reference messages in other
 libraries to import those modules in generated code.
 """,
         "direct_pbswift_files": """\
-`list` of `File`s. The Swift source files (e.g. `.pb.swift`) generated from the 
+`list` of `File`s. The Swift source files (e.g. `.pb.swift`) generated from the
 `ProtoInfo` providers of the direct proto dependencies of the `swift_proto_library` target.
 """,
         "pbswift_files": """\
-`depset` of `File`s. The Swift source files (e.g. `.pb.swift`) generated from the 
-`ProtoInfo` providers of the direct and transitive transitive proto dependencies 
+`depset` of `File`s. The Swift source files (e.g. `.pb.swift`) generated from the
+`ProtoInfo` providers of the direct and transitive transitive proto dependencies
 of the `swift_proto_library` target.
 """,
     },
@@ -447,6 +447,7 @@ def create_swift_module(
         plugins = [],
         swiftsourceinfo = None,
         swiftinterface = None,
+        private_swiftinterface = None,
         symbol_graph = None):
     """Creates a value representing a Swift module use as a Swift dependency.
 
@@ -464,6 +465,9 @@ def create_swift_module(
         plugins: A list of `SwiftCompilerPluginInfo` providers representing
             compiler plugins that are required by this module and should be
             loaded by the compiler when this module is directly depended on.
+        private_swiftinterface: The `.private.swiftinterface` file emitted by
+            the compiler for this module. May be `None` if no private module
+            interface file was emitted.
         swiftsourceinfo: The `.swiftsourceinfo` file emitted by the compiler for
             this module. May be `None` if no source info file was emitted.
         swiftinterface: The `.swiftinterface` file emitted by the compiler for
@@ -482,6 +486,7 @@ def create_swift_module(
         ast_files = tuple(ast_files),
         defines = tuple(defines),
         plugins = plugins,
+        private_swiftinterface = private_swiftinterface,
         indexstore = indexstore,
         swiftdoc = swiftdoc,
         swiftinterface = swiftinterface,

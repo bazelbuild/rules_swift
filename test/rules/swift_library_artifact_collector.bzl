@@ -24,16 +24,22 @@ load(
 )
 
 def _swiftinterface_transition_impl(_settings, attr):
-    # If the `.swiftinterface` file is requested, apply the setting that causes
-    # the rule to generate it.
     return {
+        # If the `.private.swiftinterface` file is requested, apply the setting that causes
+        # the rule to generate it.
+        "@build_bazel_rules_swift//swift:emit_private_swiftinterface": attr.private_swiftinterface != None,
+        # If the `.swiftinterface` file is requested, apply the setting that causes
+        # the rule to generate it.
         "@build_bazel_rules_swift//swift:emit_swiftinterface": attr.swiftinterface != None,
     }
 
 _swiftinterface_transition = transition(
     implementation = _swiftinterface_transition_impl,
     inputs = [],
-    outputs = ["@build_bazel_rules_swift//swift:emit_swiftinterface"],
+    outputs = [
+        "@build_bazel_rules_swift//swift:emit_private_swiftinterface",
+        "@build_bazel_rules_swift//swift:emit_swiftinterface",
+    ],
 )
 
 def _copy_file(actions, source, destination):
@@ -78,6 +84,12 @@ def _swift_library_artifact_collector_impl(ctx):
             source = swift_info.direct_modules[0].swift.swiftdoc,
             destination = ctx.outputs.swiftdoc,
         )
+    if ctx.outputs.private_swiftinterface:
+        _copy_file(
+            ctx.actions,
+            source = swift_info.direct_modules[0].swift.private_swiftinterface,
+            destination = ctx.outputs.private_swiftinterface,
+        )
     if ctx.outputs.swiftinterface:
         _copy_file(
             ctx.actions,
@@ -94,6 +106,7 @@ def _swift_library_artifact_collector_impl(ctx):
 
 swift_library_artifact_collector = rule(
     attrs = {
+        "private_swiftinterface": attr.output(mandatory = False),
         "static_library": attr.output(mandatory = False),
         "swiftdoc": attr.output(mandatory = False),
         "swiftinterface": attr.output(mandatory = False),
