@@ -2390,11 +2390,11 @@ def compile(
         feature_configuration = feature_configuration,
         generated_header_name = generated_header_name,
         generated_module_deps_swift_infos = generated_module_deps_swift_infos,
+        include_swiftdoc = include_swiftdoc,
+        include_swiftsourceinfo = include_swiftsourceinfo,
         module_name = module_name,
         target_name = target_name,
         user_compile_flags = copts,
-        include_swiftdoc = include_swiftdoc,
-        include_swiftsourceinfo = include_swiftsourceinfo,
     )
 
     split_derived_file_generation = is_feature_enabled(
