@@ -54,6 +54,8 @@ load(
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES",
     "SWIFT_FEATURE_ENABLE_TESTING",
+    "SWIFT_FEATURE_EXCLUDE_SWIFTDOC",
+    "SWIFT_FEATURE_EXCLUDE_SWIFTSOURCEINFO",
     "SWIFT_FEATURE_FASTBUILD",
     "SWIFT_FEATURE_FILE_PREFIX_MAP",
     "SWIFT_FEATURE_FULL_DEBUG_INFO",
@@ -2372,6 +2374,16 @@ def compile(
         swift_toolchain.generated_header_module_implicit_deps_providers.swift_infos
     )
 
+    # Determine if `.swiftdoc` and `.swiftsourceinfo` files should be included.
+    include_swiftdoc = not is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_EXCLUDE_SWIFTDOC,
+    )
+    include_swiftsourceinfo = not is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_EXCLUDE_SWIFTSOURCEINFO,
+    )
+
     compile_outputs, other_outputs = _declare_compile_outputs(
         srcs = srcs,
         actions = actions,
@@ -2381,6 +2393,8 @@ def compile(
         module_name = module_name,
         target_name = target_name,
         user_compile_flags = copts,
+        include_swiftdoc = include_swiftdoc,
+        include_swiftsourceinfo = include_swiftsourceinfo,
     )
 
     split_derived_file_generation = is_feature_enabled(
@@ -2401,11 +2415,13 @@ def compile(
             # various things (such as the filename prefix for param files generated
             # for that action). This guarantees some predictability.
             compile_outputs.swiftmodule_file,
-            compile_outputs.swiftdoc_file,
-            compile_outputs.swiftsourceinfo_file,
             compile_outputs.generated_header_file,
             compile_outputs.symbol_graph_directory,
         ]) + other_outputs
+        if include_swiftdoc:
+            all_derived_outputs.append(compile_outputs.swiftdoc_file)
+        if include_swiftsourceinfo:
+            all_derived_outputs.append(compile_outputs.swiftsourceinfo_file)
     else:
         all_compile_outputs = compact([
             # The `.swiftmodule` file is explicitly listed as the first output
@@ -2413,15 +2429,17 @@ def compile(
             # various things (such as the filename prefix for param files generated
             # for that action). This guarantees some predictability.
             compile_outputs.swiftmodule_file,
-            compile_outputs.swiftdoc_file,
             compile_outputs.swiftinterface_file,
             compile_outputs.private_swiftinterface_file,
-            compile_outputs.swiftsourceinfo_file,
             compile_outputs.generated_header_file,
             compile_outputs.indexstore_directory,
             compile_outputs.macro_expansion_directory,
             compile_outputs.symbol_graph_directory,
         ]) + compile_outputs.object_files + other_outputs
+        if include_swiftdoc:
+            all_compile_outputs.append(compile_outputs.swiftdoc_file)
+        if include_swiftsourceinfo:
+            all_compile_outputs.append(compile_outputs.swiftsourceinfo_file)
         all_derived_outputs = []
 
     # Merge the providers from our dependencies so that we have one each for
@@ -2921,6 +2939,8 @@ def _declare_compile_outputs(
         feature_configuration,
         generated_header_name,
         generated_module_deps_swift_infos,
+        include_swiftdoc,
+        include_swiftsourceinfo,
         module_name,
         srcs,
         target_name,
@@ -2943,6 +2963,8 @@ def _declare_compile_outputs(
         user_compile_flags: The flags that will be passed to the compile action,
             which are scanned to determine whether a single frontend invocation
             will be used or not.
+        include_swiftdoc: If .swiftdoc file should be included or not.
+        include_swiftsourceinfo: If .swiftsourceinfo file should be included or not.
 
     Returns:
         A tuple containing two elements:
@@ -2963,11 +2985,12 @@ def _declare_compile_outputs(
     swiftdoc_file = derived_files.swiftdoc(
         actions = actions,
         module_name = module_name,
-    )
+    ) if include_swiftdoc else None
+
     swiftsourceinfo_file = derived_files.swiftsourceinfo(
         actions = actions,
         module_name = module_name,
-    )
+    ) if include_swiftsourceinfo else None
 
     if are_all_features_enabled(
         feature_configuration = feature_configuration,

@@ -243,6 +243,16 @@ def _compare_expected_files(env, access_description, expected, actual):
     """
     actual = _normalize_collection(actual)
 
+    expected_is_subset = "*" in expected
+    expected_include = [
+        s
+        for s in expected
+        if not s.startswith("-") and s != "*"
+    ]
+
+    if actual == [None] and not expected_include:
+        return
+
     if (
         not types.is_list(actual) or
         any([type(item) != "File" for item in actual])
@@ -259,13 +269,6 @@ def _compare_expected_files(env, access_description, expected, actual):
         return
 
     remaining = list(actual)
-
-    expected_is_subset = "*" in expected
-    expected_include = [
-        s
-        for s in expected
-        if not s.startswith("-") and s != "*"
-    ]
     expected_exclude = [s[1:] for s in expected if s.startswith("-")]
 
     # For every expected file, pick off the first actual that we find that has
