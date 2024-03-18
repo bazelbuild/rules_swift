@@ -345,7 +345,7 @@ SWIFT_FEATURE__SUPPORTS_MACROS = "swift._supports_macros"
 SWIFT_FEATURE_TREAT_WARNINGS_AS_ERRORS = "swift.treat_warnings_as_errors"
 
 # Disable the inclusion of .swiftdoc files in Swift build outputs.
-SWIFT_FEATURE_EXCLUDE_SWIFTDOC = "swift.exclude_swiftdoc"
+SWIFT_FEATURE_EMIT_SWIFTDOC = "swift.emit_swiftdoc"
 
 # Disable the inclusion of .swiftsourceinfo files in Swift build outputs.
-SWIFT_FEATURE_EXCLUDE_SWIFTSOURCEINFO = "swift.exclude_swiftsourceinfo"
+SWIFT_FEATURE_EMIT_SWIFTSOURCEINFO = "swift.emit_swiftsourceinfo"

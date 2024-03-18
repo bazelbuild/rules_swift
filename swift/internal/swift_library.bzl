@@ -31,7 +31,9 @@ load(
 load(
     ":feature_names.bzl",
     "SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE",
+    "SWIFT_FEATURE_EMIT_SWIFTDOC",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
+    "SWIFT_FEATURE_EMIT_SWIFTSOURCEINFO",
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS",
 )
@@ -120,7 +122,10 @@ def _swift_library_impl(ctx):
         copts.extend(["-static"])
     copts.extend(module_copts)
 
-    extra_features = []
+    extra_features = [
+        SWIFT_FEATURE_EMIT_SWIFTDOC,
+        SWIFT_FEATURE_EMIT_SWIFTSOURCEINFO,
+    ]
     if ctx.attr._config_emit_swiftinterface[BuildSettingInfo].value:
         extra_features.append(SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION)
         extra_features.append(SWIFT_FEATURE_EMIT_SWIFTINTERFACE)

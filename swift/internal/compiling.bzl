@@ -48,14 +48,14 @@ load(
     "SWIFT_FEATURE_EMIT_BC",
     "SWIFT_FEATURE_EMIT_C_MODULE",
     "SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE",
+    "SWIFT_FEATURE_EMIT_SWIFTDOC",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
+    "SWIFT_FEATURE_EMIT_SWIFTSOURCEINFO",
     "SWIFT_FEATURE_EMIT_SYMBOL_GRAPH",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES",
     "SWIFT_FEATURE_ENABLE_TESTING",
-    "SWIFT_FEATURE_EXCLUDE_SWIFTDOC",
-    "SWIFT_FEATURE_EXCLUDE_SWIFTSOURCEINFO",
     "SWIFT_FEATURE_FASTBUILD",
     "SWIFT_FEATURE_FILE_PREFIX_MAP",
     "SWIFT_FEATURE_FULL_DEBUG_INFO",
@@ -2375,13 +2375,13 @@ def compile(
     )
 
     # Determine if `.swiftdoc` and `.swiftsourceinfo` files should be included.
-    include_swiftdoc = not is_feature_enabled(
+    include_swiftdoc = is_feature_enabled(
         feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_EXCLUDE_SWIFTDOC,
+        feature_name = SWIFT_FEATURE_EMIT_SWIFTDOC,
     )
-    include_swiftsourceinfo = not is_feature_enabled(
+    include_swiftsourceinfo = is_feature_enabled(
         feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_EXCLUDE_SWIFTSOURCEINFO,
+        feature_name = SWIFT_FEATURE_EMIT_SWIFTSOURCEINFO,
     )
 
     compile_outputs, other_outputs = _declare_compile_outputs(
@@ -2956,6 +2956,8 @@ def _declare_compile_outputs(
         generated_module_deps_swift_infos: `SwiftInfo` providers from
             dependencies of the module for the generated header of the target
             being compiled.
+        include_swiftdoc: If .swiftdoc file should be included or not.
+        include_swiftsourceinfo: If .swiftsourceinfo file should be included or not.
         module_name: The name of the Swift module being compiled.
         srcs: The list of source files that will be compiled.
         target_name: The name (excluding package path) of the target being
@@ -2963,8 +2965,6 @@ def _declare_compile_outputs(
         user_compile_flags: The flags that will be passed to the compile action,
             which are scanned to determine whether a single frontend invocation
             will be used or not.
-        include_swiftdoc: If .swiftdoc file should be included or not.
-        include_swiftsourceinfo: If .swiftsourceinfo file should be included or not.
 
     Returns:
         A tuple containing two elements:
