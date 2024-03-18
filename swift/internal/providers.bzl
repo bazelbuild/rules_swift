@@ -14,6 +14,13 @@
 
 """Defines Starlark providers that propagated by the Swift BUILD rules."""
 
+SwiftCompilerPluginCollectionInfo = provider(
+    doc = "Information about a collection of `SwiftCompilerPluginInfo` providers.",
+    fields = {
+        "plugins": "A `depset` of `SwiftCompilerPluginInfo` providers",
+    },
+)
+
 SwiftCompilerPluginInfo = provider(
     doc = "Information about compiler plugins, like macros.",
     fields = {
@@ -548,3 +555,27 @@ def create_swift_info(
             transitive = transitive_modules,
         ),
     )
+
+def get_compiler_plugin_infos(targets):
+    """Returns effective `SwiftCompilerPluginInfo` providers from each target in the list.
+
+    The returned list may not be the same size as `targets` if some of the
+    targets do not contain a `SwiftCompilerPluginInfo` provider, or if they
+    contain a `SwiftCompilerPluginCollectionInfo` provider that expands to 0 or
+    more `SwiftCompilerPluginInfo` providers.
+
+    Args:
+        targets: A list of targets.
+
+    Returns:
+        A list of `SwiftCompilerPluginInfo` providers from the targets.
+    """
+    plugins = []
+    for target in targets:
+        if SwiftCompilerPluginInfo in target:
+            plugins.append(target[SwiftCompilerPluginInfo])
+        if SwiftCompilerPluginCollectionInfo in target:
+            plugins.extend(
+                target[SwiftCompilerPluginCollectionInfo].plugins.to_list(),
+            )
+    return plugins

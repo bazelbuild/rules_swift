@@ -22,6 +22,7 @@ On this page:
   * [swift_binary](#swift_binary)
   * [swift_c_module](#swift_c_module)
   * [swift_compiler_plugin](#swift_compiler_plugin)
+  * [swift_compiler_plugin_group](#swift_compiler_plugin_group)
   * [universal_swift_compiler_plugin](#universal_swift_compiler_plugin)
   * [swift_feature_allowlist](#swift_feature_allowlist)
   * [swift_import](#swift_import)
@@ -401,6 +402,25 @@ swift_library(
 | <a id="swift_compiler_plugin-swiftc_inputs"></a>swiftc_inputs |  Additional files that are referenced using `$(location ...)` in attributes that support location expansion.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 
 
+<a id="swift_compiler_plugin_group"></a>
+
+## swift_compiler_plugin_group
+
+<pre>
+swift_compiler_plugin_group(<a href="#swift_compiler_plugin_group-name">name</a>, <a href="#swift_compiler_plugin_group-plugins">plugins</a>)
+</pre>
+
+
+
+**ATTRIBUTES**
+
+
+| Name  | Description | Type | Mandatory | Default |
+| :------------- | :------------- | :------------- | :------------- | :------------- |
+| <a id="swift_compiler_plugin_group-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
+| <a id="swift_compiler_plugin_group-plugins"></a>plugins |  A list of `swift_compiler_plugin` or `swift_compiler_plugin_group` targets that should be loaded by the compiler when compiling this module and any modules that directly depend on it.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | required |  |
+
+
 <a id="swift_feature_allowlist"></a>
 
 ## swift_feature_allowlist
@@ -678,7 +698,7 @@ swift_proto_library(
 | <a id="swift_proto_library-additional_compiler_info"></a>additional_compiler_info |  Dictionary of additional information passed to the compiler targets. See the documentation of the respective compiler rules for more information on which fields are accepted and how they are used.   | <a href="https://bazel.build/rules/lib/dict">Dictionary: String -> String</a> | optional |  `{}`  |
 | <a id="swift_proto_library-always_include_developer_search_paths"></a>always_include_developer_search_paths |  If `True`, the developer framework search paths will be added to the compilation command. This enables a Swift module to access `XCTest` without having to mark the target as `testonly = True`.   | Boolean | optional |  `False`  |
 | <a id="swift_proto_library-alwayslink"></a>alwayslink |  If true, any binary that depends (directly or indirectly) on this Swift module will link in all the object files for the files listed in `srcs`, even if some contain no symbols referenced by the binary. This is useful if your code isn't explicitly called by code in the binary; for example, if you rely on runtime checks for protocol conformances added in extensions in the library but do not directly reference any other symbols in the object file that adds that conformance.   | Boolean | optional |  `False`  |
-| <a id="swift_proto_library-compilers"></a>compilers |  One or more `swift_proto_compiler` targets (or targets producing `SwiftProtoCompilerInfo`), from which the Swift protos will be generated.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `["@build_bazel_rules_swift//proto/compilers:swift_proto"]`  |
+| <a id="swift_proto_library-compilers"></a>compilers |  One or more `swift_proto_compiler` targets (or targets producing `SwiftProtoCompilerInfo`), from which the Swift protos will be generated.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `["@rules_swift//proto/compilers:swift_proto"]`  |
 | <a id="swift_proto_library-copts"></a>copts |  Additional compiler options that should be passed to `swiftc`. These strings are subject to `$(location ...)` and ["Make" variable](https://docs.bazel.build/versions/master/be/make-variables.html) expansion.   | List of strings | optional |  `[]`  |
 | <a id="swift_proto_library-defines"></a>defines |  A list of defines to add to the compilation command line.<br><br>Note that unlike C-family languages, Swift defines do not have values; they are simply identifiers that are either defined or undefined. So strings in this list should be simple identifiers, **not** `name=value` pairs.<br><br>Each string is prepended with `-D` and added to the command line. Unlike `copts`, these flags are added for the target and every target that depends on it, so use this attribute with caution. It is preferred that you add defines directly to `copts`, only using this feature in the rare case that a library needs to propagate a symbol up to those that depend on it.   | List of strings | optional |  `[]`  |
 | <a id="swift_proto_library-generated_header_name"></a>generated_header_name |  The name of the generated Objective-C interface header. This name must end with a `.h` extension and cannot contain any path separators.<br><br>If this attribute is not specified, then the default behavior is to name the header `${target_name}-Swift.h`.<br><br>This attribute is ignored if the toolchain does not support generating headers.   | String | optional |  `""`  |
@@ -893,6 +913,6 @@ swift_library(
 | Name  | Description | Type | Mandatory | Default |
 | :------------- | :------------- | :------------- | :------------- | :------------- |
 | <a id="universal_swift_compiler_plugin-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
-| <a id="universal_swift_compiler_plugin-plugin"></a>plugin |  Target to generate a 'fat' binary from.   | <a href="https://bazel.build/concepts/labels">Label</a> | required |  |
+| <a id="universal_swift_compiler_plugin-plugin"></a>plugin |  A `swift_compiler_plugin` target to generate a 'fat' binary for.   | <a href="https://bazel.build/concepts/labels">Label</a> | required |  |
 
 
