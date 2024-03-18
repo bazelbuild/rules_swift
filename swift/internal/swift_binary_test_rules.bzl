@@ -20,9 +20,15 @@ load(":derived_files.bzl", "derived_files")
 load(":env_expansion.bzl", "expanded_env")
 load(":feature_names.bzl", "SWIFT_FEATURE_BUNDLED_XCTESTS")
 load(":linking.bzl", "binary_rule_attrs", "configure_features_for_binary", "register_link_binary_action")
-load(":providers.bzl", "SwiftCompilerPluginInfo", "SwiftToolchainInfo")
+load(
+    ":providers.bzl",
+    "SwiftCompilerPluginInfo",
+    "SwiftCompilerPluginCollectionInfo",
+    "SwiftToolchainInfo",
+    "get_compiler_plugin_infos",
+)
 load(":swift_common.bzl", "swift_common")
-load(":utils.bzl", "expand_locations", "get_providers", "include_developer_search_paths")
+load(":utils.bzl", "expand_locations", "include_developer_search_paths")
 
 def _maybe_parse_as_library_copts(srcs):
     """Returns a list of compiler flags depending on `main.swift`'s presence.
@@ -110,7 +116,7 @@ def _swift_linking_rule_impl(
             include_dev_srch_paths = include_dev_srch_paths,
             module_name = module_name,
             package_name = ctx.attr.package_name,
-            plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),
+            plugins = get_compiler_plugin_infos(ctx.attr.plugins),
             srcs = srcs,
             swift_toolchain = swift_toolchain,
             target_name = ctx.label.name,
@@ -287,11 +293,10 @@ def _swift_test_impl(ctx):
     # since we support testing those.
     extra_swift_infos = []
     additional_linking_contexts = []
-    for dep in ctx.attr.deps:
-        if SwiftCompilerPluginInfo in dep:
-            plugin_info = dep[SwiftCompilerPluginInfo]
-            extra_swift_infos.append(plugin_info.swift_info)
-            additional_linking_contexts.append(plugin_info.cc_info.linking_context)
+    plugin_infos = get_compiler_plugin_infos(ctx.attr.deps)
+    for plugin_info in plugin_infos:
+        extra_swift_infos.append(plugin_info.swift_info)
+        additional_linking_contexts.append(plugin_info.cc_info.linking_context)
 
     _, linking_outputs, providers = _swift_linking_rule_impl(
         ctx,
@@ -351,7 +356,10 @@ def _swift_test_impl(ctx):
 
 swift_binary = rule(
     attrs = binary_rule_attrs(
-        additional_deps_providers = [[SwiftCompilerPluginInfo]],
+        additional_deps_providers = [
+            [SwiftCompilerPluginInfo],
+            [SwiftCompilerPluginCollectionInfo],
+        ],
         stamp_default = -1,
     ),
     doc = """\
@@ -377,7 +385,10 @@ please use one of the platform-specific application rules in
 swift_test = rule(
     attrs = dicts.add(
         binary_rule_attrs(
-            additional_deps_providers = [[SwiftCompilerPluginInfo]],
+            additional_deps_providers = [
+                [SwiftCompilerPluginInfo],
+                [SwiftCompilerPluginCollectionInfo],
+            ],
             stamp_default = 0,
         ),
         {

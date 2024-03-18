@@ -12,12 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Stringify
+#if canImport(SwiftCompilerPlugin)
+import SwiftCompilerPlugin
+import SwiftSyntaxMacros
 
 @main
-struct Main {
-  static func main() {
-    print(#stringify(1 + 2))
-    print(#stringify2(2 + 1))
-  }
+struct Stringify2MacroPlugin: CompilerPlugin {
+  let providingMacros: [Macro.Type] = [
+    Stringify2Macro.self
+  ]
 }
+#endif

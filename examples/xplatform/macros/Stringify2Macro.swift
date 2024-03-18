@@ -12,12 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Stringify
+import SwiftSyntax
+import SwiftSyntaxBuilder
+import SwiftSyntaxMacros
 
-@main
-struct Main {
-  static func main() {
-    print(#stringify(1 + 2))
-    print(#stringify2(2 + 1))
+public struct Stringify2Macro: ExpressionMacro {
+  public static func expansion(
+    of node: some FreestandingMacroExpansionSyntax,
+    in context: some MacroExpansionContext
+  ) -> ExprSyntax {
+    guard let argument = node.argumentList.first?.expression else {
+      fatalError("compiler bug: the macro does not have any arguments")
+    }
+    return "(\(argument), \(literal: argument.description))"
   }
 }
