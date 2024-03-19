@@ -56,7 +56,7 @@ def write_vfsoverlay(
 
     # The YAML specification defines it has a superset of JSON, so it is safe to
     # use the built-in `to_json` function here.
-    vfsoverlay_yaml = struct(**vfsoverlay_object).to_json()
+    vfsoverlay_yaml = json.encode(struct(**vfsoverlay_object))
 
     actions.write(
         content = vfsoverlay_yaml,
