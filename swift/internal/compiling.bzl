@@ -48,7 +48,9 @@ load(
     "SWIFT_FEATURE_EMIT_BC",
     "SWIFT_FEATURE_EMIT_C_MODULE",
     "SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE",
+    "SWIFT_FEATURE_EMIT_SWIFTDOC",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
+    "SWIFT_FEATURE_EMIT_SWIFTSOURCEINFO",
     "SWIFT_FEATURE_EMIT_SYMBOL_GRAPH",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
@@ -2372,12 +2374,24 @@ def compile(
         swift_toolchain.generated_header_module_implicit_deps_providers.swift_infos
     )
 
+    # Determine if `.swiftdoc` and `.swiftsourceinfo` files should be included.
+    include_swiftdoc = is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_EMIT_SWIFTDOC,
+    )
+    include_swiftsourceinfo = is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_EMIT_SWIFTSOURCEINFO,
+    )
+
     compile_outputs, other_outputs = _declare_compile_outputs(
         srcs = srcs,
         actions = actions,
         feature_configuration = feature_configuration,
         generated_header_name = generated_header_name,
         generated_module_deps_swift_infos = generated_module_deps_swift_infos,
+        include_swiftdoc = include_swiftdoc,
+        include_swiftsourceinfo = include_swiftsourceinfo,
         module_name = module_name,
         target_name = target_name,
         user_compile_flags = copts,
@@ -2401,11 +2415,13 @@ def compile(
             # various things (such as the filename prefix for param files generated
             # for that action). This guarantees some predictability.
             compile_outputs.swiftmodule_file,
-            compile_outputs.swiftdoc_file,
-            compile_outputs.swiftsourceinfo_file,
             compile_outputs.generated_header_file,
             compile_outputs.symbol_graph_directory,
         ]) + other_outputs
+        if include_swiftdoc:
+            all_derived_outputs.append(compile_outputs.swiftdoc_file)
+        if include_swiftsourceinfo:
+            all_derived_outputs.append(compile_outputs.swiftsourceinfo_file)
     else:
         all_compile_outputs = compact([
             # The `.swiftmodule` file is explicitly listed as the first output
@@ -2413,15 +2429,17 @@ def compile(
             # various things (such as the filename prefix for param files generated
             # for that action). This guarantees some predictability.
             compile_outputs.swiftmodule_file,
-            compile_outputs.swiftdoc_file,
             compile_outputs.swiftinterface_file,
             compile_outputs.private_swiftinterface_file,
-            compile_outputs.swiftsourceinfo_file,
             compile_outputs.generated_header_file,
             compile_outputs.indexstore_directory,
             compile_outputs.macro_expansion_directory,
             compile_outputs.symbol_graph_directory,
         ]) + compile_outputs.object_files + other_outputs
+        if include_swiftdoc:
+            all_compile_outputs.append(compile_outputs.swiftdoc_file)
+        if include_swiftsourceinfo:
+            all_compile_outputs.append(compile_outputs.swiftsourceinfo_file)
         all_derived_outputs = []
 
     # Merge the providers from our dependencies so that we have one each for
@@ -2921,6 +2939,8 @@ def _declare_compile_outputs(
         feature_configuration,
         generated_header_name,
         generated_module_deps_swift_infos,
+        include_swiftdoc,
+        include_swiftsourceinfo,
         module_name,
         srcs,
         target_name,
@@ -2936,6 +2956,8 @@ def _declare_compile_outputs(
         generated_module_deps_swift_infos: `SwiftInfo` providers from
             dependencies of the module for the generated header of the target
             being compiled.
+        include_swiftdoc: If .swiftdoc file should be included or not.
+        include_swiftsourceinfo: If .swiftsourceinfo file should be included or not.
         module_name: The name of the Swift module being compiled.
         srcs: The list of source files that will be compiled.
         target_name: The name (excluding package path) of the target being
@@ -2963,11 +2985,12 @@ def _declare_compile_outputs(
     swiftdoc_file = derived_files.swiftdoc(
         actions = actions,
         module_name = module_name,
-    )
+    ) if include_swiftdoc else None
+
     swiftsourceinfo_file = derived_files.swiftsourceinfo(
         actions = actions,
         module_name = module_name,
-    )
+    ) if include_swiftsourceinfo else None
 
     if are_all_features_enabled(
         feature_configuration = feature_configuration,

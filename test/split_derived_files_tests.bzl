@@ -56,6 +56,36 @@ split_swiftmodule_skip_function_bodies_test = make_action_command_line_test_rule
         ],
     },
 )
+default_no_split_no_emit_swiftdoc_test = make_provider_test_rule(
+    config_settings = {
+        "//command_line_option:features": [
+            "-swift.emit_swiftdoc",
+        ],
+    },
+)
+default_no_split_no_emit_swiftsourceinfo_test = make_provider_test_rule(
+    config_settings = {
+        "//command_line_option:features": [
+            "-swift.emit_swiftsourceinfo",
+        ],
+    },
+)
+split_no_emit_swiftdoc_test = make_provider_test_rule(
+    config_settings = {
+        "//command_line_option:features": [
+            "-swift.emit_swiftdoc",
+            "swift.split_derived_files_generation",
+        ],
+    },
+)
+split_no_emit_swiftsourceinfo_test = make_provider_test_rule(
+    config_settings = {
+        "//command_line_option:features": [
+            "-swift.emit_swiftsourceinfo",
+            "swift.split_derived_files_generation",
+        ],
+    },
+)
 split_swiftmodule_indexing_test = make_action_command_line_test_rule(
     config_settings = {
         "//command_line_option:features": [
@@ -124,11 +154,99 @@ def split_derived_files_test_suite(name):
     )
 
     default_no_split_provider_test(
-        name = "{}_default_no_split_provider".format(name),
+        name = "{}_default_no_split_provider_swiftmodule".format(name),
         expected_files = [
             "test_fixtures_debug_settings_simple.swiftmodule",
         ],
         field = "direct_modules.swift.swiftmodule",
+        provider = "SwiftInfo",
+        tags = [name],
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+    )
+
+    default_no_split_provider_test(
+        name = "{}_default_no_split_provider_swiftdoc".format(name),
+        expected_files = [
+            "test_fixtures_debug_settings_simple.swiftdoc",
+        ],
+        field = "direct_modules.swift.swiftdoc",
+        provider = "SwiftInfo",
+        tags = [name],
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+    )
+
+    default_no_split_provider_test(
+        name = "{}_default_no_split_provider_swiftsourceinfo".format(name),
+        expected_files = [
+            "test_fixtures_debug_settings_simple.swiftsourceinfo",
+        ],
+        field = "direct_modules.swift.swiftsourceinfo",
+        provider = "SwiftInfo",
+        tags = [name],
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+    )
+
+    default_no_split_no_emit_swiftdoc_test(
+        name = "{}_default_no_split_provider_no_emit_swiftdoc".format(name),
+        expected_files = [
+            "-test_fixtures_debug_settings_simple.swiftdoc",
+        ],
+        field = "direct_modules.swift.swiftdoc",
+        provider = "SwiftInfo",
+        tags = [name],
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+    )
+
+    default_no_split_no_emit_swiftsourceinfo_test(
+        name = "{}_default_no_split_provider_no_emit_swiftsourceinfo".format(name),
+        expected_files = [
+            "-test_fixtures_debug_settings_simple.swiftsourceinfo",
+        ],
+        field = "direct_modules.swift.swiftsourceinfo",
+        provider = "SwiftInfo",
+        tags = [name],
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+    )
+
+    split_swiftmodule_provider_test(
+        name = "{}_split_provider_swiftdoc".format(name),
+        field = "direct_modules.swift.swiftdoc",
+        expected_files = [
+            "test_fixtures_debug_settings_simple.swiftdoc",
+        ],
+        provider = "SwiftInfo",
+        tags = [name],
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+    )
+
+    split_swiftmodule_provider_test(
+        name = "{}_split_provider_swiftsourceinfo".format(name),
+        field = "direct_modules.swift.swiftsourceinfo",
+        expected_files = [
+            "test_fixtures_debug_settings_simple.swiftsourceinfo",
+        ],
+        provider = "SwiftInfo",
+        tags = [name],
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+    )
+
+    split_no_emit_swiftdoc_test(
+        name = "{}_split_provider_no_emit_swiftdoc".format(name),
+        field = "direct_modules.swift.swiftdoc",
+        expected_files = [
+            "-test_fixtures_debug_settings_simple.swiftdoc",
+        ],
+        provider = "SwiftInfo",
+        tags = [name],
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+    )
+
+    split_no_emit_swiftsourceinfo_test(
+        name = "{}_split_provider_no_emit_swiftsourceinfo".format(name),
+        field = "direct_modules.swift.swiftsourceinfo",
+        expected_files = [
+            "-test_fixtures_debug_settings_simple.swiftsourceinfo",
+        ],
         provider = "SwiftInfo",
         tags = [name],
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
