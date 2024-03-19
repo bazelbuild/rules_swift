@@ -3250,13 +3250,13 @@ def _declare_multiple_outputs_and_write_output_file_map(
         output_map[src.path] = struct(**src_output_map)
 
     actions.write(
-        content = struct(**output_map).to_json(),
+        content = json.encode(struct(**output_map)),
         output = output_map_file,
     )
 
     if split_derived_file_generation:
         actions.write(
-            content = struct(**derived_files_output_map).to_json(),
+            content = json.encode(struct(**derived_files_output_map)),
             output = derived_files_output_map_file,
         )
 
