@@ -385,6 +385,20 @@ Swift build rules, and they are also passed to the C++ APIs used when linking
     },
 )
 
+SwiftClangModuleAspectInfo = provider(
+    doc = """\
+A "marker provider" (i.e., it has no fields) that is always returned when
+`swift_clang_module_aspect` is applied to a target.
+
+This provider exists because `swift_clang_module_aspect` cannot advertise that
+it returns `SwiftInfo` (since some code paths do not). Users who want to ensure
+aspect ordering via the `required_aspect_providers` parameter to their own
+`aspect` function can require this provider instead, which
+`swift_clang_module_aspect` does advertise.
+""",
+    fields = {},
+)
+
 def create_swift_module_context(
         *,
         name,
