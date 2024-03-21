@@ -47,6 +47,7 @@ load(
 load(":module_name.bzl", "derive_swift_module_name")
 load(
     ":providers.bzl",
+    "SwiftClangModuleAspectInfo",
     "SwiftInfo",
     "create_clang_module_inputs",
     "create_swift_module_context",
@@ -672,9 +673,11 @@ def _find_swift_interop_info(target, aspect_ctx):
     return None, default_direct_swift_infos, default_swift_infos
 
 def _swift_clang_module_aspect_impl(target, aspect_ctx):
+    providers = [SwiftClangModuleAspectInfo()]
+
     # Do nothing if the target already propagates `SwiftInfo`.
     if SwiftInfo in target:
-        return []
+        return providers
 
     requested_features = aspect_ctx.features
     unsupported_features = aspect_ctx.disabled_features
@@ -684,7 +687,7 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx):
         # If the module should be suppressed, return immediately and propagate
         # nothing (not even transitive dependencies).
         if interop_info.suppressed:
-            return []
+            return providers
 
         exclude_headers = interop_info.exclude_headers
         module_map_file = interop_info.module_map
@@ -721,7 +724,7 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx):
     )
 
     if interop_info or apple_common.Objc in target or CcInfo in target:
-        return _handle_module(
+        return providers + _handle_module(
             aspect_ctx = aspect_ctx,
             exclude_headers = exclude_headers,
             feature_configuration = feature_configuration,
@@ -736,12 +739,12 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx):
     # If it's any other rule, just merge the `SwiftInfo` providers from its
     # deps.
     if direct_swift_infos or swift_infos:
-        return [SwiftInfo(
+        providers.append(SwiftInfo(
             direct_swift_infos = direct_swift_infos,
             swift_infos = swift_infos,
-        )]
+        ))
 
-    return []
+    return providers
 
 swift_clang_module_aspect = aspect(
     attr_aspects = _MULTIPLE_TARGET_ASPECT_ATTRS + _SINGLE_TARGET_ASPECT_ATTRS,
@@ -774,9 +777,22 @@ propagated to any targets that depend on it, since they would not be propagated
 via `deps`. In this case, the custom rule can attach this aspect to that support
 library's attribute and then merge its `SwiftInfo` provider with any others that
 it propagates for its targets.
+
+### Returned Providers
+
+*   `SwiftClangModuleAspectInfo` _(always)_: An empty provider that is returned
+    so that other aspects that want to depend on the outputs of this aspect can
+    enforce ordering using `required_aspect_providers`.
+
+*   `SwiftInfo` _(optional)_: This provider is returned when the aspect is
+    applied to a target that is Swift-compatible or that has Swift-compatible
+    transitive dependencies. It is _not_ returned when a target has its module
+    suppressed (for example, using the `no_module` aspect hint). In this case,
+    transitive dependency information is intentionally discarded.
 """,
     fragments = ["cpp"],
     implementation = _swift_clang_module_aspect_impl,
+    provides = [SwiftClangModuleAspectInfo],
     required_aspect_providers = [
         [apple_common.Objc],
         [CcInfo],
