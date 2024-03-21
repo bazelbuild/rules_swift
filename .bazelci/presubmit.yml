@@ -32,12 +32,24 @@ x_defaults:
       - "-//examples/apple/..."
   windows_common: &windows_common
     platform: windows
+    environment:
+      SWIFT_VERSION: 0.0.0
+      PATH: "C:\\Users\\b\\AppData\\Local\\Programs\\Swift\\Toolchains\\%SWIFT_VERSION%+Asserts\\usr\\bin;C:\\Users\\b\\AppData\\Local\\Programs\\Swift\\Runtimes\\%SWIFT_VERSION%\\usr\\bin;%Path%"
+      SDKROOT: "C:\\Users\\b\\AppData\\Local\\Programs\\Swift\\Platforms\\%SWIFT_VERSION%\\Windows.platform\\Developer\\SDKs\\Windows.sdk"
     build_flags:
       # Override 'sandboxed' strategy set in .bazelrc because it's not
       # available on Windows
       - "--strategy=SwiftCompile="
+      - "--repo_env=SDKROOT=C:\\Users\\b\\AppData\\Local\\Programs\\Swift\\Platforms\\%SWIFT_VERSION%\\Windows.platform\\Developer\\SDKs\\Windows.sdk"
+      - "--repo_env=Path=C:\\Users\\b\\AppData\\Local\\Programs\\Swift\\Toolchains\\0.0.0+Asserts\\usr\\bin;C:\\Users\\b\\AppData\\Local\\Programs\\Swift\\Runtimes\\0.0.0\\usr\\bin;%Path%"
     build_targets:
       - "//tools/..."
+    test_flags:
+     - "--compiler=clang-cl"
+    test_targets:
+      - "//examples/..."
+      - "-//examples/apple/..."
+      - "-//examples/xplatform/grpc/..." # TODO: Fix gRPC on Windows
 
 tasks:
   macos_6:
@@ -117,6 +129,10 @@ tasks:
   windows_last_green:
     name: "Last Green Bazel"
     bazel: last_green
+    batch_commands:
+      - echo --- Downloading and installing Swift %SWIFT_VERSION%
+      - curl.exe -L https://download.swift.org/swift-5.10-branch/windows10/swift-5.10-DEVELOPMENT-SNAPSHOT-2024-01-18-a/swift-5.10-DEVELOPMENT-SNAPSHOT-2024-01-18-a-windows10.exe -o %TEMP%\installer.exe
+      - PowerShell Start-Process -FilePath ${env:TEMP}\installer.exe -ArgumentList(\"/install\", \"/passive\", \"/norestart\", \"/log log.txt\") -Wait -PassThru -Verb RunAs
     <<: *windows_common
 
   doc_tests:
