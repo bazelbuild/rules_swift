@@ -18,6 +18,7 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load(
     "@build_bazel_rules_swift//swift/internal:swift_autoconfiguration.bzl",
     "swift_autoconfiguration",
+    "swift_cc_autoconfiguration",
 )
 
 def _maybe(repo_rule, name, **kwargs):
@@ -189,6 +190,11 @@ def swift_rules_dependencies(include_bzlmod_ready_dependencies = True):
         canonical_id = "index-import-5.8",
         urls = ["https://github.com/MobileNativeFoundation/index-import/releases/download/5.8.0.1/index-import.tar.gz"],
         sha256 = "28c1ffa39d99e74ed70623899b207b41f79214c498c603915aef55972a851a15",
+    )
+
+    _maybe(
+        swift_cc_autoconfiguration,
+        name = "build_bazel_rules_swift_local_cc_config",
     )
 
     _maybe(

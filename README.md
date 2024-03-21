@@ -65,17 +65,6 @@ also ensure that the Swift compiler is available on your system path.
 Copy the `WORKSPACE` snippet from [the releases
 page](https://github.com/bazelbuild/rules_swift/releases).
 
-### 3. Additional configuration (Linux only)
-
-The `swift_binary` and `swift_test` rules expect to use `clang` as the driver
-for linking, and they query the Bazel C++ API and CROSSTOOL to determine which
-arguments should be passed to the linker. By default, the C++ toolchain used by
-Bazel is `gcc`, so Swift users on Linux need to override this by setting the
-environment variable `CC=clang` when invoking Bazel.
-
-This step is not necessary for macOS users because the Xcode toolchain always
-uses `clang`.
-
 ## Building with Custom Toolchains
 
 **macOS hosts:** You can build with a custom Swift toolchain (downloaded
