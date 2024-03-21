@@ -113,10 +113,10 @@ def _intermediate_frontend_file_path(target_name, src):
     """
     objs_dir = "{}_objs".format(target_name)
 
-    owner_rel_path = owner_relative_path(src).replace(" ", "__SPACE__")
-    safe_name = paths.basename(owner_rel_path)
+    owner_rel_path = owner_relative_path(src)
+    basename = paths.basename(owner_rel_path)
 
-    return paths.join(objs_dir, paths.dirname(owner_rel_path)), safe_name
+    return paths.join(objs_dir, paths.dirname(owner_rel_path)), basename
 
 def _intermediate_object_file(actions, target_name, src):
     """Declares a file for an intermediate object file during compilation.
