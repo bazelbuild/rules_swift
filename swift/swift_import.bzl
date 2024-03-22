@@ -116,6 +116,7 @@ def _swift_import_impl(ctx):
             ),
             swift = create_swift_module_inputs(
                 swiftdoc = swiftdoc,
+                swiftinterface = swiftinterface,
                 swiftmodule = swiftmodule,
             ),
         )
