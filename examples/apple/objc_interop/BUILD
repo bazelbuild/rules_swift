@@ -14,6 +14,7 @@ objc_library(
     name = "PrintStream",
     srcs = ["OIPrintStream.m"],
     hdrs = ["OIPrintStream.h"],
+    copts = ["-fmodules"],
     target_compatible_with = ["@platforms//os:macos"],
 )
 
@@ -22,12 +23,20 @@ swift_library(
     srcs = ["Printer.swift"],
     generated_header_name = "generated_header/Printer-Swift.h",
     generates_header = True,
-    deps = [":PrintStream"],
+    deps = [":PrintStream", ":Renderer"],
+)
+
+swift_library(
+    name = "Renderer",
+    srcs = ["Renderer.swift"],
+    deps = [],
+    module_name = "Renderer",
 )
 
 objc_library(
     name = "main",
     srcs = ["main.m"],
+    copts = ["-fmodules"],
     target_compatible_with = ["@platforms//os:macos"],
     deps = [":Printer"],
 )
