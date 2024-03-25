@@ -10,6 +10,7 @@ On this page:
   * [SwiftInfo](#SwiftInfo)
   * [SwiftToolchainInfo](#SwiftToolchainInfo)
   * [SwiftProtoCompilerInfo](#SwiftProtoCompilerInfo)
+  * [SwiftProtoCompilerCollectionInfo](#SwiftProtoCompilerCollectionInfo)
   * [SwiftProtoInfo](#SwiftProtoInfo)
   * [SwiftUsageInfo](#SwiftUsageInfo)
   * [DeprecatedSwiftGRPCInfo](#DeprecatedSwiftGRPCInfo)

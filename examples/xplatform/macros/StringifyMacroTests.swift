@@ -16,6 +16,7 @@ import SwiftSyntax
 import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
 import StringifyMacroPlugin
+import Stringify2MacroPlugin
 import XCTest
 
 class StringifyMacroTests: XCTestCase {
@@ -32,6 +33,23 @@ class StringifyMacroTests: XCTestCase {
       String(describing: transformedSourceFile),
       #"""
       _ = (1 + 2, "1 + 2")
+      """#
+    )
+  }
+
+  func testStringify2() {
+    let sourceFile: SourceFileSyntax = #"""
+      _ = #stringify2(2 + 1)
+      """#
+    let context = BasicMacroExpansionContext(
+      sourceFiles: [sourceFile: .init(moduleName: "TestModule", fullFilePath: "Test.swift")]
+    )
+    let transformedSourceFile =
+      sourceFile.expand(macros: ["stringify2": Stringify2Macro.self], in: context)
+    XCTAssertEqual(
+      String(describing: transformedSourceFile),
+      #"""
+      _ = (2 + 1, "2 + 1")
       """#
     )
   }

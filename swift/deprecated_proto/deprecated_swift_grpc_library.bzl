@@ -222,7 +222,7 @@ def _register_grpcswift_generate_action(
     return generated_files
 
 def _swift_grpc_library_impl(ctx):
-    print("WARNING: This rule is deprecated. See [the proto migration doc](proto_migration.md) for more information.")  # buildifier: disable=print
+    print("WARNING: This rule is deprecated. See proto_migration.md for more information.")  # buildifier: disable=print
 
     if len(ctx.attr.deps) != 1:
         fail(

@@ -41,7 +41,9 @@ load(
 load(
     "@build_bazel_rules_swift//swift/internal:providers.bzl",
     "SwiftCompilerPluginInfo",
+    "SwiftCompilerPluginCollectionInfo",
     "SwiftToolchainInfo",
+    "get_compiler_plugin_infos",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:swift_common.bzl",
@@ -50,7 +52,6 @@ load(
 load(
     "@build_bazel_rules_swift//swift/internal:utils.bzl",
     "expand_locations",
-    "get_providers",
 )
 load(":module_name.bzl", "derive_swift_module_name")
 
@@ -105,7 +106,7 @@ def _swift_compiler_plugin_impl(ctx):
         include_dev_srch_paths = ctx.attr.testonly,
         module_name = module_name,
         package_name = ctx.attr.package_name,
-        plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),
+        plugins = get_compiler_plugin_infos(ctx.attr.plugins),
         srcs = srcs,
         swift_toolchain = swift_toolchain,
         target_name = ctx.label.name,
@@ -321,13 +322,51 @@ def _universal_swift_compiler_plugin_impl(ctx):
         ),
     ]
 
+def _swift_compiler_plugin_group_impl(ctx):
+    direct = []
+    transitive = []
+    for target in ctx.attr.plugins:
+        if SwiftCompilerPluginInfo in target:
+            direct.append(target[SwiftCompilerPluginInfo])
+        if SwiftCompilerPluginCollectionInfo in target:
+            transitive.append(target[SwiftCompilerPluginCollectionInfo].plugins)
+    return [
+        SwiftCompilerPluginCollectionInfo(
+            plugins = depset(
+                direct,
+                order = "preorder",
+                transitive = transitive,
+            ),
+        ),
+    ]
+
+swift_compiler_plugin_group = rule(
+    attrs = {
+        "plugins": attr.label_list(
+            doc = """\
+A list of `swift_compiler_plugin` or `swift_compiler_plugin_group` targets that
+should be loaded by the compiler when compiling this module and any modules that
+directly depend on it.
+""",
+            mandatory = True,
+            providers = [
+                [SwiftCompilerPluginInfo],
+                [SwiftCompilerPluginCollectionInfo],
+            ],
+        ),
+    },
+    implementation = _swift_compiler_plugin_group_impl,
+)
+
 universal_swift_compiler_plugin = rule(
     attrs = dicts.add(
         apple_support.action_required_attrs(),
         {
             "plugin": attr.label(
                 cfg = macos_universal_transition,
-                doc = "Target to generate a 'fat' binary from.",
+                doc = """
+A `swift_compiler_plugin` target to generate a 'fat' binary for.
+""",
                 mandatory = True,
                 providers = [SwiftCompilerPluginInfo],
             ),

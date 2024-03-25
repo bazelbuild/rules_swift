@@ -15,3 +15,7 @@
 @freestanding(expression)
 public macro stringify<T>(_ value: T) -> (T, String) =
   #externalMacro(module: "StringifyMacroPlugin", type: "StringifyMacro")
+
+@freestanding(expression)
+public macro stringify2<T>(_ value: T) -> (T, String) =
+  #externalMacro(module: "Stringify2MacroPlugin", type: "Stringify2Macro")
