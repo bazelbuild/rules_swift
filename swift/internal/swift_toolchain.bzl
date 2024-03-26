@@ -82,7 +82,8 @@ def _all_tool_configs(
             flags.
         use_module_wrap: If True, the compile action should embed the
             swiftmodule into the final image.
-        additional_tools: Any extra tool inputs to pass to each driver config
+        additional_tools: A list of extra tools to pass to each driver config,
+            in a format suitable for the `tools` argument to `ctx.actions.run`.
         tool_executable_suffix: The suffix for executable tools to use (e.g.
             `.exe` on Windows).
 
@@ -91,12 +92,10 @@ def _all_tool_configs(
     """
     _swift_driver_tool_config = swift_toolchain_config.driver_tool_config
 
-    tool_inputs = depset(additional_tools)
-
     compile_tool_config = _swift_driver_tool_config(
         driver_mode = "swiftc",
         swift_executable = swift_executable,
-        tool_inputs = tool_inputs,
+        tools = additional_tools,
         toolchain_root = toolchain_root,
         tool_executable_suffix = tool_executable_suffix,
         use_param_file = use_param_file,
@@ -114,7 +113,7 @@ def _all_tool_configs(
         configs[swift_action_names.AUTOLINK_EXTRACT] = _swift_driver_tool_config(
             driver_mode = "swift-autolink-extract",
             swift_executable = swift_executable,
-            tool_inputs = tool_inputs,
+            tools = additional_tools,
             toolchain_root = toolchain_root,
             tool_executable_suffix = tool_executable_suffix,
             worker_mode = "wrap",
@@ -126,7 +125,7 @@ def _all_tool_configs(
             args = ["-modulewrap"],
             driver_mode = "swift",
             swift_executable = swift_executable,
-            tool_inputs = tool_inputs,
+            tools = additional_tools,
             toolchain_root = toolchain_root,
             tool_executable_suffix = tool_executable_suffix,
             worker_mode = "wrap",

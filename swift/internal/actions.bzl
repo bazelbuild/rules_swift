@@ -246,6 +246,9 @@ def run_toolchain_action(
     else:
         executable = tool_config.executable
 
+    if tool_config.tools:
+        tools.extend(tool_config.tools)
+
     # If the tool configuration has any required arguments, add those first.
     if tool_config.args:
         args.add_all(tool_config.args)
@@ -266,13 +269,12 @@ def run_toolchain_action(
         env = tool_config.env,
         executable = executable,
         execution_requirements = execution_requirements,
-        input_manifests = tool_config.tool_input_manifests,
         inputs = depset(
             action_inputs.inputs,
             transitive = action_inputs.transitive_inputs,
         ),
         mnemonic = mnemonic if mnemonic else action_name,
-        tools = depset(tools, transitive = [tool_config.tool_inputs]),
+        tools = tools,
         use_default_shell_env = USE_DEFAULT_SHELL_ENV,
         **kwargs
     )
