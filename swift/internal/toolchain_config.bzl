@@ -43,8 +43,7 @@ _ToolConfigInfo = provider(
         "env",
         "executable",
         "execution_requirements",
-        "tool_input_manifests",
-        "tool_inputs",
+        "tools",
         "use_param_file",
         "worker_mode",
     ],
@@ -300,8 +299,7 @@ def _tool_config(
         args = [],
         env = {},
         execution_requirements = {},
-        tool_input_manifests = [],
-        tool_inputs = depset(),
+        tools = [],
         use_param_file = False,
         worker_mode = None):
     """Returns a new Swift toolchain tool configuration.
@@ -316,14 +314,8 @@ def _tool_config(
             invoking actions using this tool.
         execution_requirements: A dictionary of execution requirements that
             should be passed when creating actions with this tool.
-        tool_input_manifests: A list of input runfiles metadata for tools that
-            should be passed into the `input_manifests` argument of the
-            `ctx.actions.run` call that registers actions using this tool (see
-            also Bazel's `ctx.resolve_tools`).
-        tool_inputs: A `depset` of additional inputs for tools that should be
-            passed into the `tools` argument of the `ctx.actions.run` call that
-            registers actions using this tool (see also Bazel's
-            `ctx.resolve_tools`).
+        tools: A list of additional tools to pass to spawned actions, in a
+            format suitable for the `tools` argument to `ctx.actions.run`.
         use_param_file: If True, actions invoked using this tool will have their
             arguments written to a param file.
         worker_mode: A string, or `None`, describing how the tool is invoked
@@ -343,8 +335,7 @@ def _tool_config(
         env = env,
         executable = executable,
         execution_requirements = execution_requirements,
-        tool_input_manifests = tool_input_manifests,
-        tool_inputs = tool_inputs,
+        tools = tools,
         use_param_file = use_param_file,
         worker_mode = _validate_worker_mode(worker_mode),
     )

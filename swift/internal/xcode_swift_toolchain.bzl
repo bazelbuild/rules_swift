@@ -67,7 +67,6 @@ load(
     ":utils.bzl",
     "collect_implicit_deps_providers",
     "get_swift_executable_for_toolchain",
-    "resolve_optional_tool",
 )
 
 # TODO: Remove once we drop bazel 7.x
@@ -421,7 +420,7 @@ def _all_action_configs(
     action_configs.extend(compile_action_configs(
         additional_objc_copts = additional_objc_copts,
         additional_swiftc_copts = additional_swiftc_copts,
-        generated_header_rewriter = generated_header_rewriter.executable,
+        generated_header_rewriter = generated_header_rewriter,
     ))
     return action_configs
 
@@ -439,9 +438,8 @@ def _all_tool_configs(
             one was requested.
         env: The environment variables to set when launching tools.
         execution_requirements: The execution requirements for tools.
-        generated_header_rewriter: A `struct` returned by
-            `resolve_optional_tool` that represents an executable that will be
-            invoked after compilation to rewrite the generated header.
+        generated_header_rewriter: The optional executable that will be invoked
+            after compilation to rewrite the generated header.
         swift_executable: A custom Swift driver executable to be used during the
             build, if provided.
         toolchain_root: The root directory of the toolchain, if provided.
@@ -464,8 +462,7 @@ def _all_tool_configs(
         env = env,
         execution_requirements = execution_requirements,
         swift_executable = swift_executable,
-        tool_input_manifests = generated_header_rewriter.input_manifests,
-        tool_inputs = generated_header_rewriter.inputs,
+        tools = [generated_header_rewriter] if generated_header_rewriter else [],
         toolchain_root = toolchain_root,
         use_param_file = True,
         worker_mode = "persistent",
@@ -643,10 +640,7 @@ def _xcode_swift_toolchain_impl(ctx):
 
     env = _xcode_env(target_triple = target_triple, xcode_config = xcode_config)
     execution_requirements = xcode_config.execution_info()
-    generated_header_rewriter = resolve_optional_tool(
-        ctx,
-        target = ctx.attr.generated_header_rewriter,
-    )
+    generated_header_rewriter = ctx.executable.generated_header_rewriter
 
     all_tool_configs = _all_tool_configs(
         custom_toolchain = custom_toolchain,
