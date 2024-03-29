@@ -3047,6 +3047,8 @@ def _declare_compile_outputs(
     ):
         private_swiftinterface_file = derived_files.private_swiftinterface(
             actions = actions,
+            add_target_name_to_output_path = add_target_name_to_output_path,
+            target_name = target_name,
             module_name = module_name,
         )
     else:
