@@ -92,14 +92,14 @@ def _swift_proto_library_impl(ctx):
         [module.swift.swiftinterface for module in direct_swift_info.direct_modules] +
         [module.swift.private_swiftinterface for module in direct_swift_info.direct_modules] +
         [module.swift.swiftmodule for module in direct_swift_info.direct_modules] +
-        [module.swift.swiftsourceinfo for module in direct_swift_info.direct_modules]
+        [module.swift.swiftsourceinfo for module in direct_swift_info.direct_modules],
     )
 
     return [
         DefaultInfo(
             files = depset(
                 direct_files,
-                transitive = [direct_swift_proto_info.pbswift_files]
+                transitive = [direct_swift_proto_info.pbswift_files],
             ),
             runfiles = ctx.runfiles(
                 collect_data = True,

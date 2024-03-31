@@ -385,6 +385,6 @@ def compile_swift_protos_for_target(
     return struct(
         direct_output_group_info = direct_output_group_info,
         direct_swift_proto_cc_info = direct_swift_proto_cc_info,
-        direct_swift_info = direct_swift_info, 
-        direct_swift_proto_info = direct_swift_proto_info
+        direct_swift_info = direct_swift_info,
+        direct_swift_proto_info = direct_swift_proto_info,
     )
