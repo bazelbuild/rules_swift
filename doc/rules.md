@@ -32,6 +32,7 @@ On this page:
   * [swift_test](#swift_test)
   * [swift_proto_library](#swift_proto_library)
   * [swift_proto_compiler](#swift_proto_compiler)
+  * [swift_proto_library_group](#swift_proto_library_group)
   * [deprecated_swift_grpc_library](#deprecated_swift_grpc_library)
   * [deprecated_swift_proto_library](#deprecated_swift_proto_library)
 
@@ -594,8 +595,8 @@ target's label is included by the package specifications in the configuration.
 ## swift_proto_compiler
 
 <pre>
-swift_proto_compiler(<a href="#swift_proto_compiler-name">name</a>, <a href="#swift_proto_compiler-deps">deps</a>, <a href="#swift_proto_compiler-plugin">plugin</a>, <a href="#swift_proto_compiler-plugin_name">plugin_name</a>, <a href="#swift_proto_compiler-plugin_option_allowlist">plugin_option_allowlist</a>, <a href="#swift_proto_compiler-plugin_options">plugin_options</a>,
-                     <a href="#swift_proto_compiler-protoc">protoc</a>, <a href="#swift_proto_compiler-suffixes">suffixes</a>)
+swift_proto_compiler(<a href="#swift_proto_compiler-name">name</a>, <a href="#swift_proto_compiler-deps">deps</a>, <a href="#swift_proto_compiler-bundled_proto_paths">bundled_proto_paths</a>, <a href="#swift_proto_compiler-plugin">plugin</a>, <a href="#swift_proto_compiler-plugin_name">plugin_name</a>, <a href="#swift_proto_compiler-plugin_option_allowlist">plugin_option_allowlist</a>,
+                     <a href="#swift_proto_compiler-plugin_options">plugin_options</a>, <a href="#swift_proto_compiler-protoc">protoc</a>, <a href="#swift_proto_compiler-suffixes">suffixes</a>)
 </pre>
 
 
@@ -607,6 +608,7 @@ swift_proto_compiler(<a href="#swift_proto_compiler-name">name</a>, <a href="#sw
 | :------------- | :------------- | :------------- | :------------- | :------------- |
 | <a id="swift_proto_compiler-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
 | <a id="swift_proto_compiler-deps"></a>deps |  List of targets providing SwiftInfo and CcInfo. Added as implicit dependencies for any swift_proto_library using this compiler. Typically, these are Well Known Types and proto runtime libraries.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
+| <a id="swift_proto_compiler-bundled_proto_paths"></a>bundled_proto_paths |  List of proto paths for which to skip generation because they're bundled in runtime.   | List of strings | optional |  `["google/protobuf/any.proto", "google/protobuf/api.proto", "google/protobuf/descriptor.proto", "google/protobuf/duration.proto", "google/protobuf/empty.proto", "google/protobuf/field_mask.proto", "google/protobuf/source_context.proto", "google/protobuf/struct.proto", "google/protobuf/timestamp.proto", "google/protobuf/type.proto", "google/protobuf/wrappers.proto"]`  |
 | <a id="swift_proto_compiler-plugin"></a>plugin |  A proto compiler plugin executable binary.<br><br>For example: "//tools/protoc_wrapper:protoc-gen-grpc-swift" "//tools/protoc_wrapper:ProtoCompilerPlugin"   | <a href="https://bazel.build/concepts/labels">Label</a> | required |  |
 | <a id="swift_proto_compiler-plugin_name"></a>plugin_name |  Name of the proto compiler plugin passed to protoc.<br><br>For example:<br><br><pre><code>protoc     --plugin=protoc-gen-NAME=path/to/plugin/binary</code></pre><br><br>This name will be used to prefix the option and output directory arguments. E.g.:<br><br><pre><code>protoc     --plugin=protoc-gen-NAME=path/to/mybinary     --NAME_out=OUT_DIR     --NAME_opt=Visibility=Public</code></pre><br><br>See the [protobuf API reference](https://protobuf.dev/reference/cpp/api-docs/google.protobuf.compiler.plugin) for more information.   | String | required |  |
 | <a id="swift_proto_compiler-plugin_option_allowlist"></a>plugin_option_allowlist |  Allowlist of options allowed by the plugin. This is used to filter out any irrelevant plugin options passed down to the compiler from the library, which is especially useful when using multiple plugins in combination like GRPC and SwiftProtobuf.   | List of strings | required |  |
@@ -688,6 +690,83 @@ swift_proto_library(
 | <a id="swift_proto_library-plugins"></a>plugins |  A list of `swift_compiler_plugin` targets that should be loaded by the compiler when compiling this module and any modules that directly depend on it.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 | <a id="swift_proto_library-protos"></a>protos |  A list of `proto_library` targets (or targets producing `ProtoInfo`), from which the Swift source files should be generated.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 | <a id="swift_proto_library-swiftc_inputs"></a>swiftc_inputs |  Additional files that are referenced using `$(location ...)` in attributes that support location expansion.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
+
+
+<a id="swift_proto_library_group"></a>
+
+## swift_proto_library_group
+
+<pre>
+swift_proto_library_group(<a href="#swift_proto_library_group-name">name</a>, <a href="#swift_proto_library_group-compiler">compiler</a>, <a href="#swift_proto_library_group-proto">proto</a>)
+</pre>
+
+Generates a collection of Swift static library from a target producing `ProtoInfo` and its dependencies.
+
+This rule is intended to facilitate migration from the deprecated swift proto library rules to the new ones.
+Unlike swift_proto_library which is a drop-in-replacement for swift_library,
+this rule uses an aspect over the direct proto library dependency and its transitive dependencies,
+compiling each into a swift static library.
+
+For example, in the following targets, the proto_library_group_swift_proto target only depends on
+package_2_proto target, and this transitively depends on package_1_proto.
+When used as a dependency from a swift_library or swift_binary target,
+two modules generated from these proto library targets are visible.
+
+Because these are derived from the proto library targets via an aspect, though,
+you cannot customize many of the attributes including the swift proto compiler targets or
+the module names. The module names are derived from the proto library names.
+
+In this case, the module names are:
+```
+import examples_xplatform_proto_library_group_package_1_package_1_proto
+import examples_xplatform_proto_library_group_package_2_package_2_proto
+```
+
+For this reason, we would encourage new consumers of the proto rules to use
+`swift_proto_library` when possible.
+
+```python
+proto_library(
+    name = "package_1_proto",
+    srcs = glob(["*.proto"]),
+    visibility = ["//visibility:public"],
+)
+
+...
+
+proto_library(
+    name = "package_2_proto",
+    srcs = glob(["*.proto"]),
+    visibility = ["//visibility:public"],
+    deps = ["//examples/xplatform/proto_library_group/package_1:package_1_proto"],
+)
+
+...
+
+swift_proto_library_group(
+    name = "proto_library_group_swift_proto",
+    proto = "//examples/xplatform/proto_library_group/package_2:package_2_proto",
+)
+
+...
+
+swift_binary(
+    name = "proto_library_group_example",
+    srcs = ["main.swift"],
+    deps = [
+        ":proto_library_group_swift_proto",
+    ],
+)
+```
+
+**ATTRIBUTES**
+
+
+| Name  | Description | Type | Mandatory | Default |
+| :------------- | :------------- | :------------- | :------------- | :------------- |
+| <a id="swift_proto_library_group-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
+| <a id="swift_proto_library_group-compiler"></a>compiler |  A `swift_proto_compiler` target (or target producing `SwiftProtoCompilerInfo`), from which the Swift protos will be generated.   | <a href="https://bazel.build/concepts/labels">Label</a> | optional |  `"@build_bazel_rules_swift//proto/compilers:swift_proto"`  |
+| <a id="swift_proto_library_group-proto"></a>proto |  Exactly one `proto_library` target (or target producing `ProtoInfo`), from which the Swift source files should be generated.   | <a href="https://bazel.build/concepts/labels">Label</a> | required |  |
 
 
 <a id="swift_test"></a>

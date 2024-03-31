@@ -33,6 +33,7 @@ _DOC_SRCS = {
         "swift_test",
         "swift_proto_library",
         "swift_proto_compiler",
+        "swift_proto_library_group",
         "deprecated_swift_grpc_library",
         "deprecated_swift_proto_library",
     ],

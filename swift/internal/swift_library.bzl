@@ -178,7 +178,7 @@ def _swift_library_impl(ctx):
             attr = "generated_header_name",
         )
 
-    include_dev_srch_paths = include_developer_search_paths(ctx)
+    include_dev_srch_paths = include_developer_search_paths(ctx.attr)
 
     module_context, cc_compilation_outputs, other_compilation_outputs = swift_common.compile(
         actions = ctx.actions,

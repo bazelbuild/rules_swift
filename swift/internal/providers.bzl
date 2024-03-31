@@ -147,6 +147,10 @@ Typically these are proto runtime libraries.
 Well Known Types should be added as dependencies of the swift_proto_library
 targets as needed to avoid compiling them unnecessarily.
 """,
+        "bundled_proto_paths": """\
+List of proto paths for which to skip generation because they're built into the modules
+imported by the generated Swift proto code, e.g., SwiftProtobuf.
+""",
         "internal": """\
 Opaque struct passing information from the compiler target to the compile function.
 """,

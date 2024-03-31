@@ -372,18 +372,18 @@ def struct_fields(s):
         if field not in ("to_json", "to_proto")
     }
 
-def include_developer_search_paths(ctx):
+def include_developer_search_paths(attr):
     """Determines whether to include developer search paths.
 
     Args:
-        ctx: A rule's `ctx`.
+        attr: A rule's `ctx.attr`.
 
     Returns:
         A `bool` where `True` indicates that the developer search paths should
         be included during compilation. Otherwise, `False`.
     """
-    return ctx.attr.testonly or getattr(
-        ctx.attr,
+    return attr.testonly or getattr(
+        attr,
         "always_include_developer_search_paths",
         False,
     )
