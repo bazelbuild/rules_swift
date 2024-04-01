@@ -88,6 +88,9 @@ def _swift_import_impl(ctx):
             module_context.swift.swiftmodule,
         ] + compact([module_context.swift.swiftdoc])
     else:
+        # TODO: make this a failure in version 2.x
+        if swiftinterface:
+            print("WARNING: Provided `swiftinterface` attribute will be ignored because `swiftmodule` was provided. This will be an error in a future version of rules_swift.")  # buildifier: disable=print
         module_context = swift_common.create_module(
             name = ctx.attr.module_name,
             clang = swift_common.create_clang_module(
@@ -161,6 +164,7 @@ The `.swiftdoc` file provided to Swift targets that depend on this target.
                 allow_single_file = ["swiftinterface"],
                 doc = """\
 The `.swiftinterface` file that defines the module interface for this target.
+The interface files are ignored if `swiftmodule` is specified.
 """,
                 mandatory = False,
             ),
@@ -181,8 +185,20 @@ toolchain (such as `clang`) will be retrieved.
         },
     ),
     doc = """\
-Allows for the use of Swift textual module interfaces and/or precompiled Swift modules as dependencies in other
+Allows for the use of Swift textual module interfaces or precompiled Swift modules as dependencies in other
 `swift_library` and `swift_binary` targets.
+
+To use `swift_import` targets across Xcode versions and/or OS versions, it is required to use `.swiftinterface` files.
+These can be produced by the pre-built target if built with:
+
+  - `--features=swift.enable_library_evolution`
+  - `--features=swift.emit_swiftinterface`
+
+If the pre-built target supports `.private.swiftinterface` files, these can be used instead of `.swiftinterface` files
+in the `swiftinterface` attribute.
+
+To import pre-built Swift modules that use `@_spi` when using `swiftinterface`,
+the `.private.swiftinterface` files are required in order to build any code that uses the API marked with `@_spi`.
 """,
     fragments = ["cpp"],
     implementation = _swift_import_impl,
