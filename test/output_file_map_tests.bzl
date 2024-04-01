@@ -61,7 +61,7 @@ output_file_map_embed_bitcode_wmo_test = make_output_file_map_test_rule(
 # Test with enabled `swift.add_target_name_to_output` feature
 output_file_map_embed_target_name_bitcode_wmo_test = make_output_file_map_test_rule(
     config_settings = {
-        "//command_line_option:swiftcopt": [
+        str(Label("@build_bazel_rules_swift//swift:copt")): [
             "-whole-module-optimization",
         ],
         "//command_line_option:features": [
