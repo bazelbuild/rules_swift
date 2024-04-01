@@ -438,8 +438,20 @@ package.
 swift_import(<a href="#swift_import-name">name</a>, <a href="#swift_import-deps">deps</a>, <a href="#swift_import-data">data</a>, <a href="#swift_import-archives">archives</a>, <a href="#swift_import-module_name">module_name</a>, <a href="#swift_import-swiftdoc">swiftdoc</a>, <a href="#swift_import-swiftinterface">swiftinterface</a>, <a href="#swift_import-swiftmodule">swiftmodule</a>)
 </pre>
 
-Allows for the use of Swift textual module interfaces and/or precompiled Swift modules as dependencies in other
+Allows for the use of Swift textual module interfaces or precompiled Swift modules as dependencies in other
 `swift_library` and `swift_binary` targets.
+
+To use `swift_import` targets across Xcode versions and/or OS versions, it is required to use `.swiftinterface` files.
+These can be produced by the pre-built target if built with:
+
+  - `--features=swift.enable_library_evolution`
+  - `--features=swift.emit_swiftinterface`
+
+If the pre-built target supports `.private.swiftinterface` files, these can be used instead of `.swiftinterface` files
+in the `swiftinterface` attribute.
+
+To import pre-built Swift modules that use `@_spi` when using `swiftinterface`,
+the `.private.swiftinterface` files are required in order to build any code that uses the API marked with `@_spi`.
 
 **ATTRIBUTES**
 
@@ -452,7 +464,7 @@ Allows for the use of Swift textual module interfaces and/or precompiled Swift m
 | <a id="swift_import-archives"></a>archives |  The list of `.a` files provided to Swift targets that depend on this target.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 | <a id="swift_import-module_name"></a>module_name |  The name of the module represented by this target.   | String | required |  |
 | <a id="swift_import-swiftdoc"></a>swiftdoc |  The `.swiftdoc` file provided to Swift targets that depend on this target.   | <a href="https://bazel.build/concepts/labels">Label</a> | optional |  `None`  |
-| <a id="swift_import-swiftinterface"></a>swiftinterface |  The `.swiftinterface` file that defines the module interface for this target.   | <a href="https://bazel.build/concepts/labels">Label</a> | optional |  `None`  |
+| <a id="swift_import-swiftinterface"></a>swiftinterface |  The `.swiftinterface` file that defines the module interface for this target. The interface files are ignored if `swiftmodule` is specified.   | <a href="https://bazel.build/concepts/labels">Label</a> | optional |  `None`  |
 | <a id="swift_import-swiftmodule"></a>swiftmodule |  The `.swiftmodule` file provided to Swift targets that depend on this target.   | <a href="https://bazel.build/concepts/labels">Label</a> | optional |  `None`  |
 
 
