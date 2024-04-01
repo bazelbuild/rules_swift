@@ -45,6 +45,16 @@ def swift_rules_dependencies(include_bzlmod_ready_dependencies = True):
     if include_bzlmod_ready_dependencies:
         _maybe(
             http_archive,
+            name = "platforms",
+            urls = [
+                "https://mirror.bazel.build/github.com/bazelbuild/platforms/releases/download/0.0.9/platforms-0.0.9.tar.gz",
+                "https://github.com/bazelbuild/platforms/releases/download/0.0.9/platforms-0.0.9.tar.gz",
+            ],
+            sha256 = "5eda539c841265031c2f82d8ae7a3a6490bd62176e0c038fc469eabf91f6149b",
+        )
+
+        _maybe(
+            http_archive,
             name = "bazel_skylib",
             urls = [
                 "https://github.com/bazelbuild/bazel-skylib/releases/download/1.3.0/bazel-skylib-1.3.0.tar.gz",
