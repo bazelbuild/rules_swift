@@ -92,36 +92,36 @@ def swift_rules_dependencies(include_bzlmod_ready_dependencies = True):
     _maybe(
         http_archive,
         name = "com_github_apple_swift_protobuf",
-        urls = ["https://github.com/apple/swift-protobuf/archive/1.20.2.tar.gz"],  # pinned to grpc-swift version
-        sha256 = "3fb50bd4d293337f202d917b6ada22f9548a0a0aed9d9a4d791e6fbd8a246ebb",
-        strip_prefix = "swift-protobuf-1.20.2/",
+        urls = ["https://github.com/apple/swift-protobuf/archive/1.25.2.tar.gz"],  # pinned to grpc-swift version
+        sha256 = "7d269be07c0bc5e53171c50f577f8d515701c54408c21573c454dfcec68f46a0",
+        strip_prefix = "swift-protobuf-1.25.2/",
         build_file = "@build_bazel_rules_swift//third_party:com_github_apple_swift_protobuf/BUILD.overlay",
     )
 
     _maybe(
         http_archive,
         name = "com_github_grpc_grpc_swift",
-        urls = ["https://github.com/grpc/grpc-swift/archive/1.16.0.tar.gz"],  # latest at time of writing
-        sha256 = "58b60431d0064969f9679411264b82e40a217ae6bd34e17096d92cc4e47556a5",
-        strip_prefix = "grpc-swift-1.16.0/",
+        urls = ["https://github.com/grpc/grpc-swift/archive/1.21.1.tar.gz"],  # latest at time of writing
+        sha256 = "e012013495d2b06bf141a3cf3fade2f5a71118e0afc180c6c471fa96060e6aa5",
+        strip_prefix = "grpc-swift-1.21.1/",
         build_file = "@build_bazel_rules_swift//third_party:com_github_grpc_grpc_swift/BUILD.overlay",
     )
 
     _maybe(
         http_archive,
         name = "com_github_apple_swift_nio",
-        urls = ["https://github.com/apple/swift-nio/archive/2.42.0.tar.gz"],  # pinned to grpc swift version
-        sha256 = "e3304bc3fb53aea74a3e54bd005ede11f6dc357117d9b1db642d03aea87194a0",
-        strip_prefix = "swift-nio-2.42.0/",
+        urls = ["https://github.com/apple/swift-nio/archive/2.58.0.tar.gz"],  # pinned to grpc swift version
+        sha256 = "27bff7d2f4567e788c5668eeff12d58aa43691427a2dd9daa45b1b715feb9cf3",
+        strip_prefix = "swift-nio-2.58.0/",
         build_file = "@build_bazel_rules_swift//third_party:com_github_apple_swift_nio/BUILD.overlay",
     )
 
     _maybe(
         http_archive,
         name = "com_github_apple_swift_nio_http2",
-        urls = ["https://github.com/apple/swift-nio-http2/archive/1.26.0.tar.gz"],  # pinned to grpc-swift version
-        sha256 = "f0edfc9d6a7be1d587e5b403f2d04264bdfae59aac1d74f7d974a9022c6d2b25",
-        strip_prefix = "swift-nio-http2-1.26.0/",
+        urls = ["https://github.com/apple/swift-nio-http2/archive/1.24.1.tar.gz"],  # pinned to grpc-swift version
+        sha256 = "819b9ea605e90c7b00645b83af595909446edac5cb493ae3717c720c7c284514",
+        strip_prefix = "swift-nio-http2-1.24.1/",
         build_file = "@build_bazel_rules_swift//third_party:com_github_apple_swift_nio_http2/BUILD.overlay",
     )
 
@@ -164,12 +164,11 @@ def swift_rules_dependencies(include_bzlmod_ready_dependencies = True):
     _maybe(
         http_archive,
         name = "com_github_apple_swift_collections",
-        urls = ["https://github.com/apple/swift-collections/archive/1.0.4.tar.gz"],  # pinned to swift-nio @ grpc-swift version
-        sha256 = "d9e4c8a91c60fb9c92a04caccbb10ded42f4cb47b26a212bc6b39cc390a4b096",
-        strip_prefix = "swift-collections-1.0.4/",
+        urls = ["https://github.com/apple/swift-collections/archive/1.0.5.tar.gz"],  # pinned to swift-nio @ grpc-swift version
+        sha256 = "d0f584b197860db26fd939175c9d1a7badfe7b89949b4bd52d4f626089776e0a",
+        strip_prefix = "swift-collections-1.0.5/",
         build_file = "@build_bazel_rules_swift//third_party:com_github_apple_swift_collections/BUILD.overlay",
     )
-
     _maybe(
         http_archive,
         name = "com_github_apple_swift_atomics",

@@ -43,6 +43,59 @@ swift_library(
     ],
 )
 
+swift_library(
+    name = "GRPCCodeGen",
+    srcs = glob(
+        ["Sources/GRPCCodeGen/**/*.swift"],
+        allow_empty = False,
+    ),
+    module_name = "GRPCCodeGen",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":CGRPCZlib",
+        "@com_github_apple_swift_log//:Logging",
+        "@com_github_apple_swift_nio//:NIO",
+        "@com_github_apple_swift_nio//:NIOCore",
+        "@com_github_apple_swift_nio//:NIOEmbedded",
+        "@com_github_apple_swift_nio//:NIOFoundationCompat",
+        "@com_github_apple_swift_nio//:NIOHTTP1",
+        "@com_github_apple_swift_nio//:NIOPosix",
+        "@com_github_apple_swift_nio//:NIOTLS",
+        "@com_github_apple_swift_nio_extras//:NIOExtras",
+        "@com_github_apple_swift_nio_http2//:NIOHTTP2",
+        "@com_github_apple_swift_nio_ssl//:NIOSSL",
+        "@com_github_apple_swift_nio_transport_services//:NIOTransportServices",
+        "@com_github_apple_swift_protobuf//:SwiftProtobuf",
+    ],
+)
+
+swift_library(
+    name = "GRPCProtobufCodeGen",
+    srcs = glob(
+        ["Sources/GRPCProtobufCodeGen/**/*.swift"],
+        allow_empty = False,
+    ),
+    module_name = "GRPCProtobufCodeGen",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":CGRPCZlib",
+        ":GRPCCodeGen",
+        "@com_github_apple_swift_log//:Logging",
+        "@com_github_apple_swift_nio//:NIO",
+        "@com_github_apple_swift_nio//:NIOCore",
+        "@com_github_apple_swift_nio//:NIOEmbedded",
+        "@com_github_apple_swift_nio//:NIOFoundationCompat",
+        "@com_github_apple_swift_nio//:NIOHTTP1",
+        "@com_github_apple_swift_nio//:NIOPosix",
+        "@com_github_apple_swift_nio//:NIOTLS",
+        "@com_github_apple_swift_nio_extras//:NIOExtras",
+        "@com_github_apple_swift_nio_http2//:NIOHTTP2",
+        "@com_github_apple_swift_nio_ssl//:NIOSSL",
+        "@com_github_apple_swift_nio_transport_services//:NIOTransportServices",
+        "@com_github_apple_swift_protobuf//:SwiftProtobuf",
+    ],
+)
+
 swift_binary(
     name = "protoc-gen-grpc-swift",
     srcs = glob([
@@ -50,6 +103,8 @@ swift_binary(
     ]),
     visibility = ["//visibility:public"],
     deps = [
+        ":GRPCCodeGen",
+        ":GRPCProtobufCodeGen",
         "@com_github_apple_swift_protobuf//:SwiftProtobuf",
         "@com_github_apple_swift_protobuf//:SwiftProtobufPluginLibrary",
     ],
