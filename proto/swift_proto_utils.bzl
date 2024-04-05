@@ -20,6 +20,33 @@ load(
     "@bazel_skylib//lib:paths.bzl",
     "paths",
 )
+load(
+    "//swift:swift.bzl",
+    "SwiftInfo",
+    "SwiftProtoCompilerInfo",
+    "SwiftProtoInfo",
+    "SwiftToolchainInfo",
+    "swift_common",
+)
+
+# buildifier: disable=bzl-visibility
+load(
+    "//swift/internal:compiling.bzl",
+    "output_groups_from_other_compilation_outputs",
+)
+
+# buildifier: disable=bzl-visibility
+load(
+    "//swift/internal:linking.bzl",
+    "new_objc_provider",
+)
+
+# buildifier: disable=bzl-visibility
+load(
+    "//swift/internal:utils.bzl",
+    "get_providers",
+    "include_developer_search_paths",
+)
 
 def proto_path(proto_src, proto_info):
     """Derives the string used to import the proto. 
@@ -48,12 +75,12 @@ def proto_path(proto_src, proto_info):
         return proto_src.path
     return proto_src.path[len(prefix):]
 
-def register_module_mapping_write_action(label, actions, module_mappings):
+def register_module_mapping_write_action(*, actions, label, module_mappings):
     """Registers an action that generates a module mapping for a proto library.
 
     Args:
-        label: The label of the target being analyzed.
-        actions: The context's actions object.
+        actions: The actions object used to declare the files to be generated and the action that generates it.
+        label: The label of the target for which the files are being generated.
         module_mappings: The sequence of module mapping `struct`s to be rendered.
             This sequence should already have duplicates removed.
 
@@ -62,7 +89,7 @@ def register_module_mapping_write_action(label, actions, module_mappings):
         protobuf text format.
     """
     mapping_file = actions.declare_file(
-        "{}.protoc_gen_swift_modules.asciipb".format(label),
+        "{}.protoc_gen_swift_modules.asciipb".format(label.name),
     )
     content = "".join([_render_text_module_mapping(m) for m in module_mappings])
 
@@ -101,8 +128,271 @@ def _render_text_module_mapping(mapping):
 
     return content
 
-# The exported `swift_proto_common` module, which defines the public API
-# for rules that compile Swift protos.
-swift_proto_common = struct(
-    proto_path = proto_path,
+def _generate_module_mappings(
+        *,
+        bundled_proto_paths,
+        module_name,
+        proto_infos,
+        transitive_swift_proto_deps):
+    """Generates module mappings from ProtoInfo and SwiftProtoInfo providers.
+
+    Args:
+        bundled_proto_paths: Set (dict) of proto paths bundled with the runtime.
+        module_name: Name of the module the direct proto dependencies will be compiled into.
+        proto_infos: List of ProtoInfo providers for the direct proto dependencies.
+        transitive_swift_proto_deps: Transitive dependencies propagating SwiftProtoInfo providers.
+
+    Returns:
+        List of module mappings.
+    """
+
+    # Collect the direct proto source files from the proto deps and build the module mapping:
+    direct_proto_file_paths = []
+    for proto_info in proto_infos:
+        proto_file_paths = [
+            proto_path(proto_src, proto_info)
+            for proto_src in proto_info.check_deps_sources.to_list()
+        ]
+        direct_proto_file_paths.extend([
+            proto_path
+            for proto_path in proto_file_paths
+            if proto_path not in bundled_proto_paths
+        ])
+    module_mapping = struct(
+        module_name = module_name,
+        proto_file_paths = direct_proto_file_paths,
+    )
+
+    # Collect the transitive module mappings:
+    transitive_module_mappings = []
+    for dep in transitive_swift_proto_deps:
+        if not SwiftProtoInfo in dep:
+            continue
+        transitive_module_mappings.extend(dep[SwiftProtoInfo].module_mappings)
+
+    # Create a list combining the direct + transitive module mappings:
+    if len(direct_proto_file_paths) > 0:
+        return [module_mapping] + transitive_module_mappings
+    return transitive_module_mappings
+
+SwiftProtoCcInfo = provider(
+    doc = """\
+Wraps a `CcInfo` provider added to a `proto_library` by the Swift proto aspect.
+
+This is necessary because `proto_library` targets already propagate a `CcInfo`
+provider for C++ protos, so the Swift proto aspect cannot directly attach its
+own. (It's also not good practice to attach providers that you don't own to
+arbitrary targets, because you don't know how those targets might change in the
+future.) The `swift_proto_library` rule will pick up this provider and return
+the underlying `CcInfo` provider as its own.
+
+This provider is an implementation detail not meant to be used by clients.
+""",
+    fields = {
+        "cc_info": "The underlying `CcInfo` provider.",
+        "objc_info": "The underlying `apple_common.Objc` provider.",
+    },
 )
+
+def compile_swift_protos_for_target(
+        *,
+        additional_compiler_deps,
+        additional_swift_proto_compiler_info,
+        attr,
+        ctx,
+        module_name,
+        proto_infos,
+        swift_proto_compilers,
+        swift_proto_deps,
+        target_label):
+    """ Compiles the Swift source files into a module.
+
+    Args:
+        additional_swift_proto_compiler_info: Dictionary of additional information passed to the Swift proto compiler.
+        additional_compiler_deps: Additional dependencies passed directly to the Swift compiler.
+        attr: The attributes of the target for which the module is being compiled.
+        ctx: The context of the aspect or rule.
+        module_name: The name of the Swift module that should be compiled from the protos.
+        proto_infos: List of `ProtoInfo` providers to compile into Swift source files.
+        swift_proto_compilers: List of targets propagating `SwiftProtoCompiler` providers.
+        swift_proto_deps: List of targets propagating `SwiftProtoInfo` providers.
+        target_label: The label of the target for which the module is being compiled.
+
+    Returns:
+        A struct with the following fields:
+        direct_output_group_info: OutputGroupInfo provider generated directly by this target.
+        direct_swift_proto_cc_info: SwiftProtoCcInfo provider generated directly by this target.
+        direct_swift_info: SwiftInfo provider generated directly by this target.
+        direct_swift_proto_info: SwiftProtoInfo provider generated directly by this target.
+    """
+
+    # Create a map of bundled proto paths for faster lookup:
+    bundled_proto_paths = {}
+    for swift_proto_compiler_target in swift_proto_compilers:
+        swift_proto_compiler_info = swift_proto_compiler_target[SwiftProtoCompilerInfo]
+        compiler_bundled_proto_paths = getattr(swift_proto_compiler_info, "bundled_proto_paths", [])
+        for bundled_proto_path in compiler_bundled_proto_paths:
+            bundled_proto_paths[bundled_proto_path] = True
+
+    # Generate the module mappings:
+    module_mappings = _generate_module_mappings(
+        bundled_proto_paths = bundled_proto_paths,
+        module_name = module_name,
+        proto_infos = proto_infos,
+        transitive_swift_proto_deps = swift_proto_deps,
+    )
+
+    # Use the proto compiler to compile the swift sources for the proto deps:
+    compiler_deps = swift_proto_deps + additional_compiler_deps
+    generated_swift_srcs = []
+    for swift_proto_compiler_target in swift_proto_compilers:
+        swift_proto_compiler_info = swift_proto_compiler_target[SwiftProtoCompilerInfo]
+        compiler_deps.extend(swift_proto_compiler_info.compiler_deps)
+        generated_swift_srcs.extend(swift_proto_compiler_info.compile(
+            label = ctx.label,
+            actions = ctx.actions,
+            swift_proto_compiler_info = swift_proto_compiler_info,
+            additional_compiler_info = additional_swift_proto_compiler_info,
+            proto_infos = proto_infos,
+            module_mappings = module_mappings,
+        ))
+
+    # Extract the swift toolchain and configure the features:
+    swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
+    feature_configuration = swift_common.configure_features(
+        ctx = ctx,
+        requested_features = ctx.features,
+        swift_toolchain = swift_toolchain,
+        unsupported_features = ctx.disabled_features,
+    )
+
+    # Compile the generated Swift source files as a module:
+    include_dev_srch_paths = include_developer_search_paths(attr)
+    module_context, cc_compilation_outputs, other_compilation_outputs = swift_common.compile(
+        actions = ctx.actions,
+        copts = ["-parse-as-library"],
+        deps = compiler_deps,
+        feature_configuration = feature_configuration,
+        include_dev_srch_paths = include_dev_srch_paths,
+        module_name = module_name,
+        package_name = None,
+        srcs = generated_swift_srcs,
+        swift_toolchain = swift_toolchain,
+        target_name = target_label.name,
+        workspace_name = ctx.workspace_name,
+    )
+
+    # Create the linking context from the compilation outputs:
+    linking_context, linking_output = (
+        swift_common.create_linking_context_from_compilation_outputs(
+            actions = ctx.actions,
+            compilation_outputs = cc_compilation_outputs,
+            feature_configuration = feature_configuration,
+            include_dev_srch_paths = include_dev_srch_paths,
+            label = target_label,
+            linking_contexts = [
+                dep[CcInfo].linking_context
+                for dep in compiler_deps
+                if CcInfo in dep
+            ],
+            module_context = module_context,
+            swift_toolchain = swift_toolchain,
+        )
+    )
+
+    # Extract the swift toolchain and configure the features:
+    swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
+    feature_configuration = swift_common.configure_features(
+        ctx = ctx,
+        requested_features = ctx.features,
+        swift_toolchain = swift_toolchain,
+        unsupported_features = ctx.disabled_features,
+    )
+
+    # Gather the transitive cc info providers:
+    transitive_cc_infos = get_providers(
+        compiler_deps,
+        SwiftProtoCcInfo,
+        lambda proto_cc_info: proto_cc_info.cc_info,
+    ) + get_providers(compiler_deps, CcInfo)
+
+    # Gather the transitive objc info providers:
+    transitive_objc_infos = get_providers(
+        compiler_deps,
+        SwiftProtoCcInfo,
+        lambda proto_cc_info: proto_cc_info.objc_info,
+    ) + get_providers(compiler_deps, apple_common.Objc)
+
+    # Gather the transitive swift info providers:
+    transitive_swift_infos = get_providers(
+        compiler_deps,
+        SwiftInfo,
+    )
+
+    # Gather the transitive swift proto info providers:
+    transitive_swift_proto_infos = get_providers(
+        compiler_deps,
+        SwiftProtoInfo,
+    )
+
+    # Create the direct cc info provider:
+    direct_cc_info = cc_common.merge_cc_infos(
+        direct_cc_infos = [
+            CcInfo(
+                compilation_context = module_context.clang.compilation_context,
+                linking_context = linking_context,
+            ),
+        ],
+        cc_infos = transitive_cc_infos,
+    )
+
+    # Create the direct objc info provider:
+    direct_objc_info = new_objc_provider(
+        additional_objc_infos = (
+            transitive_objc_infos +
+            swift_toolchain.implicit_deps_providers.objc_infos
+        ),
+        deps = [],
+        feature_configuration = feature_configuration,
+        is_test = False,
+        module_context = module_context,
+        libraries_to_link = [linking_output.library_to_link],
+        swift_toolchain = swift_toolchain,
+    )
+
+    # Create the direct swift info provider:
+    direct_swift_info = swift_common.create_swift_info(
+        modules = [module_context],
+        swift_infos = transitive_swift_infos,
+    )
+
+    # Create the direct output group info provider:
+    direct_output_group_info = OutputGroupInfo(
+        **output_groups_from_other_compilation_outputs(
+            other_compilation_outputs = other_compilation_outputs,
+        )
+    )
+
+    # Create the direct swift proto cc info provider:
+    direct_swift_proto_cc_info = SwiftProtoCcInfo(
+        cc_info = direct_cc_info,
+        objc_info = direct_objc_info,
+    )
+
+    # Create the direct swift proto info:
+    direct_swift_proto_info = SwiftProtoInfo(
+        module_name = module_context.name,
+        module_mappings = module_mappings,
+        direct_pbswift_files = generated_swift_srcs,
+        pbswift_files = depset(
+            direct = generated_swift_srcs,
+            transitive = [swift_proto_info.pbswift_files for swift_proto_info in transitive_swift_proto_infos],
+        ),
+    )
+
+    return struct(
+        direct_output_group_info = direct_output_group_info,
+        direct_swift_info = direct_swift_info,
+        direct_swift_proto_cc_info = direct_swift_proto_cc_info,
+        direct_swift_proto_info = direct_swift_proto_info,
+    )

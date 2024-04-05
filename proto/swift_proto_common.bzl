@@ -21,9 +21,11 @@ or define a custom `swift_proto_compiler` target.
 
 load(
     "//proto:swift_proto_utils.bzl",
+    "compile_swift_protos_for_target",
     "proto_path",
 )
 
 swift_proto_common = struct(
     proto_path = proto_path,
+    compile_swift_protos_for_target = compile_swift_protos_for_target,
 )
