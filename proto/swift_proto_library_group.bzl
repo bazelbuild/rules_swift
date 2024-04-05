@@ -124,22 +124,16 @@ def _swift_proto_library_group_impl(ctx):
             ),
         ),
         direct_output_group_info,
+        direct_swift_info,
         direct_swift_proto_cc_info.cc_info,
         direct_swift_proto_cc_info.objc_info,
-        direct_swift_info,
         direct_swift_proto_info,
     ]
 
 swift_proto_library_group = rule(
     attrs = {
-        "proto": attr.label(
-            aspects = [_swift_proto_library_group_aspect],
-            doc = """\
-Exactly one `proto_library` target (or target producing `ProtoInfo`),
-from which the Swift source files should be generated.
-""",
-            providers = [ProtoInfo],
-            mandatory = True,
+        "_allowlist_function_transition": attr.label(
+            default = "@bazel_tools//tools/allowlists/function_transition_allowlist",
         ),
         "compiler": attr.label(
             default = "//proto/compilers:swift_proto",
@@ -149,8 +143,14 @@ from which the Swift protos will be generated.
 """,
             providers = [SwiftProtoCompilerInfo],
         ),
-        "_allowlist_function_transition": attr.label(
-            default = "@bazel_tools//tools/allowlists/function_transition_allowlist",
+        "proto": attr.label(
+            aspects = [_swift_proto_library_group_aspect],
+            doc = """\
+Exactly one `proto_library` target (or target producing `ProtoInfo`),
+from which the Swift source files should be generated.
+""",
+            providers = [ProtoInfo],
+            mandatory = True,
         ),
     },
     cfg = _swift_proto_compiler_transition,
@@ -158,13 +158,14 @@ from which the Swift protos will be generated.
 Generates a collection of Swift static library from a target producing `ProtoInfo` and its dependencies.
 
 This rule is intended to facilitate migration from the deprecated swift proto library rules to the new ones.
-Unlike swift_proto_library which is a drop-in-replacement for swift_library, 
+Unlike `swift_proto_library` which is a drop-in-replacement for `swift_library`, 
 this rule uses an aspect over the direct proto library dependency and its transitive dependencies,
 compiling each into a swift static library.
 
-For example, in the following targets, the proto_library_group_swift_proto target only depends on
-package_2_proto target, and this transitively depends on package_1_proto.
-When used as a dependency from a swift_library or swift_binary target, 
+For example, in the following targets, the `proto_library_group_swift_proto` target only depends on
+`package_2_proto` target, and this transitively depends on `package_1_proto`.
+
+When used as a dependency from a `swift_library` or `swift_binary` target, 
 two modules generated from these proto library targets are visible. 
 
 Because these are derived from the proto library targets via an aspect, though,
