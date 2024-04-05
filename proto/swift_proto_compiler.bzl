@@ -151,9 +151,9 @@ def _swift_proto_compile(label, actions, swift_proto_compiler_info, additional_c
 
     # Write the module mappings to a file:
     module_mappings_file = register_module_mapping_write_action(
-        actions = actions, 
-        label = label, 
-        module_mappings = module_mappings
+        actions = actions,
+        label = label,
+        module_mappings = module_mappings,
     )
 
     # Build the arguments for protoc:

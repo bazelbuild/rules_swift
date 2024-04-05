@@ -129,11 +129,11 @@ def _render_text_module_mapping(mapping):
     return content
 
 def _generate_module_mappings(
-    *, 
-    bundled_proto_paths, 
-    module_name, 
-    proto_infos, 
-    transitive_swift_proto_deps):
+        *,
+        bundled_proto_paths,
+        module_name,
+        proto_infos,
+        transitive_swift_proto_deps):
     """Generates module mappings from ProtoInfo and SwiftProtoInfo providers.
 
     Args:
