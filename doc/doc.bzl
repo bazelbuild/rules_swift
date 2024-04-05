@@ -41,6 +41,7 @@ load(
     # rules
     _swift_proto_compiler = "swift_proto_compiler",
     _swift_proto_library = "swift_proto_library",
+    _swift_proto_library_group = "swift_proto_library_group",
 )
 load(
     "//swift:swift.bzl",
@@ -77,6 +78,7 @@ SwiftProtoCompilerInfo = _SwiftProtoCompilerInfo
 SwiftProtoInfo = _SwiftProtoInfo
 swift_proto_compiler = _swift_proto_compiler
 swift_proto_library = _swift_proto_library
+swift_proto_library_group = _swift_proto_library_group
 
 # swift symbols
 swift_common = _swift_common
