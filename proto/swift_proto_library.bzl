@@ -73,15 +73,15 @@ def _swift_proto_library_impl(ctx):
 
     # Compile the source files to a module:
     direct_providers = compile_swift_protos_for_target(
-        ctx,
-        ctx.attr,
-        ctx.label,
-        module_name,
-        [d[ProtoInfo] for d in ctx.attr.protos],
-        ctx.attr.compilers,
-        ctx.attr.deps,
-        ctx.attr.additional_compiler_info,
-        ctx.attr.additional_compiler_deps,
+        additional_compiler_deps = ctx.attr.additional_compiler_deps,
+        additional_swift_proto_compiler_info = ctx.attr.additional_compiler_info,
+        attr = ctx.attr,
+        ctx = ctx,
+        module_name = module_name,
+        proto_infos = [d[ProtoInfo] for d in ctx.attr.protos],
+        swift_proto_compilers = ctx.attr.compilers,
+        swift_proto_deps = ctx.attr.deps,
+        target_label = ctx.label,
     )
     direct_output_group_info = direct_providers.direct_output_group_info
     direct_swift_proto_cc_info = direct_providers.direct_swift_proto_cc_info

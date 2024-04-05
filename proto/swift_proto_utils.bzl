@@ -75,12 +75,12 @@ def proto_path(proto_src, proto_info):
         return proto_src.path
     return proto_src.path[len(prefix):]
 
-def register_module_mapping_write_action(label, actions, module_mappings):
+def register_module_mapping_write_action(*, actions, label, module_mappings):
     """Registers an action that generates a module mapping for a proto library.
 
     Args:
-        label: The label of the target for which the files are being generated.
         actions: The actions object used to declare the files to be generated and the action that generates it.
+        label: The label of the target for which the files are being generated.
         module_mappings: The sequence of module mapping `struct`s to be rendered.
             This sequence should already have duplicates removed.
 
@@ -128,14 +128,19 @@ def _render_text_module_mapping(mapping):
 
     return content
 
-def _generate_module_mappings(module_name, proto_infos, transitive_swift_proto_deps, bundled_proto_paths):
+def _generate_module_mappings(
+    *, 
+    bundled_proto_paths, 
+    module_name, 
+    proto_infos, 
+    transitive_swift_proto_deps):
     """Generates module mappings from ProtoInfo and SwiftProtoInfo providers.
 
     Args:
+        bundled_proto_paths: Set (dict) of proto paths bundled with the runtime.
         module_name: Name of the module the direct proto dependencies will be compiled into.
         proto_infos: List of ProtoInfo providers for the direct proto dependencies.
         transitive_swift_proto_deps: Transitive dependencies propagating SwiftProtoInfo providers.
-        bundled_proto_paths: Set (dict) of proto paths bundled with the runtime.
 
     Returns:
         List of module mappings.
@@ -190,27 +195,28 @@ This provider is an implementation detail not meant to be used by clients.
 )
 
 def compile_swift_protos_for_target(
-        ctx,
+        *,
+        additional_compiler_deps,
+        additional_swift_proto_compiler_info,
         attr,
-        target_label,
+        ctx,
         module_name,
         proto_infos,
         swift_proto_compilers,
         swift_proto_deps,
-        additional_swift_proto_compiler_info = {},
-        additional_compiler_deps = []):
+        target_label):
     """ Compiles the Swift source files into a module.
 
     Args:
-        ctx: The context of the aspect or rule.
-        attr: The attributes of the target for which the module is being compiled.
-        target_label: The label of the target for which the module is being compiled.
-        module_name: The name of the Swift module that should be compiled from the protos.
-        swift_proto_compilers: List of targets propagating `SwiftProtoCompiler` providers.
-        proto_infos: List of `ProtoInfo` providers to compile into Swift source files.
-        swift_proto_deps: List of targets propagating `SwiftProtoInfo` providers.
         additional_swift_proto_compiler_info: Dictionary of additional information passed to the Swift proto compiler.
         additional_compiler_deps: Additional dependencies passed directly to the Swift compiler.
+        attr: The attributes of the target for which the module is being compiled.
+        ctx: The context of the aspect or rule.
+        module_name: The name of the Swift module that should be compiled from the protos.
+        proto_infos: List of `ProtoInfo` providers to compile into Swift source files.
+        swift_proto_compilers: List of targets propagating `SwiftProtoCompiler` providers.
+        swift_proto_deps: List of targets propagating `SwiftProtoInfo` providers.
+        target_label: The label of the target for which the module is being compiled.
 
     Returns:
         A struct with the following fields:
@@ -230,10 +236,10 @@ def compile_swift_protos_for_target(
 
     # Generate the module mappings:
     module_mappings = _generate_module_mappings(
-        module_name,
-        proto_infos,
-        swift_proto_deps,
-        bundled_proto_paths,
+        bundled_proto_paths = bundled_proto_paths,
+        module_name = module_name,
+        proto_infos = proto_infos,
+        transitive_swift_proto_deps = swift_proto_deps,
     )
 
     # Use the proto compiler to compile the swift sources for the proto deps:

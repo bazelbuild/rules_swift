@@ -51,13 +51,15 @@ def _swift_proto_library_group_aspect_impl(target, aspect_ctx):
 
     # Compile the source files to a module:
     direct_providers = compile_swift_protos_for_target(
-        aspect_ctx,
-        aspect_ctx.rule.attr,
-        target.label,
-        module_name,
-        [target[ProtoInfo]],
-        [aspect_ctx.attr._compiler],
-        aspect_ctx.rule.attr.deps,
+        additional_compiler_deps = [],
+        additional_swift_proto_compiler_info = {},
+        attr = aspect_ctx.rule.attr,
+        ctx = aspect_ctx,
+        module_name = module_name,
+        proto_infos = [target[ProtoInfo]],
+        swift_proto_compilers = [aspect_ctx.attr._compiler],
+        swift_proto_deps = aspect_ctx.rule.attr.deps,
+        target_label = target.label,
     )
 
     return [
