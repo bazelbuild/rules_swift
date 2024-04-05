@@ -31,8 +31,8 @@ On this page:
   * [swift_package_configuration](#swift_package_configuration)
   * [swift_test](#swift_test)
   * [swift_proto_library](#swift_proto_library)
-  * [swift_proto_compiler](#swift_proto_compiler)
   * [swift_proto_library_group](#swift_proto_library_group)
+  * [swift_proto_compiler](#swift_proto_compiler)
   * [deprecated_swift_grpc_library](#deprecated_swift_grpc_library)
   * [deprecated_swift_proto_library](#deprecated_swift_proto_library)
 
@@ -703,13 +703,14 @@ swift_proto_library_group(<a href="#swift_proto_library_group-name">name</a>, <a
 Generates a collection of Swift static library from a target producing `ProtoInfo` and its dependencies.
 
 This rule is intended to facilitate migration from the deprecated swift proto library rules to the new ones.
-Unlike swift_proto_library which is a drop-in-replacement for swift_library,
+Unlike `swift_proto_library` which is a drop-in-replacement for `swift_library`,
 this rule uses an aspect over the direct proto library dependency and its transitive dependencies,
 compiling each into a swift static library.
 
-For example, in the following targets, the proto_library_group_swift_proto target only depends on
-package_2_proto target, and this transitively depends on package_1_proto.
-When used as a dependency from a swift_library or swift_binary target,
+For example, in the following targets, the `proto_library_group_swift_proto` target only depends on
+`package_2_proto` target, and this transitively depends on `package_1_proto`.
+
+When used as a dependency from a `swift_library` or `swift_binary` target,
 two modules generated from these proto library targets are visible.
 
 Because these are derived from the proto library targets via an aspect, though,
@@ -765,7 +766,7 @@ swift_binary(
 | Name  | Description | Type | Mandatory | Default |
 | :------------- | :------------- | :------------- | :------------- | :------------- |
 | <a id="swift_proto_library_group-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
-| <a id="swift_proto_library_group-compiler"></a>compiler |  A `swift_proto_compiler` target (or target producing `SwiftProtoCompilerInfo`), from which the Swift protos will be generated.   | <a href="https://bazel.build/concepts/labels">Label</a> | optional |  `"@rules_swift//proto/compilers:swift_proto"`  |
+| <a id="swift_proto_library_group-compiler"></a>compiler |  A `swift_proto_compiler` target (or target producing `SwiftProtoCompilerInfo`), from which the Swift protos will be generated.   | <a href="https://bazel.build/concepts/labels">Label</a> | optional |  `"@build_bazel_rules_swift//proto/compilers:swift_proto"`  |
 | <a id="swift_proto_library_group-proto"></a>proto |  Exactly one `proto_library` target (or target producing `ProtoInfo`), from which the Swift source files should be generated.   | <a href="https://bazel.build/concepts/labels">Label</a> | required |  |
 
 
