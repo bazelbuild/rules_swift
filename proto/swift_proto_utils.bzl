@@ -75,11 +75,12 @@ def proto_path(proto_src, proto_info):
         return proto_src.path
     return proto_src.path[len(prefix):]
 
-def register_module_mapping_write_action(ctx, module_mappings):
+def register_module_mapping_write_action(label, actions, module_mappings):
     """Registers an action that generates a module mapping for a proto library.
 
     Args:
-        ctx: Context of the aspect or rule.
+        label: The label of the target for which the files are being generated.
+        actions: The actions object used to declare the files to be generated and the action that generates it.
         module_mappings: The sequence of module mapping `struct`s to be rendered.
             This sequence should already have duplicates removed.
 
@@ -87,12 +88,12 @@ def register_module_mapping_write_action(ctx, module_mappings):
         The `File` representing the module mapping that will be generated in
         protobuf text format.
     """
-    mapping_file = ctx.actions.declare_file(
-        "{}.protoc_gen_swift_modules.asciipb".format(ctx.label.name),
+    mapping_file = actions.declare_file(
+        "{}.protoc_gen_swift_modules.asciipb".format(label.name),
     )
     content = "".join([_render_text_module_mapping(m) for m in module_mappings])
 
-    ctx.actions.write(
+    actions.write(
         content = content,
         output = mapping_file,
     )
@@ -242,7 +243,8 @@ def compile_swift_protos_for_target(
         swift_proto_compiler_info = swift_proto_compiler_target[SwiftProtoCompilerInfo]
         compiler_deps.extend(swift_proto_compiler_info.compiler_deps)
         generated_swift_srcs.extend(swift_proto_compiler_info.compile(
-            ctx = ctx,
+            label = ctx.label,
+            actions = ctx.actions,
             swift_proto_compiler_info = swift_proto_compiler_info,
             additional_compiler_info = additional_swift_proto_compiler_info,
             proto_infos = proto_infos,
