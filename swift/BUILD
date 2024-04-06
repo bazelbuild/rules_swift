@@ -50,8 +50,6 @@ bzl_library(
     srcs = ["swift.bzl"],
     deps = [
         ":swift_compiler_plugin",
-        "//swift/deprecated_proto:deprecated_swift_grpc_library",
-        "//swift/deprecated_proto:deprecated_swift_proto_library",
         "//swift/internal:providers",
         "//swift/internal:swift_binary_test_rules",
         "//swift/internal:swift_common",

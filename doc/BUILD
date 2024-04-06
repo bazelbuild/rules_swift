@@ -17,7 +17,6 @@ _DOC_SRCS = {
         "SwiftProtoCompilerInfo",
         "SwiftProtoInfo",
         "SwiftUsageInfo",
-        "DeprecatedSwiftGRPCInfo",
     ],
     "rules": [
         "swift_binary",
