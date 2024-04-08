@@ -5,6 +5,7 @@ load(
     "per_module_swiftcopt_flag",
     "repeatable_string_flag",
 )
+load(":swift.bzl", "swift_interop_hint")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -53,10 +54,10 @@ bzl_library(
         "//swift/deprecated_proto:deprecated_swift_proto_library",
         "//swift/internal:providers",
         "//swift/internal:swift_binary_test_rules",
-        "//swift/internal:swift_c_module",
         "//swift/internal:swift_common",
         "//swift/internal:swift_feature_allowlist",
         "//swift/internal:swift_import",
+        "//swift/internal:swift_interop_hint",
         "//swift/internal:swift_library",
         "//swift/internal:swift_library_group",
         "//swift/internal:swift_module_alias",
@@ -93,6 +94,21 @@ repeatable_string_flag(
 repeatable_string_flag(
     name = "exec_copt",
     build_setting_default = [],
+)
+
+# An aspect hint that enables module map generation for a non-Swift,
+# non-Objective-C target, deriving the module name automatically based on the
+# hinted target's label.
+swift_interop_hint(
+    name = "auto_module",
+    visibility = ["//visibility:public"],
+)
+
+# An aspect hint that suppresses generation of a module for a non-Swift target
+# that would otherwise generate one by default, like an `objc_library`.
+swift_interop_hint(
+    name = "no_module",
+    suppressed = True,
     visibility = ["//visibility:public"],
 )
 

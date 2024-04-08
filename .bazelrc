@@ -11,6 +11,12 @@ build --macos_minimum_os=13.0
 # dependencies cause us to use a newer version
 build --check_direct_dependencies=off
 
+# This is needed for Bazel 6 compatibility.
+# It's enabled (and can't be disabled) in Bazel 7.
+# TODO: Remove this once we drop Bazel 6 support.
+# See also: https://github.com/bazelbuild/bazel/issues/14327
+build --experimental_enable_aspect_hints
+
 # Make sure no warnings slip into the C++ tools we vendor
 build --features treat_warnings_as_errors
 

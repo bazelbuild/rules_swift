@@ -3,8 +3,8 @@
 ## BUILD Rules
 
 * [swift_binary](rules.md#swift_binary)
-* [swift_c_module](rules.md#swift_c_module)
 * [swift_import](rules.md#swift_import)
+* [swift_interop_hint](rules.md#swift_interop_hint)
 * [swift_library](rules.md#swift_library)
 * [swift_module_alias](rules.md#swift_module_alias)
 * [swift_proto_library](rules.md#swift_proto_library)

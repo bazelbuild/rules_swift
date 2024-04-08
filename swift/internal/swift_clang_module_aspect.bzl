@@ -14,14 +14,18 @@
 
 """Propagates unified `SwiftInfo` providers for C/Objective-C targets."""
 
+load("@bazel_skylib//lib:sets.bzl", "sets")
 load(":attrs.bzl", "swift_toolchain_attrs")
 load(":compiling.bzl", "derive_module_name", "precompile_clang_module")
 load(":derived_files.bzl", "derived_files")
 load(
     ":feature_names.bzl",
     "SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT",
+    "SWIFT_FEATURE_EMIT_C_MODULE",
+    "SWIFT_FEATURE_LAYERING_CHECK",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS",
+    "SWIFT_FEATURE_USE_C_MODULES",
 )
 load(":features.bzl", "configure_features", "is_feature_enabled")
 load(":module_maps.bzl", "write_module_map")
@@ -36,7 +40,6 @@ load(
 load(
     ":utils.bzl",
     "compilation_context_for_explicit_module_compilation",
-    "get_providers",
 )
 
 _MULTIPLE_TARGET_ASPECT_ATTRS = [
@@ -49,6 +52,14 @@ _MULTIPLE_TARGET_ASPECT_ATTRS = [
 _SINGLE_TARGET_ASPECT_ATTRS = [
     # TODO(b/151667396): Remove j2objc-specific attributes when possible.
     "_jre_lib",
+    "_j2objc_proto_toolchain",
+    "runtime",
+]
+
+# TODO(b/151667396): Remove j2objc-specific attributes when possible.
+_DIRECT_ASPECT_ATTRS = [
+    "exports",
+    "_j2objc_proto_toolchain",
 ]
 
 _SwiftInteropInfo = provider(
@@ -57,6 +68,11 @@ Contains minimal information required to allow `swift_clang_module_aspect` to
 manage the creation of a `SwiftInfo` provider for a C/Objective-C target.
 """,
     fields = {
+        "exclude_headers": """\
+A `list` of `File`s representing headers that should be excluded from the
+module, if a module map is being automatically generated based on the headers in
+the target's compilation context.
+""",
         "module_map": """\
 A `File` representing an existing module map that should be used to represent
 the module, or `None` if the module map should be generated based on the headers
@@ -74,6 +90,10 @@ implementation to supply an additional set of fixed features that should always
 be enabled when the aspect processes that target; for example, a rule can
 request that `swift.emit_c_module` always be enabled for its targets even if it
 is not explicitly enabled in the toolchain or on the target directly.
+""",
+        "suppressed": """\
+A `bool` indicating whether the module that the aspect would create for the
+target should instead be suppressed.
 """,
         "swift_infos": """\
 A list of `SwiftInfo` providers from dependencies of the target, which will be
@@ -93,9 +113,11 @@ enabled by default in the toolchain.
 
 def create_swift_interop_info(
         *,
+        exclude_headers = [],
         module_map = None,
         module_name = None,
         requested_features = [],
+        suppressed = False,
         swift_infos = [],
         unsupported_features = []):
     """Returns a provider that lets a target expose C/Objective-C APIs to Swift.
@@ -124,6 +146,8 @@ def create_swift_interop_info(
     exclude dependencies if necessary.
 
     Args:
+        exclude_headers: A `list` of `File`s representing headers that should be
+            excluded from the module if the module map is generated.
         module_map: A `File` representing an existing module map that should be
             used to represent the module, or `None` (the default) if the module
             map should be generated based on the headers in the target's
@@ -143,6 +167,8 @@ def create_swift_interop_info(
             `swift.emit_c_module` always be enabled for its targets even if it
             is not explicitly enabled in the toolchain or on the target
             directly.
+        suppressed: A `bool` indicating whether the module that the aspect would
+            create for the target should instead be suppressed.
         swift_infos: A list of `SwiftInfo` providers from dependencies, which
             will be merged with the new `SwiftInfo` created by the aspect.
         unsupported_features: A list of features (empty by default) that should
@@ -160,77 +186,82 @@ def create_swift_interop_info(
         A provider whose type/layout is an implementation detail and should not
         be relied upon.
     """
-    if module_map and not module_name:
-        fail("'module_name' must be specified when 'module_map' is specified.")
+    if module_map:
+        if not module_name:
+            fail("'module_name' must be specified when 'module_map' is " +
+                 "specified.")
+        if exclude_headers:
+            fail("'exclude_headers' may not be specified when 'module_map' " +
+                 "is specified.")
 
     return _SwiftInteropInfo(
+        exclude_headers = exclude_headers,
         module_map = module_map,
         module_name = module_name,
         requested_features = requested_features,
+        suppressed = suppressed,
         swift_infos = swift_infos,
         unsupported_features = unsupported_features,
     )
 
-def _tagged_target_module_name(label, tags):
-    """Returns the module name of a `swift_module`-tagged target.
+def _compute_all_excluded_headers(*, exclude_headers, target):
+    """Returns the full set of headers to exclude for a target.
 
-    The `swift_module` tag may take one of two forms:
-
-    *   `swift_module`: By itself, this indicates that the target is compatible
-        with Swift and should be given a module name that is derived from its
-        target label.
-    *   `swift_module=name`: The module should be given the name `name`.
-
-    If the `swift_module` tag is not present, no module name is used or
-    computed.
-
-    Since tags are unprocessed strings, nothing prevents the `swift_module` tag
-    from being listed multiple times on the same target with different values.
-    For this reason, the aspect uses the _last_ occurrence that it finds in the
-    list.
+    This function specifically handles the `cc_library` logic around the
+    `include_prefix` and `strip_include_prefix` attributes, which cause Bazel to
+    create a virtual header (symlink) for every public header in the target. For
+    the generated module map to be created, we must exclude both the actual
+    header file and the symlink.
 
     Args:
-        label: The target label from which a module name should be derived, if
-            necessary.
-        tags: The list of tags from the `cc_library` target to which the aspect
-            is being applied.
+        exclude_headers: A list of `File`s representing headers that should be
+            excluded from the module.
+        target: The target to which the aspect is being applied.
 
     Returns:
-        If the `swift_module` tag was present, then the return value is the
-        explicit name if it was of the form `swift_module=name`, or the
-        label-derived name if the tag was not followed by a name. Otherwise, if
-        the tag is not present, `None` is returned.
+        A list containing the complete set of headers that should be excluded,
+        including any virtual header symlinks that match a real header in the
+        excluded headers list passed into the function.
     """
-    module_name = None
-    for tag in tags:
-        if tag == "swift_module":
-            module_name = derive_module_name(label)
-        elif tag.startswith("swift_module="):
-            _, _, module_name = tag.partition("=")
-    return module_name
+    exclude_headers_set = sets.make(exclude_headers)
+    virtual_exclude_headers = []
+
+    for action in target.actions:
+        if action.mnemonic != "Symlink":
+            continue
+
+        original_header = action.inputs.to_list()[0]
+        virtual_header = action.outputs.to_list()[0]
+
+        if sets.contains(exclude_headers_set, original_header):
+            virtual_exclude_headers.append(virtual_header)
+
+    return exclude_headers + virtual_exclude_headers
 
 def _generate_module_map(
+        *,
         actions,
+        aspect_ctx,
         compilation_context,
         dependent_module_names,
+        exclude_headers,
         feature_configuration,
         module_name,
-        target,
-        umbrella_header):
+        target):
     """Generates the module map file for the given target.
 
     Args:
         actions: The object used to register actions.
+        aspect_ctx: The aspect context.
         compilation_context: The C++ compilation context that provides the
             headers for the module.
         dependent_module_names: A `list` of names of Clang modules that are
             direct dependencies of the target whose module map is being written.
+        exclude_headers: A `list` of `File`s representing header files to
+            exclude, if any, if we are generating the module map.
         feature_configuration: A Swift feature configuration.
         module_name: The name of the module.
         target: The target for which the module map is being generated.
-        umbrella_header: A `File` representing an umbrella header that, if
-            present, will be written into the module map instead of the list of
-            headers in the compilation context.
 
     Returns: A `File` representing the generated module map.
     """
@@ -256,11 +287,6 @@ def _generate_module_map(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT,
     )
-    module_map_file = derived_files.module_map(
-        actions = actions,
-        add_target_name_to_output_path = add_target_name_to_output_path,
-        target_name = target.label.name,
-    )
 
     # Sort dependent module names and the headers to ensure a deterministic
     # order in the output file, in the event the compilation context would ever
@@ -268,22 +294,53 @@ def _generate_module_map(
     def _path_sorting_key(file):
         return file.path
 
+    # The headers in a `cc_inc_library` are actually symlinks to headers in its
+    # `deps`. This interferes with layering because the `cc_inc_library` won't
+    # depend directly on the libraries containing headers that the symlinked
+    # headers include. Generating the module map with the symlinks as textual
+    # headers instead of modular headers fixes this.
+    if aspect_ctx.rule.kind == "cc_inc_library":
+        public_headers = []
+        textual_headers = sorted(
+            compilation_context.direct_public_headers,
+            key = _path_sorting_key,
+        )
+    else:
+        public_headers = sorted(
+            compilation_context.direct_public_headers,
+            key = _path_sorting_key,
+        )
+        textual_headers = sorted(
+            compilation_context.direct_textual_headers,
+            key = _path_sorting_key,
+        )
+
+    module_map_file = derived_files.module_map(
+        actions = actions,
+        add_target_name_to_output_path = add_target_name_to_output_path,
+        target_name = target.label.name,
+    )
+
+    if exclude_headers:
+        # If we're excluding headers from the module map, make sure to pick up
+        # any virtual header symlinks that might be created, for example, by a
+        # `cc_library` using the `include_prefix` and/or `strip_include_prefix`
+        # attributes.
+        exclude_headers = _compute_all_excluded_headers(
+            exclude_headers = exclude_headers,
+            target = target,
+        )
+
     write_module_map(
         actions = actions,
         dependent_module_names = sorted(dependent_module_names),
+        exclude_headers = sorted(exclude_headers, key = _path_sorting_key),
         exported_module_ids = ["*"],
         module_map_file = module_map_file,
         module_name = module_name,
         private_headers = sorted(private_headers, key = _path_sorting_key),
-        public_headers = sorted(
-            compilation_context.direct_public_headers,
-            key = _path_sorting_key,
-        ),
-        public_textual_headers = sorted(
-            compilation_context.direct_textual_headers,
-            key = _path_sorting_key,
-        ),
-        umbrella_header = umbrella_header,
+        public_headers = public_headers,
+        public_textual_headers = textual_headers,
         workspace_relative = workspace_relative,
     )
     return module_map_file
@@ -316,56 +373,77 @@ def _objc_library_module_info(aspect_ctx):
     return module_name, module_map_file
 
 # TODO(b/151667396): Remove j2objc-specific knowledge.
-def _j2objc_umbrella_workaround(target):
-    """Tries to find and return the umbrella header for a J2ObjC target.
+def _j2objc_compilation_context(target):
+    """Construct and return a compilation context for a J2ObjC target
 
     This is an unfortunate hack/workaround needed for J2ObjC, which needs to use
     an umbrella header that `#include`s, rather than `#import`s, the headers in
-    the module due to the way they're segmented.
+    the module due to the way they're segmented. Additionally, the headers
+    need a header search path set for them to be found.
 
     It's also somewhat ugly in the way that it has to find the umbrella header,
     which is tied to Bazel's built-in module map generation. Since there's not a
     direct umbrella header field in `ObjcProvider`, we scan the target's actions
     to find the one that writes it out. Then, we return it and a new compilation
-    context with the direct headers from the `ObjcProvider`, since the generated
-    headers are not accessible via `CcInfo`--Java targets to which the J2ObjC
-    aspect are applied do not propagate `CcInfo` directly, but a native Bazel
-    provider that wraps the `CcInfo`, and we have no access to it from Starlark.
+    context with the direct headers from the `CcInfo` of the J2ObjC aspect.
 
     Args:
         target: The target to which the aspect is being applied.
 
     Returns:
-        A tuple containing two elements:
-
-        *   A `File` representing the umbrella header generated by the target,
-            or `None` if there was none.
-        *   A `CcCompilationContext` containing the direct generated headers of
-            the J2ObjC target (including the umbrella header), or `None` if the
-            target did not generate an umbrella header.
+        A `CcCompilationContext` containing the direct generated headers of
+        the J2ObjC target (including the umbrella header), or `None` if the
+        target did not generate an umbrella header.
     """
     for action in target.actions:
         if action.mnemonic != "UmbrellaHeader":
             continue
 
         umbrella_header = action.outputs.to_list()[0]
-        compilation_context = cc_common.create_compilation_context(
-            headers = depset(
-                target[apple_common.Objc].direct_headers + [umbrella_header],
-            ),
-        )
-        return umbrella_header, compilation_context
+        headers = target[CcInfo].compilation_context.direct_headers
 
-    return None, None
+        if JavaInfo not in target:
+            # This is not a `java_library`, but a `proto_library` processed by J2ObjC. We need to
+            # treat the generated headers as textual, but do not need the special header search path
+            # logic like we do for `java_library` targets below.
+            return cc_common.create_compilation_context(
+                headers = depset([umbrella_header]),
+                direct_textual_headers = headers,
+            )
+
+        include_paths = sets.make()
+        for header in headers:
+            header_path = header.path
+
+            if "/_j2objc/src_jar_files/" in header_path:
+                # When source jars are used the headers are generated within a tree artifact.
+                # We can use the path to the tree artifact as the include search path.
+                include_path = header_path
+            else:
+                # J2ObjC generates headers within <bin_dir>/<package>/_j2objc/<target>/.
+                # Compute that path to use as the include search path.
+                header_path_components = header_path.split("/")
+                j2objc_index = header_path_components.index("_j2objc")
+                include_path = "/".join(header_path_components[:j2objc_index + 2])
+
+            sets.insert(include_paths, include_path)
+
+        return cc_common.create_compilation_context(
+            headers = depset([umbrella_header]),
+            direct_textual_headers = headers,
+            includes = depset(sets.to_list(include_paths)),
+        )
+
+    return None
 
 def _module_info_for_target(
         target,
         aspect_ctx,
         compilation_context,
         dependent_module_names,
+        exclude_headers,
         feature_configuration,
-        module_name,
-        umbrella_header):
+        module_name):
     """Returns the module name and module map for the target.
 
     Args:
@@ -375,13 +453,12 @@ def _module_info_for_target(
             headers for the module.
         dependent_module_names: A `list` of names of Clang modules that are
             direct dependencies of the target whose module map is being written.
+        exclude_headers: A `list` of `File`s representing header files to
+            exclude, if any, if we are generating the module map.
         feature_configuration: A Swift feature configuration.
         module_name: The module name to prefer (if we're generating a module map
             from `_SwiftInteropInfo`), or None to derive it from other
             properties of the target.
-        umbrella_header: A `File` representing an umbrella header that, if
-            present, will be written into the module map instead of the list of
-            headers in the compilation context.
 
     Returns:
         A tuple containing the module name (a string) and module map file (a
@@ -405,19 +482,7 @@ def _module_info_for_target(
     ):
         return None, None
 
-    attr = aspect_ctx.rule.attr
     module_map_file = None
-
-    # TODO: Remove once we cherry-pick the `swift_interop_hint` rule
-    if not module_name and aspect_ctx.rule.kind == "cc_library":
-        # For all other targets, there is no mechanism to provide a custom
-        # module map, and we only generate one if the target is tagged.
-        module_name = _tagged_target_module_name(
-            label = target.label,
-            tags = attr.tags,
-        )
-        if not module_name:
-            return None, None
 
     if not module_name:
         if apple_common.Objc not in target:
@@ -436,21 +501,23 @@ def _module_info_for_target(
     if not module_map_file:
         module_map_file = _generate_module_map(
             actions = aspect_ctx.actions,
+            aspect_ctx = aspect_ctx,
             compilation_context = compilation_context,
             dependent_module_names = dependent_module_names,
+            exclude_headers = exclude_headers,
             feature_configuration = feature_configuration,
             module_name = module_name,
             target = target,
-            umbrella_header = umbrella_header,
         )
     return module_name, module_map_file
 
 def _handle_module(
         aspect_ctx,
-        compilation_context,
+        exclude_headers,
         feature_configuration,
         module_map_file,
         module_name,
+        direct_swift_infos,
         swift_infos,
         swift_toolchain,
         target):
@@ -458,14 +525,17 @@ def _handle_module(
 
     Args:
         aspect_ctx: The aspect's context.
-        compilation_context: The `CcCompilationContext` containing the target's
-            headers.
+        exclude_headers: A `list` of `File`s representing header files to
+            exclude, if any, if we are generating the module map.
         feature_configuration: The current feature configuration.
         module_map_file: The `.modulemap` file that defines the module, or None
             if it should be inferred from other properties of the target (for
             legacy support).
         module_name: The name of the module, or None if it should be inferred
             from other properties of the target (for legacy support).
+        direct_swift_infos: The `SwiftInfo` providers of the current target's
+            dependencies, which should be merged into the `SwiftInfo` provider
+            created and returned for this target.
         swift_infos: The `SwiftInfo` providers of the current target's
             dependencies, which should be merged into the `SwiftInfo` provider
             created and returned for this target.
@@ -478,8 +548,13 @@ def _handle_module(
     attr = aspect_ctx.rule.attr
 
     all_swift_infos = (
-        swift_infos + swift_toolchain.clang_implicit_deps_providers.swift_infos
+        direct_swift_infos + swift_infos + swift_toolchain.clang_implicit_deps_providers.swift_infos
     )
+
+    if CcInfo in target:
+        compilation_context = target[CcInfo].compilation_context
+    else:
+        compilation_context = None
 
     # Collect the names of Clang modules that the module being built directly
     # depends on.
@@ -494,10 +569,8 @@ def _handle_module(
     # support legacy rules.
     if not module_map_file:
         # TODO(b/151667396): Remove j2objc-specific knowledge.
-        umbrella_header, new_compilation_context = _j2objc_umbrella_workaround(
-            target = target,
-        )
-        if umbrella_header:
+        new_compilation_context = _j2objc_compilation_context(target = target)
+        if new_compilation_context:
             compilation_context = new_compilation_context
 
         module_name, module_map_file = _module_info_for_target(
@@ -505,23 +578,52 @@ def _handle_module(
             aspect_ctx = aspect_ctx,
             compilation_context = compilation_context,
             dependent_module_names = dependent_module_names,
+            exclude_headers = exclude_headers,
             feature_configuration = feature_configuration,
             module_name = module_name,
-            umbrella_header = umbrella_header,
         )
 
     if not module_map_file:
         if all_swift_infos:
-            return [create_swift_info(swift_infos = swift_infos)]
+            return [
+                create_swift_info(
+                    direct_swift_infos = direct_swift_infos,
+                    swift_infos = swift_infos,
+                ),
+            ]
         else:
             return []
 
+    compilation_contexts_to_merge_for_compilation = [compilation_context]
+
+    # Fold the `strict_includes` from `apple_common.Objc` into the Clang module
+    # descriptor in `SwiftInfo` so that the `Objc` provider doesn't have to be
+    # passed as a separate input to Swift build APIs.
+    if apple_common.Objc in target:
+        strict_includes = target[apple_common.Objc].strict_include
+        compilation_contexts_to_merge_for_compilation.append(
+            cc_common.create_compilation_context(includes = strict_includes),
+        )
+    else:
+        strict_includes = None
+
     compilation_context_to_compile = (
         compilation_context_for_explicit_module_compilation(
-            compilation_contexts = [compilation_context],
-            deps = getattr(attr, "deps", []),
+            compilation_contexts = (
+                compilation_contexts_to_merge_for_compilation
+            ),
+            deps = [
+                target
+                for attr_name in _MULTIPLE_TARGET_ASPECT_ATTRS
+                for target in getattr(attr, attr_name, [])
+            ] + [
+                getattr(attr, attr_name)
+                for attr_name in _SINGLE_TARGET_ASPECT_ATTRS
+                if hasattr(attr, attr_name)
+            ],
         )
     )
+
     precompiled_module = precompile_clang_module(
         actions = aspect_ctx.actions,
         cc_compilation_context = compilation_context_to_compile,
@@ -542,9 +644,11 @@ def _handle_module(
                         compilation_context = compilation_context,
                         module_map = module_map_file,
                         precompiled_module = precompiled_module,
+                        strict_includes = strict_includes,
                     ),
                 ),
             ],
+            direct_swift_infos = direct_swift_infos,
             swift_infos = swift_infos,
         ),
     ]
@@ -558,39 +662,124 @@ def _handle_module(
 
     return providers
 
-def _compilation_context_for_target(target):
-    """Gets the compilation context to use when compiling this target's module.
-
-    This function also handles the special case of a target that propagates an
-    `apple_common.Objc` provider in addition to its `CcInfo` provider, where the
-    former contains strict include paths that must also be added when compiling
-    the module.
+def _collect_swift_infos_from_deps(aspect_ctx):
+    """Collect `SwiftInfo` providers from dependencies.
 
     Args:
-        target: The target to which the aspect is being applied.
+        aspect_ctx: The aspect's context.
 
     Returns:
-        A `CcCompilationContext` that contains the headers of the target being
-        compiled.
+        A tuple of lists of `SwiftInfo` providers from dependencies of the target to which
+        the aspect was applied. The first list contains those from attributes that should be treated
+        as direct, while the second list contains those from all other attributes.
     """
-    if CcInfo not in target:
-        return None
+    direct_swift_infos = []
+    swift_infos = []
 
-    compilation_context = target[CcInfo].compilation_context
+    attr = aspect_ctx.rule.attr
+    for attr_name in _MULTIPLE_TARGET_ASPECT_ATTRS:
+        infos = [
+            dep[SwiftInfo]
+            for dep in getattr(attr, attr_name, [])
+            if SwiftInfo in dep
+        ]
 
-    if apple_common.Objc in target:
-        strict_includes = target[apple_common.Objc].strict_include
-        if strict_includes:
-            compilation_context = cc_common.merge_compilation_contexts(
-                compilation_contexts = [
-                    compilation_context,
-                    cc_common.create_compilation_context(
-                        includes = strict_includes,
-                    ),
-                ],
-            )
+        if attr_name in _DIRECT_ASPECT_ATTRS:
+            direct_swift_infos.extend(infos)
+        else:
+            swift_infos.extend(infos)
 
-    return compilation_context
+    for attr_name in _SINGLE_TARGET_ASPECT_ATTRS:
+        dep = getattr(attr, attr_name, None)
+        if dep and SwiftInfo in dep:
+            if attr_name in _DIRECT_ASPECT_ATTRS:
+                direct_swift_infos.append(dep[SwiftInfo])
+            else:
+                swift_infos.append(dep[SwiftInfo])
+
+    # TODO(b/151667396): Remove j2objc-specific knowledge.
+    if str(aspect_ctx.label) in ("@bazel_tools//tools/j2objc:j2objc_proto_toolchain", "//third_party/java/j2objc:proto_runtime"):
+        # The J2ObjC proto runtime headers are implicit dependencies of the generated J2ObjC code
+        # by being transitively reachable via the toolchain and runtime targets. The `SwiftInfos` of
+        # these targets need to be propagated as direct so that J2ObjC code using the runtime
+        # headers appears to have a direct dependency on them.
+        direct_swift_infos.extend(swift_infos)
+        swift_infos = []
+
+    return direct_swift_infos, swift_infos
+
+def _find_swift_interop_info(target, aspect_ctx):
+    """Finds a `_SwiftInteropInfo` provider associated with the target.
+
+    This function first looks at the target itself to determine if it propagated
+    a `_SwiftInteropInfo` provider directly (that is, its rule implementation
+    function called `swift_common.create_swift_interop_info`). If it did not,
+    then the target's `aspect_hints` attribute is checked for a reference to a
+    target that propagates `_SwiftInteropInfo` (such as `swift_interop_hint`).
+
+    It is an error if `aspect_hints` contains two or more targets that propagate
+    `_SwiftInteropInfo`, or if the target directly propagates the provider and
+    there is also any target in `aspect_hints` that propagates it.
+
+    Args:
+        target: The target to which the aspect is currently being applied.
+        aspect_ctx: The aspect's context.
+
+    Returns:
+        A tuple containing two elements:
+
+        -   The `_SwiftInteropInfo` associated with the target, if found;
+            otherwise, None.
+        -   A list of additional `SwiftInfo` providers that are treated as
+            direct dependencies of the target, determined by reading attributes
+            from the target if it did not provide `_SwiftInteropInfo` directly.
+    """
+    if _SwiftInteropInfo in target:
+        # If the target's rule implementation directly provides
+        # `_SwiftInteropInfo`, then it is that rule's responsibility to collect
+        # and merge `SwiftInfo` providers from relevant dependencies.
+        interop_target = target
+        interop_from_rule = True
+        default_direct_swift_infos = []
+        default_swift_infos = []
+    else:
+        # If the target's rule implementation does not directly provide
+        # `_SwiftInteropInfo`, then we need to collect the `SwiftInfo` providers
+        # from the default dependencies and returns those. Note that if a custom
+        # rule is used as a hint and returns a `_SwiftInteropInfo` that contains
+        # `SwiftInfo` providers, then we would consider the providers from the
+        # default dependencies and the providers from the hint; they are merged
+        # after the call site of this function.
+        interop_target = None
+        interop_from_rule = False
+        default_direct_swift_infos, default_swift_infos = _collect_swift_infos_from_deps(aspect_ctx)
+
+    # We don't break this loop early when we find a matching hint, because we
+    # want to give an error message if there are two aspect hints that provide
+    # `_SwiftInteropInfo` (or if both the rule and an aspect hint do).
+    for hint in aspect_ctx.rule.attr.aspect_hints:
+        if _SwiftInteropInfo in hint:
+            if interop_target:
+                if interop_from_rule:
+                    fail(("Conflicting Swift interop info from the target " +
+                          "'{target}' ({rule} rule) and the aspect hint " +
+                          "'{hint}'. Only one is allowed.").format(
+                        hint = str(hint.label),
+                        target = str(target.label),
+                        rule = aspect_ctx.rule.kind,
+                    ))
+                else:
+                    fail(("Conflicting Swift interop info from aspect hints " +
+                          "'{hint1}' and '{hint2}'. Only one is " +
+                          "allowed.").format(
+                        hint1 = str(interop_target.label),
+                        hint2 = str(hint.label),
+                    ))
+            interop_target = hint
+
+    if interop_target:
+        return interop_target[_SwiftInteropInfo], default_direct_swift_infos, default_swift_infos
+    return None, default_direct_swift_infos, default_swift_infos
 
 def _swift_clang_module_aspect_impl(target, aspect_ctx):
     # Do nothing if the target already propagates `SwiftInfo`.
@@ -600,30 +789,35 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx):
     requested_features = aspect_ctx.features
     unsupported_features = aspect_ctx.disabled_features
 
-    if _SwiftInteropInfo in target:
-        interop_info = target[_SwiftInteropInfo]
+    interop_info, direct_swift_infos, swift_infos = _find_swift_interop_info(target, aspect_ctx)
+    if interop_info:
+        # If the module should be suppressed, return immediately and propagate
+        # nothing (not even transitive dependencies).
+        if interop_info.suppressed:
+            return []
+
+        exclude_headers = interop_info.exclude_headers
         module_map_file = interop_info.module_map
         module_name = (
             interop_info.module_name or derive_module_name(target.label)
         )
-        swift_infos = interop_info.swift_infos
+        swift_infos.extend(interop_info.swift_infos)
         requested_features.extend(interop_info.requested_features)
         unsupported_features.extend(interop_info.unsupported_features)
     else:
+        exclude_headers = []
         module_map_file = None
         module_name = None
 
-        # Collect `SwiftInfo` providers from dependencies, based on the
-        # attributes that this aspect traverses.
-        deps = []
-        attr = aspect_ctx.rule.attr
-        for attr_name in _MULTIPLE_TARGET_ASPECT_ATTRS:
-            deps.extend(getattr(attr, attr_name, []))
-        for attr_name in _SINGLE_TARGET_ASPECT_ATTRS:
-            dep = getattr(attr, attr_name, None)
-            if dep:
-                deps.append(dep)
-        swift_infos = get_providers(deps, SwiftInfo)
+    if hasattr(aspect_ctx.rule.attr, "_jre_lib"):
+        # TODO(b/151667396): Remove j2objc-specific knowledge.
+        # Force explicit modules on for targets processed by `j2objc_library`.
+        requested_features.extend([
+            SWIFT_FEATURE_EMIT_C_MODULE,
+            SWIFT_FEATURE_USE_C_MODULES,
+            SWIFT_FEATURE_LAYERING_CHECK,
+        ])
+        unsupported_features.append(SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS)
 
     swift_toolchain = aspect_ctx.attr._toolchain_for_aspect[SwiftToolchainInfo]
     feature_configuration = configure_features(
@@ -633,17 +827,14 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx):
         unsupported_features = unsupported_features,
     )
 
-    if (
-        _SwiftInteropInfo in target or
-        apple_common.Objc in target or
-        CcInfo in target
-    ):
+    if interop_info or apple_common.Objc in target or CcInfo in target:
         return _handle_module(
             aspect_ctx = aspect_ctx,
-            compilation_context = _compilation_context_for_target(target),
+            exclude_headers = exclude_headers,
             feature_configuration = feature_configuration,
             module_map_file = module_map_file,
             module_name = module_name,
+            direct_swift_infos = direct_swift_infos,
             swift_infos = swift_infos,
             swift_toolchain = swift_toolchain,
             target = target,
@@ -651,8 +842,11 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx):
 
     # If it's any other rule, just merge the `SwiftInfo` providers from its
     # deps.
-    if swift_infos:
-        return [create_swift_info(swift_infos = swift_infos)]
+    if direct_swift_infos or swift_infos:
+        return [create_swift_info(
+            direct_swift_infos = direct_swift_infos,
+            swift_infos = swift_infos,
+        )]
 
     return []
 
@@ -671,16 +865,12 @@ artifacts, and so that Swift module artifacts are not lost when passing through
 a non-Swift target in the build graph (for example, a `swift_library` that
 depends on an `objc_library` that depends on a `swift_library`).
 
-It also manages module map generation for `cc_library` targets that have the
-`swift_module` tag. This tag may take one of two forms:
-
-*   `swift_module`: By itself, this indicates that the target is compatible
-    with Swift and should be given a module name that is derived from its
-    target label.
-*   `swift_module=name`: The module should be given the name `name`.
-
-Note that the public headers of such `cc_library` targets must be parsable as C,
-since Swift does not support C++ interop at this time.
+It also manages module map generation for targets that call
+`swift_common.create_swift_interop_info` and do not provide their own module
+map, and for targets that use the `swift_interop_hint` aspect hint. Note that if
+one of these approaches is used to interop with a target such as a `cc_library`,
+the headers must be parsable as C, since Swift does not support C++ interop at
+this time.
 
 Most users will not need to interact directly with this aspect, since it is
 automatically applied to the `deps` attribute of all `swift_binary`,

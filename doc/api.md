@@ -103,7 +103,7 @@ Compiles a Swift module.
 | <a id="swift_common.compile-additional_inputs"></a>additional_inputs |  A list of `File`s representing additional input files that need to be passed to the Swift compile action because they are referenced by compiler flags.   |  `[]` |
 | <a id="swift_common.compile-copts"></a>copts |  A list of compiler flags that apply to the target being built. These flags, along with those from Bazel's Swift configuration fragment (i.e., `--swiftcopt` command line flags) are scanned to determine whether whole module optimization is being requested, which affects the nature of the output files.   |  `[]` |
 | <a id="swift_common.compile-defines"></a>defines |  Symbols that should be defined by passing `-D` to the compiler.   |  `[]` |
-| <a id="swift_common.compile-deps"></a>deps |  Non-private dependencies of the target being compiled. These targets are used as dependencies of both the Swift module being compiled and the Clang module for the generated header. These targets must propagate one of the following providers: `CcInfo`, `SwiftInfo`, or `apple_common.Objc`.   |  `[]` |
+| <a id="swift_common.compile-deps"></a>deps |  Non-private dependencies of the target being compiled. These targets are used as dependencies of both the Swift module being compiled and the Clang module for the generated header. These targets must propagate `CcInfo` or `SwiftInfo`.   |  `[]` |
 | <a id="swift_common.compile-extra_swift_infos"></a>extra_swift_infos |  Extra `SwiftInfo` providers that aren't contained by the `deps` of the target being compiled but are required for compilation.   |  `[]` |
 | <a id="swift_common.compile-feature_configuration"></a>feature_configuration |  A feature configuration obtained from `swift_common.configure_features`.   |  none |
 | <a id="swift_common.compile-generated_header_name"></a>generated_header_name |  The name of the Objective-C generated header that should be generated for this module. If omitted, no header will be generated.   |  `None` |
@@ -112,7 +112,7 @@ Compiles a Swift module.
 | <a id="swift_common.compile-module_name"></a>module_name |  The name of the Swift module being compiled. This must be present and valid; use `swift_common.derive_module_name` to generate a default from the target's label if needed.   |  none |
 | <a id="swift_common.compile-package_name"></a>package_name |  The semantic package of the name of the Swift module being compiled.   |  none |
 | <a id="swift_common.compile-plugins"></a>plugins |  A list of `SwiftCompilerPluginInfo` providers that represent plugins that should be loaded by the compiler.   |  `[]` |
-| <a id="swift_common.compile-private_deps"></a>private_deps |  Private (implementation-only) dependencies of the target being compiled. These are only used as dependencies of the Swift module, not of the Clang module for the generated header. These targets must propagate one of the following providers: `CcInfo`, `SwiftInfo`, or `apple_common.Objc`.   |  `[]` |
+| <a id="swift_common.compile-private_deps"></a>private_deps |  Private (implementation-only) dependencies of the target being compiled. These are only used as dependencies of the Swift module, not of the Clang module for the generated header. These targets must propagate `CcInfo` or `SwiftInfo`.   |  `[]` |
 | <a id="swift_common.compile-srcs"></a>srcs |  The Swift source files to compile.   |  none |
 | <a id="swift_common.compile-swift_toolchain"></a>swift_toolchain |  The `SwiftToolchainInfo` provider of the toolchain.   |  none |
 | <a id="swift_common.compile-target_name"></a>target_name |  The name of the target for which the code is being compiled, which is used to determine unique file paths for the outputs.   |  none |
@@ -215,30 +215,11 @@ An opaque value representing the feature configuration that can be
 ## swift_common.create_clang_module
 
 <pre>
-swift_common.create_clang_module(<a href="#swift_common.create_clang_module-compilation_context">compilation_context</a>, <a href="#swift_common.create_clang_module-module_map">module_map</a>, <a href="#swift_common.create_clang_module-precompiled_module">precompiled_module</a>)
+swift_common.create_clang_module(<a href="#swift_common.create_clang_module-compilation_context">compilation_context</a>, <a href="#swift_common.create_clang_module-module_map">module_map</a>, <a href="#swift_common.create_clang_module-precompiled_module">precompiled_module</a>,
+                                 <a href="#swift_common.create_clang_module-strict_includes">strict_includes</a>)
 </pre>
 
 Creates a value representing a Clang module used as a Swift dependency.
-
-Note: The `compilation_context` argument of this function is primarily
-intended to communicate information *to* the Swift build rules, not to
-retrieve information *back out.* In most cases, it is better to depend on
-the `CcInfo` provider propagated by a Swift target to collect transitive
-C/Objective-C compilation information about that target. This is because the
-context used when compiling the module itself may not be the same as the
-context desired when depending on it. (For example, `apple_common.Objc`
-supports "strict include paths" which are only propagated to direct
-dependents.)
-
-One valid exception to the guidance above is retrieving the generated header
-associated with a specific Swift module. Since the `CcInfo` provider
-propagated by the library will have already merged them transitively (or,
-in the case of a hypothetical custom rule that propagates multiple direct
-modules, the `direct_public_headers` of the `CcInfo` would also have them
-merged), it is acceptable to read the headers from the compilation context
-of the module struct itself in order to associate them with the module that
-generated them.
-
 
 **PARAMETERS**
 
@@ -248,11 +229,13 @@ generated them.
 | <a id="swift_common.create_clang_module-compilation_context"></a>compilation_context |  A `CcCompilationContext` that contains the header files and other context (such as include paths, preprocessor defines, and so forth) needed to compile this module as an explicit module.   |  none |
 | <a id="swift_common.create_clang_module-module_map"></a>module_map |  The text module map file that defines this module. This argument may be specified as a `File` or as a `string`; in the latter case, it is assumed to be the path to a file that cannot be provided as an action input because it is outside the workspace (for example, the module map for a module from an Xcode SDK).   |  none |
 | <a id="swift_common.create_clang_module-precompiled_module"></a>precompiled_module |  A `File` representing the precompiled module (`.pcm` file) if one was emitted for the module. This may be `None` if no explicit module was built for the module; in that case, targets that depend on the module will fall back to the text module map and headers.   |  `None` |
+| <a id="swift_common.create_clang_module-strict_includes"></a>strict_includes |  A `depset` of strings representing additional Clang include paths that should be passed to the compiler when this module is a _direct_ dependency of the module being compiled. May be `None`. **This field only exists to support a specific legacy use case and should otherwise not be used, as it is fundamentally incompatible with Swift's import model.**   |  `None` |
 
 **RETURNS**
 
-A `struct` containing the `compilation_context`, `module_map`, and
-  `precompiled_module` fields provided as arguments.
+A `struct` containing the `compilation_context`, `module_map`,
+  `precompiled_module`, and `strict_includes` fields provided as
+  arguments.
 
 
 <a id="swift_common.create_compilation_context"></a>
@@ -421,8 +404,8 @@ A new `SwiftInfo` provider with the given values.
 ## swift_common.create_swift_interop_info
 
 <pre>
-swift_common.create_swift_interop_info(<a href="#swift_common.create_swift_interop_info-module_map">module_map</a>, <a href="#swift_common.create_swift_interop_info-module_name">module_name</a>, <a href="#swift_common.create_swift_interop_info-requested_features">requested_features</a>, <a href="#swift_common.create_swift_interop_info-swift_infos">swift_infos</a>,
-                                       <a href="#swift_common.create_swift_interop_info-unsupported_features">unsupported_features</a>)
+swift_common.create_swift_interop_info(<a href="#swift_common.create_swift_interop_info-exclude_headers">exclude_headers</a>, <a href="#swift_common.create_swift_interop_info-module_map">module_map</a>, <a href="#swift_common.create_swift_interop_info-module_name">module_name</a>, <a href="#swift_common.create_swift_interop_info-requested_features">requested_features</a>,
+                                       <a href="#swift_common.create_swift_interop_info-suppressed">suppressed</a>, <a href="#swift_common.create_swift_interop_info-swift_infos">swift_infos</a>, <a href="#swift_common.create_swift_interop_info-unsupported_features">unsupported_features</a>)
 </pre>
 
 Returns a provider that lets a target expose C/Objective-C APIs to Swift.
@@ -456,9 +439,11 @@ exclude dependencies if necessary.
 
 | Name  | Description | Default Value |
 | :------------- | :------------- | :------------- |
+| <a id="swift_common.create_swift_interop_info-exclude_headers"></a>exclude_headers |  A `list` of `File`s representing headers that should be excluded from the module if the module map is generated.   |  `[]` |
 | <a id="swift_common.create_swift_interop_info-module_map"></a>module_map |  A `File` representing an existing module map that should be used to represent the module, or `None` (the default) if the module map should be generated based on the headers in the target's compilation context. If this argument is provided, then `module_name` must also be provided.   |  `None` |
 | <a id="swift_common.create_swift_interop_info-module_name"></a>module_name |  A string denoting the name of the module, or `None` (the default) if the name should be derived automatically from the target label.   |  `None` |
 | <a id="swift_common.create_swift_interop_info-requested_features"></a>requested_features |  A list of features (empty by default) that should be requested for the target, which are added to those supplied in the `features` attribute of the target. These features will be enabled unless they are otherwise marked as unsupported (either on the target or by the toolchain). This allows the rule implementation to have additional control over features that should be supported by default for all instances of that rule as if it were creating the feature configuration itself; for example, a rule can request that `swift.emit_c_module` always be enabled for its targets even if it is not explicitly enabled in the toolchain or on the target directly.   |  `[]` |
+| <a id="swift_common.create_swift_interop_info-suppressed"></a>suppressed |  A `bool` indicating whether the module that the aspect would create for the target should instead be suppressed.   |  `False` |
 | <a id="swift_common.create_swift_interop_info-swift_infos"></a>swift_infos |  A list of `SwiftInfo` providers from dependencies, which will be merged with the new `SwiftInfo` created by the aspect.   |  `[]` |
 | <a id="swift_common.create_swift_interop_info-unsupported_features"></a>unsupported_features |  A list of features (empty by default) that should be considered unsupported for the target, which are added to those supplied as negations in the `features` attribute. This allows the rule implementation to have additional control over features that should be disabled by default for all instances of that rule as if it were creating the feature configuration itself; for example, a rule that processes frameworks with headers that do not follow strict layering can request that `swift.strict_module` always be disabled for its targets even if it is enabled by default in the toolchain.   |  `[]` |
 

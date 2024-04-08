@@ -145,16 +145,6 @@ bzl_library(
 )
 
 bzl_library(
-    name = "swift_c_module",
-    srcs = ["swift_c_module.bzl"],
-    visibility = ["//swift:__subpackages__"],
-    deps = [
-        ":swift_common",
-        ":utils",
-    ],
-)
-
-bzl_library(
     name = "swift_feature_allowlist",
     srcs = ["swift_feature_allowlist.bzl"],
     visibility = ["//swift:__subpackages__"],
@@ -208,6 +198,13 @@ bzl_library(
         ":utils",
         "@bazel_skylib//lib:dicts",
     ],
+)
+
+bzl_library(
+    name = "swift_interop_hint",
+    srcs = ["swift_interop_hint.bzl"],
+    visibility = ["//swift:__subpackages__"],
+    deps = [":swift_common"],
 )
 
 bzl_library(

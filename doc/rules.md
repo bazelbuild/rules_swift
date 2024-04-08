@@ -20,11 +20,11 @@ load("@build_bazel_rules_swift//proto:proto.bzl", "swift_proto_library")
 On this page:
 
   * [swift_binary](#swift_binary)
-  * [swift_c_module](#swift_c_module)
   * [swift_compiler_plugin](#swift_compiler_plugin)
   * [universal_swift_compiler_plugin](#universal_swift_compiler_plugin)
   * [swift_feature_allowlist](#swift_feature_allowlist)
   * [swift_import](#swift_import)
+  * [swift_interop_hint](#swift_interop_hint)
   * [swift_library](#swift_library)
   * [swift_library_group](#swift_library_group)
   * [swift_module_alias](#swift_module_alias)
@@ -249,7 +249,7 @@ please use one of the platform-specific application rules in
 | Name  | Description | Type | Mandatory | Default |
 | :------------- | :------------- | :------------- | :------------- | :------------- |
 | <a id="swift_binary-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
-| <a id="swift_binary-deps"></a>deps |  A list of targets that are dependencies of the target being built, which will be linked into that target.<br><br>If the Swift toolchain supports implementation-only imports (`private_deps` on `swift_library`), then targets in `deps` are treated as regular (non-implementation-only) imports that are propagated both to their direct and indirect (transitive) dependents.<br><br>Allowed kinds of dependencies are:<br><br>*   `swift_c_module`, `swift_import` and `swift_library` (or anything     propagating `SwiftInfo`)<br><br>*   `cc_library` (or anything propagating `CcInfo`)<br><br>Additionally, on platforms that support Objective-C interop, `objc_library` targets (or anything propagating the `apple_common.Objc` provider) are allowed as dependencies. On platforms that do not support Objective-C interop (such as Linux), those dependencies will be **ignored.**   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
+| <a id="swift_binary-deps"></a>deps |  A list of targets that are dependencies of the target being built, which will be linked into that target.<br><br>If the Swift toolchain supports implementation-only imports (`private_deps` on `swift_library`), then targets in `deps` are treated as regular (non-implementation-only) imports that are propagated both to their direct and indirect (transitive) dependents.<br><br>Allowed kinds of dependencies are:<br><br>*   `swift_import` and `swift_library` (or anything propagating `SwiftInfo`)<br><br>*   `cc_library` (or anything propagating `CcInfo`)<br><br>Additionally, on platforms that support Objective-C interop, `objc_library` targets (or anything propagating the `apple_common.Objc` provider) are allowed as dependencies. On platforms that do not support Objective-C interop (such as Linux), those dependencies will be **ignored.**   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 | <a id="swift_binary-srcs"></a>srcs |  A list of `.swift` source files that will be compiled into the library.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 | <a id="swift_binary-data"></a>data |  The list of files needed by this target at runtime.<br><br>Files and targets named in the `data` attribute will appear in the `*.runfiles` area of this target, if it has one. This may include data files needed by a binary or library, or other programs needed by it.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 | <a id="swift_binary-copts"></a>copts |  Additional compiler options that should be passed to `swiftc`. These strings are subject to `$(location ...)` and ["Make" variable](https://docs.bazel.build/versions/master/be/make-variables.html) expansion.   | List of strings | optional |  `[]`  |
@@ -261,56 +261,6 @@ please use one of the platform-specific application rules in
 | <a id="swift_binary-plugins"></a>plugins |  A list of `swift_compiler_plugin` targets that should be loaded by the compiler when compiling this module and any modules that directly depend on it.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 | <a id="swift_binary-stamp"></a>stamp |  Enable or disable link stamping; that is, whether to encode build information into the binary. Possible values are:<br><br>* `stamp = 1`: Stamp the build information into the binary. Stamped binaries are   only rebuilt when their dependencies change. Use this if there are tests that   depend on the build information.<br><br>* `stamp = 0`: Always replace build information by constant values. This gives   good build result caching.<br><br>* `stamp = -1`: Embedding of build information is controlled by the   `--[no]stamp` flag.   | Integer | optional |  `-1`  |
 | <a id="swift_binary-swiftc_inputs"></a>swiftc_inputs |  Additional files that are referenced using `$(location ...)` in attributes that support location expansion.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
-
-
-<a id="swift_c_module"></a>
-
-## swift_c_module
-
-<pre>
-swift_c_module(<a href="#swift_c_module-name">name</a>, <a href="#swift_c_module-deps">deps</a>, <a href="#swift_c_module-module_map">module_map</a>, <a href="#swift_c_module-module_name">module_name</a>, <a href="#swift_c_module-system_module_map">system_module_map</a>)
-</pre>
-
-Wraps one or more C targets in a new module map that allows it to be imported
-into Swift to access its C interfaces.
-
-The `cc_library` rule in Bazel does not produce module maps that are compatible
-with Swift. In order to make interop between Swift and C possible, users have
-one of two options:
-
-1.  **Use an auto-generated module map.** In this case, the `swift_c_module`
-    rule is not needed. If a `cc_library` is a direct dependency of a
-    `swift_{binary,library,test}` target, a module map will be automatically
-    generated for it and the module's name will be derived from the Bazel target
-    label (in the same fashion that module names for Swift targets are derived).
-    The module name can be overridden by setting the `swift_module` tag on the
-    `cc_library`; e.g., `tags = ["swift_module=MyModule"]`.
-
-2.  **Use a custom module map.** For finer control over the headers that are
-    exported by the module, use the `swift_c_module` rule to provide a custom
-    module map that specifies the name of the module, its headers, and any other
-    module information. The `cc_library` targets that contain the headers that
-    you wish to expose to Swift should be listed in the `deps` of your
-    `swift_c_module` (and by listing multiple targets, you can export multiple
-    libraries under a single module if desired). Then, your
-    `swift_{binary,library,test}` targets should depend on the `swift_c_module`
-    target, not on the underlying `cc_library` target(s).
-
-NOTE: Swift at this time does not support interop directly with C++. Any headers
-referenced by a module map that is imported into Swift must have only C features
-visible, often by using preprocessor conditions like `#if __cplusplus` to hide
-any C++ declarations.
-
-**ATTRIBUTES**
-
-
-| Name  | Description | Type | Mandatory | Default |
-| :------------- | :------------- | :------------- | :------------- | :------------- |
-| <a id="swift_c_module-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
-| <a id="swift_c_module-deps"></a>deps |  A list of C targets (or anything propagating `CcInfo`) that are dependencies of this target and whose headers may be referenced by the module map.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
-| <a id="swift_c_module-module_map"></a>module_map |  The module map file that should be loaded to import the C library dependency into Swift. This is mutally exclusive with `system_module_map`.   | <a href="https://bazel.build/concepts/labels">Label</a> | optional |  `None`  |
-| <a id="swift_c_module-module_name"></a>module_name |  The name of the top-level module in the module map that this target represents.<br><br>A single `module.modulemap` file can define multiple top-level modules. When building with implicit modules, the presence of that module map allows any of the modules defined in it to be imported. When building explicit modules, however, there is a one-to-one correspondence between top-level modules and BUILD targets and the module name must be known without reading the module map file, so it must be provided directly. Therefore, one may have multiple `swift_c_module` targets that reference the same `module.modulemap` file but with different module names and headers.   | String | required |  |
-| <a id="swift_c_module-system_module_map"></a>system_module_map |  The path to a system framework module map. This is mutually exclusive with `module_map`.<br><br>Variables `__BAZEL_XCODE_SDKROOT__` and `__BAZEL_XCODE_DEVELOPER_DIR__` will be substitued appropriately for, i.e. `/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk` and `/Applications/Xcode.app/Contents/Developer` respectively.   | String | optional |  `""`  |
 
 
 <a id="swift_compiler_plugin"></a>
@@ -387,7 +337,7 @@ swift_library(
 | Name  | Description | Type | Mandatory | Default |
 | :------------- | :------------- | :------------- | :------------- | :------------- |
 | <a id="swift_compiler_plugin-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
-| <a id="swift_compiler_plugin-deps"></a>deps |  A list of targets that are dependencies of the target being built, which will be linked into that target.<br><br>If the Swift toolchain supports implementation-only imports (`private_deps` on `swift_library`), then targets in `deps` are treated as regular (non-implementation-only) imports that are propagated both to their direct and indirect (transitive) dependents.<br><br>Allowed kinds of dependencies are:<br><br>*   `swift_c_module`, `swift_import` and `swift_library` (or anything     propagating `SwiftInfo`)<br><br>*   `cc_library` (or anything propagating `CcInfo`)<br><br>Additionally, on platforms that support Objective-C interop, `objc_library` targets (or anything propagating the `apple_common.Objc` provider) are allowed as dependencies. On platforms that do not support Objective-C interop (such as Linux), those dependencies will be **ignored.**   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
+| <a id="swift_compiler_plugin-deps"></a>deps |  A list of targets that are dependencies of the target being built, which will be linked into that target.<br><br>If the Swift toolchain supports implementation-only imports (`private_deps` on `swift_library`), then targets in `deps` are treated as regular (non-implementation-only) imports that are propagated both to their direct and indirect (transitive) dependents.<br><br>Allowed kinds of dependencies are:<br><br>*   `swift_import` and `swift_library` (or anything propagating `SwiftInfo`)<br><br>*   `cc_library` (or anything propagating `CcInfo`)<br><br>Additionally, on platforms that support Objective-C interop, `objc_library` targets (or anything propagating the `apple_common.Objc` provider) are allowed as dependencies. On platforms that do not support Objective-C interop (such as Linux), those dependencies will be **ignored.**   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 | <a id="swift_compiler_plugin-srcs"></a>srcs |  A list of `.swift` source files that will be compiled into the library.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 | <a id="swift_compiler_plugin-data"></a>data |  The list of files needed by this target at runtime.<br><br>Files and targets named in the `data` attribute will appear in the `*.runfiles` area of this target, if it has one. This may include data files needed by a binary or library, or other programs needed by it.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 | <a id="swift_compiler_plugin-copts"></a>copts |  Additional compiler options that should be passed to `swiftc`. These strings are subject to `$(location ...)` and ["Make" variable](https://docs.bazel.build/versions/master/be/make-variables.html) expansion.   | List of strings | optional |  `[]`  |
@@ -460,13 +410,155 @@ the `.private.swiftinterface` files are required in order to build any code that
 | Name  | Description | Type | Mandatory | Default |
 | :------------- | :------------- | :------------- | :------------- | :------------- |
 | <a id="swift_import-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
-| <a id="swift_import-deps"></a>deps |  A list of targets that are dependencies of the target being built, which will be linked into that target.<br><br>If the Swift toolchain supports implementation-only imports (`private_deps` on `swift_library`), then targets in `deps` are treated as regular (non-implementation-only) imports that are propagated both to their direct and indirect (transitive) dependents.<br><br>Allowed kinds of dependencies are:<br><br>*   `swift_c_module`, `swift_import` and `swift_library` (or anything     propagating `SwiftInfo`)<br><br>*   `cc_library` (or anything propagating `CcInfo`)<br><br>Additionally, on platforms that support Objective-C interop, `objc_library` targets (or anything propagating the `apple_common.Objc` provider) are allowed as dependencies. On platforms that do not support Objective-C interop (such as Linux), those dependencies will be **ignored.**   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
+| <a id="swift_import-deps"></a>deps |  A list of targets that are dependencies of the target being built, which will be linked into that target.<br><br>If the Swift toolchain supports implementation-only imports (`private_deps` on `swift_library`), then targets in `deps` are treated as regular (non-implementation-only) imports that are propagated both to their direct and indirect (transitive) dependents.<br><br>Allowed kinds of dependencies are:<br><br>*   `swift_import` and `swift_library` (or anything propagating `SwiftInfo`)<br><br>*   `cc_library` (or anything propagating `CcInfo`)<br><br>Additionally, on platforms that support Objective-C interop, `objc_library` targets (or anything propagating the `apple_common.Objc` provider) are allowed as dependencies. On platforms that do not support Objective-C interop (such as Linux), those dependencies will be **ignored.**   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 | <a id="swift_import-data"></a>data |  The list of files needed by this target at runtime.<br><br>Files and targets named in the `data` attribute will appear in the `*.runfiles` area of this target, if it has one. This may include data files needed by a binary or library, or other programs needed by it.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 | <a id="swift_import-archives"></a>archives |  The list of `.a` files provided to Swift targets that depend on this target.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 | <a id="swift_import-module_name"></a>module_name |  The name of the module represented by this target.   | String | required |  |
 | <a id="swift_import-swiftdoc"></a>swiftdoc |  The `.swiftdoc` file provided to Swift targets that depend on this target.   | <a href="https://bazel.build/concepts/labels">Label</a> | optional |  `None`  |
 | <a id="swift_import-swiftinterface"></a>swiftinterface |  The `.swiftinterface` file that defines the module interface for this target. The interface files are ignored if `swiftmodule` is specified.   | <a href="https://bazel.build/concepts/labels">Label</a> | optional |  `None`  |
 | <a id="swift_import-swiftmodule"></a>swiftmodule |  The `.swiftmodule` file provided to Swift targets that depend on this target.   | <a href="https://bazel.build/concepts/labels">Label</a> | optional |  `None`  |
+
+
+<a id="swift_interop_hint"></a>
+
+## swift_interop_hint
+
+<pre>
+swift_interop_hint(<a href="#swift_interop_hint-name">name</a>, <a href="#swift_interop_hint-exclude_hdrs">exclude_hdrs</a>, <a href="#swift_interop_hint-module_map">module_map</a>, <a href="#swift_interop_hint-module_name">module_name</a>, <a href="#swift_interop_hint-suppressed">suppressed</a>)
+</pre>
+
+Defines an aspect hint that associates non-Swift BUILD targets with additional
+information required for them to be imported by Swift.
+
+> [!NOTE]
+> Bazel 6 users must set the `--experimental_enable_aspect_hints` flag to utilize
+> this rule. In addition, downstream consumers of rules that utilize this rule
+> must also set the flag. The flag is enabled by default in Bazel 7.
+
+Some build rules, such as `objc_library`, support interoperability with Swift
+simply by depending on them; a module map is generated automatically. This is
+for convenience, because the common case is that most `objc_library` targets
+contain code that is compatible (i.e., capable of being imported) by Swift.
+
+For other rules, like `cc_library`, additional information must be provided to
+indicate that a particular target is compatible with Swift. This is done using
+the `aspect_hints` attribute and the `swift_interop_hint` rule.
+
+#### Using the automatically derived module name (recommended)
+
+If you want to import a non-Swift, non-Objective-C target into Swift using the
+module name that is automatically derived from the BUILD label, there is no need
+to declare an instance of `swift_interop_hint`. A canonical one that requests
+module name derivation has been provided in
+`@build_bazel_rules_swift//swift:auto_module`. Simply add it to the `aspect_hints` of
+the target you wish to import:
+
+```build
+# //my/project/BUILD
+cc_library(
+    name = "somelib",
+    srcs = ["somelib.c"],
+    hdrs = ["somelib.h"],
+    aspect_hints = ["@build_bazel_rules_swift//swift:auto_module"],
+)
+```
+
+When this `cc_library` is a dependency of a Swift target, a module map will be
+generated for it. In this case, the module's name would be `my_project_somelib`.
+
+#### Using an explicit module name
+
+If you need to provide an explicit name for the module (for example, if it is
+part of a third-party library that expects to be imported with a specific name),
+then you can declare your own `swift_interop_hint` target to define the name:
+
+```build
+# //my/project/BUILD
+cc_library(
+    name = "somelib",
+    srcs = ["somelib.c"],
+    hdrs = ["somelib.h"],
+    aspect_hints = [":somelib_swift_interop"],
+)
+
+swift_interop_hint(
+    name = "somelib_swift_interop",
+    module_name = "CSomeLib",
+)
+```
+
+When this `cc_library` is a dependency of a Swift target, a module map will be
+generated for it with the module name `CSomeLib`.
+
+#### Using a custom module map
+
+In rare cases, the automatically generated module map may not be suitable. For
+example, a Swift module may depend on a C module that defines specific
+submodules, and this is not handled by the Swift build rules. In this case, you
+can provide the module map file using the `module_map` attribute.
+
+When setting the `module_map` attribute, `module_name` must also be set to the
+name of the desired top-level module; it cannot be omitted.
+
+```build
+# //my/project/BUILD
+cc_library(
+    name = "somelib",
+    srcs = ["somelib.c"],
+    hdrs = ["somelib.h"],
+    aspect_hints = [":somelib_swift_interop"],
+)
+
+swift_interop_hint(
+    name = "somelib_swift_interop",
+    module_map = "module.modulemap",
+    module_name = "CSomeLib",
+)
+```
+
+#### Suppressing a module
+
+As mentioned above, `objc_library` and other Objective-C targets generate
+modules by default, without an explicit hint, for convenience. In some
+situations, this behavior may not be desirable. For example, an `objc_library`
+might contain only Objective-C++ code in its headers that would not be possible
+to import into Swift at all.
+
+When building with implicit modules, this is not typically an issue because the
+module map would only be used if Swift code tried to import it (although it does
+create useless actions and compiler inputs during the build). When building with
+explicit modules, however, Bazel needs to know which targets represent modules
+that it can compile and which do not.
+
+In these cases, there is no need to declare an instance of `swift_interop_hint`.
+A canonical one that suppresses module generation has been provided in
+`@build_bazel_rules_swift//swift:no_module`. Simply add it to the `aspect_hints` of
+the target whose module you wish to suppress:
+
+```build
+# //my/project/BUILD
+objc_library(
+    name = "somelib",
+    srcs = ["somelib.mm"],
+    hdrs = ["somelib.h"],
+    aspect_hints = ["@build_bazel_rules_swift//swift:no_module"],
+)
+```
+
+When this `objc_library` is a dependency of a Swift target, no module map or
+explicit module will be generated for it, nor will any Swift information from
+its transitive dependencies be propagated.
+
+**ATTRIBUTES**
+
+
+| Name  | Description | Type | Mandatory | Default |
+| :------------- | :------------- | :------------- | :------------- | :------------- |
+| <a id="swift_interop_hint-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
+| <a id="swift_interop_hint-exclude_hdrs"></a>exclude_hdrs |  A list of header files that should be excluded from the Clang module generated for the target to which this hint is applied. This allows a target to exclude a subset of a library's headers specifically from the Swift module map without removing them from the library completely, which can be useful if some headers are not Swift-compatible but are still needed by other sources in the library or by non-Swift dependents.<br><br>This attribute may only be specified if a custom `module_map` is not provided. Setting both attributes is an error.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
+| <a id="swift_interop_hint-module_map"></a>module_map |  An optional custom `.modulemap` file that defines the Clang module for the headers in the target to which this hint is applied.<br><br>If this attribute is omitted, a module map will be automatically generated based on the headers in the hinted target.<br><br>If this attribute is provided, then `module_name` must also be provided and match the name of the desired top-level module in the `.modulemap` file. (A single `.modulemap` file may define multiple top-level modules.)   | <a href="https://bazel.build/concepts/labels">Label</a> | optional |  `None`  |
+| <a id="swift_interop_hint-module_name"></a>module_name |  The name that will be used to import the hinted module into Swift.<br><br>If left unspecified, the module name will be computed based on the hinted target's build label, by stripping the leading `//` and replacing `/`, `:`, and other non-identifier characters with underscores.   | String | optional |  `""`  |
+| <a id="swift_interop_hint-suppressed"></a>suppressed |  If `True`, the hinted target should suppress any module that it would otherwise generate.   | Boolean | optional |  `False`  |
 
 
 <a id="swift_library"></a>
@@ -487,7 +579,7 @@ Compiles and links Swift code into a static library and Swift module.
 | Name  | Description | Type | Mandatory | Default |
 | :------------- | :------------- | :------------- | :------------- | :------------- |
 | <a id="swift_library-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
-| <a id="swift_library-deps"></a>deps |  A list of targets that are dependencies of the target being built, which will be linked into that target.<br><br>If the Swift toolchain supports implementation-only imports (`private_deps` on `swift_library`), then targets in `deps` are treated as regular (non-implementation-only) imports that are propagated both to their direct and indirect (transitive) dependents.<br><br>Allowed kinds of dependencies are:<br><br>*   `swift_c_module`, `swift_import` and `swift_library` (or anything     propagating `SwiftInfo`)<br><br>*   `cc_library` (or anything propagating `CcInfo`)<br><br>Additionally, on platforms that support Objective-C interop, `objc_library` targets (or anything propagating the `apple_common.Objc` provider) are allowed as dependencies. On platforms that do not support Objective-C interop (such as Linux), those dependencies will be **ignored.**   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
+| <a id="swift_library-deps"></a>deps |  A list of targets that are dependencies of the target being built, which will be linked into that target.<br><br>If the Swift toolchain supports implementation-only imports (`private_deps` on `swift_library`), then targets in `deps` are treated as regular (non-implementation-only) imports that are propagated both to their direct and indirect (transitive) dependents.<br><br>Allowed kinds of dependencies are:<br><br>*   `swift_import` and `swift_library` (or anything propagating `SwiftInfo`)<br><br>*   `cc_library` (or anything propagating `CcInfo`)<br><br>Additionally, on platforms that support Objective-C interop, `objc_library` targets (or anything propagating the `apple_common.Objc` provider) are allowed as dependencies. On platforms that do not support Objective-C interop (such as Linux), those dependencies will be **ignored.**   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 | <a id="swift_library-srcs"></a>srcs |  A list of `.swift` source files that will be compiled into the library.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | required |  |
 | <a id="swift_library-data"></a>data |  The list of files needed by this target at runtime.<br><br>Files and targets named in the `data` attribute will appear in the `*.runfiles` area of this target, if it has one. This may include data files needed by a binary or library, or other programs needed by it.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 | <a id="swift_library-always_include_developer_search_paths"></a>always_include_developer_search_paths |  If `True`, the developer framework search paths will be added to the compilation command. This enables a Swift module to access `XCTest` without having to mark the target as `testonly = True`.   | Boolean | optional |  `False`  |
@@ -501,7 +593,7 @@ Compiles and links Swift code into a static library and Swift module.
 | <a id="swift_library-module_name"></a>module_name |  The name of the Swift module being built.<br><br>If left unspecified, the module name will be computed based on the target's build label, by stripping the leading `//` and replacing `/`, `:`, and other non-identifier characters with underscores.   | String | optional |  `""`  |
 | <a id="swift_library-package_name"></a>package_name |  The semantic package of the Swift target being built. Targets with the same package_name can access APIs using the 'package' access control modifier in Swift 5.9+.   | String | optional |  `""`  |
 | <a id="swift_library-plugins"></a>plugins |  A list of `swift_compiler_plugin` targets that should be loaded by the compiler when compiling this module and any modules that directly depend on it.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
-| <a id="swift_library-private_deps"></a>private_deps |  A list of targets that are implementation-only dependencies of the target being built. Libraries/linker flags from these dependencies will be propagated to dependent for linking, but artifacts/flags required for compilation (such as .swiftmodule files, C headers, and search paths) will not be propagated.<br><br>Allowed kinds of dependencies are:<br><br>*   `swift_c_module`, `swift_import` and `swift_library` (or anything     propagating `SwiftInfo`)<br><br>*   `cc_library` (or anything propagating `CcInfo`)<br><br>Additionally, on platforms that support Objective-C interop, `objc_library` targets (or anything propagating the `apple_common.Objc` provider) are allowed as dependencies. On platforms that do not support Objective-C interop (such as Linux), those dependencies will be **ignored.**   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
+| <a id="swift_library-private_deps"></a>private_deps |  A list of targets that are implementation-only dependencies of the target being built. Libraries/linker flags from these dependencies will be propagated to dependent for linking, but artifacts/flags required for compilation (such as .swiftmodule files, C headers, and search paths) will not be propagated.<br><br>Allowed kinds of dependencies are:<br><br>*   `swift_import` and `swift_library` (or anything propagating `SwiftInfo`)<br><br>*   `cc_library` (or anything propagating `CcInfo`)<br><br>Additionally, on platforms that support Objective-C interop, `objc_library` targets (or anything propagating the `apple_common.Objc` provider) are allowed as dependencies. On platforms that do not support Objective-C interop (such as Linux), those dependencies will be **ignored.**   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 | <a id="swift_library-swiftc_inputs"></a>swiftc_inputs |  Additional files that are referenced using `$(location ...)` in attributes that support location expansion.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 
 
@@ -526,7 +618,7 @@ need to import the grouped libraries directly.
 | Name  | Description | Type | Mandatory | Default |
 | :------------- | :------------- | :------------- | :------------- | :------------- |
 | <a id="swift_library_group-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
-| <a id="swift_library_group-deps"></a>deps |  A list of targets that should be included in the group.<br><br>Allowed kinds of dependencies are:<br><br>*   `swift_c_module`, `swift_import` and `swift_library` (or anything     propagating `SwiftInfo`)<br><br>*   `cc_library` (or anything propagating `CcInfo`)<br><br>Additionally, on platforms that support Objective-C interop, `objc_library` targets (or anything propagating the `apple_common.Objc` provider) are allowed as dependencies. On platforms that do not support Objective-C interop (such as Linux), those dependencies will be **ignored.**   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
+| <a id="swift_library_group-deps"></a>deps |  A list of targets that should be included in the group.<br><br>Allowed kinds of dependencies are:<br><br>*   `swift_import` and `swift_library` (or anything propagating `SwiftInfo`)<br><br>*   `cc_library` (or anything propagating `CcInfo`)<br><br>Additionally, on platforms that support Objective-C interop, `objc_library` targets (or anything propagating the `apple_common.Objc` provider) are allowed as dependencies. On platforms that do not support Objective-C interop (such as Linux), those dependencies will be **ignored.**   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 
 
 <a id="swift_module_alias"></a>
@@ -671,10 +763,10 @@ swift_proto_library(
 | Name  | Description | Type | Mandatory | Default |
 | :------------- | :------------- | :------------- | :------------- | :------------- |
 | <a id="swift_proto_library-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
-| <a id="swift_proto_library-deps"></a>deps |  A list of targets that are dependencies of the target being built, which will be linked into that target.<br><br>If the Swift toolchain supports implementation-only imports (`private_deps` on `swift_library`), then targets in `deps` are treated as regular (non-implementation-only) imports that are propagated both to their direct and indirect (transitive) dependents.<br><br>Allowed kinds of dependencies are:<br><br>*   `swift_c_module`, `swift_import` and `swift_library` (or anything     propagating `SwiftInfo`)<br><br>*   `cc_library` (or anything propagating `CcInfo`)<br><br>Additionally, on platforms that support Objective-C interop, `objc_library` targets (or anything propagating the `apple_common.Objc` provider) are allowed as dependencies. On platforms that do not support Objective-C interop (such as Linux), those dependencies will be **ignored.**   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
+| <a id="swift_proto_library-deps"></a>deps |  A list of targets that are dependencies of the target being built, which will be linked into that target.<br><br>If the Swift toolchain supports implementation-only imports (`private_deps` on `swift_library`), then targets in `deps` are treated as regular (non-implementation-only) imports that are propagated both to their direct and indirect (transitive) dependents.<br><br>Allowed kinds of dependencies are:<br><br>*   `swift_import` and `swift_library` (or anything propagating `SwiftInfo`)<br><br>*   `cc_library` (or anything propagating `CcInfo`)<br><br>Additionally, on platforms that support Objective-C interop, `objc_library` targets (or anything propagating the `apple_common.Objc` provider) are allowed as dependencies. On platforms that do not support Objective-C interop (such as Linux), those dependencies will be **ignored.**   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 | <a id="swift_proto_library-srcs"></a>srcs |  A list of `.swift` source files that will be compiled into the library.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 | <a id="swift_proto_library-data"></a>data |  The list of files needed by this target at runtime.<br><br>Files and targets named in the `data` attribute will appear in the `*.runfiles` area of this target, if it has one. This may include data files needed by a binary or library, or other programs needed by it.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
-| <a id="swift_proto_library-additional_compiler_deps"></a>additional_compiler_deps |  List of additional dependencies required by the generated Swift code at compile time, whose SwiftProtoInfo will be ignored.<br><br>Allowed kinds of dependencies are:<br><br>*   `swift_c_module`, `swift_import` and `swift_library` (or anything     propagating `SwiftInfo`)<br><br>*   `cc_library` (or anything propagating `CcInfo`)<br><br>Additionally, on platforms that support Objective-C interop, `objc_library` targets (or anything propagating the `apple_common.Objc` provider) are allowed as dependencies. On platforms that do not support Objective-C interop (such as Linux), those dependencies will be **ignored.**   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
+| <a id="swift_proto_library-additional_compiler_deps"></a>additional_compiler_deps |  List of additional dependencies required by the generated Swift code at compile time, whose SwiftProtoInfo will be ignored.<br><br>Allowed kinds of dependencies are:<br><br>*   `swift_import` and `swift_library` (or anything propagating `SwiftInfo`)<br><br>*   `cc_library` (or anything propagating `CcInfo`)<br><br>Additionally, on platforms that support Objective-C interop, `objc_library` targets (or anything propagating the `apple_common.Objc` provider) are allowed as dependencies. On platforms that do not support Objective-C interop (such as Linux), those dependencies will be **ignored.**   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 | <a id="swift_proto_library-additional_compiler_info"></a>additional_compiler_info |  Dictionary of additional information passed to the compiler targets. See the documentation of the respective compiler rules for more information on which fields are accepted and how they are used.   | <a href="https://bazel.build/rules/lib/dict">Dictionary: String -> String</a> | optional |  `{}`  |
 | <a id="swift_proto_library-always_include_developer_search_paths"></a>always_include_developer_search_paths |  If `True`, the developer framework search paths will be added to the compilation command. This enables a Swift module to access `XCTest` without having to mark the target as `testonly = True`.   | Boolean | optional |  `False`  |
 | <a id="swift_proto_library-alwayslink"></a>alwayslink |  If true, any binary that depends (directly or indirectly) on this Swift module will link in all the object files for the files listed in `srcs`, even if some contain no symbols referenced by the binary. This is useful if your code isn't explicitly called by code in the binary; for example, if you rely on runtime checks for protocol conformances added in extensions in the library but do not directly reference any other symbols in the object file that adds that conformance.   | Boolean | optional |  `False`  |
@@ -830,7 +922,7 @@ bazel test //:Tests --test_filter=TestModuleName.TestClassName/testMethodName
 | Name  | Description | Type | Mandatory | Default |
 | :------------- | :------------- | :------------- | :------------- | :------------- |
 | <a id="swift_test-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
-| <a id="swift_test-deps"></a>deps |  A list of targets that are dependencies of the target being built, which will be linked into that target.<br><br>If the Swift toolchain supports implementation-only imports (`private_deps` on `swift_library`), then targets in `deps` are treated as regular (non-implementation-only) imports that are propagated both to their direct and indirect (transitive) dependents.<br><br>Allowed kinds of dependencies are:<br><br>*   `swift_c_module`, `swift_import` and `swift_library` (or anything     propagating `SwiftInfo`)<br><br>*   `cc_library` (or anything propagating `CcInfo`)<br><br>Additionally, on platforms that support Objective-C interop, `objc_library` targets (or anything propagating the `apple_common.Objc` provider) are allowed as dependencies. On platforms that do not support Objective-C interop (such as Linux), those dependencies will be **ignored.**   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
+| <a id="swift_test-deps"></a>deps |  A list of targets that are dependencies of the target being built, which will be linked into that target.<br><br>If the Swift toolchain supports implementation-only imports (`private_deps` on `swift_library`), then targets in `deps` are treated as regular (non-implementation-only) imports that are propagated both to their direct and indirect (transitive) dependents.<br><br>Allowed kinds of dependencies are:<br><br>*   `swift_import` and `swift_library` (or anything propagating `SwiftInfo`)<br><br>*   `cc_library` (or anything propagating `CcInfo`)<br><br>Additionally, on platforms that support Objective-C interop, `objc_library` targets (or anything propagating the `apple_common.Objc` provider) are allowed as dependencies. On platforms that do not support Objective-C interop (such as Linux), those dependencies will be **ignored.**   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 | <a id="swift_test-srcs"></a>srcs |  A list of `.swift` source files that will be compiled into the library.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 | <a id="swift_test-data"></a>data |  The list of files needed by this target at runtime.<br><br>Files and targets named in the `data` attribute will appear in the `*.runfiles` area of this target, if it has one. This may include data files needed by a binary or library, or other programs needed by it.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 | <a id="swift_test-copts"></a>copts |  Additional compiler options that should be passed to `swiftc`. These strings are subject to `$(location ...)` and ["Make" variable](https://docs.bazel.build/versions/master/be/make-variables.html) expansion.   | List of strings | optional |  `[]`  |

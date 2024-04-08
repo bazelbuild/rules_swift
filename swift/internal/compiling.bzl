@@ -1459,17 +1459,28 @@ def _pcm_developer_framework_paths_configurator(prerequisites, args):
             args,
         )
 
+def _clang_module_strict_includes(module_context):
+    """Returns the strict Clang include paths for a module context."""
+    if not module_context.clang:
+        return None
+    strict_includes = module_context.clang.strict_includes
+    if not strict_includes:
+        return None
+    return strict_includes.to_list()
+
 def _clang_search_paths_configurator(prerequisites, args):
     """Adds Clang search paths to the command line."""
     args.add_all(
-        depset(transitive = [
-            prerequisites.cc_compilation_context.includes,
-            # TODO(b/146575101): Replace with `objc_info.include` once this bug
-            # is fixed. See `_merge_target_providers` below for more details.
-            prerequisites.objc_include_paths_workaround,
-        ]),
+        prerequisites.cc_compilation_context.includes,
         before_each = "-Xcc",
         format_each = "-I%s",
+    )
+    args.add_all(
+        prerequisites.transitive_modules,
+        before_each = "-Xcc",
+        format_each = "-I%s",
+        map_each = _clang_module_strict_includes,
+        uniquify = True,
     )
 
     # Add Clang search paths for the workspace root and Bazel output roots. The
@@ -1516,7 +1527,6 @@ def _collect_clang_module_inputs(
         cc_compilation_context,
         is_swift,
         modules,
-        objc_info,
         prefer_precompiled_modules):
     """Collects Clang module-related inputs to pass to an action.
 
@@ -1530,8 +1540,6 @@ def _collect_clang_module_inputs(
             `swift_common.create_module`). The precompiled Clang modules or the
             textual module maps and headers of these modules (depending on the
             value of `prefer_precompiled_modules`) will be collected as inputs.
-        objc_info: The `apple_common.Objc` provider of the target being
-            compiled.
         prefer_precompiled_modules: If True, precompiled module artifacts should
             be preferred over textual module map files and headers for modules
             that have them. If False, textual module map files and headers
@@ -1545,36 +1553,22 @@ def _collect_clang_module_inputs(
     direct_inputs = []
     transitive_inputs = []
 
-    if cc_compilation_context:
-        # The headers stored in the compilation context differ depending on the
-        # kind of action we're invoking:
-        if (is_swift and not prefer_precompiled_modules) or not is_swift:
-            # If this is a `SwiftCompile` with explicit modules disabled, the
-            # `headers` field is an already-computed set of the transitive
-            # headers of all the deps. (For an explicit module build, we skip it
-            # and will more selectively pick subsets for any individual modules
-            # that need to fallback to implicit modules in the loop below).
-            #
-            # If this is a `SwiftPrecompileCModule`, then by definition we're
-            # only here in a build with explicit modules enabled. We should only
-            # need the direct headers of the module being compiled and its
-            # direct dependencies (the latter because Clang needs them present
-            # on the file system to map them to the module that contains them.)
-            # However, we may also need some of the transitive headers, if the
-            # module has dependencies that aren't recognized as modules (e.g.,
-            # `cc_library` targets without the `swift_module` tag) and the
-            # module's headers include those. This will likely over-estimate the
-            # needed inputs, but we can't do better without include scanning in
-            # Starlark.
-            transitive_inputs.append(cc_compilation_context.headers)
-
-    # Some rules still use the `umbrella_header` field to propagate a header
-    # that they don't also include in `cc_compilation_context.headers`, so we
-    # also need to pull these in for the time being.
-    # TODO(b/142867898): This can be removed once the Swift rules start
-    # generating its own module map for these targets.
-    if objc_info:
-        transitive_inputs.append(objc_info.umbrella_header)
+    if cc_compilation_context and not is_swift:
+        # This is a `SwiftPrecompileCModule` action, so by definition we're
+        # only here in a build with explicit modules enabled. We should only
+        # need the direct headers of the module being compiled and its
+        # direct dependencies (the latter because Clang needs them present
+        # on the file system to map them to the module that contains them.)
+        # However, we may also need some of the transitive headers, if the
+        # module has dependencies that aren't recognized as modules (e.g.,
+        # `cc_library` targets without an aspect hint) and the module's
+        # headers include those. This will likely over-estimate the needed
+        # inputs, but we can't do better without include scanning in
+        # Starlark.
+        transitive_inputs.append(cc_compilation_context.headers)
+        transitive_inputs.append(
+            depset(cc_compilation_context.direct_textual_headers),
+        )
 
     for module in modules:
         clang_module = module.clang
@@ -1585,22 +1579,24 @@ def _collect_clang_module_inputs(
         if not module.is_system and type(module_map) == "File":
             direct_inputs.append(module_map)
 
-        if prefer_precompiled_modules:
-            precompiled_module = clang_module.precompiled_module
-            if precompiled_module:
-                # For builds preferring explicit modules, use it if we have it
-                # and don't include any headers as inputs.
-                direct_inputs.append(precompiled_module)
-            else:
-                # If we don't have an explicit module, we need the transitive
-                # headers from the compilation context associated with the
-                # module. This will likely overestimate the headers that will
-                # actually be used in the action, but until we can use include
-                # scanning from Starlark, we can't compute a more precise input
-                # set.
-                transitive_inputs.append(
-                    clang_module.compilation_context.headers,
-                )
+        precompiled_module = clang_module.precompiled_module
+
+        if prefer_precompiled_modules and precompiled_module:
+            # For builds preferring explicit modules, use it if we have it
+            # and don't include any headers as inputs.
+            direct_inputs.append(precompiled_module)
+        else:
+            # If we don't have an explicit module (or we're not using it), we
+            # need the transitive headers from the compilation context
+            # associated with the module. This will likely overestimate the
+            # headers that will actually be used in the action, but until we can
+            # use include scanning from Starlark, we can't compute a more
+            # precise input set.
+            compilation_context = clang_module.compilation_context
+            transitive_inputs.append(compilation_context.headers)
+            transitive_inputs.append(
+                depset(compilation_context.direct_textual_headers),
+            )
 
     return swift_toolchain_config.config_result(
         inputs = direct_inputs,
@@ -1685,7 +1681,6 @@ def _dependencies_clang_modulemaps_configurator(prerequisites, args):
         cc_compilation_context = prerequisites.cc_compilation_context,
         is_swift = prerequisites.is_swift,
         modules = modules,
-        objc_info = prerequisites.objc_info,
         prefer_precompiled_modules = False,
     )
 
@@ -1711,7 +1706,6 @@ def _dependencies_clang_modules_configurator(prerequisites, args):
         cc_compilation_context = prerequisites.cc_compilation_context,
         is_swift = prerequisites.is_swift,
         modules = modules,
-        objc_info = prerequisites.objc_info,
         prefer_precompiled_modules = True,
     )
 
@@ -2310,8 +2304,7 @@ def compile(
         deps: Non-private dependencies of the target being compiled. These
             targets are used as dependencies of both the Swift module being
             compiled and the Clang module for the generated header. These
-            targets must propagate one of the following providers: `CcInfo`,
-            `SwiftInfo`, or `apple_common.Objc`.
+            targets must propagate `CcInfo` or `SwiftInfo`.
         extra_swift_infos: Extra `SwiftInfo` providers that aren't contained
             by the `deps` of the target being compiled but are required for
             compilation.
@@ -2335,8 +2328,7 @@ def compile(
         private_deps: Private (implementation-only) dependencies of the target
             being compiled. These are only used as dependencies of the Swift
             module, not of the Clang module for the generated header. These
-            targets must propagate one of the following providers: `CcInfo`,
-            `SwiftInfo`, or `apple_common.Objc`.
+            targets must propagate `CcInfo` or `SwiftInfo`.
         srcs: The Swift source files to compile.
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
         target_name: The name of the target for which the code is being
@@ -2450,9 +2442,9 @@ def compile(
         all_derived_outputs = []
 
     # Merge the providers from our dependencies so that we have one each for
-    # `SwiftInfo`, `CcInfo`, and `apple_common.Objc`. Then we can pass these
-    # into the action prerequisites so that configurators have easy access to
-    # the full set of values and inputs through a single accessor.
+    # `SwiftInfo` and `CcInfo`. Then we can pass these into the action
+    # prerequisites so that configurators have easy access to the full set of
+    # values and inputs through a single accessor.
     merged_providers = _merge_targets_providers(
         implicit_deps_providers = swift_toolchain.implicit_deps_providers,
         targets = deps + private_deps,
@@ -2568,9 +2560,6 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         is_swift = True,
         module_name = module_name,
         package_name = package_name,
-        objc_include_paths_workaround = (
-            merged_providers.objc_include_paths_workaround
-        ),
         objc_info = merged_providers.objc_info,
         plugins = depset(used_plugins),
         source_files = srcs,
@@ -2853,7 +2842,6 @@ def _precompile_clang_module(
         is_swift_generated_header = is_swift_generated_header,
         module_name = module_name,
         package_name = None,
-        objc_include_paths_workaround = depset(),
         objc_info = apple_common.new_objc_provider(),
         pcm_file = precompiled_module,
         source_files = [module_map_file],
@@ -2893,8 +2881,7 @@ def _create_cc_compilation_context(
         deps: Non-private dependencies of the target being compiled. These
             targets are used as dependencies of both the Swift module being
             compiled and the Clang module for the generated header. These
-            targets must propagate one of the following providers: `CcInfo`,
-            `SwiftInfo`, or `apple_common.Objc`.
+            targets must propagate `CcInfo` or `SwiftInfo`.
         feature_configuration: A feature configuration obtained from
             `swift_common.configure_features`.
         public_hdrs: Public headers that should be propagated by the new
@@ -3343,11 +3330,10 @@ def _declare_multiple_outputs_and_write_output_file_map(
 def _merge_targets_providers(implicit_deps_providers, targets):
     """Merges the compilation-related providers for the given targets.
 
-    This function merges the `CcInfo`, `SwiftInfo`, and `apple_common.Objc`
-    providers from the given targets into a single provider for each. These
-    providers are then meant to be passed as prerequisites to compilation
-    actions so that configurators can populate command lines and inputs based on
-    their data.
+    This function merges the `CcInfo` and `SwiftInfo` providers from the given
+    targets into a single provider for each. These providers are then meant to
+    be passed as prerequisites to compilation actions so that configurators can
+    populate command lines and inputs based on their data.
 
     Args:
         implicit_deps_providers: The implicit deps providers `struct` from the
@@ -3358,22 +3344,12 @@ def _merge_targets_providers(implicit_deps_providers, targets):
         A `struct` containing the following fields:
 
         *   `cc_info`: The merged `CcInfo` provider of the targets.
-        *   `objc_include_paths_workaround`: A `depset` containing the include
-            paths from the given targets that should be passed to ClangImporter.
-            This is a workaround for some currently incorrect propagation
-            behavior that is being removed in the future.
         *   `objc_info`: The merged `apple_common.Objc` provider of the targets.
         *   `swift_info`: The merged `SwiftInfo` provider of the targets.
     """
     cc_infos = list(implicit_deps_providers.cc_infos)
     objc_infos = list(implicit_deps_providers.objc_infos)
     swift_infos = list(implicit_deps_providers.swift_infos)
-
-    # TODO(b/146575101): This is only being used to preserve the current
-    # behavior of strict Objective-C include paths being propagated one more
-    # level than they should be. Once the remaining targets that depend on this
-    # behavior have been fixed, remove it.
-    objc_include_paths_workaround_depsets = []
 
     for target in targets:
         if CcInfo in target:
@@ -3382,15 +3358,9 @@ def _merge_targets_providers(implicit_deps_providers, targets):
             swift_infos.append(target[SwiftInfo])
         if apple_common.Objc in target:
             objc_infos.append(target[apple_common.Objc])
-            objc_include_paths_workaround_depsets.append(
-                target[apple_common.Objc].strict_include,
-            )
 
     return struct(
         cc_info = cc_common.merge_cc_infos(cc_infos = cc_infos),
-        objc_include_paths_workaround = depset(
-            transitive = objc_include_paths_workaround_depsets,
-        ),
         objc_info = apple_common.new_objc_provider(providers = objc_infos),
         swift_info = create_swift_info(swift_infos = swift_infos),
     )
