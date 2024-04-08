@@ -296,7 +296,7 @@ The most common case for this is having a `swift_proto_library_group` target for
 and then a `swift_proto_library_group` target which depends on it and generates the services,
 similar to the old `swift_grpc_library` rule depending on the old `swift_proto_library` rule.
 
-See the `//examples/xplatform/proto_library_group/service:service_server_swift_proto` for a concrete example.
+See `//examples/xplatform/proto_library_group/service:service_server_swift_proto` for a concrete example.
 
 ## F.A.Q.
 
