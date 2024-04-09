@@ -209,13 +209,13 @@ SWIFT_FEATURE_USE_RESPONSE_FILES = "swift.use_response_files"
 
 # If enabled, Swift linking actions will use `swift-autolink-extract` to extract
 # the linker arguments.  This is required for ELF targets.  This is used
-# internally to determine the behaviour of the actions across different
+# internally to determine the behavior of the actions across different
 # toolchain platforms, this is should not be set by users of the toolchain.
 SWIFT_FEATURE_USE_AUTOLINK_EXTRACT = "swift.use_autolink_extract"
 
 # If enabled, Swift will wrap the `.swiftmodule` into an object file and link it
 # into the module.  This is used internally to support the different platforms
-# which have differing behaviour for debug information handling.  This should
+# which have differing behavior for debug information handling.  This should
 # not be used by users of the toolchain.
 SWIFT_FEATURE_USE_MODULE_WRAP = "swift.use_module_wrap"
 

@@ -15,7 +15,13 @@
 """Common attributes used by multiple Swift build rules."""
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load(":providers.bzl", "SwiftCompilerPluginInfo", "SwiftInfo", "SwiftToolchainInfo")
+load(
+    ":providers.bzl",
+    "SwiftCompilerPluginInfo",
+    "SwiftCompilerPluginCollectionInfo",
+    "SwiftInfo",
+    "SwiftToolchainInfo",
+)
 
 def swift_common_rule_attrs(
         additional_deps_aspects = [],
@@ -146,7 +152,10 @@ Swift 5.9+.
 A list of `swift_compiler_plugin` targets that should be loaded by the compiler
 when compiling this module and any modules that directly depend on it.
 """,
-                providers = [[SwiftCompilerPluginInfo]],
+                providers = [
+                    [SwiftCompilerPluginInfo],
+                    [SwiftCompilerPluginCollectionInfo],
+                ],
             ),
             "srcs": attr.label_list(
                 allow_empty = not requires_srcs,

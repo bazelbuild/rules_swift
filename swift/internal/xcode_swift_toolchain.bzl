@@ -48,6 +48,7 @@ load(
     "SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS",
     "SWIFT_FEATURE_SUPPORTS_SYSTEM_MODULE_FLAG",
+    "SWIFT_FEATURE_USE_AUTOLINK_EXTRACT",
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
     "SWIFT_FEATURE_USE_RESPONSE_FILES",
     "SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE",
@@ -430,7 +431,8 @@ def _all_tool_configs(
         execution_requirements,
         generated_header_rewriter,
         swift_executable,
-        toolchain_root):
+        toolchain_root,
+        use_autolink_extract):
     """Returns the tool configurations for the Swift toolchain.
 
     Args:
@@ -496,6 +498,14 @@ def _all_tool_configs(
             )
         ),
     }
+
+    if use_autolink_extract:
+        tool_configs[swift_action_names.AUTOLINK_EXTRACT] = swift_toolchain_config.driver_tool_config(
+            driver_mode = "swift-autolink-extract",
+            swift_executable = swift_executable,
+            toolchain_root = toolchain_root,
+            worker_mode = "wrap",
+        )
 
     return tool_configs
 
@@ -649,6 +659,7 @@ def _xcode_swift_toolchain_impl(ctx):
         generated_header_rewriter = generated_header_rewriter,
         swift_executable = swift_executable,
         toolchain_root = toolchain_root,
+        use_autolink_extract = SWIFT_FEATURE_USE_AUTOLINK_EXTRACT in ctx.features,
     )
     all_action_configs = _all_action_configs(
         additional_objc_copts = _command_line_objc_copts(

@@ -322,6 +322,7 @@ def _swift_toolchain_impl(ctx):
         SWIFT_FEATURE_OPT_USES_WMO,
         SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE,
         SWIFT_FEATURE_USE_RESPONSE_FILES,
+        "gcc_quoting_for_param_files",
     ])
 
     requested_features.extend(ctx.features)

@@ -57,6 +57,7 @@ load(
     # api
     _swift_common = "swift_common",
     _swift_compiler_plugin = "swift_compiler_plugin",
+    _swift_compiler_plugin_group = "swift_compiler_plugin_group",
     _swift_feature_allowlist = "swift_feature_allowlist",
     _swift_import = "swift_import",
     _swift_interop_hint = "swift_interop_hint",
@@ -91,6 +92,7 @@ deprecated_swift_grpc_library = _deprecated_swift_grpc_library
 deprecated_swift_proto_library = _deprecated_swift_proto_library
 swift_binary = _swift_binary
 swift_compiler_plugin = _swift_compiler_plugin
+swift_compiler_plugin_group = _swift_compiler_plugin_group
 universal_swift_compiler_plugin = _universal_swift_compiler_plugin
 swift_feature_allowlist = _swift_feature_allowlist
 swift_import = _swift_import

@@ -30,6 +30,7 @@ load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
 load(
     "@build_bazel_rules_swift//swift:swift_compiler_plugin.bzl",
     _swift_compiler_plugin = "swift_compiler_plugin",
+    _swift_compiler_plugin_group = "swift_compiler_plugin_group",
     _universal_swift_compiler_plugin = "universal_swift_compiler_plugin",
 )
 load(
@@ -108,6 +109,7 @@ swift_common = _swift_common
 # Re-export rules.
 swift_binary = _swift_binary
 swift_compiler_plugin = _swift_compiler_plugin
+swift_compiler_plugin_group = _swift_compiler_plugin_group
 universal_swift_compiler_plugin = _universal_swift_compiler_plugin
 swift_feature_allowlist = _swift_feature_allowlist
 swift_import = _swift_import

@@ -15,6 +15,7 @@ _DOC_SRCS = {
         "SwiftInfo",
         "SwiftToolchainInfo",
         "SwiftProtoCompilerInfo",
+        "SwiftProtoCompilerCollectionInfo",
         "SwiftProtoInfo",
         "SwiftUsageInfo",
         "DeprecatedSwiftGRPCInfo",
@@ -22,6 +23,7 @@ _DOC_SRCS = {
     "rules": [
         "swift_binary",
         "swift_compiler_plugin",
+        "swift_compiler_plugin_group",
         "universal_swift_compiler_plugin",
         "swift_feature_allowlist",
         "swift_import",
