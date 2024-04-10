@@ -1,8 +1,9 @@
 # Overview
 
 This document aims to provide context to future contributors on why we decided to rewrite
-the `swift_proto_library` and `swift_grpc_library` rules into the new `swift_proto_library` rule,
-as well as a guide for consumers of the deprecated rules to migrate to the new `swift_proto_library` rule.
+the `swift_proto_library` and `swift_grpc_library` rules into the new 
+`swift_proto_library` and `swift_proto_library_group` rules,
+as well as a guide for consumers of the deprecated rules to migrate to the new rules.
 
 On this page:
   * [Why rewrite?](#why-rewrite)
@@ -95,9 +96,10 @@ This is how the analagous `go_proto_library` works as well.
 
 ## How to Migrate
 
-NOTE: If you leveraged the capability of the the deprecated `swift_proto_library`
-to generate the protos for multiple `proto_library` targets from a single `swift_proto_library` target, 
-you will need to create additional targets for a 1:1 mapping of `proto_library` targets to `swift_proto_library` targets.
+NOTE: If you required the capability of the the deprecated `swift_proto_library`
+to generate the protos transitively for multiple `proto_library` targets from a single `swift_proto_library` target, 
+you will need to to use the `swift_proto_library_group` rule. 
+See the relevant section below for more information.
 
 ## 1. Swift Proto Library
 
@@ -241,6 +243,60 @@ as the test clients do not conform to Sendable.
 This capability may be removed in a future major version update.
 
 The alternative recommended by the `grpc-swift` authors is to register a mock server on localhost.
+
+## 3. Swift Proto Library Group
+
+To aid consumers of the old rules in their migration to the new rules,
+we introduced the `swift_proto_library_group` rule which has an aspect similar to the old rule,
+while still allowing for pluggable swift proto compilers.
+
+One drawback of the aspect approach that is still present here is the inability 
+to configure the module names or other attributes of the generated modules 
+because they must be derived directly from the `proto_library` targets.
+
+Specific usecases for this rule include:
+- You have a lot of protos and do not want to handwrite a lot of `swift_proto_library` targets,
+  or generate them with a tool like Gazelle.
+- You have `proto_library` targets which are not visible to the `swift_proto_library` target,
+  and you need to generate the protos for them transitively by tranversing the graph from a visible `proto_library` target.
+
+Example of use:
+
+```
+proto_library(
+    name = "request_proto",
+    srcs = [
+        "request.proto",
+    ]
+)
+
+proto_library(
+    name = "response_proto",
+    srcs = [
+        "response.proto",
+    ],
+    deps = [
+        ":request_proto",
+    ],
+)
+
+swift_proto_library_group(
+    name = "proto_library_group_swift_proto",
+    compiler = "//proto/compilers:swift_proto",
+    proto = ":response_proto",
+)
+```
+
+In this example, `proto_library_group_swift_proto` depends on `response_proto` which in turn depends on `request_proto`.
+The Swift source files for `response_proto` and transitively `request_proto` will be generated and compiled if you build the
+`proto_library_group_swift_proto` target.
+
+NOTE: You can mix-and-match `swift_proto_library` targets and `swift_proto_library_group` targets.
+The most common case for this is having a `swift_proto_library_group` target for your non-GRPC protos,
+and then a `swift_proto_library_group` target which depends on it and generates the services,
+similar to the old `swift_grpc_library` rule depending on the old `swift_proto_library` rule.
+
+See `//examples/xplatform/proto_library_group/service:service_server_swift_proto` for a concrete example.
 
 ## F.A.Q.
 
