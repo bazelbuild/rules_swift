@@ -31,6 +31,7 @@ load(
 )
 load(
     ":feature_names.bzl",
+    "SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT",
     "SWIFT_FEATURE_LLD_GC_WORKAROUND",
     "SWIFT_FEATURE_OBJC_LINK_FLAGS",
     "SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE",
@@ -258,8 +259,13 @@ def create_linking_context_from_compilation_outputs(
             action_name = swift_action_names.AUTOLINK_EXTRACT,
             swift_toolchain = swift_toolchain,
         ):
+            add_target_name_to_output_path = is_feature_enabled(
+                feature_configuration = feature_configuration,
+                feature_name = SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT,
+            )
             autolink_file = derived_files.autolink_flags(
                 actions = actions,
+                add_target_name_to_output_path = add_target_name_to_output_path,
                 target_name = label.name,
             )
             register_autolink_extract_action(

@@ -27,6 +27,16 @@ private_deps_provider_test = make_provider_test_rule(
     },
 )
 
+# Test with enabled `swift.add_target_name_to_output` feature
+private_deps_provider_target_name_test = make_provider_test_rule(
+    config_settings = {
+        "//command_line_option:features": [
+            "swift.supports_private_deps",
+            "swift.add_target_name_to_output",
+        ],
+    },
+)
+
 def private_deps_test_suite(name):
     """Test suite for propagation behavior of `swift_library.private_deps`.
 
@@ -96,6 +106,18 @@ def private_deps_test_suite(name):
         expected_files = [
             "/test/fixtures/private_deps/public_cc.swift.modulemap",
             "-/test/fixtures/private_deps/private_cc.swift.modulemap",
+        ],
+        field = "transitive_modules.clang!.module_map!",
+        provider = "SwiftInfo",
+        tags = [name],
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/private_deps:client_cc_deps",
+    )
+
+    private_deps_provider_target_name_test(
+        name = "{}_client_cc_deps_modulemaps_target_name".format(name),
+        expected_files = [
+            "/test/fixtures/private_deps/public_cc/public_cc.swift.modulemap",
+            "-/test/fixtures/private_deps/public_cc/private_cc.swift.modulemap",
         ],
         field = "transitive_modules.clang!.module_map!",
         provider = "SwiftInfo",

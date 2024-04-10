@@ -20,6 +20,7 @@ load(":split_derived_files_tests.bzl", "split_derived_files_test_suite")
 load(":swift_through_non_swift_tests.bzl", "swift_through_non_swift_test_suite")
 load(":utils_tests.bzl", "utils_test_suite")
 load(":xctest_runner_tests.bzl", "xctest_runner_test_suite")
+load(":swift_binary_linking_tests.bzl", "swift_binary_linking_test_suite")
 
 licenses(["notice"])
 
@@ -62,6 +63,8 @@ private_swiftinterface_test_suite(name = "private_swiftinterface")
 xctest_runner_test_suite(name = "xctest_runner")
 
 utils_test_suite(name = "utils")
+
+swift_binary_linking_test_suite(name = "swift_binary_rules")
 
 test_suite(
     name = "all_tests",
