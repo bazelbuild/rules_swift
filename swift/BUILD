@@ -58,6 +58,7 @@ bzl_library(
         "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
         "@bazel_skylib//lib:sets",
+        "@rules_java//java:rules",
     ],
 )
 

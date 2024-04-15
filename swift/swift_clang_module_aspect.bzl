@@ -48,6 +48,7 @@ load(
     "@build_bazel_rules_swift//swift/internal:utils.bzl",
     "compilation_context_for_explicit_module_compilation",
 )
+load("@rules_java//java:defs.bzl", "JavaInfo")
 load(":module_name.bzl", "derive_swift_module_name")
 load(
     ":providers.bzl",
