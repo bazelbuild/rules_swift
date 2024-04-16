@@ -318,3 +318,48 @@ which provides `SwiftProtoCompilerInfo`, and passing this to the `swift_proto_li
 The only real requirement is that it has a function wich accepts a list of `ProtoInfo` providers,
 and produces a list Swift source files from these which the `swift_proto_library` rule compiles.
 See `//examples/xplatform/custom_swift_proto_compiler/compile` for an example of how to do this.
+
+### How can I handle protos with the same file name but different paths?
+
+Within a Swift module, source file names must be unique.
+By default, the generated source files will mirror the structure of their respective proto files.
+
+For example, the following target relative proto paths:
+`foo/bar.proto`
+`bar.proto`
+
+Will produce the following target relative source file paths:
+`foo/bar.swift`
+`bar.swift`
+
+This will result in a compiler error.
+
+To circumvent this issue, the `SwiftProtobuf` `protoc` plugin accepts the `PathToUnderscores` option,
+which incorporates the directory structure into the generated file names.
+
+When set, the following target relative source file paths will be produced instead:
+`foo_bar.swift`
+`bar.swift`
+
+Which will compile without issue.
+
+In the deprecated `swift_proto_library` rule, there was a `feature` that set the `PathToUnderscores` option internally.
+In the new rules, this is not necessary because you can pass arbitrary options directly to the `swift_proto_compiler`,
+and its respective `protoc` plugin.
+
+To see an example, check out `//examples/xplatform/proto:example_path_to_underscores_proto_swift`:
+
+```
+swift_proto_library(
+    name = "example_path_to_underscores_proto_swift",
+    additional_compiler_info = {
+        "FileNaming": "PathToUnderscores",
+    },
+    protos = [":example_path_to_underscores_proto"],
+)
+```
+
+You can apply this option to individual `swift_proto_library` targets via the `additional_compiler_info` attribute,
+or you can apply them to all of your targets through a custom `swift_proto_compiler` target via the `plugin_options` attribute.
+
+See the documentation for those rules and their respective attributes for more information.
