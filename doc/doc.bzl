@@ -46,13 +46,10 @@ load(
 load(
     "//swift:swift.bzl",
     # providers
-    _DeprecatedSwiftGRPCInfo = "SwiftGRPCInfo",
     _SwiftInfo = "SwiftInfo",
     _SwiftToolchainInfo = "SwiftToolchainInfo",
     _SwiftUsageInfo = "SwiftUsageInfo",
     # rules
-    _deprecated_swift_grpc_library = "deprecated_swift_grpc_library",
-    _deprecated_swift_proto_library = "deprecated_swift_proto_library",
     _swift_binary = "swift_binary",
     # api
     _swift_common = "swift_common",
@@ -83,12 +80,9 @@ swift_proto_library_group = _swift_proto_library_group
 # swift symbols
 swift_common = _swift_common
 swift_usage_aspect = _swift_usage_aspect
-DeprecatedSwiftGRPCInfo = _DeprecatedSwiftGRPCInfo
 SwiftInfo = _SwiftInfo
 SwiftToolchainInfo = _SwiftToolchainInfo
 SwiftUsageInfo = _SwiftUsageInfo
-deprecated_swift_grpc_library = _deprecated_swift_grpc_library
-deprecated_swift_proto_library = _deprecated_swift_proto_library
 swift_binary = _swift_binary
 swift_compiler_plugin = _swift_compiler_plugin
 universal_swift_compiler_plugin = _universal_swift_compiler_plugin

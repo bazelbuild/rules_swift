@@ -11,4 +11,5 @@ bzl_library(
 bzl_library(
     name = "common",
     srcs = ["common.bzl"],
+    deps = ["@build_bazel_rules_swift//swift"],
 )

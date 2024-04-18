@@ -1,7 +1,0 @@
-syntax = "proto3";
-
-import "message_1/message.proto";
-
-message Message2 {
-  Message1 message = 4;
-}

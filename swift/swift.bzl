@@ -33,16 +33,7 @@ load(
     _universal_swift_compiler_plugin = "universal_swift_compiler_plugin",
 )
 load(
-    "@build_bazel_rules_swift//swift/deprecated_proto:deprecated_swift_grpc_library.bzl",
-    _deprecated_swift_grpc_library = "deprecated_swift_grpc_library",
-)
-load(
-    "@build_bazel_rules_swift//swift/deprecated_proto:deprecated_swift_proto_library.bzl",
-    _deprecated_swift_proto_library = "deprecated_swift_proto_library",
-)
-load(
     "@build_bazel_rules_swift//swift/internal:providers.bzl",
-    _DeprecatedSwiftGRPCInfo = "SwiftGRPCInfo",
     _SwiftInfo = "SwiftInfo",
     _SwiftProtoCompilerInfo = "SwiftProtoCompilerInfo",
     _SwiftProtoInfo = "SwiftProtoInfo",
@@ -117,13 +108,6 @@ swift_library_group = _swift_library_group
 swift_module_alias = _swift_module_alias
 swift_package_configuration = _swift_package_configuration
 swift_test = _swift_test
-
-# Deprecated swift proto rules:
-deprecated_swift_proto_library = _deprecated_swift_proto_library
-deprecated_swift_grpc_library = _deprecated_swift_grpc_library
-swift_proto_library = _deprecated_swift_proto_library
-swift_grpc_library = _deprecated_swift_grpc_library
-SwiftGRPCInfo = _DeprecatedSwiftGRPCInfo
 
 # Re-export public aspects.
 swift_clang_module_aspect = _swift_clang_module_aspect

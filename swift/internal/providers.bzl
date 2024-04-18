@@ -62,19 +62,6 @@ the allowlist.
     },
 )
 
-SwiftGRPCInfo = provider(
-    doc = "DEPRECATED -- Propagates Swift-specific information about a `swift_grpc_library`.",
-    fields = {
-        "flavor": """\
-The flavor of GRPC that was generated. E.g. server, client, or client_stubs.
-""",
-        "direct_pbgrpc_files": """\
-`Depset` of `File`s. The Swift source files (`.grpc.swift`) generated
-from the `.proto` files in direct dependencies.
-""",
-    },
-)
-
 SwiftInfo = provider(
     doc = """\
 Contains information about the compiled artifacts of a Swift module.

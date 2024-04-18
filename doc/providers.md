@@ -12,26 +12,6 @@ On this page:
   * [SwiftProtoCompilerInfo](#SwiftProtoCompilerInfo)
   * [SwiftProtoInfo](#SwiftProtoInfo)
   * [SwiftUsageInfo](#SwiftUsageInfo)
-  * [DeprecatedSwiftGRPCInfo](#DeprecatedSwiftGRPCInfo)
-
-<a id="DeprecatedSwiftGRPCInfo"></a>
-
-## DeprecatedSwiftGRPCInfo
-
-<pre>
-DeprecatedSwiftGRPCInfo(<a href="#DeprecatedSwiftGRPCInfo-flavor">flavor</a>, <a href="#DeprecatedSwiftGRPCInfo-direct_pbgrpc_files">direct_pbgrpc_files</a>)
-</pre>
-
-DEPRECATED -- Propagates Swift-specific information about a `swift_grpc_library`.
-
-**FIELDS**
-
-
-| Name  | Description |
-| :------------- | :------------- |
-| <a id="DeprecatedSwiftGRPCInfo-flavor"></a>flavor |  The flavor of GRPC that was generated. E.g. server, client, or client_stubs.    |
-| <a id="DeprecatedSwiftGRPCInfo-direct_pbgrpc_files"></a>direct_pbgrpc_files |  `Depset` of `File`s. The Swift source files (`.grpc.swift`) generated from the `.proto` files in direct dependencies.    |
-
 
 <a id="SwiftInfo"></a>
 
