@@ -36,12 +36,12 @@ load(":explicit_module_map_file.bzl", "write_explicit_swift_module_map_file")
 load(
     ":feature_names.bzl",
     "SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT",
+    "SWIFT_FEATURE_DECLARE_SWIFTSOURCEINFO",
     "SWIFT_FEATURE_EMIT_BC",
     "SWIFT_FEATURE_EMIT_C_MODULE",
     "SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE",
     "SWIFT_FEATURE_EMIT_SWIFTDOC",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
-    "SWIFT_FEATURE_EMIT_SWIFTSOURCEINFO",
     "SWIFT_FEATURE_FULL_LTO",
     "SWIFT_FEATURE_HEADERS_ALWAYS_ACTION_INPUTS",
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
@@ -478,16 +478,6 @@ def compile(
 
     const_gather_protocols_file = swift_toolchain.const_protocols_to_gather
 
-    # Determine if `.swiftdoc` and `.swiftsourceinfo` files should be included.
-    include_swiftdoc = is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_EMIT_SWIFTDOC,
-    )
-    include_swiftsourceinfo = is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_EMIT_SWIFTSOURCEINFO,
-    )
-
     compile_outputs = _declare_compile_outputs(
         srcs = srcs,
         actions = actions,
@@ -495,8 +485,6 @@ def compile(
         feature_configuration = feature_configuration,
         generated_header_name = generated_header_name,
         generated_module_deps_swift_infos = generated_module_deps_swift_infos,
-        include_swiftdoc = include_swiftdoc,
-        include_swiftsourceinfo = include_swiftsourceinfo,
         module_name = module_name,
         target_name = target_name,
         user_compile_flags = copts,
@@ -520,12 +508,10 @@ def compile(
             # various things (such as the filename prefix for param files generated
             # for that action). This guarantees some predictability.
             compile_outputs.swiftmodule_file,
+            compile_outputs.swiftdoc_file,
+            compile_outputs.swiftsourceinfo_file,
             compile_outputs.generated_header_file,
         ])
-        if include_swiftdoc:
-            all_derived_outputs.append(compile_outputs.swiftdoc_file)
-        if include_swiftsourceinfo:
-            all_derived_outputs.append(compile_outputs.swiftsourceinfo_file)
     else:
         all_compile_outputs = compact([
             # The `.swiftmodule` file is explicitly listed as the first output
@@ -533,16 +519,14 @@ def compile(
             # various things (such as the filename prefix for param files generated
             # for that action). This guarantees some predictability.
             compile_outputs.swiftmodule_file,
+            compile_outputs.swiftdoc_file,
             compile_outputs.swiftinterface_file,
             compile_outputs.private_swiftinterface_file,
+            compile_outputs.swiftsourceinfo_file,
             compile_outputs.generated_header_file,
             compile_outputs.indexstore_directory,
             compile_outputs.macro_expansion_directory,
         ]) + compile_outputs.object_files + compile_outputs.const_values_files
-        if include_swiftdoc:
-            all_compile_outputs.append(compile_outputs.swiftdoc_file)
-        if include_swiftsourceinfo:
-            all_compile_outputs.append(compile_outputs.swiftsourceinfo_file)
         all_derived_outputs = []
 
     # In `upstream` they call `merge_compilation_contexts` on passed in
@@ -1139,8 +1123,6 @@ def _declare_compile_outputs(
         feature_configuration,
         generated_header_name,
         generated_module_deps_swift_infos,
-        include_swiftdoc,
-        include_swiftsourceinfo,
         module_name,
         srcs,
         target_name,
@@ -1158,8 +1140,6 @@ def _declare_compile_outputs(
         generated_module_deps_swift_infos: `SwiftInfo` providers from
             dependencies of the module for the generated header of the target
             being compiled.
-        include_swiftdoc: If .swiftdoc file should be included or not.
-        include_swiftsourceinfo: If .swiftsourceinfo file should be included or not.
         module_name: The name of the Swift module being compiled.
         srcs: The list of source files that will be compiled.
         target_name: The name (excluding package path) of the target being
@@ -1186,19 +1166,32 @@ def _declare_compile_outputs(
         target_name = target_name,
         basename = "{}.swiftmodule".format(module_name),
     )
-    swiftdoc_file = _declare_target_scoped_file(
-        actions = actions,
-        add_target_name_to_output_path = add_target_name_to_output_path,
-        target_name = target_name,
-        basename = "{}.swiftdoc".format(module_name),
-    ) if include_swiftdoc else None
 
-    swiftsourceinfo_file = _declare_target_scoped_file(
-        actions = actions,
-        add_target_name_to_output_path = add_target_name_to_output_path,
-        target_name = target_name,
-        basename = "{}.swiftsourceinfo".format(module_name),
-    ) if include_swiftsourceinfo else None
+    if is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_EMIT_SWIFTDOC,
+    ):
+        swiftdoc_file = _declare_target_scoped_file(
+            actions = actions,
+            add_target_name_to_output_path = add_target_name_to_output_path,
+            target_name = target_name,
+            basename = "{}.swiftdoc".format(module_name),
+        )
+    else:
+        swiftdoc_file = None
+
+    if is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_DECLARE_SWIFTSOURCEINFO,
+    ):
+        swiftsourceinfo_file = _declare_target_scoped_file(
+            actions = actions,
+            add_target_name_to_output_path = add_target_name_to_output_path,
+            target_name = target_name,
+            basename = "{}.swiftsourceinfo".format(module_name),
+        )
+    else:
+        swiftsourceinfo_file = None
 
     if is_feature_enabled(
         feature_configuration = feature_configuration,
