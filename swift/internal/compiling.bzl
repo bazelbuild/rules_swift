@@ -33,6 +33,7 @@ load(":actions.bzl", "is_action_enabled", "run_toolchain_action")
 load(":explicit_module_map_file.bzl", "write_explicit_swift_module_map_file")
 load(
     ":feature_names.bzl",
+    "SWIFT_FEATURE_DECLARE_SWIFTSOURCEINFO",
     "SWIFT_FEATURE_EMIT_C_MODULE",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
     "SWIFT_FEATURE_HEADERS_ALWAYS_ACTION_INPUTS",
@@ -956,9 +957,16 @@ def _declare_compile_outputs(
         "{}.swiftmodule".format(module_name),
     )
     swiftdoc_file = actions.declare_file("{}.swiftdoc".format(module_name))
-    swiftsourceinfo_file = actions.declare_file(
-        "{}.swiftsourceinfo".format(module_name),
-    )
+
+    if is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_DECLARE_SWIFTSOURCEINFO,
+    ):
+        swiftsourceinfo_file = actions.declare_file(
+            "{}.swiftsourceinfo".format(module_name),
+        )
+    else:
+        swiftsourceinfo_file = None
 
     if is_feature_enabled(
         feature_configuration = feature_configuration,

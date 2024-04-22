@@ -184,6 +184,13 @@ SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION = "swift.enable_library_evolution"
 # invocation.
 SWIFT_FEATURE_EMIT_SWIFTINTERFACE = "swift.emit_swiftinterface"
 
+# If enabled, declare `.swiftsourceinfo` files as outputs that Bazel will track.
+# Note that at the time of this writing (Swift 5.10), `.swiftsourceinfo` files
+# are non-deterministic: they contain absolute paths that are not remapped by
+# any of the existing compiler flags. Only enable this feature if such
+# non-determinism does not negatively impact you.
+SWIFT_FEATURE_DECLARE_SWIFTSOURCEINFO = "swift.declare_swiftsourceinfo"
+
 # If enabled, the .swiftmodule file for the affected target will not be
 # embedded in debug info and propagated to the linker.
 #
