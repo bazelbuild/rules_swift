@@ -30,6 +30,14 @@ SWIFT_FEATURE_DBG = "swift.dbg"
 SWIFT_FEATURE_FASTBUILD = "swift.fastbuild"
 SWIFT_FEATURE_OPT = "swift.opt"
 
+# If this feature is enabled, the toolchain should enable the features that are
+# available in Swift 6 language mode. If the toolchain supports
+# `-swift-version 6`, it will do so using that flag. If it is older, it will
+# enable the set of upcoming features that will be on by default in Swift 6,
+# allowing users to prepare their code base by opting in to the full set of
+# Swift 6 features even before switching to a Swift 6 compiler.
+SWIFT_FEATURE_ENABLE_V6 = "swift.enable_v6"
+
 # If True, transitive C headers will be always be passed as inputs to Swift
 # compilation actions, even when building with explicit modules.
 SWIFT_FEATURE_HEADERS_ALWAYS_ACTION_INPUTS = "swift.headers_always_action_inputs"
@@ -364,6 +372,11 @@ SWIFT_FEATURE_DISABLE_AVAILABILITY_CHECKING = "swift.disable_availability_checki
 # `-enable-{experimental,upcoming}-feature` flag (Swift 5.8 and above). Users
 # should never manually, enable, disable, or query this feature.
 SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES = "swift._supports_upcoming_features"
+
+# A private feature that is set by the toolchain if it supports
+# `-swift-version 6` (Swift 6.0 and above). Users should never manually enable,
+# disable, or query this feature.
+SWIFT_FEATURE__SUPPORTS_V6 = "swift._supports_v6"
 
 # Disables Swift sandbox which prevents issues with nested sandboxing when Swift code contains system-provided macros.
 # If enabled '#Preview' macro provided by SwiftUI fails to build and probably other system-provided macros.

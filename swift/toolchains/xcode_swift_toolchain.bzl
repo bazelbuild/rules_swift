@@ -55,6 +55,7 @@ load(
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_REMAP_XCODE_PATH",
     "SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES",
+    "SWIFT_FEATURE__SUPPORTS_V6",
 )
 load(
     "//swift/internal:features.bzl",
@@ -627,6 +628,9 @@ def _xcode_swift_toolchain_impl(ctx):
 
     if _is_xcode_at_least_version(xcode_config, "15.3"):
         requested_features.append(SWIFT_FEATURE_DISABLE_SWIFT_SANDBOX)
+
+    if _is_xcode_at_least_version(xcode_config, "16.0"):
+        requested_features.append(SWIFT_FEATURE__SUPPORTS_V6)
 
     env = _xcode_env(target_triple = target_triple, xcode_config = xcode_config)
     execution_requirements = xcode_config.execution_info()
