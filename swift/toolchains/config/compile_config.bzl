@@ -37,6 +37,7 @@ load(
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_ENABLE_TESTING",
+    "SWIFT_FEATURE_ENABLE_V6",
     "SWIFT_FEATURE_FASTBUILD",
     "SWIFT_FEATURE_FILE_PREFIX_MAP",
     "SWIFT_FEATURE_FULL_DEBUG_INFO",
@@ -61,6 +62,7 @@ load(
     "SWIFT_FEATURE__SUPPORTS_MACROS",
     "SWIFT_FEATURE__SUPPORTS_PACKAGE_MODIFIER",
     "SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES",
+    "SWIFT_FEATURE__SUPPORTS_V6",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
 )
 load(":action_config.bzl", "ActionConfigInfo", "ConfigResultInfo", "add_arg")
@@ -842,6 +844,16 @@ def compile_action_configs(
             configurators = [_upcoming_and_experimental_features_configurator],
             features = [
                 SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES,
+            ],
+        ),
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_COMPILE,
+            ],
+            configurators = [add_arg("-swift-version", "6")],
+            features = [
+                SWIFT_FEATURE_ENABLE_V6,
+                SWIFT_FEATURE__SUPPORTS_V6,
             ],
         ),
     ]

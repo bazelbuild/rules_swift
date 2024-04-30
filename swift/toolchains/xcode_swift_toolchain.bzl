@@ -47,6 +47,7 @@ load(
     "SWIFT_FEATURE__SUPPORTS_MACROS",
     "SWIFT_FEATURE__SUPPORTS_PACKAGE_MODIFIER",
     "SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES",
+    "SWIFT_FEATURE__SUPPORTS_V6",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:features.bzl",
@@ -652,6 +653,12 @@ def _xcode_swift_toolchain_impl(ctx):
             SWIFT_FEATURE__SUPPORTS_MACROS,
             SWIFT_FEATURE__SUPPORTS_PACKAGE_MODIFIER,
         ])
+
+    # TODO: b/336996662 - Use a very high Xcode version number until we've
+    # confirmed the actual Xcode release that ships with a compiler that
+    # supports `-swift-version 6`.
+    if _is_xcode_at_least_version(xcode_config, "999.0"):
+        requested_features.append(SWIFT_FEATURE__SUPPORTS_V6)
 
     env = _xcode_env(target_triple = target_triple, xcode_config = xcode_config)
     execution_requirements = xcode_config.execution_info()
