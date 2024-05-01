@@ -15,7 +15,6 @@
 """An aspect attached to `proto_library` targets to generate Swift artifacts."""
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 load(
     "@build_bazel_rules_swift//swift:module_name.bzl",
     "derive_swift_module_name",
@@ -30,8 +29,6 @@ load(":attrs.bzl", "swift_config_attrs")
 load(":compiling.bzl", "compile")
 load(
     ":feature_names.bzl",
-    "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
-    "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_ENABLE_TESTING",
     "SWIFT_FEATURE_LAYERING_CHECK_SWIFT",
 )
@@ -235,16 +232,6 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
         )
 
         extra_features = []
-
-        # This feature is not fully supported because the SwiftProtobuf library
-        # has not yet been designed to fully support library evolution. The
-        # intent of this is to allow users building distributable frameworks to
-        # use Swift protos as an _implementation-only_ detail of their
-        # framework, where those protos would not be exposed to clients in the
-        # API. Rely on it at your own risk.
-        if aspect_ctx.attr._config_emit_swiftinterface[BuildSettingInfo].value:
-            extra_features.append(SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION)
-            extra_features.append(SWIFT_FEATURE_EMIT_SWIFTINTERFACE)
 
         # Compile the generated Swift sources and produce a static library and a
         # .swiftmodule as outputs. In addition to the other proto deps, we also

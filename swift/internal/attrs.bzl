@@ -51,7 +51,9 @@ indirect (transitive) dependents.
         ),
         # Deprecated, but Starlark rules do not inherit `licenses` by default
         # (see b/169635467).
-        "licenses": attr.license(),  # buildifier: disable=attr-license
+        # buildifier: disable=attr-license
+        # buildifier: disable=attr-licenses
+        "licenses": attr.license(),
     }
 
 def swift_compilation_attrs(
@@ -172,9 +174,6 @@ def swift_config_attrs():
         configuration settings.
     """
     return {
-        "_config_emit_swiftinterface": attr.label(
-            default = "@build_bazel_rules_swift//swift:emit_swiftinterface",
-        ),
         "_per_module_swiftcopt": attr.label(
             default = "@build_bazel_rules_swift//swift:per_module_swiftcopt",
         ),

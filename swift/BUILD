@@ -1,5 +1,4 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
-load("@bazel_skylib//rules:common_settings.bzl", "bool_setting")
 load(
     "//swift/internal:build_settings.bzl",
     "per_module_swiftcopt_flag",
@@ -262,13 +261,6 @@ repeatable_string_flag(
 per_module_swiftcopt_flag(
     name = "per_module_swiftcopt",
     build_setting_default = "",
-    visibility = ["//visibility:public"],
-)
-
-# Configuration setting for enabling the generation of swiftinterface files.
-bool_setting(
-    name = "emit_swiftinterface",
-    build_setting_default = False,
     visibility = ["//visibility:public"],
 )
 
