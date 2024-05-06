@@ -494,6 +494,7 @@ _SWIFT_6_EQUIVALENT_FEATURES = [
     "swift.upcoming.ConciseMagicFile",  # SE-0274
     "swift.upcoming.ForwardTrailingClosures",  # SE-0286
     "swift.upcoming.StrictConcurrency",  # SE-0337
+    "swift.experimental.StrictConcurrency=complete",  # same as above on older compilers
     "swift.upcoming.BareSlashRegexLiterals",  # SE-0354
     "swift.upcoming.DeprecateApplicationMain",  # SE-0383
     "swift.upcoming.ImportObjcForwardDeclarations",  # SE-0384
