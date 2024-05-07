@@ -187,7 +187,8 @@ bool IsModuleIgnorableForLayeringCheck(absl::string_view module_name) {
 SwiftRunner::SwiftRunner(const std::vector<std::string> &args,
                          bool force_response_file)
     : job_env_(GetCurrentEnvironment()),
-      force_response_file_(force_response_file) {
+      force_response_file_(force_response_file),
+      last_flag_was_module_name_(false) {
   ProcessArguments(args);
 }
 
@@ -265,7 +266,12 @@ bool SwiftRunner::ProcessArgument(
   }
 
   absl::string_view trimmed_arg = arg;
-  if (absl::ConsumePrefix(&trimmed_arg, "-Xwrapped-swift=")) {
+  if (last_flag_was_module_name_) {
+    module_name_ = std::string(trimmed_arg);
+    last_flag_was_module_name_ = false;
+  } else if (trimmed_arg == "-module-name") {
+    last_flag_was_module_name_ = true;
+  } else if (absl::ConsumePrefix(&trimmed_arg, "-Xwrapped-swift=")) {
     if (trimmed_arg == "-debug-prefix-pwd-is-dot") {
       // Get the actual current working directory (the execution root), which
       // we didn't know at analysis time.
@@ -427,6 +433,13 @@ int SwiftRunner::PerformLayeringCheck(std::ostream &stderr_stream,
 
   absl::btree_set<std::string> deps_modules =
       ReadDepsModules(deps_modules_path_);
+
+  // We have to insert the name of the module being compiled, as well. In most
+  // cases, it's nonsensical for a module to import itself (Swift only flags
+  // this as a warning), but it's specifically allowed when writing a Swift
+  // overlay: when compiling Swift module X, `@_exported import X` specifically
+  // imports the underlying Clang module for X.
+  deps_modules.insert(module_name_);
 
   // Use a `btree_set` so that the output is automatically sorted
   // lexicographically.

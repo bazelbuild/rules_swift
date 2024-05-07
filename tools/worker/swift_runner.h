@@ -173,6 +173,12 @@ class SwiftRunner {
   // is used by layering checks to determine the set of modules that the code is
   // actually allowed to import.
   std::string deps_modules_path_;
+
+  // Tracks whether the last flag seen was `-module-name`.
+  bool last_flag_was_module_name_;
+
+  // The name of the module currently being compiled.
+  std::string module_name_;
 };
 
 }  // namespace bazel_rules_swift
