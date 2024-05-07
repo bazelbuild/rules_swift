@@ -16,6 +16,7 @@
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("//swift/internal:binary_attrs.bzl", "binary_rule_attrs")
 load("//swift/internal:compiling.bzl", "compile")
 load("//swift/internal:env_expansion.bzl", "expanded_env")
 load(
@@ -25,7 +26,6 @@ load(
 load("//swift/internal:features.bzl", "is_feature_enabled")
 load(
     "//swift/internal:linking.bzl",
-    "binary_rule_attrs",
     "configure_features_for_binary",
     "malloc_linking_context",
     "register_link_binary_action",
