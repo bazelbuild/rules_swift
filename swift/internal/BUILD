@@ -63,6 +63,17 @@ bzl_library(
 )
 
 bzl_library(
+    name = "binary_attrs",
+    srcs = ["binary_attrs.bzl"],
+    visibility = ["//swift:__subpackages__"],
+    deps = [
+        ":attrs",
+        "//swift:swift_clang_module_aspect",
+        "@bazel_skylib//lib:dicts",
+    ],
+)
+
+bzl_library(
     name = "build_settings",
     srcs = ["build_settings.bzl"],
     visibility = ["//swift:__subpackages__"],
@@ -162,15 +173,12 @@ bzl_library(
     deps = [
         ":action_names",
         ":actions",
-        ":attrs",
         ":autolinking",
         ":debugging",
         ":developer_dirs",
         ":feature_names",
         ":features",
-        "//swift:swift_clang_module_aspect",
-        "@bazel_skylib//lib:dicts",
-        "@bazel_tools//tools/build_defs/cc:action_names.bzl",
+        "//swift:providers",
     ],
 )
 

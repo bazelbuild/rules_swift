@@ -30,6 +30,7 @@ _DOC_SRCS = {
         "mixed_language_library",
         "swift_module_mapping",
         "swift_module_mapping_test",
+        "swift_overlay",
         "swift_package_configuration",
         "swift_test",
         "swift_proto_library",

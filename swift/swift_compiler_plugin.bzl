@@ -21,6 +21,7 @@ load(
     "@build_bazel_apple_support//lib:transitions.bzl",
     "macos_universal_transition",
 )
+load("//swift/internal:binary_attrs.bzl", "binary_rule_attrs")
 load("//swift/internal:compiling.bzl", "compile")
 load(
     "//swift/internal:feature_names.bzl",
@@ -29,7 +30,6 @@ load(
 load("//swift/internal:features.bzl", "is_feature_enabled")
 load(
     "//swift/internal:linking.bzl",
-    "binary_rule_attrs",
     "configure_features_for_binary",
     "create_linking_context_from_compilation_outputs",
     "malloc_linking_context",
@@ -51,7 +51,7 @@ load(
     "get_providers",
 )
 load(":module_name.bzl", "derive_swift_module_name")
-load(":providers.bzl", "SwiftBinaryInfo", "SwiftInfo")
+load(":providers.bzl", "SwiftBinaryInfo", "SwiftInfo", "SwiftOverlayInfo")
 
 def _swift_compiler_plugin_impl(ctx):
     swift_toolchain = get_swift_toolchain(ctx)
@@ -173,6 +173,10 @@ def _swift_compiler_plugin_impl(ctx):
                 dep[CcInfo].linking_context
                 for dep in deps
                 if CcInfo in dep
+            ] + [
+                dep[SwiftOverlayInfo].linking_context
+                for dep in deps
+                if SwiftOverlayInfo in dep
             ],
             module_context = module_context,
             swift_toolchain = swift_toolchain,

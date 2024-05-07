@@ -145,6 +145,21 @@ this provider and all of its dependencies.
     init = _swift_info_init,
 )
 
+SwiftOverlayInfo = provider(
+    doc = """\
+Contains additional artifacts from the Swift overlay for a C/Objective-C module
+that also need to be propagated to clients of the module for it to work
+properly.
+""",
+    fields = {
+        "linking_context": """\
+`CcLinkingContext`. A linking context that contain object files, linker flags,
+and additional linker inputs for Swift code that was compiled as an overlay for
+a C/Objective-C target.
+""",
+    },
+)
+
 SwiftPackageConfigurationInfo = provider(
     doc = """\
 Describes a compiler configuration that is applied by default to targets in a
