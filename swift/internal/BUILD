@@ -62,6 +62,16 @@ bzl_library(
 )
 
 bzl_library(
+    name = "binary_attrs",
+    srcs = ["binary_attrs.bzl"],
+    deps = [
+        ":attrs",
+        "//swift:swift_clang_module_aspect",
+        "@bazel_skylib//lib:dicts",
+    ],
+)
+
+bzl_library(
     name = "build_settings",
     srcs = ["build_settings.bzl"],
     deps = ["@bazel_skylib//rules:common_settings"],
@@ -124,11 +134,9 @@ bzl_library(
     name = "linking",
     srcs = ["linking.bzl"],
     deps = [
-        ":attrs",
         ":debugging",
         ":features",
-        "//swift:swift_clang_module_aspect",
-        "@bazel_skylib//lib:dicts",
+        "//swift:providers",
     ],
 )
 

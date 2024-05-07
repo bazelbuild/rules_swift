@@ -16,12 +16,15 @@
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(
+    "@build_bazel_rules_swift//swift/internal:binary_attrs.bzl",
+    "binary_rule_attrs",
+)
+load(
     "@build_bazel_rules_swift//swift/internal:compiling.bzl",
     "compile",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:linking.bzl",
-    "binary_rule_attrs",
     "configure_features_for_binary",
     "malloc_linking_context",
     "register_link_binary_action",

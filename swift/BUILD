@@ -32,6 +32,7 @@ bzl_library(
     deps = [
         ":module_name",
         ":providers",
+        "//swift/internal:binary_attrs",
         "//swift/internal:compiling",
         "//swift/internal:linking",
         "//swift/internal:output_groups",
@@ -48,11 +49,13 @@ bzl_library(
     deps = [
         ":module_name",
         ":providers",
-        "//swift/internal:attrs",
         "//swift/internal:compiling",
         "//swift/internal:feature_names",
         "//swift/internal:features",
+        "//swift/internal:linking",
         "//swift/internal:module_maps",
+        "//swift/internal:output_groups",
+        "//swift/internal:providers",
         "//swift/internal:swift_interop_info",
         "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
@@ -79,6 +82,7 @@ bzl_library(
     deps = [
         ":module_name",
         ":providers",
+        "//swift/internal:binary_attrs",
         "//swift/internal:compiling",
         "//swift/internal:linking",
         "//swift/internal:output_groups",
@@ -188,6 +192,19 @@ bzl_library(
 )
 
 bzl_library(
+    name = "swift_overlay",
+    srcs = ["swift_overlay.bzl"],
+    deps = [
+        ":providers",
+        ":swift_clang_module_aspect",
+        "//swift/internal:attrs",
+        "//swift/internal:feature_names",
+        "//swift/internal:providers",
+        "//swift/internal:utils",
+    ],
+)
+
+bzl_library(
     name = "swift_package_configuration",
     srcs = ["swift_package_configuration.bzl"],
     deps = [
@@ -220,6 +237,7 @@ bzl_library(
     deps = [
         ":module_name",
         ":providers",
+        "//swift/internal:binary_attrs",
         "//swift/internal:compiling",
         "//swift/internal:linking",
         "//swift/internal:output_groups",

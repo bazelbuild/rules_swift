@@ -18,19 +18,23 @@ visibility([
     "@build_bazel_rules_swift//swift/...",
 ])
 
-def supplemental_compilation_output_groups(*supplemental_outputs):
+def supplemental_compilation_output_groups(
+        *supplemental_outputs,
+        additional_indexstore_files = []):
     """Computes output groups from supplemental compilation outputs.
 
     Args:
         *supplemental_outputs: Zero or more supplemental outputs `struct`s
             returned from calls to `swift_common.compile`.
+        additional_indexstore_files: An optional `list` of additional indexstore
+            artifacts to be included in the `indexstore` output group.
 
     Returns:
         A dictionary whose keys are output group names and whose values are
         depsets of `File`s, which is suitable to be `**kwargs`-expanded into an
         `OutputGroupInfo` provider.
     """
-    indexstore_files = []
+    indexstore_files = list(additional_indexstore_files)
     macro_expansions_files = []
     const_values_files = []
 
