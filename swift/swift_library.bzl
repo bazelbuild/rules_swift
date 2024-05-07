@@ -59,7 +59,7 @@ load(
     "include_developer_search_paths",
 )
 load(":module_name.bzl", "derive_swift_module_name")
-load(":providers.bzl", "SwiftInfo")
+load(":providers.bzl", "SwiftInfo", "SwiftOverlayInfo")
 load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 
 def _maybe_parse_as_library_copts(srcs):
@@ -225,6 +225,10 @@ def _swift_library_impl(ctx):
                 dep[CcInfo].linking_context
                 for dep in deps + private_deps
                 if CcInfo in dep
+            ] + [
+                dep[SwiftOverlayInfo].linking_context
+                for dep in deps + private_deps
+                if SwiftOverlayInfo in dep
             ],
             module_context = module_context,
             swift_toolchain = swift_toolchain,

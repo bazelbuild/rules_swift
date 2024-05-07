@@ -28,6 +28,7 @@ On this page:
   * [swift_module_alias](#swift_module_alias)
   * [swift_module_mapping](#swift_module_mapping)
   * [swift_module_mapping_test](#swift_module_mapping_test)
+  * [swift_overlay](#swift_overlay)
   * [swift_package_configuration](#swift_package_configuration)
   * [swift_test](#swift_test)
   * [swift_proto_library](#swift_proto_library)
@@ -639,6 +640,101 @@ remaining modules collected are not present in the `aliases` of the
 | <a id="swift_module_mapping_test-deps"></a>deps |  A list of Swift targets whose transitive closure will be validated against the `swift_module_mapping` target specified by `mapping`.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | required |  |
 | <a id="swift_module_mapping_test-exclude"></a>exclude |  A list of module names that may be in the transitive closure of `deps` but are not required to be covered by `mapping`.   | List of strings | optional |  `[]`  |
 | <a id="swift_module_mapping_test-mapping"></a>mapping |  The label of a `swift_module_mapping` target against which the transitive closure of `deps` will be validated.   | <a href="https://bazel.build/concepts/labels">Label</a> | required |  |
+
+
+<a id="swift_overlay"></a>
+
+## swift_overlay
+
+<pre>
+swift_overlay(<a href="#swift_overlay-name">name</a>, <a href="#swift_overlay-deps">deps</a>, <a href="#swift_overlay-srcs">srcs</a>, <a href="#swift_overlay-always_include_developer_search_paths">always_include_developer_search_paths</a>, <a href="#swift_overlay-alwayslink">alwayslink</a>, <a href="#swift_overlay-copts">copts</a>, <a href="#swift_overlay-defines">defines</a>,
+              <a href="#swift_overlay-library_evolution">library_evolution</a>, <a href="#swift_overlay-linkopts">linkopts</a>, <a href="#swift_overlay-linkstatic">linkstatic</a>, <a href="#swift_overlay-package_name">package_name</a>, <a href="#swift_overlay-plugins">plugins</a>, <a href="#swift_overlay-private_deps">private_deps</a>,
+              <a href="#swift_overlay-swiftc_inputs">swiftc_inputs</a>)
+</pre>
+
+A Swift overlay that sits on top of a C/Objective-C library, allowing an author
+of a C/Objective-C library to create additional Swift-specific APIs that are
+automatically available when a Swift target depends on their C/Objective-C
+library.
+
+The Swift overlay will only be compiled when other Swift targets depend on the
+original library that uses the overlay; non-Swift clients depending on the
+original library will not cause the Swift overlay code to be built or linked.
+This is done to retain optimium build performance and binary size for non-Swift
+clients. For this reason, `swift_overlay` is **not** a general purpose mechanism
+for creating mixed-language modules; `swift_overlay` does not support generation
+of an Objective-C header.
+
+The `swift_overlay` rule does not perform any compilation of its own. Instead,
+it must be placed in the `aspect_hints` attribute of another rule such as
+`objc_library` or `cc_library`. For example,
+
+```build
+objc_library(
+    name = "MyModule",
+    srcs = ["MyModule.m"],
+    hdrs = ["MyModule.h"],
+    aspect_hints = [":MyModule_overlay"],
+    deps = [...],
+)
+
+swift_overlay(
+    name = "MyModule_overlay",
+    srcs = ["MyModule.swift"],
+    deps = [...],
+)
+```
+
+When some other Swift target, such as a `swift_library`, depends on `MyModule`,
+the Swift code in `MyModule_overlay` will be compiled into the same module.
+Therefore, when that library imports `MyModule`, it will see the APIs from the
+`objc_library` and the `swift_overlay` as a single combined module.
+
+When writing a Swift overlay, the Swift code must do a re-exporting import of
+its own module in order to access the C/Objective-C APIs; they are not available
+automatically. Continuing the example above, any Swift sources that want to use
+or extend the API from the C/Objective-C side of the module would need to write
+the following:
+
+```swift
+@_exported import MyModule
+```
+
+The `swift_overlay` rule supports all the same attributes as `swift_library`,
+except for the following:
+
+*   `module_name` is not supported because the overlay inherits the same module
+    name as the target it is attached to.
+*   `generates_header` and `generated_header_name` are not supported because it
+    is assumed that the overlay is pure Swift code that does not export any APIs
+    that would be of interest to C/Objective-C clients.
+
+Aside from its module name and its underlying C/Objective-C module dependency,
+`swift_overlay` does not inherit anything else from its associated target. If
+the `swift_overlay` imports any modules other than its C/Objective-C side, the
+overlay target must explicitly depend on them as well. This means that an
+overlay can have a different set of dependencies than the underlying module, if
+desired.
+
+**ATTRIBUTES**
+
+
+| Name  | Description | Type | Mandatory | Default |
+| :------------- | :------------- | :------------- | :------------- | :------------- |
+| <a id="swift_overlay-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
+| <a id="swift_overlay-deps"></a>deps |  A list of targets that are dependencies of the target being built, which will be linked into that target.<br><br>If the Swift toolchain supports implementation-only imports (`private_deps` on `swift_library`), then targets in `deps` are treated as regular (non-implementation-only) imports that are propagated both to their direct and indirect (transitive) dependents.<br><br>Allowed kinds of dependencies are:<br><br>*   `swift_library` (or anything propagating `SwiftInfo`)<br><br>*   `cc_library` (or anything propagating `CcInfo`)<br><br>Additionally, on platforms that support Objective-C interop, `objc_library` targets (or anything propagating the `apple_common.Objc` provider) are allowed as dependencies. On platforms that do not support Objective-C interop (such as Linux), those dependencies will be **ignored.**   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
+| <a id="swift_overlay-srcs"></a>srcs |  A list of `.swift` source files that will be compiled into the library.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | required |  |
+| <a id="swift_overlay-always_include_developer_search_paths"></a>always_include_developer_search_paths |  If `True`, the developer framework search paths will be added to the compilation command. This enables a Swift module to access `XCTest` without having to mark the target as `testonly = True`.   | Boolean | optional |  `False`  |
+| <a id="swift_overlay-alwayslink"></a>alwayslink |  If true, any binary that depends (directly or indirectly) on this Swift module will link in all the object files for the files listed in `srcs`, even if some contain no symbols referenced by the binary. This is useful if your code isn't explicitly called by code in the binary; for example, if you rely on runtime checks for protocol conformances added in extensions in the library but do not directly reference any other symbols in the object file that adds that conformance.   | Boolean | optional |  `False`  |
+| <a id="swift_overlay-copts"></a>copts |  Additional compiler options that should be passed to `swiftc`. These strings are subject to `$(location ...)` and ["Make" variable](https://docs.bazel.build/versions/master/be/make-variables.html) expansion.   | List of strings | optional |  `[]`  |
+| <a id="swift_overlay-defines"></a>defines |  A list of defines to add to the compilation command line.<br><br>Note that unlike C-family languages, Swift defines do not have values; they are simply identifiers that are either defined or undefined. So strings in this list should be simple identifiers, **not** `name=value` pairs.<br><br>Each string is prepended with `-D` and added to the command line. Unlike `copts`, these flags are added for the target and every target that depends on it, so use this attribute with caution. It is preferred that you add defines directly to `copts`, only using this feature in the rare case that a library needs to propagate a symbol up to those that depend on it.   | List of strings | optional |  `[]`  |
+| <a id="swift_overlay-library_evolution"></a>library_evolution |  Indicates whether the Swift code should be compiled with library evolution mode enabled.<br><br>This attribute should be used to compile a module that will be distributed as part of a client-facing (non-implementation-only) module in a library or framework that will be distributed for use outside of the Bazel build graph. Setting this to true will compile the module with the `-library-evolution` flag and emit a `.swiftinterface` file as one of the compilation outputs.   | Boolean | optional |  `False`  |
+| <a id="swift_overlay-linkopts"></a>linkopts |  Additional linker options that should be passed to the linker for the binary that depends on this target. These strings are subject to `$(location ...)` and ["Make" variable](https://docs.bazel.build/versions/master/be/make-variables.html) expansion.   | List of strings | optional |  `[]`  |
+| <a id="swift_overlay-linkstatic"></a>linkstatic |  If True, the Swift module will be built for static linking.  This will make all interfaces internal to the module that is being linked against and will inform the consuming module that the objects will be locally available (which may potentially avoid a PLT relocation).  Set to `False` to build a `.so` or `.dll`.   | Boolean | optional |  `True`  |
+| <a id="swift_overlay-package_name"></a>package_name |  The semantic package of the Swift target being built. Targets with the same package_name can access APIs using the 'package' access control modifier in Swift 5.9+.   | String | optional |  `""`  |
+| <a id="swift_overlay-plugins"></a>plugins |  A list of `swift_compiler_plugin` targets that should be loaded by the compiler when compiling this module and any modules that directly depend on it.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
+| <a id="swift_overlay-private_deps"></a>private_deps |  A list of targets that are implementation-only dependencies of the target being built. Libraries/linker flags from these dependencies will be propagated to dependent for linking, but artifacts/flags required for compilation (such as .swiftmodule files, C headers, and search paths) will not be propagated.<br><br>Allowed kinds of dependencies are:<br><br>*   `swift_library` (or anything propagating `SwiftInfo`)<br><br>*   `cc_library` (or anything propagating `CcInfo`)<br><br>Additionally, on platforms that support Objective-C interop, `objc_library` targets (or anything propagating the `apple_common.Objc` provider) are allowed as dependencies. On platforms that do not support Objective-C interop (such as Linux), those dependencies will be **ignored.**   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
+| <a id="swift_overlay-swiftc_inputs"></a>swiftc_inputs |  Additional files that are referenced using `$(location ...)` in attributes that support location expansion.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 
 
 <a id="swift_package_configuration"></a>

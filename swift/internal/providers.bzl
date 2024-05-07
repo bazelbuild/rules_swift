@@ -57,3 +57,58 @@ compiling it and/or any modules that depend on it.
 """,
     },
 )
+
+SwiftOverlayCompileInfo = provider(
+    doc = """\
+Propagated by the `swift_overlay` rule to represent information needed to
+compile a Swift overlay with its paired C/Objective-C module.
+""",
+    fields = {
+        "label": "The label of the `swift_overlay` target.",
+        "srcs": "The source files to compile in the overlay.",
+        "additional_inputs": "Additional inputs to the compiler.",
+        "copts": """\
+List of strings. Swift compiler flags to pass when compiling the overlay.
+""",
+        "defines": """\
+List of strings. Compiler conditions to set when compiling the overlay.
+""",
+        "disabled_features": """\
+List of strings. Features that should be disabled when compiling the overlay.
+""",
+        "enabled_features": """\
+List of strings. Features that should be enabled when compiling the overlay.
+""",
+        "include_dev_srch_paths": """\
+Bool. Whether to add the developer framework search paths when compiling the
+overlay.
+""",
+        "library_evolution": """\
+Bool. Whether to compile the overlay with library evolution enabled.
+""",
+        "linkopts": """\
+List of strings. Linker flags to propagate when the overlay is used as a
+dependency.
+""",
+        "plugins": """\
+A list of `SwiftCompilerPluginInfo` providers of the overlay's plug-ins.
+""",
+        "private_deps": """\
+A `struct` containing the following fields:
+
+*   `cc_infos`: A list of `CcInfo` providers from the overlay's `private_deps`.
+*   `swift_infos`: A list of `SwiftInfo` providers from the overlay's
+    `private_deps`.
+""",
+        "alwayslink": """\
+Bool. Whether the overlay should always be included in the final binary's
+linkage.
+""",
+        "deps": """\
+A `struct` containing the following fields:
+
+*   `cc_infos`: A list of `CcInfo` providers from the overlay's `deps`.
+*   `swift_infos`: A list of `SwiftInfo` providers from the overlay's `deps`.
+""",
+    },
+)

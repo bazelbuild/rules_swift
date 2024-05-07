@@ -29,6 +29,7 @@ _DOC_SRCS = {
         "swift_module_alias",
         "swift_module_mapping",
         "swift_module_mapping_test",
+        "swift_overlay",
         "swift_package_configuration",
         "swift_test",
         "swift_proto_library",

@@ -98,6 +98,7 @@ load(
     "//swift:swift_module_mapping_test.bzl",
     _swift_module_mapping_test = "swift_module_mapping_test",
 )
+load("//swift:swift_overlay.bzl", _swift_overlay = "swift_overlay")
 load(
     "//swift:swift_package_configuration.bzl",
     _swift_package_configuration = "swift_package_configuration",
@@ -133,5 +134,6 @@ mixed_language_library = _mixed_language_library
 swift_module_alias = _swift_module_alias
 swift_module_mapping = _swift_module_mapping
 swift_module_mapping_test = _swift_module_mapping_test
+swift_overlay = _swift_overlay
 swift_package_configuration = _swift_package_configuration
 swift_test = _swift_test
