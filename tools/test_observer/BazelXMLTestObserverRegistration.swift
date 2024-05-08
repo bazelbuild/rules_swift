@@ -19,6 +19,7 @@
   /// The principal class in an XCTest bundle on Darwin-based platforms, which registers the
   /// XML-generating observer with the XCTest observation center when the bundle is loaded.
   @objc(BazelXMLTestObserverRegistration)
+  @MainActor
   public final class BazelXMLTestObserverRegistration: NSObject {
     @objc public override init() {
       super.init()
