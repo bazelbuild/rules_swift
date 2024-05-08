@@ -29,6 +29,7 @@ public final class BazelXMLTestObserver: NSObject {
   ///
   /// If the `XML_OUTPUT_FILE` environment variable is not set or the file at that path could not be
   /// created and opened for writing, the value of this property will be nil.
+  @MainActor
   public static let `default`: BazelXMLTestObserver? = {
     guard
       let outputPath = ProcessInfo.processInfo.environment["XML_OUTPUT_FILE"],
