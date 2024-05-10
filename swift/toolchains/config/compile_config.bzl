@@ -900,7 +900,10 @@ def compile_action_configs(
                     SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 ],
                 configurators = [
-                    lambda _, args: args.add_all(additional_swiftc_copts),
+                    lambda _, args: args.add_all(
+                        additional_swiftc_copts,
+                        map_each = _fail_if_flag_is_banned,
+                    ),
                 ],
             ),
         )
@@ -1519,7 +1522,10 @@ def _source_files_configurator(prerequisites, args):
 
 def _user_compile_flags_configurator(prerequisites, args):
     """Adds user compile flags to the command line."""
-    args.add_all(prerequisites.user_compile_flags)
+    args.add_all(
+        prerequisites.user_compile_flags,
+        map_each = _fail_if_flag_is_banned,
+    )
 
 def _make_wmo_thread_count_configurator(should_check_flags):
     """Adds thread count flags for WMO compiles to the command line.
@@ -1641,3 +1647,27 @@ def _additional_inputs_configurator(prerequisites, _args):
     return ConfigResultInfo(
         inputs = prerequisites.additional_inputs,
     )
+
+# Swift compiler flags that should be banned (in either `copts` on a target or
+# by passing `--swiftcopt` on the command line) should be listed here.
+_BANNED_SWIFTCOPTS = {
+}
+
+def _fail_if_flag_is_banned(copt):
+    """Fails the build if the given compiler flag matches a banned flag.
+
+    This is meant to be used as a `map_each` argument to `args.add_all`,
+    delaying the check until the action is actually executed and allowing it to
+    happen during the building of the command line (when the flags are already
+    being iterated), instead of doing a less-efficient separate traversal of the
+    list earlier at analysis time.
+
+    Args:
+        copt: The flag to check.
+
+    Returns:
+        The original flag, if the function didn't fail.
+    """
+    if copt in _BANNED_SWIFTCOPTS:
+        fail("The Swift compiler flag '{}' may not be used.".format(copt))
+    return copt
