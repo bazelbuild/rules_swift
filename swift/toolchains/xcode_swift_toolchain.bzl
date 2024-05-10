@@ -92,6 +92,10 @@ load(
     "compile_module_interface_action_configs",
 )
 load(
+    "@build_bazel_rules_swift//swift/toolchains/config:default_warnings_as_errors.bzl",
+    "default_warnings_as_errors_features",
+)
+load(
     "@build_bazel_rules_swift//swift/toolchains/config:symbol_graph_config.bzl",
     "symbol_graph_action_configs",
 )
@@ -644,6 +648,7 @@ def _xcode_swift_toolchain_impl(ctx):
         ctx = ctx,
         target_triple = target_triple,
     ))
+    requested_features.extend(default_warnings_as_errors_features())
 
     if _is_xcode_at_least_version(xcode_config, "14.3"):
         requested_features.append(SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES)

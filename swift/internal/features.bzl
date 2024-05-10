@@ -285,6 +285,24 @@ def upcoming_and_experimental_features(feature_configuration):
 
     return (upcoming, experimental)
 
+def warnings_as_errors_from_features(feature_configuration):
+    """Extracts the diagnostic IDs to treat as errors in post-processing.
+
+    Args:
+        feature_configuration: The Swift feature configuration.
+
+    Returns:
+        The `list` of diagnostic IDs to treat as errors.
+    """
+    prefix = "swift.werror."
+    warnings_as_errors = []
+
+    for feature in feature_configuration._enabled_features:
+        if feature.startswith(prefix):
+            warnings_as_errors.append(feature[len(prefix):])
+
+    return warnings_as_errors
+
 def _check_allowlists(
         *,
         allowlists,

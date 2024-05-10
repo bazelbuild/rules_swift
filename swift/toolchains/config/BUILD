@@ -47,6 +47,11 @@ bzl_library(
 )
 
 bzl_library(
+    name = "default_warnings_as_errors",
+    srcs = ["default_warnings_as_errors.bzl"],
+)
+
+bzl_library(
     name = "modulewrap_config",
     srcs = ["modulewrap_config.bzl"],
     deps = [

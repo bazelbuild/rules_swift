@@ -856,6 +856,15 @@ def compile_action_configs(
                 SWIFT_FEATURE__SUPPORTS_V6,
             ],
         ),
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_COMPILE,
+            ],
+            configurators = [
+                add_arg("-debug-diagnostic-names"),
+                _warnings_as_errors_configurator,
+            ],
+        ),
     ]
 
     # NOTE: The positions of these action configs in the list are important,
@@ -1635,6 +1644,13 @@ def _upcoming_and_experimental_features_configurator(prerequisites, args):
     args.add_all(
         prerequisites.experimental_features,
         before_each = "-enable-experimental-feature",
+    )
+
+def _warnings_as_errors_configurator(prerequisites, args):
+    """Adds upcoming and experimental features to the command line."""
+    args.add_all(
+        prerequisites.warnings_as_errors,
+        format_each = "-Xwrapped-swift=-warning-as-error=%s",
     )
 
 def _additional_inputs_configurator(prerequisites, _args):

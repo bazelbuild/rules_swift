@@ -55,6 +55,7 @@ load(
     "get_cc_feature_configuration",
     "is_feature_enabled",
     "upcoming_and_experimental_features",
+    "warnings_as_errors_from_features",
 )
 load(":module_maps.bzl", "write_module_map")
 load(":toolchain_utils.bzl", "SWIFT_TOOLCHAIN_TYPE")
@@ -477,6 +478,9 @@ def compile(
     upcoming_features, experimental_features = upcoming_and_experimental_features(
         feature_configuration = feature_configuration,
     )
+    warnings_as_errors = warnings_as_errors_from_features(
+        feature_configuration = feature_configuration,
+    )
     prerequisites = struct(
         additional_inputs = additional_inputs,
         always_include_headers = is_feature_enabled(
@@ -501,6 +505,7 @@ def compile(
         transitive_swiftmodules = transitive_swiftmodules,
         upcoming_features = upcoming_features,
         user_compile_flags = copts,
+        warnings_as_errors = warnings_as_errors,
         # Merge the compile outputs into the prerequisites.
         **struct_fields(compile_outputs)
     )

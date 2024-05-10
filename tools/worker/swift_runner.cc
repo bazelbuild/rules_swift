@@ -20,7 +20,9 @@
 #include <fstream>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <ostream>
+#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -38,6 +40,7 @@
 #include "tools/common/path_utils.h"
 #include "tools/common/process.h"
 #include "tools/common/temp_file.h"
+#include "re2/re2.h"
 
 namespace bazel_rules_swift {
 
@@ -206,9 +209,13 @@ int SwiftRunner::Run(std::ostream &stderr_stream, bool stdout_to_stderr) {
     }
   }
 
-  // Spawn the originally requested job with its full argument list.
-  exit_code =
-      SpawnJob(tool_args_, args_, &job_env_, stderr_stream, stdout_to_stderr);
+  // Spawn the originally requested job with its full argument list. Capture
+  // stderr in a string stream, which we post-process to upgrade warnings to
+  // errors if requested.
+  std::ostringstream captured_stderr_stream;
+  exit_code = SpawnJob(tool_args_, args_, &job_env_, captured_stderr_stream,
+                       stdout_to_stderr);
+  ProcessDiagnostics(captured_stderr_stream.str(), stderr_stream, exit_code);
   if (exit_code != 0) {
     return exit_code;
   }
@@ -344,6 +351,11 @@ bool SwiftRunner::ProcessArgument(
       return true;
     }
 
+    if (absl::ConsumePrefix(&trimmed_arg, "-warning-as-error=")) {
+      warnings_as_errors_.insert(std::string(trimmed_arg));
+      return true;
+    }
+
     // TODO(allevato): Report that an unknown wrapper arg was found and give
     // the caller a way to exit gracefully.
     return true;
@@ -475,6 +487,67 @@ int SwiftRunner::PerformLayeringCheck(std::ostream &stderr_stream,
   }
 
   return 0;
+}
+
+void SwiftRunner::ProcessDiagnostics(absl::string_view stderr_output,
+                                     std::ostream &stderr_stream,
+                                     int &exit_code) const {
+  if (stderr_output.empty()) {
+    // Nothing to do if there was no output.
+    return;
+  }
+
+  // Match the "warning: " prefix on a message, also capturing the preceding
+  // ANSI color sequence if present.
+  RE2 warning_pattern("((\\x1b\\[(?:\\d+)(?:;\\d+)*m)?warning:\\s)");
+  // When `-debug-diagnostic-names` is enabled, names are printed as identifiers
+  // in square brackets, either at the end of the string or followed by a
+  // semicolon (for wrapped diagnostics). Nothing guarantees this for the
+  // wrapped case -- it is just observed convention -- but it is sufficient
+  // while the compiler doesn't give us a more proper way to detect these.
+  RE2 diagnostic_name_pattern("\\[([_A-Za-z][_A-Za-z0-9]*)\\](;|$)");
+
+  for (absl::string_view line : absl::StrSplit(stderr_output, '\n')) {
+    std::unique_ptr<std::string> modified_line;
+
+    absl::string_view warning_label;
+    std::optional<absl::string_view> ansi_sequence;
+    if (RE2::PartialMatch(line, warning_pattern, &warning_label,
+                          &ansi_sequence)) {
+      absl::string_view diagnostic_name;
+      absl::string_view line_cursor = line;
+
+      // Search the diagnostic line for all possible diagnostic names surrounded
+      // by square brackets.
+      while (RE2::FindAndConsume(&line_cursor, diagnostic_name_pattern,
+                                 &diagnostic_name)) {
+        if (warnings_as_errors_.contains(diagnostic_name)) {
+          modified_line = std::make_unique<std::string>(line);
+          std::ostringstream error_label;
+          if (ansi_sequence.has_value()) {
+            error_label << Color(Color::kBoldRed);
+          }
+          error_label << "error (upgraded from warning): ";
+          modified_line->replace(warning_label.data() - line.data(),
+                                 warning_label.length(), error_label.str());
+          if (exit_code == 0) {
+            exit_code = 1;
+          }
+
+          // In the event that there are multiple diagnostics on the same line
+          // (this is the case, for example, with "this is an error in Swift 6"
+          // messages), we can stop after we find the first match; the whole
+          // line will become an error.
+          break;
+        }
+      }
+    }
+    if (modified_line) {
+      stderr_stream << *modified_line << std::endl;
+    } else {
+      stderr_stream << line << std::endl;
+    }
+  }
 }
 
 }  // namespace bazel_rules_swift
