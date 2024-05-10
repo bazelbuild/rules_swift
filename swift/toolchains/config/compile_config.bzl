@@ -1946,6 +1946,10 @@ def _fail_if_flag_is_banned(copt):
     Returns:
         The original flag, if the function didn't fail.
     """
-    if copt in _BANNED_SWIFTCOPTS:
-        fail("The Swift compiler flag '{}' may not be used.".format(copt))
+    reason = _BANNED_SWIFTCOPTS.get(copt)
+    if reason:
+        fail("The Swift compiler flag '{}' may not be used. {}".format(
+            copt,
+            reason,
+        ))
     return copt
