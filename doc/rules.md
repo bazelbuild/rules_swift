@@ -17,6 +17,7 @@ On this page:
   * [swift_binary](#swift_binary)
   * [swift_compiler_plugin](#swift_compiler_plugin)
   * [universal_swift_compiler_plugin](#universal_swift_compiler_plugin)
+  * [swift_compiler_plugin_import](#swift_compiler_plugin_import)
   * [swift_cross_import_overlay](#swift_cross_import_overlay)
   * [swift_feature_allowlist](#swift_feature_allowlist)
   * [swift_import](#swift_import)
@@ -166,6 +167,28 @@ swift_library(
 | <a id="swift_compiler_plugin-swiftc_inputs"></a>swiftc_inputs |  Additional files that are referenced using `$(location ...)` in attributes that support location expansion.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 
 
+<a id="swift_compiler_plugin_import"></a>
+
+## swift_compiler_plugin_import
+
+<pre>
+swift_compiler_plugin_import(<a href="#swift_compiler_plugin_import-name">name</a>, <a href="#swift_compiler_plugin_import-executable">executable</a>, <a href="#swift_compiler_plugin_import-module_names">module_names</a>)
+</pre>
+
+Allows for a Swift compiler plugin to be loaded from a prebuilt executable or
+some other binary-propagating rule, instead of building the plugin from source
+using `swift_compiler_plugin`.
+
+**ATTRIBUTES**
+
+
+| Name  | Description | Type | Mandatory | Default |
+| :------------- | :------------- | :------------- | :------------- | :------------- |
+| <a id="swift_compiler_plugin_import-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
+| <a id="swift_compiler_plugin_import-executable"></a>executable |  The compiler plugin executable that will be passed to the Swift compiler when compiling any modules that depend on the plugin. This attribute may refer directly to an executable binary or to another rule that produces an executable binary.   | <a href="https://bazel.build/concepts/labels">Label</a> | required |  |
+| <a id="swift_compiler_plugin_import-module_names"></a>module_names |  The list of names of Swift modules in the plugin executable that provide implementations of plugin types, which the compiler uses to look up their implementations.   | List of strings | required |  |
+
+
 <a id="swift_cross_import_overlay"></a>
 
 ## swift_cross_import_overlay
@@ -243,23 +266,26 @@ package.
 ## swift_import
 
 <pre>
-swift_import(<a href="#swift_import-name">name</a>, <a href="#swift_import-deps">deps</a>, <a href="#swift_import-data">data</a>, <a href="#swift_import-archives">archives</a>, <a href="#swift_import-module_name">module_name</a>, <a href="#swift_import-swiftdoc">swiftdoc</a>, <a href="#swift_import-swiftinterface">swiftinterface</a>, <a href="#swift_import-swiftmodule">swiftmodule</a>)
+swift_import(<a href="#swift_import-name">name</a>, <a href="#swift_import-deps">deps</a>, <a href="#swift_import-data">data</a>, <a href="#swift_import-archives">archives</a>, <a href="#swift_import-module_name">module_name</a>, <a href="#swift_import-plugins">plugins</a>, <a href="#swift_import-swiftdoc">swiftdoc</a>, <a href="#swift_import-swiftinterface">swiftinterface</a>,
+             <a href="#swift_import-swiftmodule">swiftmodule</a>)
 </pre>
 
-Allows for the use of Swift textual module interfaces or precompiled Swift modules as dependencies in other
-`swift_library` and `swift_binary` targets.
+Allows for the use of Swift textual module interfaces and/or precompiled Swift
+modules as dependencies in other `swift_library` and `swift_binary` targets.
 
-To use `swift_import` targets across Xcode versions and/or OS versions, it is required to use `.swiftinterface` files.
-These can be produced by the pre-built target if built with:
+To use `swift_import` targets across Xcode versions and/or OS versions, it is
+required to use `.swiftinterface` files. These can be produced by the pre-built
+target if built with:
 
   - `--features=swift.enable_library_evolution`
   - `--features=swift.emit_swiftinterface`
 
-If the pre-built target supports `.private.swiftinterface` files, these can be used instead of `.swiftinterface` files
-in the `swiftinterface` attribute.
+If the pre-built target supports `.private.swiftinterface` files, these can be
+used instead of `.swiftinterface` files in the `swiftinterface` attribute.
 
 To import pre-built Swift modules that use `@_spi` when using `swiftinterface`,
-the `.private.swiftinterface` files are required in order to build any code that uses the API marked with `@_spi`.
+the `.private.swiftinterface` files are required in order to build any code that
+uses the API marked with `@_spi`.
 
 **ATTRIBUTES**
 
@@ -271,6 +297,7 @@ the `.private.swiftinterface` files are required in order to build any code that
 | <a id="swift_import-data"></a>data |  The list of files needed by this target at runtime.<br><br>Files and targets named in the `data` attribute will appear in the `*.runfiles` area of this target, if it has one. This may include data files needed by a binary or library, or other programs needed by it.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 | <a id="swift_import-archives"></a>archives |  The list of `.a` or `.lo` files provided to Swift targets that depend on this target.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 | <a id="swift_import-module_name"></a>module_name |  The name of the module represented by this target.   | String | required |  |
+| <a id="swift_import-plugins"></a>plugins |  A list of `swift_compiler_plugin` targets that should be loaded by the compiler when compiling any modules that directly depend on this target.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 | <a id="swift_import-swiftdoc"></a>swiftdoc |  The `.swiftdoc` file provided to Swift targets that depend on this target.   | <a href="https://bazel.build/concepts/labels">Label</a> | optional |  `None`  |
 | <a id="swift_import-swiftinterface"></a>swiftinterface |  The `.swiftinterface` file that defines the module interface for this target. May not be specified if `swiftmodule` is specified.   | <a href="https://bazel.build/concepts/labels">Label</a> | optional |  `None`  |
 | <a id="swift_import-swiftmodule"></a>swiftmodule |  The `.swiftmodule` file provided to Swift targets that depend on this target. May not be specified if `swiftinterface` is specified.   | <a href="https://bazel.build/concepts/labels">Label</a> | optional |  `None`  |

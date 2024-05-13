@@ -18,6 +18,7 @@ _DOC_SRCS = {
         "swift_binary",
         "swift_compiler_plugin",
         "universal_swift_compiler_plugin",
+        "swift_compiler_plugin_import",
         "swift_cross_import_overlay",
         "swift_feature_allowlist",
         "swift_import",
