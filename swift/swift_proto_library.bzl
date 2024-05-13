@@ -74,6 +74,7 @@ def _swift_proto_library_impl(ctx):
                 transitive = [swift_proto_info.pbswift_files],
             ),
         ),
+        OutputGroupInfo(ide_srcs = swift_proto_info.pbswift_files),
         # Repropagate the Swift* and Cc* providers that the aspect attached to
         # the `proto_library` dependency so that the modules and link libraries
         # are passed through correctly.
