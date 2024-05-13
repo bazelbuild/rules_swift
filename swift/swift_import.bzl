@@ -29,6 +29,10 @@ load(
     "get_cc_feature_configuration",
 )
 load(
+    "@build_bazel_rules_swift//swift/internal:providers.bzl",
+    "SwiftCompilerPluginInfo",
+)
+load(
     "@build_bazel_rules_swift//swift/internal:toolchain_utils.bzl",
     "get_swift_toolchain",
     "use_swift_toolchain",
@@ -115,6 +119,11 @@ def _swift_import_impl(ctx):
                 module_map = None,
             ),
             swift = create_swift_module_inputs(
+                plugins = [
+                    plugin[SwiftCompilerPluginInfo]
+                    for plugin in ctx.attr.plugins
+                    if SwiftCompilerPluginInfo in plugin
+                ],
                 swiftdoc = swiftdoc,
                 swiftinterface = swiftinterface,
                 swiftmodule = swiftmodule,
@@ -146,13 +155,22 @@ swift_import = rule(
                 allow_empty = True,
                 allow_files = ["a", "lo"],
                 doc = """\
-The list of `.a` or `.lo` files provided to Swift targets that depend on this target.
+The list of `.a` or `.lo` files provided to Swift targets that depend on this
+target.
 """,
                 mandatory = False,
             ),
             "module_name": attr.string(
                 doc = "The name of the module represented by this target.",
                 mandatory = True,
+            ),
+            "plugins": attr.label_list(
+                cfg = "exec",
+                doc = """\
+A list of `swift_compiler_plugin` targets that should be loaded by the compiler
+when compiling any modules that directly depend on this target.
+""",
+                providers = [[SwiftCompilerPluginInfo]],
             ),
             "swiftdoc": attr.label(
                 allow_single_file = ["swiftdoc"],
@@ -180,8 +198,8 @@ The `.swiftmodule` file provided to Swift targets that depend on this target.
         },
     ),
     doc = """\
-Allows for the use of Swift textual module interfaces and/or precompiled Swift modules as dependencies in other
-`swift_library` and `swift_binary` targets.
+Allows for the use of Swift textual module interfaces and/or precompiled Swift
+modules as dependencies in other `swift_library` and `swift_binary` targets.
 """,
     fragments = ["cpp"],
     implementation = _swift_import_impl,

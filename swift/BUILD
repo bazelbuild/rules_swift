@@ -94,6 +94,14 @@ bzl_library(
 )
 
 bzl_library(
+    name = "swift_compiler_plugin_import",
+    srcs = ["swift_compiler_plugin_import.bzl"],
+    deps = [
+        "//swift/internal:providers",
+    ],
+)
+
+bzl_library(
     name = "swift_cross_import_overlay",
     srcs = ["swift_cross_import_overlay.bzl"],
     deps = [
