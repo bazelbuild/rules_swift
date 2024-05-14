@@ -24,6 +24,7 @@ load(
 )
 load(
     "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
+    "SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT",
     "SWIFT_FEATURE__SUPPORTS_MACROS",
 )
 load(
@@ -119,6 +120,15 @@ def _swift_compiler_plugin_impl(ctx):
         feature_configuration = feature_configuration,
     )
 
+    if is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT,
+    ):
+        # Making executable in a folder to avoid naming collisions
+        name = "{}/{}".format(ctx.label.name, ctx.label.name)
+    else:
+        name = ctx.label.name
+
     binary_linking_outputs = register_link_binary_action(
         actions = ctx.actions,
         additional_inputs = ctx.files.swiftc_inputs,
@@ -126,7 +136,7 @@ def _swift_compiler_plugin_impl(ctx):
         cc_feature_configuration = cc_feature_configuration,
         compilation_outputs = cc_compilation_outputs,
         deps = deps,
-        name = ctx.label.name,
+        name = name,
         output_type = "executable",
         stamp = ctx.attr.stamp,
         owner = ctx.label,
