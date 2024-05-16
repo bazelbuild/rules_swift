@@ -1378,10 +1378,6 @@ def _emit_private_module_interface_path_configurator(prerequisites, args):
     """Adds the `.private.swiftinterface` output path to the command line."""
     args.add("-emit-private-module-interface-path", prerequisites.private_swiftinterface_file)
 
-def _emit_const_values_path_configurator(prerequisites, args):
-    """Adds the `.swiftconst` output path to the command line."""
-    args.add("-emit-const-values-path", prerequisites.swiftconst_values)
-
 def _emit_objc_header_path_configurator(prerequisites, args):
     """Adds the generated header output path to the command line."""
     if prerequisites.generated_header_file:
@@ -2422,7 +2418,6 @@ def compile(
         const_gather_protocols_file = swift_toolchain.const_gather_protocols
     else:
         const_gather_protocols_file = []
-
 
     compile_outputs, other_outputs = _declare_compile_outputs(
         srcs = srcs,
