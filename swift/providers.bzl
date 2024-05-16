@@ -241,6 +241,14 @@ that use the toolchain.
         "action_configs": """\
 This field is an internal implementation detail of the build rules.
 """,
+        "builtin_headers": """\
+A `depset` of `File`s containing the compiler's built-in headers, if customized,
+otherwise None.
+""",
+        "builtin_headers_path": """\
+The path to the location of the compiler's built-in headers, if customized,
+otherwise None.
+""",
         "cc_language": """\
 The `language` that should be passed to `cc_common` APIs that take it as an
 argument.
