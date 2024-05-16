@@ -2415,12 +2415,6 @@ def compile(
         feature_name = SWIFT_FEATURE_EMIT_SWIFTSOURCEINFO,
     )
 
-    const_gather_protocols_file = _maybe_create_const_protocols_file(
-        actions = actions,
-        swift_infos = generated_module_deps_swift_infos,
-        target_name = target_name,
-    )
-
     if is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE__SUPPORTS_CONST_VALUE_EXTRACTION,
