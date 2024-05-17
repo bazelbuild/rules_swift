@@ -303,7 +303,7 @@ Extracts the symbol graph from a Swift module.
 ## swift_common.get_toolchain
 
 <pre>
-swift_common.get_toolchain(<a href="#swift_common.get_toolchain-ctx">ctx</a>, <a href="#swift_common.get_toolchain-exec_group">exec_group</a>, <a href="#swift_common.get_toolchain-attr">attr</a>)
+swift_common.get_toolchain(<a href="#swift_common.get_toolchain-ctx">ctx</a>, <a href="#swift_common.get_toolchain-exec_group">exec_group</a>, <a href="#swift_common.get_toolchain-mandatory">mandatory</a>, <a href="#swift_common.get_toolchain-attr">attr</a>)
 </pre>
 
 Gets the Swift toolchain associated with the rule or aspect.
@@ -315,11 +315,13 @@ Gets the Swift toolchain associated with the rule or aspect.
 | :------------- | :------------- | :------------- |
 | <a id="swift_common.get_toolchain-ctx"></a>ctx |  The rule or aspect context.   |  none |
 | <a id="swift_common.get_toolchain-exec_group"></a>exec_group |  The name of the execution group that should contain the toolchain. If this is provided and the toolchain is not declared in that execution group, it will be looked up from `ctx` as a fallback instead. If this argument is `None` (the default), then the toolchain will only be looked up from `ctx.`   |  `None` |
+| <a id="swift_common.get_toolchain-mandatory"></a>mandatory |  If `False`, this function will return `None` instead of failing if no toolchain is found. Defaults to `True`.   |  `True` |
 | <a id="swift_common.get_toolchain-attr"></a>attr |  The name of the attribute on the calling rule or aspect that should be used to retrieve the toolchain if it is not provided by the `toolchains` argument of the rule/aspect. Note that this is only supported for legacy/migration purposes and will be removed once migration to toolchains is complete.   |  `"_toolchain"` |
 
 **RETURNS**
 
-A `SwiftToolchainInfo` provider.
+A `SwiftToolchainInfo` provider, or `None` if the toolchain was not
+  found and not required.
 
 
 <a id="swift_common.is_enabled"></a>
@@ -434,7 +436,7 @@ A new attribute dictionary that can be added to the attributes of a
 ## swift_common.use_toolchain
 
 <pre>
-swift_common.use_toolchain()
+swift_common.use_toolchain(<a href="#swift_common.use_toolchain-mandatory">mandatory</a>)
 </pre>
 
 Returns a list of toolchain types needed to use the Swift toolchain.
@@ -448,10 +450,17 @@ toolchains = use_swift_toolchain() + [other toolchains...]
 ```
 
 
+**PARAMETERS**
+
+
+| Name  | Description | Default Value |
+| :------------- | :------------- | :------------- |
+| <a id="swift_common.use_toolchain-mandatory"></a>mandatory |  Whether or not it should be an error if the toolchain cannot be resolved. Defaults to True.   |  `True` |
 
 **RETURNS**
 
-A list of toolchain types that should be passed to `rule()`, `aspect()`,
-  or `exec_group`.
+A list of
+  [toolchain types](https://bazel.build/rules/lib/builtins/toolchain_type.html)
+  that should be passed to `rule()`, `aspect()`, or `exec_group()`.
 
 
