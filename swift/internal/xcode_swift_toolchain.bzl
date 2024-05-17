@@ -51,6 +51,7 @@ load(
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
     "SWIFT_FEATURE_USE_RESPONSE_FILES",
     "SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE",
+    "SWIFT_FEATURE__SUPPORTS_CONST_VALUE_EXTRACTION",
     "SWIFT_FEATURE__SUPPORTS_MACROS",
 )
 load(":features.bzl", "features_for_build_modes")
@@ -637,6 +638,7 @@ def _xcode_swift_toolchain_impl(ctx):
 
     if _is_xcode_at_least_version(xcode_config, "15.0"):
         requested_features.append(SWIFT_FEATURE__SUPPORTS_MACROS)
+        requested_features.append(SWIFT_FEATURE__SUPPORTS_CONST_VALUE_EXTRACTION)
 
     env = _xcode_env(target_triple = target_triple, xcode_config = xcode_config)
     execution_requirements = xcode_config.execution_info()
@@ -715,6 +717,7 @@ def _xcode_swift_toolchain_impl(ctx):
             ],
             requested_features = requested_features,
             swift_worker = ctx.attr._worker[DefaultInfo].files_to_run,
+            const_protocols_to_gather = ctx.file.const_protocols_to_gather,
             test_configuration = struct(
                 env = env,
                 execution_requirements = execution_requirements,
@@ -793,6 +796,14 @@ A list of `swift_package_configuration` targets that specify additional compiler
 configuration options that are applied to targets on a per-package basis.
 """,
                 providers = [[SwiftPackageConfigurationInfo]],
+            ),
+            "const_protocols_to_gather": attr.label(
+                default = Label("@build_bazel_rules_swift//swift/toolchains/config:const_protocols_to_gather.json"),
+                allow_single_file = True,
+                doc = """\
+The label of the file specifying a list of protocols for extraction of conformances'
+const values.
+""",
             ),
             "_cc_toolchain": attr.label(
                 default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
