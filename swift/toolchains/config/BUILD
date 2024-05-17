@@ -7,7 +7,7 @@ package(
     ],
 )
 
-exports_files(["const_extract_protocols.json"])
+exports_files(["const_protocols_to_gather.json"])
 
 bzl_library(
     name = "compile_module_interface_config",

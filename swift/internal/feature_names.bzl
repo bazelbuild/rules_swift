@@ -359,6 +359,6 @@ SWIFT_FEATURE_EMIT_SWIFTSOURCEINFO = "swift.emit_swiftsourceinfo"
 SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT = "swift.add_target_name_to_output"
 
 # A private feature that is set by the toolchain if it supports constant values
-# extraction. Users should never manually enable, disable, or query this
+# extraction (Swift 5.8 and above). Users should never manually enable, disable, or query this
 # feature.
 SWIFT_FEATURE__SUPPORTS_CONST_VALUE_EXTRACTION = "swift._supports_const_value_extraction"

@@ -197,7 +197,7 @@ C/Objective-C modules:
 For ease of use, this field is never `None`; it will always be a valid `struct`
 containing the fields described above, even if those lists are empty.
 """,
-        "const_gather_protocols": """\
+        "const_protocols_to_gather": """\
 `File`. A JSON file specifying a list of protocols for extraction of
 conformances' const values.
 """,
@@ -439,7 +439,7 @@ def create_swift_module(
         swiftsourceinfo = None,
         swiftinterface = None,
         private_swiftinterface = None,
-        const_gather_protocols = [],
+        const_protocols_to_gather = [],
         symbol_graph = None):
     """Creates a value representing a Swift module use as a Swift dependency.
 
@@ -464,7 +464,7 @@ def create_swift_module(
             this module. May be `None` if no source info file was emitted.
         swiftinterface: The `.swiftinterface` file emitted by the compiler for
             this module. May be `None` if no module interface file was emitted.
-        const_gather_protocols: A list of protocol names from which constant
+        const_protocols_to_gather: A list of protocol names from which constant
             values should be extracted from source code that takes this module
             as a *direct* dependency.
         symbol_graph: A `File` representing the directory that contains the
@@ -487,7 +487,7 @@ def create_swift_module(
         swiftinterface = swiftinterface,
         swiftmodule = swiftmodule,
         swiftsourceinfo = swiftsourceinfo,
-        const_gather_protocols = tuple(const_gather_protocols),
+        const_protocols_to_gather = tuple(const_protocols_to_gather),
         symbol_graph = symbol_graph,
     )
 

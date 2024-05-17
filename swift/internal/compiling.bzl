@@ -1992,19 +1992,19 @@ def _conditional_compilation_flag_configurator(prerequisites, args):
 
 def _constant_value_extraction_configurator(prerequisites, args):
     """Adds flags related to constant value extraction to the command line."""
-    if not prerequisites.const_gather_protocols_file:
+    if not prerequisites.const_protocols_to_gather_file:
         return None
 
     args.add("-emit-const-values-path", prerequisites.const_values_files[0])
     args.add_all(
         [
             "-const-gather-protocols-file",
-            prerequisites.const_gather_protocols_file,
+            prerequisites.const_protocols_to_gather_file,
         ],
         before_each = "-Xfrontend",
     )
     return swift_toolchain_config.config_result(
-        inputs = [prerequisites.const_gather_protocols_file],
+        inputs = [prerequisites.const_protocols_to_gather_file],
     )
 
 def _additional_inputs_configurator(prerequisites, _args):
@@ -2415,14 +2415,14 @@ def compile(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE__SUPPORTS_CONST_VALUE_EXTRACTION,
     ):
-        const_gather_protocols_file = swift_toolchain.const_gather_protocols
+        const_protocols_to_gather_file = swift_toolchain.const_protocols_to_gather
     else:
-        const_gather_protocols_file = []
+        const_protocols_to_gather_file = []
 
     compile_outputs, other_outputs = _declare_compile_outputs(
         srcs = srcs,
         actions = actions,
-        extract_const_values = bool(const_gather_protocols_file),
+        extract_const_values = bool(const_protocols_to_gather_file),
         feature_configuration = feature_configuration,
         generated_header_name = generated_header_name,
         generated_module_deps_swift_infos = generated_module_deps_swift_infos,
@@ -2588,7 +2588,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         additional_inputs = additional_inputs,
         bin_dir = feature_configuration._bin_dir,
         cc_compilation_context = merged_providers.cc_info.compilation_context,
-        const_gather_protocols_file = const_gather_protocols_file,
+        const_protocols_to_gather_file = const_protocols_to_gather_file,
         cc_linking_context = merged_providers.cc_info.linking_context,
         defines = sets.to_list(defines_set),
         explicit_swift_module_map_file = explicit_swift_module_map_file,
@@ -2709,7 +2709,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
             swiftinterface = compile_outputs.swiftinterface_file,
             swiftmodule = compile_outputs.swiftmodule_file,
             swiftsourceinfo = compile_outputs.swiftsourceinfo_file,
-            const_gather_protocols = compile_outputs.const_values_files,
+            const_protocols_to_gather = compile_outputs.const_values_files,
             symbol_graph = compile_outputs.symbol_graph_directory,
         ),
     )

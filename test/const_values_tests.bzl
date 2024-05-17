@@ -87,7 +87,7 @@ def const_values_test_suite(name):
         name = "{}_expected_argv".format(name),
         expected_argv = [
             "-Xfrontend -const-gather-protocols-file",
-            "-Xfrontend swift/toolchains/config/const_extract_protocols.json",
+            "-Xfrontend swift/toolchains/config/const_protocols_to_gather.json",
             "-emit-const-values-path",
             "first.swift.swiftconstvalues",
         ],
@@ -100,7 +100,7 @@ def const_values_test_suite(name):
         name = "{}_not_expected_argv".format(name),
         not_expected_argv = [
             "-Xfrontend -const-gather-protocols-file",
-            "-Xfrontend swift/toolchains/config/const_extract_protocols.json",
+            "-Xfrontend swift/toolchains/config/const_protocols_to_gather.json",
             "-emit-const-values-path",
             "first.swift.swiftconstvalues",
         ],
