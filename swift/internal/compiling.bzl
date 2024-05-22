@@ -132,6 +132,13 @@ _WMO_FLAGS = {
     "-wmo": True,
 }
 
+# Swift command line flags that enable LTO. (This
+# dictionary is used as a set for quick lookup; the values are irrelevant.)
+_LTO_FLAGS = {
+    "-lto=llvm-thin": True,
+    "-lto=llvm-full": True,
+}
+
 def compile_action_configs(
         *,
         os = None,
@@ -1909,6 +1916,20 @@ def _is_wmo_manually_requested(user_compile_flags):
             return True
     return False
 
+def _is_LTO_requested(user_compile_flags):
+    """Returns `True` if a LTO flag is in the given list of compiler flags.
+
+    Args:
+        user_compile_flags: A list of compiler flags to scan for LTO usage.
+
+    Returns:
+        True if LTO is enabled in the given list of flags.
+    """
+    for copt in user_compile_flags:
+        if copt in _LTO_FLAGS:
+            return True
+    return False
+
 def features_from_swiftcopts(swiftcopts):
     """Returns a list of features to enable based on `--swiftcopt` flags.
 
@@ -1931,6 +1952,9 @@ def features_from_swiftcopts(swiftcopts):
         features.append(SWIFT_FEATURE__WMO_IN_SWIFTCOPTS)
     if _find_num_threads_flag_value(user_compile_flags = swiftcopts) == 0:
         features.append(SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS)
+    if _is_LTO_requested(user_compile_flags = swiftcopts):
+        features.append(SWIFT_FEATURE_EMIT_BC)
+
     return features
 
 def _index_while_building_configurator(prerequisites, args):
