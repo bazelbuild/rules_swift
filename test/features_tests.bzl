@@ -60,6 +60,14 @@ use_global_index_store_index_while_building_test = make_action_command_line_test
     },
 )
 
+disable_swift_sandbox_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:features": [
+            "swift.disable_swift_sandbox",
+        ],
+    },
+)
+
 vfsoverlay_test = make_action_command_line_test_rule(
     config_settings = {
         "//command_line_option:features": [
@@ -173,6 +181,17 @@ def features_test_suite(name):
         tags = [name],
         expected_argv = [
             "-Xwrapped-swift=-global-index-store-import-path=bazel-out/_global_index_store",
+        ],
+        mnemonic = "SwiftCompile",
+        target_compatible_with = ["@platforms//os:macos"],
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+    )
+
+    disable_swift_sandbox_test(
+        name = "{}_disable_swift_sandbox_test".format(name),
+        tags = [name],
+        expected_argv = [
+            "-disable-sandbox",
         ],
         mnemonic = "SwiftCompile",
         target_compatible_with = ["@platforms//os:macos"],

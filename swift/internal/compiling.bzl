@@ -45,6 +45,7 @@ load(
     "SWIFT_FEATURE_COVERAGE_PREFIX_MAP",
     "SWIFT_FEATURE_DBG",
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
+    "SWIFT_FEATURE_DISABLE_SWIFT_SANDBOX",
     "SWIFT_FEATURE_DISABLE_SYSTEM_INDEX",
     "SWIFT_FEATURE_EMIT_BC",
     "SWIFT_FEATURE_EMIT_C_MODULE",
@@ -562,6 +563,19 @@ def compile_action_configs(
                 swift_toolchain_config.add_arg("-warnings-as-errors"),
             ],
             features = [SWIFT_FEATURE_TREAT_WARNINGS_AS_ERRORS],
+        ),
+
+        # Disable Swift sandbox.
+        swift_toolchain_config.action_config(
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVE_FILES,
+                swift_action_names.DUMP_AST,
+            ],
+            configurators = [
+                swift_toolchain_config.add_arg("-disable-sandbox"),
+            ],
+            features = [SWIFT_FEATURE_DISABLE_SWIFT_SANDBOX],
         ),
 
         # Set Developer Framework search paths
