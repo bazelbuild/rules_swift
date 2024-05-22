@@ -52,6 +52,7 @@ load(
     "SwiftPackageConfigurationInfo",
     "SwiftToolchainInfo",
 )
+load(":symbol_graph_extracting.bzl", "symbol_graph_action_configs")
 load(":toolchain_config.bzl", "swift_toolchain_config")
 load(
     ":utils.bzl",
@@ -103,10 +104,22 @@ def _all_tool_configs(
         env = env,
     )
 
+    swift_symbolgraph_extract_config = _swift_driver_tool_config(
+        driver_mode = "swift-symbolgraph-extract",
+        swift_executable = swift_executable,
+        tools = additional_tools,
+        toolchain_root = toolchain_root,
+        tool_executable_suffix = tool_executable_suffix,
+        use_param_file = True,
+        worker_mode = "wrap",
+        env = env,
+    )
+
     configs = {
         swift_action_names.COMPILE: compile_tool_config,
         swift_action_names.DERIVE_FILES: compile_tool_config,
         swift_action_names.DUMP_AST: compile_tool_config,
+        swift_action_names.SYMBOL_GRAPH_EXTRACT: swift_symbolgraph_extract_config,
     }
 
     if use_autolink_extract:
@@ -155,7 +168,8 @@ def _all_action_configs(os, arch, sdkroot, xctest_version, additional_swiftc_cop
             additional_swiftc_copts = additional_swiftc_copts,
         ) +
         modulewrap_action_configs() +
-        autolink_extract_action_configs()
+        autolink_extract_action_configs() +
+        symbol_graph_action_configs()
     )
 
 def _swift_windows_linkopts_cc_info(

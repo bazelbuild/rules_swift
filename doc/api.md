@@ -538,8 +538,8 @@ The module name derived from the label.
 
 <pre>
 swift_common.extract_symbol_graph(<a href="#swift_common.extract_symbol_graph-actions">actions</a>, <a href="#swift_common.extract_symbol_graph-compilation_contexts">compilation_contexts</a>, <a href="#swift_common.extract_symbol_graph-feature_configuration">feature_configuration</a>,
-                                  <a href="#swift_common.extract_symbol_graph-minimum_access_level">minimum_access_level</a>, <a href="#swift_common.extract_symbol_graph-module_name">module_name</a>, <a href="#swift_common.extract_symbol_graph-output_dir">output_dir</a>, <a href="#swift_common.extract_symbol_graph-swift_infos">swift_infos</a>,
-                                  <a href="#swift_common.extract_symbol_graph-swift_toolchain">swift_toolchain</a>)
+                                  <a href="#swift_common.extract_symbol_graph-include_dev_srch_paths">include_dev_srch_paths</a>, <a href="#swift_common.extract_symbol_graph-minimum_access_level">minimum_access_level</a>, <a href="#swift_common.extract_symbol_graph-module_name">module_name</a>,
+                                  <a href="#swift_common.extract_symbol_graph-output_dir">output_dir</a>, <a href="#swift_common.extract_symbol_graph-swift_infos">swift_infos</a>, <a href="#swift_common.extract_symbol_graph-swift_toolchain">swift_toolchain</a>)
 </pre>
 
 Extracts the symbol graph from a Swift module.
@@ -552,6 +552,7 @@ Extracts the symbol graph from a Swift module.
 | <a id="swift_common.extract_symbol_graph-actions"></a>actions |  The object used to register actions.   |  none |
 | <a id="swift_common.extract_symbol_graph-compilation_contexts"></a>compilation_contexts |  A list of `CcCompilationContext`s that represent C/Objective-C requirements of the target being compiled, such as Swift-compatible preprocessor defines, header search paths, and so forth. These are typically retrieved from the `CcInfo` providers of a target's dependencies.   |  none |
 | <a id="swift_common.extract_symbol_graph-feature_configuration"></a>feature_configuration |  The Swift feature configuration.   |  none |
+| <a id="swift_common.extract_symbol_graph-include_dev_srch_paths"></a>include_dev_srch_paths |  A `bool` that indicates whether the developer framework search paths will be added to the compilation command.   |  none |
 | <a id="swift_common.extract_symbol_graph-minimum_access_level"></a>minimum_access_level |  The minimum access level of the declarations that should be extracted into the symbol graphs. The default value is `None`, which means the Swift compiler's default behavior should be used (at the time of this writing, the default behavior is "public").   |  `None` |
 | <a id="swift_common.extract_symbol_graph-module_name"></a>module_name |  The name of the module whose symbol graph should be extracted.   |  none |
 | <a id="swift_common.extract_symbol_graph-output_dir"></a>output_dir |  A directory-type `File` into which `.symbols.json` files representing the module's symbol graph will be extracted. If extraction is successful, this directory will contain a file named `${MODULE_NAME}.symbols.json`. Optionally, if the module contains extensions to types in other modules, then there will also be files named `${MODULE_NAME}@${EXTENDED_MODULE}.symbols.json`.   |  none |
