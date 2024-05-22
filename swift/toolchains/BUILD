@@ -25,6 +25,7 @@ bzl_library(
         "//swift/toolchains/config:default_warnings_as_errors",
         "//swift/toolchains/config:symbol_graph_config",
         "//swift/toolchains/config:tool_config",
+        "//third_party/unsupported_toolchains/swift/build_defs:glibc_module_bzl",
         "@bazel_skylib//lib:paths",
         "@bazel_skylib//rules:common_settings",
     ],
