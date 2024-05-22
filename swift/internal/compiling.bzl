@@ -83,6 +83,7 @@ load(
     "SWIFT_FEATURE_USE_OLD_DRIVER",
     "SWIFT_FEATURE_USE_PCH_OUTPUT_DIR",
     "SWIFT_FEATURE_VFSOVERLAY",
+    "SWIFT_FEATURE__DISABLE_SWIFT_SANDBOX",
     "SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS",
     "SWIFT_FEATURE__SUPPORTS_CONST_VALUE_EXTRACTION",
     "SWIFT_FEATURE__SUPPORTS_MACROS",
@@ -562,6 +563,19 @@ def compile_action_configs(
                 swift_toolchain_config.add_arg("-warnings-as-errors"),
             ],
             features = [SWIFT_FEATURE_TREAT_WARNINGS_AS_ERRORS],
+        ),
+
+        # Disable Swift sandbox.
+        swift_toolchain_config.action_config(
+            actions = [
+                swift_action_names.COMPILE,
+                swift_action_names.DERIVE_FILES,
+                swift_action_names.DUMP_AST,
+            ],
+            configurators = [
+                swift_toolchain_config.add_arg("-disable-sandbox"),
+            ],
+            features = [SWIFT_FEATURE__DISABLE_SWIFT_SANDBOX],
         ),
 
         # Set Developer Framework search paths

@@ -341,6 +341,10 @@ SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE = "swift._force_alwayslink_true"
 # feature.
 SWIFT_FEATURE__SUPPORTS_MACROS = "swift._supports_macros"
 
+# Disables Swift sandbox which prevents issues with nested sandboxing when Swift code contains system-provided macros.
+# If enabled '#Preview' macro provided by SwiftUI fails to build and probably other system-provided macros.
+SWIFT_FEATURE__DISABLE_SWIFT_SANDBOX = "swift._disable_swift_sandbox"
+
 # Pass -warnings-as-errors to the compiler.
 SWIFT_FEATURE_TREAT_WARNINGS_AS_ERRORS = "swift.treat_warnings_as_errors"
 
