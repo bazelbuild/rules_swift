@@ -35,6 +35,7 @@ load(
     "SWIFT_FEATURE_COVERAGE",
     "SWIFT_FEATURE_COVERAGE_PREFIX_MAP",
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
+    "SWIFT_FEATURE_DISABLE_SWIFT_SANDBOX",
     "SWIFT_FEATURE_EMIT_SWIFTDOC",
     "SWIFT_FEATURE_EMIT_SWIFTSOURCEINFO",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
@@ -50,7 +51,6 @@ load(
     "SWIFT_FEATURE_SUPPORTS_SYSTEM_MODULE_FLAG",
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
     "SWIFT_FEATURE_USE_RESPONSE_FILES",
-    "SWIFT_FEATURE__DISABLE_SWIFT_SANDBOX",
     "SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE",
     "SWIFT_FEATURE__SUPPORTS_CONST_VALUE_EXTRACTION",
     "SWIFT_FEATURE__SUPPORTS_MACROS",
@@ -642,7 +642,7 @@ def _xcode_swift_toolchain_impl(ctx):
         requested_features.append(SWIFT_FEATURE__SUPPORTS_CONST_VALUE_EXTRACTION)
 
     if _is_xcode_at_least_version(xcode_config, "15.3"):
-        requested_features.append(SWIFT_FEATURE__DISABLE_SWIFT_SANDBOX)
+        requested_features.append(SWIFT_FEATURE_DISABLE_SWIFT_SANDBOX)
 
     env = _xcode_env(target_triple = target_triple, xcode_config = xcode_config)
     execution_requirements = xcode_config.execution_info()

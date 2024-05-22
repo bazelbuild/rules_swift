@@ -45,6 +45,7 @@ load(
     "SWIFT_FEATURE_COVERAGE_PREFIX_MAP",
     "SWIFT_FEATURE_DBG",
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
+    "SWIFT_FEATURE_DISABLE_SWIFT_SANDBOX",
     "SWIFT_FEATURE_DISABLE_SYSTEM_INDEX",
     "SWIFT_FEATURE_EMIT_BC",
     "SWIFT_FEATURE_EMIT_C_MODULE",
@@ -83,7 +84,6 @@ load(
     "SWIFT_FEATURE_USE_OLD_DRIVER",
     "SWIFT_FEATURE_USE_PCH_OUTPUT_DIR",
     "SWIFT_FEATURE_VFSOVERLAY",
-    "SWIFT_FEATURE__DISABLE_SWIFT_SANDBOX",
     "SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS",
     "SWIFT_FEATURE__SUPPORTS_CONST_VALUE_EXTRACTION",
     "SWIFT_FEATURE__SUPPORTS_MACROS",
@@ -575,7 +575,7 @@ def compile_action_configs(
             configurators = [
                 swift_toolchain_config.add_arg("-disable-sandbox"),
             ],
-            features = [SWIFT_FEATURE__DISABLE_SWIFT_SANDBOX],
+            features = [SWIFT_FEATURE_DISABLE_SWIFT_SANDBOX],
         ),
 
         # Set Developer Framework search paths
