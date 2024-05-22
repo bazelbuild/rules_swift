@@ -61,6 +61,7 @@ load(
     "SWIFT_FEATURE_FASTBUILD",
     "SWIFT_FEATURE_FILE_PREFIX_MAP",
     "SWIFT_FEATURE_FULL_DEBUG_INFO",
+    "SWIFT_FEATURE_FULL_LTO",
     "SWIFT_FEATURE_GLOBAL_MODULE_CACHE_USES_TMPDIR",
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
     "SWIFT_FEATURE_LAYERING_CHECK",
@@ -76,6 +77,7 @@ load(
     "SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_SUPPORTS_SYSTEM_MODULE_FLAG",
     "SWIFT_FEATURE_SYSTEM_MODULE",
+    "SWIFT_FEATURE_THIN_LTO",
     "SWIFT_FEATURE_TREAT_WARNINGS_AS_ERRORS",
     "SWIFT_FEATURE_USE_C_MODULES",
     "SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP",
@@ -260,7 +262,11 @@ def compile_action_configs(
             configurators = [
                 swift_toolchain_config.add_arg("-emit-bc"),
             ],
-            features = [SWIFT_FEATURE_EMIT_BC],
+            features = [
+                [SWIFT_FEATURE_EMIT_BC],
+                [SWIFT_FEATURE_FULL_LTO],
+                [SWIFT_FEATURE_THIN_LTO],
+            ],
         ),
 
         # Add the single object file or object file map, whichever is needed.
@@ -399,6 +405,24 @@ def compile_action_configs(
             ],
             configurators = [_constant_value_extraction_configurator],
             features = [SWIFT_FEATURE__SUPPORTS_CONST_VALUE_EXTRACTION],
+        ),
+
+        # Link Time Optimization (LTO)
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [
+                swift_toolchain_config.add_arg("-lto=llvm-thin"),
+            ],
+            features = [SWIFT_FEATURE_THIN_LTO],
+            not_features = [SWIFT_FEATURE_FULL_LTO],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.COMPILE],
+            configurators = [
+                swift_toolchain_config.add_arg("-lto=llvm-full"),
+            ],
+            features = [SWIFT_FEATURE_FULL_LTO],
+            not_features = [SWIFT_FEATURE_THIN_LTO],
         ),
     ]
 
@@ -3156,10 +3180,22 @@ def _declare_compile_outputs(
 
     # If enabled the compiler will emit LLVM BC files instead of Mach-O object
     # files.
+    # LTO implies emitting LLVM BC files, too
+
+    full_lto_enabled = is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_FULL_LTO,
+    )
+
+    thin_lto_enabled = is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_THIN_LTO,
+    )
+
     emits_bc = is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_EMIT_BC,
-    )
+    ) or full_lto_enabled or thin_lto_enabled
 
     if not output_nature.emits_multiple_objects:
         # If we're emitting a single object, we don't use an object map; we just
