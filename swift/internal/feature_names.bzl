@@ -343,6 +343,7 @@ SWIFT_FEATURE__SUPPORTS_MACROS = "swift._supports_macros"
 
 # Disables Swift sandbox which prevents issues with nested sandboxing when Swift code contains system-provided macros.
 # If enabled '#Preview' macro provided by SwiftUI fails to build and probably other system-provided macros.
+# Enabled by default for Swift 5.10+ on macOS.
 SWIFT_FEATURE__DISABLE_SWIFT_SANDBOX = "swift._disable_swift_sandbox"
 
 # Pass -warnings-as-errors to the compiler.
