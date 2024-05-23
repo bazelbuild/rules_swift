@@ -262,11 +262,7 @@ def compile_action_configs(
             configurators = [
                 swift_toolchain_config.add_arg("-emit-bc"),
             ],
-            features = [
-                [SWIFT_FEATURE_EMIT_BC],
-                [SWIFT_FEATURE_FULL_LTO],
-                [SWIFT_FEATURE_THIN_LTO],
-            ],
+            features = [SWIFT_FEATURE_EMIT_BC],
         ),
 
         # Add the single object file or object file map, whichever is needed.
@@ -414,7 +410,6 @@ def compile_action_configs(
                 swift_toolchain_config.add_arg("-lto=llvm-thin"),
             ],
             features = [SWIFT_FEATURE_THIN_LTO],
-            not_features = [SWIFT_FEATURE_FULL_LTO],
         ),
         swift_toolchain_config.action_config(
             actions = [swift_action_names.COMPILE],
@@ -422,7 +417,6 @@ def compile_action_configs(
                 swift_toolchain_config.add_arg("-lto=llvm-full"),
             ],
             features = [SWIFT_FEATURE_FULL_LTO],
-            not_features = [SWIFT_FEATURE_THIN_LTO],
         ),
     ]
 
