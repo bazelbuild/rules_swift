@@ -110,7 +110,8 @@ SwiftRunner::SwiftRunner(const std::vector<std::string> &args,
     : job_env_(GetCurrentEnvironment()),
       index_import_path_(index_import_path),
       force_response_file_(force_response_file),
-      is_dump_ast_(false) {
+      is_dump_ast_(false),
+      file_prefix_pwd_is_dot_(false) {
   args_ = ProcessArguments(args);
 }
 
