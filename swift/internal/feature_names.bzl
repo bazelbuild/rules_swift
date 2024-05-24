@@ -367,3 +367,9 @@ SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT = "swift.add_target_name_to_output"
 # extraction (Swift 5.8 and above). Users should never manually enable, disable, or query this
 # feature.
 SWIFT_FEATURE__SUPPORTS_CONST_VALUE_EXTRACTION = "swift._supports_const_value_extraction"
+
+# Enable thin LTO and update output-file-map correctly
+SWIFT_FEATURE_THIN_LTO = "swift.thin_lto"
+
+# Enable full LTO and update output-file-map correctly
+SWIFT_FEATURE_FULL_LTO = "swift.full_lto"

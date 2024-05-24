@@ -34,3 +34,9 @@ swift_test(
     srcs = ["empty.swift"],
     tags = FIXTURE_TAGS,
 )
+
+swift_binary(
+    name = "bin",
+    srcs = ["empty.swift"],
+    tags = FIXTURE_TAGS,
+)

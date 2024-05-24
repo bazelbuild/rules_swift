@@ -14,6 +14,22 @@ split_test = make_action_command_line_test_rule(
     },
 )
 
+thin_lto_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:features": [
+            "swift.thin_lto",
+        ],
+    },
+)
+
+full_lto_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:features": [
+            "swift.full_lto",
+        ],
+    },
+)
+
 def compiler_arguments_test_suite(name):
     """Test suite for various command line flags passed to Swift compiles.
 
@@ -67,6 +83,22 @@ def compiler_arguments_test_suite(name):
         mnemonic = "SwiftDeriveFiles",
         tags = [name],
         target_under_test = "@build_bazel_rules_swift//test/fixtures/compiler_arguments:lib_package_name",
+    )
+
+    thin_lto_test(
+        name = "{}_thin_lto".format(name),
+        expected_argv = ["-lto=llvm-thin"],
+        mnemonic = "SwiftCompile",
+        tags = [name],
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/compiler_arguments:bin",
+    )
+
+    full_lto_test(
+        name = "{}_full_lto".format(name),
+        expected_argv = ["-lto=llvm-full"],
+        mnemonic = "SwiftCompile",
+        tags = [name],
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/compiler_arguments:bin",
     )
 
     native.test_suite(
