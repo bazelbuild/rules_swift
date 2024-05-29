@@ -523,4 +523,9 @@ _SWIFT_6_EQUIVALENT_FEATURES = [
     "swift.upcoming.ImplicitOpenExistentials",  # SE-0352
     "swift.upcoming.RegionBasedIsolation",  # SE-0414
     "swift.upcoming.DynamicActorIsolation",  # SE-0423
+
+    # The upcoming feature flags only emit warnings about things that will
+    # become errors in Swift 6. We want the `swift.enable_v6` flag specifically
+    # to enforce the same error behavior.
+    "swift.werror.error_in_future_swift_version",
 ]
