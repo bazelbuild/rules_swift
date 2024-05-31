@@ -115,9 +115,9 @@ def _check_deps_are_disjoint(label, deps, private_deps):
     private_deps_set = sets.make([str(dep.label) for dep in private_deps])
     intersection = sets.to_list(sets.intersection(deps_set, private_deps_set))
     if intersection:
-        detail_msg = ["\n  - {}".format(label) for label in intersection]
+        detail_msg = "\n".join(["  - {}".format(label) for label in intersection])
         fail(("In target '{}', 'deps' and 'private_deps' must be disjoint, " +
-              "but the following targets were found in both: {}").format(
+              "but the following targets were found in both:\n{}").format(
             label,
             detail_msg,
         ))
