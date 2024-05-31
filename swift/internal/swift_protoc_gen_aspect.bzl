@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """An aspect attached to `proto_library` targets to generate Swift artifacts."""
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
