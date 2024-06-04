@@ -460,6 +460,14 @@ def _swift_toolchain_impl(ctx):
         target_triple = target_triple,
     ))
 
+    requested_features.extend([
+        # Allow users to start using access levels on `import`s by default. Note
+        # that this does *not* change the default access level for `import`s to
+        # `internal`; that is controlled by the upcoming feature flag
+        # `InternalImportsByDefault`.
+        "swift.experimental.AccessLevelOnImport",
+    ])
+
     requested_features.extend(ctx.features)
 
     # Swift.org toolchains assume everything is just available on the PATH so we

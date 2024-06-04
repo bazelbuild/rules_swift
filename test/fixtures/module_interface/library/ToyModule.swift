@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Foundation
-
 /// A toy value.
 @frozen
 public struct ToyValue {
@@ -21,8 +19,8 @@ public struct ToyValue {
   public var number: Int
 
   /// The hexadecimal value of the numeric value.
-  public var hexString: String {
-    String(format: "0x%x", number)
+  public var stringValue: String {
+    "\(number)"
   }
 
   /// Creates a new toy value with the given numeric value.
