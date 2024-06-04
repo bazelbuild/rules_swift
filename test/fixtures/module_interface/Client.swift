@@ -15,5 +15,5 @@
 import ToyModule
 
 let value = ToyValue(number: 10)
-print(value.hexString)
+print(value.stringValue)
 print(value.squared())

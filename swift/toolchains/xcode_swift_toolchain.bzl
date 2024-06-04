@@ -646,6 +646,13 @@ def _xcode_swift_toolchain_impl(ctx):
         target_triple = target_triple,
     ))
     requested_features.extend(default_warnings_as_errors_features())
+    requested_features.extend([
+        # Allow users to start using access levels on `import`s by default. Note
+        # that this does *not* change the default access level for `import`s to
+        # `internal`; that is controlled by the upcoming feature flag
+        # `InternalImportsByDefault`.
+        "swift.experimental.AccessLevelOnImport",
+    ])
 
     # TODO: b/336996662 - Use a very high Xcode version number until we've
     # confirmed the actual Xcode release that ships with a compiler that
