@@ -240,21 +240,6 @@ SWIFT_FEATURE_INTERNALIZE_AT_LINK = "swift.internalize_at_link"
 # This disables checking for potentially unavailable APIs.
 SWIFT_FEATURE_DISABLE_AVAILABILITY_CHECKING = "swift.disable_availability_checking"
 
-# A private feature that is set by the toolchain if it supports macros (Swift
-# 5.9 and above). Users should never manually enable, disable, or query this
-# feature.
-SWIFT_FEATURE__SUPPORTS_MACROS = "swift._supports_macros"
-
-# A private feature that is set by the toolchain if it supports the `package`
-# modifier (Swift 5.9 and above). Users should never manually enable, disable,
-# or query this feature.
-SWIFT_FEATURE__SUPPORTS_PACKAGE_MODIFIER = "swift._supports_package_modifier"
-
-# A private feature that is set by the toolchain if it supports the
-# `-enable-{experimental,upcoming}-feature` flag (Swift 5.8 and above). Users
-# should never manually, enable, disable, or query this feature.
-SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES = "swift._supports_upcoming_features"
-
 # A private feature that is set by the toolchain if it supports
 # `-swift-version 6` (Swift 6.0 and above). Users should never manually enable,
 # disable, or query this feature.

@@ -44,9 +44,6 @@ load(
 load(
     "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
-    "SWIFT_FEATURE__SUPPORTS_MACROS",
-    "SWIFT_FEATURE__SUPPORTS_PACKAGE_MODIFIER",
-    "SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES",
     "SWIFT_FEATURE__SUPPORTS_V6",
 )
 load(
@@ -649,15 +646,6 @@ def _xcode_swift_toolchain_impl(ctx):
         target_triple = target_triple,
     ))
     requested_features.extend(default_warnings_as_errors_features())
-
-    if _is_xcode_at_least_version(xcode_config, "14.3"):
-        requested_features.append(SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES)
-
-    if _is_xcode_at_least_version(xcode_config, "15.0"):
-        requested_features.extend([
-            SWIFT_FEATURE__SUPPORTS_MACROS,
-            SWIFT_FEATURE__SUPPORTS_PACKAGE_MODIFIER,
-        ])
 
     # TODO: b/336996662 - Use a very high Xcode version number until we've
     # confirmed the actual Xcode release that ships with a compiler that

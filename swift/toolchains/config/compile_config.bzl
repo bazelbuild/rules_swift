@@ -59,9 +59,6 @@ load(
     "SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP",
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
     "SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS",
-    "SWIFT_FEATURE__SUPPORTS_MACROS",
-    "SWIFT_FEATURE__SUPPORTS_PACKAGE_MODIFIER",
-    "SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES",
     "SWIFT_FEATURE__SUPPORTS_V6",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
 )
@@ -571,7 +568,6 @@ def compile_action_configs(
         ActionConfigInfo(
             actions = [SWIFT_ACTION_COMPILE],
             configurators = [_macro_expansion_configurator],
-            features = [SWIFT_FEATURE__SUPPORTS_MACROS],
             # The compiler only generates these in debug builds, unless we pass
             # additional frontend flags. At the current time, we only want to
             # capture these for debug builds.
@@ -580,7 +576,6 @@ def compile_action_configs(
         ActionConfigInfo(
             actions = [SWIFT_ACTION_COMPILE],
             configurators = [_package_identifier_configurator],
-            features = [SWIFT_FEATURE__SUPPORTS_PACKAGE_MODIFIER],
         ),
 
         # swift-symbolgraph-extract doesn't yet support explicit Swift module
@@ -842,9 +837,6 @@ def compile_action_configs(
                 SWIFT_ACTION_COMPILE,
             ],
             configurators = [_upcoming_and_experimental_features_configurator],
-            features = [
-                SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES,
-            ],
         ),
         ActionConfigInfo(
             actions = [

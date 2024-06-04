@@ -46,7 +46,6 @@ load(
     "SWIFT_FEATURE_SYSTEM_MODULE",
     "SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP",
     "SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS",
-    "SWIFT_FEATURE__SUPPORTS_MACROS",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
 )
 load(
@@ -1076,10 +1075,7 @@ def _declare_compile_outputs(
         const_values_files = output_info.const_values_files
         output_file_map = output_info.output_file_map
 
-    if is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE__SUPPORTS_MACROS,
-    ) and not is_feature_enabled(
+    if not is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_OPT,
     ):
