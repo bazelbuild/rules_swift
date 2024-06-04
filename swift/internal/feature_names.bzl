@@ -314,11 +314,6 @@ SWIFT_FEATURE_OBJC_LINK_FLAGS = "swift.objc_link_flag"
 # all Swift compilations to always be linked.
 SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE = "swift._force_alwayslink_true"
 
-# A private feature that is set by the toolchain if it supports macros (Swift
-# 5.9 and above). Users should never manually enable, disable, or query this
-# feature.
-SWIFT_FEATURE__SUPPORTS_MACROS = "swift._supports_macros"
-
 # Disables Swift sandbox which prevents issues with nested sandboxing when Swift code contains system-provided macros.
 # If enabled '#Preview' macro provided by SwiftUI fails to build and probably other system-provided macros.
 # Enabled by default for Swift 5.10+ on macOS.
