@@ -194,7 +194,7 @@ def _intermediate_object_file(actions, add_target_name_to_output_path, target_na
         paths.join(dirname, "{}.o".format(basename)),
     )
 
-def _module_map(actions, add_target_name_to_output_path, target_name):
+def _module_map(actions, target_name):
     """Declares the module map for a target.
 
     These module maps are used when generating a Swift-compatible module map for
@@ -203,17 +203,16 @@ def _module_map(actions, add_target_name_to_output_path, target_name):
 
     Args:
         actions: The context's actions object.
-        add_target_name_to_output_path: Add target_name in output path. More info at SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT description.
         target_name: The name of the target being built.
 
     Returns:
         The declared `File`.
     """
-    return _declare_file(
-        actions,
-        add_target_name_to_output_path,
-        target_name,
-        "{}.swift.modulemap".format(target_name),
+
+    # Path is two directories deep to avoid automatic discovery by
+    # `-fimplicit-module-maps` and with non-related include paths
+    return actions.declare_file(
+        "{}_modulemap/_/module.modulemap".format(target_name),
     )
 
 def _modulewrap_object(actions, add_target_name_to_output_path, target_name):

@@ -104,8 +104,8 @@ def private_deps_test_suite(name):
     private_deps_provider_test(
         name = "{}_client_cc_deps_modulemaps".format(name),
         expected_files = [
-            "/test/fixtures/private_deps/public_cc.swift.modulemap",
-            "-/test/fixtures/private_deps/private_cc.swift.modulemap",
+            "/test/fixtures/private_deps/public_cc_modulemap/_/module.modulemap",
+            "-/test/fixtures/private_deps/private_cc_modulemap_/module.modulemap",
         ],
         field = "transitive_modules.clang!.module_map!",
         provider = "SwiftInfo",
@@ -116,8 +116,8 @@ def private_deps_test_suite(name):
     private_deps_provider_target_name_test(
         name = "{}_client_cc_deps_modulemaps_target_name".format(name),
         expected_files = [
-            "/test/fixtures/private_deps/public_cc/public_cc.swift.modulemap",
-            "-/test/fixtures/private_deps/public_cc/private_cc.swift.modulemap",
+            "/test/fixtures/private_deps/public_cc_modulemap/_/module.modulemap",
+            "-/test/fixtures/private_deps/private_cc_modulemap/_/module.modulemap",
         ],
         field = "transitive_modules.clang!.module_map!",
         provider = "SwiftInfo",

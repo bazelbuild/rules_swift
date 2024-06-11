@@ -36,7 +36,7 @@ def interop_hints_test_suite(name = "interop_hints"):
     provider_test(
         name = "{}_hint_with_custom_module_name_builds".format(name),
         expected_files = [
-            "test/fixtures/interop_hints/cc_lib_custom_module_name.swift.modulemap",
+            "test/fixtures/interop_hints/cc_lib_custom_module_name_modulemap/_/module.modulemap",
         ],
         field = "transitive_modules.clang.module_map!",
         provider = "SwiftInfo",
