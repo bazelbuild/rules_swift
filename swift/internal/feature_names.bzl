@@ -142,6 +142,11 @@ SWIFT_FEATURE_NO_ASAN_VERSION_CHECK = "swift.no_asan_version_check"
 # the target is not generating a header.
 SWIFT_FEATURE_NO_GENERATED_MODULE_MAP = "swift.no_generated_module_map"
 
+# If enabled, the generates module map is named `module.modulemap` and
+# the parent directory is added as to `CcInfo.compliation_context.includes`.
+# This allows `objc_library` to import the Swift module.
+SWIFT_FEATURE_PROPAGATE_GENERATED_MODULE_MAP = "swift.propagate_generated_module_map"
+
 # If enabled, builds using the "opt" compilation mode will invoke `swiftc` with
 # the `-whole-module-optimization` flag (in addition to `-O`).
 SWIFT_FEATURE_OPT_USES_WMO = "swift.opt_uses_wmo"

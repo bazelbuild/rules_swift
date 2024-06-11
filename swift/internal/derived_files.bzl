@@ -153,7 +153,12 @@ def _module_map(actions, target_name):
     Returns:
         The declared `File`.
     """
-    return actions.declare_file("{}.swift.modulemap".format(target_name))
+
+    # Path is two directories deep to avoid automatic discovery by
+    # `-fimplicit-module-maps` and with non-related include paths
+    return actions.declare_file(
+        "{}_modulemap/_/module.modulemap".format(target_name),
+    )
 
 def _modulewrap_object(actions, target_name):
     """Declares the object file used to wrap Swift modules for ELF binaries.
