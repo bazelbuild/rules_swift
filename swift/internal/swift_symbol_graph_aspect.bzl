@@ -17,7 +17,8 @@
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(":attrs.bzl", "swift_toolchain_attrs")
 load(":derived_files.bzl", "derived_files")
-load(":features.bzl", "configure_features")
+load(":feature_names.bzl", "SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT")
+load(":features.bzl", "configure_features", "is_feature_enabled")
 load(
     ":providers.bzl",
     "SwiftInfo",
@@ -39,6 +40,11 @@ def _swift_symbol_graph_aspect_impl(target, aspect_ctx):
             unsupported_features = aspect_ctx.disabled_features,
         )
 
+        add_target_name_to_output_path = is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT,
+        )
+
         swift_info = target[SwiftInfo]
         if CcInfo in target:
             compilation_context = target[CcInfo].compilation_context
@@ -50,6 +56,7 @@ def _swift_symbol_graph_aspect_impl(target, aspect_ctx):
         for module in swift_info.direct_modules:
             output_dir = derived_files.symbol_graph_directory(
                 actions = aspect_ctx.actions,
+                add_target_name_to_output_path = add_target_name_to_output_path,
                 target_name = target.label.name,
             )
             extract_symbol_graph(

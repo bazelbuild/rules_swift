@@ -438,17 +438,23 @@ def _swiftsourceinfo(actions, add_target_name_to_output_path, target_name, modul
         "{}.swiftsourceinfo".format(module_name),
     )
 
-def _symbol_graph_directory(actions, target_name):
+def _symbol_graph_directory(actions, add_target_name_to_output_path, target_name):
     """Declares a directory for symbol graphs extracted from a Swift module.
 
     Args:
         actions: The context's actions object.
+        add_target_name_to_output_path: Add target_name in output path. More info at SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT description.
         target_name: The name of the target being built.
 
     Returns:
         The declared `File`.
     """
-    return actions.declare_directory("{}.symbolgraphs".format(target_name))
+    return _declare_directory(
+        actions,
+        add_target_name_to_output_path,
+        target_name,
+        "{}.symbolgraphs".format(target_name),
+    )
 
 def _vfsoverlay(actions, add_target_name_to_output_path, target_name):
     """Declares a file for the VFS overlay for a compilation action.

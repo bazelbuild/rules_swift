@@ -14,15 +14,37 @@
 
 """Implementation of the `swift_extract_module_graph` rule."""
 
+load("@bazel_skylib//lib:dicts.bzl", "dicts")
+load(":attrs.bzl", "swift_toolchain_attrs")
 load(":derived_files.bzl", "derived_files")
-load(":providers.bzl", "SwiftInfo", "SwiftSymbolGraphInfo")
+load(":feature_names.bzl", "SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT")
+load(":features.bzl", "configure_features", "is_feature_enabled")
+load(
+    ":providers.bzl",
+    "SwiftInfo",
+    "SwiftSymbolGraphInfo",
+    "SwiftToolchainInfo",
+)
 load(":swift_symbol_graph_aspect.bzl", "swift_symbol_graph_aspect")
 
 def _swift_extract_symbol_graph_impl(ctx):
     actions = ctx.actions
+    swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
+    feature_configuration = configure_features(
+        ctx = ctx,
+        swift_toolchain = swift_toolchain,
+        requested_features = ctx.features,
+        unsupported_features = ctx.disabled_features,
+    )
+
+    add_target_name_to_output_path = is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT,
+    )
 
     output_dir = derived_files.symbol_graph_directory(
         actions = actions,
+        add_target_name_to_output_path = add_target_name_to_output_path,
         target_name = ctx.label.name,
     )
 
@@ -71,33 +93,36 @@ done
     return [DefaultInfo(files = depset([output_dir]))]
 
 swift_extract_symbol_graph = rule(
-    attrs = {
-        "minimum_access_level": attr.string(
-            default = "public",
-            doc = """\
+    attrs = dicts.add(
+        swift_toolchain_attrs(),
+        {
+            "minimum_access_level": attr.string(
+                default = "public",
+                doc = """\
 The minimum access level of the declarations that should be emitted in the
 symbol graphs.
 
 This value must be either `fileprivate`, `internal`, `private`, or `public`. The
 default value is `public`.
 """,
-            values = [
-                "fileprivate",
-                "internal",
-                "private",
-                "public",
-            ],
-        ),
-        "targets": attr.label_list(
-            allow_empty = False,
-            aspects = [swift_symbol_graph_aspect],
-            doc = """\
+                values = [
+                    "fileprivate",
+                    "internal",
+                    "private",
+                    "public",
+                ],
+            ),
+            "targets": attr.label_list(
+                allow_empty = False,
+                aspects = [swift_symbol_graph_aspect],
+                doc = """\
 One or more Swift targets from which to extract symbol graphs.
 """,
-            mandatory = True,
-            providers = [[SwiftInfo]],
-        ),
-    },
+                mandatory = True,
+                providers = [[SwiftInfo]],
+            ),
+        },
+    ),
     doc = """\
 Extracts symbol graphs from one or more Swift targets.
 
@@ -121,5 +146,6 @@ registers other Starlark actions that read the symbol graphs based on the
 `SwiftSymbolGraphInfo` providers attached to those targets. The implementation
 of this rule can serve as a guide for implementing such a rule.
 """,
+    fragments = ["cpp"],
     implementation = _swift_extract_symbol_graph_impl,
 )
