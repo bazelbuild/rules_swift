@@ -53,6 +53,8 @@ load(
     "SwiftToolchainInfo",
 )
 load(":toolchain_config.bzl", "swift_toolchain_config")
+load(":symbol_graph_extracting.bzl", "symbol_graph_action_configs")
+load(":target_triples.bzl", "target_triples")
 load(
     ":utils.bzl",
     "collect_implicit_deps_providers",
@@ -103,10 +105,22 @@ def _all_tool_configs(
         env = env,
     )
 
+    swift_symbolgraph_extract_config = _swift_driver_tool_config(
+        driver_mode = "swift-symbolgraph-extract",
+        swift_executable = swift_executable,
+        tools = additional_tools,
+        toolchain_root = toolchain_root,
+        tool_executable_suffix = tool_executable_suffix,
+        use_param_file = True,
+        worker_mode = "wrap",
+        env = env,
+    )
+
     configs = {
         swift_action_names.COMPILE: compile_tool_config,
         swift_action_names.DERIVE_FILES: compile_tool_config,
         swift_action_names.DUMP_AST: compile_tool_config,
+        swift_action_names.SYMBOL_GRAPH_EXTRACT: swift_symbolgraph_extract_config,
     }
 
     if use_autolink_extract:
@@ -132,12 +146,13 @@ def _all_tool_configs(
         )
     return configs
 
-def _all_action_configs(os, arch, sdkroot, xctest_version, additional_swiftc_copts):
+def _all_action_configs(os, arch, target_triple, sdkroot, xctest_version, additional_swiftc_copts):
     """Returns the action configurations for the Swift toolchain.
 
     Args:
         os: The OS that we are compiling for.
         arch: The architecture we are compiling for.
+        target_triple: The triple of the platform being targeted.
         sdkroot: The path to the SDK that we should use to build against.
         xctest_version: The version of XCTest to use.
         additional_swiftc_copts: Additional Swift compiler flags obtained from
@@ -146,7 +161,23 @@ def _all_action_configs(os, arch, sdkroot, xctest_version, additional_swiftc_cop
     Returns:
         A list of action configurations for the toolchain.
     """
-    return (
+
+    # Basic compilation flags (target triple).
+    action_configs = [
+        swift_toolchain_config.action_config(
+            actions = [
+                swift_action_names.SYMBOL_GRAPH_EXTRACT,
+            ],
+            configurators = [
+                swift_toolchain_config.add_arg(
+                    "-target",
+                    target_triples.str(target_triple),
+                ),
+            ],
+        ),
+    ]
+
+    action_configs.extend((
         compile_action_configs(
             os = os,
             arch = arch,
@@ -155,8 +186,11 @@ def _all_action_configs(os, arch, sdkroot, xctest_version, additional_swiftc_cop
             additional_swiftc_copts = additional_swiftc_copts,
         ) +
         modulewrap_action_configs() +
-        autolink_extract_action_configs()
-    )
+        autolink_extract_action_configs() +
+        symbol_graph_action_configs()
+    ))
+
+    return action_configs
 
 def _swift_windows_linkopts_cc_info(
         arch,
@@ -271,9 +305,28 @@ def _entry_point_linkopts_provider(*, entry_point_name):
         linkopts = ["-Wl,--defsym,main={}".format(entry_point_name)],
     )
 
+def _parse_target_system_name(*, arch, os, target_system_name):
+    """Returns the target system name set by the CC toolchain or attempts to create one based on the OS and arch."""
+
+    if target_system_name != "local":
+        return target_system_name
+
+    if os == "linux":
+        return "%s-unknown-linux-gnu" % arch
+    else:
+        return "%s-unknown-%s" % (arch, os)
+
 def _swift_toolchain_impl(ctx):
     toolchain_root = ctx.attr.root
     cc_toolchain = find_cpp_toolchain(ctx)
+    target_system_name = _parse_target_system_name(
+        arch = ctx.attr.arch,
+        os = ctx.attr.os,
+        target_system_name = cc_toolchain.target_gnu_system_name,
+    )
+    target_triple = target_triples.normalize_for_swift(
+        target_triples.parse(target_system_name),
+    )
 
     if "clang" not in cc_toolchain.compiler:
         fail("Swift requires the configured CC toolchain to be LLVM (clang). " +
@@ -344,6 +397,7 @@ def _swift_toolchain_impl(ctx):
     all_action_configs = _all_action_configs(
         os = ctx.attr.os,
         arch = ctx.attr.arch,
+        target_triple = target_triple,
         sdkroot = ctx.attr.sdkroot,
         xctest_version = ctx.attr.xctest_version,
         additional_swiftc_copts = swiftcopts,
