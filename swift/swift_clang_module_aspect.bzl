@@ -644,6 +644,10 @@ def _compile_swift_overlay(
         feature_configuration = feature_configuration,
         module_name = module_name,
         plugins = overlay_info.plugins,
+        private_compilation_contexts = [
+            cc_info.compilation_context
+            for cc_info in overlay_info.private_deps.cc_infos
+        ],
         srcs = overlay_info.srcs,
         swift_infos = swift_infos,
         swift_toolchain = swift_toolchain,

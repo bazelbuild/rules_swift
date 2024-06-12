@@ -228,6 +228,7 @@ def compile(
         generated_header_name = None,
         module_name,
         plugins = [],
+        private_compilation_contexts = [],
         private_swift_infos = [],
         srcs,
         swift_infos,
@@ -264,6 +265,11 @@ def compile(
             default from the target's label if needed.
         plugins: A list of `SwiftCompilerPluginInfo` providers that represent
             plugins that should be loaded by the compiler.
+        private_compilation_contexts: A list of `CcCompilationContext`s that
+            represent private (non-propagated) C/Objective-C requirements of the
+            target being compiled, such as Swift-compatible preprocessor
+            defines, header search paths, and so forth. These are typically
+            retrieved from the `CcInfo` providers of a target's `private_deps`.
         private_swift_infos: A list of `SwiftInfo` providers from private
             (implementation-only) dependencies of the target being compiled. The
             modules defined by these providers are used as dependencies of the
@@ -401,10 +407,12 @@ def compile(
     ]) + compile_outputs.object_files + compile_outputs.const_values_files
 
     merged_compilation_context = merge_compilation_contexts(
-        transitive_compilation_contexts = compilation_contexts + [
-            cc_info.compilation_context
-            for cc_info in swift_toolchain.implicit_deps_providers.cc_infos
-        ],
+        transitive_compilation_contexts = (
+            compilation_contexts + private_compilation_contexts + [
+                cc_info.compilation_context
+                for cc_info in swift_toolchain.implicit_deps_providers.cc_infos
+            ]
+        ),
     )
 
     transitive_swiftmodules = []

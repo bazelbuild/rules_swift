@@ -186,6 +186,9 @@ def _swift_library_impl(ctx):
         generated_header_name = generated_header_name,
         module_name = module_name,
         plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),
+        private_compilation_contexts = get_compilation_contexts(
+            ctx.attr.private_deps,
+        ),
         private_swift_infos = private_swift_infos,
         srcs = srcs,
         swift_infos = swift_infos,
