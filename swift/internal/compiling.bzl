@@ -71,6 +71,7 @@ load(
     "SWIFT_FEATURE_OPT",
     "SWIFT_FEATURE_OPT_USES_OSIZE",
     "SWIFT_FEATURE_OPT_USES_WMO",
+    "SWIFT_FEATURE_PROPAGATE_GENERATED_MODULE_MAP",
     "SWIFT_FEATURE_REWRITE_GENERATED_HEADER",
     "SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION",
     "SWIFT_FEATURE_SUPPORTS_BARE_SLASH_REGEX",
@@ -2714,6 +2715,20 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         transitive_modules = transitive_modules,
     )
 
+    if compile_outputs.generated_header_file:
+        public_hdrs = [compile_outputs.generated_header_file]
+    else:
+        public_hdrs = []
+
+    if compile_outputs.generated_module_map_file and is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_PROPAGATE_GENERATED_MODULE_MAP,
+    ):
+        public_hdrs.append(compile_outputs.generated_module_map_file)
+        includes = [compile_outputs.generated_module_map_file.dirname]
+    else:
+        includes = []
+
     module_context = create_module(
         name = module_name,
         clang = create_clang_module(
@@ -2722,7 +2737,8 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
                 defines = defines,
                 deps = deps,
                 feature_configuration = feature_configuration,
-                public_hdrs = compact([compile_outputs.generated_header_file]),
+                includes = includes,
+                public_hdrs = public_hdrs,
                 swift_toolchain = swift_toolchain,
                 target_name = target_name,
             ),
@@ -2938,6 +2954,7 @@ def _create_cc_compilation_context(
         defines,
         deps,
         feature_configuration,
+        includes,
         public_hdrs,
         swift_toolchain,
         target_name):
@@ -2956,6 +2973,8 @@ def _create_cc_compilation_context(
             targets must propagate `CcInfo` or `SwiftInfo`.
         feature_configuration: A feature configuration obtained from
             `swift_common.configure_features`.
+        includes: Include paths that should be propagated by the new compilation
+            context.
         public_hdrs: Public headers that should be propagated by the new
             compilation context (for example, the module's generated header).
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
@@ -2990,6 +3009,7 @@ def _create_cc_compilation_context(
                 feature_configuration = feature_configuration,
             ),
             name = target_name,
+            includes = includes,
             public_hdrs = public_hdrs,
         )
         return compilation_context
@@ -3150,7 +3170,6 @@ def _declare_compile_outputs(
 
         generated_module_map = derived_files.module_map(
             actions = actions,
-            add_target_name_to_output_path = add_target_name_to_output_path,
             target_name = target_name,
         )
         write_module_map(
