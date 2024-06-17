@@ -31,10 +31,28 @@ explicit_swift_module_map_test = make_action_command_line_test_rule(
     },
 )
 
+explicit_swift_module_map_without_target_name_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:features": [
+            "swift.use_explicit_swift_module_map",
+            "-swift.add_target_name_to_output",
+        ],
+    },
+)
+
 vfsoverlay_test = make_action_command_line_test_rule(
     config_settings = {
         "//command_line_option:features": [
             "swift.vfsoverlay",
+        ],
+    },
+)
+
+vfsoverlay_without_target_name_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:features": [
+            "swift.vfsoverlay",
+            "-swift.add_target_name_to_output",
         ],
     },
 )
@@ -69,8 +87,37 @@ def module_interface_test_suite(name):
         target_under_test = "@build_bazel_rules_swift//test/fixtures/module_interface:toy_module",
     )
 
+    explicit_swift_module_map_without_target_name_test(
+        name = "{}_explicit_swift_module_map_without_target_name_test".format(name),
+        tags = [name],
+        expected_argv = [
+            "-explicit-swift-module-map-file $(BIN_DIR)/test/fixtures/module_interface/ToyModule.swift-explicit-module-map.json",
+        ],
+        not_expected_argv = [
+            "-Xfrontend",
+        ],
+        mnemonic = "SwiftCompileModuleInterface",
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/module_interface:toy_module",
+    )
+
     vfsoverlay_test(
         name = "{}_vfsoverlay_test".format(name),
+        tags = [name],
+        expected_argv = [
+            "-vfsoverlay$(BIN_DIR)/test/fixtures/module_interface/ToyModule/ToyModule.vfsoverlay.yaml",
+            "-I/__build_bazel_rules_swift/swiftmodules",
+        ],
+        not_expected_argv = [
+            "-I$(BIN_DIR)/test/fixtures/module_interface/toy_module",
+            "-explicit-swift-module-map-file",
+            "-Xfrontend",
+        ],
+        mnemonic = "SwiftCompileModuleInterface",
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/module_interface:toy_module",
+    )
+
+    vfsoverlay_without_target_name_test(
+        name = "{}_vfsoverlay_without_target_name_test".format(name),
         tags = [name],
         expected_argv = [
             "-vfsoverlay$(BIN_DIR)/test/fixtures/module_interface/ToyModule.vfsoverlay.yaml",

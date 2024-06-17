@@ -20,9 +20,9 @@ load(
     "provider_test",
 )
 
-private_deps_provider_test = make_provider_test_rule(
+provider_without_target_name_test = make_provider_test_rule(
     config_settings = {
-        "//command_line_option:features": ["swift.add_target_name_to_output"],
+        "//command_line_option:features": ["-swift.add_target_name_to_output"],
     },
 )
 
@@ -36,7 +36,7 @@ def ast_file_test_suite(name):
     provider_test(
         name = "{}_with_no_deps".format(name),
         expected_files = [
-            "test/fixtures/swift_through_non_swift/lower_objs/Empty.swift.ast",
+            "test/fixtures/swift_through_non_swift/lower/lower_objs/Empty.swift.ast",
         ],
         field = "swift_ast_file",
         provider = "OutputGroupInfo",
@@ -44,10 +44,10 @@ def ast_file_test_suite(name):
         target_under_test = "@build_bazel_rules_swift//test/fixtures/swift_through_non_swift:lower",
     )
 
-    private_deps_provider_test(
+    provider_without_target_name_test(
         name = "{}_with_no_deps_with_target_name".format(name),
         expected_files = [
-            "test/fixtures/swift_through_non_swift/lower/lower_objs/Empty.swift.ast",
+            "test/fixtures/swift_through_non_swift/lower_objs/Empty.swift.ast",
         ],
         field = "swift_ast_file",
         provider = "OutputGroupInfo",
@@ -58,7 +58,7 @@ def ast_file_test_suite(name):
     provider_test(
         name = "{}_with_deps".format(name),
         expected_files = [
-            "test/fixtures/swift_through_non_swift/upper_objs/Empty.swift.ast",
+            "test/fixtures/swift_through_non_swift/upper/upper_objs/Empty.swift.ast",
         ],
         field = "swift_ast_file",
         provider = "OutputGroupInfo",
@@ -66,10 +66,10 @@ def ast_file_test_suite(name):
         target_under_test = "@build_bazel_rules_swift//test/fixtures/swift_through_non_swift:upper",
     )
 
-    private_deps_provider_test(
+    provider_without_target_name_test(
         name = "{}_with_deps_with_target_name".format(name),
         expected_files = [
-            "test/fixtures/swift_through_non_swift/upper/upper_objs/Empty.swift.ast",
+            "test/fixtures/swift_through_non_swift/upper_objs/Empty.swift.ast",
         ],
         field = "swift_ast_file",
         provider = "OutputGroupInfo",
@@ -80,7 +80,7 @@ def ast_file_test_suite(name):
     provider_test(
         name = "{}_with_private_swift_deps".format(name),
         expected_files = [
-            "test/fixtures/private_deps/client_swift_deps_objs/Empty.swift.ast",
+            "test/fixtures/private_deps/client_swift_deps/client_swift_deps_objs/Empty.swift.ast",
         ],
         field = "swift_ast_file",
         provider = "OutputGroupInfo",
@@ -88,10 +88,10 @@ def ast_file_test_suite(name):
         target_under_test = "@build_bazel_rules_swift//test/fixtures/private_deps:client_swift_deps",
     )
 
-    private_deps_provider_test(
+    provider_without_target_name_test(
         name = "{}_with_private_swift_deps_with_target_name".format(name),
         expected_files = [
-            "test/fixtures/private_deps/client_swift_deps/client_swift_deps_objs/Empty.swift.ast",
+            "test/fixtures/private_deps/client_swift_deps_objs/Empty.swift.ast",
         ],
         field = "swift_ast_file",
         provider = "OutputGroupInfo",
@@ -102,7 +102,7 @@ def ast_file_test_suite(name):
     provider_test(
         name = "{}_with_private_cc_deps".format(name),
         expected_files = [
-            "test/fixtures/private_deps/client_cc_deps_objs/Empty.swift.ast",
+            "test/fixtures/private_deps/client_cc_deps/client_cc_deps_objs/Empty.swift.ast",
         ],
         field = "swift_ast_file",
         provider = "OutputGroupInfo",
@@ -110,10 +110,10 @@ def ast_file_test_suite(name):
         target_under_test = "@build_bazel_rules_swift//test/fixtures/private_deps:client_cc_deps",
     )
 
-    private_deps_provider_test(
+    provider_without_target_name_test(
         name = "{}_with_private_cc_deps_with_target_name".format(name),
         expected_files = [
-            "test/fixtures/private_deps/client_cc_deps/client_cc_deps_objs/Empty.swift.ast",
+            "test/fixtures/private_deps/client_cc_deps_objs/Empty.swift.ast",
         ],
         field = "swift_ast_file",
         provider = "OutputGroupInfo",
@@ -124,8 +124,8 @@ def ast_file_test_suite(name):
     provider_test(
         name = "{}_with_multiple_swift_files".format(name),
         expected_files = [
-            "test/fixtures/multiple_files/multiple_files_objs/Empty.swift.ast",
-            "test/fixtures/multiple_files/multiple_files_objs/Empty2.swift.ast",
+            "test/fixtures/multiple_files/multiple_files/multiple_files_objs/Empty.swift.ast",
+            "test/fixtures/multiple_files/multiple_files/multiple_files_objs/Empty2.swift.ast",
         ],
         field = "swift_ast_file",
         provider = "OutputGroupInfo",
@@ -133,11 +133,11 @@ def ast_file_test_suite(name):
         target_under_test = "@build_bazel_rules_swift//test/fixtures/multiple_files",
     )
 
-    private_deps_provider_test(
+    provider_without_target_name_test(
         name = "{}_with_multiple_swift_files_with_target_name".format(name),
         expected_files = [
-            "test/fixtures/multiple_files/multiple_files/multiple_files_objs/Empty.swift.ast",
-            "test/fixtures/multiple_files/multiple_files/multiple_files_objs/Empty2.swift.ast",
+            "test/fixtures/multiple_files/multiple_files_objs/Empty.swift.ast",
+            "test/fixtures/multiple_files/multiple_files_objs/Empty2.swift.ast",
         ],
         field = "swift_ast_file",
         provider = "OutputGroupInfo",

@@ -27,12 +27,11 @@ private_deps_provider_test = make_provider_test_rule(
     },
 )
 
-# Test with enabled `swift.add_target_name_to_output` feature
-private_deps_provider_target_name_test = make_provider_test_rule(
+private_deps_provider_without_target_name_test = make_provider_test_rule(
     config_settings = {
         "//command_line_option:features": [
             "swift.supports_private_deps",
-            "swift.add_target_name_to_output",
+            "-swift.add_target_name_to_output",
         ],
     },
 )
@@ -113,7 +112,7 @@ def private_deps_test_suite(name):
         target_under_test = "@build_bazel_rules_swift//test/fixtures/private_deps:client_cc_deps",
     )
 
-    private_deps_provider_target_name_test(
+    private_deps_provider_without_target_name_test(
         name = "{}_client_cc_deps_modulemaps_target_name".format(name),
         expected_files = [
             "/test/fixtures/private_deps/public_cc_modulemap/_/module.modulemap",

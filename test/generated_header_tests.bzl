@@ -24,9 +24,9 @@ load(
     "provider_test",
 )
 
-private_deps_with_target_name_test = make_provider_test_rule(
+private_deps_without_target_name_test = make_provider_test_rule(
     config_settings = {
-        "//command_line_option:features": ["swift.add_target_name_to_output"],
+        "//command_line_option:features": ["-swift.add_target_name_to_output"],
     },
 )
 
@@ -42,7 +42,7 @@ def generated_header_test_suite(name):
     provider_test(
         name = "{}_automatically_named_header_is_rule_output".format(name),
         expected_files = [
-            "test/fixtures/generated_header/auto_header-Swift.h",
+            "test/fixtures/generated_header/auto_header/auto_header-Swift.h",
             "*",
         ],
         field = "files",
@@ -51,10 +51,10 @@ def generated_header_test_suite(name):
         target_under_test = "@build_bazel_rules_swift//test/fixtures/generated_header:auto_header",
     )
 
-    private_deps_with_target_name_test(
-        name = "{}_automatically_named_header_is_rule_output_with_target_name".format(name),
+    private_deps_without_target_name_test(
+        name = "{}_automatically_named_header_is_rule_output_without_target_name".format(name),
         expected_files = [
-            "test/fixtures/generated_header/auto_header/auto_header-Swift.h",
+            "test/fixtures/generated_header/auto_header-Swift.h",
             "*",
         ],
         field = "files",
@@ -68,7 +68,7 @@ def generated_header_test_suite(name):
     provider_test(
         name = "{}_no_header".format(name),
         expected_files = [
-            "-test/fixtures/generated_header/no_header-Swift.h",
+            "-test/fixtures/generated_header/no_header/no_header-Swift.h",
             "*",
         ],
         field = "files",
@@ -82,8 +82,8 @@ def generated_header_test_suite(name):
     provider_test(
         name = "{}_explicit_header".format(name),
         expected_files = [
-            "test/fixtures/generated_header/SomeOtherName.h",
-            "-test/fixtures/generated_header/explicit_header-Swift.h",
+            "test/fixtures/generated_header/explicit_header/SomeOtherName.h",
+            "-test/fixtures/generated_header/explicit_header/explicit_header-Swift.h",
             "*",
         ],
         field = "files",
@@ -92,10 +92,10 @@ def generated_header_test_suite(name):
         target_under_test = "@build_bazel_rules_swift//test/fixtures/generated_header:explicit_header",
     )
 
-    private_deps_with_target_name_test(
-        name = "{}_explicit_header_with_target_name".format(name),
+    private_deps_without_target_name_test(
+        name = "{}_explicit_header_without_target_name".format(name),
         expected_files = [
-            "test/fixtures/generated_header/explicit_header/SomeOtherName.h",
+            "test/fixtures/generated_header/SomeOtherName.h",
             "-test/fixtures/generated_header/explicit_header-Swift.h",
             "*",
         ],
@@ -117,7 +117,7 @@ def generated_header_test_suite(name):
     provider_test(
         name = "{}_valid_path_separator".format(name),
         expected_files = [
-            "test/fixtures/generated_header/Valid/Separator.h",
+            "test/fixtures/generated_header/valid_path_separator/Valid/Separator.h",
             "*",
         ],
         field = "files",
@@ -126,10 +126,10 @@ def generated_header_test_suite(name):
         target_under_test = "@build_bazel_rules_swift//test/fixtures/generated_header:valid_path_separator",
     )
 
-    private_deps_with_target_name_test(
-        name = "{}_valid_path_separator_with_target_name".format(name),
+    private_deps_without_target_name_test(
+        name = "{}_valid_path_separator_without_target_name".format(name),
         expected_files = [
-            "test/fixtures/generated_header/valid_path_separator/Valid/Separator.h",
+            "test/fixtures/generated_header/Valid/Separator.h",
             "*",
         ],
         field = "files",

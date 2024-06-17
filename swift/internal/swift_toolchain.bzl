@@ -31,6 +31,7 @@ load(":compiling.bzl", "compile_action_configs", "features_from_swiftcopts")
 load(":debugging.bzl", "modulewrap_action_configs")
 load(
     ":feature_names.bzl",
+    "SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT",
     "SWIFT_FEATURE_CACHEABLE_SWIFTMODULES",
     "SWIFT_FEATURE_COVERAGE_PREFIX_MAP",
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
@@ -313,6 +314,7 @@ def _swift_toolchain_impl(ctx):
         features_from_swiftcopts(swiftcopts = swiftcopts)
     )
     requested_features.extend([
+        SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT,
         SWIFT_FEATURE_CACHEABLE_SWIFTMODULES,
         SWIFT_FEATURE_COVERAGE_PREFIX_MAP,
         SWIFT_FEATURE_DEBUG_PREFIX_MAP,
