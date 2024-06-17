@@ -83,6 +83,7 @@ def _swift_import_impl(ctx):
             swiftinterface_file = swiftinterface,
             swift_infos = swift_infos,
             swift_toolchain = swift_toolchain,
+            target_name = ctx.attr.name,
         )
         swift_outputs = [
             module_context.swift.swiftmodule,

@@ -151,7 +151,8 @@ A tuple containing three elements:
 
 <pre>
 swift_common.compile_module_interface(<a href="#swift_common.compile_module_interface-actions">actions</a>, <a href="#swift_common.compile_module_interface-compilation_contexts">compilation_contexts</a>, <a href="#swift_common.compile_module_interface-feature_configuration">feature_configuration</a>,
-                                      <a href="#swift_common.compile_module_interface-module_name">module_name</a>, <a href="#swift_common.compile_module_interface-swiftinterface_file">swiftinterface_file</a>, <a href="#swift_common.compile_module_interface-swift_infos">swift_infos</a>, <a href="#swift_common.compile_module_interface-swift_toolchain">swift_toolchain</a>)
+                                      <a href="#swift_common.compile_module_interface-module_name">module_name</a>, <a href="#swift_common.compile_module_interface-swiftinterface_file">swiftinterface_file</a>, <a href="#swift_common.compile_module_interface-swift_infos">swift_infos</a>, <a href="#swift_common.compile_module_interface-swift_toolchain">swift_toolchain</a>,
+                                      <a href="#swift_common.compile_module_interface-target_name">target_name</a>)
 </pre>
 
 Compiles a Swift module interface.
@@ -168,6 +169,7 @@ Compiles a Swift module interface.
 | <a id="swift_common.compile_module_interface-swiftinterface_file"></a>swiftinterface_file |  The Swift module interface file to compile.   |  none |
 | <a id="swift_common.compile_module_interface-swift_infos"></a>swift_infos |  A list of `SwiftInfo` providers from dependencies of the target being compiled.   |  none |
 | <a id="swift_common.compile_module_interface-swift_toolchain"></a>swift_toolchain |  The `SwiftToolchainInfo` provider of the toolchain.   |  none |
+| <a id="swift_common.compile_module_interface-target_name"></a>target_name |  The name of the target for which the code is being compiled, which is used to determine unique file paths for the outputs.   |  none |
 
 **RETURNS**
 

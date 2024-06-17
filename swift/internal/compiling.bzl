@@ -2179,7 +2179,8 @@ def compile_module_interface(
         module_name,
         swiftinterface_file,
         swift_infos,
-        swift_toolchain):
+        swift_toolchain,
+        target_name):
     """Compiles a Swift module interface.
 
     Args:
@@ -2198,6 +2199,9 @@ def compile_module_interface(
         swift_infos: A list of `SwiftInfo` providers from dependencies of the
             target being compiled.
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
+        target_name: The name of the target for which the code is being
+            compiled, which is used to determine unique file paths for the
+            outputs.
 
     Returns:
         A Swift module context (as returned by `swift_common.create_module`)
@@ -2235,11 +2239,6 @@ def compile_module_interface(
             continue
         transitive_swiftmodules.append(swift_module.swiftmodule)
 
-    add_target_name_to_output_path = is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT,
-    )
-
     # We need this when generating the VFS overlay file and also when
     # configuring inputs for the compile action, so it's best to precompute it
     # here.
@@ -2249,8 +2248,7 @@ def compile_module_interface(
     ):
         vfsoverlay_file = derived_files.vfsoverlay(
             actions = actions,
-            add_target_name_to_output_path = add_target_name_to_output_path,
-            target_name = module_name,
+            target_name = target_name,
         )
         write_vfsoverlay(
             actions = actions,
@@ -2269,7 +2267,7 @@ def compile_module_interface(
             fail("Cannot use both `swift.vfsoverlay` and `swift.use_explicit_swift_module_map` features at the same time.")
 
         explicit_swift_module_map_file = actions.declare_file(
-            "{}.swift-explicit-module-map.json".format(module_name),
+            "{}.swift-explicit-module-map.json".format(target_name),
         )
         write_explicit_swift_module_map_file(
             actions = actions,
@@ -2545,11 +2543,6 @@ def compile(
                 sets.make(swift_module.defines),
             )
 
-    add_target_name_to_output_path = is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT,
-    )
-
     # We need this when generating the VFS overlay file and also when
     # configuring inputs for the compile action, so it's best to precompute it
     # here.
@@ -2559,7 +2552,6 @@ def compile(
     ):
         vfsoverlay_file = derived_files.vfsoverlay(
             actions = actions,
-            add_target_name_to_output_path = add_target_name_to_output_path,
             target_name = target_name,
         )
         write_vfsoverlay(
@@ -2887,14 +2879,8 @@ def _precompile_clang_module(
     ):
         return None
 
-    add_target_name_to_output_path = is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT,
-    )
-
     precompiled_module = derived_files.precompiled_module(
         actions = actions,
-        add_target_name_to_output_path = add_target_name_to_output_path,
         target_name = target_name,
     )
 
@@ -3216,12 +3202,10 @@ def _declare_compile_outputs(
         # no other partial outputs.
         object_files = [derived_files.whole_module_object_file(
             actions = actions,
-            add_target_name_to_output_path = add_target_name_to_output_path,
             target_name = target_name,
         )]
         ast_files = [derived_files.ast(
             actions = actions,
-            add_target_name_to_output_path = add_target_name_to_output_path,
             target_name = target_name,
             src = srcs[0],
         )]
@@ -3242,7 +3226,6 @@ def _declare_compile_outputs(
         # object files so that we can pass them all to the archive action.
         output_info = _declare_multiple_outputs_and_write_output_file_map(
             actions = actions,
-            add_target_name_to_output_path = add_target_name_to_output_path,
             extract_const_values = extract_const_values,
             is_wmo = output_nature.is_wmo,
             emits_bc = emits_bc,
@@ -3270,7 +3253,6 @@ def _declare_compile_outputs(
     ):
         indexstore_directory = derived_files.indexstore_directory(
             actions = actions,
-            add_target_name_to_output_path = add_target_name_to_output_path,
             target_name = target_name,
         )
     else:
@@ -3283,7 +3265,6 @@ def _declare_compile_outputs(
     if (emit_symbol_graph):
         symbol_graph_directory = derived_files.symbol_graph_directory(
             actions = actions,
-            add_target_name_to_output_path = add_target_name_to_output_path,
             target_name = target_name,
         )
     else:
@@ -3323,7 +3304,6 @@ def _declare_compile_outputs(
 
 def _declare_multiple_outputs_and_write_output_file_map(
         actions,
-        add_target_name_to_output_path,
         extract_const_values,
         is_wmo,
         emits_bc,
@@ -3334,7 +3314,6 @@ def _declare_multiple_outputs_and_write_output_file_map(
 
     Args:
         actions: The object used to register actions.
-        add_target_name_to_output_path: Add target_name in output path. More info at SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT description.
         extract_const_values: A Boolean value indicating whether constant values
             should be extracted during this compilation.
         is_wmo: A Boolean value indicating whether whole-module-optimization was
@@ -3366,14 +3345,12 @@ def _declare_multiple_outputs_and_write_output_file_map(
     """
     output_map_file = derived_files.swiftc_output_file_map(
         actions = actions,
-        add_target_name_to_output_path = add_target_name_to_output_path,
         target_name = target_name,
     )
 
     if split_derived_file_generation:
         derived_files_output_map_file = derived_files.swiftc_derived_output_file_map(
             actions = actions,
-            add_target_name_to_output_path = add_target_name_to_output_path,
             target_name = target_name,
         )
     else:
@@ -3420,7 +3397,6 @@ def _declare_multiple_outputs_and_write_output_file_map(
             # Declare the llvm bc file (there is one per source file).
             obj = derived_files.intermediate_bc_file(
                 actions = actions,
-                add_target_name_to_output_path = add_target_name_to_output_path,
                 target_name = target_name,
                 src = src,
             )
@@ -3430,7 +3406,6 @@ def _declare_multiple_outputs_and_write_output_file_map(
             # Declare the object file (there is one per source file).
             obj = derived_files.intermediate_object_file(
                 actions = actions,
-                add_target_name_to_output_path = add_target_name_to_output_path,
                 target_name = target_name,
                 src = src,
             )
@@ -3439,7 +3414,6 @@ def _declare_multiple_outputs_and_write_output_file_map(
 
         ast = derived_files.ast(
             actions = actions,
-            add_target_name_to_output_path = add_target_name_to_output_path,
             target_name = target_name,
             src = src,
         )
