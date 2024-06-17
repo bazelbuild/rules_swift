@@ -338,3 +338,8 @@ def features_test_suite(name):
             "//test/fixtures/global_index_store:simple",
         ],
     )
+
+    native.test_suite(
+        name = name,
+        tags = [name],
+    )
