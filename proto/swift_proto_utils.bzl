@@ -31,14 +31,14 @@ load(
 
 # buildifier: disable=bzl-visibility
 load(
-    "//swift/internal:compiling.bzl",
-    "output_groups_from_other_compilation_outputs",
+    "//swift/internal:linking.bzl",
+    "new_objc_provider",
 )
 
 # buildifier: disable=bzl-visibility
 load(
-    "//swift/internal:linking.bzl",
-    "new_objc_provider",
+    "//swift/internal:output_groups.bzl",
+    "supplemental_compilation_output_groups",
 )
 
 # buildifier: disable=bzl-visibility
@@ -268,7 +268,7 @@ def compile_swift_protos_for_target(
 
     # Compile the generated Swift source files as a module:
     include_dev_srch_paths = include_developer_search_paths(attr)
-    module_context, cc_compilation_outputs, other_compilation_outputs = swift_common.compile(
+    module_context, cc_compilation_outputs, supplemental_outputs = swift_common.compile(
         actions = ctx.actions,
         cc_infos = get_providers(compiler_deps, CcInfo),
         copts = ["-parse-as-library"],
@@ -370,8 +370,8 @@ def compile_swift_protos_for_target(
 
     # Create the direct output group info provider:
     direct_output_group_info = OutputGroupInfo(
-        **output_groups_from_other_compilation_outputs(
-            other_compilation_outputs = other_compilation_outputs,
+        **supplemental_compilation_output_groups(
+            supplemental_outputs,
         )
     )
 

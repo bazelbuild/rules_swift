@@ -23,11 +23,7 @@ load(
     "PerModuleSwiftCoptSettingInfo",
     "additional_per_module_swiftcopts",
 )
-load(
-    ":compiling.bzl",
-    "output_groups_from_other_compilation_outputs",
-    "swift_library_output_map",
-)
+load(":compiling.bzl", "swift_library_output_map")
 load(
     ":feature_names.bzl",
     "SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE",
@@ -36,6 +32,7 @@ load(
     "SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS",
 )
 load(":linking.bzl", "new_objc_provider")
+load(":output_groups.bzl", "supplemental_compilation_output_groups")
 load(":providers.bzl", "SwiftCompilerPluginInfo", "SwiftInfo", "SwiftToolchainInfo")
 load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 load(":swift_common.bzl", "swift_common")
@@ -183,7 +180,7 @@ def _swift_library_impl(ctx):
 
     include_dev_srch_paths = include_developer_search_paths(ctx.attr)
 
-    module_context, cc_compilation_outputs, other_compilation_outputs = swift_common.compile(
+    module_context, cc_compilation_outputs, supplemental_outputs = swift_common.compile(
         actions = ctx.actions,
         additional_inputs = additional_inputs,
         cc_infos = get_providers(ctx.attr.deps, CcInfo),
@@ -255,8 +252,8 @@ def _swift_library_impl(ctx):
                 files = ctx.files.data,
             ),
         ),
-        OutputGroupInfo(**output_groups_from_other_compilation_outputs(
-            other_compilation_outputs = other_compilation_outputs,
+        OutputGroupInfo(**supplemental_compilation_output_groups(
+            supplemental_outputs,
         )),
         CcInfo(
             compilation_context = module_context.clang.compilation_context,

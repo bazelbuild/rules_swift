@@ -7,7 +7,10 @@ exports_files(["copy_swift_sources.sh.tpl"])
 bzl_library(
     name = "swift_proto_utils",
     srcs = ["swift_proto_utils.bzl"],
-    deps = ["@bazel_skylib//lib:paths"],
+    deps = [
+        "//swift/internal:output_groups",
+        "@bazel_skylib//lib:paths",
+    ],
 )
 
 bzl_library(

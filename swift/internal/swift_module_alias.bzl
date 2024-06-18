@@ -15,9 +15,9 @@
 """Implementation of the `swift_module_alias` rule."""
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load(":compiling.bzl", "output_groups_from_other_compilation_outputs")
 load(":derived_files.bzl", "derived_files")
 load(":linking.bzl", "new_objc_provider")
+load(":output_groups.bzl", "supplemental_compilation_output_groups")
 load(":providers.bzl", "SwiftInfo", "SwiftToolchainInfo")
 load(":swift_common.bzl", "swift_common")
 load(":utils.bzl", "compact", "get_providers")
@@ -57,7 +57,7 @@ def _swift_module_alias_impl(ctx):
 
     swift_infos = get_providers(deps, SwiftInfo)
 
-    module_context, compilation_outputs, other_compilation_outputs = swift_common.compile(
+    module_context, compilation_outputs, supplemental_outputs = swift_common.compile(
         actions = ctx.actions,
         cc_infos = get_providers(ctx.attr.deps, CcInfo),
         copts = ["-parse-as-library"],
@@ -101,8 +101,8 @@ def _swift_module_alias_impl(ctx):
                 linking_output.library_to_link.static_library,
             ])),
         ),
-        OutputGroupInfo(**output_groups_from_other_compilation_outputs(
-            other_compilation_outputs = other_compilation_outputs,
+        OutputGroupInfo(**supplemental_compilation_output_groups(
+            supplemental_outputs,
         )),
         coverage_common.instrumented_files_info(
             ctx,
