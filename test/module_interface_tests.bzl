@@ -60,7 +60,7 @@ def module_interface_test_suite(name):
         name = "{}_explicit_swift_module_map_test".format(name),
         tags = [name],
         expected_argv = [
-            "-explicit-swift-module-map-file $(BIN_DIR)/test/fixtures/module_interface/ToyModule.swift-explicit-module-map.json",
+            "-explicit-swift-module-map-file $(BIN_DIR)/test/fixtures/module_interface/toy_module.swift-explicit-module-map.json",
         ],
         not_expected_argv = [
             "-Xfrontend",
@@ -73,7 +73,7 @@ def module_interface_test_suite(name):
         name = "{}_vfsoverlay_test".format(name),
         tags = [name],
         expected_argv = [
-            "-vfsoverlay$(BIN_DIR)/test/fixtures/module_interface/ToyModule.vfsoverlay.yaml",
+            "-vfsoverlay$(BIN_DIR)/test/fixtures/module_interface/toy_module.vfsoverlay.yaml",
             "-I/__build_bazel_rules_swift/swiftmodules",
         ],
         not_expected_argv = [

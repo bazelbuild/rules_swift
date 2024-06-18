@@ -230,21 +230,6 @@ def features_test_suite(name):
         target_under_test = "@build_bazel_rules_swift//test/fixtures/basic:second",
     )
 
-    vfsoverlay_with_target_name_test(
-        name = "{}_vfsoverlay_with_target_name_test".format(name),
-        tags = [name],
-        expected_argv = [
-            "-Xfrontend -vfsoverlay$(BIN_DIR)/test/fixtures/basic/second/second.vfsoverlay.yaml",
-            "-I/__build_bazel_rules_swift/swiftmodules",
-        ],
-        not_expected_argv = [
-            "-I$(BIN_DIR)/test/fixtures/basic",
-            "-explicit-swift-module-map-file",
-        ],
-        mnemonic = "SwiftCompile",
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/basic:second",
-    )
-
     explicit_swift_module_map_test(
         name = "{}_explicit_swift_module_map_test".format(name),
         tags = [name],

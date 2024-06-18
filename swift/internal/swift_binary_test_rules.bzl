@@ -201,14 +201,13 @@ def _swift_linking_rule_impl(
 
     return cc_compilation_outputs, linking_outputs, providers
 
-def _create_xctest_runner(name, actions, add_target_name_to_output_path, executable, xctest_runner_template):
+def _create_xctest_runner(name, actions, executable, xctest_runner_template):
     """Creates a script that will launch `xctest` with the given test bundle.
 
     Args:
         name: The name of the target being built, which will be used as the
             basename of the test runner script.
         actions: The context's actions object.
-        add_target_name_to_output_path: Add target_name in output path. More info at SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT description.
         executable: The `File` representing the executable inside the `.xctest`
             bundle that should be executed.
         xctest_runner_template: The `File` that will be used as a template to
@@ -220,7 +219,6 @@ def _create_xctest_runner(name, actions, add_target_name_to_output_path, executa
     """
     xctest_runner = derived_files.xctest_runner_script(
         actions = actions,
-        add_target_name_to_output_path = add_target_name_to_output_path,
         target_name = name,
     )
 
@@ -277,11 +275,6 @@ def _swift_test_impl(ctx):
         feature_name = SWIFT_FEATURE_BUNDLED_XCTESTS,
     )
 
-    add_target_name_to_output_path = swift_common.is_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT,
-    )
-
     # If we need to run the test in an .xctest bundle, the binary must have
     # Mach-O type `MH_BUNDLE` instead of `MH_EXECUTE`.
     linkopts = ["-Wl,-bundle"] if is_bundled else []
@@ -327,7 +320,6 @@ def _swift_test_impl(ctx):
         xctest_runner = _create_xctest_runner(
             name = ctx.label.name,
             actions = ctx.actions,
-            add_target_name_to_output_path = add_target_name_to_output_path,
             executable = linking_outputs.executable,
             xctest_runner_template = ctx.file._xctest_runner_template,
         )
