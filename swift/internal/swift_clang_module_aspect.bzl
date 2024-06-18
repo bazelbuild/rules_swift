@@ -764,7 +764,8 @@ def _find_swift_interop_info(target, aspect_ctx):
     # We don't break this loop early when we find a matching hint, because we
     # want to give an error message if there are two aspect hints that provide
     # `_SwiftInteropInfo` (or if both the rule and an aspect hint do).
-    for hint in aspect_ctx.rule.attr.aspect_hints:
+    # TODO: remove usage of `getattr` and use `aspect_ctx.rule.attr.aspect_hints` directly when we drop Bazel 6.
+    for hint in getattr(aspect_ctx.rule.attr, "aspect_hints", []):
         if _SwiftInteropInfo in hint:
             if interop_target:
                 if interop_from_rule:
