@@ -19,6 +19,7 @@ non_module_deps = use_extension("//swift:extensions.bzl", "non_module_deps")
 use_repo(
     non_module_deps,
     "build_bazel_rules_swift_index_import",
+    "build_bazel_rules_swift_local_cc_config",
     "build_bazel_rules_swift_local_config",
     "com_github_apple_swift_log",
     "com_github_apple_swift_nio",
