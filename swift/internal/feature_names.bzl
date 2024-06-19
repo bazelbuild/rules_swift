@@ -107,9 +107,6 @@ SWIFT_FEATURE_CODEVIEW_DEBUG_INFO = "swift.codeview_debug_info"
 # https://docs.google.com/document/d/1cH2sTpgSnJZCkZtJl1aY-rzy4uGPcrI-6RrUpdATO2Q/
 SWIFT_FEATURE_INDEX_WHILE_BUILDING = "swift.index_while_building"
 
-# If enabled, the compilation action for a target will produce a symbol graph.
-SWIFT_FEATURE_EMIT_SYMBOL_GRAPH = "swift.emit_symbol_graph"
-
 # If enabled the compilation action will not produce indexes for system modules.
 SWIFT_FEATURE_DISABLE_SYSTEM_INDEX = "swift.disable_system_index"
 
