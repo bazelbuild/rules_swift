@@ -35,7 +35,6 @@ def supplemental_compilation_output_groups(*supplemental_outputs):
     const_values_files = []
     indexstore_files = []
     macro_expansions_files = []
-    symbol_graph_files = []
 
     for outputs in supplemental_outputs:
         if outputs.ast_files:
@@ -46,8 +45,6 @@ def supplemental_compilation_output_groups(*supplemental_outputs):
             indexstore_files.append(outputs.indexstore)
         if outputs.macro_expansion_directory:
             macro_expansions_files.append(outputs.macro_expansion_directory)
-        if outputs.symbol_graph:
-            symbol_graph_files.append(outputs.symbol_graph)
 
     output_groups = {}
     if ast_files:
@@ -58,6 +55,4 @@ def supplemental_compilation_output_groups(*supplemental_outputs):
         output_groups["swift_index_store"] = depset(indexstore_files)
     if macro_expansions_files:
         output_groups["macro_expansions"] = depset(macro_expansions_files)
-    if symbol_graph_files:
-        output_groups["swift_symbol_graph"] = depset(symbol_graph_files)
     return output_groups
