@@ -128,6 +128,15 @@ bzl_library(
 )
 
 bzl_library(
+    name = "output_groups",
+    srcs = ["output_groups.bzl"],
+    visibility = [
+        "//proto:__subpackages__",
+        "//swift:__subpackages__",
+    ],
+)
+
+bzl_library(
     name = "providers",
     srcs = ["providers.bzl"],
     visibility = ["//swift:__subpackages__"],
@@ -217,6 +226,7 @@ bzl_library(
         ":compiling",
         ":feature_names",
         ":linking",
+        ":output_groups",
         ":providers",
         ":swift_common",
         ":utils",
@@ -248,6 +258,7 @@ bzl_library(
         ":compiling",
         ":derived_files",
         ":linking",
+        ":output_groups",
         ":providers",
         ":swift_common",
         ":utils",
@@ -377,6 +388,7 @@ bzl_library(
         ":env_expansion",
         ":feature_names",
         ":linking",
+        ":output_groups",
         ":providers",
         ":swift_common",
         ":utils",

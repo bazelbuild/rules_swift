@@ -35,6 +35,7 @@ bzl_library(
         ":module_name",
         "//swift/internal:compiling",
         "//swift/internal:linking",
+        "//swift/internal:output_groups",
         "//swift/internal:providers",
         "//swift/internal:swift_common",
         "//swift/internal:utils",

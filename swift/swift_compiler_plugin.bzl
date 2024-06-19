@@ -19,10 +19,6 @@ load("@build_bazel_apple_support//lib:apple_support.bzl", "apple_support")
 load("@build_bazel_apple_support//lib:lipo.bzl", "lipo")
 load("@build_bazel_apple_support//lib:transitions.bzl", "macos_universal_transition")
 load(
-    "@build_bazel_rules_swift//swift/internal:compiling.bzl",
-    "output_groups_from_other_compilation_outputs",
-)
-load(
     "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE__SUPPORTS_MACROS",
 )
@@ -37,6 +33,10 @@ load(
     "create_linking_context_from_compilation_outputs",
     "malloc_linking_context",
     "register_link_binary_action",
+)
+load(
+    "@build_bazel_rules_swift//swift/internal:output_groups.bzl",
+    "supplemental_compilation_output_groups",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:providers.bzl",
@@ -81,7 +81,7 @@ def _swift_compiler_plugin_impl(ctx):
         module_name = derive_swift_module_name(ctx.label)
     entry_point_function_name = "{}_main".format(module_name)
 
-    module_context, cc_compilation_outputs, other_compilation_outputs = swift_common.compile(
+    module_context, cc_compilation_outputs, supplemental_outputs = swift_common.compile(
         actions = ctx.actions,
         additional_inputs = ctx.files.swiftc_inputs,
         cc_infos = get_providers(deps, CcInfo),
@@ -114,8 +114,8 @@ def _swift_compiler_plugin_impl(ctx):
         target_name = ctx.label.name,
         workspace_name = ctx.workspace_name,
     )
-    output_groups = output_groups_from_other_compilation_outputs(
-        other_compilation_outputs = other_compilation_outputs,
+    output_groups = supplemental_compilation_output_groups(
+        supplemental_outputs,
     )
 
     cc_feature_configuration = swift_common.cc_feature_configuration(
