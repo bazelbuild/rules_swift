@@ -16,16 +16,9 @@
 Defines a rule for compiling Swift source files from ProtoInfo providers.
 """
 
-load(
-    "@bazel_skylib//lib:paths.bzl",
-    "paths",
-)
-load(
-    "//proto:proto.bzl",
-    "SwiftProtoCompilerInfo",
-    "swift_proto_common",
-)
-load("//swift:providers.bzl", "SwiftInfo")
+load("@bazel_skylib//lib:paths.bzl", "paths")
+load("//proto:swift_proto_common.bzl", "swift_proto_common")
+load("//swift:providers.bzl", "SwiftInfo", "SwiftProtoCompilerInfo")
 
 def _custom_swift_proto_compile(label, actions, swift_proto_compiler_info, additional_compiler_info, proto_infos, module_mappings):
     """Compiles Swift source files from `ProtoInfo` providers.
