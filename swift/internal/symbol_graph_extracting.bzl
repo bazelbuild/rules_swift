@@ -33,6 +33,12 @@ def symbol_graph_action_configs():
         swift_toolchain_config.action_config(
             actions = [swift_action_names.SYMBOL_GRAPH_EXTRACT],
             configurators = [
+                _symbol_graph_emit_extension_block_symbols_configurator,
+            ],
+        ),
+        swift_toolchain_config.action_config(
+            actions = [swift_action_names.SYMBOL_GRAPH_EXTRACT],
+            configurators = [
                 _symbol_graph_minimum_access_level_configurator,
             ],
         ),
@@ -43,6 +49,13 @@ def symbol_graph_action_configs():
             ],
         ),
     ]
+
+def _symbol_graph_emit_extension_block_symbols_configurator(prerequisites, args):
+    """Configures whether `extension` block information should be emitted in the symbol graph."""
+
+    # TODO: update to use `bool` once https://github.com/bazelbuild/bazel/issues/22809 is resolved.
+    if prerequisites.emit_extension_block_symbols == "1":
+        args.add("-emit-extension-block-symbols")
 
 def _symbol_graph_minimum_access_level_configurator(prerequisites, args):
     """Configures the minimum access level of the symbol graph extraction."""
@@ -57,6 +70,7 @@ def extract_symbol_graph(
         *,
         actions,
         compilation_contexts,
+        emit_extension_block_symbols = None,
         feature_configuration,
         include_dev_srch_paths,
         minimum_access_level = None,
@@ -73,6 +87,8 @@ def extract_symbol_graph(
             Swift-compatible preprocessor defines, header search paths, and so
             forth. These are typically retrieved from the `CcInfo` providers of
             a target's dependencies.
+        emit_extension_block_symbols: A `bool` that indicates whether `extension` block
+            information should be included in the symbol graph.
         feature_configuration: The Swift feature configuration.
         include_dev_srch_paths: A `bool` that indicates whether the developer
             framework search paths will be added to the compilation command.
@@ -121,6 +137,7 @@ def extract_symbol_graph(
         bin_dir = feature_configuration._bin_dir,
         cc_compilation_context = merged_compilation_context,
         developer_dirs = swift_toolchain.developer_dirs,
+        emit_extension_block_symbols = emit_extension_block_symbols,
         genfiles_dir = feature_configuration._genfiles_dir,
         include_dev_srch_paths = include_dev_srch_paths,
         is_swift = True,

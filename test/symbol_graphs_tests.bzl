@@ -41,6 +41,27 @@ def symbol_graphs_test_suite(name):
         target_under_test = "@build_bazel_rules_swift//test/fixtures/symbol_graphs:some_module_symbol_graph",
     )
 
+    # TODO: ideally this tests the contents of the json file(s) to ensure
+    # the extension block symbols are present, but requires a json content test which
+    # is not yet implemented.
+    #
+    # Verify that the `swift_extract_symbol_graph` rule produces a directory
+    # output containing the correct files when the rule additionally requests
+    # to emit extension block symbols.
+    directory_test(
+        name = "{}_extract_rule_outputs_extension_block_symbols_files".format(name),
+        expected_directories = {
+            "test/fixtures/symbol_graphs/some_module_symbol_graph_with_extension_block_symbols.symbolgraphs": [
+                "SomeModuleWithExtension.symbols.json",
+            ],
+        },
+        tags = [name],
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/symbol_graphs:some_module_symbol_graph_with_extension_block_symbols",
+        # TODO: remove this constraint once Swift version in CI for Linux/Windows is updated to 5.9+
+        # until then `-emit-extension-block-symbols` is not testable as the compiler does not have the flag.
+        target_compatible_with = ["@platforms//os:macos"],
+    )
+
     # Verify that the `swift_extract_symbol_graph` rule produces a directory
     # output containing only the graph for the requested target and not its
     # dependencies.

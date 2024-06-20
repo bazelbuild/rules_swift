@@ -26,6 +26,13 @@ swift_library(
 )
 
 swift_library(
+    name = "some_module_with_extension",
+    srcs = ["SomeModuleWithExtension.swift"],
+    module_name = "SomeModuleWithExtension",
+    tags = FIXTURE_TAGS,
+)
+
+swift_library(
     name = "importing_module",
     srcs = ["ImportingModule.swift"],
     module_name = "ImportingModule",
@@ -37,6 +44,13 @@ swift_extract_symbol_graph(
     name = "some_module_symbol_graph",
     tags = FIXTURE_TAGS,
     targets = [":some_module"],
+)
+
+swift_extract_symbol_graph(
+    name = "some_module_symbol_graph_with_extension_block_symbols",
+    emit_extension_block_symbols = "1",
+    tags = FIXTURE_TAGS,
+    targets = [":some_module_with_extension"],
 )
 
 swift_extract_symbol_graph(

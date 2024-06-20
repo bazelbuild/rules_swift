@@ -72,6 +72,22 @@ done
 
 swift_extract_symbol_graph = rule(
     attrs = {
+        # TODO: use `attr.bool` once https://github.com/bazelbuild/bazel/issues/22809 is resolved.
+        "emit_extension_block_symbols": attr.string(
+            default = "0",
+            doc = """\
+Defines if the symbol graph information for `extension` blocks should be
+emitted in addition to the default symbol graph information.
+
+This value must be either `"0"` or `"1"`.When the value is `"1"`, the symbol
+graph information for `extension` blocks will be emitted in addition to
+the default symbol graph information. The default value is `"0"`.
+""",
+            values = [
+                "0",
+                "1",
+            ],
+        ),
         "minimum_access_level": attr.string(
             default = "public",
             doc = """\

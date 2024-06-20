@@ -49,6 +49,7 @@ def _swift_symbol_graph_aspect_impl(target, aspect_ctx):
         else:
             compilation_context = cc_common.create_compilation_context()
 
+        emit_extension_block_symbols = aspect_ctx.attr.emit_extension_block_symbols
         minimum_access_level = aspect_ctx.attr.minimum_access_level
 
         for module in swift_info.direct_modules:
@@ -59,6 +60,7 @@ def _swift_symbol_graph_aspect_impl(target, aspect_ctx):
             extract_symbol_graph(
                 actions = aspect_ctx.actions,
                 compilation_contexts = [compilation_context],
+                emit_extension_block_symbols = emit_extension_block_symbols,
                 feature_configuration = feature_configuration,
                 include_dev_srch_paths = include_developer_search_paths(
                     aspect_ctx.rule.attr,
@@ -113,12 +115,16 @@ def _testonly_symbol_graph_aspect_impl(target, aspect_ctx):
 
 def make_swift_symbol_graph_aspect(
         *,
+        default_emit_extension_block_symbols,
         default_minimum_access_level,
         doc = "",
         testonly_targets):
     """Creates an aspect that extracts Swift symbol graphs from dependencies.
 
     Args:
+        default_emit_extension_block_symbols: The default value for the `emit_extension_block_symbols`
+            attribute of the aspect. A rule that applies this aspect can let users
+            override this value if it also provides an attribute named `emit_extension_block_symbols`.
         default_minimum_access_level: The default minimum access level of the
             declarations that should be emitted in the symbol graphs. A rule
             that applies this aspect can let users override this value if it
@@ -140,6 +146,24 @@ def make_swift_symbol_graph_aspect(
         attrs = dicts.add(
             swift_toolchain_attrs(),
             {
+                # TODO: use `attr.bool` once https://github.com/bazelbuild/bazel/issues/22809 is resolved.
+                "emit_extension_block_symbols": attr.string(
+                    default = default_emit_extension_block_symbols,
+                    doc = """\
+Defines if the symbol graph information for `extension` blocks should be
+emitted in addition to the default symbol graph information.
+
+This value must be either `"0"` or `"1"`.When the value is `"1"`, the symbol
+graph information for `extension` blocks will be emitted in addition to
+the default symbol graph information. The default value is `"{default_value}"`.
+""".format(
+                        default_value = default_emit_extension_block_symbols,
+                    ),
+                    values = [
+                        "0",
+                        "1",
+                    ],
+                ),
                 "minimum_access_level": attr.string(
                     default = default_minimum_access_level,
                     doc = """\
