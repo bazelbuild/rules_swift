@@ -14,7 +14,7 @@ x_defaults:
     platform: ubuntu2004
     environment:
       CC: clang
-      SWIFT_VERSION: "5.7.2"
+      SWIFT_VERSION: "5.9.2"
       SWIFT_HOME: "$HOME/swift-$SWIFT_VERSION"
       PATH: "$PATH:$SWIFT_HOME/usr/bin"
     build_flags: &linux_flags

@@ -57,9 +57,6 @@ def symbol_graphs_test_suite(name):
         },
         tags = [name],
         target_under_test = "@build_bazel_rules_swift//test/fixtures/symbol_graphs:some_module_symbol_graph_with_extension_block_symbols",
-        # TODO: remove this constraint once Swift version in CI for Linux/Windows is updated to 5.9+
-        # until then `-emit-extension-block-symbols` is not testable as the compiler does not have the flag.
-        target_compatible_with = ["@platforms//os:macos"],
     )
 
     # Verify that the `swift_extract_symbol_graph` rule produces a directory
