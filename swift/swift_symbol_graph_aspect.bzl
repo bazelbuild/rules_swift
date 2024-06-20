@@ -20,6 +20,7 @@ load(
 )
 
 swift_symbol_graph_aspect = make_swift_symbol_graph_aspect(
+    default_emit_extension_block_symbols = "0",
     default_minimum_access_level = "public",
     doc = """\
 Extracts symbol graphs from Swift modules in the build graph.

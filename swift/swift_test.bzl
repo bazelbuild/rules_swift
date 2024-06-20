@@ -51,6 +51,7 @@ load(
 load(":swift_common.bzl", "swift_common")
 
 _test_discovery_symbol_graph_aspect = make_swift_symbol_graph_aspect(
+    default_emit_extension_block_symbols = "0",
     default_minimum_access_level = "internal",
     testonly_targets = True,
 )
