@@ -1,8 +1,5 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
-load(
-    "//proto:proto.bzl",
-    "swift_proto_compiler",
-)
+load("//proto:swift_proto_compiler.bzl", "swift_proto_compiler")
 load(
     "//proto/compilers:swift_proto_compiler_macros.bzl",
     "GRPC_VARIANT_CLIENT",

@@ -22,25 +22,31 @@ For example:
 
 ```build
 load("@build_bazel_rules_swift//swift:swift_library.bzl", "swift_library")
-load("@build_bazel_rules_swift//proto:proto.bzl", "swift_proto_library")
+load("@build_bazel_rules_swift//proto:swift_proto_library.bzl", "swift_proto_library")
 ```
 """
 
 load(
-    "//proto:proto.bzl",
-    # providers
-    _SwiftProtoCompilerInfo = "SwiftProtoCompilerInfo",
-    _SwiftProtoInfo = "SwiftProtoInfo",
-    # api
+    "//proto:swift_proto_common.bzl",
     _swift_proto_common = "swift_proto_common",
-    # rules
+)
+load(
+    "//proto:swift_proto_compiler.bzl",
     _swift_proto_compiler = "swift_proto_compiler",
+)
+load(
+    "//proto:swift_proto_library.bzl",
     _swift_proto_library = "swift_proto_library",
+)
+load(
+    "//proto:swift_proto_library_group.bzl",
     _swift_proto_library_group = "swift_proto_library_group",
 )
 load(
     "//swift:providers.bzl",
     _SwiftInfo = "SwiftInfo",
+    _SwiftProtoCompilerInfo = "SwiftProtoCompilerInfo",
+    _SwiftProtoInfo = "SwiftProtoInfo",
     _SwiftToolchainInfo = "SwiftToolchainInfo",
 )
 load("//swift:swift_binary.bzl", _swift_binary = "swift_binary")

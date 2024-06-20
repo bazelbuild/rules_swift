@@ -10,7 +10,7 @@ For example:
 
 ```build
 load("@build_bazel_rules_swift//swift:swift_library.bzl", "swift_library")
-load("@build_bazel_rules_swift//proto:proto.bzl", "swift_proto_library")
+load("@build_bazel_rules_swift//proto:swift_proto_library.bzl", "swift_proto_library")
 ```
 On this page:
 
@@ -535,7 +535,7 @@ Generates a Swift static library from one or more targets producing `ProtoInfo`.
 
 ```python
 load("@rules_proto//proto:defs.bzl", "proto_library")
-load("//proto:proto.bzl", "swift_proto_library")
+load("//proto:swift_proto_library.bzl", "swift_proto_library")
 
 proto_library(
     name = "foo",
@@ -553,7 +553,7 @@ swift_proto_library targets which mirror the dependencies between the proto targ
 
 ```python
 load("@rules_proto//proto:defs.bzl", "proto_library")
-load("//proto:proto.bzl", "swift_proto_library")
+load("//proto:swift_proto_library.bzl", "swift_proto_library")
 
 proto_library(
     name = "bar",
