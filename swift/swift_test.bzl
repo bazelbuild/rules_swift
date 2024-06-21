@@ -457,6 +457,11 @@ swift_test = rule(
                 ),
                 executable = True,
             ),
+            "_test_observer": attr.label(
+                default = Label(
+                    "@build_bazel_rules_swift//tools/test_observer",
+                ),
+            ),
             "_xctest_runner_template": attr.label(
                 allow_single_file = True,
                 default = Label(
