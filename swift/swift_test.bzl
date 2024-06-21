@@ -254,6 +254,7 @@ def _swift_test_impl(ctx):
             additional_linking_contexts.append(plugin_info.cc_info.linking_context)
 
     srcs = ctx.files.srcs
+    extra_deps = []
 
     # If no sources were provided and we're not using `.xctest` bundling, assume
     # that we need to discover tests using symbol graphs.
@@ -268,6 +269,9 @@ def _swift_test_impl(ctx):
             name = ctx.label.name,
             test_discoverer = ctx.executable._test_discoverer,
         )
+        extra_deps = [ctx.attr._test_observer]
+    elif is_bundled:
+        extra_deps = [ctx.attr._test_observer]
 
     module_contexts = []
     all_supplemental_outputs = []
@@ -282,7 +286,7 @@ def _swift_test_impl(ctx):
         module_context, cc_compilation_outputs, supplemental_outputs = swift_common.compile(
             actions = ctx.actions,
             additional_inputs = ctx.files.swiftc_inputs,
-            cc_infos = get_providers(ctx.attr.deps, CcInfo),
+            cc_infos = get_providers(ctx.attr.deps + extra_deps, CcInfo),
             copts = expand_locations(
                 ctx,
                 ctx.attr.copts,
@@ -293,11 +297,14 @@ def _swift_test_impl(ctx):
             feature_configuration = feature_configuration,
             include_dev_srch_paths = include_dev_srch_paths,
             module_name = module_name,
-            objc_infos = get_providers(ctx.attr.deps, apple_common.Objc),
+            objc_infos = get_providers(
+                ctx.attr.deps + extra_deps,
+                apple_common.Objc,
+            ),
             package_name = ctx.attr.package_name,
             plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),
             srcs = srcs,
-            swift_infos = get_providers(ctx.attr.deps, SwiftInfo),
+            swift_infos = get_providers(ctx.attr.deps + extra_deps, SwiftInfo),
             swift_toolchain = swift_toolchain,
             target_name = ctx.label.name,
             workspace_name = ctx.workspace_name,
@@ -317,7 +324,7 @@ def _swift_test_impl(ctx):
             label = ctx.label,
             linking_contexts = [
                 dep[CcInfo].linking_context
-                for dep in ctx.attr.deps
+                for dep in ctx.attr.deps + extra_deps
                 if CcInfo in dep
             ],
             module_context = module_context,
@@ -340,7 +347,7 @@ def _swift_test_impl(ctx):
         cc_feature_configuration = cc_feature_configuration,
         # This is already collected from `linking_context`.
         compilation_outputs = None,
-        deps = ctx.attr.deps + extra_link_deps,
+        deps = ctx.attr.deps + extra_deps + extra_link_deps,
         name = ctx.label.name,
         output_type = "executable",
         owner = ctx.label,
