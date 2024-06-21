@@ -758,7 +758,7 @@ def compile_action_configs(
         ),
     ]
 
-    #### Search paths for Swift module dependencies
+    #### Search paths/explicit module map for Swift module dependencies
     action_configs.extend([
         ActionConfigInfo(
             actions = [
@@ -795,7 +795,6 @@ def compile_action_configs(
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
-                SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
             ],
             configurators = [_dependencies_swiftmodules_configurator],
             not_features = [
@@ -839,6 +838,13 @@ def compile_action_configs(
             ],
             configurators = [_macro_expansion_configurator],
             features = [SWIFT_FEATURE__SUPPORTS_MACROS],
+        ),
+
+        # swift-symbolgraph-extract doesn't yet support explicit Swift module
+        # maps.
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT],
+            configurators = [_dependencies_swiftmodules_configurator],
         ),
     ])
 
