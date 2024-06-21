@@ -5,6 +5,7 @@ load(
 
 swift_library(
     name = "test_observer",
+    testonly = True,
     srcs = [
         "BazelXMLTestObserver.swift",
         "BazelXMLTestObserverRegistration.swift",
