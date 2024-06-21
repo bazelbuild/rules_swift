@@ -46,8 +46,12 @@ def _swift_import_impl(ctx):
     )
 
     if not (swiftinterface or swiftmodule):
-        fail("One or both of 'swiftinterface' and 'swiftmodule' must be " +
+        fail("One of 'swiftinterface' or 'swiftmodule' must be " +
              "specified.")
+
+    if swiftinterface and swiftmodule:
+        fail("'swiftinterface' may not be specified when " +
+             "'swiftmodule' is specified.")
 
     swift_toolchain = swift_common.get_toolchain(ctx)
     feature_configuration = swift_common.configure_features(
@@ -82,7 +86,7 @@ def _swift_import_impl(ctx):
 
     swift_infos = get_providers(deps, SwiftInfo)
 
-    if swiftinterface and not swiftmodule:
+    if swiftinterface:
         module_context = swift_common.compile_module_interface(
             actions = ctx.actions,
             compilation_contexts = get_compilation_contexts(ctx.attr.deps),
@@ -97,9 +101,6 @@ def _swift_import_impl(ctx):
             module_context.swift.swiftmodule,
         ] + compact([module_context.swift.swiftdoc])
     else:
-        # TODO: make this a failure in version 2.x
-        if swiftinterface:
-            print("WARNING: Provided `swiftinterface` attribute will be ignored because `swiftmodule` was provided. This will be an error in a future version of rules_swift.")  # buildifier: disable=print
         module_context = swift_common.create_module(
             name = ctx.attr.module_name,
             clang = swift_common.create_clang_module(
@@ -174,7 +175,7 @@ The `.swiftdoc` file provided to Swift targets that depend on this target.
                 allow_single_file = ["swiftinterface"],
                 doc = """\
 The `.swiftinterface` file that defines the module interface for this target.
-The interface files are ignored if `swiftmodule` is specified.
+May not be specified if `swiftmodule` is specified.
 """,
                 mandatory = False,
             ),
@@ -182,6 +183,7 @@ The interface files are ignored if `swiftmodule` is specified.
                 allow_single_file = ["swiftmodule"],
                 doc = """\
 The `.swiftmodule` file provided to Swift targets that depend on this target.
+May not be specified if `swiftinterface` is specified.
 """,
                 mandatory = False,
             ),
