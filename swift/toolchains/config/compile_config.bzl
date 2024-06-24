@@ -626,6 +626,7 @@ def compile_action_configs(
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
+                SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
             ],
             configurators = [_global_module_cache_configurator],
             features = [SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE],
@@ -637,8 +638,10 @@ def compile_action_configs(
         ActionConfigInfo(
             actions = [
                 SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
+                SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
             ],
             configurators = [_tmpdir_module_cache_configurator],
             features = [
@@ -653,6 +656,7 @@ def compile_action_configs(
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
+                SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
             ],
             configurators = [
                 add_arg("-Xwrapped-swift=-ephemeral-module-cache"),
