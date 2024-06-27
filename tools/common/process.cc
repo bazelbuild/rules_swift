@@ -19,17 +19,19 @@
 #include <unistd.h>
 
 #include <cerrno>
+#include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/cleanup/cleanup.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
-#include "tools/common/path_utils.h"
+#include "absl/strings/string_view.h"
 
 extern char **environ;
 
@@ -125,13 +127,12 @@ void PosixSpawnIORedirector::ConsumeAllSubprocessOutput(
 }
 
 // Converts an array of string arguments to char *arguments.
-// The first arg is reduced to its basename as per execve conventions.
 // Note that the lifetime of the char* arguments in the returned array
 // are controlled by the lifetime of the strings in args.
 std::vector<const char *> ConvertToCArgs(const std::vector<std::string> &args) {
   std::vector<const char *> c_args;
-  c_args.push_back(Basename(args[0].c_str()).data());
-  for (int i = 1; i < args.size(); i++) {
+  c_args.reserve(args.size() + 1);
+  for (int i = 0; i < args.size(); i++) {
     c_args.push_back(args[i].c_str());
   }
   c_args.push_back(nullptr);

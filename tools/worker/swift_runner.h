@@ -184,6 +184,9 @@ class SwiftRunner {
   // Tracks whether the last flag seen was `-module-name`.
   bool last_flag_was_module_name_;
 
+  // Tracks whether the last flag seen was `-tools-directory`.
+  bool last_flag_was_tools_directory_;
+
   // The name of the module currently being compiled.
   std::string module_name_;
 

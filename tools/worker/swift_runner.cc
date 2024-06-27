@@ -191,7 +191,8 @@ SwiftRunner::SwiftRunner(const std::vector<std::string> &args,
                          bool force_response_file)
     : job_env_(GetCurrentEnvironment()),
       force_response_file_(force_response_file),
-      last_flag_was_module_name_(false) {
+      last_flag_was_module_name_(false),
+      last_flag_was_tools_directory_(false) {
   ProcessArguments(args);
 }
 
@@ -276,14 +277,23 @@ bool SwiftRunner::ProcessArgument(
   if (last_flag_was_module_name_) {
     module_name_ = std::string(trimmed_arg);
     last_flag_was_module_name_ = false;
+  } else if (last_flag_was_tools_directory_) {
+    // Make the value of `-tools-directory` absolute, otherwise swift-driver
+    // will ignore it.
+    std::string tools_directory = std::string(trimmed_arg);
+    consumer(absl::StrCat(GetCurrentDirectory(), "/", tools_directory));
+    last_flag_was_tools_directory_ = false;
+    return true;
   } else if (trimmed_arg == "-module-name") {
     last_flag_was_module_name_ = true;
+  } else if (trimmed_arg == "-tools-directory") {
+    last_flag_was_tools_directory_ = true;
   } else if (absl::ConsumePrefix(&trimmed_arg, "-Xwrapped-swift=")) {
     if (trimmed_arg == "-debug-prefix-pwd-is-dot") {
       // Get the actual current working directory (the execution root), which
       // we didn't know at analysis time.
       consumer("-debug-prefix-map");
-      consumer(GetCurrentDirectory() + "=.");
+      consumer(absl::StrCat(GetCurrentDirectory(), "=."));
       return true;
     }
 
@@ -291,7 +301,7 @@ bool SwiftRunner::ProcessArgument(
       // Get the actual current working directory (the execution root), which
       // we didn't know at analysis time.
       consumer("-file-prefix-map");
-      consumer(GetCurrentDirectory() + "=.");
+      consumer(absl::StrCat(GetCurrentDirectory(), "=."));
       return true;
     }
 
@@ -313,7 +323,7 @@ bool SwiftRunner::ProcessArgument(
       // For now, this is the only major use of `TMPDIR` by the compiler, so we
       // can do this without other stuff that we don't want moving there. We may
       // need to revisit this logic if that changes.
-      job_env_["TMPDIR"] = temp_dir;
+      job_env_["TMPDIR"] = absl::StrCat(GetCurrentDirectory(), "/", temp_dir);
       return true;
     }
 
