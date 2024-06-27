@@ -22,6 +22,9 @@ load(":action_config.bzl", "ActionConfigInfo", "add_arg")
 
 def compile_module_interface_action_configs():
     return [
+        # Library evolution is implied since we've already produced a
+        # .swiftinterface file. So we want to unconditionally enable the flag
+        # for this action.
         ActionConfigInfo(
             actions = [SWIFT_ACTION_COMPILE_MODULE_INTERFACE],
             configurators = [add_arg("-enable-library-evolution")],
@@ -37,15 +40,6 @@ def compile_module_interface_action_configs():
             configurators = [
                 add_arg("-compile-module-from-interface"),
             ],
-        ),
-        # Library evolution is implied since we've already produced a
-        # .swiftinterface file. So we want to unconditionally enable the flag
-        # for this action.
-        ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
-            ],
-            configurators = [add_arg("-enable-library-evolution")],
         ),
     ]
 
