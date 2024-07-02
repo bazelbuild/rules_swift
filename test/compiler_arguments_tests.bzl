@@ -30,6 +30,30 @@ full_lto_test = make_action_command_line_test_rule(
     },
 )
 
+strict_concurrency_minimal_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:features": [
+            "swift.strict_concurrency.minimal",
+        ],
+    },
+)
+
+strict_concurrency_targeted_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:features": [
+            "swift.strict_concurrency.targeted",
+        ],
+    },
+)
+
+strict_concurrency_complete_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:features": [
+            "swift.strict_concurrency.complete",
+        ],
+    },
+)
+
 def compiler_arguments_test_suite(name, tags = []):
     """Test suite for various command line flags passed to Swift compiles.
 
@@ -98,6 +122,30 @@ def compiler_arguments_test_suite(name, tags = []):
     full_lto_test(
         name = "{}_full_lto".format(name),
         expected_argv = ["-lto=llvm-full"],
+        mnemonic = "SwiftCompile",
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/compiler_arguments:bin",
+    )
+
+    strict_concurrency_minimal_test(
+        name = "{}_strict_concurrency_minimal".format(name),
+        expected_argv = ["-strict-concurrency=minimal"],
+        mnemonic = "SwiftCompile",
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/compiler_arguments:bin",
+    )
+
+    strict_concurrency_targeted_test(
+        name = "{}_strict_concurrency_targeted".format(name),
+        expected_argv = ["-strict-concurrency=targeted"],
+        mnemonic = "SwiftCompile",
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/compiler_arguments:bin",
+    )
+
+    strict_concurrency_complete_test(
+        name = "{}_strict_concurrency_complete".format(name),
+        expected_argv = ["-strict-concurrency=complete"],
         mnemonic = "SwiftCompile",
         tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/compiler_arguments:bin",

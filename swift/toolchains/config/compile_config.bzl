@@ -62,6 +62,9 @@ load(
     "SWIFT_FEATURE_OPT_USES_WMO",
     "SWIFT_FEATURE_REWRITE_GENERATED_HEADER",
     "SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION",
+    "SWIFT_FEATURE_STRICT_CONCURRENCY_COMPLETE",
+    "SWIFT_FEATURE_STRICT_CONCURRENCY_MINIMAL",
+    "SWIFT_FEATURE_STRICT_CONCURRENCY_TARGETED",
     "SWIFT_FEATURE_SUPPORTS_BARE_SLASH_REGEX",
     "SWIFT_FEATURE_SYSTEM_MODULE",
     "SWIFT_FEATURE_THIN_LTO",
@@ -266,6 +269,21 @@ def compile_action_configs(
             actions = [SWIFT_ACTION_COMPILE],
             configurators = [add_arg("-lto=llvm-full")],
             features = [SWIFT_FEATURE_FULL_LTO],
+        ),
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE],
+            configurators = [add_arg("-strict-concurrency=minimal")],
+            features = [SWIFT_FEATURE_STRICT_CONCURRENCY_MINIMAL],
+        ),
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE],
+            configurators = [add_arg("-strict-concurrency=targeted")],
+            features = [SWIFT_FEATURE_STRICT_CONCURRENCY_TARGETED],
+        ),
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE],
+            configurators = [add_arg("-strict-concurrency=complete")],
+            features = [SWIFT_FEATURE_STRICT_CONCURRENCY_COMPLETE],
         ),
     ]
 

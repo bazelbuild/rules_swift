@@ -351,3 +351,12 @@ SWIFT_FEATURE_THIN_LTO = "swift.thin_lto"
 
 # Enable full LTO and update output-file-map correctly
 SWIFT_FEATURE_FULL_LTO = "swift.full_lto"
+
+# Enable minimal strict concurrency checking (most 'Sendable' checking is disabled)
+SWIFT_FEATURE_STRICT_CONCURRENCY_MINIMAL = "swift.strict_concurrency.minimal"
+
+# Enable targeted strict concurrency checking ('Sendable' checking is enabled in code that uses the concurrency mode)
+SWIFT_FEATURE_STRICT_CONCURRENCY_TARGETED = "swift.strict_concurrency.targeted"
+
+# Enable complete strict concurrency checking ('Sendable' and other checking is enabled for all code in the module)
+SWIFT_FEATURE_STRICT_CONCURRENCY_COMPLETE = "swift.strict_concurrency.complete"
