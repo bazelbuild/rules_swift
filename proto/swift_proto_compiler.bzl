@@ -154,7 +154,8 @@ def _swift_proto_compile(label, actions, swift_proto_compiler_info, additional_c
 
     # Build the arguments for protoc:
     arguments = actions.args()
-    arguments.use_param_file("--param=%s")
+    arguments.set_param_file_format("multiline")
+    arguments.use_param_file("@%s")
 
     # Add the plugin argument with the provided name to namespace all of the options:
     plugin_name_argument = "--plugin=protoc-gen-{}={}".format(
