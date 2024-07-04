@@ -21,7 +21,7 @@ applies a number of configurations that enable them to build for the target plat
 The benefit to using these rules is that you can share a analysis and build cache with your main application,
 making building targets with a lot of dependencies much faster.
 
-2. Build the swift_library directly with a config.
+2. Build the `swift_library` directly with a config.
 
 You can alternately create a config to build for the desired platform in your .bazelrc:
 
