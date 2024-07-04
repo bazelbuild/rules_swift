@@ -10,7 +10,7 @@ which imports iOS system frameworks, such as UIKit or SwiftUI:
 error: no such module 'UIKit'
 ```
 
-In order to build a swift_library for iOS, you have two main options:
+In order to build a `swift_library` for iOS, you have two main options:
 
 1. (Preferred) Build the swift_library transitively via an ios_ target.
 
