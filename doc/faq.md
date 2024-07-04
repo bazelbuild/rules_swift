@@ -12,7 +12,7 @@ error: no such module 'UIKit'
 
 In order to build a `swift_library` for iOS, you have two main options:
 
-1. (Preferred) Build the swift_library transitively via an ios_ target.
+1. (Preferred) Build the `swift_library` transitively via an `ios_*` target.
 
 The ios_ rules (ios_application, ios_framework, ios_unit_test, ios_build_test etc) 
 from rules_apple apply a "transition" to their transitive dependencies which
