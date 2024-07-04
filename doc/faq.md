@@ -16,7 +16,7 @@ In order to build a `swift_library` for iOS, you have two main options:
 
 The `ios_*` rules (e.g. `ios_application`, `ios_framework`, `ios_unit_test`, `ios_build_test`, etc.) 
 from **rules_apple** apply a "transition" to their transitive dependencies which
-applies a number of configurations which enable them to build for the target platform.
+applies a number of configurations that enable them to build for the target platform.
 
 The benefit to using these rules is that you can share a build cache with your main application,
 making building targets with a lot of dependencies much faster.
