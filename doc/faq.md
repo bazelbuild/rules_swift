@@ -1,6 +1,6 @@
 # Frequently Asked Questions
 
-## How can I build a swift_library directly for iOS?
+## How can I build a `swift_library` directly for iOS?
 
 By default, `swift_library` will compile code for your host machine (e.g. macOS).
 As a result, you may see compiler errors if you attempt to build a `swift_library`
