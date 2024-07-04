@@ -36,4 +36,4 @@ bazel build //path/to/your/library --config=ios_simulator
 ```
 
 The drawback to this approach is that the configs will likely differ between your application
-and swift library, resulting in the build cache not being shared.
+and swift library, resulting in the caches not being shared.
