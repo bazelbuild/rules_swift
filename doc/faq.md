@@ -4,7 +4,7 @@
 
 By default, `swift_library` will compile code for your host machine (e.g. macOS).
 As a result, you may see compiler errors if you attempt to build a swift_library
-which imports iOS system frameworks like UIKit or SwiftUI.
+which imports iOS system frameworks, such as UIKit or SwiftUI:
 
 ```
 error: no such module 'UIKit'
