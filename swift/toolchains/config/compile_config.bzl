@@ -43,6 +43,7 @@ load(
     "SWIFT_FEATURE_DISABLE_SYSTEM_INDEX",
     "SWIFT_FEATURE_EMIT_BC",
     "SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE",
+    "SWIFT_FEATURE_EMIT_SWIFTDOC",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
@@ -817,7 +818,13 @@ def compile_action_configs(
         # maps.
         ActionConfigInfo(
             actions = [SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT],
+            configurators = [_dependencies_swiftmodules_and_swiftdocs_configurator],
+            features = [SWIFT_FEATURE_EMIT_SWIFTDOC],
+        ),
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT],
             configurators = [_dependencies_swiftmodules_configurator],
+            not_features = [SWIFT_FEATURE_EMIT_SWIFTDOC],
         ),
     ])
 
@@ -1670,6 +1677,20 @@ def _swift_module_search_path_map_fn(module):
         return search_path
     else:
         return None
+
+def _dependencies_swiftmodules_and_swiftdocs_configurator(prerequisites, args):
+    """Adds `.swiftmodule` and `.swiftdoc` files from the transitive modules to search paths and action inputs."""
+    args.add_all(
+        prerequisites.transitive_modules,
+        format_each = "-I%s",
+        map_each = _swift_module_search_path_map_fn,
+        uniquify = True,
+    )
+
+    return ConfigResultInfo(
+        inputs = prerequisites.transitive_swiftmodules +
+                 prerequisites.direct_swiftdocs,
+    )
 
 def _dependencies_swiftmodules_configurator(prerequisites, args):
     """Adds `.swiftmodule` files from deps to search paths and action inputs."""
