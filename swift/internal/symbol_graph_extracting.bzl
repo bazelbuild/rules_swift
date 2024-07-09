@@ -80,16 +80,20 @@ def extract_symbol_graph(
     # conditionally.
     transitive_modules = merged_swift_info.transitive_modules.to_list()
 
+    direct_swiftdocs = []
     transitive_swiftmodules = []
     for module in transitive_modules:
         swift_module = module.swift
         if swift_module:
             transitive_swiftmodules.append(swift_module.swiftmodule)
+            if module.name == module_name and swift_module.swiftdoc:
+                direct_swiftdocs.append(swift_module.swiftdoc)
 
     prerequisites = struct(
         bin_dir = feature_configuration._bin_dir,
         cc_compilation_context = merged_compilation_context,
         developer_dirs = swift_toolchain.developer_dirs,
+        direct_swiftdocs = direct_swiftdocs,
         emit_extension_block_symbols = emit_extension_block_symbols,
         genfiles_dir = feature_configuration._genfiles_dir,
         include_dev_srch_paths = include_dev_srch_paths,
