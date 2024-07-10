@@ -51,6 +51,7 @@ def _swift_compiler_plugin_impl(ctx):
     feature_configuration = configure_features_for_binary(
         ctx = ctx,
         requested_features = ctx.features,
+        swift_toolchain = swift_toolchain,
         unsupported_features = ctx.disabled_features,
     )
 
