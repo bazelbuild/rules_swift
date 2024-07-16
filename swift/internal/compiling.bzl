@@ -805,6 +805,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         swift = create_swift_module(
             ast_files = compile_outputs.ast_files,
             defines = defines,
+            generated_header = compile_outputs.generated_header_file,
             indexstore = compile_outputs.indexstore_directory,
             plugins = depset(plugins),
             private_swiftinterface = compile_outputs.private_swiftinterface_file,

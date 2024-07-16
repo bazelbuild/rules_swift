@@ -132,7 +132,9 @@ SWIFT_FEATURE_NO_GENERATED_MODULE_MAP = "swift.no_generated_module_map"
 
 # If enabled, the parent directory of the generated module map is added to
 # `CcInfo.compilation_context.includes`. This allows `objc_library` to import
-# the Swift module.
+# the Swift module. If you swap this feature between enabled and disabled, and
+# sandboxing is disabled, you may need to clean your output base to prevent
+# implicit discovery of the generated module map.
 SWIFT_FEATURE_PROPAGATE_GENERATED_MODULE_MAP = "swift.propagate_generated_module_map"
 
 # If enabled, builds using the "opt" compilation mode will invoke `swiftc` with
