@@ -27,6 +27,10 @@ load("@build_bazel_rules_swift//proto:swift_proto_library.bzl", "swift_proto_lib
 """
 
 load(
+    "//mixed_language:mixed_language_library.bzl",
+    _mixed_language_library = "mixed_language_library",
+)
+load(
     "//proto:swift_proto_common.bzl",
     _swift_proto_common = "swift_proto_common",
 )
@@ -102,6 +106,7 @@ swift_import = _swift_import
 swift_interop_hint = _swift_interop_hint
 swift_library = _swift_library
 swift_library_group = _swift_library_group
+mixed_language_library = _mixed_language_library
 swift_module_alias = _swift_module_alias
 swift_package_configuration = _swift_package_configuration
 swift_test = _swift_test
