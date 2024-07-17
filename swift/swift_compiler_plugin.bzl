@@ -21,7 +21,11 @@ load(
     "@build_bazel_apple_support//lib:transitions.bzl",
     "macos_universal_transition",
 )
-load("//swift/internal:feature_names.bzl", "SWIFT_FEATURE__SUPPORTS_MACROS")
+load(
+    "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
+    "SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT",
+    "SWIFT_FEATURE__SUPPORTS_MACROS",
+)
 load("//swift/internal:features.bzl", "is_feature_enabled")
 load(
     "//swift/internal:linking.bzl",
@@ -111,6 +115,15 @@ def _swift_compiler_plugin_impl(ctx):
     compilation_outputs = compile_result.compilation_outputs
     supplemental_outputs = compile_result.supplemental_outputs
 
+    if is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT,
+    ):
+        # Making executable in a folder to avoid naming collisions
+        name = "{}/{}".format(ctx.label.name, ctx.label.name)
+    else:
+        name = ctx.label.name
+
     binary_linking_outputs = register_link_binary_action(
         actions = ctx.actions,
         additional_inputs = ctx.files.swiftc_inputs,
@@ -119,7 +132,7 @@ def _swift_compiler_plugin_impl(ctx):
         deps = deps,
         feature_configuration = feature_configuration,
         module_contexts = module_contexts,
-        name = ctx.label.name,
+        name = name,
         output_type = "executable",
         owner = ctx.label,
         stamp = ctx.attr.stamp,
