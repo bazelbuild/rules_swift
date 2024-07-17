@@ -1,4 +1,6 @@
-load("//swift:swift.bzl", "swift_binary", "swift_library", "swift_test")
+load("//swift:swift_binary.bzl", "swift_binary")
+load("//swift:swift_library.bzl", "swift_library")
+load("//swift:swift_test.bzl", "swift_test")
 load("//test/fixtures:common.bzl", "FIXTURE_TAGS")
 
 package(
@@ -31,6 +33,13 @@ swift_binary(
 swift_test(
     name = "test_package_name",
     package_name = "test",
+    srcs = ["empty.swift"],
+    discover_tests = False,
+    tags = FIXTURE_TAGS,
+)
+
+swift_binary(
+    name = "bin",
     srcs = ["empty.swift"],
     tags = FIXTURE_TAGS,
 )

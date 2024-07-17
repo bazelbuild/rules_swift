@@ -16,19 +16,9 @@
 Defines a rule for compiling Swift source files from ProtoInfo providers.
 """
 
-load(
-    "@bazel_skylib//lib:paths.bzl",
-    "paths",
-)
-load(
-    "//proto:proto.bzl",
-    "SwiftProtoCompilerInfo",
-    "swift_proto_common",
-)
-load(
-    "//swift:swift.bzl",
-    "SwiftInfo",
-)
+load("@bazel_skylib//lib:paths.bzl", "paths")
+load("//proto:swift_proto_common.bzl", "swift_proto_common")
+load("//swift:providers.bzl", "SwiftInfo", "SwiftProtoCompilerInfo")
 
 def _custom_swift_proto_compile(label, actions, swift_proto_compiler_info, additional_compiler_info, proto_infos, module_mappings):
     """Compiles Swift source files from `ProtoInfo` providers.
@@ -115,7 +105,6 @@ def _custom_swift_proto_compiler_impl(ctx):
     ]
 
 custom_swift_proto_compiler = rule(
-    implementation = _custom_swift_proto_compiler_impl,
     attrs = {
         "deps": attr.label_list(
             default = [],
@@ -135,4 +124,5 @@ custom_swift_proto_compiler = rule(
             cfg = "exec",
         ),
     },
+    implementation = _custom_swift_proto_compiler_impl,
 )

@@ -71,32 +71,40 @@ output_file_map_embed_target_name_bitcode_wmo_test = make_output_file_map_test_r
     },
 )
 
-def output_file_map_test_suite(name):
+output_file_map_thin_lto_test = make_output_file_map_test_rule(
+    config_settings = {
+        "//command_line_option:features": [
+            "swift.thin_lto",
+        ],
+    },
+)
+
+output_file_map_full_lto_test = make_output_file_map_test_rule(
+    config_settings = {
+        "//command_line_option:features": [
+            "swift.full_lto",
+        ],
+    },
+)
+
+def output_file_map_test_suite(name, tags = []):
     """Test suite for `swift_library` generating output file maps.
 
     Args:
-      name: the base name to be used in things created by this macro
+        name: The base name to be used in targets created by this macro.
+        tags: Additional tags to apply to each test.
     """
+    all_tags = [name] + tags
 
     output_file_map_test(
         name = "{}_default".format(name),
         expected_mapping = {
             "object": "test/fixtures/debug_settings/simple_objs/Empty.swift.o",
+            "const-values": "test/fixtures/debug_settings/simple_objs/Empty.swift.swiftconstvalues",
         },
         file_entry = "test/fixtures/debug_settings/Empty.swift",
         output_file_map = "test/fixtures/debug_settings/simple.output_file_map.json",
-        tags = [name],
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
-    )
-
-    output_file_map_target_name_test(
-        name = "{}_target_name_default".format(name),
-        expected_mapping = {
-            "object": "test/fixtures/debug_settings/simple/simple_objs/Empty.swift.o",
-        },
-        file_entry = "test/fixtures/debug_settings/Empty.swift",
-        output_file_map = "test/fixtures/debug_settings/simple/simple.output_file_map.json",
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
 
@@ -109,18 +117,7 @@ def output_file_map_test_suite(name):
         },
         file_entry = "test/fixtures/debug_settings/Empty.swift",
         output_file_map = "test/fixtures/debug_settings/simple.output_file_map.json",
-        tags = [name],
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
-    )
-
-    output_file_map_target_name_embed_bitcode_test(
-        name = "{}_target_name_emit_bc".format(name),
-        expected_mapping = {
-            "llvm-bc": "test/fixtures/debug_settings/simple/simple_objs/Empty.swift.bc",
-        },
-        file_entry = "test/fixtures/debug_settings/Empty.swift",
-        output_file_map = "test/fixtures/debug_settings/simple/simple.output_file_map.json",
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
 
@@ -131,22 +128,33 @@ def output_file_map_test_suite(name):
         },
         file_entry = "test/fixtures/debug_settings/Empty.swift",
         output_file_map = "test/fixtures/debug_settings/simple.output_file_map.json",
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
 
-    output_file_map_embed_target_name_bitcode_wmo_test(
-        name = "{}_target_name_emit_bc_wmo".format(name),
+    output_file_map_thin_lto_test(
+        name = "{}_thin_lto".format(name),
         expected_mapping = {
-            "llvm-bc": "test/fixtures/debug_settings/simple/simple_objs/Empty.swift.bc",
+            "llvm-bc": "test/fixtures/debug_settings/simple_objs/Empty.swift.bc",
         },
         file_entry = "test/fixtures/debug_settings/Empty.swift",
-        output_file_map = "test/fixtures/debug_settings/simple/simple.output_file_map.json",
-        tags = [name],
+        output_file_map = "test/fixtures/debug_settings/simple.output_file_map.json",
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+    )
+
+    output_file_map_full_lto_test(
+        name = "{}_full_lto".format(name),
+        expected_mapping = {
+            "llvm-bc": "test/fixtures/debug_settings/simple_objs/Empty.swift.bc",
+        },
+        file_entry = "test/fixtures/debug_settings/Empty.swift",
+        output_file_map = "test/fixtures/debug_settings/simple.output_file_map.json",
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
 
     native.test_suite(
         name = name,
-        tags = [name],
+        tags = all_tags,
     )

@@ -14,58 +14,71 @@
 
 """Bazel rules to define Swift libraries and executable binaries.
 
-Users should load these rules from one or both of the following Bazel files:
-
-```build
-@build_bazel_rules_swift//swift:swift.bzl
-@build_bazel_rules_swift//proto:proto.bzl
-```
-
-Do not import definitions from the `internal` subdirectory directly.
+Users should load these rules from `.bzl` files under the `swift` and `proto`
+directories. Do not import definitions from the `internal` subdirectory
+directly.
 
 For example:
 
 ```build
-load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
-load("@build_bazel_rules_swift//proto:proto.bzl", "swift_proto_library")
+load("@build_bazel_rules_swift//swift:swift_library.bzl", "swift_library")
+load("@build_bazel_rules_swift//proto:swift_proto_library.bzl", "swift_proto_library")
 ```
 """
 
 load(
-    "//proto:proto.bzl",
-    # providers
-    _SwiftProtoCompilerInfo = "SwiftProtoCompilerInfo",
-    _SwiftProtoInfo = "SwiftProtoInfo",
-    # api
+    "//proto:swift_proto_common.bzl",
     _swift_proto_common = "swift_proto_common",
-    # rules
+)
+load(
+    "//proto:swift_proto_compiler.bzl",
     _swift_proto_compiler = "swift_proto_compiler",
+)
+load(
+    "//proto:swift_proto_library.bzl",
     _swift_proto_library = "swift_proto_library",
+)
+load(
+    "//proto:swift_proto_library_group.bzl",
     _swift_proto_library_group = "swift_proto_library_group",
 )
 load(
-    "//swift:swift.bzl",
-    # providers
+    "//swift:providers.bzl",
     _SwiftInfo = "SwiftInfo",
+    _SwiftProtoCompilerInfo = "SwiftProtoCompilerInfo",
+    _SwiftProtoInfo = "SwiftProtoInfo",
     _SwiftToolchainInfo = "SwiftToolchainInfo",
-    _SwiftUsageInfo = "SwiftUsageInfo",
-    # rules
-    _swift_binary = "swift_binary",
-    # api
-    _swift_common = "swift_common",
+)
+load("//swift:swift_binary.bzl", _swift_binary = "swift_binary")
+load("//swift:swift_common.bzl", _swift_common = "swift_common")
+load(
+    "//swift:swift_compiler_plugin.bzl",
     _swift_compiler_plugin = "swift_compiler_plugin",
-    _swift_feature_allowlist = "swift_feature_allowlist",
-    _swift_import = "swift_import",
-    _swift_interop_hint = "swift_interop_hint",
-    _swift_library = "swift_library",
-    _swift_library_group = "swift_library_group",
-    _swift_module_alias = "swift_module_alias",
-    _swift_package_configuration = "swift_package_configuration",
-    _swift_test = "swift_test",
-    # aspects
-    _swift_usage_aspect = "swift_usage_aspect",
     _universal_swift_compiler_plugin = "universal_swift_compiler_plugin",
 )
+load(
+    "//swift:swift_feature_allowlist.bzl",
+    _swift_feature_allowlist = "swift_feature_allowlist",
+)
+load("//swift:swift_import.bzl", _swift_import = "swift_import")
+load(
+    "//swift:swift_interop_hint.bzl",
+    _swift_interop_hint = "swift_interop_hint",
+)
+load("//swift:swift_library.bzl", _swift_library = "swift_library")
+load(
+    "//swift:swift_library_group.bzl",
+    _swift_library_group = "swift_library_group",
+)
+load(
+    "//swift:swift_module_alias.bzl",
+    _swift_module_alias = "swift_module_alias",
+)
+load(
+    "//swift:swift_package_configuration.bzl",
+    _swift_package_configuration = "swift_package_configuration",
+)
+load("//swift:swift_test.bzl", _swift_test = "swift_test")
 
 # The following are re-exported symbols for consumption from stardoc.
 
@@ -79,10 +92,8 @@ swift_proto_library_group = _swift_proto_library_group
 
 # swift symbols
 swift_common = _swift_common
-swift_usage_aspect = _swift_usage_aspect
 SwiftInfo = _SwiftInfo
 SwiftToolchainInfo = _SwiftToolchainInfo
-SwiftUsageInfo = _SwiftUsageInfo
 swift_binary = _swift_binary
 swift_compiler_plugin = _swift_compiler_plugin
 universal_swift_compiler_plugin = _universal_swift_compiler_plugin

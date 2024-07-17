@@ -15,7 +15,7 @@
 """Common utility definitions used by various BUILD rules."""
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load(":providers.bzl", "SwiftInfo")
+load("//swift:providers.bzl", "SwiftInfo")
 
 def collect_implicit_deps_providers(
         targets,
@@ -72,13 +72,14 @@ def compact(sequence):
 
 def compilation_context_for_explicit_module_compilation(
         compilation_contexts,
-        deps):
+        swift_infos):
     """Returns a compilation context suitable for compiling an explicit module.
 
     Args:
         compilation_contexts: `CcCompilationContext`s that provide information
             about headers and include paths for the target being compiled.
-        deps: Direct dependencies of the target being compiled.
+        swift_infos: `SwiftInfo` providers propagated by direct dependencies of
+            the target being compiled.
 
     Returns:
         A `CcCompilationContext` containing information needed when compiling an
@@ -88,31 +89,23 @@ def compilation_context_for_explicit_module_compilation(
     """
     all_compilation_contexts = list(compilation_contexts)
 
-    for dep in deps:
-        if CcInfo in dep:
-            all_compilation_contexts.append(dep[CcInfo].compilation_context)
-        elif SwiftInfo in dep:
-            # TODO(b/151667396): Remove j2objc-specific knowledge.
-            # J2ObjC doesn't expose `CcInfo` directly on the `java_library`
-            # targets it processes, but we can find the compilation context that
-            # was synthesized by `swift_clang_module_aspect` within the
-            # `SwiftInfo` provider.
-            for module in dep[SwiftInfo].direct_modules:
-                clang = module.clang
-                if not clang:
-                    continue
+    for swift_info in swift_infos:
+        for module in swift_info.direct_modules:
+            clang = module.clang
+            if not clang:
+                continue
 
-                if clang.compilation_context:
-                    all_compilation_contexts.append(clang.compilation_context)
-                if clang.strict_includes:
-                    all_compilation_contexts.append(
-                        cc_common.create_compilation_context(
-                            includes = clang.strict_includes,
-                        ),
-                    )
+            if clang.compilation_context:
+                all_compilation_contexts.append(clang.compilation_context)
+            if clang.strict_includes:
+                all_compilation_contexts.append(
+                    cc_common.create_compilation_context(
+                        includes = clang.strict_includes,
+                    ),
+                )
 
-    return cc_common.merge_compilation_contexts(
-        compilation_contexts = all_compilation_contexts,
+    return merge_compilation_contexts(
+        direct_compilation_contexts = all_compilation_contexts,
     )
 
 def expand_locations(ctx, values, targets = []):

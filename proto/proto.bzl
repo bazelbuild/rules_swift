@@ -12,7 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Bazel rules to define Swift proto libraries and compilers."""
+"""BUILD rules to define Swift proto libraries and compilers.
+
+**NOTE:** This file is deprecated. To avoid having Bazel do more work than
+necessary, users should import each rule/build definition they use from the
+`.bzl` file that defines it in this directory.
+
+Do not import any definitions directly from the `internal` directory; those are
+meant for build rule use only.
+"""
 
 load(
     "//proto:swift_proto_common.bzl",
@@ -31,7 +39,7 @@ load(
     _swift_proto_library_group = "swift_proto_library_group",
 )
 load(
-    "//swift:swift.bzl",
+    "//swift:providers.bzl",
     _SwiftProtoCompilerInfo = "SwiftProtoCompilerInfo",
     _SwiftProtoInfo = "SwiftProtoInfo",
 )

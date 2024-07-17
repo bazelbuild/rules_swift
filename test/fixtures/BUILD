@@ -5,7 +5,10 @@ package(default_visibility = ["//test:__subpackages__"])
 bzl_library(
     name = "starlark_tests_bzls",
     srcs = glob(["*.bzl"]),
-    deps = ["//swift"],
+    deps = [
+        "//swift:providers",
+        "//swift:swift_clang_module_aspect",
+    ],
 )
 
 bzl_library(

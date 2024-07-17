@@ -30,16 +30,13 @@ SWIFT_FEATURE_DBG = "swift.dbg"
 SWIFT_FEATURE_FASTBUILD = "swift.fastbuild"
 SWIFT_FEATURE_OPT = "swift.opt"
 
+# If True, transitive C headers will be always be passed as inputs to Swift
+# compilation actions, even when building with explicit modules.
+SWIFT_FEATURE_HEADERS_ALWAYS_ACTION_INPUTS = "swift.headers_always_action_inputs"
+
 # This feature is enabled if coverage collection is enabled for the build. (See
 # the note above about not depending on the C++ features.)
 SWIFT_FEATURE_COVERAGE = "swift.coverage"
-
-# If enabled, the `swift_test` rule will output an `.xctest` bundle for Darwin
-# targets instead of a standalone binary. This is necessary for XCTest-based
-# tests that use runtime reflection to locate test methods. This feature can be
-# explicitly disabled on a per-target or per-package basis if needed to make
-# `swift_test` output just a binary.
-SWIFT_FEATURE_BUNDLED_XCTESTS = "swift.bundled_xctests"
 
 # If enabled, debug builds will use the `-debug-prefix-map` feature to remap the
 # current working directory to `.`, which permits debugging remote or sandboxed
@@ -65,6 +62,18 @@ SWIFT_FEATURE_FILE_PREFIX_MAP = "swift.file_prefix_map"
 # graph.
 SWIFT_FEATURE_EMIT_C_MODULE = "swift.emit_c_module"
 
+# If enabled, the compilation action for a target will produce an index store.
+# https://docs.google.com/document/d/1cH2sTpgSnJZCkZtJl1aY-rzy4uGPcrI-6RrUpdATO2Q/
+SWIFT_FEATURE_INDEX_WHILE_BUILDING = "swift.index_while_building"
+
+# If enabled alongside `swift.index_while_building`, the indexstore will not
+# contain records for symbols in system modules imported by the code being
+# indexed.
+SWIFT_FEATURE_DISABLE_SYSTEM_INDEX = "swift.disable_system_index"
+
+# Index while building - using a global index store cache
+SWIFT_FEATURE_USE_GLOBAL_INDEX_STORE = "swift.use_global_index_store"
+
 # If enabled, when compiling an explicit C or Objectve-C module, every header
 # included by the module being compiled must belong to one of the modules listed
 # in its dependencies. This is ignored for system modules.
@@ -72,14 +81,6 @@ SWIFT_FEATURE_LAYERING_CHECK = "swift.layering_check"
 
 # If enabled, the C or Objective-C target should be compiled as a system module.
 SWIFT_FEATURE_SYSTEM_MODULE = "swift.system_module"
-
-# If enabled, the `-Xcc -fsystem-module` flag will be passed when compiling a
-# system C/Objective-C module (with feature `swift.system_module`) because the
-# compiler is new enough to honor it correctly. If disabled, we attempt to mimic
-# this by disabling certain warnings; however, this unfortunately causes `UInt`
-# APIs to be imported by ClangImporter as `UInt` instead of `Int` because
-# ClangImporter doesn't recognize them as true system modules.
-SWIFT_FEATURE_SUPPORTS_SYSTEM_MODULE_FLAG = "swift.supports_system_module_flag"
 
 # If enabled, Swift compilation actions will use batch mode by passing
 # `-enable-batch-mode` to `swiftc`. This is a new compilation mode as of
@@ -102,19 +103,6 @@ SWIFT_FEATURE_FULL_DEBUG_INFO = "swift.full_debug_info"
 
 # Use CodeView debug information, which enables generation of PDBs for debugging.
 SWIFT_FEATURE_CODEVIEW_DEBUG_INFO = "swift.codeview_debug_info"
-
-# If enabled, the compilation action for a target will produce an index store.
-# https://docs.google.com/document/d/1cH2sTpgSnJZCkZtJl1aY-rzy4uGPcrI-6RrUpdATO2Q/
-SWIFT_FEATURE_INDEX_WHILE_BUILDING = "swift.index_while_building"
-
-# If enabled, the compilation action for a target will produce a symbol graph.
-SWIFT_FEATURE_EMIT_SYMBOL_GRAPH = "swift.emit_symbol_graph"
-
-# If enabled the compilation action will not produce indexes for system modules.
-SWIFT_FEATURE_DISABLE_SYSTEM_INDEX = "swift.disable_system_index"
-
-# Index while building - using a global index store cache
-SWIFT_FEATURE_USE_GLOBAL_INDEX_STORE = "swift.use_global_index_store"
 
 # If enabled, compilation actions and module map generation will assume that the
 # header paths in module maps are relative to the current working directory
@@ -141,6 +129,11 @@ SWIFT_FEATURE_NO_ASAN_VERSION_CHECK = "swift.no_asan_version_check"
 # module map for the Objective-C generated header. This feature is ignored if
 # the target is not generating a header.
 SWIFT_FEATURE_NO_GENERATED_MODULE_MAP = "swift.no_generated_module_map"
+
+# If enabled, the parent directory of the generated module map is added to
+# `CcInfo.compilation_context.includes`. This allows `objc_library` to import
+# the Swift module.
+SWIFT_FEATURE_PROPAGATE_GENERATED_MODULE_MAP = "swift.propagate_generated_module_map"
 
 # If enabled, builds using the "opt" compilation mode will invoke `swiftc` with
 # the `-whole-module-optimization` flag (in addition to `-O`).
@@ -201,12 +194,6 @@ SWIFT_FEATURE_GLOBAL_MODULE_CACHE_USES_TMPDIR = "swift.global_module_cache_uses_
 # launched in Xcode 13/Swift 5.5.
 SWIFT_FEATURE_USE_OLD_DRIVER = "swift.use_old_driver"
 
-# If enabled, actions invoking the Swift driver or frontend may write argument
-# lists into response files (i.e., "@args.txt") to avoid passing command lines
-# that exceed the system limit. Toolchains typically set this automatically if
-# using a sufficiently recent version of Swift (4.2 or higher).
-SWIFT_FEATURE_USE_RESPONSE_FILES = "swift.use_response_files"
-
 # If enabled, Swift linking actions will use `swift-autolink-extract` to extract
 # the linker arguments.  This is required for ELF targets.  This is used
 # internally to determine the behaviour of the actions across different
@@ -237,10 +224,6 @@ SWIFT_FEATURE_VFSOVERLAY = "swift.vfsoverlay"
 #     target.swift-extra-clang-flags
 SWIFT_FEATURE_CACHEABLE_SWIFTMODULES = "swift.cacheable_swiftmodules"
 
-# If enabled, enables features that require the library evolution compilation
-# mode. If disabled, features that require library evolution mode are noops.
-SWIFT_FEATURE_SUPPORTS_LIBRARY_EVOLUTION = "swift.supports_library_evolution"
-
 # If enabled, requests the `-enable-library-evolution` swiftc flag which is
 # required for newer features like swiftinterface file generation.
 SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION = "swift.enable_library_evolution"
@@ -256,11 +239,6 @@ SWIFT_FEATURE_EMIT_SWIFTINTERFACE = "swift.emit_swiftinterface"
 # If enabled, requests the private swiftinterface file to be built on the
 # swiftc invocation.
 SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE = "swift.emit_private_swiftinterface"
-
-# If enabled, the toolchain supports private deps (implementation-only imports).
-# This allows Bazel to avoid propagating swiftmodules of such dependencies
-# higher in the dependency graph than they need to be.
-SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS = "swift.supports_private_deps"
 
 # If enabled, the .swiftmodule file for the affected target will not be
 # embedded in debug info and propagated to the linker.
@@ -341,6 +319,11 @@ SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE = "swift._force_alwayslink_true"
 # feature.
 SWIFT_FEATURE__SUPPORTS_MACROS = "swift._supports_macros"
 
+# Disables Swift sandbox which prevents issues with nested sandboxing when Swift code contains system-provided macros.
+# If enabled '#Preview' macro provided by SwiftUI fails to build and probably other system-provided macros.
+# Enabled by default for Swift 5.10+ on macOS.
+SWIFT_FEATURE_DISABLE_SWIFT_SANDBOX = "swift.disable_swift_sandbox"
+
 # Pass -warnings-as-errors to the compiler.
 SWIFT_FEATURE_TREAT_WARNINGS_AS_ERRORS = "swift.treat_warnings_as_errors"
 
@@ -357,3 +340,14 @@ SWIFT_FEATURE_EMIT_SWIFTSOURCEINFO = "swift.emit_swiftsourceinfo"
 # A feature that adds target_name in output path to support building
 # multiple frameworks with different target name, but same module name.
 SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT = "swift.add_target_name_to_output"
+
+# A private feature that is set by the toolchain if it supports constant values
+# extraction (Swift 5.8 and above). Users should never manually enable, disable, or query this
+# feature.
+SWIFT_FEATURE__SUPPORTS_CONST_VALUE_EXTRACTION = "swift._supports_const_value_extraction"
+
+# Enable thin LTO and update output-file-map correctly
+SWIFT_FEATURE_THIN_LTO = "swift.thin_lto"
+
+# Enable full LTO and update output-file-map correctly
+SWIFT_FEATURE_FULL_LTO = "swift.full_lto"

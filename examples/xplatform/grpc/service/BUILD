@@ -1,5 +1,5 @@
 load("@rules_proto//proto:defs.bzl", "proto_library")
-load("//proto:proto.bzl", "swift_proto_library")
+load("//proto:swift_proto_library.bzl", "swift_proto_library")
 
 proto_library(
     name = "service_proto",

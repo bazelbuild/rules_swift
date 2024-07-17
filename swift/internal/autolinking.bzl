@@ -14,15 +14,20 @@
 
 """Implementation of autolink logic for Swift."""
 
-load(":actions.bzl", "run_toolchain_action", "swift_action_names")
-load(":toolchain_config.bzl", "swift_toolchain_config")
+load(
+    "//swift/toolchains/config:action_config.bzl",
+    "ActionConfigInfo",
+    "ConfigResultInfo",
+)
+load(":action_names.bzl", "SWIFT_ACTION_AUTOLINK_EXTRACT")
+load(":actions.bzl", "run_toolchain_action")
 
 def _autolink_extract_input_configurator(prerequisites, args):
     """Configures the inputs of the autolink-extract action."""
     object_files = prerequisites.object_files
 
     args.add_all(object_files)
-    return swift_toolchain_config.config_result(inputs = object_files)
+    return ConfigResultInfo(inputs = object_files)
 
 def _autolink_extract_output_configurator(prerequisites, args):
     """Configures the outputs of the autolink-extract action."""
@@ -38,8 +43,8 @@ def autolink_extract_action_configs():
         The list of action configs needed to perform autolink extraction.
     """
     return [
-        swift_toolchain_config.action_config(
-            actions = [swift_action_names.AUTOLINK_EXTRACT],
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_AUTOLINK_EXTRACT],
             configurators = [
                 _autolink_extract_input_configurator,
                 _autolink_extract_output_configurator,
@@ -73,10 +78,11 @@ def register_autolink_extract_action(
     prerequisites = struct(
         autolink_file = autolink_file,
         object_files = object_files,
+        target_label = feature_configuration._label,
     )
     run_toolchain_action(
         actions = actions,
-        action_name = swift_action_names.AUTOLINK_EXTRACT,
+        action_name = SWIFT_ACTION_AUTOLINK_EXTRACT,
         feature_configuration = feature_configuration,
         outputs = [autolink_file],
         prerequisites = prerequisites,

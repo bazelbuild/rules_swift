@@ -15,7 +15,7 @@
 """Common attributes used by multiple Swift build rules."""
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load(":providers.bzl", "SwiftCompilerPluginInfo", "SwiftInfo", "SwiftToolchainInfo")
+load("//swift:providers.bzl", "SwiftCompilerPluginInfo", "SwiftInfo")
 
 def swift_common_rule_attrs(
         additional_deps_aspects = [],
@@ -221,7 +221,7 @@ def swift_deps_attr(*, additional_deps_providers = [], doc, **kwargs):
 
 Allowed kinds of dependencies are:
 
-*   `swift_import` and `swift_library` (or anything propagating `SwiftInfo`)
+*   `swift_library` (or anything propagating `SwiftInfo`)
 
 *   `cc_library` (or anything propagating `CcInfo`)
 
@@ -390,7 +390,6 @@ def swift_toolchain_attrs(toolchain_attr_name = "_toolchain"):
     return {
         toolchain_attr_name: attr.label(
             default = Label("@build_bazel_rules_swift_local_config//:toolchain"),
-            providers = [[SwiftToolchainInfo]],
         ),
     }
 

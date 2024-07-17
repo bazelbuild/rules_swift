@@ -1,7 +1,4 @@
-load(
-    "//proto:proto.bzl",
-    "swift_proto_library",
-)
+load("//proto:swift_proto_library.bzl", "swift_proto_library")
 
 swift_proto_library(
     name = "example_proto_swift",

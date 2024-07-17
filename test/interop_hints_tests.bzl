@@ -23,12 +23,14 @@ load(
     "provider_test",
 )
 
-def interop_hints_test_suite(name = "interop_hints"):
+def interop_hints_test_suite(name, tags = []):
     """Test suite for `swift_interop_hint`.
 
     Args:
-        name: The name prefix for all the nested tests
+        name: The base name to be used in targets created by this macro.
+        tags: Additional tags to apply to each test.
     """
+    all_tags = [name] + tags
 
     # Verify that a hint with only a custom module name causes the `cc_library`
     # to propagate a `SwiftInfo` info with the expected auto-generated module
@@ -36,11 +38,11 @@ def interop_hints_test_suite(name = "interop_hints"):
     provider_test(
         name = "{}_hint_with_custom_module_name_builds".format(name),
         expected_files = [
-            "test/fixtures/interop_hints/cc_lib_custom_module_name.swift.modulemap",
+            "test/fixtures/interop_hints/cc_lib_custom_module_name_modulemap/_/module.modulemap",
         ],
         field = "transitive_modules.clang.module_map!",
         provider = "SwiftInfo",
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/interop_hints:import_module_name_swift",
     )
 
@@ -53,7 +55,7 @@ def interop_hints_test_suite(name = "interop_hints"):
         ],
         field = "transitive_modules.clang.module_map!",
         provider = "SwiftInfo",
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/interop_hints:import_submodule_swift",
     )
 
@@ -62,7 +64,7 @@ def interop_hints_test_suite(name = "interop_hints"):
     analysis_failure_test(
         name = "{}_fails_when_module_map_provided_without_module_name".format(name),
         expected_message = "'module_name' must be specified when 'module_map' is specified.",
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/interop_hints:invalid_swift",
     )
 
@@ -71,7 +73,7 @@ def interop_hints_test_suite(name = "interop_hints"):
     provider_test(
         name = "{}_objc_library_module_suppressed".format(name),
         does_not_propagate_provider = "SwiftInfo",
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/interop_hints:objc_library_suppressed",
         target_compatible_with = ["@platforms//os:macos"],
     )
@@ -81,12 +83,12 @@ def interop_hints_test_suite(name = "interop_hints"):
     provider_test(
         name = "{}_objc_library_module_with_swift_dep_suppressed".format(name),
         does_not_propagate_provider = "SwiftInfo",
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/interop_hints:objc_library_with_swift_dep_suppressed",
         target_compatible_with = ["@platforms//os:macos"],
     )
 
     native.test_suite(
         name = name,
-        tags = [name],
+        tags = all_tags,
     )

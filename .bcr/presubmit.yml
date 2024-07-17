@@ -16,7 +16,7 @@ tasks:
     platform: ${{ platform }}
     environment:
       CC: "clang"
-      SWIFT_VERSION: "5.5.3"
+      SWIFT_VERSION: "5.9.2"
       SWIFT_HOME: "$HOME/swift-$SWIFT_VERSION"
       PATH: "$PATH:$SWIFT_HOME/usr/bin"
     shell_commands: *shell_commands
@@ -24,7 +24,6 @@ tasks:
     - "--action_env=PATH"
     build_targets:
     - "@rules_swift//examples/xplatform/..."
-    - "-@rules_swift//examples/xplatform/deprecated_grpc/..." # TODO: Fix grpc on Linux
     - "-@rules_swift//examples/xplatform/grpc/..." # TODO: Fix grpc on Linux
     - "-@rules_swift//examples/xplatform/proto_library_group/..." # TODO: Fix grpc on Linux
   verify_targets_macos:

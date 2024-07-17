@@ -14,7 +14,7 @@ x_defaults:
     platform: ubuntu2004
     environment:
       CC: clang
-      SWIFT_VERSION: "5.7.2"
+      SWIFT_VERSION: "5.9.2"
       SWIFT_HOME: "$HOME/swift-$SWIFT_VERSION"
       PATH: "$PATH:$SWIFT_HOME/usr/bin"
     build_flags: &linux_flags
@@ -30,6 +30,12 @@ x_defaults:
       - "//examples/..."
       - "//test/..."
       - "-//examples/apple/..."
+      # The following tests require Swift >5.8.
+      - "-//test:const_values_empty_const_values_multiple_files"
+      - "-//test:const_values_empty_const_values_single_file"
+      - "-//test:const_values_expected_argv"
+      - "-//test:const_values_wmo_single_values_file"
+      - "-//test:output_file_map_default"
   windows_common: &windows_common
     platform: windows
     build_flags:
@@ -114,10 +120,11 @@ tasks:
       - .bazelci/update_workspace_to_deps_heads.sh
     <<: *linux_common
 
-  windows_last_green:
-    name: "Last Green Bazel"
-    bazel: last_green
-    <<: *windows_common
+  # TODO: re-enable when Windows in Bazel CI is properly configured for Swift.
+  # windows_last_green:
+  #   name: "Last Green Bazel"
+  #   bazel: last_green
+  #   <<: *windows_common
 
   doc_tests:
     name: "Doc tests"

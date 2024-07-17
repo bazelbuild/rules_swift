@@ -21,7 +21,7 @@ load(
     "asserts",
     "unittest",
 )
-load("@build_bazel_rules_swift//swift:swift.bzl", "SwiftInfo")
+load("//swift:providers.bzl", "SwiftInfo")
 
 # A sentinel value returned by `_evaluate_field` when a `None` value is
 # encountered during the evaluation of a dotted path on any component other than
@@ -65,6 +65,12 @@ def _evaluate_field(env, source, field):
         component that was not the final component, then the special value
         `_EVALUATE_FIELD_FAILED` is returned.
     """
+
+    def evaluate_component(source, component):
+        if types.is_dict(source):
+            return source.get(component)
+        return getattr(source, component, None)
+
     components = field.split(".")
 
     for component in components:
@@ -93,7 +99,7 @@ def _evaluate_field(env, source, field):
                     flattened.extend(item)
                 else:
                     flattened.append(item)
-            source = [getattr(item, component, None) for item in flattened]
+            source = [evaluate_component(item, component) for item in flattened]
             if filter_nones:
                 source = [item for item in source if item != None]
         else:
@@ -107,7 +113,7 @@ def _evaluate_field(env, source, field):
                 )
                 return _EVALUATE_FIELD_FAILED
 
-            source = getattr(source, component, None)
+            source = evaluate_component(source, component)
             if filter_nones:
                 source = _normalize_collection(source)
                 if types.is_list(source):
@@ -441,6 +447,10 @@ evaluated on every item in that list, not on the list itself. Likewise, if such
 a field path component is followed by `!`, then any `None` elements that may
 have resulted during evaluation will be removed from the list before evaluating
 the next component.
+
+If a value along the field path is a dictionary and the next component
+is a valid key in that dictionary, then the value of that dictionary key is
+retrieved instead of it being treated as a struct field access.
 """,
             ),
             "provider": attr.string(

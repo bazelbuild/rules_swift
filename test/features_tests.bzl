@@ -60,6 +60,14 @@ use_global_index_store_index_while_building_test = make_action_command_line_test
     },
 )
 
+disable_swift_sandbox_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:features": [
+            "swift.disable_swift_sandbox",
+        ],
+    },
+)
+
 vfsoverlay_test = make_action_command_line_test_rule(
     config_settings = {
         "//command_line_option:features": [
@@ -105,15 +113,18 @@ disable_objc_test = make_action_command_line_test_rule(
     },
 )
 
-def features_test_suite(name):
+def features_test_suite(name, tags = []):
     """Test suite for various features.
 
     Args:
-      name: the base name to be used in things created by this macro
+        name: The base name to be used in things created by this macro.
+        tags: Additional tags to apply to each test.
     """
+    all_tags = [name] + tags
+
     default_test(
         name = "{}_default_test".format(name),
-        tags = [name],
+        tags = all_tags,
         expected_argv = [
             "-emit-object",
             "-I$(BIN_DIR)/test/fixtures/basic",
@@ -125,7 +136,7 @@ def features_test_suite(name):
 
     default_with_target_name_test(
         name = "{}_default_with_target_name_test".format(name),
-        tags = [name],
+        tags = all_tags,
         expected_argv = [
             "-emit-object",
             "-I$(BIN_DIR)/test/fixtures/basic/first",
@@ -137,7 +148,7 @@ def features_test_suite(name):
 
     disabled_file_prefix_map_test(
         name = "{}_file_prefix_map_test".format(name),
-        tags = [name],
+        tags = all_tags,
         not_expected_argv = [
             "-Xwrapped-swift=-file-prefix-pwd-is-dot",
         ],
@@ -147,7 +158,7 @@ def features_test_suite(name):
 
     default_test(
         name = "{}_file_prefix_xcode_remap_test".format(name),
-        tags = [name],
+        tags = all_tags,
         expected_argv = [
             "-Xwrapped-swift=-file-prefix-pwd-is-dot",
             "-file-prefix-map",
@@ -160,7 +171,7 @@ def features_test_suite(name):
 
     use_global_index_store_test(
         name = "{}_use_global_index_store_test".format(name),
-        tags = [name],
+        tags = all_tags,
         not_expected_argv = [
             "-Xwrapped-swift=-global-index-store-import-path=",
         ],
@@ -170,7 +181,7 @@ def features_test_suite(name):
 
     use_global_index_store_index_while_building_test(
         name = "{}_use_global_index_store_index_while_building_test".format(name),
-        tags = [name],
+        tags = all_tags,
         expected_argv = [
             "-Xwrapped-swift=-global-index-store-import-path=bazel-out/_global_index_store",
         ],
@@ -179,9 +190,20 @@ def features_test_suite(name):
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
 
+    disable_swift_sandbox_test(
+        name = "{}_disable_swift_sandbox_test".format(name),
+        tags = all_tags,
+        expected_argv = [
+            "-disable-sandbox",
+        ],
+        mnemonic = "SwiftCompile",
+        target_compatible_with = ["@platforms//os:macos"],
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+    )
+
     default_opt_test(
         name = "{}_default_opt_test".format(name),
-        tags = [name],
+        tags = all_tags,
         expected_argv = ["-emit-object", "-O", "-whole-module-optimization"],
         mnemonic = "SwiftCompile",
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
@@ -189,7 +211,7 @@ def features_test_suite(name):
 
     opt_no_wmo_test(
         name = "{}_opt_no_wmo_test".format(name),
-        tags = [name],
+        tags = all_tags,
         expected_argv = ["-emit-object", "-O"],
         not_expected_argv = ["-whole-module-optimization"],
         mnemonic = "SwiftCompile",
@@ -198,7 +220,7 @@ def features_test_suite(name):
 
     vfsoverlay_test(
         name = "{}_vfsoverlay_test".format(name),
-        tags = [name],
+        tags = all_tags,
         expected_argv = [
             "-Xfrontend -vfsoverlay$(BIN_DIR)/test/fixtures/basic/second.vfsoverlay.yaml",
             "-I/__build_bazel_rules_swift/swiftmodules",
@@ -211,24 +233,9 @@ def features_test_suite(name):
         target_under_test = "@build_bazel_rules_swift//test/fixtures/basic:second",
     )
 
-    vfsoverlay_with_target_name_test(
-        name = "{}_vfsoverlay_with_target_name_test".format(name),
-        tags = [name],
-        expected_argv = [
-            "-Xfrontend -vfsoverlay$(BIN_DIR)/test/fixtures/basic/second/second.vfsoverlay.yaml",
-            "-I/__build_bazel_rules_swift/swiftmodules",
-        ],
-        not_expected_argv = [
-            "-I$(BIN_DIR)/test/fixtures/basic",
-            "-explicit-swift-module-map-file",
-        ],
-        mnemonic = "SwiftCompile",
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/basic:second",
-    )
-
     explicit_swift_module_map_test(
         name = "{}_explicit_swift_module_map_test".format(name),
-        tags = [name],
+        tags = all_tags,
         expected_argv = [
             "-Xfrontend -explicit-swift-module-map-file -Xfrontend $(BIN_DIR)/test/fixtures/basic/second.swift-explicit-module-map.json",
         ],
@@ -243,7 +250,7 @@ def features_test_suite(name):
 
     explicit_swift_module_map_with_target_name_test(
         name = "{}_explicit_swift_module_map_with_target_name_test".format(name),
-        tags = [name],
+        tags = all_tags,
         expected_argv = [
             "-Xfrontend -explicit-swift-module-map-file -Xfrontend $(BIN_DIR)/test/fixtures/basic/second.swift-explicit-module-map.json",
         ],
@@ -258,7 +265,7 @@ def features_test_suite(name):
 
     default_test(
         name = "{}_default_link_test".format(name),
-        tags = [name],
+        tags = all_tags,
         expected_argv = [
             "-L/usr/lib/swift",
             "-ObjC",
@@ -272,7 +279,7 @@ def features_test_suite(name):
 
     disable_objc_test(
         name = "{}_disable_objc_link_test".format(name),
-        tags = [name],
+        tags = all_tags,
         expected_argv = [
             "-L/usr/lib/swift",
             "-Wl,-objc_abi_version,2",
@@ -286,7 +293,7 @@ def features_test_suite(name):
 
     default_test(
         name = "{}_default_cc_link_test".format(name),
-        tags = [name],
+        tags = all_tags,
         expected_argv = [
             "-L/usr/lib/swift",
             "-ObjC",
@@ -300,7 +307,7 @@ def features_test_suite(name):
 
     disable_objc_test(
         name = "{}_disable_cc_link_test".format(name),
-        tags = [name],
+        tags = all_tags,
         expected_argv = [
             "-L/usr/lib/swift",
             "-Wl,-objc_abi_version,2",
@@ -314,8 +321,13 @@ def features_test_suite(name):
 
     build_test(
         name = "{}_global_index_store_builds".format(name),
-        tags = [name],
+        tags = all_tags,
         targets = [
             "//test/fixtures/global_index_store:simple",
         ],
+    )
+
+    native.test_suite(
+        name = name,
+        tags = all_tags,
     )

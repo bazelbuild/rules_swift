@@ -21,24 +21,23 @@ load(
     "paths",
 )
 load(
-    "//swift:swift.bzl",
+    "//swift:providers.bzl",
     "SwiftInfo",
     "SwiftProtoCompilerInfo",
     "SwiftProtoInfo",
-    "SwiftToolchainInfo",
-    "swift_common",
 )
-
-# buildifier: disable=bzl-visibility
-load(
-    "//swift/internal:compiling.bzl",
-    "output_groups_from_other_compilation_outputs",
-)
+load("//swift:swift_common.bzl", "swift_common")
 
 # buildifier: disable=bzl-visibility
 load(
     "//swift/internal:linking.bzl",
     "new_objc_provider",
+)
+
+# buildifier: disable=bzl-visibility
+load(
+    "//swift/internal:output_groups.bzl",
+    "supplemental_compilation_output_groups",
 )
 
 # buildifier: disable=bzl-visibility
@@ -49,7 +48,7 @@ load(
 )
 
 def proto_path(proto_src, proto_info):
-    """Derives the string used to import the proto. 
+    """Derives the string used to import the proto.
 
     This is the proto source path within its repository,
     adjusted by `import_prefix` and `strip_import_prefix`.
@@ -258,7 +257,7 @@ def compile_swift_protos_for_target(
         ))
 
     # Extract the swift toolchain and configure the features:
-    swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
+    swift_toolchain = swift_common.get_toolchain(ctx)
     feature_configuration = swift_common.configure_features(
         ctx = ctx,
         requested_features = ctx.features,
@@ -268,25 +267,31 @@ def compile_swift_protos_for_target(
 
     # Compile the generated Swift source files as a module:
     include_dev_srch_paths = include_developer_search_paths(attr)
-    module_context, cc_compilation_outputs, other_compilation_outputs = swift_common.compile(
+    compile_result = swift_common.compile(
         actions = ctx.actions,
+        cc_infos = get_providers(compiler_deps, CcInfo),
         copts = ["-parse-as-library"],
-        deps = compiler_deps,
         feature_configuration = feature_configuration,
         include_dev_srch_paths = include_dev_srch_paths,
         module_name = module_name,
+        objc_infos = get_providers(compiler_deps, apple_common.Objc),
         package_name = None,
         srcs = generated_swift_srcs,
         swift_toolchain = swift_toolchain,
+        swift_infos = get_providers(compiler_deps, SwiftInfo),
         target_name = target_label.name,
         workspace_name = ctx.workspace_name,
     )
+
+    module_context = compile_result.module_context
+    compilation_outputs = compile_result.compilation_outputs
+    supplemental_outputs = compile_result.supplemental_outputs
 
     # Create the linking context from the compilation outputs:
     linking_context, linking_output = (
         swift_common.create_linking_context_from_compilation_outputs(
             actions = ctx.actions,
-            compilation_outputs = cc_compilation_outputs,
+            compilation_outputs = compilation_outputs,
             feature_configuration = feature_configuration,
             include_dev_srch_paths = include_dev_srch_paths,
             label = target_label,
@@ -301,7 +306,7 @@ def compile_swift_protos_for_target(
     )
 
     # Extract the swift toolchain and configure the features:
-    swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
+    swift_toolchain = swift_common.get_toolchain(ctx)
     feature_configuration = swift_common.configure_features(
         ctx = ctx,
         requested_features = ctx.features,
@@ -368,8 +373,8 @@ def compile_swift_protos_for_target(
 
     # Create the direct output group info provider:
     direct_output_group_info = OutputGroupInfo(
-        **output_groups_from_other_compilation_outputs(
-            other_compilation_outputs = other_compilation_outputs,
+        **supplemental_compilation_output_groups(
+            supplemental_outputs,
         )
     )
 

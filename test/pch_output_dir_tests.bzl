@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for pch output dir command line flags"""
+"""Tests for pch output dir command line flags."""
 
 load(
     "@build_bazel_rules_swift//test/rules:action_command_line_test.bzl",
@@ -27,12 +27,14 @@ pch_output_dir_action_command_line_test = make_action_command_line_test_rule(
     },
 )
 
-def pch_output_dir_test_suite(name):
+def pch_output_dir_test_suite(name, tags = []):
     """Test suite for pch output dir options.
 
     Args:
-      name: the base name to be used in things created by this macro
+        name: The base name to be used in targets created by this macro.
+        tags: Additional tags to apply to each test.
     """
+    all_tags = [name] + tags
 
     # Verify that a pch dir is passed
     pch_output_dir_action_command_line_test(
@@ -44,11 +46,11 @@ def pch_output_dir_test_suite(name):
             # fragment baked in.
         ],
         mnemonic = "SwiftCompile",
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
 
     native.test_suite(
         name = name,
-        tags = [name],
+        tags = all_tags,
     )

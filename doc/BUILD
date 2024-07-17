@@ -8,15 +8,11 @@ _DOC_SRCS = {
     "api": [
         "swift_common",
     ],
-    "aspects": [
-        "swift_usage_aspect",
-    ],
     "providers": [
         "SwiftInfo",
         "SwiftToolchainInfo",
         "SwiftProtoCompilerInfo",
         "SwiftProtoInfo",
-        "SwiftUsageInfo",
     ],
     "rules": [
         "swift_binary",
@@ -48,24 +44,6 @@ write_file(
         "The `swift_common` module provides API access to the behavior implemented",
         "by the Swift build rules, so that other custom rules can invoke Swift",
         "compilation and/or linking as part of their implementation.",
-    ],
-)
-
-write_file(
-    name = "aspects_header",
-    out = "aspects_header.vm",
-    content = [
-        "<!-- Generated with Stardoc, Do Not Edit! -->",
-        "# Aspects",
-        "",
-        "The aspects described below are used within the build rule implementations.",
-        "Clients interested in writing custom rules that interface with the rules/provides",
-        "in this package might needs them to provide some of the same information.",
-        "",
-        "On this page:",
-        "",
-    ] + ["  * [{0}](#{0})".format(r) for r in _DOC_SRCS["aspects"]] + [
-        "",
     ],
 )
 

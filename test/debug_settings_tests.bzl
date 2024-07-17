@@ -104,12 +104,14 @@ xcode_remap_command_line_test = make_action_command_line_test_rule(
     },
 )
 
-def debug_settings_test_suite(name):
+def debug_settings_test_suite(name, tags = []):
     """Test suite for serializing debugging options.
 
     Args:
-      name: the base name to be used in things created by this macro
+        name: The base name to be used in targets created by this macro.
+        tags: Additional tags to apply to each test.
     """
+    all_tags = [name] + tags
 
     # Verify that `-c dbg` builds serialize debugging options, remap paths, and
     # have other appropriate debug flags.
@@ -127,7 +129,7 @@ def debug_settings_test_suite(name):
             "-gline-tables-only",
         ],
         mnemonic = "SwiftCompile",
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
 
@@ -148,7 +150,7 @@ def debug_settings_test_suite(name):
             "-gline-tables-only",
         ],
         mnemonic = "SwiftCompile",
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
 
@@ -168,7 +170,7 @@ def debug_settings_test_suite(name):
             "-g",
         ],
         mnemonic = "SwiftCompile",
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
 
@@ -188,7 +190,7 @@ def debug_settings_test_suite(name):
             "-gline-tables-only",
         ],
         mnemonic = "SwiftCompile",
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
 
@@ -207,7 +209,7 @@ def debug_settings_test_suite(name):
             "-gline-tables-only",
         ],
         mnemonic = "SwiftCompile",
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
 
@@ -223,7 +225,7 @@ def debug_settings_test_suite(name):
             "-Xfrontend -serialize-debugging-options",
         ],
         mnemonic = "SwiftCompile",
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
 
@@ -235,11 +237,11 @@ def debug_settings_test_suite(name):
         ],
         target_compatible_with = ["@platforms//os:macos"],
         mnemonic = "SwiftCompile",
-        tags = [name],
+        tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
 
     native.test_suite(
         name = name,
-        tags = [name],
+        tags = all_tags,
     )

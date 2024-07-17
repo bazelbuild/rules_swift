@@ -1,15 +1,6 @@
-load(
-    "@rules_proto//proto:defs.bzl",
-    "proto_library",
-)
-load(
-    "//proto:proto.bzl",
-    "swift_proto_library",
-)
-load(
-    "//swift:swift.bzl",
-    "swift_binary",
-)
+load("@rules_proto//proto:defs.bzl", "proto_library")
+load("//proto:swift_proto_library.bzl", "swift_proto_library")
+load("//swift:swift_binary.bzl", "swift_binary")
 
 proto_library(
     name = "proto_glob",

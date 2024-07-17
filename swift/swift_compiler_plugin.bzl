@@ -17,22 +17,18 @@
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@build_bazel_apple_support//lib:apple_support.bzl", "apple_support")
 load("@build_bazel_apple_support//lib:lipo.bzl", "lipo")
-load("@build_bazel_apple_support//lib:transitions.bzl", "macos_universal_transition")
 load(
-    "@build_bazel_rules_swift//swift/internal:compiling.bzl",
-    "output_groups_from_other_compilation_outputs",
+    "@build_bazel_apple_support//lib:transitions.bzl",
+    "macos_universal_transition",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT",
     "SWIFT_FEATURE__SUPPORTS_MACROS",
 )
+load("//swift/internal:features.bzl", "is_feature_enabled")
 load(
-    "@build_bazel_rules_swift//swift/internal:features.bzl",
-    "is_feature_enabled",
-)
-load(
-    "@build_bazel_rules_swift//swift/internal:linking.bzl",
+    "//swift/internal:linking.bzl",
     "binary_rule_attrs",
     "configure_features_for_binary",
     "create_linking_context_from_compilation_outputs",
@@ -40,27 +36,26 @@ load(
     "register_link_binary_action",
 )
 load(
-    "@build_bazel_rules_swift//swift/internal:providers.bzl",
-    "SwiftCompilerPluginInfo",
-    "SwiftToolchainInfo",
+    "//swift/internal:output_groups.bzl",
+    "supplemental_compilation_output_groups",
 )
+load("//swift/internal:toolchain_utils.bzl", "use_swift_toolchain")
 load(
-    "@build_bazel_rules_swift//swift/internal:swift_common.bzl",
-    "swift_common",
-)
-load(
-    "@build_bazel_rules_swift//swift/internal:utils.bzl",
+    "//swift/internal:utils.bzl",
     "expand_locations",
     "get_providers",
 )
 load(":module_name.bzl", "derive_swift_module_name")
+load(":providers.bzl", "SwiftCompilerPluginInfo", "SwiftInfo")
+load(":swift_common.bzl", "swift_common")
 
 def _swift_compiler_plugin_impl(ctx):
-    swift_toolchain = ctx.attr._toolchain[SwiftToolchainInfo]
+    swift_toolchain = swift_common.get_toolchain(ctx)
 
     feature_configuration = configure_features_for_binary(
         ctx = ctx,
         requested_features = ctx.features,
+        swift_toolchain = swift_toolchain,
         unsupported_features = ctx.disabled_features,
     )
 
@@ -72,6 +67,7 @@ def _swift_compiler_plugin_impl(ctx):
 
     deps = ctx.attr.deps
     srcs = ctx.files.srcs
+    module_contexts = []
 
     if not srcs:
         fail("A compiler plugin must have at least one file in 'srcs'.")
@@ -81,9 +77,10 @@ def _swift_compiler_plugin_impl(ctx):
         module_name = derive_swift_module_name(ctx.label)
     entry_point_function_name = "{}_main".format(module_name)
 
-    module_context, cc_compilation_outputs, other_compilation_outputs = swift_common.compile(
+    compile_result = swift_common.compile(
         actions = ctx.actions,
         additional_inputs = ctx.files.swiftc_inputs,
+        cc_infos = get_providers(deps, CcInfo),
         copts = expand_locations(
             ctx,
             ctx.attr.copts,
@@ -101,24 +98,22 @@ def _swift_compiler_plugin_impl(ctx):
             entry_point_function_name,
         ],
         defines = ctx.attr.defines,
-        deps = deps,
         feature_configuration = feature_configuration,
         include_dev_srch_paths = ctx.attr.testonly,
         module_name = module_name,
+        objc_infos = get_providers(deps, apple_common.Objc),
         package_name = ctx.attr.package_name,
         plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),
         srcs = srcs,
+        swift_infos = get_providers(deps, SwiftInfo),
         swift_toolchain = swift_toolchain,
         target_name = ctx.label.name,
         workspace_name = ctx.workspace_name,
     )
-    output_groups = output_groups_from_other_compilation_outputs(
-        other_compilation_outputs = other_compilation_outputs,
-    )
-
-    cc_feature_configuration = swift_common.cc_feature_configuration(
-        feature_configuration = feature_configuration,
-    )
+    module_context = compile_result.module_context
+    module_contexts.append(module_context)
+    compilation_outputs = compile_result.compilation_outputs
+    supplemental_outputs = compile_result.supplemental_outputs
 
     if is_feature_enabled(
         feature_configuration = feature_configuration,
@@ -133,13 +128,14 @@ def _swift_compiler_plugin_impl(ctx):
         actions = ctx.actions,
         additional_inputs = ctx.files.swiftc_inputs,
         additional_linking_contexts = [malloc_linking_context(ctx)],
-        cc_feature_configuration = cc_feature_configuration,
-        compilation_outputs = cc_compilation_outputs,
+        compilation_outputs = compilation_outputs,
         deps = deps,
+        feature_configuration = feature_configuration,
+        module_contexts = module_contexts,
         name = name,
         output_type = "executable",
-        stamp = ctx.attr.stamp,
         owner = ctx.label,
+        stamp = ctx.attr.stamp,
         swift_toolchain = swift_toolchain,
         user_link_flags = expand_locations(
             ctx,
@@ -159,7 +155,7 @@ def _swift_compiler_plugin_impl(ctx):
             actions = ctx.actions,
             additional_inputs = ctx.files.swiftc_inputs,
             alwayslink = True,
-            compilation_outputs = cc_compilation_outputs,
+            compilation_outputs = compilation_outputs,
             feature_configuration = feature_configuration,
             label = ctx.label,
             include_dev_srch_paths = ctx.attr.testonly,
@@ -184,7 +180,9 @@ def _swift_compiler_plugin_impl(ctx):
                 files = ctx.files.data,
             ),
         ),
-        OutputGroupInfo(**output_groups),
+        OutputGroupInfo(
+            **supplemental_compilation_output_groups(supplemental_outputs)
+        ),
         SwiftCompilerPluginInfo(
             cc_info = CcInfo(
                 compilation_context = module_context.clang.compilation_context,
@@ -266,6 +264,7 @@ swift_library(
     executable = True,
     fragments = ["cpp"],
     implementation = _swift_compiler_plugin_impl,
+    toolchains = use_swift_toolchain(),
 )
 
 def _universal_swift_compiler_plugin_impl(ctx):
@@ -346,9 +345,6 @@ universal_swift_compiler_plugin = rule(
             ),
         },
     ),
-    executable = True,
-    fragments = ["cpp", "apple"],
-    implementation = _universal_swift_compiler_plugin_impl,
     doc = """\
 Wraps an existing `swift_compiler_plugin` target to produce a universal binary.
 
@@ -384,4 +380,7 @@ swift_library(
 )
 ```
 """,
+    executable = True,
+    fragments = ["cpp", "apple"],
+    implementation = _universal_swift_compiler_plugin_impl,
 )

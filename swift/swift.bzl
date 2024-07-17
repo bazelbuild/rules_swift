@@ -14,17 +14,12 @@
 
 """BUILD rules to define Swift libraries and executable binaries.
 
-This file is the public interface that users should import to use the Swift
-rules. Do not import definitions from the `internal` subdirectory directly.
+**NOTE:** This file is deprecated. To avoid having Bazel do more work than
+necessary, users should import each rule/build definition they use from the
+`.bzl` file that defines it in this directory.
 
-To use the Swift build rules in your BUILD files, load them from
-`@build_bazel_rules_swift//swift:swift.bzl`.
-
-For example:
-
-```build
-load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
-```
+Do not import any definitions directly from the `internal` directory; those are
+meant for build rule use only.
 """
 
 load(
@@ -33,65 +28,48 @@ load(
     _universal_swift_compiler_plugin = "universal_swift_compiler_plugin",
 )
 load(
-    "@build_bazel_rules_swift//swift/internal:providers.bzl",
+    ":providers.bzl",
     _SwiftInfo = "SwiftInfo",
     _SwiftProtoCompilerInfo = "SwiftProtoCompilerInfo",
     _SwiftProtoInfo = "SwiftProtoInfo",
+    _SwiftSymbolGraphInfo = "SwiftSymbolGraphInfo",
     _SwiftToolchainInfo = "SwiftToolchainInfo",
-    _SwiftUsageInfo = "SwiftUsageInfo",
 )
+load(":swift_binary.bzl", _swift_binary = "swift_binary")
 load(
-    "@build_bazel_rules_swift//swift/internal:swift_binary_test_rules.bzl",
-    _swift_binary = "swift_binary",
-    _swift_test = "swift_test",
-)
-load(
-    "@build_bazel_rules_swift//swift/internal:swift_clang_module_aspect.bzl",
+    ":swift_clang_module_aspect.bzl",
     _swift_clang_module_aspect = "swift_clang_module_aspect",
 )
+load(":swift_common.bzl", _swift_common = "swift_common")
 load(
-    "@build_bazel_rules_swift//swift/internal:swift_common.bzl",
-    _swift_common = "swift_common",
+    ":swift_extract_symbol_graph.bzl",
+    _swift_extract_symbol_graph = "swift_extract_symbol_graph",
 )
 load(
-    "@build_bazel_rules_swift//swift/internal:swift_feature_allowlist.bzl",
+    ":swift_feature_allowlist.bzl",
     _swift_feature_allowlist = "swift_feature_allowlist",
 )
+load(":swift_import.bzl", _swift_import = "swift_import")
+load(":swift_interop_hint.bzl", _swift_interop_hint = "swift_interop_hint")
+load(":swift_library.bzl", _swift_library = "swift_library")
+load(":swift_library_group.bzl", _swift_library_group = "swift_library_group")
+load(":swift_module_alias.bzl", _swift_module_alias = "swift_module_alias")
 load(
-    "@build_bazel_rules_swift//swift/internal:swift_import.bzl",
-    _swift_import = "swift_import",
-)
-load(
-    "@build_bazel_rules_swift//swift/internal:swift_interop_hint.bzl",
-    _swift_interop_hint = "swift_interop_hint",
-)
-load(
-    "@build_bazel_rules_swift//swift/internal:swift_library.bzl",
-    _swift_library = "swift_library",
-)
-load(
-    "@build_bazel_rules_swift//swift/internal:swift_library_group.bzl",
-    _swift_library_group = "swift_library_group",
-)
-load(
-    "@build_bazel_rules_swift//swift/internal:swift_module_alias.bzl",
-    _swift_module_alias = "swift_module_alias",
-)
-load(
-    "@build_bazel_rules_swift//swift/internal:swift_package_configuration.bzl",
+    ":swift_package_configuration.bzl",
     _swift_package_configuration = "swift_package_configuration",
 )
 load(
-    "@build_bazel_rules_swift//swift/internal:swift_usage_aspect.bzl",
-    _swift_usage_aspect = "swift_usage_aspect",
+    ":swift_symbol_graph_aspect.bzl",
+    _swift_symbol_graph_aspect = "swift_symbol_graph_aspect",
 )
+load(":swift_test.bzl", _swift_test = "swift_test")
 
 # Re-export providers.
 SwiftInfo = _SwiftInfo
 SwiftProtoCompilerInfo = _SwiftProtoCompilerInfo
 SwiftProtoInfo = _SwiftProtoInfo
+SwiftSymbolGraphInfo = _SwiftSymbolGraphInfo
 SwiftToolchainInfo = _SwiftToolchainInfo
-SwiftUsageInfo = _SwiftUsageInfo
 
 # Re-export public API module.
 swift_common = _swift_common
@@ -100,6 +78,7 @@ swift_common = _swift_common
 swift_binary = _swift_binary
 swift_compiler_plugin = _swift_compiler_plugin
 universal_swift_compiler_plugin = _universal_swift_compiler_plugin
+swift_extract_symbol_graph = _swift_extract_symbol_graph
 swift_feature_allowlist = _swift_feature_allowlist
 swift_import = _swift_import
 swift_interop_hint = _swift_interop_hint
@@ -111,4 +90,4 @@ swift_test = _swift_test
 
 # Re-export public aspects.
 swift_clang_module_aspect = _swift_clang_module_aspect
-swift_usage_aspect = _swift_usage_aspect
+swift_symbol_graph_aspect = _swift_symbol_graph_aspect

@@ -14,66 +14,13 @@
 
 """Functions for registering actions that invoke Swift tools."""
 
-load("@bazel_skylib//lib:partial.bzl", "partial")
 load("@bazel_skylib//lib:types.bzl", "types")
+load("//swift/toolchains/config:action_config.bzl", "ConfigResultInfo")
 load(":features.bzl", "are_all_features_enabled")
-load(":toolchain_config.bzl", "swift_toolchain_config")
 
 # This is a proxy for being on bazel 7.x which has
 # --incompatible_merge_fixed_and_default_shell_env enabled by default
 USE_DEFAULT_SHELL_ENV = not hasattr(apple_common, "apple_crosstool_transition")
-
-# The names of actions currently supported by the Swift build rules.
-swift_action_names = struct(
-    # Extracts a linker input file containing libraries to link from a compiled
-    # object file to provide autolink functionality based on `import` directives
-    # on ELF platforms.
-    AUTOLINK_EXTRACT = "SwiftAutolinkExtract",
-
-    # Compiles one or more `.swift` source files into a `.swiftmodule` and
-    # object files.
-    COMPILE = "SwiftCompile",
-
-    # Compiles a `.swiftinterface` file into a `.swiftmodule` file.
-    COMPILE_MODULE_INTERFACE = "SwiftCompileModuleInterface",
-
-    # Wraps a `.swiftmodule` in a `.o` file on ELF platforms so that it can be
-    # linked into a binary for debugging.
-    MODULEWRAP = "SwiftModuleWrap",
-
-    # Precompiles an explicit module for a C/Objective-C module map and its
-    # headers, emitting a `.pcm` file.
-    PRECOMPILE_C_MODULE = "SwiftPrecompileCModule",
-
-    # Produces files that are usually fallout of the compilation such as
-    # .swiftmodule, -Swift.h and more.
-    DERIVE_FILES = "SwiftDeriveFiles",
-
-    # Produces an AST file for each swift source file in a module.
-    DUMP_AST = "SwiftDumpAST",
-)
-
-def _apply_configurator(configurator, prerequisites, args):
-    """Calls an action configurator with the given arguments.
-
-    This function appropriately handles whether the configurator is a Skylib
-    partial or a plain function.
-
-    Args:
-        configurator: The action configurator to call.
-        prerequisites: The prerequisites struct that the configurator may use
-            to control its behavior.
-        args: The `Args` object to which the configurator will add command line
-            arguments for the tool being invoked.
-
-    Returns:
-        The `swift_toolchain_config.config_result` value, or `None`, that was
-        returned by the configurator.
-    """
-    if types.is_function(configurator):
-        return configurator(prerequisites, args)
-    else:
-        return partial.call(configurator, prerequisites, args)
 
 def _apply_action_configs(
         action_name,
@@ -94,9 +41,8 @@ def _apply_action_configs(
         swift_toolchain: The Swift toolchain being used to build.
 
     Returns:
-        A `swift_toolchain_config.action_inputs` value that contains the files
-        that are required inputs of the action, as determined by the
-        configurators.
+        A `ConfigResultInfo` value that contains the files that are required
+        inputs of the action, as determined by the configurators.
     """
     inputs = []
     transitive_inputs = []
@@ -140,11 +86,7 @@ def _apply_action_configs(
         # configurators.
         if should_apply_configurators:
             for configurator in action_config.configurators:
-                action_inputs = _apply_configurator(
-                    configurator,
-                    prerequisites,
-                    args,
-                )
+                action_inputs = configurator(prerequisites, args)
 
                 # If we create an action configurator from a lambda that calls
                 # `Args.add*`, the result will be the `Args` objects (rather
@@ -152,15 +94,14 @@ def _apply_action_configs(
                 # object for chaining. We can guard against this (and possibly
                 # other errors) by checking that the value is a struct. If it
                 # is, then it's not `None` and it probably came from the
-                # provider used by `swift_toolchain_config.config_result`. If
-                # it's some other kind of struct, then we'll error out trying to
-                # access the fields.
+                # provider used by `ConfigResultInfo`. If it's some other kind
+                # of struct, then we'll error out trying to access the fields.
                 if type(action_inputs) == "struct":
                     inputs.extend(action_inputs.inputs)
                     transitive_inputs.extend(action_inputs.transitive_inputs)
 
     # Merge the action results into a single result that we return.
-    return swift_toolchain_config.config_result(
+    return ConfigResultInfo(
         inputs = inputs,
         transitive_inputs = transitive_inputs,
     )
@@ -245,9 +186,7 @@ def run_toolchain_action(
             tools.append(tool_config.executable)
     else:
         executable = tool_config.executable
-
-    if tool_config.tools:
-        tools.extend(tool_config.tools)
+    tools.extend(tool_config.additional_tools)
 
     # If the tool configuration has any required arguments, add those first.
     if tool_config.args:
@@ -274,6 +213,7 @@ def run_toolchain_action(
             transitive = action_inputs.transitive_inputs,
         ),
         mnemonic = mnemonic if mnemonic else action_name,
+        resource_set = tool_config.resource_set,
         tools = tools,
         use_default_shell_env = USE_DEFAULT_SHELL_ENV,
         **kwargs

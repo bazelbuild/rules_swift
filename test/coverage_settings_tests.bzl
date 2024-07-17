@@ -29,15 +29,18 @@ coverage_xcode_prefix_map_test = make_action_command_line_test_rule(
     },
 )
 
-def coverage_settings_test_suite(name):
+def coverage_settings_test_suite(name, tags = []):
     """Test suite for coverage options.
 
     Args:
-      name: the base name to be used in things created by this macro
+        name: The base name to be used in things created by this macro.
+        tags: Additional tags to apply to each test.
     """
+    all_tags = [name] + tags
+
     default_coverage_test(
         name = "{}_default_coverage".format(name),
-        tags = [name],
+        tags = all_tags,
         expected_argv = [
             "-profile-generate",
             "-profile-coverage-mapping",
@@ -49,7 +52,7 @@ def coverage_settings_test_suite(name):
 
     disabled_coverage_prefix_map_test(
         name = "{}_prefix_map".format(name),
-        tags = [name],
+        tags = all_tags,
         expected_argv = [
             "-profile-generate",
             "-profile-coverage-mapping",
@@ -63,7 +66,7 @@ def coverage_settings_test_suite(name):
 
     coverage_xcode_prefix_map_test(
         name = "{}_xcode_prefix_map".format(name),
-        tags = [name],
+        tags = all_tags,
         expected_argv = [
             "-coverage-prefix-map",
             "__BAZEL_XCODE_DEVELOPER_DIR__=/PLACEHOLDER_DEVELOPER_DIR",

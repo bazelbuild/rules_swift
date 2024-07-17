@@ -1,7 +1,4 @@
-load(
-    "//swift:swift.bzl",
-    "swift_binary",
-)
+load("//swift:swift_binary.bzl", "swift_binary")
 
 swift_binary(
     name = "proto_path_example",

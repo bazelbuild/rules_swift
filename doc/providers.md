@@ -11,7 +11,6 @@ On this page:
   * [SwiftToolchainInfo](#SwiftToolchainInfo)
   * [SwiftProtoCompilerInfo](#SwiftProtoCompilerInfo)
   * [SwiftProtoInfo](#SwiftProtoInfo)
-  * [SwiftUsageInfo](#SwiftUsageInfo)
 
 <a id="SwiftInfo"></a>
 
@@ -84,11 +83,11 @@ Propagates Swift-specific information about a `proto_library`.
 ## SwiftToolchainInfo
 
 <pre>
-SwiftToolchainInfo(<a href="#SwiftToolchainInfo-action_configs">action_configs</a>, <a href="#SwiftToolchainInfo-cc_toolchain_info">cc_toolchain_info</a>, <a href="#SwiftToolchainInfo-clang_implicit_deps_providers">clang_implicit_deps_providers</a>, <a href="#SwiftToolchainInfo-developer_dirs">developer_dirs</a>,
-                   <a href="#SwiftToolchainInfo-entry_point_linkopts_provider">entry_point_linkopts_provider</a>, <a href="#SwiftToolchainInfo-feature_allowlists">feature_allowlists</a>,
-                   <a href="#SwiftToolchainInfo-generated_header_module_implicit_deps_providers">generated_header_module_implicit_deps_providers</a>, <a href="#SwiftToolchainInfo-implicit_deps_providers">implicit_deps_providers</a>,
-                   <a href="#SwiftToolchainInfo-package_configurations">package_configurations</a>, <a href="#SwiftToolchainInfo-requested_features">requested_features</a>, <a href="#SwiftToolchainInfo-root_dir">root_dir</a>, <a href="#SwiftToolchainInfo-swift_worker">swift_worker</a>,
-                   <a href="#SwiftToolchainInfo-test_configuration">test_configuration</a>, <a href="#SwiftToolchainInfo-tool_configs">tool_configs</a>, <a href="#SwiftToolchainInfo-unsupported_features">unsupported_features</a>)
+SwiftToolchainInfo(<a href="#SwiftToolchainInfo-action_configs">action_configs</a>, <a href="#SwiftToolchainInfo-cc_toolchain_info">cc_toolchain_info</a>, <a href="#SwiftToolchainInfo-clang_implicit_deps_providers">clang_implicit_deps_providers</a>,
+                   <a href="#SwiftToolchainInfo-const_protocols_to_gather">const_protocols_to_gather</a>, <a href="#SwiftToolchainInfo-developer_dirs">developer_dirs</a>, <a href="#SwiftToolchainInfo-entry_point_linkopts_provider">entry_point_linkopts_provider</a>,
+                   <a href="#SwiftToolchainInfo-feature_allowlists">feature_allowlists</a>, <a href="#SwiftToolchainInfo-generated_header_module_implicit_deps_providers">generated_header_module_implicit_deps_providers</a>,
+                   <a href="#SwiftToolchainInfo-implicit_deps_providers">implicit_deps_providers</a>, <a href="#SwiftToolchainInfo-package_configurations">package_configurations</a>, <a href="#SwiftToolchainInfo-requested_features">requested_features</a>, <a href="#SwiftToolchainInfo-root_dir">root_dir</a>,
+                   <a href="#SwiftToolchainInfo-swift_worker">swift_worker</a>, <a href="#SwiftToolchainInfo-test_configuration">test_configuration</a>, <a href="#SwiftToolchainInfo-tool_configs">tool_configs</a>, <a href="#SwiftToolchainInfo-unsupported_features">unsupported_features</a>)
 </pre>
 
 Propagates information about a Swift toolchain to compilation and linking rules
@@ -102,6 +101,7 @@ that use the toolchain.
 | <a id="SwiftToolchainInfo-action_configs"></a>action_configs |  This field is an internal implementation detail of the build rules.    |
 | <a id="SwiftToolchainInfo-cc_toolchain_info"></a>cc_toolchain_info |  The `cc_common.CcToolchainInfo` provider from the Bazel C++ toolchain that this Swift toolchain depends on.    |
 | <a id="SwiftToolchainInfo-clang_implicit_deps_providers"></a>clang_implicit_deps_providers |  A `struct` with the following fields, which represent providers from targets that should be added as implicit dependencies of any precompiled explicit C/Objective-C modules:<br><br>*   `cc_infos`: A list of `CcInfo` providers from targets specified as the     toolchain's implicit dependencies. *   `objc_infos`: A list of `apple_common.Objc` providers from targets specified     as the toolchain's implicit dependencies. *   `swift_infos`: A list of `SwiftInfo` providers from targets specified as the     toolchain's implicit dependencies.<br><br>For ease of use, this field is never `None`; it will always be a valid `struct` containing the fields described above, even if those lists are empty.    |
+| <a id="SwiftToolchainInfo-const_protocols_to_gather"></a>const_protocols_to_gather |  `File`. A JSON file specifying a list of protocols for extraction of conformances' const values.    |
 | <a id="SwiftToolchainInfo-developer_dirs"></a>developer_dirs |  A list of `structs` containing the following fields:*   `developer_path_label`: A `string` representing the type of developer path. *   `path`: A `string` representing the path to the developer framework.    |
 | <a id="SwiftToolchainInfo-entry_point_linkopts_provider"></a>entry_point_linkopts_provider |  A function that returns flags that should be passed to the linker to control the name of the entry point of a linked binary for rules that customize their entry point. This function must take the following keyword arguments: *   `entry_point_name`: The name of the entry point function, as was passed to     the Swift compiler using the `-entry-point-function-name` flag. It must return a `struct` with the following fields: *   `linkopts`: A list of strings that will be passed as additional linker flags     when linking a binary with a custom entry point.    |
 | <a id="SwiftToolchainInfo-feature_allowlists"></a>feature_allowlists |  A list of `SwiftFeatureAllowlistInfo` providers that allow or prohibit packages from requesting or disabling features.    |
@@ -111,23 +111,8 @@ that use the toolchain.
 | <a id="SwiftToolchainInfo-requested_features"></a>requested_features |  `List` of `string`s. Features that should be implicitly enabled by default for targets built using this toolchain, unless overridden by the user by listing their negation in the `features` attribute of a target/package or in the `--features` command line flag.<br><br>These features determine various compilation and debugging behaviors of the Swift build rules, and they are also passed to the C++ APIs used when linking (so features defined in CROSSTOOL may be used here).    |
 | <a id="SwiftToolchainInfo-root_dir"></a>root_dir |  `String`. The workspace-relative root directory of the toolchain.    |
 | <a id="SwiftToolchainInfo-swift_worker"></a>swift_worker |  `File`. The executable representing the worker executable used to invoke the compiler and other Swift tools (for both incremental and non-incremental compiles).    |
-| <a id="SwiftToolchainInfo-test_configuration"></a>test_configuration |  `Struct` containing two fields:<br><br>*   `env`: A `dict` of environment variables to be set when running tests     that were built with this toolchain.<br><br>*   `execution_requirements`: A `dict` of execution requirements for tests     that were built with this toolchain.<br><br>This is used, for example, with Xcode-based toolchains to ensure that the `xctest` helper and coverage tools are found in the correct developer directory when running tests.    |
+| <a id="SwiftToolchainInfo-test_configuration"></a>test_configuration |  `Struct` containing the following fields:<br><br>*   `env`: A `dict` of environment variables to be set when running tests     that were built with this toolchain.<br><br>*   `execution_requirements`: A `dict` of execution requirements for tests     that were built with this toolchain.<br><br>*   `uses_xctest_bundles`: A Boolean value indicating whether test targets     should emit `.xctest` bundles that are launched with the `xctest` tool.<br><br>This is used, for example, with Xcode-based toolchains to ensure that the `xctest` helper and coverage tools are found in the correct developer directory when running tests.    |
 | <a id="SwiftToolchainInfo-tool_configs"></a>tool_configs |  This field is an internal implementation detail of the build rules.    |
 | <a id="SwiftToolchainInfo-unsupported_features"></a>unsupported_features |  `List` of `string`s. Features that should be implicitly disabled by default for targets built using this toolchain, unless overridden by the user by listing them in the `features` attribute of a target/package or in the `--features` command line flag.<br><br>These features determine various compilation and debugging behaviors of the Swift build rules, and they are also passed to the C++ APIs used when linking (so features defined in CROSSTOOL may be used here).    |
-
-
-<a id="SwiftUsageInfo"></a>
-
-## SwiftUsageInfo
-
-<pre>
-SwiftUsageInfo()
-</pre>
-
-A provider that indicates that Swift was used by a target or any target that it
-depends on.
-
-**FIELDS**
-
 
 

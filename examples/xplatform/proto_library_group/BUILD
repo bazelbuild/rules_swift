@@ -1,8 +1,5 @@
-load(
-    "//swift:swift.bzl",
-    "swift_binary",
-    "swift_test",
-)
+load("//swift:swift_binary.bzl", "swift_binary")
+load("//swift:swift_test.bzl", "swift_test")
 
 swift_binary(
     name = "echo_server",
@@ -24,7 +21,6 @@ swift_test(
     name = "echo_client_unit_test",
     srcs = [
         "client_unit_test.swift",
-        "main.swift",
     ],
     deps = [
         "//examples/xplatform/proto_library_group/service:service_client_swift_proto",

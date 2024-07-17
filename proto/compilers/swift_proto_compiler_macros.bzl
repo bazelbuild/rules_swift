@@ -16,14 +16,8 @@
 Utilities for proto compiler rules.
 """
 
-load(
-    "@bazel_skylib//lib:dicts.bzl",
-    "dicts",
-)
-load(
-    "//proto:proto.bzl",
-    "swift_proto_compiler",
-)
+load("@bazel_skylib//lib:dicts.bzl", "dicts")
+load("//proto:swift_proto_compiler.bzl", "swift_proto_compiler")
 
 # NOTE: The ProtoPathModuleMappings option is set internally for all plugins.
 # This is used to inform the plugins which Swift module the generated code for each plugin is located in.

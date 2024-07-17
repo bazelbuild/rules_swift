@@ -110,7 +110,8 @@ SwiftRunner::SwiftRunner(const std::vector<std::string> &args,
     : job_env_(GetCurrentEnvironment()),
       index_import_path_(index_import_path),
       force_response_file_(force_response_file),
-      is_dump_ast_(false) {
+      is_dump_ast_(false),
+      file_prefix_pwd_is_dot_(false) {
   args_ = ProcessArguments(args);
 }
 
@@ -324,6 +325,8 @@ bool SwiftRunner::ProcessArgument(
         changed = true;
       } else if (StripPrefix("-generated-header-rewriter=", new_arg)) {
         changed = true;
+      } else if (StripPrefix("-bazel-target-label=", new_arg)) {
+        changed = true;
       } else if (StripPrefix("-global-index-store-import-path=", new_arg)) {
         changed = true;
       } else {
@@ -385,6 +388,8 @@ std::vector<std::string> SwiftRunner::ParseArguments(Iterator itr) {
         global_index_store_import_path_ = arg;
       } else if (StripPrefix("-generated-header-rewriter=", arg)) {
         generated_header_rewriter_path_ = arg;
+      } else if (StripPrefix("-bazel-target-label=", arg)) {
+        target_label_ = arg;
       } else if (arg == "-file-prefix-pwd-is-dot") {
         file_prefix_pwd_is_dot_ = true;
       }

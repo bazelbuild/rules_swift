@@ -28,11 +28,7 @@ load(
     "//proto:swift_proto_utils.bzl",
     "register_module_mapping_write_action",
 )
-load(
-    "//swift:swift.bzl",
-    "SwiftInfo",
-    "SwiftProtoCompilerInfo",
-)
+load("//swift:providers.bzl", "SwiftInfo", "SwiftProtoCompilerInfo")
 
 def _swift_proto_compile(label, actions, swift_proto_compiler_info, additional_compiler_info, proto_infos, module_mappings):
     """Compiles Swift source files from `ProtoInfo` providers.
@@ -158,7 +154,8 @@ def _swift_proto_compile(label, actions, swift_proto_compiler_info, additional_c
 
     # Build the arguments for protoc:
     arguments = actions.args()
-    arguments.use_param_file("--param=%s")
+    arguments.set_param_file_format("multiline")
+    arguments.use_param_file("@%s")
 
     # Add the plugin argument with the provided name to namespace all of the options:
     plugin_name_argument = "--plugin=protoc-gen-{}={}".format(
@@ -260,7 +257,6 @@ def _swift_proto_compiler_impl(ctx):
     ]
 
 swift_proto_compiler = rule(
-    implementation = _swift_proto_compiler_impl,
     attrs = {
         "bundled_proto_paths": attr.string_list(
             doc = """\
@@ -315,7 +311,7 @@ For example:
         ),
         "plugin_name": attr.string(
             doc = """\
-Name of the proto compiler plugin passed to protoc. 
+Name of the proto compiler plugin passed to protoc.
 
 For example:
 
@@ -390,4 +386,5 @@ Each compiler target should configure this based on the suffix applied to the ge
             allow_single_file = True,
         ),
     },
+    implementation = _swift_proto_compiler_impl,
 )

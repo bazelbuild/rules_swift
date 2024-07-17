@@ -31,12 +31,14 @@ private_swiftinterface_test = make_action_command_line_test_rule(
     },
 )
 
-def private_swiftinterface_test_suite(name):
+def private_swiftinterface_test_suite(name, tags = []):
     """Test suite for features that compile Swift module interfaces.
 
     Args:
         name: The base name to be used in targets created by this macro.
+        tags: Additional tags to apply to each test.
     """
+    all_tags = [name] + tags
 
     # Verify that a `swift_binary` builds properly when depending on a
     # `swift_import` target that references a `.private.swiftinterface` file.
@@ -45,10 +47,10 @@ def private_swiftinterface_test_suite(name):
         targets = [
             "@build_bazel_rules_swift//test/fixtures/private_swiftinterface:client",
         ],
-        tags = [name],
+        tags = all_tags,
     )
 
     native.test_suite(
         name = name,
-        tags = [name],
+        tags = all_tags,
     )

@@ -3,7 +3,7 @@
 For more information, please see `bzl_test.bzl`.
 """
 
-load("//swift:swift.bzl", "SwiftInfo")
+load("//swift:providers.bzl", "SwiftInfo")
 
 def macro_with_doc(name):
     """This macro does nothing.

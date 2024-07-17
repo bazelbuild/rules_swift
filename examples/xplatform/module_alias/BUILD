@@ -1,4 +1,6 @@
-load("//swift:swift.bzl", "swift_binary", "swift_library", "swift_module_alias")
+load("//swift:swift_binary.bzl", "swift_binary")
+load("//swift:swift_library.bzl", "swift_library")
+load("//swift:swift_module_alias.bzl", "swift_module_alias")
 
 swift_binary(
     name = "hello_world",

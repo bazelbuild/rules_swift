@@ -47,8 +47,4 @@ class UnitTest: XCTestCase {
 
     self.wait(for: [completed], timeout: 10.0)
   }
-
-  static var allTests = [
-    ("testGetWithFakeClient", testGetWithFakeClient),
-  ]
 }

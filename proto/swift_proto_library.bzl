@@ -24,32 +24,21 @@ load(
     "@rules_proto//proto:defs.bzl",
     "ProtoInfo",
 )
+load("//swift:providers.bzl", "SwiftProtoCompilerInfo")
+load("//swift:swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
+load("//swift:swift_common.bzl", "swift_common")
+
+# buildifier: disable=bzl-visibility
+load("//swift/internal:attrs.bzl", "swift_deps_attr")
+
+# buildifier: disable=bzl-visibility
+load("//swift/internal:toolchain_utils.bzl", "use_swift_toolchain")
+
+# buildifier: disable=bzl-visibility
+load("//swift/internal:utils.bzl", "compact")
 load(
-    "//proto:swift_proto_utils.bzl",
+    ":swift_proto_utils.bzl",
     "compile_swift_protos_for_target",
-)
-load(
-    "//swift:swift.bzl",
-    "SwiftProtoCompilerInfo",
-    "swift_common",
-)
-
-# buildifier: disable=bzl-visibility
-load(
-    "//swift/internal:attrs.bzl",
-    "swift_deps_attr",
-)
-
-# buildifier: disable=bzl-visibility
-load(
-    "//swift/internal:swift_clang_module_aspect.bzl",
-    "swift_clang_module_aspect",
-)
-
-# buildifier: disable=bzl-visibility
-load(
-    "//swift/internal:utils.bzl",
-    "compact",
 )
 
 # Private
@@ -163,7 +152,7 @@ Generates a Swift static library from one or more targets producing `ProtoInfo`.
 
 ```python
 load("@rules_proto//proto:defs.bzl", "proto_library")
-load("//proto:proto.bzl", "swift_proto_library")
+load("//proto:swift_proto_library.bzl", "swift_proto_library")
 
 proto_library(
     name = "foo",
@@ -181,7 +170,7 @@ swift_proto_library targets which mirror the dependencies between the proto targ
 
 ```python
 load("@rules_proto//proto:defs.bzl", "proto_library")
-load("//proto:proto.bzl", "swift_proto_library")
+load("//proto:swift_proto_library.bzl", "swift_proto_library")
 
 proto_library(
     name = "bar",
@@ -198,4 +187,5 @@ swift_proto_library(
 """,
     fragments = ["cpp"],
     implementation = _swift_proto_library_impl,
+    toolchains = use_swift_toolchain(),
 )

@@ -10,11 +10,8 @@
 # 3.  Run the `echo_client` binary in the same terminal. It will send a request
 #     to this service and then print the response that it received.
 
-load(
-    "//swift:swift.bzl",
-    "swift_binary",
-    "swift_test",
-)
+load("//swift:swift_binary.bzl", "swift_binary")
+load("//swift:swift_test.bzl", "swift_test")
 
 licenses(["notice"])
 
@@ -38,7 +35,6 @@ swift_test(
     name = "echo_client_unit_test",
     srcs = [
         "client_unit_test.swift",
-        "main.swift",
     ],
     deps = [
         "//examples/xplatform/grpc/service:service_client_swift_proto",
@@ -49,7 +45,6 @@ swift_test(
 swift_test(
     name = "echo_test_client_unit_test",
     srcs = [
-        "main.swift",
         "test_client_unit_test.swift",
     ],
     deps = [
