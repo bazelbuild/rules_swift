@@ -14,54 +14,25 @@
 
 """Implementation of the `swift_library_group` rule."""
 
-load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load("//swift/internal:attrs.bzl", "swift_deps_attr", "swift_toolchain_attrs")
-load("//swift/internal:toolchain_utils.bzl", "use_swift_toolchain")
+load("//swift/internal:attrs.bzl", "swift_deps_attr")
+load("//swift/internal:providers.bzl", "create_swift_info")
 load("//swift/internal:utils.bzl", "get_providers")
 load(":providers.bzl", "SwiftInfo")
 load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
-load(":swift_common.bzl", "swift_common")
 
 def _swift_library_group_impl(ctx):
     deps = ctx.attr.deps
-    deps_cc_infos = [
-        dep[CcInfo]
-        for dep in deps
-        if CcInfo in dep
-    ]
-    swift_toolchain = swift_common.get_toolchain(ctx)
 
     return [
         DefaultInfo(),
-        CcInfo(
-            compilation_context = cc_common.merge_cc_infos(
-                cc_infos = deps_cc_infos,
-            ).compilation_context,
-            linking_context = cc_common.merge_linking_contexts(
-                linking_contexts = [
-                    cc_info.linking_context
-                    for cc_info in (
-                        deps_cc_infos +
-                        swift_toolchain.implicit_deps_providers.cc_infos
-                    )
-                ] + [
-                    cc_common.create_linking_context(
-                        linker_inputs = depset(
-                            direct = [
-                                cc_common.create_linker_input(
-                                    owner = ctx.label,
-                                ),
-                            ],
-                        ),
-                    ),
-                ],
-            ),
+        cc_common.merge_cc_infos(
+            cc_infos = [dep[CcInfo] for dep in deps if CcInfo in dep],
         ),
         coverage_common.instrumented_files_info(
             ctx,
             dependency_attributes = ["deps"],
         ),
-        swift_common.create_swift_info(
+        create_swift_info(
             swift_infos = get_providers(deps, SwiftInfo),
         ),
         # Propagate an `apple_common.Objc` provider with linking info about the
@@ -70,25 +41,17 @@ def _swift_library_group_impl(ctx):
         # TODO(b/171413861): This can be removed when the Obj-C rules are
         # migrated to use `CcLinkingContext`.
         apple_common.new_objc_provider(
-            providers = get_providers(
-                deps,
-                apple_common.Objc,
-            ) + swift_toolchain.implicit_deps_providers.objc_infos,
+            providers = get_providers(deps, apple_common.Objc),
         ),
     ]
 
 swift_library_group = rule(
-    attrs = dicts.add(
-        swift_toolchain_attrs(),
-        {
-            "deps": swift_deps_attr(
-                aspects = [swift_clang_module_aspect],
-                doc = """\
-A list of targets that should be included in the group.
-""",
-            ),
-        },
-    ),
+    attrs = {
+        "deps": swift_deps_attr(
+            aspects = [swift_clang_module_aspect],
+            doc = "A list of targets that should be included in the group.",
+        ),
+    },
     doc = """\
 Groups Swift compatible libraries (e.g. `swift_library` and `objc_library`).
 The target can be used anywhere a `swift_library` can be used. It behaves
@@ -98,5 +61,4 @@ Unlike `swift_module_alias`, a new module isn't created for this target, you
 need to import the grouped libraries directly.
 """,
     implementation = _swift_library_group_impl,
-    toolchains = use_swift_toolchain(),
 )

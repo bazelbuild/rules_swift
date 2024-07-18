@@ -203,11 +203,9 @@ bzl_library(
     deps = [
         ":providers",
         ":swift_clang_module_aspect",
-        ":swift_common",
         "//swift/internal:attrs",
-        "//swift/internal:toolchain_utils",
+        "//swift/internal:providers",
         "//swift/internal:utils",
-        "@bazel_skylib//lib:dicts",
     ],
 )
 
