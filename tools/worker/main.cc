@@ -20,6 +20,5 @@
 
 int main(int argc, char *argv[]) {
   std::vector<std::string> args(argv + 1, argv + argc);
-  return bazel_rules_swift::SwiftRunner(args).Run(std::cerr,
-                                                  /*stdout_to_stderr=*/false);
+  return bazel_rules_swift::SwiftRunner(args).Run(std::cout, std::cerr);
 }

@@ -135,12 +135,12 @@ bool StartsWithXcrun(const std::vector<std::string> &args) {
 int SpawnJob(const std::vector<std::string> &tool_args,
              const std::vector<std::string> &args,
              const absl::flat_hash_map<std::string, std::string> *env,
-             std::ostream &stderr_stream, bool stdout_to_stderr) {
+             std::ostream &stdout_stream, std::ostream &stderr_stream) {
   std::unique_ptr<TempFile> response_file = WriteResponseFile(args);
 
   std::vector<std::string> spawn_args(tool_args);
   spawn_args.push_back(absl::StrCat("@", response_file->GetPath()));
-  return RunSubProcess(spawn_args, env, stderr_stream, stdout_to_stderr);
+  return RunSubProcess(spawn_args, env, stdout_stream, stderr_stream);
 }
 
 // Returns a value indicating whether an argument on the Swift command line
@@ -196,7 +196,7 @@ SwiftRunner::SwiftRunner(const std::vector<std::string> &args,
   ProcessArguments(args);
 }
 
-int SwiftRunner::Run(std::ostream &stderr_stream, bool stdout_to_stderr) {
+int SwiftRunner::Run(std::ostream &stdout_stream, std::ostream &stderr_stream) {
   int exit_code = 0;
 
   // Do the layering check before compilation. This gives a better error message
@@ -204,7 +204,7 @@ int SwiftRunner::Run(std::ostream &stderr_stream, bool stdout_to_stderr) {
   // module that isn't already in the transitive closure, because that will fail
   // to compile ("cannot load underlying module for '...'").
   if (!deps_modules_path_.empty()) {
-    exit_code = PerformLayeringCheck(stderr_stream, stdout_to_stderr);
+    exit_code = PerformLayeringCheck(stdout_stream, stderr_stream);
     if (exit_code != 0) {
       return exit_code;
     }
@@ -214,16 +214,15 @@ int SwiftRunner::Run(std::ostream &stderr_stream, bool stdout_to_stderr) {
   // stderr in a string stream, which we post-process to upgrade warnings to
   // errors if requested.
   std::ostringstream captured_stderr_stream;
-  exit_code = SpawnJob(tool_args_, args_, &job_env_, captured_stderr_stream,
-                       stdout_to_stderr);
+  exit_code = SpawnJob(tool_args_, args_, &job_env_, stdout_stream,
+                       captured_stderr_stream);
   ProcessDiagnostics(captured_stderr_stream.str(), stderr_stream, exit_code);
   if (exit_code != 0) {
     return exit_code;
   }
 
   if (!generated_header_rewriter_path_.empty()) {
-    exit_code =
-        PerformGeneratedHeaderRewriting(stderr_stream, stdout_to_stderr);
+    exit_code = PerformGeneratedHeaderRewriting(stdout_stream, stderr_stream);
     if (exit_code != 0) {
       return exit_code;
     }
@@ -405,8 +404,8 @@ void SwiftRunner::ProcessArguments(const std::vector<std::string> &args) {
   }
 }
 
-int SwiftRunner::PerformGeneratedHeaderRewriting(std::ostream &stderr_stream,
-                                                 bool stdout_to_stderr) {
+int SwiftRunner::PerformGeneratedHeaderRewriting(std::ostream &stdout_stream,
+                                                 std::ostream &stderr_stream) {
 #if __APPLE__
   // Skip the `xcrun` argument that's added when running on Apple platforms,
   // since the header rewriter doesn't need it.
@@ -424,12 +423,12 @@ int SwiftRunner::PerformGeneratedHeaderRewriting(std::ostream &stderr_stream,
   rewriter_tool_args.push_back("--");
   rewriter_tool_args.push_back(tool_args_[tool_binary_index]);
 
-  return SpawnJob(rewriter_tool_args, args_, /*env=*/nullptr, stderr_stream,
-                  stdout_to_stderr);
+  return SpawnJob(rewriter_tool_args, args_, /*env=*/nullptr, stdout_stream,
+                  stderr_stream);
 }
 
-int SwiftRunner::PerformLayeringCheck(std::ostream &stderr_stream,
-                                      bool stdout_to_stderr) {
+int SwiftRunner::PerformLayeringCheck(std::ostream &stdout_stream,
+                                      std::ostream &stderr_stream) {
   // Run the compiler again, this time using `-emit-imported-modules` to
   // override whatever other behavior was requested and get the list of imported
   // modules.
@@ -448,7 +447,7 @@ int SwiftRunner::PerformLayeringCheck(std::ostream &stderr_stream,
   emit_imports_args.push_back("-o");
   emit_imports_args.push_back(imported_modules_path);
   int exit_code = SpawnJob(tool_args_, emit_imports_args, /*env=*/nullptr,
-                           stderr_stream, stdout_to_stderr);
+                           stdout_stream, stderr_stream);
   if (exit_code != 0) {
     return exit_code;
   }

@@ -68,9 +68,9 @@ class SwiftRunner {
   SwiftRunner(const std::vector<std::string> &args,
               bool force_response_file = false);
 
-  // Run the Swift compiler, redirecting stderr to the specified stream. If
-  // stdout_to_stderr is true, then stdout is also redirected to that stream.
-  int Run(std::ostream &stderr_stream, bool stdout_to_stderr = false);
+  // Run the Swift compiler, redirecting stdout and stderr to the specified
+  // streams.
+  int Run(std::ostream &stdout_stream, std::ostream &stderr_stream);
 
  private:
   // Processes an argument that looks like it might be a response file (i.e., it
@@ -115,13 +115,14 @@ class SwiftRunner {
 
   // Spawns the generated header rewriter to perform any desired transformations
   // on the Clang header emitted from a Swift compilation.
-  int PerformGeneratedHeaderRewriting(std::ostream &stderr_stream,
-                                      bool stdout_to_stderr);
+  int PerformGeneratedHeaderRewriting(std::ostream &stdout_stream,
+                                      std::ostream &stderr_stream);
 
   // Performs a layering check for the compilation, comparing the modules that
   // were imported by Swift code being compiled to the list of dependencies
   // declared in the build graph.
-  int PerformLayeringCheck(std::ostream &stderr_stream, bool stdout_to_stderr);
+  int PerformLayeringCheck(std::ostream &stdout_stream,
+                           std::ostream &stderr_stream);
 
   // Upgrade any of the requested warnings to errors and then print all of the
   // diagnostics to the given stream. Updates the exit code if necessary (to
