@@ -552,8 +552,8 @@ def _handle_module(
                         clang = clang_module_context,
                     ),
                 ],
-                direct_swift_infos = direct_swift_infos + overlay_direct_deps,
-                swift_infos = swift_infos,
+                direct_swift_infos = direct_swift_infos,
+                swift_infos = swift_infos + overlay_direct_deps,
             ),
         ]
         overlay_compile_result, overlay_linking_context = _compile_swift_overlay(
@@ -582,8 +582,8 @@ def _handle_module(
                     swift = overlay_swift_module,
                 ),
             ],
-            direct_swift_infos = direct_swift_infos + overlay_direct_deps,
-            swift_infos = swift_infos,
+            direct_swift_infos = direct_swift_infos,
+            swift_infos = swift_infos + overlay_direct_deps,
         ),
     ]
     if overlay_linking_context:
