@@ -30,6 +30,7 @@ def write_module_map(
         public_textual_headers = [],
         private_headers = [],
         private_textual_headers = [],
+        swift_generated_header = None,
         umbrella_header = None,
         workspace_relative = False):
     """Writes the content of the module map to a file.
@@ -58,6 +59,8 @@ def write_module_map(
             headers of the target whose module map is being written.
         private_textual_headers: The `list` of `File`s representing the private
             textual headers of the target whose module map is being written.
+        swift_generated_header: A `File` representing the Swift generated
+            header, that if present, will be used to create the Swift submodule.
         umbrella_header: A `File` representing an umbrella header that, if
             present, will be written into the module map instead of the list of
             headers in the compilation context.
@@ -147,6 +150,13 @@ def write_module_map(
     # Write a `use` declaration for each of the module's dependencies.
     content.add_all(dependent_module_names, format_each = '    use "%s"')
     content.add("}")
+
+    if swift_generated_header:
+        content.add("")
+        content.add(module_name, format = 'module "%s".Swift {')
+        _add_headers(headers = [swift_generated_header], kind = "header")
+        content.add("    requires objc")
+        content.add("}")
 
     actions.write(
         content = content,
