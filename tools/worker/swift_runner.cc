@@ -30,6 +30,7 @@
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
@@ -45,6 +46,94 @@
 namespace bazel_rules_swift {
 
 namespace {
+
+// Extracts frontend command lines from the driver output and groups them into
+// buckets that can be run based on the incoming `-compile-step` flag.
+class CompilationPlan {
+ public:
+  // Creates a new compilation plan by parsing the given driver output.
+  CompilationPlan(absl::string_view print_jobs_output);
+
+  // Returns the list of module jobs extracted from the plan. Each job is a
+  // command line that should be invoked to emit some module-wide output.
+  const std::vector<std::string> &ModuleJobs() const { return module_jobs_; }
+
+  // Returns the codegen job that is associated with the given output file, or
+  // `nullopt` if none was found. The job is a command line that should be
+  // invoked to emit some codegen-related output.
+  std::vector<std::string> CodegenJobsForOutputs(
+      std::vector<absl::string_view> outputs) const;
+
+ private:
+  // The command lines of any frontend jobs that emit a module or other
+  // module-wide outputs, executed when the compilation step is
+  // `SwiftCompileModule`. These are executed in sequence.
+  std::vector<std::string> module_jobs_;
+
+  // The command lines of any frontend jobs that emit codegen output, like
+  // object files. These are mapped to the output path by
+  // `codegen_job_indices_by_output_`.
+  std::vector<std::string> codegen_jobs_;
+
+  // The indices into `codegen_jobs_` of the command lines of any frontend jobs
+  // that emit codegen output for some given output path.
+  absl::flat_hash_map<std::string, int> codegen_job_indices_by_output_;
+};
+
+CompilationPlan::CompilationPlan(absl::string_view print_jobs_output) {
+  // Looks for the `-o` flags in the command line and captures the path to that
+  // file. This captures both regular paths (group 2) and single-quoted paths
+  // (group 1).
+  RE2 output_pattern("\\s-o\\s+(?:'((?:\\'|[^'])*)'|(\\S+))");
+  for (absl::string_view command_line :
+       absl::StrSplit(print_jobs_output, '\n')) {
+    if (command_line.empty()) {
+      continue;
+    }
+    if (absl::StrContains(command_line, " -c ")) {
+      int index = codegen_jobs_.size();
+      codegen_jobs_.push_back(std::string(command_line));
+
+      // When threaded WMO is enabled, a single invocation might emit multiple
+      // object files. Associate them with the same command line so that they
+      // are deduplicated.
+      std::string quoted_path, normal_path;
+      absl::string_view anchor = command_line;
+      while (RE2::FindAndConsume(&anchor, output_pattern, &quoted_path,
+                                 &normal_path)) {
+        codegen_job_indices_by_output_[!quoted_path.empty() ? quoted_path
+                                                            : normal_path] =
+            index;
+      }
+    } else {
+      module_jobs_.push_back(std::string(command_line));
+    }
+  }
+}
+
+std::vector<std::string> CompilationPlan::CodegenJobsForOutputs(
+    std::vector<absl::string_view> outputs) const {
+  absl::btree_set<int> indices;
+  for (absl::string_view desired_output : outputs) {
+    for (const auto &[output, index] : codegen_job_indices_by_output_) {
+      // We need to do a suffix search here because the driver may have
+      // realpath-ed the output argument, giving us something like
+      // `<path to work area>/bazel-out/...` when we're just expecting
+      // `bazel-out/...`.
+      if (absl::EndsWith(output, desired_output)) {
+        indices.insert(index);
+        break;
+      }
+    }
+  }
+
+  std::vector<std::string> jobs;
+  jobs.reserve(indices.size());
+  for (int index : indices) {
+    jobs.push_back(codegen_jobs_[index]);
+  }
+  return jobs;
+}
 
 // Creates a temporary file and writes the given arguments to it, one per line.
 static std::unique_ptr<TempFile> WriteResponseFile(
@@ -67,6 +156,18 @@ static std::unique_ptr<TempFile> WriteResponseFile(
     response_file_stream << "\"\n";
   }
 
+  response_file_stream.close();
+  return response_file;
+}
+
+// Creates a temporary file and writes the given command line string to it
+// without any additional processing.
+static std::unique_ptr<TempFile> WriteDirectResponseFile(
+    absl::string_view args) {
+  std::unique_ptr<TempFile> response_file =
+      TempFile::Create("swiftc_params.XXXXXX");
+  std::ofstream response_file_stream(std::string(response_file->GetPath()));
+  response_file_stream << args;
   response_file_stream.close();
   return response_file;
 }
@@ -143,6 +244,128 @@ int SpawnJob(const std::vector<std::string> &tool_args,
   return RunSubProcess(spawn_args, env, stdout_stream, stderr_stream);
 }
 
+// Executes the module-wide jobs in a compilation plan.
+int SpawnCompileModuleStep(
+    const CompilationPlan &plan, CompileStep compile_step,
+    const absl::flat_hash_map<std::string, std::string> *env,
+    std::ostream &stdout_stream, std::ostream &stderr_stream) {
+  // Run module jobs sequentially, in case later ones have dependencies on the
+  // outputs of earlier ones.
+  for (absl::string_view job : plan.ModuleJobs()) {
+    std::pair<absl::string_view, absl::string_view> tool_and_args =
+        absl::StrSplit(job, absl::MaxSplits(' ', 1));
+    std::vector<std::string> step_args{std::string(tool_and_args.first)};
+
+    // We can write the rest of the string out to a response file directly;
+    // there is no need to split it into individual arguments (and in fact,
+    // doing so would need to be quotation-aware, since the driver will quote
+    // arguments that contain spaces).
+    std::unique_ptr<TempFile> response_file =
+        WriteDirectResponseFile(tool_and_args.second);
+    step_args.push_back(absl::StrCat("@", response_file->GetPath()));
+    int exit_code = RunSubProcess(step_args, env, stdout_stream, stderr_stream);
+    if (exit_code != 0) {
+      return exit_code;
+    }
+  }
+  return 0;
+}
+
+// Executes the codegen jobs in a compilation plan.
+int SpawnCompileCodegenStep(
+    const CompilationPlan &plan, CompileStep compile_step,
+    const absl::flat_hash_map<std::string, std::string> *env,
+    std::ostream &stdout_stream, std::ostream &stderr_stream) {
+  // Run codegen jobs in parallel, since they should be independent of each
+  // other and they are slower so they benefit more from parallelism.
+  std::vector<std::unique_ptr<AsyncProcess>> processes;
+  std::vector<std::string> jobs =
+      plan.CodegenJobsForOutputs(absl::StrSplit(compile_step.output, ','));
+  if (jobs.empty()) {
+    stderr_stream << "internal error: could not find the frontend command "
+                     "for action "
+                  << compile_step.action << " for some requested output in "
+                  << compile_step.output << "\n";
+    return 1;
+  }
+  for (absl::string_view job : jobs) {
+    std::pair<absl::string_view, absl::string_view> tool_and_args =
+        absl::StrSplit(job, absl::MaxSplits(' ', 1));
+    std::vector<std::string> step_args{std::string(tool_and_args.first)};
+
+    // We can write the rest of the string out to a response file directly;
+    // there is no need to split it into individual arguments (and in fact,
+    // doing so would need to be quotation-aware, since the driver will quote
+    // arguments that contain spaces).
+    std::unique_ptr<TempFile> response_file =
+        WriteDirectResponseFile(absl::StrCat(tool_and_args.second));
+    absl::StatusOr<std::unique_ptr<AsyncProcess>> process =
+        AsyncProcess::Spawn(step_args, std::move(response_file), env);
+    if (!process.ok()) {
+      stderr_stream << "error spawning subprocess: " << process.status()
+                    << "\n";
+      return 1;
+    }
+    processes.emplace_back(std::move(*process));
+  }
+
+  for (std::unique_ptr<AsyncProcess> &process : processes) {
+    absl::StatusOr<AsyncProcess::Result> result = process->WaitForTermination();
+    if (!result.ok()) {
+      stderr_stream << "error spawning or waiting for subprocess: "
+                    << result.status() << "\n";
+      return 1;
+    }
+    stdout_stream << result->stdout;
+    stderr_stream << result->stderr;
+    if (result->exit_code != 0) {
+      return result->exit_code;
+    }
+  }
+  return 0;
+}
+
+// Spawns a single step in a parallelized compilation by getting a list of
+// frontend jobs that the driver would normally spawn and then running the one
+// that emits the output file for the requested plan step.
+int SpawnPlanStep(const std::vector<std::string> &tool_args,
+                  const std::vector<std::string> &args,
+                  const absl::flat_hash_map<std::string, std::string> *env,
+                  CompileStep compile_step, std::ostream &stdout_stream,
+                  std::ostream &stderr_stream) {
+  // Add `-driver-print-jobs` to the command line, which will cause the driver
+  // to print the command lines of the frontend jobs it would normally spawn and
+  // then exit without running them.
+  std::vector<std::string> print_jobs_args(args);
+  print_jobs_args.push_back("-driver-print-jobs");
+  // Ensure that the default TMPDIR is used by the driver for this job, not the
+  // one used to write macro expansions (which may not be accessible when that
+  // directory is not a declared output of the action in Bazel).
+  absl::flat_hash_map<std::string, std::string> print_jobs_env(*env);
+  print_jobs_env.erase("TMPDIR");
+  std::ostringstream captured_stdout_stream;
+  int exit_code = SpawnJob(tool_args, print_jobs_args, &print_jobs_env,
+                           captured_stdout_stream, stderr_stream);
+  if (exit_code != 0) {
+    return exit_code;
+  }
+
+  CompilationPlan plan(captured_stdout_stream.str());
+  if (compile_step.action == "SwiftCompileModule") {
+    return SpawnCompileModuleStep(plan, compile_step, env, stdout_stream,
+                                  stderr_stream);
+  }
+  if (compile_step.action == "SwiftCompileCodegen") {
+    return SpawnCompileCodegenStep(plan, compile_step, env, stdout_stream,
+                                   stderr_stream);
+  }
+
+  stderr_stream << "internal error: unrecognized plan step "
+                << compile_step.action << " with output " << compile_step.output
+                << "\n";
+  return 1;
+}
+
 // Returns a value indicating whether an argument on the Swift command line
 // should be skipped because it is incompatible with the
 // `-emit-imported-modules` flag used for layering checks. The given iterator is
@@ -203,6 +426,11 @@ int SwiftRunner::Run(std::ostream &stdout_stream, std::ostream &stderr_stream) {
   // in the event a Swift module is being imported that depends on a Clang
   // module that isn't already in the transitive closure, because that will fail
   // to compile ("cannot load underlying module for '...'").
+  //
+  // Note that this also means we have to do the layering check for all
+  // compilation actions (module and codegen). Otherwise, since they can be
+  // scheduled in either order, doing it only in one could cause error messages
+  // to differ if there are layering violations.
   if (!deps_modules_path_.empty()) {
     exit_code = PerformLayeringCheck(stdout_stream, stderr_stream);
     if (exit_code != 0) {
@@ -210,18 +438,36 @@ int SwiftRunner::Run(std::ostream &stdout_stream, std::ostream &stderr_stream) {
     }
   }
 
-  // Spawn the originally requested job with its full argument list. Capture
-  // stderr in a string stream, which we post-process to upgrade warnings to
-  // errors if requested.
-  std::ostringstream captured_stderr_stream;
-  exit_code = SpawnJob(tool_args_, args_, &job_env_, stdout_stream,
-                       captured_stderr_stream);
-  ProcessDiagnostics(captured_stderr_stream.str(), stderr_stream, exit_code);
-  if (exit_code != 0) {
-    return exit_code;
+  bool should_rewrite_header = false;
+
+  if (compile_step_.has_value()) {
+    // Spawn the originally requested job with its full argument list. Capture
+    // stderr in a string stream, which we post-process to upgrade warnings to
+    // errors if requested.
+    std::ostringstream captured_stderr_stream;
+    exit_code = SpawnPlanStep(tool_args_, args_, &job_env_, *compile_step_,
+                              stdout_stream, stderr_stream);
+    ProcessDiagnostics(captured_stderr_stream.str(), stderr_stream, exit_code);
+
+    // Handle post-processing for specific kinds of actions.
+    if (compile_step_->action == "SwiftCompileModule") {
+      should_rewrite_header = true;
+    }
+  } else {
+    // Spawn the originally requested job with its full argument list. Capture
+    // stderr in a string stream, which we post-process to upgrade warnings to
+    // errors if requested.
+    std::ostringstream captured_stderr_stream;
+    exit_code = SpawnJob(tool_args_, args_, &job_env_, stdout_stream,
+                         captured_stderr_stream);
+    ProcessDiagnostics(captured_stderr_stream.str(), stderr_stream, exit_code);
+    if (exit_code != 0) {
+      return exit_code;
+    }
+    should_rewrite_header = true;
   }
 
-  if (!generated_header_rewriter_path_.empty()) {
+  if (should_rewrite_header && !generated_header_rewriter_path_.empty()) {
     exit_code = PerformGeneratedHeaderRewriting(stdout_stream, stderr_stream);
     if (exit_code != 0) {
       return exit_code;
@@ -362,6 +608,14 @@ bool SwiftRunner::ProcessArgument(
 
     if (absl::ConsumePrefix(&trimmed_arg, "-warning-as-error=")) {
       warnings_as_errors_.insert(std::string(trimmed_arg));
+      return true;
+    }
+
+    if (absl::ConsumePrefix(&trimmed_arg, "-compile-step=")) {
+      std::pair<std::string, std::string> action_and_output =
+          absl::StrSplit(trimmed_arg, absl::MaxSplits('=', 1));
+      compile_step_ =
+          CompileStep{action_and_output.first, action_and_output.second};
       return true;
     }
 

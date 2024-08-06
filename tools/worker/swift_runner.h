@@ -18,6 +18,7 @@
 #include <functional>
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -28,6 +29,16 @@
 #include "tools/common/temp_file.h"
 
 namespace bazel_rules_swift {
+
+// Represents a single step in a parallelized compilation.
+struct CompileStep {
+  // The name of the action that emits this output.
+  std::string action;
+
+  // The path of the expected primary output file, which identifies the step
+  // among all of the frontend actions in the driver's job list.
+  std::string output;
+};
 
 // Handles spawning the Swift compiler driver, making any required substitutions
 // of the command line arguments (for example, Bazel's magic Xcode placeholder
@@ -194,6 +205,13 @@ class SwiftRunner {
   // A set containing the diagnostic IDs that should be upgraded from warnings
   // to errors by the worker.
   absl::flat_hash_set<std::string> warnings_as_errors_;
+
+  // The step in the compilation plan that is being requested by this specific
+  // action. If this is present, then the action is being executed as part of a
+  // parallelized compilation and we should invoke the driver to list all jobs,
+  // then extract and run the single frontend invocation that generates that
+  // that output.
+  std::optional<CompileStep> compile_step_;
 };
 
 }  // namespace bazel_rules_swift

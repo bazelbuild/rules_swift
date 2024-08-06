@@ -19,8 +19,16 @@ visibility([
 ])
 
 # Compiles one or more `.swift` source files into a `.swiftmodule` and
-# object files.
+# object files. This is the legacy mode that emits all outputs from a single
+# driver invocation.
 SWIFT_ACTION_COMPILE = "SwiftCompile"
+
+# Emits the object files and other per-source-file outputs for a a batch of
+# `.swift` source files in a module.
+SWIFT_ACTION_COMPILE_CODEGEN = "SwiftCompileCodegen"
+
+# Compiles one or more `.swift` source files into a `.swiftmodule`.
+SWIFT_ACTION_COMPILE_MODULE = "SwiftCompileModule"
 
 # Compiles a `.swiftinterface` file into a `.swiftmodule` file.
 SWIFT_ACTION_COMPILE_MODULE_INTERFACE = "SwiftCompileModuleInterface"
@@ -42,8 +50,18 @@ def all_action_names():
     """A convenience function to return all actions defined by this rule set."""
     return (
         SWIFT_ACTION_COMPILE,
+        SWIFT_ACTION_COMPILE_CODEGEN,
+        SWIFT_ACTION_COMPILE_MODULE,
         SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
         SWIFT_ACTION_MODULEWRAP,
         SWIFT_ACTION_PRECOMPILE_C_MODULE,
         SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
     )
+
+def all_compile_action_names():
+    """Returns all actions that compile source files."""
+    return [
+        SWIFT_ACTION_COMPILE,
+        SWIFT_ACTION_COMPILE_CODEGEN,
+        SWIFT_ACTION_COMPILE_MODULE,
+    ]

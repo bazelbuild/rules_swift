@@ -271,6 +271,10 @@ C/Objective-C modules:
 For ease of use, this field is never `None`; it will always be a valid `struct`
 containing the fields described above, even if those lists are empty.
 """,
+        "codegen_batch_size": """\
+The number of files to pass to the compiler in a single code generation action
+(one that compiles object files from Swift source files).
+""",
         "cross_import_overlays": """\
 A list of `SwiftCrossImportOverlayInfo` providers whose `SwiftInfo` providers
 will be automatically injected into the dependencies of Swift compilations if

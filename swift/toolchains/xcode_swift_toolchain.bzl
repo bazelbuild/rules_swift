@@ -33,9 +33,12 @@ load(
 load(
     "@build_bazel_rules_swift//swift/internal:action_names.bzl",
     "SWIFT_ACTION_COMPILE",
+    "SWIFT_ACTION_COMPILE_CODEGEN",
+    "SWIFT_ACTION_COMPILE_MODULE",
     "SWIFT_ACTION_COMPILE_MODULE_INTERFACE",
     "SWIFT_ACTION_PRECOMPILE_C_MODULE",
     "SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT",
+    "all_compile_action_names",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:attrs.bzl",
@@ -349,8 +352,7 @@ def _all_action_configs(
     # Basic compilation flags (target triple and toolchain search paths).
     action_configs = [
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
                 SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
@@ -381,8 +383,7 @@ def _all_action_configs(
     if platform_developer_framework_dir:
         action_configs.append(
             ActionConfigInfo(
-                actions = [
-                    SWIFT_ACTION_COMPILE,
+                actions = all_compile_action_names() + [
                     SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                     SWIFT_ACTION_PRECOMPILE_C_MODULE,
                     SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
@@ -404,8 +405,7 @@ def _all_action_configs(
         # directory so that modules are found correctly.
         action_configs.append(
             ActionConfigInfo(
-                actions = [
-                    SWIFT_ACTION_COMPILE,
+                actions = all_compile_action_names() + [
                     SWIFT_ACTION_PRECOMPILE_C_MODULE,
                     SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
                 ],
@@ -492,15 +492,18 @@ def _all_tool_configs(
             "toolchain_root": toolchain_root,
         }
 
+    standard_compile_tool_config = ToolConfigInfo(
+        driver_config = _driver_config(mode = "swiftc"),
+        env = env,
+        execution_requirements = execution_requirements,
+        resource_set = _swift_compile_resource_set,
+        use_param_file = True,
+        wrapped_by_worker = True,
+    )
     return {
-        SWIFT_ACTION_COMPILE: ToolConfigInfo(
-            driver_config = _driver_config(mode = "swiftc"),
-            env = env,
-            execution_requirements = execution_requirements,
-            resource_set = _swift_compile_resource_set,
-            use_param_file = True,
-            wrapped_by_worker = True,
-        ),
+        SWIFT_ACTION_COMPILE: standard_compile_tool_config,
+        SWIFT_ACTION_COMPILE_CODEGEN: standard_compile_tool_config,
+        SWIFT_ACTION_COMPILE_MODULE: standard_compile_tool_config,
         SWIFT_ACTION_COMPILE_MODULE_INTERFACE: ToolConfigInfo(
             driver_config = _driver_config(mode = "swiftc"),
             args = ["-frontend"],
@@ -695,6 +698,7 @@ def _xcode_swift_toolchain_impl(ctx):
         clang_implicit_deps_providers = collect_implicit_deps_providers(
             ctx.attr.clang_implicit_deps,
         ),
+        codegen_batch_size = 8,
         cross_import_overlays = [
             target[SwiftCrossImportOverlayInfo]
             for target in ctx.attr.cross_import_overlays

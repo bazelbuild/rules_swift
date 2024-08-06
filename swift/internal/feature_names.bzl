@@ -240,6 +240,10 @@ SWIFT_FEATURE_INTERNALIZE_AT_LINK = "swift.internalize_at_link"
 # This disables checking for potentially unavailable APIs.
 SWIFT_FEATURE_DISABLE_AVAILABILITY_CHECKING = "swift.disable_availability_checking"
 
+# If enabled, parallelize the compilation of Swift modules and their object
+# files by registering separate actions for each.
+SWIFT_FEATURE_COMPILE_IN_PARALLEL = "swift.compile_in_parallel"
+
 # A private feature that is set by the toolchain if it supports
 # `-swift-version 6` (Swift 6.0 and above). Users should never manually enable,
 # disable, or query this feature.
