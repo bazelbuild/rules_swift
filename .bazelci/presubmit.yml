@@ -40,13 +40,13 @@ x_defaults:
     platform: windows
     environment:
       SWIFT_VERSION: 0.0.0
-      CC: clang
       PATH: "%LOCALAPPDATA%\\Programs\\Swift\\Toolchains\\%SWIFT_VERSION%+Asserts\\usr\\bin;%LOCALAPPDATA%\\Programs\\Swift\\Runtimes\\%SWIFT_VERSION%\\usr\\bin;%PATH%"
       SDKROOT: "%LOCALAPPDATA%\\Programs\\Swift\\Platforms\\%SWIFT_VERSION%\\Windows.platform\\Developer\\SDKs\\Windows.sdk"
     build_flags:
       # Override 'sandboxed' strategy set in .bazelrc because it's not
       # available on Windows
       - "--strategy=SwiftCompile="
+      - "--compiler=clang-cl"
     build_targets:
       - "//tools/..."
     test_flags:
