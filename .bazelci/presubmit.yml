@@ -48,6 +48,8 @@ x_defaults:
       # available on Windows
       - "--strategy=SwiftCompile="
       - "--compiler=clang-cl"
+      - "--subcommands=pretty_print"
+      - "--verbose_failures"
     build_targets:
       - "//tools/..."
     test_flags:
@@ -140,6 +142,7 @@ tasks:
       - echo --- Downloading and installing Swift %SWIFT_VERSION%
       - curl.exe -L https://download.swift.org/swift-5.10-branch/windows10/swift-5.10-DEVELOPMENT-SNAPSHOT-2024-01-18-a/swift-5.10-DEVELOPMENT-SNAPSHOT-2024-01-18-a-windows10.exe -o %TEMP%\installer.exe
       - PowerShell Start-Process -FilePath ${env:TEMP}\installer.exe -ArgumentList(\"/install\", \"/passive\", \"/norestart\", \"/log log.txt\") -Wait -PassThru -Verb RunAs
+      - dir %LOCALAPPDATA%\Programs\Swift\Toolchains\%SWIFT_VERSION%+Asserts\\usr\\bin
     <<: *windows_common
 
   doc_tests:
