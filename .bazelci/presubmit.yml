@@ -38,12 +38,23 @@ x_defaults:
       - "-//test:output_file_map_default"
   windows_common: &windows_common
     platform: windows
+    environment:
+      SWIFT_VERSION: 0.0.0
+      PATH: "%LOCALAPPDATA%\\Programs\\Swift\\Toolchains\\%SWIFT_VERSION%+Asserts\\usr\\bin;%LOCALAPPDATA%\\Programs\\Swift\\Runtimes\\%SWIFT_VERSION%\\usr\\bin;%PATH%"
+      SDKROOT: "%LOCALAPPDATA%\\Programs\\Swift\\Platforms\\%SWIFT_VERSION%\\Windows.platform\\Developer\\SDKs\\Windows.sdk"
     build_flags:
       # Override 'sandboxed' strategy set in .bazelrc because it's not
       # available on Windows
       - "--strategy=SwiftCompile="
     build_targets:
       - "//tools/..."
+    test_flags:
+     - "--compiler=clang-cl"
+    test_targets:
+      - "//examples/..."
+      - "-//examples/apple/..."
+      # TODO: Fix gRPC on Windows
+      - "-//examples/xplatform/grpc/..."
 
 tasks:
   macos_6:
@@ -120,11 +131,14 @@ tasks:
       - .bazelci/update_workspace_to_deps_heads.sh
     <<: *linux_common
 
-  # TODO: re-enable when Windows in Bazel CI is properly configured for Swift.
-  # windows_last_green:
-  #   name: "Last Green Bazel"
-  #   bazel: last_green
-  #   <<: *windows_common
+  windows_last_green:
+    name: "Last Green Bazel"
+    bazel: last_green
+    batch_commands:
+      - echo --- Downloading and installing Swift %SWIFT_VERSION%
+      - curl.exe -L https://download.swift.org/swift-5.10-branch/windows10/swift-5.10-DEVELOPMENT-SNAPSHOT-2024-01-18-a/swift-5.10-DEVELOPMENT-SNAPSHOT-2024-01-18-a-windows10.exe -o %TEMP%\installer.exe
+      - PowerShell Start-Process -FilePath ${env:TEMP}\installer.exe -ArgumentList(\"/install\", \"/passive\", \"/norestart\", \"/log log.txt\") -Wait -PassThru -Verb RunAs
+    <<: *windows_common
 
   doc_tests:
     name: "Doc tests"
