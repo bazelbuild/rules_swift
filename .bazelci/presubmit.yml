@@ -40,20 +40,20 @@ x_defaults:
     platform: windows
     environment:
       SWIFT_VERSION: 0.0.0
-      CC: clang-cl
       PATH: "%LOCALAPPDATA%\\Programs\\Swift\\Toolchains\\%SWIFT_VERSION%+Asserts\\usr\\bin;%LOCALAPPDATA%\\Programs\\Swift\\Runtimes\\%SWIFT_VERSION%\\usr\\bin;%PATH%"
       SDKROOT: "%LOCALAPPDATA%\\Programs\\Swift\\Platforms\\%SWIFT_VERSION%\\Windows.platform\\Developer\\SDKs\\Windows.sdk"
     build_flags:
       # Override 'sandboxed' strategy set in .bazelrc because it's not
       # available on Windows
       - "--strategy=SwiftCompile="
-      - "--compiler=clang-cl"
-      - "--subcommands=pretty_print"
-      - "--verbose_failures"
+      # TODO: Use the new way of setting toolchains.
+      - "--noincompatible_enable_cc_toolchain_resolution"
     build_targets:
       - "//tools/..."
     test_flags:
-     - "--compiler=clang-cl"
+      - "--compiler=clang-cl"
+      # TODO: Use the new way of setting toolchains.
+      - "--noincompatible_enable_cc_toolchain_resolution"
     test_targets:
       - "//examples/..."
       - "-//examples/apple/..."
@@ -142,7 +142,6 @@ tasks:
       - echo --- Downloading and installing Swift %SWIFT_VERSION%
       - curl.exe -L https://download.swift.org/swift-5.10-branch/windows10/swift-5.10-DEVELOPMENT-SNAPSHOT-2024-01-18-a/swift-5.10-DEVELOPMENT-SNAPSHOT-2024-01-18-a-windows10.exe -o %TEMP%\installer.exe
       - PowerShell Start-Process -FilePath ${env:TEMP}\installer.exe -ArgumentList(\"/install\", \"/passive\", \"/norestart\", \"/log log.txt\") -Wait -PassThru -Verb RunAs
-      - dir %LOCALAPPDATA%\Programs\Swift\Toolchains\%SWIFT_VERSION%+Asserts\\usr\\bin
     <<: *windows_common
 
   doc_tests:

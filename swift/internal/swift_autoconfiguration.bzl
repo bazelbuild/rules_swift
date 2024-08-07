@@ -368,7 +368,7 @@ def _create_windows_toolchain(repository_ctx):
 
     env = {
         "PATH": repository_ctx.os.environ["PATH"],
-        "PROGRAMDATA": repository_ctx.os.environ["PROGRAMDATA"],
+        "ProgramData": repository_ctx.os.environ["ProgramData"],
     }
 
     repository_ctx.file(
@@ -416,7 +416,7 @@ def _swift_autoconfiguration_impl(repository_ctx):
         _create_linux_toolchain(repository_ctx)
 
 swift_autoconfiguration = repository_rule(
-    environ = ["CC", "PATH", "PROGRAMDATA"],
+    environ = ["CC", "PATH", "ProgramData"],
     implementation = _swift_autoconfiguration_impl,
     local = True,
 )
