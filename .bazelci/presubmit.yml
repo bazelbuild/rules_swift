@@ -50,6 +50,10 @@ x_defaults:
       - "--compiler=clang-cl"
       # TODO: Use the new way of setting toolchains.
       - "--noincompatible_enable_cc_toolchain_resolution"
+      - "--repo_env=CC=clang-cl"
+      - "--repo_env=BAZEL_LLVM=${{ env.BAZEL_LLVM }}"
+      - "--repo_env=SDKROOT=${{ env.SDKROOT }}"
+      - "--repo_env=Path=${{ env.PATH }}"
     build_targets:
       - "//tools/..."
     test_flags:
