@@ -367,7 +367,7 @@ def _create_windows_toolchain(repository_ctx):
     ])
 
     env = {
-        "PATH": repository_ctx.os.environ["PATH"] if "PATH" in repository_ctx.os.environ else repository_ctx.os.environ["Path"],
+        "Path": repository_ctx.os.environ["Path"] if "Path" in repository_ctx.os.environ else repository_ctx.os.environ["PATH"],
         "ProgramData": repository_ctx.os.environ["ProgramData"] if "ProgramData" in repository_ctx.os.environ else repository_ctx.os.environ["PROGRAMDATA"],
     }
 
