@@ -366,6 +366,8 @@ def _create_windows_toolchain(repository_ctx):
         "print(plistlib.loads(open(os.path.join(r'{}', '..', '..', '..', 'Info.plist'), 'rb').read(), fmt=plistlib.FMT_XML)['DefaultProperties']['XCTEST_VERSION'])".format(repository_ctx.os.environ["SDKROOT"]),
     ])
 
+    fail("Environment: {}".format(repository_ctx.os.environ))
+
     env = {
         "PATH": repository_ctx.os.environ["PATH"],
         "ProgramData": repository_ctx.os.environ["ProgramData"],
