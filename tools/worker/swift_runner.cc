@@ -446,7 +446,7 @@ int SwiftRunner::Run(std::ostream &stdout_stream, std::ostream &stderr_stream) {
     // errors if requested.
     std::ostringstream captured_stderr_stream;
     exit_code = SpawnPlanStep(tool_args_, args_, &job_env_, *compile_step_,
-                              stdout_stream, stderr_stream);
+                              stdout_stream, captured_stderr_stream);
     ProcessDiagnostics(captured_stderr_stream.str(), stderr_stream, exit_code);
 
     // Handle post-processing for specific kinds of actions.
