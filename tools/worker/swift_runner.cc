@@ -90,9 +90,23 @@ CompilationPlan::CompilationPlan(absl::string_view print_jobs_output) {
     if (command_line.empty()) {
       continue;
     }
+
+    // If the driver created a response file for the frontend invocation, then
+    // it prints the actual arguments with a shell comment-like notation. This
+    // is good for job scanning because we don't have to read the response files
+    // to find the invocations for various output files, but when we invoke it
+    // we need to strip that off because we aren't spawning like a shell; it
+    // would interpret the `#` and everything that follows as regular arguments.
+    // If the comment marker isn't there, then this logic also works because
+    // `first` will be the same as the original string.
+    std::pair<absl::string_view, absl::string_view> possible_response_file =
+        absl::StrSplit(command_line, absl::MaxSplits(" # ", 1));
+    absl::string_view command_line_without_expansions =
+        possible_response_file.first;
+
     if (absl::StrContains(command_line, " -c ")) {
       int index = codegen_jobs_.size();
-      codegen_jobs_.push_back(std::string(command_line));
+      codegen_jobs_.push_back(std::string(command_line_without_expansions));
 
       // When threaded WMO is enabled, a single invocation might emit multiple
       // object files. Associate them with the same command line so that they
@@ -106,7 +120,7 @@ CompilationPlan::CompilationPlan(absl::string_view print_jobs_output) {
             index;
       }
     } else {
-      module_jobs_.push_back(std::string(command_line));
+      module_jobs_.push_back(std::string(command_line_without_expansions));
     }
   }
 }
@@ -440,23 +454,23 @@ int SwiftRunner::Run(std::ostream &stdout_stream, std::ostream &stderr_stream) {
 
   bool should_rewrite_header = false;
 
+  // Spawn the originally requested job with its full argument list. Capture
+  // stderr in a string stream, which we post-process to upgrade warnings to
+  // errors if requested.
   if (compile_step_.has_value()) {
-    // Spawn the originally requested job with its full argument list. Capture
-    // stderr in a string stream, which we post-process to upgrade warnings to
-    // errors if requested.
     std::ostringstream captured_stderr_stream;
     exit_code = SpawnPlanStep(tool_args_, args_, &job_env_, *compile_step_,
                               stdout_stream, captured_stderr_stream);
     ProcessDiagnostics(captured_stderr_stream.str(), stderr_stream, exit_code);
+    if (exit_code != 0) {
+      return exit_code;
+    }
 
     // Handle post-processing for specific kinds of actions.
     if (compile_step_->action == "SwiftCompileModule") {
       should_rewrite_header = true;
     }
   } else {
-    // Spawn the originally requested job with its full argument list. Capture
-    // stderr in a string stream, which we post-process to upgrade warnings to
-    // errors if requested.
     std::ostringstream captured_stderr_stream;
     exit_code = SpawnJob(tool_args_, args_, &job_env_, stdout_stream,
                          captured_stderr_stream);
