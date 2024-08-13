@@ -103,11 +103,38 @@ struct TestDiscoverer: ParsableCommand {
       }
     }
 
+    var contents = """
+      import BazelTestObservation
+
+      \(availabilityAttribute)
+      @main
+      struct Main {
+        static func main() async {
+          do {
+            try XCTestRunner.run()
+
+            try XUnitTestRecorder.shared.writeXML()
+            guard !XUnitTestRecorder.shared.hasFailure else {
+              exit(1)
+            }
+            guard XUnitTestRecorder.shared.testCount > 0 else {
+              print("ERROR: No tests were executed")
+              exit(1)
+            }
+          } catch {
+            print("Test runner failed with \\(error)")
+            exit(1)
+          }
+        }
+      }
+
+      """
+
     let mainFileURL = URL(fileURLWithPath: mainOutput)
     if objcTestDiscovery {
       // Print the runner source file, which implements the `@main` type that executes the tests.
       let testPrinter = ObjcTestPrinter()
-      testPrinter.printTestRunner(toFileAt: mainFileURL)
+      contents.append(testPrinter.testRunnerSource())
     } else {
       // For each module, print the list of test entries that were discovered in a source file that
       // extends that module.
@@ -116,7 +143,9 @@ struct TestDiscoverer: ParsableCommand {
         testPrinter.printTestEntries(forModule: output.moduleName, toFileAt: output.outputURL)
       }
       // Print the runner source file, which implements the `@main` type that executes the tests.
-      testPrinter.printTestRunner(toFileAt: mainFileURL)
+      contents.append(testPrinter.testRunnerSource())
     }
+
+    createTextFile(at: mainFileURL, contents: contents)
   }
 }

@@ -119,15 +119,21 @@ struct SymbolGraphTestPrinter {
     createTextFile(at: url, contents: contents)
   }
 
-  /// Prints the main test runner to a Swift source file.
-  func printTestRunner(toFileAt url: URL) {
+  /// Returns the Swift source code for the test runner.
+  func testRunnerSource() -> String {
     guard !discoveredTests.modules.isEmpty else {
       // If no tests were discovered, the user likely wrote non-XCTest-style tests that pass or fail
       // based on the exit code of the process. Generate an empty source file here, which will be
       // harmlessly compiled as an empty module, and the user's `main` from their own sources will
       // be used instead.
-      createTextFile(at: url, contents: "// No tests discovered; this is intentionally empty.\n")
-      return
+      return """
+        @MainActor
+        struct XCTestRunner {
+          static func run() {
+            // No XCTest-based tests discovered; this is intentionally empty.
+          }
+        }
+        """
     }
 
     var contents = """
@@ -135,15 +141,12 @@ struct SymbolGraphTestPrinter {
       import Foundation
       import XCTest
 
-      @main
       \(availabilityAttribute)
-      struct Runner {
-        static func main() {
-          if let xmlObserver = BazelXMLTestObserver.default {
-            XCTestObservationCenter.shared.addTestObserver(xmlObserver)
-          }
-          do {
-            var testCollector = try ShardingFilteringTestCollector()
+      @MainActor
+      struct XCTestRunner {
+        static func run() throws {
+          XCTestObservationCenter.shared.addTestObserver(BazelXMLTestObserver.default)
+          var testCollector = try ShardingFilteringTestCollector()
 
       """
 
@@ -158,11 +161,9 @@ struct SymbolGraphTestPrinter {
     // We don't pass the test filter as an argument because we've already filtered the tests in the
     // collector; this lets us do better filtering (i.e., regexes) than XCTest itself allows.
     contents += """
-            XCTMain(testCollector.testsToRun)
-          } catch {
-            print("ERROR: \\(error); exiting.")
-            exit(1)
-          }
+          // The preferred overload is one that calls `exit`, which we don't want because we have
+          // post-work to do, so force the one that returns an exit code instead.
+          let _: CInt = XCTMain(testCollector.testsToRun)
         }
       }
 
@@ -219,6 +220,6 @@ struct SymbolGraphTestPrinter {
 
       """
 
-    createTextFile(at: url, contents: contents)
+    return contents
   }
 }

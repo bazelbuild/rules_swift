@@ -15,112 +15,28 @@
 import Foundation
 import XCTest
 
-/// An XCTest observer that generates an XML file in the format described by the
-/// [JUnit test result schema](https://windyroad.com.au/dl/Open%20Source/JUnit.xsd).
+/// An XCTest observer that reports its events to the shared `XUnitTestRecorder`.
 public final class BazelXMLTestObserver: NSObject {
-  /// The file handle to which the XML content will be written.
-  private let fileHandle: FileHandle
-
-  /// The current indentation to print before each line, as UTF-8 code units.
-  private var indentation: Data
-
-  /// The default XML-generating XCTest observer, which determines the output file based on the
-  /// value of the `XML_OUTPUT_FILE` environment variable.
-  ///
-  /// If the `XML_OUTPUT_FILE` environment variable is not set or the file at that path could not be
-  /// created and opened for writing, the value of this property will be nil.
+  /// The default XCTest observer.
   @MainActor
-  public static let `default`: BazelXMLTestObserver? = {
-    guard
-      let outputPath = ProcessInfo.processInfo.environment["XML_OUTPUT_FILE"],
-      FileManager.default.createFile(atPath: outputPath, contents: nil, attributes: nil),
-      let fileHandle = FileHandle(forWritingAtPath: outputPath)
-    else {
-      return nil
-    }
-    return .init(fileHandle: fileHandle)
-  }()
+  public static let `default`: BazelXMLTestObserver = .init()
 
-  /// Creates a new XML-generating XCTest observer that writes its content to the given file handle.
-  private init(fileHandle: FileHandle) {
-    self.fileHandle = fileHandle
-    self.indentation = Data()
-  }
-
-  /// Writes the given string to the observer's file handle.
-  private func writeLine<S: StringProtocol>(_ string: S) {
-    if !indentation.isEmpty {
-      fileHandle.write(indentation)
-    }
-    fileHandle.write(string.data(using: .utf8)!)  // Conversion to UTF-8 cannot fail.
-    fileHandle.write(Data([UInt8(ascii: "\n")]))
-  }
-
-  /// Increases the current indentation level by two spaces.
-  private func indent() {
-    indentation.append(contentsOf: [UInt8(ascii: " "), UInt8(ascii: " ")])
-  }
-
-  /// Reduces the current indentation level by two spaces.
-  private func dedent() {
-    indentation.removeLast(2)
-  }
-
-  /// Canonicalizes the name of the test case for printing into the XML file.
-  ///
-  /// The canonical name of the test is `TestClass.testMethod` (i.e., Swift-style syntax). When
-  /// running tests under the Objective-C runtime, the test cases will have Objective-C-style names
-  /// (i.e., `-[TestClass testMethod]`), so this method converts those to the desired syntax.
-  ///
-  /// Any test name that does not match one of those two syntaxes is returned unchanged.
-  private func canonicalizedName(of testCase: XCTestCase) -> String {
-    let name = testCase.name
-    guard name.hasPrefix("-[") && name.hasSuffix("]") else {
-      return name
-    }
-
-    let trimmedName = name.dropFirst(2).dropLast()
-    guard let spaceIndex = trimmedName.lastIndex(of: " ") else {
-      return String(trimmedName)
-    }
-
-    return "\(trimmedName[..<spaceIndex]).\(trimmedName[trimmedName.index(after: spaceIndex)...])"
+  private override init() {
+    super.init()
   }
 }
 
 extension BazelXMLTestObserver: XCTestObservation {
-  public func testBundleWillStart(_ testBundle: Bundle) {
-    writeLine(#"<?xml version="1.0" encoding="utf-8"?>"#)
-    writeLine("<testsuites>")
-    indent()
-  }
-
-  public func testBundleDidFinish(_ testBundle: Bundle) {
-    dedent()
-    writeLine("</testsuites>")
-  }
-
-  public func testSuiteWillStart(_ testSuite: XCTestSuite) {
-    writeLine(
-      #"<testsuite name="\#(xmlEscaping: testSuite.name)" tests="\#(testSuite.testCaseCount)">"#)
-    indent()
-  }
-
-  public func testSuiteDidFinish(_ testSuite: XCTestSuite) {
-    dedent()
-    writeLine("</testsuite>")
-  }
-
   public func testCaseWillStart(_ testCase: XCTestCase) {
-    writeLine(
-      #"<testcase name="\#(xmlEscaping: canonicalizedName(of: testCase))" status="run" "#
-      + #"result="completed">"#)
-    indent()
+    XUnitTestRecorder.shared.recordTestStarted(
+      nameComponents: testCase.xUnitNameComponents,
+      time: SuspendingClock.now)
   }
 
   public func testCaseDidFinish(_ testCase: XCTestCase) {
-    dedent()
-    writeLine("</testcase>")
+    XUnitTestRecorder.shared.recordTestEnded(
+      nameComponents: testCase.xUnitNameComponents,
+      time: SuspendingClock.now)
   }
 
   // On platforms with the Objective-C runtime, we use the richer `XCTIssue`-based APIs. Anywhere
@@ -128,17 +44,19 @@ extension BazelXMLTestObserver: XCTestObservation {
   // `didFailWithDescription` API.
   #if canImport(ObjectiveC)
     public func testCase(_ testCase: XCTestCase, didRecord issue: XCTIssue) {
-      let tag: String
+      let tag: RecordedIssue.Kind
       switch issue.type {
       case .assertionFailure, .performanceRegression, .unmatchedExpectedFailure:
-        tag = "failure"
+        tag = .failure
       case .system, .thrownError, .uncaughtException:
-        tag = "error"
+        tag = .error
       @unknown default:
-        tag = "failure"
+        tag = .failure
       }
 
-      writeLine(#"<\#(tag) message="\#(xmlEscaping: issue.compactDescription)"/>"#)
+      XUnitTestRecorder.shared.recordTestIssue(
+        nameComponents: testCase.xUnitNameComponents,
+        issue: .init(kind: tag, reason: issue.compactDescription))
     }
   #else
     public func testCase(
@@ -147,8 +65,10 @@ extension BazelXMLTestObserver: XCTestObservation {
       inFile filePath: String?,
       atLine lineNumber: Int
     ) {
-      let tag = description.hasPrefix(#"threw error ""#) ? "error" : "failure"
-      writeLine(#"<\#(tag) message="\#(xmlEscaping: description)"/>"#)
+      let tag: RecordedIssue.Kind = description.hasPrefix(#"threw error ""#) ? .error : .failure
+      XUnitTestRecorder.shared.recordTestIssue(
+        nameComponents: testCase.xUnitNameComponents,
+        issue: .init(kind: tag, reason: description))
     }
   #endif
 }
@@ -205,7 +125,34 @@ extension BazelXMLTestObserver: XCTestObservation {
       didRecordSkipWithDescription description: String,
       sourceCodeContext: XCTSourceCodeContext?
     ) {
-      writeLine(#"<skipped message="\#(xmlEscaping: description)"/>"#)
+      XUnitTestRecorder.shared.recordTestIssue(
+        nameComponents: testCase.xUnitNameComponents,
+        issue: .init(kind: .skipped, reason: description))
     }
   }
 #endif
+
+extension XCTestCase {
+  /// Canonicalizes the name of the test case to the list of string components expected by
+  /// `XUnitTestRecorder`.
+  ///
+  /// The canonical name components of a test are `["TestClass", "testMethod"]`. XCTests run on
+  /// Linux will be named `TestClass.testMethod` and are split on the dot. Tests run under the
+  /// Objective-C runtime will have Objective-C-style names (i.e., `-[TestClass testMethod]`), which
+  /// are likewise converted to the desired form.
+  var xUnitNameComponents: [String] {
+    guard name.hasPrefix("-[") && name.hasSuffix("]") else {
+      return name.split(separator: ".").map(String.init)
+    }
+
+    let trimmedName = name.dropFirst(2).dropLast()
+    guard let spaceIndex = trimmedName.lastIndex(of: " ") else {
+      return String(trimmedName).split(separator: ".").map(String.init)
+    }
+
+    return [
+      String(trimmedName[..<spaceIndex]),
+      String(trimmedName[trimmedName.index(after: spaceIndex)...]),
+    ]
+  }
+}
