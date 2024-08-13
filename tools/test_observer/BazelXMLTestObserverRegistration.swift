@@ -23,10 +23,7 @@
   public final class BazelXMLTestObserverRegistration: NSObject {
     @objc public override init() {
       super.init()
-
-      if let observer = BazelXMLTestObserver.default {
-        XCTestObservationCenter.shared.addTestObserver(observer)
-      }
+      XCTestObservationCenter.shared.addTestObserver(BazelXMLTestObserver.default)
     }
   }
 #endif
