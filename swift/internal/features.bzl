@@ -18,6 +18,7 @@ load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load(
     ":feature_names.bzl",
     "SWIFT_FEATURE_CHECKED_EXCLUSIVITY",
+    "SWIFT_FEATURE_COMPILE_IN_PARALLEL",
     "SWIFT_FEATURE_COVERAGE",
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
     "SWIFT_FEATURE_DISABLE_CLANG_SPI",
@@ -158,7 +159,7 @@ def configure_features(
     )
 
 def features_for_build_modes(ctx, cpp_fragment = None):
-    """Returns a list of Swift toolchain features for current build modes.
+    """Returns features to request and disable for current build modes.
 
     This function explicitly breaks the "don't pass `ctx` as an argument"
     rule-of-thumb because it is internal and only called from the toolchain
@@ -166,21 +167,35 @@ def features_for_build_modes(ctx, cpp_fragment = None):
 
     Args:
         ctx: The current rule context.
-        cpp_fragment: The Cpp configuration fragment, if available.
+        cpp_fragment: The `cpp` configuration fragment, if available.
 
     Returns:
-        A list of Swift toolchain features to enable.
+        A tuple containing two lists:
+
+        1.  A list of Swift toolchain features to requested (enable).
+        2.  A list of Swift toolchain features that are unsupported (disabled).
     """
+    requested_features = []
+    unsupported_features = []
+
     compilation_mode = ctx.var["COMPILATION_MODE"]
-    features = []
-    features.append("swift.{}".format(compilation_mode))
-    if ctx.configuration.coverage_enabled:
-        features.append(SWIFT_FEATURE_COVERAGE)
+    requested_features.append("swift.{}".format(compilation_mode))
     if compilation_mode in ("dbg", "fastbuild"):
-        features.append(SWIFT_FEATURE_ENABLE_TESTING)
+        requested_features.append(SWIFT_FEATURE_ENABLE_TESTING)
+    elif compilation_mode == "opt":
+        # Disable parallel compilation early if we know we're going to be doing
+        # an optimized compile, because the driver will not emit separate jobs
+        # unless we also explicitly disable cross-module optimization. See
+        # https://github.com/swiftlang/swift-driver/blob/c647e91574122f2b104d294ab1ec5baadaa1aa95/Sources/SwiftDriver/Jobs/EmitModuleJob.swift#L156-L181.
+        unsupported_features.append(SWIFT_FEATURE_COMPILE_IN_PARALLEL)
+
+    if ctx.configuration.coverage_enabled:
+        requested_features.append(SWIFT_FEATURE_COVERAGE)
+
     if cpp_fragment and cpp_fragment.apple_generate_dsym:
-        features.append(SWIFT_FEATURE_FULL_DEBUG_INFO)
-    return features
+        requested_features.append(SWIFT_FEATURE_FULL_DEBUG_INFO)
+
+    return requested_features, unsupported_features
 
 def get_cc_feature_configuration(feature_configuration):
     """Returns the C++ feature configuration in a Swift feature configuration.

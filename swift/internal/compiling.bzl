@@ -60,6 +60,12 @@ load(
     "warnings_as_errors_from_features",
 )
 load(":module_maps.bzl", "write_module_map")
+load(
+    ":optimization.bzl",
+    "find_num_threads_flag_value",
+    "is_optimization_manually_requested",
+    "is_wmo_manually_requested",
+)
 load(":toolchain_utils.bzl", "SWIFT_TOOLCHAIN_TYPE")
 load(
     ":utils.bzl",
@@ -69,7 +75,6 @@ load(
     "owner_relative_path",
     "struct_fields",
 )
-load(":wmo.bzl", "find_num_threads_flag_value", "is_wmo_manually_requested")
 
 visibility([
     "@build_bazel_rules_swift//swift/...",
@@ -493,9 +498,9 @@ def compile(
         "warnings_as_errors": warnings_as_errors,
     } | struct_fields(compile_outputs)
 
-    if is_feature_enabled(
+    if _should_plan_parallel_compilation(
         feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_COMPILE_IN_PARALLEL,
+        user_compile_flags = copts,
     ):
         _execute_compile_plan(
             actions = actions,
@@ -576,6 +581,23 @@ def compile(
             swift_infos = swift_infos_to_propagate,
         ),
     )
+
+def _should_plan_parallel_compilation(
+        feature_configuration,
+        user_compile_flags):
+    """Returns `True` if the compilation should be done in parallel."""
+    parallel_requested = is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_COMPILE_IN_PARALLEL,
+    )
+
+    # The Swift driver will not emit separate jobs to compile the module and to
+    # perform codegen if optimization is requested. See
+    # https://github.com/swiftlang/swift-driver/blob/c647e91574122f2b104d294ab1ec5baadaa1aa95/Sources/SwiftDriver/Jobs/EmitModuleJob.swift#L156-L181.
+    opt_requested = is_optimization_manually_requested(
+        user_compile_flags = user_compile_flags,
+    )
+    return parallel_requested and not opt_requested
 
 def _execute_compile_plan(
         actions,

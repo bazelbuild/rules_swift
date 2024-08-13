@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Functionality releated to detecting whole-module optimization."""
+"""Detection of various optimization settings."""
 
 load(
     ":feature_names.bzl",
+    "SWIFT_FEATURE_COMPILE_IN_PARALLEL",
     "SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
 )
@@ -32,29 +33,14 @@ _WMO_FLAGS = {
     "-force-single-frontend-invocation": True,
 }
 
-def features_from_swiftcopts(swiftcopts):
-    """Returns a list of features to enable based on `--swiftcopt` flags.
-
-    Since `--swiftcopt` flags are hooked into the action configuration when the
-    toolchain is configured, it's not possible for individual actions to query
-    them easily if those flags may determine the nature of outputs (for example,
-    single- vs. multi-threaded WMO). The toolchain can call this function to map
-    those flags to private features that can be queried instead.
-
-    Args:
-        swiftcopts: The list of command line flags that were passed using
-            `--swiftcopt`.
-
-    Returns:
-        A list (possibly empty) of strings denoting feature names that should be
-        enabled on the toolchain.
-    """
-    features = []
-    if is_wmo_manually_requested(user_compile_flags = swiftcopts):
-        features.append(SWIFT_FEATURE__WMO_IN_SWIFTCOPTS)
-    if find_num_threads_flag_value(user_compile_flags = swiftcopts) == 1:
-        features.append(SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS)
-    return features
+# Swift command line flags in the `O` group that enable some kind of
+# optimization. This explicitly excludes `-Onone`.
+_OPT_FLAGS = {
+    "-O": True,
+    "-Oplayground": True,
+    "-Osize": True,
+    "-Ounchecked": True,
+}
 
 def find_num_threads_flag_value(user_compile_flags):
     """Finds the value of the `-num-threads` flag.
@@ -79,6 +65,20 @@ def find_num_threads_flag_value(user_compile_flags):
             saw_num_threads = True
     return num_threads
 
+def is_optimization_manually_requested(user_compile_flags):
+    """Returns `True` if some optimization flag is in the given list of flags.
+
+    Args:
+        user_compile_flags: A list of compiler flags to scan for optimization.
+
+    Returns:
+        True if some optimization is enabled in the given list of flags.
+    """
+    for copt in user_compile_flags:
+        if copt in _OPT_FLAGS:
+            return True
+    return False
+
 def is_wmo_manually_requested(user_compile_flags):
     """Returns `True` if a WMO flag is in the given list of compiler flags.
 
@@ -93,8 +93,8 @@ def is_wmo_manually_requested(user_compile_flags):
             return True
     return False
 
-def wmo_features_from_swiftcopts(swiftcopts):
-    """Returns a list of features to enable based on `--swiftcopt` flags.
+def optimization_features_from_swiftcopts(swiftcopts):
+    """Returns features to enable or disable based on `--swiftcopt` flags.
 
     Since `--swiftcopt` flags are hooked into the action configuration when the
     toolchain is configured, it's not possible for individual actions to query
@@ -107,15 +107,29 @@ def wmo_features_from_swiftcopts(swiftcopts):
             `--swiftcopt`.
 
     Returns:
-        A list (possibly empty) of strings denoting feature names that should be
-        enabled on the toolchain.
+        A tuple containing two lists:
+
+        1.  A list (possibly empty) of strings denoting feature names that
+            should be enabled on the toolchain.
+        2.  A list (possibly empty) of strings denoting feature names that
+            should be disabled on the toolchain.
     """
-    features = []
+    requested_features = []
+    unsupported_features = []
+
+    if is_optimization_manually_requested(user_compile_flags = swiftcopts):
+        # Disable parallel compilation early if we know we're going to be doing
+        # an optimized compile, because the driver will not emit separate jobs
+        # unless we also explicitly disable cross-module optimization. See
+        # https://github.com/swiftlang/swift-driver/blob/c647e91574122f2b104d294ab1ec5baadaa1aa95/Sources/SwiftDriver/Jobs/EmitModuleJob.swift#L156-L181.
+        unsupported_features.append(SWIFT_FEATURE_COMPILE_IN_PARALLEL)
+
     if is_wmo_manually_requested(user_compile_flags = swiftcopts):
-        features.append(SWIFT_FEATURE__WMO_IN_SWIFTCOPTS)
+        requested_features.append(SWIFT_FEATURE__WMO_IN_SWIFTCOPTS)
     if find_num_threads_flag_value(user_compile_flags = swiftcopts) == 1:
-        features.append(SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS)
-    return features
+        requested_features.append(SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS)
+
+    return requested_features, unsupported_features
 
 def _safe_int(s):
     """Returns the base-10 integer value of `s` or `None` if it is invalid.

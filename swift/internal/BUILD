@@ -87,9 +87,9 @@ bzl_library(
         ":feature_names",
         ":features",
         ":module_maps",
+        ":optimization",
         ":toolchain_utils",
         ":utils",
-        ":wmo",
         "//swift:providers",
         "@bazel_skylib//lib:paths",
         "@bazel_skylib//lib:sets",
@@ -147,6 +147,14 @@ bzl_library(
 )
 
 bzl_library(
+    name = "optimization",
+    srcs = ["optimization.bzl"],
+    deps = [
+        ":feature_names",
+    ],
+)
+
+bzl_library(
     name = "output_groups",
     srcs = ["output_groups.bzl"],
 )
@@ -190,7 +198,6 @@ bzl_library(
         "//swift:module_name",
         "//swift:providers",
         "@bazel_skylib//lib:dicts",
-        "@bazel_skylib//rules:common_settings",
     ],
 )
 
@@ -235,14 +242,6 @@ bzl_library(
     deps = [
         "//swift:providers",
         "@bazel_skylib//lib:paths",
-    ],
-)
-
-bzl_library(
-    name = "wmo",
-    srcs = ["wmo.bzl"],
-    deps = [
-        ":feature_names",
     ],
 )
 

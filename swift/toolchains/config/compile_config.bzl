@@ -65,6 +65,10 @@ load(
     "SWIFT_FEATURE__SUPPORTS_V6",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
 )
+load(
+    "@build_bazel_rules_swift//swift/internal:optimization.bzl",
+    "is_wmo_manually_requested",
+)
 load(":action_config.bzl", "ActionConfigInfo", "ConfigResultInfo", "add_arg")
 
 visibility([
@@ -76,14 +80,6 @@ visibility([
 # TODO(b/32571265): Generalize this based on platform and core count
 # when an API to obtain this is available.
 _DEFAULT_WMO_THREAD_COUNT = 12
-
-# Swift command line flags that enable whole module optimization. (This
-# dictionary is used as a set for quick lookup; the values are irrelevant.)
-_WMO_FLAGS = {
-    "-wmo": True,
-    "-whole-module-optimization": True,
-    "-force-single-frontend-invocation": True,
-}
 
 def compile_action_configs(
         *,
@@ -1040,7 +1036,7 @@ def _global_module_cache_configurator(prerequisites, args):
 
 def _batch_mode_configurator(prerequisites, args):
     """Adds flags to enable batch compilation mode."""
-    if not _is_wmo_manually_requested(prerequisites.user_compile_flags):
+    if not is_wmo_manually_requested(prerequisites.user_compile_flags):
         args.add("-enable-batch-mode")
 
 def _c_layering_check_configurator(prerequisites, args):
@@ -1550,24 +1546,10 @@ def _make_wmo_thread_count_configurator(should_check_flags):
         return lambda _prerequisites, args: _add_num_threads(args)
 
     def _flag_checking_wmo_thread_count_configurator(prerequisites, args):
-        if _is_wmo_manually_requested(prerequisites.user_compile_flags):
+        if is_wmo_manually_requested(prerequisites.user_compile_flags):
             _add_num_threads(args)
 
     return _flag_checking_wmo_thread_count_configurator
-
-def _is_wmo_manually_requested(user_compile_flags):
-    """Returns `True` if a WMO flag is in the given list of compiler flags.
-
-    Args:
-        user_compile_flags: A list of compiler flags to scan for WMO usage.
-
-    Returns:
-        True if WMO is enabled in the given list of flags.
-    """
-    for copt in user_compile_flags:
-        if copt in _WMO_FLAGS:
-            return True
-    return False
 
 def _exclude_swift_incompatible_define(define):
     """A `map_each` helper that excludes a define if it is not Swift-compatible.
