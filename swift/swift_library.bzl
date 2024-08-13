@@ -137,6 +137,10 @@ def _swift_library_impl(ctx):
     )
     copts.extend(module_copts)
 
+    deps = ctx.attr.deps
+    private_deps = ctx.attr.private_deps
+    _check_deps_are_disjoint(ctx.label, deps, private_deps)
+
     extra_features = []
 
     if ctx.attr.library_evolution:
@@ -154,10 +158,6 @@ def _swift_library_impl(ctx):
         swift_toolchain = swift_toolchain,
         unsupported_features = ctx.disabled_features,
     )
-
-    deps = ctx.attr.deps
-    private_deps = ctx.attr.private_deps
-    _check_deps_are_disjoint(ctx.label, deps, private_deps)
 
     swift_infos = get_providers(deps, SwiftInfo)
     private_swift_infos = get_providers(private_deps, SwiftInfo)
@@ -291,7 +291,9 @@ dependent for linking, but artifacts/flags required for compilation (such as
     doc = """\
 Compiles and links Swift code into a static library and Swift module.
 """,
-    fragments = ["cpp"],
+    fragments = [
+        "cpp",
+    ],
     implementation = _swift_library_impl,
     toolchains = use_swift_toolchain(),
 )
