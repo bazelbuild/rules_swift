@@ -8,7 +8,6 @@ swift_library(
     testonly = True,
     srcs = [
         "BazelXMLTestObserver.swift",
-        "BazelXMLTestObserverRegistration.swift",
         "Locked.swift",
         "StringInterpolation+XMLEscaping.swift",
         "XUnitTestRecorder.swift",
