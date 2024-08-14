@@ -109,9 +109,9 @@ struct TestDiscoverer: ParsableCommand {
       \(availabilityAttribute)
       @main
       struct Main {
-        static func main() {
+        static func main() async {
           do {
-            try XCTestRunner.run()
+            try await XCTestRunner.run()
 
             try XUnitTestRecorder.shared.writeXML()
             guard !XUnitTestRecorder.shared.hasFailure else {

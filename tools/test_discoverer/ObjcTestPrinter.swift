@@ -34,12 +34,22 @@ struct ObjcTestPrinter {
           let description: String
         }
 
-        static func run() throws {
+        static func run() async throws {
           try loadXCTest()
           XCTestObservationCenter.shared.addTestObserver(BazelXMLTestObserver.default)
-          var testCollector = try ShardingFilteringTestCollector()
-          let shardedSuite = testCollector.shard(XCTestSuite.default)
-          shardedSuite.run()
+
+          // There is what appears to be a strange bug on Darwin platforms here. If the calling
+          // context (e.g., `main`) is `async` and there are any `async` tests in the suite to be
+          // run, calling `shardedSuite.run()` below will cause the test process to terminate
+          // abnormally with the error "freed pointer was not the last allocation" out of the Swift
+          // runtime. We "avoid" (work around) this by wrapping the call in a detached task and then
+          // awaiting its result. The task must be detached so that we don't block the main actor,
+          // which the tests may also be depending on.
+          _ = try await Task.detached {
+            var testCollector = try ShardingFilteringTestCollector()
+            let shardedSuite = testCollector.shard(XCTestSuite.default)
+            shardedSuite.run()
+          }.value
         }
 
         private static func loadXCTest() throws {
