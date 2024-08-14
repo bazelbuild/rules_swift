@@ -109,7 +109,7 @@ struct TestDiscoverer: ParsableCommand {
       \(availabilityAttribute)
       @main
       struct Main {
-        static func main() async {
+        static func main() {
           do {
             try XCTestRunner.run()
 
