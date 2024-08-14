@@ -88,7 +88,7 @@ xcrun llvm-cov \
   -instr-profile "$profdata" \
   -ignore-filename-regex='.*external/.+' \
   -path-equivalence="$ROOT",. \
-  "%executable%" \
+  "$executable_path" \
   @"$COVERAGE_MANIFEST" \
   > "$COVERAGE_OUTPUT_FILE" \
   2> "$error_file" \
