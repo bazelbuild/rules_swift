@@ -153,6 +153,12 @@ when compiling this module and any modules that directly depend on it.
                 allow_files = ["swift"],
                 doc = """\
 A list of `.swift` source files that will be compiled into the library.
+
+Except in very rare circumstances, a Swift source file should only appear in a
+single `swift_*` target. Adding the same source file to multiple `swift_*`
+targets can lead to binary bloat and/or symbol collisions. If specific sources
+need to be shared by multiple targets, consider factoring them out into their
+own `swift_library` instead.
 """,
                 flags = ["DIRECT_COMPILE_TIME_INPUT"],
                 mandatory = requires_srcs,
