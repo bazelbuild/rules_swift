@@ -168,6 +168,12 @@ the `swift_overlay` imports any modules other than its C/Objective-C side, the
 overlay target must explicitly depend on them as well. This means that an
 overlay can have a different set of dependencies than the underlying module, if
 desired.
+
+There is a tight coupling between a Swift overlay and the C/Objective-C module
+to which it is being applied, so a specific `swift_overlay` target should only
+be referenced by the `aspect_hints` of a single `objc_library` or `cc_library`
+target. Referencing a `swift_overlay` from multiple targets' `aspect_hints` is
+almost always an anti-pattern.
 """,
     fragments = ["cpp"],
     implementation = _swift_overlay_impl,
