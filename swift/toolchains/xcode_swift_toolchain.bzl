@@ -663,10 +663,7 @@ def _xcode_swift_toolchain_impl(ctx):
         "swift.experimental.AccessLevelOnImport",
     ])
 
-    # TODO: b/336996662 - Use a very high Xcode version number until we've
-    # confirmed the actual Xcode release that ships with a compiler that
-    # supports `-swift-version 6`.
-    if _is_xcode_at_least_version(xcode_config, "999.0"):
+    if _is_xcode_at_least_version(xcode_config, "16.0"):
         requested_features.append(SWIFT_FEATURE__SUPPORTS_V6)
 
     unsupported_features.extend(build_mode_unsupported_features)
