@@ -99,20 +99,20 @@ struct SymbolGraphTestPrinter {
     contents += """
 
       \(availabilityAttribute)
-      func collect\(allTestsIdentifier(for: discoveredModule))(into collector: inout ShardingFilteringTestCollector) {
+      let \(allTestsIdentifier(for: discoveredModule)) = [
 
       """
 
     for className in sortedClassNames {
       let testClass = discoveredModule.classes[className]!
       contents += """
-          collector.addTests("\(className)", \(className).\(allTestsIdentifier(for: testClass)))
+          testCase(\(className).\(allTestsIdentifier(for: testClass))),
 
         """
     }
 
     contents += """
-      }
+      ]
 
       """
 
@@ -127,96 +127,29 @@ struct SymbolGraphTestPrinter {
       // harmlessly compiled as an empty module, and the user's `main` from their own sources will
       // be used instead.
       return """
-        @MainActor
-        struct XCTestRunner {
-          static func run() {
-            // No XCTest-based tests discovered; this is intentionally empty.
-          }
-        }
+        private let __allDiscoveredXCTests: [XCTestCaseEntry] = []
+
         """
     }
 
     var contents = """
-      import BazelTestObservation
-      import Foundation
-      import XCTest
-
       \(availabilityAttribute)
-      @MainActor
-      struct XCTestRunner {
-        static func run() throws {
-          XCTestObservationCenter.shared.addTestObserver(BazelXMLTestObserver.default)
-          var testCollector = try ShardingFilteringTestCollector()
+      private let __allDiscoveredXCTests: [XCTestCaseEntry] = {
+        var allTests: [XCTestCaseEntry] = []
 
       """
 
     for moduleName in discoveredTests.modules.keys.sorted() {
       let module = discoveredTests.modules[moduleName]!
       contents += """
-              collect\(allTestsIdentifier(for: module))(into: &testCollector)
+          allTests.append(contentsOf: \(allTestsIdentifier(for: module)))
 
         """
     }
 
-    // We don't pass the test filter as an argument because we've already filtered the tests in the
-    // collector; this lets us do better filtering (i.e., regexes) than XCTest itself allows.
     contents += """
-          // The preferred overload is one that calls `exit`, which we don't want because we have
-          // post-work to do, so force the one that returns an exit code instead.
-          let _: CInt = XCTMain(testCollector.testsToRun)
-        }
-      }
-
-      """
-
-    contents += createShardingFilteringTestCollector(
-      extraProperties: "private(set) var testsToRun: [XCTestCaseEntry] = []\n")
-    contents += """
-      extension ShardingFilteringTestCollector {
-        mutating func addTests<T: XCTestCase>(
-          _ suiteName: String,
-          _ tests: [(String, (T) -> () -> Void)]
-        ) {
-          guard shardCount != 0 || filter != nil else {
-            // If we're not sharding or filtering, just add all the tests.
-            testsToRun.append(testCase(tests))
-            return
-          }
-          var shardTests: [(String, (T) -> () -> Void)] = []
-          for test in tests {
-            guard isIncludedByFilter("\\(suiteName)/\\(test.0)") else {
-              continue
-            }
-            if isIncludedInShard() {
-              shardTests.append(test)
-            }
-            seenTestCount += 1
-          }
-          testsToRun.append(testCase(shardTests))
-        }
-
-        mutating func addTests<T: XCTestCase>(
-          _ suiteName: String,
-          _ tests: [(String, (T) -> () throws -> Void)]
-        ) {
-          guard shardCount != 0 || filter != nil else {
-            // If we're not sharding or filtering, just add all the tests.
-            testsToRun.append(testCase(tests))
-            return
-          }
-          var shardTests: [(String, (T) -> () throws -> Void)] = []
-          for test in tests {
-            guard isIncludedByFilter("\\(suiteName)/\\(test.0)") else {
-              continue
-            }
-            if isIncludedInShard() {
-              shardTests.append(test)
-            }
-            seenTestCount += 1
-          }
-          testsToRun.append(testCase(shardTests))
-        }
-      }
+        return allTests
+      }()
 
       """
 
