@@ -105,13 +105,15 @@ struct TestDiscoverer: ParsableCommand {
 
     var contents = """
       import BazelTestObservation
+      import Foundation
+      import XCTest
 
       \(availabilityAttribute)
       @main
       struct Main {
-        static func main() async {
+        static func main() {
           do {
-            try await XCTestRunner.run()
+            try XCTestRunner.run(__allDiscoveredXCTests)
 
             try XUnitTestRecorder.shared.writeXML()
             guard !XUnitTestRecorder.shared.hasFailure else {
@@ -128,9 +130,14 @@ struct TestDiscoverer: ParsableCommand {
 
     let mainFileURL = URL(fileURLWithPath: mainOutput)
     if objcTestDiscovery {
-      // Print the runner source file, which implements the `@main` type that executes the tests.
-      let testPrinter = ObjcTestPrinter()
-      contents.append(testPrinter.testRunnerSource())
+      // On Darwin platforms, tests are discovered by the Objective-C runtime, so we don't need to
+      // generate anything. We use a dummy parameter to keep the call site the same on both
+      // platforms.
+      contents.append("""
+        // Unused by the Objective-C XCTestRunner; tests are discovered by the runtime.
+        private let __allDiscoveredXCTests: () = ()
+
+        """)
     } else {
       // For each module, print the list of test entries that were discovered in a source file that
       // extends that module.
