@@ -35,7 +35,13 @@ public struct Locked<Value>: Sendable where Value: Sendable {
     }
   }
 
-  private nonisolated(unsafe) var _storage: ManagedBuffer<Value, pthread_mutex_t>
+  // Swift 6 requires this to be declared as `nonisolated(unsafe)`, but older compilers emit a
+  // warning claiming (incorrectly) that it's redundant.
+  #if compiler(>=6)
+    private nonisolated(unsafe) var _storage: ManagedBuffer<Value, pthread_mutex_t>
+  #else
+    private var _storage: ManagedBuffer<Value, pthread_mutex_t>
+  #endif
 
   /// The value behind the lock.
   public var value: Value {

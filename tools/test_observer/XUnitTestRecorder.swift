@@ -45,9 +45,9 @@ public struct RecordedIssue: Sendable {
 /// nested suites).
 ///
 /// In an async-first world, it would make sense to make this an actor instead of using manual
-/// locking. However, since both the XCTest and swift-testing frameworks deliver their events in
-/// synchronous contexts, it's easier to do things the old-fashioned way.
-public final class XUnitTestRecorder {
+/// locking. However, since XCTest delivers its events in a synchronous context, it's easier to use
+/// old-fashioned locking.
+public final class XUnitTestRecorder: Sendable {
   /// Context that is mutated by the test reader, protected by a lock.
   private struct Context: Sendable {
     /// The total number of tests that have run.
@@ -64,7 +64,7 @@ public final class XUnitTestRecorder {
   public static let shared = XUnitTestRecorder()
 
   /// The context that is mutated by the test reader, protected by a lock.
-  private var context: Locked<Context> = Locked(.init())
+  private let context: Locked<Context> = Locked(.init())
 
   /// Indicates whether any failures have been recorded.
   public var hasFailure: Bool {
