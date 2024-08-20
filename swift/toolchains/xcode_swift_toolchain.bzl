@@ -235,7 +235,11 @@ def _swift_linkopts_cc_info(
         ),
     )
 
-def _test_linking_context(apple_toolchain, target_triple, toolchain_label):
+def _test_linking_context(
+        apple_toolchain,
+        target_triple,
+        toolchain_label,
+        xcode_config):
     """Returns a `CcLinkingContext` containing linker flags for test binaries.
 
     Args:
@@ -243,6 +247,7 @@ def _test_linking_context(apple_toolchain, target_triple, toolchain_label):
         target_triple: The target triple `struct`.
         toolchain_label: The label of the Swift toolchain that will act as the
             owner of the linker input propagating the flags.
+        xcode_config: The Xcode configuration.
 
     Returns:
         A `CcLinkingContext` that will provide linker flags to `swift_test`
@@ -261,6 +266,8 @@ def _test_linking_context(apple_toolchain, target_triple, toolchain_label):
         "-Wl,-weak_framework,XCTest",
         "-Wl,-weak-lXCTestSwiftSupport",
     ]
+    if _is_xcode_at_least_version(xcode_config, "16.0"):
+        linkopts.append("-Wl,-weak_framework,Testing")
 
     if platform_developer_framework_dir:
         linkopts.extend([
@@ -616,6 +623,7 @@ def _xcode_swift_toolchain_impl(ctx):
         apple_toolchain = apple_toolchain,
         target_triple = target_triple,
         toolchain_label = ctx.label,
+        xcode_config = xcode_config,
     )
 
     # `--define=SWIFT_USE_TOOLCHAIN_ROOT=<path>` is a rapid development feature
