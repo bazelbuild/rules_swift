@@ -103,6 +103,10 @@ struct TestDiscoverer: ParsableCommand {
       }
     }
 
+    // These shenanigans are necessary because `XCTestSuite.default.run()` doesn't like to be called
+    // from an `async main()` (it crashes in the runtime's stack allocator if it tries to run an
+    // async test method), but we have to do async work to run swift-testing tests. See
+    // https://forums.swift.org/t/74010 for additional context.
     var contents = """
       import BazelTestObservation
       import Foundation
@@ -113,20 +117,37 @@ struct TestDiscoverer: ParsableCommand {
       struct Main {
         static func main() {
           do {
+            try loadTestingLibraries()
+          } catch {
+            print("Fatal error loading runtime libraries: \\(error)")
+            exit(1)
+          }
+          do {
             try XCTestRunner.run(__allDiscoveredXCTests)
-
-            try XUnitTestRecorder.shared.writeXML()
-            guard !XUnitTestRecorder.shared.hasFailure else {
+          } catch {
+            print("Fatal error running XCTest tests: \\(error)")
+            exit(1)
+          }
+          Task {
+            do {
+              try await SwiftTestingRunner.run()
+            } catch {
+              print("Fatal error running swift-testing tests: \\(error)")
+              exit(1)
+            }
+            do {
+              try XUnitTestRecorder.shared.writeXML()
+            } catch {
+              print("Fatal error writing test results to XML: \\(error)")
               exit(1)
             }
             guard XUnitTestRecorder.shared.testCount > 0 else {
               print("ERROR: No tests were executed")
               exit(1)
             }
-          } catch {
-            print("Test runner failed with \\(error)")
-            exit(1)
+            exit(XUnitTestRecorder.shared.hasFailure ? 1 : 0)
           }
+          _asyncMainDrainQueue()
         }
       }
 

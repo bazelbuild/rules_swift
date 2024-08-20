@@ -16,22 +16,13 @@
   import Foundation
   import XCTest
 
-  @available(*, deprecated, message: """
-    Not actually deprecated. Marked as deprecated to allow inclusion of deprecated tests (which \
-    test deprecated functionality) without warnings.
-    """)
   public typealias XCTestRunner = ObjectiveCXCTestRunner
 
-  @available(*, deprecated, message: """
-    Not actually deprecated. Marked as deprecated to allow inclusion of deprecated tests (which \
-    test deprecated functionality) without warnings.
-    """)
+  /// A test runner for tests that use the XCTest framework on Apple platforms.
+  ///
+  /// This test runner uses the Objective-C runtime to discover the tests to run.
   @MainActor
   public enum ObjectiveCXCTestRunner {
-    struct Error: Swift.Error, CustomStringConvertible {
-      let description: String
-    }
-
     /// A wrapper around an `XCTestCase` used by the test collector.
     struct Test: Testable {
       /// The underlying `XCTestCase` that this wrapper represents.
@@ -49,42 +40,14 @@
         guard let spaceIndex = trimmedName.lastIndex(of: " ") else {
           return String(trimmedName)
         }
-        return "\(trimmedName[..<spaceIndex])/\(trimmedName[trimmedName.index(after: spaceIndex)...])"
+        return
+          "\(trimmedName[..<spaceIndex])/\(trimmedName[trimmedName.index(after: spaceIndex)...])"
       }
     }
 
     public static func run(_ unused: ()) throws {
-      try loadXCTest()
       XCTestObservationCenter.shared.addTestObserver(BazelXMLTestObserver.default)
       try shard(XCTestSuite.default).run()
-    }
-
-    /// Loads the XCTest framework and Swift support dylib.
-    ///
-    /// We weakly link against XCTest.framework and the Swift support dylib because the machine that
-    /// links the test binary might not be the same that runs it, and they might have Xcode
-    /// installed at different paths. To handle this, we find the path that Bazel says they're
-    /// installed at on the machine where the test is running and load them dynamically.
-    private static func loadXCTest() throws {
-      guard let sdkRoot = ProcessInfo.processInfo.environment["SDKROOT"] else {
-        throw Error(description: "ERROR: Bazel must set the SDKROOT in order to find XCTest")
-      }
-      let sdkRootURL = URL(fileURLWithPath: sdkRoot)
-      let platformDeveloperPath = sdkRootURL  // .../Developer/SDKs/MacOSX.sdk
-        .deletingLastPathComponent()  // .../Developer/SDKs
-        .deletingLastPathComponent()  // .../Developer
-      let xcTestPath = platformDeveloperPath
-        .appendingPathComponent("Library/Frameworks/XCTest.framework/XCTest")
-        .path
-      guard dlopen(xcTestPath, RTLD_NOW) != nil else {
-        throw Error(description: #"ERROR: dlopen("\#(xcTestPath)") failed"#)
-      }
-      let xcTestSwiftSupportPath = platformDeveloperPath
-        .appendingPathComponent("usr/lib/libXCTestSwiftSupport.dylib")
-        .path
-      guard dlopen(xcTestSwiftSupportPath, RTLD_NOW) != nil else {
-        throw Error(description: #"ERROR: dlopen("\#(xcTestSwiftSupportPath)") failed"#)
-      }
     }
 
     /// Returns a new `XCTestSuite` that contains a filtered and sharded copy of the tests in the
