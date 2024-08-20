@@ -16,22 +16,12 @@
   import Foundation
   import XCTest
 
-  @available(
-    *, deprecated,
-    message: """
-      Not actually deprecated. Marked as deprecated to allow inclusion of deprecated tests (which \
-      test deprecated functionality) without warnings.
-      """
-  )
   public typealias XCTestRunner = LinuxXCTestRunner
 
-  @available(
-    *, deprecated,
-    message: """
-      Not actually deprecated. Marked as deprecated to allow inclusion of deprecated tests (which \
-      test deprecated functionality) without warnings.
-      """
-  )
+  /// A test runner for tests that use the XCTest framework on Linux.
+  ///
+  /// This test runner uses test case entries that were constructed by scanning the symbol graph
+  /// output of the compiler.
   @MainActor
   public enum LinuxXCTestRunner {
     /// A wrapper around a single test from an `XCTestCaseEntry` used by the test collector.
