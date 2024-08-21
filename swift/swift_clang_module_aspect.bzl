@@ -663,7 +663,16 @@ def _compile_swift_overlay(
             label = overlay_info.label,
             linking_contexts = [
                 cc_info.linking_context
-                for cc_info in overlay_info.deps.cc_infos + overlay_info.private_deps.cc_infos
+                for cc_info in (
+                    overlay_info.deps.cc_infos +
+                    overlay_info.private_deps.cc_infos
+                )
+            ] + [
+                overlay_info.linking_context
+                for overlay_info in (
+                    overlay_info.deps.swift_overlay_infos +
+                    overlay_info.private_deps.swift_overlay_infos
+                )
             ],
             module_context = compile_result.module_context,
             swift_toolchain = swift_toolchain,
