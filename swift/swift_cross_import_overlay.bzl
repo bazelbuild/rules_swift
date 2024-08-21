@@ -19,16 +19,17 @@ load(":providers.bzl", "SwiftInfo")
 
 def _get_sole_module_name(swift_info, attr):
     if len(swift_info.direct_modules) != 1:
-        fail(("The target specified by '{}' must define exactly one Swift " +
-              "and/or Clang module.").format(attr))
+        fail(("The target specified by '{attr}' must define exactly one Swift " +
+              "and/or Clang module, or you must specify '{attr}_name' to" +
+              "disambiguate them.").format(attr = attr))
     return swift_info.direct_modules[0].name
 
 def _swift_cross_import_overlay_impl(ctx):
-    bystanding_module = _get_sole_module_name(
+    bystanding_module = ctx.attr.bystanding_module_name or _get_sole_module_name(
         ctx.attr.bystanding_module[SwiftInfo],
         "bystanding_module",
     )
-    declaring_module = _get_sole_module_name(
+    declaring_module = ctx.attr.declaring_module_name or _get_sole_module_name(
         ctx.attr.declaring_module[SwiftInfo],
         "declaring_module",
     )
@@ -53,6 +54,15 @@ the cross-import modules.
             mandatory = True,
             providers = [[SwiftInfo]],
         ),
+        "bystanding_module_name": attr.string(
+            doc = """\
+The name of the bystanding module from the target specified by the
+`bystanding_module` attribute. This is inferred if `bystanding_module` only
+exports a single direct module; this name must be specified if
+`bystanding_module` exports more than one.
+""",
+            mandatory = False,
+        ),
         "declaring_module": attr.label(
             doc = """\
 A label for the target representing the first of the two modules (the other
@@ -62,6 +72,15 @@ overlay definition that connects it to the bystander and to the overlay modules.
 """,
             mandatory = True,
             providers = [[SwiftInfo]],
+        ),
+        "declaring_module_name": attr.string(
+            doc = """\
+The name of the declaring module from the target specified by the
+`declaring_module` attribute. This is inferred if `declaring_module` only
+exports a single direct module; this name must be specified if
+`declaring_module` exports more than one.
+""",
+            mandatory = False,
         ),
         "deps": attr.label_list(
             allow_empty = False,
