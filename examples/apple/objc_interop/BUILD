@@ -9,7 +9,11 @@ licenses(["notice"])
 
 objc_library(
     name = "PrintStream",
-    srcs = ["OIPrintStream.m"],
+    srcs = [
+        "OIPrintStream.m",
+        "Private.h",
+        "Private.m",
+    ],
     hdrs = ["OIPrintStream.h"],
     target_compatible_with = ["@platforms//os:macos"],
 )
