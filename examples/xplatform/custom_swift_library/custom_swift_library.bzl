@@ -8,11 +8,11 @@ load(
 )
 load(
     "//swift:swift_clang_module_aspect.bzl",
-    "swift_clang_module_aspect"
+    "swift_clang_module_aspect",
 )
 load(
-    "//swift:swift_common.bzl", 
-    "swift_common"
+    "//swift:swift_common.bzl",
+    "swift_common",
 )
 
 def _compact(sequence):
@@ -61,7 +61,7 @@ public struct {} {{
         [module.swift.swiftinterface for module in direct_swift_info.direct_modules] +
         [module.swift.private_swiftinterface for module in direct_swift_info.direct_modules] +
         [module.swift.swiftmodule for module in direct_swift_info.direct_modules] +
-        [module.swift.swiftsourceinfo for module in direct_swift_info.direct_modules]
+        [module.swift.swiftsourceinfo for module in direct_swift_info.direct_modules],
     )
 
     return [
@@ -94,7 +94,7 @@ custom_swift_library = rule(
             "regular_import": attr.string(),
             "regular_type_name": attr.string(),
             "custom_type_name": attr.string(),
-        }
+        },
     ),
     doc = """
 Demonstrates how to create a custom rule which propagates the same providers 

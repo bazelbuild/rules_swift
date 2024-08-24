@@ -9,11 +9,11 @@ load(
 )
 load(
     "//swift/internal:compiling.bzl",
-    "compile"
+    "compile",
 )
 load(
     "//swift/internal:features.bzl",
-    "configure_features"
+    "configure_features",
 )
 load(
     "//swift/internal:linking.bzl",
@@ -26,11 +26,11 @@ load(
 )
 load(
     "//swift/internal:providers.bzl",
-    "create_swift_info"
+    "create_swift_info",
 )
 load(
     "//swift/internal:toolchain_utils.bzl",
-    "get_swift_toolchain"
+    "get_swift_toolchain",
 )
 load(
     "//swift/internal:utils.bzl",

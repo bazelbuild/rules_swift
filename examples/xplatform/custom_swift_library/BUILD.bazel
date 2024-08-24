@@ -1,27 +1,27 @@
 load(
-    "//examples/xplatform/custom_swift_library:custom_swift_library.bzl", 
-    "custom_swift_library"
+    "//examples/xplatform/custom_swift_library:custom_swift_library.bzl",
+    "custom_swift_library",
 )
 load("//swift:swift_binary.bzl", "swift_binary")
 load("//swift:swift_library.bzl", "swift_library")
 
 swift_library(
     name = "regular",
-    module_name = "Regular",
     srcs = [
-        "Regular.swift"
-    ]
+        "Regular.swift",
+    ],
+    module_name = "Regular",
 )
 
 custom_swift_library(
     name = "custom",
+    custom_type_name = "Custom",
     module_name = "Custom",
     regular_import = "import Regular",
     regular_type_name = "Regular",
-    custom_type_name = "Custom",
     deps = [
-        ":regular"
-    ]
+        ":regular",
+    ],
 )
 
 swift_binary(
@@ -29,6 +29,6 @@ swift_binary(
     srcs = ["main.swift"],
     deps = [
         ":custom",
-        ":regular"
-    ]
+        ":regular",
+    ],
 )
