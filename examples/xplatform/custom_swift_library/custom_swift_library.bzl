@@ -19,7 +19,6 @@ def _compact(sequence):
     return [item for item in sequence if item != None]
 
 def _custom_swift_library_impl(ctx):
-    target_label = ctx.label
 
     # Create the swift file:
     custom_file_format = """\
@@ -45,8 +44,8 @@ public struct {} {{
     direct_providers = swift_common.compile_and_create_linking_context(
         attr = ctx.attr,
         ctx = ctx,
-        target_label = target_label,
-        module_name = getattr(ctx.attr, "module_name", target_label.name),
+        target_label = ctx.label,
+        module_name = getattr(ctx.attr, "module_name", ctx.label.name),
         swift_srcs = [custom_file],
         compiler_deps = getattr(ctx.attr, "deps", []),
     )

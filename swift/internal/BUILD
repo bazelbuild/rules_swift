@@ -292,3 +292,19 @@ filegroup(
         "//swift:__pkg__",
     ],
 )
+bzl_library(
+    name = "compiling_and_linking",
+    srcs = ["compiling_and_linking.bzl"],
+    visibility = ["//swift:__subpackages__"],
+    deps = [
+        ":compiling",
+        ":features",
+        ":linking",
+        ":output_groups",
+        ":providers",
+        ":toolchain_utils",
+        ":utils",
+        "//swift:providers",
+    ],
+)
+
