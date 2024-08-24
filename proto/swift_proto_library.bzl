@@ -32,9 +32,6 @@ load("//swift:swift_common.bzl", "swift_common")
 load("//swift/internal:attrs.bzl", "swift_deps_attr")
 
 # buildifier: disable=bzl-visibility
-load("//swift/internal:toolchain_utils.bzl", "use_swift_toolchain")
-
-# buildifier: disable=bzl-visibility
 load("//swift/internal:utils.bzl", "compact")
 load(
     ":swift_proto_utils.bzl",
@@ -187,5 +184,5 @@ swift_proto_library(
 """,
     fragments = ["cpp"],
     implementation = _swift_proto_library_impl,
-    toolchains = use_swift_toolchain(),
+    toolchains = swift_common.use_toolchain(),
 )
