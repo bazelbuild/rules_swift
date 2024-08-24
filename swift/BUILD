@@ -111,6 +111,7 @@ bzl_library(
     deps = [
         "//swift/internal:attrs",
         "//swift/internal:compiling",
+        "//swift/internal:compiling_and_linking",
         "//swift/internal:features",
         "//swift/internal:linking",
         "//swift/internal:providers",

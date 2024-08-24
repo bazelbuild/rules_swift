@@ -156,6 +156,38 @@ A `struct` with the following fields:
           macros).
 
 
+<a id="swift_common.compile_and_create_linking_context"></a>
+
+## swift_common.compile_and_create_linking_context
+
+<pre>
+swift_common.compile_and_create_linking_context(<a href="#swift_common.compile_and_create_linking_context-attr">attr</a>, <a href="#swift_common.compile_and_create_linking_context-ctx">ctx</a>, <a href="#swift_common.compile_and_create_linking_context-target_label">target_label</a>, <a href="#swift_common.compile_and_create_linking_context-module_name">module_name</a>, <a href="#swift_common.compile_and_create_linking_context-swift_srcs">swift_srcs</a>,
+                                                <a href="#swift_common.compile_and_create_linking_context-compiler_deps">compiler_deps</a>)
+</pre>
+
+Compiles the Swift source files into a module and creates a linking context from it.
+
+**PARAMETERS**
+
+
+| Name  | Description | Default Value |
+| :------------- | :------------- | :------------- |
+| <a id="swift_common.compile_and_create_linking_context-attr"></a>attr |  The attributes of the target for which the module is being compiled.   |  none |
+| <a id="swift_common.compile_and_create_linking_context-ctx"></a>ctx |  The context of the aspect or rule.   |  none |
+| <a id="swift_common.compile_and_create_linking_context-target_label"></a>target_label |  The label of the target for which the module is being compiled.   |  none |
+| <a id="swift_common.compile_and_create_linking_context-module_name"></a>module_name |  The name of the Swift module that should be compiled from the source files.   |  none |
+| <a id="swift_common.compile_and_create_linking_context-swift_srcs"></a>swift_srcs |  List of Swift source files to be compiled into the module.   |  none |
+| <a id="swift_common.compile_and_create_linking_context-compiler_deps"></a>compiler_deps |  List of dependencies required to compile the source files.   |  none |
+
+**RETURNS**
+
+A struct with the following fields:
+  direct_cc_info: CcInfo provider generated directly by this target.
+  direct_objc_info: apple_common.Objc provider generated directly by this target.
+  direct_swift_info: SwiftInfo provider generated directly by this target.
+  direct_output_group_info: OutputGroupInfo provider generated directly by this target.
+
+
 <a id="swift_common.compile_module_interface"></a>
 
 ## swift_common.compile_module_interface
@@ -573,6 +605,37 @@ Extracts the symbol graph from a Swift module.
 | <a id="swift_common.extract_symbol_graph-swift_toolchain"></a>swift_toolchain |  The `SwiftToolchainInfo` provider of the toolchain.   |  none |
 
 
+<a id="swift_common.get_providers"></a>
+
+## swift_common.get_providers
+
+<pre>
+swift_common.get_providers(<a href="#swift_common.get_providers-targets">targets</a>, <a href="#swift_common.get_providers-provider">provider</a>, <a href="#swift_common.get_providers-map_fn">map_fn</a>)
+</pre>
+
+Returns the given provider (or a field) from each target in the list.
+
+The returned list may not be the same size as `targets` if some of the
+targets do not contain the requested provider. This is not an error.
+
+The main purpose of this function is to make this common operation more
+readable and prevent mistyping the list comprehension.
+
+
+**PARAMETERS**
+
+
+| Name  | Description | Default Value |
+| :------------- | :------------- | :------------- |
+| <a id="swift_common.get_providers-targets"></a>targets |  A list of targets.   |  none |
+| <a id="swift_common.get_providers-provider"></a>provider |  The provider to retrieve.   |  none |
+| <a id="swift_common.get_providers-map_fn"></a>map_fn |  A function that takes a single argument and returns a single value. If this is present, it will be called on each provider in the list and the result will be returned in the list returned by `get_providers`.   |  `None` |
+
+**RETURNS**
+
+A list of the providers requested from the targets.
+
+
 <a id="swift_common.get_toolchain"></a>
 
 ## swift_common.get_toolchain
@@ -594,6 +657,29 @@ Gets the Swift toolchain associated with the rule or aspect.
 **RETURNS**
 
 A `SwiftToolchainInfo` provider.
+
+
+<a id="swift_common.include_developer_search_paths"></a>
+
+## swift_common.include_developer_search_paths
+
+<pre>
+swift_common.include_developer_search_paths(<a href="#swift_common.include_developer_search_paths-attr">attr</a>)
+</pre>
+
+Determines whether to include developer search paths.
+
+**PARAMETERS**
+
+
+| Name  | Description | Default Value |
+| :------------- | :------------- | :------------- |
+| <a id="swift_common.include_developer_search_paths-attr"></a>attr |  A rule's `ctx.attr`.   |  none |
+
+**RETURNS**
+
+A `bool` where `True` indicates that the developer search paths should
+  be included during compilation. Otherwise, `False`.
 
 
 <a id="swift_common.is_enabled"></a>
@@ -675,6 +761,40 @@ A new attribute dictionary that can be added to the attributes of a
   custom build rule to provide the same interface as `swift_library`.
 
 
+<a id="swift_common.new_objc_provider"></a>
+
+## swift_common.new_objc_provider
+
+<pre>
+swift_common.new_objc_provider(<a href="#swift_common.new_objc_provider-additional_link_inputs">additional_link_inputs</a>, <a href="#swift_common.new_objc_provider-additional_objc_infos">additional_objc_infos</a>, <a href="#swift_common.new_objc_provider-alwayslink">alwayslink</a>, <a href="#swift_common.new_objc_provider-deps">deps</a>,
+                               <a href="#swift_common.new_objc_provider-feature_configuration">feature_configuration</a>, <a href="#swift_common.new_objc_provider-is_test">is_test</a>, <a href="#swift_common.new_objc_provider-libraries_to_link">libraries_to_link</a>, <a href="#swift_common.new_objc_provider-module_context">module_context</a>,
+                               <a href="#swift_common.new_objc_provider-user_link_flags">user_link_flags</a>, <a href="#swift_common.new_objc_provider-swift_toolchain">swift_toolchain</a>)
+</pre>
+
+Creates an `apple_common.Objc` provider for a Swift target.
+
+**PARAMETERS**
+
+
+| Name  | Description | Default Value |
+| :------------- | :------------- | :------------- |
+| <a id="swift_common.new_objc_provider-additional_link_inputs"></a>additional_link_inputs |  Additional linker input files that should be propagated to dependents.   |  `[]` |
+| <a id="swift_common.new_objc_provider-additional_objc_infos"></a>additional_objc_infos |  Additional `apple_common.Objc` providers from transitive dependencies not provided by the `deps` argument.   |  `[]` |
+| <a id="swift_common.new_objc_provider-alwayslink"></a>alwayslink |  If True, any binary that depends on the providers returned by this function will link in all of the library's object files, even if some contain no symbols referenced by the binary.   |  `False` |
+| <a id="swift_common.new_objc_provider-deps"></a>deps |  The dependencies of the target being built, whose `Objc` providers will be passed to the new one in order to propagate the correct transitive fields.   |  none |
+| <a id="swift_common.new_objc_provider-feature_configuration"></a>feature_configuration |  The Swift feature configuration.   |  none |
+| <a id="swift_common.new_objc_provider-is_test"></a>is_test |  Represents if the `testonly` value of the context.   |  none |
+| <a id="swift_common.new_objc_provider-libraries_to_link"></a>libraries_to_link |  A list (typically of one element) of the `LibraryToLink` objects from which the static archives (`.a` files) containing the target's compiled code will be retrieved.   |  none |
+| <a id="swift_common.new_objc_provider-module_context"></a>module_context |  The module context as returned by `swift_common.compile`.   |  none |
+| <a id="swift_common.new_objc_provider-user_link_flags"></a>user_link_flags |  Linker options that should be propagated to dependents.   |  `[]` |
+| <a id="swift_common.new_objc_provider-swift_toolchain"></a>swift_toolchain |  The `SwiftToolchainInfo` provider of the toolchain.   |  none |
+
+**RETURNS**
+
+An `apple_common.Objc` provider that should be returned by the calling
+  rule.
+
+
 <a id="swift_common.precompile_clang_module"></a>
 
 ## swift_common.precompile_clang_module
@@ -705,6 +825,30 @@ Precompiles an explicit Clang module that is compatible with Swift.
 
 A `File` representing the precompiled module (`.pcm`) file, or `None` if
   the toolchain or target does not support precompiled modules.
+
+
+<a id="swift_common.supplemental_compilation_output_groups"></a>
+
+## swift_common.supplemental_compilation_output_groups
+
+<pre>
+swift_common.supplemental_compilation_output_groups(<a href="#swift_common.supplemental_compilation_output_groups-supplemental_outputs">supplemental_outputs</a>)
+</pre>
+
+Computes output groups from supplemental compilation outputs.
+
+**PARAMETERS**
+
+
+| Name  | Description | Default Value |
+| :------------- | :------------- | :------------- |
+| <a id="swift_common.supplemental_compilation_output_groups-supplemental_outputs"></a>supplemental_outputs |  Zero or more supplemental outputs `struct`s returned from calls to `swift_common.compile`.   |  none |
+
+**RETURNS**
+
+A dictionary whose keys are output group names and whose values are
+  depsets of `File`s, which is suitable to be `**kwargs`-expanded into an
+  `OutputGroupInfo` provider.
 
 
 <a id="swift_common.toolchain_attrs"></a>
