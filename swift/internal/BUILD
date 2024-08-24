@@ -292,6 +292,7 @@ filegroup(
         "//swift:__pkg__",
     ],
 )
+
 bzl_library(
     name = "compiling_and_linking",
     srcs = ["compiling_and_linking.bzl"],
@@ -307,4 +308,3 @@ bzl_library(
         "//swift:providers",
     ],
 )
-

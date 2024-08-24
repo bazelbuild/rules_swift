@@ -19,7 +19,6 @@ def _compact(sequence):
     return [item for item in sequence if item != None]
 
 def _custom_swift_library_impl(ctx):
-
     # Create the swift file:
     custom_file_format = """\
 {}
