@@ -28,25 +28,6 @@ load(
 )
 load("//swift:swift_common.bzl", "swift_common")
 
-# buildifier: disable=bzl-visibility
-load(
-    "//swift/internal:linking.bzl",
-    "new_objc_provider",
-)
-
-# buildifier: disable=bzl-visibility
-load(
-    "//swift/internal:output_groups.bzl",
-    "supplemental_compilation_output_groups",
-)
-
-# buildifier: disable=bzl-visibility
-load(
-    "//swift/internal:utils.bzl",
-    "get_providers",
-    "include_developer_search_paths",
-)
-
 def proto_path(proto_src, proto_info):
     """Derives the string used to import the proto.
 
@@ -266,19 +247,19 @@ def compile_swift_protos_for_target(
     )
 
     # Compile the generated Swift source files as a module:
-    include_dev_srch_paths = include_developer_search_paths(attr)
+    include_dev_srch_paths = swift_common.include_developer_search_paths(attr)
     compile_result = swift_common.compile(
         actions = ctx.actions,
-        cc_infos = get_providers(compiler_deps, CcInfo),
+        cc_infos = swift_common.get_providers(compiler_deps, CcInfo),
         copts = ["-parse-as-library"],
         feature_configuration = feature_configuration,
         include_dev_srch_paths = include_dev_srch_paths,
         module_name = module_name,
-        objc_infos = get_providers(compiler_deps, apple_common.Objc),
+        objc_infos = swift_common.get_providers(compiler_deps, apple_common.Objc),
         package_name = None,
         srcs = generated_swift_srcs,
         swift_toolchain = swift_toolchain,
-        swift_infos = get_providers(compiler_deps, SwiftInfo),
+        swift_infos = swift_common.get_providers(compiler_deps, SwiftInfo),
         target_name = target_label.name,
         workspace_name = ctx.workspace_name,
     )
@@ -305,37 +286,28 @@ def compile_swift_protos_for_target(
         )
     )
 
-    # Extract the swift toolchain and configure the features:
-    swift_toolchain = swift_common.get_toolchain(ctx)
-    feature_configuration = swift_common.configure_features(
-        ctx = ctx,
-        requested_features = ctx.features,
-        swift_toolchain = swift_toolchain,
-        unsupported_features = ctx.disabled_features,
-    )
-
     # Gather the transitive cc info providers:
-    transitive_cc_infos = get_providers(
+    transitive_cc_infos = swift_common.get_providers(
         compiler_deps,
         SwiftProtoCcInfo,
         lambda proto_cc_info: proto_cc_info.cc_info,
-    ) + get_providers(compiler_deps, CcInfo)
+    ) + swift_common.get_providers(compiler_deps, CcInfo)
 
     # Gather the transitive objc info providers:
-    transitive_objc_infos = get_providers(
+    transitive_objc_infos = swift_common.get_providers(
         compiler_deps,
         SwiftProtoCcInfo,
         lambda proto_cc_info: proto_cc_info.objc_info,
-    ) + get_providers(compiler_deps, apple_common.Objc)
+    ) + swift_common.get_providers(compiler_deps, apple_common.Objc)
 
     # Gather the transitive swift info providers:
-    transitive_swift_infos = get_providers(
+    transitive_swift_infos = swift_common.get_providers(
         compiler_deps,
         SwiftInfo,
     )
 
     # Gather the transitive swift proto info providers:
-    transitive_swift_proto_infos = get_providers(
+    transitive_swift_proto_infos = swift_common.get_providers(
         compiler_deps,
         SwiftProtoInfo,
     )
@@ -352,7 +324,7 @@ def compile_swift_protos_for_target(
     )
 
     # Create the direct objc info provider:
-    direct_objc_info = new_objc_provider(
+    direct_objc_info = swift_common.new_objc_provider(
         additional_objc_infos = (
             transitive_objc_infos +
             swift_toolchain.implicit_deps_providers.objc_infos
@@ -373,7 +345,7 @@ def compile_swift_protos_for_target(
 
     # Create the direct output group info provider:
     direct_output_group_info = OutputGroupInfo(
-        **supplemental_compilation_output_groups(
+        **swift_common.supplemental_compilation_output_groups(
             supplemental_outputs,
         )
     )

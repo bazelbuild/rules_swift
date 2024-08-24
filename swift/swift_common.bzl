@@ -35,6 +35,10 @@ load(
     "precompile_clang_module",
 )
 load(
+    "//swift/internal:compiling_and_linking.bzl",
+    "compile_and_create_linking_context",
+)
+load(
     "//swift/internal:features.bzl",
     "configure_features",
     "get_cc_feature_configuration",
@@ -43,6 +47,11 @@ load(
 load(
     "//swift/internal:linking.bzl",
     "create_linking_context_from_compilation_outputs",
+    "new_objc_provider",
+)
+load(
+    "//swift/internal:output_groups.bzl",
+    "supplemental_compilation_output_groups",
 )
 load(
     "//swift/internal:providers.bzl",
@@ -61,6 +70,11 @@ load(
     "get_swift_toolchain",
     "use_swift_toolchain",
 )
+load(
+    "//swift/internal:utils.bzl",
+    "get_providers",
+    "include_developer_search_paths",
+)
 
 # The exported `swift_common` module, which defines the public API for directly
 # invoking actions that compile Swift code from other rules.
@@ -73,6 +87,7 @@ swift_common = struct(
     create_clang_module = create_clang_module,
     create_compilation_context = create_compilation_context,
     create_linking_context_from_compilation_outputs = create_linking_context_from_compilation_outputs,
+    compile_and_create_linking_context = compile_and_create_linking_context,
     create_module = create_module,
     create_swift_info = create_swift_info,
     create_swift_interop_info = create_swift_interop_info,
@@ -80,9 +95,13 @@ swift_common = struct(
     derive_module_name = derive_module_name,
     extract_symbol_graph = extract_symbol_graph,
     get_toolchain = get_swift_toolchain,
+    get_providers = get_providers,
+    include_developer_search_paths = include_developer_search_paths,
     is_enabled = is_feature_enabled,
     library_rule_attrs = swift_library_rule_attrs,
+    new_objc_provider = new_objc_provider,
     precompile_clang_module = precompile_clang_module,
+    supplemental_compilation_output_groups = supplemental_compilation_output_groups,
     toolchain_attrs = swift_toolchain_attrs,
     use_toolchain = use_swift_toolchain,
 )
