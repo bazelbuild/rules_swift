@@ -658,14 +658,24 @@ def _execute_compile_plan(
     )
     for number, batch in enumerate(batches, 1):
         object_prereqs = dict(prerequisites)
-        object_prereqs["compile_step"] = struct(
-            action = SWIFT_ACTION_COMPILE_CODEGEN,
-            output = ",".join([
+
+        # If there is only one batch (for small libraries, or libraries of any
+        # size compiled with whole-module optimization), we omit the requested
+        # file paths to eliminate some unneeded work in the worker. It will
+        # treat a blank value as "emit all outputs".
+        if len(batches) == 1:
+            step_detail = ""
+        else:
+            step_detail = ",".join([
                 object.path
                 for invocation in batch
                 for object in invocation.objects
-            ]),
+            ])
+        object_prereqs["compile_step"] = struct(
+            action = SWIFT_ACTION_COMPILE_CODEGEN,
+            output = step_detail,
         )
+
         batch_suffix = ""
         if compile_plan.output_nature.emits_multiple_objects:
             batch_suffix = " ({} of {})".format(number, len(batches))

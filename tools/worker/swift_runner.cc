@@ -127,6 +127,12 @@ CompilationPlan::CompilationPlan(absl::string_view print_jobs_output) {
 
 std::vector<std::string> CompilationPlan::CodegenJobsForOutputs(
     std::vector<absl::string_view> outputs) const {
+  // Fast-path: If there is only one batch, there's no reason to iterate over
+  // all of these. The build rules use an empty string to represent this case.
+  if (outputs.empty()) {
+    return codegen_jobs_;
+  }
+
   absl::btree_set<int> indices;
   for (absl::string_view desired_output : outputs) {
     for (const auto &[output, index] : codegen_job_indices_by_output_) {
@@ -293,8 +299,12 @@ int SpawnCompileCodegenStep(
   // Run codegen jobs in parallel, since they should be independent of each
   // other and they are slower so they benefit more from parallelism.
   std::vector<std::unique_ptr<AsyncProcess>> processes;
-  std::vector<std::string> jobs =
-      plan.CodegenJobsForOutputs(absl::StrSplit(compile_step.output, ','));
+  std::vector<std::string> jobs = plan.CodegenJobsForOutputs(
+      // Work around awkward legacy behavior in absl::StrSplit() that causes an
+      // empty string to be split into a single empty string instead of an empty
+      // array.
+      compile_step.output.empty() ? std::vector<absl::string_view>()
+                                  : absl::StrSplit(compile_step.output, ','));
   if (jobs.empty()) {
     stderr_stream << "internal error: could not find the frontend command "
                      "for action "
