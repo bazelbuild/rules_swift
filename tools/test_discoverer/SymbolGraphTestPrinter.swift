@@ -66,7 +66,7 @@ struct SymbolGraphTestPrinter {
 
     var contents = """
       import XCTest
-      @testable import \(moduleName)
+      @preconcurrency @testable import \(moduleName)
 
       """
 
@@ -78,6 +78,7 @@ struct SymbolGraphTestPrinter {
 
         fileprivate extension \(className) {
           \(availabilityAttribute)
+          @MainActor
           static let \(allTestsIdentifier(for: testClass)) = [
 
         """
@@ -99,6 +100,7 @@ struct SymbolGraphTestPrinter {
     contents += """
 
       \(availabilityAttribute)
+      @MainActor
       let \(allTestsIdentifier(for: discoveredModule)) = [
 
       """
@@ -127,6 +129,7 @@ struct SymbolGraphTestPrinter {
       // harmlessly compiled as an empty module, and the user's `main` from their own sources will
       // be used instead.
       return """
+        @MainActor
         private let __allDiscoveredXCTests: [XCTestCaseEntry] = []
 
         """
@@ -134,6 +137,7 @@ struct SymbolGraphTestPrinter {
 
     var contents = """
       \(availabilityAttribute)
+      @MainActor
       private let __allDiscoveredXCTests: [XCTestCaseEntry] = {
         var allTests: [XCTestCaseEntry] = []
 
