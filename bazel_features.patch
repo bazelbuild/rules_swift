@@ -1,0 +1,12 @@
+# We patch this file, because our custom version of Bazel has 4 segments in the version string.
+--- private/parse.bzl
++++ private/parse.bzl
+@@ -27,7 +27,7 @@ def parse_version(v):
+         # An empty string is treated as a "dev version", which is greater than anything.
+         v = "999999.999999.999999"
+     release, prerelease = _partition(v.partition(" ")[0])
+-    segments = release.split(".")
++    segments = release.split(".")[:3]
+     if len(segments) != 3:
+         fail("invalid Bazel version '{}': got {} dot-separated segments, want 3".format(v, len(segments)))
+     if prerelease.startswith("rc") and len(prerelease) > 2 and prerelease[2:].isdigit():
