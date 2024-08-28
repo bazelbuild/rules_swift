@@ -213,6 +213,14 @@ bzl_library(
 )
 
 bzl_library(
+    name = "swift_overlay_helpers",
+    srcs = ["swift_overlay_helpers.bzl"],
+    deps = [
+        "//swift/internal:providers",
+    ],
+)
+
+bzl_library(
     name = "swift_package_configuration",
     srcs = ["swift_package_configuration.bzl"],
     deps = [
