@@ -8,6 +8,7 @@ _DOC_SRCS = {
     "api": [
         "create_swift_interop_info",
         "derive_swift_module_name",
+        "is_swift_overlay",
         "swift_common",
     ],
     "providers": [
