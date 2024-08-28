@@ -252,6 +252,14 @@ bzl_library(
 )
 
 bzl_library(
+    name = "swift_overlay_helpers",
+    srcs = ["swift_overlay_helpers.bzl"],
+    deps = [
+        "//swift/internal:providers",
+    ],
+)
+
+bzl_library(
     name = "swift_package_configuration",
     srcs = ["swift_package_configuration.bzl"],
     deps = [
@@ -313,6 +321,7 @@ bzl_library(
         ":swift_module_mapping",
         ":swift_module_mapping_test",
         ":swift_overlay",
+        ":swift_overlay_helpers",
         ":swift_package_configuration",
         ":swift_symbol_graph_aspect",
         ":swift_test",
