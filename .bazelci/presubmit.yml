@@ -131,6 +131,7 @@ tasks:
     bazel: last_green
     platform: ubuntu2004
     test_flags:
+    - "--enable_workspace=true"
     - "--enable_bzlmod=false"
     test_targets:
     - "doc/..."
