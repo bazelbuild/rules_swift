@@ -28,6 +28,18 @@ public final class SwiftTestingRunner: Sendable {
   private struct Test: Testable {
     /// The identifier of the test.
     let testIdentifier: String
+
+    init(testIdentifier: String) {
+      // The test identifier given by swift-testing starts with the name of the module, which we
+      // strip off because it isn't terribly useful for filtering -- it's burdensome for users to
+      // type and IDEs cannot easily determine it without querying the build system.
+      let components = testIdentifier.split(separator: ".", maxSplits: 1)
+      if components.count > 1 {
+        self.testIdentifier = String(components[1])
+      } else {
+        self.testIdentifier = testIdentifier
+      }
+    }
   }
 
   /// A test or suite discovered by the swift-testing framework.
@@ -134,10 +146,17 @@ public final class SwiftTestingRunner: Sendable {
   private func runTests(selectedTests: [Test]?) async throws {
     var runTestsConfiguration: [String: JSON] = [:]
     if let selectedTests {
-      runTestsConfiguration["filter"] = .array(
-        selectedTests.map {
-          JSON.string(NSRegularExpression.escapedPattern(for: $0.testIdentifier))
-        })
+      // If we applied a test filter and no tests were selected, setting the `filter` configuration
+      // value to an empty array will be treated by the runner as if there were no filter (and thus
+      // run *all* tests). To handle this correctly, we ask the runner to explicitly skip all tests.
+      if selectedTests.isEmpty {
+        runTestsConfiguration["skip"] = [".*"]
+      } else {
+        runTestsConfiguration["filter"] = .array(
+          selectedTests.map {
+            JSON.string(NSRegularExpression.escapedPattern(for: $0.testIdentifier))
+          })
+      }
     }
     for try await recordJSON in try await entryPoint(configuration: .object(runTestsConfiguration))
     {
