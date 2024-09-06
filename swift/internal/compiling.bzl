@@ -460,7 +460,7 @@ def compile(
     # passed; the compiler does not attempt to load them when deserializing
     # modules.
     used_plugins = list(plugins)
-    for swift_info in swift_infos:
+    for swift_info in all_swift_infos:
         for module_context in swift_info.direct_modules:
             if module_context.swift and module_context.swift.plugins:
                 used_plugins.extend(module_context.swift.plugins)
