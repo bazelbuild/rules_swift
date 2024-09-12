@@ -21,7 +21,7 @@ import Foundation
 /// function if necessary.
 private func generatedTestEntry(for method: DiscoveredTests.Method) -> String {
   if method.isAsync {
-    return "asyncTest(\(method.name))"
+    return "asyncTest({ type in type.\(method.name) })"
   } else {
     return method.name
   }
@@ -66,7 +66,7 @@ struct SymbolGraphTestPrinter {
 
     var contents = """
       import XCTest
-      @preconcurrency @testable import \(moduleName)
+      @testable import \(moduleName)
 
       """
 
@@ -78,20 +78,23 @@ struct SymbolGraphTestPrinter {
 
         fileprivate extension \(className) {
           \(availabilityAttribute)
-          @MainActor
-          static let \(allTestsIdentifier(for: testClass)) = [
+          static func \(allTestsIdentifier(for: testClass))()
+            -> [(String, (\(className)) -> () throws -> Void)]
+          {
+            return [
 
         """
 
       for testMethod in testClass.methods.sorted(by: { $0.name < $1.name }) {
         contents += """
-              ("\(testMethod.name)", \(generatedTestEntry(for: testMethod))),
+                ("\(testMethod.name)", \(generatedTestEntry(for: testMethod))),
 
           """
       }
 
       contents += """
-          ]
+            ]
+          }
         }
 
         """
@@ -101,20 +104,22 @@ struct SymbolGraphTestPrinter {
 
       \(availabilityAttribute)
       @MainActor
-      let \(allTestsIdentifier(for: discoveredModule)) = [
+      func \(allTestsIdentifier(for: discoveredModule))() -> [XCTestCaseEntry] {
+        return [
 
       """
 
     for className in sortedClassNames {
       let testClass = discoveredModule.classes[className]!
       contents += """
-          testCase(\(className).\(allTestsIdentifier(for: testClass))),
+            testCase(\(className).\(allTestsIdentifier(for: testClass))()),
 
         """
     }
 
     contents += """
-      ]
+        ]
+      }
 
       """
 
@@ -130,7 +135,7 @@ struct SymbolGraphTestPrinter {
       // be used instead.
       return """
         @MainActor
-        private let __allDiscoveredXCTests: [XCTestCaseEntry] = []
+        private func __allDiscoveredXCTests() -> [XCTestCaseEntry] { [] }
 
         """
     }
@@ -138,7 +143,7 @@ struct SymbolGraphTestPrinter {
     var contents = """
       \(availabilityAttribute)
       @MainActor
-      private let __allDiscoveredXCTests: [XCTestCaseEntry] = {
+      private func __allDiscoveredXCTests() -> [XCTestCaseEntry] {
         var allTests: [XCTestCaseEntry] = []
 
       """
@@ -146,14 +151,14 @@ struct SymbolGraphTestPrinter {
     for moduleName in discoveredTests.modules.keys.sorted() {
       let module = discoveredTests.modules[moduleName]!
       contents += """
-          allTests.append(contentsOf: \(allTestsIdentifier(for: module)))
+          allTests.append(contentsOf: \(allTestsIdentifier(for: module))())
 
         """
     }
 
     contents += """
         return allTests
-      }()
+      }
 
       """
 

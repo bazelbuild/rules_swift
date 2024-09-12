@@ -123,7 +123,7 @@ struct TestDiscoverer: ParsableCommand {
             exit(1)
           }
           do {
-            try XCTestRunner.run(__allDiscoveredXCTests)
+            try XCTestRunner.run(__allDiscoveredXCTests())
           } catch {
             print("Fatal error running XCTest tests: \\(error)")
             exit(1)
@@ -160,7 +160,7 @@ struct TestDiscoverer: ParsableCommand {
       // platforms.
       contents.append("""
         // Unused by the Objective-C XCTestRunner; tests are discovered by the runtime.
-        private let __allDiscoveredXCTests: () = ()
+        private func __allDiscoveredXCTests() {}
 
         """)
     } else {
