@@ -111,6 +111,19 @@ def _swift_library_impl(ctx):
     linkopts = expand_make_variables(ctx, linkopts, "linkopts")
     srcs = ctx.files.srcs
 
+    matches = [dep for dep in ctx.attr.deps if dep.label == Label("@@rules_swift~//swift/runfiles:runfiles")]
+    if len(matches) > 0:
+        repo_name_file = ctx.actions.declare_file("RunfilesRepoName.swift")
+        ctx.actions.write(
+            output=repo_name_file,
+            content="""
+            enum BazelRunfilesConstants {{
+                static let repoName = "{}"
+            }}
+            """.format(ctx.label.name),
+        )
+        srcs = srcs + [repo_name_file]
+
     module_copts = additional_per_module_swiftcopts(
         ctx.label,
         ctx.attr._per_module_swiftcopt[PerModuleSwiftCoptSettingInfo],
