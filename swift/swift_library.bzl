@@ -117,7 +117,7 @@ def _swift_library_impl(ctx):
         ctx.actions.write(
             output=repo_name_file,
             content="""
-            enum BazelRunfilesConstants {{
+            internal enum BazelRunfilesConstants {{
                 static let repoName = "{}"
             }}
             """.format(ctx.label.workspace_name),
