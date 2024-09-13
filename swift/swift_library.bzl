@@ -120,7 +120,7 @@ def _swift_library_impl(ctx):
             enum BazelRunfilesConstants {{
                 static let repoName = "{}"
             }}
-            """.format(ctx.label.name),
+            """.format(ctx.label.workspace_name),
         )
         srcs = srcs + [repo_name_file]
 
