@@ -116,7 +116,7 @@ def debug_settings_test_suite(name, tags = []):
             "-Xfrontend -no-serialize-debugging-options",
             "-gline-tables-only",
         ],
-        mnemonic = "SwiftCompile",
+        mnemonic = "SwiftCompileModule",
         tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
@@ -130,7 +130,7 @@ def debug_settings_test_suite(name, tags = []):
         not_expected_argv = [
             "-Xwrapped-swift=-debug-prefix-pwd-is-dot",
         ],
-        mnemonic = "SwiftCompile",
+        mnemonic = "SwiftCompileModule",
         tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
@@ -151,7 +151,7 @@ def debug_settings_test_suite(name, tags = []):
             "-Xfrontend -serialize-debugging-options",
             "-gline-tables-only",
         ],
-        mnemonic = "SwiftCompile",
+        mnemonic = "SwiftCompileModule",
         tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
@@ -171,7 +171,7 @@ def debug_settings_test_suite(name, tags = []):
             "-Xfrontend -no-serialize-debugging-options",
             "-g",
         ],
-        mnemonic = "SwiftCompile",
+        mnemonic = "SwiftCompileModule",
         tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
@@ -191,7 +191,7 @@ def debug_settings_test_suite(name, tags = []):
             "-Xfrontend -no-serialize-debugging-options",
             "-gline-tables-only",
         ],
-        mnemonic = "SwiftCompile",
+        mnemonic = "SwiftCompileModule",
         tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
@@ -210,6 +210,8 @@ def debug_settings_test_suite(name, tags = []):
             "-g",
             "-gline-tables-only",
         ],
+        # In optimized mode, the driver still uses a single invocation for both
+        # the module and for codegen.
         mnemonic = "SwiftCompile",
         tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
