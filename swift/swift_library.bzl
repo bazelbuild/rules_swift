@@ -43,6 +43,7 @@ load(
     "get_providers",
     "include_developer_search_paths",
 )
+load("//swift/internal:runfiles.bzl", "include_runfiles_constants")
 load(":providers.bzl", "SwiftCompilerPluginInfo", "SwiftInfo")
 load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 load(":swift_common.bzl", "swift_common")
@@ -111,18 +112,7 @@ def _swift_library_impl(ctx):
     linkopts = expand_make_variables(ctx, linkopts, "linkopts")
     srcs = ctx.files.srcs
 
-    matches = [dep for dep in ctx.attr.deps if dep.label == Label("@@rules_swift~//swift/runfiles:runfiles")]
-    if len(matches) > 0:
-        repo_name_file = ctx.actions.declare_file("RunfilesRepoName.swift")
-        ctx.actions.write(
-            output=repo_name_file,
-            content="""
-            internal enum BazelRunfilesConstants {{
-                static let repoName = "{}"
-            }}
-            """.format(ctx.label.workspace_name),
-        )
-        srcs = srcs + [repo_name_file]
+    srcs = srcs + include_runfiles_constants(ctx.label, ctx.actions, ctx.attr.deps)
 
     module_copts = additional_per_module_swiftcopts(
         ctx.label,

@@ -42,6 +42,7 @@ load(
     "expand_locations",
     "include_developer_search_paths",
 )
+load("//swift/internal:runfiles.bzl", "include_runfiles_constants")
 load(
     ":providers.bzl",
     "SwiftCompilerPluginInfo",
@@ -390,6 +391,9 @@ def _swift_test_impl(ctx):
     all_supplemental_outputs = []
 
     if srcs:
+
+        srcs = srcs + include_runfiles_constants(ctx.label, ctx.actions, ctx.attr.deps)
+
         # If the `swift_test` target had sources, compile those first and then
         # extract a symbol graph from it.
         compile_result = _do_compile(
