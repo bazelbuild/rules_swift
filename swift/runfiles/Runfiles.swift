@@ -94,7 +94,7 @@ struct ManifestBased: LookupStrategy {
 
     static func loadRunfiles(from manifestPath: URL) throws -> [String: String] {
         guard let fileHandle = try? FileHandle(forReadingFrom: manifestPath) else {
-            throw RunfilesError.error
+            throw RunfilesError.missingRepoMapping
         }
         defer {
             try? fileHandle.close()
@@ -123,7 +123,10 @@ struct RepoMappingKey: Hashable {
 }
 
 public enum RunfilesError: Error {
-    case error
+    case missingArgv0
+    case missingRepoMapping
+    case invalidRepoMappingEntry(line: String)
+    case failedToFindRunfilesDirectory
 }
 
 public final class Runfiles {
@@ -234,7 +237,7 @@ func parseRepoMapping(path: URL) throws -> [RepoMappingKey: String] {
         for line in lines {
             let fields = line.components(separatedBy: ",")
             if fields.count != 3 {
-                throw RunfilesError.error
+                throw RunfilesError.invalidRepoMappingEntry(line: String(line))
             }
             let key = RepoMappingKey(
                 sourceRepoCanonicalName: fields[0],
@@ -266,7 +269,7 @@ func findRunfilesDir(environment: [String: String]) throws -> URL {
 
     // Consume the first argument (argv[0])
     guard let execPath = CommandLine.arguments.first else {
-        throw RunfilesError.error
+        throw RunfilesError.missingArgv0
     }
 
     var binaryPath = URL(filePath: execPath)
@@ -301,5 +304,5 @@ func findRunfilesDir(environment: [String: String]) throws -> URL {
         }
     }
 
-    throw RunfilesError.error
+    throw RunfilesError.failedToFindRunfilesDirectory
 }
