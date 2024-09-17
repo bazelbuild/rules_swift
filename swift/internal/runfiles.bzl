@@ -1,9 +1,7 @@
 def include_runfiles_constants(label, actions, all_deps):
     """
-    test
+    TODO: Do this the right way.
     """
-    for dep in all_deps:
-        print(dep.label)
     matches = [dep for dep in all_deps if dep.label == Label("@build_bazel_rules_swift//swift/runfiles:runfiles")]
     if len(matches) > 0:
         repo_name_file = actions.declare_file("Runfiles+Constants.swift")
