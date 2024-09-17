@@ -1,3 +1,17 @@
+// Copyright 2024 The Bazel Authors. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 import Foundation
 
 protocol LookupStrategy {
@@ -28,9 +42,9 @@ struct ManifestBased: LookupStrategy {
     private let manifestPath: URL
     private let runfiles: [String: String]
 
-    init(manifestPath: URL) {
+    init(manifestPath: URL) throws {
         self.manifestPath = manifestPath
-        runfiles = Self.loadRunfiles(from: manifestPath)
+        runfiles = try Self.loadRunfiles(from: manifestPath)
     }
 
     func rlocationChecked(path: String) -> URL? {
@@ -56,12 +70,10 @@ struct ManifestBased: LookupStrategy {
     }
 
     func envVars() -> [String: String] {
-        guard let runfilesDir = Self.getRunfilesDir(fromManifestPath: manifestPath) else {
-            return [:]
-        }
+        let runfilesDir = Self.getRunfilesDir(fromManifestPath: manifestPath)
         return [
             "RUNFILES_MANIFEST_FILE": manifestPath.path,
-            "RUNFILES_DIR": runfilesDir.path,
+            "RUNFILES_DIR": runfilesDir?.path ?? "",
         ]
     }
 
@@ -71,7 +83,7 @@ struct ManifestBased: LookupStrategy {
         if lastComponent == "MANIFEST" {
             return path.deletingLastPathComponent()
         }
-        if lastComponent == ".runfiles_manifest" {
+        if lastComponent.hasSuffix(".runfiles_manifest") {
             let newPath = path.deletingLastPathComponent().appendingPathComponent(
                 path.lastPathComponent.replacingOccurrences(of: "_manifest", with: "")
             )
@@ -80,10 +92,9 @@ struct ManifestBased: LookupStrategy {
         return nil
     }
 
-    static func loadRunfiles(from manifestPath: URL) -> [String: String] {
+    static func loadRunfiles(from manifestPath: URL) throws -> [String: String] {
         guard let fileHandle = try? FileHandle(forReadingFrom: manifestPath) else {
-            // If the file doesn't exist, return an empty dictionary.
-            return [:]
+            throw RunfilesError.error
         }
         defer {
             try? fileHandle.close()
@@ -93,11 +104,11 @@ struct ManifestBased: LookupStrategy {
         if let data = try? fileHandle.readToEnd(), let content = String(data: data, encoding: .utf8) {
             let lines = content.split(separator: "\n")
             for line in lines {
-                let fields = line.components(separatedBy: " ")
+                let fields = line.split(separator: " ", maxSplits: 1)
                 if fields.count == 1 {
-                    pathMapping[fields[0]] = fields[0]
+                    pathMapping[String(fields[0])] = String(fields[0])
                 } else {
-                    pathMapping[fields[0]] = fields[1]
+                    pathMapping[String(fields[0])] = String(fields[1])
                 }
             }
         }
@@ -117,16 +128,18 @@ public enum RunfilesError: Error {
 
 public final class Runfiles {
 
+    private let strategy: LookupStrategy
     // Value is the runfiles directory of target repository
     private let repoMapping: [RepoMappingKey: String]
-    private let strategy: LookupStrategy
+    private let sourceRepository: String
 
-    init(strategy: LookupStrategy, repoMapping: [RepoMappingKey: String]) {
+    init(strategy: LookupStrategy, repoMapping: [RepoMappingKey: String], sourceRepository: String) {
         self.strategy = strategy
         self.repoMapping = repoMapping
+        self.sourceRepository = sourceRepository
     }
 
-    public func rlocation(_ path: String, sourceRepository: String) -> URL? {
+    public func rlocation(_ path: String, sourceRepository: String? = nil) -> URL? {
         guard !path.hasPrefix("../"),
               !path.contains("/.."),
               !path.hasPrefix("./"),
@@ -142,11 +155,14 @@ public final class Runfiles {
             return URL(filePath: path)
         }
 
+        let sourceRepository = sourceRepository ?? self.sourceRepository
+
         // Split off the first path component, which contains the repository
         // name (apparent or canonical).
-        let components = path.split(separator: ",", maxSplits: 1)
+        let components = path.split(separator: "/", maxSplits: 1)
         let targetRepository = String(components[0])
         let key = RepoMappingKey(sourceRepoCanonicalName: sourceRepository, targetRepoApparentName: targetRepository)
+        print("corentin", key)
 
         if components.count == 1 || repoMapping[key] == nil {
             // One of the following is the case:
@@ -164,8 +180,11 @@ public final class Runfiles {
         // target_repo is an apparent repository name. Look up the corresponding
         // canonical repository name with respect to the current repository,
         // identified by its canonical name.
-        let targetCanonical = repoMapping[key]
-        return strategy.rlocationChecked(path: targetRepository + "/" + remainingPath)
+        if let targetCanonical = repoMapping[key] {
+            return strategy.rlocationChecked(path: targetCanonical + "/" + remainingPath)
+        } else {
+            return strategy.rlocationChecked(path: path)
+        }
     }
 
     public func envVars() -> [String: String] {
@@ -174,15 +193,15 @@ public final class Runfiles {
 
     // MARK: Factory method
 
-    public static func create(environment: [String: String]? = nil) throws -> Runfiles? {
+    public static func create(sourceRepository: String, environment: [String: String]? = nil) throws -> Runfiles {
 
         let environment = environment ?? ProcessInfo.processInfo.environment
 
         let strategy: LookupStrategy
         if let manifestFile = environment["RUNFILES_MANIFEST_FILE"] {
-            strategy = ManifestBased(manifestPath: URL(filePath: manifestFile))
+            strategy = try ManifestBased(manifestPath: URL(filePath: manifestFile))
         } else {
-            strategy = try DirectoryBased(path: findRunfilesDir())
+            strategy = try DirectoryBased(path: findRunfilesDir(environment: environment))
         }
 
         // If the repository mapping file can't be found, that is not an error: We
@@ -192,7 +211,7 @@ public final class Runfiles {
             try parseRepoMapping(path: repoMappingFile)
         } ?? [:]
 
-        return Runfiles(strategy: strategy, repoMapping: repoMapping)
+        return Runfiles(strategy: strategy, repoMapping: repoMapping, sourceRepository: sourceRepository)
     }
 
 }
@@ -222,7 +241,7 @@ func parseRepoMapping(path: URL) throws -> [RepoMappingKey: String] {
                 sourceRepoCanonicalName: fields[0],
                 targetRepoApparentName: fields[1]
             )
-            repoMapping[key] = fields[2]
+            repoMapping[key] = fields[2] // mapping
         }
     }
 
@@ -231,17 +250,19 @@ func parseRepoMapping(path: URL) throws -> [RepoMappingKey: String] {
 
 // MARK: Finding Runfiles Directory
 
-func findRunfilesDir() throws -> URL {
-    if let runfilesDirPath = ProcessInfo.processInfo.environment["RUNFILES_DIR"],
-       let runfilesDirURL = URL(string: runfilesDirPath),
-       FileManager.default.fileExists(atPath: runfilesDirURL.path, isDirectory: nil) {
-        return runfilesDirURL
+func findRunfilesDir(environment: [String: String]) throws -> URL {
+    if let runfilesDirPath = environment["RUNFILES_DIR"] {
+        let runfilesDirURL = URL(filePath: runfilesDirPath)
+        if FileManager.default.fileExists(atPath: runfilesDirURL.path, isDirectory: nil) {
+            return runfilesDirURL
+        }
     }
 
-    if let testSrcdirPath = ProcessInfo.processInfo.environment["TEST_SRCDIR"],
-       let testSrcdirURL = URL(string: testSrcdirPath),
-       FileManager.default.fileExists(atPath: testSrcdirURL.path, isDirectory: nil) {
-        return testSrcdirURL
+    if let testSrcdirPath = environment["TEST_SRCDIR"] {
+        let testSrcdirURL = URL(filePath: testSrcdirPath)
+        if FileManager.default.fileExists(atPath: testSrcdirURL.path, isDirectory: nil) {
+            return testSrcdirURL
+        }
     }
 
     // Consume the first argument (argv[0])
@@ -249,7 +270,7 @@ func findRunfilesDir() throws -> URL {
         throw RunfilesError.error
     }
 
-    var binaryPath = URL(fileURLWithPath: execPath)
+    var binaryPath = URL(filePath: execPath)
 
     while true {
         // Check for our neighboring $binary.runfiles directory.
