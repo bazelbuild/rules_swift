@@ -37,6 +37,7 @@ load(
     "get_providers",
     "include_developer_search_paths",
 )
+load("//swift/internal:runfiles.bzl", "include_runfiles_constants")
 load(":providers.bzl", "SwiftCompilerPluginInfo", "SwiftInfo")
 load(":swift_common.bzl", "swift_common")
 
@@ -69,7 +70,7 @@ def _swift_binary_impl(ctx):
         unsupported_features = ctx.disabled_features,
     )
 
-    srcs = ctx.files.srcs
+    srcs = ctx.files.srcs + include_runfiles_constants(ctx.label, ctx.actions, ctx.attr.deps)
     output_groups = {}
     module_contexts = []
     additional_linking_contexts = []
