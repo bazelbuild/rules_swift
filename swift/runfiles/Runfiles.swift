@@ -162,7 +162,6 @@ public final class Runfiles {
         let components = path.split(separator: "/", maxSplits: 1)
         let targetRepository = String(components[0])
         let key = RepoMappingKey(sourceRepoCanonicalName: sourceRepository, targetRepoApparentName: targetRepository)
-        print("corentin", key)
 
         if components.count == 1 || repoMapping[key] == nil {
             // One of the following is the case:
