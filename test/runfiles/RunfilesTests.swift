@@ -487,8 +487,8 @@ func createMockFile(name: String, contents: String) throws -> (URL, () throws ->
     throw "fail"
   }
 
-  let fallbackTempDirectory = URL(filePath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
-  let tempDirectory = URL(filePath: tmpBaseDirectory).appendingPathComponent(fallbackTempDirectory.lastPathComponent)
+  let fallbackTempDirectory = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
+  let tempDirectory = URL(fileURLWithPath: tmpBaseDirectory).appendingPathComponent(fallbackTempDirectory.lastPathComponent)
   let tempFile = tempDirectory.appendingPathComponent(name)
 
   try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
@@ -506,8 +506,8 @@ func createMockDirectory(name _: String) throws -> (URL, () throws -> Void) {
     throw "fail"
   }
 
-  let fallbackTempDirectory = URL(filePath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
-  let tempDirectory = URL(filePath: tmpBaseDirectory).appendingPathComponent(fallbackTempDirectory.lastPathComponent)
+  let fallbackTempDirectory = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
+  let tempDirectory = URL(fileURLWithPath: tmpBaseDirectory).appendingPathComponent(fallbackTempDirectory.lastPathComponent)
 
   try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
 
