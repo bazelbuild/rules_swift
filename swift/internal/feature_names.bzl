@@ -336,11 +336,6 @@ SWIFT_FEATURE_EMIT_SWIFTSOURCEINFO = "swift.emit_swiftsourceinfo"
 # multiple frameworks with different target name, but same module name.
 SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT = "swift.add_target_name_to_output"
 
-# A private feature that is set by the toolchain if it supports constant values
-# extraction (Swift 5.8 and above). Users should never manually enable, disable, or query this
-# feature.
-SWIFT_FEATURE__SUPPORTS_CONST_VALUE_EXTRACTION = "swift._supports_const_value_extraction"
-
 # Enable thin LTO and update output-file-map correctly
 SWIFT_FEATURE_THIN_LTO = "swift.thin_lto"
 
