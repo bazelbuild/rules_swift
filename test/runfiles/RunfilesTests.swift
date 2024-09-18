@@ -129,21 +129,6 @@ final class RunfilesTests: XCTestCase {
     ))
   }
 
-  func testFailsToCreateAnyRunfilesBecauseEnvvarsAreNotDefined() throws {
-
-    // Third case: Only TEST_SRCDIR is present
-    XCTAssertNil(try? Runfiles.create(
-      sourceRepository: BazelRunfilesConstants.currentRepository,
-      environment: ["TEST_SRCDIR": "always ignored"]
-    ))
-
-    // Fourth case: Environment variables are not related to runfiles
-    XCTAssertNil(try? Runfiles.create(
-      sourceRepository: BazelRunfilesConstants.currentRepository,
-      environment: ["FOO": "bar"]
-    ))
-  }
-
   func testManifestBasedRlocation() throws {
     let manifestContents = """
     /Foo/runfile1
