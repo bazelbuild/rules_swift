@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import XCTest
 import BazelRunfiles
 import Foundation
+import XCTest
 
 // Mainly adapted from https://github.com/bazelbuild/rules_python/blob/main/tests/runfiles/runfiles_test.py
 final class RunfilesTests: XCTestCase {
@@ -26,9 +26,9 @@ final class RunfilesTests: XCTestCase {
     let runfiles = try Runfiles.create(
       sourceRepository: BazelRunfilesConstants.currentRepository,
       environment: [
-          "RUNFILES_MANIFEST_FILE": fileURL.path,
-          "RUNFILES_DIR": "ignored when RUNFILES_MANIFEST_FILE has a value",
-          "TEST_SRCDIR": "always ignored",
+        "RUNFILES_MANIFEST_FILE": fileURL.path,
+        "RUNFILES_DIR": "ignored when RUNFILES_MANIFEST_FILE has a value",
+        "TEST_SRCDIR": "always ignored",
       ]
     )
     XCTAssertEqual(runfiles.rlocation("a/b")?.path, "/c/d")
@@ -42,8 +42,8 @@ final class RunfilesTests: XCTestCase {
     let runfiles = try Runfiles.create(
       sourceRepository: BazelRunfilesConstants.currentRepository,
       environment: [
-          "RUNFILES_MANIFEST_FILE": manifest.path,
-          "TEST_SRCDIR": "always ignored",
+        "RUNFILES_MANIFEST_FILE": manifest.path,
+        "TEST_SRCDIR": "always ignored",
       ]
     )
 
@@ -54,13 +54,15 @@ final class RunfilesTests: XCTestCase {
   }
 
   func testManifestBasedRunfilesEnvVarsFromRunfilesManifest() throws {
-  let (manifest, clean) = try createMockFile(name: "foo.runfiles_manifest", contents: "a/b /c/d"); defer { try? clean() }
+    let (manifest, clean) = try createMockFile(name: "foo.runfiles_manifest", contents: "a/b /c/d"); defer {
+      try? clean()
+    }
 
     let runfiles = try Runfiles.create(
       sourceRepository: BazelRunfilesConstants.currentRepository,
       environment: [
-          "RUNFILES_MANIFEST_FILE": manifest.path,
-          "TEST_SRCDIR": "always ignored",
+        "RUNFILES_MANIFEST_FILE": manifest.path,
+        "TEST_SRCDIR": "always ignored",
       ]
     )
 
@@ -77,8 +79,8 @@ final class RunfilesTests: XCTestCase {
     let runfiles = try Runfiles.create(
       sourceRepository: BazelRunfilesConstants.currentRepository,
       environment: [
-          "RUNFILES_MANIFEST_FILE": manifest.path,
-          "TEST_SRCDIR": "always ignored",
+        "RUNFILES_MANIFEST_FILE": manifest.path,
+        "TEST_SRCDIR": "always ignored",
       ]
     )
 
@@ -86,7 +88,7 @@ final class RunfilesTests: XCTestCase {
       "RUNFILES_MANIFEST_FILE": manifest.path,
       "RUNFILES_DIR": "",
     ])
-    
+
   }
 
   func testCreatesDirectoryBasedRunfiles() throws {
@@ -95,8 +97,8 @@ final class RunfilesTests: XCTestCase {
     let runfiles = try Runfiles.create(
       sourceRepository: BazelRunfilesConstants.currentRepository,
       environment: [
-          "RUNFILES_DIR":  runfilesDir.path,
-          "TEST_SRCDIR": "always ignored",
+        "RUNFILES_DIR": runfilesDir.path,
+        "TEST_SRCDIR": "always ignored",
       ]
     )
 
@@ -110,8 +112,8 @@ final class RunfilesTests: XCTestCase {
     let runfiles = try Runfiles.create(
       sourceRepository: BazelRunfilesConstants.currentRepository,
       environment: [
-          "RUNFILES_DIR":  runfilesDir.path,
-          "TEST_SRCDIR": "always ignored",
+        "RUNFILES_DIR": runfilesDir.path,
+        "TEST_SRCDIR": "always ignored",
       ]
     )
 
@@ -122,8 +124,8 @@ final class RunfilesTests: XCTestCase {
 
   func testFailsToCreateManifestBasedBecauseManifestDoesNotExist() {
     XCTAssertNil(try? Runfiles.create(
-        sourceRepository: BazelRunfilesConstants.currentRepository,
-        environment: ["RUNFILES_MANIFEST_FILE": "non-existing path"]
+      sourceRepository: BazelRunfilesConstants.currentRepository,
+      environment: ["RUNFILES_MANIFEST_FILE": "non-existing path"]
     ))
   }
 
@@ -131,14 +133,14 @@ final class RunfilesTests: XCTestCase {
 
     // Third case: Only TEST_SRCDIR is present
     XCTAssertNil(try? Runfiles.create(
-        sourceRepository: BazelRunfilesConstants.currentRepository,
-        environment: ["TEST_SRCDIR": "always ignored"]
+      sourceRepository: BazelRunfilesConstants.currentRepository,
+      environment: ["TEST_SRCDIR": "always ignored"]
     ))
 
     // Fourth case: Environment variables are not related to runfiles
     XCTAssertNil(try? Runfiles.create(
-        sourceRepository: BazelRunfilesConstants.currentRepository,
-        environment: ["FOO": "bar"]
+      sourceRepository: BazelRunfilesConstants.currentRepository,
+      environment: ["FOO": "bar"]
     ))
   }
 
@@ -152,12 +154,11 @@ final class RunfilesTests: XCTestCase {
     let (manifest, clean) = try createMockFile(name: "MANIFEST", contents: manifestContents)
     defer { try? clean() }
 
-
     let runfiles = try Runfiles.create(
       sourceRepository: BazelRunfilesConstants.currentRepository,
       environment: [
-          "RUNFILES_MANIFEST_FILE": manifest.path,
-          "TEST_SRCDIR": "always ignored",
+        "RUNFILES_MANIFEST_FILE": manifest.path,
+        "TEST_SRCDIR": "always ignored",
       ]
     )
 
@@ -165,7 +166,10 @@ final class RunfilesTests: XCTestCase {
     XCTAssertEqual(runfiles.rlocation("Foo/runfile2")?.path, "/Actual Path/runfile2")
     XCTAssertEqual(runfiles.rlocation("Foo/Bar/runfile3")?.path, "/the path/run file 3.txt")
     XCTAssertEqual(runfiles.rlocation("Foo/Bar/Dir/runfile4")?.path, "/Actual Path/Directory/runfile4")
-    XCTAssertEqual(runfiles.rlocation("Foo/Bar/Dir/Deeply/Nested/runfile4")?.path, "/Actual Path/Directory/Deeply/Nested/runfile4")
+    XCTAssertEqual(
+      runfiles.rlocation("Foo/Bar/Dir/Deeply/Nested/runfile4")?.path,
+      "/Actual Path/Directory/Deeply/Nested/runfile4"
+    )
     XCTAssertNil(runfiles.rlocation("unknown"))
 
     XCTAssertEqual(runfiles.rlocation("/foo")?.path, "/foo")
@@ -196,17 +200,32 @@ final class RunfilesTests: XCTestCase {
     let runfiles = try Runfiles.create(
       sourceRepository: BazelRunfilesConstants.currentRepository,
       environment: [
-          "RUNFILES_MANIFEST_FILE": manifest.path,
-          "TEST_SRCDIR": "always ignored",
+        "RUNFILES_MANIFEST_FILE": manifest.path,
+        "TEST_SRCDIR": "always ignored",
       ]
     )
 
-    XCTAssertEqual(runfiles.rlocation("my_module/bar/runfile", sourceRepository: "")?.path, "/the/path/./to/other//other runfile.txt")
-    XCTAssertEqual(runfiles.rlocation("my_workspace/bar/runfile", sourceRepository: "")?.path, "/the/path/./to/other//other runfile.txt")
-    XCTAssertEqual(runfiles.rlocation("my_protobuf/foo/runfile", sourceRepository: "")?.path, "/Actual Path/protobuf/runfile")
+    XCTAssertEqual(
+      runfiles.rlocation("my_module/bar/runfile", sourceRepository: "")?.path,
+      "/the/path/./to/other//other runfile.txt"
+    )
+    XCTAssertEqual(
+      runfiles.rlocation("my_workspace/bar/runfile", sourceRepository: "")?.path,
+      "/the/path/./to/other//other runfile.txt"
+    )
+    XCTAssertEqual(
+      runfiles.rlocation("my_protobuf/foo/runfile", sourceRepository: "")?.path,
+      "/Actual Path/protobuf/runfile"
+    )
     XCTAssertEqual(runfiles.rlocation("my_protobuf/bar/dir", sourceRepository: "")?.path, "/Actual Path/Directory")
-    XCTAssertEqual(runfiles.rlocation("my_protobuf/bar/dir/file", sourceRepository: "")?.path, "/Actual Path/Directory/file")
-    XCTAssertEqual(runfiles.rlocation("my_protobuf/bar/dir/de eply/nes ted/fi~le", sourceRepository: "")?.path, "/Actual Path/Directory/de eply/nes ted/fi~le")
+    XCTAssertEqual(
+      runfiles.rlocation("my_protobuf/bar/dir/file", sourceRepository: "")?.path,
+      "/Actual Path/Directory/file"
+    )
+    XCTAssertEqual(
+      runfiles.rlocation("my_protobuf/bar/dir/de eply/nes ted/fi~le", sourceRepository: "")?.path,
+      "/Actual Path/Directory/de eply/nes ted/fi~le"
+    )
 
     XCTAssertNil(runfiles.rlocation("protobuf/foo/runfile"))
     XCTAssertNil(runfiles.rlocation("protobuf/bar/dir"))
@@ -217,7 +236,10 @@ final class RunfilesTests: XCTestCase {
     XCTAssertEqual(runfiles.rlocation("protobuf~3.19.2/foo/runfile")?.path, "/Actual Path/protobuf/runfile")
     XCTAssertEqual(runfiles.rlocation("protobuf~3.19.2/bar/dir")?.path, "/Actual Path/Directory")
     XCTAssertEqual(runfiles.rlocation("protobuf~3.19.2/bar/dir/file")?.path, "/Actual Path/Directory/file")
-    XCTAssertEqual(runfiles.rlocation("protobuf~3.19.2/bar/dir/de eply/nes  ted/fi~le")?.path, "/Actual Path/Directory/de eply/nes  ted/fi~le")
+    XCTAssertEqual(
+      runfiles.rlocation("protobuf~3.19.2/bar/dir/de eply/nes  ted/fi~le")?.path,
+      "/Actual Path/Directory/de eply/nes  ted/fi~le"
+    )
 
     XCTAssertEqual(runfiles.rlocation("config.json")?.path, "/etc/config.json")
     XCTAssertNil(runfiles.rlocation("_main"))
@@ -249,17 +271,20 @@ final class RunfilesTests: XCTestCase {
     defer { try? cleanManifest() }
 
     let runfiles = try Runfiles.create(
-        sourceRepository: "protobuf~3.19.2",
-        environment: [
-            "RUNFILES_MANIFEST_FILE": manifest.path,
-            "TEST_SRCDIR": "always ignored",
-        ]
+      sourceRepository: "protobuf~3.19.2",
+      environment: [
+        "RUNFILES_MANIFEST_FILE": manifest.path,
+        "TEST_SRCDIR": "always ignored",
+      ]
     )
 
     XCTAssertEqual(runfiles.rlocation("protobuf/foo/runfile")?.path, "/Actual Path/protobuf/runfile")
     XCTAssertEqual(runfiles.rlocation("protobuf/bar/dir")?.path, "/Actual Path/Directory")
     XCTAssertEqual(runfiles.rlocation("protobuf/bar/dir/file")?.path, "/Actual Path/Directory/file")
-    XCTAssertEqual(runfiles.rlocation("protobuf/bar/dir/de eply/nes  ted/fi~le")?.path, "/Actual Path/Directory/de eply/nes  ted/fi~le")
+    XCTAssertEqual(
+      runfiles.rlocation("protobuf/bar/dir/de eply/nes  ted/fi~le")?.path,
+      "/Actual Path/Directory/de eply/nes  ted/fi~le"
+    )
 
     XCTAssertNil(runfiles.rlocation("my_module/bar/runfile"))
     XCTAssertNil(runfiles.rlocation("my_protobuf/foo/runfile"))
@@ -271,7 +296,10 @@ final class RunfilesTests: XCTestCase {
     XCTAssertEqual(runfiles.rlocation("protobuf~3.19.2/foo/runfile")?.path, "/Actual Path/protobuf/runfile")
     XCTAssertEqual(runfiles.rlocation("protobuf~3.19.2/bar/dir")?.path, "/Actual Path/Directory")
     XCTAssertEqual(runfiles.rlocation("protobuf~3.19.2/bar/dir/file")?.path, "/Actual Path/Directory/file")
-    XCTAssertEqual(runfiles.rlocation("protobuf~3.19.2/bar/dir/de eply/nes  ted/fi~le")?.path, "/Actual Path/Directory/de eply/nes  ted/fi~le")
+    XCTAssertEqual(
+      runfiles.rlocation("protobuf~3.19.2/bar/dir/de eply/nes  ted/fi~le")?.path,
+      "/Actual Path/Directory/de eply/nes  ted/fi~le"
+    )
 
     XCTAssertEqual(runfiles.rlocation("config.json")?.path, "/etc/config.json")
     XCTAssertNil(runfiles.rlocation("_main"))
@@ -284,16 +312,15 @@ final class RunfilesTests: XCTestCase {
     defer { try? clean() }
 
     let runfiles = try Runfiles.create(
-        sourceRepository: BazelRunfilesConstants.currentRepository,
-        environment: [
-          "RUNFILES_DIR": runfilesDir.path,
-        ]
+      sourceRepository: BazelRunfilesConstants.currentRepository,
+      environment: [
+        "RUNFILES_DIR": runfilesDir.path,
+      ]
     )
 
     XCTAssertEqual(runfiles.rlocation("arg")?.path, runfilesDir.appendingPathComponent("arg").path)
     XCTAssertEqual(runfiles.rlocation("/foo")?.path, "/foo")
   }
-
 
   func testDirectoryBasedRlocationWithRepoMappingFromMain() throws {
     let repoMappingContents = """
@@ -312,31 +339,69 @@ final class RunfilesTests: XCTestCase {
     defer { try? FileManager.default.removeItem(at: repoMappingFile) }
 
     let runfiles = try Runfiles.create(
-        sourceRepository: BazelRunfilesConstants.currentRepository,
-        environment: [
-          "RUNFILES_DIR": runfilesDir.path
-        ]
+      sourceRepository: BazelRunfilesConstants.currentRepository,
+      environment: [
+        "RUNFILES_DIR": runfilesDir.path,
+      ]
     )
 
-    XCTAssertEqual(runfiles.rlocation("my_module/bar/runfile")?.path, runfilesDir.appendingPathComponent("_main/bar/runfile").path)
-    XCTAssertEqual(runfiles.rlocation("my_workspace/bar/runfile")?.path, runfilesDir.appendingPathComponent("_main/bar/runfile").path)
-    XCTAssertEqual(runfiles.rlocation("my_protobuf/foo/runfile")?.path, runfilesDir.appendingPathComponent("protobuf~3.19.2/foo/runfile").path)
-    XCTAssertEqual(runfiles.rlocation("my_protobuf/bar/dir")?.path, runfilesDir.appendingPathComponent("protobuf~3.19.2/bar/dir").path)
-    XCTAssertEqual(runfiles.rlocation("my_protobuf/bar/dir/file")?.path, runfilesDir.appendingPathComponent("protobuf~3.19.2/bar/dir/file").path)
-    XCTAssertEqual(runfiles.rlocation("my_protobuf/bar/dir/de eply/nes ted/fi~le")?.path, runfilesDir.appendingPathComponent("protobuf~3.19.2/bar/dir/de eply/nes ted/fi~le").path)
+    XCTAssertEqual(
+      runfiles.rlocation("my_module/bar/runfile")?.path,
+      runfilesDir.appendingPathComponent("_main/bar/runfile").path
+    )
+    XCTAssertEqual(
+      runfiles.rlocation("my_workspace/bar/runfile")?.path,
+      runfilesDir.appendingPathComponent("_main/bar/runfile").path
+    )
+    XCTAssertEqual(
+      runfiles.rlocation("my_protobuf/foo/runfile")?.path,
+      runfilesDir.appendingPathComponent("protobuf~3.19.2/foo/runfile").path
+    )
+    XCTAssertEqual(
+      runfiles.rlocation("my_protobuf/bar/dir")?.path,
+      runfilesDir.appendingPathComponent("protobuf~3.19.2/bar/dir").path
+    )
+    XCTAssertEqual(
+      runfiles.rlocation("my_protobuf/bar/dir/file")?.path,
+      runfilesDir.appendingPathComponent("protobuf~3.19.2/bar/dir/file").path
+    )
+    XCTAssertEqual(
+      runfiles.rlocation("my_protobuf/bar/dir/de eply/nes ted/fi~le")?.path,
+      runfilesDir.appendingPathComponent("protobuf~3.19.2/bar/dir/de eply/nes ted/fi~le").path
+    )
 
-    XCTAssertEqual(runfiles.rlocation("protobuf/foo/runfile")?.path, runfilesDir.appendingPathComponent("protobuf/foo/runfile").path)
-    XCTAssertEqual(runfiles.rlocation("protobuf/bar/dir/dir/de eply/nes ted/fi~le")?.path, runfilesDir.appendingPathComponent("protobuf/bar/dir/dir/de eply/nes ted/fi~le").path)
+    XCTAssertEqual(
+      runfiles.rlocation("protobuf/foo/runfile")?.path,
+      runfilesDir.appendingPathComponent("protobuf/foo/runfile").path
+    )
+    XCTAssertEqual(
+      runfiles.rlocation("protobuf/bar/dir/dir/de eply/nes ted/fi~le")?.path,
+      runfilesDir.appendingPathComponent("protobuf/bar/dir/dir/de eply/nes ted/fi~le").path
+    )
 
-    XCTAssertEqual(runfiles.rlocation("_main/bar/runfile")?.path, runfilesDir.appendingPathComponent("_main/bar/runfile").path)
-    XCTAssertEqual(runfiles.rlocation("protobuf~3.19.2/foo/runfile")?.path, runfilesDir.appendingPathComponent("protobuf~3.19.2/foo/runfile").path)
-    XCTAssertEqual(runfiles.rlocation("protobuf~3.19.2/bar/dir")?.path, runfilesDir.appendingPathComponent("protobuf~3.19.2/bar/dir").path)
-    XCTAssertEqual(runfiles.rlocation("protobuf~3.19.2/bar/dir/file")?.path, runfilesDir.appendingPathComponent("protobuf~3.19.2/bar/dir/file").path)
-    XCTAssertEqual(runfiles.rlocation("protobuf~3.19.2/bar/dir/de eply/nes  ted/fi~le")?.path, runfilesDir.appendingPathComponent("protobuf~3.19.2/bar/dir/de eply/nes  ted/fi~le").path)
+    XCTAssertEqual(
+      runfiles.rlocation("_main/bar/runfile")?.path,
+      runfilesDir.appendingPathComponent("_main/bar/runfile").path
+    )
+    XCTAssertEqual(
+      runfiles.rlocation("protobuf~3.19.2/foo/runfile")?.path,
+      runfilesDir.appendingPathComponent("protobuf~3.19.2/foo/runfile").path
+    )
+    XCTAssertEqual(
+      runfiles.rlocation("protobuf~3.19.2/bar/dir")?.path,
+      runfilesDir.appendingPathComponent("protobuf~3.19.2/bar/dir").path
+    )
+    XCTAssertEqual(
+      runfiles.rlocation("protobuf~3.19.2/bar/dir/file")?.path,
+      runfilesDir.appendingPathComponent("protobuf~3.19.2/bar/dir/file").path
+    )
+    XCTAssertEqual(
+      runfiles.rlocation("protobuf~3.19.2/bar/dir/de eply/nes  ted/fi~le")?.path,
+      runfilesDir.appendingPathComponent("protobuf~3.19.2/bar/dir/de eply/nes  ted/fi~le").path
+    )
 
     XCTAssertEqual(runfiles.rlocation("config.json")?.path, runfilesDir.appendingPathComponent("config.json").path)
   }
-
 
   func testDirectoryBasedRlocationWithRepoMappingFromOtherRepo() throws {
     let repoMappingContents = """
@@ -355,25 +420,58 @@ final class RunfilesTests: XCTestCase {
     defer { try? FileManager.default.removeItem(at: repoMappingFile) }
 
     let runfiles = try Runfiles.create(
-        sourceRepository: "protobuf~3.19.2",
-        environment: [
-          "RUNFILES_DIR": runfilesDir.path
-        ]
+      sourceRepository: "protobuf~3.19.2",
+      environment: [
+        "RUNFILES_DIR": runfilesDir.path,
+      ]
     )
 
-    XCTAssertEqual(runfiles.rlocation("protobuf/foo/runfile")?.path, runfilesDir.appendingPathComponent("protobuf~3.19.2/foo/runfile").path)
-    XCTAssertEqual(runfiles.rlocation("protobuf/bar/dir")?.path, runfilesDir.appendingPathComponent("protobuf~3.19.2/bar/dir").path)
-    XCTAssertEqual(runfiles.rlocation("protobuf/bar/dir/file")?.path, runfilesDir.appendingPathComponent("protobuf~3.19.2/bar/dir/file").path)
-    XCTAssertEqual(runfiles.rlocation("protobuf/bar/dir/de eply/nes  ted/fi~le")?.path, runfilesDir.appendingPathComponent("protobuf~3.19.2/bar/dir/de eply/nes  ted/fi~le").path)
+    XCTAssertEqual(
+      runfiles.rlocation("protobuf/foo/runfile")?.path,
+      runfilesDir.appendingPathComponent("protobuf~3.19.2/foo/runfile").path
+    )
+    XCTAssertEqual(
+      runfiles.rlocation("protobuf/bar/dir")?.path,
+      runfilesDir.appendingPathComponent("protobuf~3.19.2/bar/dir").path
+    )
+    XCTAssertEqual(
+      runfiles.rlocation("protobuf/bar/dir/file")?.path,
+      runfilesDir.appendingPathComponent("protobuf~3.19.2/bar/dir/file").path
+    )
+    XCTAssertEqual(
+      runfiles.rlocation("protobuf/bar/dir/de eply/nes  ted/fi~le")?.path,
+      runfilesDir.appendingPathComponent("protobuf~3.19.2/bar/dir/de eply/nes  ted/fi~le").path
+    )
 
-    XCTAssertEqual(runfiles.rlocation("my_module/bar/runfile")?.path, runfilesDir.appendingPathComponent("my_module/bar/runfile").path)
-    XCTAssertEqual(runfiles.rlocation("my_protobuf/bar/dir/de eply/nes  ted/fi~le")?.path, runfilesDir.appendingPathComponent("my_protobuf/bar/dir/de eply/nes  ted/fi~le").path)
+    XCTAssertEqual(
+      runfiles.rlocation("my_module/bar/runfile")?.path,
+      runfilesDir.appendingPathComponent("my_module/bar/runfile").path
+    )
+    XCTAssertEqual(
+      runfiles.rlocation("my_protobuf/bar/dir/de eply/nes  ted/fi~le")?.path,
+      runfilesDir.appendingPathComponent("my_protobuf/bar/dir/de eply/nes  ted/fi~le").path
+    )
 
-    XCTAssertEqual(runfiles.rlocation("_main/bar/runfile")?.path, runfilesDir.appendingPathComponent("_main/bar/runfile").path)
-    XCTAssertEqual(runfiles.rlocation("protobuf~3.19.2/foo/runfile")?.path, runfilesDir.appendingPathComponent("protobuf~3.19.2/foo/runfile").path)
-    XCTAssertEqual(runfiles.rlocation("protobuf~3.19.2/bar/dir")?.path, runfilesDir.appendingPathComponent("protobuf~3.19.2/bar/dir").path)
-    XCTAssertEqual(runfiles.rlocation("protobuf~3.19.2/bar/dir/file")?.path, runfilesDir.appendingPathComponent("protobuf~3.19.2/bar/dir/file").path)
-    XCTAssertEqual(runfiles.rlocation("protobuf~3.19.2/bar/dir/de eply/nes  ted/fi~le")?.path, runfilesDir.appendingPathComponent("protobuf~3.19.2/bar/dir/de eply/nes  ted/fi~le").path)
+    XCTAssertEqual(
+      runfiles.rlocation("_main/bar/runfile")?.path,
+      runfilesDir.appendingPathComponent("_main/bar/runfile").path
+    )
+    XCTAssertEqual(
+      runfiles.rlocation("protobuf~3.19.2/foo/runfile")?.path,
+      runfilesDir.appendingPathComponent("protobuf~3.19.2/foo/runfile").path
+    )
+    XCTAssertEqual(
+      runfiles.rlocation("protobuf~3.19.2/bar/dir")?.path,
+      runfilesDir.appendingPathComponent("protobuf~3.19.2/bar/dir").path
+    )
+    XCTAssertEqual(
+      runfiles.rlocation("protobuf~3.19.2/bar/dir/file")?.path,
+      runfilesDir.appendingPathComponent("protobuf~3.19.2/bar/dir/file").path
+    )
+    XCTAssertEqual(
+      runfiles.rlocation("protobuf~3.19.2/bar/dir/de eply/nes  ted/fi~le")?.path,
+      runfilesDir.appendingPathComponent("protobuf~3.19.2/bar/dir/de eply/nes  ted/fi~le").path
+    )
 
     XCTAssertEqual(runfiles.rlocation("config.json")?.path, runfilesDir.appendingPathComponent("config.json").path)
   }
@@ -402,8 +500,8 @@ func createMockFile(name: String, contents: String) throws -> (URL, () throws ->
   })
 }
 
-func createMockDirectory(name: String) throws -> (URL, () throws -> Void) {
-   guard let tmpBaseDirectory = ProcessInfo.processInfo.environment["TEST_TMPDIR"] else {
+func createMockDirectory(name _: String) throws -> (URL, () throws -> Void) {
+  guard let tmpBaseDirectory = ProcessInfo.processInfo.environment["TEST_TMPDIR"] else {
     XCTFail()
     throw "fail"
   }
