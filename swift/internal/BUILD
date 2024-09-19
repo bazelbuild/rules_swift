@@ -212,6 +212,7 @@ bzl_library(
         ":symbol_graph_extracting",
         ":toolchain_utils",
         "//swift:providers",
+        "//swift:swift_clang_module_aspect",
     ],
 )
 
