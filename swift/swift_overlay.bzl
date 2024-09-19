@@ -173,5 +173,6 @@ be referenced by the `aspect_hints` of a single `objc_library` or `cc_library`
 target. Referencing a `swift_overlay` from multiple targets' `aspect_hints` is
 almost always an anti-pattern.
 """,
+    fragments = ["cpp"],
     implementation = _swift_overlay_impl,
 )
