@@ -49,8 +49,6 @@ load(
     "SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP",
     "SWIFT_FEATURE_VFSOVERLAY",
     "SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS",
-    "SWIFT_FEATURE__SUPPORTS_CONST_VALUE_EXTRACTION",
-    "SWIFT_FEATURE__SUPPORTS_MACROS",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
 )
 load(
@@ -493,13 +491,7 @@ def compile(
         feature_name = SWIFT_FEATURE_EMIT_SWIFTSOURCEINFO,
     )
 
-    if is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE__SUPPORTS_CONST_VALUE_EXTRACTION,
-    ):
-        const_protocols_to_gather_file = swift_toolchain.const_protocols_to_gather
-    else:
-        const_protocols_to_gather_file = []
+    const_protocols_to_gather_file = swift_toolchain.const_protocols_to_gather
 
     compile_outputs, other_outputs = _declare_compile_outputs(
         srcs = srcs,
@@ -1313,10 +1305,7 @@ def _declare_compile_outputs(
     else:
         indexstore_directory = None
 
-    if is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE__SUPPORTS_MACROS,
-    ) and not is_feature_enabled(
+    if not is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_OPT,
     ):

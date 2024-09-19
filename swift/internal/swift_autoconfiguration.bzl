@@ -40,7 +40,6 @@ load(
     "SWIFT_FEATURE_USE_AUTOLINK_EXTRACT",
     "SWIFT_FEATURE_USE_MODULE_WRAP",
     "SWIFT_FEATURE_USE_OLD_DRIVER",
-    "SWIFT_FEATURE__SUPPORTS_MACROS",
 )
 
 def _scratch_file(repository_ctx, temp_dir, name, content = ""):
@@ -154,30 +153,6 @@ def _write_swift_version(repository_ctx, swiftc_path):
     repository_ctx.file(filename, contents, executable = False)
     return filename
 
-def _fetch_supported_features(repository_ctx, swiftc_path):
-    """Fetch the json config of supported features from Swift
-
-    This can be used to flip rules specific features
-
-    Args:
-        repository_ctx: The repository context.
-        swiftc_path: The `path` to the `swiftc` executable.
-
-    Returns:
-        The list of supported features, or an empty array if it fails
-    """
-    repository_ctx.file("empty.swift")
-    result = repository_ctx.execute([
-        swiftc_path,
-        "-frontend",
-        "-emit-supported-features",
-        "empty.swift",
-    ])
-    if result.return_code == 0:
-        return json.decode(result.stdout.strip()).get("SupportedArguments", [])
-
-    return []
-
 def _compute_feature_values(repository_ctx, swiftc_path):
     """Computes a list of supported/unsupported features by running checks.
 
@@ -258,10 +233,6 @@ def _create_linux_toolchain(repository_ctx):
     feature_values.append(SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS)
     feature_values.append(SWIFT_FEATURE_USE_AUTOLINK_EXTRACT)
     feature_values.append(SWIFT_FEATURE_USE_MODULE_WRAP)
-
-    swift_features_config = _fetch_supported_features(repository_ctx, path_to_swiftc)
-    if "load-plugin-executable" in swift_features_config:
-        feature_values.append(SWIFT_FEATURE__SUPPORTS_MACROS)
 
     repository_ctx.file(
         "BUILD",

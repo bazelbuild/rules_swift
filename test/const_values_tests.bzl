@@ -26,14 +26,6 @@ load(
 
 const_values_test = make_action_command_line_test_rule()
 
-no_const_values_test = make_action_command_line_test_rule(
-    config_settings = {
-        "//command_line_option:features": [
-            "-swift._supports_const_value_extraction",
-        ],
-    },
-)
-
 const_values_wmo_test = make_provider_test_rule(
     config_settings = {
         str(Label("@build_bazel_rules_swift//swift:copt")): [
@@ -88,19 +80,6 @@ def const_values_test_suite(name, tags = []):
     const_values_test(
         name = "{}_expected_argv".format(name),
         expected_argv = [
-            "-Xfrontend -const-gather-protocols-file",
-            "-Xfrontend swift/toolchains/config/const_protocols_to_gather.json",
-            "-emit-const-values-path",
-            "first.swift.swiftconstvalues",
-        ],
-        mnemonic = "SwiftCompile",
-        tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/basic:first",
-    )
-
-    no_const_values_test(
-        name = "{}_not_expected_argv".format(name),
-        not_expected_argv = [
             "-Xfrontend -const-gather-protocols-file",
             "-Xfrontend swift/toolchains/config/const_protocols_to_gather.json",
             "-emit-const-values-path",

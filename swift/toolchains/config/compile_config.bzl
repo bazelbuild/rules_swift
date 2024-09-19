@@ -75,8 +75,6 @@ load(
     "SWIFT_FEATURE_USE_PCH_OUTPUT_DIR",
     "SWIFT_FEATURE_VFSOVERLAY",
     "SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS",
-    "SWIFT_FEATURE__SUPPORTS_CONST_VALUE_EXTRACTION",
-    "SWIFT_FEATURE__SUPPORTS_MACROS",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
 )
 load(":action_config.bzl", "ActionConfigInfo", "ConfigResultInfo", "add_arg")
@@ -254,7 +252,6 @@ def compile_action_configs(
         ActionConfigInfo(
             actions = [SWIFT_ACTION_COMPILE],
             configurators = [_constant_value_extraction_configurator],
-            features = [SWIFT_FEATURE__SUPPORTS_CONST_VALUE_EXTRACTION],
         ),
 
         # Link Time Optimization (LTO).
@@ -811,7 +808,6 @@ def compile_action_configs(
                 SWIFT_ACTION_DERIVE_FILES,
             ],
             configurators = [_macro_expansion_configurator],
-            features = [SWIFT_FEATURE__SUPPORTS_MACROS],
         ),
 
         # swift-symbolgraph-extract doesn't yet support explicit Swift module
