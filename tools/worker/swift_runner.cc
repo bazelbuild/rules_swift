@@ -85,28 +85,26 @@ CompilationPlan::CompilationPlan(absl::string_view print_jobs_output) {
   // file. This captures both regular paths (group 2) and single-quoted paths
   // (group 1).
   RE2 output_pattern("\\s-o\\s+(?:'((?:\\'|[^'])*)'|(\\S+))");
-  for (absl::string_view command_line :
+  RE2 response_file_pattern("@\\S+\\s+#");
+  for (absl::string_view command_line_view :
        absl::StrSplit(print_jobs_output, '\n')) {
-    if (command_line.empty()) {
+    if (command_line_view.empty()) {
       continue;
     }
 
-    // If the driver created a response file for the frontend invocation, then
-    // it prints the actual arguments with a shell comment-like notation. This
-    // is good for job scanning because we don't have to read the response files
-    // to find the invocations for various output files, but when we invoke it
-    // we need to strip that off because we aren't spawning like a shell; it
-    // would interpret the `#` and everything that follows as regular arguments.
-    // If the comment marker isn't there, then this logic also works because
-    // `first` will be the same as the original string.
-    std::pair<absl::string_view, absl::string_view> possible_response_file =
-        absl::StrSplit(command_line, absl::MaxSplits(" # ", 1));
-    absl::string_view command_line_without_expansions =
-        possible_response_file.first;
+    // If the driver created a response file for the frontend invocation, it
+    // writes those arguments to a temporary file and then prints the actual
+    // arguments with a shell comment-like notation. We remove the response
+    // file argument and the comment marker so to retrieve the actual arguments
+    // as if they were expanded; we'll write them back out to a response file
+    // later, and this avoids depending on temporary files written by the driver
+    // that might not always be preserved after the process terminates.
+    std::string command_line(command_line_view);
+    RE2::Replace(&command_line, response_file_pattern, "");
 
     if (absl::StrContains(command_line, " -c ")) {
       int index = codegen_jobs_.size();
-      codegen_jobs_.push_back(std::string(command_line_without_expansions));
+      codegen_jobs_.push_back(command_line);
 
       // When threaded WMO is enabled, a single invocation might emit multiple
       // object files. Associate them with the same command line so that they
@@ -120,7 +118,7 @@ CompilationPlan::CompilationPlan(absl::string_view print_jobs_output) {
             index;
       }
     } else {
-      module_jobs_.push_back(std::string(command_line_without_expansions));
+      module_jobs_.push_back(command_line);
     }
   }
 }
@@ -333,6 +331,7 @@ int SpawnCompileCodegenStep(
     processes.emplace_back(std::move(*process));
   }
 
+  int any_failing_exit_code = 0;
   for (std::unique_ptr<AsyncProcess> &process : processes) {
     absl::StatusOr<AsyncProcess::Result> result = process->WaitForTermination();
     if (!result.ok()) {
@@ -343,10 +342,12 @@ int SpawnCompileCodegenStep(
     stdout_stream << result->stdout;
     stderr_stream << result->stderr;
     if (result->exit_code != 0) {
-      return result->exit_code;
+      // Don't return early if the job failed; if we have multiple jobs in the
+      // batch, we want the user to see possible diagnostics from all of them.
+      any_failing_exit_code = result->exit_code;
     }
   }
-  return 0;
+  return any_failing_exit_code;
 }
 
 // Spawns a single step in a parallelized compilation by getting a list of
