@@ -64,10 +64,7 @@ load(
     "SWIFT_FEATURE_REMAP_XCODE_PATH",
     "SWIFT_FEATURE_SUPPORTS_BARE_SLASH_REGEX",
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
-    "SWIFT_FEATURE_USE_OLD_DRIVER",
     "SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE",
-    "SWIFT_FEATURE__SUPPORTS_CONST_VALUE_EXTRACTION",
-    "SWIFT_FEATURE__SUPPORTS_MACROS",
 )
 load("//swift/internal:features.bzl", "features_for_build_modes")
 load("//swift/internal:target_triples.bzl", "target_triples")
@@ -699,33 +696,22 @@ def _xcode_swift_toolchain_impl(ctx):
         SWIFT_FEATURE_CACHEABLE_SWIFTMODULES,
         SWIFT_FEATURE_COVERAGE_PREFIX_MAP,
         SWIFT_FEATURE_DEBUG_PREFIX_MAP,
+        SWIFT_FEATURE_DISABLE_SYSTEM_INDEX,
         SWIFT_FEATURE_EMIT_SWIFTDOC,
         SWIFT_FEATURE_EMIT_SWIFTSOURCEINFO,
         SWIFT_FEATURE_ENABLE_BATCH_MODE,
         SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES,
-        SWIFT_FEATURE_DISABLE_SYSTEM_INDEX,
+        SWIFT_FEATURE_FILE_PREFIX_MAP,
         SWIFT_FEATURE_OBJC_LINK_FLAGS,
         SWIFT_FEATURE_OPT_USES_WMO,
         SWIFT_FEATURE_REMAP_XCODE_PATH,
+        SWIFT_FEATURE_SUPPORTS_BARE_SLASH_REGEX,
         SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE,
     ])
 
     # The new driver had response file bugs in Xcode 13.x that are fixed in
-    # Xcode 14.
-    if not _is_xcode_at_least_version(xcode_config, "14.0"):
-        requested_features.append(SWIFT_FEATURE_USE_OLD_DRIVER)
-
-    # Xcode 14 implies Swift 5.7.
-    if _is_xcode_at_least_version(xcode_config, "14.0"):
-        requested_features.append(SWIFT_FEATURE_FILE_PREFIX_MAP)
-        requested_features.append(SWIFT_FEATURE_SUPPORTS_BARE_SLASH_REGEX)
-
     if getattr(ctx.fragments.objc, "alwayslink_by_default", False):
         requested_features.append(SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE)
-
-    if _is_xcode_at_least_version(xcode_config, "15.0"):
-        requested_features.append(SWIFT_FEATURE__SUPPORTS_MACROS)
-        requested_features.append(SWIFT_FEATURE__SUPPORTS_CONST_VALUE_EXTRACTION)
 
     if _is_xcode_at_least_version(xcode_config, "15.3"):
         requested_features.append(SWIFT_FEATURE_DISABLE_SWIFT_SANDBOX)

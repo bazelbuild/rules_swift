@@ -314,11 +314,6 @@ SWIFT_FEATURE_OBJC_LINK_FLAGS = "swift.objc_link_flag"
 # all Swift compilations to always be linked.
 SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE = "swift._force_alwayslink_true"
 
-# A private feature that is set by the toolchain if it supports macros (Swift
-# 5.9 and above). Users should never manually enable, disable, or query this
-# feature.
-SWIFT_FEATURE__SUPPORTS_MACROS = "swift._supports_macros"
-
 # Disables Swift sandbox which prevents issues with nested sandboxing when Swift code contains system-provided macros.
 # If enabled '#Preview' macro provided by SwiftUI fails to build and probably other system-provided macros.
 # Enabled by default for Swift 5.10+ on macOS.
@@ -340,11 +335,6 @@ SWIFT_FEATURE_EMIT_SWIFTSOURCEINFO = "swift.emit_swiftsourceinfo"
 # A feature that adds target_name in output path to support building
 # multiple frameworks with different target name, but same module name.
 SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT = "swift.add_target_name_to_output"
-
-# A private feature that is set by the toolchain if it supports constant values
-# extraction (Swift 5.8 and above). Users should never manually enable, disable, or query this
-# feature.
-SWIFT_FEATURE__SUPPORTS_CONST_VALUE_EXTRACTION = "swift._supports_const_value_extraction"
 
 # Enable thin LTO and update output-file-map correctly
 SWIFT_FEATURE_THIN_LTO = "swift.thin_lto"

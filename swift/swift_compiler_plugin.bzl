@@ -24,7 +24,6 @@ load(
 load(
     "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT",
-    "SWIFT_FEATURE__SUPPORTS_MACROS",
 )
 load("//swift/internal:features.bzl", "is_feature_enabled")
 load(
@@ -58,12 +57,6 @@ def _swift_compiler_plugin_impl(ctx):
         swift_toolchain = swift_toolchain,
         unsupported_features = ctx.disabled_features,
     )
-
-    if not is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE__SUPPORTS_MACROS,
-    ):
-        fail("Swift compiler plugins require Swift 5.9+")
 
     deps = ctx.attr.deps
     srcs = ctx.files.srcs
