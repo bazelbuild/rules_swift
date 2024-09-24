@@ -17,6 +17,7 @@ load(":module_cache_settings_tests.bzl", "module_cache_settings_test_suite")
 load(":module_interface_tests.bzl", "module_interface_test_suite")
 load(":module_mapping_tests.bzl", "module_mapping_test_suite")
 load(":output_file_map_tests.bzl", "output_file_map_test_suite")
+load(":parallel_compilation_tests.bzl", "parallel_compilation_test_suite")
 load(":pch_output_dir_tests.bzl", "pch_output_dir_test_suite")
 load(":private_deps_tests.bzl", "private_deps_test_suite")
 load(":private_swiftinterface_tests.bzl", "private_swiftinterface_test_suite")
@@ -78,6 +79,10 @@ synthesize_interface_test_suite(
     tags = [
         "manual",
     ],
+)
+
+parallel_compilation_test_suite(
+    name = "parallel_compilation",
 )
 
 pch_output_dir_test_suite(name = "pch_output_dir_settings")
