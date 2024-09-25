@@ -31,7 +31,7 @@ set -euxo pipefail
 executable="%executable%"
 expected_return_code="%expected_return_code%"
 expected_logs=%expected_logs%
-not_expected_logs=%expected_logs%
+not_expected_logs=%not_expected_logs%
 
 # execute the target under test while recording its outputs and return code
 tmp_dir=$(mktemp -d)
