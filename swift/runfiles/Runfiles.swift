@@ -94,7 +94,7 @@ struct ManifestBased: LookupStrategy {
 
     static func loadRunfiles(from manifestPath: URL) throws -> [String: String] {
         guard let fileHandle = try? FileHandle(forReadingFrom: manifestPath) else {
-            throw RunfilesError.missingRepoMapping
+            throw RunfilesError.missingManifest
         }
         defer {
             try? fileHandle.close()
@@ -124,7 +124,7 @@ struct RepoMappingKey: Hashable {
 
 public enum RunfilesError: Error {
     case missingEnvVars
-    case missingRepoMapping
+    case missingManifest
     case invalidRepoMappingEntry(line: String)
 }
 
