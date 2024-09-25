@@ -123,10 +123,9 @@ struct RepoMappingKey: Hashable {
 }
 
 public enum RunfilesError: Error {
-    case missingArgv0
+    case missingEnvVars
     case missingRepoMapping
     case invalidRepoMappingEntry(line: String)
-    case failedToFindRunfilesDirectory
 }
 
 public final class Runfiles {
@@ -202,8 +201,10 @@ public final class Runfiles {
         let strategy: LookupStrategy
         if let manifestFile = environment["RUNFILES_MANIFEST_FILE"] {
             strategy = try ManifestBased(manifestPath: URL(fileURLWithPath: manifestFile))
+        } else if let runfilesDir = environment["RUNFILES_DIR"] {
+            strategy = DirectoryBased(path: URL(fileURLWithPath: runfilesDir))
         } else {
-            strategy = try DirectoryBased(path: findRunfilesDir(environment: environment))
+            throw RunfilesError.missingEnvVars
         }
 
         // If the repository mapping file can't be found, that is not an error: We
@@ -248,61 +249,4 @@ func parseRepoMapping(path: URL) throws -> [RepoMappingKey: String] {
     }
 
     return repoMapping
-}
-
-// MARK: Finding Runfiles Directory
-
-func findRunfilesDir(environment: [String: String]) throws -> URL {
-    if let runfilesDirPath = environment["RUNFILES_DIR"] {
-        let runfilesDirURL = URL(fileURLWithPath: runfilesDirPath)
-        if FileManager.default.fileExists(atPath: runfilesDirURL.path, isDirectory: nil) {
-            return runfilesDirURL
-        }
-    }
-
-    if let testSrcdirPath = environment["TEST_SRCDIR"] {
-        let testSrcdirURL = URL(fileURLWithPath: testSrcdirPath)
-        if FileManager.default.fileExists(atPath: testSrcdirURL.path, isDirectory: nil) {
-            return testSrcdirURL
-        }
-    }
-
-    // Consume the first argument (argv[0])
-    guard let execPath = CommandLine.arguments.first else {
-        throw RunfilesError.missingArgv0
-    }
-
-    var binaryPath = URL(fileURLWithPath: execPath)
-
-    while true {
-        // Check for our neighboring $binary.runfiles directory.
-        let runfilesName = binaryPath.lastPathComponent + ".runfiles"
-        let runfilesPath = binaryPath.deletingLastPathComponent().appendingPathComponent(runfilesName)
-
-        if FileManager.default.fileExists(atPath: runfilesPath.path, isDirectory: nil) {
-            return runfilesPath
-        }
-
-        // Check if we're already under a *.runfiles directory.
-        var ancestorURL = binaryPath.deletingLastPathComponent()
-        while ancestorURL.path != "/" {
-            if ancestorURL.lastPathComponent.hasSuffix(".runfiles") {
-                return ancestorURL
-            }
-            ancestorURL.deleteLastPathComponent()
-        }
-
-        // Check if it's a symlink and follow it.
-        if let symlinkTarget = try? FileManager.default.destinationOfSymbolicLink(atPath: binaryPath.path) {
-            let linkTargetURL = URL(
-                fileURLWithPath: symlinkTarget,
-                relativeTo: binaryPath.deletingLastPathComponent()
-            )
-            binaryPath = linkTargetURL
-        } else {
-            break
-        }
-    }
-
-    throw RunfilesError.failedToFindRunfilesDirectory
 }
