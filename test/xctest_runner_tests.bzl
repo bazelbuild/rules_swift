@@ -2,6 +2,8 @@
 
 load("//test/rules:swift_shell_test.bzl", "swift_shell_test")
 
+_NO_TESTS_DISCOVERED = "ERROR: No tests were discovered"
+
 def xctest_runner_test_suite(name, tags = []):
     """Test suite for xctest runner.
 
@@ -19,6 +21,7 @@ def xctest_runner_test_suite(name, tags = []):
             "Test Suite 'PassingUnitTests.xctest' passed",
             "Executed 3 tests, with 0 failures",
         ],
+        not_expected_logs = [_NO_TESTS_DISCOVERED],
         tags = all_tags,
         target_under_test = "//test/fixtures/xctest_runner:PassingUnitTests",
         target_compatible_with = ["@platforms//os:macos"],
@@ -32,6 +35,7 @@ def xctest_runner_test_suite(name, tags = []):
             "Test Suite 'FailingUnitTests.xctest' failed",
             "Executed 1 test, with 1 failure",
         ],
+        not_expected_logs = [_NO_TESTS_DISCOVERED],
         tags = all_tags,
         target_under_test = "//test/fixtures/xctest_runner:FailingUnitTests",
         target_compatible_with = ["@platforms//os:macos"],
@@ -42,11 +46,44 @@ def xctest_runner_test_suite(name, tags = []):
         expected_return_code = 1,
         expected_logs = [
             "Executed 0 tests, with 0 failures",
-            "ERROR: No tests were discovered",
+            _NO_TESTS_DISCOVERED,
         ],
         tags = all_tags,
         target_under_test = "//test/fixtures/xctest_runner:EmptyUnitTests",
         target_compatible_with = ["@platforms//os:macos"],
+    )
+
+    swift_shell_test(
+        name = "{}_swift_testing_no_tests".format(name),
+        expected_return_code = 1,
+        expected_logs = [
+            "Test run with 0 tests.* passed after",
+            _NO_TESTS_DISCOVERED,
+        ],
+        tags = all_tags,
+        target_under_test = "//test/fixtures/xctest_runner:EmptySwiftTestingSuite",
+    )
+
+    swift_shell_test(
+        name = "{}_swift_testing_pass".format(name),
+        expected_return_code = 0,
+        expected_logs = [
+            "Test run with 1 test.* passed after",
+        ],
+        not_expected_logs = [_NO_TESTS_DISCOVERED],
+        tags = all_tags,
+        target_under_test = "//test/fixtures/xctest_runner:PassingSwiftTestingTests",
+    )
+
+    swift_shell_test(
+        name = "{}_swift_testing_fail".format(name),
+        expected_return_code = 1,
+        expected_logs = [
+            "Test run with 1 test.* failed after",
+        ],
+        not_expected_logs = [_NO_TESTS_DISCOVERED],
+        tags = all_tags,
+        target_under_test = "//test/fixtures/xctest_runner:FailingSwiftTestingTests",
     )
 
     native.test_suite(

@@ -31,7 +31,7 @@ set -euxo pipefail
 executable="%executable%"
 expected_return_code="%expected_return_code%"
 expected_logs=%expected_logs%
-not_expected_logs=%expected_logs%
+not_expected_logs=%not_expected_logs%
 
 # execute the target under test while recording its outputs and return code
 tmp_dir=$(mktemp -d)
@@ -59,7 +59,7 @@ done
 # verify the absence of unexpected logs
 for unexpected in "${not_expected_logs[@]}"
 do
-  if ! grep --quiet --invert-match --regexp "$unexpected" "$testlog"; then
+  if grep --quiet --regexp "$unexpected" "$testlog"; then
     echo "Fail: found unexpected log: $unexpected"
     exit 1
   fi

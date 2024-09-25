@@ -70,3 +70,21 @@ swift_test(
     tags = FIXTURE_TAGS,
     deps = [":MainLibrary"],
 )
+
+swift_test(
+    name = "FailingSwiftTestingTests",
+    srcs = ["FailingSwiftTestingTests.swift"],
+    tags = FIXTURE_TAGS,
+)
+
+swift_test(
+    name = "EmptySwiftTestingSuite",
+    srcs = ["EmptySwiftTestingSuite.swift"],
+    tags = FIXTURE_TAGS,
+)
+
+swift_test(
+    name = "PassingSwiftTestingTests",
+    srcs = ["PassingSwiftTestingTests.swift"],
+    tags = FIXTURE_TAGS,
+)
