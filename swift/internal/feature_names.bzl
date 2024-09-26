@@ -150,6 +150,15 @@ SWIFT_FEATURE_OPT_USES_WMO = "swift.opt_uses_wmo"
 # the `-Osize` flag instead of `-O`.
 SWIFT_FEATURE_OPT_USES_OSIZE = "swift.opt_uses_osize"
 
+# If enabled, compilations that are using whole-module optimization and also
+# request optimizations via the `-O` flag group will have cross-module
+# optimization performed. This is the default behavior for the Swift compiler
+# and for these build rules, with one exception: because CMO prevents
+# parallelized compilation, we unconditionally disable CMO for targets built in
+# an `exec` configuration under the presumption that build speed is more
+# important than runtime performance for build tools.
+SWIFT_FEATURE_OPT_USES_CMO = "swift.opt_uses_cmo"
+
 # If enabled, and if the toolchain specifies a generated header rewriting tool,
 # that tool will be invoked after compilation to rewrite the generated header in
 # place.

@@ -34,12 +34,34 @@ swift_library(
 )
 
 swift_library(
-    name = "with_opt_with_wmo",
+    name = "with_opt_with_wmo_no_cmo",
     srcs = ["Empty.swift"],
     copts = [
         "-O",
         "-wmo",
     ],
+    features = ["-swift.opt_uses_cmo"],
+    tags = FIXTURE_TAGS,
+)
+
+swift_library(
+    name = "with_opt_with_wmo_with_cmo",
+    srcs = ["Empty.swift"],
+    copts = [
+        "-O",
+        "-wmo",
+    ],
+    tags = FIXTURE_TAGS,
+)
+
+swift_library(
+    name = "with_opt_with_wmo_with_library_evolution",
+    srcs = ["Empty.swift"],
+    copts = [
+        "-O",
+        "-wmo",
+    ],
+    library_evolution = True,
     tags = FIXTURE_TAGS,
 )
 

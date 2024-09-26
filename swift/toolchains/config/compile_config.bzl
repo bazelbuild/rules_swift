@@ -54,6 +54,7 @@ load(
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_NO_ASAN_VERSION_CHECK",
     "SWIFT_FEATURE_OPT",
+    "SWIFT_FEATURE_OPT_USES_CMO",
     "SWIFT_FEATURE_OPT_USES_OSIZE",
     "SWIFT_FEATURE_OPT_USES_WMO",
     "SWIFT_FEATURE_REWRITE_GENERATED_HEADER",
@@ -283,6 +284,11 @@ def compile_action_configs(
             ],
             configurators = [add_arg("-Osize")],
             features = [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_OSIZE],
+        ),
+        ActionConfigInfo(
+            actions = all_compile_action_names(),
+            configurators = [add_arg("-disable-cmo")],
+            not_features = [SWIFT_FEATURE_OPT_USES_CMO],
         ),
 
         # If the `swift.opt_uses_wmo` feature is enabled, opt builds should also

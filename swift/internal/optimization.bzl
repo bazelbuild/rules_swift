@@ -16,7 +16,6 @@
 
 load(
     ":feature_names.bzl",
-    "SWIFT_FEATURE_COMPILE_IN_PARALLEL",
     "SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
 )
@@ -116,13 +115,6 @@ def optimization_features_from_swiftcopts(swiftcopts):
     """
     requested_features = []
     unsupported_features = []
-
-    if is_optimization_manually_requested(user_compile_flags = swiftcopts):
-        # Disable parallel compilation early if we know we're going to be doing
-        # an optimized compile, because the driver will not emit separate jobs
-        # unless we also explicitly disable cross-module optimization. See
-        # https://github.com/swiftlang/swift-driver/blob/c647e91574122f2b104d294ab1ec5baadaa1aa95/Sources/SwiftDriver/Jobs/EmitModuleJob.swift#L156-L181.
-        unsupported_features.append(SWIFT_FEATURE_COMPILE_IN_PARALLEL)
 
     if is_wmo_manually_requested(user_compile_flags = swiftcopts):
         requested_features.append(SWIFT_FEATURE__WMO_IN_SWIFTCOPTS)

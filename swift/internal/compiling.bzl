@@ -39,12 +39,14 @@ load(
     "SWIFT_FEATURE_DECLARE_SWIFTSOURCEINFO",
     "SWIFT_FEATURE_EMIT_C_MODULE",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
+    "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_HEADERS_ALWAYS_ACTION_INPUTS",
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
     "SWIFT_FEATURE_LAYERING_CHECK_SWIFT",
     "SWIFT_FEATURE_MODULAR_INDEXING",
     "SWIFT_FEATURE_NO_GENERATED_MODULE_MAP",
     "SWIFT_FEATURE_OPT",
+    "SWIFT_FEATURE_OPT_USES_CMO",
     "SWIFT_FEATURE_OPT_USES_WMO",
     "SWIFT_FEATURE_SYSTEM_MODULE",
     "SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP",
@@ -586,18 +588,56 @@ def _should_plan_parallel_compilation(
         feature_configuration,
         user_compile_flags):
     """Returns `True` if the compilation should be done in parallel."""
-    parallel_requested = is_feature_enabled(
+    if not is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_COMPILE_IN_PARALLEL,
-    )
+    ):
+        return False
 
-    # The Swift driver will not emit separate jobs to compile the module and to
-    # perform codegen if optimization is requested. See
+    # When the Swift driver plans a compilation, the default behavior is to emit
+    # separate frontend jobs to emit the module and to perform codegen. However,
+    # this will *not* happen if cross-module optimization is possible; in that
+    # case, the driver emits a single frontend job to compile everything. If any
+    # of the following conditions is true, then cross-module optimization is not
+    # possible and we can plan parallel compilation:
+    #
+    # -   Whole-module optimization is not enabled.
+    # -   Library evolution is enabled.
+    # -   Cross-module optimization has been explicitly disabled.
+    # -   Optimization (via the `-O` flag group) has not been requested.
+    #
+    # This logic mirrors that defined in
     # https://github.com/swiftlang/swift-driver/blob/c647e91574122f2b104d294ab1ec5baadaa1aa95/Sources/SwiftDriver/Jobs/EmitModuleJob.swift#L156-L181.
-    opt_requested = is_optimization_manually_requested(
-        user_compile_flags = user_compile_flags,
+    if not (
+        is_wmo_manually_requested(
+            user_compile_flags = user_compile_flags,
+        ) or are_all_features_enabled(
+            feature_configuration = feature_configuration,
+            feature_names = [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_WMO],
+        )
+    ):
+        return True
+
+    if is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION,
+    ):
+        return True
+
+    if not is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_OPT_USES_CMO,
+    ):
+        return True
+
+    return (
+        not is_optimization_manually_requested(
+            user_compile_flags = user_compile_flags,
+        ) and not is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_OPT,
+        )
     )
-    return parallel_requested and not opt_requested
 
 def _execute_compile_plan(
         actions,

@@ -18,9 +18,16 @@ load("@bazel_skylib//rules:build_test.bzl", "build_test")
 load(
     "@build_bazel_rules_swift//test/rules:actions_created_test.bzl",
     "actions_created_test",
+    "make_actions_created_test_rule",
 )
 
 visibility("private")
+
+opt_actions_create_test = make_actions_created_test_rule(
+    config_settings = {
+        "//command_line_option:compilation_mode": "opt",
+    },
+)
 
 def parallel_compilation_test_suite(name, tags = []):
     """Test suite for parallel compilation.
@@ -47,25 +54,46 @@ def parallel_compilation_test_suite(name, tags = []):
         target_under_test = "@build_bazel_rules_swift//test/fixtures/parallel_compilation:no_opt_with_wmo",
     )
 
-    # Optimized, non-WMO cannot be compiled in parallel.
-    # TODO: b/351801556 - This is actually incorrect based on further driver
-    # testing; update the rules to allow compiling these in parallel.
+    # Optimized, non-WMO can be compiled in parallel.
     actions_created_test(
         name = "{}_with_opt_no_wmo".format(name),
-        mnemonics = ["-SwiftCompileModule", "-SwiftCompileCodegen", "SwiftCompile"],
+        mnemonics = ["SwiftCompileModule", "SwiftCompileCodegen", "-SwiftCompile"],
         tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/parallel_compilation:with_opt_no_wmo",
     )
 
-    # Optimized, with-WMO cannot be compiled in parallel.
-    # TODO: b/351801556 - This should be allowed if cross-module-optimization is
-    # disabled. Update the rules to allow this and add a new version of this
-    # target that disables CMO so we can test both situtations.
+    # Optimized, with-WMO can be compiled in parallel if CMO is also disabled.
     actions_created_test(
-        name = "{}_with_opt_with_wmo".format(name),
+        name = "{}_with_opt_with_wmo_no_cmo".format(name),
+        mnemonics = ["SwiftCompileModule", "SwiftCompileCodegen", "-SwiftCompile"],
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/parallel_compilation:with_opt_with_wmo_no_cmo",
+    )
+
+    # Optimized, with-WMO cannot be compiled in parallel if CMO is enabled.
+    actions_created_test(
+        name = "{}_with_opt_with_wmo_with_cmo".format(name),
         mnemonics = ["-SwiftCompileModule", "-SwiftCompileCodegen", "SwiftCompile"],
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/parallel_compilation:with_opt_with_wmo",
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/parallel_compilation:with_opt_with_wmo_with_cmo",
+    )
+
+    # Force `-c opt` on a non-optimized, with-WMO target and make sure we don't
+    # plan parallel compilation there.
+    opt_actions_create_test(
+        name = "{}_no_opt_with_wmo_but_compilation_mode_opt".format(name),
+        mnemonics = ["-SwiftCompileModule", "-SwiftCompileCodegen", "SwiftCompile"],
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/parallel_compilation:no_opt_with_wmo",
+    )
+
+    # Optimized, with-WMO can be compiled in parallel if library evolution is
+    # enabled (which implicitly disables CMO).
+    actions_created_test(
+        name = "{}_with_opt_with_wmo_with_library_evolution".format(name),
+        mnemonics = ["SwiftCompileModule", "SwiftCompileCodegen", "-SwiftCompile"],
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/parallel_compilation:with_opt_with_wmo_with_library_evolution",
     )
 
     # Make sure that when we look for optimizer flags, we don't treat `-Onone`
@@ -85,7 +113,9 @@ def parallel_compilation_test_suite(name, tags = []):
             "@build_bazel_rules_swift//test/fixtures/parallel_compilation:no_opt_no_wmo",
             "@build_bazel_rules_swift//test/fixtures/parallel_compilation:no_opt_with_wmo",
             "@build_bazel_rules_swift//test/fixtures/parallel_compilation:with_opt_no_wmo",
-            "@build_bazel_rules_swift//test/fixtures/parallel_compilation:with_opt_with_wmo",
+            "@build_bazel_rules_swift//test/fixtures/parallel_compilation:with_opt_with_wmo_no_cmo",
+            "@build_bazel_rules_swift//test/fixtures/parallel_compilation:with_opt_with_wmo_with_cmo",
+            "@build_bazel_rules_swift//test/fixtures/parallel_compilation:with_opt_with_wmo_with_library_evolution",
             "@build_bazel_rules_swift//test/fixtures/parallel_compilation:onone_with_wmo",
         ],
         tags = all_tags,
