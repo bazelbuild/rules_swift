@@ -221,9 +221,7 @@ def features_test_suite(name, tags = []):
         tags = all_tags,
         expected_argv = ["-emit-object", "-O"],
         not_expected_argv = ["-whole-module-optimization"],
-        # In optimized mode, the driver still uses a single invocation for both
-        # the module and for codegen.
-        mnemonic = "SwiftCompile",
+        mnemonic = "SwiftCompileModule",
         target_under_test = "//test/fixtures/debug_settings:simple",
     )
 

@@ -231,8 +231,6 @@ def debug_settings_test_suite(name, tags = []):
             "-g",
             "-gline-tables-only",
         ],
-        # In optimized mode, the driver still uses a single invocation for both
-        # the module and for codegen.
         mnemonic = "SwiftCompile",
         tags = all_tags,
         target_under_test = "//test/fixtures/debug_settings:simple",

@@ -24,8 +24,6 @@ swift_library(
     tags = FIXTURE_TAGS,
 )
 
-# TODO: The `default_no_split_args` split_derived_files_generation is not supported in parallel.
-# We need to handle falling back to non-parallel compilation when this feature is enabled, but dont currently.
 swift_library(
     name = "simple_batch_mode",
     srcs = ["Empty.swift"],
