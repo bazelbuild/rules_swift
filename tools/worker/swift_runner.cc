@@ -30,12 +30,14 @@
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
+#include "absl/strings/substitute.h"
 #include "tools/common/color.h"
 #include "tools/common/file_system.h"
 #include "tools/common/path_utils.h"
@@ -264,11 +266,33 @@ int SpawnJob(const std::vector<std::string> &tool_args,
   return RunSubProcess(spawn_args, env, stdout_stream, stderr_stream);
 }
 
+// Logs an internal error message that occurred during compilation planning and
+// provides users with a workaround.
+void LogCompilePlanError(std::ostream &stderr_stream,
+                         absl::string_view message) {
+  WithColor(stderr_stream, Color::kBoldRed) << "Internal planning error: ";
+  WithColor(stderr_stream, Color::kBold) << message << std::endl;
+  WithColor(stderr_stream, Color::kBold)
+      << "You can work around this bug by adding `features = "
+         "[\"-swift.compile_in_parallel\"] to the affected target until the "
+         "bug is fixed."
+      << std::endl;
+}
+
 // Executes the module-wide jobs in a compilation plan.
 int SpawnCompileModuleStep(
     const CompilationPlan &plan, CompileStep compile_step,
     const absl::flat_hash_map<std::string, std::string> *env,
     std::ostream &stdout_stream, std::ostream &stderr_stream) {
+  // If we're trying to execute a SwiftCompileModule step but there aren't any
+  // module jobs, then there was a bug in the planning phase.
+  if (plan.ModuleJobs().empty()) {
+    LogCompilePlanError(stderr_stream,
+                        "Attempting to execute a SwiftCompileModule step but "
+                        "there are no module-wide jobs.");
+    return 1;
+  }
+
   // Run module jobs sequentially, in case later ones have dependencies on the
   // outputs of earlier ones.
   for (absl::string_view job : plan.ModuleJobs()) {
@@ -306,10 +330,11 @@ int SpawnCompileCodegenStep(
       compile_step.output.empty() ? std::vector<absl::string_view>()
                                   : absl::StrSplit(compile_step.output, ','));
   if (jobs.empty()) {
-    stderr_stream << "internal error: could not find the frontend command "
-                     "for action "
-                  << compile_step.action << " for some requested output in "
-                  << compile_step.output << "\n";
+    LogCompilePlanError(
+        stderr_stream,
+        absl::Substitute("Could not find the frontend command for action $0 "
+                         "for some requested output in $1.",
+                         compile_step.action, compile_step.output));
     return 1;
   }
   for (absl::string_view job : jobs) {
@@ -326,27 +351,36 @@ int SpawnCompileCodegenStep(
     absl::StatusOr<std::unique_ptr<AsyncProcess>> process =
         AsyncProcess::Spawn(step_args, std::move(response_file), env);
     if (!process.ok()) {
-      stderr_stream << "error spawning subprocess: " << process.status()
-                    << "\n";
+      LogCompilePlanError(
+          stderr_stream,
+          absl::Substitute("Could not spawn subprocess: $0.",
+                           process.status().ToString(
+                               absl::StatusToStringMode::kWithEverything)));
       return 1;
     }
     processes.emplace_back(std::move(*process));
   }
 
+  int any_failing_exit_code = 0;
   for (std::unique_ptr<AsyncProcess> &process : processes) {
     absl::StatusOr<AsyncProcess::Result> result = process->WaitForTermination();
     if (!result.ok()) {
-      stderr_stream << "error spawning or waiting for subprocess: "
-                    << result.status() << "\n";
+      LogCompilePlanError(
+          stderr_stream,
+          absl::Substitute("Error waiting for subprocess: $0.",
+                           result.status().ToString(
+                               absl::StatusToStringMode::kWithEverything)));
       return 1;
     }
     stdout_stream << result->stdout;
     stderr_stream << result->stderr;
     if (result->exit_code != 0) {
-      return result->exit_code;
+      // Don't return early if the job failed; if we have multiple jobs in the
+      // batch, we want the user to see possible diagnostics from all of them.
+      any_failing_exit_code = result->exit_code;
     }
   }
-  return 0;
+  return any_failing_exit_code;
 }
 
 // Spawns a single step in a parallelized compilation by getting a list of
@@ -384,9 +418,10 @@ int SpawnPlanStep(const std::vector<std::string> &tool_args,
                                    stderr_stream);
   }
 
-  stderr_stream << "internal error: unrecognized plan step "
-                << compile_step.action << " with output " << compile_step.output
-                << "\n";
+  LogCompilePlanError(
+      stderr_stream,
+      absl::Substitute("Unrecognized plan step $0 with output $1.",
+                       compile_step.action, compile_step.output));
   return 1;
 }
 
@@ -759,7 +794,7 @@ int SwiftRunner::PerformLayeringCheck(std::ostream &stdout_stream,
     WithColor(stderr_stream, Color::kBoldGreen) << target_label_ << std::endl;
     stderr_stream
         << "The following modules were imported, but they are not direct "
-        << "dependencies of the target:" << std::endl
+        << "dependencies of the target or they are misspelled:" << std::endl
         << std::endl;
 
     for (const std::string &module_name : missing_deps) {
