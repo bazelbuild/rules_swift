@@ -205,6 +205,7 @@ bzl_library(
     name = "swift_symbol_graph_aspect",
     srcs = ["swift_symbol_graph_aspect.bzl"],
     visibility = [
+        "//devtools/swift/semantic_analysis/aspect/versioned:__pkg__",
         "//swift:__pkg__",
     ],
     deps = [
