@@ -23,6 +23,7 @@ _DOC_SRCS = {
         "swift_interop_hint",
         "swift_library",
         "swift_library_group",
+        "mixed_language_library",
         "swift_module_alias",
         "swift_package_configuration",
         "swift_test",
@@ -170,6 +171,7 @@ bzl_library(
     srcs = ["//doc:doc.bzl"],
     visibility = ["//doc:__pkg__"],
     deps = [
+        "//mixed_language",
         "//proto",
         "//swift",
     ],

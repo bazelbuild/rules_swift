@@ -41,6 +41,7 @@ bzl_library(
     name = "attrs",
     srcs = ["attrs.bzl"],
     visibility = [
+        "//mixed_language:__subpackages__",
         "//proto:__subpackages__",
         "//swift:__subpackages__",
     ],
@@ -72,6 +73,7 @@ bzl_library(
     name = "compiling",
     srcs = ["compiling.bzl"],
     visibility = [
+        "//mixed_language:__subpackages__",
         "//proto:__subpackages__",
         "//swift:__subpackages__",
     ],
@@ -128,13 +130,19 @@ bzl_library(
 bzl_library(
     name = "feature_names",
     srcs = ["feature_names.bzl"],
-    visibility = ["//swift:__subpackages__"],
+    visibility = [
+        "//mixed_language:__subpackages__",
+        "//swift:__subpackages__",
+    ],
 )
 
 bzl_library(
     name = "features",
     srcs = ["features.bzl"],
-    visibility = ["//swift:__subpackages__"],
+    visibility = [
+        "//mixed_language:__subpackages__",
+        "//swift:__subpackages__",
+    ],
     deps = [
         ":feature_names",
         ":package_specs",
@@ -170,7 +178,10 @@ bzl_library(
 bzl_library(
     name = "module_maps",
     srcs = ["module_maps.bzl"],
-    visibility = ["//swift:__subpackages__"],
+    visibility = [
+        "//mixed_language:__subpackages__",
+        "//swift:__subpackages__",
+    ],
     deps = ["@bazel_skylib//lib:paths"],
 )
 
@@ -192,7 +203,10 @@ bzl_library(
 bzl_library(
     name = "providers",
     srcs = ["providers.bzl"],
-    visibility = ["//swift:__subpackages__"],
+    visibility = [
+        "//mixed_language:__subpackages__",
+        "//swift:__subpackages__",
+    ],
     deps = [
         "//swift:providers.bzl",
     ],
@@ -251,6 +265,7 @@ bzl_library(
     name = "toolchain_utils",
     srcs = ["toolchain_utils.bzl"],
     visibility = [
+        "//mixed_language:__subpackages__",
         "//proto:__subpackages__",
         "//swift:__subpackages__",
     ],
@@ -260,6 +275,7 @@ bzl_library(
     name = "utils",
     srcs = ["utils.bzl"],
     visibility = [
+        "//mixed_language:__subpackages__",
         "//proto:__subpackages__",
         "//swift:__subpackages__",
     ],

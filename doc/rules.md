@@ -22,6 +22,7 @@ On this page:
   * [swift_interop_hint](#swift_interop_hint)
   * [swift_library](#swift_library)
   * [swift_library_group](#swift_library_group)
+  * [mixed_language_library](#mixed_language_library)
   * [swift_module_alias](#swift_module_alias)
   * [swift_package_configuration](#swift_package_configuration)
   * [swift_test](#swift_test)
@@ -800,5 +801,50 @@ swift_library(
 | :------------- | :------------- | :------------- | :------------- | :------------- |
 | <a id="universal_swift_compiler_plugin-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
 | <a id="universal_swift_compiler_plugin-plugin"></a>plugin |  Target to generate a 'fat' binary from.   | <a href="https://bazel.build/concepts/labels">Label</a> | required |  |
+
+
+<a id="mixed_language_library"></a>
+
+## mixed_language_library
+
+<pre>
+mixed_language_library(<a href="#mixed_language_library-name">name</a>, <a href="#mixed_language_library-alwayslink">alwayslink</a>, <a href="#mixed_language_library-clang_copts">clang_copts</a>, <a href="#mixed_language_library-clang_defines">clang_defines</a>, <a href="#mixed_language_library-clang_srcs">clang_srcs</a>, <a href="#mixed_language_library-enable_modules">enable_modules</a>,
+                       <a href="#mixed_language_library-hdrs">hdrs</a>, <a href="#mixed_language_library-includes">includes</a>, <a href="#mixed_language_library-linkopts">linkopts</a>, <a href="#mixed_language_library-module_map">module_map</a>, <a href="#mixed_language_library-module_name">module_name</a>, <a href="#mixed_language_library-non_arc_srcs">non_arc_srcs</a>, <a href="#mixed_language_library-private_deps">private_deps</a>,
+                       <a href="#mixed_language_library-sdk_dylibs">sdk_dylibs</a>, <a href="#mixed_language_library-sdk_frameworks">sdk_frameworks</a>, <a href="#mixed_language_library-swift_copts">swift_copts</a>, <a href="#mixed_language_library-swift_defines">swift_defines</a>, <a href="#mixed_language_library-swift_srcs">swift_srcs</a>,
+                       <a href="#mixed_language_library-swiftc_inputs">swiftc_inputs</a>, <a href="#mixed_language_library-textual_hdrs">textual_hdrs</a>, <a href="#mixed_language_library-umbrella_header">umbrella_header</a>, <a href="#mixed_language_library-weak_sdk_frameworks">weak_sdk_frameworks</a>, <a href="#mixed_language_library-deps">deps</a>,
+                       <a href="#mixed_language_library-kwargs">kwargs</a>)
+</pre>
+
+Creates a mixed language library from a Clang and Swift library target     pair.
+
+**PARAMETERS**
+
+
+| Name  | Description | Default Value |
+| :------------- | :------------- | :------------- |
+| <a id="mixed_language_library-name"></a>name |  The name of the target.   |  none |
+| <a id="mixed_language_library-alwayslink"></a>alwayslink |  If true, any binary that depends (directly or indirectly) on this library will link in all the object files for the files listed in `swift_srcs`, even if some contain no symbols referenced by the binary. This is useful if your code isn't explicitly called by code in the binary; for example, if you rely on runtime checks for protocol conformances added in extensions in the library but do not directly reference any other symbols in the object file that adds that conformance.   |  `False` |
+| <a id="mixed_language_library-clang_copts"></a>clang_copts |  The compiler flags for the clang library. These will only be used for the clang library. If you want them to affect the swift library as well, you need to pass them with `-Xcc` in `swift_copts`.   |  `[]` |
+| <a id="mixed_language_library-clang_defines"></a>clang_defines |  Extra clang `-D` flags to pass to the compiler. They should be in the form `KEY=VALUE` or simply `KEY` and are passed not only to the compiler for this target (as `clang_copts` are) but also to all dependers of this target. Subject to "Make variable" substitution and Bourne shell tokenization.   |  `[]` |
+| <a id="mixed_language_library-clang_srcs"></a>clang_srcs |  The list of C, C++, Objective-C, or Objective-C++ sources for the clang library.   |  none |
+| <a id="mixed_language_library-enable_modules"></a>enable_modules |  Enables clang module support (via `-fmodules`). Setting this to `True`  will allow you to `@import` system headers and other targets: `@import UIKit;` `@import path_to_package_target;`.   |  `False` |
+| <a id="mixed_language_library-hdrs"></a>hdrs |  The list of C, C++, Objective-C, or Objective-C++ header files published by this library to be included by sources in dependent rules. This can't include `umbrella_header`.   |  `[]` |
+| <a id="mixed_language_library-includes"></a>includes |  List of `#include`/`#import` search paths to add to this target and all depending targets.   |  `[]` |
+| <a id="mixed_language_library-linkopts"></a>linkopts |  Extra flags to pass to the linker.   |  `[]` |
+| <a id="mixed_language_library-module_map"></a>module_map |  A `File` representing an existing module map that should be used to represent the module, or `None` (the default) if the module map should be generated based on `hdrs`. If this argument is provided, then `module_name` must also be provided.<br><br>Warning: If a module map (whether provided here or not) is able to be found via an include path, it will result in duplicate module definition errors for downstream targets unless sandboxing or remote execution is used.   |  `None` |
+| <a id="mixed_language_library-module_name"></a>module_name |  The name of the Swift module being built.<br><br>If left unspecified, the module name will be computed based on the target's build label, by stripping the leading `//` and replacing `/`, `:`, and other non-identifier characters with underscores.   |  `None` |
+| <a id="mixed_language_library-non_arc_srcs"></a>non_arc_srcs |  The list of Objective-C files that are processed to create the library target that DO NOT use ARC. The files in this attribute are treated very similar to those in the `clang_srcs` attribute, but are compiled without ARC enabled.   |  `[]` |
+| <a id="mixed_language_library-private_deps"></a>private_deps |  A list of targets that are implementation-only dependencies of the target being built. Libraries/linker flags from these dependencies will be propagated to dependent for linking, but artifacts/flags required for compilation (such as .swiftmodule files, C headers, and search paths) will not be propagated.   |  `[]` |
+| <a id="mixed_language_library-sdk_dylibs"></a>sdk_dylibs |  A list of of SDK `.dylib` libraries to link with. For instance, "libz" or "libarchive". "libc++" is included automatically if the binary has any C++ or Objective-C++ sources in its dependency tree. When linking a binary, all libraries named in that binary's transitive dependency graph are used.   |  `[]` |
+| <a id="mixed_language_library-sdk_frameworks"></a>sdk_frameworks |  A list of SDK frameworks to link with (e.g. "AddressBook", "QuartzCore").<br><br>When linking a top level Apple binary, all SDK frameworks listed in that binary's transitive dependency graph are linked.   |  `[]` |
+| <a id="mixed_language_library-swift_copts"></a>swift_copts |  The compiler flags for the swift library.   |  `[]` |
+| <a id="mixed_language_library-swift_defines"></a>swift_defines |  A list of Swift defines to add to the compilation command line.<br><br>Note that unlike C-family languages, Swift defines do not have values; they are simply identifiers that are either defined or undefined. So strings in this list should be simple identifiers, not `name=value` pairs.<br><br>Each string is prepended with `-D` and added to the command line. Unlike `swift_copts`, these flags are added for the target and every target that depends on it, so use this attribute with caution. It is preferred that you add defines directly to `swift_copts`, only using this feature in the rare case that a library needs to propagate a symbol up to those that depend on it.   |  `[]` |
+| <a id="mixed_language_library-swift_srcs"></a>swift_srcs |  The sources for the swift library.   |  none |
+| <a id="mixed_language_library-swiftc_inputs"></a>swiftc_inputs |  Additional files that are referenced using `$(location ...)` in attributes that support location expansion.   |  `[]` |
+| <a id="mixed_language_library-textual_hdrs"></a>textual_hdrs |  The list of C, C++, Objective-C, or Objective-C++ files that are included as headers by source files in this rule or by users of this library. Unlike `hdrs`, these will not be compiled separately from the sources.   |  `[]` |
+| <a id="mixed_language_library-umbrella_header"></a>umbrella_header |  A `File` representing an existing umbrella header that should be used in the generated module map or is used in the custom module map, or `None` (the default) if the umbrella header should be generated based on `hdrs`. A symlink to this header is added to an include path such that `#import <ModuleName/ModuleName.h>` works for this and downstream targets.   |  `None` |
+| <a id="mixed_language_library-weak_sdk_frameworks"></a>weak_sdk_frameworks |  A list of SDK frameworks to weakly link with. For instance, "MediaAccessibility". In difference to regularly linked SDK frameworks, symbols from weakly linked frameworks do not cause an error if they are not present at runtime.   |  `[]` |
+| <a id="mixed_language_library-deps"></a>deps |  A list of targets that are dependencies of the target being built.   |  `[]` |
+| <a id="mixed_language_library-kwargs"></a>kwargs |  Additional arguments to pass to the underlying clang and swift library targets.   |  none |
 
 
