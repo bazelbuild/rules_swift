@@ -202,7 +202,10 @@ bzl_library(
     name = "swift_autoconfiguration",
     srcs = ["swift_autoconfiguration.bzl"],
     visibility = ["//swift:__subpackages__"],
-    deps = ["//swift/internal:feature_names"],
+    deps = [
+        ":toolchain_utils",
+        "//swift/internal:feature_names",
+    ],
 )
 
 bzl_library(
