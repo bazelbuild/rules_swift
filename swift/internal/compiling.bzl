@@ -44,7 +44,6 @@ load(
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
     "SWIFT_FEATURE_LAYERING_CHECK_SWIFT",
     "SWIFT_FEATURE_MODULAR_INDEXING",
-    "SWIFT_FEATURE_NO_GENERATED_MODULE_MAP",
     "SWIFT_FEATURE_OPT",
     "SWIFT_FEATURE_OPT_USES_CMO",
     "SWIFT_FEATURE_OPT_USES_WMO",
@@ -865,16 +864,13 @@ def _compile_generated_header_clang_module(
         A `struct` (never `None`) containing the following fields:
 
         *   `module_map_file`: The module map file that defines the Clang module
-            for the Swift generated header. This may be `None` if the
-            `swift.no_generated_module_map` feature is enabled.
+            for the Swift generated header. This may be `None` if no generated
+            header was requested.
         *   `precompiled_module`: The precompiled module that contains the
             compiled Clang module. This may be `None` if explicit modules are
             not enabled.
     """
-    if not generated_header_name or is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_NO_GENERATED_MODULE_MAP,
-    ):
+    if not generated_header_name:
         return struct(
             module_map_file = None,
             precompiled_module = None,

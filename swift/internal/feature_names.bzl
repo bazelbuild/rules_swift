@@ -137,11 +137,6 @@ SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD = "swift.module_map_home_is_cwd"
 # link to any version of the ASAN runtime library.
 SWIFT_FEATURE_NO_ASAN_VERSION_CHECK = "swift.no_asan_version_check"
 
-# If enabled, the compilation action for a library target will not generate a
-# module map for the Objective-C generated header. This feature is ignored if
-# the target is not generating a header.
-SWIFT_FEATURE_NO_GENERATED_MODULE_MAP = "swift.no_generated_module_map"
-
 # If enabled, builds using the "opt" compilation mode will invoke `swiftc` with
 # the `-whole-module-optimization` flag (in addition to `-O`).
 SWIFT_FEATURE_OPT_USES_WMO = "swift.opt_uses_wmo"

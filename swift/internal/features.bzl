@@ -27,12 +27,10 @@ load(
     "SWIFT_FEATURE_ENABLE_V6",
     "SWIFT_FEATURE_FULL_DEBUG_INFO",
     "SWIFT_FEATURE_INTERNALIZE_AT_LINK",
-    "SWIFT_FEATURE_NO_GENERATED_MODULE_MAP",
     "SWIFT_FEATURE_OPT_USES_CMO",
     "SWIFT_FEATURE__SUPPORTS_V6",
 )
 load(":package_specs.bzl", "label_matches_package_specs")
-load(":target_triples.bzl", "target_triples")
 
 visibility([
     "@build_bazel_rules_swift//swift/...",
@@ -272,12 +270,6 @@ def default_features_for_toolchain(ctx, target_triple):
     # Apple specific features
     if target_triple.vendor == "apple":
         features.append(SWIFT_FEATURE_DEBUG_PREFIX_MAP)
-
-    # Linux specific features
-    if target_triples.unversioned_os(target_triple) == "linux":
-        features.extend([
-            SWIFT_FEATURE_NO_GENERATED_MODULE_MAP,
-        ])
 
     return features
 
