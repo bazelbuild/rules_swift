@@ -145,7 +145,6 @@ bzl_library(
     deps = [
         ":feature_names",
         ":package_specs",
-        ":target_triples",
         "@bazel_skylib//lib:collections",
         "@bazel_skylib//lib:new_sets",
         "@bazel_skylib//rules:common_settings",
