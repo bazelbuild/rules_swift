@@ -239,10 +239,6 @@ def _create_linux_toolchain(repository_ctx):
         "BUILD",
         """
 load(
-    "@build_bazel_apple_support//configs:platforms.bzl",
-    "APPLE_PLATFORMS_CONSTRAINTS",
-)
-load(
     "@build_bazel_rules_swift//swift/toolchains:swift_toolchain.bzl",
     "swift_toolchain",
 )
@@ -258,20 +254,20 @@ swift_toolchain(
     version_file = "{version_file}",
 )
 
-[
-    toolchain(
-        name = "xcode-toolchain-" + arch + "-{cpu}",
-        exec_compatible_with = [
-            "@platforms//os:linux",
-            "@platforms//cpu:{cpu}",
-        ],
-        target_compatible_with = APPLE_PLATFORMS_CONSTRAINTS[arch],
-        toolchain = ":toolchain",
-        toolchain_type = "{toolchain_type}",
-        visibility = ["//visibility:public"],
-    )
-    for arch in APPLE_PLATFORMS_CONSTRAINTS.keys()
-]
+toolchain(
+    name = "linux-swift-toolchain-{cpu}",
+    exec_compatible_with = [
+        "@platforms//os:linux",
+        "@platforms//cpu:{cpu}",
+    ],
+    target_compatible_with = [
+        "@platforms//os:linux",
+        "@platforms//cpu:{cpu}",
+    ],
+    toolchain = ":toolchain",
+    toolchain_type = "{toolchain_type}",
+    visibility = ["//visibility:public"],
+)
 """.format(
             cpu = _normalized_linux_cpu(repository_ctx.os.arch),
             feature_list = ", ".join([
@@ -393,10 +389,6 @@ def _create_windows_toolchain(repository_ctx):
         "BUILD",
         """
 load(
-    "@build_bazel_apple_support//configs:platforms.bzl",
-    "APPLE_PLATFORMS_CONSTRAINTS",
-)
-load(
   "@build_bazel_rules_swift//swift/toolchains:swift_toolchain.bzl",
   "swift_toolchain",
 )
@@ -416,20 +408,17 @@ swift_toolchain(
   xctest_version = "{xctest_version}",
 )
 
-[
-    toolchain(
-        name = "windows-toolchain-" + arch + "-x86_64",
-        exec_compatible_with = [
-            "@platforms//os:windows",
-            "@platforms//cpu:x86_64",
-        ],
-        target_compatible_with = APPLE_PLATFORMS_CONSTRAINTS[arch],
-        toolchain = ":toolchain",
-        toolchain_type = "{toolchain_type}",
-        visibility = ["//visibility:public"],
-    )
-    for arch in APPLE_PLATFORMS_CONSTRAINTS.keys()
-]
+toolchain(
+    name = "windows-swift-toolchain-x86_64",
+    exec_compatible_with = [
+        "@platforms//os:windows",
+        "@platforms//cpu:x86_64",
+    ],
+    target_compatible_with = APPLE_PLATFORMS_CONSTRAINTS[arch],
+    toolchain = ":toolchain",
+    toolchain_type = "{toolchain_type}",
+    visibility = ["//visibility:public"],
+)
 """.format(
             features = ", ".join(['"{}"'.format(feature) for feature in enabled_features] + ['"-{}"'.format(feature) for feature in disabled_features]),
             root = root,
