@@ -22,6 +22,9 @@ visibility([
     "@build_bazel_rules_swift//swift/...",
 ])
 
+C_HEADER_EXTENSIONS = ["h", "hh", "hpp", "hxx", "inc"]
+C_SOURCE_EXTENSIONS = ["c", "cc", "cpp", "cxx", "m", "mm"]
+
 def swift_common_rule_attrs(
         additional_deps_aspects = [],
         additional_deps_providers = []):
@@ -111,9 +114,17 @@ def swift_compilation_attrs(
         {
             "srcs": attr.label_list(
                 allow_empty = not requires_srcs,
-                allow_files = ["swift"],
+                allow_files = (
+                    ["swift"] + C_HEADER_EXTENSIONS + C_SOURCE_EXTENSIONS
+                ),
                 doc = """\
-A list of `.swift` source files that will be compiled into the library.
+A list of source files that will be compiled into the library. These can be
+`.swift` files, or in the case of mixed-language modules, C/Objective-C source
+files may also be included. C/Objective-C source files must be ARC-compatible
+and will be compiled using the C toolchain resolved by Bazel for the desired
+configuration. C/Objective-C header files listed in `srcs` will be treated as
+_private headers_ of the module (that is, not propagated to dependent targets)
+and must be parsable as C/Objective-C like any other header imported by Swift.
 
 Except in very rare circumstances, a Swift source file should only appear in a
 single `swift_*` target. Adding the same source file to multiple `swift_*`
@@ -128,6 +139,13 @@ own `swift_library` instead.
                 doc = """\
 Additional compiler options that should be passed to `swiftc`. These strings are
 subject to `$(location ...)` expansion.
+""",
+            ),
+            "c_copts": attr.string_list(
+                doc = """\
+Additional compiler options that should be passed to the C compiler when
+compiling any C/Objective-C sources that are part of a mixed language module.
+These strings are subject to `$(location ...)` expansion.
 """,
             ),
             "defines": attr.string_list(
@@ -340,6 +358,17 @@ effectively empty (except for a large amount of prologue and epilogue code) and
 this is generally wasteful because the extra file needs to be propagated in the
 build graph and, when explicit modules are enabled, extra actions must be
 executed to compile the Objective-C module for the generated header.
+
+#### Mixed language modules
+
+When writing a mixed language module (e.g., a `swift_library` containing both
+Swift sources and C/Objective-C sources), it is permitted for _sources_ to
+import this header to access APIs exported from Swift, but it is _not permitted_
+for other _headers_ to import the generated header. This would result in a
+circular dependency between the modules. If a header needs to refer to a symbol
+exported from Swift, then it must forward-declare it (forward declarations to
+symbols in the same module are not problematic, unlike forward declarations to
+symbols in other modules).
 """,
                 mandatory = False,
             ),

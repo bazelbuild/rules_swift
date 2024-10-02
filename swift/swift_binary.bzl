@@ -71,6 +71,9 @@ def _swift_binary_impl(ctx):
     # If the binary has sources, compile those first and collect the outputs to
     # be passed to the linker.
     if srcs:
+        copts = expand_locations(ctx, ctx.attr.copts, ctx.attr.swiftc_inputs)
+        c_copts = expand_locations(ctx, ctx.attr.c_copts, ctx.attr.swiftc_inputs)
+
         module_name = ctx.attr.module_name
         if not module_name:
             module_name = derive_swift_module_name(ctx.label)
@@ -80,11 +83,7 @@ def _swift_binary_impl(ctx):
             actions = ctx.actions,
             additional_inputs = ctx.files.swiftc_inputs,
             compilation_contexts = get_compilation_contexts(ctx.attr.deps),
-            copts = expand_locations(
-                ctx,
-                ctx.attr.copts,
-                ctx.attr.swiftc_inputs,
-            ) + [
+            copts = copts + [
                 # Use a custom entry point name so that the binary's code can
                 # also be linked into another process (like a test executable)
                 # without having its main function collide.
@@ -93,6 +92,7 @@ def _swift_binary_impl(ctx):
                 "-Xfrontend",
                 entry_point_function_name,
             ],
+            c_copts = c_copts,
             defines = ctx.attr.defines,
             feature_configuration = feature_configuration,
             module_name = module_name,

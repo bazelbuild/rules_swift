@@ -218,15 +218,15 @@ def _do_compile(
     Returns:
         The same value as would be returned by `compile`.
     """
+    copts = expand_locations(ctx, ctx.attr.copts, ctx.attr.swiftc_inputs)
+    c_copts = expand_locations(ctx, ctx.attr.c_copts, ctx.attr.swiftc_inputs)
+
     return compile(
         actions = ctx.actions,
         additional_inputs = ctx.files.swiftc_inputs,
         compilation_contexts = compilation_contexts,
-        copts = expand_locations(
-            ctx,
-            ctx.attr.copts,
-            ctx.attr.swiftc_inputs,
-        ) + additional_copts,
+        copts = copts + additional_copts,
+        c_copts = c_copts,
         defines = ctx.attr.defines,
         feature_configuration = feature_configuration,
         module_name = module_name,

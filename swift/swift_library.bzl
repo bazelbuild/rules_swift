@@ -128,6 +128,7 @@ def _swift_library_impl(ctx):
     # These can't use additional_inputs since expand_locations needs targets,
     # not files.
     copts = expand_locations(ctx, ctx.attr.copts, ctx.attr.swiftc_inputs)
+    c_copts = expand_locations(ctx, ctx.attr.c_copts, ctx.attr.swiftc_inputs)
     linkopts = expand_locations(ctx, ctx.attr.linkopts, ctx.attr.swiftc_inputs)
     srcs = ctx.files.srcs
 
@@ -181,6 +182,7 @@ def _swift_library_impl(ctx):
         additional_inputs = additional_inputs,
         compilation_contexts = get_compilation_contexts(ctx.attr.deps),
         copts = _maybe_parse_as_library_copts(srcs) + copts,
+        c_copts = c_copts,
         defines = ctx.attr.defines,
         feature_configuration = feature_configuration,
         generated_header_name = generated_header_name,
