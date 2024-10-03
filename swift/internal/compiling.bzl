@@ -45,6 +45,7 @@ load(
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
     "SWIFT_FEATURE_LAYERING_CHECK_SWIFT",
     "SWIFT_FEATURE_MODULAR_INDEXING",
+    "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_OPT",
     "SWIFT_FEATURE_OPT_USES_CMO",
     "SWIFT_FEATURE_OPT_USES_WMO",
@@ -926,6 +927,10 @@ def _compile_generated_header_clang_module(
         module_map_file = generated_module_map,
         module_name = module_name,
         public_headers = [generated_header_file],
+        workspace_relative = is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD,
+        ),
     )
 
     compilation_context_to_compile = (
