@@ -80,11 +80,11 @@ bzl_library(
     name = "swift_bzl_macro",
     srcs = ["swift_bzl_macro.bzl"],
     visibility = ["//visibility:private"],
-    deps = ["//swift"],
+    deps = ["//swift:providers"],
 )
 
 bzl_test(
     name = "swift_bzl_test",
     src = "swift_bzl_macro.bzl",
-    deps = ["//swift"],
+    deps = ["//swift:providers"],
 )
