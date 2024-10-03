@@ -71,6 +71,6 @@ bzl_library(
         ":swift_proto_compiler",
         ":swift_proto_library",
         ":swift_proto_library_group",
-        "//swift",
+        "//swift:providers.bzl",
     ],
 )
