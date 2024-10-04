@@ -54,28 +54,6 @@ bzl_library(
 )
 
 bzl_library(
-    name = "swift",
-    srcs = ["swift.bzl"],
-    deps = [
-        ":providers",
-        ":swift_binary",
-        ":swift_clang_module_aspect",
-        ":swift_common",
-        ":swift_compiler_plugin",
-        ":swift_extract_symbol_graph",
-        ":swift_feature_allowlist",
-        ":swift_import",
-        ":swift_interop_hint",
-        ":swift_library",
-        ":swift_library_group",
-        ":swift_module_alias",
-        ":swift_package_configuration",
-        ":swift_symbol_graph_aspect",
-        ":swift_test",
-    ],
-)
-
-bzl_library(
     name = "swift_binary",
     srcs = ["swift_binary.bzl"],
     deps = [
@@ -266,6 +244,28 @@ bzl_library(
         "//swift/internal:utils",
         "@bazel_skylib//lib:dicts",
         "@bazel_skylib//lib:paths",
+    ],
+)
+
+bzl_library(
+    name = "swift",
+    srcs = ["swift.bzl"],
+    deps = [
+        ":providers",
+        ":swift_binary",
+        ":swift_clang_module_aspect",
+        ":swift_common",
+        ":swift_compiler_plugin",
+        ":swift_extract_symbol_graph",
+        ":swift_feature_allowlist",
+        ":swift_import",
+        ":swift_interop_hint",
+        ":swift_library",
+        ":swift_library_group",
+        ":swift_module_alias",
+        ":swift_package_configuration",
+        ":swift_symbol_graph_aspect",
+        ":swift_test",
     ],
 )
 
