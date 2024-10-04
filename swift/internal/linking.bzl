@@ -387,22 +387,6 @@ def create_linking_context_from_compilation_outputs(
             ),
         )
 
-    if is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_OBJC_LINK_FLAGS,
-    ):
-        # TODO: Remove once we can rely on folks using the new toolchain
-        extra_linking_contexts.append(
-            cc_common.create_linking_context(
-                linker_inputs = depset([
-                    cc_common.create_linker_input(
-                        owner = label,
-                        user_link_flags = depset(["-ObjC"]),
-                    ),
-                ]),
-            ),
-        )
-
     if include_dev_srch_paths != None and is_test != None:
         fail("""\
 Both `include_dev_srch_paths` and `is_test` cannot be specified. Please select \
@@ -535,12 +519,6 @@ def new_objc_provider(
 
     if is_test:
         extra_linkopts.extend(developer_dirs_linkopts(swift_toolchain.developer_dirs))
-
-    if feature_configuration and is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_OBJC_LINK_FLAGS,
-    ):
-        extra_linkopts.append("-ObjC")
 
     kwargs = {
         "providers": get_providers(
@@ -733,7 +711,6 @@ def register_link_binary_action(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_OBJC_LINK_FLAGS,
     ):
-        # TODO: Remove once we can rely on folks using the new toolchain
         linking_contexts.append(
             cc_common.create_linking_context(
                 linker_inputs = depset([
