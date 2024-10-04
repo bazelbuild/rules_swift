@@ -30,13 +30,13 @@ load(
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
     "SWIFT_FEATURE_EMIT_SWIFTDOC",
     "SWIFT_FEATURE_EMIT_SWIFTSOURCEINFO",
+    "SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
     "SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES",
     "SWIFT_FEATURE_FILE_PREFIX_MAP",
     "SWIFT_FEATURE_LLD_GC_WORKAROUND",
     "SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS",
     "SWIFT_FEATURE_NO_EMBED_DEBUG_MODULE",
-    "SWIFT_FEATURE_SUPPORTS_BARE_SLASH_REGEX",
     "SWIFT_FEATURE_USE_AUTOLINK_EXTRACT",
     "SWIFT_FEATURE_USE_MODULE_WRAP",
 )
@@ -201,11 +201,11 @@ def _compute_feature_values(repository_ctx, swiftc_path):
 # the `swiftc` executable and a scratch directory, respectively. The function
 # should return True if the feature is supported.
 _FEATURE_CHECKS = {
+    SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX: _check_enable_bare_slash_regex,
     SWIFT_FEATURE_ENABLE_BATCH_MODE: _check_enable_batch_mode,
     SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES: _check_skip_function_bodies,
     SWIFT_FEATURE_FILE_PREFIX_MAP: _check_file_prefix_map,
     SWIFT_FEATURE_LLD_GC_WORKAROUND: _check_supports_lld_gc_workaround,
-    SWIFT_FEATURE_SUPPORTS_BARE_SLASH_REGEX: _check_enable_bare_slash_regex,
 }
 
 def _normalized_linux_cpu(cpu):
