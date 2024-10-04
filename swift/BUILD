@@ -28,15 +28,6 @@ bzl_library(
 )
 
 bzl_library(
-    name = "repositories",
-    srcs = ["repositories.bzl"],
-    deps = [
-        "//doc:bazel_tools_bzl",
-        "//swift/internal:swift_autoconfiguration",
-    ],
-)
-
-bzl_library(
     name = "module_name",
     srcs = ["module_name.bzl"],
     deps = [
@@ -54,24 +45,11 @@ bzl_library(
 )
 
 bzl_library(
-    name = "swift",
-    srcs = ["swift.bzl"],
+    name = "repositories",
+    srcs = ["repositories.bzl"],
     deps = [
-        ":providers",
-        ":swift_binary",
-        ":swift_clang_module_aspect",
-        ":swift_common",
-        ":swift_compiler_plugin",
-        ":swift_extract_symbol_graph",
-        ":swift_feature_allowlist",
-        ":swift_import",
-        ":swift_interop_hint",
-        ":swift_library",
-        ":swift_library_group",
-        ":swift_module_alias",
-        ":swift_package_configuration",
-        ":swift_symbol_graph_aspect",
-        ":swift_test",
+        "//doc:bazel_tools_bzl",
+        "//swift/internal:swift_autoconfiguration",
     ],
 )
 
@@ -269,7 +247,35 @@ bzl_library(
     ],
 )
 
-# Consumed by Bazel integration tests.
+# Consumed by docs
+bzl_library(
+    name = "swift",
+    deps = [
+        ":extensions",
+        ":extras",
+        ":module_name",
+        ":providers",
+        ":repositories",
+        ":swift_binary",
+        ":swift_clang_module_aspect",
+        ":swift_common",
+        ":swift_compiler_plugin",
+        ":swift_extract_symbol_graph",
+        ":swift_feature_allowlist",
+        ":swift_import",
+        ":swift_interop_hint",
+        ":swift_library",
+        ":swift_library_group",
+        ":swift_module_alias",
+        ":swift_module_mapping",
+        ":swift_package_configuration",
+        ":swift_symbol_graph_aspect",
+        ":swift_test",
+    ],
+    visibility = ["//doc:__pkg__"],
+)
+
+# Consumed by Bazel integration tests
 filegroup(
     name = "for_bazel_tests",
     testonly = 1,
