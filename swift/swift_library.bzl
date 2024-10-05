@@ -43,6 +43,7 @@ load(
     "get_providers",
     "include_developer_search_paths",
 )
+load("//swift/internal:runfiles.bzl", "include_runfiles_constants")
 load(":providers.bzl", "SwiftCompilerPluginInfo", "SwiftInfo")
 load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 load(":swift_common.bzl", "swift_common")
@@ -110,6 +111,8 @@ def _swift_library_impl(ctx):
     linkopts = expand_locations(ctx, ctx.attr.linkopts, ctx.attr.swiftc_inputs)
     linkopts = expand_make_variables(ctx, linkopts, "linkopts")
     srcs = ctx.files.srcs
+
+    srcs = srcs + include_runfiles_constants(ctx.label, ctx.actions, ctx.attr.deps)
 
     module_copts = additional_per_module_swiftcopts(
         ctx.label,
