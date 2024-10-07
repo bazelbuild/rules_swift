@@ -187,13 +187,13 @@ def swift_config_attrs():
     """
     return {
         "_config_emit_private_swiftinterface": attr.label(
-            default = "@build_bazel_rules_swift//swift:emit_private_swiftinterface",
+            default = Label("//swift:emit_private_swiftinterface"),
         ),
         "_config_emit_swiftinterface": attr.label(
-            default = "@build_bazel_rules_swift//swift:emit_swiftinterface",
+            default = Label("//swift:emit_swiftinterface"),
         ),
         "_per_module_swiftcopt": attr.label(
-            default = "@build_bazel_rules_swift//swift:per_module_swiftcopt",
+            default = Label("//swift:per_module_swiftcopt"),
         ),
     }
 
@@ -435,8 +435,6 @@ that it is invoked in the correct mode (i.e., `swift`, `swiftc`,
         "_default_swift_executable": attr.label(
             allow_files = True,
             cfg = "exec",
-            default = Label(
-                "@build_bazel_rules_swift//swift:default_swift_executable",
-            ),
+            default = Label("//swift:default_swift_executable"),
         ),
     }

@@ -1,7 +1,7 @@
 """Tests for various compiler arguments."""
 
 load(
-    "@build_bazel_rules_swift//test/rules:action_command_line_test.bzl",
+    "//test/rules:action_command_line_test.bzl",
     "action_command_line_test",
     "make_action_command_line_test_rule",
 )
@@ -44,7 +44,7 @@ def compiler_arguments_test_suite(name, tags = []):
         not_expected_argv = ["-package-name"],
         mnemonic = "SwiftCompile",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/compiler_arguments:no_package_name",
+        target_under_test = "//test/fixtures/compiler_arguments:no_package_name",
     )
 
     action_command_line_test(
@@ -52,7 +52,7 @@ def compiler_arguments_test_suite(name, tags = []):
         expected_argv = ["-package-name lib"],
         mnemonic = "SwiftCompile",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/compiler_arguments:lib_package_name",
+        target_under_test = "//test/fixtures/compiler_arguments:lib_package_name",
     )
 
     action_command_line_test(
@@ -60,7 +60,7 @@ def compiler_arguments_test_suite(name, tags = []):
         expected_argv = ["-package-name bin"],
         mnemonic = "SwiftCompile",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/compiler_arguments:bin_package_name",
+        target_under_test = "//test/fixtures/compiler_arguments:bin_package_name",
     )
 
     action_command_line_test(
@@ -68,7 +68,7 @@ def compiler_arguments_test_suite(name, tags = []):
         expected_argv = ["-package-name test"],
         mnemonic = "SwiftCompile",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/compiler_arguments:test_package_name",
+        target_under_test = "//test/fixtures/compiler_arguments:test_package_name",
     )
 
     split_test(
@@ -76,7 +76,7 @@ def compiler_arguments_test_suite(name, tags = []):
         expected_argv = ["-package-name lib"],
         mnemonic = "SwiftCompile",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/compiler_arguments:lib_package_name",
+        target_under_test = "//test/fixtures/compiler_arguments:lib_package_name",
     )
 
     split_test(
@@ -84,7 +84,7 @@ def compiler_arguments_test_suite(name, tags = []):
         expected_argv = ["-package-name lib"],
         mnemonic = "SwiftDeriveFiles",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/compiler_arguments:lib_package_name",
+        target_under_test = "//test/fixtures/compiler_arguments:lib_package_name",
     )
 
     thin_lto_test(
@@ -92,7 +92,7 @@ def compiler_arguments_test_suite(name, tags = []):
         expected_argv = ["-lto=llvm-thin"],
         mnemonic = "SwiftCompile",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/compiler_arguments:bin",
+        target_under_test = "//test/fixtures/compiler_arguments:bin",
     )
 
     full_lto_test(
@@ -100,7 +100,7 @@ def compiler_arguments_test_suite(name, tags = []):
         expected_argv = ["-lto=llvm-full"],
         mnemonic = "SwiftCompile",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/compiler_arguments:bin",
+        target_under_test = "//test/fixtures/compiler_arguments:bin",
     )
 
     native.test_suite(

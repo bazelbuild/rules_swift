@@ -1,7 +1,7 @@
 """Tests for swift_binary's output path."""
 
 load(
-    "@build_bazel_rules_swift//test/rules:swift_binary_linking_test.bzl",
+    "//test/rules:swift_binary_linking_test.bzl",
     "make_swift_binary_linking_test_rule",
     "swift_binary_linking_test",
 )
@@ -27,14 +27,14 @@ def swift_binary_linking_test_suite(name, tags = []):
         name = "{}_with_target_name".format(name),
         output_binary_path = "test/fixtures/linking/bin/bin",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/linking:bin",
+        target_under_test = "//test/fixtures/linking:bin",
     )
 
     swift_binary_linking_test(
         name = "{}_default".format(name),
         output_binary_path = "test/fixtures/linking/bin",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/linking:bin",
+        target_under_test = "//test/fixtures/linking:bin",
     )
 
     native.test_suite(

@@ -1,9 +1,6 @@
 """Tests for derived files related command line flags under various configs."""
 
-load(
-    "@build_bazel_rules_swift//test/rules:swift_shell_test.bzl",
-    "swift_shell_test",
-)
+load("//test/rules:swift_shell_test.bzl", "swift_shell_test")
 
 def xctest_runner_test_suite(name, tags = []):
     """Test suite for xctest runner.
@@ -23,7 +20,7 @@ def xctest_runner_test_suite(name, tags = []):
             "Executed 3 tests, with 0 failures",
         ],
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/xctest_runner:PassingUnitTests",
+        target_under_test = "//test/fixtures/xctest_runner:PassingUnitTests",
         target_compatible_with = ["@platforms//os:macos"],
     )
 
@@ -36,7 +33,7 @@ def xctest_runner_test_suite(name, tags = []):
             "Executed 1 test, with 1 failure",
         ],
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/xctest_runner:FailingUnitTests",
+        target_under_test = "//test/fixtures/xctest_runner:FailingUnitTests",
         target_compatible_with = ["@platforms//os:macos"],
     )
 
@@ -48,7 +45,7 @@ def xctest_runner_test_suite(name, tags = []):
             "error: no tests were executed",
         ],
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/xctest_runner:EmptyUnitTests",
+        target_under_test = "//test/fixtures/xctest_runner:EmptyUnitTests",
         target_compatible_with = ["@platforms//os:macos"],
     )
 

@@ -382,7 +382,7 @@ Each compiler target should configure this based on the suffix applied to the ge
             mandatory = True,
         ),
         "_copy_swift_sources_template": attr.label(
-            default = "//proto:copy_swift_sources.sh.tpl",
+            default = Label("//proto:copy_swift_sources.sh.tpl"),
             allow_single_file = True,
         ),
     },

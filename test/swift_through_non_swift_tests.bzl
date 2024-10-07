@@ -14,10 +14,7 @@
 
 """Tests for `SwiftInfo` propagation through non-Swift targets."""
 
-load(
-    "@build_bazel_rules_swift//test/rules:provider_test.bzl",
-    "provider_test",
-)
+load("//test/rules:provider_test.bzl", "provider_test")
 
 def swift_through_non_swift_test_suite(name, tags = []):
     """Test suite for propagation of `SwiftInfo` through non-Swift targets.
@@ -39,7 +36,7 @@ def swift_through_non_swift_test_suite(name, tags = []):
         field = "transitive_modules.swift!.swiftmodule",
         provider = "SwiftInfo",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/swift_through_non_swift:upper",
+        target_under_test = "//test/fixtures/swift_through_non_swift:upper",
     )
 
     native.test_suite(

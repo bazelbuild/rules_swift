@@ -14,12 +14,9 @@
 
 """Tests for Swift module aliases using the `:module_mapping` flag."""
 
+load("@bazel_skylib//rules:build_test.bzl", "build_test")
 load(
-    "@bazel_skylib//rules:build_test.bzl",
-    "build_test",
-)
-load(
-    "@build_bazel_rules_swift//swift:swift_module_mapping_test.bzl",
+    "//swift:swift_module_mapping_test.bzl",
     "swift_module_mapping_test",
 )
 
@@ -37,7 +34,7 @@ def module_mapping_test_suite(name, tags = []):
     build_test(
         name = "{}_module_mapping_is_applied".format(name),
         targets = [
-            "@build_bazel_rules_swift//test/fixtures/module_mapping:MySDK_with_mapping",
+            "//test/fixtures/module_mapping:MySDK_with_mapping",
         ],
         tags = all_tags,
     )
@@ -46,10 +43,10 @@ def module_mapping_test_suite(name, tags = []):
     # succeeds.
     swift_module_mapping_test(
         name = "{}_module_mapping_test_succeeds_with_complete_mapping".format(name),
-        mapping = "@build_bazel_rules_swift//test/fixtures/module_mapping:ExistingLibrary_module_mapping_complete",
+        mapping = "//test/fixtures/module_mapping:ExistingLibrary_module_mapping_complete",
         tags = all_tags,
         deps = [
-            "@build_bazel_rules_swift//test/fixtures/module_mapping:ExistingLibrary",
+            "//test/fixtures/module_mapping:ExistingLibrary",
         ],
     )
 
@@ -58,10 +55,10 @@ def module_mapping_test_suite(name, tags = []):
     swift_module_mapping_test(
         name = "{}_module_mapping_test_succeeds_with_exclusions".format(name),
         exclude = ["NewDependency"],
-        mapping = "@build_bazel_rules_swift//test/fixtures/module_mapping:ExistingLibrary_module_mapping_incomplete",
+        mapping = "//test/fixtures/module_mapping:ExistingLibrary_module_mapping_incomplete",
         tags = all_tags,
         deps = [
-            "@build_bazel_rules_swift//test/fixtures/module_mapping:ExistingLibrary",
+            "//test/fixtures/module_mapping:ExistingLibrary",
         ],
     )
 

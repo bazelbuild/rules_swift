@@ -15,7 +15,7 @@
 """Tests for pch output dir command line flags."""
 
 load(
-    "@build_bazel_rules_swift//test/rules:action_command_line_test.bzl",
+    "//test/rules:action_command_line_test.bzl",
     "make_action_command_line_test_rule",
 )
 
@@ -47,7 +47,7 @@ def pch_output_dir_test_suite(name, tags = []):
         ],
         mnemonic = "SwiftCompile",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     native.test_suite(

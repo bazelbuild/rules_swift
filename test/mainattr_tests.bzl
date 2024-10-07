@@ -1,7 +1,7 @@
 """Tests for validating @main related usage."""
 
 load(
-    "@build_bazel_rules_swift//test/rules:action_command_line_test.bzl",
+    "//test/rules:action_command_line_test.bzl",
     "make_action_command_line_test_rule",
 )
 
@@ -21,7 +21,7 @@ def mainattr_test_suite(name, tags = []):
         not_expected_argv = ["-parse-as-library"],
         mnemonic = "SwiftCompile",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/mainattr:main",
+        target_under_test = "//test/fixtures/mainattr:main",
     )
 
     mainattr_test(
@@ -29,7 +29,7 @@ def mainattr_test_suite(name, tags = []):
         expected_argv = ["-parse-as-library"],
         mnemonic = "SwiftCompile",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/mainattr:custommain",
+        target_under_test = "//test/fixtures/mainattr:custommain",
     )
 
     mainattr_test(
@@ -37,7 +37,7 @@ def mainattr_test_suite(name, tags = []):
         not_expected_argv = ["-parse-as-library"],
         mnemonic = "SwiftCompile",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/mainattr:multiplefiles",
+        target_under_test = "//test/fixtures/mainattr:multiplefiles",
     )
 
     native.test_suite(

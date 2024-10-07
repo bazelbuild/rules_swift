@@ -14,10 +14,7 @@
 
 """Tests for `swift_library.private_deps`."""
 
-load(
-    "@build_bazel_rules_swift//test/rules:provider_test.bzl",
-    "make_provider_test_rule",
-)
+load("//test/rules:provider_test.bzl", "make_provider_test_rule")
 
 # Force private deps support to be enabled at analysis time, regardless of
 # whether the active toolchain actually supports it.
@@ -55,7 +52,7 @@ def private_deps_test_suite(name, tags = []):
         field = "transitive_modules.swift!.swiftmodule",
         provider = "SwiftInfo",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/private_deps:private_swift",
+        target_under_test = "//test/fixtures/private_deps:private_swift",
     )
 
     private_deps_provider_test(
@@ -66,7 +63,7 @@ def private_deps_test_suite(name, tags = []):
         field = "transitive_modules.swift!.swiftmodule",
         provider = "SwiftInfo",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/private_deps:public_swift",
+        target_under_test = "//test/fixtures/private_deps:public_swift",
     )
 
     # The client module should propagate its own module and the one from `deps`,
@@ -81,7 +78,7 @@ def private_deps_test_suite(name, tags = []):
         field = "transitive_modules.swift!.swiftmodule",
         provider = "SwiftInfo",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/private_deps:client_swift_deps",
+        target_under_test = "//test/fixtures/private_deps:client_swift_deps",
     )
 
     # With private deps that are C++ libraries, we shouldn't propagate the
@@ -99,7 +96,7 @@ def private_deps_test_suite(name, tags = []):
         field = "compilation_context.headers",
         provider = "CcInfo",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/private_deps:client_cc_deps",
+        target_under_test = "//test/fixtures/private_deps:client_cc_deps",
     )
 
     # Likewise, we shouldn't repropagate the C++ private deps' module maps.
@@ -112,7 +109,7 @@ def private_deps_test_suite(name, tags = []):
         field = "transitive_modules.clang!.module_map!",
         provider = "SwiftInfo",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/private_deps:client_cc_deps",
+        target_under_test = "//test/fixtures/private_deps:client_cc_deps",
     )
 
     private_deps_provider_target_name_test(
@@ -124,7 +121,7 @@ def private_deps_test_suite(name, tags = []):
         field = "transitive_modules.clang!.module_map!",
         provider = "SwiftInfo",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/private_deps:client_cc_deps",
+        target_under_test = "//test/fixtures/private_deps:client_cc_deps",
     )
 
     # Make sure we don't also lose linking information when handling C++ private
@@ -142,7 +139,7 @@ def private_deps_test_suite(name, tags = []):
         field = "linking_context.linker_inputs.libraries.static_library!",
         provider = "CcInfo",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/private_deps:client_cc_deps",
+        target_under_test = "//test/fixtures/private_deps:client_cc_deps",
     )
 
     native.test_suite(

@@ -14,10 +14,7 @@
 
 """Implementation of the `swift_module_mapping` rule."""
 
-load(
-    "@build_bazel_rules_swift//swift/internal:providers.bzl",
-    "SwiftModuleAliasesInfo",
-)
+load("//swift/internal:providers.bzl", "SwiftModuleAliasesInfo")
 
 def _swift_module_mapping_impl(ctx):
     # This rule generates no actions/outputs; it only serves to propagate a

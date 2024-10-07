@@ -15,11 +15,11 @@
 """Tests for `const_values`."""
 
 load(
-    "@build_bazel_rules_swift//test/rules:action_command_line_test.bzl",
+    "//test/rules:action_command_line_test.bzl",
     "make_action_command_line_test_rule",
 )
 load(
-    "@build_bazel_rules_swift//test/rules:provider_test.bzl",
+    "//test/rules:provider_test.bzl",
     "make_provider_test_rule",
     "provider_test",
 )
@@ -28,7 +28,7 @@ const_values_test = make_action_command_line_test_rule()
 
 const_values_wmo_test = make_provider_test_rule(
     config_settings = {
-        str(Label("@build_bazel_rules_swift//swift:copt")): [
+        str(Label("//swift:copt")): [
             "-whole-module-optimization",
         ],
     },
@@ -51,7 +51,7 @@ def const_values_test_suite(name, tags = []):
         field = "const_values",
         provider = "OutputGroupInfo",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     provider_test(
@@ -63,7 +63,7 @@ def const_values_test_suite(name, tags = []):
         field = "const_values",
         provider = "OutputGroupInfo",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/multiple_files",
+        target_under_test = "//test/fixtures/multiple_files",
     )
 
     const_values_wmo_test(
@@ -74,7 +74,7 @@ def const_values_test_suite(name, tags = []):
         field = "const_values",
         provider = "OutputGroupInfo",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/multiple_files",
+        target_under_test = "//test/fixtures/multiple_files",
     )
 
     const_values_test(
@@ -87,7 +87,7 @@ def const_values_test_suite(name, tags = []):
         ],
         mnemonic = "SwiftCompile",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/basic:first",
+        target_under_test = "//test/fixtures/basic:first",
     )
 
     native.test_suite(

@@ -1,7 +1,7 @@
 """Tests for validating linking behavior."""
 
 load(
-    "@build_bazel_rules_swift//test/rules:action_command_line_test.bzl",
+    "//test/rules:action_command_line_test.bzl",
     "action_command_line_test",
 )
 
@@ -22,7 +22,7 @@ def imported_framework_test_suite(name, tags = []):
         ],
         mnemonic = "SwiftCompile",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/linking:bin",
+        target_under_test = "//test/fixtures/linking:bin",
     )
 
     native.test_suite(

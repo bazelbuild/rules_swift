@@ -653,26 +653,22 @@ standard executable binary that is invoked directly.
             ),
             "_swizzle_absolute_xcttestsourcelocation": attr.label(
                 default = Label(
-                    "@build_bazel_rules_swift//swift/internal:swizzle_absolute_xcttestsourcelocation",
+                    "//swift/internal:swizzle_absolute_xcttestsourcelocation",
                 ),
             ),
             "_test_discoverer": attr.label(
                 cfg = "exec",
-                default = Label(
-                    "@build_bazel_rules_swift//tools/test_discoverer",
-                ),
+                default = Label("//tools/test_discoverer"),
                 executable = True,
             ),
             "_test_runner_deps": attr.label_list(
                 default = [
-                    "@build_bazel_rules_swift//tools/test_observer",
+                    Label("//tools/test_observer"),
                 ],
             ),
             "_xctest_runner_template": attr.label(
                 allow_single_file = True,
-                default = Label(
-                    "@build_bazel_rules_swift//tools/xctest_runner:xctest_runner_template",
-                ),
+                default = Label("//tools/xctest_runner:xctest_runner_template"),
             ),
             # TODO(b/301253335): Enable AEGs and switch from `swift` exec_group to swift `toolchain` param.
             "_use_auto_exec_groups": attr.bool(default = False),

@@ -812,7 +812,9 @@ configuration options that are applied to targets on a per-package basis.
                 providers = [[SwiftPackageConfigurationInfo]],
             ),
             "const_protocols_to_gather": attr.label(
-                default = Label("@build_bazel_rules_swift//swift/toolchains/config:const_protocols_to_gather.json"),
+                default = Label(
+                    "//swift/toolchains/config:const_protocols_to_gather.json",
+                ),
                 allow_single_file = True,
                 doc = """\
 The label of the file specifying a list of protocols for extraction of conformances'
@@ -827,31 +829,27 @@ toolchain (such as `clang`) will be retrieved.
 """,
             ),
             "_copts": attr.label(
-                default = Label("@build_bazel_rules_swift//swift:copt"),
+                default = Label("//swift:copt"),
                 doc = """\
 The label of the `string_list` containing additional flags that should be passed
 to the compiler.
 """,
             ),
             "_exec_copts": attr.label(
-                default = Label("@build_bazel_rules_swift//swift:exec_copt"),
+                default = Label("//swift:exec_copt"),
                 doc = """\
 The label of the `string_list` containing additional flags that should be passed
 to the compiler for exec transition builds.
 """,
             ),
             "_module_mapping": attr.label(
-                default = Label(
-                    "@build_bazel_rules_swift//swift:module_mapping",
-                ),
+                default = Label("//swift:module_mapping"),
                 providers = [[SwiftModuleAliasesInfo]],
             ),
             "_worker": attr.label(
                 cfg = "exec",
                 allow_files = True,
-                default = Label(
-                    "@build_bazel_rules_swift//tools/worker:worker_wrapper",
-                ),
+                default = Label("//tools/worker:worker_wrapper"),
                 doc = """\
 An executable that wraps Swift compiler invocations and also provides support
 for incremental compilation using a persistent mode.
