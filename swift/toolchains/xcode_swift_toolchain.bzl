@@ -46,6 +46,7 @@ load(
 )
 load(
     "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
+    "SWIFT_FEATURE_COMPILE_IN_PARALLEL",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE__SUPPORTS_V6",
 )
@@ -664,6 +665,7 @@ def _xcode_swift_toolchain_impl(ctx):
     ))
     requested_features.extend(default_warnings_as_errors_features())
     requested_features.extend([
+        SWIFT_FEATURE_COMPILE_IN_PARALLEL,
         # Allow users to start using access levels on `import`s by default. Note
         # that this does *not* change the default access level for `import`s to
         # `internal`; that is controlled by the upcoming feature flag
