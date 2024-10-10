@@ -63,6 +63,8 @@ def _swift_symbol_graph_aspect_impl(target, aspect_ctx):
         ]
         if compiles_code:
             for module in swift_info.direct_modules:
+                if module.is_system:
+                    continue
                 output_dir = aspect_ctx.actions.declare_directory(
                     "{}.symbolgraphs".format(target.label.name),
                 )
