@@ -112,10 +112,11 @@ dependent for linking, but artifacts/flags required for compilation (such as
     # taken from the target to which it is applied as an aspect hint. Likewise,
     # it cannot generate a header because we assume that this is a pure Swift
     # overlay that does not export any APIs that would be of interest to
-    # C/Objective-C clients.
+    # C/Objective-C clients, and it should not have any other headers either.
     attrs.pop("module_name")
     attrs.pop("generated_header_name")
     attrs.pop("generates_header")
+    attrs.pop("hdrs")
 
     # TODO: b/65410357 - More work is needed to support runfiles.
     attrs.pop("data")

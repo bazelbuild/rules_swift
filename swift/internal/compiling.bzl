@@ -238,6 +238,7 @@ def compile(
         exec_group = None,
         feature_configuration,
         generated_header_name = None,
+        hdrs = [],
         module_name,
         plugins = [],
         private_compilation_contexts = [],
@@ -274,6 +275,10 @@ def compile(
         generated_header_name: The name of the Objective-C generated header that
             should be generated for this module. If omitted, no header will be
             generated.
+        hdrs: A list of C/Objective-C header files that should be propagated by
+            the module being compiled, if this is a mixed language module. Note
+            that this should only contain *public* headers; private headers
+            should be provided via `srcs`.
         module_name: The name of the Swift module being compiled. This must be
             present and valid; use `derive_swift_module_name` to generate a
             default from the target's label if needed.
@@ -291,8 +296,8 @@ def compile(
             generated header.
         srcs: The source files to compile. Typically this contains only Swift
             sources, but a mixed language module may contain C/Objective-C
-            sources as well and those will be compiled by the underlying C
-            toolchain.
+            sources and private headers as well, and those will be compiled by
+            the underlying C toolchain.
         swift_infos: A list of `SwiftInfo` providers from non-private
             dependencies of the target being compiled. The modules defined by
             these providers are used as dependencies of both the Swift module
@@ -388,6 +393,7 @@ def compile(
 
     compile_plan = _construct_compile_plan(
         srcs = srcs,
+        hdrs = hdrs,
         actions = actions,
         extract_const_values = bool(const_gather_protocols_file),
         feature_configuration = feature_configuration,
@@ -397,15 +403,6 @@ def compile(
         user_compile_flags = copts,
     )
     compile_outputs = compile_plan.outputs
-
-    merged_compilation_context = merge_compilation_contexts(
-        transitive_compilation_contexts = (
-            compilation_contexts + private_compilation_contexts + [
-                cc_info.compilation_context
-                for cc_info in swift_toolchain.implicit_deps_providers.cc_infos
-            ]
-        ),
-    )
 
     transitive_swiftmodules = []
     defines_set = sets.make(defines)
@@ -480,6 +477,69 @@ def compile(
     warnings_as_errors = warnings_as_errors_from_features(
         feature_configuration = feature_configuration,
     )
+
+    # In order to support mixed language modules, we need to perform multiple
+    # compilation steps:
+    #
+    # 1.  If any C/Objective-C headers were provided, compile a Clang module
+    #     containing them.
+    # 2.  Compile the Swift sources into a Swift module, which will take the
+    #     module from step 1 among its dependencies.
+    # 3.  If step 2 generated a C/Objective-C header, compile another Clang
+    #     module containing that header, along with the other C headers that
+    #     were present in step 1. This will be propagated to this target's
+    #     dependents.
+    # 4.  Compile any C/Objective-C sources that were provided, if any, using
+    #     the compilation context from step 3.
+
+    # `cc_common.create_compilation_context` doesn't provide a way for us to
+    # distinguish public vs. private headers, but calling `cc_common.compile`
+    # (via `_compile_c_inputs`) to "compile" the headers does let us do this.
+
+    # Step 1
+    incomplete_compilation_context, _ = _compile_c_inputs(
+        actions = actions,
+        compilation_contexts = compilation_contexts,
+        copts = c_copts,
+        defines = defines,
+        feature_configuration = feature_configuration,
+        private_hdrs = compile_plan.c_inputs.private_hdrs,
+        public_hdrs = compile_plan.c_inputs.public_hdrs,
+        srcs = [],
+        swift_toolchain = swift_toolchain,
+        target_name = "{}.incomplete".format(target_name),
+    )
+    incomplete_header_module = _compile_clang_module_for_swift_module(
+        actions = actions,
+        compilation_context = incomplete_compilation_context,
+        exec_group = exec_group,
+        feature_configuration = feature_configuration,
+        file_extension_fragment = (
+            ".incomplete" if generated_header_name else ""
+        ),
+        is_swift_generated_header = False,
+        module_name = module_name,
+        # If we're generating a header for this Swift module, defer indexing to
+        # when we generate the full module that includes that header as well.
+        # Otherwise, this is the only Clang module that we're compiling, so we
+        # need to index it now.
+        should_index = not generated_header_name,
+        swift_infos = swift_infos,
+        swift_toolchain = swift_toolchain,
+        target_name = target_name,
+        toolchain_type = toolchain_type,
+    )
+
+    merged_compilation_context = merge_compilation_contexts(
+        direct_compilation_contexts = [incomplete_compilation_context],
+        transitive_compilation_contexts = (
+            private_compilation_contexts + [
+                cc_info.compilation_context
+                for cc_info in swift_toolchain.implicit_deps_providers.cc_infos
+            ]
+        ),
+    )
+
     prerequisites = {
         "additional_inputs": additional_inputs,
         "always_include_headers": is_feature_enabled(
@@ -495,6 +555,7 @@ def compile(
         "explicit_swift_module_map_file": explicit_swift_module_map_file,
         "genfiles_dir": feature_configuration._genfiles_dir,
         "is_swift": True,
+        "mixed_module_clang_inputs": incomplete_header_module,
         "module_name": module_name,
         "original_module_name": original_module_name,
         "plugins": used_plugins,
@@ -507,6 +568,7 @@ def compile(
         "warnings_as_errors": warnings_as_errors,
     } | struct_fields(compile_outputs)
 
+    # Step 2
     if _should_plan_parallel_compilation(
         feature_configuration = feature_configuration,
         user_compile_flags = copts,
@@ -529,20 +591,7 @@ def compile(
             swift_toolchain = swift_toolchain,
         )
 
-    generated_header_module = _compile_generated_header_clang_module(
-        actions = actions,
-        exec_group = exec_group,
-        feature_configuration = feature_configuration,
-        generated_header_file = compile_outputs.generated_header_file,
-        generated_header_name = generated_header_name,
-        merged_compilation_context = merged_compilation_context,
-        module_name = module_name,
-        swift_infos = swift_infos,
-        swift_toolchain = swift_toolchain,
-        target_name = target_name,
-        toolchain_type = toolchain_type,
-    )
-
+    # Steps 3 and 4
     c_compilation_context, c_compilation_outputs = _compile_c_inputs(
         actions = actions,
         compilation_contexts = compilation_contexts,
@@ -557,6 +606,35 @@ def compile(
         swift_toolchain = swift_toolchain,
         target_name = target_name,
     )
+    if generated_header_name:
+        merged_compilation_context = merge_compilation_contexts(
+            direct_compilation_contexts = [c_compilation_context],
+            transitive_compilation_contexts = (
+                private_compilation_contexts + [
+                    cc_info.compilation_context
+                    for cc_info in swift_toolchain.implicit_deps_providers.cc_infos
+                ]
+            ),
+        )
+        generated_header_module = _compile_clang_module_for_swift_module(
+            actions = actions,
+            compilation_context = c_compilation_context,
+            exec_group = exec_group,
+            feature_configuration = feature_configuration,
+            file_extension_fragment = "",
+            is_swift_generated_header = True,
+            module_name = module_name,
+            should_index = True,
+            swift_infos = (
+                swift_infos +
+                swift_toolchain.generated_header_module_implicit_deps_providers.swift_infos
+            ),
+            swift_toolchain = swift_toolchain,
+            target_name = target_name,
+            toolchain_type = toolchain_type,
+        )
+    else:
+        generated_header_module = incomplete_header_module
 
     module_context = create_swift_module_context(
         name = module_name,
@@ -864,21 +942,50 @@ def _plan_legacy_swift_compilation(
         swift_toolchain = swift_toolchain,
     )
 
-def _compile_generated_header_clang_module(
+def _compile_clang_module_for_swift_module(
         actions,
+        compilation_context,
         exec_group,
         feature_configuration,
-        generated_header_file,
-        generated_header_name,
-        merged_compilation_context,
+        file_extension_fragment,
+        is_swift_generated_header,
         module_name,
+        should_index,
         swift_infos,
         swift_toolchain,
         target_name,
         toolchain_type):
-    """Precompiles the Clang module for a Swift module's generated header.
+    """Precompiles the Clang module for the Swift module being compiled.
 
     Args:
+        actions: The context's `actions` object.
+        compilation_context: A `CcCompilationContext` that represents the
+            compilation requirements for the C/Objective-C part of this Swift
+            module; that is, the module's own public/private headers as well as
+            the transitive headers needed to successfully compile it.
+        exec_group: Runs the Swift compilation action under the given execution
+            group's context. If `None`, the default execution group is used.
+        feature_configuration: A feature configuration obtained from
+            `swift_common.configure_features`.
+        file_extension_fragment: A fragment to be inserted before the final
+            module map and PCM file extensions if necessary to distinguish the
+            "incomplete" module for a mixed language module from the complete
+            one that will contain the generated header.
+        is_swift_generated_header: If True, the module contains the Swift
+            generated header.
+        module_name: The name of the module being compiled.
+        should_index: If True and index-while-building is enabled, the
+            indexstore directory should be declared and returned among the
+            results.
+        swift_infos: The `SwiftInfo` providers for the dependencies of this
+            module.
+        swift_toolchain: The Swift toolchain being used to build.
+        target_name: The name of the target for which the code is being
+            compiled, which is used to determine unique file paths for the
+            outputs.
+        toolchain_type: A toolchain type of the `swift_toolchain` which is used
+            for the proper selection of the execution platform inside
+            `run_toolchain_action`.
 
     Returns:
         A `struct` (never `None`) containing the following fields:
@@ -890,7 +997,10 @@ def _compile_generated_header_clang_module(
             compiled Clang module. This may be `None` if explicit modules are
             not enabled.
     """
-    if not generated_header_name:
+    if (
+        not compilation_context.direct_public_headers and
+        not compilation_context.direct_private_headers
+    ):
         return struct(
             module_map_file = None,
             precompiled_module = None,
@@ -900,33 +1010,22 @@ def _compile_generated_header_clang_module(
     # Objective-C generated header module -- this includes the dependencies of
     # the Swift module, plus any additional dependencies that the toolchain says
     # are required for all generated header modules.
-    generated_module_deps_swift_infos = (
-        swift_infos +
-        swift_toolchain.generated_header_module_implicit_deps_providers.swift_infos
-    )
     dependent_module_names = sets.make()
-    for swift_info in generated_module_deps_swift_infos:
+    for swift_info in swift_infos:
         for module in swift_info.direct_modules:
             if module.clang:
                 sets.insert(dependent_module_names, module.name)
 
-    # Create a module map for the generated header file. This ensures that
-    # inclusions of it are treated modularly, not textually.
-    #
-    # Caveat: Generated module maps are incompatible with the hack that some
-    # folks are using to support mixed Objective-C and Swift modules. This trap
-    # door lets them escape the module redefinition error, with the caveat that
-    # that certain import scenarios could lead to incorrect behavior because a
-    # header can be imported textually instead of modularly.
     generated_module_map = actions.declare_file(
-        "{}.swift.modulemap".format(target_name),
+        "{}.swift{}.modulemap".format(target_name, file_extension_fragment),
     )
     write_module_map(
         actions = actions,
         dependent_module_names = sorted(sets.to_list(dependent_module_names)),
         module_map_file = generated_module_map,
         module_name = module_name,
-        public_headers = [generated_header_file],
+        private_headers = compilation_context.direct_private_headers,
+        public_headers = compilation_context.direct_public_headers,
         workspace_relative = is_feature_enabled(
             feature_configuration = feature_configuration,
             feature_name = SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD,
@@ -935,12 +1034,7 @@ def _compile_generated_header_clang_module(
 
     compilation_context_to_compile = (
         compilation_context_for_explicit_module_compilation(
-            compilation_contexts = [
-                cc_common.create_compilation_context(
-                    headers = depset([generated_header_file]),
-                ),
-                merged_compilation_context,
-            ],
+            compilation_contexts = [compilation_context],
             swift_infos = swift_infos,
         )
     )
@@ -949,10 +1043,12 @@ def _compile_generated_header_clang_module(
         cc_compilation_context = compilation_context_to_compile,
         exec_group = exec_group,
         feature_configuration = feature_configuration,
-        is_swift_generated_header = True,
+        file_extension = "{}.pcm".format(file_extension_fragment),
+        is_swift_generated_header = is_swift_generated_header,
         module_map_file = generated_module_map,
         module_name = module_name,
-        swift_infos = generated_module_deps_swift_infos,
+        should_index = should_index,
+        swift_infos = swift_infos,
         swift_toolchain = swift_toolchain,
         target_name = target_name,
         toolchain_type = toolchain_type,
@@ -1018,9 +1114,11 @@ def precompile_clang_module(
         cc_compilation_context = cc_compilation_context,
         exec_group = exec_group,
         feature_configuration = feature_configuration,
+        file_extension = ".pcm",
         is_swift_generated_header = False,
         module_map_file = module_map_file,
         module_name = module_name,
+        should_index = True,
         swift_infos = swift_infos,
         swift_toolchain = swift_toolchain,
         toolchain_type = toolchain_type,
@@ -1033,9 +1131,11 @@ def _precompile_clang_module(
         cc_compilation_context,
         exec_group = None,
         feature_configuration,
+        file_extension,
         is_swift_generated_header,
         module_map_file,
         module_name,
+        should_index,
         swift_infos = [],
         swift_toolchain,
         toolchain_type,
@@ -1057,12 +1157,16 @@ def _precompile_clang_module(
             group's context. If `None`, the default execution group is used.
         feature_configuration: A feature configuration obtained from
             `swift_common.configure_features`.
+        file_extension: The file extension of the generated precompiled module.
         is_swift_generated_header: If True, the action is compiling the
             Objective-C header generated by the Swift compiler for a module.
         module_map_file: A textual module map file that defines the Clang module
             to be compiled.
         module_name: The name of the top-level module in the module map that
             will be compiled.
+        should_index: If True and index-while-building is enabled, the
+            indexstore directory should be declared and returned among the
+            results.
         swift_infos: A list of `SwiftInfo` providers representing dependencies
             required to compile this module.
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
@@ -1092,7 +1196,7 @@ def _precompile_clang_module(
         return None
 
     precompiled_module = actions.declare_file(
-        "{}.swift.pcm".format(target_name),
+        "{}.swift{}".format(target_name, file_extension),
     )
 
     if not is_swift_generated_header:
@@ -1120,7 +1224,7 @@ def _precompile_clang_module(
         transitive_modules = []
 
     outputs = [precompiled_module]
-    if are_all_features_enabled(
+    if should_index and are_all_features_enabled(
         feature_configuration = feature_configuration,
         feature_names = [
             SWIFT_FEATURE_INDEX_WHILE_BUILDING,
@@ -1236,6 +1340,7 @@ def _compile_c_inputs(
             feature_configuration = get_cc_feature_configuration(
                 feature_configuration = feature_configuration,
             ),
+            language = swift_toolchain.cc_language,
             name = target_name,
             private_hdrs = private_hdrs,
             public_hdrs = public_hdrs,
@@ -1303,6 +1408,7 @@ def _construct_compile_plan(
         extract_const_values,
         feature_configuration,
         generated_header_name,
+        hdrs,
         module_name,
         srcs,
         target_name,
@@ -1317,6 +1423,8 @@ def _construct_compile_plan(
             `swift_common.configure_features`.
         generated_header_name: The desired name of the generated header for this
             module, or `None` if no header should be generated.
+        hdrs: A list of C/Objective-C header files that should be propagated by
+            the module being compiled, if this is a mixed language target.
         module_name: The name of the Swift module being compiled.
         srcs: The list of source files that will be compiled.
         target_name: The name (excluding package path) of the target being
@@ -1460,7 +1568,7 @@ def _construct_compile_plan(
         codegen_outputs = codegen_outputs,
         c_inputs = struct(
             private_hdrs = c_private_hdrs,
-            public_hdrs = [],  # TODO: b/65410357 - Support public headers.
+            public_hdrs = hdrs,
             srcs = c_srcs,
         ),
         module_outputs = struct(

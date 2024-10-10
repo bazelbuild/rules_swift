@@ -286,6 +286,20 @@ def swift_library_rule_attrs(
         ),
         swift_config_attrs(),
         {
+            "hdrs": attr.label_list(
+                allow_files = C_HEADER_EXTENSIONS,
+                doc = """\
+A list if C/Objective-C header files that will be exported as public headers of
+the library.
+
+This attribute is meant to be used by mixed-language targets that export both
+Swift and C/Objective-C APIs from the same module. Note that these headers
+*cannot* import the Swift generated header from the same module. If you need to
+refer to symbols exported from your Swift `srcs`, then you must forward-declare
+them (forward declarations to symbols in the same module are not problematic,
+unlike forward declarations to symbols in other modules).
+""",
+            ),
             "library_evolution": attr.bool(
                 default = False,
                 doc = """\

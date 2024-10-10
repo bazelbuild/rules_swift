@@ -131,6 +131,7 @@ def _swift_library_impl(ctx):
     c_copts = expand_locations(ctx, ctx.attr.c_copts, ctx.attr.swiftc_inputs)
     linkopts = expand_locations(ctx, ctx.attr.linkopts, ctx.attr.swiftc_inputs)
     srcs = ctx.files.srcs
+    hdrs = ctx.files.hdrs
 
     module_copts = additional_per_module_swiftcopts(
         ctx.label,
@@ -186,6 +187,7 @@ def _swift_library_impl(ctx):
         defines = ctx.attr.defines,
         feature_configuration = feature_configuration,
         generated_header_name = generated_header_name,
+        hdrs = hdrs,
         module_name = module_name,
         plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),
         private_compilation_contexts = get_compilation_contexts(

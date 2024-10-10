@@ -1120,6 +1120,7 @@ def _dependencies_clang_defines_configurator(prerequisites, args):
 def _collect_clang_module_inputs(
         always_include_headers,
         explicit_module_compilation_context,
+        mixed_module_clang_inputs,
         modules,
         prefer_precompiled_modules):
     """Collects Clang module-related inputs to pass to an action.
@@ -1132,6 +1133,9 @@ def _collect_clang_module_inputs(
             target being compiled, if the inputs are being collected for an
             explicit module compilation action. This parameter should be `None`
             if inputs are being collected for Swift compilation.
+        mixed_module_clang_inputs: A `struct` containing the module map and
+            precompiled module for the C/Objective-C half of a mixed C/Swift
+            module, or None if they are not applicable.
         modules: A list of module structures (as returned by
             `create_swift_module_context`). The precompiled Clang modules or the
             textual module maps and headers of these modules (depending on the
@@ -1197,6 +1201,12 @@ def _collect_clang_module_inputs(
             transitive_inputs.append(
                 depset(compilation_context.direct_textual_headers),
             )
+
+    if mixed_module_clang_inputs:
+        if mixed_module_clang_inputs.module_map_file:
+            direct_inputs.append(mixed_module_clang_inputs.module_map_file)
+        if mixed_module_clang_inputs.precompiled_module:
+            direct_inputs.append(mixed_module_clang_inputs.precompiled_module)
 
     return ConfigResultInfo(
         inputs = direct_inputs,
@@ -1278,8 +1288,10 @@ def _dependencies_clang_modulemaps_configurator(prerequisites, args):
     )
 
     if prerequisites.is_swift:
+        mixed_inputs = getattr(prerequisites, "mixed_module_clang_inputs", None)
         compilation_context = None
     else:
+        mixed_inputs = None
         compilation_context = prerequisites.cc_compilation_context
 
     return _collect_clang_module_inputs(
@@ -1289,6 +1301,7 @@ def _dependencies_clang_modulemaps_configurator(prerequisites, args):
             False,
         ),
         explicit_module_compilation_context = compilation_context,
+        mixed_module_clang_inputs = mixed_inputs,
         modules = modules,
         prefer_precompiled_modules = False,
     )
@@ -1315,9 +1328,30 @@ def _dependencies_clang_modules_configurator(prerequisites, args, include_module
     )
 
     if prerequisites.is_swift:
+        # If this is the Swift compilation of a mixed C/Swift module, then we
+        # have already precompiled the C half of the module. Add the flags to
+        # import it.
+        mixed_inputs = getattr(prerequisites, "mixed_module_clang_inputs", None)
+        if mixed_inputs and mixed_inputs.module_map_file:
+            args.add("-import-underlying-module")
+            args.add_all(
+                [mixed_inputs.module_map_file],
+                format_each = "-fmodule-map-file=%s",
+                before_each = "-Xcc",
+            )
+            if mixed_inputs.precompiled_module:
+                args.add_all(
+                    [mixed_inputs.precompiled_module],
+                    format_each = "-fmodule-file={}=%s".format(
+                        prerequisites.module_name,
+                    ),
+                    before_each = "-Xcc",
+                )
+
         compilation_context = None
 
     else:
+        mixed_inputs = None
         compilation_context = prerequisites.cc_compilation_context
 
     return _collect_clang_module_inputs(
@@ -1327,6 +1361,7 @@ def _dependencies_clang_modules_configurator(prerequisites, args, include_module
             False,
         ),
         explicit_module_compilation_context = compilation_context,
+        mixed_module_clang_inputs = mixed_inputs,
         modules = modules,
         prefer_precompiled_modules = True,
     )
