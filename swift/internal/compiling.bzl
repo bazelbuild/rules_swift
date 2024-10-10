@@ -40,6 +40,7 @@ load(":explicit_module_map_file.bzl", "write_explicit_swift_module_map_file")
 load(
     ":feature_names.bzl",
     "SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS",
+    "SWIFT_FEATURE__OPT_IN_SWIFTCOPTS",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
     "SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT",
     "SWIFT_FEATURE_COMPILE_IN_PARALLEL",
@@ -815,6 +816,9 @@ def _should_plan_parallel_compilation(
         ) and not is_feature_enabled(
             feature_configuration = feature_configuration,
             feature_name = SWIFT_FEATURE_OPT,
+        ) and not is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE__OPT_IN_SWIFTCOPTS,
         )
     )
 
