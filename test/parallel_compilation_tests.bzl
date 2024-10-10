@@ -29,6 +29,12 @@ opt_actions_create_test = make_actions_created_test_rule(
     },
 )
 
+opt_via_swiftcopt_actions_create_test = make_actions_created_test_rule(
+    config_settings = {
+        "@build_bazel_rules_swift//swift:copt": ["-O"],
+    },
+)
+
 def parallel_compilation_test_suite(name, tags = []):
     """Test suite for parallel compilation.
 
@@ -82,6 +88,15 @@ def parallel_compilation_test_suite(name, tags = []):
     # plan parallel compilation there.
     opt_actions_create_test(
         name = "{}_no_opt_with_wmo_but_compilation_mode_opt".format(name),
+        mnemonics = ["-SwiftCompileModule", "-SwiftCompileCodegen", "SwiftCompile"],
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/parallel_compilation:no_opt_with_wmo",
+    )
+
+    # Force `-O` using the `copt` flag on a non-optimized, with-WMO target and
+    # make sure we don't plan parallel compilation there.
+    opt_via_swiftcopt_actions_create_test(
+        name = "{}_no_opt_with_wmo_but_swiftcopt_dash_O".format(name),
         mnemonics = ["-SwiftCompileModule", "-SwiftCompileCodegen", "SwiftCompile"],
         tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/parallel_compilation:no_opt_with_wmo",

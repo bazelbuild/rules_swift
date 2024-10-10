@@ -17,6 +17,7 @@
 load(
     ":feature_names.bzl",
     "SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS",
+    "SWIFT_FEATURE__OPT_IN_SWIFTCOPTS",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
 )
 
@@ -116,6 +117,8 @@ def optimization_features_from_swiftcopts(swiftcopts):
     requested_features = []
     unsupported_features = []
 
+    if is_optimization_manually_requested(user_compile_flags = swiftcopts):
+        requested_features.append(SWIFT_FEATURE__OPT_IN_SWIFTCOPTS)
     if is_wmo_manually_requested(user_compile_flags = swiftcopts):
         requested_features.append(SWIFT_FEATURE__WMO_IN_SWIFTCOPTS)
     if find_num_threads_flag_value(user_compile_flags = swiftcopts) == 1:
