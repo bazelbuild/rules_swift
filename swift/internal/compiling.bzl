@@ -712,6 +712,9 @@ def _should_plan_parallel_compilation(
         ) or are_all_features_enabled(
             feature_configuration = feature_configuration,
             feature_names = [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_WMO],
+        ) or is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE__WMO_IN_SWIFTCOPTS,
         )
     ):
         return True

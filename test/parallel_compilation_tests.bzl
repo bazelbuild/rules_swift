@@ -35,6 +35,15 @@ opt_via_swiftcopt_actions_create_test = make_actions_created_test_rule(
     },
 )
 
+opt_with_wmo_via_swiftcopt_actions_create_test = make_actions_created_test_rule(
+    config_settings = {
+        "//command_line_option:compilation_mode": "opt",
+        "@build_bazel_rules_swift//swift:copt": [
+            "-whole-module-optimization",
+        ],
+    },
+)
+
 def parallel_compilation_test_suite(name, tags = []):
     """Test suite for parallel compilation.
 
@@ -118,6 +127,15 @@ def parallel_compilation_test_suite(name, tags = []):
         mnemonics = ["SwiftCompileModule", "SwiftCompileCodegen", "-SwiftCompile"],
         tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/parallel_compilation:onone_with_wmo",
+    )
+
+    # Optimized (via `-c opt`) with-WMO cannot be compiled in parallel if CMO is
+    # enabled (the default).
+    opt_with_wmo_via_swiftcopt_actions_create_test(
+        name = "{}_with_opt_via_compilation_mode_opt_with_wmo".format(name),
+        mnemonics = ["-SwiftCompileModule", "-SwiftCompileCodegen", "SwiftCompile"],
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/parallel_compilation:no_opt_no_wmo",
     )
 
     # The analysis tests verify that we register the actions we expect. Use a
