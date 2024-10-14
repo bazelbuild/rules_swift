@@ -274,9 +274,6 @@ C/Objective-C modules:
 *   `cc_infos`: A list of `CcInfo` providers from targets specified as the
     toolchain's implicit dependencies.
 
-*   `objc_infos`: A list of `apple_common.Objc` providers from targets specified
-    as the toolchain's implicit dependencies.
-
 *   `swift_infos`: A list of `SwiftInfo` providers from targets specified as the
     toolchain's implicit dependencies.
 
@@ -332,9 +329,6 @@ module for the generated Objective-C header of a Swift module:
 *   `cc_infos`: A list of `CcInfo` providers from targets specified as the
     toolchain's implicit dependencies.
 
-*   `objc_infos`: A list of `apple_common.Objc` providers from targets specified
-    as the toolchain's implicit dependencies.
-
 *   `swift_infos`: A list of `SwiftInfo` providers from targets specified as the
     toolchain's implicit dependencies.
 
@@ -351,9 +345,6 @@ linking target (but not to precompiled explicit C/Objective-C modules):
 
 *   `cc_infos`: A list of `CcInfo` providers from targets specified as the
     toolchain's implicit dependencies.
-
-*   `objc_infos`: A list of `apple_common.Objc` providers from targets specified
-    as the toolchain's implicit dependencies.
 
 *   `swift_infos`: A list of `SwiftInfo` providers from targets specified as the
     toolchain's implicit dependencies.
