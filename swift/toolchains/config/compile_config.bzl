@@ -47,6 +47,7 @@ load(
     "SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE",
     "SWIFT_FEATURE_EMIT_SWIFTDOC",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
+    "SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES",
@@ -67,7 +68,6 @@ load(
     "SWIFT_FEATURE_OPT_USES_WMO",
     "SWIFT_FEATURE_REWRITE_GENERATED_HEADER",
     "SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION",
-    "SWIFT_FEATURE_SUPPORTS_BARE_SLASH_REGEX",
     "SWIFT_FEATURE_SYSTEM_MODULE",
     "SWIFT_FEATURE_THIN_LTO",
     "SWIFT_FEATURE_TREAT_WARNINGS_AS_ERRORS",
@@ -1121,15 +1121,13 @@ def compile_action_configs(
             ],
             configurators = [_conditional_compilation_flag_configurator],
         ),
-
-        # Enable bare slash regexes.
         ActionConfigInfo(
             actions = [
                 SWIFT_ACTION_COMPILE,
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
             ],
             configurators = [add_arg("-enable-bare-slash-regex")],
-            features = [SWIFT_FEATURE_SUPPORTS_BARE_SLASH_REGEX],
+            features = [SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX],
         ),
         ActionConfigInfo(
             actions = [
