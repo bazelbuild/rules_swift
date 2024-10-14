@@ -228,7 +228,6 @@ bzl_library(
     srcs = ["swift_symbol_graph_aspect.bzl"],
     visibility = ["//swift:__subpackages__"],
     deps = [
-        ":attrs",
         ":features",
         ":providers",
         ":symbol_graph_extracting",
