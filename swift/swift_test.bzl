@@ -39,6 +39,7 @@ load(
 )
 load(
     "@build_bazel_rules_swift//swift/internal:swift_symbol_graph_aspect.bzl",
+    "SwiftTestDiscoverySymbolGraphInfo",
     "make_swift_symbol_graph_aspect",
 )
 load(
@@ -57,7 +58,7 @@ load(
     "get_providers",
 )
 load(":module_name.bzl", "derive_swift_module_name")
-load(":providers.bzl", "SwiftBinaryInfo", "SwiftInfo", "SwiftSymbolGraphInfo")
+load(":providers.bzl", "SwiftBinaryInfo", "SwiftInfo")
 
 visibility("public")
 
@@ -116,10 +117,12 @@ def _generate_test_discovery_srcs(
             modules_to_scan.append(owner_module_name)
 
         for dep in deps:
-            if SwiftSymbolGraphInfo not in dep:
+            if SwiftTestDiscoverySymbolGraphInfo not in dep:
                 continue
 
-            symbol_graph_info = dep[SwiftSymbolGraphInfo]
+            symbol_graph_info = (
+                dep[SwiftTestDiscoverySymbolGraphInfo].symbol_graph_info
+            )
 
             # Only include the direct symbol graphs if the owner didn't have any
             # sources.
