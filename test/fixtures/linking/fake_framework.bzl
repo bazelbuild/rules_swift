@@ -54,7 +54,7 @@ fake_framework = rule(
     implementation = _impl,
     attrs = {
         "_cc_toolchain": attr.label(
-            default = "@bazel_tools//tools/cpp:current_cc_toolchain",
+            default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
             doc = "The C++ toolchain to use.",
         ),
     },

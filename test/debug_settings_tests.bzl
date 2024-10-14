@@ -15,7 +15,7 @@
 """Tests for debugging-related command line flags under various configs."""
 
 load(
-    "@build_bazel_rules_swift//test/rules:action_command_line_test.bzl",
+    "//test/rules:action_command_line_test.bzl",
     "make_action_command_line_test_rule",
 )
 
@@ -146,7 +146,7 @@ def debug_settings_test_suite(name, tags = []):
         ],
         mnemonic = "SwiftCompile",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     # Verify that the build is remapping paths with a file prefix map.
@@ -160,7 +160,7 @@ def debug_settings_test_suite(name, tags = []):
         ],
         mnemonic = "SwiftCompile",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     # Verify that `-c dbg` builds with `swift.cacheable_modules` do NOT
@@ -181,7 +181,7 @@ def debug_settings_test_suite(name, tags = []):
         ],
         mnemonic = "SwiftCompile",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     # Verify that `-c fastbuild` builds serialize debugging options, remap
@@ -201,7 +201,7 @@ def debug_settings_test_suite(name, tags = []):
         ],
         mnemonic = "SwiftCompile",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     # Verify that `-c fastbuild` builds with `swift.full_debug_info` use `-g`
@@ -221,7 +221,7 @@ def debug_settings_test_suite(name, tags = []):
         ],
         mnemonic = "SwiftCompile",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     # Verify that `-c opt` builds do not serialize debugging options or remap
@@ -240,7 +240,7 @@ def debug_settings_test_suite(name, tags = []):
         ],
         mnemonic = "SwiftCompile",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     # Verify that `-c opt` builds do not serialize debugging options or remap
@@ -256,7 +256,7 @@ def debug_settings_test_suite(name, tags = []):
         ],
         mnemonic = "SwiftCompile",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     xcode_remap_command_line_test(
@@ -268,7 +268,7 @@ def debug_settings_test_suite(name, tags = []):
         target_compatible_with = ["@platforms//os:macos"],
         mnemonic = "SwiftCompile",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     native.test_suite(

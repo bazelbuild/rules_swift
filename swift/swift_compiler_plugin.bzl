@@ -21,11 +21,11 @@ load(
     "@build_bazel_apple_support//lib:transitions.bzl",
     "macos_universal_transition",
 )
+load("//swift/internal:compiling.bzl", "compile")
 load(
-    "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
+    "//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT",
 )
-load("//swift/internal:compiling.bzl", "compile")
 load("//swift/internal:features.bzl", "is_feature_enabled")
 load(
     "//swift/internal:linking.bzl",
@@ -336,7 +336,9 @@ universal_swift_compiler_plugin = rule(
                 providers = [SwiftCompilerPluginInfo],
             ),
             "_allowlist_function_transition": attr.label(
-                default = "@bazel_tools//tools/allowlists/function_transition_allowlist",
+                default = Label(
+                    "@bazel_tools//tools/allowlists/function_transition_allowlist",
+                ),
             ),
             # TODO(b/301253335): Enable AEGs and switch from `swift` exec_group to swift `toolchain` param.
             "_use_auto_exec_groups": attr.bool(default = False),

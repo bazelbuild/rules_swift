@@ -76,7 +76,7 @@ _swift_proto_library_group_aspect = aspect(
         swift_common.toolchain_attrs(),
         {
             "_compiler": attr.label(
-                default = "//proto:_swift_proto_compiler",
+                default = Label("//proto:_swift_proto_compiler"),
                 doc = """\
 A `swift_proto_compiler` target (or target producing `SwiftProtoCompilerInfo`),
 from which the Swift protos will be generated.
@@ -137,10 +137,12 @@ def _swift_proto_library_group_impl(ctx):
 swift_proto_library_group = rule(
     attrs = {
         "_allowlist_function_transition": attr.label(
-            default = "@bazel_tools//tools/allowlists/function_transition_allowlist",
+            default = Label(
+                "@bazel_tools//tools/allowlists/function_transition_allowlist",
+            ),
         ),
         "compiler": attr.label(
-            default = "//proto/compilers:swift_proto",
+            default = Label("//proto/compilers:swift_proto"),
             doc = """\
 A `swift_proto_compiler` target (or target producing `SwiftProtoCompilerInfo`),
 from which the Swift protos will be generated.

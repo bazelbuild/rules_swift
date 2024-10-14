@@ -14,10 +14,7 @@
 
 """Tests for interoperability with `cc_library`-specific features."""
 
-load(
-    "@bazel_skylib//rules:build_test.bzl",
-    "build_test",
-)
+load("@bazel_skylib//rules:build_test.bzl", "build_test")
 load(
     "//test/rules:action_command_line_test.bzl",
     "make_action_command_line_test_rule",
@@ -45,7 +42,7 @@ def private_swiftinterface_test_suite(name, tags = []):
     build_test(
         name = "{}_swift_binary_imports_private_swiftinterface".format(name),
         targets = [
-            "@build_bazel_rules_swift//test/fixtures/private_swiftinterface:client",
+            "//test/fixtures/private_swiftinterface:client",
         ],
         tags = all_tags,
     )

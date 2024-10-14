@@ -28,10 +28,7 @@ minimize build graph invalidations among those packages when other, unrelated
 parts of the Swift rules change.
 """
 
-load(
-    "@build_bazel_rules_swift//swift/internal:swift_interop_info.bzl",
-    "SwiftInteropInfo",
-)
+load("//swift/internal:swift_interop_info.bzl", "SwiftInteropInfo")
 
 def create_swift_interop_info(
         *,

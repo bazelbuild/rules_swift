@@ -386,7 +386,7 @@ bool_flag(
 config_setting(
     name = "universal_tools_config",
     flag_values = {
-        "@build_bazel_rules_swift//swift:universal_tools": "true",
+        "//swift:universal_tools": "true",
     },
 )
 

@@ -16,13 +16,13 @@
 
 def _apply_mapping_transition_impl(settings, attr):
     settings = dict(settings)
-    settings["@build_bazel_rules_swift//swift:module_mapping"] = attr.mapping
+    settings["//swift:module_mapping"] = attr.mapping
     return settings
 
 apply_mapping_transition = transition(
     implementation = _apply_mapping_transition_impl,
     inputs = [],
-    outputs = ["@build_bazel_rules_swift//swift:module_mapping"],
+    outputs = ["//swift:module_mapping"],
 )
 
 def _apply_mapping_impl(ctx):
@@ -33,7 +33,9 @@ apply_mapping = rule(
         "mapping": attr.label(),
         "target": attr.label(cfg = apply_mapping_transition),
         "_allowlist_function_transition": attr.label(
-            default = "@bazel_tools//tools/allowlists/function_transition_allowlist",
+            default = Label(
+                "@bazel_tools//tools/allowlists/function_transition_allowlist",
+            ),
         ),
     },
     implementation = _apply_mapping_impl,

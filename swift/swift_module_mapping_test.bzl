@@ -14,11 +14,8 @@
 
 """Implementation of the `swift_module_mapping_test` rule."""
 
-load("@build_bazel_rules_swift//swift:providers.bzl", "SwiftInfo")
-load(
-    "@build_bazel_rules_swift//swift/internal:providers.bzl",
-    "SwiftModuleAliasesInfo",
-)
+load("//swift/internal:providers.bzl", "SwiftModuleAliasesInfo")
+load(":providers.bzl", "SwiftInfo")
 
 _SwiftModulesToValidateMappingInfo = provider(
     doc = "Propagates module names to have their mapping validated.",

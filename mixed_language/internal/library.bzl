@@ -246,7 +246,7 @@ The Swift portion of the mixed language module.
             "_module_map_extender": attr.label(
                 cfg = "exec",
                 executable = True,
-                default = "//tools/mixed_language_module_map_extender",
+                default = Label("//tools/mixed_language_module_map_extender"),
             ),
         },
     ),

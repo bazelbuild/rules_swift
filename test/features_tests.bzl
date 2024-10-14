@@ -1,11 +1,8 @@
 """Tests for various features that aren't large enough to need their own tests file."""
 
+load("@bazel_skylib//rules:build_test.bzl", "build_test")
 load(
-    "@bazel_skylib//rules:build_test.bzl",
-    "build_test",
-)
-load(
-    "@build_bazel_rules_swift//test/rules:action_command_line_test.bzl",
+    "//test/rules:action_command_line_test.bzl",
     "make_action_command_line_test_rule",
 )
 
@@ -131,7 +128,7 @@ def features_test_suite(name, tags = []):
             "-Xwrapped-swift=-file-prefix-pwd-is-dot",
         ],
         mnemonic = "SwiftCompile",
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/basic:second",
+        target_under_test = "//test/fixtures/basic:second",
     )
 
     default_with_target_name_test(
@@ -143,7 +140,7 @@ def features_test_suite(name, tags = []):
             "-Xwrapped-swift=-file-prefix-pwd-is-dot",
         ],
         mnemonic = "SwiftCompile",
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/basic:second",
+        target_under_test = "//test/fixtures/basic:second",
     )
 
     disabled_file_prefix_map_test(
@@ -153,7 +150,7 @@ def features_test_suite(name, tags = []):
             "-Xwrapped-swift=-file-prefix-pwd-is-dot",
         ],
         mnemonic = "SwiftCompile",
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     default_test(
@@ -166,7 +163,7 @@ def features_test_suite(name, tags = []):
         ],
         target_compatible_with = ["@platforms//os:macos"],
         mnemonic = "SwiftCompile",
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     use_global_index_store_test(
@@ -176,7 +173,7 @@ def features_test_suite(name, tags = []):
             "-Xwrapped-swift=-global-index-store-import-path=",
         ],
         mnemonic = "SwiftCompile",
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     use_global_index_store_index_while_building_test(
@@ -187,7 +184,7 @@ def features_test_suite(name, tags = []):
         ],
         mnemonic = "SwiftCompile",
         target_compatible_with = ["@platforms//os:macos"],
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     disable_swift_sandbox_test(
@@ -198,7 +195,7 @@ def features_test_suite(name, tags = []):
         ],
         mnemonic = "SwiftCompile",
         target_compatible_with = ["@platforms//os:macos"],
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     default_opt_test(
@@ -206,7 +203,7 @@ def features_test_suite(name, tags = []):
         tags = all_tags,
         expected_argv = ["-emit-object", "-O", "-whole-module-optimization"],
         mnemonic = "SwiftCompile",
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     opt_no_wmo_test(
@@ -215,7 +212,7 @@ def features_test_suite(name, tags = []):
         expected_argv = ["-emit-object", "-O"],
         not_expected_argv = ["-whole-module-optimization"],
         mnemonic = "SwiftCompile",
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     vfsoverlay_test(
@@ -230,7 +227,7 @@ def features_test_suite(name, tags = []):
             "-explicit-swift-module-map-file",
         ],
         mnemonic = "SwiftCompile",
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/basic:second",
+        target_under_test = "//test/fixtures/basic:second",
     )
 
     explicit_swift_module_map_test(
@@ -245,7 +242,7 @@ def features_test_suite(name, tags = []):
             "-Xfrontend -vfsoverlay$(BIN_DIR)/test/fixtures/basic/second.vfsoverlay.yaml",
         ],
         mnemonic = "SwiftCompile",
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/basic:second",
+        target_under_test = "//test/fixtures/basic:second",
     )
 
     explicit_swift_module_map_with_target_name_test(
@@ -260,7 +257,7 @@ def features_test_suite(name, tags = []):
             "-Xfrontend -vfsoverlay$(BIN_DIR)/test/fixtures/basic/second.vfsoverlay.yaml",
         ],
         mnemonic = "SwiftCompile",
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/basic:second",
+        target_under_test = "//test/fixtures/basic:second",
     )
 
     default_test(
@@ -273,7 +270,7 @@ def features_test_suite(name, tags = []):
             "-Wl,-rpath,/usr/lib/swift",
         ],
         mnemonic = "CppLink",
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/linking:bin",
+        target_under_test = "//test/fixtures/linking:bin",
         target_compatible_with = ["@platforms//os:macos"],
     )
 
@@ -287,7 +284,7 @@ def features_test_suite(name, tags = []):
         ],
         not_expected_argv = ["-ObjC"],
         mnemonic = "CppLink",
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/linking:bin",
+        target_under_test = "//test/fixtures/linking:bin",
         target_compatible_with = ["@platforms//os:macos"],
     )
 
@@ -301,7 +298,7 @@ def features_test_suite(name, tags = []):
             "-Wl,-rpath,/usr/lib/swift",
         ],
         mnemonic = "CppLink",
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/linking:cc_bin",
+        target_under_test = "//test/fixtures/linking:cc_bin",
         target_compatible_with = ["@platforms//os:macos"],
     )
 
@@ -315,7 +312,7 @@ def features_test_suite(name, tags = []):
         ],
         not_expected_argv = ["-ObjC"],
         mnemonic = "CppLink",
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/linking:cc_bin",
+        target_under_test = "//test/fixtures/linking:cc_bin",
         target_compatible_with = ["@platforms//os:macos"],
     )
 

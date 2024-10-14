@@ -15,7 +15,7 @@
 """Tests for module cache related command line flags under various configs."""
 
 load(
-    "@build_bazel_rules_swift//test/rules:action_command_line_test.bzl",
+    "//test/rules:action_command_line_test.bzl",
     "make_action_command_line_test_rule",
 )
 
@@ -69,7 +69,7 @@ def module_cache_settings_test_suite(name, tags = []):
         ],
         mnemonic = "SwiftCompile",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     # Verify that a pre-defined shared module cache path in `/tmp` is
@@ -85,7 +85,7 @@ def module_cache_settings_test_suite(name, tags = []):
         ],
         mnemonic = "SwiftCompile",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     # Verify that no module cache path is used when only
@@ -97,7 +97,7 @@ def module_cache_settings_test_suite(name, tags = []):
         ],
         mnemonic = "SwiftCompile",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     native.test_suite(

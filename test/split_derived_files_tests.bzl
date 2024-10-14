@@ -1,13 +1,10 @@
 """Tests for derived files related command line flags under various configs."""
 
 load(
-    "@build_bazel_rules_swift//test/rules:action_command_line_test.bzl",
+    "//test/rules:action_command_line_test.bzl",
     "make_action_command_line_test_rule",
 )
-load(
-    "@build_bazel_rules_swift//test/rules:provider_test.bzl",
-    "make_provider_test_rule",
-)
+load("//test/rules:provider_test.bzl", "make_provider_test_rule")
 
 default_no_split_test = make_action_command_line_test_rule()
 default_no_split_provider_test = make_provider_test_rule()
@@ -27,7 +24,7 @@ split_swiftmodule_provider_test = make_provider_test_rule(
 )
 split_swiftmodule_wmo_test = make_action_command_line_test_rule(
     config_settings = {
-        str(Label("@build_bazel_rules_swift//swift:copt")): [
+        str(Label("//swift:copt")): [
             "-whole-module-optimization",
         ],
         "//command_line_option:features": [
@@ -37,7 +34,7 @@ split_swiftmodule_wmo_test = make_action_command_line_test_rule(
 )
 split_swiftmodule_wmo_provider_test = make_provider_test_rule(
     config_settings = {
-        str(Label("@build_bazel_rules_swift//swift:copt")): [
+        str(Label("//swift:copt")): [
             "-whole-module-optimization",
         ],
         "//command_line_option:features": [
@@ -47,7 +44,7 @@ split_swiftmodule_wmo_provider_test = make_provider_test_rule(
 )
 split_swiftmodule_skip_function_bodies_test = make_action_command_line_test_rule(
     config_settings = {
-        str(Label("@build_bazel_rules_swift//swift:copt")): [
+        str(Label("//swift:copt")): [
             "-whole-module-optimization",
         ],
         "//command_line_option:features": [
@@ -104,7 +101,7 @@ split_swiftmodule_bitcode_test = make_action_command_line_test_rule(
 )
 split_swiftmodule_copts_test = make_action_command_line_test_rule(
     config_settings = {
-        str(Label("@build_bazel_rules_swift//swift:copt")): [
+        str(Label("//swift:copt")): [
             "-DHELLO",
         ],
         "//command_line_option:objccopt": [
@@ -138,7 +135,7 @@ def split_derived_files_test_suite(name, tags = []):
         ],
         mnemonic = "SwiftCompile",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     default_no_split_provider_test(
@@ -149,7 +146,7 @@ def split_derived_files_test_suite(name, tags = []):
         field = "direct_modules.swift.swiftmodule",
         provider = "SwiftInfo",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     default_no_split_provider_test(
@@ -160,7 +157,7 @@ def split_derived_files_test_suite(name, tags = []):
         field = "direct_modules.swift.swiftdoc",
         provider = "SwiftInfo",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     default_no_split_provider_test(
@@ -171,7 +168,7 @@ def split_derived_files_test_suite(name, tags = []):
         field = "direct_modules.swift.swiftsourceinfo",
         provider = "SwiftInfo",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     default_no_split_no_emit_swiftdoc_test(
@@ -182,7 +179,7 @@ def split_derived_files_test_suite(name, tags = []):
         field = "direct_modules.swift.swiftdoc",
         provider = "SwiftInfo",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     default_no_split_no_emit_swiftsourceinfo_test(
@@ -193,7 +190,7 @@ def split_derived_files_test_suite(name, tags = []):
         field = "direct_modules.swift.swiftsourceinfo",
         provider = "SwiftInfo",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     split_swiftmodule_provider_test(
@@ -204,7 +201,7 @@ def split_derived_files_test_suite(name, tags = []):
         ],
         provider = "SwiftInfo",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     split_swiftmodule_provider_test(
@@ -215,7 +212,7 @@ def split_derived_files_test_suite(name, tags = []):
         ],
         provider = "SwiftInfo",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     split_no_emit_swiftdoc_test(
@@ -226,7 +223,7 @@ def split_derived_files_test_suite(name, tags = []):
         ],
         provider = "SwiftInfo",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     split_no_emit_swiftsourceinfo_test(
@@ -237,7 +234,7 @@ def split_derived_files_test_suite(name, tags = []):
         ],
         provider = "SwiftInfo",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     default_no_split_provider_test(
@@ -249,7 +246,7 @@ def split_derived_files_test_suite(name, tags = []):
         provider = "CcInfo",
         tags = all_tags,
         target_compatible_with = ["@platforms//os:macos"],
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     default_no_split_provider_test(
@@ -261,7 +258,7 @@ def split_derived_files_test_suite(name, tags = []):
         provider = "CcInfo",
         tags = all_tags,
         target_compatible_with = ["@platforms//os:linux"],
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     split_swiftmodule_test(
@@ -277,7 +274,7 @@ def split_derived_files_test_suite(name, tags = []):
             "simple.derived_output_file_map.json",
         ],
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     split_swiftmodule_test(
@@ -293,7 +290,7 @@ def split_derived_files_test_suite(name, tags = []):
             "simple.output_file_map.json",
         ],
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     split_swiftmodule_provider_test(
@@ -304,7 +301,7 @@ def split_derived_files_test_suite(name, tags = []):
         field = "direct_modules.swift.swiftmodule",
         provider = "SwiftInfo",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     split_swiftmodule_provider_test(
@@ -316,7 +313,7 @@ def split_derived_files_test_suite(name, tags = []):
         provider = "CcInfo",
         tags = all_tags,
         target_compatible_with = ["@platforms//os:macos"],
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     split_swiftmodule_provider_test(
@@ -328,7 +325,7 @@ def split_derived_files_test_suite(name, tags = []):
         provider = "CcInfo",
         tags = all_tags,
         target_compatible_with = ["@platforms//os:linux"],
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     split_swiftmodule_wmo_test(
@@ -342,7 +339,7 @@ def split_derived_files_test_suite(name, tags = []):
             "-emit-module-path",
         ],
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     split_swiftmodule_wmo_test(
@@ -356,7 +353,7 @@ def split_derived_files_test_suite(name, tags = []):
             "-emit-object",
         ],
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     split_swiftmodule_wmo_provider_test(
@@ -367,7 +364,7 @@ def split_derived_files_test_suite(name, tags = []):
         field = "direct_modules.swift.swiftmodule",
         provider = "SwiftInfo",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     split_swiftmodule_wmo_provider_test(
@@ -379,7 +376,7 @@ def split_derived_files_test_suite(name, tags = []):
         provider = "CcInfo",
         tags = all_tags,
         target_compatible_with = ["@platforms//os:macos"],
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     split_swiftmodule_wmo_provider_test(
@@ -391,7 +388,7 @@ def split_derived_files_test_suite(name, tags = []):
         provider = "CcInfo",
         tags = all_tags,
         target_compatible_with = ["@platforms//os:linux"],
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     split_swiftmodule_skip_function_bodies_test(
@@ -404,7 +401,7 @@ def split_derived_files_test_suite(name, tags = []):
             "-experimental-skip-non-inlinable-function-bodies",
         ],
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     split_swiftmodule_skip_function_bodies_test(
@@ -417,7 +414,7 @@ def split_derived_files_test_suite(name, tags = []):
             "-emit-object",
         ],
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     split_swiftmodule_indexing_test(
@@ -431,7 +428,7 @@ def split_derived_files_test_suite(name, tags = []):
             "-emit-module-path",
         ],
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     split_swiftmodule_indexing_test(
@@ -445,7 +442,7 @@ def split_derived_files_test_suite(name, tags = []):
             "-index-store-path",
         ],
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     split_swiftmodule_bitcode_test(
@@ -453,7 +450,7 @@ def split_derived_files_test_suite(name, tags = []):
         expected_argv = ["-emit-bc"],
         mnemonic = "SwiftCompile",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     split_swiftmodule_bitcode_test(
@@ -463,7 +460,7 @@ def split_derived_files_test_suite(name, tags = []):
         ],
         mnemonic = "SwiftDeriveFiles",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     split_swiftmodule_copts_test(
@@ -475,7 +472,7 @@ def split_derived_files_test_suite(name, tags = []):
         target_compatible_with = ["@platforms//os:macos"],
         mnemonic = "SwiftCompile",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     split_swiftmodule_copts_test(
@@ -487,7 +484,7 @@ def split_derived_files_test_suite(name, tags = []):
         target_compatible_with = ["@platforms//os:macos"],
         mnemonic = "SwiftDeriveFiles",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     native.test_suite(

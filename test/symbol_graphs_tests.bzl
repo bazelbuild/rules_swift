@@ -14,10 +14,7 @@
 
 """Tests for extracting symbol graphs."""
 
-load(
-    "@build_bazel_rules_swift//test/rules:directory_test.bzl",
-    "directory_test",
-)
+load("//test/rules:directory_test.bzl", "directory_test")
 
 def symbol_graphs_test_suite(name, tags = []):
     """Test suite for extracting symbol graphs.
@@ -40,7 +37,7 @@ def symbol_graphs_test_suite(name, tags = []):
             ],
         },
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/symbol_graphs:some_module_symbol_graph",
+        target_under_test = "//test/fixtures/symbol_graphs:some_module_symbol_graph",
     )
 
     # TODO: ideally this tests the contents of the json file(s) to ensure
@@ -58,7 +55,7 @@ def symbol_graphs_test_suite(name, tags = []):
             ],
         },
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/symbol_graphs:some_module_symbol_graph_with_extension_block_symbols",
+        target_under_test = "//test/fixtures/symbol_graphs:some_module_symbol_graph_with_extension_block_symbols",
     )
 
     # Verify that the `swift_extract_symbol_graph` rule produces a directory
@@ -72,7 +69,7 @@ def symbol_graphs_test_suite(name, tags = []):
             ],
         },
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/symbol_graphs:importing_module_symbol_graph",
+        target_under_test = "//test/fixtures/symbol_graphs:importing_module_symbol_graph",
     )
 
     # Verify that the `swift_extract_symbol_graph` rule produces a directory
@@ -87,7 +84,7 @@ def symbol_graphs_test_suite(name, tags = []):
             ],
         },
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/symbol_graphs:all_symbol_graphs",
+        target_under_test = "//test/fixtures/symbol_graphs:all_symbol_graphs",
     )
 
     native.test_suite(

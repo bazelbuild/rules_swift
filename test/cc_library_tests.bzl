@@ -14,10 +14,7 @@
 
 """Tests for interoperability with `cc_library`-specific features."""
 
-load(
-    "@bazel_skylib//rules:build_test.bzl",
-    "build_test",
-)
+load("@bazel_skylib//rules:build_test.bzl", "build_test")
 
 def cc_library_test_suite(name, tags = []):
     """Test suite for interoperability with `cc_library`-specific features.
@@ -33,9 +30,9 @@ def cc_library_test_suite(name, tags = []):
     build_test(
         name = "{}_swift_imports_cc_library_with_include_prefix_manipulation".format(name),
         targets = [
-            "@build_bazel_rules_swift//test/fixtures/cc_library:import_prefix_and_strip_prefix",
-            "@build_bazel_rules_swift//test/fixtures/cc_library:import_prefix_only",
-            "@build_bazel_rules_swift//test/fixtures/cc_library:import_strip_prefix_only",
+            "//test/fixtures/cc_library:import_prefix_and_strip_prefix",
+            "//test/fixtures/cc_library:import_prefix_only",
+            "//test/fixtures/cc_library:import_strip_prefix_only",
         ],
         tags = all_tags,
     )
@@ -47,7 +44,7 @@ def cc_library_test_suite(name, tags = []):
     build_test(
         name = "{}_swift_interop_hint_excludes_headers_with_include_prefix_manipulation".format(name),
         targets = [
-            "@build_bazel_rules_swift//test/fixtures/cc_library:import_prefix_and_strip_prefix_with_exclusion",
+            "//test/fixtures/cc_library:import_prefix_and_strip_prefix_with_exclusion",
         ],
         tags = all_tags,
     )

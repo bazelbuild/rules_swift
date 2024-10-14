@@ -14,12 +14,9 @@
 
 """Tests for `swift_library.generated_header`."""
 
+load("//test/rules:analysis_failure_test.bzl", "analysis_failure_test")
 load(
-    "@build_bazel_rules_swift//test/rules:analysis_failure_test.bzl",
-    "analysis_failure_test",
-)
-load(
-    "@build_bazel_rules_swift//test/rules:provider_test.bzl",
+    "//test/rules:provider_test.bzl",
     "make_provider_test_rule",
     "provider_test",
 )
@@ -50,7 +47,7 @@ def generated_header_test_suite(name, tags = []):
         field = "files",
         provider = "DefaultInfo",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/generated_header:auto_header",
+        target_under_test = "//test/fixtures/generated_header:auto_header",
     )
 
     private_deps_with_target_name_test(
@@ -62,7 +59,7 @@ def generated_header_test_suite(name, tags = []):
         field = "files",
         provider = "DefaultInfo",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/generated_header:auto_header",
+        target_under_test = "//test/fixtures/generated_header:auto_header",
     )
 
     # Verify that no generated header is created if the target doesn't request
@@ -76,7 +73,7 @@ def generated_header_test_suite(name, tags = []):
         field = "files",
         provider = "DefaultInfo",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/generated_header:no_header",
+        target_under_test = "//test/fixtures/generated_header:no_header",
     )
 
     # Verify that the explicit generated header is an output of the rule and
@@ -91,7 +88,7 @@ def generated_header_test_suite(name, tags = []):
         field = "files",
         provider = "DefaultInfo",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/generated_header:explicit_header",
+        target_under_test = "//test/fixtures/generated_header:explicit_header",
     )
 
     private_deps_with_target_name_test(
@@ -104,7 +101,7 @@ def generated_header_test_suite(name, tags = []):
         field = "files",
         provider = "DefaultInfo",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/generated_header:explicit_header",
+        target_under_test = "//test/fixtures/generated_header:explicit_header",
     )
 
     # Verify that the build fails to analyze if an invalid extension is used.
@@ -112,7 +109,7 @@ def generated_header_test_suite(name, tags = []):
         name = "{}_invalid_extension".format(name),
         expected_message = "The generated header for a Swift module must have a '.h' extension",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/generated_header:invalid_extension",
+        target_under_test = "//test/fixtures/generated_header:invalid_extension",
     )
 
     # Verify that the build analyzes if a path separator is used.
@@ -125,7 +122,7 @@ def generated_header_test_suite(name, tags = []):
         field = "files",
         provider = "DefaultInfo",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/generated_header:valid_path_separator",
+        target_under_test = "//test/fixtures/generated_header:valid_path_separator",
     )
 
     private_deps_with_target_name_test(
@@ -137,7 +134,7 @@ def generated_header_test_suite(name, tags = []):
         field = "files",
         provider = "DefaultInfo",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/generated_header:valid_path_separator",
+        target_under_test = "//test/fixtures/generated_header:valid_path_separator",
     )
 
     # Verify that the build fails if `generated_header_name` is set when
@@ -146,7 +143,7 @@ def generated_header_test_suite(name, tags = []):
         name = "{}_fails_when_name_provided_but_generates_header_is_false".format(name),
         expected_message = "'generated_header_name' may only be provided when 'generates_header' is True",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/generated_header:invalid_attribute_combination",
+        target_under_test = "//test/fixtures/generated_header:invalid_attribute_combination",
     )
 
     native.test_suite(
