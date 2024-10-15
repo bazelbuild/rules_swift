@@ -5,6 +5,8 @@
 ## swift_rules_dependencies
 
 <pre>
+load("@rules_swift//swift:repositories.bzl", "swift_rules_dependencies")
+
 swift_rules_dependencies(<a href="#swift_rules_dependencies-include_bzlmod_ready_dependencies">include_bzlmod_ready_dependencies</a>)
 </pre>
 

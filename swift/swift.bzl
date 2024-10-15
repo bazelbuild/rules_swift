@@ -23,7 +23,7 @@ meant for build rule use only.
 """
 
 load(
-    "@build_bazel_rules_swift//swift:swift_compiler_plugin.bzl",
+    "//swift:swift_compiler_plugin.bzl",
     _swift_compiler_plugin = "swift_compiler_plugin",
     _universal_swift_compiler_plugin = "universal_swift_compiler_plugin",
 )
