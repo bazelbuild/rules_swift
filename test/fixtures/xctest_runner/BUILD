@@ -26,3 +26,21 @@ swift_test(
     name = "EmptyUnitTests",
     tags = FIXTURE_TAGS,
 )
+
+swift_test(
+    name = "FailingSwiftTestingTests",
+    srcs = ["FailingSwiftTestingTests.swift"],
+    tags = FIXTURE_TAGS,
+)
+
+swift_test(
+    name = "EmptySwiftTestingSuite",
+    srcs = ["EmptySwiftTestingSuite.swift"],
+    tags = FIXTURE_TAGS,
+)
+
+swift_test(
+    name = "PassingSwiftTestingTests",
+    srcs = ["PassingSwiftTestingTests.swift"],
+    tags = FIXTURE_TAGS,
+)

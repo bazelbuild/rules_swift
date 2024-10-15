@@ -66,9 +66,21 @@ if [[ "$exit_status" -ne 0 ]]; then
 fi
 
 # Fail when bundle executes nothing
-test_target_execution_count=$(grep -e "Executed [[:digit:]]\{1,\} tests*," "$testlog" | tail -n1)
-if echo "$test_target_execution_count" | grep -q -e "Executed 0 tests, with 0 failures"; then
-  echo "error: no tests were executed, is the test bundle empty?" >&2
+xctest_target_execution_count=$(grep -e "Executed [[:digit:]]\{1,\} tests*," "$testlog" | tail -n1)
+swift_testing_target_execution_count=$(grep -e "Test run with [[:digit:]]\{1,\} tests*" "$testlog" | tail -n1 || true)
+error_msg="error: no tests were executed, is the test bundle empty?"
+echo "xctest_target_execution_count: $xctest_target_execution_count"
+echo "swift_testing_target_execution_count: $swift_testing_target_execution_count"
+
+if echo "$xctest_target_execution_count" | grep -q -e "Executed 0 tests, with 0 failures" && \
+   [ -z "$swift_testing_target_execution_count" ] ; then
+  echo "$error_msg" >&2
+  exit 1
+fi
+
+if echo "$xctest_target_execution_count" | grep -q -e "Executed 0 tests, with 0 failures" && \
+   echo "$swift_testing_target_execution_count" | grep -q -e "Test run with 0 tests" ; then
+  echo "$error_msg" >&2
   exit 1
 fi
 
