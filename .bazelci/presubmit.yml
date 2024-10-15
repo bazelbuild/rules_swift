@@ -74,10 +74,10 @@ tasks:
     bazel: last_green
     <<: *mac_common
     build_flags:
-      # Currently is stardoc is broken by the autoload changes
+      # Currently is stardoc and protobuf are broken by the autoload changes
       - "--incompatible_autoload_externally=+@rules_python,+@rules_shell"
     test_flags:
-      # Currently is stardoc is broken by the autoload changes
+      # Currently is stardoc and protobuf are is broken by the autoload changes
       - "--incompatible_autoload_externally=+@rules_python,+@rules_shell"
 
   macos_latest_head_deps:
@@ -115,6 +115,12 @@ tasks:
       - "mkdir $SWIFT_HOME"
       - "curl https://download.swift.org/swift-${SWIFT_VERSION}-release/ubuntu2004/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu20.04.tar.gz | tar xvz --strip-components=1 -C $SWIFT_HOME"
     <<: *linux_common
+    build_flags:
+      # Currently is stardoc and protobuf are broken by the autoload changes
+      - "--incompatible_autoload_externally=+@rules_python,+@rules_shell"
+    test_flags:
+      # Currently is stardoc and protobuf are is broken by the autoload changes
+      - "--incompatible_autoload_externally=+@rules_python,+@rules_shell"
 
   ubuntu2004_latest_head_deps:
     name: "Current LTS with Head Deps"
@@ -145,10 +151,10 @@ tasks:
     test_targets:
     - "doc/..."
     build_flags:
-      # Currently is stardoc is broken by the autoload changes
+      # Currently is stardoc and protobuf are broken by the autoload changes
       - "--incompatible_autoload_externally=+@rules_python,+@rules_shell"
     test_flags:
-      # Currently is stardoc is broken by the autoload changes
+      # Currently is stardoc and protobuf are is broken by the autoload changes
       - "--incompatible_autoload_externally=+@rules_python,+@rules_shell"
 
 buildifier: 6.3.2
