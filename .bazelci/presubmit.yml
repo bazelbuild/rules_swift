@@ -75,10 +75,10 @@ tasks:
     <<: *mac_common
     build_flags:
       # Currently is stardoc and protobuf are broken by the autoload changes
-      - "--incompatible_autoload_externally=+@rules_python,+@rules_shell"
+      - "--incompatible_autoload_externally=+py_test,+@rules_shell"
     test_flags:
       # Currently is stardoc and protobuf are is broken by the autoload changes
-      - "--incompatible_autoload_externally=+@rules_python,+@rules_shell"
+      - "--incompatible_autoload_externally=+py_test,+@rules_shell"
 
   macos_latest_head_deps:
     name: "Current LTS with Head Deps"
@@ -117,10 +117,10 @@ tasks:
     <<: *linux_common
     build_flags:
       # Currently is stardoc and protobuf are broken by the autoload changes
-      - "--incompatible_autoload_externally=+@rules_python,+@rules_shell"
+      - "--incompatible_autoload_externally=+py_test,+@rules_shell"
     test_flags:
       # Currently is stardoc and protobuf are is broken by the autoload changes
-      - "--incompatible_autoload_externally=+@rules_python,+@rules_shell"
+      - "--incompatible_autoload_externally=+py_test,+@rules_shell"
 
   ubuntu2004_latest_head_deps:
     name: "Current LTS with Head Deps"
@@ -152,9 +152,9 @@ tasks:
     - "doc/..."
     build_flags:
       # Currently is stardoc and protobuf are broken by the autoload changes
-      - "--incompatible_autoload_externally=+@rules_python,+@rules_shell"
+      - "--incompatible_autoload_externally=+py_test,+@rules_shell"
     test_flags:
       # Currently is stardoc and protobuf are is broken by the autoload changes
-      - "--incompatible_autoload_externally=+@rules_python,+@rules_shell"
+      - "--incompatible_autoload_externally=+py_test,+@rules_shell"
 
 buildifier: 6.3.2
