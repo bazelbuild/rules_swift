@@ -575,10 +575,10 @@ def register_link_binary_action(
         compilation_outputs,
         deps,
         feature_configuration,
-        name,
+        label,
         module_contexts = [],
+        name = None,
         output_type,
-        owner,
         stamp,
         swift_toolchain,
         user_link_flags = [],
@@ -599,15 +599,16 @@ def register_link_binary_action(
         deps: A list of targets representing additional libraries that will be
             passed to the linker.
         feature_configuration: The Swift feature configuration.
+        label: The label of the target being linked, whose name is used to
+            derive the output artifact if the `name` argument is not provided.
         module_contexts: A list of module contexts resulting from the
             compilation of the sources in the binary target, which are embedded
             in the binary for debugging if this is a debug build. This list may
             be empty if the target had no sources of its own.
-        name: The name of the target being linked, which is used to derive the
-            output artifact.
+        name: If provided, the name of the output file to generate. If not
+            provided, the name of `label` will be used.
         output_type: A string indicating the output type; "executable" or
             "dynamic_library".
-        owner: The `Label` of the target that owns this linker input.
         stamp: A tri-state value (-1, 0, or 1) that specifies whether link
             stamping is enabled. See `cc_common.link` for details about the
             behavior of this argument.
@@ -682,7 +683,7 @@ def register_link_binary_action(
                 cc_common.create_linking_context(
                     linker_inputs = depset([
                         cc_common.create_linker_input(
-                            owner = owner,
+                            owner = label,
                             user_link_flags = dep_link_flags,
                             additional_inputs = additional_inputs,
                         ),
@@ -696,18 +697,21 @@ def register_link_binary_action(
         debugging_linking_context = _create_embedded_debugging_linking_context(
             actions = actions,
             feature_configuration = feature_configuration,
-            label = owner,
+            label = label,
             module_context = module_context,
             swift_toolchain = swift_toolchain,
         )
         if debugging_linking_context:
             linking_contexts.append(debugging_linking_context)
 
+    if not name:
+        name = label.name
+
     autolink_linking_context = _create_autolink_linking_context(
         actions = actions,
         compilation_outputs = compilation_outputs,
         feature_configuration = feature_configuration,
-        label = owner,
+        label = label,
         name = name,
         swift_toolchain = swift_toolchain,
     )
@@ -722,7 +726,7 @@ def register_link_binary_action(
             cc_common.create_linking_context(
                 linker_inputs = depset([
                     cc_common.create_linker_input(
-                        owner = owner,
+                        owner = label,
                         user_link_flags = depset(["-Wl,-z,nostart-stop-gc"]),
                     ),
                 ]),
@@ -738,7 +742,7 @@ def register_link_binary_action(
             cc_common.create_linking_context(
                 linker_inputs = depset([
                     cc_common.create_linker_input(
-                        owner = owner,
+                        owner = label,
                         user_link_flags = depset(["-ObjC"]),
                     ),
                 ]),

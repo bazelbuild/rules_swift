@@ -141,10 +141,10 @@ def _swift_compiler_plugin_impl(ctx):
         compilation_outputs = compilation_outputs,
         deps = deps,
         feature_configuration = feature_configuration,
+        label = ctx.label,
         module_contexts = module_contexts,
         name = name,
         output_type = "executable",
-        owner = ctx.label,
         stamp = ctx.attr.stamp,
         swift_toolchain = swift_toolchain,
         user_link_flags = expand_locations(
