@@ -61,6 +61,9 @@ def mixed_language_library(
     """Creates a mixed language library from a Clang and Swift library target \
     pair.
 
+    Note: In the future `swift_library` will support mixed-langauge libraries.
+    Once that is the case, this macro will be deprecated.
+
     Args:
         name: The name of the target.
         alwayslink: If true, any binary that depends (directly or indirectly) on

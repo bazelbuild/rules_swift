@@ -1000,6 +1000,10 @@ mixed_language_library(<a href="#mixed_language_library-name">name</a>, <a href=
 
 Creates a mixed language library from a Clang and Swift library target     pair.
 
+Note: In the future `swift_library` will support mixed-langauge libraries.
+Once that is the case, this macro will be deprecated.
+
+
 **PARAMETERS**
 
 
