@@ -17,7 +17,7 @@ If you run into any problems with these rules, please
 Create a simple CLI that can run on macOS, Linux, or Windows:
 
 ```bzl
-load("@build_bazel_rules_swift//swift:swift.bzl", "swift_binary")
+load("@build_bazel_rules_swift//swift:swift_binary.bzl", "swift_binary")
 
 swift_binary(
     name = "cli",
@@ -29,7 +29,7 @@ Create a single library target that can be used by other targets in your
 build:
 
 ```bzl
-load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
+load("@build_bazel_rules_swift//swift:swift_library.bzl", "swift_library")
 
 swift_library(
     name = "MyLibrary",

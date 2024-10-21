@@ -21,8 +21,9 @@ load(
     "@build_bazel_apple_support//lib:transitions.bzl",
     "macos_universal_transition",
 )
+load("//swift/internal:compiling.bzl", "compile")
 load(
-    "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
+    "//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT",
 )
 load("//swift/internal:features.bzl", "is_feature_enabled")
@@ -38,18 +39,22 @@ load(
     "//swift/internal:output_groups.bzl",
     "supplemental_compilation_output_groups",
 )
-load("//swift/internal:toolchain_utils.bzl", "use_swift_toolchain")
+load("//swift/internal:providers.bzl", "SwiftCompilerPluginInfo")
+load(
+    "//swift/internal:toolchain_utils.bzl",
+    "get_swift_toolchain",
+    "use_swift_toolchain",
+)
 load(
     "//swift/internal:utils.bzl",
     "expand_locations",
     "get_providers",
 )
 load(":module_name.bzl", "derive_swift_module_name")
-load(":providers.bzl", "SwiftCompilerPluginInfo", "SwiftInfo")
-load(":swift_common.bzl", "swift_common")
+load(":providers.bzl", "SwiftBinaryInfo", "SwiftInfo")
 
 def _swift_compiler_plugin_impl(ctx):
-    swift_toolchain = swift_common.get_toolchain(ctx)
+    swift_toolchain = get_swift_toolchain(ctx)
 
     feature_configuration = configure_features_for_binary(
         ctx = ctx,
@@ -70,7 +75,7 @@ def _swift_compiler_plugin_impl(ctx):
         module_name = derive_swift_module_name(ctx.label)
     entry_point_function_name = "{}_main".format(module_name)
 
-    compile_result = swift_common.compile(
+    compile_result = compile(
         actions = ctx.actions,
         additional_inputs = ctx.files.swiftc_inputs,
         cc_infos = get_providers(deps, CcInfo),
@@ -108,6 +113,17 @@ def _swift_compiler_plugin_impl(ctx):
     compilation_outputs = compile_result.compilation_outputs
     supplemental_outputs = compile_result.supplemental_outputs
 
+    # Apply the optional debugging outputs extension if the toolchain defines
+    # one.
+    debug_outputs_provider = swift_toolchain.debug_outputs_provider
+    if debug_outputs_provider:
+        debug_extension = debug_outputs_provider(ctx = ctx)
+        additional_debug_outputs = debug_extension.additional_outputs
+        variables_extension = debug_extension.variables_extension
+    else:
+        additional_debug_outputs = []
+        variables_extension = {}
+
     if is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT,
@@ -121,6 +137,7 @@ def _swift_compiler_plugin_impl(ctx):
         actions = ctx.actions,
         additional_inputs = ctx.files.swiftc_inputs,
         additional_linking_contexts = [malloc_linking_context(ctx)],
+        additional_outputs = additional_debug_outputs,
         compilation_outputs = compilation_outputs,
         deps = deps,
         feature_configuration = feature_configuration,
@@ -141,6 +158,7 @@ def _swift_compiler_plugin_impl(ctx):
                 entry_point_name = entry_point_function_name,
             ).linkopts
         ),
+        variables_extension = variables_extension,
     )
 
     linking_context, _ = (
@@ -166,7 +184,9 @@ def _swift_compiler_plugin_impl(ctx):
     return [
         DefaultInfo(
             executable = binary_linking_outputs.executable,
-            files = depset([binary_linking_outputs.executable]),
+            files = depset(
+                [binary_linking_outputs.executable] + additional_debug_outputs,
+            ),
             runfiles = ctx.runfiles(
                 collect_data = True,
                 collect_default = True,
@@ -176,16 +196,16 @@ def _swift_compiler_plugin_impl(ctx):
         OutputGroupInfo(
             **supplemental_compilation_output_groups(supplemental_outputs)
         ),
-        SwiftCompilerPluginInfo(
+        SwiftBinaryInfo(
             cc_info = CcInfo(
                 compilation_context = module_context.clang.compilation_context,
                 linking_context = linking_context,
             ),
+            swift_info = compile_result.swift_info,
+        ),
+        SwiftCompilerPluginInfo(
             executable = binary_linking_outputs.executable,
             module_names = depset([module_name]),
-            swift_info = swift_common.create_swift_info(
-                modules = [module_context],
-            ),
         ),
     ]
 
@@ -287,10 +307,10 @@ def _universal_swift_compiler_plugin_impl(ctx):
     module_name = None
     swift_infos = []
     for plugin in ctx.split_attr.plugin.values():
-        cc_infos.append(plugin[SwiftCompilerPluginInfo].cc_info)
-        direct_swift_modules.extend(plugin[SwiftCompilerPluginInfo].swift_info.direct_modules)
+        cc_infos.append(plugin[SwiftBinaryInfo].cc_info)
+        direct_swift_modules.extend(plugin[SwiftBinaryInfo].swift_info.direct_modules)
         module_name = plugin[SwiftCompilerPluginInfo].module_names.to_list()[0]
-        swift_infos.append(plugin[SwiftCompilerPluginInfo].swift_info)
+        swift_infos.append(plugin[SwiftBinaryInfo].swift_info)
 
     first_output_group_info = ctx.split_attr.plugin.values()[0][OutputGroupInfo]
     combined_output_group_info = {}
@@ -312,14 +332,16 @@ def _universal_swift_compiler_plugin_impl(ctx):
             runfiles = ctx.runfiles().merge_all(transitive_runfiles),
         ),
         OutputGroupInfo(**combined_output_group_info),
-        SwiftCompilerPluginInfo(
+        SwiftBinaryInfo(
             cc_info = cc_common.merge_cc_infos(cc_infos = cc_infos),
-            executable = output,
-            module_names = depset([module_name]),
-            swift_info = swift_common.create_swift_info(
+            swift_info = SwiftInfo(
                 modules = direct_swift_modules,
                 swift_infos = swift_infos,
             ),
+        ),
+        SwiftCompilerPluginInfo(
+            executable = output,
+            module_names = depset([module_name]),
         ),
     ]
 
@@ -331,11 +353,15 @@ universal_swift_compiler_plugin = rule(
                 cfg = macos_universal_transition,
                 doc = "Target to generate a 'fat' binary from.",
                 mandatory = True,
-                providers = [SwiftCompilerPluginInfo],
+                providers = [[SwiftBinaryInfo, SwiftCompilerPluginInfo]],
             ),
             "_allowlist_function_transition": attr.label(
-                default = "@bazel_tools//tools/allowlists/function_transition_allowlist",
+                default = Label(
+                    "@bazel_tools//tools/allowlists/function_transition_allowlist",
+                ),
             ),
+            # TODO(b/301253335): Enable AEGs and switch from `swift` exec_group to swift `toolchain` param.
+            "_use_auto_exec_groups": attr.bool(default = False),
         },
     ),
     doc = """\

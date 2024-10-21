@@ -48,21 +48,21 @@ load("//swift/internal:attrs.bzl", "swift_toolchain_driver_attrs")
 load("//swift/internal:autolinking.bzl", "autolink_extract_action_configs")
 load(
     "//swift/internal:feature_names.bzl",
-    "SWIFT_FEATURE_CACHEABLE_SWIFTMODULES",
-    "SWIFT_FEATURE_COVERAGE_PREFIX_MAP",
-    "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
-    "SWIFT_FEATURE_DISABLE_SYSTEM_INDEX",
-    "SWIFT_FEATURE_EMIT_SWIFTDOC",
-    "SWIFT_FEATURE_EMIT_SWIFTSOURCEINFO",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
-    "SWIFT_FEATURE_NO_GENERATED_MODULE_MAP",
-    "SWIFT_FEATURE_OPT_USES_WMO",
     "SWIFT_FEATURE_USE_AUTOLINK_EXTRACT",
     "SWIFT_FEATURE_USE_GLOBAL_INDEX_STORE",
-    "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
     "SWIFT_FEATURE_USE_MODULE_WRAP",
 )
-load("//swift/internal:features.bzl", "features_for_build_modes")
+load(
+    "//swift/internal:features.bzl",
+    "default_features_for_toolchain",
+    "features_for_build_modes",
+)
+load(
+    "//swift/internal:providers.bzl",
+    "SwiftCrossImportOverlayInfo",
+    "SwiftModuleAliasesInfo",
+)
 load("//swift/internal:target_triples.bzl", "target_triples")
 load(
     "//swift/internal:utils.bzl",
@@ -182,7 +182,7 @@ def _all_action_configs(os, arch, target_triple, sdkroot, xctest_version, additi
         sdkroot: The path to the SDK that we should use to build against.
         xctest_version: The version of XCTest to use.
         additional_swiftc_copts: Additional Swift compiler flags obtained from
-            the `swift` configuration fragment.
+            the `.../swift:copt` build setting.
 
     Returns:
         A list of action configurations for the toolchain.
@@ -455,16 +455,17 @@ def _swift_toolchain_impl(ctx):
         features_for_build_modes(ctx) +
         features_from_swiftcopts(swiftcopts = swiftcopts)
     )
+    requested_features.extend(default_features_for_toolchain(
+        ctx = ctx,
+        target_triple = target_triple,
+    ))
+
     requested_features.extend([
-        SWIFT_FEATURE_CACHEABLE_SWIFTMODULES,
-        SWIFT_FEATURE_COVERAGE_PREFIX_MAP,
-        SWIFT_FEATURE_DEBUG_PREFIX_MAP,
-        SWIFT_FEATURE_DISABLE_SYSTEM_INDEX,
-        SWIFT_FEATURE_EMIT_SWIFTDOC,
-        SWIFT_FEATURE_EMIT_SWIFTSOURCEINFO,
-        SWIFT_FEATURE_NO_GENERATED_MODULE_MAP,
-        SWIFT_FEATURE_OPT_USES_WMO,
-        SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE,
+        # Allow users to start using access levels on `import`s by default. Note
+        # that this does *not* change the default access level for `import`s to
+        # `internal`; that is controlled by the upcoming feature flag
+        # `InternalImportsByDefault`.
+        "swift.experimental.AccessLevelOnImport",
     ])
 
     requested_features.extend(ctx.features)
@@ -515,10 +516,16 @@ def _swift_toolchain_impl(ctx):
     # assumptions that are only valid on Linux.
     swift_toolchain_info = SwiftToolchainInfo(
         action_configs = all_action_configs,
+        cc_language = None,
         cc_toolchain_info = cc_toolchain,
         clang_implicit_deps_providers = (
             collect_implicit_deps_providers([])
         ),
+        cross_import_overlays = [
+            target[SwiftCrossImportOverlayInfo]
+            for target in ctx.attr.cross_import_overlays
+        ],
+        debug_outputs_provider = None,
         developer_dirs = [],
         entry_point_linkopts_provider = _entry_point_linkopts_provider,
         feature_allowlists = [
@@ -527,6 +534,9 @@ def _swift_toolchain_impl(ctx):
         ],
         generated_header_module_implicit_deps_providers = (
             collect_implicit_deps_providers([])
+        ),
+        module_aliases = (
+            ctx.attr._module_mapping[SwiftModuleAliasesInfo].aliases
         ),
         implicit_deps_providers = collect_implicit_deps_providers(
             [],
@@ -574,6 +584,16 @@ architecture-specific content, such as "x86_64" in "lib/swift/linux/x86_64".
 """,
                 mandatory = True,
             ),
+            "cross_import_overlays": attr.label_list(
+                allow_empty = True,
+                doc = """\
+A list of `swift_cross_import_overlay` targets that will be automatically
+injected into the dependencies of Swift compilations if their declaring module
+and bystanding module are both already declared as dependencies.
+""",
+                mandatory = False,
+                providers = [[SwiftCrossImportOverlayInfo]],
+            ),
             "feature_allowlists": attr.label_list(
                 doc = """\
 A list of `swift_feature_allowlist` targets that allow or prohibit packages from
@@ -612,18 +632,22 @@ The C++ toolchain from which other tools needed by the Swift toolchain (such as
 """,
             ),
             "_copts": attr.label(
-                default = Label("@build_bazel_rules_swift//swift:copt"),
+                default = Label("//swift:copt"),
                 doc = """\
 The label of the `string_list` containing additional flags that should be passed
 to the compiler.
 """,
             ),
             "_exec_copts": attr.label(
-                default = Label("@build_bazel_rules_swift//swift:exec_copt"),
+                default = Label("//swift:exec_copt"),
                 doc = """\
 The label of the `string_list` containing additional flags that should be passed
 to the compiler for exec transition builds.
 """,
+            ),
+            "_module_mapping": attr.label(
+                default = Label("//swift:module_mapping"),
+                providers = [[SwiftModuleAliasesInfo]],
             ),
             "_worker": attr.label(
                 cfg = "exec",
@@ -636,7 +660,9 @@ for incremental compilation using a persistent mode.
                 executable = True,
             ),
             "const_protocols_to_gather": attr.label(
-                default = Label("@build_bazel_rules_swift//swift/toolchains/config:const_protocols_to_gather.json"),
+                default = Label(
+                    "//swift/toolchains/config:const_protocols_to_gather.json",
+                ),
                 allow_single_file = True,
                 doc = """\
 The label of the file specifying a list of protocols for extraction of conformances'

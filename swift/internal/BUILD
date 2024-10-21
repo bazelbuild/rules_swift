@@ -41,6 +41,7 @@ bzl_library(
     name = "attrs",
     srcs = ["attrs.bzl"],
     visibility = [
+        "//mixed_language:__subpackages__",
         "//proto:__subpackages__",
         "//swift:__subpackages__",
     ],
@@ -72,6 +73,7 @@ bzl_library(
     name = "compiling",
     srcs = ["compiling.bzl"],
     visibility = [
+        "//mixed_language:__subpackages__",
         "//proto:__subpackages__",
         "//swift:__subpackages__",
     ],
@@ -83,13 +85,12 @@ bzl_library(
         ":feature_names",
         ":features",
         ":module_maps",
-        ":providers",
         ":utils",
         ":vfsoverlay",
         ":wmo",
+        "//swift:providers",
         "@bazel_skylib//lib:paths",
         "@bazel_skylib//lib:sets",
-        "@bazel_skylib//lib:types",
     ],
 )
 
@@ -128,18 +129,26 @@ bzl_library(
 bzl_library(
     name = "feature_names",
     srcs = ["feature_names.bzl"],
-    visibility = ["//swift:__subpackages__"],
+    visibility = [
+        "//mixed_language:__subpackages__",
+        "//swift:__subpackages__",
+    ],
 )
 
 bzl_library(
     name = "features",
     srcs = ["features.bzl"],
-    visibility = ["//swift:__subpackages__"],
+    visibility = [
+        "//mixed_language:__subpackages__",
+        "//swift:__subpackages__",
+    ],
     deps = [
         ":feature_names",
         ":package_specs",
+        ":target_triples",
         "@bazel_skylib//lib:collections",
         "@bazel_skylib//lib:new_sets",
+        "@bazel_skylib//rules:common_settings",
     ],
 )
 
@@ -170,7 +179,10 @@ bzl_library(
 bzl_library(
     name = "module_maps",
     srcs = ["module_maps.bzl"],
-    visibility = ["//swift:__subpackages__"],
+    visibility = [
+        "//mixed_language:__subpackages__",
+        "//swift:__subpackages__",
+    ],
     deps = ["@bazel_skylib//lib:paths"],
 )
 
@@ -192,9 +204,8 @@ bzl_library(
 bzl_library(
     name = "providers",
     srcs = ["providers.bzl"],
-    visibility = ["//swift:__subpackages__"],
-    deps = [
-        "//swift:providers.bzl",
+    visibility = [
+        "//swift:__subpackages__",
     ],
 )
 
@@ -208,7 +219,10 @@ bzl_library(
     name = "swift_autoconfiguration",
     srcs = ["swift_autoconfiguration.bzl"],
     visibility = ["//swift:__subpackages__"],
-    deps = ["//swift/internal:feature_names"],
+    deps = [
+        ":toolchain_utils",
+        "//swift/internal:feature_names",
+    ],
 )
 
 bzl_library(
@@ -239,8 +253,8 @@ bzl_library(
     deps = [
         ":action_names",
         ":actions",
-        ":providers",
         ":utils",
+        "//swift:providers",
     ],
 )
 
@@ -254,6 +268,7 @@ bzl_library(
     name = "toolchain_utils",
     srcs = ["toolchain_utils.bzl"],
     visibility = [
+        "//mixed_language:__subpackages__",
         "//proto:__subpackages__",
         "//swift:__subpackages__",
     ],
@@ -263,6 +278,7 @@ bzl_library(
     name = "utils",
     srcs = ["utils.bzl"],
     visibility = [
+        "//mixed_language:__subpackages__",
         "//proto:__subpackages__",
         "//swift:__subpackages__",
     ],

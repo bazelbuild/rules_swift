@@ -14,11 +14,8 @@
 
 """Common build definitions used by test fixtures."""
 
-load("@build_bazel_rules_swift//swift:providers.bzl", "SwiftInfo")
-load(
-    "@build_bazel_rules_swift//swift:swift_clang_module_aspect.bzl",
-    "swift_clang_module_aspect",
-)
+load("//swift:providers.bzl", "SwiftInfo")
+load("//swift:swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 
 # Common tags that prevent the test fixtures from actually being built (i.e.,
 # their actions executed) when running `bazel test` to do analysis testing.

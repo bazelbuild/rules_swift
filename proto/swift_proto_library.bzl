@@ -24,6 +24,7 @@ load(
     "@rules_proto//proto:defs.bzl",
     "ProtoInfo",
 )
+load("//swift:module_name.bzl", "derive_swift_module_name")
 load("//swift:providers.bzl", "SwiftProtoCompilerInfo")
 load("//swift:swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 load("//swift:swift_common.bzl", "swift_common")
@@ -51,7 +52,7 @@ def _get_module_name(attr, target_label):
     """
     module_name = attr.module_name
     if not module_name:
-        module_name = swift_common.derive_module_name(target_label)
+        module_name = derive_swift_module_name(target_label)
     return module_name
 
 # Rule

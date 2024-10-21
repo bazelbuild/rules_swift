@@ -20,16 +20,32 @@ load(
     "swift_common_rule_attrs",
     "swift_toolchain_attrs",
 )
+load("//swift/internal:compiling.bzl", "compile_module_interface")
+load(
+    "//swift/internal:features.bzl",
+    "configure_features",
+    "get_cc_feature_configuration",
+)
 load("//swift/internal:linking.bzl", "new_objc_provider")
-load("//swift/internal:toolchain_utils.bzl", "use_swift_toolchain")
+load("//swift/internal:providers.bzl", "SwiftCompilerPluginInfo")
+load(
+    "//swift/internal:toolchain_utils.bzl",
+    "get_swift_toolchain",
+    "use_swift_toolchain",
+)
 load(
     "//swift/internal:utils.bzl",
     "compact",
     "get_compilation_contexts",
     "get_providers",
 )
-load(":providers.bzl", "SwiftInfo")
-load(":swift_common.bzl", "swift_common")
+load(
+    ":providers.bzl",
+    "SwiftInfo",
+    "create_clang_module_inputs",
+    "create_swift_module_context",
+    "create_swift_module_inputs",
+)
 
 def _swift_import_impl(ctx):
     archives = ctx.files.archives
@@ -38,8 +54,8 @@ def _swift_import_impl(ctx):
     swiftinterface = ctx.file.swiftinterface
     swiftmodule = ctx.file.swiftmodule
 
-    swift_toolchain = swift_common.get_toolchain(ctx)
-    feature_configuration = swift_common.configure_features(
+    swift_toolchain = get_swift_toolchain(ctx)
+    feature_configuration = configure_features(
         ctx = ctx,
         swift_toolchain = swift_toolchain,
         requested_features = ctx.features,
@@ -54,8 +70,8 @@ def _swift_import_impl(ctx):
         fail("'swiftinterface' may not be specified when " +
              "'swiftmodule' is specified.")
 
-    swift_toolchain = swift_common.get_toolchain(ctx)
-    feature_configuration = swift_common.configure_features(
+    swift_toolchain = get_swift_toolchain(ctx)
+    feature_configuration = configure_features(
         ctx = ctx,
         swift_toolchain = swift_toolchain,
         requested_features = ctx.features,
@@ -65,8 +81,9 @@ def _swift_import_impl(ctx):
     libraries_to_link = [
         cc_common.create_library_to_link(
             actions = ctx.actions,
+            alwayslink = True,
             cc_toolchain = swift_toolchain.cc_toolchain_info,
-            feature_configuration = swift_common.cc_feature_configuration(
+            feature_configuration = get_cc_feature_configuration(
                 feature_configuration,
             ),
             static_library = archive,
@@ -88,7 +105,7 @@ def _swift_import_impl(ctx):
     swift_infos = get_providers(deps, SwiftInfo)
 
     if swiftinterface:
-        module_context = swift_common.compile_module_interface(
+        module_context = compile_module_interface(
             actions = ctx.actions,
             compilation_contexts = get_compilation_contexts(ctx.attr.deps),
             feature_configuration = feature_configuration,
@@ -102,14 +119,20 @@ def _swift_import_impl(ctx):
             module_context.swift.swiftmodule,
         ] + compact([module_context.swift.swiftdoc])
     else:
-        module_context = swift_common.create_module(
+        module_context = create_swift_module_context(
             name = ctx.attr.module_name,
-            clang = swift_common.create_clang_module(
+            clang = create_clang_module_inputs(
                 compilation_context = cc_info.compilation_context,
                 module_map = None,
             ),
-            swift = swift_common.create_swift_module(
+            swift = create_swift_module_inputs(
+                plugins = [
+                    plugin[SwiftCompilerPluginInfo]
+                    for plugin in ctx.attr.plugins
+                    if SwiftCompilerPluginInfo in plugin
+                ],
                 swiftdoc = swiftdoc,
+                swiftinterface = swiftinterface,
                 swiftmodule = swiftmodule,
             ),
         )
@@ -123,6 +146,10 @@ def _swift_import_impl(ctx):
                 collect_default = True,
                 files = ctx.files.data,
             ),
+        ),
+        SwiftInfo(
+            modules = [module_context],
+            swift_infos = swift_infos,
         ),
         cc_info,
         # Propagate an `Objc` provider so that Apple-specific rules like
@@ -139,10 +166,6 @@ def _swift_import_impl(ctx):
             module_context = module_context,
             swift_toolchain = swift_toolchain,
         ),
-        swift_common.create_swift_info(
-            modules = [module_context],
-            swift_infos = swift_infos,
-        ),
     ]
 
     return providers
@@ -154,15 +177,24 @@ swift_import = rule(
         {
             "archives": attr.label_list(
                 allow_empty = True,
-                allow_files = ["a"],
+                allow_files = ["a", "lo"],
                 doc = """\
-The list of `.a` files provided to Swift targets that depend on this target.
+The list of `.a` or `.lo` files provided to Swift targets that depend on this
+target.
 """,
                 mandatory = False,
             ),
             "module_name": attr.string(
                 doc = "The name of the module represented by this target.",
                 mandatory = True,
+            ),
+            "plugins": attr.label_list(
+                cfg = "exec",
+                doc = """\
+A list of `swift_compiler_plugin` targets that should be loaded by the compiler
+when compiling any modules that directly depend on this target.
+""",
+                providers = [[SwiftCompilerPluginInfo]],
             ),
             "swiftdoc": attr.label(
                 allow_single_file = ["swiftdoc"],
@@ -187,23 +219,27 @@ May not be specified if `swiftinterface` is specified.
 """,
                 mandatory = False,
             ),
+            # TODO(b/301253335): Enable AEGs and add `toolchain` param once this rule starts using toolchain resolution.
+            "_use_auto_exec_groups": attr.bool(default = False),
         },
     ),
     doc = """\
-Allows for the use of Swift textual module interfaces or precompiled Swift modules as dependencies in other
-`swift_library` and `swift_binary` targets.
+Allows for the use of Swift textual module interfaces and/or precompiled Swift
+modules as dependencies in other `swift_library` and `swift_binary` targets.
 
-To use `swift_import` targets across Xcode versions and/or OS versions, it is required to use `.swiftinterface` files.
-These can be produced by the pre-built target if built with:
+To use `swift_import` targets across Xcode versions and/or OS versions, it is
+required to use `.swiftinterface` files. These can be produced by the pre-built
+target if built with:
 
   - `--features=swift.enable_library_evolution`
   - `--features=swift.emit_swiftinterface`
 
-If the pre-built target supports `.private.swiftinterface` files, these can be used instead of `.swiftinterface` files
-in the `swiftinterface` attribute.
+If the pre-built target supports `.private.swiftinterface` files, these can be
+used instead of `.swiftinterface` files in the `swiftinterface` attribute.
 
 To import pre-built Swift modules that use `@_spi` when using `swiftinterface`,
-the `.private.swiftinterface` files are required in order to build any code that uses the API marked with `@_spi`.
+the `.private.swiftinterface` files are required in order to build any code that
+uses the API marked with `@_spi`.
 """,
     fragments = ["cpp"],
     implementation = _swift_import_impl,

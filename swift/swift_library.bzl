@@ -17,24 +17,40 @@
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:sets.bzl", "sets")
 load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
-load("//swift/internal:attrs.bzl", "swift_deps_attr")
+load(
+    "//swift/internal:attrs.bzl",
+    "swift_deps_attr",
+    "swift_library_rule_attrs",
+)
 load(
     "//swift/internal:build_settings.bzl",
     "PerModuleSwiftCoptSettingInfo",
     "additional_per_module_swiftcopts",
 )
+load("//swift/internal:compiling.bzl", "compile")
 load(
     "//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
 )
-load("//swift/internal:linking.bzl", "new_objc_provider")
+load("//swift/internal:features.bzl", "configure_features")
+load(
+    "//swift/internal:linking.bzl",
+    "create_linking_context_from_compilation_outputs",
+    "new_objc_provider",
+)
 load(
     "//swift/internal:output_groups.bzl",
     "supplemental_compilation_output_groups",
 )
-load("//swift/internal:toolchain_utils.bzl", "use_swift_toolchain")
+load("//swift/internal:providers.bzl", "SwiftCompilerPluginInfo")
+load("//swift/internal:runfiles.bzl", "include_runfiles_constants")
+load(
+    "//swift/internal:toolchain_utils.bzl",
+    "get_swift_toolchain",
+    "use_swift_toolchain",
+)
 load(
     "//swift/internal:utils.bzl",
     "compact",
@@ -43,10 +59,9 @@ load(
     "get_providers",
     "include_developer_search_paths",
 )
-load("//swift/internal:runfiles.bzl", "include_runfiles_constants")
-load(":providers.bzl", "SwiftCompilerPluginInfo", "SwiftInfo")
+load(":module_name.bzl", "derive_swift_module_name")
+load(":providers.bzl", "SwiftInfo")
 load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
-load(":swift_common.bzl", "swift_common")
 
 def _maybe_parse_as_library_copts(srcs):
     """Returns a list of compiler flags depending on `main.swift`'s presence.
@@ -122,30 +137,39 @@ def _swift_library_impl(ctx):
         copts.extend(["-static"])
     copts.extend(module_copts)
 
+    deps = ctx.attr.deps
+    private_deps = ctx.attr.private_deps
+    _check_deps_are_disjoint(ctx.label, deps, private_deps)
+
     extra_features = []
-    if ctx.attr._config_emit_swiftinterface[BuildSettingInfo].value:
+
+    # TODO(b/239957001): Remove the global flag.
+    if (
+        ctx.attr.library_evolution or
+        ctx.attr._config_emit_swiftinterface[BuildSettingInfo].value
+    ):
         extra_features.append(SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION)
         extra_features.append(SWIFT_FEATURE_EMIT_SWIFTINTERFACE)
 
-    if ctx.attr._config_emit_private_swiftinterface[BuildSettingInfo].value:
+    # TODO(b/239957001): Remove the global flag.
+    if (
+        ctx.attr.library_evolution or
+        ctx.attr._config_emit_private_swiftinterface[BuildSettingInfo].value
+    ):
         extra_features.append(SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION)
         extra_features.append(SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE)
 
     module_name = ctx.attr.module_name
     if not module_name:
-        module_name = swift_common.derive_module_name(ctx.label)
+        module_name = derive_swift_module_name(ctx.label)
 
-    swift_toolchain = swift_common.get_toolchain(ctx)
-    feature_configuration = swift_common.configure_features(
+    swift_toolchain = get_swift_toolchain(ctx)
+    feature_configuration = configure_features(
         ctx = ctx,
         requested_features = ctx.features + extra_features,
         swift_toolchain = swift_toolchain,
         unsupported_features = ctx.disabled_features,
     )
-
-    deps = ctx.attr.deps
-    private_deps = ctx.attr.private_deps
-    _check_deps_are_disjoint(ctx.label, deps, private_deps)
 
     swift_infos = get_providers(deps, SwiftInfo)
     private_swift_infos = get_providers(private_deps, SwiftInfo)
@@ -166,7 +190,7 @@ def _swift_library_impl(ctx):
 
     include_dev_srch_paths = include_developer_search_paths(ctx.attr)
 
-    compile_result = swift_common.compile(
+    compile_result = compile(
         actions = ctx.actions,
         additional_inputs = additional_inputs,
         cc_infos = get_providers(ctx.attr.deps, CcInfo),
@@ -192,7 +216,7 @@ def _swift_library_impl(ctx):
     supplemental_outputs = compile_result.supplemental_outputs
 
     linking_context, linking_output = (
-        swift_common.create_linking_context_from_compilation_outputs(
+        create_linking_context_from_compilation_outputs(
             actions = ctx.actions,
             additional_inputs = additional_inputs,
             alwayslink = ctx.attr.alwayslink,
@@ -252,12 +276,7 @@ def _swift_library_impl(ctx):
             extensions = ["swift"],
             source_attributes = ["srcs"],
         ),
-        swift_common.create_swift_info(
-            modules = [module_context],
-            # Note that private_deps are explicitly omitted here; they should
-            # not propagate.
-            swift_infos = swift_infos,
-        ),
+        compile_result.swift_info,
         OutputGroupInfo(
             **supplemental_compilation_output_groups(supplemental_outputs)
         ),
@@ -284,7 +303,7 @@ def _swift_library_impl(ctx):
 
 swift_library = rule(
     attrs = dicts.add(
-        swift_common.library_rule_attrs(additional_deps_aspects = [
+        swift_library_rule_attrs(additional_deps_aspects = [
             swift_clang_module_aspect,
         ]),
         {
@@ -297,12 +316,17 @@ dependent for linking, but artifacts/flags required for compilation (such as
 .swiftmodule files, C headers, and search paths) will not be propagated.
 """,
             ),
+            # TODO(b/301253335): Once AEGs are enabled in Bazel, set the swift toolchain type in the
+            # exec configuration of `plugins` attribute and enable AEGs in swift_library.
+            "_use_auto_exec_groups": attr.bool(default = False),
         },
     ),
     doc = """\
 Compiles and links Swift code into a static library and Swift module.
 """,
-    fragments = ["cpp"],
+    fragments = [
+        "cpp",
+    ],
     implementation = _swift_library_impl,
     toolchains = use_swift_toolchain(),
 )

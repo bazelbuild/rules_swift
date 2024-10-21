@@ -10,13 +10,15 @@ x_defaults:
     test_targets:
       - "//examples/..."
       - "//test/..."
-  linux_common: &linux_common
+  linux_environment: &linux_environment
     platform: ubuntu2004
     environment:
       CC: clang
       SWIFT_VERSION: "5.9.2"
       SWIFT_HOME: "$HOME/swift-$SWIFT_VERSION"
       PATH: "$PATH:$SWIFT_HOME/usr/bin"
+  linux_common: &linux_common
+    <<: *linux_environment
     build_flags: &linux_flags
       # On Linux, we look for Swift toolchain binaries on the path. We may be
       # able to change this when we start auto-downloading toolchains (see
@@ -129,7 +131,11 @@ tasks:
   doc_tests:
     name: "Doc tests"
     bazel: last_green
-    platform: ubuntu2004
+    <<: *linux_environment
+    shell_commands:
+      - "echo --- Downloading and extracting Swift $SWIFT_VERSION to $SWIFT_HOME"
+      - "mkdir $SWIFT_HOME"
+      - "curl https://download.swift.org/swift-${SWIFT_VERSION}-release/ubuntu2004/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu20.04.tar.gz | tar xvz --strip-components=1 -C $SWIFT_HOME"
     test_targets:
     - "doc/..."
 

@@ -34,28 +34,36 @@ load(
 load(
     "//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_CACHEABLE_SWIFTMODULES",
+    "SWIFT_FEATURE_CHECKED_EXCLUSIVITY",
     "SWIFT_FEATURE_CODEVIEW_DEBUG_INFO",
     "SWIFT_FEATURE_COVERAGE",
     "SWIFT_FEATURE_COVERAGE_PREFIX_MAP",
     "SWIFT_FEATURE_DBG",
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
+    "SWIFT_FEATURE_DISABLE_AVAILABILITY_CHECKING",
+    "SWIFT_FEATURE_DISABLE_CLANG_SPI",
     "SWIFT_FEATURE_DISABLE_SWIFT_SANDBOX",
     "SWIFT_FEATURE_DISABLE_SYSTEM_INDEX",
     "SWIFT_FEATURE_EMIT_BC",
     "SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE",
     "SWIFT_FEATURE_EMIT_SWIFTDOC",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
+    "SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES",
     "SWIFT_FEATURE_ENABLE_TESTING",
+    "SWIFT_FEATURE_ENABLE_V6",
     "SWIFT_FEATURE_FASTBUILD",
     "SWIFT_FEATURE_FILE_PREFIX_MAP",
     "SWIFT_FEATURE_FULL_DEBUG_INFO",
     "SWIFT_FEATURE_FULL_LTO",
     "SWIFT_FEATURE_GLOBAL_MODULE_CACHE_USES_TMPDIR",
+    "SWIFT_FEATURE_INDEX_INCLUDE_LOCALS",
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
+    "SWIFT_FEATURE_INTERNALIZE_AT_LINK",
     "SWIFT_FEATURE_LAYERING_CHECK",
+    "SWIFT_FEATURE_MODULAR_INDEXING",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_NO_ASAN_VERSION_CHECK",
     "SWIFT_FEATURE_OPT",
@@ -63,7 +71,6 @@ load(
     "SWIFT_FEATURE_OPT_USES_WMO",
     "SWIFT_FEATURE_REWRITE_GENERATED_HEADER",
     "SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION",
-    "SWIFT_FEATURE_SUPPORTS_BARE_SLASH_REGEX",
     "SWIFT_FEATURE_SYSTEM_MODULE",
     "SWIFT_FEATURE_THIN_LTO",
     "SWIFT_FEATURE_TREAT_WARNINGS_AS_ERRORS",
@@ -71,10 +78,11 @@ load(
     "SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP",
     "SWIFT_FEATURE_USE_GLOBAL_INDEX_STORE",
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
-    "SWIFT_FEATURE_USE_OLD_DRIVER",
     "SWIFT_FEATURE_USE_PCH_OUTPUT_DIR",
     "SWIFT_FEATURE_VFSOVERLAY",
     "SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS",
+    "SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES",
+    "SWIFT_FEATURE__SUPPORTS_V6",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
 )
 load(":action_config.bzl", "ActionConfigInfo", "ConfigResultInfo", "add_arg")
@@ -97,6 +105,7 @@ def compile_action_configs(
         *,
         additional_objc_copts = [],
         additional_swiftc_copts = [],
+        configure_precompile_c_module_clang_modules = None,
         generated_header_rewriter = None):
     """Returns the list of action configs needed to perform Swift compilation.
 
@@ -111,6 +120,10 @@ def compile_action_configs(
         additional_swiftc_copts: An optional list of additional Swift compiler
             flags that should be passed to Swift compile actions only after any
             other toolchain- or user-provided flags.
+        configure_precompile_c_module_clang_modules: An optional function that
+            configures clang module dependencies for precompiled c modules if
+            present. Takes the configurator for clang module dependencies as an
+            argument, and returns a list of action configs. Defaults to None.
         generated_header_rewriter: An executable that will be invoked after
             compilation to rewrite the generated header, or None if this is not
             desired.
@@ -119,24 +132,8 @@ def compile_action_configs(
         The list of action configs needed to perform compilation.
     """
 
-    #### Flags that control the driver
-    action_configs = [
-        # Use the legacy driver if requested.
-        ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
-                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
-                SWIFT_ACTION_DERIVE_FILES,
-                SWIFT_ACTION_DUMP_AST,
-                SWIFT_ACTION_PRECOMPILE_C_MODULE,
-            ],
-            configurators = [add_arg("-disallow-use-new-driver")],
-            features = [SWIFT_FEATURE_USE_OLD_DRIVER],
-        ),
-    ]
-
     #### Flags that control compilation outputs
-    action_configs += [
+    action_configs = [
         # Emit object file(s).
         ActionConfigInfo(
             actions = [SWIFT_ACTION_COMPILE],
@@ -248,7 +245,14 @@ def compile_action_configs(
             configurators = [_emit_objc_header_path_configurator],
         ),
 
-        # Configure Const value extraction.
+        # Configure enforce exclusivity checks if enabled.
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE],
+            configurators = [add_arg("-enforce-exclusivity=checked")],
+            features = [SWIFT_FEATURE_CHECKED_EXCLUSIVITY],
+        ),
+
+        # Configure constant value extraction.
         ActionConfigInfo(
             actions = [SWIFT_ACTION_COMPILE],
             configurators = [_constant_value_extraction_configurator],
@@ -268,15 +272,21 @@ def compile_action_configs(
     ]
 
     if generated_header_rewriter:
-        # Only add the generated header rewriter to the command line only if the
-        # toolchain provides one, the relevant feature is requested, and the
-        # particular compilation action is generating a header.
+        # Only add the generated header rewriter to the command line and to the
+        # action's tool inputs only if the toolchain provides one, the relevant
+        # feature is requested, and the particular compilation action is
+        # generating a header.
         def generated_header_rewriter_configurator(prerequisites, args):
+            additional_tools = []
             if prerequisites.generated_header_file:
+                additional_tools.append(depset([generated_header_rewriter]))
                 args.add(
                     generated_header_rewriter,
                     format = "-Xwrapped-swift=-generated-header-rewriter=%s",
                 )
+            return ConfigResultInfo(
+                additional_tools = additional_tools,
+            )
 
         action_configs.append(
             ActionConfigInfo(
@@ -358,6 +368,13 @@ def compile_action_configs(
                 [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_WMO],
                 [SWIFT_FEATURE__WMO_IN_SWIFTCOPTS],
             ],
+        ),
+
+        # Improve dead-code stripping.
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE],
+            configurators = [add_arg("-Xfrontend", "-internalize-at-link")],
+            features = [SWIFT_FEATURE_INTERNALIZE_AT_LINK],
         ),
 
         # Enable or disable serialization of debugging options into
@@ -503,11 +520,13 @@ def compile_action_configs(
                 [SWIFT_FEATURE_DEBUG_PREFIX_MAP, SWIFT_FEATURE_FASTBUILD],
                 [SWIFT_FEATURE_DEBUG_PREFIX_MAP, SWIFT_FEATURE_FULL_DEBUG_INFO],
             ],
+            not_features = [SWIFT_FEATURE_FILE_PREFIX_MAP],
         ),
         ActionConfigInfo(
             actions = [
                 SWIFT_ACTION_COMPILE,
                 SWIFT_ACTION_DERIVE_FILES,
+                SWIFT_ACTION_PRECOMPILE_C_MODULE,
             ],
             configurators = [
                 add_arg("-Xwrapped-swift=-file-prefix-pwd-is-dot"),
@@ -796,6 +815,10 @@ def compile_action_configs(
             features = [SWIFT_FEATURE_VFSOVERLAY],
         ),
         ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE],
+            configurators = [_module_aliases_configurator],
+        ),
+        ActionConfigInfo(
             actions = [
                 SWIFT_ACTION_COMPILE,
                 SWIFT_ACTION_DERIVE_FILES,
@@ -808,6 +831,10 @@ def compile_action_configs(
                 SWIFT_ACTION_DERIVE_FILES,
             ],
             configurators = [_macro_expansion_configurator],
+            # The compiler only generates these in debug builds, unless we pass
+            # additional frontend flags. At the current time, we only want to
+            # capture these for debug builds.
+            not_features = [SWIFT_FEATURE_OPT],
         ),
 
         # swift-symbolgraph-extract doesn't yet support explicit Swift module
@@ -880,7 +907,6 @@ def compile_action_configs(
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
-                SWIFT_ACTION_PRECOMPILE_C_MODULE,
                 SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
             ],
             configurators = [_dependencies_clang_modules_configurator],
@@ -899,6 +925,19 @@ def compile_action_configs(
             not_features = [SWIFT_FEATURE_USE_C_MODULES],
         ),
     ])
+
+    if configure_precompile_c_module_clang_modules:
+        action_configs.extend(configure_precompile_c_module_clang_modules(
+            _dependencies_clang_modules_configurator,
+        ))
+    else:
+        action_configs.append(ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_PRECOMPILE_C_MODULE,
+            ],
+            configurators = [_dependencies_clang_modules_configurator],
+            features = [SWIFT_FEATURE_USE_C_MODULES],
+        ))
 
     #### Various other Swift compilation flags
     action_configs += [
@@ -988,6 +1027,17 @@ def compile_action_configs(
             ],
             configurators = [_module_name_configurator],
         ),
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_DERIVE_FILES,
+                SWIFT_ACTION_PRECOMPILE_C_MODULE,
+            ],
+            configurators = [
+                add_arg("-file-prefix-map", "__BAZEL_XCODE_DEVELOPER_DIR__=DEVELOPER_DIR"),
+            ],
+            features = [SWIFT_FEATURE_FILE_PREFIX_MAP],
+        ),
 
         # Set the package name.
         ActionConfigInfo(
@@ -1017,10 +1067,45 @@ def compile_action_configs(
         ),
         ActionConfigInfo(
             actions = [SWIFT_ACTION_COMPILE],
+            configurators = [add_arg("-index-include-locals")],
+            features = [
+                SWIFT_FEATURE_INDEX_WHILE_BUILDING,
+                SWIFT_FEATURE_INDEX_INCLUDE_LOCALS,
+            ],
+        ),
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE],
             configurators = [add_arg("-index-ignore-system-modules")],
             features = [
                 SWIFT_FEATURE_INDEX_WHILE_BUILDING,
                 SWIFT_FEATURE_DISABLE_SYSTEM_INDEX,
+            ],
+        ),
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE],
+            configurators = [
+                add_arg("-index-ignore-clang-modules"),
+            ],
+            features = [
+                SWIFT_FEATURE_INDEX_WHILE_BUILDING,
+                SWIFT_FEATURE_MODULAR_INDEXING,
+                SWIFT_FEATURE_USE_C_MODULES,
+            ],
+        ),
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_PRECOMPILE_C_MODULE],
+            configurators = [
+                _index_while_building_configurator,
+                add_arg("-index-ignore-clang-modules"),
+                add_arg("-Xcc", "-index-ignore-pcms"),
+            ],
+            features = [
+                SWIFT_FEATURE_INDEX_WHILE_BUILDING,
+                SWIFT_FEATURE_MODULAR_INDEXING,
+                # Only index system PCMs since we should have the source code
+                # available for most non system modules except for third-party
+                # frameworks which we don't have the source code for.
+                SWIFT_FEATURE_SYSTEM_MODULE,
             ],
         ),
         ActionConfigInfo(
@@ -1048,15 +1133,50 @@ def compile_action_configs(
             ],
             configurators = [_conditional_compilation_flag_configurator],
         ),
-
-        # Enable bare slash regexes.
         ActionConfigInfo(
             actions = [
                 SWIFT_ACTION_COMPILE,
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
             ],
             configurators = [add_arg("-enable-bare-slash-regex")],
-            features = [SWIFT_FEATURE_SUPPORTS_BARE_SLASH_REGEX],
+            features = [SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX],
+        ),
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_COMPILE,
+            ],
+            configurators = [add_arg("-Xfrontend", "-disable-clang-spi")],
+            features = [
+                SWIFT_FEATURE_DISABLE_CLANG_SPI,
+            ],
+        ),
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_COMPILE,
+            ],
+            configurators = [add_arg("-Xfrontend", "-disable-availability-checking")],
+            features = [
+                SWIFT_FEATURE_DISABLE_AVAILABILITY_CHECKING,
+            ],
+        ),
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_COMPILE,
+            ],
+            configurators = [_upcoming_and_experimental_features_configurator],
+            features = [
+                SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES,
+            ],
+        ),
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_COMPILE,
+            ],
+            configurators = [add_arg("-swift-version", "6")],
+            features = [
+                SWIFT_FEATURE_ENABLE_V6,
+                SWIFT_FEATURE__SUPPORTS_V6,
+            ],
         ),
     ]
 
@@ -1142,6 +1262,52 @@ def compile_action_configs(
     )
 
     return action_configs
+
+def command_line_objc_copts(compilation_mode, cpp_fragment, objc_fragment):
+    """Returns copts that should be passed to `clang` from the `objc` fragment.
+
+    Args:
+        compilation_mode: The current compilation mode.
+        cpp_fragment: The `cpp` configuration fragment.
+        objc_fragment: The `objc` configuration fragment.
+
+    Returns:
+        A list of `clang` copts, each of which is preceded by `-Xcc` so that
+        they can be passed through `swiftc` to its underlying ClangImporter
+        instance.
+    """
+
+    # In general, every compilation mode flag from native `objc_*` rules should
+    # be passed, but `-g` seems to break Clang module compilation. Since this
+    # flag does not make much sense for module compilation and only touches
+    # headers, it's ok to omit.
+    # TODO(b/153867054): These flags were originally being set by Bazel's legacy
+    # hardcoded Objective-C behavior, which has been migrated to crosstool. In
+    # the long term, we should query crosstool for the flags we're interested in
+    # and pass those to ClangImporter, and do this across all platforms. As an
+    # immediate short-term workaround, we preserve the old behavior by passing
+    # the exact set of flags that Bazel was originally passing if the list we
+    # get back from the configuration fragment is empty.
+    legacy_copts = objc_fragment.copts_for_current_compilation_mode
+    if not legacy_copts:
+        if compilation_mode == "dbg":
+            legacy_copts = [
+                "-O0",
+                "-DDEBUG=1",
+                "-fstack-protector",
+                "-fstack-protector-all",
+            ]
+        elif compilation_mode == "opt":
+            legacy_copts = [
+                "-Os",
+                "-DNDEBUG=1",
+                "-Wno-unused-variable",
+                "-Winit-self",
+                "-Wno-extra",
+            ]
+
+    clang_copts = cpp_fragment.objccopts + legacy_copts
+    return [copt for copt in clang_copts if copt != "-g"]
 
 def _output_or_file_map(output_file_map, outputs, args):
     """Adds the output file map or single object file to the command line."""
@@ -1383,7 +1549,7 @@ def _collect_clang_module_inputs(
             explicit module compilation action. This parameter should be `None`
             if inputs are being collected for Swift compilation.
         modules: A list of module structures (as returned by
-            `swift_common.create_module`). The precompiled Clang modules or the
+            `create_swift_module_context`). The precompiled Clang modules or the
             textual module maps and headers of these modules (depending on the
             value of `prefer_precompiled_modules`) will be collected as inputs.
         prefer_precompiled_modules: If True, precompiled module artifacts should
@@ -1458,7 +1624,7 @@ def _clang_modulemap_dependency_args(module, ignore_system = True):
 
     Args:
         module: A struct containing information about the module, as defined by
-            `swift_common.create_module`.
+            `create_swift_module_context`.
         ignore_system: If `True` and the module is a system module, no flag
             should be returned. Defaults to `True`.
 
@@ -1489,7 +1655,7 @@ def _clang_module_dependency_args(module):
 
     Args:
         module: A struct containing information about the module, as defined by
-            `swift_common.create_module`.
+            `create_swift_module_context`.
 
     Returns:
         A list of arguments, possibly empty, to pass to `swiftc` (without the
@@ -1543,13 +1709,16 @@ def _dependencies_clang_modulemaps_configurator(prerequisites, args):
         prefer_precompiled_modules = False,
     )
 
-def _dependencies_clang_modules_configurator(prerequisites, args):
+def _dependencies_clang_modules_configurator(prerequisites, args, include_modules = True):
     """Configures precompiled Clang modules from dependencies."""
-    modules = [
-        module
-        for module in prerequisites.transitive_modules
-        if module.clang
-    ]
+    if include_modules:
+        modules = [
+            module
+            for module in prerequisites.transitive_modules
+            if module.clang
+        ]
+    else:
+        modules = []
 
     # Uniquify the arguments because different modules might be defined in the
     # same module map file, so it only needs to be present once on the command
@@ -1586,13 +1755,15 @@ def _framework_search_paths_configurator(prerequisites, args, is_swift):
     # case they're using implicit modules, and Clang module compilations). We
     # don't need to add regular `-F` if this is a Clang module compilation,
     # though, since it won't be used.
+
+    framework_includes = prerequisites.cc_compilation_context.framework_includes
     if is_swift:
         args.add_all(
-            prerequisites.cc_compilation_context.framework_includes,
+            framework_includes,
             format_each = "-F%s",
         )
     args.add_all(
-        prerequisites.cc_compilation_context.framework_includes,
+        framework_includes,
         format_each = "-F%s",
         before_each = "-Xcc",
     )
@@ -1656,7 +1827,7 @@ def _swift_module_search_path_map_fn(module):
 
     Args:
         module: The module structure (as returned by
-            `swift_common.create_module`) extracted from the transitive
+            `create_swift_module_context`) extracted from the transitive
             modules of a `SwiftInfo` provider.
 
     Returns:
@@ -1671,6 +1842,44 @@ def _swift_module_search_path_map_fn(module):
             search_path = paths.dirname(search_path)
 
         return search_path
+    else:
+        return None
+
+def _module_alias_flags(name, original):
+    """Returns compiler flags to set the given module alias."""
+
+    # TODO(b/257269318): Remove `-Xfrontend`; this is only needed to workaround
+    # a bug in toolchains still using the legacy C++ driver.
+    return [
+        "-Xfrontend",
+        "-module-alias",
+        "-Xfrontend",
+        "{original}={name}".format(
+            name = name,
+            original = original,
+        ),
+    ]
+
+def _module_alias_map_fn(module):
+    """Returns compiler flags to alias the given module.
+
+    This function is intended to be used as a mapping function for modules
+    passed into `Args.add_all`.
+
+    Args:
+        module: The module structure (as returned by
+            `create_swift_module_context`) extracted from the transitive
+            modules of a `SwiftInfo` provider.
+
+    Returns:
+        The flags to pass to the compiler to alias the given module, or `None`
+        if no alias applies.
+    """
+    if module.swift and module.swift.original_module_name:
+        return _module_alias_flags(
+            original = module.swift.original_module_name,
+            name = module.name,
+        )
     else:
         return None
 
@@ -1701,6 +1910,21 @@ def _dependencies_swiftmodules_configurator(prerequisites, args):
         inputs = prerequisites.transitive_swiftmodules,
     )
 
+def _module_aliases_configurator(prerequisites, args):
+    """Adds `-module-alias` flags for the active module mapping, if any."""
+    args.add_all(
+        prerequisites.transitive_modules,
+        map_each = _module_alias_map_fn,
+    )
+
+    if prerequisites.original_module_name:
+        args.add_all(
+            _module_alias_flags(
+                original = prerequisites.original_module_name,
+                name = prerequisites.module_name,
+            ),
+        )
+
 def _load_executable_plugin_map_fn(plugin):
     """Returns frontend flags to load compiler plugins."""
     return [
@@ -1720,7 +1944,7 @@ def _plugins_configurator(prerequisites, args):
     )
 
     return ConfigResultInfo(
-        inputs = [p.executable for p in prerequisites.plugins.to_list()],
+        inputs = [p.executable for p in prerequisites.plugins],
     )
 
 def _macro_expansion_configurator(prerequisites, args):
@@ -1783,6 +2007,10 @@ def _package_name_configurator(prerequisites, args):
 def _index_while_building_configurator(prerequisites, args):
     """Adds flags for indexstore generation to the command line."""
     args.add("-index-store-path", prerequisites.indexstore_directory.path)
+    index_output_path = getattr(prerequisites, "index_unit_output_path", None)
+    if index_output_path:
+        args.add("-Xcc", "-index-unit-output-path")
+        args.add("-Xcc", index_output_path)
 
 def _global_index_store_configurator(prerequisites, args):
     """Adds flags for index-store generation to the command line."""
@@ -1890,19 +2118,30 @@ def _conditional_compilation_flag_configurator(prerequisites, args):
 
 def _constant_value_extraction_configurator(prerequisites, args):
     """Adds flags related to constant value extraction to the command line."""
-    if not prerequisites.const_protocols_to_gather_file:
+    if not prerequisites.const_gather_protocols_file:
         return None
 
     args.add("-emit-const-values-path", prerequisites.const_values_files[0])
     args.add_all(
         [
             "-const-gather-protocols-file",
-            prerequisites.const_protocols_to_gather_file,
+            prerequisites.const_gather_protocols_file,
         ],
         before_each = "-Xfrontend",
     )
     return ConfigResultInfo(
-        inputs = [prerequisites.const_protocols_to_gather_file],
+        inputs = [prerequisites.const_gather_protocols_file],
+    )
+
+def _upcoming_and_experimental_features_configurator(prerequisites, args):
+    """Adds upcoming and experimental features to the command line."""
+    args.add_all(
+        prerequisites.upcoming_features,
+        before_each = "-enable-upcoming-feature",
+    )
+    args.add_all(
+        prerequisites.experimental_features,
+        before_each = "-enable-experimental-feature",
     )
 
 def _additional_inputs_configurator(prerequisites, _args):

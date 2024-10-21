@@ -13,6 +13,7 @@ load(":interop_hints_tests.bzl", "interop_hints_test_suite")
 load(":mainattr_tests.bzl", "mainattr_test_suite")
 load(":module_cache_settings_tests.bzl", "module_cache_settings_test_suite")
 load(":module_interface_tests.bzl", "module_interface_test_suite")
+load(":module_mapping_tests.bzl", "module_mapping_test_suite")
 load(":output_file_map_tests.bzl", "output_file_map_test_suite")
 load(":pch_output_dir_tests.bzl", "pch_output_dir_test_suite")
 load(":private_deps_tests.bzl", "private_deps_test_suite")
@@ -52,6 +53,8 @@ module_cache_settings_test_suite(name = "module_cache_settings")
 
 module_interface_test_suite(name = "module_interface")
 
+module_mapping_test_suite(name = "module_mapping")
+
 output_file_map_test_suite(name = "output_file_map")
 
 private_deps_test_suite(name = "private_deps")
@@ -80,11 +83,11 @@ bzl_library(
     name = "swift_bzl_macro",
     srcs = ["swift_bzl_macro.bzl"],
     visibility = ["//visibility:private"],
-    deps = ["//swift"],
+    deps = ["//swift:providers"],
 )
 
 bzl_test(
     name = "swift_bzl_test",
     src = "swift_bzl_macro.bzl",
-    deps = ["//swift"],
+    deps = ["//swift:providers"],
 )

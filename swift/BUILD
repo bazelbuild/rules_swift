@@ -6,6 +6,7 @@ load(
     "repeatable_string_flag",
 )
 load(":swift_interop_hint.bzl", "swift_interop_hint")
+load(":swift_module_mapping.bzl", "swift_module_mapping")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -53,39 +54,19 @@ bzl_library(
 )
 
 bzl_library(
-    name = "swift",
-    srcs = ["swift.bzl"],
-    deps = [
-        ":providers",
-        ":swift_binary",
-        ":swift_clang_module_aspect",
-        ":swift_common",
-        ":swift_compiler_plugin",
-        ":swift_extract_symbol_graph",
-        ":swift_feature_allowlist",
-        ":swift_import",
-        ":swift_interop_hint",
-        ":swift_library",
-        ":swift_library_group",
-        ":swift_module_alias",
-        ":swift_package_configuration",
-        ":swift_symbol_graph_aspect",
-        ":swift_test",
-    ],
-)
-
-bzl_library(
     name = "swift_binary",
     srcs = ["swift_binary.bzl"],
     deps = [
+        ":module_name",
         ":providers",
-        ":swift_common",
         "//swift/internal:compiling",
         "//swift/internal:feature_names",
         "//swift/internal:linking",
+        "//swift/internal:providers",
         "//swift/internal:runfiles",
         "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
+        "@bazel_skylib//lib:dicts",
         "@bazel_skylib//lib:paths",
     ],
 )
@@ -94,6 +75,7 @@ bzl_library(
     name = "swift_clang_module_aspect",
     srcs = ["swift_clang_module_aspect.bzl"],
     deps = [
+        ":module_name",
         ":providers",
         "//swift/internal:attrs",
         "//swift/internal:compiling",
@@ -110,11 +92,13 @@ bzl_library(
     name = "swift_common",
     srcs = ["swift_common.bzl"],
     deps = [
+        ":module_name",
+        ":providers",
+        ":swift_interop_info",
         "//swift/internal:attrs",
         "//swift/internal:compiling",
         "//swift/internal:features",
         "//swift/internal:linking",
-        "//swift/internal:providers",
         "//swift/internal:swift_interop_info",
         "//swift/internal:symbol_graph_extracting",
         "//swift/internal:toolchain_utils",
@@ -127,7 +111,6 @@ bzl_library(
     deps = [
         ":module_name",
         ":providers",
-        ":swift_common",
         "//swift/internal:compiling",
         "//swift/internal:linking",
         "//swift/internal:output_groups",
@@ -137,6 +120,23 @@ bzl_library(
         "@build_bazel_apple_support//lib:apple_support",
         "@build_bazel_apple_support//lib:lipo",
         "@build_bazel_apple_support//lib:transitions",
+    ],
+)
+
+bzl_library(
+    name = "swift_compiler_plugin_import",
+    srcs = ["swift_compiler_plugin_import.bzl"],
+    deps = [
+        "//swift/internal:providers",
+    ],
+)
+
+bzl_library(
+    name = "swift_cross_import_overlay",
+    srcs = ["swift_cross_import_overlay.bzl"],
+    deps = [
+        ":providers",
+        "//swift/internal:providers",
     ],
 )
 
@@ -163,8 +163,9 @@ bzl_library(
     srcs = ["swift_import.bzl"],
     deps = [
         ":providers",
-        ":swift_common",
         "//swift/internal:attrs",
+        "//swift/internal:compiling",
+        "//swift/internal:features",
         "//swift/internal:linking",
         "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
@@ -175,21 +176,34 @@ bzl_library(
 bzl_library(
     name = "swift_interop_hint",
     srcs = ["swift_interop_hint.bzl"],
-    deps = ["//swift/internal:swift_interop_info"],
+    deps = [
+        ":swift_interop_info",
+    ],
+)
+
+bzl_library(
+    name = "swift_interop_info",
+    srcs = ["swift_interop_info.bzl"],
+    deps = [
+        "//swift/internal:swift_interop_info",
+    ],
 )
 
 bzl_library(
     name = "swift_library",
     srcs = ["swift_library.bzl"],
     deps = [
+        ":module_name",
         ":providers",
         ":swift_clang_module_aspect",
-        ":swift_common",
         "//swift/internal:attrs",
         "//swift/internal:build_settings",
+        "//swift/internal:compiling",
         "//swift/internal:feature_names",
+        "//swift/internal:features",
         "//swift/internal:linking",
         "//swift/internal:output_groups",
+        "//swift/internal:providers",
         "//swift/internal:runfiles",
         "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
@@ -206,7 +220,6 @@ bzl_library(
         ":providers",
         ":swift_clang_module_aspect",
         "//swift/internal:attrs",
-        "//swift/internal:providers",
         "//swift/internal:utils",
     ],
 )
@@ -215,13 +228,33 @@ bzl_library(
     name = "swift_module_alias",
     srcs = ["swift_module_alias.bzl"],
     deps = [
+        ":module_name",
         ":providers",
-        ":swift_common",
+        "//swift/internal:attrs",
+        "//swift/internal:compiling",
+        "//swift/internal:features",
         "//swift/internal:linking",
         "//swift/internal:output_groups",
         "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
         "@bazel_skylib//lib:dicts",
+    ],
+)
+
+bzl_library(
+    name = "swift_module_mapping",
+    srcs = ["swift_module_mapping.bzl"],
+    deps = [
+        "//swift/internal:providers",
+    ],
+)
+
+bzl_library(
+    name = "swift_module_mapping_test",
+    srcs = ["swift_module_mapping_test.bzl"],
+    deps = [
+        ":providers",
+        "//swift/internal:providers",
     ],
 )
 
@@ -248,18 +281,48 @@ bzl_library(
     name = "swift_test",
     srcs = ["swift_test.bzl"],
     deps = [
+        ":module_name",
         ":providers",
-        ":swift_common",
+        "//swift/internal:compiling",
         "//swift/internal:env_expansion",
         "//swift/internal:feature_names",
         "//swift/internal:linking",
         "//swift/internal:output_groups",
+        "//swift/internal:providers",
         "//swift/internal:runfiles",
         "//swift/internal:swift_symbol_graph_aspect",
+        "//swift/internal:symbol_graph_extracting",
         "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
         "@bazel_skylib//lib:dicts",
         "@bazel_skylib//lib:paths",
+    ],
+)
+
+bzl_library(
+    name = "swift",
+    srcs = ["swift.bzl"],
+    deps = [
+        ":providers",
+        ":swift_binary",
+        ":swift_clang_module_aspect",
+        ":swift_common",
+        ":swift_compiler_plugin",
+        ":swift_compiler_plugin_import",
+        ":swift_cross_import_overlay",
+        ":swift_extract_symbol_graph",
+        ":swift_feature_allowlist",
+        ":swift_import",
+        ":swift_interop_hint",
+        ":swift_interop_info",
+        ":swift_library",
+        ":swift_library_group",
+        ":swift_module_alias",
+        ":swift_module_mapping",
+        ":swift_module_mapping_test",
+        ":swift_package_configuration",
+        ":swift_symbol_graph_aspect",
+        ":swift_test",
     ],
 )
 
@@ -282,6 +345,7 @@ filegroup(
 repeatable_string_flag(
     name = "copt",
     build_setting_default = [],
+    visibility = ["//visibility:public"],
 )
 
 # Additional Swift compiler flags that will be applied to all `SwiftCompile`
@@ -290,6 +354,7 @@ repeatable_string_flag(
 repeatable_string_flag(
     name = "exec_copt",
     build_setting_default = [],
+    visibility = ["//visibility:public"],
 )
 
 # An aspect hint that enables module map generation for a non-Swift,
@@ -316,6 +381,7 @@ per_module_swiftcopt_flag(
 bool_setting(
     name = "emit_swiftinterface",
     build_setting_default = False,
+    visibility = ["//visibility:public"],
 )
 
 # Configuration setting for enabling the generation of private swiftinterface files (e.g. those for `@_spi`).
@@ -338,16 +404,8 @@ bool_flag(
 config_setting(
     name = "universal_tools_config",
     flag_values = {
-        "@build_bazel_rules_swift//swift:universal_tools": "true",
+        "//swift:universal_tools": "true",
     },
-)
-
-# Configuration setting for forcing generation of Apple targets.
-# NOTE: this is only intended for use with transitions that want to force
-# building of an Apple target when building for Linux.
-bool_setting(
-    name = "force_apple_target",
-    build_setting_default = False,
 )
 
 # Allows a user to override the default Swift driver during a build, if the
@@ -355,11 +413,27 @@ bool_setting(
 label_flag(
     name = "default_swift_executable",
     build_setting_default = ":empty",
+    visibility = ["//visibility:public"],
 )
 
 # Empty filegroup used as the default value for `:default_swift_executable`
 # since the `build_setting_default` value is required.
 filegroup(
     name = "empty",
+    visibility = ["//visibility:private"],
+)
+
+# Provides the mapping that will be passed to the compiler as module aliases.
+label_flag(
+    name = "module_mapping",
+    build_setting_default = ":empty_module_mapping",
+    visibility = ["//visibility:public"],
+)
+
+# The default empty module mapping used when the `:module_mapping` flag is not
+# set.
+swift_module_mapping(
+    name = "empty_module_mapping",
+    aliases = {},
     visibility = ["//visibility:private"],
 )

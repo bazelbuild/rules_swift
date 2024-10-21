@@ -30,6 +30,14 @@ SWIFT_FEATURE_DBG = "swift.dbg"
 SWIFT_FEATURE_FASTBUILD = "swift.fastbuild"
 SWIFT_FEATURE_OPT = "swift.opt"
 
+# If this feature is enabled, the toolchain should enable the features that are
+# available in Swift 6 language mode. If the toolchain supports
+# `-swift-version 6`, it will do so using that flag. If it is older, it will
+# enable the set of upcoming features that will be on by default in Swift 6,
+# allowing users to prepare their code base by opting in to the full set of
+# Swift 6 features even before switching to a Swift 6 compiler.
+SWIFT_FEATURE_ENABLE_V6 = "swift.enable_v6"
+
 # If True, transitive C headers will be always be passed as inputs to Swift
 # compilation actions, even when building with explicit modules.
 SWIFT_FEATURE_HEADERS_ALWAYS_ACTION_INPUTS = "swift.headers_always_action_inputs"
@@ -37,6 +45,14 @@ SWIFT_FEATURE_HEADERS_ALWAYS_ACTION_INPUTS = "swift.headers_always_action_inputs
 # This feature is enabled if coverage collection is enabled for the build. (See
 # the note above about not depending on the C++ features.)
 SWIFT_FEATURE_COVERAGE = "swift.coverage"
+
+# If enabled, builds will use the `-file-prefix-map` feature to remap the
+# current working directory to `.`, which avoids embedding non-hermetic
+# absolute path information in build artifacts. Specifically what this flag
+# does is subject to change in Swift, but it should imply all other
+# `-*-prefix-map` flags. How those flags compose is potentially complicated, so
+# using only this flag, or the same values for each flag, is recommended.
+SWIFT_FEATURE_FILE_PREFIX_MAP = "swift.file_prefix_map"
 
 # If enabled, debug builds will use the `-debug-prefix-map` feature to remap the
 # current working directory to `.`, which permits debugging remote or sandboxed
@@ -47,14 +63,6 @@ SWIFT_FEATURE_DEBUG_PREFIX_MAP = "swift.debug_prefix_map"
 # remap the current working directory to `.`, which increases reproducibility
 # of remote builds.
 SWIFT_FEATURE_COVERAGE_PREFIX_MAP = "swift.coverage_prefix_map"
-
-# If enabled, builds will use the `-file-prefix-map` feature to remap the
-# current working directory to `.`, which avoids embedding non-hermetic
-# absolute path information in build artifacts. Specifically what this flag
-# does is subject to change in Swift, but it should imply all other
-# `-*-prefix-map` flags. How those flags compose is potentially complicated, so
-# using only this flag, or the same values for each flag, is recommended.
-SWIFT_FEATURE_FILE_PREFIX_MAP = "swift.file_prefix_map"
 
 # If enabled, C and Objective-C libraries that are direct or transitive
 # dependencies of a Swift library will emit explicit precompiled modules that
@@ -73,6 +81,21 @@ SWIFT_FEATURE_DISABLE_SYSTEM_INDEX = "swift.disable_system_index"
 
 # Index while building - using a global index store cache
 SWIFT_FEATURE_USE_GLOBAL_INDEX_STORE = "swift.use_global_index_store"
+
+# If enabled, indexstore data will contain local definitions and references.
+#
+# NOTE: This is only applicable if `SWIFT_FEATURE_INDEX_WHILE_BUILDING` is also
+# enabled.
+SWIFT_FEATURE_INDEX_INCLUDE_LOCALS = "swift.index_include_locals"
+
+# If enabled, indexing will be completely modular - PCMs and Swift Modules will only
+# be indexed when they are compiled. While indexing a module/PCM, none of its dependencies
+# will be indexed.
+#
+# NOTE: This is only applicable if both `SWIFT_FEATURE_EMIT_C_MODULE` and
+# `SWIFT_FEATURE_INDEX_WHILE_BUILDING` are enabled as well. In addition, this feature requires
+# Xcode 14 in order to work.
+SWIFT_FEATURE_MODULAR_INDEXING = "swift.modular_indexing"
 
 # If enabled, when compiling an explicit C or Objectve-C module, every header
 # included by the module being compiled must belong to one of the modules listed
@@ -132,7 +155,9 @@ SWIFT_FEATURE_NO_GENERATED_MODULE_MAP = "swift.no_generated_module_map"
 
 # If enabled, the parent directory of the generated module map is added to
 # `CcInfo.compilation_context.includes`. This allows `objc_library` to import
-# the Swift module.
+# the Swift module. If you swap this feature between enabled and disabled, and
+# sandboxing is disabled, you may need to clean your output base to prevent
+# implicit discovery of the generated module map.
 SWIFT_FEATURE_PROPAGATE_GENERATED_MODULE_MAP = "swift.propagate_generated_module_map"
 
 # If enabled, builds using the "opt" compilation mode will invoke `swiftc` with
@@ -189,11 +214,6 @@ SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE = "swift.use_global_module_cache"
 # This feature requires `swift.use_global_module_cache` to be enabled.
 SWIFT_FEATURE_GLOBAL_MODULE_CACHE_USES_TMPDIR = "swift.global_module_cache_uses_tmpdir"
 
-# If enabled, actions invoking the Swift driver will use the legacy driver
-# instead of the new driver (https://github.com/apple/swift-driver) that
-# launched in Xcode 13/Swift 5.5.
-SWIFT_FEATURE_USE_OLD_DRIVER = "swift.use_old_driver"
-
 # If enabled, Swift linking actions will use `swift-autolink-extract` to extract
 # the linker arguments.  This is required for ELF targets.  This is used
 # internally to determine the behaviour of the actions across different
@@ -232,6 +252,13 @@ SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION = "swift.enable_library_evolution"
 # Mach-O object file using -emit-bc instead of -emit-object.
 SWIFT_FEATURE_EMIT_BC = "swift.emit_bc"
 
+# Defines whether .swiftdoc files are included in build outputs.
+# This feature is enabled by default.
+#
+# Note: If opted out of this feature, .swiftdoc are generated by the compiler
+# but excluded from Bazel's tracking.
+SWIFT_FEATURE_EMIT_SWIFTDOC = "swift.emit_swiftdoc"
+
 # If enabled, requests the swiftinterface file to be built on the swiftc
 # invocation.
 SWIFT_FEATURE_EMIT_SWIFTINTERFACE = "swift.emit_swiftinterface"
@@ -239,6 +266,16 @@ SWIFT_FEATURE_EMIT_SWIFTINTERFACE = "swift.emit_swiftinterface"
 # If enabled, requests the private swiftinterface file to be built on the
 # swiftc invocation.
 SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE = "swift.emit_private_swiftinterface"
+
+# If enabled, declare `.swiftsourceinfo` files as outputs that Bazel will track.
+# Note that at the time of this writing (Swift 5.10), `.swiftsourceinfo` files
+# are non-deterministic: they contain absolute paths that are not remapped by
+# any of the existing compiler flags. Only enable this feature if such
+# non-determinism does not negatively impact you.
+#
+# Note: If opted out of this feature, .swiftsourceinfo are generated by the
+# compiler but excluded from Bazel's tracking.
+SWIFT_FEATURE_DECLARE_SWIFTSOURCEINFO = "swift.emit_swiftsourceinfo"
 
 # If enabled, the .swiftmodule file for the affected target will not be
 # embedded in debug info and propagated to the linker.
@@ -295,11 +332,6 @@ SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS = "swift._num_threads_0_in_swiftcopts
 # This is a directory to persist automatically created precompiled bridging headers
 SWIFT_FEATURE_USE_PCH_OUTPUT_DIR = "swift.use_pch_output_dir"
 
-# If enabled, Swift compilation actions will pass
-# `-enable-bare-slash-regex` to `swiftc`. This is a new flag as of
-# Swift 5.7 that enables `/.../` syntax regular-expression literals.
-SWIFT_FEATURE_SUPPORTS_BARE_SLASH_REGEX = "swift.supports_bare_slash_regex"
-
 # Workaround this issue https://github.com/apple/swift/issues/60406, disable
 # this feature if you have a version of Swift that fixes it and you care about
 # minor binary size improvements
@@ -314,6 +346,38 @@ SWIFT_FEATURE_OBJC_LINK_FLAGS = "swift.objc_link_flag"
 # all Swift compilations to always be linked.
 SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE = "swift._force_alwayslink_true"
 
+# If enabled, requests the `-enforce-exclusivity=checked` swiftc flag which
+# enables runtime checking of exclusive memory access on mutation.
+SWIFT_FEATURE_CHECKED_EXCLUSIVITY = "swift.checked_exclusivity"
+
+# If enabled, requests the `-enable-bare-slash-regex` swiftc flag which is
+# required for forward slash regex expression literals.
+SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX = "swift.supports_bare_slash_regex"
+
+# If enabled, requests the `-disable-clang-spi` swiftc flag. Disables importing
+# Clang SPIs as Swift SPIs.
+SWIFT_FEATURE_DISABLE_CLANG_SPI = "swift.disable_clang_spi"
+
+# If enabled, allow public symbols to be internalized at link time to support
+# better dead-code stripping. This assumes that all clients of public types are
+# part of the same link unit or that public symbols linked into frameworks are
+# explicitly exported via `-exported_symbols_list`.
+SWIFT_FEATURE_INTERNALIZE_AT_LINK = "swift.internalize_at_link"
+
+# If enabled, requests the `-disable-availability-checking` frontend flag.
+# This disables checking for potentially unavailable APIs.
+SWIFT_FEATURE_DISABLE_AVAILABILITY_CHECKING = "swift.disable_availability_checking"
+
+# A private feature that is set by the toolchain if it supports the
+# `-enable-{experimental,upcoming}-feature` flag (Swift 5.8 and above). Users
+# should never manually, enable, disable, or query this feature.
+SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES = "swift._supports_upcoming_features"
+
+# A private feature that is set by the toolchain if it supports
+# `-swift-version 6` (Swift 6.0 and above). Users should never manually enable,
+# disable, or query this feature.
+SWIFT_FEATURE__SUPPORTS_V6 = "swift._supports_v6"
+
 # Disables Swift sandbox which prevents issues with nested sandboxing when Swift code contains system-provided macros.
 # If enabled '#Preview' macro provided by SwiftUI fails to build and probably other system-provided macros.
 # Enabled by default for Swift 5.10+ on macOS.
@@ -321,16 +385,6 @@ SWIFT_FEATURE_DISABLE_SWIFT_SANDBOX = "swift.disable_swift_sandbox"
 
 # Pass -warnings-as-errors to the compiler.
 SWIFT_FEATURE_TREAT_WARNINGS_AS_ERRORS = "swift.treat_warnings_as_errors"
-
-# Defines whether .swiftdoc files are included in build outputs.
-# This feature is enabled by default.
-# Note: If opted out of this feature, .swiftdoc are generated by the compiler but excluded from Bazel's tracking.
-SWIFT_FEATURE_EMIT_SWIFTDOC = "swift.emit_swiftdoc"
-
-# Defines whether .swiftsourceinfo files are included in build outputs.
-# This feature is enabled by default.
-# Note: If opted out of this feature, .swiftsourceinfo are generated by the compiler but excluded from Bazel's tracking.
-SWIFT_FEATURE_EMIT_SWIFTSOURCEINFO = "swift.emit_swiftsourceinfo"
 
 # A feature that adds target_name in output path to support building
 # multiple frameworks with different target name, but same module name.

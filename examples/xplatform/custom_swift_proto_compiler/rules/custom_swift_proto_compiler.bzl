@@ -119,7 +119,9 @@ custom_swift_proto_compiler = rule(
             doc = """\
             A proto compiler executable binary.
             """,
-            default = "//examples/xplatform/custom_swift_proto_compiler/rules:custom_proto_compiler",
+            default = Label(
+                "//examples/xplatform/custom_swift_proto_compiler/rules:custom_proto_compiler",
+            ),
             executable = True,
             cfg = "exec",
         ),

@@ -20,25 +20,6 @@ check them in directly.
 
 load("//swift:providers.bzl", "SwiftInfo")
 
-def _swiftinterface_transition_impl(_settings, attr):
-    return {
-        # If the `.private.swiftinterface` file is requested, apply the setting that causes
-        # the rule to generate it.
-        "@build_bazel_rules_swift//swift:emit_private_swiftinterface": attr.private_swiftinterface != None,
-        # If the `.swiftinterface` file is requested, apply the setting that causes
-        # the rule to generate it.
-        "@build_bazel_rules_swift//swift:emit_swiftinterface": attr.swiftinterface != None,
-    }
-
-_swiftinterface_transition = transition(
-    implementation = _swiftinterface_transition_impl,
-    inputs = [],
-    outputs = [
-        "@build_bazel_rules_swift//swift:emit_private_swiftinterface",
-        "@build_bazel_rules_swift//swift:emit_swiftinterface",
-    ],
-)
-
 def _copy_file(actions, source, destination):
     """Copies the source file to the destination file.
 
@@ -63,7 +44,7 @@ cp "$1" "$2"
     )
 
 def _swift_library_artifact_collector_impl(ctx):
-    target = ctx.attr.target[0]
+    target = ctx.attr.target
     swift_info = target[SwiftInfo]
 
     if ctx.outputs.static_library:
@@ -108,13 +89,7 @@ swift_library_artifact_collector = rule(
         "swiftdoc": attr.output(mandatory = False),
         "swiftinterface": attr.output(mandatory = False),
         "swiftmodule": attr.output(mandatory = False),
-        "target": attr.label(
-            cfg = _swiftinterface_transition,
-            providers = [[CcInfo, SwiftInfo]],
-        ),
-        "_allowlist_function_transition": attr.label(
-            default = "@bazel_tools//tools/allowlists/function_transition_allowlist",
-        ),
+        "target": attr.label(providers = [[CcInfo, SwiftInfo]]),
     },
     implementation = _swift_library_artifact_collector_impl,
 )

@@ -12,26 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Foundation
+import Common
 
-/// A toy value.
-@frozen
-public struct ToyValue {
-  /// The numeric value.
-  public var number: Int
-
-  /// The hexadecimal value of the numeric value.
-  public var hexString: String {
-    String(format: "0x%x", number)
-  }
-
-  /// Creates a new toy value with the given numeric value.
-  public init(number: Int) {
-    self.number = number
-  }
-
-  /// Returns the square of the receiver's numeric value.
-  public func squared() -> Int {
-    number * number
-  }
+public func makeStandardIssueCat() -> Common.Cat {
+  return Common.Cat.standardIssue
 }

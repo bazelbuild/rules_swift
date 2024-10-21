@@ -25,22 +25,20 @@ Skylib.
 """
 
 load(
-    "//swift/internal:feature_names.bzl",
+    ":feature_names.bzl",
     "SWIFT_FEATURE_CODEVIEW_DEBUG_INFO",
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
+    "SWIFT_FEATURE_DECLARE_SWIFTSOURCEINFO",
     "SWIFT_FEATURE_EMIT_SWIFTDOC",
-    "SWIFT_FEATURE_EMIT_SWIFTSOURCEINFO",
-    "SWIFT_FEATURE_ENABLE_BATCH_MODE",
-    "SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES",
-    "SWIFT_FEATURE_FILE_PREFIX_MAP",
     "SWIFT_FEATURE_LLD_GC_WORKAROUND",
     "SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS",
     "SWIFT_FEATURE_NO_EMBED_DEBUG_MODULE",
-    "SWIFT_FEATURE_SUPPORTS_BARE_SLASH_REGEX",
     "SWIFT_FEATURE_USE_AUTOLINK_EXTRACT",
     "SWIFT_FEATURE_USE_MODULE_WRAP",
-    "SWIFT_FEATURE_USE_OLD_DRIVER",
+    "SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES",
+    "SWIFT_FEATURE__SUPPORTS_V6",
 )
+load(":toolchain_utils.bzl", "SWIFT_TOOLCHAIN_TYPE")
 
 def _scratch_file(repository_ctx, temp_dir, name, content = ""):
     """Creates and returns a scratch file with the given name and content.
@@ -74,45 +72,24 @@ def _swift_succeeds(repository_ctx, swiftc_path, *args):
     swift_result = repository_ctx.execute([swiftc_path] + list(args))
     return swift_result.return_code == 0
 
-def _check_enable_batch_mode(repository_ctx, swiftc_path, _temp_dir):
-    """Returns True if `swiftc` supports batch mode."""
-    return _swift_succeeds(
-        repository_ctx,
-        swiftc_path,
-        "-version",
-        "-enable-batch-mode",
-    )
+def _check_supports_language_mode_6(repository_ctx, swiftc_path, _temp_dir):
+    """Returns True if the swift compiler supports language mode 6."""
+    result = repository_ctx.execute([swiftc_path, "-version"])
+    if result.return_code == 0:
+        _, _, almost_version = result.stdout.partition("swiftlang-")
+        if not almost_version:
+            return False
 
-def _check_skip_function_bodies(repository_ctx, swiftc_path, _temp_dir):
-    """Returns True if `swiftc` supports skip function bodies."""
-    return _swift_succeeds(
-        repository_ctx,
-        swiftc_path,
-        "-version",
-        "-experimental-skip-non-inlinable-function-bodies",
-    )
+        major_version, _, _ = almost_version.parition(".")
+        if not major_version:
+            return False
 
-def _check_file_prefix_map(repository_ctx, swiftc_path, _temp_dir):
-    """Returns True if `swiftc` supports -file-prefix-map."""
-    return _swift_succeeds(
-        repository_ctx,
-        swiftc_path,
-        "-version",
-        "-file-prefix-map",
-        "foo=bar",
-    )
+        return int(major_version) >= 6
 
-def _check_enable_bare_slash_regex(repository_ctx, swiftc_path, _temp_dir):
-    """Returns True if `swiftc` supports debug prefix mapping."""
-    return _swift_succeeds(
-        repository_ctx,
-        swiftc_path,
-        "-version",
-        "-enable-bare-slash-regex",
-    )
+    return False
 
 def _check_supports_lld_gc_workaround(repository_ctx, swiftc_path, temp_dir):
-    """Returns True if lld is being used and it supports nostart-stop-gc"""
+    """Returns True if lld is being used and it supports nostart-stop-gc."""
     source_file = _scratch_file(
         repository_ctx,
         temp_dir,
@@ -130,6 +107,16 @@ print("Hello")
         "-z",
         "-Xlinker",
         "nostart-stop-gc",
+    )
+
+def _check_supports_upcoming_features(repository_ctx, swiftc_path, _temp_dir):
+    """Returns True if `swiftc` supports the `-enable-{experimental,upcoming}-feature` flags."""
+    return _swift_succeeds(
+        repository_ctx,
+        swiftc_path,
+        "-version",
+        "-enable-upcoming-feature",
+        "BareRegexLiteralSyntax",
     )
 
 def _write_swift_version(repository_ctx, swiftc_path):
@@ -201,11 +188,11 @@ def _compute_feature_values(repository_ctx, swiftc_path):
 # the `swiftc` executable and a scratch directory, respectively. The function
 # should return True if the feature is supported.
 _FEATURE_CHECKS = {
-    SWIFT_FEATURE_ENABLE_BATCH_MODE: _check_enable_batch_mode,
-    SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES: _check_skip_function_bodies,
-    SWIFT_FEATURE_FILE_PREFIX_MAP: _check_file_prefix_map,
     SWIFT_FEATURE_LLD_GC_WORKAROUND: _check_supports_lld_gc_workaround,
-    SWIFT_FEATURE_SUPPORTS_BARE_SLASH_REGEX: _check_enable_bare_slash_regex,
+    SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES: (
+        _check_supports_upcoming_features
+    ),
+    SWIFT_FEATURE__SUPPORTS_V6: _check_supports_language_mode_6,
 }
 
 def _normalized_linux_cpu(cpu):
@@ -252,6 +239,21 @@ swift_toolchain(
     root = "{root}",
     version_file = "{version_file}",
 )
+
+toolchain(
+    name = "linux-swift-toolchain-{cpu}",
+    exec_compatible_with = [
+        "@platforms//os:linux",
+        "@platforms//cpu:{cpu}",
+    ],
+    target_compatible_with = [
+        "@platforms//os:linux",
+        "@platforms//cpu:{cpu}",
+    ],
+    toolchain = ":toolchain",
+    toolchain_type = "{toolchain_type}",
+    visibility = ["//visibility:public"],
+)
 """.format(
             cpu = _normalized_linux_cpu(repository_ctx.os.arch),
             feature_list = ", ".join([
@@ -259,6 +261,7 @@ swift_toolchain(
                 for feature in feature_values
             ]),
             root = root,
+            toolchain_type = SWIFT_TOOLCHAIN_TYPE,
             version_file = version_file,
         ),
     )
@@ -280,21 +283,47 @@ def _create_xcode_toolchain(repository_ctx):
         "BUILD",
         """
 load(
+    "@build_bazel_apple_support//configs:platforms.bzl",
+    "APPLE_PLATFORMS_CONSTRAINTS",
+)
+load(
     "@build_bazel_rules_swift//swift/toolchains:xcode_swift_toolchain.bzl",
     "xcode_swift_toolchain",
 )
 
 package(default_visibility = ["//visibility:public"])
 
+_OSX_DEVELOPER_PLATFORM_CPUS = [
+    "arm64",
+    "x86_64",
+]
+
 xcode_swift_toolchain(
     name = "toolchain",
     features = [{feature_list}],
 )
+
+[
+    toolchain(
+        name = "xcode-toolchain-" + arch + "-" + cpu,
+        exec_compatible_with = [
+            "@platforms//os:macos",
+            "@platforms//cpu:" + cpu,
+        ],
+        target_compatible_with = APPLE_PLATFORMS_CONSTRAINTS[arch],
+        toolchain = ":toolchain",
+        toolchain_type = "{toolchain_type}",
+        visibility = ["//visibility:public"],
+    )
+    for arch in APPLE_PLATFORMS_CONSTRAINTS.keys()
+    for cpu in _OSX_DEVELOPER_PLATFORM_CPUS
+]
 """.format(
             feature_list = ", ".join([
                 '"{}"'.format(feature)
                 for feature in feature_values
             ]),
+            toolchain_type = SWIFT_TOOLCHAIN_TYPE,
         ),
     )
 
@@ -317,17 +346,13 @@ def _create_windows_toolchain(repository_ctx):
     root = path_to_swiftc.dirname.dirname
     enabled_features = [
         SWIFT_FEATURE_CODEVIEW_DEBUG_INFO,
+        SWIFT_FEATURE_DECLARE_SWIFTSOURCEINFO,
         SWIFT_FEATURE_DEBUG_PREFIX_MAP,
         SWIFT_FEATURE_EMIT_SWIFTDOC,
-        SWIFT_FEATURE_EMIT_SWIFTSOURCEINFO,
-        SWIFT_FEATURE_ENABLE_BATCH_MODE,
-        SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES,
         SWIFT_FEATURE_NO_EMBED_DEBUG_MODULE,
         SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS,
     ]
-    disabled_features = [
-        SWIFT_FEATURE_USE_OLD_DRIVER,
-    ]
+    disabled_features = []
 
     version_file = _write_swift_version(repository_ctx, path_to_swiftc)
     xctest_version = repository_ctx.execute([
@@ -364,11 +389,24 @@ swift_toolchain(
   tool_executable_suffix = ".exe",
   xctest_version = "{xctest_version}",
 )
+
+toolchain(
+    name = "windows-swift-toolchain-x86_64",
+    exec_compatible_with = [
+        "@platforms//os:windows",
+        "@platforms//cpu:x86_64",
+    ],
+    target_compatible_with = APPLE_PLATFORMS_CONSTRAINTS[arch],
+    toolchain = ":toolchain",
+    toolchain_type = "{toolchain_type}",
+    visibility = ["//visibility:public"],
+)
 """.format(
             features = ", ".join(['"{}"'.format(feature) for feature in enabled_features] + ['"-{}"'.format(feature) for feature in disabled_features]),
             root = root,
             env = env,
             sdkroot = repository_ctx.os.environ["SDKROOT"].replace("\\", "/"),
+            toolchain_type = SWIFT_TOOLCHAIN_TYPE,
             xctest_version = xctest_version.stdout.rstrip(),
             version_file = version_file,
         ),

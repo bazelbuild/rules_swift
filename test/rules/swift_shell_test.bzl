@@ -69,11 +69,11 @@ swift_shell_test = rule(
             providers = [DefaultInfo],
         ),
         "_tool": attr.label(
-            default = "@bazel_tools//tools/bash/runfiles",
+            default = Label("@bazel_tools//tools/bash/runfiles"),
         ),
         "_runner_template": attr.label(
             allow_single_file = True,
-            default = "@build_bazel_rules_swift//test/rules:swift_shell_runner.sh.template",
+            default = Label("//test/rules:swift_shell_runner.sh.template"),
         ),
     },
     test = True,

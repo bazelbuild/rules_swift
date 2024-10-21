@@ -15,15 +15,26 @@
 """Implementation of the `swift_module_alias` rule."""
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load("//swift/internal:linking.bzl", "new_objc_provider")
+load("//swift/internal:attrs.bzl", "swift_toolchain_attrs")
+load("//swift/internal:compiling.bzl", "compile")
+load("//swift/internal:features.bzl", "configure_features")
+load(
+    "//swift/internal:linking.bzl",
+    "create_linking_context_from_compilation_outputs",
+    "new_objc_provider",
+)
 load(
     "//swift/internal:output_groups.bzl",
     "supplemental_compilation_output_groups",
 )
-load("//swift/internal:toolchain_utils.bzl", "use_swift_toolchain")
+load(
+    "//swift/internal:toolchain_utils.bzl",
+    "get_swift_toolchain",
+    "use_swift_toolchain",
+)
 load("//swift/internal:utils.bzl", "compact", "get_providers")
+load(":module_name.bzl", "derive_swift_module_name")
 load(":providers.bzl", "SwiftInfo")
-load(":swift_common.bzl", "swift_common")
 
 def _swift_module_alias_impl(ctx):
     deps = ctx.attr.deps
@@ -35,7 +46,7 @@ def _swift_module_alias_impl(ctx):
 
     module_name = ctx.attr.module_name
     if not module_name:
-        module_name = swift_common.derive_module_name(ctx.label)
+        module_name = derive_swift_module_name(ctx.label)
 
     # Generate a source file that imports each of the deps using `@_exported`.
     reexport_src = ctx.actions.declare_file(
@@ -49,8 +60,8 @@ def _swift_module_alias_impl(ctx):
         output = reexport_src,
     )
 
-    swift_toolchain = swift_common.get_toolchain(ctx)
-    feature_configuration = swift_common.configure_features(
+    swift_toolchain = get_swift_toolchain(ctx)
+    feature_configuration = configure_features(
         ctx = ctx,
         requested_features = ctx.features,
         swift_toolchain = swift_toolchain,
@@ -59,7 +70,7 @@ def _swift_module_alias_impl(ctx):
 
     swift_infos = get_providers(deps, SwiftInfo)
 
-    compile_result = swift_common.compile(
+    compile_result = compile(
         actions = ctx.actions,
         cc_infos = get_providers(ctx.attr.deps, CcInfo),
         copts = ["-parse-as-library"],
@@ -80,7 +91,7 @@ def _swift_module_alias_impl(ctx):
     supplemental_outputs = compile_result.supplemental_outputs
 
     linking_context, linking_output = (
-        swift_common.create_linking_context_from_compilation_outputs(
+        create_linking_context_from_compilation_outputs(
             actions = ctx.actions,
             compilation_outputs = compilation_outputs,
             feature_configuration = feature_configuration,
@@ -118,10 +129,7 @@ def _swift_module_alias_impl(ctx):
             compilation_context = module_context.clang.compilation_context,
             linking_context = linking_context,
         ),
-        swift_common.create_swift_info(
-            modules = [module_context],
-            swift_infos = swift_infos,
-        ),
+        compile_result.swift_info,
     ]
 
     # Propagate an `apple_common.Objc` provider with linking info about the
@@ -144,7 +152,7 @@ def _swift_module_alias_impl(ctx):
 
 swift_module_alias = rule(
     attrs = dicts.add(
-        swift_common.toolchain_attrs(),
+        swift_toolchain_attrs(),
         {
             "deps": attr.label_list(
                 doc = """\

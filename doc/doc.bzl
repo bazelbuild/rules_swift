@@ -27,6 +27,10 @@ load("@build_bazel_rules_swift//proto:swift_proto_library.bzl", "swift_proto_lib
 """
 
 load(
+    "//mixed_language:mixed_language_library.bzl",
+    _mixed_language_library = "mixed_language_library",
+)
+load(
     "//proto:swift_proto_common.bzl",
     _swift_proto_common = "swift_proto_common",
 )
@@ -43,6 +47,10 @@ load(
     _swift_proto_library_group = "swift_proto_library_group",
 )
 load(
+    "//swift:module_name.bzl",
+    _derive_swift_module_name = "derive_swift_module_name",
+)
+load(
     "//swift:providers.bzl",
     _SwiftInfo = "SwiftInfo",
     _SwiftProtoCompilerInfo = "SwiftProtoCompilerInfo",
@@ -55,6 +63,14 @@ load(
     "//swift:swift_compiler_plugin.bzl",
     _swift_compiler_plugin = "swift_compiler_plugin",
     _universal_swift_compiler_plugin = "universal_swift_compiler_plugin",
+)
+load(
+    "//swift:swift_compiler_plugin_import.bzl",
+    _swift_compiler_plugin_import = "swift_compiler_plugin_import",
+)
+load(
+    "//swift:swift_cross_import_overlay.bzl",
+    _swift_cross_import_overlay = "swift_cross_import_overlay",
 )
 load(
     "//swift:swift_feature_allowlist.bzl",
@@ -75,6 +91,14 @@ load(
     _swift_module_alias = "swift_module_alias",
 )
 load(
+    "//swift:swift_module_mapping.bzl",
+    _swift_module_mapping = "swift_module_mapping",
+)
+load(
+    "//swift:swift_module_mapping_test.bzl",
+    _swift_module_mapping_test = "swift_module_mapping_test",
+)
+load(
     "//swift:swift_package_configuration.bzl",
     _swift_package_configuration = "swift_package_configuration",
 )
@@ -91,17 +115,23 @@ swift_proto_library = _swift_proto_library
 swift_proto_library_group = _swift_proto_library_group
 
 # swift symbols
+derive_swift_module_name = _derive_swift_module_name
 swift_common = _swift_common
 SwiftInfo = _SwiftInfo
 SwiftToolchainInfo = _SwiftToolchainInfo
 swift_binary = _swift_binary
 swift_compiler_plugin = _swift_compiler_plugin
 universal_swift_compiler_plugin = _universal_swift_compiler_plugin
+swift_compiler_plugin_import = _swift_compiler_plugin_import
+swift_cross_import_overlay = _swift_cross_import_overlay
 swift_feature_allowlist = _swift_feature_allowlist
 swift_import = _swift_import
 swift_interop_hint = _swift_interop_hint
 swift_library = _swift_library
 swift_library_group = _swift_library_group
+mixed_language_library = _mixed_language_library
 swift_module_alias = _swift_module_alias
+swift_module_mapping = _swift_module_mapping
+swift_module_mapping_test = _swift_module_mapping_test
 swift_package_configuration = _swift_package_configuration
 swift_test = _swift_test

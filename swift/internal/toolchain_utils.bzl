@@ -16,11 +16,23 @@
 
 SWIFT_TOOLCHAIN_TYPE = "@build_bazel_rules_swift//toolchains:toolchain_type"
 
-def get_swift_toolchain(ctx, attr = "_toolchain"):
+def get_swift_toolchain(
+        ctx,
+        *,
+        exec_group = None,
+        mandatory = True,
+        attr = "_toolchain"):
     """Gets the Swift toolchain associated with the rule or aspect.
 
     Args:
         ctx: The rule or aspect context.
+        exec_group: The name of the execution group that should contain the
+            toolchain. If this is provided and the toolchain is not declared in
+            that execution group, it will be looked up from `ctx` as a fallback
+            instead. If this argument is `None` (the default), then the
+            toolchain will only be looked up from `ctx.`
+        mandatory: If `False`, this function will return `None` instead of
+            failing if no toolchain is found. Defaults to `True`.
         attr: The name of the attribute on the calling rule or aspect that
             should be used to retrieve the toolchain if it is not provided by
             the `toolchains` argument of the rule/aspect. Note that this is only
@@ -28,8 +40,14 @@ def get_swift_toolchain(ctx, attr = "_toolchain"):
             migration to toolchains is complete.
 
     Returns:
-        A `SwiftToolchainInfo` provider.
+        A `SwiftToolchainInfo` provider, or `None` if the toolchain was not
+        found and not required.
     """
+    if exec_group:
+        group = ctx.exec_groups[exec_group]
+        if group and SWIFT_TOOLCHAIN_TYPE in group.toolchains:
+            return group.toolchains[SWIFT_TOOLCHAIN_TYPE].swift_toolchain
+
     if SWIFT_TOOLCHAIN_TYPE in ctx.toolchains:
         return ctx.toolchains[SWIFT_TOOLCHAIN_TYPE].swift_toolchain
 
@@ -39,11 +57,14 @@ def get_swift_toolchain(ctx, attr = "_toolchain"):
     if toolchain_target and platform_common.ToolchainInfo in toolchain_target:
         return toolchain_target[platform_common.ToolchainInfo].swift_toolchain
 
-    fail("To use `swift_common.get_toolchain`, you must declare the " +
-         "toolchain in your rule using " +
-         "`toolchains = swift_common.use_toolchain()`.")
+    if mandatory:
+        fail("To use `swift_common.get_toolchain`, you must declare the " +
+             "toolchain in your rule using " +
+             "`toolchains = swift_common.use_toolchain()`.")
 
-def use_swift_toolchain():
+    return None
+
+def use_swift_toolchain(*, mandatory = True):
     """Returns a list of toolchain types needed to use the Swift toolchain.
 
     This function returns a list so that it can be easily composed with other
@@ -51,15 +72,21 @@ def use_swift_toolchain():
     dependencies could write:
 
     ```
-    toolchains = swift_common.use_toolchain() + [other toolchains...]
+    toolchains = use_swift_toolchain() + [other toolchains...]
     ```
 
-    Returns:
-        A list of toolchain types that should be passed to `rule()` or
-        `aspect()`.
-    """
+    Args:
+        mandatory: Whether or not it should be an error if the toolchain cannot
+            be resolved. Defaults to True.
 
-    # TODO(b/205018581): Intentionally empty for now so that rule definitions
-    # can reference the function while still being a no-op. A future change will
-    # add the toolchain type to this list to enable toolchain resolution.
-    return []
+    Returns:
+        A list of
+        [toolchain types](https://bazel.build/rules/lib/builtins/toolchain_type.html)
+        that should be passed to `rule()`, `aspect()`, or `exec_group()`.
+    """
+    return [
+        config_common.toolchain_type(
+            SWIFT_TOOLCHAIN_TYPE,
+            mandatory = mandatory,
+        ),
+    ]

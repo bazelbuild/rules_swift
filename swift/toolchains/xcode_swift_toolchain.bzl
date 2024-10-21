@@ -47,26 +47,26 @@ load(
 load("//swift/internal:attrs.bzl", "swift_toolchain_driver_attrs")
 load(
     "//swift/internal:feature_names.bzl",
-    "SWIFT_FEATURE_CACHEABLE_SWIFTMODULES",
     "SWIFT_FEATURE_COVERAGE",
     "SWIFT_FEATURE_COVERAGE_PREFIX_MAP",
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
     "SWIFT_FEATURE_DISABLE_SWIFT_SANDBOX",
-    "SWIFT_FEATURE_DISABLE_SYSTEM_INDEX",
-    "SWIFT_FEATURE_EMIT_SWIFTDOC",
-    "SWIFT_FEATURE_EMIT_SWIFTSOURCEINFO",
-    "SWIFT_FEATURE_ENABLE_BATCH_MODE",
-    "SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES",
     "SWIFT_FEATURE_FILE_PREFIX_MAP",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
-    "SWIFT_FEATURE_OBJC_LINK_FLAGS",
-    "SWIFT_FEATURE_OPT_USES_WMO",
     "SWIFT_FEATURE_REMAP_XCODE_PATH",
-    "SWIFT_FEATURE_SUPPORTS_BARE_SLASH_REGEX",
-    "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
-    "SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE",
+    "SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES",
+    "SWIFT_FEATURE__SUPPORTS_V6",
 )
-load("//swift/internal:features.bzl", "features_for_build_modes")
+load(
+    "//swift/internal:features.bzl",
+    "default_features_for_toolchain",
+    "features_for_build_modes",
+)
+load(
+    "//swift/internal:providers.bzl",
+    "SwiftCrossImportOverlayInfo",
+    "SwiftModuleAliasesInfo",
+)
 load("//swift/internal:target_triples.bzl", "target_triples")
 load(
     "//swift/internal:utils.bzl",
@@ -83,7 +83,11 @@ load(
     "//swift/toolchains/config:all_actions_config.bzl",
     "all_actions_action_configs",
 )
-load("//swift/toolchains/config:compile_config.bzl", "compile_action_configs")
+load(
+    "//swift/toolchains/config:compile_config.bzl",
+    "command_line_objc_copts",
+    "compile_action_configs",
+)
 load(
     "//swift/toolchains/config:compile_module_interface_config.bzl",
     "compile_module_interface_action_configs",
@@ -96,83 +100,6 @@ load("//swift/toolchains/config:tool_config.bzl", "ToolConfigInfo")
 
 # TODO: Remove once we drop bazel 7.x
 _OBJC_PROVIDER_LINKING = hasattr(apple_common.new_objc_provider(), "linkopt")
-
-# Maps (operating system, environment) pairs from target triples to the legacy
-# Bazel core `apple_common.platform` values, since we still use some APIs that
-# require these.
-_TRIPLE_OS_TO_PLATFORM = {
-    ("ios", None): apple_common.platform.ios_device,
-    ("ios", "simulator"): apple_common.platform.ios_simulator,
-    ("macos", None): apple_common.platform.macos,
-    ("tvos", None): apple_common.platform.tvos_device,
-    ("tvos", "simulator"): apple_common.platform.tvos_simulator,
-    # TODO: Remove getattr use once we no longer support 6.x
-    ("xros", None): getattr(apple_common.platform, "visionos_device", None),
-    ("xros", "simulator"): getattr(apple_common.platform, "visionos_simulator", None),
-    ("watchos", None): apple_common.platform.watchos_device,
-    ("watchos", "simulator"): apple_common.platform.watchos_simulator,
-}
-
-def _bazel_apple_platform(target_triple):
-    """Returns the `apple_common.platform` value for the given target triple."""
-
-    # TODO: Remove once we no longer support 6.x
-    if target_triples.unversioned_os(target_triple) == "xros" and not hasattr(
-        apple_common.platform,
-        "visionos_device",
-    ):
-        fail("visionOS requested but your version of bazel doesn't support it")
-
-    return _TRIPLE_OS_TO_PLATFORM[(
-        target_triples.unversioned_os(target_triple),
-        target_triple.environment,
-    )]
-
-def _command_line_objc_copts(compilation_mode, cpp_fragment, objc_fragment):
-    """Returns copts that should be passed to `clang` from the `objc` fragment.
-
-    Args:
-        compilation_mode: The current compilation mode.
-        cpp_fragment: The `cpp` configuration fragment.
-        objc_fragment: The `objc` configuration fragment.
-
-    Returns:
-        A list of `clang` copts, each of which is preceded by `-Xcc` so that
-        they can be passed through `swiftc` to its underlying ClangImporter
-        instance.
-    """
-
-    # In general, every compilation mode flag from native `objc_*` rules should
-    # be passed, but `-g` seems to break Clang module compilation. Since this
-    # flag does not make much sense for module compilation and only touches
-    # headers, it's ok to omit.
-    # TODO(b/153867054): These flags were originally being set by Bazel's legacy
-    # hardcoded Objective-C behavior, which has been migrated to crosstool. In
-    # the long term, we should query crosstool for the flags we're interested in
-    # and pass those to ClangImporter, and do this across all platforms. As an
-    # immediate short-term workaround, we preserve the old behavior by passing
-    # the exact set of flags that Bazel was originally passing if the list we
-    # get back from the configuration fragment is empty.
-    legacy_copts = objc_fragment.copts_for_current_compilation_mode
-    if not legacy_copts:
-        if compilation_mode == "dbg":
-            legacy_copts = [
-                "-O0",
-                "-DDEBUG=1",
-                "-fstack-protector",
-                "-fstack-protector-all",
-            ]
-        elif compilation_mode == "opt":
-            legacy_copts = [
-                "-Os",
-                "-DNDEBUG=1",
-                "-Wno-unused-variable",
-                "-Winit-self",
-                "-Wno-extra",
-            ]
-
-    clang_copts = cpp_fragment.objccopts + legacy_copts
-    return [copt for copt in clang_copts if copt != "-g"]
 
 def _platform_developer_framework_dir(
         apple_toolchain,
@@ -191,7 +118,7 @@ def _platform_developer_framework_dir(
         apple_toolchain.developer_dir(),
         "Platforms",
         "{}.platform".format(
-            _bazel_apple_platform(target_triple).name_in_plist,
+            target_triples.bazel_apple_platform(target_triple).name_in_plist,
         ),
         "Developer/Library/Frameworks",
     )
@@ -332,7 +259,7 @@ def _all_action_configs(
             from the `objc` configuration fragment (and legacy flags that were
             previously passed directly by Bazel).
         additional_swiftc_copts: Additional Swift compiler flags obtained from
-            the `swift` configuration fragment.
+            the `.../swift:copt` build setting.
         apple_toolchain: The `apple_common.apple_toolchain()` object.
         generated_header_rewriter: An executable that will be invoked after
             compilation to rewrite the generated header, or None if this is not
@@ -457,7 +384,7 @@ def _all_action_configs(
                 add_arg(
                     "-target-sdk-version",
                     str(xcode_config.sdk_version_for_platform(
-                        _bazel_apple_platform(target_triple),
+                        target_triples.bazel_apple_platform(target_triple),
                     )),
                 ),
             ],
@@ -484,10 +411,8 @@ def _all_tool_configs(
         custom_toolchain,
         env,
         execution_requirements,
-        generated_header_rewriter,
         swift_executable,
-        toolchain_root,
-        xcode_config):
+        toolchain_root):
     """Returns the tool configurations for the Swift toolchain.
 
     Args:
@@ -495,12 +420,9 @@ def _all_tool_configs(
             one was requested.
         env: The environment variables to set when launching tools.
         execution_requirements: The execution requirements for tools.
-        generated_header_rewriter: The optional executable that will be invoked
-            after compilation to rewrite the generated header.
         swift_executable: A custom Swift driver executable to be used during the
             build, if provided.
         toolchain_root: The root directory of the toolchain, if provided.
-        xcode_config: The `apple_common.XcodeVersionConfig` provider.
 
     Returns:
         A dictionary mapping action name to tool configuration.
@@ -513,15 +435,6 @@ def _all_tool_configs(
         env = dict(env)
         env["TOOLCHAINS"] = custom_toolchain
 
-    # In Xcode 13.3 and 13.4 (Swift 5.6), the legacy driver prints a warning
-    # if it is used. Suppress it, since we still have to use it on those
-    # specific versions due to response file bugs.
-    if (
-        _is_xcode_at_least_version(xcode_config, "13.3") and
-        not _is_xcode_at_least_version(xcode_config, "14.0")
-    ):
-        env["SWIFT_AVOID_WARNING_USING_OLD_DRIVER"] = "1"
-
     def _driver_config(*, mode):
         return {
             "mode": mode,
@@ -530,9 +443,6 @@ def _all_tool_configs(
         }
 
     tool_config = ToolConfigInfo(
-        additional_tools = (
-            [generated_header_rewriter] if generated_header_rewriter else []
-        ),
         driver_config = _driver_config(mode = "swiftc"),
         env = env,
         execution_requirements = execution_requirements,
@@ -556,9 +466,6 @@ def _all_tool_configs(
         ),
         SWIFT_ACTION_COMPILE_MODULE_INTERFACE: (
             ToolConfigInfo(
-                additional_tools = (
-                    [generated_header_rewriter] if generated_header_rewriter else []
-                ),
                 driver_config = _driver_config(mode = "swiftc"),
                 args = ["-frontend"],
                 env = env,
@@ -620,7 +527,7 @@ def _xcode_env(target_triple, xcode_config):
         apple_common.apple_host_system_env(xcode_config),
         apple_common.target_apple_env(
             xcode_config,
-            _bazel_apple_platform(target_triple),
+            target_triples.bazel_apple_platform(target_triple),
         ),
     )
 
@@ -628,6 +535,25 @@ def _entry_point_linkopts_provider(*, entry_point_name):
     """Returns linkopts to customize the entry point of a binary."""
     return struct(
         linkopts = ["-Wl,-alias,_{},_main".format(entry_point_name)],
+    )
+
+def _dsym_provider(*, ctx):
+    """Apple-specific linking extension to generate .dSYM binaries.
+
+    This extension generates a minimal dSYM bundle that LLDB can find next to
+    the built binary.
+    """
+    dsym_file = ctx.actions.declare_file(
+        "{name}.dSYM/Contents/Resources/DWARF/{name}".format(
+            name = ctx.label.name,
+        ),
+    )
+    variables_extension = {
+        "dsym_path": dsym_file.path,
+    }
+    return struct(
+        additional_outputs = [dsym_file],
+        variables_extension = variables_extension,
     )
 
 def _xcode_swift_toolchain_impl(ctx):
@@ -692,29 +618,27 @@ def _xcode_swift_toolchain_impl(ctx):
         cpp_fragment = cpp_fragment,
     ) + wmo_features_from_swiftcopts(swiftcopts = swiftcopts)
     requested_features.extend(ctx.features)
+    requested_features.extend(default_features_for_toolchain(
+        ctx = ctx,
+        target_triple = target_triple,
+    ))
+
     requested_features.extend([
-        SWIFT_FEATURE_CACHEABLE_SWIFTMODULES,
-        SWIFT_FEATURE_COVERAGE_PREFIX_MAP,
-        SWIFT_FEATURE_DEBUG_PREFIX_MAP,
-        SWIFT_FEATURE_DISABLE_SYSTEM_INDEX,
-        SWIFT_FEATURE_EMIT_SWIFTDOC,
-        SWIFT_FEATURE_EMIT_SWIFTSOURCEINFO,
-        SWIFT_FEATURE_ENABLE_BATCH_MODE,
-        SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES,
-        SWIFT_FEATURE_FILE_PREFIX_MAP,
-        SWIFT_FEATURE_OBJC_LINK_FLAGS,
-        SWIFT_FEATURE_OPT_USES_WMO,
-        SWIFT_FEATURE_REMAP_XCODE_PATH,
-        SWIFT_FEATURE_SUPPORTS_BARE_SLASH_REGEX,
-        SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE,
+        # Allow users to start using access levels on `import`s by default. Note
+        # that this does *not* change the default access level for `import`s to
+        # `internal`; that is controlled by the upcoming feature flag
+        # `InternalImportsByDefault`.
+        "swift.experimental.AccessLevelOnImport",
     ])
 
-    # The new driver had response file bugs in Xcode 13.x that are fixed in
-    if getattr(ctx.fragments.objc, "alwayslink_by_default", False):
-        requested_features.append(SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE)
+    if _is_xcode_at_least_version(xcode_config, "14.3"):
+        requested_features.append(SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES)
 
     if _is_xcode_at_least_version(xcode_config, "15.3"):
         requested_features.append(SWIFT_FEATURE_DISABLE_SWIFT_SANDBOX)
+
+    if _is_xcode_at_least_version(xcode_config, "16.0"):
+        requested_features.append(SWIFT_FEATURE__SUPPORTS_V6)
 
     env = _xcode_env(target_triple = target_triple, xcode_config = xcode_config)
     execution_requirements = xcode_config.execution_info()
@@ -724,13 +648,11 @@ def _xcode_swift_toolchain_impl(ctx):
         custom_toolchain = custom_toolchain,
         env = env,
         execution_requirements = execution_requirements,
-        generated_header_rewriter = generated_header_rewriter,
         swift_executable = swift_executable,
         toolchain_root = toolchain_root,
-        xcode_config = xcode_config,
     )
     all_action_configs = _all_action_configs(
-        additional_objc_copts = _command_line_objc_copts(
+        additional_objc_copts = command_line_objc_copts(
             ctx.var["COMPILATION_MODE"],
             ctx.fragments.cpp,
             ctx.fragments.objc,
@@ -768,16 +690,26 @@ def _xcode_swift_toolchain_impl(ctx):
 
     swift_toolchain_info = SwiftToolchainInfo(
         action_configs = all_action_configs,
+        cc_language = "objc",
         cc_toolchain_info = cc_toolchain,
         clang_implicit_deps_providers = collect_implicit_deps_providers(
             ctx.attr.clang_implicit_deps,
         ),
+        cross_import_overlays = [
+            target[SwiftCrossImportOverlayInfo]
+            for target in ctx.attr.cross_import_overlays
+        ],
         developer_dirs = swift_toolchain_developer_paths,
         entry_point_linkopts_provider = _entry_point_linkopts_provider,
         feature_allowlists = [
             target[SwiftFeatureAllowlistInfo]
             for target in ctx.attr.feature_allowlists
         ],
+        debug_outputs_provider = (
+            # This function unconditionally declares the output file, so we
+            # should only use it if a .dSYM is being requested during the build.
+            _dsym_provider if cpp_fragment.apple_generate_dsym else None
+        ),
         generated_header_module_implicit_deps_providers = (
             collect_implicit_deps_providers(
                 ctx.attr.generated_header_module_implicit_deps,
@@ -787,6 +719,9 @@ def _xcode_swift_toolchain_impl(ctx):
             ctx.attr.implicit_deps + ctx.attr.clang_implicit_deps,
             additional_cc_infos = [swift_linkopts_providers.cc_info],
             additional_objc_infos = [swift_linkopts_providers.objc_info],
+        ),
+        module_aliases = (
+            ctx.attr._module_mapping[SwiftModuleAliasesInfo].aliases
         ),
         package_configurations = [
             target[SwiftPackageConfigurationInfo]
@@ -836,6 +771,16 @@ implicit dependencies.
 """,
                 providers = [[SwiftInfo]],
             ),
+            "cross_import_overlays": attr.label_list(
+                allow_empty = True,
+                doc = """\
+A list of `swift_cross_import_overlay` targets that will be automatically
+injected into the dependencies of Swift compilations if their declaring module
+and bystanding module are both already declared as dependencies.
+""",
+                mandatory = False,
+                providers = [[SwiftCrossImportOverlayInfo]],
+            ),
             "feature_allowlists": attr.label_list(
                 doc = """\
 A list of `swift_feature_allowlist` targets that allow or prohibit packages from
@@ -860,8 +805,7 @@ generated header.
 
 This tool is expected to have a command line interface such that the Swift
 compiler invocation is passed to it following a `"--"` argument, and any
-arguments preceding the `"--"` can be defined by the tool itself (however, at
-this time the worker does not support passing additional flags to the tool).
+arguments preceding the `"--"` can be defined by the tool itself.
 """,
                 executable = True,
             ),
@@ -884,7 +828,9 @@ configuration options that are applied to targets on a per-package basis.
                 providers = [[SwiftPackageConfigurationInfo]],
             ),
             "const_protocols_to_gather": attr.label(
-                default = Label("@build_bazel_rules_swift//swift/toolchains/config:const_protocols_to_gather.json"),
+                default = Label(
+                    "//swift/toolchains/config:const_protocols_to_gather.json",
+                ),
                 allow_single_file = True,
                 doc = """\
 The label of the file specifying a list of protocols for extraction of conformances'
@@ -899,25 +845,27 @@ toolchain (such as `clang`) will be retrieved.
 """,
             ),
             "_copts": attr.label(
-                default = Label("@build_bazel_rules_swift//swift:copt"),
+                default = Label("//swift:copt"),
                 doc = """\
 The label of the `string_list` containing additional flags that should be passed
 to the compiler.
 """,
             ),
             "_exec_copts": attr.label(
-                default = Label("@build_bazel_rules_swift//swift:exec_copt"),
+                default = Label("//swift:exec_copt"),
                 doc = """\
 The label of the `string_list` containing additional flags that should be passed
 to the compiler for exec transition builds.
 """,
             ),
+            "_module_mapping": attr.label(
+                default = Label("//swift:module_mapping"),
+                providers = [[SwiftModuleAliasesInfo]],
+            ),
             "_worker": attr.label(
                 cfg = "exec",
                 allow_files = True,
-                default = Label(
-                    "@build_bazel_rules_swift//tools/worker:worker_wrapper",
-                ),
+                default = Label("//tools/worker:worker_wrapper"),
                 doc = """\
 An executable that wraps Swift compiler invocations and also provides support
 for incremental compilation using a persistent mode.
@@ -930,6 +878,8 @@ for incremental compilation using a persistent mode.
                     fragment = "apple",
                 ),
             ),
+            # TODO(b/301253335): Enable AEGs later.
+            "_use_auto_exec_groups": attr.bool(default = False),
         },
     ),
     doc = "Represents a Swift compiler toolchain provided by Xcode.",

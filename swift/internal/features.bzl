@@ -17,18 +17,40 @@
 load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load(
     ":feature_names.bzl",
+    "SWIFT_FEATURE_CACHEABLE_SWIFTMODULES",
+    "SWIFT_FEATURE_CHECKED_EXCLUSIVITY",
     "SWIFT_FEATURE_COVERAGE",
+    "SWIFT_FEATURE_COVERAGE_PREFIX_MAP",
+    "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
+    "SWIFT_FEATURE_DECLARE_SWIFTSOURCEINFO",
+    "SWIFT_FEATURE_DISABLE_CLANG_SPI",
+    "SWIFT_FEATURE_DISABLE_SYSTEM_INDEX",
+    "SWIFT_FEATURE_EMIT_SWIFTDOC",
+    "SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX",
+    "SWIFT_FEATURE_ENABLE_BATCH_MODE",
+    "SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES",
     "SWIFT_FEATURE_ENABLE_TESTING",
+    "SWIFT_FEATURE_ENABLE_V6",
+    "SWIFT_FEATURE_FILE_PREFIX_MAP",
     "SWIFT_FEATURE_FULL_DEBUG_INFO",
+    "SWIFT_FEATURE_INTERNALIZE_AT_LINK",
+    "SWIFT_FEATURE_NO_GENERATED_MODULE_MAP",
+    "SWIFT_FEATURE_OBJC_LINK_FLAGS",
+    "SWIFT_FEATURE_OPT_USES_WMO",
+    "SWIFT_FEATURE_REMAP_XCODE_PATH",
+    "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
+    "SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE",
+    "SWIFT_FEATURE__SUPPORTS_V6",
 )
 load(":package_specs.bzl", "label_matches_package_specs")
+load(":target_triples.bzl", "target_triples")
 
 def are_all_features_enabled(feature_configuration, feature_names):
     """Returns `True` if all features are enabled in the feature configuration.
 
     Args:
         feature_configuration: The Swift feature configuration, as returned by
-            `swift_common.configure_features`.
+            `configure_features`.
         feature_names: The list of feature names to check.
 
     Returns:
@@ -55,7 +77,7 @@ def configure_features(
     underlying C++ features as well, and nests the C++ feature configuration
     inside the Swift one. Users who need to call C++ APIs that require a feature
     configuration can extract it by calling
-    `swift_common.cc_feature_configuration(feature_configuration)`.
+    `get_cc_feature_configuration(feature_configuration)`.
 
     Args:
         ctx: The rule context.
@@ -83,16 +105,29 @@ def configure_features(
     # for a generated header).
     unsupported_features = list(unsupported_features)
     unsupported_features.extend([
-        # Avoid making the `grep_includes` tool a requirement of Swift
-        # compilation APIs/rules that generate a header.
         "cc_include_scanning",
-        # Don't register parse-header actions for generated headers.
         "parse_headers",
     ])
+
+    # HACK: This is the only way today to check whether the caller is inside an
+    # aspect. We have to do this because accessing `ctx.aspect_ids` halts the
+    # build if called from outside an aspect, but we can't use `hasattr` to
+    # check if it's safe because the attribute is always present on both rule
+    # and aspect contexts.
+    # TODO: b/319132714 - Replace this with a real API.
+    is_aspect = repr(ctx).startswith("<aspect context ")
+    if is_aspect and ctx.aspect_ids:
+        # It doesn't appear to be documented anywhere, but according to the
+        # Bazel team, the last element in this list is the currently running
+        # aspect.
+        aspect_id = ctx.aspect_ids[len(ctx.aspect_ids) - 1]
+    else:
+        aspect_id = None
 
     if swift_toolchain.feature_allowlists:
         _check_allowlists(
             allowlists = swift_toolchain.feature_allowlists,
+            aspect_id = aspect_id,
             label = ctx.label,
             requested_features = requested_features,
             unsupported_features = unsupported_features,
@@ -107,6 +142,7 @@ def configure_features(
     cc_feature_configuration = cc_common.configure_features(
         ctx = ctx,
         cc_toolchain = swift_toolchain.cc_toolchain_info,
+        language = swift_toolchain.cc_language,
         requested_features = all_requestable_features,
         unsupported_features = all_unsupported_features,
     )
@@ -159,7 +195,7 @@ def get_cc_feature_configuration(feature_configuration):
 
     Args:
         feature_configuration: The Swift feature configuration, as returned from
-            `swift_common.configure_features`.
+            `configure_features`.
 
     Returns:
         A C++ `FeatureConfiguration` value (see
@@ -177,7 +213,7 @@ def is_feature_enabled(feature_configuration, feature_name):
 
     Args:
         feature_configuration: The Swift feature configuration, as returned by
-            `swift_common.configure_features`.
+            `configure_features`.
         feature_name: The name of the feature to check.
 
     Returns:
@@ -193,9 +229,91 @@ def is_feature_enabled(feature_configuration, feature_name):
             feature_name = feature_name,
         )
 
+def default_features_for_toolchain(ctx, target_triple):
+    """Enables a common set of swift features based on build configuration.
+
+    We have a common set of features we'd like to enable for both
+    swift_toolchain and xcode_swift_toolchain. This method configures that set
+    of features based on what exec platform we're using (linux or apple) and
+    what platform we're targetting (linux, macos, ios, etc.).
+
+    Args:
+        ctx: Context of the swift toolchain rule building this list of features.
+        target_triple: Target triple configured for our toolchain.
+
+    Returns:
+        List of default features for our toolchain's build config.
+    """
+
+    # Common features we turn on regardless of target.
+    features = [
+        SWIFT_FEATURE_CACHEABLE_SWIFTMODULES,
+        SWIFT_FEATURE_CHECKED_EXCLUSIVITY,
+        SWIFT_FEATURE_COVERAGE_PREFIX_MAP,
+        SWIFT_FEATURE_DEBUG_PREFIX_MAP,
+        SWIFT_FEATURE_DECLARE_SWIFTSOURCEINFO,
+        SWIFT_FEATURE_DISABLE_CLANG_SPI,
+        SWIFT_FEATURE_DISABLE_SYSTEM_INDEX,
+        SWIFT_FEATURE_EMIT_SWIFTDOC,
+        SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX,
+        SWIFT_FEATURE_ENABLE_BATCH_MODE,
+        SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES,
+        SWIFT_FEATURE_FILE_PREFIX_MAP,
+        SWIFT_FEATURE_INTERNALIZE_AT_LINK,
+        SWIFT_FEATURE_OPT_USES_WMO,
+        SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE,
+    ]
+
+    # Apple specific features
+    if target_triple.vendor == "apple":
+        features.extend([
+            SWIFT_FEATURE_OBJC_LINK_FLAGS,
+            SWIFT_FEATURE_REMAP_XCODE_PATH,
+        ])
+
+        if getattr(ctx.fragments.objc, "alwayslink_by_default", False):
+            features.append(SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE)
+
+    # Linux specific features
+    if target_triples.unversioned_os(target_triple) == "linux":
+        features.extend([
+            SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE,
+            SWIFT_FEATURE_NO_GENERATED_MODULE_MAP,
+        ])
+
+    return features
+
+def upcoming_and_experimental_features(feature_configuration):
+    """Extracts the upcoming and experimental feature names from the config.
+
+    Args:
+        feature_configuration: The Swift feature configuration.
+
+    Returns:
+        A tuple containing the following elements:
+
+        1.  The `list` of requested upcoming features (with the
+            `swift.upcoming.` prefix removed).
+        2.  The `list` of requested experimental features (with the
+            `swift.experimental.` prefix removed).
+    """
+    upcoming_prefix = "swift.upcoming."
+    experimental_prefix = "swift.experimental."
+    upcoming = []
+    experimental = []
+
+    for feature in feature_configuration._enabled_features:
+        if feature.startswith(upcoming_prefix):
+            upcoming.append(feature[len(upcoming_prefix):])
+        elif feature.startswith(experimental_prefix):
+            experimental.append(feature[len(experimental_prefix):])
+
+    return (upcoming, experimental)
+
 def _check_allowlists(
         *,
         allowlists,
+        aspect_id,
         label,
         requested_features,
         unsupported_features):
@@ -208,6 +326,9 @@ def _check_allowlists(
     Args:
         allowlists: A list of `SwiftFeatureAllowlistInfo` providers that will be
             checked.
+        aspect_id: The identifier of the currently running aspect that has been
+            applied to the target that is creating the feature configuration, or
+            `None` if it is not being called from an aspect.
         label: The label of the target being checked against the allowlist.
         requested_features: The list of features to be enabled. This is
             typically obtained using the `ctx.features` field in a rule
@@ -225,6 +346,11 @@ def _check_allowlists(
         for feature_string in features_to_check:
             # Any feature not managed by the allowlist is allowed by default.
             if feature_string not in allowlist.managed_features:
+                continue
+
+            # If the current aspect is permitted by the allowlist, we can allow
+            # the usage without looking at the package specs.
+            if aspect_id in allowlist.aspect_ids:
                 continue
 
             if not label_matches_package_specs(
@@ -356,4 +482,57 @@ def _compute_features(
     # Features that are unsupported by the toolchain override any requests for those features.
     feature_updater.update_features([], swift_toolchain.unsupported_features)
 
-    return (feature_updater.requested_features(), feature_updater.disabled_features())
+    all_disabled_features = feature_updater.disabled_features()
+    all_requested_features = _compute_implied_features(
+        requested_features = feature_updater.requested_features(),
+        unsupported_features = all_disabled_features,
+    )
+    return (all_requested_features, all_disabled_features)
+
+def _compute_implied_features(requested_features, unsupported_features):
+    """Compute additional features that should be implied by combinations.
+
+    To avoid an explosion of generalized complexity, this is being done only for
+    features related to language mode support, instead of building it out as a
+    feature for use elsewhere in the toolchain.
+    """
+
+    # If a user requests Swift language mode 6 on a compiler that doesn't
+    # support `-swift-version 6`, we instead enable all of the upcoming features
+    # that will be on by default in Swift 6 mode. This provides an early
+    # migration path for those users.
+    if (SWIFT_FEATURE_ENABLE_V6 in requested_features and
+        SWIFT_FEATURE__SUPPORTS_V6 not in requested_features):
+        for feature in _SWIFT_6_EQUIVALENT_FEATURES:
+            # Only add it if the user did not explicitly ask for it to be
+            # suppressed.
+            if feature not in unsupported_features:
+                requested_features.append(feature)
+
+    return requested_features
+
+# The list below is taken from the feature definitions in the compiler, at
+# https://github.com/apple/swift/blob/release/6.0/include/swift/Basic/Features.def#L180-L193.
+# TODO: b/336996662 - Confirm that this is the final set of features enabled by
+# default in Swift 6 language mode when the compiler is released.
+_SWIFT_6_EQUIVALENT_FEATURES = [
+    "swift.upcoming.ConciseMagicFile",  # SE-0274
+    "swift.upcoming.ForwardTrailingClosures",  # SE-0286
+    "swift.upcoming.StrictConcurrency",  # SE-0337
+    "swift.experimental.StrictConcurrency=complete",  # same as above on older compilers
+    "swift.upcoming.BareSlashRegexLiterals",  # SE-0354
+    "swift.upcoming.DeprecateApplicationMain",  # SE-0383
+    "swift.upcoming.ImportObjcForwardDeclarations",  # SE-0384
+    "swift.upcoming.DisableOutwardActorInference",  # SE-0401
+    "swift.upcoming.IsolatedDefaultValues",  # SE-0411
+    "swift.upcoming.GlobalConcurrency",  # SE-0412
+    "swift.upcoming.InferSendableFromCaptures",  # SE-0418
+    "swift.upcoming.ImplicitOpenExistentials",  # SE-0352
+    "swift.upcoming.RegionBasedIsolation",  # SE-0414
+    "swift.upcoming.DynamicActorIsolation",  # SE-0423
+
+    # The upcoming feature flags only emit warnings about things that will
+    # become errors in Swift 6. We want the `swift.enable_v6` flag specifically
+    # to enforce the same error behavior.
+    "swift.werror.error_in_future_swift_version",
+]

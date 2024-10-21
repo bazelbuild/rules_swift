@@ -12,15 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Implementation of the `swift_binary` and `swift_test` rules."""
+"""Implementation of the `swift_test` rule."""
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("//swift/internal:compiling.bzl", "compile")
 load("//swift/internal:env_expansion.bzl", "expanded_env")
 load(
     "//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT",
 )
+load("//swift/internal:features.bzl", "is_feature_enabled")
 load(
     "//swift/internal:linking.bzl",
     "binary_rule_attrs",
@@ -32,24 +34,32 @@ load(
     "//swift/internal:output_groups.bzl",
     "supplemental_compilation_output_groups",
 )
+load("//swift/internal:providers.bzl", "SwiftCompilerPluginInfo")
+load("//swift/internal:runfiles.bzl", "include_runfiles_constants")
 load(
     "//swift/internal:swift_symbol_graph_aspect.bzl",
     "make_swift_symbol_graph_aspect",
 )
-load("//swift/internal:toolchain_utils.bzl", "use_swift_toolchain")
+load("//swift/internal:symbol_graph_extracting.bzl", "extract_symbol_graph")
+load(
+    "//swift/internal:toolchain_utils.bzl",
+    "get_swift_toolchain",
+    "use_swift_toolchain",
+)
 load(
     "//swift/internal:utils.bzl",
     "expand_locations",
+    "get_providers",
     "include_developer_search_paths",
 )
-load("//swift/internal:runfiles.bzl", "include_runfiles_constants")
+load(":module_name.bzl", "derive_swift_module_name")
 load(
     ":providers.bzl",
-    "SwiftCompilerPluginInfo",
+    "SwiftBinaryInfo",
     "SwiftInfo",
     "SwiftSymbolGraphInfo",
+    "create_swift_module_context",
 )
-load(":swift_common.bzl", "swift_common")
 
 _test_discovery_symbol_graph_aspect = make_swift_symbol_graph_aspect(
     default_emit_extension_block_symbols = "0",
@@ -261,6 +271,7 @@ def _do_compile(
         objc_infos,
         name,
         package_name,
+        plugins = [],
         srcs,
         swift_infos,
         swift_toolchain,
@@ -283,6 +294,8 @@ def _do_compile(
             provided as inputs to the compilation action.
         package_name: The semantic package of the name of the Swift module
             being compiled.
+        plugins: A list of `SwiftCompilerPluginInfo` providers that need to be
+            loaded when compiling this module.
         srcs: The sources to compile.
         swift_infos: A list of `SwiftInfo` providers that should be used to
             determine the module inputs for the action.
@@ -292,9 +305,9 @@ def _do_compile(
              outputs.
 
     Returns:
-        The same value as would be returned by `swift_common.compile`.
+        The same value as would be returned by `compile`.
     """
-    return swift_common.compile(
+    return compile(
         actions = ctx.actions,
         additional_inputs = ctx.files.swiftc_inputs,
         cc_infos = cc_infos,
@@ -308,6 +321,7 @@ def _do_compile(
         include_dev_srch_paths = include_dev_srch_paths,
         module_name = module_name,
         package_name = package_name,
+        plugins = plugins,
         objc_infos = objc_infos,
         srcs = srcs,
         swift_infos = swift_infos,
@@ -317,7 +331,7 @@ def _do_compile(
     )
 
 def _swift_test_impl(ctx):
-    swift_toolchain = swift_common.get_toolchain(ctx)
+    swift_toolchain = get_swift_toolchain(ctx)
 
     feature_configuration = configure_features_for_binary(
         ctx = ctx,
@@ -334,8 +348,8 @@ def _swift_test_impl(ctx):
     # Mach-O type `MH_BUNDLE` instead of `MH_EXECUTE`.
     extra_linkopts = ["-Wl,-bundle"] if is_bundled else []
 
-    # `swift_common.is_enabled` isn't used, as it requires the prefix of the
-    # feature to start with `swift.`
+    # `is_feature_enabled` isn't used, as it requires the prefix of the feature
+    # to start with `swift.`
     swizzle_absolute_xcttestsourcelocation = (
         "apple.swizzle_absolute_xcttestsourcelocation" in
         feature_configuration._enabled_features
@@ -345,14 +359,26 @@ def _swift_test_impl(ctx):
     if swizzle_absolute_xcttestsourcelocation:
         extra_link_deps.append(ctx.attr._swizzle_absolute_xcttestsourcelocation)
 
-    # We also need to collect nested providers from `SwiftCompilerPluginInfo`
-    # since we support testing those.
+    deps = list(ctx.attr.deps)
+    test_runner_deps = list(ctx.attr._test_runner_deps)
+
+    # In test discovery mode (whether manual or by the Obj-C runtime), inject
+    # the test observer that prints the xUnit-style output for Bazel. Otherwise
+    # don't link this, because we don't want it to pull in link time
+    # dependencies on XCTest, which the test binary may not be using.
+    if discover_tests:
+        additional_link_deps = test_runner_deps
+    else:
+        additional_link_deps = []
+
+    # We also need to collect nested providers from `SwiftBinaryInfo` since we
+    # support testing those.
     deps_cc_infos = []
     deps_compilation_contexts = []
     deps_objc_infos = []
     deps_swift_infos = []
     additional_linking_contexts = []
-    for dep in ctx.attr.deps:
+    for dep in deps:
         if CcInfo in dep:
             deps_cc_infos.append(dep[CcInfo])
             deps_compilation_contexts.append(dep[CcInfo].compilation_context)
@@ -360,30 +386,23 @@ def _swift_test_impl(ctx):
             deps_objc_infos.append(dep[apple_common.Objc])
         if SwiftInfo in dep:
             deps_swift_infos.append(dep[SwiftInfo])
-        if SwiftCompilerPluginInfo in dep:
-            plugin_info = dep[SwiftCompilerPluginInfo]
+        if SwiftBinaryInfo in dep:
+            plugin_info = dep[SwiftBinaryInfo]
             deps_swift_infos.append(plugin_info.swift_info)
             additional_linking_contexts.append(
                 plugin_info.cc_info.linking_context,
             )
+    additional_linking_contexts.append(malloc_linking_context(ctx))
 
-    test_runner_deps_swift_infos = [ctx.attr._test_observer[SwiftInfo]]
+    test_runner_deps_cc_infos = get_providers(test_runner_deps, CcInfo)
+    test_runner_deps_swift_infos = get_providers(test_runner_deps, SwiftInfo)
 
     srcs = ctx.files.srcs
     owner_symbol_graph_dir = None
 
-    all_deps = list(ctx.attr.deps)
-
-    # In test discovery mode (whether manual or by the Obj-C runtime), inject
-    # the test observer that prints the xUnit-style output for Bazel. Otherwise
-    # don't link this, because we don't want it to pull in link time
-    # dependencies on XCTest, which the test binary may not be using.
-    if discover_tests:
-        all_deps.append(ctx.attr._test_observer)
-
     module_name = ctx.attr.module_name
     if not module_name:
-        module_name = swift_common.derive_module_name(ctx.label)
+        module_name = derive_swift_module_name(ctx.label)
 
     include_dev_srch_paths = include_developer_search_paths(ctx.attr)
 
@@ -413,6 +432,7 @@ def _swift_test_impl(ctx):
             module_name = module_name,
             objc_infos = deps_objc_infos,
             package_name = ctx.attr.package_name,
+            plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),
             name = ctx.label.name,
             srcs = srcs,
             swift_infos = deps_swift_infos,
@@ -424,10 +444,7 @@ def _swift_test_impl(ctx):
         compilation_outputs = compile_result.compilation_outputs
         all_supplemental_outputs.append(compile_result.supplemental_outputs)
 
-        swift_infos_including_owner = [swift_common.create_swift_info(
-            modules = [compile_result.module_context],
-            swift_infos = deps_swift_infos,
-        )]
+        swift_infos_including_owner = [compile_result.swift_info]
 
         # If we're going to do test discovery below, extract the symbol graph of
         # the module that we just compiled so that we can discover any tests in
@@ -436,7 +453,7 @@ def _swift_test_impl(ctx):
             owner_symbol_graph_dir = ctx.actions.declare_directory(
                 "{}.symbolgraphs".format(ctx.label.name),
             )
-            swift_common.extract_symbol_graph(
+            extract_symbol_graph(
                 actions = ctx.actions,
                 compilation_contexts = deps_compilation_contexts,
                 feature_configuration = feature_configuration,
@@ -466,7 +483,7 @@ def _swift_test_impl(ctx):
             ctx = ctx,
             # The generated test runner uses `@main`.
             additional_copts = ["-parse-as-library"],
-            cc_infos = deps_cc_infos,
+            cc_infos = test_runner_deps_cc_infos,
             feature_configuration = feature_configuration,
             include_dev_srch_paths = include_dev_srch_paths,
             module_name = module_name + "__GeneratedTestDiscoveryRunner",
@@ -491,13 +508,22 @@ def _swift_test_impl(ctx):
             discovery_compile_result.supplemental_outputs,
         )
 
-    additional_linking_contexts.append(malloc_linking_context(ctx))
-
     # If we need to run the test in an .xctest bundle, the binary must have
     # Mach-O type `MH_BUNDLE` instead of `MH_EXECUTE`.
     extra_linkopts = ["-Wl,-bundle"] if is_bundled else []
 
-    if swift_common.is_enabled(
+    # Apply the optional debugging outputs extension if the toolchain defines
+    # one.
+    debug_outputs_provider = swift_toolchain.debug_outputs_provider
+    if debug_outputs_provider:
+        debug_extension = debug_outputs_provider(ctx = ctx)
+        additional_debug_outputs = debug_extension.additional_outputs
+        variables_extension = debug_extension.variables_extension
+    else:
+        additional_debug_outputs = []
+        variables_extension = {}
+
+    if is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT,
     ):
@@ -509,8 +535,9 @@ def _swift_test_impl(ctx):
         actions = ctx.actions,
         additional_inputs = ctx.files.swiftc_inputs,
         additional_linking_contexts = additional_linking_contexts,
+        additional_outputs = additional_debug_outputs,
         compilation_outputs = compilation_outputs,
-        deps = all_deps,
+        deps = deps + additional_link_deps,
         feature_configuration = feature_configuration,
         module_contexts = module_contexts,
         name = name,
@@ -523,6 +550,7 @@ def _swift_test_impl(ctx):
             ctx.attr.linkopts,
             ctx.attr.swiftc_inputs,
         ) + extra_linkopts + ctx.fragments.cpp.linkopts,
+        variables_extension = variables_extension,
     )
 
     # If the tests are to be bundled, create the bundle and the test runner
@@ -555,7 +583,10 @@ def _swift_test_impl(ctx):
     return [
         DefaultInfo(
             executable = executable,
-            files = depset(direct = [executable] + additional_test_outputs),
+            files = depset(
+                [executable] + additional_test_outputs +
+                additional_debug_outputs,
+            ),
             runfiles = ctx.runfiles(
                 collect_data = True,
                 collect_default = True,
@@ -572,9 +603,9 @@ def _swift_test_impl(ctx):
             extensions = ["swift"],
             source_attributes = ["srcs"],
         ),
-        swift_common.create_swift_info(
+        SwiftInfo(
             modules = [
-                swift_common.create_module(
+                create_swift_module_context(
                     name = module_context.name,
                     compilation_context = module_context.compilation_context,
                     # The rest of the fields are intentionally ommited, as we
@@ -631,27 +662,25 @@ standard executable binary that is invoked directly.
             ),
             "_swizzle_absolute_xcttestsourcelocation": attr.label(
                 default = Label(
-                    "@build_bazel_rules_swift//swift/internal:swizzle_absolute_xcttestsourcelocation",
+                    "//swift/internal:swizzle_absolute_xcttestsourcelocation",
                 ),
             ),
             "_test_discoverer": attr.label(
                 cfg = "exec",
-                default = Label(
-                    "@build_bazel_rules_swift//tools/test_discoverer",
-                ),
+                default = Label("//tools/test_discoverer"),
                 executable = True,
             ),
-            "_test_observer": attr.label(
-                default = Label(
-                    "@build_bazel_rules_swift//tools/test_observer",
-                ),
+            "_test_runner_deps": attr.label_list(
+                default = [
+                    Label("//tools/test_observer"),
+                ],
             ),
             "_xctest_runner_template": attr.label(
                 allow_single_file = True,
-                default = Label(
-                    "@build_bazel_rules_swift//tools/xctest_runner:xctest_runner_template",
-                ),
+                default = Label("//tools/xctest_runner:xctest_runner_template"),
             ),
+            # TODO(b/301253335): Enable AEGs and switch from `swift` exec_group to swift `toolchain` param.
+            "_use_auto_exec_groups": attr.bool(default = False),
         },
     ),
     doc = """\
@@ -696,10 +725,20 @@ root of your workspace (i.e. `$(SRCROOT)`).
 
 ### Test Filtering
 
-A subset of tests for a given target can be executed via the `--test_filter` parameter:
+`swift_test` supports Bazel's `--test_filter` flag on all platforms (i.e., Apple
+and Linux), which can be used to run only a subset of tests. The expected filter
+format is the same as Xcode's `xctest` tool:
 
-```
-bazel test //:Tests --test_filter=TestModuleName.TestClassName/testMethodName
+*   `ModuleName`: Run only the test classes/methods in module `ModuleName`.
+*   `ModuleName.ClassName`: Run only the test methods in class
+    `ModuleName.ClassName`.
+*   `ModuleName.ClassName/testMethodName`: Run only the method `testMethodName`
+    in class `ModuleName.ClassName`.
+
+Multiple such filters can be separated by commas. For example:
+
+```shell
+bazel test --test_filter=AModule,BModule.SomeTests,BModule.OtherTests/testX //my/package/...
 ```
 """,
     executable = True,

@@ -34,7 +34,7 @@ def _apply_action_configs(
         action_name: The name of the action that should be run.
         args: The `Args` object to which command line flags will be added.
         feature_configuration: A feature configuration obtained from
-            `swift_common.configure_features`.
+            `configure_features`.
         prerequisites: An action-specific `struct` whose fields can be accessed
             by the action configurators to add files and other dependent data to
             the command line.
@@ -44,6 +44,7 @@ def _apply_action_configs(
         A `ConfigResultInfo` value that contains the files that are required
         inputs of the action, as determined by the configurators.
     """
+    additional_tools = []
     inputs = []
     transitive_inputs = []
 
@@ -82,26 +83,32 @@ def _apply_action_configs(
                     should_apply_configurators = False
                     break
 
+        if not should_apply_configurators:
+            continue
+
         # If one of the feature lists is completely satisfied, invoke the
         # configurators.
-        if should_apply_configurators:
-            for configurator in action_config.configurators:
-                action_inputs = configurator(prerequisites, args)
+        for configurator in action_config.configurators:
+            action_inputs = configurator(prerequisites, args)
 
-                # If we create an action configurator from a lambda that calls
-                # `Args.add*`, the result will be the `Args` objects (rather
-                # than `None`) because those methods return the same `Args`
-                # object for chaining. We can guard against this (and possibly
-                # other errors) by checking that the value is a struct. If it
-                # is, then it's not `None` and it probably came from the
-                # provider used by `ConfigResultInfo`. If it's some other kind
-                # of struct, then we'll error out trying to access the fields.
-                if type(action_inputs) == "struct":
-                    inputs.extend(action_inputs.inputs)
-                    transitive_inputs.extend(action_inputs.transitive_inputs)
+            # If we create an action configurator from a lambda that calls
+            # `Args.add*`, the result will be the `Args` objects (rather than
+            # `None`) because those methods return the same `Args` object for
+            # chaining. We can guard against this (and possibly other errors) by
+            # checking that the value is a struct. If it is, then it's not
+            # `None` and it probably came from the provider used by
+            # `ConfigResultInfo`. If it's some other kind of struct, then we'll
+            # error out trying to access the fields.
+            if not type(action_inputs) == "struct":
+                continue
+
+            additional_tools.extend(action_inputs.additional_tools)
+            inputs.extend(action_inputs.inputs)
+            transitive_inputs.extend(action_inputs.transitive_inputs)
 
     # Merge the action results into a single result that we return.
     return ConfigResultInfo(
+        additional_tools = additional_tools,
         inputs = inputs,
         transitive_inputs = transitive_inputs,
     )
@@ -120,8 +127,10 @@ def is_action_enabled(action_name, swift_toolchain):
     return bool(tool_config)
 
 def run_toolchain_action(
+        *,
         actions,
         action_name,
+        exec_group = None,
         feature_configuration,
         prerequisites,
         swift_toolchain,
@@ -133,8 +142,10 @@ def run_toolchain_action(
         actions: The rule context's `Actions` object, which will be used to
             create `Args` objects.
         action_name: The name of the action that should be run.
+        exec_group: Runs the Swift compilation action under the given execution
+            group's context. If `None`, the default execution group is used.
         feature_configuration: A feature configuration obtained from
-            `swift_common.configure_features`.
+            `configure_features`.
         mnemonic: The mnemonic to associate with the action. If not provided,
             the action name itself will be used.
         prerequisites: An action-specific `struct` whose fields can be accessed
@@ -206,6 +217,7 @@ def run_toolchain_action(
     actions.run(
         arguments = [tool_executable_args, args],
         env = tool_config.env,
+        exec_group = exec_group,
         executable = executable,
         execution_requirements = execution_requirements,
         inputs = depset(
@@ -214,7 +226,10 @@ def run_toolchain_action(
         ),
         mnemonic = mnemonic if mnemonic else action_name,
         resource_set = tool_config.resource_set,
-        tools = tools,
+        tools = depset(
+            tools,
+            transitive = action_inputs.additional_tools,
+        ),
         use_default_shell_env = USE_DEFAULT_SHELL_ENV,
         **kwargs
     )

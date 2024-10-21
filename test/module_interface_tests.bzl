@@ -14,14 +14,12 @@
 
 """Tests for interoperability with `cc_library`-specific features."""
 
+load("@bazel_skylib//rules:build_test.bzl", "build_test")
 load(
-    "@bazel_skylib//rules:build_test.bzl",
-    "build_test",
-)
-load(
-    "@build_bazel_rules_swift//test/rules:action_command_line_test.bzl",
+    "//test/rules:action_command_line_test.bzl",
     "make_action_command_line_test_rule",
 )
+load("//test/rules:provider_test.bzl", "provider_test")
 
 explicit_swift_module_map_test = make_action_command_line_test_rule(
     config_settings = {
@@ -53,9 +51,37 @@ def module_interface_test_suite(name, tags = []):
     build_test(
         name = "{}_swift_binary_imports_swiftinterface".format(name),
         targets = [
-            "@build_bazel_rules_swift//test/fixtures/module_interface:client",
+            "//test/fixtures/module_interface:client",
         ],
         tags = all_tags,
+    )
+
+    # Verify that `.swiftinterface` file is emitted when the `library_evolution`
+    # attribute is true.
+    provider_test(
+        name = "{}_swift_library_with_evolution_emits_swiftinterface".format(name),
+        expected_files = [
+            "test/fixtures/module_interface/library/ToyModule.swiftinterface",
+            "*",
+        ],
+        field = "files",
+        provider = "DefaultInfo",
+        tags = all_tags,
+        target_under_test = "//test/fixtures/module_interface/library:toy_module_library",
+    )
+
+    # Verify that `.swiftinterface` file is not emitted when the
+    # `library_evolution` attribute is false.
+    provider_test(
+        name = "{}_swift_library_without_evolution_emits_no_swiftinterface".format(name),
+        expected_files = [
+            "-test/fixtures/module_interface/library/ToyModuleNoEvolution.swiftinterface",
+            "*",
+        ],
+        field = "files",
+        provider = "DefaultInfo",
+        tags = all_tags,
+        target_under_test = "//test/fixtures/module_interface/library:toy_module_library_without_library_evolution",
     )
 
     explicit_swift_module_map_test(
@@ -68,7 +94,7 @@ def module_interface_test_suite(name, tags = []):
             "-Xfrontend",
         ],
         mnemonic = "SwiftCompileModuleInterface",
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/module_interface:toy_module",
+        target_under_test = "//test/fixtures/module_interface:toy_module",
     )
 
     vfsoverlay_test(
@@ -84,7 +110,7 @@ def module_interface_test_suite(name, tags = []):
             "-Xfrontend",
         ],
         mnemonic = "SwiftCompileModuleInterface",
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/module_interface:toy_module",
+        target_under_test = "//test/fixtures/module_interface:toy_module",
     )
 
     native.test_suite(

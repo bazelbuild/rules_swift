@@ -15,7 +15,8 @@
 """Common attributes used by multiple Swift build rules."""
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load("//swift:providers.bzl", "SwiftCompilerPluginInfo", "SwiftInfo")
+load("//swift:providers.bzl", "SwiftBinaryInfo", "SwiftInfo")
+load(":providers.bzl", "SwiftCompilerPluginInfo")
 
 def swift_common_rule_attrs(
         additional_deps_aspects = [],
@@ -146,7 +147,7 @@ Swift 5.9+.
 A list of `swift_compiler_plugin` targets that should be loaded by the compiler
 when compiling this module and any modules that directly depend on it.
 """,
-                providers = [[SwiftCompilerPluginInfo]],
+                providers = [[SwiftBinaryInfo, SwiftCompilerPluginInfo]],
             ),
             "srcs": attr.label_list(
                 allow_empty = not requires_srcs,
@@ -187,13 +188,13 @@ def swift_config_attrs():
     """
     return {
         "_config_emit_private_swiftinterface": attr.label(
-            default = "@build_bazel_rules_swift//swift:emit_private_swiftinterface",
+            default = Label("//swift:emit_private_swiftinterface"),
         ),
         "_config_emit_swiftinterface": attr.label(
-            default = "@build_bazel_rules_swift//swift:emit_swiftinterface",
+            default = Label("//swift:emit_swiftinterface"),
         ),
         "_per_module_swiftcopt": attr.label(
-            default = "@build_bazel_rules_swift//swift:per_module_swiftcopt",
+            default = Label("//swift:per_module_swiftcopt"),
         ),
     }
 
@@ -290,6 +291,20 @@ def swift_library_rule_attrs(
         ),
         swift_config_attrs(),
         {
+            "library_evolution": attr.bool(
+                default = False,
+                doc = """\
+Indicates whether the Swift code should be compiled with library evolution mode
+enabled.
+
+This attribute should be used to compile a module that will be distributed as
+part of a client-facing (non-implementation-only) module in a library or
+framework that will be distributed for use outside of the Bazel build graph.
+Setting this to true will compile the module with the `-library-evolution` flag
+and emit a `.swiftinterface` file as one of the compilation outputs.
+""",
+                mandatory = False,
+            ),
             "alwayslink": attr.bool(
                 default = False,
                 doc = """\
@@ -421,8 +436,6 @@ that it is invoked in the correct mode (i.e., `swift`, `swiftc`,
         "_default_swift_executable": attr.label(
             allow_files = True,
             cfg = "exec",
-            default = Label(
-                "@build_bazel_rules_swift//swift:default_swift_executable",
-            ),
+            default = Label("//swift:default_swift_executable"),
         ),
     }

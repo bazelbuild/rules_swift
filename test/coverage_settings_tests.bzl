@@ -1,7 +1,7 @@
 """Tests for coverage-related command line flags under various configs."""
 
 load(
-    "@build_bazel_rules_swift//test/rules:action_command_line_test.bzl",
+    "//test/rules:action_command_line_test.bzl",
     "make_action_command_line_test_rule",
 )
 
@@ -47,7 +47,7 @@ def coverage_settings_test_suite(name, tags = []):
             "-Xwrapped-swift=-coverage-prefix-pwd-is-dot",
         ],
         mnemonic = "SwiftCompile",
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     disabled_coverage_prefix_map_test(
@@ -61,7 +61,7 @@ def coverage_settings_test_suite(name, tags = []):
             "-Xwrapped-swift=-coverage-prefix-pwd-is-dot",
         ],
         mnemonic = "SwiftCompile",
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     coverage_xcode_prefix_map_test(
@@ -73,5 +73,5 @@ def coverage_settings_test_suite(name, tags = []):
         ],
         target_compatible_with = ["@platforms//os:macos"],
         mnemonic = "SwiftCompile",
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )

@@ -5,11 +5,6 @@ load("//swift:swift_test.bzl", "swift_test")
 
 licenses(["notice"])
 
-config_setting(
-    name = "supports_macros",
-    values = {"define": "supports_macros=1"},
-)
-
 swift_library(
     name = "stringify",
     srcs = ["Stringify.swift"],
@@ -31,10 +26,6 @@ swift_compiler_plugin(
         "StringifyMacroPlugin.swift",
     ],
     module_name = "StringifyMacroPlugin",
-    target_compatible_with = select({
-        ":supports_macros": [],
-        "//conditions:default": ["@platforms//:incompatible"],
-    }),
     deps = [
         "@SwiftSyntax",
         "@SwiftSyntax//:SwiftCompilerPlugin",
@@ -63,10 +54,6 @@ swift_binary(
 swift_test(
     name = "stringify_macro_test",
     srcs = ["StringifyMacroTests.swift"],
-    target_compatible_with = select({
-        ":supports_macros": [],
-        "//conditions:default": ["@platforms//:incompatible"],
-    }),
     deps = [
         ":stringify_macro",
         "@SwiftSyntax",

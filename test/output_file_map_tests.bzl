@@ -15,7 +15,7 @@
 """Tests for `output_file_map`."""
 
 load(
-    "@build_bazel_rules_swift//test/rules:output_file_map_test.bzl",
+    "//test/rules:output_file_map_test.bzl",
     "make_output_file_map_test_rule",
     "output_file_map_test",
 )
@@ -49,7 +49,7 @@ output_file_map_target_name_embed_bitcode_test = make_output_file_map_test_rule(
 
 output_file_map_embed_bitcode_wmo_test = make_output_file_map_test_rule(
     config_settings = {
-        str(Label("@build_bazel_rules_swift//swift:copt")): [
+        str(Label("//swift:copt")): [
             "-whole-module-optimization",
         ],
         "//command_line_option:features": [
@@ -61,7 +61,7 @@ output_file_map_embed_bitcode_wmo_test = make_output_file_map_test_rule(
 # Test with enabled `swift.add_target_name_to_output` feature
 output_file_map_embed_target_name_bitcode_wmo_test = make_output_file_map_test_rule(
     config_settings = {
-        str(Label("@build_bazel_rules_swift//swift:copt")): [
+        str(Label("//swift:copt")): [
             "-whole-module-optimization",
         ],
         "//command_line_option:features": [
@@ -105,7 +105,7 @@ def output_file_map_test_suite(name, tags = []):
         file_entry = "test/fixtures/debug_settings/Empty.swift",
         output_file_map = "test/fixtures/debug_settings/simple.output_file_map.json",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     # In Xcode13, the bitcode file needs to be in the output file map
@@ -118,7 +118,7 @@ def output_file_map_test_suite(name, tags = []):
         file_entry = "test/fixtures/debug_settings/Empty.swift",
         output_file_map = "test/fixtures/debug_settings/simple.output_file_map.json",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     output_file_map_embed_bitcode_wmo_test(
@@ -129,7 +129,7 @@ def output_file_map_test_suite(name, tags = []):
         file_entry = "test/fixtures/debug_settings/Empty.swift",
         output_file_map = "test/fixtures/debug_settings/simple.output_file_map.json",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     output_file_map_thin_lto_test(
@@ -140,7 +140,7 @@ def output_file_map_test_suite(name, tags = []):
         file_entry = "test/fixtures/debug_settings/Empty.swift",
         output_file_map = "test/fixtures/debug_settings/simple.output_file_map.json",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     output_file_map_full_lto_test(
@@ -151,7 +151,7 @@ def output_file_map_test_suite(name, tags = []):
         file_entry = "test/fixtures/debug_settings/Empty.swift",
         output_file_map = "test/fixtures/debug_settings/simple.output_file_map.json",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
     native.test_suite(

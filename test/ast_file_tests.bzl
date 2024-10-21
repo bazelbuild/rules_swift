@@ -14,7 +14,7 @@
 
 """Tests for `ast_file`."""
 
-load("@build_bazel_rules_swift//test/rules:provider_test.bzl", "provider_test")
+load("//test/rules:provider_test.bzl", "provider_test")
 
 def ast_file_test_suite(name, tags = []):
     """Test suite for `swift_library` dumping ast files.
@@ -33,7 +33,7 @@ def ast_file_test_suite(name, tags = []):
         field = "swift_ast_file",
         provider = "OutputGroupInfo",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/swift_through_non_swift:lower",
+        target_under_test = "//test/fixtures/swift_through_non_swift:lower",
     )
 
     provider_test(
@@ -44,7 +44,7 @@ def ast_file_test_suite(name, tags = []):
         field = "swift_ast_file",
         provider = "OutputGroupInfo",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/swift_through_non_swift:upper",
+        target_under_test = "//test/fixtures/swift_through_non_swift:upper",
     )
 
     provider_test(
@@ -55,7 +55,7 @@ def ast_file_test_suite(name, tags = []):
         field = "swift_ast_file",
         provider = "OutputGroupInfo",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/private_deps:client_swift_deps",
+        target_under_test = "//test/fixtures/private_deps:client_swift_deps",
     )
 
     provider_test(
@@ -66,7 +66,7 @@ def ast_file_test_suite(name, tags = []):
         field = "swift_ast_file",
         provider = "OutputGroupInfo",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/private_deps:client_cc_deps",
+        target_under_test = "//test/fixtures/private_deps:client_cc_deps",
     )
 
     provider_test(
@@ -78,7 +78,7 @@ def ast_file_test_suite(name, tags = []):
         field = "swift_ast_file",
         provider = "OutputGroupInfo",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/multiple_files",
+        target_under_test = "//test/fixtures/multiple_files",
     )
 
     native.test_suite(
