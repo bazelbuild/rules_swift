@@ -134,5 +134,9 @@ tasks:
       - "curl https://download.swift.org/swift-${SWIFT_VERSION}-release/ubuntu2004/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu20.04.tar.gz | tar xvz --strip-components=1 -C $SWIFT_HOME"
     test_targets:
     - "doc/..."
+    # TODO: Remove this once stardoc is updated to 0.7.1+ (https://github.com/bazelbuild/stardoc/pull/238)
+    test_flags:
+    - "--action_env=PATH"
+    - "--noincompatible_disallow_empty_glob"
 
 buildifier: 6.3.2
