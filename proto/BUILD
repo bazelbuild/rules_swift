@@ -35,6 +35,7 @@ bzl_library(
         ":swift_proto_utils",
         "//swift:module_name",
         "//swift:swift_clang_module_aspect",
+        "//swift:swift_common",
         "//swift/internal:attrs",
         "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
