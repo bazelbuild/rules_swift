@@ -54,3 +54,20 @@ http_archive(
     strip_prefix = "swift-syntax-01fc3e3ed4d26121c06790abf8fe5ddaa22a4cc5",
     url = "https://github.com/apple/swift-syntax/archive/01fc3e3ed4d26121c06790abf8fe5ddaa22a4cc5.tar.gz",
 )
+
+# TODO: Remove override when a protobuf release is available that supports
+# Bazel 8
+archive_override(
+    module_name = "protobuf",
+    integrity = "sha256-+dloYVexGlGsxKLTARuU4KXZ5ORo/BWPR6obFk73d+Q=",
+    strip_prefix = "protobuf-b93b8e5f64ed922d101759380d7c6a2bbe474e26",
+    urls = ["https://github.com/protocolbuffers/protobuf/archive/b93b8e5f64ed922d101759380d7c6a2bbe474e26.zip"],
+)
+
+# TODO: Remove override when a protobuf release that marks `stardoc` as a
+# dev_dependency is available, until then it's upgrading our stardoc version
+# so override it here.
+single_version_override(
+    module_name = "stardoc",
+    version = "0.6.2",
+)
