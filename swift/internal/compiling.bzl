@@ -46,6 +46,7 @@ load(
     "SWIFT_FEATURE_HEADERS_ALWAYS_ACTION_INPUTS",
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
     "SWIFT_FEATURE_MODULAR_INDEXING",
+    "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_OPT",
     "SWIFT_FEATURE_OPT_USES_WMO",
     "SWIFT_FEATURE_PROPAGATE_GENERATED_MODULE_MAP",
@@ -1257,6 +1258,10 @@ def _declare_compile_outputs(
             module_map_file = generated_module_map,
             module_name = module_name,
             public_headers = [generated_header],
+            workspace_relative = is_feature_enabled(
+                feature_configuration = feature_configuration,
+                feature_name = SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD,
+            ),
         )
     else:
         generated_module_map = None
