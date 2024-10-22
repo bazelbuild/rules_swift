@@ -208,7 +208,11 @@ def _create_linux_toolchain(repository_ctx):
     """
     path_to_swiftc = repository_ctx.which("swiftc")
     if not path_to_swiftc:
-        fail("No 'swiftc' executable found in $PATH")
+        print("""\
+No 'swiftc' executable found in $PATH. Not auto-generating a Linux Swift \
+toolchain.
+""")  # buildifier: disable=print
+        return
 
     root = path_to_swiftc.dirname.dirname
     feature_values = _compute_feature_values(repository_ctx, path_to_swiftc)
