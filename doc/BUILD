@@ -6,6 +6,8 @@ load("@io_bazel_stardoc//stardoc:stardoc.bzl", "stardoc")
 
 _DOC_SRCS = {
     "api": [
+        "create_swift_interop_info",
+        "derive_swift_module_name",
         "swift_common",
     ],
     "providers": [

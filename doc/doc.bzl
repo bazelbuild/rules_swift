@@ -81,6 +81,10 @@ load(
     "//swift:swift_interop_hint.bzl",
     _swift_interop_hint = "swift_interop_hint",
 )
+load(
+    "//swift:swift_interop_info.bzl",
+    _create_swift_interop_info = "create_swift_interop_info",
+)
 load("//swift:swift_library.bzl", _swift_library = "swift_library")
 load(
     "//swift:swift_library_group.bzl",
@@ -111,6 +115,7 @@ swift_proto_library = _swift_proto_library
 swift_proto_library_group = _swift_proto_library_group
 
 # swift symbols
+create_swift_interop_info = _create_swift_interop_info
 derive_swift_module_name = _derive_swift_module_name
 swift_common = _swift_common
 SwiftInfo = _SwiftInfo
