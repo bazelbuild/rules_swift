@@ -1,9 +1,112 @@
 <!-- Generated with Stardoc, Do Not Edit! -->
 # Build API
 
-The `swift_common` module provides API access to the behavior implemented
-by the Swift build rules, so that other custom rules can invoke Swift
-compilation and/or linking as part of their implementation.
+The `swift_common` module provides API access to the behavior
+implemented by the Swift build rules, so that other custom rules can
+invoke Swift compilation and/or linking as part of their
+implementation.
+
+Some API is exposed as free functions outside of the `swift_common`
+module.
+<a id="create_swift_interop_info"></a>
+
+## create_swift_interop_info
+
+<pre>
+create_swift_interop_info(<a href="#create_swift_interop_info-exclude_headers">exclude_headers</a>, <a href="#create_swift_interop_info-module_map">module_map</a>, <a href="#create_swift_interop_info-module_name">module_name</a>, <a href="#create_swift_interop_info-requested_features">requested_features</a>, <a href="#create_swift_interop_info-suppressed">suppressed</a>,
+                          <a href="#create_swift_interop_info-swift_infos">swift_infos</a>, <a href="#create_swift_interop_info-unsupported_features">unsupported_features</a>)
+</pre>
+
+Returns a provider that lets a target expose C/Objective-C APIs to Swift.
+
+The provider returned by this function allows custom build rules written in
+Starlark to be uninvolved with much of the low-level machinery involved in
+making a Swift-compatible module. Such a target should propagate a `CcInfo`
+provider whose compilation context contains the headers that it wants to
+make into a module, and then also propagate the provider returned from this
+function.
+
+The simplest usage is for a custom rule to do the following:
+
+*   Add `swift_clang_module_aspect` to any attribute that provides
+    dependencies of the code that needs to interop with Swift (typically
+    `deps`, but could be other attributes as well, such as attributes
+    providing additional support libraries).
+*   Have the rule implementation call `create_swift_interop_info`, passing
+    it only the list of `SwiftInfo` providers from its dependencies. This
+    tells `swift_clang_module_aspect` when it runs on *this* rule's target
+    to derive the module name from the target label and create a module map
+    using the headers from the compilation context of the `CcInfo` you
+    propagate.
+
+If the custom rule has reason to provide its own module name or module map,
+then it can do so using the `module_name` and `module_map` arguments.
+
+When a rule returns this provider, it must provide the full set of
+`SwiftInfo` providers from dependencies that will be merged with the one
+that `swift_clang_module_aspect` creates for the target itself. The aspect
+will **not** collect dependency providers automatically. This allows the
+rule to not only add extra dependencies (such as support libraries from
+implicit attributes) but also to exclude dependencies if necessary.
+
+
+**PARAMETERS**
+
+
+| Name  | Description | Default Value |
+| :------------- | :------------- | :------------- |
+| <a id="create_swift_interop_info-exclude_headers"></a>exclude_headers |  A `list` of `File`s representing headers that should be excluded from the module if the module map is generated.   |  `[]` |
+| <a id="create_swift_interop_info-module_map"></a>module_map |  A `File` representing an existing module map that should be used to represent the module, or `None` (the default) if the module map should be generated based on the headers in the target's compilation context. If this argument is provided, then `module_name` must also be provided.   |  `None` |
+| <a id="create_swift_interop_info-module_name"></a>module_name |  A string denoting the name of the module, or `None` (the default) if the name should be derived automatically from the target label.   |  `None` |
+| <a id="create_swift_interop_info-requested_features"></a>requested_features |  A list of features (empty by default) that should be requested for the target, which are added to those supplied in the `features` attribute of the target. These features will be enabled unless they are otherwise marked as unsupported (either on the target or by the toolchain). This allows the rule implementation to have additional control over features that should be supported by default for all instances of that rule as if it were creating the feature configuration itself; for example, a rule can request that `swift.emit_c_module` always be enabled for its targets even if it is not explicitly enabled in the toolchain or on the target directly.   |  `[]` |
+| <a id="create_swift_interop_info-suppressed"></a>suppressed |  A `bool` indicating whether the module that the aspect would create for the target should instead be suppressed.   |  `False` |
+| <a id="create_swift_interop_info-swift_infos"></a>swift_infos |  A list of `SwiftInfo` providers from dependencies, which will be merged with the new `SwiftInfo` created by the aspect.   |  `[]` |
+| <a id="create_swift_interop_info-unsupported_features"></a>unsupported_features |  A list of features (empty by default) that should be considered unsupported for the target, which are added to those supplied as negations in the `features` attribute. This allows the rule implementation to have additional control over features that should be disabled by default for all instances of that rule as if it were creating the feature configuration itself; for example, a rule that processes frameworks with headers that do not follow strict layering can request that `swift.strict_module` always be disabled for its targets even if it is enabled by default in the toolchain.   |  `[]` |
+
+**RETURNS**
+
+A provider whose type/layout is an implementation detail and should not
+  be relied upon.
+
+
+<a id="derive_swift_module_name"></a>
+
+## derive_swift_module_name
+
+<pre>
+derive_swift_module_name(<a href="#derive_swift_module_name-args">args</a>)
+</pre>
+
+Returns a derived module name from the given build label.
+
+For targets whose module name is not explicitly specified, the module name
+is computed using the following algorithm:
+
+*   The package and name components of the label are considered separately.
+    All _interior_ sequences of non-identifier characters (anything other
+    than `a-z`, `A-Z`, `0-9`, and `_`) are replaced by a single underscore
+    (`_`). Any leading or trailing non-identifier characters are dropped.
+*   If the package component is non-empty after the above transformation,
+    it is joined with the transformed name component using an underscore.
+    Otherwise, the transformed name is used by itself.
+*   If this would result in a string that begins with a digit (`0-9`), an
+    underscore is prepended to make it identifier-safe.
+
+This mapping is intended to be fairly predictable, but not reversible.
+
+
+**PARAMETERS**
+
+
+| Name  | Description | Default Value |
+| :------------- | :------------- | :------------- |
+| <a id="derive_swift_module_name-args"></a>args |  Either a single argument of type `Label`, or two arguments of type `str` where the first argument is the package name and the second argument is the target name.   |  none |
+
+**RETURNS**
+
+The module name derived from the label.
+
+
 <a id="swift_common.cc_feature_configuration"></a>
 
 ## swift_common.cc_feature_configuration
