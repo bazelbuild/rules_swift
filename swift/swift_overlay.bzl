@@ -35,7 +35,7 @@ load(
     "get_providers",
     "include_developer_search_paths",
 )
-load(":providers.bzl", "SwiftInfo")
+load(":providers.bzl", "SwiftInfo", "SwiftOverlayInfo")
 load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 
 def _swift_overlay_impl(ctx):
@@ -65,11 +65,13 @@ def _swift_overlay_impl(ctx):
         private_deps = struct(
             cc_infos = get_providers(private_deps, CcInfo),
             swift_infos = get_providers(private_deps, SwiftInfo),
+            swift_overlay_infos = get_providers(private_deps, SwiftOverlayInfo),
         ),
         alwayslink = ctx.attr.alwayslink,
         deps = struct(
             cc_infos = get_providers(deps, CcInfo),
             swift_infos = get_providers(deps, SwiftInfo),
+            swift_overlay_infos = get_providers(deps, SwiftOverlayInfo),
         ),
     )]
 
