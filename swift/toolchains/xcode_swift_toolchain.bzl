@@ -574,15 +574,12 @@ def _xcode_swift_toolchain_impl(ctx):
     # attribute, which supports remote builds.
     #
     # To use a "standard" custom toolchain built using the full Swift build
-    # script, use `--define=SWIFT_CUSTOM_TOOLCHAIN=<id>` as shown below.
+    # script, set the `TOOLCHAINS` envirinment variable as shown below.
     swift_executable = get_swift_executable_for_toolchain(ctx)
     toolchain_root = ctx.var.get("SWIFT_USE_TOOLCHAIN_ROOT")
 
-    # TODO: Remove SWIFT_CUSTOM_TOOLCHAIN for the next major release
-    custom_toolchain = ctx.var.get("SWIFT_CUSTOM_TOOLCHAIN") or ctx.configuration.default_shell_env.get("TOOLCHAINS")
+    custom_toolchain = ctx.configuration.default_shell_env.get("TOOLCHAINS")
     custom_xcode_toolchain_root = None
-    if ctx.var.get("SWIFT_CUSTOM_TOOLCHAIN"):
-        print("WARNING: SWIFT_CUSTOM_TOOLCHAIN is deprecated. Use --action_env=TOOLCHAINS=<id> instead.")  # buildifier: disable=print
     if toolchain_root and custom_toolchain:
         fail("Do not use SWIFT_USE_TOOLCHAIN_ROOT and TOOLCHAINS" +
              "in the same build.")
