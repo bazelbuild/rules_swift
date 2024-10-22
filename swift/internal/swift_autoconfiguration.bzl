@@ -212,6 +212,13 @@ def _create_linux_toolchain(repository_ctx):
 No 'swiftc' executable found in $PATH. Not auto-generating a Linux Swift \
 toolchain.
 """)  # buildifier: disable=print
+        repository_ctx.file(
+            "BUILD",
+            """\
+# No 'swiftc' executable found in $PATH. Not auto-generating a Linux Swift \
+toolchain.
+""",
+        )
         return
 
     root = path_to_swiftc.dirname.dirname
@@ -227,7 +234,7 @@ toolchain.
 
     repository_ctx.file(
         "BUILD",
-        """
+        """\
 load(
     "@build_bazel_rules_swift//swift/toolchains:swift_toolchain.bzl",
     "swift_toolchain",
