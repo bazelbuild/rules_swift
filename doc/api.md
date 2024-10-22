@@ -1,9 +1,13 @@
 <!-- Generated with Stardoc, Do Not Edit! -->
 # Build API
 
-The `swift_common` module provides API access to the behavior implemented
-by the Swift build rules, so that other custom rules can invoke Swift
-compilation and/or linking as part of their implementation.
+The `swift_common` module provides API access to the behavior
+implemented by the Swift build rules, so that other custom rules can
+invoke Swift compilation and/or linking as part of their
+implementation.
+
+Some API is exposed as free functions outside of the `swift_common`
+module.
 <a id="create_swift_interop_info"></a>
 
 ## create_swift_interop_info
