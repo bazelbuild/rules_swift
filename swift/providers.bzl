@@ -82,16 +82,33 @@ def _swift_info_init(
         *,
         direct_swift_infos = [],
         modules = [],
-        swift_infos = []):
-    direct_modules = modules + [
-        module
-        for provider in direct_swift_infos
-        for module in provider.direct_modules
-    ]
-    transitive_modules = [
-        provider.transitive_modules
-        for provider in direct_swift_infos + swift_infos
-    ]
+        swift_infos = [],
+        # TODO: Remove as part of rules_swift 3.0
+        direct_modules = [],
+        transitive_modules = []):
+    if direct_modules or transitive_modules:
+        # buildifier: disable=print
+        print("Using 'direct_modules' and 'transitive_modules' is deprecated " +
+              "and will be removed in a future rules_swift release; use " +
+              "'direct_swift_infos', 'modules', and 'swift_infos' instead.")
+        if direct_modules and (direct_swift_infos or modules or swift_infos):
+            fail("Can't use legacy 'direct_modules' attribute with new " +
+                 "'direct_swift_infos', 'modules', and 'swift_infos' " +
+                 "attributes.")
+        if transitive_modules and (direct_swift_infos or modules or swift_infos):
+            fail("Can't use legacy 'transitive_modules' attribute with new " +
+                 "'direct_swift_infos', 'modules', and 'swift_infos' " +
+                 "attributes.")
+    else:
+        direct_modules = modules + [
+            module
+            for provider in direct_swift_infos
+            for module in provider.direct_modules
+        ]
+        transitive_modules = [
+            provider.transitive_modules
+            for provider in direct_swift_infos + swift_infos
+        ]
 
     return {
         "direct_modules": direct_modules,
