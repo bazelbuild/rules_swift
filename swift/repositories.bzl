@@ -122,7 +122,7 @@ def swift_rules_dependencies(include_bzlmod_ready_dependencies = True):
         strip_prefix = "grpc-swift-1.16.0/",
         build_file = Label(
             "//third_party:com_github_grpc_grpc_swift/BUILD.overlay",
-        )
+        ),
     )
 
     _maybe(
