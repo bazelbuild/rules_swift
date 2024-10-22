@@ -16,7 +16,7 @@ x_defaults:
       CC: clang
       SWIFT_VERSION: "5.9.2"
       SWIFT_HOME: "$HOME/swift-$SWIFT_VERSION"
-      PATH: "$PATH:$SWIFT_HOME/usr/bin"
+      PATH: "$SWIFT_HOME/usr/bin:$PATH"
   linux_common: &linux_common
     <<: *linux_environment
     build_flags: &linux_flags
