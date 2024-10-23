@@ -100,6 +100,10 @@ load(
 )
 load("//swift:swift_overlay.bzl", _swift_overlay = "swift_overlay")
 load(
+    "//swift:swift_overlay_helpers.bzl",
+    _is_swift_overlay = "is_swift_overlay",
+)
+load(
     "//swift:swift_package_configuration.bzl",
     _swift_package_configuration = "swift_package_configuration",
 )
@@ -118,6 +122,7 @@ swift_proto_library_group = _swift_proto_library_group
 # swift symbols
 create_swift_interop_info = _create_swift_interop_info
 derive_swift_module_name = _derive_swift_module_name
+is_swift_overlay = _is_swift_overlay
 swift_common = _swift_common
 SwiftInfo = _SwiftInfo
 SwiftToolchainInfo = _SwiftToolchainInfo

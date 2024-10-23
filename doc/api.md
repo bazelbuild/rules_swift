@@ -107,6 +107,34 @@ This mapping is intended to be fairly predictable, but not reversible.
 The module name derived from the label.
 
 
+<a id="is_swift_overlay"></a>
+
+## is_swift_overlay
+
+<pre>
+is_swift_overlay(<a href="#is_swift_overlay-target">target</a>)
+</pre>
+
+Returns a value indicating whether the given target is a `swift_overlay`.
+
+This is meant to be used by aspects that visit the `aspect_hints` of a
+target to identify the `swift_overlay` target (if present) without making
+the provider public or requiring those aspects to propagate the information
+themselves.
+
+
+**PARAMETERS**
+
+
+| Name  | Description | Default Value |
+| :------------- | :------------- | :------------- |
+| <a id="is_swift_overlay-target"></a>target |  A `Target`; for example, an element of `ctx.rule.attr.aspect_hints` accessed inside an aspect.   |  none |
+
+**RETURNS**
+
+True if the target is a `swift_overlay`, otherwise False.
+
+
 <a id="swift_common.cc_feature_configuration"></a>
 
 ## swift_common.cc_feature_configuration
