@@ -15,7 +15,7 @@
 """Common attributes used by multiple Swift build rules."""
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load("//swift:providers.bzl", "SwiftBinaryInfo", "SwiftInfo")
+load("//swift:providers.bzl", "SwiftInfo")
 load(":providers.bzl", "SwiftCompilerPluginInfo")
 
 def swift_common_rule_attrs(
@@ -147,7 +147,7 @@ Swift 5.9+.
 A list of `swift_compiler_plugin` targets that should be loaded by the compiler
 when compiling this module and any modules that directly depend on it.
 """,
-                providers = [[SwiftBinaryInfo, SwiftCompilerPluginInfo]],
+                providers = [SwiftCompilerPluginInfo],
             ),
             "srcs": attr.label_list(
                 allow_empty = not requires_srcs,
