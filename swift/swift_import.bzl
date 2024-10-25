@@ -52,14 +52,6 @@ def _swift_import_impl(ctx):
     swiftinterface = ctx.file.swiftinterface
     swiftmodule = ctx.file.swiftmodule
 
-    swift_toolchain = get_swift_toolchain(ctx)
-    feature_configuration = configure_features(
-        ctx = ctx,
-        swift_toolchain = swift_toolchain,
-        requested_features = ctx.features,
-        unsupported_features = ctx.disabled_features,
-    )
-
     if not (swiftinterface or swiftmodule):
         fail("One of 'swiftinterface' or 'swiftmodule' must be " +
              "specified.")
