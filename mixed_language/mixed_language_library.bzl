@@ -39,6 +39,7 @@ def mixed_language_library(
         clang_copts = [],
         clang_defines = [],
         clang_srcs,
+        data = [],
         enable_modules = False,
         hdrs = [],
         includes = [],
@@ -84,6 +85,12 @@ def mixed_language_library(
             substitution and Bourne shell tokenization.
         clang_srcs: The list of C, C++, Objective-C, or Objective-C++ sources
             for the clang library.
+        data: The list of files needed by this target at runtime.
+
+            Files and targets named in the `data` attribute will appear in the
+            `*.runfiles` area of this target, if it has one. This may include
+            data files needed by a binary or library, or other programs needed
+            by it.
         enable_modules: Enables clang module support (via `-fmodules`). Setting
             this to `True`  will allow you to `@import` system headers and other
             targets: `@import UIKit;` `@import path_to_package_target;`.
@@ -371,6 +378,7 @@ a mixed language Swift library, use a clang only library rule like \
         name = name,
         aspect_hints = aspect_hints,
         clang_target = ":" + clang_library_name,
+        data = data,
         features = features,
         module_map = module_map,
         module_name = module_name,
