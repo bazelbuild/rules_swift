@@ -181,13 +181,20 @@ def _mixed_language_library_impl(ctx):
     )
 
     return [
-        DefaultInfo(files = depset(
-            outputs,
-            transitive = [
-                swift_target[DefaultInfo].files,
-                clang_target[DefaultInfo].files,
-            ],
-        )),
+        DefaultInfo(
+            files = depset(
+                outputs,
+                transitive = [
+                    swift_target[DefaultInfo].files,
+                    clang_target[DefaultInfo].files,
+                ],
+            ),
+            runfiles = ctx.runfiles(
+                collect_data = True,
+                collect_default = True,
+                files = ctx.files.data,
+            ),
+        ),
         cc_info,
         coverage_common.instrumented_files_info(
             ctx,
@@ -217,6 +224,16 @@ The non-Swift portion of the mixed language module.
 """,
                 mandatory = True,
                 providers = [CcInfo],
+            ),
+            "data": attr.label_list(
+                allow_files = True,
+                doc = """\
+The list of files needed by this target at runtime.
+
+Files and targets named in the `data` attribute will appear in the `*.runfiles`
+area of this target, if it has one. This may include data files needed by a
+binary or library, or other programs needed by it.
+""",
             ),
             "deps": swift_deps_attr(
                 aspects = [swift_clang_module_aspect],
