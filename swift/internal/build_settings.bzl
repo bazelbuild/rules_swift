@@ -89,9 +89,9 @@ def _per_module_swiftcopt_flag_impl(ctx):
     return PerModuleSwiftCoptSettingInfo(value = value)
 
 per_module_swiftcopt_flag = rule(
-    build_setting = config.string(
+    build_setting = config.string_list(
         flag = True,
-        allow_multiple = True,
+        repeatable = True,
     ),
     # TODO(b/186869451): Support adding swiftcopts by module name in addition
     # to the target label.
