@@ -367,7 +367,7 @@ swift_interop_hint(
 # User settable flag that specifies additional Swift copts on a per-swiftmodule basis.
 per_module_swiftcopt_flag(
     name = "per_module_swiftcopt",
-    build_setting_default = "",
+    build_setting_default = [],
 )
 
 # NOTE: Enabling this flag will transition --proto_compiler to
