@@ -1339,6 +1339,13 @@ def _compile_c_inputs(
     # for an `objc_library`, and those layering checks will fail when the
     # Objective-C code tries to import the `swift_library`'s headers.
     if private_hdrs or public_hdrs or srcs:
+        language = swift_toolchain.cc_language
+        variables_extension = {}
+        if language == "objc":
+            # This is required to enable ARC when compiling Objective-C code.
+            # We do not support non-ARC compilation in Swift mixed modules.
+            variables_extension["objc_arc"] = ""
+
         compilation_context, compilation_outputs = cc_common.compile(
             actions = actions,
             cc_toolchain = swift_toolchain.cc_toolchain_info,
@@ -1347,12 +1354,13 @@ def _compile_c_inputs(
             feature_configuration = get_cc_feature_configuration(
                 feature_configuration = feature_configuration,
             ),
-            language = swift_toolchain.cc_language,
+            language = language,
             name = target_name,
             private_hdrs = private_hdrs,
             public_hdrs = public_hdrs,
             srcs = srcs,
             user_compile_flags = copts,
+            variables_extension = variables_extension,
         )
         return compilation_context, compilation_outputs
 
