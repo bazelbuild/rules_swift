@@ -324,8 +324,16 @@ private struct SwiftTestingEntryPoint {
 
 // `RTLD_DEFAULT` is only defined on Linux when `_GNU_SOURCE` is defined. Just redefine it
 // here for convenience.
-#if os(Linux)
-  private nonisolated(unsafe) let rtldDefault = UnsafeMutableRawPointer(bitPattern: 0)
+#if compiler(>=5.10)
+  #if os(Linux)
+    private nonisolated(unsafe) let rtldDefault = UnsafeMutableRawPointer(bitPattern: 0)
+  #else
+    private nonisolated(unsafe) let rtldDefault = UnsafeMutableRawPointer(bitPattern: -2)
+  #endif
 #else
-  private nonisolated(unsafe) let rtldDefault = UnsafeMutableRawPointer(bitPattern: -2)
+  #if os(Linux)
+    private let rtldDefault = UnsafeMutableRawPointer(bitPattern: 0)
+  #else
+    private let rtldDefault = UnsafeMutableRawPointer(bitPattern: -2)
+  #endif
 #endif
