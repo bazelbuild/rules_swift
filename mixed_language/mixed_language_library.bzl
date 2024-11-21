@@ -213,12 +213,12 @@ Use 'private_deps' to set implementation deps.\
             attr = "implementation_deps",
         )
 
-    if not clang_srcs and not hdrs:
+    if not clang_srcs and not hdrs and not non_arc_srcs:
         fail(
             """\
-'mixed_language_library' requires either 'clang_srcs' and/or 'hdrs' to be \
-non-empty. If this is not a mixed language Swift library, use `swift_library` \
-instead.\
+'mixed_language_library' requires either 'clang_srcs' and/or 'hdrs' and/or \
+'non_arc_srcs' to be non-empty. If this is not a mixed language Swift library, \
+use `swift_library` instead.\
 """,
             attr = "clang_srcs",
         )
