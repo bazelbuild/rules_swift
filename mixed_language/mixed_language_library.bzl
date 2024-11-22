@@ -46,6 +46,7 @@ def mixed_language_library(
         module_map = None,
         module_name = None,
         non_arc_srcs = [],
+        package_name = None,
         private_deps = [],
         sdk_dylibs = [],
         sdk_frameworks = [],
@@ -111,6 +112,9 @@ def mixed_language_library(
             the library target that DO NOT use ARC. The files in this attribute
             are treated very similar to those in the `clang_srcs` attribute, but
             are compiled without ARC enabled.
+        package_name: The semantic package of the Swift target being built. Targets
+            with the same `package_name` can access APIs using the 'package'
+            access control modifier in Swift 5.9+.
         private_deps: A list of targets that are implementation-only
             dependencies of the target being built. Libraries/linker flags from
             these dependencies will be propagated to dependent for linking, but
@@ -307,6 +311,7 @@ a mixed language Swift library, use a clang only library rule like \
         generated_header_name = module_name + "-Swift.h",
         linkopts = linkopts,
         module_name = module_name,
+        package_name = package_name,
         private_deps = private_deps,
         swiftc_inputs = swiftc_inputs,
         tags = internal_tags,
