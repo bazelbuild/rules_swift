@@ -347,17 +347,6 @@ def _swift_test_impl(ctx):
     # Mach-O type `MH_BUNDLE` instead of `MH_EXECUTE`.
     extra_linkopts = ["-Wl,-bundle"] if is_bundled else []
 
-    # `is_feature_enabled` isn't used, as it requires the prefix of the feature
-    # to start with `swift.`
-    swizzle_absolute_xcttestsourcelocation = (
-        "apple.swizzle_absolute_xcttestsourcelocation" in
-        feature_configuration._enabled_features
-    )
-
-    extra_link_deps = []
-    if swizzle_absolute_xcttestsourcelocation:
-        extra_link_deps.append(ctx.attr._swizzle_absolute_xcttestsourcelocation)
-
     deps = list(ctx.attr.deps)
     test_runner_deps = list(ctx.attr._test_runner_deps)
 
@@ -369,6 +358,17 @@ def _swift_test_impl(ctx):
         additional_link_deps = test_runner_deps
     else:
         additional_link_deps = []
+
+    # `is_feature_enabled` isn't used, as it requires the prefix of the feature
+    # to start with `swift.`
+    swizzle_absolute_xcttestsourcelocation = (
+        "apple.swizzle_absolute_xcttestsourcelocation" in
+        feature_configuration._enabled_features
+    )
+    if swizzle_absolute_xcttestsourcelocation:
+        additional_link_deps.append(
+            ctx.attr._swizzle_absolute_xcttestsourcelocation,
+        )
 
     # We also need to collect nested providers from `SwiftBinaryInfo` since we
     # support testing those.
