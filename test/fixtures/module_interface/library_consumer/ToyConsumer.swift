@@ -1,4 +1,4 @@
-// Copyright 2022 The Bazel Authors. All rights reserved.
+// Copyright 2024 The Bazel Authors. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,14 +13,7 @@
 // limitations under the License.
 
 import ToyModule
-import ToyModuleConsumer
 
-@main
-struct Main {
-  static func main() {
-    let value = ToyValue(number: 10)
-    print(value.stringValue)
-    print(value.squared())
-    printToyValue()
-  }
+public func printToyValue() {
+  print(ToyValue(number: 42))
 }

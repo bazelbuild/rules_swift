@@ -1861,7 +1861,7 @@ def _disable_autolink_framework_copts(library_path):
     )
 
 def _swift_module_search_path_map_fn(module):
-    """Returns the path to the directory containing a `.swiftmodule` file.
+    """Returns the path to the directory containing a Swift module file.
 
     This function is intended to be used as a mapping function for modules
     passed into `Args.add_all`.
@@ -1872,10 +1872,16 @@ def _swift_module_search_path_map_fn(module):
             modules of a `SwiftInfo` provider.
 
     Returns:
-        The dirname of the module's `.swiftmodule` file.
+        The dirname of the module's `.swiftmodule` or `.swiftinterface` file.
     """
     if module.swift:
-        search_path = module.swift.swiftmodule.dirname
+        # For modules with .swiftinterface files (like swift_import), we need
+        # to use the directory containing the .swiftinterface so that Swift
+        # can find it when compiling dependent module interfaces.
+        if module.swift.swiftinterface:
+            search_path = module.swift.swiftinterface.dirname
+        else:
+            search_path = module.swift.swiftmodule.dirname
 
         # If the dirname also ends in .swiftmodule, remove it as well so that
         # the compiler finds the module *directory*.
