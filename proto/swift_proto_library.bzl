@@ -20,10 +20,7 @@ load(
     "@bazel_skylib//lib:dicts.bzl",
     "dicts",
 )
-load(
-    "@rules_proto//proto:defs.bzl",
-    "ProtoInfo",
-)
+load("@protobuf//bazel/common:proto_info.bzl", "ProtoInfo")
 load("//swift:module_name.bzl", "derive_swift_module_name")
 load("//swift:providers.bzl", "SwiftProtoCompilerInfo")
 load("//swift:swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
@@ -154,7 +151,7 @@ on which fields are accepted and how they are used.
 Generates a Swift static library from one or more targets producing `ProtoInfo`.
 
 ```python
-load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("//proto:swift_proto_library.bzl", "swift_proto_library")
 
 proto_library(
@@ -172,7 +169,7 @@ If your protos depend on protos from other targets, add dependencies between the
 swift_proto_library targets which mirror the dependencies between the proto targets.
 
 ```python
-load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("//proto:swift_proto_library.bzl", "swift_proto_library")
 
 proto_library(

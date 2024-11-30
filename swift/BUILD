@@ -23,7 +23,6 @@ bzl_library(
     srcs = ["extras.bzl"],
     deps = [
         "@build_bazel_apple_support//lib:repositories",
-        "@rules_proto//proto:repositories",
     ],
 )
 
@@ -331,7 +330,7 @@ bzl_library(
 # Consumed by Bazel integration tests.
 filegroup(
     name = "for_bazel_tests",
-    testonly = 1,
+    testonly = True,
     srcs = glob(["**"]) + [
         "//swift/internal:for_bazel_tests",
         "//swift/toolchains:for_bazel_tests",

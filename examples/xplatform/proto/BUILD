@@ -1,4 +1,4 @@
-load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("//proto:swift_proto_library.bzl", "swift_proto_library")
 load("//swift:swift_binary.bzl", "swift_binary")
 
@@ -8,7 +8,7 @@ proto_library(
     name = "example_proto",
     srcs = ["example.proto"],
     deps = [
-        "@com_google_protobuf//:api_proto",
+        "@protobuf//:api_proto",
     ],
 )
 

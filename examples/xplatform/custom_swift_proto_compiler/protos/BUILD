@@ -1,7 +1,4 @@
-load(
-    "@rules_proto//proto:defs.bzl",
-    "proto_library",
-)
+load("@protobuf//bazel:proto_library.bzl", "proto_library")
 
 proto_library(
     name = "example_proto",

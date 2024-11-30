@@ -41,6 +41,8 @@ On this page:
 ## swift_binary
 
 <pre>
+load("@rules_swift//doc:doc.bzl", "swift_binary")
+
 swift_binary(<a href="#swift_binary-name">name</a>, <a href="#swift_binary-deps">deps</a>, <a href="#swift_binary-srcs">srcs</a>, <a href="#swift_binary-data">data</a>, <a href="#swift_binary-copts">copts</a>, <a href="#swift_binary-defines">defines</a>, <a href="#swift_binary-linkopts">linkopts</a>, <a href="#swift_binary-malloc">malloc</a>, <a href="#swift_binary-module_name">module_name</a>, <a href="#swift_binary-package_name">package_name</a>,
              <a href="#swift_binary-plugins">plugins</a>, <a href="#swift_binary-stamp">stamp</a>, <a href="#swift_binary-swiftc_inputs">swiftc_inputs</a>)
 </pre>
@@ -84,6 +86,8 @@ please use one of the platform-specific application rules in
 ## swift_compiler_plugin
 
 <pre>
+load("@rules_swift//doc:doc.bzl", "swift_compiler_plugin")
+
 swift_compiler_plugin(<a href="#swift_compiler_plugin-name">name</a>, <a href="#swift_compiler_plugin-deps">deps</a>, <a href="#swift_compiler_plugin-srcs">srcs</a>, <a href="#swift_compiler_plugin-data">data</a>, <a href="#swift_compiler_plugin-copts">copts</a>, <a href="#swift_compiler_plugin-defines">defines</a>, <a href="#swift_compiler_plugin-linkopts">linkopts</a>, <a href="#swift_compiler_plugin-malloc">malloc</a>, <a href="#swift_compiler_plugin-module_name">module_name</a>,
                       <a href="#swift_compiler_plugin-package_name">package_name</a>, <a href="#swift_compiler_plugin-plugins">plugins</a>, <a href="#swift_compiler_plugin-stamp">stamp</a>, <a href="#swift_compiler_plugin-swiftc_inputs">swiftc_inputs</a>)
 </pre>
@@ -172,6 +176,8 @@ swift_library(
 ## swift_compiler_plugin_import
 
 <pre>
+load("@rules_swift//doc:doc.bzl", "swift_compiler_plugin_import")
+
 swift_compiler_plugin_import(<a href="#swift_compiler_plugin_import-name">name</a>, <a href="#swift_compiler_plugin_import-executable">executable</a>, <a href="#swift_compiler_plugin_import-module_names">module_names</a>)
 </pre>
 
@@ -194,6 +200,8 @@ using `swift_compiler_plugin`.
 ## swift_cross_import_overlay
 
 <pre>
+load("@rules_swift//doc:doc.bzl", "swift_cross_import_overlay")
+
 swift_cross_import_overlay(<a href="#swift_cross_import_overlay-name">name</a>, <a href="#swift_cross_import_overlay-deps">deps</a>, <a href="#swift_cross_import_overlay-bystanding_module">bystanding_module</a>, <a href="#swift_cross_import_overlay-bystanding_module_name">bystanding_module_name</a>, <a href="#swift_cross_import_overlay-declaring_module">declaring_module</a>,
                            <a href="#swift_cross_import_overlay-declaring_module_name">declaring_module_name</a>)
 </pre>
@@ -238,6 +246,8 @@ the future, this rule is not recommended for other widespread use.
 ## swift_feature_allowlist
 
 <pre>
+load("@rules_swift//doc:doc.bzl", "swift_feature_allowlist")
+
 swift_feature_allowlist(<a href="#swift_feature_allowlist-name">name</a>, <a href="#swift_feature_allowlist-aspect_ids">aspect_ids</a>, <a href="#swift_feature_allowlist-managed_features">managed_features</a>, <a href="#swift_feature_allowlist-packages">packages</a>)
 </pre>
 
@@ -269,6 +279,8 @@ package.
 ## swift_import
 
 <pre>
+load("@rules_swift//doc:doc.bzl", "swift_import")
+
 swift_import(<a href="#swift_import-name">name</a>, <a href="#swift_import-deps">deps</a>, <a href="#swift_import-data">data</a>, <a href="#swift_import-archives">archives</a>, <a href="#swift_import-module_name">module_name</a>, <a href="#swift_import-plugins">plugins</a>, <a href="#swift_import-swiftdoc">swiftdoc</a>, <a href="#swift_import-swiftinterface">swiftinterface</a>,
              <a href="#swift_import-swiftmodule">swiftmodule</a>)
 </pre>
@@ -311,6 +323,8 @@ uses the API marked with `@_spi`.
 ## swift_interop_hint
 
 <pre>
+load("@rules_swift//doc:doc.bzl", "swift_interop_hint")
+
 swift_interop_hint(<a href="#swift_interop_hint-name">name</a>, <a href="#swift_interop_hint-exclude_hdrs">exclude_hdrs</a>, <a href="#swift_interop_hint-module_map">module_map</a>, <a href="#swift_interop_hint-module_name">module_name</a>, <a href="#swift_interop_hint-suppressed">suppressed</a>)
 </pre>
 
@@ -453,6 +467,8 @@ its transitive dependencies be propagated.
 ## swift_library
 
 <pre>
+load("@rules_swift//doc:doc.bzl", "swift_library")
+
 swift_library(<a href="#swift_library-name">name</a>, <a href="#swift_library-deps">deps</a>, <a href="#swift_library-srcs">srcs</a>, <a href="#swift_library-data">data</a>, <a href="#swift_library-always_include_developer_search_paths">always_include_developer_search_paths</a>, <a href="#swift_library-alwayslink">alwayslink</a>, <a href="#swift_library-copts">copts</a>,
               <a href="#swift_library-defines">defines</a>, <a href="#swift_library-generated_header_name">generated_header_name</a>, <a href="#swift_library-generates_header">generates_header</a>, <a href="#swift_library-library_evolution">library_evolution</a>, <a href="#swift_library-linkopts">linkopts</a>,
               <a href="#swift_library-linkstatic">linkstatic</a>, <a href="#swift_library-module_name">module_name</a>, <a href="#swift_library-package_name">package_name</a>, <a href="#swift_library-plugins">plugins</a>, <a href="#swift_library-private_deps">private_deps</a>, <a href="#swift_library-swiftc_inputs">swiftc_inputs</a>)
@@ -490,6 +506,8 @@ Compiles and links Swift code into a static library and Swift module.
 ## swift_library_group
 
 <pre>
+load("@rules_swift//doc:doc.bzl", "swift_library_group")
+
 swift_library_group(<a href="#swift_library_group-name">name</a>, <a href="#swift_library_group-deps">deps</a>)
 </pre>
 
@@ -514,6 +532,8 @@ libraries directly.
 ## swift_module_mapping
 
 <pre>
+load("@rules_swift//doc:doc.bzl", "swift_module_mapping")
+
 swift_module_mapping(<a href="#swift_module_mapping-name">name</a>, <a href="#swift_module_mapping-aliases">aliases</a>)
 </pre>
 
@@ -579,6 +599,8 @@ source asked to `import Utils`.
 ## swift_module_mapping_test
 
 <pre>
+load("@rules_swift//doc:doc.bzl", "swift_module_mapping_test")
+
 swift_module_mapping_test(<a href="#swift_module_mapping_test-name">name</a>, <a href="#swift_module_mapping_test-deps">deps</a>, <a href="#swift_module_mapping_test-exclude">exclude</a>, <a href="#swift_module_mapping_test-mapping">mapping</a>)
 </pre>
 
@@ -613,6 +635,8 @@ remaining modules collected are not present in the `aliases` of the
 ## swift_overlay
 
 <pre>
+load("@rules_swift//doc:doc.bzl", "swift_overlay")
+
 swift_overlay(<a href="#swift_overlay-name">name</a>, <a href="#swift_overlay-deps">deps</a>, <a href="#swift_overlay-srcs">srcs</a>, <a href="#swift_overlay-always_include_developer_search_paths">always_include_developer_search_paths</a>, <a href="#swift_overlay-alwayslink">alwayslink</a>, <a href="#swift_overlay-copts">copts</a>, <a href="#swift_overlay-defines">defines</a>,
               <a href="#swift_overlay-library_evolution">library_evolution</a>, <a href="#swift_overlay-linkopts">linkopts</a>, <a href="#swift_overlay-linkstatic">linkstatic</a>, <a href="#swift_overlay-package_name">package_name</a>, <a href="#swift_overlay-plugins">plugins</a>, <a href="#swift_overlay-private_deps">private_deps</a>,
               <a href="#swift_overlay-swiftc_inputs">swiftc_inputs</a>)
@@ -714,6 +738,8 @@ almost always an anti-pattern.
 ## swift_package_configuration
 
 <pre>
+load("@rules_swift//doc:doc.bzl", "swift_package_configuration")
+
 swift_package_configuration(<a href="#swift_package_configuration-name">name</a>, <a href="#swift_package_configuration-configured_features">configured_features</a>, <a href="#swift_package_configuration-packages">packages</a>)
 </pre>
 
@@ -739,6 +765,8 @@ target's label is included by the package specifications in the configuration.
 ## swift_proto_compiler
 
 <pre>
+load("@rules_swift//doc:doc.bzl", "swift_proto_compiler")
+
 swift_proto_compiler(<a href="#swift_proto_compiler-name">name</a>, <a href="#swift_proto_compiler-deps">deps</a>, <a href="#swift_proto_compiler-bundled_proto_paths">bundled_proto_paths</a>, <a href="#swift_proto_compiler-plugin">plugin</a>, <a href="#swift_proto_compiler-plugin_name">plugin_name</a>, <a href="#swift_proto_compiler-plugin_option_allowlist">plugin_option_allowlist</a>,
                      <a href="#swift_proto_compiler-plugin_options">plugin_options</a>, <a href="#swift_proto_compiler-protoc">protoc</a>, <a href="#swift_proto_compiler-suffixes">suffixes</a>)
 </pre>
@@ -766,6 +794,8 @@ swift_proto_compiler(<a href="#swift_proto_compiler-name">name</a>, <a href="#sw
 ## swift_proto_library
 
 <pre>
+load("@rules_swift//doc:doc.bzl", "swift_proto_library")
+
 swift_proto_library(<a href="#swift_proto_library-name">name</a>, <a href="#swift_proto_library-deps">deps</a>, <a href="#swift_proto_library-srcs">srcs</a>, <a href="#swift_proto_library-data">data</a>, <a href="#swift_proto_library-additional_compiler_deps">additional_compiler_deps</a>, <a href="#swift_proto_library-additional_compiler_info">additional_compiler_info</a>,
                     <a href="#swift_proto_library-always_include_developer_search_paths">always_include_developer_search_paths</a>, <a href="#swift_proto_library-alwayslink">alwayslink</a>, <a href="#swift_proto_library-compilers">compilers</a>, <a href="#swift_proto_library-copts">copts</a>, <a href="#swift_proto_library-defines">defines</a>,
                     <a href="#swift_proto_library-generated_header_name">generated_header_name</a>, <a href="#swift_proto_library-generates_header">generates_header</a>, <a href="#swift_proto_library-library_evolution">library_evolution</a>, <a href="#swift_proto_library-linkopts">linkopts</a>, <a href="#swift_proto_library-linkstatic">linkstatic</a>,
@@ -775,7 +805,7 @@ swift_proto_library(<a href="#swift_proto_library-name">name</a>, <a href="#swif
 Generates a Swift static library from one or more targets producing `ProtoInfo`.
 
 ```python
-load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("//proto:swift_proto_library.bzl", "swift_proto_library")
 
 proto_library(
@@ -793,7 +823,7 @@ If your protos depend on protos from other targets, add dependencies between the
 swift_proto_library targets which mirror the dependencies between the proto targets.
 
 ```python
-load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("//proto:swift_proto_library.bzl", "swift_proto_library")
 
 proto_library(
@@ -842,6 +872,8 @@ swift_proto_library(
 ## swift_proto_library_group
 
 <pre>
+load("@rules_swift//doc:doc.bzl", "swift_proto_library_group")
+
 swift_proto_library_group(<a href="#swift_proto_library_group-name">name</a>, <a href="#swift_proto_library_group-compiler">compiler</a>, <a href="#swift_proto_library_group-proto">proto</a>)
 </pre>
 
@@ -920,6 +952,8 @@ swift_binary(
 ## swift_test
 
 <pre>
+load("@rules_swift//doc:doc.bzl", "swift_test")
+
 swift_test(<a href="#swift_test-name">name</a>, <a href="#swift_test-deps">deps</a>, <a href="#swift_test-srcs">srcs</a>, <a href="#swift_test-data">data</a>, <a href="#swift_test-copts">copts</a>, <a href="#swift_test-defines">defines</a>, <a href="#swift_test-discover_tests">discover_tests</a>, <a href="#swift_test-env">env</a>, <a href="#swift_test-linkopts">linkopts</a>, <a href="#swift_test-malloc">malloc</a>,
            <a href="#swift_test-module_name">module_name</a>, <a href="#swift_test-package_name">package_name</a>, <a href="#swift_test-plugins">plugins</a>, <a href="#swift_test-stamp">stamp</a>, <a href="#swift_test-swiftc_inputs">swiftc_inputs</a>)
 </pre>
@@ -1013,6 +1047,8 @@ root of your workspace (i.e. `$(SRCROOT)`).
 ## universal_swift_compiler_plugin
 
 <pre>
+load("@rules_swift//doc:doc.bzl", "universal_swift_compiler_plugin")
+
 universal_swift_compiler_plugin(<a href="#universal_swift_compiler_plugin-name">name</a>, <a href="#universal_swift_compiler_plugin-plugin">plugin</a>)
 </pre>
 
@@ -1064,11 +1100,13 @@ swift_library(
 ## mixed_language_library
 
 <pre>
-mixed_language_library(<a href="#mixed_language_library-name">name</a>, <a href="#mixed_language_library-alwayslink">alwayslink</a>, <a href="#mixed_language_library-clang_copts">clang_copts</a>, <a href="#mixed_language_library-clang_defines">clang_defines</a>, <a href="#mixed_language_library-clang_srcs">clang_srcs</a>, <a href="#mixed_language_library-data">data</a>,
+load("@rules_swift//doc:doc.bzl", "mixed_language_library")
+
+mixed_language_library(*, <a href="#mixed_language_library-name">name</a>, <a href="#mixed_language_library-alwayslink">alwayslink</a>, <a href="#mixed_language_library-clang_copts">clang_copts</a>, <a href="#mixed_language_library-clang_defines">clang_defines</a>, <a href="#mixed_language_library-clang_srcs">clang_srcs</a>, <a href="#mixed_language_library-data">data</a>,
                        <a href="#mixed_language_library-enable_modules">enable_modules</a>, <a href="#mixed_language_library-hdrs">hdrs</a>, <a href="#mixed_language_library-includes">includes</a>, <a href="#mixed_language_library-linkopts">linkopts</a>, <a href="#mixed_language_library-module_map">module_map</a>, <a href="#mixed_language_library-module_name">module_name</a>,
                        <a href="#mixed_language_library-non_arc_srcs">non_arc_srcs</a>, <a href="#mixed_language_library-package_name">package_name</a>, <a href="#mixed_language_library-private_deps">private_deps</a>, <a href="#mixed_language_library-sdk_dylibs">sdk_dylibs</a>, <a href="#mixed_language_library-sdk_frameworks">sdk_frameworks</a>,
                        <a href="#mixed_language_library-swift_copts">swift_copts</a>, <a href="#mixed_language_library-swift_defines">swift_defines</a>, <a href="#mixed_language_library-swift_srcs">swift_srcs</a>, <a href="#mixed_language_library-swiftc_inputs">swiftc_inputs</a>, <a href="#mixed_language_library-textual_hdrs">textual_hdrs</a>,
-                       <a href="#mixed_language_library-umbrella_header">umbrella_header</a>, <a href="#mixed_language_library-weak_sdk_frameworks">weak_sdk_frameworks</a>, <a href="#mixed_language_library-deps">deps</a>, <a href="#mixed_language_library-kwargs">kwargs</a>)
+                       <a href="#mixed_language_library-umbrella_header">umbrella_header</a>, <a href="#mixed_language_library-weak_sdk_frameworks">weak_sdk_frameworks</a>, <a href="#mixed_language_library-deps">deps</a>, <a href="#mixed_language_library-kwargs">**kwargs</a>)
 </pre>
 
 Creates a mixed language library from a Clang and Swift library target     pair.
