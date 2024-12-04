@@ -38,6 +38,11 @@ module_mapping_test_suite(
 
 parallel_compilation_test_suite(
     name = "parallel_compilation",
+    # Parallel compilation is temporarily disabled. b/374699519
+    tags = [
+        "manual",
+        "notap",
+    ],
 )
 
 private_deps_test_suite(
