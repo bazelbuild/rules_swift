@@ -130,7 +130,8 @@ tasks:
 
   doc_tests:
     name: "Doc tests"
-    bazel: last_green
+    # TODO: Bump when https://github.com/bazelbuild/stardoc/issues/94#issuecomment-2492218404 is resolved
+    bazel: 7.x
     <<: *linux_environment
     shell_commands:
       - "echo --- Downloading and extracting Swift $SWIFT_VERSION to $SWIFT_HOME"
