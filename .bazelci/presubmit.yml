@@ -14,7 +14,7 @@ x_defaults:
     platform: ubuntu2004
     environment:
       CC: clang
-      SWIFT_VERSION: "5.9.2"
+      SWIFT_VERSION: "6.0.2"
       SWIFT_HOME: "$HOME/swift-$SWIFT_VERSION"
       PATH: "$SWIFT_HOME/usr/bin:$PATH"
   linux_common: &linux_common
@@ -66,7 +66,9 @@ tasks:
 
   macos_last_green:
     name: "Last Green Bazel"
-    bazel: last_green
+    # FIXME: Use last_green when
+    # https://github.com/bazelbuild/bazel/issues/24375 is fixed
+    # bazel: last_green
     <<: *mac_common
 
   macos_latest_head_deps:
@@ -99,7 +101,9 @@ tasks:
 
   ubuntu2004_last_green:
     name: "Last Green Bazel"
-    bazel: last_green
+    # FIXME: Use last_green when
+    # https://github.com/bazelbuild/bazel/issues/24375 is fixed
+    # bazel: last_green
     shell_commands:
       - "echo --- Downloading and extracting Swift $SWIFT_VERSION to $SWIFT_HOME"
       - "mkdir $SWIFT_HOME"
