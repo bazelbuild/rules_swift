@@ -130,10 +130,8 @@ tasks:
 
   doc_tests:
     name: "Doc tests"
-    # FIXME: Use last_green when
-    # https://github.com/bazelbuild/bazel/issues/24375 is fixed
-    # bazel: last_green
-    bazel: 17057fd4409da8286709a70c077fe457275138f6
+    # TODO: Bump when https://github.com/bazelbuild/stardoc/issues/94#issuecomment-2492218404 is resolved
+    bazel: 7.x
     <<: *linux_environment
     shell_commands:
       - "echo --- Downloading and extracting Swift $SWIFT_VERSION to $SWIFT_HOME"

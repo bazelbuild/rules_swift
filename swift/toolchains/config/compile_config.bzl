@@ -1137,6 +1137,7 @@ def compile_action_configs(
             actions = [
                 SWIFT_ACTION_COMPILE,
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+                SWIFT_ACTION_DERIVE_FILES,
             ],
             configurators = [add_arg("-enable-bare-slash-regex")],
             features = [SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX],
