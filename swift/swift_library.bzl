@@ -16,6 +16,7 @@
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:sets.bzl", "sets")
+load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load(
     "//swift/internal:attrs.bzl",
@@ -144,9 +145,20 @@ def _swift_library_impl(ctx):
 
     extra_features = []
 
-    if ctx.attr.library_evolution:
+    # TODO(b/239957001): Remove the global flag.
+    if (
+        ctx.attr.library_evolution or
+        ctx.attr._config_emit_swiftinterface[BuildSettingInfo].value
+    ):
         extra_features.append(SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION)
         extra_features.append(SWIFT_FEATURE_EMIT_SWIFTINTERFACE)
+
+    # TODO(b/239957001): Remove the global flag.
+    if (
+        ctx.attr.library_evolution or
+        ctx.attr._config_emit_private_swiftinterface[BuildSettingInfo].value
+    ):
+        extra_features.append(SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION)
         extra_features.append(SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE)
 
     module_name = ctx.attr.module_name
