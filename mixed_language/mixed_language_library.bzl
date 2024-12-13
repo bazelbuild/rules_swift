@@ -374,6 +374,7 @@ a mixed language Swift library, use a clang only library rule like \
         aspect_hints = aspect_hints + [":" + internal_swift_interop_name],
         copts = clang_copts,
         defines = clang_defines,
+        data = data,
         enable_modules = enable_modules,
         features = features,
         includes = includes,
