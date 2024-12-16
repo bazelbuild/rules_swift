@@ -15,24 +15,33 @@
 """Implementation of the `swift_library_group` rule."""
 
 load("//swift/internal:attrs.bzl", "swift_deps_attr")
+load(
+    "//swift/internal:toolchain_utils.bzl",
+    "get_swift_toolchain",
+    "use_swift_toolchain",
+)
 load("//swift/internal:utils.bzl", "get_providers")
 load(":providers.bzl", "SwiftInfo")
 load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 
 def _swift_library_group_impl(ctx):
+    swift_toolchain = get_swift_toolchain(ctx)
+
     deps = ctx.attr.deps
 
     return [
         DefaultInfo(),
         cc_common.merge_cc_infos(
-            cc_infos = [dep[CcInfo] for dep in deps if CcInfo in dep],
+            cc_infos = ([dep[CcInfo] for dep in deps if CcInfo in dep] +
+                        swift_toolchain.implicit_deps_providers.cc_infos),
         ),
         coverage_common.instrumented_files_info(
             ctx,
             dependency_attributes = ["deps"],
         ),
         SwiftInfo(
-            swift_infos = get_providers(deps, SwiftInfo),
+            swift_infos = (get_providers(deps, SwiftInfo) +
+                           swift_toolchain.implicit_deps_providers.swift_infos),
         ),
         # Propagate an `apple_common.Objc` provider with linking info about the
         # library so that linking with Apple Starlark APIs/rules works
@@ -60,4 +69,5 @@ Unlike `swift_module_alias`, a new module isn't created for this target, you
 need to import the grouped libraries directly.
 """,
     implementation = _swift_library_group_impl,
+    toolchains = use_swift_toolchain(),
 )
