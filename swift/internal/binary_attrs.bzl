@@ -91,11 +91,6 @@ into the binary. Possible values are:
 """,
                 mandatory = False,
             ),
-            # Do not add references; temporary attribute for C++ toolchain
-            # Starlark migration.
-            "_cc_toolchain": attr.label(
-                default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
-            ),
             # A late-bound attribute denoting the value of the `--custom_malloc`
             # command line flag (or None if the flag is not provided).
             "_custom_malloc": attr.label(
