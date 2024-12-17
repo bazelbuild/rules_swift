@@ -17,7 +17,9 @@ On this page:
 ## SwiftInfo
 
 <pre>
-SwiftInfo(<a href="#SwiftInfo-direct_modules">direct_modules</a>, <a href="#SwiftInfo-transitive_modules">transitive_modules</a>)
+load("@rules_swift//doc:doc.bzl", "SwiftInfo")
+
+SwiftInfo(*, <a href="#SwiftInfo-_init-direct_swift_infos">direct_swift_infos</a>, <a href="#SwiftInfo-_init-modules">modules</a>, <a href="#SwiftInfo-_init-swift_infos">swift_infos</a>)
 </pre>
 
 Contains information about the compiled artifacts of a Swift module.
@@ -48,8 +50,15 @@ where the arguments are:
 When reading an existing `SwiftInfo` provider, it has the two fields described
 below.
 
-**FIELDS**
+**CONSTRUCTOR PARAMETERS**
 
+| Name  | Description | Default Value |
+| :------------- | :------------- | :------------- |
+| <a id="SwiftInfo-_init-direct_swift_infos"></a>direct_swift_infos | <p align="center">-</p> | `[]` |
+| <a id="SwiftInfo-_init-modules"></a>modules | <p align="center">-</p> | `[]` |
+| <a id="SwiftInfo-_init-swift_infos"></a>swift_infos | <p align="center">-</p> | `[]` |
+
+**FIELDS**
 
 | Name  | Description |
 | :------------- | :------------- |
@@ -62,13 +71,14 @@ below.
 ## SwiftProtoCompilerInfo
 
 <pre>
+load("@rules_swift//doc:doc.bzl", "SwiftProtoCompilerInfo")
+
 SwiftProtoCompilerInfo(<a href="#SwiftProtoCompilerInfo-bundled_proto_paths">bundled_proto_paths</a>, <a href="#SwiftProtoCompilerInfo-compile">compile</a>, <a href="#SwiftProtoCompilerInfo-compiler_deps">compiler_deps</a>, <a href="#SwiftProtoCompilerInfo-internal">internal</a>)
 </pre>
 
 Provides information needed to generate Swift code from `ProtoInfo` providers
 
 **FIELDS**
-
 
 | Name  | Description |
 | :------------- | :------------- |
@@ -83,13 +93,14 @@ Provides information needed to generate Swift code from `ProtoInfo` providers
 ## SwiftProtoInfo
 
 <pre>
+load("@rules_swift//doc:doc.bzl", "SwiftProtoInfo")
+
 SwiftProtoInfo(<a href="#SwiftProtoInfo-module_name">module_name</a>, <a href="#SwiftProtoInfo-module_mappings">module_mappings</a>, <a href="#SwiftProtoInfo-direct_pbswift_files">direct_pbswift_files</a>, <a href="#SwiftProtoInfo-pbswift_files">pbswift_files</a>)
 </pre>
 
 Propagates Swift-specific information about a `proto_library`.
 
 **FIELDS**
-
 
 | Name  | Description |
 | :------------- | :------------- |
@@ -104,6 +115,8 @@ Propagates Swift-specific information about a `proto_library`.
 ## SwiftToolchainInfo
 
 <pre>
+load("@rules_swift//doc:doc.bzl", "SwiftToolchainInfo")
+
 SwiftToolchainInfo(<a href="#SwiftToolchainInfo-action_configs">action_configs</a>, <a href="#SwiftToolchainInfo-cc_language">cc_language</a>, <a href="#SwiftToolchainInfo-cc_toolchain_info">cc_toolchain_info</a>, <a href="#SwiftToolchainInfo-clang_implicit_deps_providers">clang_implicit_deps_providers</a>,
                    <a href="#SwiftToolchainInfo-const_protocols_to_gather">const_protocols_to_gather</a>, <a href="#SwiftToolchainInfo-cross_import_overlays">cross_import_overlays</a>, <a href="#SwiftToolchainInfo-debug_outputs_provider">debug_outputs_provider</a>,
                    <a href="#SwiftToolchainInfo-developer_dirs">developer_dirs</a>, <a href="#SwiftToolchainInfo-entry_point_linkopts_provider">entry_point_linkopts_provider</a>, <a href="#SwiftToolchainInfo-feature_allowlists">feature_allowlists</a>,
@@ -116,7 +129,6 @@ Propagates information about a Swift toolchain to compilation and linking rules
 that use the toolchain.
 
 **FIELDS**
-
 
 | Name  | Description |
 | :------------- | :------------- |

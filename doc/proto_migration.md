@@ -116,7 +116,7 @@ proto_library(
     name = "bar_proto",
     srcs = ["bar.proto"],
     deps = [
-        "@com_google_protobuf//:api_proto",
+        "@protobuf//:api_proto",
         ":foo_proto",
     ],
 )

@@ -8,8 +8,7 @@ matrix:
   - 7.x
   # TODO: Uncomment once Bazel 8 is released
   # - 8.x
-  # TODO: Uncomment once we support HEAD again
-  # - latest
+  - last_green
   platform:
   - ubuntu2004
 tasks:
