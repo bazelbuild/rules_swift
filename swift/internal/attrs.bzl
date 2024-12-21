@@ -192,6 +192,9 @@ def swift_config_attrs():
         configuration settings.
     """
     return {
+        "_config_emit_swiftinterface": attr.label(
+            default = Label("//swift:emit_swiftinterface"),
+        ),
         "_per_module_swiftcopt": attr.label(
             default = Label("//swift:per_module_swiftcopt"),
         ),
