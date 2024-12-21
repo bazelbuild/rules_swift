@@ -15,8 +15,7 @@
 """Propagates unified `SwiftInfo` providers for C/Objective-C targets."""
 
 load("@bazel_skylib//lib:sets.bzl", "sets")
-load("//swift/internal:attrs.bzl", "swift_toolchain_attrs")
-load("//swift/internal:compiling.bzl", "precompile_clang_module")
+load("//swift/internal:compiling.bzl", "compile", "precompile_clang_module")
 load(
     "//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
@@ -27,7 +26,16 @@ load(
     "configure_features",
     "is_feature_enabled",
 )
+load(
+    "//swift/internal:linking.bzl",
+    "create_linking_context_from_compilation_outputs",
+)
 load("//swift/internal:module_maps.bzl", "write_module_map")
+load(
+    "//swift/internal:output_groups.bzl",
+    "supplemental_compilation_output_groups",
+)
+load("//swift/internal:providers.bzl", "SwiftOverlayCompileInfo")
 load(
     "//swift/internal:swift_interop_info.bzl",
     "SwiftInteropInfo",
@@ -39,6 +47,7 @@ load(
 )
 load(
     "//swift/internal:utils.bzl",
+    "compact",
     "compilation_context_for_explicit_module_compilation",
 )
 load(":module_name.bzl", "derive_swift_module_name")
@@ -46,6 +55,7 @@ load(
     ":providers.bzl",
     "SwiftClangModuleAspectInfo",
     "SwiftInfo",
+    "SwiftOverlayInfo",
     "create_clang_module_inputs",
     "create_swift_module_context",
 )
@@ -189,15 +199,14 @@ def _generate_module_map(
     return module_map_file
 
 def _objc_library_module_info(aspect_ctx):
-    """Returns the `module_name` and `module_map` attrs for an `objc_library`.
+    """Returns the `module_name` attribute for an `objc_library`.
 
     Args:
         aspect_ctx: The aspect context.
 
     Returns:
-        A tuple containing the module name (a string) and the module map file (a
-        `File`) specified as attributes on the `objc_library`. These values may
-        be `None`.
+        The module name (a string) specified as an attribute on the
+        `objc_library`. This may be `None`.
     """
     attr = aspect_ctx.rule.attr
 
@@ -205,15 +214,16 @@ def _objc_library_module_info(aspect_ctx):
     # `swift_interop_hint` to customize `objc_*` targets' module names and
     # module maps.
     module_name = getattr(attr, "module_name", None)
-    module_map_file = None
 
-    module_map_target = getattr(attr, "module_map", None)
-    if module_map_target:
-        module_map_files = module_map_target.files.to_list()
-        if module_map_files:
-            module_map_file = module_map_files[0]
+    # TODO(b/195019413): Remove this when the `module_map` attribute is deleted.
+    if getattr(attr, "module_map", None):
+        fail(
+            "The `module_map` attribute on `objc_library` is no longer " +
+            "supported. Use `swift_interop_hint` instead to customize the " +
+            "module map for a target.",
+        )
 
-    return module_name, module_map_file
+    return module_name
 
 def _module_info_for_target(
         target,
@@ -253,14 +263,12 @@ def _module_info_for_target(
     ):
         return None, None
 
-    module_map_file = None
-
     if not module_name:
         if apple_common.Objc not in target:
             return None, None
 
         if aspect_ctx.rule.kind == "objc_library":
-            module_name, module_map_file = _objc_library_module_info(aspect_ctx)
+            module_name = _objc_library_module_info(aspect_ctx)
 
         # If it was an `objc_library` without an explicit module name, or it
         # was some other `Objc`-providing target, derive the module name
@@ -268,18 +276,17 @@ def _module_info_for_target(
         if not module_name:
             module_name = derive_swift_module_name(target.label)
 
-    # If we didn't get a module map above, generate it now.
-    if not module_map_file:
-        module_map_file = _generate_module_map(
-            actions = aspect_ctx.actions,
-            aspect_ctx = aspect_ctx,
-            compilation_context = compilation_context,
-            dependent_module_names = dependent_module_names,
-            exclude_headers = exclude_headers,
-            feature_configuration = feature_configuration,
-            module_name = module_name,
-            target = target,
-        )
+    module_map_file = _generate_module_map(
+        actions = aspect_ctx.actions,
+        aspect_ctx = aspect_ctx,
+        compilation_context = compilation_context,
+        dependent_module_names = dependent_module_names,
+        exclude_headers = exclude_headers,
+        feature_configuration = feature_configuration,
+        module_name = module_name,
+        target = target,
+    )
+
     return module_name, module_map_file
 
 def _handle_module(
@@ -395,6 +402,8 @@ def _handle_module(
         )
     )
 
+    output_groups = {}
+
     pcm_outputs = precompile_clang_module(
         actions = aspect_ctx.actions,
         cc_compilation_context = compilation_context_to_compile,
@@ -406,32 +415,160 @@ def _handle_module(
         target_name = target.label.name,
     )
     precompiled_module = getattr(pcm_outputs, "pcm_file", None)
-    indexstore_directory = getattr(pcm_outputs, "indexstore_directory", None)
+    pcm_indexstore = getattr(pcm_outputs, "indexstore_directory", None)
+
+    clang_module_context = create_clang_module_inputs(
+        compilation_context = compilation_context,
+        module_map = module_map_file,
+        precompiled_module = precompiled_module,
+        strict_includes = strict_includes,
+    )
+
+    # If we have a `swift_overlay` in the aspect hints of this target, compile
+    # it and propagate the Swift module information as part of the same
+    # `SwiftInfo` provider so that downstream Swift clients get both halves of
+    # the module.
+    overlay_swift_module = None
+    overlay_direct_deps = []
+    overlay_linking_context = None
+    overlay_info = _find_swift_overlay_compile_info(aspect_ctx)
+    if overlay_info:
+        overlay_direct_deps = overlay_info.deps.swift_infos
+        swift_infos_for_overlay = direct_swift_infos + overlay_direct_deps + [
+            SwiftInfo(
+                modules = [
+                    create_swift_module_context(
+                        name = module_name,
+                        clang = clang_module_context,
+                    ),
+                ],
+                direct_swift_infos = direct_swift_infos,
+                swift_infos = swift_infos + overlay_direct_deps,
+            ),
+        ]
+        overlay_compile_result, overlay_linking_context = _compile_swift_overlay(
+            aspect_ctx = aspect_ctx,
+            cc_info = CcInfo(
+                compilation_context = compilation_context_to_compile,
+            ),
+            module_name = module_name,
+            overlay_info = overlay_info,
+            swift_infos = swift_infos_for_overlay,
+            swift_toolchain = swift_toolchain,
+        )
+        overlay_swift_info = overlay_compile_result.swift_info
+        overlay_swift_module = overlay_swift_info.direct_modules[0].swift
+        output_groups = supplemental_compilation_output_groups(
+            overlay_compile_result.supplemental_outputs,
+            additional_indexstore_files = compact([pcm_indexstore]),
+        )
+    elif pcm_indexstore:
+        output_groups = {"indexstore": depset([pcm_indexstore])}
 
     providers = [
         SwiftInfo(
             modules = [
                 create_swift_module_context(
                     name = module_name,
-                    clang = create_clang_module_inputs(
-                        compilation_context = compilation_context,
-                        module_map = module_map_file,
-                        precompiled_module = precompiled_module,
-                        strict_includes = strict_includes,
-                    ),
+                    clang = clang_module_context,
+                    swift = overlay_swift_module,
                 ),
             ],
             direct_swift_infos = direct_swift_infos,
-            swift_infos = swift_infos,
+            swift_infos = swift_infos + overlay_direct_deps,
         ),
     ]
+    if overlay_linking_context:
+        providers.append(SwiftOverlayInfo(
+            linking_context = overlay_linking_context,
+        ))
 
-    if indexstore_directory:
-        providers.append(
-            OutputGroupInfo(indexstore = depset([indexstore_directory])),
-        )
+    if output_groups:
+        providers.append(OutputGroupInfo(**output_groups))
 
     return providers
+
+def _compile_swift_overlay(
+        *,
+        aspect_ctx,
+        cc_info,
+        module_name,
+        overlay_info,
+        swift_infos,
+        swift_toolchain):
+    """Compiles Swift code to be used as an overlay for a C/Objective-C module.
+
+    Args:
+        aspect_ctx: The aspect context.
+        cc_info: The `CcInfo` that represents the
+            C/Objective-C slice of this module.
+        module_name: The module name of that C/Objective-C module that this
+            overlay shares.
+        overlay_info: The `SwiftOverlayCompileInfo` provider from the target
+            providing the overlay's compilation information.
+        swift_infos: A list of `SwiftInfo` providers that represent the
+            dependencies of both the original C/Objective-C target and the
+            Swift overlay.
+        swift_toolchain: The Swift toolchain to use when compiling.
+
+    Returns:
+        The compilation result, as returned by `swift_common.compile`.
+    """
+
+    # We need to create a new feature configuration here because we want to use
+    # the features that apply to the overlay target, not to the target that uses
+    # the overlay.
+    feature_configuration = configure_features(
+        ctx = aspect_ctx,
+        requested_features = overlay_info.enabled_features,
+        swift_toolchain = swift_toolchain,
+        unsupported_features = overlay_info.disabled_features,
+    )
+    compile_result = compile(
+        actions = aspect_ctx.actions,
+        additional_inputs = overlay_info.additional_inputs,
+        cc_infos = overlay_info.deps.cc_infos + [cc_info],
+        copts = overlay_info.copts + ["-parse-as-library"],
+        defines = overlay_info.defines,
+        feature_configuration = feature_configuration,
+        include_dev_srch_paths = overlay_info.include_dev_srch_paths,
+        module_name = module_name,
+        package_name = None,
+        plugins = overlay_info.plugins,
+        private_cc_infos = overlay_info.private_deps.cc_infos,
+        srcs = overlay_info.srcs,
+        swift_infos = swift_infos,
+        swift_toolchain = swift_toolchain,
+        target_name = overlay_info.label.name,
+        workspace_name = aspect_ctx.workspace_name,
+    )
+    linking_context, _ = (
+        create_linking_context_from_compilation_outputs(
+            actions = aspect_ctx.actions,
+            additional_inputs = overlay_info.additional_inputs,
+            alwayslink = overlay_info.alwayslink,
+            compilation_outputs = compile_result.compilation_outputs,
+            feature_configuration = feature_configuration,
+            label = overlay_info.label,
+            linking_contexts = [
+                cc_info.linking_context
+                for cc_info in (
+                    overlay_info.deps.cc_infos +
+                    overlay_info.private_deps.cc_infos
+                )
+            ] + [
+                overlay_info.linking_context
+                for overlay_info in (
+                    overlay_info.deps.swift_overlay_infos +
+                    overlay_info.private_deps.swift_overlay_infos
+                )
+            ],
+            module_context = compile_result.module_context,
+            swift_toolchain = swift_toolchain,
+            user_link_flags = overlay_info.linkopts,
+        )
+    )
+    return compile_result, linking_context
 
 def _collect_swift_infos_from_deps(aspect_ctx):
     """Collect `SwiftInfo` providers from dependencies.
@@ -532,6 +669,43 @@ def _find_swift_interop_info(target, aspect_ctx):
         return interop_target[SwiftInteropInfo], default_direct_swift_infos, default_swift_infos
     return None, default_direct_swift_infos, default_swift_infos
 
+def _find_swift_overlay_compile_info(aspect_ctx):
+    """Returns the `SwiftOverlayCompileInfo` from an aspect hint, if present.
+
+    It is an error if `aspect_hints` contains two or more targets that propagate
+    `SwiftOverlayCompileInfo`.
+
+    Args:
+        aspect_ctx: The aspect's context.
+
+    Returns:
+        The `SwiftOverlayCompileInfo` if found, or `None`.
+    """
+    overlay_target = None
+
+    for hint in aspect_ctx.rule.attr.aspect_hints:
+        if SwiftOverlayCompileInfo in hint:
+            if (hint.label.package != aspect_ctx.label.package or
+                hint.label.repo_name != aspect_ctx.label.repo_name):
+                fail(("The 'swift_overlay' '{overlay}' is not in the same " +
+                      "BUILD package as the target '{attached}' that it is " +
+                      "attached to. They must be in the same package.").format(
+                    overlay = hint.label,
+                    attached = aspect_ctx.label,
+                ))
+            if overlay_target:
+                fail(("Conflicting Swift overlay info from aspect hints " +
+                      "'{hint1}' and '{hint2}'. Only one is " +
+                      "allowed.").format(
+                    hint1 = str(overlay_target.label),
+                    hint2 = str(hint.label),
+                ))
+            overlay_target = hint
+
+    if overlay_target:
+        return overlay_target[SwiftOverlayCompileInfo]
+    return None
+
 def _swift_clang_module_aspect_impl(target, aspect_ctx):
     providers = [SwiftClangModuleAspectInfo()]
 
@@ -564,7 +738,6 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx):
 
     swift_toolchain = get_swift_toolchain(
         aspect_ctx,
-        attr = "_toolchain_for_aspect",
     )
     feature_configuration = configure_features(
         ctx = aspect_ctx,
@@ -598,9 +771,6 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx):
 
 swift_clang_module_aspect = aspect(
     attr_aspects = _MULTIPLE_TARGET_ASPECT_ATTRS,
-    attrs = swift_toolchain_attrs(
-        toolchain_attr_name = "_toolchain_for_aspect",
-    ),
     doc = """\
 Propagates unified `SwiftInfo` providers for targets that represent
 C/Objective-C modules.

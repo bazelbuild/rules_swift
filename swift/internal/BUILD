@@ -63,6 +63,17 @@ bzl_library(
 )
 
 bzl_library(
+    name = "binary_attrs",
+    srcs = ["binary_attrs.bzl"],
+    visibility = ["//swift:__subpackages__"],
+    deps = [
+        ":attrs",
+        "//swift:swift_clang_module_aspect",
+        "@bazel_skylib//lib:dicts",
+    ],
+)
+
+bzl_library(
     name = "build_settings",
     srcs = ["build_settings.bzl"],
     visibility = ["//swift:__subpackages__"],
@@ -145,7 +156,6 @@ bzl_library(
     deps = [
         ":feature_names",
         ":package_specs",
-        ":target_triples",
         "@bazel_skylib//lib:collections",
         "@bazel_skylib//lib:new_sets",
         "@bazel_skylib//rules:common_settings",
@@ -162,17 +172,12 @@ bzl_library(
     deps = [
         ":action_names",
         ":actions",
-        ":attrs",
         ":autolinking",
         ":debugging",
         ":developer_dirs",
         ":feature_names",
         ":features",
-        ":utils",
-        "//swift:swift_clang_module_aspect",
-        "@bazel_skylib//lib:collections",
-        "@bazel_skylib//lib:dicts",
-        "@bazel_tools//tools/build_defs/cc:action_names.bzl",
+        "//swift:providers",
     ],
 )
 
@@ -236,12 +241,13 @@ bzl_library(
     srcs = ["swift_symbol_graph_aspect.bzl"],
     visibility = ["//swift:__subpackages__"],
     deps = [
-        ":attrs",
         ":features",
         ":providers",
         ":symbol_graph_extracting",
         ":toolchain_utils",
         ":utils",
+        "//swift:providers",
+        "//swift:swift_clang_module_aspect",
         "@bazel_skylib//lib:dicts",
     ],
 )

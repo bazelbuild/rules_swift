@@ -16,7 +16,6 @@
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:sets.bzl", "sets")
-load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 load(
     "//swift/internal:attrs.bzl",
     "swift_deps_attr",
@@ -38,7 +37,6 @@ load("//swift/internal:features.bzl", "configure_features")
 load(
     "//swift/internal:linking.bzl",
     "create_linking_context_from_compilation_outputs",
-    "new_objc_provider",
 )
 load(
     "//swift/internal:output_groups.bzl",
@@ -60,7 +58,7 @@ load(
     "include_developer_search_paths",
 )
 load(":module_name.bzl", "derive_swift_module_name")
-load(":providers.bzl", "SwiftInfo")
+load(":providers.bzl", "SwiftInfo", "SwiftOverlayInfo")
 load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 
 def _maybe_parse_as_library_copts(srcs):
@@ -143,20 +141,9 @@ def _swift_library_impl(ctx):
 
     extra_features = []
 
-    # TODO(b/239957001): Remove the global flag.
-    if (
-        ctx.attr.library_evolution or
-        ctx.attr._config_emit_swiftinterface[BuildSettingInfo].value
-    ):
+    if ctx.attr.library_evolution:
         extra_features.append(SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION)
         extra_features.append(SWIFT_FEATURE_EMIT_SWIFTINTERFACE)
-
-    # TODO(b/239957001): Remove the global flag.
-    if (
-        ctx.attr.library_evolution or
-        ctx.attr._config_emit_private_swiftinterface[BuildSettingInfo].value
-    ):
-        extra_features.append(SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION)
         extra_features.append(SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE)
 
     module_name = ctx.attr.module_name
@@ -200,9 +187,9 @@ def _swift_library_impl(ctx):
         generated_header_name = generated_header_name,
         include_dev_srch_paths = include_dev_srch_paths,
         module_name = module_name,
-        objc_infos = get_providers(ctx.attr.deps, apple_common.Objc),
         package_name = ctx.attr.package_name,
         plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),
+        private_cc_infos = get_providers(ctx.attr.private_deps, CcInfo),
         private_swift_infos = private_swift_infos,
         srcs = srcs,
         swift_infos = swift_infos,
@@ -228,6 +215,10 @@ def _swift_library_impl(ctx):
                 dep[CcInfo].linking_context
                 for dep in deps + private_deps
                 if CcInfo in dep
+            ] + [
+                dep[SwiftOverlayInfo].linking_context
+                for dep in deps + private_deps
+                if SwiftOverlayInfo in dep
             ],
             module_context = module_context,
             swift_toolchain = swift_toolchain,
@@ -256,8 +247,7 @@ def _swift_library_impl(ctx):
         linking_output.library_to_link.pic_static_library,
     ])
 
-    implicit_deps_providers = swift_toolchain.implicit_deps_providers
-    providers = [
+    return [
         DefaultInfo(
             files = depset(direct_output_files),
             runfiles = ctx.runfiles(
@@ -281,25 +271,6 @@ def _swift_library_impl(ctx):
             **supplemental_compilation_output_groups(supplemental_outputs)
         ),
     ]
-
-    # Propagate an `apple_common.Objc` provider with linking info about the
-    # library so that linking with Apple Starlark APIs/rules works correctly.
-    # TODO(b/171413861): This can be removed when the Obj-C rules are migrated
-    # to use `CcLinkingContext`.
-    providers.append(new_objc_provider(
-        additional_link_inputs = additional_inputs,
-        additional_objc_infos = implicit_deps_providers.objc_infos,
-        alwayslink = ctx.attr.alwayslink,
-        deps = deps + private_deps,
-        feature_configuration = feature_configuration,
-        is_test = ctx.attr.testonly,
-        module_context = module_context,
-        libraries_to_link = [linking_output.library_to_link],
-        user_link_flags = linkopts,
-        swift_toolchain = swift_toolchain,
-    ))
-
-    return providers
 
 swift_library = rule(
     attrs = dicts.add(

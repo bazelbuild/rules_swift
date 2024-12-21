@@ -46,7 +46,7 @@ load(
     "SWIFT_FEATURE_HEADERS_ALWAYS_ACTION_INPUTS",
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
     "SWIFT_FEATURE_MODULAR_INDEXING",
-    "SWIFT_FEATURE_NO_GENERATED_MODULE_MAP",
+    "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_OPT",
     "SWIFT_FEATURE_OPT_USES_WMO",
     "SWIFT_FEATURE_PROPAGATE_GENERATED_MODULE_MAP",
@@ -258,7 +258,6 @@ def compile_module_interface(
         is_swift = True,
         module_name = module_name,
         objc_include_paths_workaround = depset(),
-        objc_info = None,
         source_files = [swiftinterface_file],
         swiftmodule_file = swiftmodule_file,
         target_label = feature_configuration._label,
@@ -314,9 +313,9 @@ def compile(
         is_test = None,
         include_dev_srch_paths = None,
         module_name,
-        objc_infos,
         package_name,
         plugins = [],
+        private_cc_infos = [],
         private_swift_infos = [],
         srcs,
         swift_infos,
@@ -358,14 +357,15 @@ def compile(
         module_name: The name of the Swift module being compiled. This must be
             present and valid; use `derive_swift_module_name` to generate a
             default from the target's label if needed.
-        objc_infos: A list of `apple_common.ObjC` providers that represent
-            C/Objective-C requirements of the target being compiled, such as
-            Swift-compatible preprocessor defines, header search paths, and so
-            forth. These are typically retrieved from a target's dependencies.
         package_name: The semantic package of the name of the Swift module
             being compiled.
         plugins: A list of `SwiftCompilerPluginInfo` providers that represent
             plugins that should be loaded by the compiler.
+        private_cc_infos: A list of `CcInfos`s that represent private
+            (non-propagated) C/Objective-C requirements of the target being
+            compiled, such as Swift-compatible preprocessor defines, header
+            search paths, and so forth. These are typically retrieved from a
+            target's `private_deps`.
         private_swift_infos: A list of `SwiftInfo` providers from private
             (implementation-only) dependencies of the target being compiled. The
             modules defined by these providers are used as dependencies of the
@@ -540,10 +540,8 @@ def compile(
         for cc_info in cc_infos
     ]
     merged_cc_info = cc_common.merge_cc_infos(
-        cc_infos = cc_infos + swift_toolchain.implicit_deps_providers.cc_infos,
-    )
-    merged_objc_info = apple_common.new_objc_provider(
-        providers = objc_infos + swift_toolchain.implicit_deps_providers.objc_infos,
+        cc_infos = cc_infos + private_cc_infos +
+                   swift_toolchain.implicit_deps_providers.cc_infos,
     )
 
     transitive_swiftmodules = []
@@ -645,7 +643,6 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         include_dev_srch_paths = include_dev_srch_paths_value,
         is_swift = True,
         module_name = module_name,
-        objc_info = merged_objc_info,
         original_module_name = original_module_name,
         package_name = package_name,
         plugins = used_plugins,
@@ -702,10 +699,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
 
     # If a header and module map were generated for this Swift module, attempt
     # to precompile the explicit module for that header as well.
-    if generated_header_name and not is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_NO_GENERATED_MODULE_MAP,
-    ):
+    if generated_header_name:
         compilation_context_to_compile = (
             compilation_context_for_explicit_module_compilation(
                 compilation_contexts = [
@@ -987,7 +981,6 @@ def _precompile_clang_module(
         is_swift_generated_header = is_swift_generated_header,
         module_name = module_name,
         package_name = None,
-        objc_info = apple_common.new_objc_provider(),
         pcm_file = precompiled_module,
         source_files = [module_map_file],
         target_label = feature_configuration._label,
@@ -1245,10 +1238,7 @@ def _declare_compile_outputs(
     # trap door lets them escape the module redefinition error, with the
     # caveat that certain import scenarios could lead to incorrect behavior
     # because a header can be imported textually instead of modularly.
-    if generated_header and not is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_NO_GENERATED_MODULE_MAP,
-    ):
+    if generated_header:
         # Collect the names of Clang modules that the module being built
         # directly depends on.
         dependent_module_names = sets.make()
@@ -1268,6 +1258,10 @@ def _declare_compile_outputs(
             module_map_file = generated_module_map,
             module_name = module_name,
             public_headers = [generated_header],
+            workspace_relative = is_feature_enabled(
+                feature_configuration = feature_configuration,
+                feature_name = SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD,
+            ),
         )
     else:
         generated_module_map = None

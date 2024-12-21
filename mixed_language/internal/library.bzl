@@ -25,7 +25,7 @@ load(
 load("//swift:swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 
 # buildifier: disable=bzl-visibility
-load("//swift/internal:attrs.bzl", "swift_deps_attr", "swift_toolchain_attrs")
+load("//swift/internal:attrs.bzl", "swift_deps_attr")
 
 # buildifier: disable=bzl-visibility
 load(
@@ -181,35 +181,30 @@ def _mixed_language_library_impl(ctx):
     )
 
     return [
-        DefaultInfo(files = depset(
-            outputs,
-            transitive = [
-                swift_target[DefaultInfo].files,
-                clang_target[DefaultInfo].files,
-            ],
-        )),
+        DefaultInfo(
+            files = depset(
+                outputs,
+                transitive = [
+                    swift_target[DefaultInfo].files,
+                    clang_target[DefaultInfo].files,
+                ],
+            ),
+            runfiles = ctx.runfiles(
+                collect_data = True,
+                collect_default = True,
+                files = ctx.files.data,
+            ),
+        ),
         cc_info,
         coverage_common.instrumented_files_info(
             ctx,
             dependency_attributes = ["deps"],
         ),
         swift_info,
-        # Propagate an `apple_common.Objc` provider with linking info about the
-        # library so that linking with Apple Starlark APIs/rules works
-        # correctly.
-        # TODO(b/171413861): This can be removed when the Obj-C rules are
-        # migrated to use `CcLinkingContext`.
-        apple_common.new_objc_provider(
-            providers = get_providers(
-                [swift_target, clang_target],
-                apple_common.Objc,
-            ),
-        ),
     ]
 
 mixed_language_library = rule(
     attrs = dicts.add(
-        swift_toolchain_attrs(),
         {
             "clang_target": attr.label(
                 doc = """
@@ -217,6 +212,16 @@ The non-Swift portion of the mixed language module.
 """,
                 mandatory = True,
                 providers = [CcInfo],
+            ),
+            "data": attr.label_list(
+                allow_files = True,
+                doc = """\
+The list of files needed by this target at runtime.
+
+Files and targets named in the `data` attribute will appear in the `*.runfiles`
+area of this target, if it has one. This may include data files needed by a
+binary or library, or other programs needed by it.
+""",
             ),
             "deps": swift_deps_attr(
                 aspects = [swift_clang_module_aspect],

@@ -18,7 +18,6 @@ load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(
     "//swift/internal:attrs.bzl",
     "swift_common_rule_attrs",
-    "swift_toolchain_attrs",
 )
 load("//swift/internal:compiling.bzl", "compile_module_interface")
 load(
@@ -26,7 +25,6 @@ load(
     "configure_features",
     "get_cc_feature_configuration",
 )
-load("//swift/internal:linking.bzl", "new_objc_provider")
 load("//swift/internal:providers.bzl", "SwiftCompilerPluginInfo")
 load(
     "//swift/internal:toolchain_utils.bzl",
@@ -53,14 +51,6 @@ def _swift_import_impl(ctx):
     swiftdoc = ctx.file.swiftdoc
     swiftinterface = ctx.file.swiftinterface
     swiftmodule = ctx.file.swiftmodule
-
-    swift_toolchain = get_swift_toolchain(ctx)
-    feature_configuration = configure_features(
-        ctx = ctx,
-        swift_toolchain = swift_toolchain,
-        requested_features = ctx.features,
-        unsupported_features = ctx.disabled_features,
-    )
 
     if not (swiftinterface or swiftmodule):
         fail("One of 'swiftinterface' or 'swiftmodule' must be " +
@@ -138,7 +128,7 @@ def _swift_import_impl(ctx):
         )
         swift_outputs = [swiftmodule] + compact([swiftdoc])
 
-    providers = [
+    return [
         DefaultInfo(
             files = depset(archives + swift_outputs),
             runfiles = ctx.runfiles(
@@ -152,28 +142,11 @@ def _swift_import_impl(ctx):
             swift_infos = swift_infos,
         ),
         cc_info,
-        # Propagate an `Objc` provider so that Apple-specific rules like
-        # apple_binary` will link the imported library properly. Typically we'd
-        # want to only propagate this if the toolchain reports that it supports
-        # Objective-C interop, but we would hit the same cyclic dependency
-        # mentioned above, so we propagate it unconditionally; it will be
-        # ignored on non-Apple platforms anyway.
-        new_objc_provider(
-            deps = deps,
-            feature_configuration = None,
-            is_test = ctx.attr.testonly,
-            libraries_to_link = libraries_to_link,
-            module_context = module_context,
-            swift_toolchain = swift_toolchain,
-        ),
     ]
-
-    return providers
 
 swift_import = rule(
     attrs = dicts.add(
         swift_common_rule_attrs(),
-        swift_toolchain_attrs(),
         {
             "archives": attr.label_list(
                 allow_empty = True,

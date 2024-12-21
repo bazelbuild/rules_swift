@@ -6,6 +6,9 @@ load("@io_bazel_stardoc//stardoc:stardoc.bzl", "stardoc")
 
 _DOC_SRCS = {
     "api": [
+        "create_swift_interop_info",
+        "derive_swift_module_name",
+        "is_swift_overlay",
         "swift_common",
     ],
     "providers": [
@@ -26,9 +29,9 @@ _DOC_SRCS = {
         "swift_library",
         "swift_library_group",
         "mixed_language_library",
-        "swift_module_alias",
         "swift_module_mapping",
         "swift_module_mapping_test",
+        "swift_overlay",
         "swift_package_configuration",
         "swift_test",
         "swift_proto_library",
@@ -46,9 +49,13 @@ write_file(
         "<!-- Generated with Stardoc, Do Not Edit! -->",
         "# Build API",
         "",
-        "The `swift_common` module provides API access to the behavior implemented",
-        "by the Swift build rules, so that other custom rules can invoke Swift",
-        "compilation and/or linking as part of their implementation.",
+        "The `swift_common` module provides API access to the behavior",
+        "implemented by the Swift build rules, so that other custom rules can",
+        "invoke Swift compilation and/or linking as part of their",
+        "implementation.",
+        "",
+        "Some API is exposed as free functions outside of the `swift_common`",
+        "module.",
     ],
 )
 

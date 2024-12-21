@@ -39,6 +39,7 @@ def mixed_language_library(
         clang_copts = [],
         clang_defines = [],
         clang_srcs,
+        data = [],
         enable_modules = False,
         hdrs = [],
         includes = [],
@@ -46,6 +47,7 @@ def mixed_language_library(
         module_map = None,
         module_name = None,
         non_arc_srcs = [],
+        package_name = None,
         private_deps = [],
         sdk_dylibs = [],
         sdk_frameworks = [],
@@ -68,12 +70,12 @@ def mixed_language_library(
         name: The name of the target.
         alwayslink: If true, any binary that depends (directly or indirectly) on
             this library will link in all the object files for the files listed
-            in `swift_srcs`, even if some contain no symbols referenced by the
-            binary. This is useful if your code isn't explicitly called by code
-            in the binary; for example, if you rely on runtime checks for
-            protocol conformances added in extensions in the library but do not
-            directly reference any other symbols in the object file that adds
-            that conformance.
+            in `clang_srcs` and `swift_srcs`, even if some contain no symbols
+            referenced by the binary. This is useful if your code isn't
+            explicitly called by code in the binary; for example, if you rely on
+            runtime checks for protocol conformances added in extensions in the
+            library but do not directly reference any other symbols in the
+            object file that adds that conformance.
         clang_copts: The compiler flags for the clang library. These will only
             be used for the clang library. If you want them to affect the swift
             library as well, you need to pass them with `-Xcc` in `swift_copts`.
@@ -84,6 +86,12 @@ def mixed_language_library(
             substitution and Bourne shell tokenization.
         clang_srcs: The list of C, C++, Objective-C, or Objective-C++ sources
             for the clang library.
+        data: The list of files needed by this target at runtime.
+
+            Files and targets named in the `data` attribute will appear in the
+            `*.runfiles` area of this target, if it has one. This may include
+            data files needed by a binary or library, or other programs needed
+            by it.
         enable_modules: Enables clang module support (via `-fmodules`). Setting
             this to `True`  will allow you to `@import` system headers and other
             targets: `@import UIKit;` `@import path_to_package_target;`.
@@ -111,6 +119,9 @@ def mixed_language_library(
             the library target that DO NOT use ARC. The files in this attribute
             are treated very similar to those in the `clang_srcs` attribute, but
             are compiled without ARC enabled.
+        package_name: The semantic package of the Swift target being built. Targets
+            with the same `package_name` can access APIs using the 'package'
+            access control modifier in Swift 5.9+.
         private_deps: A list of targets that are implementation-only
             dependencies of the target being built. Libraries/linker flags from
             these dependencies will be propagated to dependent for linking, but
@@ -307,6 +318,7 @@ a mixed language Swift library, use a clang only library rule like \
         generated_header_name = module_name + "-Swift.h",
         linkopts = linkopts,
         module_name = module_name,
+        package_name = package_name,
         private_deps = private_deps,
         swiftc_inputs = swiftc_inputs,
         tags = internal_tags,
@@ -334,6 +346,7 @@ a mixed language Swift library, use a clang only library rule like \
     native.objc_library(
         name = clang_library_name,
         srcs = clang_srcs,
+        alwayslink = alwayslink,
         hdrs = adjusted_hdrs,
         non_arc_srcs = non_arc_srcs,
         # `internal_swift_interop_name` isn't needed here because
@@ -371,6 +384,7 @@ a mixed language Swift library, use a clang only library rule like \
         name = name,
         aspect_hints = aspect_hints,
         clang_target = ":" + clang_library_name,
+        data = data,
         features = features,
         module_map = module_map,
         module_name = module_name,

@@ -456,7 +456,6 @@ def _swift_toolchain_impl(ctx):
         features_from_swiftcopts(swiftcopts = swiftcopts)
     )
     requested_features.extend(default_features_for_toolchain(
-        ctx = ctx,
         target_triple = target_triple,
     ))
 
@@ -551,9 +550,11 @@ def _swift_toolchain_impl(ctx):
         swift_worker = ctx.attr._worker[DefaultInfo].files_to_run,
         const_protocols_to_gather = ctx.file.const_protocols_to_gather,
         test_configuration = struct(
+            binary_name = "{name}",
             env = env,
             execution_requirements = {},
-            uses_xctest_bundles = False,
+            objc_test_discovery = False,
+            test_linking_contexts = [],
         ),
         tool_configs = all_tool_configs,
         unsupported_features = ctx.disabled_features + [

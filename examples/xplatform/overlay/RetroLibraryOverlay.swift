@@ -1,4 +1,4 @@
-// Copyright 2018 The Bazel Authors. All rights reserved.
+// Copyright 2024 The Bazel Authors. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,4 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-print("Hello, world!")
+import OrientationModule
+@_exported import RetroLibrary
+
+extension RetroRect {
+  public var orientation: Orientation {
+    if width > height {
+      return .horizontal
+    }
+    if height > width {
+      return .vertical
+    }
+    return .unoriented
+  }
+}
+
+extension RetroRect: CustomStringConvertible {
+  public var description: String {
+    return "<x: \(x), y: \(y), width: \(width), height: \(height)>"
+  }
+}

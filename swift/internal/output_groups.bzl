@@ -19,12 +19,16 @@ visibility([
     "//swift/...",
 ])
 
-def supplemental_compilation_output_groups(*supplemental_outputs):
+def supplemental_compilation_output_groups(
+        *supplemental_outputs,
+        additional_indexstore_files = []):
     """Computes output groups from supplemental compilation outputs.
 
     Args:
         *supplemental_outputs: Zero or more supplemental outputs `struct`s
             returned from calls to `compile`.
+        additional_indexstore_files: An optional `list` of additional indexstore
+            artifacts to be included in the `indexstore` output group.
 
     Returns:
         A dictionary whose keys are output group names and whose values are
@@ -33,7 +37,7 @@ def supplemental_compilation_output_groups(*supplemental_outputs):
     """
     ast_files = []
     const_values_files = []
-    indexstore_files = []
+    indexstore_files = list(additional_indexstore_files)
     macro_expansions_files = []
 
     for outputs in supplemental_outputs:

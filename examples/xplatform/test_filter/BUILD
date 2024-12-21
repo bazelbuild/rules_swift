@@ -27,7 +27,7 @@ swift_test(
 swift_test(
     name = "test_filter__feature__target_class",
     env = {
-        "TESTBRIDGE_TEST_ONLY": "test_filter.PassTests",
+        "TESTBRIDGE_TEST_ONLY": "PassTests",
     },
     module_name = "test_filter__feature__target_class",
     deps = [":test_filter_lib"],
@@ -37,7 +37,7 @@ swift_test(
 swift_test(
     name = "test_filter__feature__target_class_method",
     env = {
-        "TESTBRIDGE_TEST_ONLY": "test_filter.PassFailTests/test_pass",
+        "TESTBRIDGE_TEST_ONLY": "PassFailTests/test_pass",
     },
     module_name = "test_filter__feature__target_class_method",
     deps = [":test_filter_lib"],

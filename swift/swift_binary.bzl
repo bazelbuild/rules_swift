@@ -16,6 +16,7 @@
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("//swift/internal:binary_attrs.bzl", "binary_rule_attrs")
 load("//swift/internal:compiling.bzl", "compile")
 load(
     "//swift/internal:feature_names.bzl",
@@ -24,7 +25,6 @@ load(
 load("//swift/internal:features.bzl", "is_feature_enabled")
 load(
     "//swift/internal:linking.bzl",
-    "binary_rule_attrs",
     "configure_features_for_binary",
     "create_linking_context_from_compilation_outputs",
     "malloc_linking_context",
@@ -52,6 +52,7 @@ load(
     ":providers.bzl",
     "SwiftBinaryInfo",
     "SwiftInfo",
+    "SwiftOverlayInfo",
     "create_swift_module_context",
 )
 
@@ -120,7 +121,6 @@ def _swift_binary_impl(ctx):
             feature_configuration = feature_configuration,
             include_dev_srch_paths = include_dev_srch_paths,
             module_name = module_name,
-            objc_infos = get_providers(ctx.attr.deps, apple_common.Objc),
             package_name = ctx.attr.package_name,
             plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),
             srcs = srcs,
@@ -183,10 +183,10 @@ def _swift_binary_impl(ctx):
         feature_configuration = feature_configuration,
         compilation_outputs = compilation_outputs,
         deps = ctx.attr.deps,
+        label = ctx.label,
         module_contexts = module_contexts,
         name = name,
         output_type = "executable",
-        owner = ctx.label,
         stamp = ctx.attr.stamp,
         swift_toolchain = swift_toolchain,
         user_link_flags = binary_link_flags + entry_point_linkopts,
@@ -235,6 +235,10 @@ def _swift_binary_impl(ctx):
                     dep[CcInfo].linking_context
                     for dep in ctx.attr.deps
                     if CcInfo in dep
+                ] + [
+                    dep[SwiftOverlayInfo].linking_context
+                    for dep in ctx.attr.deps
+                    if SwiftOverlayInfo in dep
                 ],
                 module_context = compile_result.module_context,
                 swift_toolchain = swift_toolchain,

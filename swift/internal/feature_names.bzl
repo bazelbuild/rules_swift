@@ -148,11 +148,6 @@ SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS = (
 # link to any version of the ASAN runtime library.
 SWIFT_FEATURE_NO_ASAN_VERSION_CHECK = "swift.no_asan_version_check"
 
-# If enabled, the compilation action for a library target will not generate a
-# module map for the Objective-C generated header. This feature is ignored if
-# the target is not generating a header.
-SWIFT_FEATURE_NO_GENERATED_MODULE_MAP = "swift.no_generated_module_map"
-
 # If enabled, the parent directory of the generated module map is added to
 # `CcInfo.compilation_context.includes`. This allows `objc_library` to import
 # the Swift module. If you swap this feature between enabled and disabled, and
@@ -341,10 +336,6 @@ SWIFT_FEATURE_LLD_GC_WORKAROUND = "swift.lld_gc_workaround"
 # non-Apple binary top level targets. Disable this to avoid over-linking
 # objects if you know that isn't required.
 SWIFT_FEATURE_OBJC_LINK_FLAGS = "swift.objc_link_flag"
-
-# A private feature that is set by the toolchain if the given toolchain wants
-# all Swift compilations to always be linked.
-SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE = "swift._force_alwayslink_true"
 
 # If enabled, requests the `-enforce-exclusivity=checked` swiftc flag which
 # enables runtime checking of exclusive memory access on mutation.

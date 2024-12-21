@@ -24,7 +24,7 @@ file in the parent directory.
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("//swift:providers.bzl", "SwiftInfo", "SwiftSymbolGraphInfo")
-load("//swift/internal:attrs.bzl", "swift_toolchain_attrs")
+load("//swift:swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 load("//swift/internal:features.bzl", "configure_features")
 load("//swift/internal:symbol_graph_extracting.bzl", "extract_symbol_graph")
 load(
@@ -55,30 +55,37 @@ def _swift_symbol_graph_aspect_impl(target, aspect_ctx):
         emit_extension_block_symbols = aspect_ctx.attr.emit_extension_block_symbols
         minimum_access_level = aspect_ctx.attr.minimum_access_level
 
-        for module in swift_info.direct_modules:
-            output_dir = aspect_ctx.actions.declare_directory(
-                "{}.symbolgraphs".format(target.label.name),
-            )
-            extract_symbol_graph(
-                actions = aspect_ctx.actions,
-                compilation_contexts = [compilation_context],
-                emit_extension_block_symbols = emit_extension_block_symbols,
-                feature_configuration = feature_configuration,
-                include_dev_srch_paths = include_developer_search_paths(
-                    aspect_ctx.rule.attr,
-                ),
-                minimum_access_level = minimum_access_level,
-                module_name = module.name,
-                output_dir = output_dir,
-                swift_infos = [swift_info],
-                swift_toolchain = swift_toolchain,
-            )
-            symbol_graphs.append(
-                struct(
+        # Only extract the symbol graphs of modules when the target compiles Swift or ObjC code
+        compiles_code = [
+            action
+            for action in target.actions
+            if action.mnemonic in ("SwiftCompile", "SwiftCompileModule", "SwiftPrecompileCModule")
+        ]
+        if compiles_code:
+            for module in swift_info.direct_modules:
+                output_dir = aspect_ctx.actions.declare_directory(
+                    "{}.symbolgraphs".format(target.label.name),
+                )
+                extract_symbol_graph(
+                    actions = aspect_ctx.actions,
+                    compilation_contexts = [compilation_context],
+                    emit_extension_block_symbols = emit_extension_block_symbols,
+                    feature_configuration = feature_configuration,
+                    include_dev_srch_paths = include_developer_search_paths(
+                        aspect_ctx.rule.attr,
+                    ),
+                    minimum_access_level = minimum_access_level,
                     module_name = module.name,
-                    symbol_graph_dir = output_dir,
-                ),
-            )
+                    output_dir = output_dir,
+                    swift_infos = [swift_info],
+                    swift_toolchain = swift_toolchain,
+                )
+                symbol_graphs.append(
+                    struct(
+                        module_name = module.name,
+                        symbol_graph_dir = output_dir,
+                    ),
+                )
 
     # TODO(b/204480390): We intentionally don't propagate symbol graphs from
     # private deps at this time, since the main use case for them is
@@ -148,7 +155,6 @@ def make_swift_symbol_graph_aspect(
     return aspect(
         attr_aspects = ["deps"],
         attrs = dicts.add(
-            swift_toolchain_attrs(),
             {
                 # TODO: use `attr.bool` once https://github.com/bazelbuild/bazel/issues/22809 is resolved.
                 "emit_extension_block_symbols": attr.string(
@@ -192,5 +198,6 @@ default value is {default_value}.
         fragments = ["cpp"],
         implementation = aspect_impl,
         provides = [SwiftSymbolGraphInfo],
+        requires = [swift_clang_module_aspect],
         toolchains = use_swift_toolchain(),
     )

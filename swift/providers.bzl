@@ -145,6 +145,21 @@ this provider and all of its dependencies.
     init = _swift_info_init,
 )
 
+SwiftOverlayInfo = provider(
+    doc = """\
+Contains additional artifacts from the Swift overlay for a C/Objective-C module
+that also need to be propagated to clients of the module for it to work
+properly.
+""",
+    fields = {
+        "linking_context": """\
+`CcLinkingContext`. A linking context that contain object files, linker flags,
+and additional linker inputs for Swift code that was compiled as an overlay for
+a C/Objective-C target.
+""",
+    },
+)
+
 SwiftPackageConfigurationInfo = provider(
     doc = """\
 Describes a compiler configuration that is applied by default to targets in a
@@ -279,9 +294,6 @@ C/Objective-C modules:
 *   `cc_infos`: A list of `CcInfo` providers from targets specified as the
     toolchain's implicit dependencies.
 
-*   `objc_infos`: A list of `apple_common.Objc` providers from targets specified
-    as the toolchain's implicit dependencies.
-
 *   `swift_infos`: A list of `SwiftInfo` providers from targets specified as the
     toolchain's implicit dependencies.
 
@@ -347,9 +359,6 @@ module for the generated Objective-C header of a Swift module:
 *   `cc_infos`: A list of `CcInfo` providers from targets specified as the
     toolchain's implicit dependencies.
 
-*   `objc_infos`: A list of `apple_common.Objc` providers from targets specified
-    as the toolchain's implicit dependencies.
-
 *   `swift_infos`: A list of `SwiftInfo` providers from targets specified as the
     toolchain's implicit dependencies.
 
@@ -366,9 +375,6 @@ linking target (but not to precompiled explicit C/Objective-C modules):
 
 *   `cc_infos`: A list of `CcInfo` providers from targets specified as the
     toolchain's implicit dependencies.
-
-*   `objc_infos`: A list of `apple_common.Objc` providers from targets specified
-    as the toolchain's implicit dependencies.
 
 *   `swift_infos`: A list of `SwiftInfo` providers from targets specified as the
     toolchain's implicit dependencies.
@@ -406,14 +412,21 @@ compiles).
         "test_configuration": """\
 `Struct` containing the following fields:
 
+*   `binary_name`: A template string used to compute the name of the output
+    binary for `swift_test` rules. Any occurrences of the string `"{name}"` will
+    be substituted by the name of the target.
+
 *   `env`: A `dict` of environment variables to be set when running tests
     that were built with this toolchain.
 
 *   `execution_requirements`: A `dict` of execution requirements for tests
     that were built with this toolchain.
 
-*   `uses_xctest_bundles`: A Boolean value indicating whether test targets
-    should emit `.xctest` bundles that are launched with the `xctest` tool.
+*   `objc_test_discovery`: A Boolean value indicating whether test targets
+    should discover tests dynamically using the Objective-C runtime.
+
+*   `test_linking_contexts`: A list of `CcLinkingContext`s that provide
+    additional flags to use when linking test binaries.
 
 This is used, for example, with Xcode-based toolchains to ensure that the
 `xctest` helper and coverage tools are found in the correct developer

@@ -16,8 +16,16 @@
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
 
+# buildifier: disable=bzl-visibility
+load(
+    "//swift/internal:toolchain_utils.bzl",
+    "get_swift_toolchain",
+    "use_swift_toolchain",
+)
+
 def _swift_shell_test_impl(ctx):
     """Implementation of the swift_shell_test rule."""
+    swift_toolchain = get_swift_toolchain(ctx)
 
     test_executable = ctx.attr.target_under_test.files_to_run.executable
 
@@ -47,10 +55,13 @@ def _swift_shell_test_impl(ctx):
             runfiles = runfiles,
         ),
         ctx.attr.target_under_test[OutputGroupInfo],
+        testing.ExecutionInfo(
+            swift_toolchain.test_configuration.execution_requirements,
+        ),
+        testing.TestEnvironment(swift_toolchain.test_configuration.env),
     ]
 
 swift_shell_test = rule(
-    implementation = _swift_shell_test_impl,
     attrs = {
         "expected_return_code": attr.int(
             doc = "The expected return code from the target under test",
@@ -76,5 +87,7 @@ swift_shell_test = rule(
             default = Label("//test/rules:swift_shell_runner.sh.template"),
         ),
     },
+    implementation = _swift_shell_test_impl,
     test = True,
+    toolchains = use_swift_toolchain(),
 )

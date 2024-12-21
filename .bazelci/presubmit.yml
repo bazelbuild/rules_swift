@@ -16,7 +16,7 @@ x_defaults:
       CC: clang
       SWIFT_VERSION: "5.9.2"
       SWIFT_HOME: "$HOME/swift-$SWIFT_VERSION"
-      PATH: "$PATH:$SWIFT_HOME/usr/bin"
+      PATH: "$SWIFT_HOME/usr/bin:$PATH"
   linux_common: &linux_common
     <<: *linux_environment
     build_flags: &linux_flags
@@ -48,16 +48,11 @@ x_defaults:
       - "//tools/..."
 
 tasks:
-  macos_6:
-    name: "6.x LTS"
-    bazel: 6.x
-    <<: *mac_common
-    build_flags:
-      # Bazel 6.x has dependencies that produce warnings now
-      - "--features=-treat_warnings_as_errors"
-    test_flags:
-      # Bazel 6.x has dependencies that produce warnings now
-      - "--features=-treat_warnings_as_errors"
+  # TODO: Uncomment once Bazel 8 is released
+  # macos_7:
+  #   name: "Previous LTS"
+  #   bazel: 7.x
+  #   <<: *mac_common
 
   macos_latest:
     name: "Current LTS"
@@ -83,14 +78,15 @@ tasks:
     - .bazelci/update_workspace_to_deps_heads.sh
     <<: *mac_common
 
-  ubuntu2004_lts:
-    name: "Previous LTS"
-    bazel: latest-1
-    shell_commands:
-      - "echo --- Downloading and extracting Swift $SWIFT_VERSION to $SWIFT_HOME"
-      - "mkdir $SWIFT_HOME"
-      - "curl https://download.swift.org/swift-${SWIFT_VERSION}-release/ubuntu2004/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu20.04.tar.gz | tar xvz --strip-components=1 -C $SWIFT_HOME"
-    <<: *linux_common
+  # TODO: Uncomment once Bazel 8 is released
+  # ubuntu2004_7:
+  #   name: "Previous LTS"
+  #   bazel: 7.x
+  #   shell_commands:
+  #     - "echo --- Downloading and extracting Swift $SWIFT_VERSION to $SWIFT_HOME"
+  #     - "mkdir $SWIFT_HOME"
+  #     - "curl https://download.swift.org/swift-${SWIFT_VERSION}-release/ubuntu2004/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu20.04.tar.gz | tar xvz --strip-components=1 -C $SWIFT_HOME"
+  #   <<: *linux_common
 
   ubuntu2004_latest:
     name: "Current LTS"
@@ -138,5 +134,9 @@ tasks:
       - "curl https://download.swift.org/swift-${SWIFT_VERSION}-release/ubuntu2004/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu20.04.tar.gz | tar xvz --strip-components=1 -C $SWIFT_HOME"
     test_targets:
     - "doc/..."
+    # TODO: Remove this once stardoc is updated to 0.7.1+ (https://github.com/bazelbuild/stardoc/pull/238)
+    test_flags:
+    - "--action_env=PATH"
+    - "--noincompatible_disallow_empty_glob"
 
 buildifier: 6.3.2

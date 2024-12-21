@@ -81,14 +81,14 @@ load(
     "//swift:swift_interop_hint.bzl",
     _swift_interop_hint = "swift_interop_hint",
 )
+load(
+    "//swift:swift_interop_info.bzl",
+    _create_swift_interop_info = "create_swift_interop_info",
+)
 load("//swift:swift_library.bzl", _swift_library = "swift_library")
 load(
     "//swift:swift_library_group.bzl",
     _swift_library_group = "swift_library_group",
-)
-load(
-    "//swift:swift_module_alias.bzl",
-    _swift_module_alias = "swift_module_alias",
 )
 load(
     "//swift:swift_module_mapping.bzl",
@@ -97,6 +97,11 @@ load(
 load(
     "//swift:swift_module_mapping_test.bzl",
     _swift_module_mapping_test = "swift_module_mapping_test",
+)
+load("//swift:swift_overlay.bzl", _swift_overlay = "swift_overlay")
+load(
+    "//swift:swift_overlay_helpers.bzl",
+    _is_swift_overlay = "is_swift_overlay",
 )
 load(
     "//swift:swift_package_configuration.bzl",
@@ -115,7 +120,9 @@ swift_proto_library = _swift_proto_library
 swift_proto_library_group = _swift_proto_library_group
 
 # swift symbols
+create_swift_interop_info = _create_swift_interop_info
 derive_swift_module_name = _derive_swift_module_name
+is_swift_overlay = _is_swift_overlay
 swift_common = _swift_common
 SwiftInfo = _SwiftInfo
 SwiftToolchainInfo = _SwiftToolchainInfo
@@ -130,8 +137,8 @@ swift_interop_hint = _swift_interop_hint
 swift_library = _swift_library
 swift_library_group = _swift_library_group
 mixed_language_library = _mixed_language_library
-swift_module_alias = _swift_module_alias
 swift_module_mapping = _swift_module_mapping
 swift_module_mapping_test = _swift_module_mapping_test
+swift_overlay = _swift_overlay
 swift_package_configuration = _swift_package_configuration
 swift_test = _swift_test

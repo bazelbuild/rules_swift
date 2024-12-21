@@ -1776,27 +1776,21 @@ def _frameworks_disable_autolink_configurator(prerequisites, args):
     errors since when linking the framework it will be passed directly as a
     library.
     """
-    if hasattr(prerequisites.objc_info, "dynamic_framework_file"):
-        args.add_all(
-            depset(transitive = [prerequisites.objc_info.imported_library, prerequisites.objc_info.dynamic_framework_file]),
-            map_each = _disable_autolink_framework_copts,
-        )
-    else:
-        libraries = []
-        inputs = prerequisites.cc_linking_context.linker_inputs.to_list()
-        for linker_input in inputs:
-            for library in linker_input.libraries:
-                if library.dynamic_library:
-                    libraries.append(library.dynamic_library)
-                if library.static_library:
-                    libraries.append(library.static_library)
-                if library.pic_static_library:
-                    libraries.append(library.pic_static_library)
+    libraries = []
+    inputs = prerequisites.cc_linking_context.linker_inputs.to_list()
+    for linker_input in inputs:
+        for library in linker_input.libraries:
+            if library.dynamic_library:
+                libraries.append(library.dynamic_library)
+            if library.static_library:
+                libraries.append(library.static_library)
+            if library.pic_static_library:
+                libraries.append(library.pic_static_library)
 
-        args.add_all(
-            depset(transitive = [depset(libraries)]),
-            map_each = _disable_autolink_framework_copts,
-        )
+    args.add_all(
+        depset(transitive = [depset(libraries)]),
+        map_each = _disable_autolink_framework_copts,
+    )
 
 def _disable_autolink_framework_copts(library_path):
     """A `map_each` helper that potentially disables autolinking for the given library.

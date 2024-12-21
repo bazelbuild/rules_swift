@@ -45,6 +45,7 @@ load(
     "SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT",
 )
 load("//swift/internal:attrs.bzl", "swift_toolchain_driver_attrs")
+load("//swift/internal:developer_dirs.bzl", "swift_developer_lib_dir")
 load(
     "//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_COVERAGE",
@@ -71,6 +72,7 @@ load("//swift/internal:target_triples.bzl", "target_triples")
 load(
     "//swift/internal:utils.bzl",
     "collect_implicit_deps_providers",
+    "compact",
     "get_swift_executable_for_toolchain",
 )
 load("//swift/internal:wmo.bzl", "wmo_features_from_swiftcopts")
@@ -97,9 +99,6 @@ load(
     "symbol_graph_action_configs",
 )
 load("//swift/toolchains/config:tool_config.bzl", "ToolConfigInfo")
-
-# TODO: Remove once we drop bazel 7.x
-_OBJC_PROVIDER_LINKING = hasattr(apple_common.new_objc_provider(), "linkopt")
 
 def _platform_developer_framework_dir(
         apple_toolchain,
@@ -143,16 +142,16 @@ def _sdk_developer_framework_dir(apple_toolchain, target_triple):
 
     return paths.join(apple_toolchain.sdk_dir(), "Developer/Library/Frameworks")
 
-def _swift_linkopts_providers(
+def _swift_linkopts_cc_info(
         apple_toolchain,
         target_triple,
         toolchain_label,
         toolchain_root):
-    """Returns providers containing flags that should be passed to the linker.
+    """Returns a `CcInfo` containing flags that should be passed to the linker.
 
     The providers returned by this function will be used as implicit
-    dependencies of the toolchain to ensure that any binary containing Swift code
-    will link to the standard libraries correctly.
+    dependencies of the toolchain to ensure that any binary containing Swift
+    code will link to the standard libraries correctly.
 
     Args:
         apple_toolchain: The `apple_common.apple_toolchain()` object.
@@ -163,12 +162,8 @@ def _swift_linkopts_providers(
             libraries required to link the binary
 
     Returns:
-        A `struct` containing the following fields:
-
-        *   `cc_info`: A `CcInfo` provider that will provide linker flags to
-            binaries that depend on Swift targets.
-        *   `objc_info`: An `apple_common.Objc` provider that will provide
-            linker flags to binaries that depend on Swift targets.
+        A `CcInfo` provider that will provide linker flags to binaries that
+        depend on Swift targets.
     """
     linkopts = []
     if toolchain_root:
@@ -188,7 +183,7 @@ def _swift_linkopts_providers(
     linkopts.extend([
         "-L{}".format(swift_lib_dir),
         "-L/usr/lib/swift",
-        # TODO(b/112000244): These should get added by the C++ Starlark API,
+        # TODO(b/112000244): This should get added by the C++ Starlark API,
         # but we're using the "c++-link-executable" action right now instead
         # of "objc-executable" because the latter requires additional
         # variables not provided by cc_common. Figure out how to handle this
@@ -197,23 +192,65 @@ def _swift_linkopts_providers(
         "-Wl,-rpath,/usr/lib/swift",
     ])
 
-    if _OBJC_PROVIDER_LINKING:
-        objc_info = apple_common.new_objc_provider(linkopt = depset(linkopts))
-    else:
-        objc_info = apple_common.new_objc_provider()
+    return CcInfo(
+        linking_context = cc_common.create_linking_context(
+            linker_inputs = depset([
+                cc_common.create_linker_input(
+                    owner = toolchain_label,
+                    user_link_flags = depset(linkopts),
+                ),
+            ]),
+        ),
+    )
 
-    return struct(
-        cc_info = CcInfo(
-            linking_context = cc_common.create_linking_context(
-                linker_inputs = depset([
-                    cc_common.create_linker_input(
-                        owner = toolchain_label,
-                        user_link_flags = depset(linkopts),
+def _test_linking_context(apple_toolchain, target_triple, toolchain_label):
+    """Returns a `CcLinkingContext` containing linker flags for test binaries.
+
+    Args:
+        apple_toolchain: The `apple_common.apple_toolchain()` object.
+        target_triple: The target triple `struct`.
+        toolchain_label: The label of the Swift toolchain that will act as the
+            owner of the linker input propagating the flags.
+
+    Returns:
+        A `CcLinkingContext` that will provide linker flags to `swift_test`
+        binaries.
+    """
+    platform_developer_framework_dir = _platform_developer_framework_dir(
+        apple_toolchain,
+        target_triple,
+    )
+
+    # Weakly link to XCTest. It's possible that machine that links the test
+    # binary will have Xcode installed at a different path than the machine that
+    # runs the binary. To handle this, the binary `dlopen`s XCTest at startup
+    # using the path Bazel passes in the test action's environment.
+    linkopts = [
+        "-Wl,-weak_framework,XCTest",
+        "-Wl,-weak-lXCTestSwiftSupport",
+    ]
+
+    if platform_developer_framework_dir:
+        linkopts.extend([
+            "-Wl,-rpath,{}".format(path)
+            for path in compact([
+                swift_developer_lib_dir([
+                    struct(
+                        developer_path_label = "platform",
+                        path = platform_developer_framework_dir,
                     ),
                 ]),
+                platform_developer_framework_dir,
+            ])
+        ])
+
+    return cc_common.create_linking_context(
+        linker_inputs = depset([
+            cc_common.create_linker_input(
+                owner = toolchain_label,
+                user_link_flags = depset(linkopts),
             ),
-        ),
-        objc_info = objc_info,
+        ]),
     )
 
 def _make_resource_directory_configurator(developer_dir):
@@ -578,6 +615,12 @@ def _xcode_swift_toolchain_impl(ctx):
     else:
         swiftcopts.extend(ctx.attr._copts[BuildSettingInfo].value)
 
+    test_linking_context = _test_linking_context(
+        apple_toolchain = apple_toolchain,
+        target_triple = target_triple,
+        toolchain_label = ctx.label,
+    )
+
     # `--define=SWIFT_USE_TOOLCHAIN_ROOT=<path>` is a rapid development feature
     # that lets you build *just* a custom `swift` driver (and `swiftc`
     # symlink), rather than a full toolchain, and point compilation actions at
@@ -589,22 +632,19 @@ def _xcode_swift_toolchain_impl(ctx):
     # attribute, which supports remote builds.
     #
     # To use a "standard" custom toolchain built using the full Swift build
-    # script, use `--define=SWIFT_CUSTOM_TOOLCHAIN=<id>` as shown below.
+    # script, set the `TOOLCHAINS` envirinment variable as shown below.
     swift_executable = get_swift_executable_for_toolchain(ctx)
     toolchain_root = ctx.var.get("SWIFT_USE_TOOLCHAIN_ROOT")
 
-    # TODO: Remove SWIFT_CUSTOM_TOOLCHAIN for the next major release
-    custom_toolchain = ctx.var.get("SWIFT_CUSTOM_TOOLCHAIN") or ctx.configuration.default_shell_env.get("TOOLCHAINS")
+    custom_toolchain = ctx.configuration.default_shell_env.get("TOOLCHAINS")
     custom_xcode_toolchain_root = None
-    if ctx.var.get("SWIFT_CUSTOM_TOOLCHAIN"):
-        print("WARNING: SWIFT_CUSTOM_TOOLCHAIN is deprecated. Use --action_env=TOOLCHAINS=<id> instead.")  # buildifier: disable=print
     if toolchain_root and custom_toolchain:
         fail("Do not use SWIFT_USE_TOOLCHAIN_ROOT and TOOLCHAINS" +
              "in the same build.")
     elif custom_toolchain:
         custom_xcode_toolchain_root = "__BAZEL_CUSTOM_XCODE_TOOLCHAIN_PATH__"
 
-    swift_linkopts_providers = _swift_linkopts_providers(
+    swift_linkopts_cc_info = _swift_linkopts_cc_info(
         apple_toolchain = apple_toolchain,
         target_triple = target_triple,
         toolchain_label = ctx.label,
@@ -619,7 +659,6 @@ def _xcode_swift_toolchain_impl(ctx):
     ) + wmo_features_from_swiftcopts(swiftcopts = swiftcopts)
     requested_features.extend(ctx.features)
     requested_features.extend(default_features_for_toolchain(
-        ctx = ctx,
         target_triple = target_triple,
     ))
 
@@ -717,8 +756,7 @@ def _xcode_swift_toolchain_impl(ctx):
         ),
         implicit_deps_providers = collect_implicit_deps_providers(
             ctx.attr.implicit_deps + ctx.attr.clang_implicit_deps,
-            additional_cc_infos = [swift_linkopts_providers.cc_info],
-            additional_objc_infos = [swift_linkopts_providers.objc_info],
+            additional_cc_infos = [swift_linkopts_cc_info],
         ),
         module_aliases = (
             ctx.attr._module_mapping[SwiftModuleAliasesInfo].aliases
@@ -731,9 +769,11 @@ def _xcode_swift_toolchain_impl(ctx):
         swift_worker = ctx.attr._worker[DefaultInfo].files_to_run,
         const_protocols_to_gather = ctx.file.const_protocols_to_gather,
         test_configuration = struct(
+            binary_name = "{bundle_name}.xctest/Contents/MacOS/{name}",
             env = env,
             execution_requirements = execution_requirements,
-            uses_xctest_bundles = True,
+            objc_test_discovery = True,
+            test_linking_contexts = [test_linking_context],
         ),
         tool_configs = all_tool_configs,
         unsupported_features = ctx.disabled_features + [

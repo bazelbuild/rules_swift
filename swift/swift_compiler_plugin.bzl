@@ -21,6 +21,7 @@ load(
     "@build_bazel_apple_support//lib:transitions.bzl",
     "macos_universal_transition",
 )
+load("//swift/internal:binary_attrs.bzl", "binary_rule_attrs")
 load("//swift/internal:compiling.bzl", "compile")
 load(
     "//swift/internal:feature_names.bzl",
@@ -29,7 +30,6 @@ load(
 load("//swift/internal:features.bzl", "is_feature_enabled")
 load(
     "//swift/internal:linking.bzl",
-    "binary_rule_attrs",
     "configure_features_for_binary",
     "create_linking_context_from_compilation_outputs",
     "malloc_linking_context",
@@ -51,7 +51,7 @@ load(
     "get_providers",
 )
 load(":module_name.bzl", "derive_swift_module_name")
-load(":providers.bzl", "SwiftBinaryInfo", "SwiftInfo")
+load(":providers.bzl", "SwiftBinaryInfo", "SwiftInfo", "SwiftOverlayInfo")
 
 def _swift_compiler_plugin_impl(ctx):
     swift_toolchain = get_swift_toolchain(ctx)
@@ -99,7 +99,6 @@ def _swift_compiler_plugin_impl(ctx):
         feature_configuration = feature_configuration,
         include_dev_srch_paths = ctx.attr.testonly,
         module_name = module_name,
-        objc_infos = get_providers(deps, apple_common.Objc),
         package_name = ctx.attr.package_name,
         plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),
         srcs = srcs,
@@ -141,10 +140,10 @@ def _swift_compiler_plugin_impl(ctx):
         compilation_outputs = compilation_outputs,
         deps = deps,
         feature_configuration = feature_configuration,
+        label = ctx.label,
         module_contexts = module_contexts,
         name = name,
         output_type = "executable",
-        owner = ctx.label,
         stamp = ctx.attr.stamp,
         swift_toolchain = swift_toolchain,
         user_link_flags = expand_locations(
@@ -174,6 +173,10 @@ def _swift_compiler_plugin_impl(ctx):
                 dep[CcInfo].linking_context
                 for dep in deps
                 if CcInfo in dep
+            ] + [
+                dep[SwiftOverlayInfo].linking_context
+                for dep in deps
+                if SwiftOverlayInfo in dep
             ],
             module_context = module_context,
             swift_toolchain = swift_toolchain,
@@ -354,11 +357,6 @@ universal_swift_compiler_plugin = rule(
                 doc = "Target to generate a 'fat' binary from.",
                 mandatory = True,
                 providers = [[SwiftBinaryInfo, SwiftCompilerPluginInfo]],
-            ),
-            "_allowlist_function_transition": attr.label(
-                default = Label(
-                    "@bazel_tools//tools/allowlists/function_transition_allowlist",
-                ),
             ),
             # TODO(b/301253335): Enable AEGs and switch from `swift` exec_group to swift `toolchain` param.
             "_use_auto_exec_groups": attr.bool(default = False),

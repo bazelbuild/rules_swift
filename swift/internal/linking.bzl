@@ -14,30 +14,20 @@
 
 """Implementation of linking logic for Swift."""
 
-load("@bazel_skylib//lib:collections.bzl", "collections")
-load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load(
-    "//swift:swift_clang_module_aspect.bzl",
-    "swift_clang_module_aspect",
-)
+load("//swift:providers.bzl", "SwiftOverlayInfo")
 load(":action_names.bzl", "SWIFT_ACTION_AUTOLINK_EXTRACT")
 load(":actions.bzl", "is_action_enabled")
-load(":attrs.bzl", "swift_compilation_attrs")
 load(":autolinking.bzl", "register_autolink_extract_action")
 load(
     ":debugging.bzl",
     "ensure_swiftmodule_is_embedded",
     "should_embed_swiftmodule_for_debugging",
 )
-load(
-    ":developer_dirs.bzl",
-    "developer_dirs_linkopts",
-)
+load(":developer_dirs.bzl", "developer_dirs_linkopts")
 load(
     ":feature_names.bzl",
     "SWIFT_FEATURE_LLD_GC_WORKAROUND",
     "SWIFT_FEATURE_OBJC_LINK_FLAGS",
-    "SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE",
 )
 load(
     ":features.bzl",
@@ -45,91 +35,6 @@ load(
     "get_cc_feature_configuration",
     "is_feature_enabled",
 )
-load(":utils.bzl", "get_providers")
-
-# TODO: Remove once we drop bazel 7.x
-_OBJC_PROVIDER_LINKING = hasattr(apple_common.new_objc_provider(), "linkopt")
-
-def binary_rule_attrs(
-        *,
-        additional_deps_aspects = [],
-        additional_deps_providers = [],
-        stamp_default):
-    """Returns attributes common to both `swift_binary` and `swift_test`.
-
-    Args:
-        additional_deps_aspects: A list of additional aspects that should be
-            applied to the `deps` attribute of the rule.
-        additional_deps_providers: A list of lists representing additional
-            providers that should be allowed by the `deps` attribute of the
-            rule.
-        stamp_default: The default value of the `stamp` attribute.
-
-    Returns:
-        A `dict` of attributes for a binary or test rule.
-    """
-    return dicts.add(
-        swift_compilation_attrs(
-            additional_deps_aspects = [
-                swift_clang_module_aspect,
-            ] + additional_deps_aspects,
-            additional_deps_providers = additional_deps_providers,
-            requires_srcs = False,
-        ),
-        {
-            "linkopts": attr.string_list(
-                doc = """\
-Additional linker options that should be passed to `clang`. These strings are
-subject to `$(location ...)` expansion.
-""",
-                mandatory = False,
-            ),
-            "malloc": attr.label(
-                default = Label("@bazel_tools//tools/cpp:malloc"),
-                doc = """\
-Override the default dependency on `malloc`.
-
-By default, Swift binaries are linked against `@bazel_tools//tools/cpp:malloc"`,
-which is an empty library and the resulting binary will use libc's `malloc`.
-This label must refer to a `cc_library` rule.
-""",
-                mandatory = False,
-                providers = [[CcInfo]],
-            ),
-            "stamp": attr.int(
-                default = stamp_default,
-                doc = """\
-Enable or disable link stamping; that is, whether to encode build information
-into the binary. Possible values are:
-
-* `stamp = 1`: Stamp the build information into the binary. Stamped binaries are
-  only rebuilt when their dependencies change. Use this if there are tests that
-  depend on the build information.
-
-* `stamp = 0`: Always replace build information by constant values. This gives
-  good build result caching.
-
-* `stamp = -1`: Embedding of build information is controlled by the
-  `--[no]stamp` flag.
-""",
-                mandatory = False,
-            ),
-            # Do not add references; temporary attribute for C++ toolchain
-            # Starlark migration.
-            "_cc_toolchain": attr.label(
-                default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
-            ),
-            # A late-bound attribute denoting the value of the `--custom_malloc`
-            # command line flag (or None if the flag is not provided).
-            "_custom_malloc": attr.label(
-                default = configuration_field(
-                    fragment = "cpp",
-                    name = "custom_malloc",
-                ),
-                providers = [[CcInfo]],
-            ),
-        },
-    )
 
 def configure_features_for_binary(
         *,
@@ -277,7 +182,7 @@ def create_linking_context_from_compilation_outputs(
         *,
         actions,
         additional_inputs = [],
-        alwayslink = False,
+        alwayslink = True,
         compilation_outputs,
         feature_configuration,
         is_test = None,
@@ -302,9 +207,11 @@ def create_linking_context_from_compilation_outputs(
         additional_inputs: A `list` of `File`s containing any additional files
             that are referenced by `user_link_flags` and therefore need to be
             propagated up to the linker.
-        alwayslink: If True, any binary that depends on the providers returned
-            by this function will link in all of the library's object files,
-            even if some contain no symbols referenced by the binary.
+        alwayslink: If `False`, any binary that depends on the providers
+            returned by this function will link in all of the library's object
+            files only if there are symbol references. See the discussion on
+            `swift_library` `alwayslink` for why that behavior could result
+            in undesired results.
         compilation_outputs: A `CcCompilationOutputs` value containing the
             object files to link. Typically, this is the second tuple element in
             the value returned by `compile`.
@@ -365,12 +272,6 @@ def create_linking_context_from_compilation_outputs(
     )
     if autolink_linking_context:
         extra_linking_contexts.append(autolink_linking_context)
-
-    if not alwayslink:
-        alwayslink = is_feature_enabled(
-            feature_configuration = feature_configuration,
-            feature_name = SWIFT_FEATURE__FORCE_ALWAYSLINK_TRUE,
-        )
 
     if is_feature_enabled(
         feature_configuration = feature_configuration,
@@ -454,118 +355,6 @@ def malloc_linking_context(ctx):
     malloc = ctx.attr._custom_malloc or ctx.attr.malloc
     return malloc[CcInfo].linking_context
 
-def new_objc_provider(
-        *,
-        additional_link_inputs = [],
-        additional_objc_infos = [],
-        alwayslink = False,
-        deps,
-        feature_configuration,
-        is_test,
-        libraries_to_link,
-        module_context,
-        user_link_flags = [],
-        swift_toolchain):
-    """Creates an `apple_common.Objc` provider for a Swift target.
-
-    Args:
-        additional_link_inputs: Additional linker input files that should be
-            propagated to dependents.
-        additional_objc_infos: Additional `apple_common.Objc` providers from
-            transitive dependencies not provided by the `deps` argument.
-        alwayslink: If True, any binary that depends on the providers returned
-            by this function will link in all of the library's object files,
-            even if some contain no symbols referenced by the binary.
-        deps: The dependencies of the target being built, whose `Objc` providers
-            will be passed to the new one in order to propagate the correct
-            transitive fields.
-        feature_configuration: The Swift feature configuration.
-        is_test: Represents if the `testonly` value of the context.
-        libraries_to_link: A list (typically of one element) of the
-            `LibraryToLink` objects from which the static archives (`.a` files)
-            containing the target's compiled code will be retrieved.
-        module_context: The module context as returned by
-            `compile`.
-        user_link_flags: Linker options that should be propagated to dependents.
-        swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
-
-    Returns:
-        An `apple_common.Objc` provider that should be returned by the calling
-        rule.
-    """
-
-    # The link action registered by `apple_common.link_multi_arch_binary` only
-    # looks at `Objc` providers, not `CcInfo`, for libraries to link.
-    # Dependencies from an `objc_library` to a `cc_library` are handled as a
-    # special case, but other `cc_library` dependencies (such as `swift_library`
-    # to `cc_library`) would be lost since they do not receive the same
-    # treatment. Until those special cases are resolved via the unification of
-    # the Obj-C and C++ rules, we need to collect libraries from `CcInfo` and
-    # put them into the new `Objc` provider.
-    transitive_cc_libs = []
-    for cc_info in get_providers(deps, CcInfo):
-        static_libs = []
-        for linker_input in cc_info.linking_context.linker_inputs.to_list():
-            for library_to_link in linker_input.libraries:
-                library = library_to_link.static_library
-                if library:
-                    static_libs.append(library)
-        transitive_cc_libs.append(depset(static_libs, order = "topological"))
-
-    direct_libraries = []
-    force_load_libraries = []
-
-    for library_to_link in libraries_to_link:
-        library = library_to_link.static_library
-        if library:
-            direct_libraries.append(library)
-            if alwayslink:
-                force_load_libraries.append(library)
-
-    extra_linkopts = []
-    if feature_configuration and should_embed_swiftmodule_for_debugging(
-        feature_configuration = feature_configuration,
-        module_context = module_context,
-    ):
-        module_file = module_context.swift.swiftmodule
-        extra_linkopts.append("-Wl,-add_ast_path,{}".format(module_file.path))
-        debug_link_inputs = [module_file]
-    else:
-        debug_link_inputs = []
-
-    if is_test:
-        extra_linkopts.extend(developer_dirs_linkopts(swift_toolchain.developer_dirs))
-
-    if feature_configuration and is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_OBJC_LINK_FLAGS,
-    ):
-        extra_linkopts.append("-ObjC")
-
-    kwargs = {
-        "providers": get_providers(
-            deps,
-            apple_common.Objc,
-        ) + additional_objc_infos,
-    }
-
-    if _OBJC_PROVIDER_LINKING:
-        kwargs = dicts.add(kwargs, {
-            "force_load_library": depset(
-                force_load_libraries,
-                order = "topological",
-            ),
-            "library": depset(
-                direct_libraries,
-                transitive = transitive_cc_libs,
-                order = "topological",
-            ),
-            "link_inputs": depset(additional_link_inputs + debug_link_inputs),
-            "linkopt": depset(user_link_flags + extra_linkopts),
-        })
-
-    return apple_common.new_objc_provider(**kwargs)
-
 def register_link_binary_action(
         *,
         actions,
@@ -575,10 +364,10 @@ def register_link_binary_action(
         compilation_outputs,
         deps,
         feature_configuration,
-        name,
+        label,
         module_contexts = [],
+        name = None,
         output_type,
-        owner,
         stamp,
         swift_toolchain,
         user_link_flags = [],
@@ -599,15 +388,16 @@ def register_link_binary_action(
         deps: A list of targets representing additional libraries that will be
             passed to the linker.
         feature_configuration: The Swift feature configuration.
+        label: The label of the target being linked, whose name is used to
+            derive the output artifact if the `name` argument is not provided.
         module_contexts: A list of module contexts resulting from the
             compilation of the sources in the binary target, which are embedded
             in the binary for debugging if this is a debug build. This list may
             be empty if the target had no sources of its own.
-        name: The name of the target being linked, which is used to derive the
-            output artifact.
+        name: If provided, the name of the output file to generate. If not
+            provided, the name of `label` will be used.
         output_type: A string indicating the output type; "executable" or
             "dynamic_library".
-        owner: The `Label` of the target that owns this linker input.
         stamp: A tri-state value (-1, 0, or 1) that specifies whether link
             stamping is enabled. See `cc_common.link` for details about the
             behavior of this argument.
@@ -623,91 +413,35 @@ def register_link_binary_action(
         `library_to_link` that was linked (depending on the value of the
         `output_type` argument).
     """
-    linking_contexts = []
-
-    for dep in deps:
-        if CcInfo in dep:
-            cc_info = dep[CcInfo]
-            linking_contexts.append(cc_info.linking_context)
-
-        # TODO(allevato): Remove all of this when `apple_common.Objc` goes away.
-        if apple_common.Objc in dep:
-            objc = dep[apple_common.Objc]
-
-            def get_objc_list(objc, attr):
-                return getattr(objc, attr, depset([])).to_list()
-
-            # We don't need to handle the `objc.sdk_framework` field here
-            # because those values have also been put into the user link flags
-            # of a CcInfo, but the others don't seem to have been.
-            dep_link_flags = [
-                "-l{}".format(dylib)
-                for dylib in get_objc_list(objc, "sdk_dylib")
-            ]
-            dep_link_flags.extend([
-                "-F{}".format(path)
-                for path in get_objc_list(objc, "dynamic_framework_paths")
-            ])
-            dep_link_flags.extend(collections.before_each(
-                "-framework",
-                get_objc_list(objc, "dynamic_framework_names"),
-            ))
-            dep_link_flags.extend([
-                "-F{}".format(path)
-                for path in get_objc_list(objc, "static_framework_paths")
-            ])
-            dep_link_flags.extend(collections.before_each(
-                "-framework",
-                get_objc_list(objc, "static_framework_names"),
-            ))
-
-            is_bazel_6 = hasattr(apple_common, "link_multi_arch_static_library")
-            if not hasattr(objc, "static_framework_file"):
-                additional_inputs = depset([])
-            elif is_bazel_6:
-                additional_inputs = objc.static_framework_file
-            else:
-                additional_inputs = depset(
-                    transitive = [
-                        objc.static_framework_file,
-                        objc.imported_library,
-                    ],
-                )
-                dep_link_flags.extend([
-                    lib.path
-                    for lib in objc.imported_library.to_list()
-                ])
-
-            linking_contexts.append(
-                cc_common.create_linking_context(
-                    linker_inputs = depset([
-                        cc_common.create_linker_input(
-                            owner = owner,
-                            user_link_flags = dep_link_flags,
-                            additional_inputs = additional_inputs,
-                        ),
-                    ]),
-                ),
-            )
-
-    linking_contexts.extend(additional_linking_contexts)
+    linking_contexts = [
+        dep[CcInfo].linking_context
+        for dep in deps
+        if CcInfo in dep
+    ] + [
+        dep[SwiftOverlayInfo].linking_context
+        for dep in deps
+        if SwiftOverlayInfo in dep
+    ] + additional_linking_contexts
 
     for module_context in module_contexts:
         debugging_linking_context = _create_embedded_debugging_linking_context(
             actions = actions,
             feature_configuration = feature_configuration,
-            label = owner,
+            label = label,
             module_context = module_context,
             swift_toolchain = swift_toolchain,
         )
         if debugging_linking_context:
             linking_contexts.append(debugging_linking_context)
 
+    if not name:
+        name = label.name
+
     autolink_linking_context = _create_autolink_linking_context(
         actions = actions,
         compilation_outputs = compilation_outputs,
         feature_configuration = feature_configuration,
-        label = owner,
+        label = label,
         name = name,
         swift_toolchain = swift_toolchain,
     )
@@ -722,7 +456,7 @@ def register_link_binary_action(
             cc_common.create_linking_context(
                 linker_inputs = depset([
                     cc_common.create_linker_input(
-                        owner = owner,
+                        owner = label,
                         user_link_flags = depset(["-Wl,-z,nostart-stop-gc"]),
                     ),
                 ]),
@@ -738,7 +472,7 @@ def register_link_binary_action(
             cc_common.create_linking_context(
                 linker_inputs = depset([
                     cc_common.create_linker_input(
-                        owner = owner,
+                        owner = label,
                         user_link_flags = depset(["-ObjC"]),
                     ),
                 ]),

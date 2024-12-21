@@ -1,5 +1,5 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
-load("@bazel_skylib//rules:common_settings.bzl", "bool_flag", "bool_setting")
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
 load(
     "//swift/internal:build_settings.bzl",
     "per_module_swiftcopt_flag",
@@ -59,6 +59,7 @@ bzl_library(
     deps = [
         ":module_name",
         ":providers",
+        "//swift/internal:binary_attrs",
         "//swift/internal:compiling",
         "//swift/internal:feature_names",
         "//swift/internal:linking",
@@ -77,11 +78,13 @@ bzl_library(
     deps = [
         ":module_name",
         ":providers",
-        "//swift/internal:attrs",
         "//swift/internal:compiling",
         "//swift/internal:feature_names",
         "//swift/internal:features",
+        "//swift/internal:linking",
         "//swift/internal:module_maps",
+        "//swift/internal:output_groups",
+        "//swift/internal:providers",
         "//swift/internal:swift_interop_info",
         "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
@@ -92,14 +95,9 @@ bzl_library(
     name = "swift_common",
     srcs = ["swift_common.bzl"],
     deps = [
-        ":module_name",
-        ":providers",
-        ":swift_interop_info",
-        "//swift/internal:attrs",
         "//swift/internal:compiling",
         "//swift/internal:features",
         "//swift/internal:linking",
-        "//swift/internal:swift_interop_info",
         "//swift/internal:symbol_graph_extracting",
         "//swift/internal:toolchain_utils",
     ],
@@ -111,6 +109,7 @@ bzl_library(
     deps = [
         ":module_name",
         ":providers",
+        "//swift/internal:binary_attrs",
         "//swift/internal:compiling",
         "//swift/internal:linking",
         "//swift/internal:output_groups",
@@ -225,23 +224,6 @@ bzl_library(
 )
 
 bzl_library(
-    name = "swift_module_alias",
-    srcs = ["swift_module_alias.bzl"],
-    deps = [
-        ":module_name",
-        ":providers",
-        "//swift/internal:attrs",
-        "//swift/internal:compiling",
-        "//swift/internal:features",
-        "//swift/internal:linking",
-        "//swift/internal:output_groups",
-        "//swift/internal:toolchain_utils",
-        "//swift/internal:utils",
-        "@bazel_skylib//lib:dicts",
-    ],
-)
-
-bzl_library(
     name = "swift_module_mapping",
     srcs = ["swift_module_mapping.bzl"],
     deps = [
@@ -254,6 +236,27 @@ bzl_library(
     srcs = ["swift_module_mapping_test.bzl"],
     deps = [
         ":providers",
+        "//swift/internal:providers",
+    ],
+)
+
+bzl_library(
+    name = "swift_overlay",
+    srcs = ["swift_overlay.bzl"],
+    deps = [
+        ":providers",
+        ":swift_clang_module_aspect",
+        "//swift/internal:attrs",
+        "//swift/internal:feature_names",
+        "//swift/internal:providers",
+        "//swift/internal:utils",
+    ],
+)
+
+bzl_library(
+    name = "swift_overlay_helpers",
+    srcs = ["swift_overlay_helpers.bzl"],
+    deps = [
         "//swift/internal:providers",
     ],
 )
@@ -283,6 +286,7 @@ bzl_library(
     deps = [
         ":module_name",
         ":providers",
+        "//swift/internal:binary_attrs",
         "//swift/internal:compiling",
         "//swift/internal:env_expansion",
         "//swift/internal:feature_names",
@@ -317,9 +321,10 @@ bzl_library(
         ":swift_interop_info",
         ":swift_library",
         ":swift_library_group",
-        ":swift_module_alias",
         ":swift_module_mapping",
         ":swift_module_mapping_test",
+        ":swift_overlay",
+        ":swift_overlay_helpers",
         ":swift_package_configuration",
         ":swift_symbol_graph_aspect",
         ":swift_test",
@@ -374,20 +379,7 @@ swift_interop_hint(
 # User settable flag that specifies additional Swift copts on a per-swiftmodule basis.
 per_module_swiftcopt_flag(
     name = "per_module_swiftcopt",
-    build_setting_default = "",
-)
-
-# Configuration setting for enabling the generation of swiftinterface files.
-bool_setting(
-    name = "emit_swiftinterface",
-    build_setting_default = False,
-    visibility = ["//visibility:public"],
-)
-
-# Configuration setting for enabling the generation of private swiftinterface files (e.g. those for `@_spi`).
-bool_setting(
-    name = "emit_private_swiftinterface",
-    build_setting_default = False,
+    build_setting_default = [],
 )
 
 # NOTE: Enabling this flag will transition --proto_compiler to
