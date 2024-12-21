@@ -144,7 +144,6 @@ def _swift_library_impl(ctx):
         extra_features.append(SWIFT_FEATURE_EMIT_SWIFTINTERFACE)
         extra_features.append(SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE)
     elif ctx.attr._config_emit_swiftinterface[BuildSettingInfo].value:
-        # TODO(b/239957001): Remove the global flag.
         extra_features.append(SWIFT_FEATURE_EMIT_SWIFTINTERFACE)
 
     module_name = ctx.attr.module_name
