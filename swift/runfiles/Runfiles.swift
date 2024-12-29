@@ -100,8 +100,6 @@ public final class Runfiles {
   /// manifest or directory using the other environment variable, or using
   /// CommandLine.arguments[0] under the hood.
   ///
-  /// - Important: Use `createForTest` inside tests.
-  ///
   /// - Parameters:
   ///   - sourceRepository: the canonical name of the repository whose
   ///     repository mapping should be used to resolve apparent to canonical
