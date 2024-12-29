@@ -6,11 +6,11 @@ cc_library(
     name = "rules_cc_runfiles_wrapper",
     srcs = ["runfiles.cc"],
     hdrs = ["runfiles.h"],
-    deps = [
-        "@rules_cc//cc/runfiles",
-    ],
     aspect_hints = [
         ":swift_hint",
+    ],
+    deps = [
+        "@rules_cc//cc/runfiles",
     ],
 )
 
@@ -22,9 +22,9 @@ swift_interop_hint(
 swift_library(
     name = "runfiles",
     srcs = ["Runfiles.swift"],
+    module_name = "BazelRunfiles",
+    visibility = ["//visibility:public"],
     deps = [
         ":rules_cc_runfiles_wrapper",
     ],
-    module_name = "BazelRunfiles",
-    visibility = ["//visibility:public"],
 )
