@@ -43,6 +43,4 @@ void *Runfiles_WithSourceRepository(void *handle,
 
 void Runfiles_Destroy(void *handle);
 
-// } // namespace swiftrunfiles
-
 #endif
