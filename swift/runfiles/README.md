@@ -39,9 +39,9 @@ let filePath = runfiles?.rlocation("my_workspace/path/to/my/data.txt")
   variables. If not present, the function looks for the manifest and directory
   near CommandLine.arguments.first (argv[0]), the path of the main program.
 
-If you want to start subprocesses, and the subprocess can't automatically
-find the correct runfiles directory, you can explicitly set the right
-environment variables for them:
+If you want to start subprocesses, and those subprocesses need to resolve
+runfiles themselves, you need to explicitly set the right environment variables
+for them:
 
 ```swift
 import Foundation
