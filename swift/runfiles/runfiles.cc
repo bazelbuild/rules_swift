@@ -23,17 +23,6 @@ static char *CopyStringToC(const std::string &str) {
 
 extern "C" {
 
-void *Runfiles_CreateForTest(const char *source_repository, char **error) {
-  std::string err;
-  auto *runfiles = rules_cc::cc::runfiles::Runfiles::CreateForTest(
-      std::string(source_repository), &err);
-  if (!runfiles && error) {
-    *error = CopyStringToC(err);
-    return nullptr;
-  }
-  return runfiles;
-}
-
 void *Runfiles_Create(const char *argv0, const char *source_repository,
                       char **error) {
   std::string err;

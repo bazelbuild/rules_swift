@@ -93,22 +93,6 @@ public final class Runfiles {
 
   // MARK: Factory methods
 
-  /// Returns a new `Runfiles` instance.
-  ///
-  /// Use this from within `swift_test` rules.
-  ///
-  /// This method looks at the RUNFILES_MANIFEST_FILE and TEST_SRCDIR
-  /// environment variables.
-  public static func createForTest(
-    sourceRepository: String? = nil,
-    _ callerFilePath: String = #filePath
-  )
-    throws -> Runfiles {
-    try createInternal { error in
-      Runfiles_CreateForTest(sourceRepository ?? Self.repository(from: callerFilePath), error)
-    }
-  }
-
   /// Returns a new `Runfiles`` instance.
   ///
   /// This method looks at the RUNFILES_MANIFEST_FILE and RUNFILES_DIR

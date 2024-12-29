@@ -25,7 +25,6 @@
 
 #include <stddef.h>
 
-void *Runfiles_CreateForTest(const char *source_repository, char **error);
 void *Runfiles_Create(const char *argv0, const char *source_repository,
                       char **error);
 void *Runfiles_Create2(const char *argv0, const char *runfiles_manifest_file,
