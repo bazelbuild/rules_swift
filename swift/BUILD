@@ -219,6 +219,7 @@ bzl_library(
         ":providers",
         ":swift_clang_module_aspect",
         "//swift/internal:attrs",
+        "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
     ],
 )
