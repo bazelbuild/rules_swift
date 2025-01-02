@@ -10,7 +10,7 @@ cc_library(
         ":swift_hint",
     ],
     deps = [
-        "@rules_cc//cc/runfiles",
+        "@bazel_tools//tools/cpp/runfiles",
     ],
 )
 
