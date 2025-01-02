@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "tools/cpp/runfiles/runfiles.h"
+#include <cstring>
 
 static char *CopyStringToC(const std::string &str) {
   char *cstr = static_cast<char *>(std::malloc(str.size() + 1));
