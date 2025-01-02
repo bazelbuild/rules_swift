@@ -18,7 +18,7 @@ let runfiles = try Runfiles.create()
 
 // Runfiles lookup paths have the form `my_workspace/package/file`.
 // Runfiles path lookup may return nil.
-guard let runFile = runfiles.rlocation("runfiles/examples/runfiles/data/sample.txt") else {
+guard let runFile = runfiles.rlocation("__main__/examples/runfiles/data/sample.txt") else {
     fatalError("couldn't resolve runfile")
 }
 
