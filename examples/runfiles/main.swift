@@ -1,6 +1,6 @@
 import BazelRunfiles
 
-let runfiles = try Runfiles.create(sourceRepository: BazelRunfilesConstants.currentRepository)
+let runfiles = try Runfiles.create()
 
 // Runfiles lookup paths have the form `my_workspace/package/file`.
 // Runfiles path lookup may return nil.
