@@ -176,56 +176,13 @@ public final class Runfiles {
         strategy.envVars()
     }
 
-    static func createLookupStrategy(
-        argv0: String,
-        manifestFile: String?,
-        runfilesDir: String?,
-        isRunfilesManifest: (String) -> Bool,
-        isRunfilesDirectory: (String) -> Bool
-    ) throws -> LookupStrategy {
-        // if a manifest or a runfiles dir was provided, try to use whichever
-        // was valid or else error.
-        if (manifestFile != nil || runfilesDir != nil) {
-            if let manifestFile, isRunfilesManifest(manifestFile) {
-                return try ManifestBased(manifestPath: URL(fileURLWithPath: manifestFile))
-            } else if let runfilesDir, isRunfilesDirectory(runfilesDir) {
-                return DirectoryBased(path: URL(fileURLWithPath: runfilesDir))
-            } else {
-                throw RunfilesError.invalidRunfilesLocations
-            }
-        }
-
-        // If a manifest exists in one of the well known location, use it.
-        for wellKnownManifestFileSuffixes in [".runfiles/MANIFEST", ".runfiles_manifest"] {
-            let manifestFileCandidate = "\(argv0)\(wellKnownManifestFileSuffixes)"
-            if isRunfilesManifest(manifestFileCandidate) {
-                return try ManifestBased(manifestPath: URL(fileURLWithPath: manifestFileCandidate))
-            }
-        }
-
-        // If a runfiles dir exists in the well known location, use it, except
-        // if it contains a manifest, in which case, use the latter.
-        let runfilesDirCandidate = "\(argv0).runfiles"
-        if isRunfilesDirectory(runfilesDirCandidate) {
-            for wellKnownManifestFileSuffixes in ["/MANIFEST", "_manifest"] {
-                let manifestFileCandidate = "\(runfilesDirCandidate)\(wellKnownManifestFileSuffixes)"
-                if isRunfilesManifest(manifestFileCandidate) {
-                    return try ManifestBased(manifestPath: URL(fileURLWithPath: manifestFileCandidate))
-                }
-            }
-            return DirectoryBased(path: URL(fileURLWithPath: runfilesDirCandidate))
-        }
-
-        throw RunfilesError.missingRunfilesLocations
-    }
-
     // MARK: Factory method
 
     public static func create(sourceRepository: String? = nil, environment: [String: String]? = nil, _ callerFilePath: String = #filePath) throws -> Runfiles {
 
         let environment = environment ?? ProcessInfo.processInfo.environment
 
-        let strategy = try Self.createLookupStrategy(
+        let runfilesPath = try computeRunfilesPath(
             argv0: CommandLine.arguments[0],
             manifestFile: environment["RUNFILES_MANIFEST_FILE"],
             runfilesDir: environment["RUNFILES_DIR"],
@@ -236,11 +193,18 @@ public final class Runfiles {
             }
         )
 
+        let strategy: LookupStrategy = switch (runfilesPath) {
+            case .manifest(let path):
+                try ManifestBased(manifestPath: URL(fileURLWithPath: path))
+            case .directory(let path):
+                DirectoryBased(path: URL(fileURLWithPath: path))
+        }
+
         // If the repository mapping file can't be found, that is not an error: We
         // might be running without Bzlmod enabled or there may not be any runfiles.
         // In this case, just apply an empty repo mapping.
-        let repoMapping = try strategy.rlocationChecked(path: "_repo_mapping").map { repoMappingFile in
-            try parseRepoMapping(path: repoMappingFile)
+        let repoMapping = try strategy.rlocationChecked(path: "_repo_mapping").map { path in
+            try parseRepoMapping(path: path)
         } ?? [:]
 
         return Runfiles(strategy: strategy, repoMapping: repoMapping, sourceRepository: sourceRepository ?? repository(from: callerFilePath))
@@ -264,6 +228,49 @@ public final class Runfiles {
     // If a file is not in an external repository, return an empty string
     return ""
   }
+
+// MARK: Runfiles Paths Computation
+
+enum RunfilesPath: Equatable {
+    case manifest(String)
+    case directory(String)
+}
+
+func computeRunfilesPath(
+    argv0: String,
+    manifestFile: String?,
+    runfilesDir: String?,
+    isRunfilesManifest: (String) -> Bool,
+    isRunfilesDirectory: (String) -> Bool
+) throws -> RunfilesPath {
+    // if a manifest or a runfiles dir was provided, try to use whichever
+    // was valid or else error.
+    if (manifestFile != nil || runfilesDir != nil) {
+        if let manifestFile, isRunfilesManifest(manifestFile) {
+            return RunfilesPath.manifest(manifestFile)
+        } else if let runfilesDir, isRunfilesDirectory(runfilesDir) {
+            return RunfilesPath.directory(runfilesDir)
+        } else {
+            throw RunfilesError.invalidRunfilesLocations
+        }
+    }
+
+    // If a manifest exists in one of the well known location, use it.
+    for wellKnownManifestFileSuffixes in [".runfiles/MANIFEST", ".runfiles_manifest"] {
+        let manifestFileCandidate = "\(argv0)\(wellKnownManifestFileSuffixes)"
+        if isRunfilesManifest(manifestFileCandidate) {
+            return RunfilesPath.manifest(manifestFileCandidate)
+        }
+    }
+
+    // If a runfiles dir exists in the well known location, use it.
+    let runfilesDirCandidate = "\(argv0).runfiles"
+    if isRunfilesDirectory(runfilesDirCandidate) {
+        return RunfilesPath.directory(runfilesDirCandidate)
+    }
+
+    throw RunfilesError.missingRunfilesLocations
+}
 
 // MARK: Parsing Repo Mapping
 

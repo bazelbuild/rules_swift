@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import BazelRunfiles
+@testable import BazelRunfiles
 import Foundation
 import XCTest
 
@@ -412,6 +412,96 @@ final class RunfilesTests: XCTestCase {
     )
 
     XCTAssertEqual(runfiles.rlocation("config.json")?.path, runfilesDir.appendingPathComponent("config.json").path)
+  }
+
+  func testComputeRunfilesPath_withValidManifestFile() throws {
+      let mockManifestFile = "/path/to/manifest"
+      let isRunfilesManifest: (String) -> Bool = { $0 == mockManifestFile }
+      let isRunfilesDirectory: (String) -> Bool = { _ in false }
+
+      let path = try computeRunfilesPath(
+          argv0: "/path/to/argv0",
+          manifestFile: mockManifestFile,
+          runfilesDir: nil,
+          isRunfilesManifest: isRunfilesManifest,
+          isRunfilesDirectory: isRunfilesDirectory
+      )
+      XCTAssertEqual(path, RunfilesPath.manifest(mockManifestFile))
+  }
+
+  func testComputeRunfilesPath_withValidRunfilesDirectory() throws {
+      let mockRunfilesDir = "/path/to/runfiles"
+      let isRunfilesManifest: (String) -> Bool = { _ in false }
+      let isRunfilesDirectory: (String) -> Bool = { $0 == mockRunfilesDir }
+
+      let path = try computeRunfilesPath(
+          argv0: "/path/to/argv0",
+          manifestFile: nil,
+          runfilesDir: mockRunfilesDir,
+          isRunfilesManifest: isRunfilesManifest,
+          isRunfilesDirectory: isRunfilesDirectory
+      )
+
+      XCTAssertEqual(path, RunfilesPath.directory(mockRunfilesDir))
+  }
+
+  func testComputeRunfilesPath_withInvalidManifestAndDirectory() {
+      let isRunfilesManifest: (String) -> Bool = { _ in false }
+      let isRunfilesDirectory: (String) -> Bool = { _ in false }
+
+      XCTAssertThrowsError(try computeRunfilesPath(
+          argv0: "/path/to/argv0",
+          manifestFile: "/invalid/manifest",
+          runfilesDir: "/invalid/runfiles",
+          isRunfilesManifest: isRunfilesManifest,
+          isRunfilesDirectory: isRunfilesDirectory
+      ))
+  }
+
+  func testComputeRunfilesPath_withWellKnownManifestFile() throws {
+      let argv0 = "/path/to/argv0"
+      let isRunfilesManifest: (String) -> Bool = { $0 == "/path/to/argv0.runfiles/MANIFEST" }
+      let isRunfilesDirectory: (String) -> Bool = { _ in false }
+
+      let path = try computeRunfilesPath(
+          argv0: argv0,
+          manifestFile: nil,
+          runfilesDir: nil,
+          isRunfilesManifest: isRunfilesManifest,
+          isRunfilesDirectory: isRunfilesDirectory
+      )
+
+      XCTAssertEqual(path, RunfilesPath.manifest("/path/to/argv0.runfiles/MANIFEST"))
+  }
+
+  func testComputeRunfilesPath_withWellKnownRunfilesDir() throws {
+      let argv0 = "/path/to/argv0"
+      let isRunfilesManifest: (String) -> Bool = { _ in false }
+      let isRunfilesDirectory: (String) -> Bool = { $0 == "/path/to/argv0.runfiles" }
+
+      let path = try computeRunfilesPath(
+          argv0: argv0,
+          manifestFile: nil,
+          runfilesDir: nil,
+          isRunfilesManifest: isRunfilesManifest,
+          isRunfilesDirectory: isRunfilesDirectory
+      )
+
+      XCTAssertEqual(path, RunfilesPath.directory("/path/to/argv0.runfiles"))
+  }
+
+  func testComputeRunfilesPath_missingRunfilesLocations() {
+      let argv0 = "/path/to/argv0"
+      let isRunfilesManifest: (String) -> Bool = { _ in false }
+      let isRunfilesDirectory: (String) -> Bool = { _ in false }
+
+      XCTAssertThrowsError(try computeRunfilesPath(
+          argv0: argv0,
+          manifestFile: nil,
+          runfilesDir: nil,
+          isRunfilesManifest: isRunfilesManifest,
+          isRunfilesDirectory: isRunfilesDirectory
+      ))
   }
 
 }
