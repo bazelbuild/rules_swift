@@ -70,26 +70,9 @@ struct ManifestBased: LookupStrategy {
     }
 
     func envVars() -> [String: String] {
-        let runfilesDir = Self.getRunfilesDir(fromManifestPath: manifestPath)
-        return [
+        [
             "RUNFILES_MANIFEST_FILE": manifestPath.path,
-            "RUNFILES_DIR": runfilesDir?.path ?? "",
         ]
-    }
-
-    static func getRunfilesDir(fromManifestPath path: URL) -> URL? {
-        let lastComponent = path.lastPathComponent
-
-        if lastComponent == "MANIFEST" {
-            return path.deletingLastPathComponent()
-        }
-        if lastComponent.hasSuffix(".runfiles_manifest") {
-            let newPath = path.deletingLastPathComponent().appendingPathComponent(
-                path.lastPathComponent.replacingOccurrences(of: "_manifest", with: "")
-            )
-            return newPath
-        }
-        return nil
     }
 
     static func loadRunfiles(from manifestPath: URL) throws -> [String: String] {

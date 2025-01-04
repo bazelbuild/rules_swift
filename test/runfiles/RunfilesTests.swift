@@ -24,7 +24,6 @@ final class RunfilesTests: XCTestCase {
     let (fileURL, clean) = try createMockFile(name: "MANIFEST", contents: "a/b /c/d"); defer { try? clean() }
 
     let runfiles = try Runfiles.create(
-      sourceRepository: BazelRunfilesConstants.currentRepository,
       environment: [
         "RUNFILES_MANIFEST_FILE": fileURL.path,
         "RUNFILES_DIR": "ignored when RUNFILES_MANIFEST_FILE has a value",
@@ -35,49 +34,11 @@ final class RunfilesTests: XCTestCase {
     XCTAssertNil(runfiles.rlocation("foo"))
   }
 
-  func testManifestBasedRunfilesEnvVarsFromManifest() throws {
-
-    let (manifest, clean) = try createMockFile(name: "MANIFEST", contents: "a/b /c/d"); defer { try? clean() }
-
-    let runfiles = try Runfiles.create(
-      sourceRepository: BazelRunfilesConstants.currentRepository,
-      environment: [
-        "RUNFILES_MANIFEST_FILE": manifest.path,
-        "TEST_SRCDIR": "always ignored",
-      ]
-    )
-
-    XCTAssertEqual(runfiles.envVars(), [
-      "RUNFILES_MANIFEST_FILE": manifest.path,
-      "RUNFILES_DIR": manifest.deletingLastPathComponent().path,
-    ])
-  }
-
-  func testManifestBasedRunfilesEnvVarsFromRunfilesManifest() throws {
-    let (manifest, clean) = try createMockFile(name: "foo.runfiles_manifest", contents: "a/b /c/d"); defer {
-      try? clean()
-    }
-
-    let runfiles = try Runfiles.create(
-      sourceRepository: BazelRunfilesConstants.currentRepository,
-      environment: [
-        "RUNFILES_MANIFEST_FILE": manifest.path,
-        "TEST_SRCDIR": "always ignored",
-      ]
-    )
-
-    XCTAssertEqual(runfiles.envVars(), [
-      "RUNFILES_MANIFEST_FILE": manifest.path,
-      "RUNFILES_DIR": manifest.deletingLastPathComponent().appendingPathComponent("foo.runfiles").path,
-    ])
-  }
-
   func testManifestBasedRunfilesEnvVarsFromArbitraryManifest() throws {
 
     let (manifest, clean) = try createMockFile(name: "x_manifest", contents: "a/b /c/d"); defer { try? clean() }
 
     let runfiles = try Runfiles.create(
-      sourceRepository: BazelRunfilesConstants.currentRepository,
       environment: [
         "RUNFILES_MANIFEST_FILE": manifest.path,
         "TEST_SRCDIR": "always ignored",
@@ -86,7 +47,6 @@ final class RunfilesTests: XCTestCase {
 
     XCTAssertEqual(runfiles.envVars(), [
       "RUNFILES_MANIFEST_FILE": manifest.path,
-      "RUNFILES_DIR": "",
     ])
 
   }
@@ -95,7 +55,6 @@ final class RunfilesTests: XCTestCase {
 
     let (runfilesDir, clean) = try createMockDirectory(name: "my_custom_runfiles"); defer { try? clean() }
     let runfiles = try Runfiles.create(
-      sourceRepository: BazelRunfilesConstants.currentRepository,
       environment: [
         "RUNFILES_DIR": runfilesDir.path,
         "TEST_SRCDIR": "always ignored",
@@ -110,7 +69,6 @@ final class RunfilesTests: XCTestCase {
 
     let (runfilesDir, clean) = try createMockDirectory(name: "my_custom_runfiles"); defer { try? clean() }
     let runfiles = try Runfiles.create(
-      sourceRepository: BazelRunfilesConstants.currentRepository,
       environment: [
         "RUNFILES_DIR": runfilesDir.path,
         "TEST_SRCDIR": "always ignored",
@@ -124,7 +82,6 @@ final class RunfilesTests: XCTestCase {
 
   func testFailsToCreateManifestBasedBecauseManifestDoesNotExist() {
     XCTAssertNil(try? Runfiles.create(
-      sourceRepository: BazelRunfilesConstants.currentRepository,
       environment: ["RUNFILES_MANIFEST_FILE": "non-existing path"]
     ))
   }
@@ -140,7 +97,6 @@ final class RunfilesTests: XCTestCase {
     defer { try? clean() }
 
     let runfiles = try Runfiles.create(
-      sourceRepository: BazelRunfilesConstants.currentRepository,
       environment: [
         "RUNFILES_MANIFEST_FILE": manifest.path,
         "TEST_SRCDIR": "always ignored",
@@ -183,7 +139,6 @@ final class RunfilesTests: XCTestCase {
     defer { try? cleanManifest() }
 
     let runfiles = try Runfiles.create(
-      sourceRepository: BazelRunfilesConstants.currentRepository,
       environment: [
         "RUNFILES_MANIFEST_FILE": manifest.path,
         "TEST_SRCDIR": "always ignored",
@@ -297,7 +252,6 @@ final class RunfilesTests: XCTestCase {
     defer { try? clean() }
 
     let runfiles = try Runfiles.create(
-      sourceRepository: BazelRunfilesConstants.currentRepository,
       environment: [
         "RUNFILES_DIR": runfilesDir.path,
       ]
@@ -324,7 +278,6 @@ final class RunfilesTests: XCTestCase {
     defer { try? FileManager.default.removeItem(at: repoMappingFile) }
 
     let runfiles = try Runfiles.create(
-      sourceRepository: BazelRunfilesConstants.currentRepository,
       environment: [
         "RUNFILES_DIR": runfilesDir.path,
       ]
@@ -463,13 +416,15 @@ final class RunfilesTests: XCTestCase {
 
 }
 
-extension String: Error {}
+enum RunfilesTestError: Error {
+  case missingTestTmpDir
+}
 
 func createMockFile(name: String, contents: String) throws -> (URL, () throws -> Void) {
 
   guard let tmpBaseDirectory = ProcessInfo.processInfo.environment["TEST_TMPDIR"] else {
     XCTFail()
-    throw "fail"
+    throw RunfilesTestError.missingTestTmpDir
   }
 
   let fallbackTempDirectory = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
@@ -488,7 +443,7 @@ func createMockFile(name: String, contents: String) throws -> (URL, () throws ->
 func createMockDirectory(name _: String) throws -> (URL, () throws -> Void) {
   guard let tmpBaseDirectory = ProcessInfo.processInfo.environment["TEST_TMPDIR"] else {
     XCTFail()
-    throw "fail"
+    throw RunfilesTestError.missingTestTmpDir
   }
 
   let fallbackTempDirectory = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
