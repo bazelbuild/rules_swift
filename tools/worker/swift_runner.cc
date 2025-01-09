@@ -823,11 +823,12 @@ void SwiftRunner::ProcessDiagnostics(absl::string_view stderr_output,
   // ANSI color sequence if present.
   RE2 warning_pattern("((\\x1b\\[(?:\\d+)(?:;\\d+)*m)?warning:\\s)");
   // When `-debug-diagnostic-names` is enabled, names are printed as identifiers
-  // in square brackets, either at the end of the string or followed by a
-  // semicolon (for wrapped diagnostics). Nothing guarantees this for the
-  // wrapped case -- it is just observed convention -- but it is sufficient
-  // while the compiler doesn't give us a more proper way to detect these.
-  RE2 diagnostic_name_pattern("\\[([_A-Za-z][_A-Za-z0-9]*)\\](;|$)");
+  // in square brackets, either at the end of the string (modulo another escape
+  // sequence like 'reset'), or when followed by a semicolon (for wrapped
+  // diagnostics). Nothing guarantees this for the wrapped case -- it is just
+  // observed convention -- but it is sufficient while the compiler doesn't give
+  // us a more proper way to detect these.
+  RE2 diagnostic_name_pattern("\\[([_A-Za-z][_A-Za-z0-9]*)\\](;|$|\\x1b)");
 
   for (absl::string_view line : absl::StrSplit(stderr_output, '\n')) {
     std::unique_ptr<std::string> modified_line;
