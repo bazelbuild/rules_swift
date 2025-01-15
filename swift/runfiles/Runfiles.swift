@@ -126,12 +126,14 @@ public final class Runfiles {
     }
 
     public func rlocation(_ path: String, sourceRepository: String? = nil) -> URL? {
-        guard !path.hasPrefix("../"),
-              !path.contains("/.."),
-              !path.hasPrefix("./"),
-              !path.contains("/./"),
-              !path.hasSuffix("/."),
-              !path.contains("//") else {
+        guard 
+            !path.hasPrefix("../"),
+            !path.contains("/.."),
+            !path.hasPrefix("./"),
+            !path.contains("/./"),
+            !path.hasSuffix("/."),
+            !path.contains("//") 
+        else {
             return nil
         }
         guard path.first != "\\" else {
