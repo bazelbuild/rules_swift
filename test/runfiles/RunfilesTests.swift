@@ -30,8 +30,8 @@ final class RunfilesTests: XCTestCase {
         "TEST_SRCDIR": "always ignored",
       ]
     )
-    XCTAssertEqual(runfiles.rlocation("a/b")?.path, "/c/d")
-    XCTAssertNil(runfiles.rlocation("foo"))
+    XCTAssertEqual(try runfiles.rlocation("a/b").path, "/c/d")
+    XCTAssertNil(try? runfiles.rlocation("foo"))
   }
 
   func testManifestBasedRunfilesEnvVarsFromArbitraryManifest() throws {
@@ -61,8 +61,8 @@ final class RunfilesTests: XCTestCase {
       ]
     )
 
-    XCTAssertEqual(runfiles.rlocation("a/b")?.path, runfilesDir.path + "/" + "a/b")
-    XCTAssertEqual(runfiles.rlocation("foo")?.path, runfilesDir.path + "/" + "foo")
+    XCTAssertEqual(try runfiles.rlocation("a/b").path, runfilesDir.path + "/" + "a/b")
+    XCTAssertEqual(try runfiles.rlocation("foo").path, runfilesDir.path + "/" + "foo")
   }
 
   func testCreatesDirectoryBasedRunfilesEnvVars() throws {
@@ -103,17 +103,17 @@ final class RunfilesTests: XCTestCase {
       ]
     )
 
-    XCTAssertEqual(runfiles.rlocation("/Foo/runfile1")?.path, "/Foo/runfile1")
-    XCTAssertEqual(runfiles.rlocation("Foo/runfile2")?.path, "/Actual Path/runfile2")
-    XCTAssertEqual(runfiles.rlocation("Foo/Bar/runfile3")?.path, "/the path/run file 3.txt")
-    XCTAssertEqual(runfiles.rlocation("Foo/Bar/Dir/runfile4")?.path, "/Actual Path/Directory/runfile4")
+    XCTAssertEqual(try runfiles.rlocation("/Foo/runfile1").path, "/Foo/runfile1")
+    XCTAssertEqual(try runfiles.rlocation("Foo/runfile2").path, "/Actual Path/runfile2")
+    XCTAssertEqual(try runfiles.rlocation("Foo/Bar/runfile3").path, "/the path/run file 3.txt")
+    XCTAssertEqual(try runfiles.rlocation("Foo/Bar/Dir/runfile4").path, "/Actual Path/Directory/runfile4")
     XCTAssertEqual(
-      runfiles.rlocation("Foo/Bar/Dir/Deeply/Nested/runfile4")?.path,
+      try runfiles.rlocation("Foo/Bar/Dir/Deeply/Nested/runfile4").path,
       "/Actual Path/Directory/Deeply/Nested/runfile4"
     )
-    XCTAssertNil(runfiles.rlocation("unknown"))
+    XCTAssertNil(try? runfiles.rlocation("unknown"))
 
-    XCTAssertEqual(runfiles.rlocation("/foo")?.path, "/foo")
+    XCTAssertEqual(try runfiles.rlocation("/foo").path, "/foo")
   }
 
   func testManifestBasedRlocationWithRepoMappingFromMain() throws {
@@ -146,45 +146,45 @@ final class RunfilesTests: XCTestCase {
     )
 
     XCTAssertEqual(
-      runfiles.rlocation("my_module/bar/runfile", sourceRepository: "")?.path,
+      try runfiles.rlocation("my_module/bar/runfile", sourceRepository: "").path,
       "/the/path/./to/other//other runfile.txt"
     )
     XCTAssertEqual(
-      runfiles.rlocation("my_workspace/bar/runfile", sourceRepository: "")?.path,
+      try runfiles.rlocation("my_workspace/bar/runfile", sourceRepository: "").path,
       "/the/path/./to/other//other runfile.txt"
     )
     XCTAssertEqual(
-      runfiles.rlocation("my_protobuf/foo/runfile", sourceRepository: "")?.path,
+      try runfiles.rlocation("my_protobuf/foo/runfile", sourceRepository: "").path,
       "/Actual Path/protobuf/runfile"
     )
-    XCTAssertEqual(runfiles.rlocation("my_protobuf/bar/dir", sourceRepository: "")?.path, "/Actual Path/Directory")
+    XCTAssertEqual(try runfiles.rlocation("my_protobuf/bar/dir", sourceRepository: "").path, "/Actual Path/Directory")
     XCTAssertEqual(
-      runfiles.rlocation("my_protobuf/bar/dir/file", sourceRepository: "")?.path,
+      try runfiles.rlocation("my_protobuf/bar/dir/file", sourceRepository: "").path,
       "/Actual Path/Directory/file"
     )
     XCTAssertEqual(
-      runfiles.rlocation("my_protobuf/bar/dir/de eply/nes ted/fi~le", sourceRepository: "")?.path,
+      try runfiles.rlocation("my_protobuf/bar/dir/de eply/nes ted/fi~le", sourceRepository: "").path,
       "/Actual Path/Directory/de eply/nes ted/fi~le"
     )
 
-    XCTAssertNil(runfiles.rlocation("protobuf/foo/runfile"))
-    XCTAssertNil(runfiles.rlocation("protobuf/bar/dir"))
-    XCTAssertNil(runfiles.rlocation("protobuf/bar/dir/file"))
-    XCTAssertNil(runfiles.rlocation("protobuf/bar/dir/dir/de eply/nes ted/fi~le"))
+    XCTAssertNil(try? runfiles.rlocation("protobuf/foo/runfile"))
+    XCTAssertNil(try? runfiles.rlocation("protobuf/bar/dir"))
+    XCTAssertNil(try? runfiles.rlocation("protobuf/bar/dir/file"))
+    XCTAssertNil(try? runfiles.rlocation("protobuf/bar/dir/dir/de eply/nes ted/fi~le"))
 
-    XCTAssertEqual(runfiles.rlocation("_main/bar/runfile")?.path, "/the/path/./to/other//other runfile.txt")
-    XCTAssertEqual(runfiles.rlocation("protobuf~3.19.2/foo/runfile")?.path, "/Actual Path/protobuf/runfile")
-    XCTAssertEqual(runfiles.rlocation("protobuf~3.19.2/bar/dir")?.path, "/Actual Path/Directory")
-    XCTAssertEqual(runfiles.rlocation("protobuf~3.19.2/bar/dir/file")?.path, "/Actual Path/Directory/file")
+    XCTAssertEqual(try runfiles.rlocation("_main/bar/runfile").path, "/the/path/./to/other//other runfile.txt")
+    XCTAssertEqual(try runfiles.rlocation("protobuf~3.19.2/foo/runfile").path, "/Actual Path/protobuf/runfile")
+    XCTAssertEqual(try runfiles.rlocation("protobuf~3.19.2/bar/dir").path, "/Actual Path/Directory")
+    XCTAssertEqual(try runfiles.rlocation("protobuf~3.19.2/bar/dir/file").path, "/Actual Path/Directory/file")
     XCTAssertEqual(
-      runfiles.rlocation("protobuf~3.19.2/bar/dir/de eply/nes  ted/fi~le")?.path,
+      try runfiles.rlocation("protobuf~3.19.2/bar/dir/de eply/nes  ted/fi~le").path,
       "/Actual Path/Directory/de eply/nes  ted/fi~le"
     )
 
-    XCTAssertEqual(runfiles.rlocation("config.json")?.path, "/etc/config.json")
-    XCTAssertNil(runfiles.rlocation("_main"))
-    XCTAssertNil(runfiles.rlocation("my_module"))
-    XCTAssertNil(runfiles.rlocation("protobuf"))
+    XCTAssertEqual(try runfiles.rlocation("config.json").path, "/etc/config.json")
+    XCTAssertNil(try? runfiles.rlocation("_main"))
+    XCTAssertNil(try? runfiles.rlocation("my_module"))
+    XCTAssertNil(try? runfiles.rlocation("protobuf"))
   }
 
   func testManifestBasedRlocationWithRepoMappingFromOtherRepo() throws {
@@ -218,33 +218,33 @@ final class RunfilesTests: XCTestCase {
       ]
     )
 
-    XCTAssertEqual(runfiles.rlocation("protobuf/foo/runfile")?.path, "/Actual Path/protobuf/runfile")
-    XCTAssertEqual(runfiles.rlocation("protobuf/bar/dir")?.path, "/Actual Path/Directory")
-    XCTAssertEqual(runfiles.rlocation("protobuf/bar/dir/file")?.path, "/Actual Path/Directory/file")
+    XCTAssertEqual(try runfiles.rlocation("protobuf/foo/runfile").path, "/Actual Path/protobuf/runfile")
+    XCTAssertEqual(try runfiles.rlocation("protobuf/bar/dir").path, "/Actual Path/Directory")
+    XCTAssertEqual(try runfiles.rlocation("protobuf/bar/dir/file").path, "/Actual Path/Directory/file")
     XCTAssertEqual(
-      runfiles.rlocation("protobuf/bar/dir/de eply/nes  ted/fi~le")?.path,
+      try runfiles.rlocation("protobuf/bar/dir/de eply/nes  ted/fi~le").path,
       "/Actual Path/Directory/de eply/nes  ted/fi~le"
     )
 
-    XCTAssertNil(runfiles.rlocation("my_module/bar/runfile"))
-    XCTAssertNil(runfiles.rlocation("my_protobuf/foo/runfile"))
-    XCTAssertNil(runfiles.rlocation("my_protobuf/bar/dir"))
-    XCTAssertNil(runfiles.rlocation("my_protobuf/bar/dir/file"))
-    XCTAssertNil(runfiles.rlocation("my_protobuf/bar/dir/de eply/nes  ted/fi~le"))
+    XCTAssertNil(try? runfiles.rlocation("my_module/bar/runfile"))
+    XCTAssertNil(try? runfiles.rlocation("my_protobuf/foo/runfile"))
+    XCTAssertNil(try? runfiles.rlocation("my_protobuf/bar/dir"))
+    XCTAssertNil(try? runfiles.rlocation("my_protobuf/bar/dir/file"))
+    XCTAssertNil(try? runfiles.rlocation("my_protobuf/bar/dir/de eply/nes  ted/fi~le"))
 
-    XCTAssertEqual(runfiles.rlocation("_main/bar/runfile")?.path, "/the/path/./to/other//other runfile.txt")
-    XCTAssertEqual(runfiles.rlocation("protobuf~3.19.2/foo/runfile")?.path, "/Actual Path/protobuf/runfile")
-    XCTAssertEqual(runfiles.rlocation("protobuf~3.19.2/bar/dir")?.path, "/Actual Path/Directory")
-    XCTAssertEqual(runfiles.rlocation("protobuf~3.19.2/bar/dir/file")?.path, "/Actual Path/Directory/file")
+    XCTAssertEqual(try runfiles.rlocation("_main/bar/runfile").path, "/the/path/./to/other//other runfile.txt")
+    XCTAssertEqual(try runfiles.rlocation("protobuf~3.19.2/foo/runfile").path, "/Actual Path/protobuf/runfile")
+    XCTAssertEqual(try runfiles.rlocation("protobuf~3.19.2/bar/dir").path, "/Actual Path/Directory")
+    XCTAssertEqual(try runfiles.rlocation("protobuf~3.19.2/bar/dir/file").path, "/Actual Path/Directory/file")
     XCTAssertEqual(
-      runfiles.rlocation("protobuf~3.19.2/bar/dir/de eply/nes  ted/fi~le")?.path,
+      try runfiles.rlocation("protobuf~3.19.2/bar/dir/de eply/nes  ted/fi~le").path,
       "/Actual Path/Directory/de eply/nes  ted/fi~le"
     )
 
-    XCTAssertEqual(runfiles.rlocation("config.json")?.path, "/etc/config.json")
-    XCTAssertNil(runfiles.rlocation("_main"))
-    XCTAssertNil(runfiles.rlocation("my_module"))
-    XCTAssertNil(runfiles.rlocation("protobuf"))
+    XCTAssertEqual(try runfiles.rlocation("config.json").path, "/etc/config.json")
+    XCTAssertNil(try? runfiles.rlocation("_main"))
+    XCTAssertNil(try? runfiles.rlocation("my_module"))
+    XCTAssertNil(try? runfiles.rlocation("protobuf"))
   }
 
   func testDirectoryBasedRlocation() throws {
@@ -257,8 +257,8 @@ final class RunfilesTests: XCTestCase {
       ]
     )
 
-    XCTAssertEqual(runfiles.rlocation("arg")?.path, runfilesDir.appendingPathComponent("arg").path)
-    XCTAssertEqual(runfiles.rlocation("/foo")?.path, "/foo")
+    XCTAssertEqual(try runfiles.rlocation("arg").path, runfilesDir.appendingPathComponent("arg").path)
+    XCTAssertEqual(try runfiles.rlocation("/foo").path, "/foo")
   }
 
   func testDirectoryBasedRlocationWithRepoMappingFromMain() throws {
@@ -284,61 +284,61 @@ final class RunfilesTests: XCTestCase {
     )
 
     XCTAssertEqual(
-      runfiles.rlocation("my_module/bar/runfile")?.path,
+      try runfiles.rlocation("my_module/bar/runfile").path,
       runfilesDir.appendingPathComponent("_main/bar/runfile").path
     )
     XCTAssertEqual(
-      runfiles.rlocation("my_workspace/bar/runfile")?.path,
+      try runfiles.rlocation("my_workspace/bar/runfile").path,
       runfilesDir.appendingPathComponent("_main/bar/runfile").path
     )
     XCTAssertEqual(
-      runfiles.rlocation("my_protobuf/foo/runfile")?.path,
+      try runfiles.rlocation("my_protobuf/foo/runfile").path,
       runfilesDir.appendingPathComponent("protobuf~3.19.2/foo/runfile").path
     )
     XCTAssertEqual(
-      runfiles.rlocation("my_protobuf/bar/dir")?.path,
+      try runfiles.rlocation("my_protobuf/bar/dir").path,
       runfilesDir.appendingPathComponent("protobuf~3.19.2/bar/dir").path
     )
     XCTAssertEqual(
-      runfiles.rlocation("my_protobuf/bar/dir/file")?.path,
+      try runfiles.rlocation("my_protobuf/bar/dir/file").path,
       runfilesDir.appendingPathComponent("protobuf~3.19.2/bar/dir/file").path
     )
     XCTAssertEqual(
-      runfiles.rlocation("my_protobuf/bar/dir/de eply/nes ted/fi~le")?.path,
+      try runfiles.rlocation("my_protobuf/bar/dir/de eply/nes ted/fi~le").path,
       runfilesDir.appendingPathComponent("protobuf~3.19.2/bar/dir/de eply/nes ted/fi~le").path
     )
 
     XCTAssertEqual(
-      runfiles.rlocation("protobuf/foo/runfile")?.path,
+      try runfiles.rlocation("protobuf/foo/runfile").path,
       runfilesDir.appendingPathComponent("protobuf/foo/runfile").path
     )
     XCTAssertEqual(
-      runfiles.rlocation("protobuf/bar/dir/dir/de eply/nes ted/fi~le")?.path,
+      try runfiles.rlocation("protobuf/bar/dir/dir/de eply/nes ted/fi~le").path,
       runfilesDir.appendingPathComponent("protobuf/bar/dir/dir/de eply/nes ted/fi~le").path
     )
 
     XCTAssertEqual(
-      runfiles.rlocation("_main/bar/runfile")?.path,
+      try runfiles.rlocation("_main/bar/runfile").path,
       runfilesDir.appendingPathComponent("_main/bar/runfile").path
     )
     XCTAssertEqual(
-      runfiles.rlocation("protobuf~3.19.2/foo/runfile")?.path,
+      try runfiles.rlocation("protobuf~3.19.2/foo/runfile").path,
       runfilesDir.appendingPathComponent("protobuf~3.19.2/foo/runfile").path
     )
     XCTAssertEqual(
-      runfiles.rlocation("protobuf~3.19.2/bar/dir")?.path,
+      try runfiles.rlocation("protobuf~3.19.2/bar/dir").path,
       runfilesDir.appendingPathComponent("protobuf~3.19.2/bar/dir").path
     )
     XCTAssertEqual(
-      runfiles.rlocation("protobuf~3.19.2/bar/dir/file")?.path,
+      try runfiles.rlocation("protobuf~3.19.2/bar/dir/file").path,
       runfilesDir.appendingPathComponent("protobuf~3.19.2/bar/dir/file").path
     )
     XCTAssertEqual(
-      runfiles.rlocation("protobuf~3.19.2/bar/dir/de eply/nes  ted/fi~le")?.path,
+      try runfiles.rlocation("protobuf~3.19.2/bar/dir/de eply/nes  ted/fi~le").path,
       runfilesDir.appendingPathComponent("protobuf~3.19.2/bar/dir/de eply/nes  ted/fi~le").path
     )
 
-    XCTAssertEqual(runfiles.rlocation("config.json")?.path, runfilesDir.appendingPathComponent("config.json").path)
+    XCTAssertEqual(try runfiles.rlocation("config.json").path, runfilesDir.appendingPathComponent("config.json").path)
   }
 
   func testDirectoryBasedRlocationWithRepoMappingFromOtherRepo() throws {
@@ -365,53 +365,53 @@ final class RunfilesTests: XCTestCase {
     )
 
     XCTAssertEqual(
-      runfiles.rlocation("protobuf/foo/runfile")?.path,
+      try runfiles.rlocation("protobuf/foo/runfile").path,
       runfilesDir.appendingPathComponent("protobuf~3.19.2/foo/runfile").path
     )
     XCTAssertEqual(
-      runfiles.rlocation("protobuf/bar/dir")?.path,
+      try runfiles.rlocation("protobuf/bar/dir").path,
       runfilesDir.appendingPathComponent("protobuf~3.19.2/bar/dir").path
     )
     XCTAssertEqual(
-      runfiles.rlocation("protobuf/bar/dir/file")?.path,
+      try runfiles.rlocation("protobuf/bar/dir/file").path,
       runfilesDir.appendingPathComponent("protobuf~3.19.2/bar/dir/file").path
     )
     XCTAssertEqual(
-      runfiles.rlocation("protobuf/bar/dir/de eply/nes  ted/fi~le")?.path,
+      try runfiles.rlocation("protobuf/bar/dir/de eply/nes  ted/fi~le").path,
       runfilesDir.appendingPathComponent("protobuf~3.19.2/bar/dir/de eply/nes  ted/fi~le").path
     )
 
     XCTAssertEqual(
-      runfiles.rlocation("my_module/bar/runfile")?.path,
+      try runfiles.rlocation("my_module/bar/runfile").path,
       runfilesDir.appendingPathComponent("my_module/bar/runfile").path
     )
     XCTAssertEqual(
-      runfiles.rlocation("my_protobuf/bar/dir/de eply/nes  ted/fi~le")?.path,
+      try runfiles.rlocation("my_protobuf/bar/dir/de eply/nes  ted/fi~le").path,
       runfilesDir.appendingPathComponent("my_protobuf/bar/dir/de eply/nes  ted/fi~le").path
     )
 
     XCTAssertEqual(
-      runfiles.rlocation("_main/bar/runfile")?.path,
+      try runfiles.rlocation("_main/bar/runfile").path,
       runfilesDir.appendingPathComponent("_main/bar/runfile").path
     )
     XCTAssertEqual(
-      runfiles.rlocation("protobuf~3.19.2/foo/runfile")?.path,
+      try runfiles.rlocation("protobuf~3.19.2/foo/runfile").path,
       runfilesDir.appendingPathComponent("protobuf~3.19.2/foo/runfile").path
     )
     XCTAssertEqual(
-      runfiles.rlocation("protobuf~3.19.2/bar/dir")?.path,
+      try runfiles.rlocation("protobuf~3.19.2/bar/dir").path,
       runfilesDir.appendingPathComponent("protobuf~3.19.2/bar/dir").path
     )
     XCTAssertEqual(
-      runfiles.rlocation("protobuf~3.19.2/bar/dir/file")?.path,
+      try runfiles.rlocation("protobuf~3.19.2/bar/dir/file").path,
       runfilesDir.appendingPathComponent("protobuf~3.19.2/bar/dir/file").path
     )
     XCTAssertEqual(
-      runfiles.rlocation("protobuf~3.19.2/bar/dir/de eply/nes  ted/fi~le")?.path,
+      try runfiles.rlocation("protobuf~3.19.2/bar/dir/de eply/nes  ted/fi~le").path,
       runfilesDir.appendingPathComponent("protobuf~3.19.2/bar/dir/de eply/nes  ted/fi~le").path
     )
 
-    XCTAssertEqual(runfiles.rlocation("config.json")?.path, runfilesDir.appendingPathComponent("config.json").path)
+    XCTAssertEqual(try runfiles.rlocation("config.json").path, runfilesDir.appendingPathComponent("config.json").path)
   }
 
   func testComputeRunfilesPath_withValidManifestFile() throws {

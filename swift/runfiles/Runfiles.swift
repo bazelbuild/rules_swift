@@ -15,7 +15,7 @@
 import Foundation
 
 protocol LookupStrategy {
-    func rlocationChecked(path: String) -> URL?
+    func rlocationChecked(path: String) throws -> URL
     func envVars() -> [String: String]
 }
 
@@ -26,7 +26,7 @@ struct DirectoryBased: LookupStrategy {
         runfilesRoot = path
     }
 
-    func rlocationChecked(path: String) -> URL? {
+    func rlocationChecked(path: String) throws -> URL {
         runfilesRoot.appendingPathComponent(path)
     }
 
@@ -47,7 +47,7 @@ struct ManifestBased: LookupStrategy {
         runfiles = try Self.loadRunfiles(from: manifestPath)
     }
 
-    func rlocationChecked(path: String) -> URL? {
+    func rlocationChecked(path: String) throws -> URL {
         if let runfile = runfiles[path] {
             return URL(fileURLWithPath: runfile)
         }
@@ -61,7 +61,7 @@ struct ManifestBased: LookupStrategy {
             }
         }
 
-        return nil
+        throw RunfilesError.missingRunfileEntryFromManifest
     }
 
     func envVars() -> [String: String] {
@@ -101,8 +101,10 @@ struct RepoMappingKey: Hashable {
 }
 
 public enum RunfilesError: Error {
+    case invalidRunfilePath
     case invalidRunfilesLocations
     case missingRunfilesLocations
+    case missingRunfileEntryFromManifest
     case invalidRepoMappingEntry(line: String)
     case missingManifest
 }
@@ -120,7 +122,7 @@ public final class Runfiles {
         self.sourceRepository = sourceRepository
     }
 
-    public func rlocation(_ path: String, sourceRepository: String? = nil) -> URL? {
+    public func rlocation(_ path: String, sourceRepository: String? = nil) throws -> URL {
         guard 
             !path.hasPrefix("../"),
             !path.contains("/.."),
@@ -129,10 +131,10 @@ public final class Runfiles {
             !path.hasSuffix("/."),
             !path.contains("//") 
         else {
-            return nil
+            throw RunfilesError.invalidRunfilePath
         }
         guard path.first != "\\" else {
-            return nil
+            throw RunfilesError.invalidRunfilePath
         }
         guard path.first != "/" else {
             return URL(fileURLWithPath: path)
@@ -154,7 +156,7 @@ public final class Runfiles {
             //   have to be mapped.
             // - path did not contain a slash and referred to a root symlink,
             //   which also should not be mapped.
-            return strategy.rlocationChecked(path: path)
+            return try strategy.rlocationChecked(path: path)
         }
 
         let remainingPath = String(components[1])
@@ -163,9 +165,9 @@ public final class Runfiles {
         // canonical repository name with respect to the current repository,
         // identified by its canonical name.
         if let targetCanonical = repoMapping[key] {
-            return strategy.rlocationChecked(path: targetCanonical + "/" + remainingPath)
+            return try strategy.rlocationChecked(path: targetCanonical + "/" + remainingPath)
         } else {
-            return strategy.rlocationChecked(path: path)
+            return try strategy.rlocationChecked(path: path)
         }
     }
 
@@ -200,9 +202,11 @@ public final class Runfiles {
         // If the repository mapping file can't be found, that is not an error: We
         // might be running without Bzlmod enabled or there may not be any runfiles.
         // In this case, just apply an empty repo mapping.
-        let repoMapping = try strategy.rlocationChecked(path: "_repo_mapping").map { path in
+        let repoMapping: [RepoMappingKey : String] = if let path = try? strategy.rlocationChecked(path: "_repo_mapping") {
             try parseRepoMapping(path: path)
-        } ?? [:]
+        } else {
+            [:]
+        }
 
         return Runfiles(strategy: strategy, repoMapping: repoMapping, sourceRepository: sourceRepository ?? repository(from: callerFilePath))
     }
