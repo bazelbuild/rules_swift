@@ -1,7 +1,7 @@
 load("//swift:swift.bzl", "swift_binary")
 
 swift_binary(
-    name = "binary",
+    name = "runfiles_example",
     srcs = ["main.swift"],
     data = [
         "data/sample.txt",
