@@ -283,7 +283,7 @@ func parseRepoMapping(path: URL) throws -> [RepoMappingKey: String] {
     }
 
     var repoMapping = [RepoMappingKey: String]()
-    if let data = try? fileHandle.readToEnd(), let content = String(data: data, encoding: .utf8) {
+    if let data = try fileHandle.readToEnd(), let content = String(data: data, encoding: .utf8) {
         let lines = content.split(separator: "\n")
         for line in lines {
             let fields = line.components(separatedBy: ",")
