@@ -34,16 +34,16 @@ let runfiles = try? Runfiles.create(sourceRepository: BazelRunfilesConstants.cur
 let fileURL = runfiles?.rlocation("my_workspace/path/to/my/data.txt")
 ```
 
-> The code above creates a manifest- or directory-based implementation based on
+The code above:
+
+- Creates a manifest- or directory-based implementation based on
   the environment variables in `Process.processInfo.environment`.
   See `Runfiles.create()` for more info.
-
-> The Runfiles.create function uses the runfiles manifest and the runfiles
-  directory from the RUNFILES_MANIFEST_FILE and RUNFILES_DIR environment
+- The `Runfiles.create` function uses the runfiles manifest and the runfiles
+  directory from the `RUNFILES_MANIFEST_FILE` and `RUNFILES_DIR` environment
   variables. If not present, the function looks for the manifest and directory
-  near CommandLine.arguments.first (argv[0]), the path of the main program.
-
-> The BazelRunfilesConstants.currentRepository symbol is available in every
+  near `CommandLine.arguments.first` (e.g. `argv[0]` the path of the main program).
+- The `BazelRunfilesConstants.currentRepository` symbol is available in every
   target that depends on the runfiles library.
 
 If you want to start subprocesses, and the subprocess can't automatically
