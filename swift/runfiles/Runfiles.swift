@@ -53,20 +53,15 @@ struct ManifestBased: LookupStrategy {
         }
 
         // Search for prefixes in the path
-        var prefixEnd = path.lastIndex(of: "/")
-
-        while true {
-            guard let end = prefixEnd else {
-                return nil
-            }
-
+        for end in path.indices.reversed() where path[end] == "/" {
             let prefix = String(path[..<end])
             if let prefixMatch = runfiles[prefix] {
                 let relativePath = String(path[path.index(after: end)...])
                 return URL(fileURLWithPath: prefixMatch + "/" + relativePath)
             }
-            prefixEnd = path[..<end].lastIndex(of: "/")
         }
+
+        return nil
     }
 
     func envVars() -> [String: String] {
