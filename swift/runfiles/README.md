@@ -30,7 +30,7 @@ import BazelRunfiles
 import BazelRunfiles
 
 do {
-    let runfiles = try Runfiles.create(sourceRepository: BazelRunfilesConstants.currentRepository)
+    let runfiles = try Runfiles.create()
     let fileURL = try runfiles.rlocation("my_workspace/path/to/my/data.txt")
     print("file: \(fileURL)")
 } catch {
@@ -47,8 +47,6 @@ The code above:
   directory from the `RUNFILES_MANIFEST_FILE` and `RUNFILES_DIR` environment
   variables. If not present, the function looks for the manifest and directory
   near `CommandLine.arguments.first` (e.g. `argv[0]` the path of the main program).
-- The `BazelRunfilesConstants.currentRepository` symbol is available in every
-  target that depends on the runfiles library.
 
 If you want to start subprocesses, and the subprocess can't automatically
 find the correct runfiles directory, you can explicitly set the right
@@ -60,7 +58,7 @@ import Foundation
 
 do {
 
-    let runfiles = try Runfiles.create(sourceRepository: BazelRunfilesConstant.currentRepository)
+    let runfiles = try Runfiles.create()
     let executableURL = try runfiles.rlocation("my_workspace/path/to/binary")
 
     let process = Process()
@@ -74,7 +72,7 @@ do {
     } catch {
         // ...
     }
-catch {
+} catch {
     fatalError("runfiles error: \(error)")
 }
 ```
