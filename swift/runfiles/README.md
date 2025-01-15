@@ -51,24 +51,26 @@ find the correct runfiles directory, you can explicitly set the right
 environment variables for them:
 
 ```swift
-import Foundation
 import BazelRunfiles
-
-let runfiles = try? Runfiles.create(sourceRepository: BazelRunfilesConstant.currentRepository)
-
-guard let executableURL = runfiles.rlocation("my_workspace/path/to/binary") else {
-    return
-}
-
-let process = Process()
-process.executableURL = executableURL
-process.environment = runfiles.envVars()
+import Foundation
 
 do {
-    // Launch the process
-    try process.run()
-    process.waitUntilExit()
-} catch {
-    // ...
+
+    let runfiles = try Runfiles.create(sourceRepository: BazelRunfilesConstant.currentRepository)
+    let executableURL = try runfiles.rlocation("my_workspace/path/to/binary")
+
+    let process = Process()
+    process.executableURL = executableURL
+    process.environment = runfiles.envVars()
+
+    do {
+        // Launch the process
+        try process.run()
+        process.waitUntilExit()
+    } catch {
+        // ...
+    }
+catch {
+    fatalError("runfiles error: \(error)")
 }
 ```
