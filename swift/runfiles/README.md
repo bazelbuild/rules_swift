@@ -29,9 +29,13 @@ import BazelRunfiles
 ```swift
 import BazelRunfiles
 
-let runfiles = try? Runfiles.create(sourceRepository: BazelRunfilesConstants.currentRepository)
-
-let fileURL = runfiles?.rlocation("my_workspace/path/to/my/data.txt")
+do {
+    let runfiles = try Runfiles.create(sourceRepository: BazelRunfilesConstants.currentRepository)
+    let fileURL = try runfiles.rlocation("my_workspace/path/to/my/data.txt")
+    print("file: \(fileURL)")
+} catch {
+     print("runfiles error: \(error)")
+}
 ```
 
 The code above:
