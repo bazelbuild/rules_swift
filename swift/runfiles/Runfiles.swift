@@ -15,8 +15,8 @@
 import Foundation
 
 enum RunfilesEnv {
-  static let runfilesManifestFile: String = "RUNFILES_MANIFEST_FILE"
-  static let runfilesDir: String = "RUNFILES_DIR"
+    static let runfilesManifestFile: String = "RUNFILES_MANIFEST_FILE"
+    static let runfilesDir: String = "RUNFILES_DIR"
 }
 
 protocol LookupStrategy {
