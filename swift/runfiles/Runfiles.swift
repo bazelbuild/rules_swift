@@ -14,6 +14,11 @@
 
 import Foundation
 
+enum RunfilesEnv {
+  static let runfilesManifestFile: String = "RUNFILES_MANIFEST_FILE"
+  static let runfilesDir: String = "RUNFILES_DIR"
+}
+
 protocol LookupStrategy {
     func rlocationChecked(path: String) throws -> URL
     func envVars() -> [String: String]
@@ -32,7 +37,7 @@ struct DirectoryBased: LookupStrategy {
 
     func envVars() -> [String: String] {
         [
-            "RUNFILES_DIR": runfilesRoot.path,
+            RunfilesEnv.runfilesDir: runfilesRoot.path,
         ]
     }
 }
@@ -66,7 +71,7 @@ struct ManifestBased: LookupStrategy {
 
     func envVars() -> [String: String] {
         [
-            "RUNFILES_MANIFEST_FILE": manifestPath.path,
+            RunfilesEnv.runfilesManifestFile: manifestPath.path,
         ]
     }
 
@@ -183,8 +188,8 @@ public final class Runfiles {
 
         let runfilesPath = try computeRunfilesPath(
             argv0: CommandLine.arguments[0],
-            manifestFile: environment["RUNFILES_MANIFEST_FILE"],
-            runfilesDir: environment["RUNFILES_DIR"],
+            manifestFile: environment[RunfilesEnv.runfilesManifestFile],
+            runfilesDir: environment[RunfilesEnv.runfilesDir],
             isRunfilesManifest: { file in FileManager.default.fileExists(atPath: file) },
             isRunfilesDirectory: { file in
                 var isDir: ObjCBool = false
