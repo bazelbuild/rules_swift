@@ -99,8 +99,8 @@ void OutputFileMap::UpdateForIncremental(
       auto kind = output.key();
       auto path = output.value().get<std::string>();
 
-      if (kind == "object") {
-        // If the file kind is "object", we want to update the path to point to
+      if (kind == "object" || kind == "const-values") {
+        // If the file kind is "object" or "const-values", we want to update the path to point to
         // the incremental storage area and then add a "swift-dependencies"
         // in the same location.
         auto new_path = MakeIncrementalOutputPath(path, derived);
