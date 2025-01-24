@@ -25,7 +25,7 @@ def _non_module_deps_impl(module_ctx):
         metadata_kwargs["reproducible"] = True
 
     return module_ctx.extension_metadata(
-        **metadata_kwargs,
+        **metadata_kwargs
     )
 
 non_module_deps = module_extension(implementation = _non_module_deps_impl)
