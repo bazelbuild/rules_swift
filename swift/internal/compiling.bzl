@@ -1250,7 +1250,10 @@ def _precompile_clang_module(
 
     prerequisites = struct(
         bin_dir = feature_configuration._bin_dir,
-        cc_compilation_context = cc_compilation_context,
+        cc_compilation_context = compilation_context_for_explicit_module_compilation(
+            compilation_contexts = [cc_compilation_context],
+            swift_infos = swift_infos,
+        ),
         genfiles_dir = feature_configuration._genfiles_dir,
         indexstore_directory = indexstore_directory,
         index_unit_output_path = index_unit_output_path,
