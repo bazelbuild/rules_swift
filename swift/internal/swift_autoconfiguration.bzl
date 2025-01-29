@@ -259,7 +259,7 @@ toolchain(
         version_file = version_file,
     )
 
-def _create_xcode_toolchain():
+def _create_xcode_toolchain(repository_ctx):
     """Creates BUILD targets for the Swift toolchain on macOS using Xcode.
     """
     feature_values = [
@@ -273,6 +273,7 @@ def _create_xcode_toolchain():
 xcode_swift_toolchain(
     name = "xcode-toolchain",
     features = [{feature_list}],
+    generated_header_rewriter = {generated_header_rewriter},
 )
 
 [
@@ -294,6 +295,10 @@ xcode_swift_toolchain(
             for feature in feature_values
         ]),
         toolchain_type = SWIFT_TOOLCHAIN_TYPE,
+        # SNAP internal: pass an optional -Swift.h rewriter tool via repo ENV
+        # as a hacky but much simpler alternative to creating custom swift
+        # toolchains
+        generated_header_rewriter = repository_ctx.os.environ.get("GeneratedHeaderRewriter"),
     )
 
 def _get_python_bin(repository_ctx):
@@ -402,14 +407,14 @@ load(
 
 package(default_visibility = ["//visibility:public"])
 """,
-            _create_xcode_toolchain(),
+            _create_xcode_toolchain(repository_ctx = repository_ctx),
             _create_windows_toolchain(repository_ctx = repository_ctx),
             _create_linux_toolchain(repository_ctx = repository_ctx),
         ]),
     )
 
 swift_autoconfiguration = repository_rule(
-    environ = ["CC", "PATH", "ProgramData", "Path"],
+    environ = ["CC", "PATH", "ProgramData", "Path", "GeneratedHeaderRewriter"],
     implementation = _swift_autoconfiguration_impl,
     local = True,
 )
