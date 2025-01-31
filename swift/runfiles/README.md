@@ -48,9 +48,7 @@ The code above:
   variables. If not present, the function looks for the manifest and directory
   near `CommandLine.arguments.first` (e.g. `argv[0]` the path of the main program).
 
-If you want to start subprocesses, and the subprocess can't automatically
-find the correct runfiles directory, you can explicitly set the right
-environment variables for them:
+If you want to start subprocesses, the runfiles library helps you set the required environment variables for them to find their runfiles:
 
 ```swift
 import BazelRunfiles
