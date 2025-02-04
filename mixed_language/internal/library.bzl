@@ -25,7 +25,7 @@ load(
 load("//swift:swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 
 # buildifier: disable=bzl-visibility
-load("//swift/internal:attrs.bzl", "swift_deps_attr", "swift_toolchain_attrs")
+load("//swift/internal:attrs.bzl", "swift_deps_attr")
 
 # buildifier: disable=bzl-visibility
 load(
@@ -216,7 +216,6 @@ def _mixed_language_library_impl(ctx):
 
 mixed_language_library = rule(
     attrs = dicts.add(
-        swift_toolchain_attrs(),
         {
             "clang_target": attr.label(
                 doc = """
