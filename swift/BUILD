@@ -76,7 +76,6 @@ bzl_library(
     deps = [
         ":module_name",
         ":providers",
-        "//swift/internal:attrs",
         "//swift/internal:compiling",
         "//swift/internal:feature_names",
         "//swift/internal:features",
@@ -229,7 +228,6 @@ bzl_library(
     deps = [
         ":module_name",
         ":providers",
-        "//swift/internal:attrs",
         "//swift/internal:compiling",
         "//swift/internal:features",
         "//swift/internal:linking",

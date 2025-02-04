@@ -102,7 +102,6 @@ def swift_compilation_attrs(
             additional_deps_aspects = additional_deps_aspects,
             additional_deps_providers = additional_deps_providers,
         ),
-        swift_toolchain_attrs(),
         {
             "copts": attr.string_list(
                 doc = """\

@@ -15,7 +15,6 @@
 """Implementation of the `swift_module_alias` rule."""
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load("//swift/internal:attrs.bzl", "swift_toolchain_attrs")
 load("//swift/internal:compiling.bzl", "compile")
 load("//swift/internal:features.bzl", "configure_features")
 load(
@@ -152,7 +151,6 @@ def _swift_module_alias_impl(ctx):
 
 swift_module_alias = rule(
     attrs = dicts.add(
-        swift_toolchain_attrs(),
         {
             "deps": attr.label_list(
                 doc = """\
