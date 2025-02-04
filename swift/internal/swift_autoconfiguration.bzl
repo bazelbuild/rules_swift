@@ -212,14 +212,10 @@ def _create_linux_toolchain(repository_ctx):
 No 'swiftc' executable found in $PATH. Not auto-generating a Linux Swift \
 toolchain.
 """)  # buildifier: disable=print
-        repository_ctx.file(
-            "BUILD",
-            """\
+        return """\
 # No 'swiftc' executable found in $PATH. Not auto-generating a Linux Swift \
 toolchain.
-""",
-        )
-        return
+"""
 
     root = path_to_swiftc.dirname.dirname
     feature_values = _compute_feature_values(repository_ctx, path_to_swiftc)
@@ -232,18 +228,9 @@ toolchain.
     feature_values.append(SWIFT_FEATURE_USE_AUTOLINK_EXTRACT)
     feature_values.append(SWIFT_FEATURE_USE_MODULE_WRAP)
 
-    repository_ctx.file(
-        "BUILD",
-        """\
-load(
-    "@build_bazel_rules_swift//swift/toolchains:swift_toolchain.bzl",
-    "swift_toolchain",
-)
-
-package(default_visibility = ["//visibility:public"])
-
+    return """\
 swift_toolchain(
-    name = "toolchain",
+    name = "linux-toolchain",
     arch = "{cpu}",
     features = [{feature_list}],
     os = "linux",
@@ -261,27 +248,23 @@ toolchain(
         "@platforms//os:linux",
         "@platforms//cpu:{cpu}",
     ],
-    toolchain = ":toolchain",
+    toolchain = ":linux-toolchain",
     toolchain_type = "{toolchain_type}",
     visibility = ["//visibility:public"],
 )
 """.format(
-            cpu = _normalized_linux_cpu(repository_ctx.os.arch),
-            feature_list = ", ".join([
-                '"{}"'.format(feature)
-                for feature in feature_values
-            ]),
-            root = root,
-            toolchain_type = SWIFT_TOOLCHAIN_TYPE,
-            version_file = version_file,
-        ),
+        cpu = _normalized_linux_cpu(repository_ctx.os.arch),
+        feature_list = ", ".join([
+            '"{}"'.format(feature)
+            for feature in feature_values
+        ]),
+        root = root,
+        toolchain_type = SWIFT_TOOLCHAIN_TYPE,
+        version_file = version_file,
     )
 
-def _create_xcode_toolchain(repository_ctx):
+def _create_xcode_toolchain():
     """Creates BUILD targets for the Swift toolchain on macOS using Xcode.
-
-    Args:
-      repository_ctx: The repository rule context.
     """
     feature_values = [
         # TODO: This should be removed so that private headers can be used with
@@ -290,22 +273,9 @@ def _create_xcode_toolchain(repository_ctx):
         SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS,
     ]
 
-    repository_ctx.file(
-        "BUILD",
-        """
-load(
-    "@build_bazel_apple_support//configs:platforms.bzl",
-    "APPLE_PLATFORMS_CONSTRAINTS",
-)
-load(
-    "@build_bazel_rules_swift//swift/toolchains:xcode_swift_toolchain.bzl",
-    "xcode_swift_toolchain",
-)
-
-package(default_visibility = ["//visibility:public"])
-
+    return """\
 xcode_swift_toolchain(
-    name = "toolchain",
+    name = "xcode-toolchain",
     features = [{feature_list}],
 )
 
@@ -316,19 +286,18 @@ xcode_swift_toolchain(
             "@platforms//os:macos",
         ],
         target_compatible_with = APPLE_PLATFORMS_CONSTRAINTS[arch],
-        toolchain = ":toolchain",
+        toolchain = ":xcode-toolchain",
         toolchain_type = "{toolchain_type}",
         visibility = ["//visibility:public"],
     )
     for arch in APPLE_PLATFORMS_CONSTRAINTS.keys()
 ]
 """.format(
-            feature_list = ", ".join([
-                '"{}"'.format(feature)
-                for feature in feature_values
-            ]),
-            toolchain_type = SWIFT_TOOLCHAIN_TYPE,
-        ),
+        feature_list = ", ".join([
+            '"{}"'.format(feature)
+            for feature in feature_values
+        ]),
+        toolchain_type = SWIFT_TOOLCHAIN_TYPE,
     )
 
 def _get_python_bin(repository_ctx):
@@ -349,14 +318,10 @@ def _create_windows_toolchain(repository_ctx):
 No 'swiftc.exe' executable found in $PATH. Not auto-generating a Windows Swift \
 toolchain.
 """)  # buildifier: disable=print
-        repository_ctx.file(
-            "BUILD",
-            """\
+        return """\
 # No 'swiftc.exe' executable found in $PATH. Not auto-generating a Windows \
 Swift toolchain.
-""",
-        )
-        return
+"""
 
     root = path_to_swiftc.dirname.dirname
     enabled_features = [
@@ -382,18 +347,9 @@ Swift toolchain.
         "ProgramData": repository_ctx.os.environ["ProgramData"],
     }
 
-    repository_ctx.file(
-        "BUILD",
-        """
-load(
-  "@build_bazel_rules_swift//swift/toolchains:swift_toolchain.bzl",
-  "swift_toolchain",
-)
-
-package(default_visibility = ["//visibility:public"])
-
+    return """\
 swift_toolchain(
-  name = "toolchain",
+  name = "windows-toolchain",
   arch = "x86_64",
   features = [{features}],
   os = "windows",
@@ -412,32 +368,45 @@ toolchain(
         "@platforms//cpu:x86_64",
     ],
     target_compatible_with = APPLE_PLATFORMS_CONSTRAINTS[arch],
-    toolchain = ":toolchain",
+    toolchain = ":windows-toolchain",
     toolchain_type = "{toolchain_type}",
     visibility = ["//visibility:public"],
 )
 """.format(
-            features = ", ".join(['"{}"'.format(feature) for feature in enabled_features] + ['"-{}"'.format(feature) for feature in disabled_features]),
-            root = root,
-            env = env,
-            sdkroot = repository_ctx.os.environ["SDKROOT"].replace("\\", "/"),
-            toolchain_type = SWIFT_TOOLCHAIN_TYPE,
-            xctest_version = xctest_version.stdout.rstrip(),
-            version_file = version_file,
-        ),
+        features = ", ".join(['"{}"'.format(feature) for feature in enabled_features] + ['"-{}"'.format(feature) for feature in disabled_features]),
+        root = root,
+        env = env,
+        sdkroot = repository_ctx.os.environ["SDKROOT"].replace("\\", "/"),
+        toolchain_type = SWIFT_TOOLCHAIN_TYPE,
+        xctest_version = xctest_version.stdout.rstrip(),
+        version_file = version_file,
     )
 
 def _swift_autoconfiguration_impl(repository_ctx):
-    # TODO(allevato): This is expedient and fragile. Use the
-    # platforms/toolchains APIs instead to define proper toolchains, and make it
-    # possible to support non-Xcode toolchains on macOS as well.
-    os_name = repository_ctx.os.name.lower()
-    if os_name.startswith("mac os"):
-        _create_xcode_toolchain(repository_ctx)
-    elif os_name.startswith("windows"):
-        _create_windows_toolchain(repository_ctx)
-    else:
-        _create_linux_toolchain(repository_ctx)
+    repository_ctx.file(
+        "BUILD",
+        "\n".join([
+            """\
+load(
+    "@build_bazel_apple_support//configs:platforms.bzl",
+    "APPLE_PLATFORMS_CONSTRAINTS",
+)
+load(
+    "@build_bazel_rules_swift//swift/toolchains:swift_toolchain.bzl",
+    "swift_toolchain",
+)
+load(
+    "@build_bazel_rules_swift//swift/toolchains:xcode_swift_toolchain.bzl",
+    "xcode_swift_toolchain",
+)
+
+package(default_visibility = ["//visibility:public"])
+""",
+            _create_xcode_toolchain(),
+            _create_windows_toolchain(repository_ctx),
+            _create_linux_toolchain(repository_ctx),
+        ]),
+    )
 
 swift_autoconfiguration = repository_rule(
     environ = ["CC", "PATH", "ProgramData", "Path"],
