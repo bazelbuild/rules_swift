@@ -80,7 +80,7 @@ def _check_supports_language_mode_6(repository_ctx, swiftc_path, _temp_dir):
         if not almost_version:
             return False
 
-        major_version, _, _ = almost_version.parition(".")
+        major_version, _, _ = almost_version.partition(".")
         if not major_version:
             return False
 
