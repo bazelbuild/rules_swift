@@ -304,11 +304,6 @@ load(
 
 package(default_visibility = ["//visibility:public"])
 
-_OSX_DEVELOPER_PLATFORM_CPUS = [
-    "arm64",
-    "x86_64",
-]
-
 xcode_swift_toolchain(
     name = "toolchain",
     features = [{feature_list}],
@@ -316,10 +311,9 @@ xcode_swift_toolchain(
 
 [
     toolchain(
-        name = "xcode-toolchain-" + arch + "-" + cpu,
+        name = "xcode-toolchain-" + arch,
         exec_compatible_with = [
             "@platforms//os:macos",
-            "@platforms//cpu:" + cpu,
         ],
         target_compatible_with = APPLE_PLATFORMS_CONSTRAINTS[arch],
         toolchain = ":toolchain",
@@ -327,7 +321,6 @@ xcode_swift_toolchain(
         visibility = ["//visibility:public"],
     )
     for arch in APPLE_PLATFORMS_CONSTRAINTS.keys()
-    for cpu in _OSX_DEVELOPER_PLATFORM_CPUS
 ]
 """.format(
             feature_list = ", ".join([
