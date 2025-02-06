@@ -36,7 +36,6 @@ load(
     "SwiftProtoCompilerInfo",
     "SwiftProtoInfo",
 )
-load("//swift:swift_common.bzl", "swift_common")
 
 # buildifier: disable=bzl-visibility
 load("//swift/internal:toolchain_utils.bzl", "use_swift_toolchain")
@@ -73,7 +72,6 @@ def _swift_proto_library_group_aspect_impl(target, aspect_ctx):
 _swift_proto_library_group_aspect = aspect(
     attr_aspects = ["deps"],
     attrs = dicts.add(
-        swift_common.toolchain_attrs(),
         {
             "_compiler": attr.label(
                 default = Label("//proto:_swift_proto_compiler"),
