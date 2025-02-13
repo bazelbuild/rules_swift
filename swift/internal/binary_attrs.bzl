@@ -37,6 +37,7 @@ def binary_rule_attrs(
         *,
         additional_deps_aspects = [],
         additional_deps_providers = [],
+        exclude_env = False,
         stamp_default):
     """Returns attributes common to both `swift_binary` and `swift_test`.
 
@@ -46,12 +47,13 @@ def binary_rule_attrs(
         additional_deps_providers: A list of lists representing additional
             providers that should be allowed by the `deps` attribute of the
             rule.
+        exclude_env: Whether to exclude the `env` attribute.
         stamp_default: The default value of the `stamp` attribute.
 
     Returns:
         A `dict` of attributes for a binary or test rule.
     """
-    return dicts.add(
+    result = dicts.add(
         swift_compilation_attrs(
             additional_deps_aspects = [
                 swift_clang_module_aspect,
@@ -102,3 +104,18 @@ into the binary. Possible values are:
             ),
         },
     )
+    if not exclude_env:
+        result["env"] = attr.string_dict(
+            doc = """\
+Specifies additional environment variables to set when the test is executed by
+`bazel run` or `bazel test`.
+
+The values of these environment variables are subject to `$(location)` and
+"Make variable" substitution.
+
+NOTE: The environment variables are not set when you run the target outside of
+Bazel (for example, by manually executing the binary in `bazel-bin/`).
+""",
+        )
+
+    return result

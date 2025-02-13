@@ -174,6 +174,13 @@ def _swift_binary_impl(ctx):
             source_attributes = ["srcs"],
         ),
         OutputGroupInfo(**output_groups),
+        RunEnvironmentInfo(
+            environment = expand_locations(
+                ctx,
+                ctx.attr.env,
+                ctx.attr.swiftc_inputs,
+            ),
+        ),
     ]
 
     # Only create a linking context and propagate `SwiftBinaryInfo` if this rule

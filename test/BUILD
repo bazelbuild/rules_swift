@@ -1,6 +1,7 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load(":cc_library_tests.bzl", "cc_library_test_suite")
 load(":debug_settings_tests.bzl", "debug_settings_test_suite")
+load(":environment_tests.bzl", "environment_test_suite")
 load(":generated_header_tests.bzl", "generated_header_test_suite")
 load(":interop_hints_tests.bzl", "interop_hints_test_suite")
 load(":module_interface_tests.bzl", "module_interface_test_suite")
@@ -18,6 +19,10 @@ cc_library_test_suite(
 
 debug_settings_test_suite(
     name = "debug_settings",
+)
+
+environment_test_suite(
+    name = "environment",
 )
 
 generated_header_test_suite(

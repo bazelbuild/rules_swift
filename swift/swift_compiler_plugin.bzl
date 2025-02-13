@@ -201,8 +201,12 @@ def _swift_compiler_plugin_impl(ctx):
 
 swift_compiler_plugin = rule(
     attrs = dicts.add(
-        # Do not stamp macro binaries by default to prevent frequent rebuilds.
-        binary_rule_attrs(stamp_default = 0),
+        binary_rule_attrs(
+            exclude_env = True,
+            # Do not stamp macro binaries by default to prevent frequent
+            # rebuilds.
+            stamp_default = 0,
+        ),
         {
             # TODO(b/301253335): Enable AEGs and switch from `swift` exec_group to swift `toolchain` param.
             "_use_auto_exec_groups": attr.bool(default = False),

@@ -24,6 +24,7 @@ load("@build_bazel_rules_swift//swift:providers.bzl", "SwiftInfo")
 load(
     "@build_bazel_rules_swift//test/rules:expected_files.bzl",
     "compare_expected_files",
+    "compare_expected_strings",
     "normalize_collection",
 )
 
@@ -165,6 +166,8 @@ def _lookup_provider_by_name(env, target, provider_name):
         provider = DefaultInfo
     elif provider_name == "OutputGroupInfo":
         provider = OutputGroupInfo
+    elif provider_name == "RunEnvironmentInfo":
+        provider = RunEnvironmentInfo
     elif provider_name == "SwiftInfo":
         provider = SwiftInfo
 
@@ -260,6 +263,13 @@ def _provider_test_impl(ctx):
             ctx.attr.expected_files,
             actual,
         )
+    elif ctx.attr.expected_values:
+        compare_expected_strings(
+            env,
+            access_description,
+            ctx.attr.expected_values,
+            actual,
+        )
 
     return analysistest.end(env)
 
@@ -288,6 +298,7 @@ Currently, only the following providers are recognized:
 *   `CcInfo`
 *   `DefaultInfo`
 *   `OutputGroupInfo`
+*   `RunEnvironmentInfo`
 *   `SwiftInfo`
 """,
             ),
@@ -309,6 +320,26 @@ This list can contain three types of strings:
 
 The use of path suffixes allows the test to be unconcerned about specific
 configuration details, such as output directories for generated files.
+""",
+            ),
+            "expected_values": attr.string_list(
+                mandatory = False,
+                doc = """\
+The expected list of values when evaluating the given provider's field.
+
+This list can contain three types of strings:
+
+*   A string (e.g., `foo`), which indicates a value that must be present.
+*   A negated string (`-foo`), denoting that a string that must *not* be
+    present.
+*   A wildcard (`*`), denoting that the expected list of strings can be a
+    *subset* of the actual list. If the wildcard is omitted, the expected list
+    of strings must match the actual list completely; unmatched strings will
+    result in a test failure.
+
+This attribute also supports string dictionary attributes. In this case, each
+key and value will be concatenated into a single string of the form `key=value`
+and this form is what should be specified in the `expected_values` list.
 """,
             ),
             "field": attr.string(
@@ -340,6 +371,7 @@ Currently, only the following providers are recognized:
 *   `CcInfo`
 *   `DefaultInfo`
 *   `OutputGroupInfo`
+*   `RunEnvironmentInfo`
 *   `SwiftInfo`
 """,
             ),

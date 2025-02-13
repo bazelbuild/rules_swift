@@ -106,13 +106,24 @@ def expand_locations(ctx, values, targets = []):
 
     Args:
         ctx: The rule context.
-        values: A list of strings, which may contain `$(location)` placeholders.
+        values: A list or dictionary of strings. If it is a list, each element
+            is assumed to be a string that may contain `$(location)`
+            placeholders. If it is a dictionary, each value is assumed to be a
+            string that may contain `$(location)` placeholders. (The keys of a
+            dictionary are not substituted.)
         targets: A list of additional targets (other than the calling rule's
             `deps`) that should be searched for substitutable labels.
 
     Returns:
-        A list of strings with any `$(location)` placeholders filled in.
+        A list or dictionary of strings with any `$(location)` placeholders
+        filled in.
     """
+    if type(values) == "dict":
+        return {
+            key: ctx.expand_location(value, targets)
+            for key, value in values.items()
+        }
+
     return [ctx.expand_location(value, targets) for value in values]
 
 def get_compilation_contexts(targets):
