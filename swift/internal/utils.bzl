@@ -16,6 +16,8 @@
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@build_bazel_rules_swift//swift:providers.bzl", "SwiftInfo")
+load(":feature_names.bzl", "SWIFT_FEATURE_NO_IMPLICIT_DEPS")
+load(":features.bzl", "is_feature_enabled")
 
 visibility([
     "@build_bazel_rules_swift//swift/...",
@@ -364,3 +366,51 @@ def struct_fields(s):
         # TODO(b/36412967): Remove the `to_json` and `to_proto` checks.
         if field not in ("to_json", "to_proto")
     }
+
+def get_swift_implicit_deps(*, feature_configuration, swift_toolchain):
+    """Returns the Swift and C++ providers for implicit Swift dependencies.
+
+    Args:
+        feature_configuration: A feature configuration obtained from
+            `swift_common.configure_features`. If this feature configuration is
+            such that implicit dependencies should be ignored, this function
+            returns an empty list for both providers.
+        swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
+
+    Returns:
+        A tuple `(list[SwiftInfo], list[CcInfo])`.
+    """
+    if is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_NO_IMPLICIT_DEPS,
+    ):
+        return [], []
+    else:
+        return (
+            swift_toolchain.implicit_deps_providers.swift_infos,
+            swift_toolchain.implicit_deps_providers.cc_infos,
+        )
+
+def get_clang_implicit_deps(*, feature_configuration, swift_toolchain):
+    """Returns the Swift and C++ providers for implicit Clang dependencies.
+
+    Args:
+        feature_configuration: A feature configuration obtained from
+            `swift_common.configure_features`. If this feature configuration is
+            such that implicit dependencies should be ignored, this function
+            returns an empty list for both providers.
+        swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
+
+    Returns:
+        A tuple `(list[SwiftInfo], list[CcInfo])`.
+    """
+    if is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_NO_IMPLICIT_DEPS,
+    ):
+        return [], []
+    else:
+        return (
+            swift_toolchain.clang_implicit_deps_providers.swift_infos,
+            swift_toolchain.clang_implicit_deps_providers.cc_infos,
+        )

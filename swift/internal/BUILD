@@ -136,6 +136,7 @@ bzl_library(
     deps = [
         ":debugging",
         ":features",
+        ":utils",
         "//swift:providers",
     ],
 )
@@ -242,6 +243,8 @@ bzl_library(
     name = "utils",
     srcs = ["utils.bzl"],
     deps = [
+        ":feature_names",
+        ":features",
         "//swift:providers",
         "@bazel_skylib//lib:paths",
     ],

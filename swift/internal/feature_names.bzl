@@ -257,3 +257,8 @@ SWIFT_FEATURE_COMPILE_IN_PARALLEL = "swift.compile_in_parallel"
 # `-swift-version 6` (Swift 6.0 and above). Users should never manually enable,
 # disable, or query this feature.
 SWIFT_FEATURE__SUPPORTS_V6 = "swift._supports_v6"
+
+# If enabled, the toolchain's implicit dependencies will not be used when
+# compiling Swift or Clang modules. This should only be used when building the
+# toolchain itself.
+SWIFT_FEATURE_NO_IMPLICIT_DEPS = "swift.no_implicit_deps"
