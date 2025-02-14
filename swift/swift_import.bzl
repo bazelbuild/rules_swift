@@ -50,6 +50,7 @@ load(
     "create_swift_module_context",
     "create_swift_module_inputs",
 )
+load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 
 visibility("public")
 
@@ -64,7 +65,7 @@ def _swift_import_impl(ctx):
         fail("One or both of 'swiftinterface' and 'swiftmodule' must be " +
              "specified.")
 
-    swift_toolchain = get_swift_toolchain(ctx, attr = "toolchain")
+    swift_toolchain = get_swift_toolchain(ctx)
     feature_configuration = configure_features(
         ctx = ctx,
         swift_toolchain = swift_toolchain,
@@ -149,7 +150,9 @@ def _swift_import_impl(ctx):
 
 swift_import = rule(
     attrs = dicts.add(
-        swift_common_rule_attrs(),
+        swift_common_rule_attrs(
+            additional_deps_aspects = [swift_clang_module_aspect],
+        ),
         {
             "archives": attr.label_list(
                 allow_empty = True,
@@ -193,8 +196,6 @@ The `.swiftmodule` file provided to Swift targets that depend on this target.
 """,
                 mandatory = False,
             ),
-            # TODO(b/301253335): Enable AEGs and add `toolchain` param once this rule starts using toolchain resolution.
-            "_use_auto_exec_groups": attr.bool(default = False),
         },
     ),
     doc = """\
