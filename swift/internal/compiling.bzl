@@ -603,9 +603,6 @@ def compile(
     # passed; the compiler does not attempt to load them when deserializing
     # modules.
     used_plugins = list(plugins)
-    for module_context in transitive_modules:
-        if module_context.swift and module_context.swift.plugins:
-            used_plugins.extend(module_context.swift.plugins)
 
     if include_dev_srch_paths != None and is_test != None:
         fail("""\
