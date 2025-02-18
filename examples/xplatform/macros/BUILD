@@ -42,12 +42,14 @@ universal_swift_compiler_plugin(
 swift_binary(
     name = "stringify_client",
     srcs = ["StringifyClient.swift"],
+    plugins = [":stringify_macro"],
     deps = [":stringify"],
 )
 
 swift_binary(
     name = "stringify_universal_client",
     srcs = ["StringifyUniversalClient.swift"],
+    plugins = [":stringify_macro_universal"],
     deps = [":stringify_universal"],
 )
 
