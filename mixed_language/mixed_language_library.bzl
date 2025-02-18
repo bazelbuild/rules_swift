@@ -54,6 +54,7 @@ def mixed_language_library(
         swift_copts = [],
         swift_defines = [],
         swift_srcs,
+        swift_plugins = [],
         swiftc_inputs = [],
         textual_hdrs = [],
         umbrella_header = None,
@@ -153,6 +154,7 @@ def mixed_language_library(
             using this feature in the rare case that a library needs to
             propagate a symbol up to those that depend on it.
         swift_srcs: The sources for the swift library.
+        swift_plugins: A list of Swift plugins for swift library.
         swiftc_inputs: Additional files that are referenced using
             `$(location ...)` in attributes that support location expansion.
         textual_hdrs: The list of C, C++, Objective-C, or Objective-C++ files
@@ -319,6 +321,7 @@ a mixed language Swift library, use a clang only library rule like \
         linkopts = linkopts,
         module_name = module_name,
         package_name = package_name,
+        plugins = swift_plugins,
         private_deps = private_deps,
         swiftc_inputs = swiftc_inputs,
         tags = internal_tags,
