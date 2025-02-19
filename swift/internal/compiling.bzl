@@ -14,6 +14,7 @@
 
 """Implementation of compilation logic for Swift."""
 
+load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:sets.bzl", "sets")
 load(
@@ -645,7 +646,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         module_name = module_name,
         original_module_name = original_module_name,
         package_name = package_name,
-        plugins = used_plugins,
+        plugins = collections.uniq(used_plugins),
         source_files = srcs,
         target_label = feature_configuration._label,
         transitive_modules = transitive_modules,
