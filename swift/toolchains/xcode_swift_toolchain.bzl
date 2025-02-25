@@ -658,7 +658,7 @@ def _xcode_swift_toolchain_impl(ctx):
         )
     )
     requested_features.extend(build_mode_requested_features)
-    requested_features.extend(ctx.features)
+    requested_features.extend(ctx.attr.default_enabled_features)
     requested_features.extend(default_features_for_toolchain(
         ctx = ctx,
         target_triple = target_triple,
@@ -677,7 +677,7 @@ def _xcode_swift_toolchain_impl(ctx):
         requested_features.append(SWIFT_FEATURE__SUPPORTS_V6)
 
     unsupported_features.extend(build_mode_unsupported_features)
-    unsupported_features.extend(ctx.disabled_features)
+    unsupported_features.extend(ctx.attr.default_unsupported_features)
 
     # `-fmodule-map-file-home-is-cwd` is incompatible with Apple's module maps,
     # which we must use for system frameworks.
@@ -801,6 +801,17 @@ and bystanding module are both already declared as dependencies.
 """,
                 mandatory = False,
                 providers = [[SwiftCrossImportOverlayInfo]],
+            ),
+            "default_enabled_features": attr.string_list(
+                doc = """\
+A list of features that are enabled by default for all targets build with this
+toolchain.
+""",
+            ),
+            "default_unsupported_features": attr.string_list(
+                doc = """\
+A list of features that are unsupported by this toolchain.
+""",
             ),
             "feature_allowlists": attr.label_list(
                 doc = """\
