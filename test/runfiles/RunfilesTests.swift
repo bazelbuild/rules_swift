@@ -1,4 +1,4 @@
-// Copyright 2024 The Bazel Authors. All rights reserved.
+// Copyright 2025 The Bazel Authors. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,9 +18,7 @@ import XCTest
 
 // Mainly adapted from https://github.com/bazelbuild/rules_python/blob/main/tests/runfiles/runfiles_test.py
 final class RunfilesTests: XCTestCase {
-
   func testRlocationArgumentValidation() throws {
-
     let (fileURL, clean) = try createMockFile(name: "MANIFEST", contents: "a/b /c/d"); defer { try? clean() }
 
     let runfiles = try Runfiles.create(
@@ -35,7 +33,6 @@ final class RunfilesTests: XCTestCase {
   }
 
   func testManifestBasedRunfilesEnvVarsFromArbitraryManifest() throws {
-
     let (manifest, clean) = try createMockFile(name: "x_manifest", contents: "a/b /c/d"); defer { try? clean() }
 
     let runfiles = try Runfiles.create(
@@ -48,11 +45,9 @@ final class RunfilesTests: XCTestCase {
     XCTAssertEqual(runfiles.envVars(), [
       "RUNFILES_MANIFEST_FILE": manifest.path,
     ])
-
   }
 
   func testCreatesDirectoryBasedRunfiles() throws {
-
     let (runfilesDir, clean) = try createMockDirectory(name: "my_custom_runfiles"); defer { try? clean() }
     let runfiles = try Runfiles.create(
       environment: [
@@ -66,7 +61,6 @@ final class RunfilesTests: XCTestCase {
   }
 
   func testCreatesDirectoryBasedRunfilesEnvVars() throws {
-
     let (runfilesDir, clean) = try createMockDirectory(name: "my_custom_runfiles"); defer { try? clean() }
     let runfiles = try Runfiles.create(
       environment: [
@@ -503,7 +497,6 @@ final class RunfilesTests: XCTestCase {
           isRunfilesDirectory: isRunfilesDirectory
       ))
   }
-
 }
 
 enum RunfilesTestError: Error {
