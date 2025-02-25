@@ -1,4 +1,4 @@
-// Copyright 2024 The Bazel Authors. All rights reserved.
+// Copyright 2025 The Bazel Authors. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@ protocol LookupStrategy {
 }
 
 struct DirectoryBased: LookupStrategy {
-
     private let runfilesRoot: URL
     init(path: URL) {
         runfilesRoot = path
@@ -43,7 +42,6 @@ struct DirectoryBased: LookupStrategy {
 }
 
 struct ManifestBased: LookupStrategy {
-
     private let manifestPath: URL
     private let runfiles: [String: String]
 
@@ -115,7 +113,6 @@ public enum RunfilesError: Error {
 }
 
 public final class Runfiles {
-
     private let strategy: LookupStrategy
     // Value is the runfiles directory of target repository
     private let repoMapping: [RepoMappingKey: String]
@@ -215,7 +212,6 @@ public final class Runfiles {
 
         return Runfiles(strategy: strategy, repoMapping: repoMapping, sourceRepository: sourceRepository ?? repository(from: callerFilePath))
     }
-
 }
 
   // https://github.com/bazel-contrib/rules_go/blob/6505cf2e4f0a768497b123a74363f47b711e1d02/go/runfiles/global.go#L53-L54
