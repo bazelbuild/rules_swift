@@ -605,6 +605,7 @@ def compile(
         copts = c_copts,
         defines = defines,
         feature_configuration = feature_configuration,
+        has_generated_header = bool(compile_outputs.generated_header_file),
         private_hdrs = compile_plan.c_inputs.private_hdrs,
         public_hdrs = compile_plan.c_inputs.public_hdrs + compact([
             compile_outputs.generated_header_file,
@@ -1297,6 +1298,7 @@ def _compile_c_inputs(
         copts,
         defines,
         feature_configuration,
+        has_generated_header = False,
         private_hdrs,
         public_hdrs,
         srcs,
@@ -1320,6 +1322,8 @@ def _compile_c_inputs(
         defines: Symbols that should be defined by passing `-D` to the compiler.
         feature_configuration: A feature configuration obtained from
             `swift_common.configure_features`.
+        has_generated_header: If True, the `public_hdrs` include a generated
+            Objective-C header.
         private_hdrs: Private headers that should be used when compiling the
             C/Objective-C sources.
         public_hdrs: Public headers that should be propagated by the new
@@ -1356,14 +1360,24 @@ def _compile_c_inputs(
             # We do not support non-ARC compilation in Swift mixed modules.
             variables_extension["objc_arc"] = ""
 
+        # If we have a generated header, we need to create the feature
+        # configuration that disables `parse_headers` for the compilation
+        # action.
+        if has_generated_header:
+            cc_feature_configuration = (
+                feature_configuration._cc_feature_configuration_no_parse_headers()
+            )
+        else:
+            cc_feature_configuration = get_cc_feature_configuration(
+                feature_configuration = feature_configuration,
+            )
+
         compilation_context, compilation_outputs = cc_common.compile(
             actions = actions,
             cc_toolchain = swift_toolchain.cc_toolchain_info,
             compilation_contexts = compilation_contexts,
             defines = defines,
-            feature_configuration = get_cc_feature_configuration(
-                feature_configuration = feature_configuration,
-            ),
+            feature_configuration = cc_feature_configuration,
             language = language,
             name = target_name,
             private_hdrs = private_hdrs,

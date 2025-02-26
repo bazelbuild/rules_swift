@@ -90,15 +90,12 @@ def configure_features(
         this value should otherwise not be relied on or inspected directly.
     """
 
-    # Always disable these two features so that any `cc_common` APIs called by
+    # Always disable this feature so that any `cc_common` APIs called by
     # `swift_common` APIs don't cause certain actions to be created (for
     # example, when using `cc_common.compile` to create the compilation context
     # for a generated header).
     unsupported_features = list(unsupported_features)
-    unsupported_features.extend([
-        "cc_include_scanning",
-        "parse_headers",
-    ])
+    unsupported_features.append("cc_include_scanning")
 
     # HACK: This is the only way today to check whether the caller is inside an
     # aspect. We have to do this because accessing `ctx.aspect_ids` halts the
@@ -151,8 +148,23 @@ def configure_features(
         unsupported_features = all_unsupported_features,
     )
 
+    # Swift generated Objective-C headers are not compatible with
+    # `parse_headers` actions. But, we don't want to disable `parse_headers` for
+    # all actions performed by the toolchain, only the one that compiles the
+    # generated header into an explicit module. So, we (lazily) create a second
+    # feature configuration that will be used by that specific action.
+    def cc_feature_configuration_no_parse_headers():
+        return cc_common.configure_features(
+            ctx = ctx,
+            cc_toolchain = swift_toolchain.cc_toolchain_info,
+            language = swift_toolchain.cc_language,
+            requested_features = all_requestable_features,
+            unsupported_features = all_unsupported_features + ["parse_headers"],
+        )
+
     return struct(
         _cc_feature_configuration = cc_feature_configuration,
+        _cc_feature_configuration_no_parse_headers = cc_feature_configuration_no_parse_headers,
         _enabled_features = all_requestable_features,
         # This is naughty, but APIs like `cc_common.compile` do far worse and
         # "cheat" by accessing the full rule context through a back-reference in
