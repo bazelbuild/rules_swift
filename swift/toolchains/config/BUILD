@@ -43,7 +43,6 @@ bzl_library(
     deps = [
         ":action_config",
         "//swift/internal:action_names",
-        "//swift/internal:feature_names",
     ],
 )
 
@@ -64,6 +63,15 @@ bzl_library(
 bzl_library(
     name = "symbol_graph_config",
     srcs = ["symbol_graph_config.bzl"],
+    deps = [
+        ":action_config",
+        "//swift/internal:action_names",
+    ],
+)
+
+bzl_library(
+    name = "synthesize_interface_config",
+    srcs = ["synthesize_interface_config.bzl"],
     deps = [
         ":action_config",
         "//swift/internal:action_names",

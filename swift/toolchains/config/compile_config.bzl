@@ -24,6 +24,7 @@ load(
     "SWIFT_ACTION_COMPILE_MODULE_INTERFACE",
     "SWIFT_ACTION_PRECOMPILE_C_MODULE",
     "SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT",
+    "SWIFT_ACTION_SYNTHESIZE_INTERFACE",
     "all_compile_action_names",
 )
 load(
@@ -449,6 +450,7 @@ def compile_action_configs(
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
                 SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
+                SWIFT_ACTION_SYNTHESIZE_INTERFACE,
             ],
             configurators = [
                 add_arg("-Xcc", "-Xclang"),
@@ -487,6 +489,7 @@ def compile_action_configs(
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
                 SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
+                SWIFT_ACTION_SYNTHESIZE_INTERFACE,
             ],
             configurators = [add_arg("-Xcc", "-fno-implicit-module-maps")],
             features = [SWIFT_FEATURE_USE_C_MODULES],
@@ -497,6 +500,7 @@ def compile_action_configs(
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
                 SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
+                SWIFT_ACTION_SYNTHESIZE_INTERFACE,
             ],
             configurators = [add_arg("-Xcc", "-fno-implicit-modules")],
             features = [SWIFT_FEATURE_USE_C_MODULES],
@@ -588,10 +592,13 @@ def compile_action_configs(
             configurators = [_package_identifier_configurator],
         ),
 
-        # swift-symbolgraph-extract doesn't yet support explicit Swift module
-        # maps.
+        # swift-symbolgraph-extract and swift-synthesize-interface don't yet
+        # support explicit Swift module maps.
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT],
+            actions = [
+                SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
+                SWIFT_ACTION_SYNTHESIZE_INTERFACE,
+            ],
             configurators = [_dependencies_swiftmodules_configurator],
         ),
     ])
@@ -602,6 +609,7 @@ def compile_action_configs(
             actions = all_compile_action_names() + [
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
+                SWIFT_ACTION_SYNTHESIZE_INTERFACE,
             ],
             configurators = [
                 lambda prereqs, args: _framework_search_paths_configurator(
@@ -631,6 +639,7 @@ def compile_action_configs(
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
                 SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
+                SWIFT_ACTION_SYNTHESIZE_INTERFACE,
             ],
             configurators = [
                 _clang_search_paths_configurator,
@@ -644,6 +653,7 @@ def compile_action_configs(
             actions = all_compile_action_names() + [
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
+                SWIFT_ACTION_SYNTHESIZE_INTERFACE,
             ],
             configurators = [_dependencies_clang_modules_configurator],
             features = [SWIFT_FEATURE_USE_C_MODULES],
@@ -653,6 +663,7 @@ def compile_action_configs(
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
                 SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
+                SWIFT_ACTION_SYNTHESIZE_INTERFACE,
             ],
             configurators = [_dependencies_clang_modulemaps_configurator],
             not_features = [SWIFT_FEATURE_USE_C_MODULES],
@@ -748,6 +759,7 @@ def compile_action_configs(
             actions = all_compile_action_names() + [
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
                 SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
+                SWIFT_ACTION_SYNTHESIZE_INTERFACE,
             ],
             configurators = [_module_name_configurator],
         ),

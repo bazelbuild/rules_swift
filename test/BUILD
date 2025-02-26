@@ -10,6 +10,7 @@ load(":parallel_compilation_tests.bzl", "parallel_compilation_test_suite")
 load(":private_deps_tests.bzl", "private_deps_test_suite")
 load(":swift_through_non_swift_tests.bzl", "swift_through_non_swift_test_suite")
 load(":symbol_graphs_tests.bzl", "symbol_graphs_test_suite")
+load(":synthesize_interface_tests.bzl", "synthesize_interface_test_suite")
 
 licenses(["notice"])
 
@@ -46,7 +47,6 @@ parallel_compilation_test_suite(
     # Parallel compilation is temporarily disabled. b/374699519
     tags = [
         "manual",
-        "notap",
     ],
 )
 
@@ -60,6 +60,14 @@ swift_through_non_swift_test_suite(
 
 symbol_graphs_test_suite(
     name = "symbol_graphs",
+)
+
+synthesize_interface_test_suite(
+    name = "synthesize_interface",
+    # Don't run this on CI until Xcode 16.3 is available.
+    tags = [
+        "manual",
+    ],
 )
 
 test_suite(

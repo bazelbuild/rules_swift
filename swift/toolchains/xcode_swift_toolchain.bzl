@@ -38,6 +38,7 @@ load(
     "SWIFT_ACTION_COMPILE_MODULE_INTERFACE",
     "SWIFT_ACTION_PRECOMPILE_C_MODULE",
     "SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT",
+    "SWIFT_ACTION_SYNTHESIZE_INTERFACE",
     "all_compile_action_names",
 )
 load(
@@ -99,6 +100,10 @@ load(
 load(
     "@build_bazel_rules_swift//swift/toolchains/config:symbol_graph_config.bzl",
     "symbol_graph_action_configs",
+)
+load(
+    "@build_bazel_rules_swift//swift/toolchains/config:synthesize_interface_config.bzl",
+    "synthesize_interface_action_configs",
 )
 load(
     "@build_bazel_rules_swift//swift/toolchains/config:tool_config.bzl",
@@ -364,6 +369,7 @@ def _all_action_configs(
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
                 SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
+                SWIFT_ACTION_SYNTHESIZE_INTERFACE,
             ],
             configurators = [
                 add_arg("-target", target_triples.str(target_triple)),
@@ -377,6 +383,7 @@ def _all_action_configs(
             actions = [
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
                 SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
+                SWIFT_ACTION_SYNTHESIZE_INTERFACE,
             ],
             configurators = [
                 add_arg("-Xcc", framework_dir, format = "-F%s")
@@ -395,6 +402,7 @@ def _all_action_configs(
                     SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                     SWIFT_ACTION_PRECOMPILE_C_MODULE,
                     SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
+                    SWIFT_ACTION_SYNTHESIZE_INTERFACE,
                 ],
                 configurators = [
                     add_arg(
@@ -416,6 +424,7 @@ def _all_action_configs(
                 actions = all_compile_action_names() + [
                     SWIFT_ACTION_PRECOMPILE_C_MODULE,
                     SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
+                    SWIFT_ACTION_SYNTHESIZE_INTERFACE,
                 ],
                 configurators = [
                     _make_resource_directory_configurator(
@@ -456,6 +465,7 @@ def _all_action_configs(
         ),
     ))
     action_configs.extend(symbol_graph_action_configs())
+    action_configs.extend(synthesize_interface_action_configs())
     action_configs.extend(compile_module_interface_action_configs())
 
     return action_configs
@@ -470,7 +480,8 @@ def _all_tool_configs(
         env,
         execution_requirements,
         swift_executable,
-        toolchain_root):
+        toolchain_root,
+        xcode_config):
     """Returns the tool configurations for the Swift toolchain.
 
     Args:
@@ -508,7 +519,7 @@ def _all_tool_configs(
         use_param_file = True,
         wrapped_by_worker = True,
     )
-    return {
+    action_configs = {
         SWIFT_ACTION_COMPILE: standard_compile_tool_config,
         SWIFT_ACTION_COMPILE_CODEGEN: standard_compile_tool_config,
         SWIFT_ACTION_COMPILE_MODULE: standard_compile_tool_config,
@@ -536,6 +547,18 @@ def _all_tool_configs(
             wrapped_by_worker = True,
         ),
     }
+
+    # swift-synthesize-interface is only available in Xcode 16.3 and later.
+    if _is_xcode_at_least_version(xcode_config, "16.3"):
+        action_configs[SWIFT_ACTION_SYNTHESIZE_INTERFACE] = ToolConfigInfo(
+            driver_config = _driver_config(mode = "swift-synthesize-interface"),
+            env = env,
+            execution_requirements = execution_requirements,
+            use_param_file = True,
+            wrapped_by_worker = True,
+        )
+
+    return action_configs
 
 def _is_xcode_at_least_version(xcode_config, desired_version):
     """Returns True if we are building with at least the given Xcode version.
@@ -696,6 +719,7 @@ def _xcode_swift_toolchain_impl(ctx):
         execution_requirements = execution_requirements,
         swift_executable = swift_executable,
         toolchain_root = toolchain_root,
+        xcode_config = xcode_config,
     )
     all_action_configs = _all_action_configs(
         additional_objc_copts = command_line_objc_copts(

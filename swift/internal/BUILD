@@ -131,6 +131,17 @@ bzl_library(
 )
 
 bzl_library(
+    name = "interface_synthesizing",
+    srcs = ["interface_synthesizing.bzl"],
+    deps = [
+        ":action_names",
+        ":actions",
+        ":utils",
+        "//swift:providers",
+    ],
+)
+
+bzl_library(
     name = "linking",
     srcs = ["linking.bzl"],
     deps = [

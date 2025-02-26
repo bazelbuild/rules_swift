@@ -8,6 +8,7 @@ bzl_library(
     ],
     deps = [
         "//swift:providers",
+        "//swift:swift_synthesize_interface_aspect",
         "@bazel_skylib//lib:collections",
         "@bazel_skylib//lib:types",
         "@bazel_skylib//lib:unittest",
