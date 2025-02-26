@@ -96,6 +96,7 @@ bzl_library(
     deps = [
         "//swift/internal:compiling",
         "//swift/internal:features",
+        "//swift/internal:interface_synthesizing",
         "//swift/internal:linking",
         "//swift/internal:symbol_graph_extracting",
         "//swift/internal:toolchain_utils",
@@ -207,7 +208,6 @@ bzl_library(
         "//swift/internal:utils",
         "@bazel_skylib//lib:dicts",
         "@bazel_skylib//lib:sets",
-        "@bazel_skylib//rules:common_settings",
     ],
 )
 
@@ -249,6 +249,7 @@ bzl_library(
         "//swift/internal:attrs",
         "//swift/internal:feature_names",
         "//swift/internal:providers",
+        "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
     ],
 )
@@ -281,6 +282,18 @@ bzl_library(
 )
 
 bzl_library(
+    name = "swift_synthesize_interface_aspect",
+    srcs = ["swift_synthesize_interface_aspect.bzl"],
+    deps = [
+        ":providers",
+        ":swift_clang_module_aspect",
+        "//swift/internal:features",
+        "//swift/internal:interface_synthesizing",
+        "//swift/internal:toolchain_utils",
+    ],
+)
+
+bzl_library(
     name = "swift_test",
     srcs = ["swift_test.bzl"],
     deps = [
@@ -290,6 +303,7 @@ bzl_library(
         "//swift/internal:compiling",
         "//swift/internal:env_expansion",
         "//swift/internal:feature_names",
+        "//swift/internal:interface_synthesizing",
         "//swift/internal:linking",
         "//swift/internal:output_groups",
         "//swift/internal:providers",
@@ -326,6 +340,7 @@ bzl_library(
         ":swift_overlay_helpers",
         ":swift_package_configuration",
         ":swift_symbol_graph_aspect",
+        ":swift_synthesize_interface_aspect",
         ":swift_test",
     ],
 )

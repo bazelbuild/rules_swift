@@ -1,0 +1,12 @@
+#ifndef RULES_SWIFT_TEST_FIXTURES_SYNTHESIZE_INTERFACE_HEADER_H_
+#define RULES_SWIFT_TEST_FIXTURES_SYNTHESIZE_INTERFACE_HEADER_H_
+
+#define SIMPLE_CONSTANT 123
+
+typedef struct MyStruct {
+  int my_field;
+} MyStruct;
+
+void my_function(MyStruct *p);
+
+#endif  // RULES_SWIFT_TEST_FIXTURES_SYNTHESIZE_INTERFACE_HEADER_H_

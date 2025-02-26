@@ -24,6 +24,7 @@ load(":split_derived_files_tests.bzl", "split_derived_files_test_suite")
 load(":swift_binary_linking_tests.bzl", "swift_binary_linking_test_suite")
 load(":swift_through_non_swift_tests.bzl", "swift_through_non_swift_test_suite")
 load(":symbol_graphs_tests.bzl", "symbol_graphs_test_suite")
+load(":synthesize_interface_tests.bzl", "synthesize_interface_test_suite")
 load(":utils_tests.bzl", "utils_test_suite")
 load(":xctest_runner_tests.bzl", "xctest_runner_test_suite")
 
@@ -70,6 +71,14 @@ swift_binary_linking_test_suite(name = "swift_binary_rules")
 swift_through_non_swift_test_suite(name = "swift_through_non_swift")
 
 symbol_graphs_test_suite(name = "symbol_graphs")
+
+synthesize_interface_test_suite(
+    name = "synthesize_interface",
+    # Don't run this on CI until Xcode 16.3 is available.
+    tags = [
+        "manual",
+    ],
+)
 
 pch_output_dir_test_suite(name = "pch_output_dir_settings")
 

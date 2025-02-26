@@ -43,6 +43,7 @@ load(
     "SWIFT_ACTION_DUMP_AST",
     "SWIFT_ACTION_PRECOMPILE_C_MODULE",
     "SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT",
+    "SWIFT_ACTION_SYNTHESIZE_INTERFACE",
 )
 load("//swift/internal:attrs.bzl", "swift_toolchain_driver_attrs")
 load("//swift/internal:developer_dirs.bzl", "swift_developer_lib_dir")
@@ -97,6 +98,10 @@ load(
 load(
     "//swift/toolchains/config:symbol_graph_config.bzl",
     "symbol_graph_action_configs",
+)
+load(
+    "//swift/toolchains/config:synthesize_interface_config.bzl",
+    "synthesize_interface_action_configs",
 )
 load("//swift/toolchains/config:tool_config.bzl", "ToolConfigInfo")
 
@@ -327,6 +332,7 @@ def _all_action_configs(
                 SWIFT_ACTION_DUMP_AST,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
                 SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
+                SWIFT_ACTION_SYNTHESIZE_INTERFACE,
             ],
             configurators = [
                 add_arg("-target", target_triples.str(target_triple)),
@@ -404,6 +410,7 @@ def _all_action_configs(
                     SWIFT_ACTION_DUMP_AST,
                     SWIFT_ACTION_PRECOMPILE_C_MODULE,
                     SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
+                    SWIFT_ACTION_SYNTHESIZE_INTERFACE,
                 ],
                 configurators = [
                     _make_resource_directory_configurator(
@@ -442,6 +449,7 @@ def _all_action_configs(
         generated_header_rewriter = generated_header_rewriter,
     ))
     action_configs.extend(symbol_graph_action_configs())
+    action_configs.extend(synthesize_interface_action_configs())
     action_configs.extend(compile_module_interface_action_configs())
 
     return action_configs
@@ -456,7 +464,8 @@ def _all_tool_configs(
         env,
         execution_requirements,
         swift_executable,
-        toolchain_root):
+        toolchain_root,
+        xcode_config):
     """Returns the tool configurations for the Swift toolchain.
 
     Args:
@@ -467,6 +476,7 @@ def _all_tool_configs(
         swift_executable: A custom Swift driver executable to be used during the
             build, if provided.
         toolchain_root: The root directory of the toolchain, if provided.
+        xcode_config: The Xcode configuration.
 
     Returns:
         A dictionary mapping action name to tool configuration.
@@ -531,6 +541,16 @@ def _all_tool_configs(
             )
         ),
     }
+
+    # swift-synthesize-interface is only available in Xcode 16.3 and later.
+    if _is_xcode_at_least_version(xcode_config, "16.3"):
+        tool_configs[SWIFT_ACTION_SYNTHESIZE_INTERFACE] = ToolConfigInfo(
+            driver_config = _driver_config(mode = "swift-synthesize-interface"),
+            env = env,
+            execution_requirements = execution_requirements,
+            use_param_file = True,
+            worker_mode = "wrap",
+        )
 
     return tool_configs
 
@@ -711,6 +731,7 @@ def _xcode_swift_toolchain_impl(ctx):
         execution_requirements = execution_requirements,
         swift_executable = swift_executable,
         toolchain_root = toolchain_root,
+        xcode_config = xcode_config,
     )
     all_action_configs = _all_action_configs(
         additional_objc_copts = command_line_objc_copts(

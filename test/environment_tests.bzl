@@ -38,7 +38,7 @@ def environment_test_suite(name, tags = []):
         field = "environment",
         provider = "RunEnvironmentInfo",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/environment:binary",
+        target_under_test = "//test/fixtures/environment:binary",
     )
 
     provider_test(
@@ -50,7 +50,7 @@ def environment_test_suite(name, tags = []):
         field = "environment",
         provider = "RunEnvironmentInfo",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/environment:test",
+        target_under_test = "//test/fixtures/environment:test",
     )
 
     provider_test(
@@ -61,7 +61,7 @@ def environment_test_suite(name, tags = []):
         field = "inherited_environment",
         provider = "RunEnvironmentInfo",
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/environment:test",
+        target_under_test = "//test/fixtures/environment:test",
     )
 
     native.test_suite(

@@ -269,6 +269,31 @@ has the same fields as documented in `direct_symbol_graphs`.
     },
 )
 
+SwiftSynthesizedInterfaceInfo = provider(
+    doc = "Propagates synthesized Swift interfaces for modules.",
+    fields = {
+        "direct_modules": """\
+`List` of `struct`s representing the synthesized interfaces for the modules in
+the target that propagated this provider. This list will be empty if propagated
+by a target that does not contain any modules that Swift can synthesize an
+interface for (i.e., C, or Swift itself), but its `transitive_modules` may be
+non-empty if it has dependencies for which interfaces can be synthesized.
+
+Each `struct` has the following fields:
+
+*   `module_name`: A string denoting the name of the module whose interface is
+    synthesized.
+
+*   `synthesized_interface`: A `File` containing the synthesized interface.
+""",
+        "transitive_modules": """\
+`Depset` of `struct`s representing the synthesized interfaces for the modules in
+the target that propagated this provider and all of its dependencies. Each
+`struct` has the same fields as documented in `direct_modules`.
+""",
+    },
+)
+
 SwiftToolchainInfo = provider(
     doc = """
 Propagates information about a Swift toolchain to compilation and linking rules

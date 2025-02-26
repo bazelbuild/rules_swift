@@ -8,6 +8,7 @@ bzl_library(
     deps = [
         "//swift:providers",
         "//swift:swift_clang_module_aspect",
+        "//swift:swift_synthesize_interface_aspect",
     ],
 )
 
