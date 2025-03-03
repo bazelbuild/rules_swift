@@ -71,6 +71,7 @@ load(
     "SWIFT_FEATURE_OPT_USES_WMO",
     "SWIFT_FEATURE_REWRITE_GENERATED_HEADER",
     "SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION",
+    "SWIFT_FEATURE_SUPPRESS_WARNINGS",
     "SWIFT_FEATURE_SYSTEM_MODULE",
     "SWIFT_FEATURE_THIN_LTO",
     "SWIFT_FEATURE_TREAT_WARNINGS_AS_ERRORS",
@@ -412,6 +413,19 @@ def compile_action_configs(
             ],
             configurators = [add_arg("-enable-testing")],
             features = [SWIFT_FEATURE_ENABLE_TESTING],
+        ),
+
+        # Enable suppress-warnings if requested.
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_DERIVE_FILES,
+                SWIFT_ACTION_DUMP_AST,
+            ],
+            configurators = [
+                add_arg("-suppress-warnings"),
+            ],
+            features = [SWIFT_FEATURE_SUPPRESS_WARNINGS],
         ),
 
         # Enable warnings-as-errors if requested.

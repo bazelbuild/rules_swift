@@ -21,7 +21,7 @@ import Foundation
 /// function if necessary.
 private func generatedTestEntry(for method: DiscoveredTests.Method) -> String {
   if method.isAsync {
-    return "asyncTest(\(method.name))"
+    return "asyncTest({ type in type.\(method.name) })"
   } else {
     return method.name
   }
@@ -78,19 +78,23 @@ struct SymbolGraphTestPrinter {
 
         fileprivate extension \(className) {
           \(availabilityAttribute)
-          static let \(allTestsIdentifier(for: testClass)) = [
+          static func \(allTestsIdentifier(for: testClass))()
+            -> [(String, (\(className)) -> () throws -> Void)]
+          {
+            return [
 
         """
 
       for testMethod in testClass.methods.sorted(by: { $0.name < $1.name }) {
         contents += """
-              ("\(testMethod.name)", \(generatedTestEntry(for: testMethod))),
+                ("\(testMethod.name)", \(generatedTestEntry(for: testMethod))),
 
           """
       }
 
       contents += """
-          ]
+            ]
+          }
         }
 
         """
@@ -99,19 +103,22 @@ struct SymbolGraphTestPrinter {
     contents += """
 
       \(availabilityAttribute)
-      func collect\(allTestsIdentifier(for: discoveredModule))(into collector: inout ShardingFilteringTestCollector) {
+      @MainActor
+      func \(allTestsIdentifier(for: discoveredModule))() -> [XCTestCaseEntry] {
+        return [
 
       """
 
     for className in sortedClassNames {
       let testClass = discoveredModule.classes[className]!
       contents += """
-          collector.addTests("\(className)", \(className).\(allTestsIdentifier(for: testClass)))
+            testCase(\(className).\(allTestsIdentifier(for: testClass))()),
 
         """
     }
 
     contents += """
+        ]
       }
 
       """
@@ -119,106 +126,42 @@ struct SymbolGraphTestPrinter {
     createTextFile(at: url, contents: contents)
   }
 
-  /// Prints the main test runner to a Swift source file.
-  func printTestRunner(toFileAt url: URL) {
+  /// Returns the Swift source code for the test runner.
+  func testRunnerSource() -> String {
     guard !discoveredTests.modules.isEmpty else {
       // If no tests were discovered, the user likely wrote non-XCTest-style tests that pass or fail
       // based on the exit code of the process. Generate an empty source file here, which will be
       // harmlessly compiled as an empty module, and the user's `main` from their own sources will
       // be used instead.
-      createTextFile(at: url, contents: "// No tests discovered; this is intentionally empty.\n")
-      return
+      return """
+        @MainActor
+        private func __allDiscoveredXCTests() -> [XCTestCaseEntry] { [] }
+
+        """
     }
 
     var contents = """
-      import BazelTestObservation
-      import Foundation
-      import XCTest
-
-      @main
       \(availabilityAttribute)
-      struct Runner {
-        static func main() {
-          if let xmlObserver = BazelXMLTestObserver.default {
-            XCTestObservationCenter.shared.addTestObserver(xmlObserver)
-          }
-          do {
-            var testCollector = try ShardingFilteringTestCollector()
+      @MainActor
+      private func __allDiscoveredXCTests() -> [XCTestCaseEntry] {
+        var allTests: [XCTestCaseEntry] = []
 
       """
 
     for moduleName in discoveredTests.modules.keys.sorted() {
       let module = discoveredTests.modules[moduleName]!
       contents += """
-              collect\(allTestsIdentifier(for: module))(into: &testCollector)
+          allTests.append(contentsOf: \(allTestsIdentifier(for: module))())
 
         """
     }
 
-    // We don't pass the test filter as an argument because we've already filtered the tests in the
-    // collector; this lets us do better filtering (i.e., regexes) than XCTest itself allows.
     contents += """
-            XCTMain(testCollector.testsToRun)
-          } catch {
-            print("ERROR: \\(error); exiting.")
-            exit(1)
-          }
-        }
+        return allTests
       }
 
       """
 
-    contents += createShardingFilteringTestCollector(
-      extraProperties: "private(set) var testsToRun: [XCTestCaseEntry] = []\n")
-    contents += """
-      extension ShardingFilteringTestCollector {
-        mutating func addTests<T: XCTestCase>(
-          _ suiteName: String,
-          _ tests: [(String, (T) -> () -> Void)]
-        ) {
-          guard shardCount != 0 || filter != nil else {
-            // If we're not sharding or filtering, just add all the tests.
-            testsToRun.append(testCase(tests))
-            return
-          }
-          var shardTests: [(String, (T) -> () -> Void)] = []
-          for test in tests {
-            guard isIncludedByFilter("\\(suiteName)/\\(test.0)") else {
-              continue
-            }
-            if isIncludedInShard() {
-              shardTests.append(test)
-            }
-            seenTestCount += 1
-          }
-          testsToRun.append(testCase(shardTests))
-        }
-
-        mutating func addTests<T: XCTestCase>(
-          _ suiteName: String,
-          _ tests: [(String, (T) -> () throws -> Void)]
-        ) {
-          guard shardCount != 0 || filter != nil else {
-            // If we're not sharding or filtering, just add all the tests.
-            testsToRun.append(testCase(tests))
-            return
-          }
-          var shardTests: [(String, (T) -> () throws -> Void)] = []
-          for test in tests {
-            guard isIncludedByFilter("\\(suiteName)/\\(test.0)") else {
-              continue
-            }
-            if isIncludedInShard() {
-              shardTests.append(test)
-            }
-            seenTestCount += 1
-          }
-          testsToRun.append(testCase(shardTests))
-        }
-      }
-
-      """
-
-    createTextFile(at: url, contents: contents)
+    return contents
   }
 }
