@@ -215,6 +215,12 @@ bzl_library(
 )
 
 bzl_library(
+    name = "runfiles",
+    srcs = ["runfiles.bzl"],
+    visibility = ["//swift:__subpackages__"],
+)
+
+bzl_library(
     name = "swift_autoconfiguration",
     srcs = ["swift_autoconfiguration.bzl"],
     visibility = ["//swift:__subpackages__"],
