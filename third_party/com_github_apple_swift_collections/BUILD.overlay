@@ -18,6 +18,9 @@ swift_library(
     srcs = glob([
         "Sources/DequeModule/**/*.swift",
     ]),
+    deps = [
+        ":InternalCollectionsUtilities",
+    ],
     module_name = "DequeModule",
     visibility = ["//visibility:public"],
 )
@@ -27,6 +30,18 @@ swift_library(
     srcs = glob([
         "Sources/OrderedCollections/**/*.swift",
     ]),
+    deps = [
+        ":InternalCollectionsUtilities",
+    ],
     module_name = "OrderedCollections",
+    visibility = ["//visibility:public"],
+)
+
+swift_library(
+    name = "InternalCollectionsUtilities",
+    srcs = glob([
+        "Sources/InternalCollectionsUtilities/**/*.swift",
+    ]),
+    module_name = "InternalCollectionsUtilities",
     visibility = ["//visibility:public"],
 )

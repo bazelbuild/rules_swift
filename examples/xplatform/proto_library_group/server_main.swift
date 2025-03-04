@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import Dispatch
-import GRPC
+import GRPCCore
 import NIOCore
 import NIOPosix
 import examples_xplatform_proto_library_group_request_request_proto

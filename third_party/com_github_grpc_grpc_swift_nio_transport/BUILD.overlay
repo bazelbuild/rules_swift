@@ -1,0 +1,22 @@
+load(
+    "@build_bazel_rules_swift//swift:swift_interop_hint.bzl",
+    "swift_interop_hint",
+)
+
+cc_library(
+    name = "CGRPCZlib",
+    srcs = glob([
+        "Sources/CGRPCNIOTransportZlib/**/*.c",
+    ]),
+    hdrs = glob([
+        "Sources/CGRPCZlib/**/*.h",
+    ]),
+    aspect_hints = [":CGRPCZLIB_interop"],
+    includes = ["Sources/CGRPCNIOTransportZlib/include"],
+    linkopts = ["-lz"],
+)
+
+swift_interop_hint(
+    name = "CGRPCZLIB_interop",
+    module_name = "CGRPCZlib",
+)

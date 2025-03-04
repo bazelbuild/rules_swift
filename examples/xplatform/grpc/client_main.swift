@@ -14,7 +14,7 @@
 
 import Foundation
 import SwiftProtobuf
-import GRPC
+import GRPCCore
 import NIOCore
 import NIOPosix
 import ServiceClient

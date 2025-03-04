@@ -1,0 +1,64 @@
+load("@build_bazel_rules_swift//swift:swift_binary.bzl", "swift_binary")
+load("@build_bazel_rules_swift//swift:swift_library.bzl", "swift_library")
+
+swift_binary(
+    name = "protoc-gen-grpc-swift",
+    srcs = glob([
+        "Sources/protoc-gen-grpc-swift/*.swift",
+    ]),
+    visibility = ["//visibility:public"],
+    features = [
+        "swift.upcoming.ExistentialAny",
+        "swift.upcoming.InternalImportsByDefault",
+        "swift.upcoming.MemberImportVisibility",
+        "swift.enable_v6",
+    ],
+    deps = [
+        ":GRPCProtobufCodeGen",
+        "@com_github_grpc_grpc_swift//:GRPCCodeGen",
+        "@com_github_apple_swift_protobuf//:SwiftProtobuf",
+        "@com_github_apple_swift_protobuf//:SwiftProtobufPluginLibrary",
+    ],
+)
+
+swift_library(
+    name = "GRPCProtobuf",
+    srcs = glob([
+        "Sources/GRPCProtobuf/**/*.swift",
+    ]),
+    defines = ["SWIFT_PACKAGE"],  # activates CgRPC imports
+    module_name = "GRPCProtobuf",
+    package_name = "GRPCProtobuf",
+    visibility = ["//visibility:public"],
+    features = [
+        "swift.upcoming.ExistentialAny",
+        "swift.upcoming.InternalImportsByDefault",
+        "swift.upcoming.MemberImportVisibility",
+        "swift.enable_v6",
+    ],
+    deps = [
+        "@com_github_grpc_grpc_swift//:GRPCCore",
+        "@com_github_apple_swift_protobuf//:SwiftProtobuf",
+    ],
+)
+
+swift_library(
+    name = "GRPCProtobufCodeGen",
+    srcs = glob([
+        "Sources/GRPCProtobufCodeGen/**/*.swift",
+    ]),
+    defines = ["SWIFT_PACKAGE"],  # activates CgRPC imports
+    module_name = "GRPCProtobufCodeGen",
+    package_name = "GRPCProtobufCodeGen",
+    visibility = ["//visibility:public"],
+    features = [
+        "swift.upcoming.ExistentialAny",
+        "swift.upcoming.InternalImportsByDefault",
+        "swift.upcoming.MemberImportVisibility",
+        "swift.enable_v6",
+    ],
+    deps = [
+        "@com_github_grpc_grpc_swift//:GRPCCodeGen",
+        "@com_github_apple_swift_protobuf//:SwiftProtobufPluginLibrary",
+    ],
+)

@@ -221,18 +221,6 @@ swift_proto_library(
     ],
     protos = [":service_proto"],
 )
-
-swift_proto_library(
-    name = "service_test_client_swift_proto",
-    additional_compiler_info = {
-        "ExtraModuleImports": "examples_xplatform_grpc_service_client_swift_proto",
-    },
-    compiler_deps = [
-        ":service_client_swift_proto",
-    ],
-    compilers = ["@build_bazel_rules_swift//proto/compilers:swift_test_client_proto"],
-    protos = [":service_proto"],
-)
 ```
 
 Note here that we don't need the intermediate `swift_proto_library` target,

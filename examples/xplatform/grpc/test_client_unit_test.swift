@@ -14,7 +14,7 @@
 
 import ServiceClient
 import ServiceTestClient
-import GRPC
+import GRPCCore
 import NIOCore
 import NIOPosix
 import XCTest

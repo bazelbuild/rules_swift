@@ -6,6 +6,8 @@ swift_binary(
     srcs = ["server_main.swift"],
     deps = [
         "//examples/xplatform/proto_library_group/service:service_server_swift_proto",
+        "@com_github_apple_swift_nio//:NIO",
+        "@com_github_apple_swift_nio//:NIOCore",
     ],
 )
 
@@ -14,6 +16,8 @@ swift_binary(
     srcs = ["client_main.swift"],
     deps = [
         "//examples/xplatform/proto_library_group/service:service_client_swift_proto",
+        "@com_github_apple_swift_nio//:NIO",
+        "@com_github_apple_swift_nio//:NIOCore",
     ],
 )
 
@@ -25,5 +29,7 @@ swift_test(
     deps = [
         "//examples/xplatform/proto_library_group/service:service_client_swift_proto",
         "//examples/xplatform/proto_library_group/service:service_server_swift_proto",
+        "@com_github_apple_swift_nio//:NIO",
+        "@com_github_apple_swift_nio//:NIOCore",
     ],
 )
