@@ -68,6 +68,7 @@ bzl_library(
     name = "swift_common",
     srcs = ["swift_common.bzl"],
     deps = [
+        "//swift/internal:actions",
         "//swift/internal:compiling",
         "//swift/internal:features",
         "//swift/internal:interface_synthesizing",

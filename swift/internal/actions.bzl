@@ -22,7 +22,9 @@ load(
 load(":features.bzl", "are_all_features_enabled")
 load(":toolchain_utils.bzl", "SWIFT_TOOLCHAIN_TYPE")
 
-visibility("private")
+visibility([
+    "@build_bazel_rules_swift//swift/...",
+])
 
 def _apply_action_configs(
         action_name,
@@ -118,8 +120,15 @@ def _apply_action_configs(
 def is_action_enabled(action_name, swift_toolchain):
     """Returns True if the given action is enabled in the Swift toolchain.
 
+    This function should be used before invoking APIs that invoke actions that
+    might not be available depending on the version of the Swift toolchain. For
+    example, `SwiftSynthesizeInterface` actions (created by calling
+    `swift_common.synthesize_interface`) are only available starting from Swift
+    6.1.
+
     Args:
-        action_name: The name of the action.
+        action_name: The name of the action, which corresponds to the action's
+            mnemonic (for example, `SwiftSynthesizeInterface`).
         swift_toolchain: The Swift toolchain being used to build.
 
     Returns:

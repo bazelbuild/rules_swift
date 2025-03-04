@@ -21,6 +21,10 @@ and then needs to compile them. This module provides that lower-level interface.
 """
 
 load(
+    "@build_bazel_rules_swift//swift/internal:actions.bzl",
+    "is_action_enabled",
+)
+load(
     "@build_bazel_rules_swift//swift/internal:compiling.bzl",
     "compile",
     "compile_module_interface",
@@ -62,6 +66,7 @@ swift_common = struct(
     create_linking_context_from_compilation_outputs = create_linking_context_from_compilation_outputs,
     extract_symbol_graph = extract_symbol_graph,
     get_toolchain = get_swift_toolchain,
+    is_action_enabled = is_action_enabled,
     is_enabled = is_feature_enabled,
     precompile_clang_module = precompile_clang_module,
     synthesize_interface = synthesize_interface,
