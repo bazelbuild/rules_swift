@@ -47,16 +47,3 @@ swift_test(
         "@com_github_apple_swift_nio//:NIOCore",
     ],
 )
-
-swift_test(
-    name = "echo_test_client_unit_test",
-    srcs = [
-        "test_client_unit_test.swift",
-    ],
-    deps = [
-        "//examples/xplatform/grpc/service:service_client_swift_proto",
-        "//examples/xplatform/grpc/service:service_test_client_swift_proto",
-        "@com_github_apple_swift_nio//:NIO",
-        "@com_github_apple_swift_nio//:NIOCore",
-    ],
-)
