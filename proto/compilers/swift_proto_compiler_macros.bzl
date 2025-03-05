@@ -74,8 +74,8 @@ def make_grpc_swift_proto_compiler(
         plugin_options = merged_plugin_options,
         suffixes = [".grpc.swift"],
         deps = [
-            "@com_github_apple_swift_protobuf//:SwiftProtobuf",
-            "@com_github_grpc_grpc_swift//:GRPCCodeGen",
+            "@com_github_grpc_grpc_swift_protobuf//:GRPCProtobuf",
+            "@com_github_grpc_grpc_swift//:GRPCCore",
         ],
         visibility = ["//visibility:public"],
     )

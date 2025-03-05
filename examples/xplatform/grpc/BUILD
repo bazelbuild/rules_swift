@@ -32,6 +32,7 @@ swift_binary(
         "//examples/xplatform/grpc/service:service_client_swift_proto",
         "@com_github_apple_swift_nio//:NIO",
         "@com_github_apple_swift_nio//:NIOCore",
+        "@com_github_grpc_grpc_swift_nio_transport//:GRPCNIOTransportHTTP2",
     ],
 )
 

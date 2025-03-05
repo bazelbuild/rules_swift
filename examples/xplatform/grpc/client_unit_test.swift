@@ -19,7 +19,7 @@ import NIOCore
 import NIOPosix
 import XCTest
 
-public class EchoServiceProvider: Service_EchoServiceProvider {
+public class EchoServiceProvider: Service_EchoService.ClientProtocol {
   public let interceptors: Service_EchoServiceServerInterceptorFactoryProtocol?
 
   public init(interceptors: Service_EchoServiceServerInterceptorFactoryProtocol? = nil) {

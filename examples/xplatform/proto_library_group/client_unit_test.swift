@@ -21,7 +21,7 @@ import examples_xplatform_proto_library_group_response_response_proto
 import ServiceClient
 import ServiceServer
 
-public class EchoServiceProvider: Service_EchoServiceProvider {
+public class EchoServiceProvider: Service_EchoService.ClientProtocol {
   public let interceptors: Service_EchoServiceServerInterceptorFactoryProtocol?
 
   public init(interceptors: Service_EchoServiceServerInterceptorFactoryProtocol? = nil) {

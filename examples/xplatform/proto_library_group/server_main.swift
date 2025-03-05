@@ -21,7 +21,7 @@ import examples_xplatform_proto_library_group_response_response_proto
 import ServiceServer
 
 /// Concrete implementation of the `EchoService` service definition.
-class EchoProvider: Service_EchoServiceProvider {
+class EchoProvider: Service_EchoService.ClientProtocol {
   var interceptors: Service_EchoServiceServerInterceptorFactoryProtocol?
 
   /// Called when the server receives a request for the `EchoService.Echo` method.

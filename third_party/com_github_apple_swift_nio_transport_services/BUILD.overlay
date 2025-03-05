@@ -14,4 +14,7 @@ swift_library(
         "@com_github_apple_swift_nio//:NIOFoundationCompat",
         "@com_github_apple_swift_nio//:NIOTLS",
     ],
+    features = [
+        "swift.upcoming.MemberImportVisibility",
+    ],
 )
