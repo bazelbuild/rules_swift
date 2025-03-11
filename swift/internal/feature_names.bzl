@@ -374,7 +374,7 @@ SWIFT_FEATURE__SUPPORTS_V6 = "swift._supports_v6"
 # Enabled by default for Swift 5.10+ on macOS.
 SWIFT_FEATURE_DISABLE_SWIFT_SANDBOX = "swift.disable_swift_sandbox"
 
-# Pass -warnings-as-errors to the compiler.
+# Pass -suppress-warnings to the compiler.
 SWIFT_FEATURE_SUPPRESS_WARNINGS = "swift.suppress_warnings"
 
 # Pass -warnings-as-errors to the compiler.
