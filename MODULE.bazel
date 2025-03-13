@@ -50,9 +50,9 @@ http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "ht
 http_archive(
     name = "SwiftSyntax",
     dev_dependency = True,
-    sha256 = "527a5c6d19987acbb5019efa067b0fbd127e06187a0689c3f1098fd22c1a7d43",
-    strip_prefix = "swift-syntax-01fc3e3ed4d26121c06790abf8fe5ddaa22a4cc5",
-    url = "https://github.com/apple/swift-syntax/archive/01fc3e3ed4d26121c06790abf8fe5ddaa22a4cc5.tar.gz",
+    integrity = "sha256-82HceGwbVKEulHzfYWAxw/NmlG3rSWDza9o5amsBIYM=",
+    strip_prefix = "swift-syntax-509.1.1",
+    url = "https://github.com/swiftlang/swift-syntax/archive/refs/tags/509.1.1.tar.gz",
 )
 
 # TODO: Remove override when a protobuf release is available that supports
