@@ -542,7 +542,7 @@ def compile(
     ]
     merged_cc_info = cc_common.merge_cc_infos(
         cc_infos = cc_infos + private_cc_infos +
-                   swift_toolchain.implicit_deps_providers.cc_infos
+                   swift_toolchain.implicit_deps_providers.cc_infos,
     )
     merged_objc_info = apple_common.new_objc_provider(
         providers = objc_infos + swift_toolchain.implicit_deps_providers.objc_infos,
