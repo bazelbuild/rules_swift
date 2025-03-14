@@ -367,6 +367,11 @@ def compile(
             being compiled.
         plugins: A list of `SwiftCompilerPluginInfo` providers that represent
             plugins that should be loaded by the compiler.
+        private_cc_infos: A list of `CcInfos`s that represent private
+            (non-propagated) C/Objective-C requirements of the target being
+            compiled, such as Swift-compatible preprocessor defines, header
+            search paths, and so forth. These are typically retrieved from a
+            target's `private_deps`.
         private_swift_infos: A list of `SwiftInfo` providers from private
             (implementation-only) dependencies of the target being compiled. The
             modules defined by these providers are used as dependencies of the
