@@ -51,7 +51,7 @@ def get_swift_toolchain(
         if group and toolchain_type in group.toolchains:
             return group.toolchains[toolchain_type].swift_toolchain
 
-    if toolchain_type in ctx.toolchains:
+    if toolchain_type in ctx.toolchains and ctx.toolchains[toolchain_type]:
         return ctx.toolchains[toolchain_type].swift_toolchain
 
     # TODO(b/205018581): Delete this code path when migration to the new

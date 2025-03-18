@@ -114,7 +114,35 @@ def _swift_info_init(
     }
 
 SwiftInfo, _create_raw_swift_info = provider(
-    doc = "Contains information about the compiled artifacts of a Swift module.",
+    doc = """\
+Contains information about the compiled artifacts of a Swift module.
+
+This provider has a custom initializer that will merge the transitive modules of
+a list of `SwiftInfo` providers, rather than a separate "merge" function. The
+correct signature when _creating_ a new `SwiftInfo` provider is the following:
+
+```build
+SwiftInfo(
+    direct_swift_infos,
+    modules,
+    swift_infos,
+)
+```
+
+where the arguments are:
+
+*   `direct_swift_infos`: A list of `SwiftInfo` providers from dependencies
+    whose direct modules should be treated as direct modules in the resulting
+    provider, in addition to their transitive modules being merged.
+*   `modules`: A list of values (as returned by `create_swift_module_context`)
+    that represent Clang and/or Swift module artifacts that are direct outputs
+    of the target being built.
+*   `swift_infos`: A list of `SwiftInfo` providers from dependencies whose
+    transitive modules should be merged into the resulting provider.
+
+When reading an existing `SwiftInfo` provider, it has the two fields described
+below.
+""",
     fields = {
         "direct_modules": """\
 `List` of values returned from `create_swift_module_context`. The modules (both
