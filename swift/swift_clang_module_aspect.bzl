@@ -54,6 +54,7 @@ load(
 )
 load(
     "@build_bazel_rules_swift//swift/internal:toolchain_utils.bzl",
+    "SWIFT_TOOLCHAIN_TYPE",
     "get_swift_toolchain",
     "use_swift_toolchain",
 )
@@ -394,6 +395,7 @@ def _handle_module(
         direct_swift_infos,
         swift_infos,
         swift_toolchain,
+        toolchain_type,
         target):
     """Processes a C/Objective-C target that is a dependency of a Swift target.
 
@@ -415,6 +417,7 @@ def _handle_module(
             created and returned for this target.
         swift_toolchain: The Swift toolchain being used to build this target.
         target: The C++ target to which the aspect is currently being applied.
+        toolchain_type: The toolchain type of the Swift toolchain.
 
     Returns:
         A list of providers that should be returned by the aspect.
@@ -523,6 +526,7 @@ def _handle_module(
         swift_infos = swift_infos,
         swift_toolchain = swift_toolchain,
         target_name = target.label.name,
+        toolchain_type = toolchain_type,
     )
     precompiled_module = getattr(pcm_outputs, "pcm_file", None)
     pcm_indexstore = getattr(pcm_outputs, "indexstore_directory", None)
@@ -563,6 +567,7 @@ def _handle_module(
             overlay_info = overlay_info,
             swift_infos = swift_infos_for_overlay,
             swift_toolchain = swift_toolchain,
+            toolchain_type = toolchain_type,
         )
         overlay_swift_info = overlay_compile_result.swift_info
         overlay_swift_module = overlay_swift_info.direct_modules[0].swift
@@ -603,7 +608,8 @@ def _compile_swift_overlay(
         module_name,
         overlay_info,
         swift_infos,
-        swift_toolchain):
+        swift_toolchain,
+        toolchain_type):
     """Compiles Swift code to be used as an overlay for a C/Objective-C module.
 
     Args:
@@ -618,6 +624,7 @@ def _compile_swift_overlay(
             dependencies of both the original C/Objective-C target and the
             Swift overlay.
         swift_toolchain: The Swift toolchain to use when compiling.
+        toolchain_type: The toolchain type of the Swift toolchain.
 
     Returns:
         The compilation result, as returned by `swift_common.compile`.
@@ -652,6 +659,7 @@ def _compile_swift_overlay(
         swift_infos = swift_infos,
         swift_toolchain = swift_toolchain,
         target_name = overlay_info.label.name,
+        toolchain_type = toolchain_type,
     )
     linking_context, _ = (
         create_linking_context_from_compilation_outputs(
@@ -851,7 +859,7 @@ def _find_swift_overlay_compile_info(aspect_ctx):
         return overlay_target[SwiftOverlayCompileInfo]
     return None
 
-def _swift_clang_module_aspect_impl(target, aspect_ctx):
+def _swift_clang_module_aspect_impl(target, aspect_ctx, toolchain_type):
     providers = [SwiftClangModuleAspectInfo()]
 
     # Do nothing if the target already propagates `SwiftInfo`.
@@ -892,6 +900,7 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx):
 
     swift_toolchain = get_swift_toolchain(
         aspect_ctx,
+        toolchain_type = toolchain_type,
     )
     feature_configuration = configure_features(
         ctx = aspect_ctx,
@@ -910,6 +919,7 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx):
             direct_swift_infos = direct_swift_infos,
             swift_infos = swift_infos,
             swift_toolchain = swift_toolchain,
+            toolchain_type = toolchain_type,
             target = target,
         )
 
@@ -923,9 +933,26 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx):
 
     return providers
 
-swift_clang_module_aspect = aspect(
-    attr_aspects = _MULTIPLE_TARGET_ASPECT_ATTRS + _SINGLE_TARGET_ASPECT_ATTRS,
-    doc = """\
+def make_swift_clang_module_aspect(*, toolchain_type):
+    """Creates a `swift_clang_module_aspect` with the given toolchain type.
+
+    Args:
+        toolchain_type: The toolchain type of the Swift toolchain.
+
+    Returns:
+        A `swift_clang_module_aspect` with the given toolchain type.
+    """
+
+    def _impl(target, aspect_ctx):
+        return _swift_clang_module_aspect_impl(
+            target = target,
+            aspect_ctx = aspect_ctx,
+            toolchain_type = toolchain_type,
+        )
+
+    return aspect(
+        attr_aspects = _MULTIPLE_TARGET_ASPECT_ATTRS + _SINGLE_TARGET_ASPECT_ATTRS,
+        doc = """\
 Propagates unified `SwiftInfo` providers for targets that represent
 C/Objective-C modules.
 
@@ -964,12 +991,18 @@ it propagates for its targets.
     suppressed (for example, using the `no_module` aspect hint). In this case,
     transitive dependency information is intentionally discarded.
 """,
-    fragments = ["cpp"],
-    implementation = _swift_clang_module_aspect_impl,
-    provides = [SwiftClangModuleAspectInfo],
-    required_aspect_providers = [
-        [apple_common.Objc],
-        [CcInfo],
-    ],
-    toolchains = use_swift_toolchain(),
+        fragments = ["cpp"],
+        implementation = _impl,
+        provides = [SwiftClangModuleAspectInfo],
+        required_aspect_providers = [
+            [apple_common.Objc],
+            [CcInfo],
+        ],
+        toolchains = use_swift_toolchain(
+            toolchain_type = toolchain_type,
+        ),
+    )
+
+swift_clang_module_aspect = make_swift_clang_module_aspect(
+    toolchain_type = SWIFT_TOOLCHAIN_TYPE,
 )
