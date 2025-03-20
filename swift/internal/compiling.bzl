@@ -326,6 +326,7 @@ def compile(
         swift_infos,
         swift_toolchain,
         target_name,
+        toolchain_type,
         workspace_name):
     """Compiles a Swift module.
 
@@ -385,6 +386,9 @@ def compile(
         target_name: The name of the target for which the code is being
             compiled, which is used to determine unique file paths for the
             outputs.
+        toolchain_type: The toolchain type of the `swift_toolchain` which is
+            used for the proper selection of the execution platform inside
+            `run_toolchain_action`.
         workspace_name: The name of the workspace for which the code is being
              compiled, which is used to determine unique file paths for some
              outputs.
@@ -676,6 +680,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
             prerequisites = prerequisites,
             progress_message = "Generating derived files for Swift module %{label}",
             swift_toolchain = swift_toolchain,
+            toolchain_type = toolchain_type,
         )
 
     run_toolchain_action(
@@ -687,6 +692,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         prerequisites = prerequisites,
         progress_message = "Compiling Swift module %{label}",
         swift_toolchain = swift_toolchain,
+        toolchain_type = toolchain_type,
     )
 
     # Dump AST has to run in its own action because `-dump-ast` is incompatible
@@ -704,6 +710,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         prerequisites = prerequisites,
         progress_message = "Dumping Swift AST for %{label}",
         swift_toolchain = swift_toolchain,
+        toolchain_type = toolchain_type,
     )
 
     # If a header and module map were generated for this Swift module, attempt
@@ -826,6 +833,7 @@ def precompile_clang_module(
         module_name,
         swift_toolchain,
         target_name,
+        toolchain_type,
         swift_infos = []):
     """Precompiles an explicit Clang module that is compatible with Swift.
 
@@ -852,6 +860,7 @@ def precompile_clang_module(
         target_name: The name of the target for which the code is being
             compiled, which is used to determine unique file paths for the
             outputs.
+        toolchain_type: The toolchain type of the Swift toolchain.
         swift_infos: A list of `SwiftInfo` providers representing dependencies
             required to compile this module.
 
@@ -870,6 +879,7 @@ def precompile_clang_module(
         swift_infos = swift_infos,
         swift_toolchain = swift_toolchain,
         target_name = target_name,
+        toolchain_type = toolchain_type,
     )
 
 def _precompile_clang_module(
@@ -883,7 +893,8 @@ def _precompile_clang_module(
         module_name,
         swift_infos = [],
         swift_toolchain,
-        target_name):
+        target_name,
+        toolchain_type):
     """Precompiles an explicit Clang module that is compatible with Swift.
 
     Args:
@@ -913,6 +924,7 @@ def _precompile_clang_module(
         target_name: The name of the target for which the code is being
             compiled, which is used to determine unique file paths for the
             outputs.
+        toolchain_type: The toolchain type of the Swift toolchain.
 
     Returns:
         A struct containing the precompiled module and optional indexstore directory,
@@ -1009,6 +1021,7 @@ def _precompile_clang_module(
         prerequisites = prerequisites,
         progress_message = "Precompiling C module %{label}",
         swift_toolchain = swift_toolchain,
+        toolchain_type = toolchain_type,
     )
 
     return struct(
