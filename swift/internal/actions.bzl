@@ -20,7 +20,6 @@ load(
     "ConfigResultInfo",
 )
 load(":features.bzl", "are_all_features_enabled")
-load(":toolchain_utils.bzl", "SWIFT_TOOLCHAIN_TYPE")
 
 visibility([
     "@build_bazel_rules_swift//swift/...",
@@ -146,7 +145,7 @@ def run_toolchain_action(
         prerequisites,
         swift_toolchain,
         mnemonic = None,
-        toolchain_type = SWIFT_TOOLCHAIN_TYPE,
+        toolchain_type,
         **kwargs):
     """Runs an action using the toolchain's tool and action configurations.
 
@@ -164,8 +163,9 @@ def run_toolchain_action(
             by the action configurators to add files and other dependent data to
             the command line.
         swift_toolchain: The Swift toolchain being used to build.
-        toolchain_type: A toolchain type of the `swift_toolchain` which is used for
-            the proper selection of the execution platform inside `run_toolchain_action`.
+        toolchain_type: A toolchain type of the `swift_toolchain` which is used
+            for the proper selection of the execution platform inside
+            `run_toolchain_action`.
         **kwargs: Additional arguments passed directly to `actions.run`.
     """
     tool_config = swift_toolchain.tool_configs.get(action_name)

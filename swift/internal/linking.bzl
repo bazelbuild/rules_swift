@@ -24,6 +24,7 @@ load(
     "should_embed_swiftmodule_for_debugging",
 )
 load(":features.bzl", "configure_features", "get_cc_feature_configuration")
+load(":toolchain_utils.bzl", "SWIFT_TOOLCHAIN_TYPE")
 load(":utils.bzl", "get_swift_implicit_deps")
 
 visibility([
@@ -76,7 +77,8 @@ def _create_embedded_debugging_linking_context(
         feature_configuration,
         label,
         module_context,
-        swift_toolchain):
+        swift_toolchain,
+        toolchain_type):
     """Creates a linking context that embeds a .swiftmodule for debugging.
 
     Args:
@@ -92,6 +94,9 @@ def _create_embedded_debugging_linking_context(
             Typically, this is the first tuple element in the value returned by
             `swift_common.compile`.
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
+        toolchain_type: The toolchain type of the `swift_toolchain` which is
+            used for the proper selection of the execution platform inside
+            `run_toolchain_action`.
 
     Returns:
         A valid `CcLinkingContext`, or `None` if no linking context was created.
@@ -111,6 +116,7 @@ def _create_embedded_debugging_linking_context(
                 label = label,
                 swiftmodule = module_context.swift.swiftmodule,
                 swift_toolchain = swift_toolchain,
+                toolchain_type = toolchain_type,
             ),
         ]
         return cc_common.create_linking_context(
@@ -131,6 +137,7 @@ def create_linking_context_from_compilation_outputs(
         module_context,
         name = None,
         swift_toolchain,
+        toolchain_type = SWIFT_TOOLCHAIN_TYPE,
         user_link_flags = []):
     """Creates a linking context from the outputs of a Swift compilation.
 
@@ -169,6 +176,9 @@ def create_linking_context_from_compilation_outputs(
             Typically, this is the first tuple element in the value returned by
             `swift_common.compile`.
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
+        toolchain_type: The toolchain type of the `swift_toolchain` which is
+            used for the proper selection of the execution platform inside
+            `run_toolchain_action`.
         user_link_flags: A `list` of strings containing additional flags that
             will be passed to the linker for any binary that links with the
             returned linking context.
@@ -193,6 +203,7 @@ def create_linking_context_from_compilation_outputs(
         label = label,
         module_context = module_context,
         swift_toolchain = swift_toolchain,
+        toolchain_type = toolchain_type,
     )
     if debugging_linking_context:
         extra_linking_contexts.append(debugging_linking_context)
@@ -244,6 +255,7 @@ def register_link_binary_action(
         output_type,
         stamp,
         swift_toolchain,
+        toolchain_type = SWIFT_TOOLCHAIN_TYPE,
         user_link_flags = [],
         variables_extension = {}):
     """Registers an action that invokes the linker to produce a binary.
@@ -276,6 +288,9 @@ def register_link_binary_action(
             stamping is enabled. See `cc_common.link` for details about the
             behavior of this argument.
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
+        toolchain_type: The toolchain type of the `swift_toolchain` which is
+            used for the proper selection of the execution platform inside
+            `run_toolchain_action`.
         user_link_flags: Additional flags passed to the linker. Any
             `$(location ...)` placeholders are assumed to have already been
             expanded.
@@ -304,6 +319,7 @@ def register_link_binary_action(
             label = label,
             module_context = module_context,
             swift_toolchain = swift_toolchain,
+            toolchain_type = toolchain_type,
         )
         if debugging_linking_context:
             linking_contexts.append(debugging_linking_context)

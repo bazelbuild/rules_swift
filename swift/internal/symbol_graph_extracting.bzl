@@ -17,6 +17,7 @@
 load("@build_bazel_rules_swift//swift:providers.bzl", "SwiftInfo")
 load(":action_names.bzl", "SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT")
 load(":actions.bzl", "run_toolchain_action")
+load(":toolchain_utils.bzl", "SWIFT_TOOLCHAIN_TYPE")
 load(":utils.bzl", "merge_compilation_contexts")
 
 visibility([
@@ -32,7 +33,8 @@ def extract_symbol_graph(
         module_name,
         output_dir,
         swift_infos,
-        swift_toolchain):
+        swift_toolchain,
+        toolchain_type = SWIFT_TOOLCHAIN_TYPE):
     """Extracts the symbol graph from a Swift module.
 
     Args:
@@ -60,6 +62,9 @@ def extract_symbol_graph(
             target being compiled. This should include both propagated and
             non-propagated (implementation-only) dependencies.
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
+        toolchain_type: The toolchain type of the `swift_toolchain` which is
+            used for the proper selection of the execution platform inside
+            `run_toolchain_action`.
     """
     merged_compilation_context = merge_compilation_contexts(
         transitive_compilation_contexts = compilation_contexts + [
@@ -107,4 +112,5 @@ def extract_symbol_graph(
             "Extracting symbol graph for {}".format(module_name)
         ),
         swift_toolchain = swift_toolchain,
+        toolchain_type = toolchain_type,
     )

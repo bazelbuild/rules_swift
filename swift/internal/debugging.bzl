@@ -36,7 +36,8 @@ def ensure_swiftmodule_is_embedded(
         feature_configuration,
         label,
         swiftmodule,
-        swift_toolchain):
+        swift_toolchain,
+        toolchain_type):
     """Ensures that a `.swiftmodule` file is embedded in a library or binary.
 
     This function handles the distinctions between how different object file
@@ -49,6 +50,9 @@ def ensure_swiftmodule_is_embedded(
         label: The `Label` of the target being built.
         swiftmodule: The `.swiftmodule` file to be wrapped.
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
+        toolchain_type: The toolchain type of the `swift_toolchain` which is
+            used for the proper selection of the execution platform inside
+            `run_toolchain_action`.
 
     Returns:
         A `LinkerInput` containing any flags and/or input files that should be
@@ -80,6 +84,7 @@ def ensure_swiftmodule_is_embedded(
                 "Wrapping {} for debugging".format(swiftmodule.short_path)
             ),
             swift_toolchain = swift_toolchain,
+            toolchain_type = toolchain_type,
         )
 
         # Passing the `.o` file directly to the linker ensures that it links to

@@ -308,8 +308,9 @@ def compile(
             these providers are used as dependencies of both the Swift module
             being compiled and the Clang module for the generated header.
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
-        toolchain_type: A toolchain type of the `swift_toolchain` which is used for
-            the proper selection of the execution platform inside `run_toolchain_action`.
+        toolchain_type: A toolchain type of the `swift_toolchain` which is used
+            for the proper selection of the execution platform inside
+            `run_toolchain_action`.
         target_name: The name of the target for which the code is being
             compiled, which is used to determine unique file paths for the
             outputs.
@@ -587,6 +588,7 @@ def compile(
             feature_configuration = feature_configuration,
             prerequisites = prerequisites,
             swift_toolchain = swift_toolchain,
+            toolchain_type = toolchain_type,
         )
     else:
         _plan_legacy_swift_compilation(
@@ -596,6 +598,7 @@ def compile(
             feature_configuration = feature_configuration,
             prerequisites = prerequisites,
             swift_toolchain = swift_toolchain,
+            toolchain_type = toolchain_type,
         )
 
     # Steps 3 and 4
@@ -756,7 +759,8 @@ def _execute_compile_plan(
         exec_group,
         feature_configuration,
         prerequisites,
-        swift_toolchain):
+        swift_toolchain,
+        toolchain_type):
     """Executes the planned actions needed to compile a Swift module.
 
     Args:
@@ -770,6 +774,9 @@ def _execute_compile_plan(
         prerequisites: A `dict` containing the common prerequisites for the
             compilation action.
         swift_toolchain: The Swift toolchain being used to build.
+        toolchain_type: A toolchain type of the `swift_toolchain` which is used
+            for the proper selection of the execution platform inside
+            `run_toolchain_action`.
     """
     compile_outputs = compile_plan.outputs
     module_outputs = compact([
@@ -800,6 +807,7 @@ def _execute_compile_plan(
             prerequisites["module_name"],
         ),
         swift_toolchain = swift_toolchain,
+        toolchain_type = toolchain_type,
     )
 
     batches = _compute_codegen_batches(
@@ -860,6 +868,7 @@ def _execute_compile_plan(
             prerequisites = struct(**object_prereqs),
             progress_message = progress_message,
             swift_toolchain = swift_toolchain,
+            toolchain_type = toolchain_type,
         )
 
 def _compute_codegen_batches(
@@ -911,7 +920,8 @@ def _plan_legacy_swift_compilation(
         exec_group,
         feature_configuration,
         prerequisites,
-        swift_toolchain):
+        swift_toolchain,
+        toolchain_type):
     """Plans the single driver invocation needed to compile a Swift module.
 
     The legacy compilation mode uses a single driver invocation to compile both
@@ -928,6 +938,9 @@ def _plan_legacy_swift_compilation(
         prerequisites: A `dict` containing the common prerequisites for the
             compilation action.
         swift_toolchain: The Swift toolchain being used to build.
+        toolchain_type: A toolchain type of the `swift_toolchain` which is used
+            for the proper selection of the execution platform inside
+            `run_toolchain_action`.
     """
     all_compile_outputs = compact([
         # The `.swiftmodule` file is explicitly listed as the first output
@@ -954,6 +967,7 @@ def _plan_legacy_swift_compilation(
             prerequisites["module_name"],
         ),
         swift_toolchain = swift_toolchain,
+        toolchain_type = toolchain_type,
     )
 
 def _compile_clang_module_for_swift_module(
