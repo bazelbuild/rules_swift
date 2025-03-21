@@ -21,6 +21,7 @@ load(
 )
 load(":action_names.bzl", "SWIFT_ACTION_AUTOLINK_EXTRACT")
 load(":actions.bzl", "run_toolchain_action")
+load(":toolchain_utils.bzl", "SWIFT_TOOLCHAIN_TYPE")
 
 def _autolink_extract_input_configurator(prerequisites, args):
     """Configures the inputs of the autolink-extract action."""
@@ -57,7 +58,8 @@ def register_autolink_extract_action(
         autolink_file,
         feature_configuration,
         object_files,
-        swift_toolchain):
+        swift_toolchain,
+        toolchain_type = SWIFT_TOOLCHAIN_TYPE):
     """Extracts autolink information from Swift `.o` files.
 
     For some platforms (such as Linux), autolinking of imported frameworks is
@@ -74,6 +76,9 @@ def register_autolink_extract_action(
         object_files: The list of object files whose autolink information will
             be extracted.
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
+        toolchain_type: The toolchain type of the `swift_toolchain` which is
+            used for the proper selection of the execution platform inside
+            `run_toolchain_action`.
     """
     prerequisites = struct(
         autolink_file = autolink_file,
@@ -88,4 +93,5 @@ def register_autolink_extract_action(
         prerequisites = prerequisites,
         progress_message = "Extracting autolink data for Swift module %{label}",
         swift_toolchain = swift_toolchain,
+        toolchain_type = toolchain_type,
     )

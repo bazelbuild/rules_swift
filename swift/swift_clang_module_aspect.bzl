@@ -573,6 +573,7 @@ def _compile_swift_overlay(
             ],
             module_context = compile_result.module_context,
             swift_toolchain = swift_toolchain,
+            toolchain_type = toolchain_type,
             user_link_flags = overlay_info.linkopts,
         )
     )
