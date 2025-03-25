@@ -60,7 +60,10 @@ def _swift_synthesize_interface_aspect_impl(target, aspect_ctx):
 
         for module in swift_info.direct_modules:
             output_file = aspect_ctx.actions.declare_file(
-                "{}.synthesized.swift".format(target.label.name),
+                "{}.synthesized_interfaces/{}.synthesized.swift".format(
+                    target.label.name,
+                    module.name,
+                ),
             )
             direct_outputs.append(output_file)
             synthesize_interface(
