@@ -99,6 +99,7 @@ def compile_module_interface(
         swiftinterface_file,
         swift_infos,
         swift_toolchain,
+        target_name,  # @unused
         toolchain_type = SWIFT_TOOLCHAIN_TYPE):
     """Compiles a Swift module interface.
 
@@ -124,16 +125,30 @@ def compile_module_interface(
         swift_infos: A list of `SwiftInfo` providers from dependencies of the
             target being compiled.
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
-        toolchain_type: A toolchain type of the `swift_toolchain` which is used for
-            the proper selection of the execution platform inside `run_toolchain_action`.
+        target_name: The name of the target for which the interface is being
+            compiled, which is used to determine unique file paths for the
+            outputs.
+        toolchain_type: A toolchain type of the `swift_toolchain` which is used
+            for the proper selection of the execution platform inside
+            `run_toolchain_action`.
 
     Returns:
-        A Swift module context (as returned by `create_swift_module_context`)
-        that contains the Swift (and potentially C/Objective-C) compilation
-        prerequisites of the compiled module. This should typically be
-        propagated by a `SwiftInfo` provider of the calling rule, and the
-        `CcCompilationContext` inside the Clang module substructure should be
-        propagated by the `CcInfo` provider of the calling rule.
+        A `struct` with the following fields:
+
+        *   `module_context`: A Swift module context (as returned by
+            `create_swift_module_context`) that contains the Swift (and
+            potentially C/Objective-C) compilation prerequisites of the compiled
+            module. This should typically be propagated by a `SwiftInfo`
+            provider of the calling rule, and the `CcCompilationContext` inside
+            the Clang module substructure should be propagated by the `CcInfo`
+            provider of the calling rule.
+
+        *   `supplemental_outputs`: A `struct` representing supplemental,
+            optional outputs. Its fields are:
+
+            *   `indexstore_directory`: A directory-type `File` that represents
+                the indexstore output files created when the feature
+                `swift.index_while_building` is enabled.
     """
     swiftmodule_file = actions.declare_file("{}.swiftmodule".format(module_name))
 
@@ -230,7 +245,13 @@ def compile_module_interface(
         ),
     )
 
-    return module_context
+    return struct(
+        module_context = module_context,
+        supplemental_outputs = struct(
+            # TODO: b/401305010 - Generate indexstore when requested.
+            indexstore_directory = None,
+        ),
+    )
 
 def compile(
         *,

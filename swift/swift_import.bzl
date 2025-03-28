@@ -100,7 +100,7 @@ def _swift_import_impl(ctx):
     swift_infos = get_providers(deps, SwiftInfo)
 
     if swiftinterface and not swiftmodule:
-        module_context = compile_module_interface(
+        compile_result = compile_module_interface(
             actions = ctx.actions,
             compilation_contexts = get_compilation_contexts(ctx.attr.deps),
             feature_configuration = feature_configuration,
@@ -108,7 +108,9 @@ def _swift_import_impl(ctx):
             swiftinterface_file = swiftinterface,
             swift_infos = swift_infos,
             swift_toolchain = swift_toolchain,
+            target_name = ctx.label.name,
         )
+        module_context = compile_result.module_context
         swift_outputs = [
             module_context.swift.swiftmodule,
         ] + compact([module_context.swift.swiftdoc])
