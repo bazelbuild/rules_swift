@@ -18,6 +18,10 @@ load(
     "@build_bazel_rules_swift//swift/internal:action_names.bzl",
     "SWIFT_ACTION_COMPILE_MODULE_INTERFACE",
 )
+load(
+    "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
+    "SWIFT_FEATURE_EXPLICIT_INTERFACE_BUILD",
+)
 load(":action_config.bzl", "ActionConfigInfo", "add_arg")
 
 visibility([
@@ -35,7 +39,9 @@ def compile_module_interface_action_configs():
         ),
         ActionConfigInfo(
             actions = [SWIFT_ACTION_COMPILE_MODULE_INTERFACE],
-            configurators = [_emit_module_path_from_module_interface_configurator],
+            configurators = [
+                _emit_module_path_from_module_interface_configurator,
+            ],
         ),
         ActionConfigInfo(
             actions = [SWIFT_ACTION_COMPILE_MODULE_INTERFACE],
@@ -43,8 +49,24 @@ def compile_module_interface_action_configs():
                 add_arg("-compile-module-from-interface"),
             ],
         ),
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE_MODULE_INTERFACE],
+            configurators = [
+                _emit_explicit_module_interface_build_configurator,
+            ],
+            features = [SWIFT_FEATURE_EXPLICIT_INTERFACE_BUILD],
+        ),
     ]
 
 def _emit_module_path_from_module_interface_configurator(prerequisites, args):
     """Adds the `.swiftmodule` output path to the command line."""
     args.add("-o", prerequisites.swiftmodule_file)
+
+def _emit_explicit_module_interface_build_configurator(prerequisites, args):
+    """Adds flags to perform an explicit interface build to the command line."""
+
+    args.add("-explicit-interface-module-build")
+    args.add(
+        prerequisites.source_files[0],
+        format = "-Xwrapped-swift=-explicit-compile-module-from-interface=%s",
+    )

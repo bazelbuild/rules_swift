@@ -32,6 +32,9 @@ absl::Status CopyFile(absl::string_view src, absl::string_view dest);
 // don't already exist. Returns true if successful.
 absl::Status MakeDirs(absl::string_view path, int mode);
 
+// Returns true if the given path exists.
+bool PathExists(absl::string_view path);
+
 }  // namespace bazel_rules_swift
 
 #endif  // BUILD_BAZEL_RULES_SWIFT_TOOLS_COMMON_FILE_SYSTEM_H_

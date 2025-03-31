@@ -156,4 +156,10 @@ absl::Status MakeDirs(absl::string_view path, int mode) {
   return MakeFailingStatus("unexpected error");
 }
 
+bool PathExists(absl::string_view path) {
+  struct stat stats;
+  std::string null_terminated_path{path};
+  return stat(null_terminated_path.c_str(), &stats) == 0;
+}
+
 }  // namespace bazel_rules_swift

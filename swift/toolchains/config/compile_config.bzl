@@ -42,6 +42,7 @@ load(
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_ENABLE_TESTING",
     "SWIFT_FEATURE_ENABLE_V6",
+    "SWIFT_FEATURE_EXPLICIT_INTERFACE_BUILD",
     "SWIFT_FEATURE_FASTBUILD",
     "SWIFT_FEATURE_FILE_PREFIX_MAP",
     "SWIFT_FEATURE_FULL_DEBUG_INFO",
@@ -775,12 +776,16 @@ def compile_action_configs(
 
         # Configure index-while-building.
         ActionConfigInfo(
-            actions = all_compile_action_names(),
+            actions = all_compile_action_names() + [
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+            ],
             configurators = [_index_while_building_configurator],
             features = [SWIFT_FEATURE_INDEX_WHILE_BUILDING],
         ),
         ActionConfigInfo(
-            actions = all_compile_action_names(),
+            actions = all_compile_action_names() + [
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+            ],
             configurators = [add_arg("-index-include-locals")],
             features = [
                 SWIFT_FEATURE_INDEX_WHILE_BUILDING,
@@ -846,6 +851,15 @@ def compile_action_configs(
         ActionConfigInfo(
             actions = all_compile_action_names(),
             configurators = [add_arg("-Xfrontend", "-disable-availability-checking")],
+            features = [
+                SWIFT_FEATURE_DISABLE_AVAILABILITY_CHECKING,
+            ],
+        ),
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+            ],
+            configurators = [add_arg("-disable-availability-checking")],
             features = [
                 SWIFT_FEATURE_DISABLE_AVAILABILITY_CHECKING,
             ],
@@ -918,15 +932,25 @@ def compile_action_configs(
             ),
         )
 
-    action_configs.append(
+    action_configs.extend([
         ActionConfigInfo(
             actions = all_compile_action_names() + [
-                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
             ],
             configurators = [_source_files_configurator],
         ),
-    )
+
+        # We don't add the path as a source file if this is an explicit
+        # interface build, because we let the worker infer it in the event that
+        # it is a system module.
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+            ],
+            configurators = [_source_files_configurator],
+            not_features = [SWIFT_FEATURE_EXPLICIT_INTERFACE_BUILD],
+        ),
+    ])
 
     # Add additional input files to the sandbox (does not modify flags).
     action_configs.append(

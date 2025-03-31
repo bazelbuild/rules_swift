@@ -196,6 +196,13 @@ SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION = "swift.enable_library_evolution"
 # invocation.
 SWIFT_FEATURE_EMIT_SWIFTINTERFACE = "swift.emit_swiftinterface"
 
+# If enabled, the `-explicit-module-interface-build` flag should be passed to
+# the compiler when compiling a .swiftinterface file. To support this, the
+# worker must extract the correct flags from the interface file manually and
+# pass them to the compiler.
+# TODO: b/401511920 - Make this the default behavior.
+SWIFT_FEATURE_EXPLICIT_INTERFACE_BUILD = "swift.explicit_interface_build"
+
 # If enabled, declare `.swiftsourceinfo` files as outputs that Bazel will track.
 # Note that at the time of this writing (Swift 5.10), `.swiftsourceinfo` files
 # are non-deterministic: they contain absolute paths that are not remapped by

@@ -99,7 +99,7 @@ def compile_module_interface(
         swiftinterface_file,
         swift_infos,
         swift_toolchain,
-        target_name,  # @unused
+        target_name,
         toolchain_type = SWIFT_TOOLCHAIN_TYPE):
     """Compiles a Swift module interface.
 
@@ -150,7 +150,10 @@ def compile_module_interface(
                 the indexstore output files created when the feature
                 `swift.index_while_building` is enabled.
     """
-    swiftmodule_file = actions.declare_file("{}.swiftmodule".format(module_name))
+    swiftmodule_file = actions.declare_file(
+        "{}_outs/{}.swiftmodule".format(target_name, module_name),
+    )
+    outputs = [swiftmodule_file]
 
     implicit_swift_infos, implicit_cc_infos = get_swift_implicit_deps(
         feature_configuration = feature_configuration,
@@ -201,11 +204,23 @@ def compile_module_interface(
     else:
         explicit_swift_module_map_file = None
 
+    if is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_INDEX_WHILE_BUILDING,
+    ):
+        indexstore_directory = actions.declare_directory(
+            "{}.swiftinterface.indexstore".format(target_name),
+        )
+        outputs.append(indexstore_directory)
+    else:
+        indexstore_directory = None
+
     prerequisites = struct(
         bin_dir = feature_configuration._bin_dir,
         cc_compilation_context = merged_compilation_context,
         explicit_swift_module_map_file = explicit_swift_module_map_file,
         genfiles_dir = feature_configuration._genfiles_dir,
+        indexstore_directory = indexstore_directory,
         is_swift = True,
         module_name = module_name,
         source_files = [swiftinterface_file],
@@ -220,7 +235,7 @@ def compile_module_interface(
         action_name = SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
         exec_group = exec_group,
         feature_configuration = feature_configuration,
-        outputs = [swiftmodule_file],
+        outputs = outputs,
         prerequisites = prerequisites,
         progress_message = "Compiling Swift module {} from textual interface".format(module_name),
         swift_toolchain = swift_toolchain,
@@ -248,8 +263,7 @@ def compile_module_interface(
     return struct(
         module_context = module_context,
         supplemental_outputs = struct(
-            # TODO: b/401305010 - Generate indexstore when requested.
-            indexstore_directory = None,
+            indexstore_directory = indexstore_directory,
         ),
     )
 

@@ -69,6 +69,12 @@ cc_library(
 )
 
 cc_library(
+    name = "target_triple",
+    hdrs = ["target_triple.h"],
+    deps = ["@com_google_absl//absl/strings"],
+)
+
+cc_library(
     name = "temp_file",
     hdrs = ["temp_file.h"],
     deps = ["@com_google_absl//absl/strings"],

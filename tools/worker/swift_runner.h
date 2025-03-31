@@ -199,8 +199,19 @@ class SwiftRunner {
   // Tracks whether the last flag seen was `-tools-directory`.
   bool last_flag_was_tools_directory_;
 
+  // Tracks whether the last flag seen was `-target`.
+  bool last_flag_was_target_;
+
   // The name of the module currently being compiled.
   std::string module_name_;
+
+  // The target triple of the current compilation.
+  std::string target_triple_;
+
+  // The path to either the `.swiftinterface` file to compile or to a
+  // `.swiftmodule` directory in which the worker will infer the interface file
+  // to compile.
+  std::string module_or_interface_path_;
 
   // A set containing the diagnostic IDs that should be upgraded from warnings
   // to errors by the worker.

@@ -19,6 +19,7 @@
 #include <cstddef>
 #include <fstream>
 #include <functional>
+#include <iostream>
 #include <memory>
 #include <optional>
 #include <ostream>
@@ -27,6 +28,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/nullability.h"
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
@@ -42,6 +44,7 @@
 #include "tools/common/file_system.h"
 #include "tools/common/path_utils.h"
 #include "tools/common/process.h"
+#include "tools/common/target_triple.h"
 #include "tools/common/temp_file.h"
 #include "re2/re2.h"
 
@@ -194,17 +197,39 @@ static std::unique_ptr<TempFile> WriteDirectResponseFile(
   return response_file;
 }
 
-// Unescape and unquote an argument read from a line of a response file.
-static std::string Unescape(absl::string_view arg) {
+// Consumes and returns a single argument from the given command line (skipping
+// any leading whitespace and also handling quoted/escaped arguments), advancing
+// the view to the end of the argument in a similar fashion to
+// `absl::ConsumePrefix()`.
+static std::optional<std::string> ConsumeArg(
+    absl::Nonnull<absl::string_view *> line) {
+  size_t whitespace_count = 0;
+  size_t length = line->size();
+  while (whitespace_count < length && (*line)[whitespace_count] == ' ') {
+    whitespace_count++;
+  }
+  if (whitespace_count > 0) {
+    line->remove_prefix(whitespace_count);
+  }
+
+  if (line->empty()) {
+    return std::nullopt;
+  }
+
   std::string result;
-  size_t length = arg.size();
-  for (size_t i = 0; i < length; ++i) {
-    char ch = arg[i];
+  length = line->size();
+  size_t i = 0;
+  for (i = 0; i < length; ++i) {
+    char ch = (*line)[i];
+
+    if (ch == ' ') {
+      break;
+    }
 
     // If it's a backslash, consume it and append the character that follows.
     if (ch == '\\' && i + 1 < length) {
       ++i;
-      result.push_back(arg[i]);
+      result.push_back((*line)[i]);
       continue;
     }
 
@@ -213,11 +238,11 @@ static std::string Unescape(absl::string_view arg) {
     if (ch == '"' || ch == '\'') {
       char quote = ch;
       ++i;
-      while (i != length && arg[i] != quote) {
-        if (arg[i] == '\\' && i + 1 < length) {
+      while (i != length && (*line)[i] != quote) {
+        if ((*line)[i] == '\\' && i + 1 < length) {
           ++i;
         }
-        result.push_back(arg[i]);
+        result.push_back((*line)[i]);
         ++i;
       }
       if (i == length) {
@@ -230,7 +255,13 @@ static std::string Unescape(absl::string_view arg) {
     result.push_back(ch);
   }
 
+  line->remove_prefix(i);
   return result;
+}
+
+// Unescape and unquote an argument read from a line of a response file.
+static std::string Unescape(absl::string_view arg) {
+  return ConsumeArg(&arg).value_or("");
 }
 
 // Reads the list of module names that are direct dependencies of the code being
@@ -467,6 +498,94 @@ bool IsModuleIgnorableForLayeringCheck(absl::string_view module_name) {
   return kModulesIgnorableForLayeringCheck.contains(module_name);
 }
 
+// Infers the path to the `.swiftinterface` file inside a `.swiftmodule`
+// directory based on the given target triple.
+//
+// This roughly mirrors the logic in the Swift frontend's
+// `forEachTargetModuleBasename` function at
+// https://github.com/swiftlang/swift/blob/d36b06747a54689a09ca6771b04798fc42b3e701/lib/Serialization/SerializedModuleLoader.cpp#L55.
+std::optional<std::string> InferInterfacePath(
+    absl::string_view module_path, absl::string_view target_triple_string) {
+  std::optional<TargetTriple> parsed_triple =
+      TargetTriple::Parse(target_triple_string);
+  if (!parsed_triple.has_value()) {
+    return std::nullopt;
+  }
+
+  // The target triple passed to us by the build rules has already been
+  // normalized (e.g., `macos` instead of `macosx`), so we don't have to do as
+  // much work here as the frontend normally would.
+  TargetTriple normalized_triple = parsed_triple->WithoutOSVersion();
+
+  // First, try the triple we were given.
+  std::string attempt = absl::Substitute("$0/$1.swiftinterface", module_path,
+                                         normalized_triple.TripleString());
+  if (PathExists(attempt)) {
+    return attempt;
+  }
+
+  // Next, if the target triple is `arm64`, we can also load an `arm64e`
+  // interface, so try that.
+  if (normalized_triple.Arch() == "arm64") {
+    TargetTriple arm64e_triple = normalized_triple.WithArch("arm64e");
+    attempt = absl::Substitute("$0/$1.swiftinterface", module_path,
+                               arm64e_triple.TripleString());
+    if (PathExists(attempt)) {
+      return attempt;
+    }
+  }
+
+  return std::nullopt;
+}
+
+// Extracts flags from the given `.swiftinterface` file and passes them to the
+// given consumer.
+void ExtractFlagsFromInterfaceFile(
+    absl::string_view module_or_interface_path, absl::string_view target_triple,
+    std::function<void(absl::string_view)> consumer) {
+  std::string interface_path;
+  if (absl::EndsWith(module_or_interface_path, ".swiftinterface")) {
+    interface_path = std::string(module_or_interface_path);
+  } else {
+    std::optional<std::string> inferred_path =
+        InferInterfacePath(module_or_interface_path, target_triple);
+    if (!inferred_path.has_value()) {
+      return;
+    }
+    interface_path = *inferred_path;
+  }
+
+  // Add the path to the interface file as a source file argument, then extract
+  // the flags from it and add them as well.
+  consumer(interface_path);
+
+  std::ifstream interface_file{std::string(interface_path)};
+  std::string line;
+  while (std::getline(interface_file, line)) {
+    absl::string_view line_view = line;
+    if (absl::ConsumePrefix(&line_view, "// swift-module-flags: ")) {
+      bool skip_next = false;
+      while (std::optional<std::string> flag = ConsumeArg(&line_view)) {
+        if (skip_next) {
+          skip_next = false;
+        } else if (*flag == "-target") {
+          // We have to skip the target triple in the interface file because it
+          // might be slightly different from the one the rest of our
+          // dependencies were compiled with. For example, if we are targeting
+          // `arm64-apple-macos`, that is the architecture that any Clang
+          // module dependencies will have used. If the module uses
+          // `arm64e-apple-macos` instead, then it will not be compatible with
+          // those Clang modules.
+          skip_next = true;
+        } else {
+          consumer(*flag);
+        }
+      }
+      return;
+    }
+  }
+}
+
 }  // namespace
 
 SwiftRunner::SwiftRunner(const std::vector<std::string> &args,
@@ -588,10 +707,15 @@ bool SwiftRunner::ProcessArgument(
     consumer(absl::StrCat(GetCurrentDirectory(), "/", tools_directory));
     last_flag_was_tools_directory_ = false;
     return true;
+  } else if (last_flag_was_target_) {
+    target_triple_ = std::string(trimmed_arg);
+    last_flag_was_target_ = false;
   } else if (trimmed_arg == "-module-name") {
     last_flag_was_module_name_ = true;
   } else if (trimmed_arg == "-tools-directory") {
     last_flag_was_tools_directory_ = true;
+  } else if (trimmed_arg == "-target") {
+    last_flag_was_target_ = true;
   } else if (absl::ConsumePrefix(&trimmed_arg, "-Xwrapped-swift=")) {
     if (trimmed_arg == "-debug-prefix-pwd-is-dot") {
       // Get the actual current working directory (the execution root), which
@@ -678,6 +802,13 @@ bool SwiftRunner::ProcessArgument(
       return true;
     }
 
+    if (absl::ConsumePrefix(&trimmed_arg,
+                            "-explicit-compile-module-from-interface=")) {
+      module_or_interface_path_ = std::string(trimmed_arg);
+      bazel_placeholder_substitutions_.Apply(module_or_interface_path_);
+      return true;
+    }
+
     // TODO(allevato): Report that an unknown wrapper arg was found and give
     // the caller a way to exit gracefully.
     return true;
@@ -707,13 +838,19 @@ void SwiftRunner::ProcessArguments(const std::vector<std::string> &args) {
   auto it = args.begin();
   tool_args_.push_back(*it++);
 
-  // If we're forcing response files, push the remaining processed args onto a
-  // different vector that we write out below. If not, push them directly onto
-  // the vector being returned.
+  auto consumer = [&](absl::string_view arg) {
+    args_.push_back(std::string(arg));
+  };
   while (it != args.end()) {
-    ProcessArgument(
-        *it, [&](absl::string_view arg) { args_.push_back(std::string(arg)); });
+    ProcessArgument(*it, consumer);
     ++it;
+  }
+
+  // If we're doing an explicit interface build, we need to extract the flags
+  // from the .swiftinterface file as well.
+  if (!module_or_interface_path_.empty()) {
+    ExtractFlagsFromInterfaceFile(module_or_interface_path_, target_triple_,
+                                  consumer);
   }
 }
 
