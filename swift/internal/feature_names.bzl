@@ -432,3 +432,7 @@ SWIFT_FEATURE_ENABLE_CPP23_INTEROP = "swift.enable_cpp23_interop"
 #   automatically include it at compile time, and provide it to the linker at link time
 # * alwayslink on swift_library() target will now default to False, as it is not required in embedded mode
 SWIFT_FEATURE_ENABLE_EMBEDDED = "swift.enable_embedded"
+
+# A feature that exposes all dependencies as public, including
+# the targets passed to `private_deps` attribute.
+SWIFT_FEATURE_EXPOSE_PRIVATE_DEPS_AS_PUBLIC = "swift.expose_private_deps_as_public"

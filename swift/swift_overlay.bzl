@@ -20,11 +20,13 @@ load(
     "swift_deps_attr",
     "swift_library_rule_attrs",
 )
+load("//swift/internal:features.bzl", "configure_features", "is_feature_enabled")
 load(
     "//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
+    "SWIFT_FEATURE_EXPOSE_PRIVATE_DEPS_AS_PUBLIC",
 )
 load(
     "//swift/internal:providers.bzl",
@@ -38,10 +40,29 @@ load(
 )
 load(":providers.bzl", "SwiftInfo", "SwiftOverlayInfo")
 load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
+load(
+    "//swift/internal:toolchain_utils.bzl",
+    "get_swift_toolchain",
+    "use_swift_toolchain",
+)
 
 def _swift_overlay_impl(ctx):
-    deps = ctx.attr.deps
-    private_deps = ctx.attr.private_deps
+    swift_toolchain = get_swift_toolchain(ctx)
+    feature_configuration = configure_features(
+        ctx = ctx,
+        requested_features = ctx.features,
+        swift_toolchain = swift_toolchain,
+        unsupported_features = ctx.disabled_features,
+    )
+    if is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_EXPOSE_PRIVATE_DEPS_AS_PUBLIC,
+    ):
+        deps = ctx.attr.deps + ctx.attr.private_deps
+        private_deps = []
+    else:
+        deps = ctx.attr.deps
+        private_deps = ctx.attr.private_deps
 
     features = list(ctx.features)
     if ctx.attr.library_evolution:
@@ -180,4 +201,5 @@ almost always an anti-pattern.
 """,
     fragments = ["cpp"],
     implementation = _swift_overlay_impl,
+    toolchains = use_swift_toolchain(),
 )

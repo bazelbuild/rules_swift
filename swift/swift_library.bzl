@@ -35,6 +35,7 @@ load(
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
     "SWIFT_FEATURE_ENABLE_EMBEDDED",
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
+    "SWIFT_FEATURE_EXPOSE_PRIVATE_DEPS_AS_PUBLIC",
 )
 load(
     "//swift/internal:features.bzl",
@@ -139,10 +140,6 @@ def _swift_library_impl(ctx):
         copts.extend(["-static"])
     copts.extend(module_copts)
 
-    deps = ctx.attr.deps
-    private_deps = ctx.attr.private_deps
-    _check_deps_are_disjoint(ctx.label, deps, private_deps)
-
     extra_features = []
 
     # TODO(b/239957001): Remove the global flag.
@@ -173,6 +170,20 @@ def _swift_library_impl(ctx):
         unsupported_features = ctx.disabled_features,
     )
 
+    _deps = ctx.attr.deps
+    _private_deps = ctx.attr.private_deps
+    _check_deps_are_disjoint(ctx.label, _deps, _private_deps)
+
+    if is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_EXPOSE_PRIVATE_DEPS_AS_PUBLIC,
+    ):
+        deps = _deps + _private_deps
+        private_deps = []
+    else:
+        deps = _deps
+        private_deps = _private_deps
+
     swift_infos = get_providers(deps, SwiftInfo)
     private_swift_infos = get_providers(private_deps, SwiftInfo)
 
@@ -195,7 +206,7 @@ def _swift_library_impl(ctx):
     compile_result = compile(
         actions = ctx.actions,
         additional_inputs = additional_inputs,
-        cc_infos = get_providers(ctx.attr.deps, CcInfo),
+        cc_infos = get_providers(deps, CcInfo),
         copts = _maybe_parse_as_library_copts(srcs) + copts,
         defines = ctx.attr.defines,
         feature_configuration = feature_configuration,
@@ -204,7 +215,7 @@ def _swift_library_impl(ctx):
         module_name = module_name,
         package_name = ctx.attr.package_name,
         plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),
-        private_cc_infos = get_providers(ctx.attr.private_deps, CcInfo),
+        private_cc_infos = get_providers(private_deps, CcInfo),
         private_swift_infos = private_swift_infos,
         srcs = srcs,
         swift_infos = swift_infos,
