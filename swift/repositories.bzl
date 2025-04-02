@@ -231,9 +231,10 @@ def swift_rules_dependencies(include_bzlmod_ready_dependencies = True):
         http_archive,
         name = "build_bazel_rules_swift_index_import",
         build_file = Label("//third_party:build_bazel_rules_swift_index_import/BUILD.overlay"),
-        canonical_id = "index-import-5.8",
-        urls = ["https://github.com/MobileNativeFoundation/index-import/releases/download/5.8.0.1/index-import.tar.gz"],
-        sha256 = "28c1ffa39d99e74ed70623899b207b41f79214c498c603915aef55972a851a15",
+        canonical_id = "index-import-c91955e129ae1b64ea7b46edba6f041f33efc26c",
+        urls = ["https://github.com/luispadron/index-import/archive/c91955e129ae1b64ea7b46edba6f041f33efc26c.tar.gz"],
+        sha256 = "ddf6b631664e5e574a42ba2576594805ac70987f153570665b4844b0a43e66bd",
+        strip_prefix = "index-import-c91955e129ae1b64ea7b46edba6f041f33efc26c",
     )
 
     _maybe(
