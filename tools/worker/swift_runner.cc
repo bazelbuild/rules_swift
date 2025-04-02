@@ -202,7 +202,7 @@ static std::unique_ptr<TempFile> WriteDirectResponseFile(
 // the view to the end of the argument in a similar fashion to
 // `absl::ConsumePrefix()`.
 static std::optional<std::string> ConsumeArg(
-    absl::Nonnull<absl::string_view *> line) {
+    absl::string_view *absl_nonnull line) {
   size_t whitespace_count = 0;
   size_t length = line->size();
   while (whitespace_count < length && (*line)[whitespace_count] == ' ') {
