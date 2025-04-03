@@ -688,6 +688,14 @@ def _xcode_swift_toolchain_impl(ctx):
         requested_features.append(SWIFT_FEATURE__SUPPORTS_V6)
 
     env = _xcode_env(target_triple = target_triple, xcode_config = xcode_config)
+
+    # TODO: Remove once we drop support for Xcode 16.x.
+    # We set a private environment variable when using a version older than Xcode 16.3
+    # which comes with Swift 6.1 which changes the hash algorithm for the index-import tool.
+    # When using an older version we switch to the older version of index-import.
+    if not _is_xcode_at_least_version(xcode_config, "16.3"):
+        env["__RULES_SWIFT_USE_LEGACY_INDEX_IMPORT"] = "1"
+
     execution_requirements = xcode_config.execution_info()
     generated_header_rewriter = ctx.executable.generated_header_rewriter
 

@@ -224,16 +224,26 @@ def swift_rules_dependencies(include_bzlmod_ready_dependencies = True):
         ),
     )
 
-    # It relies on `index-import` to import indexes into Bazel's remote
-    # cache and allow using a global index internally in workers.
-    # Note: this is only loaded if swift.index_while_building_v2 is enabled
+    # When using the "global index store" feature we rely on `index-import` to allow
+    # using a global index.
+    # TODO: we must depend on two versions of index-import to support backwards
+    # compatibility between Xcode 16.3+ and older versions, we can remove the older
+    # version once we drop support for Xcode 16.x.
     _maybe(
         http_archive,
-        name = "build_bazel_rules_swift_index_import",
+        name = "build_bazel_rules_swift_index_import_5_8",
         build_file = Label("//third_party:build_bazel_rules_swift_index_import/BUILD.overlay"),
         canonical_id = "index-import-5.8",
         urls = ["https://github.com/MobileNativeFoundation/index-import/releases/download/5.8.0.1/index-import.tar.gz"],
         sha256 = "28c1ffa39d99e74ed70623899b207b41f79214c498c603915aef55972a851a15",
+    )
+    _maybe(
+        http_archive,
+        name = "build_bazel_rules_swift_index_import_6_1",
+        build_file = Label("//third_party:build_bazel_rules_swift_index_import/BUILD.overlay"),
+        canonical_id = "index-import-6.1",
+        urls = ["https://github.com/MobileNativeFoundation/index-import/releases/download/6.1.0/index-import.tar.gz"],
+        sha256 = "54d0477526bba0dc1560189dfc4f02d90aea536e9cb329e911f32b2a564b66f1",
     )
 
     _maybe(
