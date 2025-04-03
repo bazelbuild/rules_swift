@@ -17,6 +17,7 @@
 #include <string>
 #include <vector>
 
+#include "tools/common/process.h"
 #include "tools/cpp/runfiles/runfiles.h"
 #include "tools/worker/compile_with_worker.h"
 #include "tools/worker/compile_without_worker.h"
@@ -31,10 +32,16 @@ int main(int argc, char *argv[]) {
     std::unique_ptr<Runfiles> runfiles(Runfiles::Create(argv[0]));
   #endif  // BAZEL_CURRENT_REPOSITORY
   if (runfiles != nullptr) {
-    // We silently ignore errors here, we will report an error later if this
-    // path is accessed
-    index_import_path =
-      runfiles->Rlocation("build_bazel_rules_swift_index_import/index-import");
+    // TODO: Remove once we drop support for Xcode 16.x.
+    // Determine which version of index-import to use based on the environment
+    auto env = GetCurrentEnvironment();
+    if (env.find("__RULES_SWIFT_USE_LEGACY_INDEX_IMPORT") != env.end()) {
+      index_import_path = runfiles->Rlocation(
+          "build_bazel_rules_swift_index_import_5_8/index-import");
+    } else {
+      index_import_path = runfiles->Rlocation(
+          "build_bazel_rules_swift_index_import_6_1/index-import");
+    }
   }
 
   auto args = std::vector<std::string>(argv + 1, argv + argc);
