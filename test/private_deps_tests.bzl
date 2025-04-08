@@ -104,7 +104,7 @@ def private_deps_test_suite(name, tags = []):
         name = "{}_client_cc_deps_modulemaps".format(name),
         expected_files = [
             "/test/fixtures/private_deps/public_cc_modulemap/_/module.modulemap",
-            "-/test/fixtures/private_deps/private_cc_modulemap_/module.modulemap",
+            "-/test/fixtures/private_deps/private_cc_modulemap/_/module.modulemap",
         ],
         field = "transitive_modules.clang!.module_map!",
         provider = "SwiftInfo",
