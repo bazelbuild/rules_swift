@@ -31,7 +31,7 @@ def runtime_deps_test_suite(name, tags = []):
     provider_test(
         name = "{}_swift_binary_runtime_deps".format(name),
         expected_files = [
-            "test/fixtures/runtime_deps/data.txt",
+            "test/fixtures/runtime_deps/transitive_data.txt",
             "*",
         ],
         field = "default_runfiles.files",

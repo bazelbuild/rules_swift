@@ -6,14 +6,20 @@ package(
     default_visibility = ["//test:__subpackages__"],
 )
 
-exports_files(["data.txt"])
+exports_files(["transitive_data.txt"])
 
 swift_library(
-    name = "library",
-    srcs = ["library.swift"],
-    data = [":data.txt"],
-    module_name = "library",
+    name = "transitive_library",
+    srcs = ["transitive_library.swift"],
+    data = [":transitive_data.txt"],
     tags = FIXTURE_TAGS,
+)
+
+swift_library(
+    name = "direct_library",
+    srcs = ["direct_library.swift"],
+    tags = FIXTURE_TAGS,
+    deps = [":transitive_library"],
 )
 
 swift_binary(
@@ -21,5 +27,5 @@ swift_binary(
     srcs = ["main.swift"],
     module_name = "binary",
     tags = FIXTURE_TAGS,
-    deps = [":library"],
+    deps = [":direct_library"],
 )
