@@ -98,7 +98,7 @@ per_module_swiftcopt_flag = rule(
     doc = """\
 A string list build setting that can be set on the command line. Each item in
 the list is expected to be of the form: <//target-package:name>=<copts> where
-copts is a colon separated list of Swift copts.
+copts is a comma separated list of Swift copts.
 """,
     implementation = _per_module_swiftcopt_flag_impl,
 )
