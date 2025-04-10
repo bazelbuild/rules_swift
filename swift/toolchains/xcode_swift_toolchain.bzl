@@ -22,7 +22,7 @@ toolchain, see `doc/rules.md`.
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
-load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "CPP_TOOLCHAIN_TYPE", "use_cpp_toolchain")
+load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain", "use_cpp_toolchain")
 load(
     "@build_bazel_rules_swift//swift:providers.bzl",
     "SwiftFeatureAllowlistInfo",
@@ -629,7 +629,7 @@ def _entry_point_linkopts_provider(*, entry_point_name):
 def _xcode_swift_toolchain_impl(ctx):
     cpp_fragment = ctx.fragments.cpp
     apple_toolchain = apple_common.apple_toolchain()
-    cc_toolchain = ctx.exec_groups["default"].toolchains[CPP_TOOLCHAIN_TYPE].cc
+    cc_toolchain = find_cpp_toolchain(ctx)
 
     target_triple = target_triples.normalize_for_swift(
         target_triples.parse(cc_toolchain.target_gnu_system_name),
@@ -919,17 +919,10 @@ for incremental compilation using a persistent mode.
         },
     ),
     doc = "Represents a Swift compiler toolchain provided by Xcode.",
-    exec_groups = {
-        # An execution group that has no specific platform requirements. This
-        # ensures that the execution platform of this Swift toolchain does not
-        # unnecessarily constrain the execution platform of the C++ toolchain.
-        "default": exec_group(
-            toolchains = use_cpp_toolchain(),
-        ),
-    },
     fragments = [
         "cpp",
         "objc",
     ],
+    toolchains = use_cpp_toolchain(),
     implementation = _xcode_swift_toolchain_impl,
 )
