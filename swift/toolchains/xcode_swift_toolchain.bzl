@@ -56,6 +56,7 @@ load(
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
     "SWIFT_FEATURE_DISABLE_SWIFT_SANDBOX",
     "SWIFT_FEATURE_FILE_PREFIX_MAP",
+    "SWIFT_FEATURE_MODULE_HOME_IS_CWD",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_REMAP_XCODE_PATH",
     "SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES",
@@ -708,7 +709,16 @@ def _xcode_swift_toolchain_impl(ctx):
         requested_features.append(SWIFT_FEATURE_DISABLE_SWIFT_SANDBOX)
 
     if _is_xcode_at_least_version(xcode_config, "16.0"):
-        requested_features.append(SWIFT_FEATURE__SUPPORTS_V6)
+        requested_features.extend([
+            SWIFT_FEATURE__SUPPORTS_V6,
+            # Ensure hermetic PCM files (no absolute workspace paths). This flag
+            # is actually supported on Xcode 15.x as well, but it's bugged; a
+            # `MODULE_DIRECTORY` field remains in the PCM file that has the
+            # absolute workspace path, so it's not hermetic, and worse, it
+            # causes other compilation errors in the unfortunately common case
+            # where two modules contain the same header.
+            SWIFT_FEATURE_MODULE_HOME_IS_CWD,
+        ])
 
     unsupported_features = ctx.disabled_features + [
         SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD,
