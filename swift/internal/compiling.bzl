@@ -673,6 +673,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         run_toolchain_action(
             actions = actions,
             action_name = SWIFT_ACTION_DERIVE_FILES,
+            exec_group = exec_group,
             feature_configuration = feature_configuration,
             outputs = all_derived_outputs,
             prerequisites = prerequisites,
@@ -700,6 +701,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
     run_toolchain_action(
         actions = actions,
         action_name = SWIFT_ACTION_DUMP_AST,
+        exec_group = exec_group,
         feature_configuration = feature_configuration,
         outputs = compile_outputs.ast_files,
         prerequisites = prerequisites,
