@@ -696,6 +696,23 @@ bool SwiftRunner::ProcessArgument(
     return ProcessPossibleResponseFile(arg, consumer);
   }
 
+  // Helper function for adding path remapping flags that depend on information
+  // only known at execution time.
+  auto add_prefix_map_flags = [&](absl::string_view flag) {
+    // Get the actual current working directory (the execution root), which
+    // we didn't know at analysis time.
+    consumer(flag);
+    consumer(absl::StrCat(GetCurrentDirectory(), "=."));
+
+#if __APPLE__
+    std::string developer_dir = "__BAZEL_XCODE_DEVELOPER_DIR__";
+    if (bazel_placeholder_substitutions_.Apply(developer_dir)) {
+      consumer(flag);
+      consumer(absl::StrCat(developer_dir, "=DEVELOPER_DIR"));
+    }
+#endif
+  };
+
   absl::string_view trimmed_arg = arg;
   if (last_flag_was_module_name_) {
     module_name_ = std::string(trimmed_arg);
@@ -718,18 +735,12 @@ bool SwiftRunner::ProcessArgument(
     last_flag_was_target_ = true;
   } else if (absl::ConsumePrefix(&trimmed_arg, "-Xwrapped-swift=")) {
     if (trimmed_arg == "-debug-prefix-pwd-is-dot") {
-      // Get the actual current working directory (the execution root), which
-      // we didn't know at analysis time.
-      consumer("-debug-prefix-map");
-      consumer(absl::StrCat(GetCurrentDirectory(), "=."));
+      add_prefix_map_flags("-debug-prefix-map");
       return true;
     }
 
     if (trimmed_arg == "-file-prefix-pwd-is-dot") {
-      // Get the actual current working directory (the execution root), which
-      // we didn't know at analysis time.
-      consumer("-file-prefix-map");
-      consumer(absl::StrCat(GetCurrentDirectory(), "=."));
+      add_prefix_map_flags("-file-prefix-map");
       return true;
     }
 

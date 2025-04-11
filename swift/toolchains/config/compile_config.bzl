@@ -36,6 +36,7 @@ load(
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
     "SWIFT_FEATURE_DISABLE_AVAILABILITY_CHECKING",
     "SWIFT_FEATURE_DISABLE_CLANG_SPI",
+    "SWIFT_FEATURE_EMIT_C_MODULE",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
     "SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
@@ -53,6 +54,7 @@ load(
     "SWIFT_FEATURE_LAYERING_CHECK",
     "SWIFT_FEATURE_LAYERING_CHECK_SWIFT",
     "SWIFT_FEATURE_MODULAR_INDEXING",
+    "SWIFT_FEATURE_MODULE_HOME_IS_CWD",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_NO_ASAN_VERSION_CHECK",
     "SWIFT_FEATURE_OPT",
@@ -444,6 +446,50 @@ def compile_action_configs(
     #### Flags controlling how Swift/Clang modular inputs are processed
 
     action_configs += [
+        # Explicitly set the working directory to ensure that the
+        # `FILE_SYSTEM_OPTIONS` block of PCM files is hermetic.
+        #
+        # IMPORTANT: When writing a PCM file, Clang *unconditionally* includes
+        # the working directory in the `FILE_SYSTEM_OPTIONS` block. Thus, the
+        # only way to ensure that these files are hermetic is to pass
+        # `-working-directory=.`. We cannot pass this to Swift, however, because
+        # the driver unfortunately resolves whatever path is given to it and
+        # then passes all of the source files as absolute paths to the
+        # frontend, which makes other outputs non-hermetic. Therefore, we *only*
+        # pass this flag to Clang. Having the two values not be literally
+        # identical should still be safe, because we're only passing a value
+        # here that is *effectively* the same as the default.
+        ActionConfigInfo(
+            actions = all_compile_action_names() + [
+                SWIFT_ACTION_PRECOMPILE_C_MODULE,
+            ],
+            configurators = [
+                add_arg("-Xcc", "-working-directory=."),
+            ],
+            features = [[
+                SWIFT_FEATURE_EMIT_C_MODULE,
+                SWIFT_FEATURE_USE_C_MODULES,
+                SWIFT_FEATURE_MODULE_HOME_IS_CWD,
+            ]],
+        ),
+        # Treat paths embedded into .pcm files as workspace-relative, not
+        # modulemap-relative.
+        ActionConfigInfo(
+            actions = all_compile_action_names() + [
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+                SWIFT_ACTION_PRECOMPILE_C_MODULE,
+                SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
+            ],
+            configurators = [
+                add_arg("-Xcc", "-Xclang"),
+                add_arg("-Xcc", "-fmodule-file-home-is-cwd"),
+            ],
+            features = [[
+                SWIFT_FEATURE_EMIT_C_MODULE,
+                SWIFT_FEATURE_USE_C_MODULES,
+                SWIFT_FEATURE_MODULE_HOME_IS_CWD,
+            ]],
+        ),
         # Treat paths in .modulemap files as workspace-relative, not modulemap-
         # relative.
         ActionConfigInfo(

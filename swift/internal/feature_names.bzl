@@ -124,6 +124,11 @@ SWIFT_FEATURE_ENABLE_TESTING = "swift.enable_testing"
 # warnings otherwise.
 SWIFT_FEATURE_FULL_DEBUG_INFO = "swift.full_debug_info"
 
+# If enabled, paths embedded into precompiled Clang modules will be relative to
+# the workspace, not to the modulemap file location. Paths in the module maps
+# themselves will still be treated as modulemap-relative.
+SWIFT_FEATURE_MODULE_HOME_IS_CWD = "swift.module_home_is_cwd"
+
 # If enabled, compilation actions and module map generation will assume that the
 # header paths in module maps are relative to the current working directory
 # (i.e., the workspace root); if disabled, header paths in module maps are
