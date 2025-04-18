@@ -23,7 +23,7 @@ load(
 load(
     "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_EMIT_C_MODULE",
-    "SWIFT_FEATURE_LAYERING_CHECK",
+    "SWIFT_FEATURE_LAYERING_CHECK_FOR_C_DEPS",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_USE_C_MODULES",
 )
@@ -896,7 +896,7 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx, toolchain_type):
         requested_features.extend([
             SWIFT_FEATURE_EMIT_C_MODULE,
             SWIFT_FEATURE_USE_C_MODULES,
-            SWIFT_FEATURE_LAYERING_CHECK,
+            SWIFT_FEATURE_LAYERING_CHECK_FOR_C_DEPS,
         ])
 
     swift_toolchain = get_swift_toolchain(
