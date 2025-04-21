@@ -94,7 +94,6 @@ SWIFT_FEATURE_MODULAR_INDEXING = "swift.modular_indexing"
 # If enabled, when compiling an explicit C or Objectve-C module, every header
 # included by the module being compiled must belong to one of the modules listed
 # in its dependencies. This is ignored for system modules.
-SWIFT_FEATURE_LAYERING_CHECK = "swift.layering_check"
 SWIFT_FEATURE_LAYERING_CHECK_FOR_C_DEPS = "swift.layering_check_for_c_deps"
 
 # If enabled, an error will be emitted when compiling Swift code if it imports

@@ -51,7 +51,6 @@ load(
     "SWIFT_FEATURE_INDEX_SYSTEM_MODULES",
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
     "SWIFT_FEATURE_INTERNALIZE_AT_LINK",
-    "SWIFT_FEATURE_LAYERING_CHECK",
     "SWIFT_FEATURE_LAYERING_CHECK_FOR_C_DEPS",
     "SWIFT_FEATURE_LAYERING_CHECK_SWIFT",
     "SWIFT_FEATURE_MODULAR_INDEXING",
@@ -556,8 +555,7 @@ def compile_action_configs(
         ActionConfigInfo(
             actions = [SWIFT_ACTION_PRECOMPILE_C_MODULE],
             configurators = [_c_layering_check_configurator],
-            # We require both so turning off either during the migration will disable this.
-            features = [SWIFT_FEATURE_LAYERING_CHECK, SWIFT_FEATURE_LAYERING_CHECK_FOR_C_DEPS],
+            features = [SWIFT_FEATURE_LAYERING_CHECK_FOR_C_DEPS],
             not_features = [SWIFT_FEATURE_SYSTEM_MODULE],
         ),
         ActionConfigInfo(
