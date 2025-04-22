@@ -14,6 +14,7 @@
 
 """Implementation of the `swift_binary` rule."""
 
+load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(
     "@build_bazel_rules_swift//swift/internal:binary_attrs.bzl",
     "binary_rule_attrs",
@@ -225,7 +226,13 @@ def _swift_binary_impl(ctx):
     return providers
 
 swift_binary = rule(
-    attrs = binary_rule_attrs(stamp_default = -1),
+    attrs = dicts.add(
+        binary_rule_attrs(stamp_default = -1),
+        {
+            # TODO(b/301253335): Enable AEGs and switch from `swift` exec_group to swift `toolchain` param.
+            "_use_auto_exec_groups": attr.bool(default = False),
+        },
+    ),
     doc = """\
 Compiles and links Swift code into an executable binary.
 
