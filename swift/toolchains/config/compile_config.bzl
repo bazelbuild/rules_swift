@@ -464,7 +464,8 @@ def compile_action_configs(
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
             ],
             configurators = [
-                add_arg("-Xcc", "-working-directory=."),
+                add_arg("-Xcc", "-working-directory"),
+                add_arg("-Xcc", "."),
             ],
             features = [[
                 SWIFT_FEATURE_EMIT_C_MODULE,
