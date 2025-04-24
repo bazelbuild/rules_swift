@@ -285,9 +285,6 @@ dependent for linking, but artifacts/flags required for compilation (such as
 .swiftmodule files, C headers, and search paths) will not be propagated.
 """,
             ),
-            # TODO(b/301253335): Once AEGs are enabled in Bazel, set the swift toolchain type in the
-            # exec configuration of `plugins` attribute and enable AEGs in swift_library.
-            "_use_auto_exec_groups": attr.bool(default = False),
         },
     ),
     doc = """\
