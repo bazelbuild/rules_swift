@@ -208,8 +208,6 @@ swift_compiler_plugin = rule(
             stamp_default = 0,
         ),
         {
-            # TODO(b/301253335): Enable AEGs and switch from `swift` exec_group to swift `toolchain` param.
-            "_use_auto_exec_groups": attr.bool(default = False),
         },
     ),
     doc = """\
