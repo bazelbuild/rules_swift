@@ -604,8 +604,6 @@ environment when the test is executed by `bazel test`.
                     Label("//tools/test_observer"),
                 ],
             ),
-            # TODO(b/301253335): Enable AEGs and switch from `swift` exec_group to swift `toolchain` param.
-            "_use_auto_exec_groups": attr.bool(default = False),
         },
     ),
     doc = """\
