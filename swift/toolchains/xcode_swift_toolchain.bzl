@@ -50,7 +50,6 @@ load(
     "SWIFT_FEATURE_COMPILE_IN_PARALLEL",
     "SWIFT_FEATURE_MODULE_HOME_IS_CWD",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
-    "SWIFT_FEATURE__SUPPORTS_V6",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:features.bzl",
@@ -265,16 +264,16 @@ def _test_linking_context(
         target_triple,
     )
 
-    # Weakly link to XCTest. It's possible that machine that links the test
-    # binary will have Xcode installed at a different path than the machine that
-    # runs the binary. To handle this, the binary `dlopen`s XCTest at startup
-    # using the path Bazel passes in the test action's environment.
+    # Weakly link to the testing libraries. It's possible that the machine that
+    # links the test binary will have Xcode installed at a different path than
+    # the machine that runs the binary. To handle this, the binary `dlopen`s
+    # these libraries at startup using the path Bazel passes in the test
+    # action's environment.
     linkopts = [
         "-Wl,-weak_framework,XCTest",
         "-Wl,-weak-lXCTestSwiftSupport",
+        "-Wl,-weak_framework,Testing",
     ]
-    if _is_xcode_at_least_version(xcode_config, "16.0"):
-        linkopts.append("-Wl,-weak_framework,Testing")
 
     if platform_developer_framework_dir:
         linkopts.extend([
@@ -690,24 +689,16 @@ def _xcode_swift_toolchain_impl(ctx):
     requested_features.extend(default_warnings_as_errors_features())
     requested_features.extend([
         SWIFT_FEATURE_COMPILE_IN_PARALLEL,
+
         # Allow users to start using access levels on `import`s by default. Note
         # that this does *not* change the default access level for `import`s to
         # `internal`; that is controlled by the upcoming feature flag
         # `InternalImportsByDefault`.
         "swift.experimental.AccessLevelOnImport",
-    ])
 
-    if _is_xcode_at_least_version(xcode_config, "16.0"):
-        requested_features.extend([
-            SWIFT_FEATURE__SUPPORTS_V6,
-            # Ensure hermetic PCM files (no absolute workspace paths). This flag
-            # is actually supported on Xcode 15.x as well, but it's bugged; a
-            # `MODULE_DIRECTORY` field remains in the PCM file that has the
-            # absolute workspace path, so it's not hermetic, and worse, it
-            # causes other compilation errors in the unfortunately common case
-            # where two modules contain the same header.
-            SWIFT_FEATURE_MODULE_HOME_IS_CWD,
-        ])
+        # Ensure hermetic PCM files (no absolute workspace paths).
+        SWIFT_FEATURE_MODULE_HOME_IS_CWD,
+    ])
 
     unsupported_features.extend(build_mode_unsupported_features)
     unsupported_features.extend(ctx.attr.default_unsupported_features)

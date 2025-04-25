@@ -67,7 +67,6 @@ load(
     "SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP",
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
     "SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS",
-    "SWIFT_FEATURE__SUPPORTS_V6",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
 )
 load(
@@ -920,7 +919,6 @@ def compile_action_configs(
             configurators = [add_arg("-swift-version", "6")],
             features = [
                 SWIFT_FEATURE_ENABLE_V6,
-                SWIFT_FEATURE__SUPPORTS_V6,
             ],
         ),
         ActionConfigInfo(

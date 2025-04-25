@@ -263,11 +263,6 @@ SWIFT_FEATURE_DISABLE_AVAILABILITY_CHECKING = "swift.disable_availability_checki
 # files by registering separate actions for each.
 SWIFT_FEATURE_COMPILE_IN_PARALLEL = "swift.compile_in_parallel"
 
-# A private feature that is set by the toolchain if it supports
-# `-swift-version 6` (Swift 6.0 and above). Users should never manually enable,
-# disable, or query this feature.
-SWIFT_FEATURE__SUPPORTS_V6 = "swift._supports_v6"
-
 # If enabled, the toolchain's implicit dependencies will not be used when
 # compiling Swift or Clang modules. This should only be used when building the
 # toolchain itself.
