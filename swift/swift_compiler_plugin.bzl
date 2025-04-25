@@ -199,6 +199,12 @@ def _swift_compiler_plugin_impl(ctx):
         OutputGroupInfo(
             **supplemental_compilation_output_groups(supplemental_outputs)
         ),
+        coverage_common.instrumented_files_info(
+            ctx,
+            dependency_attributes = ["deps"],
+            extensions = ["swift"],
+            source_attributes = ["srcs"],
+        ),
         SwiftBinaryInfo(
             cc_info = CcInfo(
                 compilation_context = module_context.clang.compilation_context,
