@@ -204,6 +204,12 @@ def _swift_binary_impl(ctx):
                 files = ctx.files.data,
             ),
         ),
+        coverage_common.instrumented_files_info(
+            ctx,
+            dependency_attributes = ["deps"],
+            extensions = ["swift"],
+            source_attributes = ["srcs"],
+        ),
         OutputGroupInfo(**output_groups),
         SwiftInfo(
             modules = [
