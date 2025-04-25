@@ -56,7 +56,7 @@ indirect (transitive) dependents.
         # (see b/169635467).
         # buildifier: disable=attr-license
         # buildifier: disable=attr-licenses
-        "licenses": attr.string_list(),
+        "licenses": attr.license(),
     }
 
 def swift_compilation_attrs(
