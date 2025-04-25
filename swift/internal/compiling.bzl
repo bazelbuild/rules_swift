@@ -549,6 +549,7 @@ def compile(
         private_hdrs = compile_plan.c_inputs.private_hdrs,
         public_hdrs = compile_plan.c_inputs.public_hdrs,
         srcs = [],
+        swift_infos = swift_infos,
         swift_toolchain = swift_toolchain,
         target_name = "{}.incomplete".format(target_name),
     )
@@ -649,6 +650,7 @@ def compile(
             compile_outputs.generated_header_file,
         ]),
         srcs = compile_plan.c_inputs.srcs,
+        swift_infos = swift_infos,
         swift_toolchain = swift_toolchain,
         target_name = target_name,
     )
@@ -1351,6 +1353,7 @@ def _compile_c_inputs(
         private_hdrs,
         public_hdrs,
         srcs,
+        swift_infos,
         swift_toolchain,
         target_name):
     """Compiles the C/Objective-C inputs for a Swift module, if any.
@@ -1379,6 +1382,10 @@ def _compile_c_inputs(
             compilation context (for example, the module's generated header).
         srcs: C/Objective-C source files that should be compiled, if this is a
             mixed-language module.
+        swift_infos: A list of `SwiftInfo` providers from regular and private
+            dependencies of the target being compiled. This is used to retrieve
+            any strict include paths that should be used during Objective-C
+            compilation but not propagated.
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
         target_name: The name of the target for which the code is being
             compiled, which is used to determine unique file paths for the
@@ -1421,6 +1428,23 @@ def _compile_c_inputs(
                 feature_configuration = feature_configuration,
             )
 
+        strict_includes = []
+        for swift_info in swift_infos:
+            for module in swift_info.direct_modules:
+                if not module.clang:
+                    continue
+                if module.clang.strict_includes:
+                    strict_includes.append(module.clang.strict_includes)
+
+        # We pass these to `cc_common.compile` as flags instead of using the
+        # `quote_includes` argument because we do not want them to be propagated
+        # to dependencies via the compilation context that `cc_common.compile`
+        # returns.
+        strict_include_flags = [
+            "-iquote{}".format(path)
+            for path in depset(transitive = strict_includes).to_list()
+        ]
+
         compilation_context, compilation_outputs = cc_common.compile(
             actions = actions,
             cc_toolchain = swift_toolchain.cc_toolchain_info,
@@ -1432,7 +1456,7 @@ def _compile_c_inputs(
             private_hdrs = private_hdrs,
             public_hdrs = public_hdrs,
             srcs = srcs,
-            user_compile_flags = copts,
+            user_compile_flags = copts + strict_include_flags,
             variables_extension = variables_extension,
         )
         return compilation_context, compilation_outputs
