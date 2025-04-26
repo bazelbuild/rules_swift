@@ -13,33 +13,24 @@
 // limitations under the License.
 
 import Foundation
-import examples_apple_objc_interop_PrintStream
-import Renderer
 
-@objc(OIPrinter)
-public class Printer: NSObject {
+@objc(SnapRenderer)
+public class Renderer: NSObject {
 
-  private let stream: OIPrintStream
   private let prefix: String
-  private let renderer: Renderer
 
   @objc public init(prefix: NSString) {
-    self.stream = OIPrintStream(fileHandle: .standardOutput)
     self.prefix = prefix as String
-    self.renderer = Renderer(prefix:prefix)
   }
 
-  @objc public func print(_ message: NSString) {
-    stream.print("\(prefix)\(message)")
+  @objc public func printHaHa(_ message: NSString) {
+    print("\(prefix)\(message)")
   }
 
-  @objc public func print2(_ message: NSString, renderer: Renderer) {
-    stream.print("\(prefix)\(message)")
-  }
 }
 
-extension Printer: RenderProtocol { 
-  public func render(_ name: String) {
-    stream.print(name)
-  }
+@objc(SnapRenderProtocol)
+public protocol RenderProtocol: NSObjectProtocol {
+
+    func render(_ name: String)
 }
