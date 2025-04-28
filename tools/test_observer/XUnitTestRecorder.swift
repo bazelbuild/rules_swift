@@ -66,6 +66,13 @@ public final class XUnitTestRecorder: Sendable {
   /// The context that is mutated by the test reader, protected by a lock.
   private let context: Locked<Context> = Locked(.init())
 
+  /// Indicates whether any tests have run.
+  public var didTestsRun: Bool {
+    context.withLock { context in
+      context.testCount > 0
+    }
+  }
+
   /// Indicates whether any failures have been recorded.
   public var hasFailure: Bool {
     context.withLock { context in
