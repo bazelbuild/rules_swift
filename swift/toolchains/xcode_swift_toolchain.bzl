@@ -129,11 +129,11 @@ def _swift_developer_lib_dir(platform_framework_dir):
         "lib",
     )
 
-def _platform_developer_framework_dir(apple_toolchain, target_triple):
+def _platform_developer_framework_dir(developer_dir, target_triple):
     """Returns the Developer framework directory for the platform.
 
     Args:
-        apple_toolchain: The `apple_common.apple_toolchain()` object.
+        developer_dir: The path to Xcode's "Developer" directory.
         target_triple: The triple of the platform being targeted.
 
     Returns:
@@ -141,7 +141,7 @@ def _platform_developer_framework_dir(apple_toolchain, target_triple):
         exists, otherwise `None`.
     """
     return paths.join(
-        apple_toolchain.developer_dir(),
+        developer_dir,
         "Platforms",
         "{}.platform".format(
             target_triples.bazel_apple_platform(target_triple).name_in_plist,
@@ -190,7 +190,7 @@ def _swift_linkopts_cc_info(
         depend on Swift targets.
     """
     platform_developer_framework_dir = _platform_developer_framework_dir(
-        apple_toolchain,
+        apple_toolchain.developer_dir(),
         target_triple,
     )
     sdk_developer_framework_dir = _sdk_developer_framework_dir(
@@ -241,41 +241,34 @@ def _swift_linkopts_cc_info(
         ),
     )
 
-def _test_linking_context(
-        apple_toolchain,
-        target_triple,
-        toolchain_label,
-        xcode_config):
+def _test_linking_context(target_triple, toolchain_label):
     """Returns a `CcLinkingContext` containing linker flags for test binaries.
 
     Args:
-        apple_toolchain: The `apple_common.apple_toolchain()` object.
         target_triple: The target triple `struct`.
         toolchain_label: The label of the Swift toolchain that will act as the
             owner of the linker input propagating the flags.
-        xcode_config: The Xcode configuration.
 
     Returns:
         A `CcLinkingContext` that will provide linker flags to `swift_test`
         binaries.
     """
-    platform_developer_framework_dir = _platform_developer_framework_dir(
-        apple_toolchain,
-        target_triple,
-    )
 
-    # Weakly link to the testing libraries. It's possible that the machine that
-    # links the test binary will have Xcode installed at a different path than
-    # the machine that runs the binary. To handle this, the binary `dlopen`s
-    # these libraries at startup using the path Bazel passes in the test
-    # action's environment.
-    linkopts = [
-        "-Wl,-weak_framework,XCTest",
-        "-Wl,-weak-lXCTestSwiftSupport",
-        "-Wl,-weak_framework,Testing",
+    # xcode-select creates the following symlink(s) to the developer directory
+    # (we list both because the behavior changed between versions of macOS).
+    # We use these as the rpaths for linking tests so that the required
+    # libraries are found if Xcode is installed in a different location on the
+    # machine that runs the tests than the machine used to link them.
+    developer_dirs = [
+        "/private/var/select/developer_dir",
+        "/var/db/xcode_select_link",
     ]
-
-    if platform_developer_framework_dir:
+    linkopts = []
+    for developer_dir in developer_dirs:
+        platform_developer_framework_dir = _platform_developer_framework_dir(
+            developer_dir,
+            target_triple,
+        )
         linkopts.extend([
             "-Wl,-rpath,{}".format(path)
             for path in compact([
@@ -350,7 +343,7 @@ def _all_action_configs(
         The action configurations for the Swift toolchain.
     """
     platform_developer_framework_dir = _platform_developer_framework_dir(
-        apple_toolchain,
+        apple_toolchain.developer_dir(),
         target_triple,
     )
     sdk_developer_framework_dir = _sdk_developer_framework_dir(
@@ -644,10 +637,8 @@ def _xcode_swift_toolchain_impl(ctx):
         toolchain_label = ctx.label,
     )
     test_linking_context = _test_linking_context(
-        apple_toolchain = apple_toolchain,
         target_triple = target_triple,
         toolchain_label = ctx.label,
-        xcode_config = xcode_config,
     )
 
     # `--define=SWIFT_USE_TOOLCHAIN_ROOT=<path>` is a rapid development feature

@@ -117,12 +117,6 @@ struct TestDiscoverer: ParsableCommand {
       struct Main {
         static func main() {
           do {
-            try loadTestingLibraries()
-          } catch {
-            print("Fatal error loading runtime libraries: \\(error)")
-            exit(1)
-          }
-          do {
             try XCTestRunner.run(__allDiscoveredXCTests())
           } catch {
             print("Fatal error running XCTest tests: \\(error)")

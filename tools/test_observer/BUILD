@@ -8,11 +8,11 @@ swift_library(
     testonly = 1,
     srcs = [
         "BazelXMLTestObserver.swift",
+        "Concurrency.swift",
         "JSON.swift",
         "LinuxXCTestRunner.swift",
         "Locked.swift",
         "ObjectiveCXCTestRunner.swift",
-        "RuntimeLibraries.swift",
         "ShardingFilteringTestCollector.swift",
         "StringInterpolation+XMLEscaping.swift",
         "SwiftTestingRunner.swift",
