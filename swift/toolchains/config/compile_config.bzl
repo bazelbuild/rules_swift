@@ -1272,6 +1272,8 @@ def _collect_clang_module_inputs(
             direct_inputs.append(mixed_module_clang_inputs.module_map_file)
         if mixed_module_clang_inputs.precompiled_module:
             direct_inputs.append(mixed_module_clang_inputs.precompiled_module)
+        if mixed_module_clang_inputs.vfs_overlay_file:
+            direct_inputs.append(mixed_module_clang_inputs.vfs_overlay_file)
 
     return ConfigResultInfo(
         inputs = direct_inputs,
@@ -1399,14 +1401,24 @@ def _dependencies_clang_modules_configurator(prerequisites, args, include_module
         mixed_inputs = getattr(prerequisites, "mixed_module_clang_inputs", None)
         if mixed_inputs and mixed_inputs.module_map_file:
             args.add("-import-underlying-module")
+            if mixed_inputs.vfs_overlay_file:
+                # Note that `-ivfsoverlay` and the path must be separate
+                # arguments. The frontend does not give the joined form the
+                # special treatment that we need to avoid serializing the flag.
+                args.add_all(
+                    ["-ivfsoverlay", mixed_inputs.vfs_overlay_file],
+                    before_each = "-Xcc",
+                )
             args.add_all(
-                [mixed_inputs.module_map_file],
+                [mixed_inputs.virtual_module_map_path or
+                 mixed_inputs.module_map_file],
                 format_each = "-fmodule-map-file=%s",
                 before_each = "-Xcc",
             )
             if mixed_inputs.precompiled_module:
                 args.add_all(
-                    [mixed_inputs.precompiled_module],
+                    [mixed_inputs.virtual_precompiled_module_path or
+                     mixed_inputs.precompiled_module],
                     format_each = "-fmodule-file={}=%s".format(
                         prerequisites.module_name,
                     ),

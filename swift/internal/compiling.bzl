@@ -558,9 +558,7 @@ def compile(
         compilation_context = incomplete_compilation_context,
         exec_group = exec_group,
         feature_configuration = feature_configuration,
-        file_extension_fragment = (
-            ".incomplete" if generated_header_name else ""
-        ),
+        is_incomplete_header_module = bool(generated_header_name),
         is_swift_generated_header = False,
         module_name = module_name,
         # If we're generating a header for this Swift module, defer indexing to
@@ -669,7 +667,7 @@ def compile(
             compilation_context = c_compilation_context,
             exec_group = exec_group,
             feature_configuration = feature_configuration,
-            file_extension_fragment = "",
+            is_incomplete_header_module = False,
             is_swift_generated_header = True,
             module_name = module_name,
             should_index = True,
@@ -1012,7 +1010,7 @@ def _compile_clang_module_for_swift_module(
         compilation_context,
         exec_group,
         feature_configuration,
-        file_extension_fragment,
+        is_incomplete_header_module,
         is_swift_generated_header,
         module_name,
         should_index,
@@ -1032,10 +1030,10 @@ def _compile_clang_module_for_swift_module(
             group's context. If `None`, the default execution group is used.
         feature_configuration: A feature configuration obtained from
             `swift_common.configure_features`.
-        file_extension_fragment: A fragment to be inserted before the final
-            module map and PCM file extensions if necessary to distinguish the
-            "incomplete" module for a mixed language module from the complete
-            one that will contain the generated header.
+        is_incomplete_header_module: If True, the module is an "incomplete"
+            header module that does not contain the generated header (and more
+            specifically, there will be a second module compiled that does
+            include it).
         is_swift_generated_header: If True, the module contains the Swift
             generated header.
         module_name: The name of the module being compiled.
@@ -1069,6 +1067,9 @@ def _compile_clang_module_for_swift_module(
         return struct(
             module_map_file = None,
             precompiled_module = None,
+            vfs_overlay_file = None,
+            virtual_module_map_path = None,
+            virtual_precompiled_module_path = None,
         )
 
     # Collect the `SwiftInfo` providers that represent the dependencies of the
@@ -1081,6 +1082,9 @@ def _compile_clang_module_for_swift_module(
             if module.clang:
                 sets.insert(dependent_module_names, module.name)
 
+    file_extension_fragment = (
+        ".incomplete" if is_incomplete_header_module else ""
+    )
     generated_module_map = actions.declare_file(
         "{}.swift{}.modulemap".format(target_name, file_extension_fragment),
     )
@@ -1123,9 +1127,75 @@ def _compile_clang_module_for_swift_module(
     else:
         precompiled_module = None
 
+    # If this is an incomplete header module, we need to mimic Xcode's behavior
+    # and create a VFS overlay that pretends that the incomplete module map and
+    # precompiled module are actually at the same location that the complete
+    # ones will be. This is because the paths to the module map and precompiled
+    # module will be serialized into the `.swiftmodule` file, and we need them
+    # to look the same as what downstream dependents will use. Otherwise, LLDB
+    # will attempt to load both the incomplete and the complete modules, which
+    # will fail because they will be treated as duplicates.
+    #
+    # This depends on some extremely specific logic in the Swift frontend that
+    # checks the name of the VFS overlay and avoids serializing it:
+    # https://github.com/swiftlang/swift/blob/454e5ea98fde61c33d522f2f09aeb20736ba7b07/lib/Serialization/Serialization.cpp#L1203-L1221
+    vfs_overlay_file = None
+    virtual_module_map_path = None
+    virtual_precompiled_module_path = None
+    if is_incomplete_header_module:
+        vfs_dir_path = generated_module_map.dirname
+        virtual_module_map_basename = "{}.swift.modulemap".format(target_name)
+        virtual_module_map_path = paths.join(
+            vfs_dir_path,
+            virtual_module_map_basename,
+        )
+
+        vfs_contents = [
+            {
+                "type": "file",
+                "name": virtual_module_map_basename,
+                "external-contents": generated_module_map.path,
+            },
+        ]
+        if precompiled_module:
+            virtual_precompiled_module_basename = "{}.swift.pcm".format(
+                target_name,
+            )
+            virtual_precompiled_module_path = paths.join(
+                vfs_dir_path,
+                virtual_precompiled_module_basename,
+            )
+            vfs_contents.append({
+                "type": "file",
+                "name": virtual_precompiled_module_basename,
+                "external-contents": precompiled_module.path,
+            })
+
+        incomplete_module_overlay = {
+            "version": 0,
+            "case-sensitive": True,
+            "roots": [
+                {
+                    "type": "directory",
+                    "name": vfs_dir_path,
+                    "contents": vfs_contents,
+                },
+            ],
+        }
+        vfs_overlay_file = actions.declare_file(
+            "{}_objs/unextended-module-overlay.yaml".format(target_name),
+        )
+        actions.write(
+            content = json.encode(incomplete_module_overlay),
+            output = vfs_overlay_file,
+        )
+
     return struct(
         module_map_file = generated_module_map,
         precompiled_module = precompiled_module,
+        vfs_overlay_file = vfs_overlay_file,
+        virtual_module_map_path = virtual_module_map_path,
+        virtual_precompiled_module_path = virtual_precompiled_module_path,
     )
 
 def precompile_clang_module(
