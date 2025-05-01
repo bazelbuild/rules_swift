@@ -185,6 +185,18 @@ public final class SwiftTestingRunner: Sendable {
     let instant = EncodedInstant(seconds: absolute.doubleValue)
     let nameComponents = nameComponents(for: testID)
 
+    // Later versions of swift-testing (after Xcode 16.0) stopped reporting suites that don't use
+    // the `@Suite` attribute in the `listTests` request
+    // (https://github.com/swiftlang/swift-testing/issues/1099). It's not clear if this is
+    // intentional or not, but we still need to be able to distinguish suites from test functions to
+    // produce the correct tree structure in the test recorder. We can distinguish them by observing
+    // that the last component of a test function ID (after the source location is stripped off, as
+    // `nameComponents` does above) will have trailing parentheses, while suites will just be the
+    // name of the type.
+    guard let last = nameComponents.last, last.hasSuffix(")") else {
+      return
+    }
+
     switch kind {
     case "testStarted":
       XUnitTestRecorder.shared.recordTestStarted(nameComponents: nameComponents, time: instant)
