@@ -708,7 +708,7 @@ bool SwiftRunner::ProcessArgument(
     std::string developer_dir = "__BAZEL_XCODE_DEVELOPER_DIR__";
     if (bazel_placeholder_substitutions_.Apply(developer_dir)) {
       consumer(flag);
-      consumer(absl::StrCat(developer_dir, "=DEVELOPER_DIR"));
+      consumer(absl::StrCat(developer_dir, "=/DEVELOPER_DIR"));
     }
 #endif
   };

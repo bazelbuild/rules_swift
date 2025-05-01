@@ -815,7 +815,7 @@ def compile_action_configs(
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
             ],
             configurators = [
-                add_arg("-file-prefix-map", "__BAZEL_XCODE_DEVELOPER_DIR__=DEVELOPER_DIR"),
+                add_arg("-file-prefix-map", "__BAZEL_XCODE_DEVELOPER_DIR__=/DEVELOPER_DIR"),
             ],
             features = [SWIFT_FEATURE_FILE_PREFIX_MAP],
         ),
