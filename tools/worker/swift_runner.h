@@ -135,6 +135,12 @@ class SwiftRunner {
   int PerformLayeringCheck(std::ostream &stdout_stream,
                            std::ostream &stderr_stream);
 
+  // Performs a safe JSON AST dump of the current compilation, which attempts to
+  // recover from known crash issues in the Swift 6.1 implementation of the
+  // feature.
+  int PerformJsonAstDump(std::ostream &stdout_stream,
+                         std::ostream &stderr_stream);
+
   // Upgrade any of the requested warnings to errors and then print all of the
   // diagnostics to the given stream. Updates the exit code if necessary (to
   // turn a previously successful compilation into a failing one).
@@ -223,6 +229,9 @@ class SwiftRunner {
   // then extract and run the single frontend invocation that generates that
   // that output.
   std::optional<CompileStep> compile_step_;
+
+  // Whether the worker should emit a JSON AST dump of the compilation.
+  bool emit_json_ast_;
 };
 
 }  // namespace bazel_rules_swift

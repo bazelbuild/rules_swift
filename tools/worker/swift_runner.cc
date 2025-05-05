@@ -46,6 +46,7 @@
 #include "tools/common/process.h"
 #include "tools/common/target_triple.h"
 #include "tools/common/temp_file.h"
+#include "third_party/json/src/json.hpp"
 #include "re2/re2.h"
 
 namespace bazel_rules_swift {
@@ -456,26 +457,43 @@ int SpawnPlanStep(const std::vector<std::string> &tool_args,
   return 1;
 }
 
+// Indicates which driver mode we are invoking as an additional invocation,
+// which may require special handling of arguments.
+enum class IncompatibleArgMode {
+  kLayeringCheck,
+  kJsonAst,
+};
+
 // Returns a value indicating whether an argument on the Swift command line
-// should be skipped because it is incompatible with the
-// `-emit-imported-modules` flag used for layering checks. The given iterator is
-// also advanced if necessary past any additional flags (e.g., a path following
-// a flag).
-bool SkipLayeringCheckIncompatibleArgs(std::vector<std::string>::iterator &it) {
+// should be skipped because it is incompatible with specific driver modes that
+// we invoke as additional invocations. The given iterator is also advanced if
+// necessary past any additional flags (e.g., a path following a flag).
+bool SkipIncompatibleArgs(IncompatibleArgMode mode,
+                          std::vector<std::string>::iterator &it) {
   if (*it == "-emit-module" || *it == "-emit-module-interface" ||
       *it == "-emit-object" || *it == "-emit-objc-header" ||
-      *it == "-emit-const-values" || *it == "-wmo" ||
-      *it == "-whole-module-optimization") {
+      *it == "-emit-const-values" || *it == "-warnings-as-errors" ||
+      *it == "-wmo" || *it == "-whole-module-optimization") {
     // Skip just this argument.
     return true;
   }
-  if (*it == "-o" || *it == "-output-file-map" || *it == "-emit-module-path" ||
+  if (*it == "-o" || *it == "-emit-module-path" ||
       *it == "-emit-module-interface-path" || *it == "-emit-objc-header-path" ||
       *it == "-emit-clang-header-path" || *it == "-emit-const-values-path" ||
       *it == "-num-threads") {
     // This flag has a value after it that we also need to skip.
     ++it;
     return true;
+  }
+
+  // Some flags we only want to skip when doing a layering check, but we still
+  // need them for JSON AST dumps.
+  if (mode == IncompatibleArgMode::kLayeringCheck) {
+    if (*it == "-output-file-map") {
+      // This flag has a value after it that we also need to skip.
+      ++it;
+      return true;
+    }
   }
 
   // Don't skip the flag.
@@ -593,7 +611,8 @@ SwiftRunner::SwiftRunner(const std::vector<std::string> &args,
     : job_env_(GetCurrentEnvironment()),
       force_response_file_(force_response_file),
       last_flag_was_module_name_(false),
-      last_flag_was_tools_directory_(false) {
+      last_flag_was_tools_directory_(false),
+      emit_json_ast_(false) {
   ProcessArguments(args);
 }
 
@@ -650,6 +669,10 @@ int SwiftRunner::Run(std::ostream &stdout_stream, std::ostream &stderr_stream) {
     if (exit_code != 0) {
       return exit_code;
     }
+  }
+
+  if (emit_json_ast_) {
+    PerformJsonAstDump(stdout_stream, stderr_stream);
   }
 
   return exit_code;
@@ -820,6 +843,11 @@ bool SwiftRunner::ProcessArgument(
       return true;
     }
 
+    if (trimmed_arg == "-emit-json-ast") {
+      emit_json_ast_ = true;
+      return true;
+    }
+
     // TODO(allevato): Report that an unknown wrapper arg was found and give
     // the caller a way to exit gracefully.
     return true;
@@ -899,7 +927,7 @@ int SwiftRunner::PerformLayeringCheck(std::ostream &stdout_stream,
 
   std::vector<std::string> emit_imports_args;
   for (auto it = args_.begin(); it != args_.end(); ++it) {
-    if (!SkipLayeringCheckIncompatibleArgs(it)) {
+    if (!SkipIncompatibleArgs(IncompatibleArgMode::kLayeringCheck, it)) {
       emit_imports_args.push_back(*it);
     }
   }
@@ -956,6 +984,61 @@ int SwiftRunner::PerformLayeringCheck(std::ostream &stdout_stream,
     return 1;
   }
 
+  return 0;
+}
+
+int SwiftRunner::PerformJsonAstDump(std::ostream &stdout_stream,
+                                    std::ostream &stderr_stream) {
+  // It is assumed that the Bazel caller spawning this action has already
+  // populated the output file map with `ast-dump` keys that represent the
+  // per-source-file outputs.
+  std::vector<std::string> ast_dump_args;
+  bool last_arg_was_output_file_map = false;
+  std::string output_file_map_path;
+  for (auto it = args_.begin(); it != args_.end(); ++it) {
+    if (!SkipIncompatibleArgs(IncompatibleArgMode::kJsonAst, it)) {
+      ast_dump_args.push_back(*it);
+
+      if (last_arg_was_output_file_map) {
+        output_file_map_path = *it;
+        last_arg_was_output_file_map = false;
+      } else if (*it == "-output-file-map") {
+        last_arg_was_output_file_map = true;
+      }
+    }
+  }
+
+  ast_dump_args.push_back("-dump-ast");
+  ast_dump_args.push_back("-dump-ast-format");
+  ast_dump_args.push_back("json");
+  // If there were warnings emitted by the actual compilation, we don't need to
+  // see them again via the AST dump.
+  ast_dump_args.push_back("-suppress-warnings");
+
+  int exit_code = SpawnJob(tool_args_, ast_dump_args, /*env=*/nullptr,
+                           stdout_stream, stderr_stream);
+  if (exit_code == 0) {
+    return 0;
+  }
+
+  // If the dump failed, it likely did so because of a crash (there are known
+  // crashing bugs in the JSON AST dump in Swift 6.1). If this happens, read the
+  // output file map to determine which files were expected and write dummy
+  // files so that Bazel is happy.
+  std::ifstream stream((std::string(output_file_map_path)));
+  nlohmann::json output_file_map;
+  stream >> output_file_map;
+
+  for (auto &[src, outputs] : output_file_map.items()) {
+    if (auto ast_dump_path = outputs.find("ast-dump");
+        ast_dump_path != outputs.end()) {
+      std::ofstream ast_dump_file(ast_dump_path->get<std::string>());
+      ast_dump_file << "{}" << std::endl;
+    }
+  }
+
+  // We still return success here so that a bad JSON AST dump doesn't cause the
+  // whole build to fail.
   return 0;
 }
 

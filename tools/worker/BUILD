@@ -5,6 +5,7 @@ cc_library(
     srcs = ["swift_runner.cc"],
     hdrs = ["swift_runner.h"],
     deps = [
+        "//third_party/json",
         "//tools/common:bazel_substitutions",
         "//tools/common:color",
         "//tools/common:file_system",
