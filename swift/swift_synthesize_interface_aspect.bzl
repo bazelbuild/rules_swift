@@ -26,8 +26,8 @@ load(
 )
 load(
     "//swift/internal:toolchain_utils.bzl",
-    "get_swift_toolchain",
-    "use_swift_toolchain",
+    "find_all_toolchains",
+    "use_all_toolchains",
 )
 load(":providers.bzl", "SwiftInfo", "SwiftSynthesizedInterfaceInfo")
 load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
@@ -47,10 +47,10 @@ def _swift_synthesize_interface_aspect_impl(target, aspect_ctx):
 
     swift_info = _get_swift_info(target)
     if swift_info and swift_info.direct_modules:
-        swift_toolchain = get_swift_toolchain(aspect_ctx)
+        toolchains = find_all_toolchains(aspect_ctx)
         feature_configuration = configure_features(
             ctx = aspect_ctx,
-            swift_toolchain = swift_toolchain,
+            toolchains = toolchains,
             requested_features = aspect_ctx.features,
             unsupported_features = aspect_ctx.disabled_features,
         )
@@ -75,7 +75,7 @@ def _swift_synthesize_interface_aspect_impl(target, aspect_ctx):
                 module_name = module.name,
                 output_file = output_file,
                 swift_infos = [swift_info],
-                swift_toolchain = swift_toolchain,
+                toolchains = toolchains,
             )
             synthesized_modules.append(
                 struct(
@@ -127,5 +127,5 @@ swift_synthesize_interface_aspect = aspect(
     implementation = _swift_synthesize_interface_aspect_impl,
     provides = [SwiftSynthesizedInterfaceInfo],
     requires = [swift_clang_module_aspect],
-    toolchains = use_swift_toolchain(),
+    toolchains = use_all_toolchains(),
 )

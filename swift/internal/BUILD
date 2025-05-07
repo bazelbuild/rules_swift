@@ -176,6 +176,7 @@ bzl_library(
     deps = [
         ":action_names",
         ":actions",
+        ":features",
         ":toolchain_utils",
         ":utils",
         "//swift:providers",
@@ -277,6 +278,7 @@ bzl_library(
     deps = [
         ":action_names",
         ":actions",
+        ":features",
         ":toolchain_utils",
         ":utils",
         "//swift:providers",
@@ -297,6 +299,7 @@ bzl_library(
         "//proto:__subpackages__",
         "//swift:__subpackages__",
     ],
+    deps = ["@rules_cc//cc:find_cc_toolchain_bzl"],
 )
 
 bzl_library(

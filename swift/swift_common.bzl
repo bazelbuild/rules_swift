@@ -51,7 +51,9 @@ load(
 )
 load(
     "//swift/internal:toolchain_utils.bzl",
+    "find_all_toolchains",
     "get_swift_toolchain",
+    "use_all_toolchains",
     "use_swift_toolchain",
 )
 
@@ -65,10 +67,15 @@ swift_common = struct(
     create_compilation_context = create_compilation_context,
     create_linking_context_from_compilation_outputs = create_linking_context_from_compilation_outputs,
     extract_symbol_graph = extract_symbol_graph,
-    get_toolchain = get_swift_toolchain,
+    find_all_toolchains = find_all_toolchains,
     is_action_enabled = is_action_enabled,
     is_enabled = is_feature_enabled,
     precompile_clang_module = precompile_clang_module,
     synthesize_interface = synthesize_interface,
+    use_all_toolchains = use_all_toolchains,
+
+    # TODO: b/415809235 - These functions are deprecated and should be removed
+    # after migrating to the new APIs.
+    get_toolchain = get_swift_toolchain,
     use_toolchain = use_swift_toolchain,
 )
