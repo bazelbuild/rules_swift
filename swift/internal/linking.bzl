@@ -23,7 +23,12 @@ load(
     "ensure_swiftmodule_is_embedded",
     "should_embed_swiftmodule_for_debugging",
 )
-load(":features.bzl", "configure_features", "get_cc_feature_configuration")
+load(
+    ":features.bzl",
+    "configure_features",
+    "gather_toolchains",
+    "get_cc_feature_configuration",
+)
 load(":toolchain_utils.bzl", "SWIFT_TOOLCHAIN_TYPE")
 load(":utils.bzl", "get_swift_implicit_deps")
 
@@ -35,7 +40,7 @@ def configure_features_for_binary(
         *,
         ctx,
         requested_features = [],
-        swift_toolchain,
+        toolchains,
         unsupported_features = []):
     """Creates and returns the feature configuration for binary linking.
 
@@ -45,7 +50,8 @@ def configure_features_for_binary(
     Args:
         ctx: The rule context.
         requested_features: Features that are requested for the target.
-        swift_toolchain: The Swift toolchain provider.
+        toolchains: The struct containing the Swift and C++ toolchain providers,
+            as returned by `swift_common.find_all_toolchains()`.
         unsupported_features: Features that are unsupported for the target.
 
     Returns:
@@ -67,7 +73,7 @@ def configure_features_for_binary(
     return configure_features(
         ctx = ctx,
         requested_features = requested_features,
-        swift_toolchain = swift_toolchain,
+        toolchains = toolchains,
         unsupported_features = unsupported_features,
     )
 
@@ -136,7 +142,8 @@ def create_linking_context_from_compilation_outputs(
         linking_contexts = [],
         module_context,
         name = None,
-        swift_toolchain,
+        swift_toolchain = None,
+        toolchains = None,
         toolchain_type = SWIFT_TOOLCHAIN_TYPE,
         user_link_flags = []):
     """Creates a linking context from the outputs of a Swift compilation.
@@ -176,6 +183,8 @@ def create_linking_context_from_compilation_outputs(
             Typically, this is the first tuple element in the value returned by
             `swift_common.compile`.
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
+        toolchains: The struct containing the Swift and C++ toolchain providers,
+            as returned by `swift_common.find_all_toolchains()`.
         toolchain_type: The toolchain type of the `swift_toolchain` which is
             used for the proper selection of the execution platform inside
             `run_toolchain_action`.
@@ -188,9 +197,14 @@ def create_linking_context_from_compilation_outputs(
         context to be propagated by the caller's `CcInfo` provider and the
         artifact representing the library that was linked, respectively.
     """
+    toolchains = gather_toolchains(
+        swift_toolchain = swift_toolchain,
+        toolchains = toolchains,
+    )
+
     _, implicit_cc_infos = get_swift_implicit_deps(
         feature_configuration = feature_configuration,
-        swift_toolchain = swift_toolchain,
+        swift_toolchain = toolchains.swift,
     )
     extra_linking_contexts = [
         cc_info.linking_context
@@ -202,7 +216,7 @@ def create_linking_context_from_compilation_outputs(
         feature_configuration = feature_configuration,
         label = label,
         module_context = module_context,
-        swift_toolchain = swift_toolchain,
+        swift_toolchain = toolchains.swift,
         toolchain_type = toolchain_type,
     )
     if debugging_linking_context:
@@ -216,7 +230,7 @@ def create_linking_context_from_compilation_outputs(
         feature_configuration = get_cc_feature_configuration(
             feature_configuration,
         ),
-        cc_toolchain = swift_toolchain.cc_toolchain_info,
+        cc_toolchain = toolchains.cc,
         compilation_outputs = compilation_outputs,
         name = name,
         user_link_flags = user_link_flags,
@@ -254,7 +268,7 @@ def register_link_binary_action(
         name = None,
         output_type,
         stamp,
-        swift_toolchain,
+        toolchains,
         toolchain_type = SWIFT_TOOLCHAIN_TYPE,
         user_link_flags = [],
         variables_extension = {}):
@@ -287,7 +301,8 @@ def register_link_binary_action(
         stamp: A tri-state value (-1, 0, or 1) that specifies whether link
             stamping is enabled. See `cc_common.link` for details about the
             behavior of this argument.
-        swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
+        toolchains: The struct containing the Swift and C++ toolchain providers,
+            as returned by `swift_common.find_all_toolchains()`.
         toolchain_type: The toolchain type of the `swift_toolchain` which is
             used for the proper selection of the execution platform inside
             `run_toolchain_action`.
@@ -318,7 +333,7 @@ def register_link_binary_action(
             feature_configuration = feature_configuration,
             label = label,
             module_context = module_context,
-            swift_toolchain = swift_toolchain,
+            swift_toolchain = toolchains.swift,
             toolchain_type = toolchain_type,
         )
         if debugging_linking_context:
@@ -328,7 +343,7 @@ def register_link_binary_action(
     # dependencies.
     _, implicit_cc_infos = get_swift_implicit_deps(
         feature_configuration = feature_configuration,
-        swift_toolchain = swift_toolchain,
+        swift_toolchain = toolchains.swift,
     )
     linking_contexts.extend([
         cc_info.linking_context
@@ -339,7 +354,7 @@ def register_link_binary_action(
         actions = actions,
         additional_inputs = additional_inputs,
         additional_outputs = additional_outputs,
-        cc_toolchain = swift_toolchain.cc_toolchain_info,
+        cc_toolchain = toolchains.cc,
         compilation_outputs = compilation_outputs,
         feature_configuration = get_cc_feature_configuration(
             feature_configuration,

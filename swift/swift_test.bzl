@@ -48,8 +48,8 @@ load(
 )
 load(
     "@build_bazel_rules_swift//swift/internal:toolchain_utils.bzl",
-    "get_swift_toolchain",
-    "use_swift_toolchain",
+    "find_all_toolchains",
+    "use_all_toolchains",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:utils.bzl",
@@ -198,7 +198,7 @@ def _do_compile(
         plugins = [],
         srcs,
         swift_infos,
-        swift_toolchain):
+        toolchains):
     """Compiles Swift source code for a `swift_test` target.
 
     Args:
@@ -216,7 +216,7 @@ def _do_compile(
         srcs: The sources to compile.
         swift_infos: A list of `SwiftInfo` providers that should be used to
             determine the module inputs for the action.
-        swift_toolchain: The Swift toolchain to use to configure the build.
+        toolchains: The Swift and C++ toolchains to use to configure the build.
 
     Returns:
         The same value as would be returned by `compile`.
@@ -236,22 +236,21 @@ def _do_compile(
         plugins = plugins,
         srcs = srcs,
         swift_infos = swift_infos,
-        swift_toolchain = swift_toolchain,
+        toolchains = toolchains,
         target_name = name,
     )
 
 def _swift_test_impl(ctx):
-    swift_toolchain = get_swift_toolchain(ctx)
-
+    toolchains = find_all_toolchains(ctx)
     feature_configuration = configure_features_for_binary(
         ctx = ctx,
         requested_features = ctx.features,
-        swift_toolchain = swift_toolchain,
+        toolchains = toolchains,
         unsupported_features = ctx.disabled_features,
     )
 
     discover_tests = ctx.attr.discover_tests
-    objc_test_discovery = swift_toolchain.test_configuration.objc_test_discovery
+    objc_test_discovery = toolchains.swift.test_configuration.objc_test_discovery
     srcs = ctx.files.srcs
     owner_symbol_graph_dir = None
 
@@ -272,7 +271,7 @@ def _swift_test_impl(ctx):
     deps_compilation_contexts = []
     deps_swift_infos = []
     additional_linking_contexts = list(
-        swift_toolchain.test_configuration.test_linking_contexts,
+        toolchains.swift.test_configuration.test_linking_contexts,
     )
     for dep in deps:
         if CcInfo in dep:
@@ -324,7 +323,7 @@ def _swift_test_impl(ctx):
             plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),
             srcs = srcs,
             swift_infos = deps_swift_infos,
-            swift_toolchain = swift_toolchain,
+            toolchains = toolchains,
         )
 
         module_contexts.append(compile_result.module_context)
@@ -349,7 +348,7 @@ def _swift_test_impl(ctx):
                 module_name = module_name,
                 output_dir = owner_symbol_graph_dir,
                 swift_infos = swift_infos_including_owner,
-                swift_toolchain = swift_toolchain,
+                toolchains = toolchains,
             )
     else:
         compilation_outputs = cc_common.create_compilation_outputs()
@@ -378,7 +377,7 @@ def _swift_test_impl(ctx):
             swift_infos = (
                 swift_infos_including_owner + test_runner_deps_swift_infos
             ),
-            swift_toolchain = swift_toolchain,
+            toolchains = toolchains,
         )
         module_contexts.append(discovery_compile_result.module_context)
         compilation_outputs = cc_common.merge_compilation_outputs(
@@ -393,7 +392,7 @@ def _swift_test_impl(ctx):
 
     # Apply the optional debugging outputs extension if the toolchain defines
     # one.
-    debug_outputs_provider = swift_toolchain.debug_outputs_provider
+    debug_outputs_provider = toolchains.swift.debug_outputs_provider
     if debug_outputs_provider:
         debug_extension = debug_outputs_provider(ctx = ctx)
         additional_debug_outputs = debug_extension.additional_outputs
@@ -402,7 +401,7 @@ def _swift_test_impl(ctx):
         additional_debug_outputs = []
         variables_extension = {}
 
-    binary_name = swift_toolchain.test_configuration.binary_name.replace(
+    binary_name = toolchains.swift.test_configuration.binary_name.replace(
         "{name}",
         ctx.label.name,
     )
@@ -419,7 +418,7 @@ def _swift_test_impl(ctx):
         name = binary_name,
         output_type = "executable",
         stamp = ctx.attr.stamp,
-        swift_toolchain = swift_toolchain,
+        toolchains = toolchains,
         user_link_flags = expand_locations(
             ctx,
             ctx.attr.linkopts,
@@ -430,7 +429,7 @@ def _swift_test_impl(ctx):
 
     test_environment = dicts.add(
         ctx.attr.env,
-        swift_toolchain.test_configuration.env,
+        toolchains.swift.test_configuration.env,
         {"TEST_BINARIES_FOR_LLVM_COV": linking_outputs.executable.short_path},
     )
 
@@ -457,7 +456,7 @@ def _swift_test_impl(ctx):
             source_attributes = ["srcs"],
         ),
         testing.ExecutionInfo(
-            swift_toolchain.test_configuration.execution_requirements,
+            toolchains.swift.test_configuration.execution_requirements,
         ),
         RunEnvironmentInfo(
             environment = expand_locations(
@@ -578,6 +577,16 @@ For example,
     starting with `testApp` or `testIns` in the `ArrayTests` class.
 """,
     exec_groups = {
+        # The `plugins` attribute associates its `exec` transition with this
+        # execution group. Even though the group is otherwise not used in this
+        # rule, we must resolve the Swift toolchain in this execution group so
+        # that the execution platform of the plugins will have the same
+        # constraints as the execution platform as the other uses of the same
+        # toolchain, ensuring that they don't get built for mismatched
+        # platforms.
+        "swift_plugins": exec_group(
+            toolchains = use_all_toolchains(),
+        ),
         # Define an execution group for `SwiftTestDiscovery` actions that does
         # not have constraints, so that test discovery using the already
         # generated symbol graphs can be routed to any platform that supports it
@@ -588,5 +597,5 @@ For example,
     fragments = ["cpp"],
     test = True,
     implementation = _swift_test_impl,
-    toolchains = use_swift_toolchain(),
+    toolchains = use_all_toolchains(),
 )

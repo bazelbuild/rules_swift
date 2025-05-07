@@ -39,7 +39,6 @@ bzl_library(
         "//swift/internal:providers",
         "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
-        "@bazel_skylib//lib:dicts",
     ],
 )
 

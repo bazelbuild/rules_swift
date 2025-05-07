@@ -53,8 +53,8 @@ load(
 )
 load(
     "@build_bazel_rules_swift//swift/internal:toolchain_utils.bzl",
-    "get_swift_toolchain",
-    "use_swift_toolchain",
+    "find_all_toolchains",
+    "use_all_toolchains",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:utils.bzl",
@@ -153,11 +153,11 @@ def _swift_library_impl(ctx):
     if not module_name:
         module_name = derive_swift_module_name(ctx.label)
 
-    swift_toolchain = get_swift_toolchain(ctx)
+    toolchains = find_all_toolchains(ctx)
     feature_configuration = configure_features(
         ctx = ctx,
         requested_features = ctx.features + extra_features,
-        swift_toolchain = swift_toolchain,
+        toolchains = toolchains,
         unsupported_features = ctx.disabled_features,
     )
 
@@ -196,7 +196,7 @@ def _swift_library_impl(ctx):
         private_swift_infos = private_swift_infos,
         srcs = srcs,
         swift_infos = swift_infos,
-        swift_toolchain = swift_toolchain,
+        toolchains = toolchains,
         target_name = ctx.label.name,
     )
 
@@ -222,7 +222,7 @@ def _swift_library_impl(ctx):
                 if SwiftOverlayInfo in dep
             ],
             module_context = module_context,
-            swift_toolchain = swift_toolchain,
+            toolchains = toolchains,
             user_link_flags = linkopts,
         )
     )
@@ -292,9 +292,21 @@ dependent for linking, but artifacts/flags required for compilation (such as
     doc = """\
 Compiles and links Swift code into a static library and Swift module.
 """,
+    exec_groups = {
+        # The `plugins` attribute associates its `exec` transition with this
+        # execution group. Even though the group is otherwise not used in this
+        # rule, we must resolve the Swift toolchain in this execution group so
+        # that the execution platform of the plugins will have the same
+        # constraints as the execution platform as the other uses of the same
+        # toolchain, ensuring that they don't get built for mismatched
+        # platforms.
+        "swift_plugins": exec_group(
+            toolchains = use_all_toolchains(),
+        ),
+    },
     fragments = [
         "cpp",
     ],
     implementation = _swift_library_impl,
-    toolchains = use_swift_toolchain(),
+    toolchains = use_all_toolchains(),
 )

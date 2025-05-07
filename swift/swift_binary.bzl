@@ -39,8 +39,8 @@ load(
 )
 load(
     "@build_bazel_rules_swift//swift/internal:toolchain_utils.bzl",
-    "get_swift_toolchain",
-    "use_swift_toolchain",
+    "find_all_toolchains",
+    "use_all_toolchains",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:utils.bzl",
@@ -54,12 +54,11 @@ load(":providers.bzl", "SwiftBinaryInfo", "SwiftInfo", "SwiftOverlayInfo")
 visibility("public")
 
 def _swift_binary_impl(ctx):
-    swift_toolchain = get_swift_toolchain(ctx)
-
+    toolchains = find_all_toolchains(ctx)
     feature_configuration = configure_features_for_binary(
         ctx = ctx,
         requested_features = ctx.features,
-        swift_toolchain = swift_toolchain,
+        toolchains = toolchains,
         unsupported_features = ctx.disabled_features,
     )
 
@@ -98,7 +97,7 @@ def _swift_binary_impl(ctx):
             plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),
             srcs = srcs,
             swift_infos = get_providers(ctx.attr.deps, SwiftInfo),
-            swift_toolchain = swift_toolchain,
+            toolchains = toolchains,
             target_name = ctx.label.name,
         )
         module_contexts.append(compile_result.module_context)
@@ -114,7 +113,7 @@ def _swift_binary_impl(ctx):
 
     # Apply the optional debugging outputs extension if the toolchain defines
     # one.
-    debug_outputs_provider = swift_toolchain.debug_outputs_provider
+    debug_outputs_provider = toolchains.swift.debug_outputs_provider
     if debug_outputs_provider:
         debug_extension = debug_outputs_provider(ctx = ctx)
         additional_debug_outputs = debug_extension.additional_outputs
@@ -131,7 +130,7 @@ def _swift_binary_impl(ctx):
 
     # When linking the binary, make sure we use the correct entry point name.
     if entry_point_function_name:
-        entry_point_linkopts = swift_toolchain.entry_point_linkopts_provider(
+        entry_point_linkopts = toolchains.swift.entry_point_linkopts_provider(
             entry_point_name = entry_point_function_name,
         ).linkopts
     else:
@@ -149,7 +148,7 @@ def _swift_binary_impl(ctx):
         module_contexts = module_contexts,
         output_type = "executable",
         stamp = ctx.attr.stamp,
-        swift_toolchain = swift_toolchain,
+        toolchains = toolchains,
         user_link_flags = binary_link_flags + entry_point_linkopts,
         variables_extension = variables_extension,
     )
@@ -204,7 +203,7 @@ def _swift_binary_impl(ctx):
                     if SwiftOverlayInfo in dep
                 ],
                 module_context = compile_result.module_context,
-                swift_toolchain = swift_toolchain,
+                toolchains = toolchains,
                 # Exclude the entry point linkopts from this linking context,
                 # because it is meant to be used by other binary rules that
                 # provide their own entry point while linking this "binary" in
@@ -241,8 +240,20 @@ please use one of the platform-specific application rules in
 [rules_apple](https://github.com/bazelbuild/rules_apple) instead of
 `swift_binary`.
 """,
+    exec_groups = {
+        # The `plugins` attribute associates its `exec` transition with this
+        # execution group. Even though the group is otherwise not used in this
+        # rule, we must resolve the Swift toolchain in this execution group so
+        # that the execution platform of the plugins will have the same
+        # constraints as the execution platform as the other uses of the same
+        # toolchain, ensuring that they don't get built for mismatched
+        # platforms.
+        "swift_plugins": exec_group(
+            toolchains = use_all_toolchains(),
+        ),
+    },
     executable = True,
     fragments = ["cpp"],
     implementation = _swift_binary_impl,
-    toolchains = use_swift_toolchain(),
+    toolchains = use_all_toolchains(),
 )

@@ -34,8 +34,8 @@ load(
 )
 load(
     "@build_bazel_rules_swift//swift/internal:toolchain_utils.bzl",
-    "get_swift_toolchain",
-    "use_swift_toolchain",
+    "find_all_toolchains",
+    "use_all_toolchains",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:utils.bzl",
@@ -65,10 +65,10 @@ def _swift_import_impl(ctx):
         fail("One or both of 'swiftinterface' and 'swiftmodule' must be " +
              "specified.")
 
-    swift_toolchain = get_swift_toolchain(ctx)
+    toolchains = find_all_toolchains(ctx)
     feature_configuration = configure_features(
         ctx = ctx,
-        swift_toolchain = swift_toolchain,
+        toolchains = toolchains,
         requested_features = ctx.features,
         unsupported_features = ctx.disabled_features,
     )
@@ -77,7 +77,7 @@ def _swift_import_impl(ctx):
         cc_common.create_library_to_link(
             actions = ctx.actions,
             alwayslink = True,
-            cc_toolchain = swift_toolchain.cc_toolchain_info,
+            cc_toolchain = toolchains.cc,
             feature_configuration = get_cc_feature_configuration(
                 feature_configuration,
             ),
@@ -107,7 +107,7 @@ def _swift_import_impl(ctx):
             module_name = ctx.attr.module_name,
             swiftinterface_file = swiftinterface,
             swift_infos = swift_infos,
-            swift_toolchain = swift_toolchain,
+            toolchains = toolchains,
             target_name = ctx.label.name,
         )
         module_context = compile_result.module_context
@@ -206,5 +206,5 @@ modules as dependencies in other `swift_library` and `swift_binary` targets.
 """,
     fragments = ["cpp"],
     implementation = _swift_import_impl,
-    toolchains = use_swift_toolchain(),
+    toolchains = use_all_toolchains(),
 )

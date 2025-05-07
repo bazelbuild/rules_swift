@@ -45,7 +45,6 @@ bzl_library(
     srcs = ["actions.bzl"],
     deps = [
         ":features",
-        ":toolchain_utils",
         "//swift/toolchains/config:action_config",
         "@bazel_skylib//lib:types",
     ],
@@ -136,6 +135,7 @@ bzl_library(
     deps = [
         ":action_names",
         ":actions",
+        ":features",
         ":toolchain_utils",
         ":utils",
         "//swift:providers",
@@ -237,6 +237,7 @@ bzl_library(
     deps = [
         ":action_names",
         ":actions",
+        ":features",
         ":toolchain_utils",
         ":utils",
         "//swift:providers",
@@ -251,6 +252,7 @@ bzl_library(
 bzl_library(
     name = "toolchain_utils",
     srcs = ["toolchain_utils.bzl"],
+    deps = ["@rules_cc//cc:find_cc_toolchain_bzl"],
 )
 
 bzl_library(

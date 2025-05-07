@@ -35,7 +35,7 @@ load(":features.bzl", "configure_features")
 load(":linking.bzl", "create_linking_context_from_compilation_outputs")
 load(":output_groups.bzl", "supplemental_compilation_output_groups")
 load(":proto_gen_utils.bzl", "swift_proto_lang_toolchain_label")
-load(":toolchain_utils.bzl", "get_swift_toolchain", "use_swift_toolchain")
+load(":toolchain_utils.bzl", "find_all_toolchains", "use_all_toolchains")
 load(":utils.bzl", "get_compilation_contexts")
 
 visibility([
@@ -173,7 +173,7 @@ def _render_text_module_mapping(mapping):
     return content
 
 def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
-    swift_toolchain = get_swift_toolchain(aspect_ctx)
+    toolchains = find_all_toolchains(aspect_ctx)
     proto_lang_toolchain_info = aspect_ctx.attr._proto_lang_toolchain[proto_common.ProtoLangToolchainInfo]
     target_proto_info = target[ProtoInfo]
 
@@ -239,7 +239,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
         feature_configuration = configure_features(
             ctx = aspect_ctx,
             requested_features = aspect_ctx.features + extra_features,
-            swift_toolchain = swift_toolchain,
+            toolchains = toolchains,
             unsupported_features = aspect_ctx.disabled_features + [
                 SWIFT_FEATURE_ENABLE_TESTING,
                 # Layering checks interfere with `import public`, where the
@@ -267,7 +267,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             module_name = module_name,
             srcs = direct_pbswift_files,
             swift_infos = transitive_swift_infos,
-            swift_toolchain = swift_toolchain,
+            toolchains = toolchains,
             target_name = target.label.name,
         )
 
@@ -287,7 +287,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
                 # directory, which use the `lib{name}.a` pattern. This will
                 # produce `lib{name}.swift.a` instead.
                 name = "{}.swift".format(target.label.name),
-                swift_toolchain = swift_toolchain,
+                toolchains = toolchains,
             )
         )
 
@@ -373,5 +373,5 @@ detail of the `swift_proto_library` rule.
     provides = [SwiftProtoInfo],
     fragments = ["cpp"],
     implementation = _swift_protoc_gen_aspect_impl,
-    toolchains = use_swift_toolchain(),
+    toolchains = use_all_toolchains(),
 )

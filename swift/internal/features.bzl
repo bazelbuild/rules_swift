@@ -55,9 +55,43 @@ def are_all_features_enabled(feature_configuration, feature_names):
             return False
     return True
 
+# TODO: b/415809235 - Remove this function and its callers once all build API
+# clients have been migrated to `toolchains`.
+def gather_toolchains(swift_toolchain = None, toolchains = None):
+    """Returns a `struct` containing the Swift and C++ toolchains.
+
+    This function exists solely as a migration helper for the internal build API
+    logic, which needs to temporarily handle being passed _either_ the new
+    `toolchains` struct or the old `swift_toolchain` provider. Once the
+    migration is complete, this function can be removed.
+
+    Args:
+        swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain
+            being used to build.
+        toolchains: The toolchains that are used to determine which features are
+            enabled by default or unsupported.
+
+    Returns:
+        A `struct` containing the Swift and C++ toolchain providers. If
+        `toolchains` is provided, it will be returned directly. Otherwise, a
+        `struct` containing the `swift_toolchain` provider will be returned and
+        its nested C++ toolchain provider will be returned in the `cc` field.
+    """
+    if toolchains:
+        return toolchains
+
+    if swift_toolchain:
+        return struct(
+            cc = swift_toolchain.cc_toolchain_info,
+            swift = swift_toolchain,
+        )
+
+    fail("either `toolchains` or `swift_toolchain` must be provided")
+
 def configure_features(
         ctx,
-        swift_toolchain,
+        swift_toolchain = None,
+        toolchains = None,
         *,
         requested_features = [],
         unsupported_features = []):
@@ -76,6 +110,9 @@ def configure_features(
             enabled by default or unsupported by the toolchain, and the C++
             toolchain associated with the Swift toolchain is used to create the
             underlying C++ feature configuration.
+        toolchains: The toolchains that are used to determine which features are
+            enabled by default or unsupported. This is typically obtained using
+            `swift_common.find_all_toolchains()`.
         requested_features: The list of features to be enabled. This is
             typically obtained using the `ctx.features` field in a rule
             implementation function.
@@ -88,6 +125,10 @@ def configure_features(
         passed to other `swift_common` functions. Note that the structure of
         this value should otherwise not be relied on or inspected directly.
     """
+    toolchains = gather_toolchains(
+        swift_toolchain = swift_toolchain,
+        toolchains = toolchains,
+    )
 
     # Always disable this feature so that any `cc_common` APIs called by
     # `swift_common` APIs don't cause certain actions to be created (for
@@ -111,9 +152,9 @@ def configure_features(
     else:
         aspect_id = None
 
-    if swift_toolchain.feature_allowlists:
+    if toolchains.swift.feature_allowlists:
         _check_allowlists(
-            allowlists = swift_toolchain.feature_allowlists,
+            allowlists = toolchains.swift.feature_allowlists,
             aspect_id = aspect_id,
             label = ctx.label,
             requested_features = requested_features,
@@ -136,13 +177,13 @@ def configure_features(
     all_requestable_features, all_unsupported_features = _compute_features(
         label = ctx.label,
         requested_features = requested_features,
-        swift_toolchain = swift_toolchain,
+        swift_toolchain = toolchains.swift,
         unsupported_features = unsupported_features,
     )
     cc_feature_configuration = cc_common.configure_features(
         ctx = ctx,
-        cc_toolchain = swift_toolchain.cc_toolchain_info,
-        language = swift_toolchain.cc_language,
+        cc_toolchain = toolchains.cc,
+        language = toolchains.swift.cc_language,
         requested_features = all_requestable_features,
         unsupported_features = all_unsupported_features,
     )
@@ -155,8 +196,8 @@ def configure_features(
     def cc_feature_configuration_no_parse_headers():
         return cc_common.configure_features(
             ctx = ctx,
-            cc_toolchain = swift_toolchain.cc_toolchain_info,
-            language = swift_toolchain.cc_language,
+            cc_toolchain = toolchains.cc,
+            language = toolchains.swift.cc_language,
             requested_features = all_requestable_features,
             unsupported_features = all_unsupported_features + ["parse_headers"],
         )
