@@ -36,7 +36,7 @@ def ensure_swiftmodule_is_embedded(
         feature_configuration,
         label,
         swiftmodule,
-        swift_toolchain,
+        toolchains,
         toolchain_type):
     """Ensures that a `.swiftmodule` file is embedded in a library or binary.
 
@@ -49,7 +49,8 @@ def ensure_swiftmodule_is_embedded(
         feature_configuration: The Swift feature configuration.
         label: The `Label` of the target being built.
         swiftmodule: The `.swiftmodule` file to be wrapped.
-        swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
+        toolchains: The struct containing the Swift and C++ toolchain providers,
+            as returned by `swift_common.find_all_toolchains()`.
         toolchain_type: The toolchain type of the `swift_toolchain` which is
             used for the proper selection of the execution platform inside
             `run_toolchain_action`.
@@ -61,7 +62,7 @@ def ensure_swiftmodule_is_embedded(
     """
     if is_action_enabled(
         action_name = SWIFT_ACTION_MODULEWRAP,
-        swift_toolchain = swift_toolchain,
+        toolchains = toolchains,
     ):
         # For ELF-format binaries, we need to invoke a Swift modulewrap action
         # to wrap the .swiftmodule file in a .o file that gets propagated to the
@@ -83,7 +84,7 @@ def ensure_swiftmodule_is_embedded(
             progress_message = (
                 "Wrapping {} for debugging".format(swiftmodule.short_path)
             ),
-            swift_toolchain = swift_toolchain,
+            swift_toolchain = toolchains.swift,
             toolchain_type = toolchain_type,
         )
 

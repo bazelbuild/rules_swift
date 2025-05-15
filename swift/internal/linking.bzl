@@ -83,7 +83,7 @@ def _create_embedded_debugging_linking_context(
         feature_configuration,
         label,
         module_context,
-        swift_toolchain,
+        toolchains,
         toolchain_type):
     """Creates a linking context that embeds a .swiftmodule for debugging.
 
@@ -99,7 +99,8 @@ def _create_embedded_debugging_linking_context(
             containing information about the Swift module that was compiled.
             Typically, this is the first tuple element in the value returned by
             `swift_common.compile`.
-        swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
+        toolchains: The struct containing the Swift and C++ toolchain providers,
+            as returned by `swift_common.find_all_toolchains()`.
         toolchain_type: The toolchain type of the `swift_toolchain` which is
             used for the proper selection of the execution platform inside
             `run_toolchain_action`.
@@ -121,7 +122,7 @@ def _create_embedded_debugging_linking_context(
                 feature_configuration = feature_configuration,
                 label = label,
                 swiftmodule = module_context.swift.swiftmodule,
-                swift_toolchain = swift_toolchain,
+                toolchains = toolchains,
                 toolchain_type = toolchain_type,
             ),
         ]
@@ -216,7 +217,7 @@ def create_linking_context_from_compilation_outputs(
         feature_configuration = feature_configuration,
         label = label,
         module_context = module_context,
-        swift_toolchain = toolchains.swift,
+        toolchains = toolchains,
         toolchain_type = toolchain_type,
     )
     if debugging_linking_context:
@@ -333,7 +334,7 @@ def register_link_binary_action(
             feature_configuration = feature_configuration,
             label = label,
             module_context = module_context,
-            swift_toolchain = toolchains.swift,
+            toolchains = toolchains,
             toolchain_type = toolchain_type,
         )
         if debugging_linking_context:
