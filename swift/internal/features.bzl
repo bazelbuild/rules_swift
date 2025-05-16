@@ -55,43 +55,9 @@ def are_all_features_enabled(feature_configuration, feature_names):
             return False
     return True
 
-# TODO: b/415809235 - Remove this function and its callers once all build API
-# clients have been migrated to `toolchains`.
-def gather_toolchains(swift_toolchain = None, toolchains = None):
-    """Returns a `struct` containing the Swift and C++ toolchains.
-
-    This function exists solely as a migration helper for the internal build API
-    logic, which needs to temporarily handle being passed _either_ the new
-    `toolchains` struct or the old `swift_toolchain` provider. Once the
-    migration is complete, this function can be removed.
-
-    Args:
-        swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain
-            being used to build.
-        toolchains: The toolchains that are used to determine which features are
-            enabled by default or unsupported.
-
-    Returns:
-        A `struct` containing the Swift and C++ toolchain providers. If
-        `toolchains` is provided, it will be returned directly. Otherwise, a
-        `struct` containing the `swift_toolchain` provider will be returned and
-        its nested C++ toolchain provider will be returned in the `cc` field.
-    """
-    if toolchains:
-        return toolchains
-
-    if swift_toolchain:
-        return struct(
-            cc = swift_toolchain.cc_toolchain_info,
-            swift = swift_toolchain,
-        )
-
-    fail("either `toolchains` or `swift_toolchain` must be provided")
-
 def configure_features(
         ctx,
-        swift_toolchain = None,
-        toolchains = None,
+        toolchains,
         *,
         requested_features = [],
         unsupported_features = []):
@@ -105,11 +71,6 @@ def configure_features(
 
     Args:
         ctx: The rule context.
-        swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain
-            being used to build. This is used to determine features that are
-            enabled by default or unsupported by the toolchain, and the C++
-            toolchain associated with the Swift toolchain is used to create the
-            underlying C++ feature configuration.
         toolchains: The toolchains that are used to determine which features are
             enabled by default or unsupported. This is typically obtained using
             `swift_common.find_all_toolchains()`.
@@ -125,10 +86,6 @@ def configure_features(
         passed to other `swift_common` functions. Note that the structure of
         this value should otherwise not be relied on or inspected directly.
     """
-    toolchains = gather_toolchains(
-        swift_toolchain = swift_toolchain,
-        toolchains = toolchains,
-    )
 
     # Always disable this feature so that any `cc_common` APIs called by
     # `swift_common` APIs don't cause certain actions to be created (for

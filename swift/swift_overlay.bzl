@@ -31,7 +31,7 @@ load(
 )
 load(
     "@build_bazel_rules_swift//swift/internal:toolchain_utils.bzl",
-    "use_swift_toolchain",
+    "use_all_toolchains",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:utils.bzl",
@@ -209,7 +209,7 @@ almost always an anti-pattern.
         # toolchain, ensuring that they don't get built for mismatched
         # platforms.
         "swift_plugins": exec_group(
-            toolchains = use_swift_toolchain(),
+            toolchains = use_all_toolchains(),
         ),
     },
     fragments = ["cpp"],

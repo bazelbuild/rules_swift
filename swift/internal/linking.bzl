@@ -23,12 +23,7 @@ load(
     "ensure_swiftmodule_is_embedded",
     "should_embed_swiftmodule_for_debugging",
 )
-load(
-    ":features.bzl",
-    "configure_features",
-    "gather_toolchains",
-    "get_cc_feature_configuration",
-)
+load(":features.bzl", "configure_features", "get_cc_feature_configuration")
 load(":toolchain_utils.bzl", "SWIFT_TOOLCHAIN_TYPE")
 load(":utils.bzl", "get_swift_implicit_deps")
 
@@ -143,8 +138,7 @@ def create_linking_context_from_compilation_outputs(
         linking_contexts = [],
         module_context,
         name = None,
-        swift_toolchain = None,
-        toolchains = None,
+        toolchains,
         toolchain_type = SWIFT_TOOLCHAIN_TYPE,
         user_link_flags = []):
     """Creates a linking context from the outputs of a Swift compilation.
@@ -183,7 +177,6 @@ def create_linking_context_from_compilation_outputs(
             containing information about the Swift module that was compiled.
             Typically, this is the first tuple element in the value returned by
             `swift_common.compile`.
-        swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
         toolchains: The struct containing the Swift and C++ toolchain providers,
             as returned by `swift_common.find_all_toolchains()`.
         toolchain_type: The toolchain type of the `swift_toolchain` which is
@@ -198,11 +191,6 @@ def create_linking_context_from_compilation_outputs(
         context to be propagated by the caller's `CcInfo` provider and the
         artifact representing the library that was linked, respectively.
     """
-    toolchains = gather_toolchains(
-        swift_toolchain = swift_toolchain,
-        toolchains = toolchains,
-    )
-
     _, implicit_cc_infos = get_swift_implicit_deps(
         feature_configuration = feature_configuration,
         swift_toolchain = toolchains.swift,

@@ -19,7 +19,7 @@ load(
     "@build_bazel_rules_swift//swift/toolchains/config:action_config.bzl",
     "ConfigResultInfo",
 )
-load(":features.bzl", "are_all_features_enabled", "gather_toolchains")
+load(":features.bzl", "are_all_features_enabled")
 
 visibility([
     "@build_bazel_rules_swift//swift/...",
@@ -116,7 +116,7 @@ def _apply_action_configs(
         transitive_inputs = transitive_inputs,
     )
 
-def is_action_enabled(action_name, swift_toolchain = None, toolchains = None):
+def is_action_enabled(action_name, toolchains):
     """Returns True if the given action is enabled in the Swift toolchain.
 
     This function should be used before invoking APIs that invoke actions that
@@ -128,17 +128,12 @@ def is_action_enabled(action_name, swift_toolchain = None, toolchains = None):
     Args:
         action_name: The name of the action, which corresponds to the action's
             mnemonic (for example, `SwiftSynthesizeInterface`).
-        swift_toolchain: The Swift toolchain being used to build.
         toolchains: The struct containing the Swift and C++ toolchain providers,
             as returned by `swift_common.find_all_toolchains()`.
 
     Returns:
         True if the action is enabled, or False if it is not.
     """
-    toolchains = gather_toolchains(
-        swift_toolchain = swift_toolchain,
-        toolchains = toolchains,
-    )
     tool_config = toolchains.swift.tool_configs.get(action_name)
     return bool(tool_config)
 

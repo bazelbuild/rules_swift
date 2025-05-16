@@ -262,10 +262,6 @@ otherwise None.
 The `language` that should be passed to `cc_common` APIs that take it as an
 argument.
 """,
-        "cc_toolchain_info": """\
-The `cc_common.CcToolchainInfo` provider from the Bazel C++ toolchain that this
-Swift toolchain depends on.
-""",
         "clang_implicit_deps_providers": """\
 A `struct` with the following fields, which represent providers from targets
 that should be added as implicit dependencies of any precompiled explicit
