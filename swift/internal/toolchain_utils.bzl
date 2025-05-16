@@ -84,61 +84,6 @@ def find_all_toolchains(
         swift = swift_toolchain,
     )
 
-def get_swift_toolchain(
-        ctx,
-        *,
-        exec_group = None,
-        mandatory = True,
-        toolchain_type = SWIFT_TOOLCHAIN_TYPE,
-        attr = "_toolchain"):
-    """Gets the Swift toolchain associated with the rule or aspect.
-
-    > WARNING: This function is deprecated and will be removed soon. Use
-    > `swift_common.find_all_toolchains()` instead to request the Swift and the
-    > C++ toolchains.
-
-    Args:
-        ctx: The rule or aspect context.
-        exec_group: The name of the execution group that should contain the
-            toolchain. If this is provided and the toolchain is not declared in
-            that execution group, it will be looked up from `ctx` as a fallback
-            instead. If this argument is `None` (the default), then the
-            toolchain will only be looked up from `ctx.`
-        mandatory: If `False`, this function will return `None` instead of
-            failing if no toolchain is found. Defaults to `True`.
-        toolchain_type: The toolchain type to use. Defaults to the standard
-            Swift toolchain type.
-        attr: The name of the attribute on the calling rule or aspect that
-            should be used to retrieve the toolchain if it is not provided by
-            the `toolchains` argument of the rule/aspect. Note that this is only
-            supported for legacy/migration purposes and will be removed once
-            migration to toolchains is complete.
-
-    Returns:
-        A `SwiftToolchainInfo` provider, or `None` if the toolchain was not
-        found and not required.
-    """
-    if exec_group:
-        group = ctx.exec_groups[exec_group]
-        if group and toolchain_type in group.toolchains:
-            return group.toolchains[toolchain_type].swift_toolchain
-
-    if toolchain_type in ctx.toolchains and ctx.toolchains[toolchain_type]:
-        return ctx.toolchains[toolchain_type].swift_toolchain
-
-    # TODO(b/205018581): Delete this code path when migration to the new
-    # toolchain APIs is complete.
-    toolchain_target = getattr(ctx.attr, attr, None)
-    if toolchain_target and platform_common.ToolchainInfo in toolchain_target:
-        return toolchain_target[platform_common.ToolchainInfo].swift_toolchain
-
-    if mandatory:
-        fail("To use `swift_common.get_toolchain`, you must declare the " +
-             "toolchain in your rule using " +
-             "`toolchains = swift_common.use_toolchain()`.")
-
-    return None
-
 def use_all_toolchains(
         *,
         mandatory = True,
@@ -167,41 +112,7 @@ def use_all_toolchains(
         [toolchain types](https://bazel.build/rules/lib/builtins/toolchain_type.html)
         that should be passed to `rule()`, `aspect()`, or `exec_group()`.
     """
-    return use_cc_toolchain() + use_swift_toolchain(
-        mandatory = mandatory,
-        toolchain_type = toolchain_type,
-    )
-
-def use_swift_toolchain(
-        *,
-        mandatory = True,
-        toolchain_type = SWIFT_TOOLCHAIN_TYPE):
-    """Returns a list of toolchain types needed to use the Swift toolchain.
-
-    > WARNING: This function is deprecated and will be removed soon. Use
-    > `swift_common.find_all_toolchains()` instead to request the Swift and the
-    > C++ toolchains.
-
-    This function returns a list so that it can be easily composed with other
-    toolchains if necessary. For example, a rule with multiple toolchain
-    dependencies could write:
-
-    ```
-    toolchains = swift_common.use_toolchain() + [other toolchains...]
-    ```
-
-    Args:
-        mandatory: Whether or not it should be an error if the toolchain cannot
-            be resolved. Defaults to True.
-        toolchain_type: The toolchain type to use. Defaults to the standard
-            Swift toolchain type.
-
-    Returns:
-        A list of
-        [toolchain types](https://bazel.build/rules/lib/builtins/toolchain_type.html)
-        that should be passed to `rule()`, `aspect()`, or `exec_group()`.
-    """
-    return [
+    return use_cc_toolchain() + [
         config_common.toolchain_type(
             toolchain_type,
             mandatory = mandatory,
