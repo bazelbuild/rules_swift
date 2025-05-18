@@ -666,6 +666,7 @@ def _xcode_swift_toolchain_impl(ctx):
         cpp_fragment = cpp_fragment,
     ) + wmo_features_from_swiftcopts(swiftcopts = swiftcopts)
     requested_features.extend(ctx.features)
+    requested_features.extend(ctx.attr.default_enabled_features)
     requested_features.extend(default_features_for_toolchain(
         target_triple = target_triple,
     ))
@@ -686,6 +687,11 @@ def _xcode_swift_toolchain_impl(ctx):
 
     if _is_xcode_at_least_version(xcode_config, "16.0"):
         requested_features.append(SWIFT_FEATURE__SUPPORTS_V6)
+
+    unsupported_features = ctx.disabled_features + [
+        SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD,
+    ]
+    unsupported_features.extend(ctx.attr.default_unsupported_features)
 
     env = _xcode_env(target_triple = target_triple, xcode_config = xcode_config)
 
@@ -792,9 +798,7 @@ def _xcode_swift_toolchain_impl(ctx):
             test_linking_contexts = [test_linking_context],
         ),
         tool_configs = all_tool_configs,
-        unsupported_features = ctx.disabled_features + [
-            SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD,
-        ],
+        unsupported_features = unsupported_features,
     )
 
     return [
@@ -836,6 +840,17 @@ and bystanding module are both already declared as dependencies.
 """,
                 mandatory = False,
                 providers = [[SwiftCrossImportOverlayInfo]],
+            ),
+            "default_enabled_features": attr.string_list(
+                doc = """\
+A list of features that are enabled by default for all targets build with this
+toolchain.
+""",
+            ),
+            "default_unsupported_features": attr.string_list(
+                doc = """\
+A list of features that are unsupported by this toolchain.
+""",
             ),
             "feature_allowlists": attr.label_list(
                 doc = """\
