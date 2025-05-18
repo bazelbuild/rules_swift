@@ -222,6 +222,13 @@ def _swift_binary_impl(ctx):
                 for module_context in module_contexts
             ],
         ),
+        RunEnvironmentInfo(
+            environment = expand_locations(
+                ctx,
+                ctx.attr.env,
+                ctx.attr.swiftc_inputs,
+            ),
+        ),
     ]
 
     # Only create a linking context and propagate `SwiftBinaryInfo` if this rule

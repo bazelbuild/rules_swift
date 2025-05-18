@@ -57,6 +57,8 @@ def normalize_collection(object):
     """
     if types.is_depset(object):
         return object.to_list()
+    elif types.is_dict(object):
+        return ["{}={}".format(k, v) for k, v in object.items()]
     else:
         return object
 
@@ -151,5 +153,89 @@ def compare_expected_files(env, access_description, expected, actual):
                 f.path if type(f) == "File" else repr(f)
                 for f in actual
             ]),
+        ),
+    )
+
+def compare_expected_strings(env, access_description, expected, actual):
+    """Implements the `expected_strings` comparison.
+
+    This compares a list or dictionary of strings retrieved from a provider
+    field against a list of expected strings, as well as excluded strings and a
+    wildcard. See the documentation of the `expected_values` attribute on the
+    rule definition below for specifics.
+
+    Args:
+        env: The analysis test environment.
+        access_description: A target/provider/field access description string
+            printed in assertion failure messages.
+        expected: The list of expected string inclusions/exclusions.
+        actual: The collection of strings obtained from the provider.
+    """
+    if not (types.is_list(actual) or types.is_dict(actual)):
+        unittest.fail(
+            env,
+            ("Expected '{}' to be a list or dict of strings, " +
+             "but got a {}: {}.").format(
+                access_description,
+                type(actual),
+                _prettify(actual),
+            ),
+        )
+        return
+
+    actual = normalize_collection(actual)
+    remaining = list(actual)
+
+    expected_is_subset = "*" in expected
+    expected_include = [
+        s
+        for s in expected
+        if not s.startswith("-") and s != "*"
+    ]
+    expected_exclude = [s[1:] for s in expected if s.startswith("-")]
+
+    # For every expected string, pick off the first actual that we find that is
+    # equal to it.
+    failed = False
+    for current in expected_include:
+        if not remaining:
+            # It's a failure if we are still expecting strings but there are no
+            # more actual strings.
+            failed = True
+            break
+
+        found_expected_string = False
+        for i in range(len(remaining)):
+            actual_string = remaining[i]
+            if actual_string == current:
+                found_expected_string = True
+                remaining.pop(i)
+                break
+
+        # It's a failure if we never found a string we expected.
+        if not found_expected_string:
+            failed = True
+            break
+
+    # For every string expected to *not* be present, check the list of remaining
+    # strings and fail if we find a match.
+    for current in expected_exclude:
+        for r in remaining:
+            if r == current:
+                failed = True
+                break
+
+    # If we found all the expected strings, the remaining list should be empty.
+    # Fail if the list is not empty and we're not looking for a subset.
+    if not expected_is_subset and remaining:
+        failed = True
+
+    asserts.false(
+        env,
+        failed,
+        "Expected '{}' to match {}, but got {}.".format(
+            access_description,
+            _prettify(expected),
+            _prettify([repr(v) for v in actual]),
         ),
     )
