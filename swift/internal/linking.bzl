@@ -35,6 +35,7 @@ load(
     "get_cc_feature_configuration",
     "is_feature_enabled",
 )
+load(":utils.bzl", "get_swift_implicit_deps")
 
 def configure_features_for_binary(
         *,
@@ -244,9 +245,13 @@ def create_linking_context_from_compilation_outputs(
         context to be propagated by the caller's `CcInfo` provider and the
         artifact representing the library that was linked, respectively.
     """
+    _, implicit_cc_infos = get_swift_implicit_deps(
+        feature_configuration = feature_configuration,
+        swift_toolchain = swift_toolchain,
+    )
     extra_linking_contexts = [
         cc_info.linking_context
-        for cc_info in swift_toolchain.implicit_deps_providers.cc_infos
+        for cc_info in implicit_cc_infos
     ]
 
     debugging_linking_context = _create_embedded_debugging_linking_context(
@@ -481,9 +486,13 @@ def register_link_binary_action(
 
     # Collect linking contexts from any of the toolchain's implicit
     # dependencies.
+    _, implicit_cc_infos = get_swift_implicit_deps(
+        feature_configuration = feature_configuration,
+        swift_toolchain = swift_toolchain,
+    )
     linking_contexts.extend([
         cc_info.linking_context
-        for cc_info in swift_toolchain.implicit_deps_providers.cc_infos
+        for cc_info in implicit_cc_infos
     ])
 
     return cc_common.link(

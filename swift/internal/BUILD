@@ -177,6 +177,7 @@ bzl_library(
         ":developer_dirs",
         ":feature_names",
         ":features",
+        ":utils",
         "//swift:providers",
     ],
 )
