@@ -487,6 +487,7 @@ def _swift_test_impl(ctx):
     )
 
     test_environment = dicts.add(
+        ctx.attr.env,
         swift_toolchain.test_configuration.env,
         {"TEST_BINARIES_FOR_LLVM_COV": linking_outputs.executable.short_path},
         expanded_env.get_expanded_env(ctx, {}),
@@ -528,7 +529,14 @@ def _swift_test_impl(ctx):
         testing.ExecutionInfo(
             swift_toolchain.test_configuration.execution_requirements,
         ),
-        testing.TestEnvironment(test_environment),
+        RunEnvironmentInfo(
+            environment = expand_locations(
+                ctx,
+                test_environment,
+                ctx.attr.swiftc_inputs,
+            ),
+            inherited_environment = ctx.attr.env_inherit,
+        ),
     ]
 
 swift_test = rule(
@@ -564,6 +572,12 @@ a zero exit code for success or a non-zero exit code for failure.
                 doc = """
                 Dictionary of environment variables that should be set during the test execution.
                 """,
+            ),
+            "env_inherit": attr.string_list(
+                doc = """\
+Specifies additional environment variables to inherit from the external
+environment when the test is executed by `bazel test`.
+""",
             ),
             "_apple_coverage_support": attr.label(
                 cfg = "exec",
