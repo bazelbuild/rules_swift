@@ -1486,28 +1486,12 @@ def _c_layering_check_configurator(prerequisites, args):
         args.add("-Xcc", "-fmodules-strict-decluse")
     return None
 
-def _clang_module_strict_includes(module_context):
-    """Returns the strict Clang include paths for a module context."""
-    if not module_context.clang:
-        return None
-    strict_includes = module_context.clang.strict_includes
-    if not strict_includes:
-        return None
-    return strict_includes.to_list()
-
 def _clang_search_paths_configurator(prerequisites, args):
     """Adds Clang search paths to the command line."""
     args.add_all(
         prerequisites.cc_compilation_context.includes,
         before_each = "-Xcc",
         format_each = "-I%s",
-    )
-    args.add_all(
-        prerequisites.transitive_modules,
-        before_each = "-Xcc",
-        format_each = "-I%s",
-        map_each = _clang_module_strict_includes,
-        uniquify = True,
     )
 
     # Add Clang search paths for the workspace root and Bazel output roots. The
