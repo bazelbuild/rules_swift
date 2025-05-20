@@ -161,10 +161,11 @@ bzl_library(
     srcs = ["swift_import.bzl"],
     deps = [
         ":providers",
+        ":swift_clang_module_aspect",
         "//swift/internal:attrs",
         "//swift/internal:compiling",
         "//swift/internal:features",
-        "//swift/internal:linking",
+        "//swift/internal:providers",
         "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
         "@bazel_skylib//lib:dicts",

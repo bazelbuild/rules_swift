@@ -71,6 +71,8 @@ load(
     ":utils.bzl",
     "compact",
     "compilation_context_for_explicit_module_compilation",
+    "get_clang_implicit_deps",
+    "get_swift_implicit_deps",
     "merge_compilation_contexts",
     "owner_relative_path",
     "struct_fields",
@@ -182,16 +184,18 @@ def compile_module_interface(
     """
     swiftmodule_file = actions.declare_file("{}.swiftmodule".format(module_name))
 
+    implicit_swift_infos, implicit_cc_infos = get_swift_implicit_deps(
+        feature_configuration = feature_configuration,
+        swift_toolchain = swift_toolchain,
+    )
     merged_compilation_context = merge_compilation_contexts(
         transitive_compilation_contexts = compilation_contexts + [
             cc_info.compilation_context
-            for cc_info in swift_toolchain.implicit_deps_providers.cc_infos
+            for cc_info in implicit_cc_infos
         ],
     )
     merged_swift_info = SwiftInfo(
-        swift_infos = (
-            swift_infos + swift_toolchain.implicit_deps_providers.swift_infos
-        ),
+        swift_infos = swift_infos + implicit_swift_infos,
     )
 
     # Flattening this `depset` is necessary because we need to extract the
@@ -461,10 +465,12 @@ def compile(
         user_swift_infos = swift_infos + private_swift_infos,
     )
 
+    implicit_swift_infos, implicit_cc_infos = get_swift_implicit_deps(
+        feature_configuration = feature_configuration,
+        swift_toolchain = swift_toolchain,
+    )
     all_swift_infos = (
-        swift_infos_to_propagate +
-        private_swift_infos +
-        swift_toolchain.implicit_deps_providers.swift_infos
+        swift_infos_to_propagate + private_swift_infos + implicit_swift_infos
     )
     merged_swift_info = SwiftInfo(swift_infos = all_swift_infos)
 
@@ -542,7 +548,7 @@ def compile(
     ]
     merged_cc_info = cc_common.merge_cc_infos(
         cc_infos = cc_infos + private_cc_infos +
-                   swift_toolchain.implicit_deps_providers.cc_infos,
+                   implicit_cc_infos,
     )
 
     transitive_swiftmodules = []
@@ -932,18 +938,19 @@ def _precompile_clang_module(
     )
 
     if not is_swift_generated_header:
-        implicit_swift_infos = (
-            swift_toolchain.clang_implicit_deps_providers.swift_infos
+        implicit_swift_infos, implicit_cc_infos = get_clang_implicit_deps(
+            feature_configuration = feature_configuration,
+            swift_toolchain = swift_toolchain,
         )
         cc_compilation_context = merge_compilation_contexts(
             direct_compilation_contexts = [cc_compilation_context],
             transitive_compilation_contexts = [
                 cc_info.compilation_context
-                for cc_info in swift_toolchain.clang_implicit_deps_providers.cc_infos
+                for cc_info in implicit_cc_infos
             ],
         )
     else:
-        implicit_swift_infos = []
+        implicit_swift_infos, _ = [], []
 
     if not is_swift_generated_header and implicit_swift_infos:
         swift_infos = list(swift_infos)

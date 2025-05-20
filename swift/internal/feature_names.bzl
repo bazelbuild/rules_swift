@@ -38,6 +38,11 @@ SWIFT_FEATURE_OPT = "swift.opt"
 # Swift 6 features even before switching to a Swift 6 compiler.
 SWIFT_FEATURE_ENABLE_V6 = "swift.enable_v6"
 
+# If enabled, the toolchain's implicit dependencies will not be used when
+# compiling Swift or Clang modules. This should only be used when building the
+# toolchain itself.
+SWIFT_FEATURE_NO_IMPLICIT_DEPS = "swift.no_implicit_deps"
+
 # If True, transitive C headers will be always be passed as inputs to Swift
 # compilation actions, even when building with explicit modules.
 SWIFT_FEATURE_HEADERS_ALWAYS_ACTION_INPUTS = "swift.headers_always_action_inputs"
