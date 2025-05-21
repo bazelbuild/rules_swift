@@ -187,8 +187,10 @@ void PosixSpawnIORedirector::ConsumeAllSubprocessOutput(
 
 absl::flat_hash_map<std::string, std::string> GetCurrentEnvironment() {
   absl::flat_hash_map<std::string, std::string> result;
-  char **envp = environ;
-  while (*envp++ != nullptr) {
+  if (environ == nullptr) {
+    return result;
+  }
+  for (char **envp = environ; *envp != nullptr; ++envp) {
     std::pair<absl::string_view, absl::string_view> key_value =
         absl::StrSplit(*envp, absl::MaxSplits('=', 1));
     result[key_value.first] = std::string(key_value.second);
