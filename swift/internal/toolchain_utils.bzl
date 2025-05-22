@@ -21,6 +21,7 @@ def get_swift_toolchain(
         *,
         exec_group = None,
         mandatory = True,
+        toolchain_type = SWIFT_TOOLCHAIN_TYPE,
         attr = "_toolchain"):
     """Gets the Swift toolchain associated with the rule or aspect.
 
@@ -33,6 +34,8 @@ def get_swift_toolchain(
             toolchain will only be looked up from `ctx.`
         mandatory: If `False`, this function will return `None` instead of
             failing if no toolchain is found. Defaults to `True`.
+        toolchain_type: The toolchain type to use. Defaults to the standard
+            Swift toolchain type.
         attr: The name of the attribute on the calling rule or aspect that
             should be used to retrieve the toolchain if it is not provided by
             the `toolchains` argument of the rule/aspect. Note that this is only
@@ -45,11 +48,11 @@ def get_swift_toolchain(
     """
     if exec_group:
         group = ctx.exec_groups[exec_group]
-        if group and SWIFT_TOOLCHAIN_TYPE in group.toolchains:
-            return group.toolchains[SWIFT_TOOLCHAIN_TYPE].swift_toolchain
+        if group and toolchain_type in group.toolchains:
+            return group.toolchains[toolchain_type].swift_toolchain
 
-    if SWIFT_TOOLCHAIN_TYPE in ctx.toolchains:
-        return ctx.toolchains[SWIFT_TOOLCHAIN_TYPE].swift_toolchain
+    if toolchain_type in ctx.toolchains:
+        return ctx.toolchains[toolchain_type].swift_toolchain
 
     # TODO(b/205018581): Delete this code path when migration to the new
     # toolchain APIs is complete.
@@ -64,7 +67,10 @@ def get_swift_toolchain(
 
     return None
 
-def use_swift_toolchain(*, mandatory = True):
+def use_swift_toolchain(
+        *,
+        mandatory = True,
+        toolchain_type = SWIFT_TOOLCHAIN_TYPE):
     """Returns a list of toolchain types needed to use the Swift toolchain.
 
     This function returns a list so that it can be easily composed with other
@@ -78,6 +84,8 @@ def use_swift_toolchain(*, mandatory = True):
     Args:
         mandatory: Whether or not it should be an error if the toolchain cannot
             be resolved. Defaults to True.
+        toolchain_type: The toolchain type to use. Defaults to the standard
+            Swift toolchain type.
 
     Returns:
         A list of
@@ -86,7 +94,7 @@ def use_swift_toolchain(*, mandatory = True):
     """
     return [
         config_common.toolchain_type(
-            SWIFT_TOOLCHAIN_TYPE,
+            toolchain_type,
             mandatory = mandatory,
         ),
     ]

@@ -44,6 +44,7 @@ load(
     "create_swift_module_context",
     "create_swift_module_inputs",
 )
+load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 
 def _swift_import_impl(ctx):
     archives = ctx.files.archives
@@ -146,7 +147,9 @@ def _swift_import_impl(ctx):
 
 swift_import = rule(
     attrs = dicts.add(
-        swift_common_rule_attrs(),
+        swift_common_rule_attrs(
+            additional_deps_aspects = [swift_clang_module_aspect],
+        ),
         {
             "archives": attr.label_list(
                 allow_empty = True,
@@ -192,8 +195,6 @@ May not be specified if `swiftinterface` is specified.
 """,
                 mandatory = False,
             ),
-            # TODO(b/301253335): Enable AEGs and add `toolchain` param once this rule starts using toolchain resolution.
-            "_use_auto_exec_groups": attr.bool(default = False),
         },
     ),
     doc = """\
