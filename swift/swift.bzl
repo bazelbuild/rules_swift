@@ -33,6 +33,7 @@ load(
     _SwiftProtoCompilerInfo = "SwiftProtoCompilerInfo",
     _SwiftProtoInfo = "SwiftProtoInfo",
     _SwiftSymbolGraphInfo = "SwiftSymbolGraphInfo",
+    _SwiftSynthesizedInterfaceInfo = "SwiftSynthesizedInterfaceInfo",
     _SwiftToolchainInfo = "SwiftToolchainInfo",
 )
 load(":swift_binary.bzl", _swift_binary = "swift_binary")
@@ -61,6 +62,10 @@ load(
     ":swift_symbol_graph_aspect.bzl",
     _swift_symbol_graph_aspect = "swift_symbol_graph_aspect",
 )
+load(
+    ":swift_synthesize_interface_aspect.bzl",
+    _swift_synthesize_interface_aspect = "swift_synthesize_interface_aspect",
+)
 load(":swift_test.bzl", _swift_test = "swift_test")
 
 # Re-export providers.
@@ -68,6 +73,7 @@ SwiftInfo = _SwiftInfo
 SwiftProtoCompilerInfo = _SwiftProtoCompilerInfo
 SwiftProtoInfo = _SwiftProtoInfo
 SwiftSymbolGraphInfo = _SwiftSymbolGraphInfo
+SwiftSynthesizedInterfaceInfo = _SwiftSynthesizedInterfaceInfo
 SwiftToolchainInfo = _SwiftToolchainInfo
 
 # Re-export public API module.
@@ -89,3 +95,4 @@ swift_test = _swift_test
 # Re-export public aspects.
 swift_clang_module_aspect = _swift_clang_module_aspect
 swift_symbol_graph_aspect = _swift_symbol_graph_aspect
+swift_synthesize_interface_aspect = _swift_synthesize_interface_aspect

@@ -46,6 +46,9 @@ SWIFT_ACTION_PRECOMPILE_C_MODULE = "SwiftPrecompileCModule"
 # other tooling.
 SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT = "SwiftSymbolGraphExtract"
 
+# Synthesizes the Swift interface from a compiled module.
+SWIFT_ACTION_SYNTHESIZE_INTERFACE = "SwiftSynthesizeInterface"
+
 def all_action_names():
     """A convenience function to return all actions defined by this rule set."""
     return (
@@ -57,4 +60,5 @@ def all_action_names():
         SWIFT_ACTION_MODULEWRAP,
         SWIFT_ACTION_PRECOMPILE_C_MODULE,
         SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
+        SWIFT_ACTION_SYNTHESIZE_INTERFACE,
     )

@@ -34,6 +34,10 @@ load(
     "is_feature_enabled",
 )
 load(
+    "//swift/internal:interface_synthesizing.bzl",
+    "synthesize_interface",
+)
+load(
     "//swift/internal:linking.bzl",
     "create_linking_context_from_compilation_outputs",
 )
@@ -60,5 +64,6 @@ swift_common = struct(
     get_toolchain = get_swift_toolchain,
     is_enabled = is_feature_enabled,
     precompile_clang_module = precompile_clang_module,
+    synthesize_interface = synthesize_interface,
     use_toolchain = use_swift_toolchain,
 )

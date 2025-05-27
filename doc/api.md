@@ -517,6 +517,31 @@ A struct containing the precompiled module and optional indexstore directory,
   or `None` if the toolchain or target does not support precompiled modules.
 
 
+<a id="swift_common.synthesize_interface"></a>
+
+## swift_common.synthesize_interface
+
+<pre>
+swift_common.synthesize_interface(<a href="#swift_common.synthesize_interface-actions">actions</a>, <a href="#swift_common.synthesize_interface-compilation_contexts">compilation_contexts</a>, <a href="#swift_common.synthesize_interface-feature_configuration">feature_configuration</a>, <a href="#swift_common.synthesize_interface-module_name">module_name</a>,
+                                  <a href="#swift_common.synthesize_interface-output_file">output_file</a>, <a href="#swift_common.synthesize_interface-swift_infos">swift_infos</a>, <a href="#swift_common.synthesize_interface-swift_toolchain">swift_toolchain</a>)
+</pre>
+
+Extracts the symbol graph from a Swift module.
+
+**PARAMETERS**
+
+
+| Name  | Description | Default Value |
+| :------------- | :------------- | :------------- |
+| <a id="swift_common.synthesize_interface-actions"></a>actions |  The object used to register actions.   |  none |
+| <a id="swift_common.synthesize_interface-compilation_contexts"></a>compilation_contexts |  A list of `CcCompilationContext`s that represent C/Objective-C requirements of the target being compiled, such as Swift-compatible preprocessor defines, header search paths, and so forth. These are typically retrieved from the `CcInfo` providers of a target's dependencies.   |  none |
+| <a id="swift_common.synthesize_interface-feature_configuration"></a>feature_configuration |  The Swift feature configuration.   |  none |
+| <a id="swift_common.synthesize_interface-module_name"></a>module_name |  The name of the module whose symbol graph should be extracted.   |  none |
+| <a id="swift_common.synthesize_interface-output_file"></a>output_file |  A `File` into which the synthesized interface will be written.   |  none |
+| <a id="swift_common.synthesize_interface-swift_infos"></a>swift_infos |  A list of `SwiftInfo` providers from dependencies of the target being compiled. This should include both propagated and non-propagated (implementation-only) dependencies.   |  none |
+| <a id="swift_common.synthesize_interface-swift_toolchain"></a>swift_toolchain |  The `SwiftToolchainInfo` provider of the toolchain.   |  none |
+
+
 <a id="swift_common.use_toolchain"></a>
 
 ## swift_common.use_toolchain

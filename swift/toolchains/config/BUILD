@@ -67,6 +67,15 @@ bzl_library(
 )
 
 bzl_library(
+    name = "synthesize_interface_config",
+    srcs = ["synthesize_interface_config.bzl"],
+    deps = [
+        ":action_config",
+        "//swift/internal:action_names",
+    ],
+)
+
+bzl_library(
     name = "tool_config",
     srcs = ["tool_config.bzl"],
     deps = [
