@@ -4,7 +4,7 @@ x_defaults:
   # it doesn't know about; so that is used to avoid repeating common subparts.
   mac_common: &mac_common
     platform: macos_arm64
-    xcode_version: "15.4"
+    xcode_version: "16.2"
     build_targets:
       - "//examples/..."
     test_targets:
