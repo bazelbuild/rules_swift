@@ -180,12 +180,22 @@ def compile_module_interface(
             `run_toolchain_action`.
 
     Returns:
-        A Swift module context (as returned by `create_swift_module_context`)
-        that contains the Swift (and potentially C/Objective-C) compilation
-        prerequisites of the compiled module. This should typically be
-        propagated by a `SwiftInfo` provider of the calling rule, and the
-        `CcCompilationContext` inside the Clang module substructure should be
-        propagated by the `CcInfo` provider of the calling rule.
+        A `struct` with the following fields:
+
+        *   `module_context`: A Swift module context (as returned by
+            `create_swift_module_context`) that contains the Swift (and
+            potentially C/Objective-C) compilation prerequisites of the compiled
+            module. This should typically be propagated by a `SwiftInfo`
+            provider of the calling rule, and the `CcCompilationContext` inside
+            the Clang module substructure should be propagated by the `CcInfo`
+            provider of the calling rule.
+
+        *   `supplemental_outputs`: A `struct` representing supplemental,
+            optional outputs. Its fields are:
+
+            *   `indexstore_directory`: A directory-type `File` that represents
+                the indexstore output files created when the feature
+                `swift.index_while_building` is enabled.
     """
     swiftmodule_file = actions.declare_file("{}.swiftmodule".format(module_name))
 
@@ -308,7 +318,13 @@ def compile_module_interface(
         ),
     )
 
-    return module_context
+    return struct(
+        module_context = module_context,
+        supplemental_outputs = struct(
+            # TODO: b/401305010 - Generate indexstore when requested.
+            indexstore_directory = None,
+        ),
+    )
 
 def compile(
         *,
