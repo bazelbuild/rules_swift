@@ -83,6 +83,18 @@ def _swift_info_init(
         direct_swift_infos = [],
         modules = [],
         swift_infos = []):
+    """Creates a `SwiftInfo` provider from the given arguments.
+
+    Args:
+        direct_swift_infos: A list of `SwiftInfo` providers from dependencies
+            whose direct modules should be treated as direct modules in the resulting
+            provider, in addition to their transitive modules being merged.
+        modules: A list of values (as returned by `create_swift_module_context()`)
+            that represent Clang and/or Swift module artifacts that are direct outputs
+            of the target being built.
+        swift_infos: A list of `SwiftInfo` providers from dependencies whose
+            transitive modules should be merged into the resulting provider.
+    """
     direct_modules = modules + [
         module
         for provider in direct_swift_infos

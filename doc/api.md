@@ -463,6 +463,36 @@ A `SwiftToolchainInfo` provider, or `None` if the toolchain was not
   found and not required.
 
 
+<a id="swift_common.is_action_enabled"></a>
+
+## swift_common.is_action_enabled
+
+<pre>
+swift_common.is_action_enabled(<a href="#swift_common.is_action_enabled-action_name">action_name</a>, <a href="#swift_common.is_action_enabled-swift_toolchain">swift_toolchain</a>)
+</pre>
+
+Returns True if the given action is enabled in the Swift toolchain.
+
+This function should be used before invoking APIs that invoke actions that
+might not be available depending on the version of the Swift toolchain. For
+example, `SwiftSynthesizeInterface` actions (created by calling
+`swift_common.synthesize_interface`) are only available starting from Swift
+6.1.
+
+
+**PARAMETERS**
+
+
+| Name  | Description | Default Value |
+| :------------- | :------------- | :------------- |
+| <a id="swift_common.is_action_enabled-action_name"></a>action_name |  The name of the action, which corresponds to the action's mnemonic (for example, `SwiftSynthesizeInterface`).   |  none |
+| <a id="swift_common.is_action_enabled-swift_toolchain"></a>swift_toolchain |  The Swift toolchain being used to build.   |  none |
+
+**RETURNS**
+
+True if the action is enabled, or False if it is not.
+
+
 <a id="swift_common.is_enabled"></a>
 
 ## swift_common.is_enabled
