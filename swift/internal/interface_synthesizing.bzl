@@ -17,6 +17,7 @@
 load("//swift:providers.bzl", "SwiftInfo")
 load(":action_names.bzl", "SWIFT_ACTION_SYNTHESIZE_INTERFACE")
 load(":actions.bzl", "run_toolchain_action")
+load(":toolchain_utils.bzl", "SWIFT_TOOLCHAIN_TYPE")
 load(":utils.bzl", "merge_compilation_contexts")
 
 def synthesize_interface(
@@ -27,7 +28,8 @@ def synthesize_interface(
         module_name,
         output_file,
         swift_infos,
-        swift_toolchain):
+        swift_toolchain,
+        toolchain_type = SWIFT_TOOLCHAIN_TYPE):
     """Extracts the symbol graph from a Swift module.
 
     Args:
@@ -46,6 +48,9 @@ def synthesize_interface(
             target being compiled. This should include both propagated and
             non-propagated (implementation-only) dependencies.
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
+        toolchain_type: The toolchain type of the `swift_toolchain` which is
+            used for the proper selection of the execution platform inside
+            `run_toolchain_action`.
     """
     merged_compilation_context = merge_compilation_contexts(
         transitive_compilation_contexts = compilation_contexts + [
@@ -92,4 +97,5 @@ def synthesize_interface(
             "Synthesizing Swift interface for {}".format(module_name)
         ),
         swift_toolchain = swift_toolchain,
+        toolchain_type = toolchain_type,
     )

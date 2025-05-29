@@ -169,6 +169,7 @@ bzl_library(
     deps = [
         ":action_names",
         ":actions",
+        ":toolchain_utils",
         ":utils",
         "//swift:providers",
     ],
@@ -189,6 +190,7 @@ bzl_library(
         ":developer_dirs",
         ":feature_names",
         ":features",
+        ":toolchain_utils",
         ":utils",
         "//swift:providers",
     ],
@@ -272,6 +274,7 @@ bzl_library(
     deps = [
         ":action_names",
         ":actions",
+        ":toolchain_utils",
         ":utils",
         "//swift:providers",
     ],
