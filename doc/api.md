@@ -13,8 +13,8 @@ module.
 ## create_swift_interop_info
 
 <pre>
-create_swift_interop_info(<a href="#create_swift_interop_info-exclude_headers">exclude_headers</a>, <a href="#create_swift_interop_info-module_map">module_map</a>, <a href="#create_swift_interop_info-module_name">module_name</a>, <a href="#create_swift_interop_info-requested_features">requested_features</a>, <a href="#create_swift_interop_info-suppressed">suppressed</a>,
-                          <a href="#create_swift_interop_info-swift_infos">swift_infos</a>, <a href="#create_swift_interop_info-unsupported_features">unsupported_features</a>)
+create_swift_interop_info(*, <a href="#create_swift_interop_info-exclude_headers">exclude_headers</a>, <a href="#create_swift_interop_info-module_map">module_map</a>, <a href="#create_swift_interop_info-module_name">module_name</a>, <a href="#create_swift_interop_info-requested_features">requested_features</a>,
+                          <a href="#create_swift_interop_info-suppressed">suppressed</a>, <a href="#create_swift_interop_info-swift_infos">swift_infos</a>, <a href="#create_swift_interop_info-unsupported_features">unsupported_features</a>)
 </pre>
 
 Returns a provider that lets a target expose C/Objective-C APIs to Swift.
@@ -74,7 +74,7 @@ A provider whose type/layout is an implementation detail and should not
 ## derive_swift_module_name
 
 <pre>
-derive_swift_module_name(<a href="#derive_swift_module_name-args">args</a>)
+derive_swift_module_name(<a href="#derive_swift_module_name-args">*args</a>)
 </pre>
 
 Returns a derived module name from the given build label.
@@ -164,7 +164,7 @@ A C++ `FeatureConfiguration` value (see
 ## swift_common.compile
 
 <pre>
-swift_common.compile(<a href="#swift_common.compile-actions">actions</a>, <a href="#swift_common.compile-additional_inputs">additional_inputs</a>, <a href="#swift_common.compile-cc_infos">cc_infos</a>, <a href="#swift_common.compile-copts">copts</a>, <a href="#swift_common.compile-defines">defines</a>, <a href="#swift_common.compile-exec_group">exec_group</a>,
+swift_common.compile(*, <a href="#swift_common.compile-actions">actions</a>, <a href="#swift_common.compile-additional_inputs">additional_inputs</a>, <a href="#swift_common.compile-cc_infos">cc_infos</a>, <a href="#swift_common.compile-copts">copts</a>, <a href="#swift_common.compile-defines">defines</a>, <a href="#swift_common.compile-exec_group">exec_group</a>,
                      <a href="#swift_common.compile-extra_swift_infos">extra_swift_infos</a>, <a href="#swift_common.compile-feature_configuration">feature_configuration</a>, <a href="#swift_common.compile-generated_header_name">generated_header_name</a>, <a href="#swift_common.compile-is_test">is_test</a>,
                      <a href="#swift_common.compile-include_dev_srch_paths">include_dev_srch_paths</a>, <a href="#swift_common.compile-module_name">module_name</a>, <a href="#swift_common.compile-package_name">package_name</a>, <a href="#swift_common.compile-plugins">plugins</a>, <a href="#swift_common.compile-private_cc_infos">private_cc_infos</a>,
                      <a href="#swift_common.compile-private_swift_infos">private_swift_infos</a>, <a href="#swift_common.compile-srcs">srcs</a>, <a href="#swift_common.compile-swift_infos">swift_infos</a>, <a href="#swift_common.compile-swift_toolchain">swift_toolchain</a>, <a href="#swift_common.compile-target_name">target_name</a>,
@@ -250,7 +250,7 @@ A `struct` with the following fields:
 ## swift_common.compile_module_interface
 
 <pre>
-swift_common.compile_module_interface(<a href="#swift_common.compile_module_interface-actions">actions</a>, <a href="#swift_common.compile_module_interface-clang_module">clang_module</a>, <a href="#swift_common.compile_module_interface-compilation_contexts">compilation_contexts</a>, <a href="#swift_common.compile_module_interface-copts">copts</a>,
+swift_common.compile_module_interface(*, <a href="#swift_common.compile_module_interface-actions">actions</a>, <a href="#swift_common.compile_module_interface-clang_module">clang_module</a>, <a href="#swift_common.compile_module_interface-compilation_contexts">compilation_contexts</a>, <a href="#swift_common.compile_module_interface-copts">copts</a>,
                                       <a href="#swift_common.compile_module_interface-exec_group">exec_group</a>, <a href="#swift_common.compile_module_interface-feature_configuration">feature_configuration</a>, <a href="#swift_common.compile_module_interface-is_framework">is_framework</a>, <a href="#swift_common.compile_module_interface-module_name">module_name</a>,
                                       <a href="#swift_common.compile_module_interface-swiftinterface_file">swiftinterface_file</a>, <a href="#swift_common.compile_module_interface-swift_infos">swift_infos</a>, <a href="#swift_common.compile_module_interface-swift_toolchain">swift_toolchain</a>, <a href="#swift_common.compile_module_interface-target_name">target_name</a>,
                                       <a href="#swift_common.compile_module_interface-toolchain_type">toolchain_type</a>)
@@ -292,7 +292,7 @@ A Swift module context (as returned by `create_swift_module_context`)
 ## swift_common.configure_features
 
 <pre>
-swift_common.configure_features(<a href="#swift_common.configure_features-ctx">ctx</a>, <a href="#swift_common.configure_features-swift_toolchain">swift_toolchain</a>, <a href="#swift_common.configure_features-requested_features">requested_features</a>, <a href="#swift_common.configure_features-unsupported_features">unsupported_features</a>)
+swift_common.configure_features(<a href="#swift_common.configure_features-ctx">ctx</a>, <a href="#swift_common.configure_features-swift_toolchain">swift_toolchain</a>, *, <a href="#swift_common.configure_features-requested_features">requested_features</a>, <a href="#swift_common.configure_features-unsupported_features">unsupported_features</a>)
 </pre>
 
 Creates a feature configuration to be passed to Swift build APIs.
@@ -359,8 +359,8 @@ A `struct` containing four fields:
 ## swift_common.create_linking_context_from_compilation_outputs
 
 <pre>
-swift_common.create_linking_context_from_compilation_outputs(<a href="#swift_common.create_linking_context_from_compilation_outputs-actions">actions</a>, <a href="#swift_common.create_linking_context_from_compilation_outputs-additional_inputs">additional_inputs</a>, <a href="#swift_common.create_linking_context_from_compilation_outputs-alwayslink">alwayslink</a>,
-                                                             <a href="#swift_common.create_linking_context_from_compilation_outputs-compilation_outputs">compilation_outputs</a>,
+swift_common.create_linking_context_from_compilation_outputs(*, <a href="#swift_common.create_linking_context_from_compilation_outputs-actions">actions</a>, <a href="#swift_common.create_linking_context_from_compilation_outputs-additional_inputs">additional_inputs</a>,
+                                                             <a href="#swift_common.create_linking_context_from_compilation_outputs-alwayslink">alwayslink</a>, <a href="#swift_common.create_linking_context_from_compilation_outputs-compilation_outputs">compilation_outputs</a>,
                                                              <a href="#swift_common.create_linking_context_from_compilation_outputs-feature_configuration">feature_configuration</a>, <a href="#swift_common.create_linking_context_from_compilation_outputs-is_test">is_test</a>,
                                                              <a href="#swift_common.create_linking_context_from_compilation_outputs-include_dev_srch_paths">include_dev_srch_paths</a>, <a href="#swift_common.create_linking_context_from_compilation_outputs-label">label</a>,
                                                              <a href="#swift_common.create_linking_context_from_compilation_outputs-linking_contexts">linking_contexts</a>, <a href="#swift_common.create_linking_context_from_compilation_outputs-module_context">module_context</a>, <a href="#swift_common.create_linking_context_from_compilation_outputs-name">name</a>,
@@ -410,7 +410,7 @@ A tuple of `(CcLinkingContext, CcLinkingOutputs)` containing the linking
 ## swift_common.extract_symbol_graph
 
 <pre>
-swift_common.extract_symbol_graph(<a href="#swift_common.extract_symbol_graph-actions">actions</a>, <a href="#swift_common.extract_symbol_graph-compilation_contexts">compilation_contexts</a>, <a href="#swift_common.extract_symbol_graph-emit_extension_block_symbols">emit_extension_block_symbols</a>,
+swift_common.extract_symbol_graph(*, <a href="#swift_common.extract_symbol_graph-actions">actions</a>, <a href="#swift_common.extract_symbol_graph-compilation_contexts">compilation_contexts</a>, <a href="#swift_common.extract_symbol_graph-emit_extension_block_symbols">emit_extension_block_symbols</a>,
                                   <a href="#swift_common.extract_symbol_graph-feature_configuration">feature_configuration</a>, <a href="#swift_common.extract_symbol_graph-include_dev_srch_paths">include_dev_srch_paths</a>, <a href="#swift_common.extract_symbol_graph-minimum_access_level">minimum_access_level</a>,
                                   <a href="#swift_common.extract_symbol_graph-module_name">module_name</a>, <a href="#swift_common.extract_symbol_graph-output_dir">output_dir</a>, <a href="#swift_common.extract_symbol_graph-swift_infos">swift_infos</a>, <a href="#swift_common.extract_symbol_graph-swift_toolchain">swift_toolchain</a>,
                                   <a href="#swift_common.extract_symbol_graph-toolchain_type">toolchain_type</a>)
@@ -441,7 +441,7 @@ Extracts the symbol graph from a Swift module.
 ## swift_common.get_toolchain
 
 <pre>
-swift_common.get_toolchain(<a href="#swift_common.get_toolchain-ctx">ctx</a>, <a href="#swift_common.get_toolchain-exec_group">exec_group</a>, <a href="#swift_common.get_toolchain-mandatory">mandatory</a>, <a href="#swift_common.get_toolchain-toolchain_type">toolchain_type</a>, <a href="#swift_common.get_toolchain-attr">attr</a>)
+swift_common.get_toolchain(<a href="#swift_common.get_toolchain-ctx">ctx</a>, *, <a href="#swift_common.get_toolchain-exec_group">exec_group</a>, <a href="#swift_common.get_toolchain-mandatory">mandatory</a>, <a href="#swift_common.get_toolchain-toolchain_type">toolchain_type</a>, <a href="#swift_common.get_toolchain-attr">attr</a>)
 </pre>
 
 Gets the Swift toolchain associated with the rule or aspect.
@@ -526,7 +526,7 @@ check it.
 ## swift_common.precompile_clang_module
 
 <pre>
-swift_common.precompile_clang_module(<a href="#swift_common.precompile_clang_module-actions">actions</a>, <a href="#swift_common.precompile_clang_module-cc_compilation_context">cc_compilation_context</a>, <a href="#swift_common.precompile_clang_module-exec_group">exec_group</a>,
+swift_common.precompile_clang_module(*, <a href="#swift_common.precompile_clang_module-actions">actions</a>, <a href="#swift_common.precompile_clang_module-cc_compilation_context">cc_compilation_context</a>, <a href="#swift_common.precompile_clang_module-exec_group">exec_group</a>,
                                      <a href="#swift_common.precompile_clang_module-feature_configuration">feature_configuration</a>, <a href="#swift_common.precompile_clang_module-module_map_file">module_map_file</a>, <a href="#swift_common.precompile_clang_module-module_name">module_name</a>,
                                      <a href="#swift_common.precompile_clang_module-swift_toolchain">swift_toolchain</a>, <a href="#swift_common.precompile_clang_module-target_name">target_name</a>, <a href="#swift_common.precompile_clang_module-toolchain_type">toolchain_type</a>, <a href="#swift_common.precompile_clang_module-swift_infos">swift_infos</a>)
 </pre>
@@ -560,8 +560,9 @@ A struct containing the precompiled module and optional indexstore directory,
 ## swift_common.synthesize_interface
 
 <pre>
-swift_common.synthesize_interface(<a href="#swift_common.synthesize_interface-actions">actions</a>, <a href="#swift_common.synthesize_interface-compilation_contexts">compilation_contexts</a>, <a href="#swift_common.synthesize_interface-feature_configuration">feature_configuration</a>, <a href="#swift_common.synthesize_interface-module_name">module_name</a>,
-                                  <a href="#swift_common.synthesize_interface-output_file">output_file</a>, <a href="#swift_common.synthesize_interface-swift_infos">swift_infos</a>, <a href="#swift_common.synthesize_interface-swift_toolchain">swift_toolchain</a>, <a href="#swift_common.synthesize_interface-toolchain_type">toolchain_type</a>)
+swift_common.synthesize_interface(*, <a href="#swift_common.synthesize_interface-actions">actions</a>, <a href="#swift_common.synthesize_interface-compilation_contexts">compilation_contexts</a>, <a href="#swift_common.synthesize_interface-feature_configuration">feature_configuration</a>,
+                                  <a href="#swift_common.synthesize_interface-module_name">module_name</a>, <a href="#swift_common.synthesize_interface-output_file">output_file</a>, <a href="#swift_common.synthesize_interface-swift_infos">swift_infos</a>, <a href="#swift_common.synthesize_interface-swift_toolchain">swift_toolchain</a>,
+                                  <a href="#swift_common.synthesize_interface-toolchain_type">toolchain_type</a>)
 </pre>
 
 Extracts the symbol graph from a Swift module.
@@ -586,7 +587,7 @@ Extracts the symbol graph from a Swift module.
 ## swift_common.use_toolchain
 
 <pre>
-swift_common.use_toolchain(<a href="#swift_common.use_toolchain-mandatory">mandatory</a>, <a href="#swift_common.use_toolchain-toolchain_type">toolchain_type</a>)
+swift_common.use_toolchain(*, <a href="#swift_common.use_toolchain-mandatory">mandatory</a>, <a href="#swift_common.use_toolchain-toolchain_type">toolchain_type</a>)
 </pre>
 
 Returns a list of toolchain types needed to use the Swift toolchain.
