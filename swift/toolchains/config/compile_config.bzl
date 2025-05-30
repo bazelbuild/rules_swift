@@ -985,9 +985,19 @@ def compile_action_configs(
             configurators = [_source_files_configurator],
         ),
 
-        # We don't add the path as a source file if this is an explicit
-        # interface build, because we let the worker infer it in the event that
-        # it is a system module.
+        # If this is an explicit interface build, ensure that the
+        # `.swiftinterface` file is among the action inputs but don't add it to
+        # the command line because we have a worker-specific flag for that
+        # (`-Xwrapped-swift=-explicit-compile-module-from-interface=<path>`).
+        # If it's not an explicit interface build, add it to the command line
+        # like any other source file.
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+            ],
+            configurators = [_source_files_as_action_inputs_only_configurator],
+            features = [SWIFT_FEATURE_EXPLICIT_INTERFACE_BUILD],
+        ),
         ActionConfigInfo(
             actions = [
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
@@ -1625,6 +1635,15 @@ def _index_while_building_configurator(prerequisites, args):
 def _source_files_configurator(prerequisites, args):
     """Adds source files to the command line and required inputs."""
     args.add_all(prerequisites.source_files)
+    return _source_files_as_action_inputs_only_configurator(prerequisites, args)
+
+def _source_files_as_action_inputs_only_configurator(prerequisites, _args):
+    """Adds source files to the required inputs but not the command line.
+
+    This configurator assumes that the source files are already provided to the
+    command line through some other means (for example, through a
+    worker-specific flag).
+    """
 
     # Only add source files to the input file set if they are not strings (for
     # example, the module map of a system framework will be passed in as a file
