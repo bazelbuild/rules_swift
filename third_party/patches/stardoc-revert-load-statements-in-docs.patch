@@ -1,0 +1,139 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Luis Padron <heyluispadron@gmail.com>
+Date: Fri, 30 May 2025 21:55:02 -0400
+Subject: Revert load statements in docs
+
+
+diff --git a/stardoc/templates/html_tables/aspect.vm b/stardoc/templates/html_tables/aspect.vm
+index 7033279..e66b2b2 100644
+--- a/stardoc/templates/html_tables/aspect.vm
++++ b/stardoc/templates/html_tables/aspect.vm
+@@ -3,8 +3,6 @@
+ #[[##]]# ${aspectName}
+ 
+ <pre>
+-${util.loadStatement($aspectName)}
+-
+ ${util.aspectSummary($aspectName, $aspectInfo)}
+ </pre>
+ 
+diff --git a/stardoc/templates/html_tables/func.vm b/stardoc/templates/html_tables/func.vm
+index 7d9191d..b52e5bc 100644
+--- a/stardoc/templates/html_tables/func.vm
++++ b/stardoc/templates/html_tables/func.vm
+@@ -3,8 +3,6 @@
+ #[[##]]# ${funcInfo.functionName}
+ 
+ <pre>
+-${util.loadStatement($funcInfo.functionName)}
+-
+ ${util.funcSummary($funcInfo)}
+ </pre>
+ 
+diff --git a/stardoc/templates/html_tables/provider.vm b/stardoc/templates/html_tables/provider.vm
+index 4684676..a2919b0 100644
+--- a/stardoc/templates/html_tables/provider.vm
++++ b/stardoc/templates/html_tables/provider.vm
+@@ -8,8 +8,6 @@
+ #[[##]]# ${providerName}
+ 
+ <pre>
+-${util.loadStatement($providerName)}
+-
+ #if ($providerInfo.hasInit() && !$mergeParamsAndFields)
+ ${util.providerSummaryWithInitAnchor($providerName, $providerInfo)}
+ #else
+diff --git a/stardoc/templates/html_tables/repository_rule.vm b/stardoc/templates/html_tables/repository_rule.vm
+index 90df09b..2378562 100644
+--- a/stardoc/templates/html_tables/repository_rule.vm
++++ b/stardoc/templates/html_tables/repository_rule.vm
+@@ -3,8 +3,6 @@
+ #[[##]]# ${ruleName}
+ 
+ <pre>
+-${util.loadStatement($ruleName)}
+-
+ ${util.repositoryRuleSummary($ruleName, $ruleInfo)}
+ </pre>
+ #if (!$ruleInfo.docString.isEmpty())
+diff --git a/stardoc/templates/html_tables/rule.vm b/stardoc/templates/html_tables/rule.vm
+index 546e0c1..0d5b638 100644
+--- a/stardoc/templates/html_tables/rule.vm
++++ b/stardoc/templates/html_tables/rule.vm
+@@ -3,8 +3,6 @@
+ #[[##]]# ${ruleName}
+ 
+ <pre>
+-${util.loadStatement($ruleName)}
+-
+ ${util.ruleSummary($ruleName, $ruleInfo)}
+ </pre>
+ 
+diff --git a/stardoc/templates/markdown_tables/aspect.vm b/stardoc/templates/markdown_tables/aspect.vm
+index 327bf10..36aa47a 100644
+--- a/stardoc/templates/markdown_tables/aspect.vm
++++ b/stardoc/templates/markdown_tables/aspect.vm
+@@ -3,8 +3,6 @@
+ #[[##]]# ${aspectName}
+ 
+ <pre>
+-${util.loadStatement($aspectName)}
+-
+ ${util.aspectSummary($aspectName, $aspectInfo)}
+ </pre>
+ 
+diff --git a/stardoc/templates/markdown_tables/func.vm b/stardoc/templates/markdown_tables/func.vm
+index 5d529fc..e53b81a 100644
+--- a/stardoc/templates/markdown_tables/func.vm
++++ b/stardoc/templates/markdown_tables/func.vm
+@@ -3,8 +3,6 @@
+ #[[##]]# ${funcInfo.functionName}
+ 
+ <pre>
+-${util.loadStatement($funcInfo.functionName)}
+-
+ ${util.funcSummary($funcInfo)}
+ </pre>
+ 
+diff --git a/stardoc/templates/markdown_tables/provider.vm b/stardoc/templates/markdown_tables/provider.vm
+index a198ac5..f623e0d 100644
+--- a/stardoc/templates/markdown_tables/provider.vm
++++ b/stardoc/templates/markdown_tables/provider.vm
+@@ -8,8 +8,6 @@
+ #[[##]]# ${providerName}
+ 
+ <pre>
+-${util.loadStatement($providerName)}
+-
+ #if ($providerInfo.hasInit() && !$mergeParamsAndFields)
+ ${util.providerSummaryWithInitAnchor($providerName, $providerInfo)}
+ #else
+diff --git a/stardoc/templates/markdown_tables/repository_rule.vm b/stardoc/templates/markdown_tables/repository_rule.vm
+index 579e76a..4473f01 100644
+--- a/stardoc/templates/markdown_tables/repository_rule.vm
++++ b/stardoc/templates/markdown_tables/repository_rule.vm
+@@ -3,8 +3,6 @@
+ #[[##]]# ${ruleName}
+ 
+ <pre>
+-${util.loadStatement($ruleName)}
+-
+ ${util.repositoryRuleSummary($ruleName, $ruleInfo)}
+ </pre>
+ #if (!$ruleInfo.docString.isEmpty())
+diff --git a/stardoc/templates/markdown_tables/rule.vm b/stardoc/templates/markdown_tables/rule.vm
+index 3b94cd5..0b73239 100644
+--- a/stardoc/templates/markdown_tables/rule.vm
++++ b/stardoc/templates/markdown_tables/rule.vm
+@@ -3,8 +3,6 @@
+ #[[##]]# ${ruleName}
+ 
+ <pre>
+-${util.loadStatement($ruleName)}
+-
+ ${util.ruleSummary($ruleName, $ruleInfo)}
+ </pre>
+ 
+-- 
+2.49.0
+

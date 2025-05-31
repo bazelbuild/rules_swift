@@ -17,7 +17,7 @@ On this page:
 ## SwiftInfo
 
 <pre>
-SwiftInfo(<a href="#SwiftInfo-direct_modules">direct_modules</a>, <a href="#SwiftInfo-transitive_modules">transitive_modules</a>)
+SwiftInfo(*, <a href="#SwiftInfo-_init-direct_swift_infos">direct_swift_infos</a>, <a href="#SwiftInfo-_init-modules">modules</a>, <a href="#SwiftInfo-_init-swift_infos">swift_infos</a>)
 </pre>
 
 Contains information about the compiled artifacts of a Swift module.
@@ -48,8 +48,15 @@ where the arguments are:
 When reading an existing `SwiftInfo` provider, it has the two fields described
 below.
 
-**FIELDS**
+**CONSTRUCTOR PARAMETERS**
 
+| Name  | Description | Default Value |
+| :------------- | :------------- | :------------- |
+| <a id="SwiftInfo-_init-direct_swift_infos"></a>direct_swift_infos | A list of `SwiftInfo` providers from dependencies whose direct modules should be treated as direct modules in the resulting provider, in addition to their transitive modules being merged. | `[]` |
+| <a id="SwiftInfo-_init-modules"></a>modules | A list of values (as returned by `create_swift_module_context()`) that represent Clang and/or Swift module artifacts that are direct outputs of the target being built. | `[]` |
+| <a id="SwiftInfo-_init-swift_infos"></a>swift_infos | A list of `SwiftInfo` providers from dependencies whose transitive modules should be merged into the resulting provider. | `[]` |
+
+**FIELDS**
 
 | Name  | Description |
 | :------------- | :------------- |
@@ -68,7 +75,6 @@ SwiftProtoCompilerInfo(<a href="#SwiftProtoCompilerInfo-bundled_proto_paths">bun
 Provides information needed to generate Swift code from `ProtoInfo` providers
 
 **FIELDS**
-
 
 | Name  | Description |
 | :------------- | :------------- |
@@ -89,7 +95,6 @@ SwiftProtoInfo(<a href="#SwiftProtoInfo-module_name">module_name</a>, <a href="#
 Propagates Swift-specific information about a `proto_library`.
 
 **FIELDS**
-
 
 | Name  | Description |
 | :------------- | :------------- |
@@ -116,7 +121,6 @@ Propagates information about a Swift toolchain to compilation and linking rules
 that use the toolchain.
 
 **FIELDS**
-
 
 | Name  | Description |
 | :------------- | :------------- |

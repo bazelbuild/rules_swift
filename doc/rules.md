@@ -1066,11 +1066,11 @@ swift_library(
 ## mixed_language_library
 
 <pre>
-mixed_language_library(<a href="#mixed_language_library-name">name</a>, <a href="#mixed_language_library-alwayslink">alwayslink</a>, <a href="#mixed_language_library-clang_copts">clang_copts</a>, <a href="#mixed_language_library-clang_defines">clang_defines</a>, <a href="#mixed_language_library-clang_srcs">clang_srcs</a>, <a href="#mixed_language_library-data">data</a>,
+mixed_language_library(*, <a href="#mixed_language_library-name">name</a>, <a href="#mixed_language_library-alwayslink">alwayslink</a>, <a href="#mixed_language_library-clang_copts">clang_copts</a>, <a href="#mixed_language_library-clang_defines">clang_defines</a>, <a href="#mixed_language_library-clang_srcs">clang_srcs</a>, <a href="#mixed_language_library-data">data</a>,
                        <a href="#mixed_language_library-enable_modules">enable_modules</a>, <a href="#mixed_language_library-hdrs">hdrs</a>, <a href="#mixed_language_library-includes">includes</a>, <a href="#mixed_language_library-linkopts">linkopts</a>, <a href="#mixed_language_library-module_map">module_map</a>, <a href="#mixed_language_library-module_name">module_name</a>,
                        <a href="#mixed_language_library-non_arc_srcs">non_arc_srcs</a>, <a href="#mixed_language_library-package_name">package_name</a>, <a href="#mixed_language_library-private_deps">private_deps</a>, <a href="#mixed_language_library-sdk_dylibs">sdk_dylibs</a>, <a href="#mixed_language_library-sdk_frameworks">sdk_frameworks</a>,
                        <a href="#mixed_language_library-swift_copts">swift_copts</a>, <a href="#mixed_language_library-swift_defines">swift_defines</a>, <a href="#mixed_language_library-swift_plugins">swift_plugins</a>, <a href="#mixed_language_library-swift_srcs">swift_srcs</a>, <a href="#mixed_language_library-swiftc_inputs">swiftc_inputs</a>,
-                       <a href="#mixed_language_library-textual_hdrs">textual_hdrs</a>, <a href="#mixed_language_library-umbrella_header">umbrella_header</a>, <a href="#mixed_language_library-weak_sdk_frameworks">weak_sdk_frameworks</a>, <a href="#mixed_language_library-deps">deps</a>, <a href="#mixed_language_library-kwargs">kwargs</a>)
+                       <a href="#mixed_language_library-textual_hdrs">textual_hdrs</a>, <a href="#mixed_language_library-umbrella_header">umbrella_header</a>, <a href="#mixed_language_library-weak_sdk_frameworks">weak_sdk_frameworks</a>, <a href="#mixed_language_library-deps">deps</a>, <a href="#mixed_language_library-kwargs">**kwargs</a>)
 </pre>
 
 Creates a mixed language library from a Clang and Swift library target     pair.
