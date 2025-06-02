@@ -33,6 +33,7 @@ load(
     "SWIFT_FEATURE_FILE_PREFIX_MAP",
     "SWIFT_FEATURE_FULL_DEBUG_INFO",
     "SWIFT_FEATURE_INTERNALIZE_AT_LINK",
+    "SWIFT_FEATURE_NO_GENERATED_MODULE_MAP",
     "SWIFT_FEATURE_OBJC_LINK_FLAGS",
     "SWIFT_FEATURE_OPT_USES_WMO",
     "SWIFT_FEATURE_REMAP_XCODE_PATH",
@@ -40,6 +41,7 @@ load(
     "SWIFT_FEATURE__SUPPORTS_V6",
 )
 load(":package_specs.bzl", "label_matches_package_specs")
+load(":target_triples.bzl", "target_triples")
 
 def are_all_features_enabled(feature_configuration, feature_names):
     """Returns `True` if all features are enabled in the feature configuration.
@@ -263,6 +265,12 @@ def default_features_for_toolchain(target_triple):
         features.extend([
             SWIFT_FEATURE_OBJC_LINK_FLAGS,
             SWIFT_FEATURE_REMAP_XCODE_PATH,
+        ])
+
+    # Linux specific features
+    if target_triples.unversioned_os(target_triple) == "linux":
+        features.extend([
+            SWIFT_FEATURE_NO_GENERATED_MODULE_MAP,
         ])
 
     return features

@@ -48,6 +48,7 @@ load(
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
     "SWIFT_FEATURE_MODULAR_INDEXING",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
+    "SWIFT_FEATURE_NO_GENERATED_MODULE_MAP",
     "SWIFT_FEATURE_OPT",
     "SWIFT_FEATURE_OPT_USES_WMO",
     "SWIFT_FEATURE_PROPAGATE_GENERATED_MODULE_MAP",
@@ -724,7 +725,10 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
 
     # If a header and module map were generated for this Swift module, attempt
     # to precompile the explicit module for that header as well.
-    if generated_header_name:
+    if generated_header_name and not is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_NO_GENERATED_MODULE_MAP,
+    ):
         compilation_context_to_compile = (
             compilation_context_for_explicit_module_compilation(
                 compilation_contexts = [
@@ -1274,7 +1278,10 @@ def _declare_compile_outputs(
     # trap door lets them escape the module redefinition error, with the
     # caveat that certain import scenarios could lead to incorrect behavior
     # because a header can be imported textually instead of modularly.
-    if generated_header:
+    if generated_header and not is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_NO_GENERATED_MODULE_MAP,
+    ):
         # Collect the names of Clang modules that the module being built
         # directly depends on.
         dependent_module_names = sets.make()
