@@ -14,9 +14,6 @@
 
 #import <Foundation/Foundation.h>
 
-@protocol Stupid
-@end
-
 /** A very contrived interface for writing strings to a file handle. */
 @interface OIPrintStream<PrintType> : NSObject
 
