@@ -394,6 +394,10 @@ toolchain(
     )
 
 def _swift_autoconfiguration_impl(repository_ctx):
+    if repository_ctx.getenv("BAZEL_NO_SWIFT_TOOLCHAIN") == "1":
+        repository_ctx.file("BUILD", "")
+        return
+
     os_name = repository_ctx.os.name.lower()
     is_linux = False
     is_windows = False
@@ -436,7 +440,7 @@ package(default_visibility = ["//visibility:public"])
     )
 
 swift_autoconfiguration = repository_rule(
-    environ = ["CC", "PATH", "ProgramData", "Path"],
+    environ = ["BAZEL_NO_SWIFT_TOOLCHAIN", "CC", "PATH", "ProgramData", "Path"],
     implementation = _swift_autoconfiguration_impl,
     local = True,
 )
