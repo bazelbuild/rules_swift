@@ -200,21 +200,14 @@ def _normalized_linux_cpu(cpu):
         return "x86_64"
     return cpu
 
-def _create_linux_toolchain(*, repository_ctx, warn_on_no_swiftc):
+def _create_linux_toolchain(*, repository_ctx):
     """Creates BUILD targets for the Swift toolchain on Linux.
 
     Args:
       repository_ctx: The repository rule context.
-      warn_on_no_swiftc: If True, print a warning if 'swiftc' is not found in
-        $PATH.
     """
     path_to_swiftc = repository_ctx.which("swiftc")
     if not path_to_swiftc:
-        if warn_on_no_swiftc:
-            print("""\
-No 'swiftc' executable found in $PATH. Not auto-generating a Linux Swift \
-toolchain.
-""")  # buildifier: disable=print
         return """\
 # No 'swiftc' executable found in $PATH. Not auto-generating a Linux Swift \
 toolchain.
@@ -314,21 +307,14 @@ def _get_python_bin(repository_ctx):
         return out
     return None
 
-def _create_windows_toolchain(*, repository_ctx, warn_on_no_swiftc):
+def _create_windows_toolchain(*, repository_ctx):
     """Creates BUILD targets for the Swift toolchain on Linux.
 
     Args:
       repository_ctx: The repository rule context.
-      warn_on_no_swiftc: If True, print a warning if 'swiftc.exe' is not found
-        in $PATH.
     """
     path_to_swiftc = repository_ctx.which("swiftc.exe")
     if not path_to_swiftc:
-        if warn_on_no_swiftc:
-            print("""\
-No 'swiftc.exe' executable found in $PATH. Not auto-generating a Windows Swift \
-toolchain.
-""")  # buildifier: disable=print
         return """\
 # No 'swiftc.exe' executable found in $PATH. Not auto-generating a Windows \
 Swift toolchain.
@@ -394,16 +380,6 @@ toolchain(
     )
 
 def _swift_autoconfiguration_impl(repository_ctx):
-    os_name = repository_ctx.os.name.lower()
-    is_linux = False
-    is_windows = False
-    if os_name.startswith("mac os"):
-        pass
-    elif os_name.startswith("windows"):
-        is_windows = True
-    else:
-        is_linux = True
-
     repository_ctx.file(
         "BUILD",
         "\n".join([
@@ -424,14 +400,8 @@ load(
 package(default_visibility = ["//visibility:public"])
 """,
             _create_xcode_toolchain(),
-            _create_windows_toolchain(
-                repository_ctx = repository_ctx,
-                warn_on_no_swiftc = is_windows,
-            ),
-            _create_linux_toolchain(
-                repository_ctx = repository_ctx,
-                warn_on_no_swiftc = is_linux,
-            ),
+            _create_windows_toolchain(repository_ctx = repository_ctx),
+            _create_linux_toolchain(repository_ctx = repository_ctx),
         ]),
     )
 
