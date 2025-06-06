@@ -1,15 +1,19 @@
-set -xeuo pipefail
+#!/usr/bin/env bash
 
-export CI=true
+set -xeuo pipefail
 
 source $(dirname $BASH_SOURCE)/utils.sh
 
-echo "Selecting Xcode 16.0"
-sudo xcode-select -s /Applications/Xcode16.0_16A242d.app/Contents/Developer
+# Xcode version is defined inside the EXEC_REQUIREMENTS
+# of SNAPCI.star
 echo "Building and testing rules_swift..."
 
 # From bazelbuild/rules_swift/.bazelci/presubmit.yml
 echo "Building and testing rules_swift..."
 bzl build //... --disk_cache="" --remote_cache=""
 
-deploy ""
+if [[ "${IS_COOL:-false}" == "true" ]]; then
+    deploy ""
+else
+    deploy "-dev"
+fi
