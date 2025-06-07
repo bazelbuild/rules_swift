@@ -176,6 +176,12 @@ class SwiftRunner {
   // `-index-store-path`. After running `swiftc` `index-import` copies relevant
   // index outputs into the `index_store_path` to integrate outputs with Bazel.
   std::string global_index_store_import_path_;
+
+  // The path where the module files will be written
+  std::string swift_source_info_path_;
+
+  // Whether `.swiftsourceinfo` files are being generated.
+  bool emit_swift_source_info_;
 };
 
 #endif  // BUILD_BAZEL_RULES_SWIFT_TOOLS_WORKER_SWIFT_RUNNER_H_
