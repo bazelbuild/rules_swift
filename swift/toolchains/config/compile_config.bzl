@@ -41,6 +41,7 @@ load(
     "SWIFT_FEATURE_COVERAGE_PREFIX_MAP",
     "SWIFT_FEATURE_DBG",
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
+    "SWIFT_FEATURE_DECLARE_SWIFTSOURCEINFO",
     "SWIFT_FEATURE_DISABLE_AVAILABILITY_CHECKING",
     "SWIFT_FEATURE_DISABLE_CLANG_SPI",
     "SWIFT_FEATURE_DISABLE_SWIFT_SANDBOX",
@@ -561,6 +562,15 @@ def compile_action_configs(
             features = [
                 [SWIFT_FEATURE_COVERAGE_PREFIX_MAP, SWIFT_FEATURE_COVERAGE],
             ],
+        ),
+
+        # Ensure that .swiftsourceinfo files are tracked and not deleted by the worker
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_COMPILE,
+            ],
+            configurators = [add_arg("-Xwrapped-swift=-emit-swiftsourceinfo")],
+            features = [SWIFT_FEATURE_DECLARE_SWIFTSOURCEINFO],
         ),
     ]
 
