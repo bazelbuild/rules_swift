@@ -1,8 +1,8 @@
 module(
     name = "rules_swift",
     version = "0",
-    bazel_compatibility = [">=6.0.0"],
-    compatibility_level = 2,
+    bazel_compatibility = [">=7.0.0"],
+    compatibility_level = 3,
     repo_name = "build_bazel_rules_swift",
 )
 
