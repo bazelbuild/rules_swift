@@ -39,6 +39,7 @@ def mixed_language_library(
         alwayslink = False,
         clang_copts = [],
         clang_defines = [],
+        clang_deps = [],
         clang_srcs,
         data = [],
         enable_modules = False,
@@ -64,7 +65,7 @@ def mixed_language_library(
     """Creates a mixed language library from a Clang and Swift library target \
     pair.
 
-    Note: In the future `swift_library` will support mixed-langauge libraries.
+    Note: In the future `swift_library` will support mixed-language libraries.
     Once that is the case, this macro will be deprecated.
 
     Args:
@@ -89,6 +90,8 @@ def mixed_language_library(
             only to the compiler for this target (as `clang_copts` are) but also
             to all dependers of this target. Subject to "Make variable"
             substitution and Bourne shell tokenization.
+        clang_deps: A list of targets that are dependencies of only the
+            clang library.
         clang_srcs: The list of C, C++, Objective-C, or Objective-C++ sources
             for the clang library.
         data: The list of files needed by this target at runtime.
@@ -376,7 +379,7 @@ a mixed language Swift library, use a clang only library rule like \
         testonly = testonly,
         textual_hdrs = textual_hdrs,
         weak_sdk_frameworks = weak_sdk_frameworks,
-        deps = deps,
+        deps = deps + clang_deps,
         **kwargs
     )
 
