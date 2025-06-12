@@ -35,6 +35,7 @@ load("//swift:swift_library.bzl", "swift_library")
 def mixed_language_library(
         *,
         name,
+        always_include_developer_search_paths = False,
         alwayslink = False,
         clang_copts = [],
         clang_defines = [],
@@ -68,6 +69,10 @@ def mixed_language_library(
 
     Args:
         name: The name of the target.
+        always_include_developer_search_paths: If `True`, the developer
+            framework search paths will be added to the swift compilation
+            command. This enables a Swift module to access `XCTest` without
+            having to mark the target as `testonly = True`.
         alwayslink: If true, any binary that depends (directly or indirectly) on
             this library will link in all the object files for the files listed
             in `clang_srcs` and `swift_srcs`, even if some contain no symbols
@@ -306,6 +311,7 @@ a mixed language Swift library, use a clang only library rule like \
         name = swift_library_name,
         srcs = swift_srcs,
         alwayslink = alwayslink,
+        always_include_developer_search_paths = always_include_developer_search_paths,
         aspect_hints = aspect_hints,
         copts = ["-import-underlying-module"] + swift_copts,
         defines = swift_defines,
