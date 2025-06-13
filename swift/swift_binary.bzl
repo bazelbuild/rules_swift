@@ -232,8 +232,8 @@ On Linux, this rule produces an executable binary for the desired target
 architecture.
 
 On Apple platforms, this rule produces a _single-architecture_ binary; it does
-not produce fat binaries. As such, this rule is mainly useful for creating Swift
-tools intended to run on the local build machine.
+not produce universal binaries. As such, this rule is mainly useful for
+creating Swift tools intended to run on the local build machine.
 
 If you want to create a multi-architecture binary or a bundled application,
 please use one of the platform-specific application rules in
