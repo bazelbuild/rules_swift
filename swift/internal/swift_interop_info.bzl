@@ -55,9 +55,7 @@ A list of features that should be enabled for the target, in addition to those
 supplied in the `features` attribute, unless the feature is otherwise marked as
 unsupported (either on the target or by the toolchain). This allows the rule
 implementation to supply an additional set of fixed features that should always
-be enabled when the aspect processes that target; for example, a rule can
-request that `swift.emit_c_module` always be enabled for its targets even if it
-is not explicitly enabled in the toolchain or on the target directly.
+be enabled when the Swift build rules process that target.
 """,
         "suppressed": """\
 A `bool` indicating whether the module that the aspect would create for the
@@ -71,10 +69,7 @@ merged with the new `SwiftInfo` created by the aspect.
 A list of features that should be disabled for the target, in addition to those
 supplied as negations in the `features` attribute. This allows the rule
 implementation to supply an additional set of fixed features that should always
-be disabled when the aspect processes that target; for example, a rule that
-processes frameworks with headers that do not follow strict layering can request
-that `swift.strict_module` always be disabled for its targets even if it is
-enabled by default in the toolchain.
+be disabled when the Swift build rules process that target.
 """,
     },
 )

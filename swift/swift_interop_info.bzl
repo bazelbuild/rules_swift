@@ -94,10 +94,7 @@ def create_swift_interop_info(
             target or by the toolchain). This allows the rule implementation to
             have additional control over features that should be supported by
             default for all instances of that rule as if it were creating the
-            feature configuration itself; for example, a rule can request that
-            `swift.emit_c_module` always be enabled for its targets even if it
-            is not explicitly enabled in the toolchain or on the target
-            directly.
+            feature configuration itself.
         suppressed: A `bool` indicating whether the module that the aspect would
             create for the target should instead be suppressed.
         swift_infos: A list of `SwiftInfo` providers from dependencies, which
@@ -107,11 +104,7 @@ def create_swift_interop_info(
             supplied as negations in the `features` attribute. This allows the
             rule implementation to have additional control over features that
             should be disabled by default for all instances of that rule as if
-            it were creating the feature configuration itself; for example, a
-            rule that processes frameworks with headers that do not follow
-            strict layering can request that `swift.strict_module` always be
-            disabled for its targets even if it is enabled by default in the
-            toolchain.
+            it were creating the feature configuration itself.
 
     Returns:
         A provider whose type/layout is an implementation detail and should not
