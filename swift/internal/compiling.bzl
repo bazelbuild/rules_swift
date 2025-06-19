@@ -731,6 +731,16 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_NO_GENERATED_MODULE_MAP,
     ):
+        # SNAP specific logic 
+        # We pass headermaps via copts and we need to process copts and extract the hmaps and includes 
+        # And then add them into compilation_context
+        includes, quote_includes = [], []
+        for copt in copts:
+            if copt.startswith("-I"):
+                includes.append(copt[2:])
+            elif copt.startswith("-iquote"):
+                quote_includes.append(copt[7:])
+
         compilation_context_to_compile = (
             compilation_context_for_explicit_module_compilation(
                 compilation_contexts = [
@@ -738,6 +748,8 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
                         headers = depset([
                             compile_outputs.generated_header_file,
                         ]),
+                        includes = depset(includes),
+                        quote_includes = depset(quote_includes),
                     ),
                     merged_cc_info.compilation_context,
                 ],

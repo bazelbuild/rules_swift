@@ -38,7 +38,8 @@ def create_swift_interop_info(
         requested_features = [],
         suppressed = False,
         swift_infos = [],
-        unsupported_features = []):
+        unsupported_features = [],
+        system_pcms = []):
     """Returns a provider that lets a target expose C/Objective-C APIs to Swift.
 
     The provider returned by this function allows custom build rules written in
@@ -107,6 +108,9 @@ def create_swift_interop_info(
             strict layering can request that `swift.strict_module` always be
             disabled for its targets even if it is enabled by default in the
             toolchain.
+        system_pcms: A list of precompiled clang modules with `SwiftInfo`
+            providers for system modules. This is used to define system pcm 
+            dependencies passed from `swift_interop_hint`.
 
     Returns:
         A provider whose type/layout is an implementation detail and should not
@@ -128,4 +132,5 @@ def create_swift_interop_info(
         suppressed = suppressed,
         swift_infos = swift_infos,
         unsupported_features = unsupported_features,
+        system_pcms = system_pcms,
     )
