@@ -443,7 +443,6 @@ def _swift_test_impl(ctx):
                 collect_data = True,
                 collect_default = True,
                 files = ctx.files.data,
-                transitive_files = ctx.attr._apple_coverage_support.files,
             ),
         ),
         OutputGroupInfo(
@@ -502,12 +501,6 @@ a zero exit code for success or a non-zero exit code for failure.
 Specifies additional environment variables to inherit from the external
 environment when the test is executed by `bazel test`.
 """,
-            ),
-            "_apple_coverage_support": attr.label(
-                cfg = "exec",
-                default = Label(
-                    "@build_bazel_apple_support//tools:coverage_support",
-                ),
             ),
             "_test_discoverer": attr.label(
                 cfg = config.exec(_DISCOVER_TESTS_EXEC_GROUP),
