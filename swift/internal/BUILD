@@ -11,7 +11,8 @@ package(
 
 proto_lang_toolchain(
     name = "proto_swift_toolchain",
-    blacklisted_protos = [
+    command_line = "--swift_out=$(OUT)",
+    denylisted_protos = [
         # keep sorted
         "@com_google_protobuf//:any_proto",
         "@com_google_protobuf//:api_proto",
@@ -25,7 +26,6 @@ proto_lang_toolchain(
         "@com_google_protobuf//:type_proto",
         "@com_google_protobuf//:wrappers_proto",
     ],
-    command_line = "--swift_out=$(OUT)",
     mnemonic = "ProtocGenSwift",
     output_files = "multiple",
     plugin = "@com_github_apple_swift_protobuf//:protoc-gen-swift",
