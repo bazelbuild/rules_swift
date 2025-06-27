@@ -108,7 +108,7 @@ def configure_features(
         "parse_headers",
     ])
 
-    if ctx.configuration.coverage_enabled and ctx.coverage_instrumented():
+    if ctx.coverage_instrumented():
         requested_features.append(SWIFT_FEATURE_COVERAGE)
 
     # HACK: This is the only way today to check whether the caller is inside an
