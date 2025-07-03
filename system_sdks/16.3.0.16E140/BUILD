@@ -67,3 +67,18 @@ swift_library_group(
         "//conditions:default": [],
     }),
 )
+
+
+swift_library_group(
+    name = "testonly_system_sdks",
+    testonly = True,
+    deps = select({
+        "ios_device_arm64": ["//system_sdks/16.3.0.16E140/iPhoneOS/arm64:all_generated_testonly_targets"],
+        "watchos_device_arm64_32": ["//system_sdks/16.3.0.16E140/WatchOS/arm64_32:all_generated_testonly_targets"],
+        "watchos_sim_arm64": ["//system_sdks/16.3.0.16E140/WatchSimulator/arm64:all_generated_testonly_targets"],
+        "watchos_sim_x86_64": ["//system_sdks/16.3.0.16E140/WatchSimulator/x86_64:all_generated_testonly_targets"],
+        "ios_sim_arm64": ["//system_sdks/16.3.0.16E140/iPhoneSimulator/arm64:all_generated_testonly_targets"],
+        "ios_sim_x86_64": ["//system_sdks/16.3.0.16E140/iPhoneSimulator/x86_64:all_generated_testonly_targets"],
+        "//conditions:default": [],
+    }),
+)

@@ -15,3 +15,12 @@ swift_library_group(
         "//conditions:default": [],
     }),
 )
+
+swift_library_group(
+    name = "testonly_system_sdks",
+    testonly = True,
+    deps = select({
+        ":xcode_16_3_0_16E140": ["//system_sdks/16.3.0.16E140:testonly_system_sdks"],
+        "//conditions:default": [],
+    }),
+)
