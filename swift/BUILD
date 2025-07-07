@@ -23,7 +23,7 @@ bzl_library(
     srcs = ["extras.bzl"],
     deps = [
         "@build_bazel_apple_support//lib:repositories",
-        # "@rules_proto//proto:repositories",
+        "@bazel_features//:deps"
     ],
 )
 
