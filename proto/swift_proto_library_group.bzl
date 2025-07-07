@@ -16,14 +16,8 @@
 Defines a rule that generates Swift libraries from protocol buffer sources.
 """
 
-load(
-    "@bazel_skylib//lib:dicts.bzl",
-    "dicts",
-)
-load(
-    "@rules_proto//proto:defs.bzl",
-    "ProtoInfo",
-)
+load("@bazel_skylib//lib:dicts.bzl", "dicts")
+load("@com_google_protobuf//bazel/common:proto_info.bzl", "ProtoInfo")
 load(
     "//proto:swift_proto_utils.bzl",
     "SwiftProtoCcInfo",

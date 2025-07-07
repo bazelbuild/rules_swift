@@ -5,7 +5,7 @@ licenses(["notice"])
 # Consumed by Bazel integration tests.
 filegroup(
     name = "for_bazel_tests",
-    testonly = 1,
+    testonly = True,
     srcs = glob(["**"]) + [
         "//tools/common:for_bazel_tests",
         "//tools/mkdir_and_run:for_bazel_tests",
