@@ -15,6 +15,7 @@
 """Helper functions for working with Bazel features."""
 
 load("@bazel_skylib//lib:new_sets.bzl", "sets")
+load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load(
     ":feature_names.bzl",
     "SWIFT_FEATURE_CACHEABLE_SWIFTMODULES",

@@ -14,6 +14,7 @@
 
 """Implementation of the `mixed_language_library` macro."""
 
+load("@rules_cc//cc:objc_library.bzl", "objc_library")
 load(
     "//mixed_language/internal:library.bzl",
     _mixed_language_library = "mixed_language_library",
@@ -299,7 +300,7 @@ a mixed language Swift library, use a clang only library rule like \
         module_name = module_name,
     )
     headers_library_name = name + "_headers"
-    native.objc_library(
+    objc_library(
         name = headers_library_name,
         hdrs = adjusted_hdrs,
         aspect_hints = aspect_hints + [":" + internal_swift_interop_name],
@@ -355,7 +356,7 @@ a mixed language Swift library, use a clang only library rule like \
     # We can't look at the `clang_srcs` attribute because it might be a
     # `select`.
     clang_library_name = name + "_clang"
-    native.objc_library(
+    objc_library(
         name = clang_library_name,
         srcs = clang_srcs,
         alwayslink = alwayslink,

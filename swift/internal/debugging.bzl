@@ -15,6 +15,7 @@
 """Functions relating to debugging support during compilation and linking."""
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load(":action_names.bzl", "SWIFT_ACTION_MODULEWRAP")
 load(
     ":actions.bzl",

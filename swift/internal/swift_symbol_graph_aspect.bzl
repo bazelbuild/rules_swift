@@ -23,6 +23,8 @@ file in the parent directory.
 """
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
+load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
+load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load("//swift:providers.bzl", "SwiftInfo", "SwiftSymbolGraphInfo")
 load("//swift:swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 load("//swift/internal:features.bzl", "configure_features")

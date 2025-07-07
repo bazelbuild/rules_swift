@@ -10,6 +10,7 @@ bzl_library(
     deps = [
         "//swift/internal:output_groups",
         "@bazel_skylib//lib:paths",
+        "@rules_cc//cc/common",
     ],
 )
 

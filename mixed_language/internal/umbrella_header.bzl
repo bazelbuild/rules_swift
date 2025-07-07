@@ -15,6 +15,8 @@
 """Implementation of the `mixed_language_umbrella_header` rule."""
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
+load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 
 def _mixed_language_umbrella_header_impl(ctx):
     actions = ctx.actions
