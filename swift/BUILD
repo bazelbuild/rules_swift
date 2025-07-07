@@ -22,8 +22,8 @@ bzl_library(
     name = "extras",
     srcs = ["extras.bzl"],
     deps = [
+        "@bazel_features//:deps",
         "@build_bazel_apple_support//lib:repositories",
-        "@bazel_features//:deps"
     ],
 )
 
