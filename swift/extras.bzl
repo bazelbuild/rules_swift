@@ -18,11 +18,11 @@ dependencies of the Swift rules.
 
 load("@bazel_features//:deps.bzl", "bazel_features_deps")
 load("@build_bazel_apple_support//lib:repositories.bzl", "apple_support_dependencies")
-load(
-    "@rules_proto//proto:repositories.bzl",
-    "rules_proto_dependencies",
-    "rules_proto_toolchains",
-)
+# load(
+#     "@rules_proto//proto:repositories.bzl",
+#     "rules_proto_dependencies",
+#     "rules_proto_toolchains",
+# )
 
 def swift_rules_extra_dependencies():
     """Fetches transitive repositories of the dependencies of `rules_swift`.
@@ -35,8 +35,8 @@ def swift_rules_extra_dependencies():
 
     apple_support_dependencies()
 
-    rules_proto_dependencies()
+    # rules_proto_dependencies()
 
-    rules_proto_toolchains()
+    # rules_proto_toolchains()
 
     bazel_features_deps()

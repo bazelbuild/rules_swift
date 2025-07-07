@@ -40,7 +40,7 @@ bzl_library(
         "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
         "@bazel_skylib//lib:dicts",
-        "@rules_proto//proto:defs",
+        "@com_google_protobuf//bazel/common:proto_info_bzl",
     ],
 )
 
@@ -60,7 +60,7 @@ bzl_library(
         "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
         "@bazel_skylib//lib:dicts",
-        "@rules_proto//proto:defs",
+        "@com_google_protobuf//bazel/common:proto_info_bzl",
     ],
 )
 

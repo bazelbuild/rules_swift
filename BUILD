@@ -7,7 +7,7 @@ exports_files(["LICENSE"])
 # Consumed by Bazel integration tests (such as those defined in rules_apple).
 filegroup(
     name = "for_bazel_tests",
-    testonly = 1,
+    testonly = True,
     srcs = [
         "WORKSPACE",
         "//swift:for_bazel_tests",

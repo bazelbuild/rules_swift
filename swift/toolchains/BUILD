@@ -64,7 +64,7 @@ bzl_library(
 # Consumed by Bazel integration tests.
 filegroup(
     name = "for_bazel_tests",
-    testonly = 1,
+    testonly = True,
     srcs = glob(["**"]) + [
         "//swift/toolchains/config:for_bazel_tests",
     ],
