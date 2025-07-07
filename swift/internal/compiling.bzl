@@ -17,6 +17,7 @@
 load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:sets.bzl", "sets")
+load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load(
     "//swift:providers.bzl",
     "SwiftInfo",

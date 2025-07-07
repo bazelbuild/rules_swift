@@ -28,6 +28,7 @@ bzl_library(
         "@bazel_skylib//lib:paths",
         "@bazel_skylib//rules:common_settings",
         "@bazel_tools//tools/cpp:toolchain_utils.bzl",
+        "@rules_cc//cc/common",
     ],
 )
 
@@ -56,6 +57,7 @@ bzl_library(
         "@bazel_skylib//lib:paths",
         "@bazel_skylib//rules:common_settings",
         "@bazel_tools//tools/cpp:toolchain_utils.bzl",
+        "@rules_cc//cc/common",
     ],
 )
 

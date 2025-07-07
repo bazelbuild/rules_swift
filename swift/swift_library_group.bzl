@@ -14,6 +14,8 @@
 
 """Implementation of the `swift_library_group` rule."""
 
+load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
+load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load("//swift/internal:attrs.bzl", "swift_deps_attr")
 load(
     "//swift/internal:toolchain_utils.bzl",

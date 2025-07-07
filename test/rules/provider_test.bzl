@@ -20,6 +20,7 @@ load(
     "analysistest",
     "unittest",
 )
+load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load("//swift:providers.bzl", "SwiftInfo")
 load(
     "//test/rules:expected_files.bzl",

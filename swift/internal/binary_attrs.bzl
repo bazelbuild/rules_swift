@@ -15,6 +15,7 @@
 """Common attributes used by rules that define Swift binary targets."""
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
+load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load(
     "//swift:swift_clang_module_aspect.bzl",
     "swift_clang_module_aspect",

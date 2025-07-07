@@ -15,6 +15,8 @@
 """Implementation of the `swift_import` rule."""
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
+load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
+load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load(
     "//swift/internal:attrs.bzl",
     "swift_common_rule_attrs",

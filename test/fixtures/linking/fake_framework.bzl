@@ -5,6 +5,8 @@ load(
     "find_cpp_toolchain",
     "use_cpp_toolchain",
 )
+load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
+load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 
 def _impl(ctx):
     binary1 = ctx.actions.declare_file("framework1.framework/framework1")

@@ -15,6 +15,8 @@
 """Common utility definitions used by various BUILD rules."""
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
+load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load("//swift:providers.bzl", "SwiftInfo")
 load(":feature_names.bzl", "SWIFT_FEATURE_NO_IMPLICIT_DEPS")
 load(":features.bzl", "is_feature_enabled")
