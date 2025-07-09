@@ -29,6 +29,11 @@
 // optimization in the compiler.
 extern bool ArgumentEnablesWMO(const std::string &arg);
 
+// If `str` starts with `prefix`, `str` is mutated to remove `prefix` and the
+// function returns true. Otherwise, `str` is left unmodified and the function
+// returns `false`.
+extern bool StripPrefix(const std::string &prefix, std::string &str);
+
 // Handles spawning the Swift compiler driver, making any required substitutions
 // of the command line arguments (for example, Bazel's magic Xcode placeholder
 // strings).
