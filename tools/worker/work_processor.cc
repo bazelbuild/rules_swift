@@ -86,17 +86,21 @@ void WorkProcessor::ProcessWorkRequest(
   std::string emit_objc_header_path;
   bool is_wmo = false;
   bool is_dump_ast = false;
+  bool emit_swift_source_info = false;
 
   std::string prev_arg;
   for (std::string arg : request.arguments) {
     std::string original_arg = arg;
-    // Peel off the `-output-file-map` argument, so we can rewrite it if
-    // necessary later.
+
+    // Handle arguments, in some cases we rewrite the argument entirely and in others we simply use it to determine
+    // specific behavior.
     if (arg == "-output-file-map") {
+      // Peel off the `-output-file-map` argument, so we can rewrite it if necessary later.
       arg.clear();
     } else if (arg == "-dump-ast") {
       is_dump_ast = true;
     } else if (prev_arg == "-output-file-map") {
+      // Peel off the `-output-file-map` argument, so we can rewrite it if necessary later.
       output_file_map_path = arg;
       arg.clear();
     } else if (prev_arg == "-emit-module-path") {
@@ -105,6 +109,8 @@ void WorkProcessor::ProcessWorkRequest(
       emit_objc_header_path = arg;
     } else if (ArgumentEnablesWMO(arg)) {
       is_wmo = true;
+    } else if (prev_arg == "-Xwrapped-swift=-emit-swiftsourceinfo") {
+      emit_swift_source_info = true;
     }
 
     if (!arg.empty()) {
@@ -153,11 +159,23 @@ void WorkProcessor::ProcessWorkRequest(
 
     for (const auto &expected_object_pair :
          output_file_map.incremental_inputs()) {
+
+      const auto expected_object_path = std::filesystem::path(expected_object_pair.second);
+
+      // In rules_swift < 3.x the .swiftsourceinfo files are unconditionally written to the module path.
+      // In rules_swift >= 3.x these same files are no longer tracked by Bazel unless explicitly requested.
+      // When using non-sandboxed mode, previous builds will contain these files and cause build failures
+      // when Swift tries to use them, in order to work around this compatibility issue, we remove them if they are
+      // present but not requested.
+      if (!emit_swift_source_info && expected_object_path.extension() == ".swiftsourceinfo") {
+        std::filesystem::remove(expected_object_path);
+      }
+
       // Bazel creates the intermediate directories for the files declared at
       // analysis time, but not any any deeper directories, like one can have
       // with -emit-objc-header-path, so we need to create those.
       const std::string dir_path =
-          std::filesystem::path(expected_object_pair.second)
+          expected_object_path
               .parent_path()
               .string();
       dir_paths.insert(dir_path);
