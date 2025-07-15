@@ -91,18 +91,16 @@ void WorkProcessor::ProcessWorkRequest(
   std::string prev_arg;
   for (std::string arg : request.arguments) {
     std::string original_arg = arg;
-    // Peel off the `-output-file-map` argument, so we can rewrite it if
-    // necessary later.
-    if (StripPrefix("-Xwrapped-swift=", arg)) {
-      if (arg == "-emit-swiftsourceinfo") {
-        emit_swift_source_info = true;
-      }
-      arg.clear();
-    } else if (arg == "-output-file-map") {
+
+    // Handle arguments, in some cases we rewrite the argument entirely and in others we simply use it to determine
+    // specific behavior.
+    if (arg == "-output-file-map") {
+      // Peel off the `-output-file-map` argument, so we can rewrite it if necessary later.
       arg.clear();
     } else if (arg == "-dump-ast") {
       is_dump_ast = true;
     } else if (prev_arg == "-output-file-map") {
+      // Peel off the `-output-file-map` argument, so we can rewrite it if necessary later.
       output_file_map_path = arg;
       arg.clear();
     } else if (prev_arg == "-emit-module-path") {
@@ -111,6 +109,8 @@ void WorkProcessor::ProcessWorkRequest(
       emit_objc_header_path = arg;
     } else if (ArgumentEnablesWMO(arg)) {
       is_wmo = true;
+    } else if (prev_arg == "-Xwrapped-swift=-emit-swiftsourceinfo") {
+      emit_swift_source_info = true;
     }
 
     if (!arg.empty()) {
@@ -167,7 +167,7 @@ void WorkProcessor::ProcessWorkRequest(
       // When using non-sandboxed mode, previous builds will contain these files and cause build failures
       // when Swift tries to use them, in order to work around this compatibility issue, we remove them if they are
       // present but not requested.
-      if (expected_object_path.extension() == ".swiftsourceinfo" && !emit_swift_source_info) {
+      if (!emit_swift_source_info && expected_object_path.extension() == ".swiftsourceinfo") {
         std::filesystem::remove(expected_object_path);
       }
 

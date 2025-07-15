@@ -27,14 +27,6 @@ bool ArgumentEnablesWMO(const std::string &arg) {
          arg == "-force-single-frontend-invocation";
 }
 
-bool StripPrefix(const std::string &prefix, std::string &str) {
-  if (str.find(prefix) != 0) {
-    return false;
-  }
-  str.erase(0, prefix.size());
-  return true;
-}
-
 namespace {
 
 // Creates a temporary file and writes the given arguments to it, one per line.
@@ -98,6 +90,17 @@ static std::string Unescape(const std::string &arg) {
   }
 
   return result;
+}
+
+// If `str` starts with `prefix`, `str` is mutated to remove `prefix` and the
+// function returns true. Otherwise, `str` is left unmodified and the function
+// returns `false`.
+static bool StripPrefix(const std::string &prefix, std::string &str) {
+  if (str.find(prefix) != 0) {
+    return false;
+  }
+  str.erase(0, prefix.size());
+  return true;
 }
 
 }  // namespace
