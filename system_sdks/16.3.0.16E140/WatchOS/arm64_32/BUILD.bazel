@@ -859,7 +859,7 @@ swift_c_module(
 
 swift_library_group(
     name = "StoreKitTest_swift",
-    testonly = False,
+    testonly = True,
     deps = [
         ":StoreKitTest",
         ":_SwiftConcurrencyShims",
@@ -886,7 +886,7 @@ swift_library_group(
 swift_c_module(
     name = "StoreKitTest",
     module_name = "StoreKitTest",
-    testonly = False,
+    testonly = True,
     system_module_map = "__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/WatchOS.platform/Developer/Library/Frameworks/StoreKitTest.framework/Modules/module.modulemap",
     deps = [
         ":Foundation",
@@ -4865,8 +4865,6 @@ swift_library_group(
         ":RegexBuilder_swift",
         ":LiveExecutionResultsLogger_swift",
         ":Testing_swift",
-        ":StoreKitTest_swift",
-        ":StoreKitTest",
         ":Translation_swift",
         ":Translation",
         ":CryptoTokenKit_swift",
@@ -5114,5 +5112,7 @@ swift_library_group(
         ":XCTest",
         ":XCUIAutomation_swift",
         ":XCUIAutomation",
+        ":StoreKitTest_swift",
+        ":StoreKitTest",
     ],
 )

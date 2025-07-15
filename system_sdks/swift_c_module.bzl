@@ -35,7 +35,7 @@ def _swift_c_module_impl(ctx):
 
     deps = ctx.attr.deps
 
-    if ctx.attr.module_name in ("XCTest", "XCUIAutomation"):
+    if ctx.attr.module_name in ("XCTest", "XCUIAutomation", "StoreKitTest"):
         framework_dir = paths.dirname(paths.dirname(paths.dirname(module_map)))
         compilation_context_for_system_module = cc_common.create_compilation_context(framework_includes = depset([framework_dir]),)
     else:
