@@ -51,7 +51,7 @@ config_setting(
     constraint_values = [
         "@platforms//os:watchos",
         "@platforms//cpu:arm64_32",
-        "@build_bazel_apple_support//constraints:simulator",
+        "@build_bazel_apple_support//constraints:device",
     ],
 )
 
