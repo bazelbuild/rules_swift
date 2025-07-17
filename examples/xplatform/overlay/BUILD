@@ -1,3 +1,4 @@
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load(
     "//swift:swift_interop_hint.bzl",
     "swift_interop_hint",
