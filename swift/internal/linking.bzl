@@ -30,6 +30,8 @@ load(
     ":feature_names.bzl",
     "SWIFT_FEATURE_LLD_GC_WORKAROUND",
     "SWIFT_FEATURE_OBJC_LINK_FLAGS",
+    "SWIFT_FEATURE_FULL_LTO",
+    "SWIFT_FEATURE_THIN_LTO",
 )
 load(
     ":features.bzl",
@@ -202,7 +204,8 @@ def create_linking_context_from_compilation_outputs(
         name = None,
         swift_toolchain,
         toolchain_type = SWIFT_TOOLCHAIN_TYPE,
-        user_link_flags = []):
+        user_link_flags = [],
+        bazel_bin_path = None):
     """Creates a linking context from the outputs of a Swift compilation.
 
     On some platforms, this function will spawn additional post-compile actions
@@ -317,6 +320,30 @@ def create_linking_context_from_compilation_outputs(
                     cc_common.create_linker_input(
                         owner = label,
                         user_link_flags = depset(["-ObjC"]),
+                    ),
+                ]),
+            ),
+        )
+
+    full_lto_enabled = is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_FULL_LTO,
+    )
+
+    thin_lto_enabled = is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_THIN_LTO,
+    )
+
+    # When LTO is enabled, we need to pass `-object_path_lto` to the linker, where it can write one big object file after LTO
+    # or else build will produce invalid dSYM.
+    if (full_lto_enabled or thin_lto_enabled) and bazel_bin_path != None:
+        extra_linking_contexts.append(
+            cc_common.create_linking_context(
+                linker_inputs = depset([
+                    cc_common.create_linker_input(
+                        owner = label,
+                        user_link_flags = depset(["-Wl,-object_path_lto,{}/{}_lto.o".format(bazel_bin_path, name)]),
                     ),
                 ]),
             ),

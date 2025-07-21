@@ -155,7 +155,6 @@ def _swift_library_impl(ctx):
         swift_toolchain = swift_toolchain,
         unsupported_features = ctx.disabled_features,
     )
-
     swift_infos = get_providers(deps, SwiftInfo)
     private_swift_infos = get_providers(private_deps, SwiftInfo)
 
@@ -199,7 +198,6 @@ def _swift_library_impl(ctx):
     module_context = compile_result.module_context
     compilation_outputs = compile_result.compilation_outputs
     supplemental_outputs = compile_result.supplemental_outputs
-
     linking_context, linking_output = (
         create_linking_context_from_compilation_outputs(
             actions = ctx.actions,
@@ -221,6 +219,7 @@ def _swift_library_impl(ctx):
             module_context = module_context,
             swift_toolchain = swift_toolchain,
             user_link_flags = linkopts,
+            bazel_bin_path = ctx.bin_dir.path,
         )
     )
 
