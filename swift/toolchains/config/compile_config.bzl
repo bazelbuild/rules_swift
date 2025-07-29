@@ -445,6 +445,19 @@ def compile_action_configs(
     #### Flags controlling how Swift/Clang modular inputs are processed
 
     action_configs += [
+        # When `-g` is passed to the compiler, the driver will pass
+        # `-file-compilation-dir <CWD>` to the frontend, which in turn passes
+        # `-ffile-compilation-dir <CWD>` to Clang. This CWD is fully resolved so
+        # it contains the absolute path to the workspace. If we pass
+        # `-file-compilation-dir .`, then the driver/frontend preserve that
+        # spelling, ensuring that the ClangImporter options section of the
+        # `.swiftmodule` file is hermetic.
+        ActionConfigInfo(
+            actions = all_compile_action_names(),
+            configurators = [
+                add_arg("-file-compilation-dir", "."),
+            ],
+        ),
         # Explicitly set the working directory to ensure that the
         # `FILE_SYSTEM_OPTIONS` block of PCM files is hermetic.
         #
