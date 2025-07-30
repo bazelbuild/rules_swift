@@ -26,6 +26,7 @@ load(
     "SWIFT_ACTION_PRECOMPILE_C_MODULE",
     "SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT",
     "SWIFT_ACTION_SYNTHESIZE_INTERFACE",
+    "all_compile_action_names",
 )
 load(
     "//swift/internal:developer_dirs.bzl",
