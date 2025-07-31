@@ -18,6 +18,7 @@ This rule is used in tests to simulate "pre-built" artifacts without having to
 check them in directly.
 """
 
+load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load("//swift:providers.bzl", "SwiftInfo")
 
 def _copy_file(actions, source, destination):

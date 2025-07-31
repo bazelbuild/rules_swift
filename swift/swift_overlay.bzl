@@ -14,6 +14,7 @@
 
 """Implementation of the `swift_overlay` rule."""
 
+load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load(
     "//swift/internal:attrs.bzl",
     "swift_deps_attr",

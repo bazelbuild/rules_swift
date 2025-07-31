@@ -23,5 +23,6 @@ bzl_library(
         "//swift:swift_library",
         "//swift/internal:compiling",
         "@bazel_skylib//lib:paths",
+        "@rules_cc//cc:core_rules",
     ],
 )

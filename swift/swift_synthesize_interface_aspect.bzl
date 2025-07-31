@@ -14,6 +14,8 @@
 
 """Implementation of the `swift_synthesize_interface_aspect` aspect."""
 
+load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
+load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load(
     "//swift/internal:features.bzl",
     "configure_features",

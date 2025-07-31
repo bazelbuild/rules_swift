@@ -15,6 +15,7 @@
 """Helper functions for working with Bazel features."""
 
 load("@bazel_skylib//lib:new_sets.bzl", "sets")
+load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load(
     ":feature_names.bzl",
     "SWIFT_FEATURE_CACHEABLE_SWIFTMODULES",
@@ -96,16 +97,20 @@ def configure_features(
         passed to other `swift_common` functions. Note that the structure of
         this value should otherwise not be relied on or inspected directly.
     """
+    requested_features = list(requested_features)
+    unsupported_features = list(unsupported_features)
 
     # Always disable these two features so that any `cc_common` APIs called by
     # `swift_common` APIs don't cause certain actions to be created (for
     # example, when using `cc_common.compile` to create the compilation context
     # for a generated header).
-    unsupported_features = list(unsupported_features)
     unsupported_features.extend([
         "cc_include_scanning",
         "parse_headers",
     ])
+
+    if ctx.coverage_instrumented():
+        requested_features.append(SWIFT_FEATURE_COVERAGE)
 
     # HACK: This is the only way today to check whether the caller is inside an
     # aspect. We have to do this because accessing `ctx.aspect_ids` halts the
@@ -180,8 +185,6 @@ def features_for_build_modes(ctx, cpp_fragment = None):
     compilation_mode = ctx.var["COMPILATION_MODE"]
     features = []
     features.append("swift.{}".format(compilation_mode))
-    if ctx.configuration.coverage_enabled:
-        features.append(SWIFT_FEATURE_COVERAGE)
     if compilation_mode in ("dbg", "fastbuild"):
         features.append(SWIFT_FEATURE_ENABLE_TESTING)
     if cpp_fragment and cpp_fragment.apple_generate_dsym:

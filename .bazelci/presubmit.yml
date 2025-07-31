@@ -134,5 +134,4 @@ tasks:
     test_targets:
     - "doc/..."
 
-# TODO: Update to version 8+ and fix errors
-buildifier: 6.3.2
+buildifier: 8.2.1

@@ -21,6 +21,8 @@ load(
     "@build_bazel_apple_support//lib:transitions.bzl",
     "macos_universal_transition",
 )
+load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
+load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load("//swift/internal:binary_attrs.bzl", "binary_rule_attrs")
 load("//swift/internal:compiling.bzl", "compile")
 load(
