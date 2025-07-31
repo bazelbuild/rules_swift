@@ -1,0 +1,2521 @@
+load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library_group")
+load("@build_bazel_rules_swift//system_sdks:swift_c_module.bzl", "swift_c_module")
+
+package(default_visibility = ["//visibility:public"])
+
+swift_library_group(
+    name = "imports_swift",
+    testonly = True,
+    deps = [
+        ":Swift_swift",
+        ":SwiftOnoneSupport_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+        ":Network_swift",
+        ":GameKit_swift",
+        ":QuartzCore_swift",
+        ":CoreGraphics_swift",
+        ":StoreKit_swift",
+        ":CoreML_swift",
+        ":WirelessInsights_swift",
+        ":Symbols_swift",
+        ":LightweightCodeRequirements_swift",
+        ":MediaPlayer_swift",
+        ":UIKit_swift",
+        ":HomeKit_swift",
+        ":CryptoKit_swift",
+        ":NaturalLanguage_swift",
+        ":CoreVideo_swift",
+        ":OSLog_swift",
+        ":CoreText_swift",
+        ":UniformTypeIdentifiers_swift",
+        ":SwiftData_swift",
+        ":ManagedSettings_swift",
+        ":AVFoundation_swift",
+        ":Accelerate_swift",
+        ":FamilyControls_swift",
+        ":ClockKit_swift",
+        ":Contacts_swift",
+        ":ExtensionFoundation_swift",
+        ":PhotosUI_swift",
+        ":SpriteKit_swift",
+        ":CoreMedia_swift",
+        ":Intents_swift",
+        ":FinanceKit_swift",
+        ":HealthKit_swift",
+        ":AVFAudio_swift",
+        ":GeoToolbox_swift",
+        ":SwiftUICore_swift",
+        ":DeviceActivity_swift",
+        ":CoreAudio_swift",
+        ":SecurityUI_swift",
+        ":MusicKit_swift",
+        ":RelevanceKit_swift",
+        ":SwiftUI_swift",
+        ":Combine_swift",
+        ":WatchKit_swift",
+        ":CreateMLComponents_swift",
+        ":ShazamKit_swift",
+        ":CarKey_swift",
+        ":AppIntents_swift",
+        ":AuthenticationServices_swift",
+        ":LiveCommunicationKit_swift",
+        ":WeatherKit_swift",
+        ":DataDetection_swift",
+        ":NearbyInteraction_swift",
+        ":LocalAuthentication_swift",
+        ":MatterSupport_swift",
+        ":Foundation_swift",
+        ":Accessibility_swift",
+        ":HealthKitUI_swift",
+        ":NetworkExtension_swift",
+        ":ExtensionKit_swift",
+        ":EventKit_swift",
+        ":Charts_swift",
+        ":MapKit_swift",
+        ":CallKit_swift",
+        ":CoreFoundation_swift",
+        ":TabularData_swift",
+        ":CoreMotion_swift",
+        ":WidgetKit_swift",
+        ":SoundAnalysis_swift",
+        ":CoreLocation_swift",
+        ":EnergyKit_swift",
+        ":CloudKit_swift",
+        ":BrowserEngineCore_swift",
+        ":WorkoutKit_swift",
+        ":BrowserEngineKit_swift",
+        ":PassKit_swift",
+        ":TipKit_swift",
+        ":CoreData_swift",
+        ":CryptoTokenKit_swift",
+        ":Translation_swift",
+        ":DeveloperToolsSupport_swift",
+        ":CoreTransferable_swift",
+        ":SceneKit_swift",
+        ":StoreKitTest_swift",
+        ":XCUIAutomation_swift",
+        ":XCTest_swift",
+        ":Testing_swift",
+        ":Darwin_swift",
+        ":RegexBuilder_swift",
+        ":System_swift",
+        ":AppleArchive_swift",
+        ":Observation_swift",
+        ":ObjectiveC_swift",
+        ":Synchronization_swift",
+        ":hvf_swift",
+        ":Dispatch_swift",
+        ":simd_swift",
+        ":Compression_swift",
+        ":Distributed_swift",
+        ":Spatial_swift",
+        ":os_swift",
+        ":_MusicKit_SwiftUI_swift",
+        ":_Testing_Foundation_swift",
+        ":_CoreData_CloudKit_swift",
+        ":_AppIntents_UIKit_swift",
+        ":_AppIntents_SwiftUI_swift",
+        ":_PhotosUI_SwiftUI_swift",
+        ":_SwiftData_CoreData_swift",
+        ":_SwiftData_SwiftUI_swift",
+        ":_RelevanceKit_MapKit_swift",
+        ":_GeoToolbox_AppIntents_swift",
+        ":_AuthenticationServices_SwiftUI_swift",
+        ":_StoreKit_SwiftUI_swift",
+        ":_ClockKit_SwiftUI_swift",
+        ":_WorkoutKit_SwiftUI_swift",
+        ":_HomeKit_SwiftUI_swift",
+    ],
+)
+
+swift_library_group(
+    name = "_HomeKit_SwiftUI_swift",
+    testonly = False,
+    deps = [
+        ":HomeKit_swift",
+        ":Swift_swift",
+        ":SwiftUI_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "_WorkoutKit_SwiftUI_swift",
+    testonly = False,
+    deps = [
+        ":Swift_swift",
+        ":SwiftUI_swift",
+        ":WorkoutKit_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "_ClockKit_SwiftUI_swift",
+    testonly = False,
+    deps = [
+        ":ClockKit_swift",
+        ":Swift_swift",
+        ":SwiftUI_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "_StoreKit_SwiftUI_swift",
+    testonly = False,
+    deps = [
+        ":Combine_swift",
+        ":CoreGraphics_swift",
+        ":CryptoKit_swift",
+        ":DeveloperToolsSupport_swift",
+        ":Foundation_swift",
+        ":OSLog_swift",
+        ":StoreKit_swift",
+        ":Swift_swift",
+        ":SwiftUI_swift",
+        ":UIKit_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+        ":os_swift",
+    ],
+)
+
+swift_library_group(
+    name = "_AuthenticationServices_SwiftUI_swift",
+    testonly = False,
+    deps = [
+        ":AuthenticationServices_swift",
+        ":Swift_swift",
+        ":SwiftUI_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+        ":os_swift",
+    ],
+)
+
+swift_library_group(
+    name = "_GeoToolbox_AppIntents_swift",
+    testonly = False,
+    deps = [
+        ":AppIntents_swift",
+        ":CoreLocation_swift",
+        ":GeoToolbox_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "_RelevanceKit_MapKit_swift",
+    testonly = False,
+    deps = [
+        ":MapKit_swift",
+        ":RelevanceKit_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "_SwiftData_SwiftUI_swift",
+    testonly = False,
+    deps = [
+        ":Observation_swift",
+        ":Swift_swift",
+        ":SwiftData_swift",
+        ":SwiftUI_swift",
+        ":UniformTypeIdentifiers_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "_SwiftData_CoreData_swift",
+    testonly = False,
+    deps = [
+        ":CoreData_swift",
+        ":Swift_swift",
+        ":SwiftData_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "_PhotosUI_SwiftUI_swift",
+    testonly = False,
+    deps = [
+        ":CoreTransferable_swift",
+        ":PhotosUI_swift",
+        ":Swift_swift",
+        ":SwiftUI_swift",
+        ":UniformTypeIdentifiers_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "_AppIntents_UIKit_swift",
+    testonly = False,
+    deps = [
+        ":AppIntents_swift",
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":UIKit_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "_CoreData_CloudKit_swift",
+    testonly = False,
+    deps = [
+        ":CloudKit_swift",
+        ":CoreData_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "_Testing_Foundation_swift",
+    testonly = False,
+    deps = [
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":Testing_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "_MusicKit_SwiftUI_swift",
+    testonly = False,
+    deps = [
+        ":CoreGraphics_swift",
+        ":Foundation_swift",
+        ":MusicKit_swift",
+        ":Swift_swift",
+        ":SwiftUI_swift",
+        ":UIKit_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "hvf_swift",
+    testonly = False,
+    deps = [
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "AppleArchive_swift",
+    testonly = False,
+    deps = [
+        ":Compression_swift",
+        ":CryptoKit_swift",
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":System_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "Compression_swift",
+    testonly = False,
+    deps = [
+        ":Darwin_swift",
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "RegexBuilder_swift",
+    testonly = False,
+    deps = [
+        ":Swift_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "Testing_swift",
+    testonly = False,
+    deps = [
+        ":ObjectiveC_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "XCTest_swift",
+    testonly = True,
+    deps = [
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":XCUIAutomation_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+        ":SwiftOnoneSupport_swift",
+    ],
+)
+
+swift_library_group(
+    name = "XCUIAutomation_swift",
+    testonly = True,
+    deps = [
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+        ":os_swift",
+        ":SwiftOnoneSupport_swift",
+    ],
+)
+
+swift_library_group(
+    name = "StoreKitTest_swift",
+    testonly = False,
+    deps = [
+        ":Foundation_swift",
+        ":StoreKit_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "SceneKit_swift",
+    testonly = False,
+    deps = [
+        ":CoreGraphics_swift",
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+        ":simd_swift",
+    ],
+)
+
+swift_library_group(
+    name = "Translation_swift",
+    testonly = False,
+    deps = [
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "CryptoTokenKit_swift",
+    testonly = False,
+    deps = [
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "TipKit_swift",
+    testonly = False,
+    deps = [
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":SwiftUI_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "PassKit_swift",
+    testonly = False,
+    deps = [
+        ":LocalAuthentication_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "BrowserEngineKit_swift",
+    testonly = False,
+    deps = [
+        ":AVFoundation_swift",
+        ":BrowserEngineCore_swift",
+        ":ExtensionFoundation_swift",
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":UIKit_swift",
+        ":UniformTypeIdentifiers_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "WorkoutKit_swift",
+    testonly = False,
+    deps = [
+        ":CoreLocation_swift",
+        ":Foundation_swift",
+        ":HealthKit_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+        ":os_swift",
+    ],
+)
+
+swift_library_group(
+    name = "BrowserEngineCore_swift",
+    testonly = False,
+    deps = [
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "CloudKit_swift",
+    testonly = False,
+    deps = [
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "EnergyKit_swift",
+    testonly = False,
+    deps = [
+        ":CoreLocation_swift",
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "SoundAnalysis_swift",
+    testonly = False,
+    deps = [
+        ":AVFAudio_swift",
+        ":CoreML_swift",
+        ":CoreMedia_swift",
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "WidgetKit_swift",
+    testonly = False,
+    deps = [
+        ":AppIntents_swift",
+        ":DeveloperToolsSupport_swift",
+        ":Intents_swift",
+        ":Swift_swift",
+        ":SwiftUI_swift",
+        ":_AppIntents_SwiftUI_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "_AppIntents_SwiftUI_swift",
+    testonly = False,
+    deps = [
+        ":AppIntents_swift",
+        ":DeveloperToolsSupport_swift",
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":SwiftUI_swift",
+        ":UIKit_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "CoreMotion_swift",
+    testonly = False,
+    deps = [
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+        ":os_swift",
+    ],
+)
+
+swift_library_group(
+    name = "CallKit_swift",
+    testonly = False,
+    deps = [
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "MapKit_swift",
+    testonly = False,
+    deps = [
+        ":Foundation_swift",
+        ":GeoToolbox_swift",
+        ":Swift_swift",
+        ":UIKit_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "Charts_swift",
+    testonly = False,
+    deps = [
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":SwiftUI_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "EventKit_swift",
+    testonly = False,
+    deps = [
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+        ":os_swift",
+    ],
+)
+
+swift_library_group(
+    name = "ExtensionKit_swift",
+    testonly = False,
+    deps = [
+        ":ExtensionFoundation_swift",
+        ":Foundation_swift",
+        ":OSLog_swift",
+        ":Swift_swift",
+        ":SwiftUI_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+        ":os_swift",
+    ],
+)
+
+swift_library_group(
+    name = "NetworkExtension_swift",
+    testonly = False,
+    deps = [
+        ":ExtensionFoundation_swift",
+        ":Network_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "HealthKitUI_swift",
+    testonly = False,
+    deps = [
+        ":Swift_swift",
+        ":SwiftUI_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "MatterSupport_swift",
+    testonly = False,
+    deps = [
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "NearbyInteraction_swift",
+    testonly = False,
+    deps = [
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "WeatherKit_swift",
+    testonly = False,
+    deps = [
+        ":CoreLocation_swift",
+        ":Foundation_swift",
+        ":Network_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+        ":os_swift",
+    ],
+)
+
+swift_library_group(
+    name = "LiveCommunicationKit_swift",
+    testonly = False,
+    deps = [
+        ":AVFoundation_swift",
+        ":Combine_swift",
+        ":ExtensionFoundation_swift",
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "AuthenticationServices_swift",
+    testonly = False,
+    deps = [
+        ":CryptoKit_swift",
+        ":DeveloperToolsSupport_swift",
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+        ":os_swift",
+    ],
+)
+
+swift_library_group(
+    name = "CarKey_swift",
+    testonly = False,
+    deps = [
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "ShazamKit_swift",
+    testonly = False,
+    deps = [
+        ":Combine_swift",
+        ":Foundation_swift",
+        ":MusicKit_swift",
+        ":Observation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+        ":os_swift",
+    ],
+)
+
+swift_library_group(
+    name = "CreateMLComponents_swift",
+    testonly = False,
+    deps = [
+        ":Accelerate_swift",
+        ":Combine_swift",
+        ":CoreML_swift",
+        ":CoreMedia_swift",
+        ":CoreVideo_swift",
+        ":Foundation_swift",
+        ":OSLog_swift",
+        ":Swift_swift",
+        ":TabularData_swift",
+        ":UniformTypeIdentifiers_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+        ":os_swift",
+    ],
+)
+
+swift_library_group(
+    name = "TabularData_swift",
+    testonly = False,
+    deps = [
+        ":Combine_swift",
+        ":Dispatch_swift",
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "MusicKit_swift",
+    testonly = False,
+    deps = [
+        ":Combine_swift",
+        ":CoreGraphics_swift",
+        ":DeveloperToolsSupport_swift",
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "SecurityUI_swift",
+    testonly = False,
+    deps = [
+        ":DeveloperToolsSupport_swift",
+        ":Foundation_swift",
+        ":OSLog_swift",
+        ":Swift_swift",
+        ":SwiftUI_swift",
+        ":UIKit_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+        ":os_swift",
+    ],
+)
+
+swift_library_group(
+    name = "SwiftUI_swift",
+    testonly = False,
+    deps = [
+        ":Combine_swift",
+        ":CoreData_swift",
+        ":CoreFoundation_swift",
+        ":CoreGraphics_swift",
+        ":CoreText_swift",
+        ":CoreTransferable_swift",
+        ":DeveloperToolsSupport_swift",
+        ":Foundation_swift",
+        ":OSLog_swift",
+        ":Observation_swift",
+        ":Spatial_swift",
+        ":Swift_swift",
+        ":SwiftUICore_swift",
+        ":Symbols_swift",
+        ":UIKit_swift",
+        ":UniformTypeIdentifiers_swift",
+        ":WatchKit_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+        ":os_swift",
+    ],
+)
+
+
+swift_c_module(
+    name = "CoreLocation",
+    module_name = "CoreLocation",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/System/Library/Frameworks/CoreLocation.framework/Modules/module.modulemap",
+    deps = [
+        ":os_availability",
+        ":Foundation",
+    ],
+)
+
+
+swift_c_module(
+    name = "_LocationEssentials",
+    module_name = "_LocationEssentials",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/System/Library/Frameworks/_LocationEssentials.framework/Modules/module.modulemap",
+    deps = [
+        ":Foundation",
+    ],
+)
+
+swift_c_module(
+    name = "TargetConditionals",
+    module_name = "TargetConditionals",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/usr/include/DarwinFoundation1.modulemap",
+    deps = [
+        ":_DarwinFoundation1",
+    ],
+)
+
+
+swift_c_module(
+    name = "SceneKit",
+    module_name = "SceneKit",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/System/Library/Frameworks/SceneKit.framework/Modules/module.modulemap",
+    deps = [
+        ":CoreGraphics",
+        ":Foundation",
+        ":simd",
+    ],
+)
+
+swift_c_module(
+    name = "os_availability",
+    module_name = "os_availability",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/usr/include/DarwinFoundation1.modulemap",
+    deps = [
+        ":_DarwinFoundation1",
+    ],
+)
+
+
+swift_c_module(
+    name = "MapKit",
+    module_name = "MapKit",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/System/Library/Frameworks/MapKit.framework/Modules/module.modulemap",
+    deps = [
+        ":CoreGraphics",
+        ":CoreLocation",
+        ":Foundation",
+        ":os_availability",
+        ":UIKit",
+    ],
+)
+
+swift_c_module(
+    name = "HomeKit",
+    module_name = "HomeKit",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/System/Library/Frameworks/HomeKit.framework/Modules/module.modulemap",
+    deps = [
+        ":Foundation",
+        ":CoreGraphics",
+    ],
+)
+
+swift_c_module(
+    name = "WatchKit",
+    module_name = "WatchKit",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/System/Library/Frameworks/WatchKit.framework/Modules/module.modulemap",
+    deps = [
+        ":Foundation",
+        ":_Builtin_intrinsics",
+        ":_Builtin_tgmath",
+        ":CoreGraphics",
+        ":UIKit",
+        ":HomeKit",
+        ":MapKit",
+        ":SceneKit",
+    ],
+)
+
+swift_library_group(
+    name = "WatchKit_swift",
+    testonly = False,
+    deps = [
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "Spatial_swift",
+    testonly = False,
+    deps = [
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "DeviceActivity_swift",
+    testonly = False,
+    deps = [
+        ":Foundation_swift",
+        ":ManagedSettings_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+        ":os_swift",
+    ],
+)
+
+swift_library_group(
+    name = "GeoToolbox_swift",
+    testonly = False,
+    deps = [
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "HealthKit_swift",
+    testonly = False,
+    deps = [
+        ":CoreLocation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+        ":os_swift",
+    ],
+)
+
+swift_library_group(
+    name = "FinanceKit_swift",
+    testonly = False,
+    deps = [
+        ":CoreData_swift",
+        ":ExtensionFoundation_swift",
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "CoreData_swift",
+    testonly = False,
+    deps = [
+        ":Combine_swift",
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+        ":os_swift",
+    ],
+)
+
+swift_library_group(
+    name = "Intents_swift",
+    testonly = False,
+    deps = [
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "SpriteKit_swift",
+    testonly = False,
+    deps = [
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+        ":simd_swift",
+    ],
+)
+
+swift_library_group(
+    name = "PhotosUI_swift",
+    testonly = False,
+    deps = [
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "Contacts_swift",
+    testonly = False,
+    deps = [
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "ClockKit_swift",
+    testonly = False,
+    deps = [
+        ":AppIntents_swift",
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "AppIntents_swift",
+    testonly = False,
+    deps = [
+        ":CoreGraphics_swift",
+        ":CoreLocation_swift",
+        ":CoreTransferable_swift",
+        ":Dispatch_swift",
+        ":ExtensionFoundation_swift",
+        ":Foundation_swift",
+        ":RelevanceKit_swift",
+        ":Swift_swift",
+        ":UniformTypeIdentifiers_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "RelevanceKit_swift",
+    testonly = False,
+    deps = [
+        ":CoreLocation_swift",
+        ":Foundation_swift",
+        ":OSLog_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "ExtensionFoundation_swift",
+    testonly = False,
+    deps = [
+        ":Combine_swift",
+        ":Foundation_swift",
+        ":Network_swift",
+        ":OSLog_swift",
+        ":Observation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+        ":os_swift",
+    ],
+)
+
+swift_library_group(
+    name = "CoreLocation_swift",
+    testonly = False,
+    deps = [
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+        ":os_swift",
+    ],
+)
+
+swift_library_group(
+    name = "FamilyControls_swift",
+    testonly = False,
+    deps = [
+        ":Combine_swift",
+        ":DeveloperToolsSupport_swift",
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+        ":os_swift",
+    ],
+)
+
+swift_library_group(
+    name = "Accelerate_swift",
+    testonly = False,
+    deps = [
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+        ":simd_swift",
+    ],
+)
+
+swift_library_group(
+    name = "AVFoundation_swift",
+    testonly = False,
+    deps = [
+        ":AVFAudio_swift",
+        ":CoreGraphics_swift",
+        ":CoreMedia_swift",
+        ":Dispatch_swift",
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":Synchronization_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "CoreMedia_swift",
+    testonly = False,
+    deps = [
+        ":CoreAudio_swift",
+        ":CoreFoundation_swift",
+        ":CoreGraphics_swift",
+        ":CoreVideo_swift",
+        ":Darwin_swift",
+        ":Dispatch_swift",
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+        ":simd_swift",
+    ],
+)
+
+swift_library_group(
+    name = "simd_swift",
+    testonly = False,
+    deps = [
+        ":Darwin_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "CoreAudio_swift",
+    testonly = False,
+    deps = [
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "AVFAudio_swift",
+    testonly = False,
+    deps = [
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "ManagedSettings_swift",
+    testonly = False,
+    deps = [
+        ":Combine_swift",
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+        ":os_swift",
+    ],
+)
+
+swift_library_group(
+    name = "SwiftData_swift",
+    testonly = False,
+    deps = [
+        ":Foundation_swift",
+        ":Observation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "NaturalLanguage_swift",
+    testonly = False,
+    deps = [
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "HomeKit_swift",
+    testonly = False,
+    deps = [
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "MediaPlayer_swift",
+    testonly = False,
+    deps = [
+        ":DeveloperToolsSupport_swift",
+        ":Dispatch_swift",
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":UIKit_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "LightweightCodeRequirements_swift",
+    testonly = False,
+    deps = [
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "WirelessInsights_swift",
+    testonly = False,
+    deps = [
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+        ":os_swift",
+    ],
+)
+
+swift_library_group(
+    name = "CoreML_swift",
+    testonly = False,
+    deps = [
+        ":CoreVideo_swift",
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":Synchronization_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "Synchronization_swift",
+    testonly = False,
+    deps = [
+        ":Darwin_swift",
+        ":Swift_swift",
+    ],
+)
+
+swift_library_group(
+    name = "CoreVideo_swift",
+    testonly = False,
+    deps = [
+        ":CoreGraphics_swift",
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "StoreKit_swift",
+    testonly = False,
+    deps = [
+        ":Combine_swift",
+        ":CoreFoundation_swift",
+        ":CryptoKit_swift",
+        ":Foundation_swift",
+        ":OSLog_swift",
+        ":Swift_swift",
+        ":UIKit_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+        ":os_swift",
+    ],
+)
+
+swift_library_group(
+    name = "UIKit_swift",
+    testonly = False,
+    deps = [
+        ":Accessibility_swift",
+        ":CoreGraphics_swift",
+        ":CoreText_swift",
+        ":DataDetection_swift",
+        ":DeveloperToolsSupport_swift",
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":SwiftUICore_swift",
+        ":Symbols_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "SwiftUICore_swift",
+    testonly = False,
+    deps = [
+        ":Accessibility_swift",
+        ":Combine_swift",
+        ":CoreFoundation_swift",
+        ":CoreText_swift",
+        ":CoreTransferable_swift",
+        ":DeveloperToolsSupport_swift",
+        ":Foundation_swift",
+        ":OSLog_swift",
+        ":Observation_swift",
+        ":Swift_swift",
+        ":Symbols_swift",
+        ":UniformTypeIdentifiers_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+        ":os_swift",
+    ],
+)
+
+swift_library_group(
+    name = "Symbols_swift",
+    testonly = False,
+    deps = [
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "CoreTransferable_swift",
+    testonly = False,
+    deps = [
+        ":Combine_swift",
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":UniformTypeIdentifiers_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+        ":os_swift",
+    ],
+)
+
+swift_library_group(
+    name = "DeveloperToolsSupport_swift",
+    testonly = False,
+    deps = [
+        ":CoreGraphics_swift",
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "DataDetection_swift",
+    testonly = False,
+    deps = [
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "CoreText_swift",
+    testonly = False,
+    deps = [
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":UniformTypeIdentifiers_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "UniformTypeIdentifiers_swift",
+    testonly = False,
+    deps = [
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "Accessibility_swift",
+    testonly = False,
+    deps = [
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "OSLog_swift",
+    testonly = False,
+    deps = [
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "CryptoKit_swift",
+    testonly = False,
+    deps = [
+        ":Foundation_swift",
+        ":LocalAuthentication_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "LocalAuthentication_swift",
+    testonly = False,
+    deps = [
+        ":Combine_swift",
+        ":Foundation_swift",
+        ":Observation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "CoreGraphics_swift",
+    testonly = False,
+    deps = [
+        ":CoreFoundation_swift",
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "QuartzCore_swift",
+    testonly = False,
+    deps = [
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "GameKit_swift",
+    testonly = False,
+    deps = [
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+        ":os_swift",
+    ],
+)
+
+swift_library_group(
+    name = "Network_swift",
+    testonly = False,
+    deps = [
+        ":Darwin_swift",
+        ":Dispatch_swift",
+        ":Distributed_swift",
+        ":Foundation_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+        ":os_swift",
+    ],
+)
+
+swift_library_group(
+    name = "os_swift",
+    testonly = False,
+    deps = [
+        ":ObjectiveC_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "Foundation_swift",
+    testonly = False,
+    deps = [
+        ":Combine_swift",
+        ":CoreFoundation_swift",
+        ":Darwin_swift",
+        ":Dispatch_swift",
+        ":ObjectiveC_swift",
+        ":Observation_swift",
+        ":Swift_swift",
+        ":System_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "System_swift",
+    testonly = False,
+    deps = [
+        ":Darwin_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "Observation_swift",
+    testonly = False,
+    deps = [
+        ":Swift_swift",
+    ],
+)
+
+swift_library_group(
+    name = "ObjectiveC_swift",
+    testonly = False,
+    deps = [
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "CoreFoundation_swift",
+    testonly = False,
+    deps = [
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "Distributed_swift",
+    testonly = False,
+    deps = [
+        ":Darwin_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+    ],
+)
+
+swift_library_group(
+    name = "Dispatch_swift",
+    testonly = False,
+    deps = [
+        ":Combine_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "Combine_swift",
+    testonly = False,
+    deps = [
+        ":Darwin_swift",
+        ":Swift_swift",
+        ":_Concurrency_swift",
+        ":_StringProcessing_swift",
+    ],
+)
+
+swift_library_group(
+    name = "Darwin_swift",
+    testonly = False,
+    deps = [
+        ":Swift_swift",
+        ":_Builtin_float_swift",
+        ":_DarwinFoundation1_swift",
+        ":_DarwinFoundation2_swift",
+        ":_DarwinFoundation3_swift",
+    ],
+)
+
+swift_library_group(
+    name = "_DarwinFoundation3_swift",
+    testonly = False,
+    deps = [
+        ":Swift_swift",
+    ],
+)
+
+swift_library_group(
+    name = "_DarwinFoundation2_swift",
+    testonly = False,
+    deps = [
+        ":Swift_swift",
+    ],
+)
+
+swift_library_group(
+    name = "_DarwinFoundation1_swift",
+    testonly = False,
+    deps = [
+        ":Swift_swift",
+    ],
+)
+
+swift_library_group(
+    name = "_Builtin_float_swift",
+    testonly = False,
+    deps = [
+        ":Swift_swift",
+    ],
+)
+
+swift_library_group(
+    name = "_StringProcessing_swift",
+    testonly = False,
+    deps = [
+        ":Swift_swift",
+    ],
+)
+
+swift_library_group(
+    name = "_Concurrency_swift",
+    testonly = False,
+    deps = [
+        ":Swift_swift",
+    ],
+)
+
+swift_library_group(
+    name = "SwiftOnoneSupport_swift",
+    testonly = False,
+    deps = [
+        ":Swift_swift",
+    ],
+)
+
+swift_library_group(
+    name = "Swift_swift",
+    testonly = False,
+    deps = [
+        ":_SwiftConcurrencyShims",
+    ],
+)
+
+#MANUALLY ADDED TARGETS START
+swift_c_module(
+    name = "_SwiftConcurrencyShims",
+    module_name = "_SwiftConcurrencyShims",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/usr/lib/swift/shims/module.modulemap",
+)
+
+swift_c_module(
+    name = "SwiftShims",
+    module_name = "SwiftShims",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/usr/lib/swift/shims/module.modulemap",
+)
+
+swift_c_module(
+    name = "_DarwinFoundation1",
+    module_name = "_DarwinFoundation1",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/usr/include/DarwinFoundation1.modulemap",
+    deps = [
+        ":_AvailabilityInternal",
+        ":ptrcheck",
+    ],
+)
+
+swift_c_module(
+    name = "_DarwinFoundation2",
+    module_name = "_DarwinFoundation2",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/WatchSimulator.platform/Developer/SDKs/WatchSimulator.sdk/usr/include/DarwinFoundation2.modulemap",
+    deps = [
+        ":_DarwinFoundation1",
+        ":_Builtin_stdarg",
+        ":_Builtin_stddef",
+    ],
+)
+
+swift_c_module(
+    name = "_Builtin_stdint",
+    module_name = "_Builtin_stdint",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_DEVELOPER_DIR__/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/module.modulemap",
+    deps = [
+        ":_DarwinFoundation2",
+    ],
+)
+
+swift_c_module(
+    name = "_Builtin_inttypes",
+    module_name = "_Builtin_inttypes",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_DEVELOPER_DIR__/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/module.modulemap",
+    deps = [
+        ":_DarwinFoundation3",
+    ],
+)
+
+swift_c_module(
+    name = "_Builtin_limits",
+    module_name = "_Builtin_limits",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_DEVELOPER_DIR__/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/module.modulemap",
+    deps = [
+        ":_DarwinFoundation1",
+    ],
+)
+
+swift_c_module(
+    name = "_Builtin_stdarg",
+    module_name = "_Builtin_stdarg",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_DEVELOPER_DIR__/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/module.modulemap",
+)
+
+swift_c_module(
+    name = "_Builtin_float",
+    module_name = "_Builtin_float",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_DEVELOPER_DIR__/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/module.modulemap",
+)
+
+swift_c_module(
+    name = "_DarwinFoundation3",
+    module_name = "_DarwinFoundation3",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/WatchSimulator.platform/Developer/SDKs/WatchSimulator.sdk/usr/include/DarwinFoundation3.modulemap",
+    deps = [
+        ":_DarwinFoundation1",
+        ":_DarwinFoundation2",
+        ":_Builtin_stdint",
+        ":_Builtin_stddef",
+        ":ptrcheck",
+        ":_Builtin_stdarg",
+    ],
+)
+
+swift_c_module(
+    name = "_Builtin_stdbool",
+    module_name = "_Builtin_stdbool",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_DEVELOPER_DIR__/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/module.modulemap",
+)
+
+swift_c_module(
+    name = "_Builtin_stddef",
+    module_name = "_Builtin_stddef",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_DEVELOPER_DIR__/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/module.modulemap",
+)
+
+swift_c_module(
+    name = "_AvailabilityInternal",
+    module_name = "_AvailabilityInternal",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/WatchSimulator.platform/Developer/SDKs/WatchSimulator.sdk/usr/include/DarwinFoundation1.modulemap",
+)
+
+swift_c_module(
+    name = "ptrcheck",
+    module_name = "ptrcheck",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_DEVELOPER_DIR__/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/module.modulemap",
+)
+
+swift_c_module(
+    name = "ptrauth",
+    module_name = "ptrauth",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_DEVELOPER_DIR__/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/module.modulemap",
+)
+
+swift_c_module(
+    name = "sys_types",
+    module_name = "sys_types",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/usr/include/DarwinFoundation2.modulemap",
+    deps = [
+        ":_DarwinFoundation2",
+    ],
+)
+
+swift_c_module(
+    name = "CoreData",
+    module_name = "CoreData",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/System/Library/Frameworks/CoreData.framework/Modules/module.modulemap",
+    deps = [
+        ":Foundation",
+        ":_DarwinFoundation1",
+    ],
+)
+
+swift_c_module(
+    name = "Foundation",
+    module_name = "Foundation",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/System/Library/Frameworks/Foundation.framework/Modules/module.modulemap",
+    deps = [
+        ":CoreFoundation",
+        ":Dispatch",
+        ":_Builtin_limits",
+        ":_Builtin_stdarg",
+        ":_DarwinFoundation1",
+        ":ObjectiveC",
+        ":_Builtin_stdint",
+        ":ptrauth",
+        ":Darwin",
+        ":_Builtin_stddef",
+    ],
+)
+
+swift_c_module(
+    name = "CoreFoundation",
+    module_name = "CoreFoundation",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/System/Library/Frameworks/CoreFoundation.framework/Modules/module.modulemap",
+    deps = [
+        ":_DarwinFoundation1",
+        ":_DarwinFoundation2",
+        ":_Builtin_stdarg",
+        ":_Builtin_float",
+        ":_Builtin_limits",
+        ":_DarwinFoundation3",
+        ":_Builtin_stddef",
+        ":_Builtin_inttypes",
+        ":_Builtin_stdint",
+        ":_Builtin_stdbool",
+        ":Darwin",
+        ":ptrauth",
+        ":Dispatch",
+    ],
+)
+
+swift_c_module(
+    name = "Dispatch",
+    module_name = "Dispatch",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/usr/include/dispatch.modulemap",
+    deps = [
+        ":_DarwinFoundation1",
+        ":Darwin",
+        ":_DarwinFoundation2",
+        ":_Builtin_stddef",
+        ":_Builtin_stdint",
+        ":_Builtin_stdbool",
+        ":_Builtin_stdarg",
+        ":_DarwinFoundation3",
+        ":os_object",
+        ":os_workgroup",
+    ],
+)
+
+swift_c_module(
+    name = "ObjectiveC",
+    module_name = "ObjectiveC",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/usr/include/ObjectiveC.modulemap",
+    deps = [
+        ":_DarwinFoundation1",
+        ":_Builtin_limits",
+        ":_DarwinFoundation3",
+        ":_Builtin_stdbool",
+        ":_Builtin_stddef",
+        ":_DarwinFoundation2",
+        ":_Builtin_stdint",
+        ":Darwin",
+        ":_Builtin_stdarg",
+    ],
+)
+
+swift_c_module(
+    name = "os_workgroup",
+    module_name = "os_workgroup",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/usr/include/os.modulemap",
+    deps = [
+        ":_DarwinFoundation2",
+        ":_Builtin_stddef",
+        ":_Builtin_stdint",
+        ":_Builtin_stdbool",
+        ":_DarwinFoundation3",
+        ":Darwin",
+        ":_DarwinFoundation1",
+        ":os_object",
+    ],
+)
+
+
+swift_c_module(
+    name = "os_object",
+    module_name = "os_object",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/usr/include/os.modulemap",
+    deps = [
+        ":_DarwinFoundation1",
+        ":Darwin",
+        ":ObjectiveC",
+    ],
+)
+
+
+swift_c_module(
+    name = "os",
+    module_name = "os",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/usr/include/os.modulemap",
+    deps = [
+        ":Darwin",
+        ":_Builtin_stdatomic",
+        ":_Builtin_stdint",
+        ":_Builtin_stdbool",
+        ":MachO",
+        ":_DarwinFoundation1",
+        ":os_object",
+        ":_Builtin_stdarg",
+        ":_DarwinFoundation2",
+        ":_DarwinFoundation3",
+        ":os_workgroup",
+    ],
+)
+
+swift_c_module(
+    name = "Darwin",
+    module_name = "Darwin",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/WatchSimulator.platform/Developer/SDKs/WatchSimulator.sdk/usr/include/Darwin.modulemap",
+    deps = [
+        ":_DarwinFoundation1",
+        ":_DarwinFoundation2",
+        ":_Builtin_stdint",
+        ":_Builtin_inttypes",
+        ":_Builtin_limits",
+        ":_DarwinFoundation3",
+        ":_Builtin_stdarg",
+        ":_Builtin_stdbool",
+        ":_Builtin_stddef",
+    ],
+)
+
+swift_c_module(
+    name = "CoreGraphics",
+    module_name = "CoreGraphics",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/System/Library/Frameworks/CoreGraphics.framework/Modules/module.modulemap",
+    deps = [
+        ":CoreFoundation",
+        ":_Builtin_stdbool",
+        ":_Builtin_stddef",
+        ":_Builtin_float",
+        ":_DarwinFoundation1",
+        ":_Builtin_stdint",
+        ":_DarwinFoundation2",
+    ],
+)
+
+swift_c_module(
+    name = "_Builtin_stdatomic",
+    module_name = "_Builtin_stdatomic",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_DEVELOPER_DIR__/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/module.modulemap",
+    deps = [
+        ":_Builtin_stddef",
+        ":_Builtin_stdint",
+    ],
+)
+
+swift_c_module(
+    name = "MachO",
+    module_name = "MachO",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/usr/include/DarwinBasic.modulemap",
+    deps = [
+        ":_Builtin_stdint",
+        ":Darwin",
+        ":_DarwinFoundation1",
+        ":_Builtin_stddef",
+        ":_Builtin_stdbool",
+        ":_DarwinFoundation3",
+        ":_DarwinFoundation2",
+    ],
+)
+
+swift_c_module(
+    name = "CoreText",
+    module_name = "CoreText",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/System/Library/Frameworks/CoreText.framework/Modules/module.modulemap",
+    deps = [
+        ":_DarwinFoundation1",
+        ":CoreGraphics",
+        ":CoreFoundation",
+        ":Darwin",
+    ],
+)
+
+swift_c_module(
+    name = "UniformTypeIdentifiers",
+    module_name = "UniformTypeIdentifiers",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/System/Library/Frameworks/UniformTypeIdentifiers.framework/Modules/module.modulemap",
+    deps = [
+        ":Foundation",
+        ":_DarwinFoundation1",
+    ],
+)
+
+swift_c_module(
+    name = "CoreTransferable",
+    module_name = "CoreTransferable",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/System/Library/Frameworks/CoreTransferable.framework/Modules/module.modulemap",
+    deps = [
+        ":Foundation",
+    ],
+)
+
+
+swift_c_module(
+    name = "DeveloperToolsSupport",
+    module_name = "DeveloperToolsSupport",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/System/Library/Frameworks/DeveloperToolsSupport.framework/Modules/module.modulemap",
+)
+
+
+swift_c_module(
+    name = "OSLog",
+    module_name = "OSLog",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/System/Library/Frameworks/OSLog.framework/Modules/module.modulemap",
+    deps = [
+        ":Foundation",
+        ":os",
+    ],
+)
+
+
+swift_c_module(
+    name = "Spatial",
+    module_name = "Spatial",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/usr/include/Spatial/module.modulemap",
+    deps = [
+        ":_DarwinFoundation1",
+        ":simd",
+        ":_Builtin_stdbool",
+    ],
+)
+
+swift_c_module(
+    name = "simd",
+    module_name = "simd",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/usr/include/simd/module.modulemap",
+    deps = [
+        ":_DarwinFoundation1",
+        ":_Builtin_intrinsics",
+        ":_Builtin_stdint",
+        ":_Builtin_tgmath",
+        ":_Builtin_stddef",
+    ],
+)
+
+
+swift_c_module(
+    name = "_Builtin_tgmath",
+    module_name = "_Builtin_tgmath",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_DEVELOPER_DIR__/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/module.modulemap",
+    deps = [
+        ":_DarwinFoundation1",
+        ":_DarwinFoundation2",
+    ],
+)
+
+swift_c_module(
+    name = "_Builtin_intrinsics",
+    module_name = "_Builtin_intrinsics",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_DEVELOPER_DIR__/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/module.modulemap",
+    deps = [
+        ":_Builtin_stdint",
+    ],
+)
+
+
+swift_c_module(
+    name = "SwiftUI",
+    module_name = "SwiftUI",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/System/Library/Frameworks/SwiftUI.framework/Modules/module.modulemap",
+    deps = [
+        ":_DarwinFoundation1",
+        ":_Builtin_intrinsics",
+        ":_Builtin_tgmath",
+        ":UIKit",
+        ":WatchKit",
+    ],
+)
+
+
+swift_c_module(
+    name = "Accessibility",
+    module_name = "Accessibility",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/System/Library/Frameworks/Accessibility.framework/Modules/module.modulemap",
+    deps = [
+        ":Foundation",
+        ":CoreGraphics",
+        ":_DarwinFoundation1",
+    ],
+)
+
+
+swift_c_module(
+    name = "UIKit",
+    module_name = "UIKit",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/System/Library/Frameworks/UIKit.framework/Modules/module.modulemap",
+    deps = [
+        ":Foundation",
+        ":CoreText",
+        ":CoreGraphics",
+        ":_DarwinFoundation1",
+        ":Symbols",
+        ":QuartzCore",
+        ":UIUtilities",
+        ":UserNotifications",
+    ],
+)
+
+
+swift_c_module(
+    name = "Symbols",
+    module_name = "Symbols",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/System/Library/Frameworks/Symbols.framework/Modules/module.modulemap",
+    deps = [
+        ":Foundation",
+    ],
+)
+
+swift_c_module(
+    name = "ImageIO",
+    module_name = "ImageIO",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/System/Library/Frameworks/ImageIO.framework/Modules/module.modulemap",
+    deps = [
+        ":CoreGraphics",
+        ":_Builtin_stdbool",
+        ":_Builtin_stddef",
+        ":_Builtin_stdint",
+        ":_Builtin_float",
+        ":CoreFoundation",
+        ":_DarwinFoundation1",
+    ],
+)
+
+swift_c_module(
+    name = "UIUtilities",
+    module_name = "UIUtilities",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/System/Library/SubFrameworks/UIUtilities.framework/Modules/module.modulemap",
+    deps = [
+        ":Foundation",
+        ":_DarwinFoundation1",
+    ],
+)
+
+
+swift_c_module(
+    name = "QuartzCore",
+    module_name = "QuartzCore",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/System/Library/Frameworks/QuartzCore.framework/Modules/module.modulemap",
+    deps = [
+        ":Foundation",
+        ":_Builtin_stdbool",
+        ":_Builtin_stddef",
+        ":_Builtin_stdint",
+        ":_Builtin_float",
+        ":CoreFoundation",
+        ":CoreGraphics",
+        ":_DarwinFoundation1",
+        ":ObjectiveC",
+        ":Darwin",
+        ":CoreVideo",
+    ],
+)
+
+swift_c_module(
+    name = "UserNotifications",
+    module_name = "UserNotifications",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/System/Library/Frameworks/UserNotifications.framework/Modules/module.modulemap",
+    deps = [
+        ":Foundation",
+    ],
+)
+
+
+swift_c_module(
+    name = "CoreVideo",
+    module_name = "CoreVideo",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/System/Library/Frameworks/CoreVideo.framework/Modules/module.modulemap",
+    deps = [
+        ":_DarwinFoundation1",
+        ":_Builtin_stdint",
+        ":CoreFoundation",
+        ":_Builtin_stddef",
+        ":CoreGraphics",
+    ],
+)
+
+
+swift_c_module(
+    name = "DataDetection",
+    module_name = "DataDetection",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/System/Library/Frameworks/DataDetection.framework/Modules/module.modulemap",
+    deps = [
+        ":Foundation",
+    ],
+)
+
+
+swift_c_module(
+    name = "SwiftUICore",
+    module_name = "SwiftUICore",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/System/Library/Frameworks/SwiftUICore.framework/Modules/module.modulemap",
+    deps = [
+        ":_DarwinFoundation1",
+        ":Foundation",
+        ":CoreGraphics",
+        ":CoreText",
+        ":QuartzCore",
+    ],
+)
+
+## MANUALLY ADDED TARGETS END
+
+swift_library_group(
+    name = "all_generated_targets",
+    deps = [
+        # manually added targets
+        ":SwiftShims",
+        ":Darwin",
+        ":_Builtin_float",
+        ":ptrauth",
+        ":sys_types",
+        ":CoreData",
+        ":Foundation",
+        ":CoreFoundation",
+        ":os",
+        ":CoreGraphics",
+        ":CoreText",
+        ":UniformTypeIdentifiers",
+        ":CoreTransferable",
+        ":DeveloperToolsSupport",
+        ":OSLog",
+        ":Spatial",
+        ":SwiftUI",
+        ":Accessibility",
+        ":DataDetection",
+        ":SwiftUICore",
+        ":WatchKit",
+        ":_LocationEssentials",
+
+        # generated targets
+        ":_HomeKit_SwiftUI_swift",
+        ":_WorkoutKit_SwiftUI_swift",
+        ":_ClockKit_SwiftUI_swift",
+        ":_StoreKit_SwiftUI_swift",
+        ":_AuthenticationServices_SwiftUI_swift",
+        ":_GeoToolbox_AppIntents_swift",
+        ":_RelevanceKit_MapKit_swift",
+        ":_SwiftData_SwiftUI_swift",
+        ":_SwiftData_CoreData_swift",
+        ":_PhotosUI_SwiftUI_swift",
+        ":_AppIntents_UIKit_swift",
+        ":_CoreData_CloudKit_swift",
+        ":_Testing_Foundation_swift",
+        ":_MusicKit_SwiftUI_swift",
+        ":hvf_swift",
+        ":AppleArchive_swift",
+        ":Compression_swift",
+        ":RegexBuilder_swift",
+        ":Testing_swift",
+        ":StoreKitTest_swift",
+        ":SceneKit_swift",
+        ":Translation_swift",
+        ":CryptoTokenKit_swift",
+        ":TipKit_swift",
+        ":PassKit_swift",
+        ":BrowserEngineKit_swift",
+        ":WorkoutKit_swift",
+        ":BrowserEngineCore_swift",
+        ":CloudKit_swift",
+        ":EnergyKit_swift",
+        ":SoundAnalysis_swift",
+        ":WidgetKit_swift",
+        ":_AppIntents_SwiftUI_swift",
+        ":CoreMotion_swift",
+        ":CallKit_swift",
+        ":MapKit_swift",
+        ":Charts_swift",
+        ":EventKit_swift",
+        ":ExtensionKit_swift",
+        ":NetworkExtension_swift",
+        ":HealthKitUI_swift",
+        ":MatterSupport_swift",
+        ":NearbyInteraction_swift",
+        ":WeatherKit_swift",
+        ":LiveCommunicationKit_swift",
+        ":AuthenticationServices_swift",
+        ":CarKey_swift",
+        ":ShazamKit_swift",
+        ":CreateMLComponents_swift",
+        ":TabularData_swift",
+        ":MusicKit_swift",
+        ":SecurityUI_swift",
+        ":SwiftUI_swift",
+        ":WatchKit_swift",
+        ":Spatial_swift",
+        ":DeviceActivity_swift",
+        ":GeoToolbox_swift",
+        ":HealthKit_swift",
+        ":FinanceKit_swift",
+        ":CoreData_swift",
+        ":Intents_swift",
+        ":SpriteKit_swift",
+        ":PhotosUI_swift",
+        ":Contacts_swift",
+        ":ClockKit_swift",
+        ":AppIntents_swift",
+        ":RelevanceKit_swift",
+        ":ExtensionFoundation_swift",
+        ":CoreLocation_swift",
+        ":FamilyControls_swift",
+        ":Accelerate_swift",
+        ":AVFoundation_swift",
+        ":CoreMedia_swift",
+        ":simd_swift",
+        ":CoreAudio_swift",
+        ":AVFAudio_swift",
+        ":ManagedSettings_swift",
+        ":SwiftData_swift",
+        ":NaturalLanguage_swift",
+        ":HomeKit_swift",
+        ":MediaPlayer_swift",
+        ":LightweightCodeRequirements_swift",
+        ":WirelessInsights_swift",
+        ":CoreML_swift",
+        ":Synchronization_swift",
+        ":CoreVideo_swift",
+        ":StoreKit_swift",
+        ":UIKit_swift",
+        ":SwiftUICore_swift",
+        ":Symbols_swift",
+        ":CoreTransferable_swift",
+        ":DeveloperToolsSupport_swift",
+        ":DataDetection_swift",
+        ":CoreText_swift",
+        ":UniformTypeIdentifiers_swift",
+        ":Accessibility_swift",
+        ":OSLog_swift",
+        ":CryptoKit_swift",
+        ":LocalAuthentication_swift",
+        ":CoreGraphics_swift",
+        ":QuartzCore_swift",
+        ":GameKit_swift",
+        ":Network_swift",
+        ":os_swift",
+        ":Foundation_swift",
+        ":System_swift",
+        ":Observation_swift",
+        ":ObjectiveC_swift",
+        ":CoreFoundation_swift",
+        ":Distributed_swift",
+        ":Dispatch_swift",
+        ":Combine_swift",
+        ":Darwin_swift",
+        ":_DarwinFoundation3_swift",
+        ":_DarwinFoundation2_swift",
+        ":_DarwinFoundation1_swift",
+        ":_Builtin_float_swift",
+        ":_StringProcessing_swift",
+        ":_Concurrency_swift",
+        ":SwiftOnoneSupport_swift",
+        ":Swift_swift",
+    ],
+)
+
+swift_library_group(
+    name = "all_generated_testonly_targets",
+    testonly = True,
+    deps = [
+        ":imports_swift",
+        ":XCTest_swift",
+        ":XCUIAutomation_swift",
+    ],
+)
