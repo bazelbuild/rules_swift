@@ -32,9 +32,13 @@ def write_explicit_swift_module_map_file(
         module_contexts: A list of module contexts that provide the Swift
             dependencies for the compilation.
     """
-    module_descriptions = []
+    module_descriptions = {}
 
     for module_context in module_contexts:
+        if module_context.name in module_descriptions:
+            # As of Swift 6.2, only one entry per module is permitted.
+            continue
+
         # Set attributes that are applicable to a swift module entry or a
         # clang module entry
         module_description = {
@@ -47,30 +51,31 @@ def write_explicit_swift_module_map_file(
             module_description["isFramework"] = module_context.is_framework
 
         # Append a swift moule entry if available
+        has_swift_description = False
+
         if module_context.swift:
             swift_context = module_context.swift
-            swift_description = dict(module_description)
             if swift_context.swiftmodule:
-                swift_description["modulePath"] = swift_context.swiftmodule.path
-            module_descriptions.append(swift_description)
+                has_swift_description = True
+                module_description["modulePath"] = swift_context.swiftmodule.path
 
         # Append a clang module entry if available
+        has_clang_description = False
+
         if module_context.clang:
             clang_context = module_context.clang
-            if not clang_context.module_map and not clang_context.precompiled_module:
-                # One of these must be set for our explicit clang module entry
-                # to be valid
-                continue
-            clang_description = dict(module_description)
             if clang_context.module_map:
                 # If path is not an attribute of `module_map`, then `module_map` is a string and we use it as our path.
-                clang_description["clangModuleMapPath"] = getattr(clang_context.module_map, "path", clang_context.module_map)
+                module_description["clangModuleMapPath"] = getattr(clang_context.module_map, "path", clang_context.module_map)
+                has_clang_description = True
             if clang_context.precompiled_module:
-                clang_description["clangModulePath"] = clang_context.precompiled_module.path
+                module_description["clangModulePath"] = clang_context.precompiled_module.path
+                has_clang_description = True
 
-            module_descriptions.append(clang_description)
+        if has_swift_description or has_clang_description:
+            module_descriptions[module_context.name] = module_description
 
     actions.write(
-        content = json.encode(module_descriptions),
+        content = json.encode(module_descriptions.values()),
         output = explicit_swift_module_map_file,
     )
