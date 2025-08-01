@@ -62,3 +62,10 @@ def all_action_names():
         SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
         SWIFT_ACTION_SYNTHESIZE_INTERFACE,
     )
+
+def all_compile_action_names():
+    """Returns all actions that compile source files."""
+    return [
+        SWIFT_ACTION_COMPILE,
+        SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+    ]
