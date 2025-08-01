@@ -8550,9 +8550,27 @@ swift_library_group(
     ],
 )
 
+## MANUALLY ADDED TARGETS START
+
+swift_c_module(
+    name = "sys_types",
+    module_name = "sys_types",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/usr/include/DarwinFoundation2.modulemap",
+    deps = [
+        ":_DarwinFoundation2",
+    ],
+)
+
+## MANUALLY ADDED TARGETS END
+
 swift_library_group(
     name = "all_generated_targets",
     deps = [
+        # manually added targets
+        ":sys_types",
+
+        # generated targets
         ":SafetyKit",
         ":AdServices",
         ":ImageCaptureCore",
