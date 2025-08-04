@@ -1756,6 +1756,16 @@ swift_library_group(
 
 ## MANUALLY ADDED TARGETS START
 swift_c_module(
+    name = "WatchConnectivity",
+    module_name = "WatchConnectivity",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/System/Library/Frameworks/WatchConnectivity.framework/Modules/module.modulemap",
+    deps = [
+        ":Foundation",
+    ],
+)
+
+swift_c_module(
     name = "_SwiftConcurrencyShims",
     module_name = "_SwiftConcurrencyShims",
     testonly = False,
@@ -2384,6 +2394,7 @@ swift_library_group(
         ":SwiftUICore",
         ":WatchKit",
         ":_LocationEssentials",
+        ":WatchConnectivity",
 
         # generated targets
         ":_HomeKit_SwiftUI_swift",
