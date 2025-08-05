@@ -880,6 +880,13 @@ def compile_action_configs(
             # capture these for debug builds.
             not_features = [SWIFT_FEATURE_OPT],
         ),
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_DERIVE_FILES,
+            ],
+            configurators = [_plugin_search_paths_configurator],
+        ),
 
         # swift-symbolgraph-extract doesn't yet support explicit Swift module maps.
         ActionConfigInfo(
@@ -1987,6 +1994,14 @@ def _macro_expansion_configurator(prerequisites, args):
         args.add(
             prerequisites.macro_expansion_directory.path,
             format = "-Xwrapped-swift=-macro-expansion-dir=%s",
+        )
+
+def _plugin_search_paths_configurator(prerequisites, args):
+    """Adds plugin search paths to the command line."""
+    if prerequisites.include_dev_srch_paths:
+        args.add(
+            "-plugin-path",
+            "__BAZEL_XCODE_DEVELOPER_DIR__/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
         )
 
 def _dependencies_swiftmodules_vfsoverlay_configurator(prerequisites, args, is_frontend = False):
