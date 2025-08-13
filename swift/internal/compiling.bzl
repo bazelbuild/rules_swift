@@ -23,6 +23,7 @@ load(
     "create_swift_module_context",
     "create_swift_module_inputs",
 )
+load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load(
     ":action_names.bzl",
     "SWIFT_ACTION_COMPILE",

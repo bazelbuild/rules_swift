@@ -57,6 +57,7 @@ bzl_library(
         ":providers",
         "//swift:providers",
         "@bazel_skylib//lib:dicts",
+        "@rules_cc//cc/common",
     ],
 )
 
@@ -67,6 +68,7 @@ bzl_library(
         ":attrs",
         "//swift:swift_clang_module_aspect",
         "@bazel_skylib//lib:dicts",
+        "@rules_cc//cc/common",
     ],
 )
 
@@ -93,6 +95,7 @@ bzl_library(
         "//swift:providers",
         "@bazel_skylib//lib:paths",
         "@bazel_skylib//lib:sets",
+        "@rules_cc//cc/common",
     ],
 )
 
@@ -105,6 +108,7 @@ bzl_library(
         ":feature_names",
         ":features",
         "@bazel_skylib//lib:paths",
+        "@rules_cc//cc/common",
     ],
 )
 
@@ -126,6 +130,7 @@ bzl_library(
         ":package_specs",
         "@bazel_skylib//lib:new_sets",
         "@bazel_skylib//rules:common_settings",
+        "@rules_cc//cc/common",
     ],
 )
 
@@ -151,6 +156,7 @@ bzl_library(
         ":toolchain_utils",
         ":utils",
         "//swift:providers",
+        "@rules_cc//cc/common",
     ],
 )
 
@@ -212,6 +218,7 @@ bzl_library(
         "//swift:module_name",
         "//swift:providers",
         "@bazel_skylib//lib:dicts",
+        "@rules_cc//cc/common",
     ],
 )
 
@@ -228,6 +235,7 @@ bzl_library(
         ":toolchain_utils",
         "//swift:providers",
         "//swift:swift_clang_module_aspect",
+        "@rules_cc//cc/common",
     ],
 )
 
@@ -263,6 +271,7 @@ bzl_library(
         ":features",
         "//swift:providers",
         "@bazel_skylib//lib:paths",
+        "@rules_cc//cc/common",
     ],
 )
 

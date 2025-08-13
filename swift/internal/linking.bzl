@@ -18,6 +18,8 @@ load(
     "@build_bazel_rules_swift//swift:providers.bzl",
     "SwiftOverlayInfo",
 )
+load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
+load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load(
     ":debugging.bzl",
     "ensure_swiftmodule_is_embedded",

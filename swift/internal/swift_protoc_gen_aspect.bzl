@@ -23,6 +23,8 @@ load(
     "SwiftInfo",
     "SwiftProtoInfo",
 )
+load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
+load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load("@rules_proto//proto:defs.bzl", "ProtoInfo", "proto_common")
 load(":attrs.bzl", "swift_config_attrs")
 load(":compiling.bzl", "compile")

@@ -16,6 +16,8 @@
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@build_bazel_rules_swift//swift:providers.bzl", "SwiftInfo")
+load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
+load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load(":feature_names.bzl", "SWIFT_FEATURE_NO_IMPLICIT_DEPS")
 load(":features.bzl", "is_feature_enabled")
 

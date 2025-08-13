@@ -31,6 +31,8 @@ load(
     "@build_bazel_rules_swift//swift:swift_clang_module_aspect.bzl",
     "swift_clang_module_aspect",
 )
+load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
+load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load(":features.bzl", "configure_features")
 load(":symbol_graph_extracting.bzl", "extract_symbol_graph")
 load(":toolchain_utils.bzl", "find_all_toolchains", "use_all_toolchains")

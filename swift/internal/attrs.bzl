@@ -16,6 +16,7 @@
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@build_bazel_rules_swift//swift:providers.bzl", "SwiftInfo")
+load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load(":providers.bzl", "SwiftCompilerPluginInfo")
 
 visibility([
