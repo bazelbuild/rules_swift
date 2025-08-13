@@ -627,7 +627,7 @@ def _xcode_swift_toolchain_impl(ctx):
     apple_toolchain = apple_common.apple_toolchain()
     cc_toolchain = find_cpp_toolchain(ctx)
 
-    target_triple = target_triples.normalize_for_swift(
+    target_triple = ctx.var.get("CC_TARGET_TRIPLE") or target_triples.normalize_for_swift(
         target_triples.parse(cc_toolchain.target_gnu_system_name),
     )
 

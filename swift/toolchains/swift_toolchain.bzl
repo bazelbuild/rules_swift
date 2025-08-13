@@ -416,7 +416,7 @@ def _swift_toolchain_impl(ctx):
         os = ctx.attr.os,
         target_system_name = cc_toolchain.target_gnu_system_name,
     )
-    target_triple = target_triples.normalize_for_swift(
+    target_triple = ctx.var.get("CC_TARGET_TRIPLE") or target_triples.normalize_for_swift(
         target_triples.parse(target_system_name),
     )
 
