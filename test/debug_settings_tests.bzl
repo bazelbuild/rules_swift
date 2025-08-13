@@ -23,57 +23,32 @@ visibility("private")
 
 DBG_CONFIG_SETTINGS = {
     "//command_line_option:compilation_mode": "dbg",
-    "//command_line_option:features": [
-        "swift.debug_prefix_map",
-    ],
-}
-
-FILE_PREFIX_MAP_CONFIG_SETTINGS = {
-    "//command_line_option:compilation_mode": "dbg",
-    "//command_line_option:features": [
-        "swift.debug_prefix_map",
-        "swift.file_prefix_map",
-    ],
 }
 
 CACHEABLE_DBG_CONFIG_SETTINGS = {
     "//command_line_option:compilation_mode": "dbg",
     "//command_line_option:features": [
         "swift.cacheable_swiftmodules",
-        "swift.debug_prefix_map",
     ],
 }
 
 FASTBUILD_CONFIG_SETTINGS = {
     "//command_line_option:compilation_mode": "fastbuild",
-    "//command_line_option:features": [
-        "swift.debug_prefix_map",
-    ],
 }
 
 FASTBUILD_FULL_DI_CONFIG_SETTINGS = {
     "//command_line_option:compilation_mode": "fastbuild",
     "//command_line_option:features": [
-        "swift.debug_prefix_map",
         "swift.full_debug_info",
     ],
 }
 
 OPT_CONFIG_SETTINGS = {
     "//command_line_option:compilation_mode": "opt",
-    "//command_line_option:features": [
-        # This feature indicates *support*, not unconditional enablement, which
-        # is why it is present for `opt` mode as well.
-        "swift.debug_prefix_map",
-    ],
 }
 
 dbg_action_command_line_test = make_action_command_line_test_rule(
     config_settings = DBG_CONFIG_SETTINGS,
-)
-
-file_prefix_map_command_line_test = make_action_command_line_test_rule(
-    config_settings = FILE_PREFIX_MAP_CONFIG_SETTINGS,
 )
 
 cacheable_dbg_action_command_line_test = make_action_command_line_test_rule(
@@ -108,29 +83,13 @@ def debug_settings_test_suite(name, tags = []):
         expected_argv = [
             "-DDEBUG",
             "-Xfrontend -serialize-debugging-options",
-            "-Xwrapped-swift=-debug-prefix-pwd-is-dot",
+            "-Xwrapped-swift=-file-prefix-pwd-is-dot",
             "-g",
         ],
         not_expected_argv = [
             "-DNDEBUG",
             "-Xfrontend -no-serialize-debugging-options",
             "-gline-tables-only",
-        ],
-        mnemonic = select({
-            "@build_bazel_apple_support//constraints:apple": "SwiftCompile",
-            "//conditions:default": "SwiftCompileModule",
-        }),
-        tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
-    )
-
-    # Verify that the build is remapping paths with a file prefix map.
-    file_prefix_map_command_line_test(
-        name = "{}_file_prefix_map_build".format(name),
-        expected_argv = [
-            "-Xwrapped-swift=-file-prefix-pwd-is-dot",
-        ],
-        not_expected_argv = [
             "-Xwrapped-swift=-debug-prefix-pwd-is-dot",
         ],
         mnemonic = select({
@@ -149,13 +108,14 @@ def debug_settings_test_suite(name, tags = []):
         expected_argv = [
             "-DDEBUG",
             "-Xfrontend -no-serialize-debugging-options",
-            "-Xwrapped-swift=-debug-prefix-pwd-is-dot",
+            "-Xwrapped-swift=-file-prefix-pwd-is-dot",
             "-g",
         ],
         not_expected_argv = [
             "-DNDEBUG",
             "-Xfrontend -serialize-debugging-options",
             "-gline-tables-only",
+            "-Xwrapped-swift=-debug-prefix-pwd-is-dot",
         ],
         mnemonic = select({
             "@build_bazel_apple_support//constraints:apple": "SwiftCompile",
@@ -172,13 +132,14 @@ def debug_settings_test_suite(name, tags = []):
         expected_argv = [
             "-DDEBUG",
             "-Xfrontend -serialize-debugging-options",
-            "-Xwrapped-swift=-debug-prefix-pwd-is-dot",
+            "-Xwrapped-swift=-file-prefix-pwd-is-dot",
             "-gline-tables-only",
         ],
         not_expected_argv = [
             "-DNDEBUG",
             "-Xfrontend -no-serialize-debugging-options",
             "-g",
+            "-Xwrapped-swift=-debug-prefix-pwd-is-dot",
         ],
         mnemonic = select({
             "@build_bazel_apple_support//constraints:apple": "SwiftCompile",
@@ -195,13 +156,14 @@ def debug_settings_test_suite(name, tags = []):
         expected_argv = [
             "-DDEBUG",
             "-Xfrontend -serialize-debugging-options",
-            "-Xwrapped-swift=-debug-prefix-pwd-is-dot",
+            "-Xwrapped-swift=-file-prefix-pwd-is-dot",
             "-g",
         ],
         not_expected_argv = [
             "-DNDEBUG",
             "-Xfrontend -no-serialize-debugging-options",
             "-gline-tables-only",
+            "-Xwrapped-swift=-debug-prefix-pwd-is-dot",
         ],
         mnemonic = select({
             "@build_bazel_apple_support//constraints:apple": "SwiftCompile",
@@ -211,12 +173,13 @@ def debug_settings_test_suite(name, tags = []):
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
 
-    # Verify that `-c opt` builds do not serialize debugging options or remap
-    # paths, and have appropriate flags otherwise.
+    # Verify that `-c opt` builds do not serialize debugging options, but have
+    # appropriate flags otherwise.
     opt_action_command_line_test(
         name = "{}_opt_build".format(name),
         expected_argv = [
             "-DNDEBUG",
+            "-Xwrapped-swift=-file-prefix-pwd-is-dot",
         ],
         not_expected_argv = [
             "-DDEBUG",
