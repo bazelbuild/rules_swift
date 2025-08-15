@@ -267,33 +267,24 @@ def _test_linking_context(
         ]),
     )
 
-def _make_resource_directory_configurator(developer_dir):
-    """Configures compiler flags about the toolchain's resource directory.
+def _resource_dir_path(apple_toolchain):
+    """Returns the path to the resource directory for the Swift toolchain.
 
-    We must pass a resource directory explicitly if the build rules are invoked
-    using a custom driver executable or a partial toolchain root, so that the
-    compiler doesn't try to find its resources relative to that binary.
+    The developer directory used by this function is actually a placeholder
+    string, which will be replaced at execution time by the actual developer
+    directory for the currently selected Xcode.
 
     Args:
-        developer_dir: The path to Xcode's Developer directory.
+        apple_toolchain: The `apple_common.apple_toolchain()` object.
 
     Returns:
-        A function that is used to configure the toolchain's resource directory.
+        The path to the resource directory for the Swift toolchain.
     """
-
-    def _resource_directory_configurator(_prerequisites, args):
-        args.add(
-            "-resource-dir",
-            (
-                "{developer_dir}/Toolchains/{toolchain}.xctoolchain/" +
-                "usr/lib/swift"
-            ).format(
-                developer_dir = developer_dir,
-                toolchain = "XcodeDefault",
-            ),
-        )
-
-    return _resource_directory_configurator
+    return (
+        "{developer_dir}/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift"
+    ).format(
+        developer_dir = apple_toolchain.developer_dir(),
+    )
 
 def _all_action_configs(
         additional_objc_copts,
@@ -415,8 +406,9 @@ def _all_action_configs(
                     SWIFT_ACTION_SYNTHESIZE_INTERFACE,
                 ],
                 configurators = [
-                    _make_resource_directory_configurator(
-                        apple_toolchain.developer_dir(),
+                    add_arg(
+                        "-resource-dir",
+                        _resource_dir_path(apple_toolchain),
                     ),
                 ],
             ),
@@ -431,14 +423,38 @@ def _all_action_configs(
         ActionConfigInfo(
             actions = [SWIFT_ACTION_COMPILE_MODULE_INTERFACE],
             configurators = [
-                _make_resource_directory_configurator(
-                    apple_toolchain.developer_dir(),
+                add_arg(
+                    "-resource-dir",
+                    _resource_dir_path(apple_toolchain),
                 ),
                 add_arg(
                     "-target-sdk-version",
                     str(xcode_config.sdk_version_for_platform(
                         target_triples.bazel_apple_platform(target_triple),
                     )),
+                ),
+            ],
+        ),
+    )
+
+    # Starting with Xcode 26.0 beta 5, the implementation of Swift Testing's
+    # macros is in a separate subdirectory that the build system manually passes
+    # to the compiler *only* when building test code. We don't want to plumb
+    # `testonly` information all the way through to our compile actions, so we
+    # simply pass the plugin path to all compiles. This is harmless for code
+    # that doesn't use the plugin.
+    action_configs.append(
+        ActionConfigInfo(
+            actions = all_compile_action_names() + [
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+                SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
+            ],
+            configurators = [
+                add_arg(
+                    "-plugin-path",
+                    "{resource_dir}/host/plugins/testing".format(
+                        resource_dir = _resource_dir_path(apple_toolchain),
+                    ),
                 ),
             ],
         ),
