@@ -36,6 +36,8 @@ use_repo(
     "com_github_apple_swift_nio_transport_services",
     "com_github_apple_swift_protobuf",
     "com_github_grpc_grpc_swift",
+    "com_github_grpc_grpc_swift_protobuf",
+    "com_github_grpc_grpc_swift_nio_transport",
 )
 
 apple_cc_configure = use_extension("@build_bazel_apple_support//crosstool:setup.bzl", "apple_cc_configure_extension")
