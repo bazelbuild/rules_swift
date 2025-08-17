@@ -15,15 +15,22 @@
 import Foundation
 import examples_apple_objc_interop_modulemap_PrintStream
 
+@objc public protocol MyStupid {
+}
+
 @objc(OIPrinter)
 public class Printer: NSObject {
 
-  private let stream: OIPrintStream
+  private let stream: OIPrintStream<MyStupid>
   private let prefix: String
 
   @objc public init(prefix: NSString) {
     self.stream = OIPrintStream(fileHandle: .standardOutput)
     self.prefix = prefix as String
+  }
+
+  @objc public func stream(_ thing: MyStupid) -> OIPrintStream<MyStupid> {
+    return stream
   }
 
   @objc public func print(_ message: NSString) {
