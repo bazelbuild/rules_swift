@@ -114,11 +114,11 @@ public enum RunfilesError: Error {
 
 public final class Runfiles {
     private let strategy: LookupStrategy
-    // Value is the runfiles directory of target repository
-    private let repoMapping: [RepoMappingKey: String]
+    // Repository mapping with support for wildcard patterns
+    private let repoMapping: RepositoryMapping
     private let sourceRepository: String
 
-    init(strategy: LookupStrategy, repoMapping: [RepoMappingKey: String], sourceRepository: String) {
+    init(strategy: LookupStrategy, repoMapping: RepositoryMapping, sourceRepository: String) {
         self.strategy = strategy
         self.repoMapping = repoMapping
         self.sourceRepository = sourceRepository
@@ -150,7 +150,7 @@ public final class Runfiles {
         let targetRepository = String(components[0])
         let key = RepoMappingKey(sourceRepoCanonicalName: sourceRepository, targetRepoApparentName: targetRepository)
 
-        if components.count == 1 || repoMapping[key] == nil {
+        if components.count == 1 || repoMapping.getOrDefault(key: key, defaultValue: nil) == nil {
             // One of the following is the case:
             // - not using Bzlmod, so the repository mapping is empty and
             //   apparent and canonical repository names are the same
@@ -166,7 +166,7 @@ public final class Runfiles {
         // target_repo is an apparent repository name. Look up the corresponding
         // canonical repository name with respect to the current repository,
         // identified by its canonical name.
-        if let targetCanonical = repoMapping[key] {
+        if let targetCanonical = repoMapping.getOrDefault(key: key, defaultValue: nil) {
             return try strategy.rlocationChecked(path: targetCanonical + "/" + remainingPath)
         } else {
             return try strategy.rlocationChecked(path: path)
@@ -204,10 +204,10 @@ public final class Runfiles {
         // If the repository mapping file can't be found, that is not an error: We
         // might be running without Bzlmod enabled or there may not be any runfiles.
         // In this case, just apply an empty repo mapping.
-        let repoMapping: [RepoMappingKey : String] = if let path = try? strategy.rlocationChecked(path: "_repo_mapping") {
-            try parseRepoMapping(path: path)
+        let repoMapping: RepositoryMapping = if let path = try? strategy.rlocationChecked(path: "_repo_mapping") {
+            try RepositoryMapping.readFromFile(path: path)
         } else {
-            [:]
+            RepositoryMapping.empty()
         }
 
         return Runfiles(strategy: strategy, repoMapping: repoMapping, sourceRepository: sourceRepository ?? repository(from: callerFilePath))
@@ -274,34 +274,85 @@ func computeRunfilesPath(
     throw RunfilesError.missingRunfilesLocations
 }
 
-// MARK: Parsing Repo Mapping
+// MARK: Repository Mapping
 
-func parseRepoMapping(path: URL) throws -> [RepoMappingKey: String] {
-    guard let fileHandle = try? FileHandle(forReadingFrom: path) else {
-        // If the repository mapping file can't be found, that is not an error: We
-        // might be running without Bzlmod enabled or there may not be any runfiles.
-        // In this case, just apply an empty repo mapping.
-        return [:]
-    }
-    defer {
-        try? fileHandle.close()
+struct RepositoryMapping {
+    private let exactMappings: [RepoMappingKey: String]
+    private let wildcardMappings: [String: [String: String]]
+
+    private init(exactMappings: [RepoMappingKey: String], wildcardMappings: [String: [String: String]]) {
+        self.exactMappings = exactMappings
+        self.wildcardMappings = wildcardMappings
     }
 
-    var repoMapping = [RepoMappingKey: String]()
-    if let data = try fileHandle.readToEnd(), let content = String(data: data, encoding: .utf8) {
-        let lines = content.split(separator: "\n")
-        for line in lines {
-            let fields = line.components(separatedBy: ",")
-            if fields.count != 3 {
-                throw RunfilesError.invalidRepoMappingEntry(line: String(line))
-            }
-            let key = RepoMappingKey(
-                sourceRepoCanonicalName: fields[0],
-                targetRepoApparentName: fields[1]
-            )
-            repoMapping[key] = fields[2] // mapping
+    static func empty() -> RepositoryMapping {
+        return RepositoryMapping(exactMappings: [:], wildcardMappings: [:])
+    }
+
+    static func readFromFile(path: URL) throws -> RepositoryMapping {
+        guard let fileHandle = try? FileHandle(forReadingFrom: path) else {
+            // If the repository mapping file can't be found, that is not an error: We
+            // might be running without Bzlmod enabled or there may not be any runfiles.
+            // In this case, just apply an empty repo mapping.
+            return RepositoryMapping.empty()
         }
+        defer {
+            try? fileHandle.close()
+        }
+
+        var exactMappings = [RepoMappingKey: String]()
+        var wildcardMappings = [String: [String: String]]()
+
+        if let data = try fileHandle.readToEnd(), let content = String(data: data, encoding: .utf8) {
+            let lines = content.split(separator: "\n")
+            for line in lines {
+                if line.isEmpty {
+                    continue
+                }
+                let fields = line.components(separatedBy: ",")
+                if fields.count != 3 {
+                    throw RunfilesError.invalidRepoMappingEntry(line: String(line))
+                }
+
+                if fields[0].hasSuffix("*") {
+                    let prefix = String(fields[0].dropLast())
+                    if wildcardMappings[prefix] == nil {
+                        wildcardMappings[prefix] = [:]
+                    }
+                    wildcardMappings[prefix]![fields[1]] = fields[2]
+                } else {
+                    let key = RepoMappingKey(
+                        sourceRepoCanonicalName: fields[0],
+                        targetRepoApparentName: fields[1]
+                    )
+                    exactMappings[key] = fields[2]
+                }
+            }
+        }
+
+        return RepositoryMapping(exactMappings: exactMappings, wildcardMappings: wildcardMappings)
     }
 
-    return repoMapping
+    func getOrDefault(key: RepoMappingKey, defaultValue: String?) -> String? {
+        // Check for exact match first
+        if let exactMatch = exactMappings[key] {
+            return exactMatch
+        }
+
+        // Check for wildcard match
+        // Find the longest prefix that matches the source repository
+        var longestMatch: String? = nil
+        var longestPrefix = ""
+
+        for (prefix, targetMap) in wildcardMappings {
+            if key.sourceRepoCanonicalName.hasPrefix(prefix) && prefix.count > longestPrefix.count {
+                if let mapping = targetMap[key.targetRepoApparentName] {
+                    longestMatch = mapping
+                    longestPrefix = prefix
+                }
+            }
+        }
+
+        return longestMatch ?? defaultValue
+    }
 }
