@@ -68,36 +68,6 @@ This provider is an implementation detail not meant to be used by clients.
 # Name of the execution group used for `ProtocGenSwift` actions.
 _GENERATE_EXEC_GROUP = "generate"
 
-def _compute_generated_files(
-        *,
-        actions,
-        proto_info,
-        proto_lang_toolchain_info):
-    """Checks if the target has sources to generate from.
-
-    Args:
-        actions: The ctx.actions to use for declaring the files.
-        proto_info: A targets `ProtoInfo`.
-        proto_lang_toolchain_info: The `ProtoLangToolchainInfo` for Swift Proto support.
-
-    Returns:
-        The list of `File`s that will be generated
-    """
-    files_to_skip = proto_lang_toolchain_info.provided_proto_sources
-
-    # NOTE: The `proto_common.declare_generated_files()` doesn't filter the files against
-    # the Toolchain's `provided_proto_sources`, so to filter out the WKTS, just bail the
-    # first file is a match. That generally covers the WKTs targets.
-    direct_srcs = proto_info.direct_sources
-    if direct_srcs and direct_srcs[0] in files_to_skip:
-        return []
-
-    return proto_common.declare_generated_files(
-        actions = actions,
-        proto_info = proto_info,
-        extension = ".pb.swift",
-    )
-
 def _build_module_mapping_from_srcs(target, proto_srcs):
     """Returns the sequence of module mapping `struct`s for the given sources.
 
@@ -179,11 +149,19 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
     proto_lang_toolchain_info = aspect_ctx.attr._proto_lang_toolchain[proto_common.ProtoLangToolchainInfo]
     target_proto_info = target[ProtoInfo]
 
-    direct_pbswift_files = _compute_generated_files(
-        actions = aspect_ctx.actions,
+    if proto_common.experimental_should_generate_code(
         proto_info = target_proto_info,
         proto_lang_toolchain_info = proto_lang_toolchain_info,
-    )
+        rule_name = "swift_proto_library",
+        target_label = target.label,
+    ):
+        direct_pbswift_files = proto_common.declare_generated_files(
+            actions = aspect_ctx.actions,
+            proto_info = target_proto_info,
+            extension = ".pb.swift",
+        )
+    else:
+        direct_pbswift_files = []
 
     proto_deps = aspect_ctx.rule.attr.deps
     transitive_cc_infos = []
@@ -317,7 +295,6 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
         # `proto_library` with no `srcs`, but this case can happen in the
         # transitive `proto_library` graph so the merging behavior is needed
         # for things that depend on such targets.
-
         if len(transitive_cc_infos) == 1 and len(transitive_swift_infos) == 1:
             providers = [
                 SwiftProtoCompilationInfo(
