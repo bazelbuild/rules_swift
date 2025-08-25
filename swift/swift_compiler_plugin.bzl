@@ -27,6 +27,7 @@ load(
     "@build_bazel_rules_swift//swift/internal:linking.bzl",
     "configure_features_for_binary",
     "create_linking_context_from_compilation_outputs",
+    "entry_point_function_name",
     "malloc_linking_context",
     "register_link_binary_action",
 )
@@ -76,7 +77,7 @@ def _swift_compiler_plugin_impl(ctx):
     module_name = ctx.attr.module_name
     if not module_name:
         module_name = derive_swift_module_name(ctx.label)
-    entry_point_function_name = "{}_main".format(module_name)
+    entry_point_name = entry_point_function_name(module_name)
 
     compile_result = compile(
         actions = ctx.actions,
@@ -92,7 +93,7 @@ def _swift_compiler_plugin_impl(ctx):
             "-Xfrontend",
             "-entry-point-function-name",
             "-Xfrontend",
-            entry_point_function_name,
+            entry_point_name,
         ],
         c_copts = c_copts,
         defines = ctx.attr.defines,
@@ -141,7 +142,7 @@ def _swift_compiler_plugin_impl(ctx):
             # When linking the plugin binary, make sure we use the correct entry
             # point name.
             toolchains.swift.entry_point_linkopts_provider(
-                entry_point_name = entry_point_function_name,
+                entry_point_name = entry_point_name,
             ).linkopts
         ),
         variables_extension = variables_extension,
