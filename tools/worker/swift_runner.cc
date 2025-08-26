@@ -347,6 +347,8 @@ bool SwiftRunner::ProcessArgument(
       // Process default arguments
       if (arg == "-index-store-path") {
         consumer("-index-store-path");
+        ++itr;
+
         // If there was a global index store set, pass that to swiftc.
         // Otherwise, pass the users. We later copy index data onto the users.
         if (global_index_store_import_path_ != "") {
