@@ -149,10 +149,6 @@ def _swift_library_impl(ctx):
         extra_features.append(SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION)
         extra_features.append(SWIFT_FEATURE_EMIT_SWIFTINTERFACE)
 
-    module_name = ctx.attr.module_name
-    if not module_name:
-        module_name = derive_swift_module_name(ctx.label)
-
     toolchains = find_all_toolchains(ctx)
     feature_configuration = configure_features(
         ctx = ctx,
@@ -160,6 +156,13 @@ def _swift_library_impl(ctx):
         toolchains = toolchains,
         unsupported_features = ctx.disabled_features,
     )
+
+    module_name = ctx.attr.module_name
+    if not module_name:
+        module_name = derive_swift_module_name(
+            ctx.label,
+            feature_configuration = feature_configuration,
+        )
 
     swift_infos = get_providers(deps, SwiftInfo)
     private_swift_infos = get_providers(private_deps, SwiftInfo)

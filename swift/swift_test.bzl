@@ -296,7 +296,10 @@ def _swift_test_impl(ctx):
 
     module_name = ctx.attr.module_name
     if not module_name:
-        module_name = derive_swift_module_name(ctx.label)
+        module_name = derive_swift_module_name(
+            ctx.label,
+            feature_configuration = feature_configuration,
+        )
 
     module_contexts = []
     all_supplemental_outputs = []

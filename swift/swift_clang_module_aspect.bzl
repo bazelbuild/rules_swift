@@ -371,7 +371,10 @@ def _module_info_for_target(
         # was some other `Objc`-providing target, derive the module name
         # now.
         if not module_name:
-            module_name = derive_swift_module_name(target.label)
+            module_name = derive_swift_module_name(
+                target.label,
+                feature_configuration = feature_configuration,
+            )
 
     module_map_file = _generate_module_map(
         actions = aspect_ctx.actions,
@@ -882,9 +885,8 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx, toolchain_type):
 
         exclude_headers = interop_info.exclude_headers
         module_map_file = interop_info.module_map
-        module_name = (
-            interop_info.module_name or derive_swift_module_name(target.label)
-        )
+        module_name = interop_info.module_name
+
         swift_infos.extend(interop_info.swift_infos)
         requested_features.extend(interop_info.requested_features)
         unsupported_features.extend(interop_info.unsupported_features)
@@ -912,6 +914,12 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx, toolchain_type):
         toolchains = toolchains,
         unsupported_features = unsupported_features,
     )
+
+    if interop_info and not module_name:
+        module_name = derive_swift_module_name(
+            target.label,
+            feature_configuration = feature_configuration,
+        )
 
     if interop_info or apple_common.Objc in target or CcInfo in target:
         return providers + _handle_module(

@@ -68,12 +68,12 @@ This provider is an implementation detail not meant to be used by clients.
 # Name of the execution group used for `ProtocGenSwift` actions.
 _GENERATE_EXEC_GROUP = "generate"
 
-def _build_module_mapping_from_srcs(target, proto_srcs):
+def _build_module_mapping_from_srcs(module_name, proto_srcs):
     """Returns the sequence of module mapping `struct`s for the given sources.
 
     Args:
-        target: The `proto_library` target whose module mapping is being
-            rendered.
+        module_name: The module name of the `proto_library` target being
+            compiled.
         proto_srcs: The `.proto` files that belong to the target.
 
     Returns:
@@ -82,7 +82,7 @@ def _build_module_mapping_from_srcs(target, proto_srcs):
     """
 
     return struct(
-        module_name = derive_swift_module_name(target.label),
+        module_name = module_name,
         proto_file_paths = [
             proto_common.get_import_path(f)
             for f in proto_srcs
@@ -178,12 +178,30 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
 
     direct_module_mappings = []
     if direct_pbswift_files:
+        feature_configuration = configure_features(
+            ctx = aspect_ctx,
+            requested_features = aspect_ctx.features,
+            toolchains = toolchains,
+            unsupported_features = aspect_ctx.disabled_features + [
+                SWIFT_FEATURE_ENABLE_TESTING,
+                # Layering checks interfere with `import public`, where the
+                # generator explicitly emits imports of modules that may only be
+                # transitively available. We can also save some computational
+                # effort by not doing the extra work.
+                SWIFT_FEATURE_LAYERING_CHECK_SWIFT,
+            ],
+        )
+        module_name = derive_swift_module_name(
+            target.label,
+            feature_configuration = feature_configuration,
+        )
         direct_module_mappings.append(
             _build_module_mapping_from_srcs(
-                target,
-                target_proto_info.direct_sources,
+                module_name = module_name,
+                proto_srcs = target_proto_info.direct_sources,
             ),
         )
+
     module_mappings = depset(direct_module_mappings, transitive = transitive_module_mappings)
 
     if direct_pbswift_files:
@@ -210,28 +228,10 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             proto_lang_toolchain_info = proto_lang_toolchain_info,
         )
 
-        extra_features = []
-
         # Compile the generated Swift sources and produce a static library and a
         # .swiftmodule as outputs. In addition to the other proto deps, we also
         # pass support libraries like the SwiftProtobuf runtime as deps to the
         # compile action.
-        feature_configuration = configure_features(
-            ctx = aspect_ctx,
-            requested_features = aspect_ctx.features + extra_features,
-            toolchains = toolchains,
-            unsupported_features = aspect_ctx.disabled_features + [
-                SWIFT_FEATURE_ENABLE_TESTING,
-                # Layering checks interfere with `import public`, where the
-                # generator explicitly emits imports of modules that may only be
-                # transitively available. We can also save some computational
-                # effort by not doing the extra work.
-                SWIFT_FEATURE_LAYERING_CHECK_SWIFT,
-            ],
-        )
-
-        module_name = derive_swift_module_name(target.label)
-
         support_deps = [proto_lang_toolchain_info.runtime]
         for p in support_deps:
             if CcInfo in p:
