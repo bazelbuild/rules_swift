@@ -59,7 +59,6 @@ bzl_library(
         "//swift/internal:swift_interop_info",
         "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
-        "@bazel_skylib//lib:sets",
         "@rules_cc//cc/common",
         "@rules_java//java:rules",
     ],
@@ -183,7 +182,6 @@ bzl_library(
         "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
         "@bazel_skylib//lib:dicts",
-        "@bazel_skylib//lib:sets",
         "@rules_cc//cc/common",
     ],
 )

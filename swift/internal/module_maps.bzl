@@ -14,8 +14,6 @@
 
 """Logic for generating Clang module map files."""
 
-load("@bazel_skylib//lib:sets.bzl", "sets")
-
 visibility([
     "@build_bazel_rules_swift//swift/...",
 ])
@@ -77,7 +75,7 @@ def write_module_map(
         relative_to_dir = module_map_file.dirname
         back_to_root_path = "../" * len(relative_to_dir.split("/"))
 
-    excluded_headers_set = sets.make(exclude_headers)
+    excluded_headers_set = set(exclude_headers)
 
     content = actions.args()
     content.set_param_file_format("multiline")
@@ -95,7 +93,7 @@ def write_module_map(
         return [
             _relativized_header_path(file)
             for file in directory_expander.expand(file_or_dir)
-            if not sets.contains(excluded_headers_set, file)
+            if file not in excluded_headers_set
         ]
 
     def _relativized_header_paths(file_or_dir, directory_expander):

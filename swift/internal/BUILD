@@ -96,7 +96,6 @@ bzl_library(
         ":utils",
         "//swift:providers",
         "@bazel_skylib//lib:paths",
-        "@bazel_skylib//lib:sets",
         "@rules_cc//cc/common",
     ],
 )
@@ -130,7 +129,6 @@ bzl_library(
     deps = [
         ":feature_names",
         ":package_specs",
-        "@bazel_skylib//lib:new_sets",
         "@bazel_skylib//rules:common_settings",
         "@rules_cc//cc/common",
     ],
@@ -165,7 +163,6 @@ bzl_library(
 bzl_library(
     name = "module_maps",
     srcs = ["module_maps.bzl"],
-    deps = ["@bazel_skylib//lib:sets"],
 )
 
 bzl_library(

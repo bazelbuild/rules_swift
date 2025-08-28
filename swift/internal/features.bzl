@@ -14,7 +14,6 @@
 
 """Helper functions for working with Bazel features."""
 
-load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load(
     ":feature_names.bzl",
@@ -420,54 +419,39 @@ def _compute_features(
         # Starlark doesn't support re-binding variables captured from an enclosing lexical scope
         # so we resort to mutation to achieve the same result.
         state = {
-            "requested_features": sets.make([]),
-            "disabled_features": sets.make([]),
+            "requested_features": set(),
+            "disabled_features": set(),
         }
 
         def _update_features(newly_requested_features, newly_disabled_features):
-            newly_requested_features_set = sets.make(newly_requested_features)
-            newly_disabled_features_set = sets.make(newly_disabled_features)
+            newly_requested_features_set = set(newly_requested_features)
+            newly_disabled_features_set = set(newly_disabled_features)
 
             # If a feature is both requested and disabled at the same level, it is disabled.
-            newly_requested_features_set = sets.difference(
-                newly_requested_features_set,
-                newly_disabled_features_set,
-            )
+            newly_requested_features_set.difference_update(newly_disabled_features_set)
 
             requested_features_set = state["requested_features"]
             disabled_features_set = state["disabled_features"]
 
             # If a feature was requested at a higher level then disabled more narrowly we must
             # remove it from the requested feature set.
-            requested_features_set = sets.difference(
-                requested_features_set,
-                newly_disabled_features_set,
-            )
+            requested_features_set.difference_update(newly_disabled_features_set)
 
             # If a feature was disabled at a higher level then requested more narrowly we must
             # remove it from the disabled feature set.
-            disabled_features_set = sets.difference(
-                disabled_features_set,
-                newly_requested_features_set,
-            )
+            disabled_features_set.difference_update(newly_requested_features_set)
 
-            requested_features_set = sets.union(
-                requested_features_set,
-                newly_requested_features_set,
-            )
-            disabled_features_set = sets.union(
-                disabled_features_set,
-                newly_disabled_features_set,
-            )
+            requested_features_set.update(newly_requested_features_set)
+            disabled_features_set.update(newly_disabled_features_set)
 
             state["requested_features"] = requested_features_set
             state["disabled_features"] = disabled_features_set
 
         def _requested_features():
-            return sets.to_list(state["requested_features"])
+            return list(state["requested_features"])
 
         def _disabled_features():
-            return sets.to_list(state["disabled_features"])
+            return list(state["disabled_features"])
 
         return struct(
             update_features = _update_features,

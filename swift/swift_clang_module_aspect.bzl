@@ -14,7 +14,6 @@
 
 """Propagates unified `SwiftInfo` providers for C/Objective-C targets."""
 
-load("@bazel_skylib//lib:sets.bzl", "sets")
 load(
     "@build_bazel_rules_swift//swift/internal:compiling.bzl",
     "compile",
@@ -117,7 +116,7 @@ def _compute_all_excluded_headers(*, exclude_headers, target):
         including any virtual header symlinks that match a real header in the
         excluded headers list passed into the function.
     """
-    exclude_headers_set = sets.make(exclude_headers)
+    exclude_headers_set = set(exclude_headers)
     virtual_exclude_headers = []
 
     for action in target.actions:
@@ -127,7 +126,7 @@ def _compute_all_excluded_headers(*, exclude_headers, target):
         original_header = action.inputs.to_list()[0]
         virtual_header = action.outputs.to_list()[0]
 
-        if sets.contains(exclude_headers_set, original_header):
+        if original_header in exclude_headers_set:
             virtual_exclude_headers.append(virtual_header)
 
     return exclude_headers + virtual_exclude_headers
@@ -291,7 +290,7 @@ def _j2objc_compilation_context(target):
                 direct_textual_headers = headers,
             )
 
-        include_paths = sets.make()
+        include_paths = set()
         for header in headers:
             header_path = header.path
 
@@ -306,12 +305,12 @@ def _j2objc_compilation_context(target):
                 j2objc_index = header_path_components.index("_j2objc")
                 include_path = "/".join(header_path_components[:j2objc_index + 2])
 
-            sets.insert(include_paths, include_path)
+            include_paths.add(include_path)
 
         return cc_common.create_compilation_context(
             headers = depset([umbrella_header]),
             direct_textual_headers = headers,
-            includes = depset(sets.to_list(include_paths)),
+            includes = depset(list(include_paths)),
         )
 
     return None

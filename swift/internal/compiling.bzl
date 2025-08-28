@@ -15,7 +15,6 @@
 """Implementation of compilation logic for Swift."""
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("@bazel_skylib//lib:sets.bzl", "sets")
 load(
     "@build_bazel_rules_swift//swift:providers.bzl",
     "SwiftInfo",
@@ -451,17 +450,14 @@ def compile(
     compile_outputs = compile_plan.outputs
 
     transitive_swiftmodules = []
-    defines_set = sets.make(defines)
+    defines_set = set(defines)
     for module in transitive_modules:
         swift_module = module.swift
         if not swift_module:
             continue
         transitive_swiftmodules.append(swift_module.swiftmodule)
         if swift_module.defines:
-            defines_set = sets.union(
-                defines_set,
-                sets.make(swift_module.defines),
-            )
+            defines_set.update(swift_module.defines)
 
     if is_feature_enabled(
         feature_configuration = feature_configuration,
@@ -594,7 +590,7 @@ def compile(
         "bin_dir": feature_configuration._bin_dir,
         "cc_compilation_context": merged_compilation_context,
         "const_gather_protocols_file": const_gather_protocols_file,
-        "defines": sets.to_list(defines_set),
+        "defines": list(defines_set),
         "deps_modules_file": deps_modules_file,
         "experimental_features": experimental_features,
         "explicit_swift_module_map_file": explicit_swift_module_map_file,
@@ -1080,11 +1076,11 @@ def _compile_clang_module_for_swift_module(
     # Objective-C generated header module -- this includes the dependencies of
     # the Swift module, plus any additional dependencies that the toolchain says
     # are required for all generated header modules.
-    dependent_module_names = sets.make()
+    dependent_module_names = set()
     for swift_info in swift_infos:
         for module in swift_info.direct_modules:
             if module.clang:
-                sets.insert(dependent_module_names, module.name)
+                dependent_module_names.add(module.name)
 
     file_extension_fragment = (
         ".incomplete" if is_incomplete_header_module else ""
@@ -1094,7 +1090,7 @@ def _compile_clang_module_for_swift_module(
     )
     write_module_map(
         actions = actions,
-        dependent_module_names = sorted(sets.to_list(dependent_module_names)),
+        dependent_module_names = sorted(dependent_module_names),
         module_map_file = generated_module_map,
         module_name = module_name,
         private_headers = compilation_context.direct_private_headers,

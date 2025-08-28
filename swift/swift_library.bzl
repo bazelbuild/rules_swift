@@ -15,7 +15,6 @@
 """Implementation of the `swift_library` rule."""
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load("@bazel_skylib//lib:sets.bzl", "sets")
 load(
     "@build_bazel_rules_swift//swift/internal:attrs.bzl",
     "swift_deps_attr",
@@ -112,9 +111,9 @@ def _check_deps_are_disjoint(label, deps, private_deps):
     if not deps or not private_deps:
         return
 
-    deps_set = sets.make([str(dep.label) for dep in deps])
-    private_deps_set = sets.make([str(dep.label) for dep in private_deps])
-    intersection = sets.to_list(sets.intersection(deps_set, private_deps_set))
+    deps_set = set([str(dep.label) for dep in deps])
+    private_deps_set = set([str(dep.label) for dep in private_deps])
+    intersection = list(deps_set & private_deps_set)
     if intersection:
         detail_msg = "\n".join(["  - {}".format(label) for label in intersection])
         fail(("In target '{}', 'deps' and 'private_deps' must be disjoint, " +
