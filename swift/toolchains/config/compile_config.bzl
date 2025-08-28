@@ -1506,14 +1506,14 @@ def _swift_module_search_path_map_fn(module):
     else:
         return None
 
-def _module_alias_flags(name, original):
+def _module_alias_flags(*, original, alias):
     """Returns compiler flags to set the given module alias."""
 
     return [
         "-module-alias",
-        "{original}={name}".format(
-            name = name,
+        "{original}={alias}".format(
             original = original,
+            alias = alias,
         ),
     ]
 
@@ -1532,10 +1532,10 @@ def _module_alias_map_fn(module):
         The flags to pass to the compiler to alias the given module, or `None`
         if no alias applies.
     """
-    if module.swift and module.swift.original_module_name:
+    if module.name != module.source_name:
         return _module_alias_flags(
-            original = module.swift.original_module_name,
-            name = module.name,
+            original = module.source_name,
+            alias = module.name,
         )
     else:
         return None
@@ -1560,11 +1560,12 @@ def _module_aliases_configurator(prerequisites, args):
         map_each = _module_alias_map_fn,
     )
 
-    if prerequisites.original_module_name:
+    if (prerequisites.original_module_name and
+        prerequisites.original_module_name != prerequisites.module_name):
         args.add_all(
             _module_alias_flags(
                 original = prerequisites.original_module_name,
-                name = prerequisites.module_name,
+                alias = prerequisites.module_name,
             ),
         )
 

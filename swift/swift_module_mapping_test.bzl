@@ -56,13 +56,8 @@ def _swift_module_mapping_test_module_collector_impl(target, aspect_ctx):
             if not swift_module:
                 continue
 
-            # Collect the original module name if it is present; otherwise,
-            # collect the regular module name (which is the original name when
-            # the mapping isn't applied). This ensures that the test isn't
-            # dependent on whether or not the module mapping flag is enabled.
-            direct_module_names.append(
-                swift_module.original_module_name or module_context.name,
-            )
+            # Collect the original module name.
+            direct_module_names.append(module_context.source_name)
 
     return [
         _SwiftModulesToValidateMappingInfo(

@@ -438,6 +438,7 @@ def create_swift_module_context(
         const_gather_protocols = [],
         is_framework = False,
         is_system = False,
+        source_name = None,
         swift = None):
     """Creates a value containing Clang/Swift module artifacts of a dependency.
 
@@ -458,7 +459,9 @@ def create_swift_module_context(
     (which other build rules may want to depend on for their own analysis).
 
     Args:
-        name: The name of the module.
+        name: The name of the module. If this module is aliased, then this is
+            not the name of the module as one would write in source to reference
+            it, but the *physical* name of the module used when it was compiled.
         clang: A value returned by `create_clang_module_inputs` that
             contains artifacts related to Clang modules, such as a module map or
             precompiled module. This may be `None` if the module is a pure Swift
@@ -482,6 +485,11 @@ def create_swift_module_context(
             Therefore, it is assumed that any module with `is_system == True`
             must be able to be found using import search paths in order for
             implicit module builds to succeed.
+        source_name: The name that should be used when referencing the module
+            from source code. If the module is aliased, then this is the
+            original name of the module, not its new physical name. This
+            argument is optional; if it is not provided, then `name` is used
+            instead.
         swift: A value returned by `create_swift_module_inputs` that
             contains artifacts related to Swift modules, such as the
             `.swiftmodule`, `.swiftdoc`, and/or `.swiftinterface` files emitted
@@ -497,6 +505,7 @@ def create_swift_module_context(
         is_framework = is_framework,
         is_system = is_system,
         name = name,
+        source_name = source_name or name,
         swift = swift,
     )
 
@@ -543,7 +552,6 @@ def create_clang_module_inputs(
 def create_swift_module_inputs(
         *,
         defines = [],
-        original_module_name = None,
         plugins = [],
         swiftdoc,
         swiftinterface = None,
@@ -554,8 +562,6 @@ def create_swift_module_inputs(
     Args:
         defines: A list of defines that will be provided as `copts` to targets
             that depend on this module. If omitted, the empty list will be used.
-        original_module_name: The original name of the module if it was changed
-            by a module mapping; otherwise, `None`.
         plugins: A list of `SwiftCompilerPluginInfo` providers representing
             compiler plugins that are required by this module and should be
             loaded by the compiler when this module is directly depended on.
@@ -572,7 +578,6 @@ def create_swift_module_inputs(
     """
     return struct(
         defines = defines,
-        original_module_name = original_module_name,
         plugins = plugins,
         swiftdoc = swiftdoc,
         swiftinterface = swiftinterface,

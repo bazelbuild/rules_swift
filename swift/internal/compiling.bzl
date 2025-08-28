@@ -689,9 +689,9 @@ def compile(
             precompiled_module = generated_header_module.precompiled_module,
         ),
         is_system = False,
+        source_name = original_module_name,
         swift = create_swift_module_inputs(
             defines = defines,
-            original_module_name = original_module_name,
             plugins = plugins,
             swiftdoc = compile_outputs.swiftdoc_file,
             swiftinterface = compile_outputs.swiftinterface_file,
