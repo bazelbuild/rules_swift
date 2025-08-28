@@ -1509,12 +1509,8 @@ def _swift_module_search_path_map_fn(module):
 def _module_alias_flags(name, original):
     """Returns compiler flags to set the given module alias."""
 
-    # TODO(b/257269318): Remove `-Xfrontend`; this is only needed to workaround
-    # a bug in toolchains still using the legacy C++ driver.
     return [
-        "-Xfrontend",
         "-module-alias",
-        "-Xfrontend",
         "{original}={name}".format(
             name = name,
             original = original,
