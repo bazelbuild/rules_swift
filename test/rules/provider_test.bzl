@@ -27,6 +27,7 @@ load(
     "compare_expected_strings",
     "normalize_collection",
 )
+load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 
 visibility([
     "@build_bazel_rules_swift//test/...",

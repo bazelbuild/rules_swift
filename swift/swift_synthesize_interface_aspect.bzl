@@ -27,6 +27,8 @@ load(
     "find_all_toolchains",
     "use_all_toolchains",
 )
+load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
+load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load(":providers.bzl", "SwiftInfo", "SwiftSynthesizedInterfaceInfo")
 load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 

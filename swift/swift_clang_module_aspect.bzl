@@ -63,6 +63,8 @@ load(
     "compact",
     "compilation_context_for_explicit_module_compilation",
 )
+load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
+load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load("@rules_java//java:defs.bzl", "JavaInfo")
 load(":module_name.bzl", "derive_swift_module_name")
 load(

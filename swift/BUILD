@@ -39,6 +39,7 @@ bzl_library(
         "//swift/internal:providers",
         "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
+        "@rules_cc//cc/common",
     ],
 )
 
@@ -59,6 +60,7 @@ bzl_library(
         "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
         "@bazel_skylib//lib:sets",
+        "@rules_cc//cc/common",
         "@rules_java//java:rules",
     ],
 )
@@ -91,6 +93,7 @@ bzl_library(
         "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
         "@bazel_skylib//lib:dicts",
+        "@rules_cc//cc/common",
     ],
 )
 
@@ -142,6 +145,7 @@ bzl_library(
         "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
         "@bazel_skylib//lib:dicts",
+        "@rules_cc//cc/common",
     ],
 )
 
@@ -180,6 +184,7 @@ bzl_library(
         "//swift/internal:utils",
         "@bazel_skylib//lib:dicts",
         "@bazel_skylib//lib:sets",
+        "@rules_cc//cc/common",
     ],
 )
 
@@ -211,6 +216,7 @@ bzl_library(
         "//swift/internal:providers",
         "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
+        "@rules_cc//cc/common",
     ],
 )
 
@@ -258,6 +264,7 @@ bzl_library(
         "//swift/internal:features",
         "//swift/internal:interface_synthesizing",
         "//swift/internal:toolchain_utils",
+        "@rules_cc//cc/common",
     ],
 )
 
@@ -277,6 +284,7 @@ bzl_library(
         "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
         "@bazel_skylib//lib:dicts",
+        "@rules_cc//cc/common",
     ],
 )
 

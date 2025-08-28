@@ -29,6 +29,7 @@ bzl_library(
         "//third_party/unsupported_toolchains/swift/build_defs:glibc_module_bzl",
         "@bazel_skylib//lib:paths",
         "@bazel_skylib//rules:common_settings",
+        "@rules_cc//cc/common",
     ],
 )
 
@@ -56,6 +57,7 @@ bzl_library(
         "@bazel_skylib//lib:dicts",
         "@bazel_skylib//lib:paths",
         "@bazel_skylib//rules:common_settings",
+        "@rules_cc//cc/common",
     ],
 )
 

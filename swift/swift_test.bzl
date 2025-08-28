@@ -57,6 +57,8 @@ load(
     "get_compilation_contexts",
     "get_providers",
 )
+load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
+load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load(":module_name.bzl", "derive_swift_module_name")
 load(":providers.bzl", "SwiftBinaryInfo", "SwiftInfo")
 

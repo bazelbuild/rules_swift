@@ -12,5 +12,6 @@ bzl_library(
         "@bazel_skylib//lib:collections",
         "@bazel_skylib//lib:types",
         "@bazel_skylib//lib:unittest",
+        "@rules_cc//cc/common",
     ],
 )
