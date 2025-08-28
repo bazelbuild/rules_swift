@@ -208,6 +208,9 @@ class SwiftRunner {
   // Tracks whether the last flag seen was `-target`.
   bool last_flag_was_target_;
 
+  // Tracks whether the last flag seen was `-module-alias`.
+  bool last_flag_was_module_alias_;
+
   // The name of the module currently being compiled.
   std::string module_name_;
 
@@ -232,6 +235,13 @@ class SwiftRunner {
 
   // Whether the worker should emit a JSON AST dump of the compilation.
   bool emit_json_ast_;
+
+  // The inverse mapping of module aliases passed to the compiler. The
+  // `-module-alias` flag takes its argument of the form `source=alias`. For
+  // layering checks, we need to reverse this because `-emit-imported-modules`
+  // reflects the aliased name and we want to present the original module names
+  // in the error messages.
+  absl::flat_hash_map<std::string, std::string> alias_to_source_mapping_;
 };
 
 }  // namespace bazel_rules_swift

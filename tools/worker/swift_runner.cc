@@ -750,12 +750,19 @@ bool SwiftRunner::ProcessArgument(
   } else if (last_flag_was_target_) {
     target_triple_ = std::string(trimmed_arg);
     last_flag_was_target_ = false;
+  } else if (last_flag_was_module_alias_) {
+    std::pair<absl::string_view, absl::string_view> source_and_alias =
+        absl::StrSplit(trimmed_arg, '=');
+    alias_to_source_mapping_[source_and_alias.second] = source_and_alias.first;
+    last_flag_was_module_alias_ = false;
   } else if (trimmed_arg == "-module-name") {
     last_flag_was_module_name_ = true;
   } else if (trimmed_arg == "-tools-directory") {
     last_flag_was_tools_directory_ = true;
   } else if (trimmed_arg == "-target") {
     last_flag_was_target_ = true;
+  } else if (trimmed_arg == "-module-alias") {
+    last_flag_was_module_alias_ = true;
   } else if (absl::ConsumePrefix(&trimmed_arg, "-Xwrapped-swift=")) {
     if (trimmed_arg == "-debug-prefix-pwd-is-dot") {
       add_prefix_map_flags("-debug-prefix-map");
@@ -944,22 +951,31 @@ int SwiftRunner::PerformLayeringCheck(std::ostream &stdout_stream,
   absl::btree_set<std::string> deps_modules =
       ReadDepsModules(deps_modules_path_);
 
-  // We have to insert the name of the module being compiled, as well. In most
-  // cases, it's nonsensical for a module to import itself (Swift only flags
-  // this as a warning), but it's specifically allowed when writing a Swift
-  // overlay: when compiling Swift module X, `@_exported import X` specifically
-  // imports the underlying Clang module for X.
-  deps_modules.insert(module_name_);
-
   // Use a `btree_set` so that the output is automatically sorted
   // lexicographically.
   absl::btree_set<std::string> missing_deps;
   std::ifstream imported_modules_stream(imported_modules_path);
   std::string module_name;
   while (std::getline(imported_modules_stream, module_name)) {
-    if (!IsModuleIgnorableForLayeringCheck(module_name) &&
+    // We have to ignore the name of the module being compiled as well, because
+    // a Swift module can `@_exported import` itself to import its underlying
+    // Clang module.
+    if (module_name != module_name_ &&
+        !IsModuleIgnorableForLayeringCheck(module_name) &&
         !deps_modules.contains(module_name)) {
-      missing_deps.insert(module_name);
+      // The module names that the build rules write into the direct
+      // dependencies file are the "physical" names of the module, which will be
+      // different than what is written in source if the module is aliased. This
+      // matches what the `-emit-imported-modules` output will show. We look up
+      // the name among all the known aliases so that we can print the original
+      // module name (as would be written in source) to the user.
+      if (auto alias_and_source_name =
+              alias_to_source_mapping_.find(module_name);
+          alias_and_source_name != alias_to_source_mapping_.end()) {
+        missing_deps.insert(alias_and_source_name->second);
+      } else {
+        missing_deps.insert(module_name);
+      }
     }
   }
 
