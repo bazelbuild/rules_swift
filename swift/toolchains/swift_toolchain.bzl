@@ -491,7 +491,7 @@ def _swift_toolchain_impl(ctx):
         target_triple = target_triple,
         sdkroot = ctx.attr.sdkroot,
         xctest_version = ctx.attr.xctest_version,
-        additional_swiftc_copts = swiftcopts,
+        additional_swiftc_copts = ctx.attr.copts + swiftcopts,
     )
 
     if ctx.attr.os == "windows":
@@ -626,6 +626,11 @@ configuration options that are applied to targets on a per-package basis.
             "version_file": attr.label(
                 mandatory = True,
                 allow_single_file = True,
+            ),
+            "copts": attr.string_list(
+                doc = """\
+A list of additional Swift compiler flags that should be passed to Swift compile actions.
+""",
             ),
             "_cc_toolchain": attr.label(
                 default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),

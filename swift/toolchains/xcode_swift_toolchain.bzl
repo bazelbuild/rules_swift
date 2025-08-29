@@ -736,12 +736,12 @@ def _xcode_swift_toolchain_impl(ctx):
         xcode_config = xcode_config,
     )
     all_action_configs = _all_action_configs(
-        additional_objc_copts = command_line_objc_copts(
+        additional_objc_copts = ctx.attr.objc_copts + command_line_objc_copts(
             ctx.var["COMPILATION_MODE"],
             ctx.fragments.cpp,
             ctx.fragments.objc,
         ),
-        additional_swiftc_copts = swiftcopts,
+        additional_swiftc_copts = ctx.attr.copts + swiftcopts,
         apple_toolchain = apple_toolchain,
         generated_header_rewriter = generated_header_rewriter,
         needs_resource_directory = swift_executable or toolchain_root,
@@ -929,6 +929,17 @@ configuration options that are applied to targets on a per-package basis.
                 doc = """\
 The label of the file specifying a list of protocols for extraction of conformances'
 const values.
+""",
+            ),
+            "copts": attr.string_list(
+                doc = """\
+A list of additional Swift compiler flags that should be passed to Swift compile actions.
+""",
+            ),
+            "objc_copts": attr.string_list(
+                doc = """\
+A list of additional Objective-C compiler flags that should be passed (preceded by `-Xcc`)
+to Swift compile actions *and* Swift explicit module precompile actions.
 """,
             ),
             "_cc_toolchain": attr.label(
