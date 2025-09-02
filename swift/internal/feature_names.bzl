@@ -267,3 +267,7 @@ SWIFT_FEATURE_COMPILE_IN_PARALLEL = "swift.compile_in_parallel"
 # compiling Swift or Clang modules. This should only be used when building the
 # toolchain itself.
 SWIFT_FEATURE_NO_IMPLICIT_DEPS = "swift.no_implicit_deps"
+
+# If enabled, the Bazel label itself will be used as the module name for the
+# target. This is only supported by Swift 6.2 and above.
+SWIFT_FEATURE_LABEL_AS_MODULE_NAME = "swift.label_as_module_name"

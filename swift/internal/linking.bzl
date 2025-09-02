@@ -15,6 +15,10 @@
 """Implementation of linking logic for Swift."""
 
 load(
+    "@build_bazel_rules_swift//swift:module_name.bzl",
+    "physical_swift_module_name",
+)
+load(
     "@build_bazel_rules_swift//swift:providers.bzl",
     "SwiftOverlayInfo",
 )
@@ -248,7 +252,7 @@ def entry_point_function_name(module_name):
     Returns:
         The name of the entry point function for the module.
     """
-    return "{}_main".format(module_name)
+    return "{}_main".format(physical_swift_module_name(module_name))
 
 def malloc_linking_context(ctx):
     """Returns the linking context to use for the malloc implementation.

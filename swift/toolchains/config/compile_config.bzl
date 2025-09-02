@@ -1415,7 +1415,7 @@ def _dependencies_clang_modules_configurator(prerequisites, args, include_module
         # have already precompiled the C half of the module. Add the flags to
         # import it.
         mixed_inputs = getattr(prerequisites, "mixed_module_clang_inputs", None)
-        if mixed_inputs and mixed_inputs.module_map_file:
+        if mixed_inputs and mixed_inputs.module_name:
             args.add("-import-underlying-module")
             if mixed_inputs.vfs_overlay_file:
                 # Note that `-ivfsoverlay` and the path must be separate
@@ -1436,7 +1436,7 @@ def _dependencies_clang_modules_configurator(prerequisites, args, include_module
                     [mixed_inputs.virtual_precompiled_module_path or
                      mixed_inputs.precompiled_module],
                     format_each = "-fmodule-file={}=%s".format(
-                        prerequisites.module_name,
+                        mixed_inputs.module_name,
                     ),
                     before_each = "-Xcc",
                 )
@@ -1560,8 +1560,22 @@ def _module_aliases_configurator(prerequisites, args):
         map_each = _module_alias_map_fn,
     )
 
+    def _already_contains_source_module_name(module_contexts, name):
+        for module_context in module_contexts:
+            if module_context.source_name == name:
+                return True
+        return False
+
+    # Add an alias for the module currently being compiled if necessary. Only do
+    # this if it's not already one of the transitive modules above, which will
+    # be the case for `swift_overlay`s (the underlying C module will be in that
+    # list), since the compiler will reject the duplicate alias flag.
     if (prerequisites.original_module_name and
-        prerequisites.original_module_name != prerequisites.module_name):
+        prerequisites.original_module_name != prerequisites.module_name and
+        not _already_contains_source_module_name(
+            module_contexts = prerequisites.transitive_modules,
+            name = prerequisites.original_module_name,
+        )):
         args.add_all(
             _module_alias_flags(
                 original = prerequisites.original_module_name,

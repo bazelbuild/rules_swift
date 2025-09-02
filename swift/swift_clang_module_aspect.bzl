@@ -65,7 +65,11 @@ load(
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load("@rules_java//java:defs.bzl", "JavaInfo")
-load(":module_name.bzl", "derive_swift_module_name")
+load(
+    ":module_name.bzl",
+    "derive_swift_module_name",
+    "physical_swift_module_name",
+)
 load(
     ":providers.bzl",
     "SwiftClangModuleAspectInfo",
@@ -340,8 +344,16 @@ def _module_info_for_target(
             properties of the target.
 
     Returns:
-        A tuple containing the module name (a string) and module map file (a
-        `File`) for the target. One or both of these values may be `None`.
+        A `struct` containing the following fields:
+
+        *   `module_map_file` (`File`): The Clang module map file.
+        *   `physical_name` (string): The physical module name, which is the
+            name written into the actual Clang module map.
+        *   `source_name` (string): The name of the module as it would be
+            referenced in source.
+
+        The return value may be `None` if the target does not represent a
+        Swift-compatible module.
     """
 
     # Ignore `j2objc_library` targets. They exist to apply an aspect to their
@@ -350,7 +362,7 @@ def _module_info_for_target(
     # again from this target and create another module map with them.
     # TODO(b/151667396): Remove j2objc-specific knowledge.
     if aspect_ctx.rule.kind == "j2objc_library":
-        return None, None
+        return None
 
     # If a target doesn't have any headers, then don't generate a module map for
     # it. Such modules define nothing and only waste space on the compilation
@@ -359,11 +371,11 @@ def _module_info_for_target(
         not compilation_context.direct_headers and
         not compilation_context.direct_textual_headers
     ):
-        return None, None
+        return None
 
     if not module_name:
         if apple_common.Objc not in target:
-            return None, None
+            return None
 
         if aspect_ctx.rule.kind == "objc_library":
             module_name = _objc_library_module_info(aspect_ctx)
@@ -377,6 +389,8 @@ def _module_info_for_target(
                 feature_configuration = feature_configuration,
             )
 
+    physical_name = physical_swift_module_name(module_name)
+
     module_map_file = _generate_module_map(
         actions = aspect_ctx.actions,
         aspect_ctx = aspect_ctx,
@@ -384,11 +398,15 @@ def _module_info_for_target(
         dependent_module_names = dependent_module_names,
         exclude_headers = exclude_headers,
         feature_configuration = feature_configuration,
-        module_name = module_name,
+        module_name = physical_name,
         target = target,
     )
 
-    return module_name, module_map_file
+    return struct(
+        module_map_file = module_map_file,
+        physical_name = physical_name,
+        source_name = module_name,
+    )
 
 def _handle_module(
         aspect_ctx,
@@ -447,16 +465,33 @@ def _handle_module(
             if module.clang:
                 dependent_module_names.append(module.name)
 
-    # If we weren't passed a module map (i.e., from a `SwiftInteropInfo`
-    # provider), infer it and the module name based on properties of the rule to
-    # support legacy rules.
+    # If we were passed a module map (i.e., we don't go into the branch below),
+    # then we have to assume that the source name and physical name are the same
+    # (and that is what is written in the module map file), because we cannot
+    # inspect the contents of the file during analysis.
+    #
+    # TODO: b/383316205 - This means that targets that pass their own module
+    # map cannot use `swift.label_as_module_name` today. As currently
+    # designed, we would need those clients to pass both the source name and
+    # the physical name separately, which is an onerous requirement. The
+    # best way to resolve this, which we've considered before, is to
+    # eliminate the situations where clients need to provide custom module
+    # maps and discourage/ban it except in exceptional cases like
+    # third-party code and system frameworks.
+    source_name = module_name
+    physical_name = module_name
+
     if not module_map_file:
+        # If we weren't passed a module map (i.e., from a `SwiftInteropInfo`
+        # provider), infer it and the module name based on properties of the
+        # rule to support legacy rules.
+
         # TODO(b/151667396): Remove j2objc-specific knowledge.
         new_compilation_context = _j2objc_compilation_context(target = target)
         if new_compilation_context:
             compilation_context = new_compilation_context
 
-        module_name, module_map_file = _module_info_for_target(
+        module_info = _module_info_for_target(
             target = target,
             aspect_ctx = aspect_ctx,
             compilation_context = compilation_context,
@@ -465,17 +500,22 @@ def _handle_module(
             feature_configuration = feature_configuration,
             module_name = module_name,
         )
+        if module_info:
+            source_name = module_info.source_name
+            physical_name = module_info.physical_name
+            module_map_file = module_info.module_map_file
 
-    if not module_map_file:
-        if all_swift_infos:
-            return [
-                SwiftInfo(
-                    direct_swift_infos = direct_swift_infos,
-                    swift_infos = swift_infos,
-                ),
-            ]
-        else:
-            return []
+        # If we didn't infer a module map, there's nothing left to do here.
+        if not module_map_file:
+            if all_swift_infos:
+                return [
+                    SwiftInfo(
+                        direct_swift_infos = direct_swift_infos,
+                        swift_infos = swift_infos,
+                    ),
+                ]
+            else:
+                return []
 
     compilation_contexts_to_merge_for_compilation = [compilation_context]
 
@@ -528,7 +568,7 @@ def _handle_module(
         cc_compilation_context = compilation_context_to_compile,
         feature_configuration = feature_configuration,
         module_map_file = module_map_file,
-        module_name = module_name,
+        module_name = physical_name,
         swift_infos = swift_infos,
         toolchains = toolchains,
         target_name = target.label.name,
@@ -558,8 +598,9 @@ def _handle_module(
             SwiftInfo(
                 modules = [
                     create_swift_module_context(
-                        name = module_name,
+                        name = physical_name,
                         clang = clang_module_context,
+                        source_name = source_name,
                     ),
                 ],
                 direct_swift_infos = direct_swift_infos,
@@ -569,7 +610,7 @@ def _handle_module(
         overlay_compile_result, overlay_linking_context = _compile_swift_overlay(
             aspect_ctx = aspect_ctx,
             compilation_context = compilation_context_to_compile,
-            module_name = module_name,
+            module_name = source_name,
             overlay_info = overlay_info,
             swift_infos = swift_infos_for_overlay,
             toolchains = toolchains,
@@ -588,8 +629,9 @@ def _handle_module(
         SwiftInfo(
             modules = [
                 create_swift_module_context(
-                    name = module_name,
+                    name = physical_name,
                     clang = clang_module_context,
+                    source_name = source_name,
                     swift = overlay_swift_module,
                 ),
             ],

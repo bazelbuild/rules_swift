@@ -15,6 +15,14 @@
 """The global module name derivation algorithm used by rules_swift."""
 
 load("@bazel_skylib//lib:types.bzl", "types")
+load(
+    "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
+    "SWIFT_FEATURE_LABEL_AS_MODULE_NAME",
+)
+load(
+    "@build_bazel_rules_swift//swift/internal:features.bzl",
+    "is_feature_enabled",
+)
 
 visibility("public")
 
@@ -43,9 +51,7 @@ def derive_swift_module_name(
             type `str` where the first argument is the package name and the
             second argument is the target name.
         feature_configuration: The Swift feature configuration being used when
-            compiling the target. This currently does nothing; it will be used
-            by upcoming changes to manage the migration of module names to raw
-            identifiers that use the Bazel target label.
+            compiling the target.
 
     Returns:
         The module name derived from the label.
@@ -65,6 +71,22 @@ def derive_swift_module_name(
         fail("derive_module_name may only be called with a single argument " +
              "of type 'Label' or two arguments of type 'str'.")
 
+    # If we have a feature configuration and the label-as-module-name feature is
+    # enabled, use the label itself as the module name (canonicalized so that
+    # it uses the short form when the last package component matches the name).
+    if feature_configuration and is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_LABEL_AS_MODULE_NAME,
+    ):
+        if "=" in package or "=" in name:
+            fail("Swift-compatible target labels may not contain '='.")
+
+        if not package.startswith("//"):
+            package = "//{}".format(package)
+        if package.endswith("/{}".format(name)):
+            return package
+        return "{}:{}".format(package, name)
+
     package_part = _module_name_safe(package.lstrip("//"))
     name_part = _module_name_safe(name)
     if package_part:
@@ -74,6 +96,59 @@ def derive_swift_module_name(
     if module_name[0].isdigit():
         module_name = "_" + module_name
     return module_name
+
+def physical_swift_module_name(module_name):
+    """Returns the physical module name from the source name of a module.
+
+    The "source name" is the alias of the module as it appears in source code,
+    which may be the actual Bazel target label (when the
+    `swift.label_as_module_name` feature is enabled in Swift 6.2 or later). It
+    is a module alias for the "physical name", which is the identifier-safe name
+    of the module that is used for its file system artifacts and its ABI.
+
+    Args:
+        module_name: The source name of the module.
+
+    Returns:
+        The physical module name.
+    """
+    if _is_valid_non_raw_identifier(module_name):
+        return module_name
+
+    if module_name.startswith("//"):
+        # If the module name looks like a Bazel label, we need to transform it
+        # a bit to maintain compatibility with legacy module names (because we
+        # don't want the physical names to change for existing targets). This
+        # means turning the short form (`//foo/bar`) back into the long form
+        # (`//foo/bar:bar`) so that the physical name becomes `foo_bar_bar`
+        # rather than `foo_bar`.
+        if ":" not in module_name:
+            module_name += ":{}".format(module_name.rsplit("/", maxsplit = 1))
+        module_name = _module_name_safe(module_name.lstrip("//"))
+    else:
+        # If the user has provided a module name that doesn't look like a Bazel
+        # label but still needs to be made identifier-safe, do that here without
+        # any other special treatment.
+        module_name = _module_name_safe(module_name)
+
+    if module_name[0].isdigit():
+        module_name = "_" + module_name
+    return module_name
+
+def _is_valid_non_raw_identifier(str):
+    """Returns whether the given string is a valid non-raw identifier.
+
+    We choose to ignore the vast set of Unicode code points that are supported
+    as Swift identifiers, focusing only on ASCII characters that are going to
+    appear in module names.
+    """
+    first = str[0]
+    if first != "_" and not first.isalpha():
+        return False
+    for ch in str.elems()[1:]:
+        if not ch.isalnum():
+            return False
+    return True
 
 def _module_name_safe(string):
     """Returns a transformation of `string` that is safe for module names."""

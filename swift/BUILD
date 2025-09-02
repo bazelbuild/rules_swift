@@ -17,6 +17,8 @@ bzl_library(
     name = "module_name",
     srcs = ["module_name.bzl"],
     deps = [
+        "//swift/internal:feature_names",
+        "//swift/internal:features",
         "@bazel_skylib//lib:types",
     ],
 )

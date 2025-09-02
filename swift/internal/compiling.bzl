@@ -16,6 +16,10 @@
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load(
+    "@build_bazel_rules_swift//swift:module_name.bzl",
+    "physical_swift_module_name",
+)
+load(
     "@build_bazel_rules_swift//swift:providers.bzl",
     "SwiftInfo",
     "create_clang_module_inputs",
@@ -392,13 +396,20 @@ def compile(
                 macros).
     """
 
-    # Apply the module alias for the module being compiled, if present.
+    original_module_name = module_name
     module_alias = toolchains.swift.module_aliases.get(module_name)
     if module_alias:
-        original_module_name = module_name
+        # If there was a module alias provided by a `swift_module_mapping`
+        # rule, that takes precedence.
         module_name = module_alias
     else:
-        original_module_name = None
+        physical_module_name = physical_swift_module_name(module_name)
+        if physical_module_name != module_name:
+            # If the derived physical module name is different from the provided
+            # module name, then the provided name must not be identifier-safe.
+            # We need to use the physical name as the actual module name and the
+            # provided name as an alias.
+            module_name = physical_module_name
 
     # These are the `SwiftInfo` providers that will be merged with the compiled
     # module context and returned as the `swift_info` field of this function's
@@ -1053,18 +1064,31 @@ def _compile_clang_module_for_swift_module(
     Returns:
         A `struct` (never `None`) containing the following fields:
 
+        *   `module_name`: The name of the Clang module. This may be `None` if
+            no generated header was requested.
         *   `module_map_file`: The module map file that defines the Clang module
             for the Swift generated header. This may be `None` if no generated
             header was requested.
         *   `precompiled_module`: The precompiled module that contains the
             compiled Clang module. This may be `None` if explicit modules are
             not enabled.
+        *   `vfs_overlay_file`: A VFS overlay file that pretends that the
+            module map and precompiled module are at the same location as the
+            incomplete module map and precompiled module. This may be `None` if
+            the module is not an incomplete header module.
+        *   `virtual_module_map_path`: The virtual path of the module map file
+            in the VFS overlay. This may be `None` if the module is not an
+            incomplete header module.
+        *   `virtual_precompiled_module_path`: The virtual path of the precompiled
+            module in the VFS overlay. This may be `None` if the module is not
+            an incomplete header module or explicit modules are not enabled.
     """
     if (
         not compilation_context.direct_public_headers and
         not compilation_context.direct_private_headers
     ):
         return struct(
+            module_name = None,
             module_map_file = None,
             precompiled_module = None,
             vfs_overlay_file = None,
@@ -1191,6 +1215,7 @@ def _compile_clang_module_for_swift_module(
         )
 
     return struct(
+        module_name = module_name,
         module_map_file = generated_module_map,
         precompiled_module = precompiled_module,
         vfs_overlay_file = vfs_overlay_file,
