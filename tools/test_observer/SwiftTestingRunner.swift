@@ -176,7 +176,7 @@ public final class SwiftTestingRunner: Sendable {
       case .string(let kind) = payload["kind"],
       case .string(let testID) = payload["testID"],
       // Ignore suites. The xUnit recorder reconstructs the hierarchy.
-      !discoveredSuites.withLock { $0.contains(testID) },
+      !discoveredSuites.withLock({ $0.contains(testID) }),
       case .object(let instantJSON) = payload["instant"],
       case .number(let absolute) = instantJSON["absolute"]
     else {
