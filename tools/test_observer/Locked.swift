@@ -60,6 +60,7 @@ public struct Locked<Value>: Sendable where Value: Sendable {
   ///
   /// Upon acquiring the lock, the body is passed a mutable copy of the value, which it has
   /// exclusive access to for the duration of the body. Mutations will affect the underlying value.
+  @discardableResult
   public nonmutating func withLock<Result>(
     _ body: (inout Value) throws -> Result
   ) rethrows -> Result {
