@@ -65,7 +65,6 @@ bzl_library(
     deps = [
         ":module_name",
         ":providers",
-        ":swift_interop_info",
         "//swift/internal:compiling",
         "//swift/internal:feature_names",
         "//swift/internal:features",
