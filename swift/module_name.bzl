@@ -123,7 +123,7 @@ def physical_swift_module_name(module_name):
         # (`//foo/bar:bar`) so that the physical name becomes `foo_bar_bar`
         # rather than `foo_bar`.
         if ":" not in module_name:
-            module_name += ":{}".format(module_name.rsplit("/", maxsplit = 1))
+            module_name += ":{}".format(module_name.rsplit("/", 1))
         module_name = _module_name_safe(module_name.lstrip("//"))
     else:
         # If the user has provided a module name that doesn't look like a Bazel
