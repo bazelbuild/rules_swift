@@ -956,6 +956,8 @@ def compile_action_configs(
                 actions = all_compile_action_names() + [
                     SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                     SWIFT_ACTION_PRECOMPILE_C_MODULE,
+                    SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
+                    SWIFT_ACTION_SYNTHESIZE_INTERFACE,
                 ],
                 configurators = [
                     lambda _, args: args.add_all(
