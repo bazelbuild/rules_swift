@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Import the C++ interface.
-import CxxCounter
+import Counter
 
 var counter = swiftexample.Counter()
 for _ in 1...10 {
