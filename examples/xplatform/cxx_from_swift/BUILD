@@ -1,6 +1,8 @@
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("//swift:swift_binary.bzl", "swift_binary")
+load("//swift:swift_extract_symbol_graph.bzl", "swift_extract_symbol_graph")
 load("//swift:swift_interop_hint.bzl", "swift_interop_hint")
+load("//swift:swift_library.bzl", "swift_library")
 
 licenses(["notice"])
 
@@ -21,7 +23,18 @@ swift_interop_hint(
     module_name = "CxxCounter",
 )
 
-# 2. The Swift binary then depends on the `cc_library`. This causes a
+# 2. The Swift library then depends on the `cc_library`. This causes a
+# Swift-compatible module map to be created for the `cc_library` so that the
+# Swift code can import it.
+swift_library(
+    name = "swift_counter",
+    srcs = ["Counter.swift"],
+    features = ["swift.enable_cpp20_interop"],
+    module_name = "Counter",
+    deps = [":counter"],
+)
+
+# 3. The Swift binary then depends on the `cc_library`. This causes a
 # Swift-compatible module map to be created for the `cc_library` so that the
 # Swift code can import it. Be sure to enable C++ Interoperability in the Swift
 # compiler using the `-cxx-interoperability-mode` build flag.
@@ -29,7 +42,12 @@ swift_interop_hint(
 swift_binary(
     name = "cxx_from_swift",
     srcs = ["main.swift"],
-    copts = ["-cxx-interoperability-mode=default"],
+    features = ["swift.enable_cpp20_interop"],
     module_name = "main",
-    deps = [":counter"],
+    deps = [":swift_counter"],
+)
+
+swift_extract_symbol_graph(
+    name = "symbol_graph",
+    targets = [":swift_counter"],
 )
