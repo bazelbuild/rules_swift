@@ -40,6 +40,7 @@ load(
     "SWIFT_FEATURE_CODEVIEW_DEBUG_INFO",
     "SWIFT_FEATURE_COVERAGE",
     "SWIFT_FEATURE_COVERAGE_PREFIX_MAP",
+    "SWIFT_FEATURE_CPP_INTEROP",
     "SWIFT_FEATURE_DBG",
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
     "SWIFT_FEATURE_DECLARE_SWIFTSOURCEINFO",
@@ -1239,6 +1240,15 @@ def compile_action_configs(
             features = [
                 SWIFT_FEATURE_ENABLE_V6,
                 SWIFT_FEATURE__SUPPORTS_V6,
+            ],
+        ),
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_COMPILE,
+            ],
+            configurators = [add_arg("-cxx-interoperability-mode=default")],
+            features = [
+                SWIFT_FEATURE_CPP_INTEROP,
             ],
         ),
     ]

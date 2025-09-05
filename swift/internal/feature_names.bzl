@@ -399,3 +399,6 @@ SWIFT_FEATURE_THIN_LTO = "swift.thin_lto"
 
 # Enable full LTO and update output-file-map correctly
 SWIFT_FEATURE_FULL_LTO = "swift.full_lto"
+
+# Enables swift cpp interop
+SWIFT_FEATURE_CPP_INTEROP = "swift.cpp_interop"
