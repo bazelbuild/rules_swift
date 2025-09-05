@@ -78,6 +78,7 @@ load(
     "create_clang_module_inputs",
     "create_swift_module_context",
 )
+load(":swift_interop_info.bzl", "create_swift_interop_info")
 
 visibility("public")
 
@@ -848,7 +849,10 @@ def _find_swift_interop_info(target, aspect_ctx):
     # We don't break this loop early when we find a matching hint, because we
     # want to give an error message if there are two aspect hints that provide
     # `SwiftInteropInfo` (or if both the rule and an aspect hint do).
+    found_overlay = False
     for hint in aspect_ctx.rule.attr.aspect_hints:
+        if SwiftOverlayCompileInfo in hint:
+            found_overlay = True
         if SwiftInteropInfo in hint:
             if interop_target:
                 if interop_from_rule:
@@ -870,6 +874,11 @@ def _find_swift_interop_info(target, aspect_ctx):
 
     if interop_target:
         return interop_target[SwiftInteropInfo], default_direct_swift_infos, default_swift_infos
+    if found_overlay:
+        # If no explicit interop hint was present but a `swift_overlay` was, we
+        # still want that to imply the same thing as the `auto_module` hint
+        # since it's the obvious right thing to do.
+        return create_swift_interop_info(), default_direct_swift_infos, default_swift_infos
     return None, default_direct_swift_infos, default_swift_infos
 
 def _find_swift_overlay_compile_info(aspect_ctx):
