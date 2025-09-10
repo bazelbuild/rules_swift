@@ -271,7 +271,6 @@ def compile_swift_protos_for_target(
     compile_result = swift_common.compile(
         actions = ctx.actions,
         cc_infos = get_providers(compiler_deps, CcInfo),
-        defines = ctx.attr.defines,
         copts = ["-parse-as-library"] + copts,
         feature_configuration = feature_configuration,
         include_dev_srch_paths = include_dev_srch_paths,
