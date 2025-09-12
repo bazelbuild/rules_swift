@@ -98,9 +98,7 @@ tasks:
 
   ubuntu2004_last_green:
     name: "Last Green Bazel"
-    # TODO: Use `last_green` when https://github.com/bazelbuild/bazel/issues/26962 is fixed
-    # bazel: last_green
-    bazel: 0522f8e58bf864005207eb8f09162d35ddd1f678
+    bazel: last_green
     shell_commands:
       - "echo --- Downloading and extracting Swift $SWIFT_VERSION to $SWIFT_HOME"
       - "mkdir $SWIFT_HOME"
