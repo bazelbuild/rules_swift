@@ -4,7 +4,6 @@ load(
     "//proto/compilers:swift_proto_compiler_macros.bzl",
     "GRPC_VARIANT_CLIENT",
     "GRPC_VARIANT_SERVER",
-    "GRPC_VARIANT_TEST_CLIENT",
     "PROTO_PLUGIN_OPTIONS",
     "PROTO_PLUGIN_OPTION_ALLOWLIST",
     "make_grpc_swift_proto_compiler",
@@ -38,11 +37,6 @@ make_grpc_swift_proto_compiler(
 make_grpc_swift_proto_compiler(
     name = "swift_client_proto",
     variants = [GRPC_VARIANT_CLIENT],
-)
-
-make_grpc_swift_proto_compiler(
-    name = "swift_test_client_proto",
-    variants = [GRPC_VARIANT_TEST_CLIENT],
 )
 
 bzl_library(
