@@ -1756,16 +1756,6 @@ swift_library_group(
 
 ## MANUALLY ADDED TARGETS START
 swift_c_module(
-    name = "WatchConnectivity",
-    module_name = "WatchConnectivity",
-    testonly = False,
-    system_module_map = "__BAZEL_XCODE_SDKROOT__/System/Library/Frameworks/WatchConnectivity.framework/Modules/module.modulemap",
-    deps = [
-        ":Foundation",
-    ],
-)
-
-swift_c_module(
     name = "_SwiftConcurrencyShims",
     module_name = "_SwiftConcurrencyShims",
     testonly = False,
@@ -1794,7 +1784,7 @@ swift_c_module(
     name = "_DarwinFoundation2",
     module_name = "_DarwinFoundation2",
     testonly = False,
-    system_module_map = "__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/WatchOS.platform/Developer/SDKs/WatchOS.sdk/usr/include/DarwinFoundation2.modulemap",
+    system_module_map = "__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/WatchSimulator.platform/Developer/SDKs/WatchSimulator.sdk/usr/include/DarwinFoundation2.modulemap",
     deps = [
         ":_DarwinFoundation1",
         ":_Builtin_stdarg",
@@ -1850,7 +1840,7 @@ swift_c_module(
     name = "_DarwinFoundation3",
     module_name = "_DarwinFoundation3",
     testonly = False,
-    system_module_map = "__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/WatchOS.platform/Developer/SDKs/WatchOS.sdk/usr/include/DarwinFoundation3.modulemap",
+    system_module_map = "__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/WatchSimulator.platform/Developer/SDKs/WatchSimulator.sdk/usr/include/DarwinFoundation3.modulemap",
     deps = [
         ":_DarwinFoundation1",
         ":_DarwinFoundation2",
@@ -1879,7 +1869,7 @@ swift_c_module(
     name = "_AvailabilityInternal",
     module_name = "_AvailabilityInternal",
     testonly = False,
-    system_module_map = "__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/WatchOS.platform/Developer/SDKs/WatchOS.sdk/usr/include/DarwinFoundation1.modulemap",
+    system_module_map = "__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/WatchSimulator.platform/Developer/SDKs/WatchSimulator.sdk/usr/include/DarwinFoundation1.modulemap",
 )
 
 swift_c_module(
@@ -2050,7 +2040,7 @@ swift_c_module(
     name = "Darwin",
     module_name = "Darwin",
     testonly = False,
-    system_module_map = "__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/WatchOS.platform/Developer/SDKs/WatchOS.sdk/usr/include/Darwin.modulemap",
+    system_module_map = "__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/WatchSimulator.platform/Developer/SDKs/WatchSimulator.sdk/usr/include/Darwin.modulemap",
     deps = [
         ":_DarwinFoundation1",
         ":_DarwinFoundation2",
@@ -2366,6 +2356,32 @@ swift_c_module(
     ],
 )
 
+swift_c_module(
+    name = "WatchConnectivity",
+    module_name = "WatchConnectivity",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/System/Library/Frameworks/WatchConnectivity.framework/Modules/module.modulemap",
+    deps = [
+        ":Foundation",
+    ],
+)
+
+swift_c_module(
+    name = "Security",
+    module_name = "Security",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/System/Library/Frameworks/Security.framework/Modules/module.modulemap",
+    deps = [
+        ":TargetConditionals",
+        ":_Builtin_stdint",
+        ":CoreFoundation",
+        ":os_availability",
+        ":Dispatch",
+        ":sys_types",
+        ":os_object",
+    ],
+)
+
 ## MANUALLY ADDED TARGETS END
 
 swift_library_group(
@@ -2395,7 +2411,8 @@ swift_library_group(
         ":WatchKit",
         ":_LocationEssentials",
         ":WatchConnectivity",
-
+        ":Security",
+        
         # generated targets
         ":_HomeKit_SwiftUI_swift",
         ":_WorkoutKit_SwiftUI_swift",

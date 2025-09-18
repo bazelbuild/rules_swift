@@ -1754,7 +1754,7 @@ swift_library_group(
     ],
 )
 
-## MANUALLY ADDED TARGETS START
+#MANUALLY ADDED TARGETS START
 swift_c_module(
     name = "_SwiftConcurrencyShims",
     module_name = "_SwiftConcurrencyShims",
@@ -2366,6 +2366,22 @@ swift_c_module(
     ],
 )
 
+swift_c_module(
+    name = "Security",
+    module_name = "Security",
+    testonly = False,
+    system_module_map = "__BAZEL_XCODE_SDKROOT__/System/Library/Frameworks/Security.framework/Modules/module.modulemap",
+    deps = [
+        ":TargetConditionals",
+        ":_Builtin_stdint",
+        ":CoreFoundation",
+        ":os_availability",
+        ":Dispatch",
+        ":sys_types",
+        ":os_object",
+    ],
+)
+
 ## MANUALLY ADDED TARGETS END
 
 swift_library_group(
@@ -2395,6 +2411,7 @@ swift_library_group(
         ":WatchKit",
         ":_LocationEssentials",
         ":WatchConnectivity",
+        ":Security",
         
         # generated targets
         ":_HomeKit_SwiftUI_swift",
