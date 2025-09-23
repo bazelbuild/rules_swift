@@ -142,7 +142,7 @@ def _all_tool_configs(
         driver_config = _driver_config(mode = "swiftc"),
         resource_set = _swift_compile_resource_set,
         use_param_file = True,
-        worker_mode = "persistent",
+        worker_mode = "wrap",
         env = env,
     )
 
@@ -674,7 +674,7 @@ to the compiler for exec transition builds.
                 allow_files = True,
                 default = Label("//tools/worker"),
                 doc = """\
-An executable that wraps Swift compiler invocations using a persistent mode.
+An executable that wraps Swift compiler invocations.
 """,
                 executable = True,
             ),

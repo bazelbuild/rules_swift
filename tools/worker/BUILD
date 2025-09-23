@@ -4,61 +4,15 @@ load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 licenses(["notice"])
 
 cc_library(
-    name = "compile_with_worker",
-    srcs = [
-        "compile_with_worker.cc",
-        "work_processor.cc",
-        "work_processor.h",
-    ],
-    hdrs = ["compile_with_worker.h"],
-    copts = select({
-        "//tools:clang-cl": [
-            "-Xclang=-fno-split-cold-code",
-            "/std:c++17",
-        ],
-        "//tools:msvc": [
-            "/std:c++17",
-        ],
-        "//conditions:default": [
-            "-std=c++17",
-        ],
-    }),
-    deps = [
-        ":swift_runner",
-        ":worker_protocol",
-        "//tools/common:temp_file",
-    ],
-)
-
-cc_library(
-    name = "compile_without_worker",
-    srcs = ["compile_without_worker.cc"],
-    hdrs = ["compile_without_worker.h"],
-    copts = select({
-        "//tools:clang-cl": [
-            "-Xclang=-fno-split-cold-code",
-            "/std:c++17",
-        ],
-        "//tools:msvc": [
-            "/std:c++17",
-        ],
-        "//conditions:default": [
-            "-std=c++17",
-        ],
-    }),
-    deps = [
-        ":swift_runner",
-    ],
-)
-
-cc_library(
     name = "swift_runner",
     srcs = [
         "output_file_map.cc",
-        "output_file_map.h",
         "swift_runner.cc",
     ],
-    hdrs = ["swift_runner.h"],
+    hdrs = [
+        "output_file_map.h",
+        "swift_runner.h",
+    ],
     copts = select({
         "//tools:clang-cl": [
             "-Xclang=-fno-split-cold-code",
@@ -86,34 +40,13 @@ cc_library(
     ],
 )
 
-cc_library(
-    name = "worker_protocol",
-    srcs = ["worker_protocol.cc"],
-    hdrs = ["worker_protocol.h"],
-    copts = select({
-        "//tools:clang-cl": [
-            "-Xclang=-fno-split-cold-code",
-            "/std:c++17",
-        ],
-        "//tools:msvc": [
-            "/std:c++17",
-        ],
-        "//conditions:default": [
-            "-std=c++17",
-        ],
-    }),
-    deps = [
-        "@com_github_nlohmann_json//:json",
-    ],
-)
-
 cc_binary(
     name = "worker",
-    srcs = ["worker_main.cc"],
+    srcs = ["main.cc"],
     visibility = ["//visibility:public"],
     deps = [
-        ":compile_with_worker",
-        ":compile_without_worker",
+        ":swift_runner",
+        "//tools/common:process",
         "@bazel_tools//tools/cpp/runfiles",
     ],
 )

@@ -442,8 +442,7 @@ Swift build rules, and they are also passed to the C++ APIs used when linking
 `String`. The workspace-relative root directory of the toolchain.
 """,
         "swift_worker": """\
-`File`. The executable representing the worker executable used to invoke the
-compiler and other Swift tools.
+`File`. The executable that wraps Swift compiler invocations.
 """,
         "test_configuration": """\
 `Struct` containing the following fields:

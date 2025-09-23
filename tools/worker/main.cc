@@ -19,18 +19,20 @@
 
 #include "tools/common/process.h"
 #include "tools/cpp/runfiles/runfiles.h"
-#include "tools/worker/compile_with_worker.h"
-#include "tools/worker/compile_without_worker.h"
+#include "tools/worker/swift_runner.h"
 
 using bazel::tools::cpp::runfiles::Runfiles;
 
 int main(int argc, char *argv[]) {
   std::string index_import_path;
+
+  // Find the index-import tool from runfiles if available
   #ifdef BAZEL_CURRENT_REPOSITORY
     std::unique_ptr<Runfiles> runfiles(Runfiles::Create(argv[0], BAZEL_CURRENT_REPOSITORY));
   #else
     std::unique_ptr<Runfiles> runfiles(Runfiles::Create(argv[0]));
-  #endif  // BAZEL_CURRENT_REPOSITORY
+  #endif
+
   if (runfiles != nullptr) {
     // TODO: Remove once we drop support for Xcode 16.x.
     // Determine which version of index-import to use based on the environment
@@ -46,18 +48,10 @@ int main(int argc, char *argv[]) {
 
   auto args = std::vector<std::string>(argv + 1, argv + argc);
 
-  // When Bazel invokes a tool in persistent worker mode, it includes the flag
-  // "--persistent_worker" on the command line (typically the first argument,
-  // but we don't want to rely on that). Since this "worker" tool also supports
-  // a non-worker mode, we can detect the mode based on the presence of this
-  // flag.
-  auto persistent_worker_it =
-      std::find(args.begin(), args.end(), "--persistent_worker");
-  if (persistent_worker_it == args.end()) {
-    return CompileWithoutWorker(args, index_import_path);
-  }
+  // Filter out the --persistent_worker flag if present (no longer supported)
+  args.erase(std::remove(args.begin(), args.end(), "--persistent_worker"), args.end());
 
-  // Remove the special flag before starting the worker processing loop.
-  args.erase(persistent_worker_it);
-  return CompileWithWorker(args, index_import_path);
+  // Run the Swift compiler with the provided arguments
+  return SwiftRunner(args, index_import_path)
+      .Run(&std::cerr, /*stdout_to_stderr=*/false);
 }
