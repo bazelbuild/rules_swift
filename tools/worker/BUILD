@@ -34,9 +34,21 @@ cc_library(
     }),
     deps = [
         "//tools/common:bazel_substitutions",
+        "//tools/common:color",
+        "//tools/common:file_system",
+        "//tools/common:path_utils",
         "//tools/common:process",
+        "//tools/common:target_triple",
         "//tools/common:temp_file",
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
         "@com_github_nlohmann_json//:json",
+        "@re2",
     ],
 )
 
