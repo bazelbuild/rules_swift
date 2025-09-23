@@ -504,7 +504,7 @@ def _all_tool_configs(
         execution_requirements = execution_requirements,
         resource_set = _swift_compile_resource_set,
         use_param_file = True,
-        worker_mode = "persistent",
+        worker_mode = "wrap",
     )
 
     tool_configs = {
@@ -972,7 +972,7 @@ to the compiler for exec transition builds.
                 allow_files = True,
                 default = Label("//tools/worker:worker_wrapper"),
                 doc = """\
-An executable that wraps Swift compiler invocations using a persistent mode.
+An executable that wraps Swift compiler invocations.
 """,
                 executable = True,
             ),
