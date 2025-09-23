@@ -443,8 +443,7 @@ Swift build rules, and they are also passed to the C++ APIs used when linking
 """,
         "swift_worker": """\
 `File`. The executable representing the worker executable used to invoke the
-compiler and other Swift tools (for both incremental and non-incremental
-compiles).
+compiler and other Swift tools.
 """,
         "test_configuration": """\
 `Struct` containing the following fields:

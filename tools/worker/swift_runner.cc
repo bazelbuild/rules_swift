@@ -159,10 +159,9 @@ int SwiftRunner::Run(std::ostream *stderr_stream, bool stdout_to_stderr) {
     }
 
     OutputFileMap output_file_map;
-    output_file_map.ReadFromPath(output_file_map_path_, "", "");
+    output_file_map.ReadFromPath(output_file_map_path_);
 
-    auto outputs = output_file_map.incremental_outputs();
-    std::map<std::string, std::string>::iterator it;
+    auto object_files = output_file_map.get_outputs_by_type("object");
 
     std::vector<std::string> ii_args;
     ii_args.push_back(index_import_path_);
@@ -172,14 +171,9 @@ int SwiftRunner::Run(std::ostream *stderr_stream, bool stdout_to_stderr) {
       ii_args.push_back(std::filesystem::current_path().string() + "=.");
     }
 
-    for (it = outputs.begin(); it != outputs.end(); it++) {
-      // Need the actual output paths of the compiler - not bazel
-      auto output_path = it->first;
-      auto file_type = output_path.substr(output_path.find_last_of(".") + 1);
-      if (file_type == "o") {
-        ii_args.push_back("-import-output-file");
-        ii_args.push_back(output_path);
-      }
+    for (const auto& obj_file : object_files) {
+      ii_args.push_back("-import-output-file");
+      ii_args.push_back(obj_file);
     }
 
     const std::filesystem::path &exec_root = std::filesystem::current_path();

@@ -674,8 +674,7 @@ to the compiler for exec transition builds.
                 allow_files = True,
                 default = Label("//tools/worker"),
                 doc = """\
-An executable that wraps Swift compiler invocations and also provides support
-for incremental compilation using a persistent mode.
+An executable that wraps Swift compiler invocations using a persistent mode.
 """,
                 executable = True,
             ),
