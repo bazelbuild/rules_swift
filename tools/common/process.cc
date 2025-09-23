@@ -12,241 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "process.h"
+#include "tools/common/process.h"
 
-#include <algorithm>
-#include <cassert>
-#include <iostream>
-#include <iterator>
-#include <map>
-#include <sstream>
-#include <string>
-#include <vector>
-
-#if defined(_WIN32)
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-#include <stdlib.h>
-#else
-extern "C" {
-  extern char **environ;
-}
-#endif
-
-std::map<std::string, std::string> GetCurrentEnvironment() {
-  std::map<std::string, std::string> result;
-  char **envp = environ;
-  for (int i = 0; envp[i] != nullptr; ++i) {
-    std::string envString(envp[i]);
-    size_t equalsPos = envString.find('=');
-    if (equalsPos != std::string::npos) {
-        std::string key = envString.substr(0, equalsPos);
-        std::string value = envString.substr(equalsPos + 1);
-        result[key] = value;
-    }
-  }
-  return result;
-}
-
-#if defined(_WIN32)
-
-namespace {
-class WindowsIORedirector {
-  enum { In, Out };
-  enum { Rd, Wr };
-
-  HANDLE hIO_[2][2];
-
-  explicit WindowsIORedirector(HANDLE hIO[2][2], bool include_stdout) {
-    std::memcpy(hIO_, hIO, sizeof(hIO_));
-    assert(hIO_[In][Rd] == INVALID_HANDLE_VALUE);
-    assert(hIO_[In][Wr] == INVALID_HANDLE_VALUE);
-
-    ZeroMemory(&siStartInfo, sizeof(siStartInfo));
-    siStartInfo.cb = sizeof(siStartInfo);
-    siStartInfo.dwFlags = STARTF_USESTDHANDLES;
-    siStartInfo.hStdInput = INVALID_HANDLE_VALUE;
-    siStartInfo.hStdOutput =
-        include_stdout ? hIO_[Out][Wr] : INVALID_HANDLE_VALUE;
-    siStartInfo.hStdError = hIO_[Out][Wr];
-  }
-
- public:
-  STARTUPINFOA siStartInfo;
-
-  WindowsIORedirector(const WindowsIORedirector &) = delete;
-  WindowsIORedirector &operator=(const WindowsIORedirector &) = delete;
-
-  WindowsIORedirector(WindowsIORedirector &&) = default;
-  WindowsIORedirector &operator=(WindowsIORedirector &&) = default;
-
-  ~WindowsIORedirector() {
-    assert(hIO_[In][Rd] == INVALID_HANDLE_VALUE);
-    assert(hIO_[In][Wr] == INVALID_HANDLE_VALUE);
-    CloseHandle(hIO_[Out][Rd]);
-    CloseHandle(hIO_[Out][Wr]);
-  }
-
-  static std::unique_ptr<WindowsIORedirector> Create(bool include_stdout,
-                                                     std::error_code &ec) {
-    HANDLE hIO[2][2] = {
-      {INVALID_HANDLE_VALUE, INVALID_HANDLE_VALUE},
-      {INVALID_HANDLE_VALUE, INVALID_HANDLE_VALUE},
-    };
-
-    SECURITY_ATTRIBUTES saAttr;
-    ZeroMemory(&saAttr, sizeof(saAttr));
-    saAttr.nLength = sizeof(saAttr);
-    saAttr.lpSecurityDescriptor = nullptr;
-    saAttr.bInheritHandle = TRUE;
-
-    if (!CreatePipe(&hIO[Out][Rd], &hIO[Out][Wr], &saAttr, 0)) {
-      ec = std::error_code(GetLastError(), std::system_category());
-      return nullptr;
-    }
-
-    // The read handle for stdout should not be inheritted by the child.
-    if (!SetHandleInformation(hIO[Out][Rd], HANDLE_FLAG_INHERIT, FALSE)) {
-      ec = std::error_code(GetLastError(), std::system_category());
-      CloseHandle(hIO[Out][Rd]);
-      CloseHandle(hIO[Out][Wr]);
-      return nullptr;
-    }
-
-    return std::unique_ptr<WindowsIORedirector>(
-        new WindowsIORedirector(hIO, include_stdout));
-  }
-
-  void ConsumeAllSubprocessOutput(std::ostream *stderr_stream);
-};
-
-void WindowsIORedirector::ConsumeAllSubprocessOutput(
-    std::ostream *stderr_stream) {
-  CloseHandle(hIO_[Out][Wr]);
-  hIO_[Out][Wr] = INVALID_HANDLE_VALUE;
-
-  char stderr_buffer[1024];
-  DWORD dwNumberOfBytesRead;
-  while (ReadFile(hIO_[Out][Rd], stderr_buffer, sizeof(stderr_buffer),
-                  &dwNumberOfBytesRead, nullptr)) {
-    if (dwNumberOfBytesRead)
-      stderr_stream->write(stderr_buffer, dwNumberOfBytesRead);
-  }
-  if (dwNumberOfBytesRead)
-    stderr_stream->write(stderr_buffer, dwNumberOfBytesRead);
-}
-
-std::string GetCommandLine(const std::vector<std::string> &arguments) {
-  // To escape the command line, we surround the argument with quotes.
-  // However, the complication comes due to how the Windows command line
-  // parser treats backslashes (\) and quotes (").
-  //
-  // - \ is normally treated as a literal backslash
-  //      e.g. alpha\beta\gamma => alpha\beta\gamma
-  // - The sequence \" is treated as a literal "
-  //      e.g. alpha\"beta => alpha"beta
-  //
-  // But then what if we are given a path that ends with a \?
-  //
-  // Surrounding alpha\beta\ with " would be "alpha\beta\" which would be
-  // an unterminated string since it ends on a literal quote. To allow
-  // this case the parser treats:
-  //
-  //  - \\" as \ followed by the " metacharacter
-  //  - \\\" as \ followed by a literal "
-  //
-  // In general:
-  //  - 2n \ followed by " => n \ followed by the " metacharacter
-  //  - 2n + 1 \ followed by " => n \ followed by a literal "
-  auto quote = [](const std::string &argument) -> std::string {
-    if (argument.find_first_of(" \t\n\"") == std::string::npos) return argument;
-
-    std::ostringstream buffer;
-
-    buffer << '\"';
-    std::string::const_iterator cur = std::begin(argument);
-    std::string::const_iterator end = std::end(argument);
-    while (cur < end) {
-      std::string::size_type offset = std::distance(std::begin(argument), cur);
-
-      std::string::size_type start = argument.find_first_not_of('\\', offset);
-      if (start == std::string::npos) {
-        // String ends with a backslash (e.g. first\second\), escape all
-        // the backslashes then add the metacharacter ".
-        buffer << std::string(2 * (argument.length() - offset), '\\');
-        break;
-      }
-
-      std::string::size_type count = start - offset;
-      // If this is a string of \ followed by a " (e.g. first\"second).
-      // Escape the backslashes and the quote, otherwise these are just literal
-      // backslashes.
-      buffer << std::string(argument.at(start) == '\"' ? 2 * count + 1 : count,
-                            '\\')
-             << argument.at(start);
-      // Drop the backslashes and the following character.
-      std::advance(cur, count + 1);
-    }
-    buffer << '\"';
-
-    return buffer.str();
-  };
-
-  std::ostringstream quoted;
-  std::transform(std::begin(arguments), std::end(arguments),
-                 std::ostream_iterator<std::string>(quoted, " "), quote);
-  return quoted.str();
-}
-}  // namespace
-
-int RunSubProcess(const std::vector<std::string> &args,
-                  std::map<std::string, std::string> *env,
-                  std::ostream *stderr_stream, bool stdout_to_stderr) {
-  std::error_code ec;
-  std::unique_ptr<WindowsIORedirector> redirector =
-      WindowsIORedirector::Create(stdout_to_stderr, ec);
-  if (!redirector) {
-    (*stderr_stream) << "unable to create stderr pipe: " << ec.message()
-                     << '\n';
-    return 254;
-  }
-
-  PROCESS_INFORMATION piProcess = {0};
-  if (!CreateProcessA(NULL, GetCommandLine(args).data(), nullptr, nullptr, TRUE,
-                      0, nullptr, nullptr, &redirector->siStartInfo,
-                      &piProcess)) {
-    DWORD dwLastError = GetLastError();
-    (*stderr_stream) << "unable to create process (error " << dwLastError
-                     << ")\n";
-    return dwLastError;
-  }
-
-  CloseHandle(piProcess.hThread);
-
-  redirector->ConsumeAllSubprocessOutput(stderr_stream);
-
-  if (WaitForSingleObject(piProcess.hProcess, INFINITE) == WAIT_FAILED) {
-    DWORD dwLastError = GetLastError();
-    (*stderr_stream) << "wait for process failure (error " << dwLastError
-                     << ")\n";
-    CloseHandle(piProcess.hProcess);
-    return dwLastError;
-  }
-
-  DWORD dwExitCode;
-  if (!GetExitCodeProcess(piProcess.hProcess, &dwExitCode)) {
-    DWORD dwLastError = GetLastError();
-    (*stderr_stream) << "unable to get exit code (error " << dwLastError
-                     << ")\n";
-    CloseHandle(piProcess.hProcess);
-    return dwLastError;
-  }
-
-  CloseHandle(piProcess.hProcess);
-  return dwExitCode;
-}
-
-#else
 #include <fcntl.h>
 #include <spawn.h>
 #include <sys/poll.h>
@@ -254,28 +21,52 @@ int RunSubProcess(const std::vector<std::string> &args,
 #include <unistd.h>
 
 #include <cerrno>
+#include <cstdlib>
 #include <cstring>
-#include <filesystem>
+#include <future>  // NOLINT
+#include <iostream>
 #include <memory>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "absl/container/flat_hash_map.h"
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
+#include "tools/common/temp_file.h"
+
+extern char **environ;
+
+namespace bazel_rules_swift {
 
 namespace {
 
+// Converts an array of string arguments to char *arguments, terminated by a
+// nullptr.
+// It is the responsibility of the caller to free the elements of the returned
+// vector.
+std::vector<char *> ConvertToCArgs(const std::vector<std::string> &args) {
+  std::vector<char *> c_args;
+  c_args.reserve(args.size() + 1);
+  for (int i = 0; i < args.size(); i++) {
+    c_args.push_back(strdup(args[i].c_str()));
+  }
+  c_args.push_back(nullptr);
+  return c_args;
+}
+
 // An RAII class that manages the pipes and posix_spawn state needed to redirect
-// subprocess I/O. Currently only supports stderr, but can be extended to handle
-// stdin and stdout if needed.
+// subprocess I/O. Currently only supports stdout and stderr, but can be
+// extended to handle stdin if needed.
 class PosixSpawnIORedirector {
  public:
   // Create an I/O redirector that can be used with posix_spawn to capture
   // stderr.
-  static std::unique_ptr<PosixSpawnIORedirector> Create(bool stdoutToStderr) {
-    int stderr_pipe[2];
-    if (pipe(stderr_pipe) != 0) {
-      return nullptr;
-    }
-
-    return std::unique_ptr<PosixSpawnIORedirector>(
-        new PosixSpawnIORedirector(stderr_pipe, stdoutToStderr));
-  }
+  static std::unique_ptr<PosixSpawnIORedirector> Create();
 
   // Explicitly make PosixSpawnIORedirector non-copyable and movable.
   PosixSpawnIORedirector(const PosixSpawnIORedirector &) = delete;
@@ -283,114 +74,198 @@ class PosixSpawnIORedirector {
   PosixSpawnIORedirector(PosixSpawnIORedirector &&) = default;
   PosixSpawnIORedirector &operator=(PosixSpawnIORedirector &&) = default;
 
-  ~PosixSpawnIORedirector() {
-    SafeClose(&stderr_pipe_[0]);
-    SafeClose(&stderr_pipe_[1]);
-    posix_spawn_file_actions_destroy(&file_actions_);
-  }
+  ~PosixSpawnIORedirector();
 
   // Returns the pointer to a posix_spawn_file_actions_t value that should be
   // passed to posix_spawn to enable this redirection.
   posix_spawn_file_actions_t *PosixSpawnFileActions() { return &file_actions_; }
 
+  // Returns a pointer to the two-element file descriptor array for the stdout
+  // pipe.
+  int *StdoutPipe() { return stdout_pipe_; }
+
   // Returns a pointer to the two-element file descriptor array for the stderr
   // pipe.
   int *StderrPipe() { return stderr_pipe_; }
 
-  // Consumes all the data output to stderr by the subprocess and writes it to
-  // the given output stream.
-  void ConsumeAllSubprocessOutput(std::ostream *stderr_stream);
+  // Consumes all the data output to stdout and stderr by the subprocess and
+  // writes it to the given output stream.
+  void ConsumeAllSubprocessOutput(std::ostream &stdout_stream,
+                                  std::ostream &stderr_stream);
 
  private:
-  explicit PosixSpawnIORedirector(int stderr_pipe[], bool stdoutToStderr) {
-    memcpy(stderr_pipe_, stderr_pipe, sizeof(int) * 2);
-
-    posix_spawn_file_actions_init(&file_actions_);
-    posix_spawn_file_actions_addclose(&file_actions_, stderr_pipe_[0]);
-    if (stdoutToStderr) {
-      posix_spawn_file_actions_adddup2(&file_actions_, stderr_pipe_[1],
-                                       STDOUT_FILENO);
-    }
-    posix_spawn_file_actions_adddup2(&file_actions_, stderr_pipe_[1],
-                                     STDERR_FILENO);
-    posix_spawn_file_actions_addclose(&file_actions_, stderr_pipe_[1]);
-  }
+  PosixSpawnIORedirector(int stdout_pipe[], int stderr_pipe[]);
 
   // Closes a file descriptor only if it hasn't already been closed.
-  void SafeClose(int *fd) {
-    if (*fd >= 0) {
-      close(*fd);
-      *fd = -1;
+  void SafeClose(int &fd) {
+    if (fd >= 0) {
+      close(fd);
+      fd = -1;
     }
   }
 
+  int stdout_pipe_[2];
   int stderr_pipe_[2];
   posix_spawn_file_actions_t file_actions_;
 };
 
-void PosixSpawnIORedirector::ConsumeAllSubprocessOutput(
-    std::ostream *stderr_stream) {
-  SafeClose(&stderr_pipe_[1]);
+PosixSpawnIORedirector::PosixSpawnIORedirector(int stdout_pipe[],
+                                               int stderr_pipe[]) {
+  memcpy(stdout_pipe_, stdout_pipe, sizeof(int) * 2);
+  memcpy(stderr_pipe_, stderr_pipe, sizeof(int) * 2);
 
-  char stderr_buffer[1024];
-  pollfd stderr_poll = {stderr_pipe_[0], POLLIN};
-  int status;
-  while ((status = poll(&stderr_poll, 1, -1)) > 0) {
-    if (stderr_poll.revents) {
-      int bytes_read =
-          read(stderr_pipe_[0], stderr_buffer, sizeof(stderr_buffer));
-      if (bytes_read == 0) {
-        break;
-      }
-      stderr_stream->write(stderr_buffer, bytes_read);
-    }
-  }
+  posix_spawn_file_actions_init(&file_actions_);
+  posix_spawn_file_actions_addclose(&file_actions_, stdout_pipe_[0]);
+  posix_spawn_file_actions_addclose(&file_actions_, stderr_pipe_[0]);
+  posix_spawn_file_actions_adddup2(&file_actions_, stdout_pipe_[1],
+                                   STDOUT_FILENO);
+  posix_spawn_file_actions_adddup2(&file_actions_, stderr_pipe_[1],
+                                   STDERR_FILENO);
+  posix_spawn_file_actions_addclose(&file_actions_, stdout_pipe_[1]);
+  posix_spawn_file_actions_addclose(&file_actions_, stderr_pipe_[1]);
 }
 
-// Converts an array of string arguments to char *arguments.
-// The first arg is reduced to its basename as per execve conventions.
-// Note that the lifetime of the char* arguments in the returned array
-// are controlled by the lifetime of the strings in args.
-std::vector<const char *> ConvertToCArgs(const std::vector<std::string> &args) {
-  std::vector<const char *> c_args;
-  std::string filename = std::filesystem::path(args[0]).filename().string();
-  c_args.push_back(&*std::next(args[0].rbegin(), filename.length() - 1));
-  for (int i = 1; i < args.size(); i++) {
-    c_args.push_back(args[i].c_str());
+PosixSpawnIORedirector::~PosixSpawnIORedirector() {
+  SafeClose(stdout_pipe_[1]);
+  SafeClose(stderr_pipe_[1]);
+  posix_spawn_file_actions_destroy(&file_actions_);
+}
+
+std::unique_ptr<PosixSpawnIORedirector> PosixSpawnIORedirector::Create() {
+  int stdout_pipe[2];
+  int stderr_pipe[2];
+  if (pipe(stdout_pipe) != 0 || pipe(stderr_pipe) != 0) {
+    return nullptr;
   }
-  c_args.push_back(nullptr);
-  return c_args;
+
+  return std::unique_ptr<PosixSpawnIORedirector>(
+      new PosixSpawnIORedirector(stdout_pipe, stderr_pipe));
+}
+
+void PosixSpawnIORedirector::ConsumeAllSubprocessOutput(
+    std::ostream &stdout_stream, std::ostream &stderr_stream) {
+  SafeClose(stdout_pipe_[1]);
+  SafeClose(stderr_pipe_[1]);
+
+  char stdout_buffer[1024];
+  char stderr_buffer[1024];
+
+  std::vector<pollfd> poll_list{
+      {stdout_pipe_[0], POLLIN},
+      {stderr_pipe_[0], POLLIN},
+  };
+
+  bool active_events = true;
+  while (active_events) {
+    active_events = false;
+    while (poll(&poll_list.front(), poll_list.size(), -1) == -1) {
+      int err = errno;
+      if (err == EAGAIN || err == EINTR) {
+        continue;
+      }
+    }
+    if (poll_list[0].revents & POLLIN) {
+      int bytes_read =
+          read(stdout_pipe_[0], stdout_buffer, sizeof(stdout_buffer));
+      if (bytes_read > 0) {
+        stdout_stream.write(stdout_buffer, bytes_read);
+        active_events = true;
+      }
+    }
+    if (poll_list[1].revents & POLLIN) {
+      int bytes_read =
+          read(stderr_pipe_[0], stderr_buffer, sizeof(stderr_buffer));
+      if (bytes_read > 0) {
+        stderr_stream.write(stderr_buffer, bytes_read);
+        active_events = true;
+      }
+    }
+  }
 }
 
 }  // namespace
 
-int RunSubProcess(const std::vector<std::string> &args,
-                  std::map<std::string, std::string> *env,
-                  std::ostream *stderr_stream, bool stdout_to_stderr) {
-  std::vector<const char *> exec_argv = ConvertToCArgs(args);
+absl::flat_hash_map<std::string, std::string> GetCurrentEnvironment() {
+  absl::flat_hash_map<std::string, std::string> result;
+  if (environ == nullptr) {
+    return result;
+  }
+  for (char **envp = environ; *envp != nullptr; ++envp) {
+    std::pair<absl::string_view, absl::string_view> key_value =
+        absl::StrSplit(*envp, absl::MaxSplits('=', 1));
+    result[key_value.first] = std::string(key_value.second);
+  }
+  return result;
+}
 
-  // Set up a pipe to redirect stderr from the child process so that we can
-  // capture it and return it in the response message.
-  std::unique_ptr<PosixSpawnIORedirector> redirector =
-      PosixSpawnIORedirector::Create(stdout_to_stderr);
-  if (!redirector) {
-    (*stderr_stream) << "Error creating stderr pipe for child process.\n";
+int RunSubProcess(const std::vector<std::string> &args,
+                  const absl::flat_hash_map<std::string, std::string> *env,
+                  std::ostream &stdout_stream, std::ostream &stderr_stream) {
+  absl::StatusOr<std::unique_ptr<AsyncProcess>> process =
+      AsyncProcess::Spawn(args, nullptr, env);
+  if (!process.ok()) {
+    stderr_stream << "error spawning subprocess: " << process.status() << "\n";
     return 254;
+  }
+  absl::StatusOr<AsyncProcess::Result> result =
+      (*process)->WaitForTermination();
+  if (!result.ok()) {
+    stderr_stream << "error waiting for subprocess: " << result.status()
+                  << "\n";
+    return 254;
+  }
+  stdout_stream << result->stdout;
+  stderr_stream << result->stderr;
+  return result->exit_code;
+}
+
+AsyncProcess::AsyncProcess(
+    pid_t pid, std::vector<char *> argv,
+    std::unique_ptr<TempFile> response_file,
+    std::vector<char *> allocated_environ,
+    std::future<std::pair<std::string, std::string>> output)
+    : pid_(pid),
+      argv_(argv),
+      response_file_(std::move(response_file)),
+      allocated_environ_(std::move(allocated_environ)),
+      output_(std::move(output)) {}
+
+AsyncProcess::~AsyncProcess() {
+  for (char *arg : argv_) {
+    free(arg);
+  }
+  for (char *envp : allocated_environ_) {
+    free(envp);
+  }
+}
+
+absl::StatusOr<std::unique_ptr<AsyncProcess>> AsyncProcess::Spawn(
+    const std::vector<std::string> &normal_args,
+    std::unique_ptr<TempFile> response_file,
+    const absl::flat_hash_map<std::string, std::string> *env) {
+  // Set up a pipe to redirect stdout and stderr from the child process so that
+  // we can redirect them to the given streams.
+  std::unique_ptr<PosixSpawnIORedirector> redirector =
+      PosixSpawnIORedirector::Create();
+  if (!redirector) {
+    return absl::UnknownError("Failed to create pipes for child process");
+  }
+
+  std::vector<char *> exec_argv = ConvertToCArgs(normal_args);
+  if (response_file) {
+    exec_argv.back() =
+        strdup(absl::StrCat("@", response_file->GetPath()).c_str());
+    exec_argv.push_back(nullptr);
   }
 
   char **envp;
   std::vector<char *> new_environ;
-
   if (env) {
     // Copy the environment as an array of C strings, with guaranteed cleanup
     // below whenever we exit.
     for (const auto &[key, value] : *env) {
-      std::string pair = key + "=" + value;
-      char* c_str = new char[pair.length() + 1];
-      std::strcpy(c_str, pair.c_str());
-      new_environ.push_back(c_str);
+      new_environ.push_back(strdup(absl::StrCat(key, "=", value).c_str()));
     }
-
     new_environ.push_back(nullptr);
     envp = new_environ.data();
   } else {
@@ -399,43 +274,54 @@ int RunSubProcess(const std::vector<std::string> &args,
   }
 
   pid_t pid;
-  int status =
-      posix_spawn(&pid, args[0].c_str(), redirector->PosixSpawnFileActions(),
-                  nullptr, const_cast<char **>(exec_argv.data()), envp);
-  redirector->ConsumeAllSubprocessOutput(stderr_stream);
-
-  for (char* envp : new_environ) {
-    if (envp) {
-      delete[] envp;
-    }
+  int result =
+      posix_spawn(&pid, exec_argv[0], redirector->PosixSpawnFileActions(),
+                  nullptr, exec_argv.data(), envp);
+  if (result != 0) {
+    return absl::Status(absl::ErrnoToStatusCode(errno),
+                        "Failed to spawn child process");
   }
 
-  if (status == 0) {
-    int wait_status;
-    do {
-      wait_status = waitpid(pid, &status, 0);
-    } while ((wait_status == -1) && (errno == EINTR));
-
-    if (wait_status < 0) {
-      (*stderr_stream) << "error: waiting on child process '" << args[0]
-                       << "'. " << strerror(errno) << "\n";
-      return wait_status;
-    }
-
-    if (WIFEXITED(status)) {
-      return WEXITSTATUS(status);
-    }
-
-    if (WIFSIGNALED(status)) {
-      return WTERMSIG(status);
-    }
-
-    // Unhandled case, if we hit this we should handle it above.
-    return 42;
-  } else {
-    (*stderr_stream) << "error: forking process failed '" << args[0] << "'. "
-                     << strerror(status) << "\n";
-    return status;
-  }
+  // Start an asynchronous task in the background that reads the output from the
+  // stdout/stderr pipes while the process is running.
+  std::future<std::pair<std::string, std::string>> output =
+      std::async(std::launch::async, [r = std::move(redirector)]() {
+        std::ostringstream stdout_output;
+        std::ostringstream stderr_output;
+        r->ConsumeAllSubprocessOutput(stdout_output, stderr_output);
+        return std::make_pair(stdout_output.str(), stderr_output.str());
+      });
+  return std::unique_ptr<AsyncProcess>(
+      new AsyncProcess(pid, exec_argv, std::move(response_file), new_environ,
+                       std::move(output)));
 }
-#endif
+
+absl::StatusOr<AsyncProcess::Result> AsyncProcess::WaitForTermination() {
+  int status;
+  int wait_status;
+  do {
+    wait_status = waitpid(pid_, &status, 0);
+  } while ((wait_status == -1) && (errno == EINTR));
+
+  // Once the process has terminated, wait for the output to be read and prepare
+  // the result.
+  std::pair<std::string, std::string> output = output_.get();
+  Result result{0, std::move(output.first), std::move(output.second)};
+
+  if (wait_status < 0) {
+    return absl::Status(absl::ErrnoToStatusCode(errno),
+                        "error waiting on child process");
+  }
+  if (WIFEXITED(status)) {
+    result.exit_code = WEXITSTATUS(status);
+    return result;
+  }
+  if (WIFSIGNALED(status)) {
+    result.exit_code = WTERMSIG(status);
+    return result;
+  }
+  // If we get here, we should add a case to handle it above instead.
+  return absl::UnknownError(absl::StrCat("Unexpected wait status: ", status));
+}
+
+}  // namespace bazel_rules_swift

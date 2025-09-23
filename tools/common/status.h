@@ -1,4 +1,4 @@
-// Copyright 2019 The Bazel Authors. All rights reserved.
+// Copyright 2022 The Bazel Authors. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,13 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <iostream>
-#include <string>
-#include <vector>
+#ifndef BUILD_BAZEL_RULES_SWIFT_TOOLS_COMMON_STATUS_H_
+#define BUILD_BAZEL_RULES_SWIFT_TOOLS_COMMON_STATUS_H_
 
-#include "tools/worker/swift_runner.h"
+#include "absl/status/status.h"
 
-int main(int argc, char *argv[]) {
-  std::vector<std::string> args(argv + 1, argv + argc);
-  return bazel_rules_swift::SwiftRunner(args).Run(std::cout, std::cerr);
-}
+namespace bazel_rules_swift {
+
+// Returns a `Status` value based on the current value of `errno`.
+absl::Status MakeStatusFromErrno(absl::string_view message);
+
+}  // namespace bazel_rules_swift
+
+#endif  // BUILD_BAZEL_RULES_SWIFT_TOOLS_COMMON_STATUS_H_

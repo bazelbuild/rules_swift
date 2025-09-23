@@ -15,71 +15,56 @@
 #ifndef BUILD_BAZEL_RULES_SWIFT_TOOLS_COMMON_TEMP_FILE_H
 #define BUILD_BAZEL_RULES_SWIFT_TOOLS_COMMON_TEMP_FILE_H
 
-#include <cassert>
+#include <fts.h>
+#include <string.h>
+#include <unistd.h>
+
 #include <cerrno>
-#include <cstdio>
 #include <cstdlib>
-#include <cstring>
-#include <filesystem>
 #include <iostream>
 #include <memory>
 #include <string>
 
-#if defined(_WIN32)
-#include <direct.h>
-#include <io.h>
-#endif
-#if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
-#include <unistd.h>
-#endif
+#include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
+
+namespace bazel_rules_swift {
 
 // An RAII temporary file.
 class TempFile {
  public:
+  // Create a new temporary file using the given path template string (the same
+  // form used by `mkstemp`). The file will automatically be deleted when the
+  // object goes out of scope.
+  static std::unique_ptr<TempFile> Create(absl::string_view path_template) {
+    absl::string_view tmp_dir;
+    if (const char *env_value = getenv("TMPDIR")) {
+      tmp_dir = env_value;
+    } else {
+      tmp_dir = "/tmp";
+    }
+    std::string path = absl::StrCat(tmp_dir, "/", path_template);
+    if (mkstemp(const_cast<char *>(path.c_str())) == -1) {
+      std::cerr << "Failed to create temporary file '" << path
+                << "': " << strerror(errno) << std::endl;
+      return nullptr;
+    }
+    return std::unique_ptr<TempFile>(new TempFile(path));
+  }
+
   // Explicitly make TempFile non-copyable and movable.
   TempFile(const TempFile &) = delete;
   TempFile &operator=(const TempFile &) = delete;
   TempFile(TempFile &&) = default;
   TempFile &operator=(TempFile &&) = default;
 
-  // Create a new temporary file using the given path template string (the same
-  // form used by `mkstemp`). The file will automatically be deleted when the
-  // object goes out of scope.
-  static std::unique_ptr<TempFile> Create(const std::string &path_template) {
-    std::error_code ec;
-    std::filesystem::path temporary{std::filesystem::temp_directory_path(ec) / path_template};
-    if (ec)
-      return nullptr;
-
-    std::string path = temporary.string();
-
-#if defined(_WIN32)
-    if (errno_t error = _mktemp_s(path.data(), path.size() + 1)) {
-      std::cerr << "Failed to create temporary file '" << temporary
-                << "': " << strerror(error) << "\n";
-      return nullptr;
-    }
-#else
-    if (::mkstemp(path.data()) < 0) {
-      std::cerr << "Failed to create temporary file '" << temporary
-                << "': " << strerror(errno) << "\n";
-      return nullptr;
-    }
-#endif
-
-    return std::unique_ptr<TempFile>(new TempFile(path));
-  }
-
-  ~TempFile() {
-    std::error_code ec;
-    std::filesystem::remove(path_, ec);
-  }
+  ~TempFile() { remove(path_.c_str()); }
 
   // Gets the path to the temporary file.
-  std::string GetPath() const { return path_; }
+  absl::string_view GetPath() const { return path_; }
 
  private:
-  explicit TempFile(const std::string &path) : path_(path) {}
+  explicit TempFile(absl::string_view path) : path_(path) {}
 
   std::string path_;
 };
@@ -87,69 +72,67 @@ class TempFile {
 // An RAII temporary directory that is recursively deleted.
 class TempDirectory {
  public:
+  // Create a new temporary directory using the given path template string (the
+  // same form used by `mkdtemp`). The file will automatically be deleted when
+  // the object goes out of scope.
+  static std::unique_ptr<TempDirectory> Create(
+      absl::string_view path_template) {
+    absl::string_view tmp_dir;
+    if (const char *env_value = getenv("TMPDIR")) {
+      tmp_dir = env_value;
+    } else {
+      tmp_dir = "/tmp";
+    }
+    std::string path = absl::StrCat(tmp_dir, "/", path_template);
+    if (mkdtemp(const_cast<char *>(path.c_str())) == nullptr) {
+      std::cerr << "Failed to create temporary directory '" << path
+                << "': " << strerror(errno) << std::endl;
+      return nullptr;
+    }
+    return std::unique_ptr<TempDirectory>(new TempDirectory(path));
+  }
+
   // Explicitly make TempDirectory non-copyable and movable.
   TempDirectory(const TempDirectory &) = delete;
   TempDirectory &operator=(const TempDirectory &) = delete;
   TempDirectory(TempDirectory &&) = default;
   TempDirectory &operator=(TempDirectory &&) = default;
 
-  // Create a new temporary directory using the given path template string (the
-  // same form used by `mkdtemp`). The file will automatically be deleted when
-  // the object goes out of scope.
-  static std::unique_ptr<TempDirectory> Create(
-      const std::string &path_template) {
-    std::error_code ec;
-    std::filesystem::path temporary{std::filesystem::temp_directory_path(ec) / path_template};
-    if (ec)
-      return nullptr;
-
-    std::string path = temporary.string();
-
-#if defined(_WIN32)
-    if (memcmp(path.data() + path.length() - 6, "XXXXXX", 6)) {
-      std::cerr << "Failed to create temporary directory '" << temporary
-                << "': invalid parameter\n";
-      return nullptr;
-    }
-
-    auto randname = [](char *buffer) {
-      static const char kAlphabet[] =
-          "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01123456789";
-      constexpr size_t kAlphabetSize = sizeof(kAlphabet) - 1;
-
-      for (unsigned index = 0; index < 6; ++index)
-        buffer[index] = kAlphabet[rand() % kAlphabetSize];
-    };
-
-    srand(reinterpret_cast<uintptr_t>(path.data()));
-    for (unsigned retry = 256; retry; --retry) {
-      randname(path.data() + path.length() - 6);
-      if (!_mkdir(path.c_str()))
-        break;
-    }
-#else
-    if (::mkdtemp(path.data()) == nullptr) {
-      std::cerr << "Failed to create temporary directory '" << temporary
-                << "': " << strerror(errno) << "\n";
-      return nullptr;
-    }
-#endif
-
-    return std::unique_ptr<TempDirectory>(new TempDirectory(path));
-  }
-
   ~TempDirectory() {
-    std::error_code ec;
-    std::filesystem::remove_all(path_, ec);
+    char *files[] = {(char *)path_.c_str(), nullptr};
+    // Don't have the walk change directories, don't traverse symlinks, and
+    // don't cross devices.
+    auto fts_handle =
+        fts_open(files, FTS_NOCHDIR | FTS_PHYSICAL | FTS_XDEV, nullptr);
+    if (!fts_handle) {
+      return;
+    }
+
+    FTSENT *entry;
+    while ((entry = fts_read(fts_handle))) {
+      switch (entry->fts_info) {
+        case FTS_F:        // regular file
+        case FTS_SL:       // symlink
+        case FTS_SLNONE:   // symlink without target
+        case FTS_DP:       // directory, post-order (after traversing children)
+        case FTS_DEFAULT:  // other non-error conditions
+          remove(entry->fts_accpath);
+          break;
+      }
+    }
+
+    fts_close(fts_handle);
   }
 
   // Gets the path to the temporary directory.
-  std::string GetPath() const { return path_; }
+  absl::string_view GetPath() const { return path_; }
 
  private:
-  explicit TempDirectory(const std::string &path) : path_(path) {}
+  explicit TempDirectory(absl::string_view path) : path_(path) {}
 
   std::string path_;
 };
+
+}  // namespace bazel_rules_swift
 
 #endif  // BUILD_BAZEL_RULES_SWIFT_TOOLS_COMMON_TEMP_FILE_H
