@@ -71,6 +71,10 @@ load(
     "features_for_build_modes",
 )
 load(
+    "//swift/internal:optimization.bzl",
+    "optimization_features_from_swiftcopts",
+)
+load(
     "//swift/internal:providers.bzl",
     "SwiftCrossImportOverlayInfo",
     "SwiftModuleAliasesInfo",
@@ -82,7 +86,6 @@ load(
     "compact",
     "get_swift_executable_for_toolchain",
 )
-load("//swift/internal:wmo.bzl", "wmo_features_from_swiftcopts")
 load(
     "//swift/toolchains/config:action_config.bzl",
     "ActionConfigInfo",
@@ -792,10 +795,16 @@ def _xcode_swift_toolchain_impl(ctx):
 
     # Compute the default requested features and conditional ones based on Xcode
     # version.
-    requested_features = features_for_build_modes(
-        ctx,
-        cpp_fragment = cpp_fragment,
-    ) + wmo_features_from_swiftcopts(swiftcopts = ctx.attr.copts + swiftcopts)
+    requested_features, unsupported_features = (
+        optimization_features_from_swiftcopts(swiftcopts = ctx.attr.copts + swiftcopts)
+    )
+    build_mode_requested_features, build_mode_unsupported_features = (
+        features_for_build_modes(
+            ctx,
+            cpp_fragment = cpp_fragment,
+        )
+    )
+    requested_features.extend(build_mode_requested_features)
     requested_features.extend(ctx.features)
     requested_features.extend(ctx.attr.default_enabled_features)
     requested_features.extend(default_features_for_toolchain(
@@ -829,9 +838,12 @@ def _xcode_swift_toolchain_impl(ctx):
         ])
 
     unsupported_features = ctx.disabled_features + [
+        # `-fmodule-map-file-home-is-cwd` is incompatible with Apple's module maps,
+        # which we must use for system frameworks.
         SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD,
     ]
     unsupported_features.extend(ctx.attr.default_unsupported_features)
+    unsupported_features.extend(build_mode_unsupported_features)
 
     env = _xcode_env(target_triple = target_triple, xcode_config = xcode_config)
 
