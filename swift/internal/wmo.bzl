@@ -16,7 +16,7 @@
 
 load(
     ":feature_names.bzl",
-    "SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS",
+    "SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
 )
 
@@ -49,7 +49,7 @@ def features_from_swiftcopts(swiftcopts):
     if is_wmo_manually_requested(user_compile_flags = swiftcopts):
         features.append(SWIFT_FEATURE__WMO_IN_SWIFTCOPTS)
     if find_num_threads_flag_value(user_compile_flags = swiftcopts) == 0:
-        features.append(SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS)
+        features.append(SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS)
     return features
 
 def find_num_threads_flag_value(user_compile_flags):
@@ -110,7 +110,7 @@ def wmo_features_from_swiftcopts(swiftcopts):
     if is_wmo_manually_requested(user_compile_flags = swiftcopts):
         features.append(SWIFT_FEATURE__WMO_IN_SWIFTCOPTS)
     if find_num_threads_flag_value(user_compile_flags = swiftcopts) == 1:
-        features.append(SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS)
+        features.append(SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS)
     return features
 
 def _safe_int(s):

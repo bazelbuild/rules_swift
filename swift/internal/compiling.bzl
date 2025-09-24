@@ -58,7 +58,7 @@ load(
     "SWIFT_FEATURE_THIN_LTO",
     "SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP",
     "SWIFT_FEATURE_VFSOVERLAY",
-    "SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS",
+    "SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
 )
 load(
@@ -1697,7 +1697,7 @@ def _emitted_output_nature(feature_configuration, user_compile_flags):
     # checking the flags if the feature is disabled.
     is_single_threaded = is_feature_enabled(
         feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS,
+        feature_name = SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS,
     ) or find_num_threads_flag_value(user_compile_flags) == 0
 
     return struct(

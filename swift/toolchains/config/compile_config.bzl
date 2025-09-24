@@ -84,7 +84,7 @@ load(
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
     "SWIFT_FEATURE_USE_PCH_OUTPUT_DIR",
     "SWIFT_FEATURE_VFSOVERLAY",
-    "SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS",
+    "SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS",
     "SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES",
     "SWIFT_FEATURE__SUPPORTS_V6",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
@@ -1057,7 +1057,7 @@ def compile_action_configs(
                 [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_WMO],
                 [SWIFT_FEATURE__WMO_IN_SWIFTCOPTS],
             ],
-            not_features = [SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS],
+            not_features = [SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS],
         ),
         ActionConfigInfo(
             actions = [
@@ -1073,7 +1073,7 @@ def compile_action_configs(
             ],
             not_features = [
                 [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_WMO],
-                [SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS],
+                [SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS],
             ],
         ),
 
