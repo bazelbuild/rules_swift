@@ -770,13 +770,20 @@ def _should_plan_parallel_compilation(
         feature_name = SWIFT_FEATURE_COMPILE_IN_PARALLEL,
     )
 
+    # TODO: are we able to support split derived file generation in parallel, this feature is not in upstream.
+    # For now, force non-parallel compilation when split derived file generation is enabled.
+    split_derived_file_generation = is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION,
+    )
+
     # The Swift driver will not emit separate jobs to compile the module and to
     # perform codegen if optimization is requested. See
     # https://github.com/swiftlang/swift-driver/blob/c647e91574122f2b104d294ab1ec5baadaa1aa95/Sources/SwiftDriver/Jobs/EmitModuleJob.swift#L156-L181.
     opt_requested = is_optimization_manually_requested(
         user_compile_flags = user_compile_flags,
     )
-    return parallel_requested and not opt_requested
+    return parallel_requested and not opt_requested and not split_derived_file_generation
 
 def _execute_compile_plan(
         actions,

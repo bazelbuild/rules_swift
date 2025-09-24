@@ -138,14 +138,14 @@ def split_derived_files_test_suite(name, tags = []):
             "-emit-module-path",
             "-emit-object",
             "-enable-batch-mode",
-            "simple.output_file_map.json",
+            "simple_batch_mode.output_file_map.json",
         ],
         not_expected_argv = [
-            "simple.derived_output_file_map.json",
+            "simple_batch_mode.derived_output_file_map.json",
         ],
         mnemonic = "SwiftCompile",
         tags = all_tags,
-        target_under_test = "//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/debug_settings:simple_batch_mode",
     )
 
     default_no_split_provider_test(

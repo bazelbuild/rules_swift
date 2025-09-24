@@ -45,7 +45,7 @@ def pch_output_dir_test_suite(name, tags = []):
             # can't verify the whole argument here. It has the configuration
             # fragment baked in.
         ],
-        mnemonic = "SwiftCompile",
+        mnemonic = "SwiftCompileModule",
         tags = all_tags,
         target_under_test = "//test/fixtures/debug_settings:simple",
     )
