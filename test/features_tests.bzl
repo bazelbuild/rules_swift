@@ -157,7 +157,7 @@ def features_test_suite(name, tags = []):
         not_expected_argv = [
             "-Xwrapped-swift=-file-prefix-pwd-is-dot",
         ],
-        mnemonic = "SwiftCompile",
+        mnemonic = "SwiftCompileModule",
         target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
@@ -170,7 +170,7 @@ def features_test_suite(name, tags = []):
             "__BAZEL_XCODE_DEVELOPER_DIR__=/PLACEHOLDER_DEVELOPER_DIR",
         ],
         target_compatible_with = ["@platforms//os:macos"],
-        mnemonic = "SwiftCompile",
+        mnemonic = "SwiftCompileModule",
         target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
@@ -180,7 +180,7 @@ def features_test_suite(name, tags = []):
         not_expected_argv = [
             "-Xwrapped-swift=-global-index-store-import-path=",
         ],
-        mnemonic = "SwiftCompile",
+        mnemonic = "SwiftCompileModule",
         target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
@@ -190,7 +190,7 @@ def features_test_suite(name, tags = []):
         expected_argv = [
             "-Xwrapped-swift=-global-index-store-import-path=bazel-out/_global_index_store",
         ],
-        mnemonic = "SwiftCompile",
+        mnemonic = "SwiftCompileModule",
         target_compatible_with = ["@platforms//os:macos"],
         target_under_test = "//test/fixtures/debug_settings:simple",
     )
@@ -201,7 +201,7 @@ def features_test_suite(name, tags = []):
         expected_argv = [
             "-disable-sandbox",
         ],
-        mnemonic = "SwiftCompile",
+        mnemonic = "SwiftCompileModule",
         target_compatible_with = ["@platforms//os:macos"],
         target_under_test = "//test/fixtures/debug_settings:simple",
     )
@@ -210,6 +210,8 @@ def features_test_suite(name, tags = []):
         name = "{}_default_opt_test".format(name),
         tags = all_tags,
         expected_argv = ["-emit-object", "-O", "-whole-module-optimization"],
+        # In optimized mode, the driver still uses a single invocation for both
+        # the module and for codegen.
         mnemonic = "SwiftCompile",
         target_under_test = "//test/fixtures/debug_settings:simple",
     )
@@ -219,6 +221,8 @@ def features_test_suite(name, tags = []):
         tags = all_tags,
         expected_argv = ["-emit-object", "-O"],
         not_expected_argv = ["-whole-module-optimization"],
+        # In optimized mode, the driver still uses a single invocation for both
+        # the module and for codegen.
         mnemonic = "SwiftCompile",
         target_under_test = "//test/fixtures/debug_settings:simple",
     )

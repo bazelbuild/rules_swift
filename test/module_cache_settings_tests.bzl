@@ -67,7 +67,7 @@ def module_cache_settings_test_suite(name, tags = []):
             "-Xwrapped-swift=-ephemeral-module-cache",
             "/tmp/__build_bazel_rules_swift/swift_module_cache/$(WORKSPACE_NAME)",
         ],
-        mnemonic = "SwiftCompile",
+        mnemonic = "SwiftCompileModule",
         tags = all_tags,
         target_under_test = "//test/fixtures/debug_settings:simple",
     )
@@ -83,7 +83,7 @@ def module_cache_settings_test_suite(name, tags = []):
         not_expected_argv = [
             "-Xwrapped-swift=-ephemeral-module-cache",
         ],
-        mnemonic = "SwiftCompile",
+        mnemonic = "SwiftCompileModule",
         tags = all_tags,
         target_under_test = "//test/fixtures/debug_settings:simple",
     )
@@ -95,7 +95,7 @@ def module_cache_settings_test_suite(name, tags = []):
         not_expected_argv = [
             "/tmp/__build_bazel_rules_swift/swift_module_cache/$(WORKSPACE_NAME)",
         ],
-        mnemonic = "SwiftCompile",
+        mnemonic = "SwiftCompileModule",
         tags = all_tags,
         target_under_test = "//test/fixtures/debug_settings:simple",
     )

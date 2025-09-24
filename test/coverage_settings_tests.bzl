@@ -46,7 +46,7 @@ def coverage_settings_test_suite(name, tags = []):
             "-profile-coverage-mapping",
             "-Xwrapped-swift=-coverage-prefix-pwd-is-dot",
         ],
-        mnemonic = "SwiftCompile",
+        mnemonic = "SwiftCompileModule",
         target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
@@ -60,7 +60,7 @@ def coverage_settings_test_suite(name, tags = []):
         not_expected_argv = [
             "-Xwrapped-swift=-coverage-prefix-pwd-is-dot",
         ],
-        mnemonic = "SwiftCompile",
+        mnemonic = "SwiftCompileModule",
         target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
@@ -72,6 +72,6 @@ def coverage_settings_test_suite(name, tags = []):
             "__BAZEL_XCODE_DEVELOPER_DIR__=/PLACEHOLDER_DEVELOPER_DIR",
         ],
         target_compatible_with = ["@platforms//os:macos"],
-        mnemonic = "SwiftCompile",
+        mnemonic = "SwiftCompileModule",
         target_under_test = "//test/fixtures/debug_settings:simple",
     )
