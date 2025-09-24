@@ -54,7 +54,6 @@ load(
     "SWIFT_FEATURE_OPT",
     "SWIFT_FEATURE_OPT_USES_WMO",
     "SWIFT_FEATURE_PROPAGATE_GENERATED_MODULE_MAP",
-    "SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION",
     "SWIFT_FEATURE_SYSTEM_MODULE",
     "SWIFT_FEATURE_THIN_LTO",
     "SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP",
@@ -514,44 +513,20 @@ def compile(
         user_compile_flags = copts,
     )
 
-    split_derived_file_generation = is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION,
-    )
-
-    if split_derived_file_generation:
-        all_compile_outputs = compact([
-            compile_outputs.indexstore_directory,
-        ]) + compile_outputs.object_files + compile_outputs.const_values_files
-        all_derived_outputs = compact([
-            # The `.swiftmodule` file is explicitly listed as the first output
-            # because it will always exist and because Bazel uses it as a key for
-            # various things (such as the filename prefix for param files generated
-            # for that action). This guarantees some predictability.
-            compile_outputs.swiftmodule_file,
-            compile_outputs.generated_header_file,
-            compile_outputs.macro_expansion_directory,
-            compile_outputs.swiftdoc_file,
-            compile_outputs.swiftinterface_file,
-            compile_outputs.private_swiftinterface_file,
-            compile_outputs.swiftsourceinfo_file,
-        ])
-    else:
-        all_compile_outputs = compact([
-            # The `.swiftmodule` file is explicitly listed as the first output
-            # because it will always exist and because Bazel uses it as a key for
-            # various things (such as the filename prefix for param files generated
-            # for that action). This guarantees some predictability.
-            compile_outputs.swiftmodule_file,
-            compile_outputs.swiftdoc_file,
-            compile_outputs.swiftinterface_file,
-            compile_outputs.private_swiftinterface_file,
-            compile_outputs.swiftsourceinfo_file,
-            compile_outputs.generated_header_file,
-            compile_outputs.indexstore_directory,
-            compile_outputs.macro_expansion_directory,
-        ]) + compile_outputs.object_files + compile_outputs.const_values_files
-        all_derived_outputs = []
+    all_compile_outputs = compact([
+        # The `.swiftmodule` file is explicitly listed as the first output
+        # because it will always exist and because Bazel uses it as a key for
+        # various things (such as the filename prefix for param files generated
+        # for that action). This guarantees some predictability.
+        compile_outputs.swiftmodule_file,
+        compile_outputs.swiftdoc_file,
+        compile_outputs.swiftinterface_file,
+        compile_outputs.private_swiftinterface_file,
+        compile_outputs.swiftsourceinfo_file,
+        compile_outputs.generated_header_file,
+        compile_outputs.indexstore_directory,
+        compile_outputs.macro_expansion_directory,
+    ]) + compile_outputs.object_files + compile_outputs.const_values_files
 
     # In `upstream` they call `merge_compilation_contexts` on passed in
     # `compilation_contexts` instead of merging `CcInfo`s. This is because
@@ -681,19 +656,6 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         # Merge the compile outputs into the prerequisites.
         **struct_fields(compile_outputs)
     )
-
-    if split_derived_file_generation:
-        run_toolchain_action(
-            actions = actions,
-            action_name = SWIFT_ACTION_DERIVE_FILES,
-            exec_group = exec_group,
-            feature_configuration = feature_configuration,
-            outputs = all_derived_outputs,
-            prerequisites = prerequisites,
-            progress_message = "Generating derived files for Swift module %{label}",
-            swift_toolchain = swift_toolchain,
-            toolchain_type = toolchain_type,
-        )
 
     run_toolchain_action(
         actions = actions,
@@ -1361,11 +1323,6 @@ def _declare_compile_outputs(
         # TODO(b/147451378): Support indexing even with a single object file.
 
     else:
-        split_derived_file_generation = is_feature_enabled(
-            feature_configuration = feature_configuration,
-            feature_name = SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION,
-        )
-
         # If enabled the compiler will emit LLVM BC files instead of Mach-O object
         # files.
         # LTO implies emitting LLVM BC files, too
@@ -1392,7 +1349,6 @@ def _declare_compile_outputs(
             extract_const_values = extract_const_values,
             is_wmo = output_nature.is_wmo,
             emits_bc = emits_bc,
-            split_derived_file_generation = split_derived_file_generation,
             srcs = srcs,
             target_name = target_name,
             include_index_unit_paths = include_index_unit_paths,
@@ -1462,7 +1418,6 @@ def _declare_multiple_outputs_and_write_output_file_map(
         extract_const_values,
         is_wmo,
         emits_bc,
-        split_derived_file_generation,
         srcs,
         target_name,
         include_index_unit_paths):
@@ -1476,8 +1431,6 @@ def _declare_multiple_outputs_and_write_output_file_map(
             requested.
         emits_bc: If `True` the compiler will generate LLVM BC files instead of
             object files.
-        split_derived_file_generation: Whether objects and modules are produced
-            by separate actions.
         srcs: The list of source files that will be compiled.
         target_name: The name (excluding package path) of the target being
             built.
@@ -1502,12 +1455,7 @@ def _declare_multiple_outputs_and_write_output_file_map(
         "{}.output_file_map.json".format(target_name),
     )
 
-    if split_derived_file_generation:
-        derived_files_output_map_file = actions.declare_file(
-            "{}.derived_output_file_map.json".format(target_name),
-        )
-    else:
-        derived_files_output_map_file = None
+    derived_files_output_map_file = None
 
     # The output map data, which is keyed by source path and will be written to
     # `output_map_file`.
@@ -1581,12 +1529,6 @@ def _declare_multiple_outputs_and_write_output_file_map(
         content = json.encode(struct(**output_map)),
         output = output_map_file,
     )
-
-    if split_derived_file_generation:
-        actions.write(
-            content = "{}",
-            output = derived_files_output_map_file,
-        )
 
     return struct(
         ast_files = ast_files,

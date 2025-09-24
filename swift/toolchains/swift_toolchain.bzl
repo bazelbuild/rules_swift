@@ -534,6 +534,7 @@ def _swift_toolchain_impl(ctx):
         clang_implicit_deps_providers = (
             collect_implicit_deps_providers([])
         ),
+        codegen_batch_size = 8,
         cross_import_overlays = [
             target[SwiftCrossImportOverlayInfo]
             for target in ctx.attr.cross_import_overlays

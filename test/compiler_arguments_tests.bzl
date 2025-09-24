@@ -6,14 +6,6 @@ load(
     "make_action_command_line_test_rule",
 )
 
-split_test = make_action_command_line_test_rule(
-    config_settings = {
-        "//command_line_option:features": [
-            "swift.split_derived_files_generation",
-        ],
-    },
-)
-
 thin_lto_test = make_action_command_line_test_rule(
     config_settings = {
         "//command_line_option:features": [
@@ -69,22 +61,6 @@ def compiler_arguments_test_suite(name, tags = []):
         mnemonic = "SwiftCompile",
         tags = all_tags,
         target_under_test = "//test/fixtures/compiler_arguments:test_package_name",
-    )
-
-    split_test(
-        name = "{}_split_lib_with_package".format(name),
-        expected_argv = ["-package-name lib"],
-        mnemonic = "SwiftCompile",
-        tags = all_tags,
-        target_under_test = "//test/fixtures/compiler_arguments:lib_package_name",
-    )
-
-    split_test(
-        name = "{}_split_module_with_package".format(name),
-        expected_argv = ["-package-name lib"],
-        mnemonic = "SwiftDeriveFiles",
-        tags = all_tags,
-        target_under_test = "//test/fixtures/compiler_arguments:lib_package_name",
     )
 
     thin_lto_test(

@@ -21,7 +21,6 @@ load(":pch_output_dir_tests.bzl", "pch_output_dir_test_suite")
 load(":private_deps_tests.bzl", "private_deps_test_suite")
 load(":private_swiftinterface_tests.bzl", "private_swiftinterface_test_suite")
 load(":runtime_deps_tests.bzl", "runtime_deps_test_suite")
-load(":split_derived_files_tests.bzl", "split_derived_files_test_suite")
 load(":swift_binary_linking_tests.bzl", "swift_binary_linking_test_suite")
 load(":swift_through_non_swift_tests.bzl", "swift_through_non_swift_test_suite")
 load(":symbol_graphs_tests.bzl", "symbol_graphs_test_suite")
@@ -66,8 +65,6 @@ module_mapping_test_suite(name = "module_mapping")
 output_file_map_test_suite(name = "output_file_map")
 
 private_deps_test_suite(name = "private_deps")
-
-split_derived_files_test_suite(name = "split_derived_files")
 
 swift_binary_linking_test_suite(name = "swift_binary_rules")
 

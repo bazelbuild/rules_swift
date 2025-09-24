@@ -39,6 +39,8 @@ load(
 load(
     "//swift/internal:action_names.bzl",
     "SWIFT_ACTION_COMPILE",
+    "SWIFT_ACTION_COMPILE_CODEGEN",
+    "SWIFT_ACTION_COMPILE_MODULE",
     "SWIFT_ACTION_COMPILE_MODULE_INTERFACE",
     "SWIFT_ACTION_DERIVE_FILES",
     "SWIFT_ACTION_DUMP_AST",
@@ -431,8 +433,7 @@ def _all_action_configs(
     # Basic compilation flags (target triple and toolchain search paths).
     action_configs = [
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
@@ -509,8 +510,7 @@ def _all_action_configs(
         # directory so that modules are found correctly.
         action_configs.append(
             ActionConfigInfo(
-                actions = [
-                    SWIFT_ACTION_COMPILE,
+                actions = all_compile_action_names() + [
                     SWIFT_ACTION_DERIVE_FILES,
                     SWIFT_ACTION_DUMP_AST,
                     SWIFT_ACTION_PRECOMPILE_C_MODULE,
@@ -612,6 +612,8 @@ def _all_tool_configs(
 
     tool_configs = {
         SWIFT_ACTION_COMPILE: tool_config,
+        SWIFT_ACTION_COMPILE_CODEGEN: tool_config,
+        SWIFT_ACTION_COMPILE_MODULE: tool_config,
         SWIFT_ACTION_DERIVE_FILES: tool_config,
         SWIFT_ACTION_DUMP_AST: tool_config,
         SWIFT_ACTION_PRECOMPILE_C_MODULE: (
@@ -895,6 +897,7 @@ def _xcode_swift_toolchain_impl(ctx):
         clang_implicit_deps_providers = collect_implicit_deps_providers(
             ctx.attr.clang_implicit_deps,
         ),
+        codegen_batch_size = 8,
         cross_import_overlays = [
             target[SwiftCrossImportOverlayInfo]
             for target in ctx.attr.cross_import_overlays

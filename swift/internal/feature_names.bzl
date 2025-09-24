@@ -327,11 +327,6 @@ SWIFT_FEATURE_GENERATE_FROM_RAW_PROTO_FILES = "swift.generate_from_raw_proto_fil
 # generating a Swift file from a proto file.
 SWIFT_FEATURE_GENERATE_PATH_TO_UNDERSCORES_FROM_PROTO_FILES = "swift.generate_path_to_underscores_from_proto_files"
 
-# If enabled and whole module optimisation is being used, the `*.swiftdoc`,
-# `*.swiftmodule` and `*-Swift.h` are generated with a separate action
-# rather than as part of the compilation.
-SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION = "swift.split_derived_files_generation"
-
 # If enabled the skip function bodies frontend flag is passed when using derived
 # files generation. This requires Swift 5.2
 SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES = "swift.skip_function_bodies_for_derived_files"
@@ -385,6 +380,10 @@ SWIFT_FEATURE_INTERNALIZE_AT_LINK = "swift.internalize_at_link"
 # If enabled, requests the `-disable-availability-checking` frontend flag.
 # This disables checking for potentially unavailable APIs.
 SWIFT_FEATURE_DISABLE_AVAILABILITY_CHECKING = "swift.disable_availability_checking"
+
+# If enabled, parallelize the compilation of Swift modules and their object
+# files by registering separate actions for each.
+SWIFT_FEATURE_COMPILE_IN_PARALLEL = "swift.compile_in_parallel"
 
 # A private feature that is set by the toolchain if it supports the
 # `-enable-{experimental,upcoming}-feature` flag (Swift 5.8 and above). Users
