@@ -867,9 +867,7 @@ def _execute_compile_plan(
         feature_configuration = feature_configuration,
         outputs = module_outputs,
         prerequisites = struct(**module_prereqs),
-        progress_message = "Compiling Swift module {}".format(
-            prerequisites["module_name"],
-        ),
+        progress_message = "Compiling Swift module %{label}",
         swift_toolchain = swift_toolchain,
         toolchain_type = toolchain_type,
     )
@@ -902,8 +900,7 @@ def _execute_compile_plan(
         batch_suffix = ""
         if compile_plan.output_nature.emits_multiple_objects:
             batch_suffix = " ({} of {})".format(number, len(batches))
-        progress_message = "Codegen for Swift module {}{}".format(
-            prerequisites["module_name"],
+        progress_message = "Codegen for Swift module %{{label}}{}".format(
             batch_suffix,
         )
 
@@ -1027,9 +1024,7 @@ def _plan_legacy_swift_compilation(
         feature_configuration = feature_configuration,
         outputs = all_compile_outputs,
         prerequisites = struct(**prerequisites),
-        progress_message = "Compiling Swift module {}".format(
-            prerequisites["module_name"],
-        ),
+        progress_message = "Compiling Swift module %{label}",
         swift_toolchain = swift_toolchain,
         toolchain_type = toolchain_type,
     )
