@@ -320,10 +320,19 @@ def compile_action_configs(
 
         action_configs.append(
             ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
-                SWIFT_ACTION_DERIVE_FILES,
-            ],
+                actions = [
+                    SWIFT_ACTION_COMPILE,
+                ],
+                configurators = [generated_header_rewriter_configurator],
+                features = [SWIFT_FEATURE_REWRITE_GENERATED_HEADER],
+                not_features = [SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION],
+            ),
+        )
+        action_configs.append(
+            ActionConfigInfo(
+                actions = [
+                    SWIFT_ACTION_DERIVE_FILES,
+                ],
                 configurators = [generated_header_rewriter_configurator],
                 features = [SWIFT_FEATURE_REWRITE_GENERATED_HEADER],
             ),
