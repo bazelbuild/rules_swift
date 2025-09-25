@@ -177,7 +177,10 @@ def compile_action_configs(
 
         # Don't embed Clang module breadcrumbs in debug info.
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = [
+                SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_DERIVE_FILES,
+            ],
             configurators = [
                 add_arg("-Xfrontend", "-no-clang-module-breadcrumbs"),
             ],
@@ -224,6 +227,13 @@ def compile_action_configs(
         ActionConfigInfo(
             actions = [
                 SWIFT_ACTION_COMPILE,
+            ],
+            configurators = [_emit_module_interface_path_configurator],
+            features = [SWIFT_FEATURE_EMIT_SWIFTINTERFACE],
+            not_features = [SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION],
+        ),
+        ActionConfigInfo(
+            actions = [
                 SWIFT_ACTION_DERIVE_FILES,
             ],
             configurators = [_emit_module_interface_path_configurator],
@@ -232,6 +242,13 @@ def compile_action_configs(
         ActionConfigInfo(
             actions = [
                 SWIFT_ACTION_COMPILE,
+            ],
+            configurators = [_emit_private_module_interface_path_configurator],
+            features = [SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE],
+            not_features = [SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION],
+        ),
+        ActionConfigInfo(
+            actions = [
                 SWIFT_ACTION_DERIVE_FILES,
             ],
             configurators = [_emit_private_module_interface_path_configurator],
@@ -251,7 +268,10 @@ def compile_action_configs(
 
         # Configure enforce exclusivity checks if enabled.
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = [
+                SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_DERIVE_FILES,
+            ],
             configurators = [add_arg("-enforce-exclusivity=checked")],
             features = [SWIFT_FEATURE_CHECKED_EXCLUSIVITY],
         ),
@@ -264,12 +284,18 @@ def compile_action_configs(
 
         # Link Time Optimization (LTO).
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = [
+                SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_DERIVE_FILES,
+            ],
             configurators = [add_arg("-lto=llvm-thin")],
             features = [SWIFT_FEATURE_THIN_LTO],
         ),
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = [
+                SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_DERIVE_FILES,
+            ],
             configurators = [add_arg("-lto=llvm-full")],
             features = [SWIFT_FEATURE_FULL_LTO],
         ),
@@ -294,7 +320,10 @@ def compile_action_configs(
 
         action_configs.append(
             ActionConfigInfo(
-                actions = [SWIFT_ACTION_COMPILE],
+            actions = [
+                SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_DERIVE_FILES,
+            ],
                 configurators = [generated_header_rewriter_configurator],
                 features = [SWIFT_FEATURE_REWRITE_GENERATED_HEADER],
             ),
@@ -376,7 +405,10 @@ def compile_action_configs(
 
         # Improve dead-code stripping.
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = [
+                SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_DERIVE_FILES,
+            ],
             configurators = [add_arg("-Xfrontend", "-internalize-at-link")],
             features = [SWIFT_FEATURE_INTERNALIZE_AT_LINK],
         ),
@@ -572,6 +604,14 @@ def compile_action_configs(
             ],
             configurators = [add_arg("-Xwrapped-swift=-emit-swiftsourceinfo")],
             features = [SWIFT_FEATURE_DECLARE_SWIFTSOURCEINFO],
+            not_features = [SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION],
+        ),
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_DERIVE_FILES,
+            ],
+            configurators = [add_arg("-Xwrapped-swift=-emit-swiftsourceinfo")],
+            features = [SWIFT_FEATURE_DECLARE_SWIFTSOURCEINFO],
         ),
     ]
 
@@ -614,12 +654,18 @@ def compile_action_configs(
             ],
         ),
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = [
+                SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_DERIVE_FILES,
+            ],
             configurators = [add_arg("-sanitize=thread")],
             features = ["tsan"],
         ),
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = [
+                SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_DERIVE_FILES,
+            ],
             configurators = [
                 add_arg("-sanitize=undefined"),
             ],
@@ -631,7 +677,10 @@ def compile_action_configs(
     action_configs.append(
         # Support for order-file instrumentation.
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = [
+                SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_DERIVE_FILES,
+            ],
             configurators = [
                 add_arg("-sanitize=undefined"),
                 add_arg("-sanitize-coverage=func"),
@@ -859,7 +908,10 @@ def compile_action_configs(
             features = [SWIFT_FEATURE_VFSOVERLAY],
         ),
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = [
+                SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_DERIVE_FILES,
+            ],
             configurators = [_module_aliases_configurator],
         ),
         ActionConfigInfo(
@@ -872,6 +924,18 @@ def compile_action_configs(
         ActionConfigInfo(
             actions = [
                 SWIFT_ACTION_COMPILE,
+            ],
+            configurators = [_macro_expansion_configurator],
+            # The compiler only generates these in debug builds, unless we pass
+            # additional frontend flags. At the current time, we only want to
+            # capture these for debug builds.
+            not_features = [
+                [SWIFT_FEATURE_OPT],
+                [SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION],
+            ],
+        ),
+        ActionConfigInfo(
+            actions = [
                 SWIFT_ACTION_DERIVE_FILES,
             ],
             configurators = [_macro_expansion_configurator],
@@ -1123,12 +1187,16 @@ def compile_action_configs(
 
         # Configure index-while-building.
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = [
+                SWIFT_ACTION_COMPILE,
+            ],
             configurators = [_index_while_building_configurator],
             features = [SWIFT_FEATURE_INDEX_WHILE_BUILDING],
         ),
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = [
+                SWIFT_ACTION_COMPILE,
+            ],
             configurators = [add_arg("-index-include-locals")],
             features = [
                 SWIFT_FEATURE_INDEX_WHILE_BUILDING,
@@ -1136,7 +1204,9 @@ def compile_action_configs(
             ],
         ),
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = [
+                SWIFT_ACTION_COMPILE,
+            ],
             configurators = [add_arg("-index-ignore-system-modules")],
             features = [
                 SWIFT_FEATURE_INDEX_WHILE_BUILDING,
@@ -1144,7 +1214,9 @@ def compile_action_configs(
             ],
         ),
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = [
+                SWIFT_ACTION_COMPILE,
+            ],
             configurators = [
                 add_arg("-index-ignore-clang-modules"),
             ],
@@ -1181,7 +1253,10 @@ def compile_action_configs(
 
         # Disable auto-linking for prebuilt static frameworks.
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = [
+                SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_DERIVE_FILES,
+            ],
             configurators = [_frameworks_disable_autolink_configurator],
         ),
 
@@ -1207,6 +1282,7 @@ def compile_action_configs(
         ActionConfigInfo(
             actions = [
                 SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_DERIVE_FILES,
             ],
             configurators = [add_arg("-Xfrontend", "-disable-clang-spi")],
             features = [
@@ -1216,6 +1292,7 @@ def compile_action_configs(
         ActionConfigInfo(
             actions = [
                 SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_DERIVE_FILES,
             ],
             configurators = [add_arg("-Xfrontend", "-disable-availability-checking")],
             features = [
@@ -1225,6 +1302,7 @@ def compile_action_configs(
         ActionConfigInfo(
             actions = [
                 SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_DERIVE_FILES,
             ],
             configurators = [_upcoming_and_experimental_features_configurator],
             features = [
@@ -1234,6 +1312,7 @@ def compile_action_configs(
         ActionConfigInfo(
             actions = [
                 SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_DERIVE_FILES,
             ],
             configurators = [add_arg("-swift-version", "6")],
             features = [
