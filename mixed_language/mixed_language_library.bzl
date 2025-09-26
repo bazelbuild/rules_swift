@@ -36,6 +36,7 @@ load("//swift:swift_library.bzl", "swift_library")
 def mixed_language_library(
         *,
         name,
+        additional_objc_compiler_inputs = [],
         always_include_developer_search_paths = False,
         alwayslink = False,
         clang_copts = [],
@@ -360,7 +361,7 @@ a mixed language Swift library, use a clang only library rule like \
         name = clang_library_name,
         srcs = clang_srcs,
         alwayslink = alwayslink,
-        hdrs = adjusted_hdrs,
+        hdrs = adjusted_hdrs + additional_objc_compiler_inputs,
         non_arc_srcs = non_arc_srcs,
         # `internal_swift_interop_name` isn't needed here because
         # `_mixed_language_library` will explciitly set the module name. We set
