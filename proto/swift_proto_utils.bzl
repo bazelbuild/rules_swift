@@ -262,6 +262,7 @@ def compile_swift_protos_for_target(
         unsupported_features = ctx.disabled_features,
     )
 
+    additional_inputs = getattr(ctx.files, "swiftc_inputs", [])
     swiftc_inputs = getattr(attr, "swiftc_inputs", [])
     copts = expand_locations(ctx, getattr(attr, "copts", []), swiftc_inputs)
     copts = expand_make_variables(ctx, copts, "copts")
@@ -272,6 +273,7 @@ def compile_swift_protos_for_target(
     include_dev_srch_paths = include_developer_search_paths(attr)
     compile_result = swift_common.compile(
         actions = ctx.actions,
+        additional_inputs = additional_inputs,
         cc_infos = get_providers(compiler_deps, CcInfo),
         copts = ["-parse-as-library"] + copts,
         feature_configuration = feature_configuration,
