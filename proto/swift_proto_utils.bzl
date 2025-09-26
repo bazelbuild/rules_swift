@@ -262,9 +262,10 @@ def compile_swift_protos_for_target(
         unsupported_features = ctx.disabled_features,
     )
 
-    copts = expand_locations(ctx, getattr(attr, "copts", []), ctx.attr.swiftc_inputs)
+    swiftc_inputs = getattr(attr, "swiftc_inputs", [])
+    copts = expand_locations(ctx, getattr(attr, "copts", []), swiftc_inputs)
     copts = expand_make_variables(ctx, copts, "copts")
-    linkopts = expand_locations(ctx, getattr(attr, "linkopts", []), ctx.attr.swiftc_inputs)
+    linkopts = expand_locations(ctx, getattr(attr, "linkopts", []), swiftc_inputs)
     linkopts = expand_make_variables(ctx, linkopts, "linkopts")
 
     # Compile the generated Swift source files as a module:
