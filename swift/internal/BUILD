@@ -99,9 +99,9 @@ bzl_library(
         ":feature_names",
         ":features",
         ":module_maps",
+        ":optimization",
         ":utils",
         ":vfsoverlay",
-        ":wmo",
         "//swift:providers",
         "@bazel_skylib//lib:paths",
         "@bazel_skylib//lib:sets",
@@ -314,9 +314,8 @@ bzl_library(
 )
 
 bzl_library(
-    name = "wmo",
-    srcs = ["wmo.bzl"],
-    visibility = ["//swift:__subpackages__"],
+    name = "optimization",
+    srcs = ["optimization.bzl"],
     deps = [
         ":feature_names",
     ],

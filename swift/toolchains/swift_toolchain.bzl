@@ -60,6 +60,7 @@ load(
     "default_features_for_toolchain",
     "features_for_build_modes",
 )
+load("//swift/internal:optimization.bzl", "optimization_features_from_swiftcopts")
 load(
     "//swift/internal:providers.bzl",
     "SwiftCrossImportOverlayInfo",
@@ -71,7 +72,6 @@ load(
     "collect_implicit_deps_providers",
     "get_swift_executable_for_toolchain",
 )
-load("//swift/internal:wmo.bzl", "features_from_swiftcopts")
 load(
     "//swift/toolchains/config:action_config.bzl",
     "ActionConfigInfo",
@@ -139,7 +139,7 @@ def _all_tool_configs(
         driver_config = _driver_config(mode = "swiftc"),
         resource_set = _swift_compile_resource_set,
         use_param_file = True,
-        worker_mode = "persistent",
+        worker_mode = "wrap",
         env = env,
     )
 
@@ -453,9 +453,9 @@ def _swift_toolchain_impl(ctx):
 
     # Combine build mode features, autoconfigured features, and required
     # features.
+    features_from_swiftcopts, _ = optimization_features_from_swiftcopts(swiftcopts = swiftcopts)
     requested_features = (
-        features_for_build_modes(ctx) +
-        features_from_swiftcopts(swiftcopts = swiftcopts)
+        features_for_build_modes(ctx) + features_from_swiftcopts
     )
     requested_features.extend(default_features_for_toolchain(
         target_triple = target_triple,
@@ -662,8 +662,7 @@ to the compiler for exec transition builds.
                 allow_files = True,
                 default = Label("//tools/worker"),
                 doc = """\
-An executable that wraps Swift compiler invocations and also provides support
-for incremental compilation using a persistent mode.
+An executable that wraps Swift compiler invocations.
 """,
                 executable = True,
             ),

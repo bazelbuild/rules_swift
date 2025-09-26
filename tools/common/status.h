@@ -1,4 +1,4 @@
-// Copyright 2019 The Bazel Authors. All rights reserved.
+// Copyright 2022 The Bazel Authors. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,15 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef BUILD_BAZEL_RULES_SWIFT_TOOLS_WORKER_COMPILE_WITH_WORKER_H_
-#define BUILD_BAZEL_RULES_SWIFT_TOOLS_WORKER_COMPILE_WITH_WORKER_H_
+#ifndef BUILD_BAZEL_RULES_SWIFT_TOOLS_COMMON_STATUS_H_
+#define BUILD_BAZEL_RULES_SWIFT_TOOLS_COMMON_STATUS_H_
 
-#include <string>
-#include <vector>
+#include "absl/status/status.h"
 
-// Starts the worker processing loop and listens to stdin for work requests from
-// Bazel.
-int CompileWithWorker(const std::vector<std::string> &args,
-                      std::string index_import_path);
+namespace bazel_rules_swift {
 
-#endif  // BUILD_BAZEL_RULES_SWIFT_TOOLS_WORKER_COMPILE_WITH_WORKER_H_
+// Returns a `Status` value based on the current value of `errno`.
+absl::Status MakeStatusFromErrno(absl::string_view message);
+
+}  // namespace bazel_rules_swift
+
+#endif  // BUILD_BAZEL_RULES_SWIFT_TOOLS_COMMON_STATUS_H_

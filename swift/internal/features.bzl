@@ -36,6 +36,7 @@ load(
     "SWIFT_FEATURE_INTERNALIZE_AT_LINK",
     "SWIFT_FEATURE_NO_GENERATED_MODULE_MAP",
     "SWIFT_FEATURE_OBJC_LINK_FLAGS",
+    "SWIFT_FEATURE_OPT_USES_CMO",
     "SWIFT_FEATURE_OPT_USES_WMO",
     "SWIFT_FEATURE_REMAP_XCODE_PATH",
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
@@ -136,6 +137,19 @@ def configure_features(
             unsupported_features = unsupported_features,
         )
 
+    # Disable CMO for builds in `exec` configurations so that we can use
+    # parallelized compilation for build tools written in Swift. The speedup
+    # from parallelized compilation is significantly higher than the performance
+    # loss from disabling CMO.
+    #
+    # HACK: There is no supported API yet to detect whether a build is in an
+    # `exec` configuration. https://github.com/bazelbuild/bazel/issues/14444.
+    if "-exec" in ctx.bin_dir.path or "/host/" in ctx.bin_dir.path:
+        unsupported_features.append(SWIFT_FEATURE_OPT_USES_CMO)
+    else:
+        requested_features = list(requested_features)
+        requested_features.append(SWIFT_FEATURE_OPT_USES_CMO)
+
     all_requestable_features, all_unsupported_features = _compute_features(
         label = ctx.label,
         requested_features = requested_features,
@@ -149,6 +163,7 @@ def configure_features(
         requested_features = all_requestable_features,
         unsupported_features = all_unsupported_features,
     )
+
     return struct(
         _cc_feature_configuration = cc_feature_configuration,
         _enabled_features = all_requestable_features,
@@ -169,7 +184,7 @@ def configure_features(
     )
 
 def features_for_build_modes(ctx, cpp_fragment = None):
-    """Returns a list of Swift toolchain features for current build modes.
+    """Returns features to request and disable for current build modes.
 
     This function explicitly breaks the "don't pass `ctx` as an argument"
     rule-of-thumb because it is internal and only called from the toolchain
@@ -177,19 +192,29 @@ def features_for_build_modes(ctx, cpp_fragment = None):
 
     Args:
         ctx: The current rule context.
-        cpp_fragment: The Cpp configuration fragment, if available.
+        cpp_fragment: The `cpp` configuration fragment, if available.
 
     Returns:
-        A list of Swift toolchain features to enable.
+        A tuple containing two lists:
+
+        1.  A list of Swift toolchain features to requested (enable).
+        2.  A list of Swift toolchain features that are unsupported (disabled).
     """
+    requested_features = []
+    unsupported_features = []
+
     compilation_mode = ctx.var["COMPILATION_MODE"]
-    features = []
-    features.append("swift.{}".format(compilation_mode))
+    requested_features.append("swift.{}".format(compilation_mode))
     if compilation_mode in ("dbg", "fastbuild"):
-        features.append(SWIFT_FEATURE_ENABLE_TESTING)
+        requested_features.append(SWIFT_FEATURE_ENABLE_TESTING)
+
+    if ctx.configuration.coverage_enabled:
+        requested_features.append(SWIFT_FEATURE_COVERAGE)
+
     if cpp_fragment and cpp_fragment.apple_generate_dsym:
-        features.append(SWIFT_FEATURE_FULL_DEBUG_INFO)
-    return features
+        requested_features.append(SWIFT_FEATURE_FULL_DEBUG_INFO)
+
+    return requested_features, unsupported_features
 
 def get_cc_feature_configuration(feature_configuration):
     """Returns the C++ feature configuration in a Swift feature configuration.

@@ -20,6 +20,8 @@ load("@bazel_skylib//lib:types.bzl", "types")
 load(
     "//swift/internal:action_names.bzl",
     "SWIFT_ACTION_COMPILE",
+    "SWIFT_ACTION_COMPILE_CODEGEN",
+    "SWIFT_ACTION_COMPILE_MODULE",
     "SWIFT_ACTION_COMPILE_MODULE_INTERFACE",
     "SWIFT_ACTION_DERIVE_FILES",
     "SWIFT_ACTION_DUMP_AST",
@@ -70,6 +72,7 @@ load(
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_NO_ASAN_VERSION_CHECK",
     "SWIFT_FEATURE_OPT",
+    "SWIFT_FEATURE_OPT_USES_CMO",
     "SWIFT_FEATURE_OPT_USES_OSIZE",
     "SWIFT_FEATURE_OPT_USES_WMO",
     "SWIFT_FEATURE_REWRITE_GENERATED_HEADER",
@@ -89,6 +92,10 @@ load(
     "SWIFT_FEATURE__SUPPORTS_V6",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
 )
+load(
+    "//swift/internal:optimization.bzl",
+    "is_wmo_manually_requested",
+)
 load(":action_config.bzl", "ActionConfigInfo", "ConfigResultInfo", "add_arg")
 
 # The number of threads to use for WMO builds, using the same number of cores
@@ -96,14 +103,6 @@ load(":action_config.bzl", "ActionConfigInfo", "ConfigResultInfo", "add_arg")
 # TODO(b/32571265): Generalize this based on platform and core count
 # when an API to obtain this is available.
 _DEFAULT_WMO_THREAD_COUNT = 12
-
-# Swift command line flags that enable whole module optimization. (This
-# dictionary is used as a set for quick lookup; the values are irrelevant.)
-_WMO_FLAGS = {
-    "-wmo": True,
-    "-whole-module-optimization": True,
-    "-force-single-frontend-invocation": True,
-}
 
 def compile_action_configs(
         *,
@@ -140,22 +139,29 @@ def compile_action_configs(
     action_configs = [
         # Emit object file(s).
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = all_compile_action_names(),
             configurators = [add_arg("-emit-object")],
             not_features = [SWIFT_FEATURE_EMIT_BC],
         ),
 
         # Emit llvm bc file(s).
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = all_compile_action_names(),
             configurators = [add_arg("-emit-bc")],
             features = [SWIFT_FEATURE_EMIT_BC],
         ),
 
         # Add the single object file or object file map, whichever is needed.
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = all_compile_action_names(),
             configurators = [_output_object_or_file_map_configurator],
+        ),
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_COMPILE_CODEGEN,
+                SWIFT_ACTION_COMPILE_MODULE,
+            ],
+            configurators = [_compile_step_configurator],
         ),
         ActionConfigInfo(
             actions = [SWIFT_ACTION_DERIVE_FILES],
@@ -177,7 +183,7 @@ def compile_action_configs(
 
         # Don't embed Clang module breadcrumbs in debug info.
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = all_compile_action_names(),
             configurators = [
                 add_arg("-Xfrontend", "-no-clang-module-breadcrumbs"),
             ],
@@ -203,7 +209,7 @@ def compile_action_configs(
 
         # Configure the path to the emitted .swiftmodule file.
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = all_compile_action_names(),
             configurators = [_emit_module_path_configurator],
             not_features = [SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION],
         ),
@@ -214,8 +220,7 @@ def compile_action_configs(
 
         # Configure library evolution and the path to the .swiftinterface file.
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_DERIVE_FILES,
             ],
             configurators = [add_arg("-enable-library-evolution")],
@@ -224,6 +229,7 @@ def compile_action_configs(
         ActionConfigInfo(
             actions = [
                 SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_COMPILE_MODULE,
                 SWIFT_ACTION_DERIVE_FILES,
             ],
             configurators = [_emit_module_interface_path_configurator],
@@ -232,6 +238,7 @@ def compile_action_configs(
         ActionConfigInfo(
             actions = [
                 SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_COMPILE_MODULE,
                 SWIFT_ACTION_DERIVE_FILES,
             ],
             configurators = [_emit_private_module_interface_path_configurator],
@@ -240,7 +247,10 @@ def compile_action_configs(
 
         # Configure the path to the emitted *-Swift.h file.
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = [
+                SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_COMPILE_MODULE,
+            ],
             configurators = [_emit_objc_header_path_configurator],
             not_features = [SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION],
         ),
@@ -251,25 +261,25 @@ def compile_action_configs(
 
         # Configure enforce exclusivity checks if enabled.
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = all_compile_action_names(),
             configurators = [add_arg("-enforce-exclusivity=checked")],
             features = [SWIFT_FEATURE_CHECKED_EXCLUSIVITY],
         ),
 
         # Configure constant value extraction.
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = all_compile_action_names(),
             configurators = [_constant_value_extraction_configurator],
         ),
 
         # Link Time Optimization (LTO).
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = all_compile_action_names(),
             configurators = [add_arg("-lto=llvm-thin")],
             features = [SWIFT_FEATURE_THIN_LTO],
         ),
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = all_compile_action_names(),
             configurators = [add_arg("-lto=llvm-full")],
             features = [SWIFT_FEATURE_FULL_LTO],
         ),
@@ -294,7 +304,10 @@ def compile_action_configs(
 
         action_configs.append(
             ActionConfigInfo(
-                actions = [SWIFT_ACTION_COMPILE],
+                actions = [
+                    SWIFT_ACTION_COMPILE,
+                    SWIFT_ACTION_COMPILE_MODULE,
+                ],
                 configurators = [generated_header_rewriter_configurator],
                 features = [SWIFT_FEATURE_REWRITE_GENERATED_HEADER],
             ),
@@ -310,8 +323,7 @@ def compile_action_configs(
         # Define appropriate conditional compilation symbols depending on the
         # build mode.
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
             ],
@@ -319,8 +331,7 @@ def compile_action_configs(
             features = [[SWIFT_FEATURE_DBG], [SWIFT_FEATURE_FASTBUILD]],
         ),
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
             ],
@@ -332,8 +343,7 @@ def compile_action_configs(
         # `-O` unless the `swift.opt_uses_osize` feature is enabled, then use
         # `-Osize`.
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_DERIVE_FILES,
             ],
@@ -341,8 +351,7 @@ def compile_action_configs(
             features = [[SWIFT_FEATURE_DBG], [SWIFT_FEATURE_FASTBUILD]],
         ),
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_DERIVE_FILES,
             ],
@@ -351,20 +360,23 @@ def compile_action_configs(
             not_features = [SWIFT_FEATURE_OPT_USES_OSIZE],
         ),
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_DERIVE_FILES,
             ],
             configurators = [add_arg("-Osize")],
             features = [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_OSIZE],
         ),
+        ActionConfigInfo(
+            actions = all_compile_action_names(),
+            configurators = [add_arg("-disable-cmo")],
+            not_features = [SWIFT_FEATURE_OPT_USES_CMO],
+        ),
 
         # If the `swift.opt_uses_wmo` feature is enabled, opt builds should also
         # automatically imply whole-module optimization.
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_DERIVE_FILES,
             ],
             configurators = [add_arg("-whole-module-optimization")],
@@ -376,7 +388,7 @@ def compile_action_configs(
 
         # Improve dead-code stripping.
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = all_compile_action_names(),
             configurators = [add_arg("-Xfrontend", "-internalize-at-link")],
             features = [SWIFT_FEATURE_INTERNALIZE_AT_LINK],
         ),
@@ -384,8 +396,7 @@ def compile_action_configs(
         # Enable or disable serialization of debugging options into
         # swiftmodules.
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_DERIVE_FILES,
             ],
             configurators = [
@@ -394,8 +405,7 @@ def compile_action_configs(
             features = [SWIFT_FEATURE_CACHEABLE_SWIFTMODULES],
         ),
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_DERIVE_FILES,
             ],
             configurators = [
@@ -409,8 +419,7 @@ def compile_action_configs(
 
         # Enable testability if requested.
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
             ],
@@ -420,8 +429,7 @@ def compile_action_configs(
 
         # Enable suppress-warnings if requested.
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
             ],
@@ -433,8 +441,7 @@ def compile_action_configs(
 
         # Enable warnings-as-errors if requested.
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
             ],
@@ -446,8 +453,7 @@ def compile_action_configs(
 
         # Disable Swift sandbox.
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
             ],
@@ -459,8 +465,7 @@ def compile_action_configs(
 
         # Set Developer Framework search paths
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
                 SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
@@ -479,16 +484,14 @@ def compile_action_configs(
         # `dsymutil` produces spurious warnings about symbols in the debug map
         # when run on DI emitted by `-gline-tables-only`.
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_DERIVE_FILES,
             ],
             configurators = [add_arg("-g")],
             features = [[SWIFT_FEATURE_DBG], [SWIFT_FEATURE_FULL_DEBUG_INFO]],
         ),
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_DERIVE_FILES,
             ],
             configurators = [
@@ -510,8 +513,7 @@ def compile_action_configs(
             features = [[SWIFT_FEATURE_DBG], [SWIFT_FEATURE_FULL_DEBUG_INFO]],
         ),
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_DERIVE_FILES,
             ],
             configurators = [add_arg("-gline-tables-only")],
@@ -524,8 +526,7 @@ def compile_action_configs(
 
         # Make paths written into debug info workspace-relative.
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
             ],
@@ -540,8 +541,7 @@ def compile_action_configs(
             not_features = [SWIFT_FEATURE_FILE_PREFIX_MAP],
         ),
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
             ],
@@ -553,8 +553,7 @@ def compile_action_configs(
 
         # Make paths written into coverage info workspace-relative.
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_DERIVE_FILES,
             ],
             configurators = [
@@ -567,9 +566,7 @@ def compile_action_configs(
 
         # Ensure that .swiftsourceinfo files are tracked and not deleted by the worker
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
-            ],
+            actions = all_compile_action_names(),
             configurators = [add_arg("-Xwrapped-swift=-emit-swiftsourceinfo")],
             features = [SWIFT_FEATURE_DECLARE_SWIFTSOURCEINFO],
         ),
@@ -582,8 +579,7 @@ def compile_action_configs(
     # supporting them either.
     action_configs += [
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_DERIVE_FILES,
             ],
             configurators = [
@@ -593,16 +589,14 @@ def compile_action_configs(
             features = [SWIFT_FEATURE_COVERAGE],
         ),
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_DERIVE_FILES,
             ],
             configurators = [add_arg("-sanitize=address")],
             features = ["asan"],
         ),
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_DERIVE_FILES,
             ],
             configurators = [
@@ -614,12 +608,12 @@ def compile_action_configs(
             ],
         ),
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = all_compile_action_names(),
             configurators = [add_arg("-sanitize=thread")],
             features = ["tsan"],
         ),
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = all_compile_action_names(),
             configurators = [
                 add_arg("-sanitize=undefined"),
             ],
@@ -631,7 +625,7 @@ def compile_action_configs(
     action_configs.append(
         # Support for order-file instrumentation.
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = all_compile_action_names(),
             configurators = [
                 add_arg("-sanitize=undefined"),
                 add_arg("-sanitize-coverage=func"),
@@ -652,7 +646,9 @@ def compile_action_configs(
         # spelling, ensuring that the ClangImporter options section of the
         # `.swiftmodule` file is hermetic.
         ActionConfigInfo(
-            actions = all_compile_action_names(),
+            actions = all_compile_action_names() + [
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+            ],
             configurators = [
                 add_arg("-file-compilation-dir", "."),
             ],
@@ -661,8 +657,7 @@ def compile_action_configs(
         # Treat paths in .modulemap files as workspace-relative, not modulemap-
         # relative.
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
@@ -680,8 +675,7 @@ def compile_action_configs(
         # Configure how implicit modules are handled--either using the module
         # cache, or disabled completely when using explicit modules.
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
@@ -695,8 +689,7 @@ def compile_action_configs(
             ],
         ),
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
@@ -710,8 +703,7 @@ def compile_action_configs(
             not_features = [SWIFT_FEATURE_USE_C_MODULES],
         ),
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
@@ -726,8 +718,7 @@ def compile_action_configs(
             ],
         ),
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
             ],
@@ -739,8 +730,7 @@ def compile_action_configs(
         # because all of them, including system dependencies, will be provided
         # explicitly.
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
@@ -753,8 +743,7 @@ def compile_action_configs(
         ),
         # When using C modules, disable the implicit module cache.
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
                 SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
@@ -795,8 +784,7 @@ def compile_action_configs(
     #### Search paths/explicit module map for Swift module dependencies
     action_configs.extend([
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
             ],
@@ -824,8 +812,7 @@ def compile_action_configs(
             features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
         ),
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
@@ -837,8 +824,7 @@ def compile_action_configs(
             ],
         ),
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
             ],
@@ -859,19 +845,21 @@ def compile_action_configs(
             features = [SWIFT_FEATURE_VFSOVERLAY],
         ),
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = all_compile_action_names(),
             configurators = [_module_aliases_configurator],
         ),
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_DERIVE_FILES,
             ],
             configurators = [_plugins_configurator],
         ),
         ActionConfigInfo(
             actions = [
+                # TODO: b/351801556 - Verify that this is correct; it may need
+                # to be done by the codegen actions.
                 SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_COMPILE_MODULE,
                 SWIFT_ACTION_DERIVE_FILES,
             ],
             configurators = [_macro_expansion_configurator],
@@ -881,8 +869,7 @@ def compile_action_configs(
             not_features = [SWIFT_FEATURE_OPT],
         ),
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_DERIVE_FILES,
             ],
             configurators = [_plugin_search_paths_configurator],
@@ -911,8 +898,7 @@ def compile_action_configs(
     #### Search paths for framework dependencies
     action_configs.extend([
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
@@ -943,8 +929,7 @@ def compile_action_configs(
     action_configs.extend([
         # Pass flags to Clang for search paths and propagated defines.
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
@@ -961,8 +946,7 @@ def compile_action_configs(
         # Pass flags to Clang for dependencies' module maps or explicit modules,
         # whichever are being used for this build.
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
@@ -973,8 +957,7 @@ def compile_action_configs(
             features = [SWIFT_FEATURE_USE_C_MODULES],
         ),
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
@@ -1005,8 +988,7 @@ def compile_action_configs(
         # Request color diagnostics, since Bazel pipes the output and causes the
         # driver's TTY check to fail.
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
             ],
@@ -1028,6 +1010,9 @@ def compile_action_configs(
         # performance hack.
         ActionConfigInfo(
             actions = [
+                # Only use for legacy Swift compile planning. Parallelized
+                # builds cannot use batch mode, because Bazel needs to control
+                # the batching directly.
                 SWIFT_ACTION_COMPILE,
                 SWIFT_ACTION_DERIVE_FILES,
             ],
@@ -1042,8 +1027,7 @@ def compile_action_configs(
         # Set the number of threads to use for WMO. (We can skip this if we know
         # we'll already be applying `-num-threads` via `--swiftcopt` flags.)
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_DERIVE_FILES,
             ],
             configurators = [
@@ -1060,8 +1044,7 @@ def compile_action_configs(
             not_features = [SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS],
         ),
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_DERIVE_FILES,
             ],
             configurators = [
@@ -1079,8 +1062,7 @@ def compile_action_configs(
 
         # Set the module name.
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
@@ -1090,8 +1072,7 @@ def compile_action_configs(
             configurators = [_module_name_configurator],
         ),
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
             ],
@@ -1103,8 +1084,7 @@ def compile_action_configs(
 
         # Set the package name.
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
@@ -1123,12 +1103,12 @@ def compile_action_configs(
 
         # Configure index-while-building.
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = all_compile_action_names(),
             configurators = [_index_while_building_configurator],
             features = [SWIFT_FEATURE_INDEX_WHILE_BUILDING],
         ),
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = all_compile_action_names(),
             configurators = [add_arg("-index-include-locals")],
             features = [
                 SWIFT_FEATURE_INDEX_WHILE_BUILDING,
@@ -1136,7 +1116,7 @@ def compile_action_configs(
             ],
         ),
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = all_compile_action_names(),
             configurators = [add_arg("-index-ignore-system-modules")],
             features = [
                 SWIFT_FEATURE_INDEX_WHILE_BUILDING,
@@ -1144,7 +1124,7 @@ def compile_action_configs(
             ],
         ),
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = all_compile_action_names(),
             configurators = [
                 add_arg("-index-ignore-clang-modules"),
             ],
@@ -1171,7 +1151,7 @@ def compile_action_configs(
             ],
         ),
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = all_compile_action_names(),
             configurators = [_global_index_store_configurator],
             features = [
                 SWIFT_FEATURE_INDEX_WHILE_BUILDING,
@@ -1181,23 +1161,21 @@ def compile_action_configs(
 
         # Disable auto-linking for prebuilt static frameworks.
         ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE],
+            actions = all_compile_action_names(),
             configurators = [_frameworks_disable_autolink_configurator],
         ),
 
         # User-defined conditional compilation flags (defined for Swift; those
         # passed directly to ClangImporter are handled above).
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
             ],
             configurators = [_conditional_compilation_flag_configurator],
         ),
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_DERIVE_FILES,
             ],
@@ -1205,36 +1183,28 @@ def compile_action_configs(
             features = [SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX],
         ),
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
-            ],
+            actions = all_compile_action_names(),
             configurators = [add_arg("-Xfrontend", "-disable-clang-spi")],
             features = [
                 SWIFT_FEATURE_DISABLE_CLANG_SPI,
             ],
         ),
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
-            ],
+            actions = all_compile_action_names(),
             configurators = [add_arg("-Xfrontend", "-disable-availability-checking")],
             features = [
                 SWIFT_FEATURE_DISABLE_AVAILABILITY_CHECKING,
             ],
         ),
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
-            ],
+            actions = all_compile_action_names(),
             configurators = [_upcoming_and_experimental_features_configurator],
             features = [
                 SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES,
             ],
         ),
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
-            ],
+            actions = all_compile_action_names(),
             configurators = [add_arg("-swift-version", "6")],
             features = [
                 SWIFT_FEATURE_ENABLE_V6,
@@ -1251,8 +1221,7 @@ def compile_action_configs(
     # `copts` attribute.
     action_configs.append(
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
@@ -1263,8 +1232,7 @@ def compile_action_configs(
     if additional_objc_copts:
         action_configs.append(
             ActionConfigInfo(
-                actions = [
-                    SWIFT_ACTION_COMPILE,
+                actions = all_compile_action_names() + [
                     SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                     SWIFT_ACTION_DERIVE_FILES,
                     SWIFT_ACTION_DUMP_AST,
@@ -1286,8 +1254,7 @@ def compile_action_configs(
                 # TODO(allevato): Determine if there are any uses of
                 # `-Xcc`-prefixed flags that need to be added to explicit module
                 # actions, or if we should advise against/forbid that.
-                actions = [
-                    SWIFT_ACTION_COMPILE,
+                actions = all_compile_action_names() + [
                     SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                     SWIFT_ACTION_DERIVE_FILES,
                     SWIFT_ACTION_DUMP_AST,
@@ -1303,8 +1270,7 @@ def compile_action_configs(
 
     action_configs.append(
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
@@ -1317,8 +1283,7 @@ def compile_action_configs(
     # Add additional input files to the sandbox (does not modify flags).
     action_configs.append(
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
             ],
@@ -1415,6 +1380,14 @@ def _output_ast_path_or_file_map_configurator(prerequisites, args):
         outputs = prerequisites.ast_files,
         args = args,
     )
+
+def _compile_step_configurator(prerequisites, args):
+    """Adds the parallelized compilation plan step to the command line."""
+    step = prerequisites.compile_step
+    args.add("-Xwrapped-swift=-compile-step={}={}".format(
+        step.action,
+        step.output,
+    ))
 
 def _output_pcm_file_configurator(prerequisites, args):
     """Adds the `.pcm` output path to the command line."""
@@ -1523,7 +1496,7 @@ def _pcm_developer_framework_paths_configurator(prerequisites, args):
 
 def _batch_mode_configurator(prerequisites, args):
     """Adds flags to enable batch compilation mode."""
-    if not _is_wmo_manually_requested(prerequisites.user_compile_flags):
+    if not is_wmo_manually_requested(prerequisites.user_compile_flags):
         args.add("-enable-batch-mode")
 
 def _c_layering_check_configurator(prerequisites, args):
@@ -2111,24 +2084,10 @@ def _make_wmo_thread_count_configurator(should_check_flags):
         return lambda _prerequisites, args: _add_num_threads(args)
 
     def _flag_checking_wmo_thread_count_configurator(prerequisites, args):
-        if _is_wmo_manually_requested(prerequisites.user_compile_flags):
+        if is_wmo_manually_requested(prerequisites.user_compile_flags):
             _add_num_threads(args)
 
     return _flag_checking_wmo_thread_count_configurator
-
-def _is_wmo_manually_requested(user_compile_flags):
-    """Returns `True` if a WMO flag is in the given list of compiler flags.
-
-    Args:
-        user_compile_flags: A list of compiler flags to scan for WMO usage.
-
-    Returns:
-        True if WMO is enabled in the given list of flags.
-    """
-    for copt in user_compile_flags:
-        if copt in _WMO_FLAGS:
-            return True
-    return False
 
 def _exclude_swift_incompatible_define(define):
     """A `map_each` helper that excludes a define if it is not Swift-compatible.
