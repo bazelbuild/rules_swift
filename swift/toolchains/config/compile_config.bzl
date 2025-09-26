@@ -538,6 +538,7 @@ def compile_action_configs(
             ],
             configurators = [
                 add_arg("-Xwrapped-swift=-file-prefix-pwd-is-dot"),
+                add_arg("-file-prefix-map", "__BAZEL_XCODE_DEVELOPER_DIR__=/PLACEHOLDER_DEVELOPER_DIR"),
             ],
             features = [SWIFT_FEATURE_FILE_PREFIX_MAP],
         ),
@@ -1139,17 +1140,6 @@ def compile_action_configs(
                 SWIFT_ACTION_SYNTHESIZE_INTERFACE,
             ],
             configurators = [_module_name_configurator],
-        ),
-        ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
-                SWIFT_ACTION_DERIVE_FILES,
-                SWIFT_ACTION_PRECOMPILE_C_MODULE,
-            ],
-            configurators = [
-                add_arg("-file-prefix-map", "__BAZEL_XCODE_DEVELOPER_DIR__=/PLACEHOLDER_DEVELOPER_DIR"),
-            ],
-            features = [SWIFT_FEATURE_FILE_PREFIX_MAP],
         ),
 
         # Set the package name.
