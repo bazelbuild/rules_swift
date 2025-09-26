@@ -285,6 +285,24 @@ bool SwiftRunner::ProcessArgument(
     Iterator &itr, const std::string &arg,
     std::function<void(const std::string &)> consumer) {
   bool changed = false;
+
+  // Helper function for adding path remapping flags that depend on information
+  // only known at execution time.
+  auto add_prefix_map_flags = [&](const std::string &flag) {
+    // Get the actual current working directory (the execution root), which
+    // we didn't know at analysis time.
+    consumer(flag);
+    consumer(std::filesystem::current_path().string() + "=.");
+
+#if __APPLE__
+    std::string developer_dir = "__BAZEL_XCODE_DEVELOPER_DIR__";
+    if (bazel_placeholder_substitutions_.Apply(developer_dir)) {
+      consumer(flag);
+      consumer(developer_dir + "=/PLACEHOLDER_DEVELOPER_DIR");
+    }
+#endif
+  };
+
   if (arg[0] == '@') {
     changed = ProcessPossibleResponseFile(arg, consumer);
   } else {
@@ -293,20 +311,17 @@ bool SwiftRunner::ProcessArgument(
       if (new_arg == "-debug-prefix-pwd-is-dot") {
         // Replace the $PWD with . to make the paths relative to the workspace
         // without breaking hermiticity.
-        consumer("-debug-prefix-map");
-        consumer(std::filesystem::current_path().string() + "=.");
+        add_prefix_map_flags("-debug-prefix-map");
         changed = true;
       } else if (new_arg == "-coverage-prefix-pwd-is-dot") {
         // Replace the $PWD with . to make the paths relative to the workspace
         // without breaking hermiticity.
-        consumer("-coverage-prefix-map");
-        consumer(std::filesystem::current_path().string() + "=.");
+        add_prefix_map_flags("-file-prefix-map");
         changed = true;
       } else if (new_arg == "-file-prefix-pwd-is-dot") {
         // Replace the $PWD with . to make the paths relative to the workspace
         // without breaking hermiticity.
-        consumer("-file-prefix-map");
-        consumer(std::filesystem::current_path().string() + "=.");
+        add_prefix_map_flags("-file-prefix-map");
         changed = true;
       } else if (StripPrefix("-macro-expansion-dir=", new_arg)) {
         changed = true;
