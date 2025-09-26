@@ -73,6 +73,9 @@ def mixed_language_library(
 
     Args:
         name: The name of the target.
+        additional_objc_compiler_inputs: Additional files that are referenced
+            using `$(location ...)` in attributes that support location
+            expansion.
         always_include_developer_search_paths: If `True`, the developer
             framework search paths will be added to the swift compilation
             command. This enables a Swift module to access `XCTest` without
