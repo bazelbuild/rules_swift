@@ -18,7 +18,7 @@ load(
     "//swift/internal:action_names.bzl",
     "SWIFT_ACTION_COMPILE_MODULE_INTERFACE",
 )
-load(":action_config.bzl", "ActionConfigInfo", "add_arg")
+load(":action_config.bzl", "ActionConfigInfo", "ConfigResultInfo", "add_arg")
 
 def compile_module_interface_action_configs():
     return [
@@ -41,8 +41,32 @@ def compile_module_interface_action_configs():
                 add_arg("-compile-module-from-interface"),
             ],
         ),
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE_MODULE_INTERFACE],
+            configurators = [
+                _dependencies_swiftmodules_configurator,
+            ],
+        ),
     ]
 
 def _emit_module_path_from_module_interface_configurator(prerequisites, args):
     """Adds the `.swiftmodule` output path to the command line."""
     args.add("-o", prerequisites.swiftmodule_file)
+
+def _dependencies_swiftmodules_configurator(prerequisites):
+    """Adds transitive swiftmodule dependencies as inputs for module interface compilation."""
+
+    # For module interface compilation, we need access to dependency swiftinterface/swiftmodule files
+    # This ensures they are available in the sandbox
+    transitive_inputs = []
+    for module in prerequisites.transitive_modules:
+        swift_module = module.swift
+        if swift_module:
+            if swift_module.swiftmodule:
+                transitive_inputs.append(swift_module.swiftmodule)
+            if swift_module.swiftinterface:
+                transitive_inputs.append(swift_module.swiftinterface)
+
+    return ConfigResultInfo(
+        inputs = transitive_inputs,
+    )
