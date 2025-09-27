@@ -2005,8 +2005,19 @@ def _dependencies_swiftmodules_configurator(prerequisites, args):
         uniquify = True,
     )
 
+    # Include both swiftmodule and swiftinterface files as inputs to ensure
+    # they are available in the sandbox for compilation
+    transitive_inputs = []
+    for module in prerequisites.transitive_modules:
+        swift_module = module.swift
+        if swift_module:
+            if swift_module.swiftmodule:
+                transitive_inputs.append(swift_module.swiftmodule)
+            if swift_module.swiftinterface:
+                transitive_inputs.append(swift_module.swiftinterface)
+
     return ConfigResultInfo(
-        inputs = prerequisites.transitive_swiftmodules,
+        inputs = transitive_inputs,
     )
 
 def _module_aliases_configurator(prerequisites, args):
