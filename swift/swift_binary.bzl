@@ -157,7 +157,7 @@ def _swift_binary_impl(ctx):
     binary_link_flags = expand_locations(
         ctx,
         ctx.attr.linkopts,
-        ctx.attr.swiftc_inputs,
+        ctx.attr.swiftc_inputs + ctx.attr.additional_linker_inputs,
     ) + ctx.fragments.cpp.linkopts
 
     # When linking the binary, make sure we use the correct entry point name.
@@ -178,7 +178,7 @@ def _swift_binary_impl(ctx):
 
     linking_outputs = register_link_binary_action(
         actions = ctx.actions,
-        additional_inputs = ctx.files.swiftc_inputs,
+        additional_inputs = ctx.files.swiftc_inputs + ctx.files.additional_linker_inputs,
         additional_linking_contexts = additional_linking_contexts,
         additional_outputs = additional_debug_outputs,
         feature_configuration = feature_configuration,
@@ -228,7 +228,7 @@ def _swift_binary_impl(ctx):
             environment = expand_locations(
                 ctx,
                 ctx.attr.env,
-                ctx.attr.swiftc_inputs,
+                ctx.attr.swiftc_inputs + ctx.attr.additional_linker_inputs,
             ),
         ),
     ]
@@ -240,7 +240,7 @@ def _swift_binary_impl(ctx):
         linking_context, _ = (
             create_linking_context_from_compilation_outputs(
                 actions = ctx.actions,
-                additional_inputs = ctx.files.swiftc_inputs,
+                additional_inputs = ctx.files.swiftc_inputs + ctx.files.additional_linker_inputs,
                 alwayslink = True,
                 compilation_outputs = compilation_outputs,
                 feature_configuration = feature_configuration,
