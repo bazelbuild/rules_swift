@@ -157,7 +157,7 @@ def _swift_binary_impl(ctx):
     binary_link_flags = expand_locations(
         ctx,
         ctx.attr.linkopts,
-        ctx.attr.swiftc_inputs + ctx.attr.additional_linker_inputs,
+        ctx.attr.additional_linker_inputs,
     ) + ctx.fragments.cpp.linkopts
 
     # When linking the binary, make sure we use the correct entry point name.
