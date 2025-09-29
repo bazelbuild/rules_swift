@@ -33,10 +33,10 @@ def _swift_binary_additional_linker_inputs_test_impl(ctx):
     expected_inputs = ctx.attr.expected_additional_inputs
     expected_linkopts = ctx.attr.expected_linkopts
 
-    action_input_paths = set([input.short_path for input in link_action.inputs.to_list()])
+    action_input_paths = [input.short_path for input in link_action.inputs.to_list()]
 
     if expected_inputs:
-        missing_inputs = set(expected_inputs) - action_input_paths
+        missing_inputs = [input for input in expected_inputs if input not in action_input_paths]
         if missing_inputs:
             unittest.fail(
                 env,
