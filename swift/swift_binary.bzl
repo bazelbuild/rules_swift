@@ -178,7 +178,7 @@ def _swift_binary_impl(ctx):
 
     linking_outputs = register_link_binary_action(
         actions = ctx.actions,
-        additional_inputs = ctx.files.swiftc_inputs + ctx.files.additional_linker_inputs,
+        additional_inputs = ctx.files.additional_linker_inputs,
         additional_linking_contexts = additional_linking_contexts,
         additional_outputs = additional_debug_outputs,
         feature_configuration = feature_configuration,
