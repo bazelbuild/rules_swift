@@ -240,7 +240,7 @@ def _swift_binary_impl(ctx):
         linking_context, _ = (
             create_linking_context_from_compilation_outputs(
                 actions = ctx.actions,
-                additional_inputs = ctx.files.swiftc_inputs + ctx.files.additional_linker_inputs,
+                additional_inputs = ctx.files.additional_linker_inputs,
                 alwayslink = True,
                 compilation_outputs = compilation_outputs,
                 feature_configuration = feature_configuration,
