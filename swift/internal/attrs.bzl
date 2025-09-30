@@ -297,7 +297,6 @@ and emit a `.swiftinterface` file as one of the compilation outputs.
                 mandatory = False,
             ),
             "alwayslink": attr.bool(
-                default = True,
                 doc = """\
 If `False`, any binary that depends (directly or indirectly) on this Swift module
 will only link in all the object files for the files listed in `srcs` when there
@@ -318,7 +317,13 @@ get batched into a single `.o` by the compiler options used.
 Swift Package Manager always passes the individual `.o` files to the linker
 instead of using intermediate static libraries, so it effectively is the same
 as `alwayslink = True`.
+
+Note that by default, this value will default to True. But if the
+swift.enable_embedded feature is on, this value will default to False, as
+the swift features that cause -force_load to be required (such as reflection)
+are not available in that mode.
 """,
+                mandatory = False,
             ),
             "generated_header_name": attr.string(
                 doc = """\
