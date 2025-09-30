@@ -72,10 +72,8 @@ def _swift_binary_additional_linker_inputs_test_impl(ctx):
 swift_binary_additional_linker_inputs_test = analysistest.make(
     _swift_binary_additional_linker_inputs_test_impl,
     attrs = {
-        "expected_additional_inputs": attr.string_list(
-        ),
-        "expected_linkopts": attr.string_list(
-        ),
+        "expected_additional_inputs": attr.string_list(),
+        "expected_linkopts": attr.string_list(),
     },
 )
 
