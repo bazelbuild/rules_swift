@@ -8200,6 +8200,7 @@ swift_library_group(
         ":_DarwinFoundation1_swift",
         ":_DarwinFoundation2_swift",
         ":_DarwinFoundation3_swift",
+        ":sys_types"
     ],
 )
 
