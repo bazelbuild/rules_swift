@@ -111,7 +111,9 @@ SwiftRunner::SwiftRunner(const std::vector<std::string> &args,
       index_import_path_(index_import_path),
       force_response_file_(force_response_file),
       is_dump_ast_(false),
-      file_prefix_pwd_is_dot_(false) {
+      file_prefix_pwd_is_dot_(false),
+      module_file_home_is_cwd_(false),
+      working_directory_is_dot_(false) {
   args_ = ProcessArguments(args);
 }
 
@@ -169,7 +171,14 @@ int SwiftRunner::Run(std::ostream *stderr_stream, bool stdout_to_stderr) {
 
     if (file_prefix_pwd_is_dot_) {
       ii_args.push_back("-file-prefix-map");
-      ii_args.push_back(std::filesystem::current_path().string() + "=.");
+      std::string mapped_path;
+      if (module_file_home_is_cwd_ && working_directory_is_dot_) {
+        // TODO : this is a workaround for swift indexstore unit output file hash mismatch issue.
+        mapped_path = "=././.";
+      } else {
+        mapped_path = "=.";
+      }
+      ii_args.push_back(std::filesystem::current_path().string() + mapped_path);
     }
 
     for (it = outputs.begin(); it != outputs.end(); it++) {
@@ -285,7 +294,6 @@ bool SwiftRunner::ProcessArgument(
     Iterator &itr, const std::string &arg,
     std::function<void(const std::string &)> consumer) {
   bool changed = false;
-
   // Helper function for adding path remapping flags that depend on information
   // only known at execution time.
   auto add_prefix_map_flags = [&](const std::string &flag,
@@ -450,6 +458,20 @@ std::vector<std::string> SwiftRunner::ParseArguments(Iterator itr) {
         std::filesystem::path module_path(arg);
         swift_source_info_path_ = module_path.replace_extension(".swiftsourceinfo").string();
         out_args.push_back(arg);
+      } else if (arg == "-fmodule-file-home-is-cwd") {
+        module_file_home_is_cwd_ = true;
+      } else if (arg == "-working-directory") {
+        ++it;
+        arg = *it;
+        out_args.push_back(arg);
+        if (arg == "-Xcc") {
+          ++it;
+          arg = *it;
+          out_args.push_back(arg);
+          if (arg == ".") {
+            working_directory_is_dot_ = true;
+          }
+        }
       }
     }
   }

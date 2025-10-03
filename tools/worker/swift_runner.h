@@ -157,6 +157,12 @@ class SwiftRunner {
   // Whether `-file-prefix-map PWD=.` is set.
   bool file_prefix_pwd_is_dot_;
 
+  // Whether `-module-file-home-is-cwd` is set.
+  bool module_file_home_is_cwd_;
+
+  // Whether `-working-directory=.` is set.
+  bool working_directory_is_dot_;
+
   // The path to the generated header rewriter tool, if one is being used for
   // this compilation.
   std::string generated_header_rewriter_path_;
