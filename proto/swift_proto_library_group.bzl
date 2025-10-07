@@ -32,10 +32,17 @@ load(
 )
 
 # buildifier: disable=bzl-visibility
-load("//swift/internal:toolchain_utils.bzl", "use_swift_toolchain")
+load(
+    "//swift/internal:toolchain_utils.bzl",
+    "SWIFT_TOOLCHAIN_TYPE",
+    "use_swift_toolchain",
+)
 
 # buildifier: disable=bzl-visibility
 load("//swift/internal:utils.bzl", "compact")
+
+# Name of the execution group used for `SwiftCompile` actions.
+_COMPILE_EXEC_GROUP = "swift"
 
 # _swift_proto_library_group_aspect
 
@@ -49,6 +56,7 @@ def _swift_proto_library_group_aspect_impl(target, aspect_ctx):
         additional_swift_proto_compiler_info = {},
         attr = aspect_ctx.rule.attr,
         ctx = aspect_ctx,
+        exec_group = _COMPILE_EXEC_GROUP,
         module_name = module_name,
         proto_infos = [target[ProtoInfo]],
         swift_proto_compilers = [aspect_ctx.attr._compiler],
@@ -80,6 +88,12 @@ from which the Swift protos will be generated.
     doc = """\
     Gathers all of the transitive ProtoInfo providers along the deps attribute
     """,
+    exec_groups = {
+        # Define an execution group for `SwiftCompile` actions that does
+        # not have constraints, so the action can be routed to any platform that
+        # supports it.
+        _COMPILE_EXEC_GROUP: exec_group(toolchains = [SWIFT_TOOLCHAIN_TYPE]),
+    },
     fragments = ["cpp"],
     implementation = _swift_proto_library_group_aspect_impl,
     toolchains = use_swift_toolchain(),

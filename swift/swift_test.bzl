@@ -45,6 +45,7 @@ load(
 load("//swift/internal:symbol_graph_extracting.bzl", "extract_symbol_graph")
 load(
     "//swift/internal:toolchain_utils.bzl",
+    "SWIFT_TOOLCHAIN_TYPE",
     "get_swift_toolchain",
     "use_swift_toolchain",
 )
@@ -61,6 +62,9 @@ load(
     "SwiftInfo",
     "create_swift_module_context",
 )
+
+# Name of the execution group used for `SwiftCompile` actions.
+_COMPILE_EXEC_GROUP = "swift"
 
 # Name of the execution group used for `SwiftTestDiscovery` actions.
 _DISCOVER_TESTS_EXEC_GROUP = "discover_tests"
@@ -670,6 +674,10 @@ set the `BUILD_WORKSPACE_DIRECTORY` environment variable in your scheme to the
 root of your workspace (i.e. `$(SRCROOT)`).
 """,
     exec_groups = {
+        # Define an execution group for `SwiftCompile` actions that does
+        # not have constraints, so the action can be routed to any platform that
+        # supports it.
+        _COMPILE_EXEC_GROUP: exec_group(toolchains = [SWIFT_TOOLCHAIN_TYPE]),
         # Define an execution group for `SwiftTestDiscovery` actions that does
         # not have constraints, so that test discovery using the already
         # generated symbol graphs can be routed to any platform that supports it

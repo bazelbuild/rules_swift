@@ -31,10 +31,14 @@ load("//swift/internal:features.bzl", "configure_features")
 load("//swift/internal:symbol_graph_extracting.bzl", "extract_symbol_graph")
 load(
     "//swift/internal:toolchain_utils.bzl",
+    "SWIFT_TOOLCHAIN_TYPE",
     "get_swift_toolchain",
     "use_swift_toolchain",
 )
 load("//swift/internal:utils.bzl", "include_developer_search_paths")
+
+# Name of the execution group used for `SwiftCompile` actions.
+_COMPILE_EXEC_GROUP = "swift"
 
 def _make_swift_symbol_graph_aspect_impl(
         output_distinguisher = None,
@@ -291,6 +295,12 @@ default value is {default_value}.
             },
         ),
         doc = doc,
+        exec_groups = {
+            # Define an execution group for `SwiftCompile` actions that does
+            # not have constraints, so the action can be routed to any platform
+            # that supports it.
+        _COMPILE_EXEC_GROUP: exec_group(toolchains = [SWIFT_TOOLCHAIN_TYPE]),
+        },
         fragments = ["cpp"],
         implementation = aspect_impl,
         provides = provides,

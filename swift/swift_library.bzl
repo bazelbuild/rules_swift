@@ -46,6 +46,7 @@ load(
 load("//swift/internal:providers.bzl", "SwiftCompilerPluginInfo")
 load(
     "//swift/internal:toolchain_utils.bzl",
+    "SWIFT_TOOLCHAIN_TYPE",
     "get_swift_toolchain",
     "use_swift_toolchain",
 )
@@ -60,6 +61,9 @@ load(
 load(":module_name.bzl", "derive_swift_module_name")
 load(":providers.bzl", "SwiftInfo", "SwiftOverlayInfo")
 load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
+
+# Name of the execution group used for `SwiftCompile` actions.
+_COMPILE_EXEC_GROUP = "swift"
 
 def _maybe_parse_as_library_copts(srcs):
     """Returns a list of compiler flags depending on `main.swift`'s presence.
@@ -181,6 +185,7 @@ def _swift_library_impl(ctx):
         cc_infos = get_providers(ctx.attr.deps, CcInfo),
         copts = _maybe_parse_as_library_copts(srcs) + copts,
         defines = ctx.attr.defines,
+        exec_group = _COMPILE_EXEC_GROUP,
         feature_configuration = feature_configuration,
         generated_header_name = generated_header_name,
         include_dev_srch_paths = include_dev_srch_paths,
@@ -290,6 +295,12 @@ dependent for linking, but artifacts/flags required for compilation (such as
     doc = """\
 Compiles and links Swift code into a static library and Swift module.
 """,
+    exec_groups = {
+        # Define an execution group for `SwiftCompile` actions that does
+        # not have constraints, so the action can be routed to any platform that
+        # supports it.
+        _COMPILE_EXEC_GROUP: exec_group(toolchains = [SWIFT_TOOLCHAIN_TYPE]),
+    },
     fragments = [
         "cpp",
     ],
