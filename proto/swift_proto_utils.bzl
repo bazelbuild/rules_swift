@@ -196,6 +196,7 @@ def compile_swift_protos_for_target(
         additional_swift_proto_compiler_info,
         attr,
         ctx,
+        exec_group = None,
         module_name,
         proto_infos,
         swift_proto_compilers,
@@ -208,6 +209,8 @@ def compile_swift_protos_for_target(
         additional_compiler_deps: Additional dependencies passed directly to the Swift compiler.
         attr: The attributes of the target for which the module is being compiled.
         ctx: The context of the aspect or rule.
+        exec_group: Runs the Swift compilation action under the given execution
+            group's context. If `None`, the default execution group is used.
         module_name: The name of the Swift module that should be compiled from the protos.
         proto_infos: List of `ProtoInfo` providers to compile into Swift source files.
         swift_proto_compilers: List of targets propagating `SwiftProtoCompiler` providers.
@@ -276,6 +279,7 @@ def compile_swift_protos_for_target(
         additional_inputs = additional_inputs,
         cc_infos = get_providers(compiler_deps, CcInfo),
         copts = ["-parse-as-library"] + copts,
+        exec_group = exec_group,
         feature_configuration = feature_configuration,
         include_dev_srch_paths = include_dev_srch_paths,
         module_name = module_name,

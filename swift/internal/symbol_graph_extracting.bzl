@@ -25,6 +25,7 @@ def extract_symbol_graph(
         actions,
         compilation_contexts,
         emit_extension_block_symbols = None,
+        exec_group = None,
         feature_configuration,
         include_dev_srch_paths,
         minimum_access_level = None,
@@ -44,6 +45,8 @@ def extract_symbol_graph(
             a target's dependencies.
         emit_extension_block_symbols: A `bool` that indicates whether `extension` block
             information should be included in the symbol graph.
+        exec_group: Runs the Swift compilation action under the given execution
+            group's context. If `None`, the default execution group is used.
         feature_configuration: The Swift feature configuration.
         include_dev_srch_paths: A `bool` that indicates whether the developer
             framework search paths will be added to the compilation command.
@@ -114,6 +117,7 @@ def extract_symbol_graph(
     run_toolchain_action(
         actions = actions,
         action_name = SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
+        exec_group = exec_group,
         feature_configuration = feature_configuration,
         outputs = [output_dir],
         prerequisites = prerequisites,
