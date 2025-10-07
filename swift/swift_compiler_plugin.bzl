@@ -44,6 +44,7 @@ load(
 load("//swift/internal:providers.bzl", "SwiftCompilerPluginInfo")
 load(
     "//swift/internal:toolchain_utils.bzl",
+    "SWIFT_TOOLCHAIN_TYPE",
     "get_swift_toolchain",
     "use_swift_toolchain",
 )
@@ -54,6 +55,9 @@ load(
 )
 load(":module_name.bzl", "derive_swift_module_name")
 load(":providers.bzl", "SwiftBinaryInfo", "SwiftInfo", "SwiftOverlayInfo")
+
+# Name of the execution group used for `SwiftCompile` actions.
+_COMPILE_EXEC_GROUP = "swift"
 
 def _swift_compiler_plugin_impl(ctx):
     swift_toolchain = get_swift_toolchain(ctx)
@@ -98,6 +102,7 @@ def _swift_compiler_plugin_impl(ctx):
             entry_point_function_name,
         ],
         defines = ctx.attr.defines,
+        exec_group = _COMPILE_EXEC_GROUP,
         feature_configuration = feature_configuration,
         include_dev_srch_paths = ctx.attr.testonly,
         module_name = module_name,
@@ -290,6 +295,12 @@ swift_library(
 )
 ```
 """,
+    exec_groups = {
+        # Define an execution group for `SwiftCompile` actions that does
+        # not have constraints, so the action can be routed to any platform that
+        # supports it.
+        _COMPILE_EXEC_GROUP: exec_group(toolchains = [SWIFT_TOOLCHAIN_TYPE]),
+    },
     executable = True,
     fragments = ["cpp"],
     implementation = _swift_compiler_plugin_impl,

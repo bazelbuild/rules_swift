@@ -39,6 +39,7 @@ load(
 load("//swift/internal:providers.bzl", "SwiftCompilerPluginInfo")
 load(
     "//swift/internal:toolchain_utils.bzl",
+    "SWIFT_TOOLCHAIN_TYPE",
     "get_swift_toolchain",
     "use_swift_toolchain",
 )
@@ -56,6 +57,9 @@ load(
     "SwiftOverlayInfo",
     "create_swift_module_context",
 )
+
+# Name of the execution group used for `SwiftCompile` actions.
+_COMPILE_EXEC_GROUP = "swift"
 
 def _maybe_parse_as_library_copts(srcs):
     """Returns a list of compiler flags depending on `main.swift`'s presence.
@@ -119,6 +123,7 @@ def _swift_binary_impl(ctx):
                 entry_point_function_name,
             ],
             defines = ctx.attr.defines,
+            exec_group = _COMPILE_EXEC_GROUP,
             feature_configuration = feature_configuration,
             include_dev_srch_paths = include_dev_srch_paths,
             module_name = module_name,
@@ -301,6 +306,12 @@ please use one of the platform-specific application rules in
 [rules_apple](https://github.com/bazelbuild/rules_apple) instead of
 `swift_binary`.
 """,
+    exec_groups = {
+        # Define an execution group for `SwiftCompile` actions that does
+        # not have constraints, so the action can be routed to any platform that
+        # supports it.
+        _COMPILE_EXEC_GROUP: exec_group(toolchains = [SWIFT_TOOLCHAIN_TYPE]),
+    },
     executable = True,
     fragments = ["cpp"],
     implementation = _swift_binary_impl,
