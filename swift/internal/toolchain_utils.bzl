@@ -14,7 +14,7 @@
 
 """Helpers used to depend on and access the Swift toolchain."""
 
-SWIFT_TOOLCHAIN_TYPE = "@build_bazel_rules_swift//toolchains:toolchain_type"
+SWIFT_TOOLCHAIN_TYPE = Label("//toolchains:toolchain_type")
 
 def get_swift_toolchain(
         ctx,
