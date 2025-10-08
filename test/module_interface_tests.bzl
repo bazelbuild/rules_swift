@@ -19,6 +19,7 @@ load(
     "//test/rules:action_command_line_test.bzl",
     "make_action_command_line_test_rule",
 )
+load("//test/rules:action_inputs_test.bzl", "action_inputs_test")
 load("//test/rules:provider_test.bzl", "provider_test")
 
 explicit_swift_module_map_test = make_action_command_line_test_rule(
@@ -110,6 +111,17 @@ def module_interface_test_suite(name, tags = []):
             "-Xfrontend",
         ],
         mnemonic = "SwiftCompileModuleInterface",
+        target_under_test = "//test/fixtures/module_interface:toy_module",
+    )
+
+    # Test that dependency swiftinterface files are included as action inputs
+    action_inputs_test(
+        name = "{}_dependencies_included_as_inputs".format(name),
+        tags = all_tags,
+        mnemonic = "SwiftCompileModuleInterface",
+        expected_inputs = [
+            "ToyModule.swiftinterface",
+        ],
         target_under_test = "//test/fixtures/module_interface:toy_module",
     )
 

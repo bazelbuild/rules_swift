@@ -2006,8 +2006,19 @@ def _dependencies_swiftmodules_configurator(prerequisites, args):
         uniquify = True,
     )
 
+    # Include both swiftmodule and swiftinterface files as inputs to ensure
+    # they are available in the sandbox for compilation
+    transitive_inputs = []
+    for module in prerequisites.transitive_modules:
+        swift_module = module.swift
+        if swift_module:
+            if swift_module.swiftmodule:
+                transitive_inputs.append(swift_module.swiftmodule)
+            if swift_module.swiftinterface:
+                transitive_inputs.append(swift_module.swiftinterface)
+
     return ConfigResultInfo(
-        inputs = prerequisites.transitive_swiftmodules,
+        inputs = transitive_inputs,
     )
 
 def _module_aliases_configurator(prerequisites, args):
@@ -2065,7 +2076,6 @@ def _plugin_search_paths_configurator(prerequisites, args):
 
 def _dependencies_swiftmodules_vfsoverlay_configurator(prerequisites, args, is_frontend = False):
     """Provides a single `.swiftmodule` search path using a VFS overlay."""
-    swiftmodules = prerequisites.transitive_swiftmodules
 
     # Bug: `swiftc` doesn't pass its `-vfsoverlay` arg to the frontend.
     # Workaround: Pass `-vfsoverlay` directly via `-Xfrontend`.
@@ -2077,8 +2087,19 @@ def _dependencies_swiftmodules_vfsoverlay_configurator(prerequisites, args, is_f
         "-I{}".format(prerequisites.vfsoverlay_search_path),
     )
 
+    # Include both swiftmodule and swiftinterface files as inputs to ensure
+    # they are available in the sandbox for compilation
+    transitive_inputs = [prerequisites.vfsoverlay_file]
+    for module in prerequisites.transitive_modules:
+        swift_module = module.swift
+        if swift_module:
+            if swift_module.swiftmodule:
+                transitive_inputs.append(swift_module.swiftmodule)
+            if swift_module.swiftinterface:
+                transitive_inputs.append(swift_module.swiftinterface)
+
     return ConfigResultInfo(
-        inputs = swiftmodules + [prerequisites.vfsoverlay_file],
+        inputs = transitive_inputs,
     )
 
 def _explicit_swift_module_map_configurator(prerequisites, args, is_frontend = False):
