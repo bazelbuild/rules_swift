@@ -114,6 +114,13 @@ load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 
 visibility("public")
 
+# These are symlink locations known to be used by xcode-select in various Xcode
+# and macOS versions to point to the selected `Developer` directory.
+_DEVELOPER_DIR_SYMLINKS = [
+    "/private/var/select/developer_dir",
+    "/var/db/xcode_select_link",
+]
+
 def _swift_developer_lib_dir(platform_framework_dir):
     """Returns the directory containing extra Swift developer libraries.
 
@@ -171,10 +178,43 @@ def _sdk_developer_framework_dir(apple_toolchain, target_triple):
 
     return paths.join(apple_toolchain.sdk_dir(), "Developer/Library/Frameworks")
 
+def _swift_compatibility_lib_paths(*, target_triple, xcode_config):
+    """Returns the paths to the Swift compatibility libraries in the toolchain.
+
+    The returned paths are relative to the `Developer` directory; they do not
+    contain the Bazel placeholder that would be substituted with the actual
+    `Developer` directory at execution time.
+
+    Args:
+        target_triple: The target triple `struct`.
+        xcode_config: The `apple_common.XcodeVersionConfig` provider.
+
+    Returns:
+        A list of paths to the Swift compatibility libraries in the toolchain.
+    """
+
+    # We choose to ignore swift-5.0 and swift-5.5 because they correspond to
+    # such old OS versions that nobody is targeting with rules like
+    # `swift_binary` and `swift_test`. (And if they were, they would already be
+    # broken before this addition.)
+    versions = []
+    if _is_xcode_at_least_version(xcode_config, "26.0"):
+        versions.append("6.2")
+
+    platform_name = target_triples.platform_name_for_swift(target_triple)
+    return [
+        "Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-{}/{}".format(
+            version,
+            platform_name,
+        )
+        for version in versions
+    ]
+
 def _swift_linkopts_cc_info(
         apple_toolchain,
         target_triple,
-        toolchain_label):
+        toolchain_label,
+        xcode_config):
     """Returns a `CcInfo` containing flags that should be passed to the linker.
 
     The providers returned by this function will be used as implicit
@@ -186,6 +226,7 @@ def _swift_linkopts_cc_info(
         target_triple: The target triple `struct`.
         toolchain_label: The label of the Swift toolchain that will act as the
             owner of the linker input propagating the flags.
+        xcode_config: The `apple_common.XcodeVersionConfig` provider.
 
     Returns:
         A `CcInfo` provider that will provide linker flags to binaries that
@@ -212,7 +253,6 @@ def _swift_linkopts_cc_info(
             sdk_developer_framework_dir,
         ])
     ] + [
-        "-Wl,-rpath,/usr/lib/swift",
         "-L{}".format(swift_lib_dir),
         "-L/usr/lib/swift",
         # TODO(b/112000244): This should get added by the C++ Starlark API,
@@ -221,6 +261,30 @@ def _swift_linkopts_cc_info(
         # variables not provided by cc_common. Figure out how to handle this
         # correctly.
         "-Wl,-objc_abi_version,2",
+    ]
+
+    # Compute the necessary rpaths for back-deployed compatibility libraries.
+    # Note that this implies that a `swift_{binary,compiler_plugin,test}` isn't
+    # portable to a different machine unless that machine also has the correct
+    # version of Xcode selected. Users who need to build a binary that can be
+    # moved to machines with different or no Xcode should use an appropriate
+    # rule from rules_apple, which ensures that the dylibs are bundled as part
+    # of the application.
+    #
+    # The system `/usr/lib/swift` must always be first in the list, to ensure
+    # that system libraries are preferred over those in the toolchain.
+    swift_compatibility_lib_dirs = _swift_compatibility_lib_paths(
+        target_triple = target_triple,
+        xcode_config = xcode_config,
+    )
+    rpaths = ["/usr/lib/swift"] + [
+        paths.join(developer_dir_symlink, compatibility_dir)
+        for developer_dir_symlink in _DEVELOPER_DIR_SYMLINKS
+        for compatibility_dir in swift_compatibility_lib_dirs
+    ]
+    linkopts += [
+        "-Wl,-rpath,{}".format(rpath)
+        for rpath in rpaths
     ]
 
     # Add the linker path to the directory containing the dylib with Swift
@@ -256,17 +320,11 @@ def _test_linking_context(target_triple, toolchain_label):
         binaries.
     """
 
-    # xcode-select creates the following symlink(s) to the developer directory
-    # (we list both because the behavior changed between versions of macOS).
     # We use these as the rpaths for linking tests so that the required
     # libraries are found if Xcode is installed in a different location on the
     # machine that runs the tests than the machine used to link them.
-    developer_dirs = [
-        "/private/var/select/developer_dir",
-        "/var/db/xcode_select_link",
-    ]
     linkopts = []
-    for developer_dir in developer_dirs:
+    for developer_dir in _DEVELOPER_DIR_SYMLINKS:
         platform_developer_framework_dir = _platform_developer_framework_dir(
             developer_dir,
             target_triple,
@@ -653,6 +711,7 @@ def _xcode_swift_toolchain_impl(ctx):
         apple_toolchain = apple_toolchain,
         target_triple = target_triple,
         toolchain_label = ctx.label,
+        xcode_config = xcode_config,
     )
     test_linking_context = _test_linking_context(
         target_triple = target_triple,
