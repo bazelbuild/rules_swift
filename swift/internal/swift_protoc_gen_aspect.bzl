@@ -203,6 +203,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
         )
 
     module_mappings = depset(direct_module_mappings, transitive = transitive_module_mappings)
+    output_groups = {}
 
     if direct_pbswift_files:
         transitive_module_mapping_file = _register_module_mapping_write_action(
@@ -276,10 +277,9 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             linking_context = linking_context,
         )
 
+        output_groups = supplemental_compilation_output_groups(supplemental_outputs)
+
         providers = [
-            OutputGroupInfo(
-                **supplemental_compilation_output_groups(supplemental_outputs)
-            ),
             SwiftProtoCompilationInfo(
                 cc_info = cc_info,
                 swift_info = compile_result.swift_info,
@@ -312,13 +312,19 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
                 ),
             ]
 
-    providers.append(SwiftProtoInfo(
-        module_mappings = module_mappings,
-        pbswift_files = depset(
-            direct = direct_pbswift_files,
-            transitive = transitive_pbswift_files,
+    pbswift_files = depset(
+        direct = direct_pbswift_files,
+        transitive = transitive_pbswift_files,
+    )
+    output_groups["ide_srcs"] = pbswift_files
+
+    providers.append(OutputGroupInfo(**output_groups))
+    providers.append(
+        SwiftProtoInfo(
+            module_mappings = module_mappings,
+            pbswift_files = pbswift_files,
         ),
-    ))
+    )
 
     return providers
 
