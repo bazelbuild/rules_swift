@@ -32,6 +32,7 @@ load("//swift/internal:swift_interop_info.bzl", "SwiftInteropInfo")
 
 def create_swift_interop_info(
         *,
+        direct_swift_infos = [],
         exclude_headers = [],
         module_map = None,
         module_name = None,
@@ -72,6 +73,9 @@ def create_swift_interop_info(
     implicit attributes) but also to exclude dependencies if necessary.
 
     Args:
+        direct_swift_infos: A list of `SwiftInfo` providers from dependencies,
+            which will be merged with the new `SwiftInfo` created by the aspect
+            as direct data.
         exclude_headers: A `list` of `File`s representing headers that should be
             excluded from the module if the module map is generated.
         module_map: A `File` representing an existing module map that should be
@@ -114,11 +118,12 @@ def create_swift_interop_info(
                  "is specified.")
 
     return SwiftInteropInfo(
+        direct_swift_infos = direct_swift_infos,
         exclude_headers = exclude_headers,
         module_map = module_map,
         module_name = module_name,
         requested_features = requested_features,
         suppressed = suppressed,
-        swift_infos = swift_infos,
+        swift_infos = direct_swift_infos + swift_infos,
         unsupported_features = unsupported_features,
     )
