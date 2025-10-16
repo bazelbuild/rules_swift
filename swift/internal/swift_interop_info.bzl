@@ -36,6 +36,10 @@ Contains minimal information required to allow `swift_clang_module_aspect` to
 manage the creation of a `SwiftInfo` provider for a C/Objective-C target.
 """,
     fields = {
+        "direct_swift_infos": """\
+A list of `SwiftInfo` providers from dependencies of the target, which will be
+merged with the new `SwiftInfo` created by the aspect as direct.
+""",
         "exclude_headers": """\
 A `list` of `File`s representing headers that should be excluded from the
 module, if a module map is being automatically generated based on the headers in

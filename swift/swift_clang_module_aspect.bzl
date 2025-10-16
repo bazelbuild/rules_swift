@@ -939,6 +939,7 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx, toolchain_type):
         module_map_file = interop_info.module_map
         module_name = interop_info.module_name
 
+        direct_swift_infos.extend(interop_info.direct_swift_infos)
         swift_infos.extend(interop_info.swift_infos)
         requested_features.extend(interop_info.requested_features)
         unsupported_features.extend(interop_info.unsupported_features)
