@@ -72,5 +72,9 @@ processes frameworks with headers that do not follow strict layering can request
 that `swift.strict_module` always be disabled for its targets even if it is
 enabled by default in the toolchain.
 """,
+        "system_pcms": """\
+A list of precompiled clang modules with `SwiftInfo` providers for system modules.
+This is used to pass `system_pcm` dependencies originating from `swift_interop_hint`.
+""",
     },
 )

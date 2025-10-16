@@ -730,6 +730,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_NO_GENERATED_MODULE_MAP,
     ):
+
         compilation_context_to_compile = (
             compilation_context_for_explicit_module_compilation(
                 compilation_contexts = [

@@ -1,0 +1,1 @@
+TODO : convert sdk discovery repo rule into python script and add instructions on how to update the BUILD files.
