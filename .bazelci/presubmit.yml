@@ -4,7 +4,7 @@ x_defaults:
   # it doesn't know about; so that is used to avoid repeating common subparts.
   mac_common: &mac_common
     platform: macos_arm64
-    xcode_version: "16.2"
+    xcode_version: "16.4"
     build_targets:
       - "//examples/..."
     test_targets:
@@ -63,7 +63,8 @@ tasks:
 
   macos_last_green:
     name: "Last Green Bazel"
-    bazel: last_green
+    # TODO: Use `last_green` when https://github.com/bazelbuild/bazel/pull/27330 merges
+    bazel: f2985041cb1170be4545049e1b4d25eea8a84660
     <<: *mac_common
 
   macos_latest_head_deps:
@@ -98,9 +99,8 @@ tasks:
 
   ubuntu2004_last_green:
     name: "Last Green Bazel"
-    # TODO: Use `last_green` when https://github.com/bazelbuild/bazel/issues/26962 is fixed
-    # bazel: last_green
-    bazel: 0522f8e58bf864005207eb8f09162d35ddd1f678
+    # TODO: Use `last_green` when https://github.com/bazelbuild/bazel/pull/27330 merges
+    bazel: f2985041cb1170be4545049e1b4d25eea8a84660
     shell_commands:
       - "echo --- Downloading and extracting Swift $SWIFT_VERSION to $SWIFT_HOME"
       - "mkdir $SWIFT_HOME"

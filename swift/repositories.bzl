@@ -48,17 +48,17 @@ def swift_rules_dependencies(include_bzlmod_ready_dependencies = True):
             http_archive,
             name = "bazel_skylib",
             urls = [
-                "https://github.com/bazelbuild/bazel-skylib/releases/download/1.3.0/bazel-skylib-1.3.0.tar.gz",
-                "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/1.3.0/bazel-skylib-1.3.0.tar.gz",
+                "https://github.com/bazelbuild/bazel-skylib/releases/download/1.7.1/bazel-skylib-1.7.1.tar.gz",
+                "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/1.7.1/bazel-skylib-1.7.1.tar.gz",
             ],
-            sha256 = "74d544d96f4a5bb630d465ca8bbcfe231e3594e5aae57e1edbf17a6eb3ca2506",
+            sha256 = "bc283cdfcd526a52c3201279cda4bc298652efa898b10b4db0837dc51652756f",
         )
 
         _maybe(
             http_archive,
             name = "build_bazel_apple_support",
-            url = "https://github.com/bazelbuild/apple_support/releases/download/1.21.0/apple_support.1.21.0.tar.gz",
-            sha256 = "293f5fe430787f3a995b2703440d27498523df119de00b84002deac9525bea55",
+            url = "https://github.com/bazelbuild/apple_support/releases/download/1.23.1/apple_support.1.23.1.tar.gz",
+            sha256 = "ee20cc5c0bab47065473c8033d462374dd38d172406ecc8de5c8f08487943f2f",
         )
 
         _maybe(
@@ -72,9 +72,19 @@ def swift_rules_dependencies(include_bzlmod_ready_dependencies = True):
         _maybe(
             http_archive,
             name = "com_google_protobuf",
-            urls = ["https://github.com/protocolbuffers/protobuf/releases/download/v27.0/protobuf-27.0.tar.gz"],
-            sha256 = "da288bf1daa6c04d03a9051781caa52aceb9163586bff9aa6cfb12f69b9395aa",
-            strip_prefix = "protobuf-27.0",
+            urls = ["https://github.com/protocolbuffers/protobuf/releases/download/v29.0/protobuf-29.0.tar.gz"],
+            sha256 = "10a0d58f39a1a909e95e00e8ba0b5b1dc64d02997f741151953a2b3659f6e78c",
+            strip_prefix = "protobuf-29.0",
+        )
+
+        # NOTE: this is required since `com_google_protobuf` depends on a bad 7.x version
+        # and WORKSAPCE mode does not upgrade the dependency correctly.
+        # This version matches that of the resolved rules_java version in `bazel mod graph`.
+        _maybe(
+            http_archive,
+            name = "rules_java",
+            url = "https://github.com/bazelbuild/rules_java/releases/download/8.14.0/rules_java-8.14.0.tar.gz",
+            sha256 = "bbe7d94360cc9ed4607ec5fd94995fd1ec41e84257020b6f09e64055281ecb12",
         )
 
         _maybe(
@@ -93,20 +103,38 @@ def swift_rules_dependencies(include_bzlmod_ready_dependencies = True):
         _maybe(
             http_archive,
             name = "bazel_features",
-            sha256 = "95fb3cfd11466b4cad6565e3647a76f89886d875556a4b827c021525cb2482bb",
-            strip_prefix = "bazel_features-1.10.0",
-            url = "https://github.com/bazel-contrib/bazel_features/releases/download/v1.10.0/bazel_features-v1.10.0.tar.gz",
+            sha256 = "a660027f5a87f13224ab54b8dc6e191693c554f2692fcca46e8e29ee7dabc43b",
+            strip_prefix = "bazel_features-1.30.0",
+            url = "https://github.com/bazel-contrib/bazel_features/releases/download/v1.30.0/bazel_features-v1.30.0.tar.gz",
         )
 
         _maybe(
             http_archive,
             name = "com_github_apple_swift_argument_parser",
-            urls = ["https://github.com/apple/swift-argument-parser/archive/refs/tags/1.3.0.tar.gz"],
-            sha256 = "e5010ff37b542807346927ba68b7f06365a53cf49d36a6df13cef50d86018204",
-            strip_prefix = "swift-argument-parser-1.3.0",
+            urls = ["https://github.com/apple/swift-argument-parser/archive/refs/tags/1.3.1.tar.gz"],
+            sha256 = "4d964f874b251abc280ee28f0f187de3c13a6122a9561524f66a10768ca2d837",
+            strip_prefix = "swift-argument-parser-1.3.1",
             build_file = Label(
                 "//third_party:com_github_apple_swift_argument_parser/BUILD.overlay",
             ),
+        )
+
+        _maybe(
+            http_archive,
+            name = "rules_shell",
+            sha256 = "d8cd4a3a91fc1dc68d4c7d6b655f09def109f7186437e3f50a9b60ab436a0c53",
+            strip_prefix = "rules_shell-0.3.0",
+            url = "https://github.com/bazelbuild/rules_shell/releases/download/v0.3.0/rules_shell-v0.3.0.tar.gz",
+        )
+
+        _maybe(
+            http_archive,
+            name = "platforms",
+            urls = [
+                "https://mirror.bazel.build/github.com/bazelbuild/platforms/releases/download/0.0.11/platforms-0.0.11.tar.gz",
+                "https://github.com/bazelbuild/platforms/releases/download/0.0.11/platforms-0.0.11.tar.gz",
+            ],
+            sha256 = "29742e87275809b5e598dc2f04d86960cc7a55b3067d97221c9abbc9926bff0f",
         )
 
     _maybe(
@@ -250,14 +278,6 @@ def swift_rules_dependencies(include_bzlmod_ready_dependencies = True):
         canonical_id = "index-import-6.1",
         urls = ["https://github.com/MobileNativeFoundation/index-import/releases/download/6.1.0.1/index-import.tar.gz"],
         sha256 = "9a54fc1674af6031125a9884480a1e31e1bcf48b8f558b3e8bcc6b6fcd6e8b61",
-    )
-
-    _maybe(
-        http_archive,
-        name = "rules_shell",
-        sha256 = "d8cd4a3a91fc1dc68d4c7d6b655f09def109f7186437e3f50a9b60ab436a0c53",
-        strip_prefix = "rules_shell-0.3.0",
-        url = "https://github.com/bazelbuild/rules_shell/releases/download/v0.3.0/rules_shell-v0.3.0.tar.gz",
     )
 
     _maybe(
