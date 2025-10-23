@@ -1358,17 +1358,38 @@ def compile_action_configs(
             ),
         )
 
+    # Force everyone to use checked continuations Obj-C async bridging,
+    # regardless of Swift language mode. See
+    # https://github.com/swiftlang/swift/issues/81846 for context.
+    #
+    # The position of this config is important; it must be applied *after* any
+    # user-specified compile flags to ensure that this one takes precedence.
+    #
+    # This can be removed if/when the compiler is fixed in the future and we
+    # drop support for compilers before the fix.
     action_configs.append(
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
-                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
-                SWIFT_ACTION_DERIVE_FILES,
-                SWIFT_ACTION_DUMP_AST,
-                SWIFT_ACTION_PRECOMPILE_C_MODULE,
-            ],
-            configurators = [_source_files_configurator],
+            actions = all_compile_action_names(),
+            configurators = [add_arg(
+                "-Xfrontend",
+                "-checked-async-objc-bridging=on",
+            )],
         ),
+    )
+
+    action_configs.extend(
+        [
+            ActionConfigInfo(
+                actions = [
+                    SWIFT_ACTION_COMPILE,
+                    SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+                    SWIFT_ACTION_DERIVE_FILES,
+                    SWIFT_ACTION_DUMP_AST,
+                    SWIFT_ACTION_PRECOMPILE_C_MODULE,
+                ],
+                configurators = [_source_files_configurator],
+            ),
+        ],
     )
 
     # Add additional input files to the sandbox (does not modify flags).
