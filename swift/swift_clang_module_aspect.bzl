@@ -21,10 +21,7 @@ load(
 )
 load(
     "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
-    "SWIFT_FEATURE_EMIT_C_MODULE",
-    "SWIFT_FEATURE_LAYERING_CHECK_FOR_C_DEPS",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
-    "SWIFT_FEATURE_USE_C_MODULES",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:features.bzl",
@@ -64,7 +61,6 @@ load(
 )
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
-load("@rules_java//java:defs.bzl", "JavaInfo")
 load(
     ":module_name.bzl",
     "derive_swift_module_name",
@@ -89,17 +85,9 @@ _MULTIPLE_TARGET_ASPECT_ATTRS = [
     "runtime_deps",
 ]
 
-_SINGLE_TARGET_ASPECT_ATTRS = [
-    # TODO(b/151667396): Remove j2objc-specific attributes when possible.
-    "_jre_lib",
-    "_j2objc_proto_toolchain",
-    "runtime",
-]
-
 # TODO(b/151667396): Remove j2objc-specific attributes when possible.
 _DIRECT_ASPECT_ATTRS = [
     "exports",
-    "_j2objc_proto_toolchain",
 ]
 
 def _compute_all_excluded_headers(*, exclude_headers, target):
@@ -255,70 +243,6 @@ def _objc_library_module_info(aspect_ctx):
         )
 
     return module_name
-
-# TODO(b/151667396): Remove j2objc-specific knowledge.
-def _j2objc_compilation_context(target):
-    """Construct and return a compilation context for a J2ObjC target
-
-    This is an unfortunate hack/workaround needed for J2ObjC, which needs to use
-    an umbrella header that `#include`s, rather than `#import`s, the headers in
-    the module due to the way they're segmented. Additionally, the headers
-    need a header search path set for them to be found.
-
-    It's also somewhat ugly in the way that it has to find the umbrella header,
-    which is tied to Bazel's built-in module map generation. Since there's not a
-    direct umbrella header field in `ObjcProvider`, we scan the target's actions
-    to find the one that writes it out. Then, we return it and a new compilation
-    context with the direct headers from the `CcInfo` of the J2ObjC aspect.
-
-    Args:
-        target: The target to which the aspect is being applied.
-
-    Returns:
-        A `CcCompilationContext` containing the direct generated headers of
-        the J2ObjC target (including the umbrella header), or `None` if the
-        target did not generate an umbrella header.
-    """
-    for action in target.actions:
-        if action.mnemonic != "UmbrellaHeader":
-            continue
-
-        umbrella_header = action.outputs.to_list()[0]
-        headers = target[CcInfo].compilation_context.direct_headers
-
-        if JavaInfo not in target:
-            # This is not a `java_library`, but a `proto_library` processed by J2ObjC. We need to
-            # treat the generated headers as textual, but do not need the special header search path
-            # logic like we do for `java_library` targets below.
-            return cc_common.create_compilation_context(
-                headers = depset([umbrella_header]),
-                direct_textual_headers = headers,
-            )
-
-        include_paths = set()
-        for header in headers:
-            header_path = header.path
-
-            if "/_j2objc/src_jar_files/" in header_path:
-                # When source jars are used the headers are generated within a tree artifact.
-                # We can use the path to the tree artifact as the include search path.
-                include_path = header_path
-            else:
-                # J2ObjC generates headers within <bin_dir>/<package>/_j2objc/<target>/.
-                # Compute that path to use as the include search path.
-                header_path_components = header_path.split("/")
-                j2objc_index = header_path_components.index("_j2objc")
-                include_path = "/".join(header_path_components[:j2objc_index + 2])
-
-            include_paths.add(include_path)
-
-        return cc_common.create_compilation_context(
-            headers = depset([umbrella_header]),
-            direct_textual_headers = headers,
-            includes = depset(list(include_paths)),
-        )
-
-    return None
 
 def _module_info_for_target(
         target,
@@ -486,12 +410,6 @@ def _handle_module(
         # If we weren't passed a module map (i.e., from a `SwiftInteropInfo`
         # provider), infer it and the module name based on properties of the
         # rule to support legacy rules.
-
-        # TODO(b/151667396): Remove j2objc-specific knowledge.
-        new_compilation_context = _j2objc_compilation_context(target = target)
-        if new_compilation_context:
-            compilation_context = new_compilation_context
-
         module_info = _module_info_for_target(
             target = target,
             aspect_ctx = aspect_ctx,
@@ -537,15 +455,6 @@ def _handle_module(
     additional_swift_infos = []
     for attr_name in _MULTIPLE_TARGET_ASPECT_ATTRS:
         for dep in getattr(attr, attr_name, []):
-            if CcInfo in dep:
-                compilation_contexts_to_merge_for_compilation.append(
-                    dep[CcInfo].compilation_context,
-                )
-            elif SwiftInfo in dep:
-                additional_swift_infos.append(dep[SwiftInfo])
-    for attr_name in _SINGLE_TARGET_ASPECT_ATTRS:
-        if hasattr(attr, attr_name):
-            dep = getattr(attr, attr_name)
             if CcInfo in dep:
                 compilation_contexts_to_merge_for_compilation.append(
                     dep[CcInfo].compilation_context,
@@ -767,37 +676,6 @@ def _collect_swift_infos_from_deps(aspect_ctx):
         else:
             swift_infos.extend(infos)
 
-    for attr_name in _SINGLE_TARGET_ASPECT_ATTRS:
-        dep = getattr(attr, attr_name, None)
-        if dep and SwiftInfo in dep:
-            if attr_name in _DIRECT_ASPECT_ATTRS:
-                direct_swift_infos.append(dep[SwiftInfo])
-            else:
-                swift_infos.append(dep[SwiftInfo])
-
-    # TODO(b/151667396): Remove j2objc-specific knowledge.
-    if str(aspect_ctx.label) in ("@bazel_tools//tools/j2objc:j2objc_proto_toolchain", "//third_party/java/j2objc:proto_runtime"):
-        # The J2ObjC proto runtime headers are implicit dependencies of the generated J2ObjC code
-        # by being transitively reachable via the toolchain and runtime targets. The `SwiftInfos` of
-        # these targets need to be propagated as direct so that J2ObjC code using the runtime
-        # headers appears to have a direct dependency on them.
-        direct_swift_infos.extend(swift_infos)
-        swift_infos = []
-
-    # TODO(b/151667396): Remove j2objc-specific knowledge.
-    if aspect_ctx.rule.kind == "j2objc_library":
-        # Treat all modules generated by `java_library` targets underneath a `j2objc_library` as
-        # being part of the `j2objc_library` target for sake of layering checks.
-        direct_swift_infos.extend(swift_infos)
-        swift_infos = []
-
-    if aspect_ctx.rule.kind == "java_proto_library":
-        # J2ObjC ignores `java_proto_library` targets and processes the underlying `proto_library`
-        # targets. Treat the module generated by the underlying `proto_library` target as being
-        # part of the `java_proto_library` for sake of layering checks.
-        direct_swift_infos.extend(swift_infos)
-        swift_infos = []
-
     return direct_swift_infos, swift_infos
 
 def _find_swift_interop_info(target, aspect_ctx):
@@ -948,15 +826,6 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx, toolchain_type):
         module_map_file = None
         module_name = None
 
-    if hasattr(aspect_ctx.rule.attr, "_jre_lib"):
-        # TODO(b/151667396): Remove j2objc-specific knowledge.
-        # Force explicit modules on for targets processed by `j2objc_library`.
-        requested_features.extend([
-            SWIFT_FEATURE_EMIT_C_MODULE,
-            SWIFT_FEATURE_USE_C_MODULES,
-            SWIFT_FEATURE_LAYERING_CHECK_FOR_C_DEPS,
-        ])
-
     toolchains = find_all_toolchains(
         aspect_ctx,
         toolchain_type = toolchain_type,
@@ -1016,7 +885,7 @@ def make_swift_clang_module_aspect(*, toolchain_type):
         )
 
     return aspect(
-        attr_aspects = _MULTIPLE_TARGET_ASPECT_ATTRS + _SINGLE_TARGET_ASPECT_ATTRS,
+        attr_aspects = _MULTIPLE_TARGET_ASPECT_ATTRS,
         doc = """\
 Propagates unified `SwiftInfo` providers for targets that represent
 C/Objective-C modules.

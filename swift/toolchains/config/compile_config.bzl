@@ -1463,7 +1463,6 @@ def _dependencies_clang_modules_configurator(prerequisites, args, include_module
                 )
 
         compilation_context = None
-
     else:
         mixed_inputs = None
         compilation_context = prerequisites.cc_compilation_context
