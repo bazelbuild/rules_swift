@@ -310,14 +310,12 @@ def _swift_linkopts_cc_info(
     )
 
 def _test_linking_context(
-        apple_toolchain,
         target_triple,
         toolchain_label,
         xcode_config):
     """Returns a `CcLinkingContext` containing linker flags for test binaries.
 
     Args:
-        apple_toolchain: The `apple_common.apple_toolchain()` object.
         target_triple: The target triple `struct`.
         toolchain_label: The label of the Swift toolchain that will act as the
             owner of the linker input propagating the flags.
@@ -327,10 +325,6 @@ def _test_linking_context(
         A `CcLinkingContext` that will provide linker flags to `swift_test`
         binaries.
     """
-    platform_developer_framework_dir = _platform_developer_framework_dir(
-        apple_toolchain,
-        target_triple,
-    )
 
     # Weakly link to XCTest. It's possible that machine that links the test
     # binary will have Xcode installed at a different path than the machine that
@@ -342,19 +336,6 @@ def _test_linking_context(
     ]
     if _is_xcode_at_least_version(xcode_config, "16.0"):
         linkopts.append("-Wl,-weak_framework,Testing")
-
-    if platform_developer_framework_dir:
-        linkopts.extend([
-            "-F{}".format(platform_developer_framework_dir),
-            "-L{}".format(
-                swift_developer_lib_dir([
-                    struct(
-                        developer_path_label = "platform",
-                        path = platform_developer_framework_dir,
-                    ),
-                ]),
-            ),
-        ])
 
     # We use these as the rpaths for linking tests so that the required
     # libraries are found if Xcode is installed in a different location on the
@@ -773,7 +754,6 @@ def _xcode_swift_toolchain_impl(ctx):
         swiftcopts.extend(ctx.attr._copts[BuildSettingInfo].value)
 
     test_linking_context = _test_linking_context(
-        apple_toolchain = apple_toolchain,
         target_triple = target_triple,
         toolchain_label = ctx.label,
         xcode_config = xcode_config,
