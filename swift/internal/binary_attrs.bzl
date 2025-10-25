@@ -59,6 +59,16 @@ def binary_rule_attrs(
             requires_srcs = False,
         ),
         {
+            "additional_linker_inputs": attr.label_list(
+                allow_files = True,
+                doc = """\
+List of additional files needed by the linker.
+
+These files will be passed to the linker when linking the binary target.
+Typically, these are linker scripts or other files referenced by `linkopts`.
+""",
+                mandatory = False,
+            ),
             "linkopts": attr.string_list(
                 doc = """\
 Additional linker options that should be passed to `clang`. These strings are
