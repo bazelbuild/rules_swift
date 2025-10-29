@@ -19,7 +19,6 @@ toolchain package. If you are looking for rules to build Swift code using this
 toolchain, see `doc/rules.md`.
 """
 
-load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain", "use_cpp_toolchain")
@@ -662,12 +661,12 @@ def _xcode_env(target_triple, xcode_config):
         A `dict` containing Xcode-related environment variables that should be
         passed to Swift compile and link actions.
     """
-    return dicts.add(
-        apple_common.apple_host_system_env(xcode_config),
+    return (
+        apple_common.apple_host_system_env(xcode_config) |
         apple_common.target_apple_env(
             xcode_config,
             target_triples.bazel_apple_platform(target_triple),
-        ),
+        )
     )
 
 def _dsym_provider(*, ctx):
@@ -864,11 +863,9 @@ def _xcode_swift_toolchain_impl(ctx):
     ]
 
 xcode_swift_toolchain = rule(
-    attrs = dicts.add(
-        swift_toolchain_driver_attrs(),
-        {
-            "clang_implicit_deps": attr.label_list(
-                doc = """\
+    attrs = swift_toolchain_driver_attrs() | {
+        "clang_implicit_deps": attr.label_list(
+            doc = """\
 A list of labels to library targets that should be unconditionally added as
 implicit dependencies of any explicit C/Objective-C module compiled by the Swift
 toolchain and also as implicit dependencies of any Swift modules compiled by
@@ -882,48 +879,48 @@ the implicit traversal performed by `swift_clang_module_aspect`; the latter is
 not possible as it would create a dependency cycle between the toolchain and the
 implicit dependencies.
 """,
-                providers = [[SwiftInfo]],
-            ),
-            "cross_import_overlays": attr.label_list(
-                allow_empty = True,
-                doc = """\
+            providers = [[SwiftInfo]],
+        ),
+        "cross_import_overlays": attr.label_list(
+            allow_empty = True,
+            doc = """\
 A list of `swift_cross_import_overlay` targets that will be automatically
 injected into the dependencies of Swift compilations if their declaring module
 and bystanding module are both already declared as dependencies.
 """,
-                mandatory = False,
-                providers = [[SwiftCrossImportOverlayInfo]],
-            ),
-            "default_enabled_features": attr.string_list(
-                doc = """\
+            mandatory = False,
+            providers = [[SwiftCrossImportOverlayInfo]],
+        ),
+        "default_enabled_features": attr.string_list(
+            doc = """\
 A list of features that are enabled by default for all targets build with this
 toolchain.
 """,
-            ),
-            "default_unsupported_features": attr.string_list(
-                doc = """\
+        ),
+        "default_unsupported_features": attr.string_list(
+            doc = """\
 A list of features that are unsupported by this toolchain.
 """,
-            ),
-            "feature_allowlists": attr.label_list(
-                doc = """\
+        ),
+        "feature_allowlists": attr.label_list(
+            doc = """\
 A list of `swift_feature_allowlist` targets that allow or prohibit packages from
 requesting or disabling features.
 """,
-                providers = [[SwiftFeatureAllowlistInfo]],
-            ),
-            "generated_header_module_implicit_deps": attr.label_list(
-                doc = """\
+            providers = [[SwiftFeatureAllowlistInfo]],
+        ),
+        "generated_header_module_implicit_deps": attr.label_list(
+            doc = """\
 Targets whose `SwiftInfo` providers should be treated as compile-time inputs to
 actions that precompile the explicit module for the generated Objective-C header
 of a Swift module.
 """,
-                providers = [[SwiftInfo]],
-            ),
-            "generated_header_rewriter": attr.label(
-                allow_files = True,
-                cfg = "exec",
-                doc = """\
+            providers = [[SwiftInfo]],
+        ),
+        "generated_header_rewriter": attr.label(
+            allow_files = True,
+            cfg = "exec",
+            doc = """\
 If present, an executable that will be invoked after compilation to rewrite the
 generated header.
 
@@ -931,59 +928,58 @@ This tool is expected to have a command line interface such that the Swift
 compiler invocation is passed to it following a `"--"` argument, and any
 arguments preceding the `"--"` can be defined by the tool itself.
 """,
-                executable = True,
-            ),
-            "implicit_deps": attr.label_list(
-                allow_files = True,
-                doc = """\
+            executable = True,
+        ),
+        "implicit_deps": attr.label_list(
+            allow_files = True,
+            doc = """\
 A list of labels to library targets that should be unconditionally added as
 implicit dependencies of any Swift compilation or linking target.
 """,
-                providers = [
-                    [CcInfo],
-                    [SwiftInfo],
-                ],
-            ),
-            "package_configurations": attr.label_list(
-                doc = """\
+            providers = [
+                [CcInfo],
+                [SwiftInfo],
+            ],
+        ),
+        "package_configurations": attr.label_list(
+            doc = """\
 A list of `swift_package_configuration` targets that specify additional compiler
 configuration options that are applied to targets on a per-package basis.
 """,
-                providers = [[SwiftPackageConfigurationInfo]],
-            ),
-            "_copts": attr.label(
-                default = Label("@build_bazel_rules_swift//swift:copt"),
-                doc = """\
+            providers = [[SwiftPackageConfigurationInfo]],
+        ),
+        "_copts": attr.label(
+            default = Label("@build_bazel_rules_swift//swift:copt"),
+            doc = """\
 The label of the `string_list` containing additional flags that should be passed
 to the compiler.
 """,
+        ),
+        "_module_mapping": attr.label(
+            default = Label(
+                "@build_bazel_rules_swift//swift:module_mapping",
             ),
-            "_module_mapping": attr.label(
-                default = Label(
-                    "@build_bazel_rules_swift//swift:module_mapping",
-                ),
-                providers = [[SwiftModuleAliasesInfo]],
+            providers = [[SwiftModuleAliasesInfo]],
+        ),
+        "_worker": attr.label(
+            cfg = "exec",
+            allow_files = True,
+            default = Label(
+                "@build_bazel_rules_swift//tools/worker",
             ),
-            "_worker": attr.label(
-                cfg = "exec",
-                allow_files = True,
-                default = Label(
-                    "@build_bazel_rules_swift//tools/worker",
-                ),
-                doc = """\
+            doc = """\
 An executable that wraps Swift compiler invocations and also provides support
 for incremental compilation using a persistent mode.
 """,
-                executable = True,
+            executable = True,
+        ),
+        "_xcode_config": attr.label(
+            default = configuration_field(
+                name = "xcode_config_label",
+                fragment = "apple",
             ),
-            "_xcode_config": attr.label(
-                default = configuration_field(
-                    name = "xcode_config_label",
-                    fragment = "apple",
-                ),
-            ),
-        },
-    ),
+        ),
+    },
     doc = "Represents a Swift compiler toolchain provided by Xcode.",
     fragments = [
         "cpp",

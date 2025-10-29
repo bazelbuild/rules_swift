@@ -14,7 +14,6 @@
 
 """Implementation of the `swift_import` rule."""
 
-load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(
     "@build_bazel_rules_swift//swift/internal:attrs.bzl",
     "swift_common_rule_attrs",
@@ -153,55 +152,52 @@ def _swift_import_impl(ctx):
     ]
 
 swift_import = rule(
-    attrs = dicts.add(
-        swift_common_rule_attrs(
-            additional_deps_aspects = [swift_clang_module_aspect],
-        ),
-        {
-            "archives": attr.label_list(
-                allow_empty = True,
-                allow_files = ["a", "lo"],
-                doc = """\
+    attrs = swift_common_rule_attrs(
+        additional_deps_aspects = [swift_clang_module_aspect],
+    ) | {
+        "archives": attr.label_list(
+            allow_empty = True,
+            allow_files = ["a", "lo"],
+            doc = """\
 The list of `.a` or `.lo` files provided to Swift targets that depend on this
 target.
 """,
-                mandatory = False,
-            ),
-            "module_name": attr.string(
-                doc = "The name of the module represented by this target.",
-                mandatory = True,
-            ),
-            "plugins": attr.label_list(
-                cfg = "exec",
-                doc = """\
+            mandatory = False,
+        ),
+        "module_name": attr.string(
+            doc = "The name of the module represented by this target.",
+            mandatory = True,
+        ),
+        "plugins": attr.label_list(
+            cfg = "exec",
+            doc = """\
 A list of `swift_compiler_plugin` targets that should be loaded by the compiler
 when compiling any modules that directly depend on this target.
 """,
-                providers = [[SwiftCompilerPluginInfo]],
-            ),
-            "swiftdoc": attr.label(
-                allow_single_file = ["swiftdoc"],
-                doc = """\
+            providers = [[SwiftCompilerPluginInfo]],
+        ),
+        "swiftdoc": attr.label(
+            allow_single_file = ["swiftdoc"],
+            doc = """\
 The `.swiftdoc` file provided to Swift targets that depend on this target.
 """,
-                mandatory = False,
-            ),
-            "swiftinterface": attr.label(
-                allow_single_file = ["swiftinterface"],
-                doc = """\
+            mandatory = False,
+        ),
+        "swiftinterface": attr.label(
+            allow_single_file = ["swiftinterface"],
+            doc = """\
 The `.swiftinterface` file that defines the module interface for this target.
 """,
-                mandatory = False,
-            ),
-            "swiftmodule": attr.label(
-                allow_single_file = ["swiftmodule"],
-                doc = """\
+            mandatory = False,
+        ),
+        "swiftmodule": attr.label(
+            allow_single_file = ["swiftmodule"],
+            doc = """\
 The `.swiftmodule` file provided to Swift targets that depend on this target.
 """,
-                mandatory = False,
-            ),
-        },
-    ),
+            mandatory = False,
+        ),
+    },
     doc = """\
 Allows for the use of Swift textual module interfaces and/or precompiled Swift
 modules as dependencies in other `swift_library` and `swift_binary` targets.

@@ -14,7 +14,6 @@
 
 """Implementation of the `swift_compiler_plugin` rule."""
 
-load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(
     "@build_bazel_rules_swift//swift/internal:binary_attrs.bzl",
     "binary_rule_attrs",
@@ -204,16 +203,13 @@ def _swift_compiler_plugin_impl(ctx):
     ]
 
 swift_compiler_plugin = rule(
-    attrs = dicts.add(
-        binary_rule_attrs(
-            exclude_env = True,
-            # Do not stamp macro binaries by default to prevent frequent
-            # rebuilds.
-            stamp_default = 0,
-        ),
-        {
-        },
-    ),
+    attrs = binary_rule_attrs(
+        exclude_env = True,
+        # Do not stamp macro binaries by default to prevent frequent
+        # rebuilds.
+        stamp_default = 0,
+    ) | {
+    },
     doc = """\
 Compiles and links a Swift compiler plugin (for example, a macro).
 

@@ -13,7 +13,6 @@
 # limitations under the License.
 """An aspect attached to `proto_library` targets to generate Swift artifacts."""
 
-load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(
     "@build_bazel_rules_swift//swift:module_name.bzl",
     "derive_swift_module_name",
@@ -330,14 +329,11 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
 
 swift_protoc_gen_aspect = aspect(
     attr_aspects = ["deps"],
-    attrs = dicts.add(
-        swift_config_attrs(),
-        {
-            "_proto_lang_toolchain": attr.label(
-                default = swift_proto_lang_toolchain_label(),
-            ),
-        },
-    ),
+    attrs = swift_config_attrs() | {
+        "_proto_lang_toolchain": attr.label(
+            default = swift_proto_lang_toolchain_label(),
+        ),
+    },
     doc = """\
 Generates Swift artifacts for a `proto_library` target.
 

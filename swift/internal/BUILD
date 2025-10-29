@@ -58,7 +58,6 @@ bzl_library(
     deps = [
         ":providers",
         "//swift:providers",
-        "@bazel_skylib//lib:dicts",
         "@rules_cc//cc/common",
     ],
 )
@@ -69,7 +68,6 @@ bzl_library(
     deps = [
         ":attrs",
         "//swift:swift_clang_module_aspect",
-        "@bazel_skylib//lib:dicts",
         "@rules_cc//cc/common",
     ],
 )
@@ -218,7 +216,6 @@ bzl_library(
         ":utils",
         "//swift:module_name",
         "//swift:providers",
-        "@bazel_skylib//lib:dicts",
         "@rules_cc//cc/common",
     ],
 )

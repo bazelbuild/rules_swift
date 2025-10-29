@@ -14,7 +14,6 @@
 
 """Common attributes used by rules that define Swift binary targets."""
 
-load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(
     "@build_bazel_rules_swift//swift:swift_clang_module_aspect.bzl",
     "swift_clang_module_aspect",
@@ -54,31 +53,29 @@ def binary_rule_attrs(
     Returns:
         A `dict` of attributes for a binary or test rule.
     """
-    result = dicts.add(
-        swift_compilation_attrs(
-            additional_deps_aspects = [
-                swift_clang_module_aspect,
-            ] + additional_deps_aspects,
-            additional_deps_providers = additional_deps_providers,
-            requires_srcs = False,
-        ),
-        {
-            "linkopts": attr.string_list(
-                doc = """\
+    result = swift_compilation_attrs(
+        additional_deps_aspects = [
+            swift_clang_module_aspect,
+        ] + additional_deps_aspects,
+        additional_deps_providers = additional_deps_providers,
+        requires_srcs = False,
+    ) | {
+        "linkopts": attr.string_list(
+            doc = """\
 Additional linker options that should be passed to `clang`. These strings are
 subject to `$(location ...)` expansion.
 """,
-                mandatory = False,
-            ),
-            "malloc": attr.label(
-                default = Label("@bazel_tools//tools/cpp:malloc"),
-                doc = _MALLOC_DOCSTRING,
-                mandatory = False,
-                providers = [[CcInfo]],
-            ),
-            "stamp": attr.int(
-                default = stamp_default,
-                doc = """\
+            mandatory = False,
+        ),
+        "malloc": attr.label(
+            default = Label("@bazel_tools//tools/cpp:malloc"),
+            doc = _MALLOC_DOCSTRING,
+            mandatory = False,
+            providers = [[CcInfo]],
+        ),
+        "stamp": attr.int(
+            default = stamp_default,
+            doc = """\
 Enable or disable link stamping; that is, whether to encode build information
 into the binary. Possible values are:
 
@@ -92,19 +89,19 @@ into the binary. Possible values are:
 * `stamp = -1`: Embedding of build information is controlled by the
   `--[no]stamp` flag.
 """,
-                mandatory = False,
+            mandatory = False,
+        ),
+        # A late-bound attribute denoting the value of the `--custom_malloc`
+        # command line flag (or None if the flag is not provided).
+        "_custom_malloc": attr.label(
+            default = configuration_field(
+                fragment = "cpp",
+                name = "custom_malloc",
             ),
-            # A late-bound attribute denoting the value of the `--custom_malloc`
-            # command line flag (or None if the flag is not provided).
-            "_custom_malloc": attr.label(
-                default = configuration_field(
-                    fragment = "cpp",
-                    name = "custom_malloc",
-                ),
-                providers = [[CcInfo]],
-            ),
-        },
-    )
+            providers = [[CcInfo]],
+        ),
+    }
+
     if not exclude_env:
         result["env"] = attr.string_dict(
             doc = """\

@@ -14,7 +14,6 @@
 
 """Implementation of the `swift_test` rule."""
 
-load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(
     "@build_bazel_rules_swift//swift/internal:binary_attrs.bzl",
     "binary_rule_attrs",
@@ -432,10 +431,10 @@ def _swift_test_impl(ctx):
         variables_extension = variables_extension,
     )
 
-    test_environment = dicts.add(
-        ctx.attr.env,
-        toolchains.swift.test_configuration.env,
-        {"TEST_BINARIES_FOR_LLVM_COV": linking_outputs.executable.short_path},
+    test_environment = (
+        ctx.attr.env |
+        toolchains.swift.test_configuration.env |
+        {"TEST_BINARIES_FOR_LLVM_COV": linking_outputs.executable.short_path}
     )
 
     return [
@@ -473,16 +472,14 @@ def _swift_test_impl(ctx):
     ]
 
 swift_test = rule(
-    attrs = dicts.add(
-        binary_rule_attrs(
-            additional_deps_aspects = [_test_discovery_symbol_graph_aspect],
-            additional_deps_providers = [[SwiftCompilerPluginInfo]],
-            stamp_default = 0,
-        ),
-        {
-            "discover_tests": attr.bool(
-                default = True,
-                doc = """\
+    attrs = binary_rule_attrs(
+        additional_deps_aspects = [_test_discovery_symbol_graph_aspect],
+        additional_deps_providers = [[SwiftCompilerPluginInfo]],
+        stamp_default = 0,
+    ) | {
+        "discover_tests": attr.bool(
+            default = True,
+            doc = """\
 Determines whether or not tests are automatically discovered in the binary. The
 default value is `True`.
 
@@ -499,28 +496,27 @@ your own `main`. This allows you to write tests that use a framework other than
 Apple's `XCTest`. The only requirement of such a test is that it terminate with
 a zero exit code for success or a non-zero exit code for failure.
 """,
-                mandatory = False,
-            ),
-            "env_inherit": attr.string_list(
-                doc = """\
+            mandatory = False,
+        ),
+        "env_inherit": attr.string_list(
+            doc = """\
 Specifies additional environment variables to inherit from the external
 environment when the test is executed by `bazel test`.
 """,
+        ),
+        "_test_discoverer": attr.label(
+            cfg = config.exec(_DISCOVER_TESTS_EXEC_GROUP),
+            default = Label(
+                "@build_bazel_rules_swift//tools/test_discoverer",
             ),
-            "_test_discoverer": attr.label(
-                cfg = config.exec(_DISCOVER_TESTS_EXEC_GROUP),
-                default = Label(
-                    "@build_bazel_rules_swift//tools/test_discoverer",
-                ),
-                executable = True,
-            ),
-            "_test_runner_deps": attr.label_list(
-                default = [
-                    "@build_bazel_rules_swift//tools/test_observer",
-                ],
-            ),
-        },
-    ),
+            executable = True,
+        ),
+        "_test_runner_deps": attr.label_list(
+            default = [
+                "@build_bazel_rules_swift//tools/test_observer",
+            ],
+        ),
+    },
     doc = """\
 Compiles and links Swift code into an executable test target.
 

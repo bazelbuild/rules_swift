@@ -94,7 +94,6 @@ bzl_library(
         "//swift/internal:providers",
         "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
-        "@bazel_skylib//lib:dicts",
         "@rules_cc//cc/common",
     ],
 )
@@ -146,7 +145,6 @@ bzl_library(
         "//swift/internal:providers",
         "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
-        "@bazel_skylib//lib:dicts",
         "@rules_cc//cc/common",
     ],
 )
@@ -184,7 +182,6 @@ bzl_library(
         "//swift/internal:providers",
         "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
-        "@bazel_skylib//lib:dicts",
         "@rules_cc//cc/common",
     ],
 )
@@ -284,7 +281,6 @@ bzl_library(
         "//swift/internal:symbol_graph_extracting",
         "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
-        "@bazel_skylib//lib:dicts",
         "@rules_cc//cc/common",
     ],
 )

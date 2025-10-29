@@ -14,7 +14,6 @@
 
 """Common attributes used by multiple Swift build rules."""
 
-load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@build_bazel_rules_swift//swift:providers.bzl", "SwiftInfo")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load(":providers.bzl", "SwiftCompilerPluginInfo")
@@ -107,18 +106,16 @@ def swift_compilation_attrs(
         custom build rule to provide a similar interface to `swift_binary`,
         `swift_library`, and `swift_test`.
     """
-    return dicts.add(
-        swift_common_rule_attrs(
-            additional_deps_aspects = additional_deps_aspects,
-            additional_deps_providers = additional_deps_providers,
-        ),
-        {
-            "srcs": attr.label_list(
-                allow_empty = not requires_srcs,
-                allow_files = (
-                    ["swift"] + C_HEADER_EXTENSIONS + C_SOURCE_EXTENSIONS
-                ),
-                doc = """\
+    return swift_common_rule_attrs(
+        additional_deps_aspects = additional_deps_aspects,
+        additional_deps_providers = additional_deps_providers,
+    ) | {
+        "srcs": attr.label_list(
+            allow_empty = not requires_srcs,
+            allow_files = (
+                ["swift"] + C_HEADER_EXTENSIONS + C_SOURCE_EXTENSIONS
+            ),
+            doc = """\
 A list of source files that will be compiled into the library. These can be
 `.swift` files, or in the case of mixed-language modules, C/Objective-C source
 files may also be included. C/Objective-C source files must be ARC-compatible
@@ -133,24 +130,24 @@ targets can lead to binary bloat and/or symbol collisions. If specific sources
 need to be shared by multiple targets, consider factoring them out into their
 own `swift_library` instead.
 """,
-                flags = ["DIRECT_COMPILE_TIME_INPUT"],
-                mandatory = requires_srcs,
-            ),
-            "copts": attr.string_list(
-                doc = """\
+            flags = ["DIRECT_COMPILE_TIME_INPUT"],
+            mandatory = requires_srcs,
+        ),
+        "copts": attr.string_list(
+            doc = """\
 Additional compiler options that should be passed to `swiftc`. These strings are
 subject to `$(location ...)` expansion.
 """,
-            ),
-            "c_copts": attr.string_list(
-                doc = """\
+        ),
+        "c_copts": attr.string_list(
+            doc = """\
 Additional compiler options that should be passed to the C compiler when
 compiling any C/Objective-C sources that are part of a mixed language module.
 These strings are subject to `$(location ...)` expansion.
 """,
-            ),
-            "defines": attr.string_list(
-                doc = """\
+        ),
+        "defines": attr.string_list(
+            doc = """\
 A list of defines to add to the compilation command line.
 
 Note that unlike C-family languages, Swift defines do not have values; they are
@@ -163,33 +160,32 @@ it, so use this attribute with caution. It is preferred that you add defines
 directly to `copts`, only using this feature in the rare case that a library
 needs to propagate a symbol up to those that depend on it.
 """,
-            ),
-            "module_name": attr.string(
-                doc = """\
+        ),
+        "module_name": attr.string(
+            doc = """\
 The name of the Swift module being built.
 
 If left unspecified, the module name will be computed based on the target's
 build label, by stripping the leading `//` and replacing `/`, `:`, and other
 non-identifier characters with underscores.
 """,
-            ),
-            "plugins": attr.label_list(
-                cfg = config.exec(exec_group = "swift_plugins"),
-                doc = """\
+        ),
+        "plugins": attr.label_list(
+            cfg = config.exec(exec_group = "swift_plugins"),
+            doc = """\
 A list of `swift_compiler_plugin` targets that should be loaded by the compiler
 when compiling this module and any modules that directly depend on it.
 """,
-                providers = [[SwiftCompilerPluginInfo]],
-            ),
-            "swiftc_inputs": attr.label_list(
-                allow_files = True,
-                doc = """\
+            providers = [[SwiftCompilerPluginInfo]],
+        ),
+        "swiftc_inputs": attr.label_list(
+            allow_files = True,
+            doc = """\
 Additional files that are referenced using `$(location ...)` in attributes that
 support location expansion.
 """,
-            ),
-        },
-    )
+        ),
+    }
 
 def swift_config_attrs():
     """Returns the Starlark configuration flags and settings attributes.
@@ -280,16 +276,13 @@ def swift_library_rule_attrs(
         A new attribute dictionary that can be added to the attributes of a
         custom build rule to provide the same interface as `swift_library`.
     """
-    return dicts.add(
-        swift_compilation_attrs(
-            additional_deps_aspects = additional_deps_aspects,
-            requires_srcs = requires_srcs,
-        ),
-        swift_config_attrs(),
-        {
-            "hdrs": attr.label_list(
-                allow_files = C_HEADER_EXTENSIONS,
-                doc = """\
+    return swift_compilation_attrs(
+        additional_deps_aspects = additional_deps_aspects,
+        requires_srcs = requires_srcs,
+    ) | swift_config_attrs() | {
+        "hdrs": attr.label_list(
+            allow_files = C_HEADER_EXTENSIONS,
+            doc = """\
 A list if C/Objective-C header files that will be exported as public headers of
 the library.
 
@@ -300,10 +293,10 @@ refer to symbols exported from your Swift `srcs`, then you must forward-declare
 them (forward declarations to symbols in the same module are not problematic,
 unlike forward declarations to symbols in other modules).
 """,
-            ),
-            "library_evolution": attr.bool(
-                default = False,
-                doc = """\
+        ),
+        "library_evolution": attr.bool(
+            default = False,
+            doc = """\
 Indicates whether the Swift code should be compiled with library evolution mode
 enabled.
 
@@ -313,18 +306,18 @@ framework that will be distributed for use outside of the Bazel build graph.
 Setting this to true will compile the module with the `-library-evolution` flag
 and emit a `.swiftinterface` file as one of the compilation outputs.
 """,
-                mandatory = False,
-            ),
-            "linkopts": attr.string_list(
-                doc = """\
+            mandatory = False,
+        ),
+        "linkopts": attr.string_list(
+            doc = """\
 Additional linker options that should be passed to the linker for the binary
 that depends on this target. These strings are subject to `$(location ...)`
 expansion.
 """,
-            ),
-            "alwayslink": attr.bool(
-                default = True,
-                doc = """\
+        ),
+        "alwayslink": attr.bool(
+            default = True,
+            doc = """\
 If `False`, any binary that depends (directly or indirectly) on this Swift module
 will only link in all the object files for the files listed in `srcs` when there
 is a direct symbol reference.
@@ -345,9 +338,9 @@ Swift Package Manager always passes the individual `.o` files to the linker
 instead of using intermediate static libraries, so it effectively is the same
 as `alwayslink = True`.
 """,
-            ),
-            "generated_header_name": attr.string(
-                doc = """\
+        ),
+        "generated_header_name": attr.string(
+            doc = """\
 The name of the generated Objective-C interface header. This name must end with
 a `.h` extension and cannot contain any path separators.
 
@@ -357,11 +350,11 @@ header `${target_name}-Swift.h`.
 It is an error to specify a value for this attribute when `generates_header` is
 False.
 """,
-                mandatory = False,
-            ),
-            "generates_header": attr.bool(
-                default = False,
-                doc = """\
+            mandatory = False,
+        ),
+        "generates_header": attr.bool(
+            default = False,
+            doc = """\
 If True, an Objective-C header will be generated for this target, in the same
 build package where the target is defined. By default, the name of the header is
 `${target_name}-Swift.h`; this can be changed using the `generated_header_name`
@@ -385,10 +378,9 @@ exported from Swift, then it must forward-declare it (forward declarations to
 symbols in the same module are not problematic, unlike forward declarations to
 symbols in other modules).
 """,
-                mandatory = False,
-            ),
-        },
-    )
+            mandatory = False,
+        ),
+    }
 
 def swift_toolchain_driver_attrs():
     """Returns attributes used to attach custom drivers to toolchains.

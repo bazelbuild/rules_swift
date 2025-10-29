@@ -14,7 +14,6 @@
 
 """Implementation of the `swift_library` rule."""
 
-load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(
     "@build_bazel_rules_swift//swift/internal:attrs.bzl",
     "swift_deps_attr",
@@ -276,22 +275,19 @@ def _swift_library_impl(ctx):
     ]
 
 swift_library = rule(
-    attrs = dicts.add(
-        swift_library_rule_attrs(additional_deps_aspects = [
-            swift_clang_module_aspect,
-        ]),
-        {
-            "private_deps": swift_deps_attr(
-                aspects = [swift_clang_module_aspect],
-                doc = """\
+    attrs = swift_library_rule_attrs(additional_deps_aspects = [
+        swift_clang_module_aspect,
+    ]) | {
+        "private_deps": swift_deps_attr(
+            aspects = [swift_clang_module_aspect],
+            doc = """\
 A list of targets that are implementation-only dependencies of the target being
 built. Libraries/linker flags from these dependencies will be propagated to
 dependent for linking, but artifacts/flags required for compilation (such as
 .swiftmodule files, C headers, and search paths) will not be propagated.
 """,
-            ),
-        },
-    ),
+        ),
+    },
     doc = """\
 Compiles and links Swift code into a static library and Swift module.
 """,
