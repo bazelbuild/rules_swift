@@ -5,13 +5,26 @@
 load("@rules_cc//cc:objc_library.bzl", "objc_library")
 load("//swift:swift_binary.bzl", "swift_binary")
 load("//swift:swift_library.bzl", "swift_library")
+load("//swift:swift_interop_hint.bzl", "swift_interop_hint")
 
 licenses(["notice"])
+
+swift_interop_hint(
+    name = "PrintStream_swift_interop",
+    module_name = "examples_apple_objc_interop_modulemap_PrintStream",
+    system_pcms = select({
+        # this lets objc library to depend on the same system_sdks as the swift library
+        "//conditions:default": [
+            "@build_bazel_rules_swift//system_sdks:system_sdks",
+        ],
+    }),
+)
 
 objc_library(
     name = "PrintStream",
     srcs = ["OIPrintStream.m"],
     hdrs = ["OIPrintStream.h"],
+    aspect_hints = [":PrintStream_swift_interop"],
     target_compatible_with = ["@platforms//os:macos"],
 )
 

@@ -1348,6 +1348,7 @@ def compile_action_configs(
                     SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                     SWIFT_ACTION_DERIVE_FILES,
                     SWIFT_ACTION_DUMP_AST,
+                    SWIFT_ACTION_PRECOMPILE_C_MODULE,
                 ],
                 configurators = [
                     lambda _, args: args.add_all(
