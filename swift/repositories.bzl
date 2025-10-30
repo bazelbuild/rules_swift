@@ -66,7 +66,7 @@ def swift_rules_dependencies(include_bzlmod_ready_dependencies = True):
             name = "rules_cc",
             sha256 = "472ddca8cec1e64ad78e4f0cabbec55936a3baddbe7bef072764ca91504bd523",
             strip_prefix = "rules_cc-0.2.13",
-            url = "https://github.com/bazelbuild/rules_cc/releases/download/0.2.13/rules_cc-0.2.13.tar.gz",i
+            url = "https://github.com/bazelbuild/rules_cc/releases/download/0.2.13/rules_cc-0.2.13.tar.gz",
         )
 
         _maybe(
