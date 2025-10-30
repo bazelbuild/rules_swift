@@ -1,0 +1,111 @@
+load(
+    "@build_bazel_rules_swift//swift:swift_interop_hint.bzl",
+    "swift_interop_hint",
+)
+load("@build_bazel_rules_swift//swift:swift_library.bzl", "swift_library")
+
+cc_library(
+    name = "CGRPCNIOTransportZlib",
+    srcs = glob([
+        "Sources/CGRPCNIOTransportZlib/**/*.c",
+    ]),
+    hdrs = glob([
+        "Sources/CGRPCNIOTransportZlib/**/*.h",
+    ]),
+    aspect_hints = [":CGRPCZLIB_interop"],
+    includes = ["Sources/CGRPCNIOTransportZlib/include"],
+    linkopts = ["-lz"],
+)
+
+swift_interop_hint(
+    name = "CGRPCZLIB_interop",
+    module_name = "CGRPCNIOTransportZlib",
+)
+
+swift_library(
+    name = "GRPCNIOTransportHTTP2",
+    srcs = glob([
+        "Sources/GRPCNIOTransportHTTP2/**/*.swift",
+    ]),
+    defines = ["SWIFT_PACKAGE"],
+    module_name = "GRPCNIOTransportHTTP2",
+    package_name = "GRPCNIOTransport",
+    visibility = ["//visibility:public"],
+    features = [
+        "swift.upcoming.ExistentialAny",
+        "swift.upcoming.InternalImportsByDefault",
+        "swift.upcoming.MemberImportVisibility",
+        "swift.enable_v6",
+    ],
+    deps = [
+        ":GRPCNIOTransportHTTP2Posix",
+        ":GRPCNIOTransportHTTP2TransportServices",
+    ],
+)
+
+swift_library(
+    name = "GRPCNIOTransportCore",
+    srcs = glob([
+        "Sources/GRPCNIOTransportCore/**/*.swift",
+    ]),
+    defines = ["SWIFT_PACKAGE"],
+    module_name = "GRPCNIOTransportCore",
+    package_name = "GRPCNIOTransport",
+    visibility = ["//visibility:public"],
+    features = [
+        "swift.upcoming.ExistentialAny",
+        "swift.upcoming.InternalImportsByDefault",
+        "swift.upcoming.MemberImportVisibility",
+    ],
+    deps = [
+        "@com_github_grpc_grpc_swift//:GRPCCore",
+        # "@com_github_apple_swift_nio//:NIOCore",
+        "@com_github_apple_swift_nio_http2//:NIOHTTP2",
+        "@com_github_apple_swift_nio_extras//:NIOExtras",
+        ":CGRPCNIOTransportZlib",
+    ],
+)
+
+swift_library(
+    name = "GRPCNIOTransportHTTP2Posix",
+    srcs = glob([
+        "Sources/GRPCNIOTransportHTTP2Posix/**/*.swift",
+    ]),
+    defines = ["SWIFT_PACKAGE"],
+    module_name = "GRPCNIOTransportHTTP2Posix",
+    package_name = "GRPCNIOTransport",
+    visibility = ["//visibility:public"],
+    features = [
+        "swift.upcoming.ExistentialAny",
+        "swift.upcoming.InternalImportsByDefault",
+        "swift.upcoming.MemberImportVisibility",
+    ],
+    deps = [
+        ":GRPCNIOTransportCore",
+        "@com_github_grpc_grpc_swift//:GRPCCore",
+        "@com_github_apple_swift_nio//:NIOPosix",
+        "@com_github_apple_swift_nio_ssl//:NIOSSL",
+    ],
+)
+
+swift_library(
+    name = "GRPCNIOTransportHTTP2TransportServices",
+    srcs = glob([
+        "Sources/GRPCNIOTransportHTTP2TransportServices/**/*.swift",
+    ]),
+    defines = ["SWIFT_PACKAGE"],
+    module_name = "GRPCNIOTransportHTTP2TransportServices",
+    package_name = "GRPCNIOTransport",
+    visibility = ["//visibility:public"],
+    features = [
+        "swift.upcoming.ExistentialAny",
+        "swift.upcoming.InternalImportsByDefault",
+        "swift.upcoming.MemberImportVisibility",
+        "swift.enable_v6",
+    ],
+    deps = [
+        ":GRPCNIOTransportCore",
+        "@com_github_grpc_grpc_swift//:GRPCCore",
+        "@com_github_apple_swift_nio_transport_services//:NIOTransportServices",
+    ],
+)

@@ -51,10 +51,14 @@ cc_library(
     ]),
     hdrs = glob([
         "Sources/CNIOBoringSSL/include/**/*.h",
-        "Sources/CNIOBoringSSL/include/**/*.inc",
+        "Sources/CNIOBoringSSL/**/*.inc",
     ]),
     aspect_hints = [":CNIOBoringSSL_interop"],
-    copts = [],
+    copts = [
+        "-D_GNU_SOURCE",
+        "-D_POSIX_C_SOURCE=200112L",
+        "-D_DARWIN_C_SOURCE",
+    ],
     includes = ["Sources/CNIOBoringSSL/include"],
     visibility = ["//visibility:public"],
     deps = [],

@@ -30,7 +30,7 @@ alias(
 
 universal_binary(
     name = "universal_protoc-gen-grpc-swift",
-    binary = "@com_github_grpc_grpc_swift//:protoc-gen-grpc-swift",
+    binary = "@com_github_grpc_grpc_swift_protobuf//:protoc-gen-grpc-swift",
     tags = ["manual"],
     target_compatible_with = select({
         "@platforms//os:windows": ["@platforms//:incompatible"],
@@ -42,7 +42,7 @@ alias(
     name = "protoc-gen-grpc-swift",
     actual = select({
         "//swift:universal_tools_config": ":universal_protoc-gen-grpc-swift",
-        "//conditions:default": "@com_github_grpc_grpc_swift//:protoc-gen-grpc-swift",
+        "//conditions:default": "@com_github_grpc_grpc_swift_protobuf//:protoc-gen-grpc-swift",
     }),
     target_compatible_with = select({
         "@platforms//os:windows": ["@platforms//:incompatible"],
