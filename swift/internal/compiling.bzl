@@ -556,7 +556,7 @@ def compile(
     # `compilation_contexts` instead of merging `CcInfo`s. This is because
     # they don't need the merged linking context to disable framework
     # autolinking. If we ever remove our need for `-disable-autolink-framework`,
-    # we should change this to match `upstream`. Same for `apple_common.Objc`.
+    # we should change this to match `upstream`. Same for `ObjcInfo`.
     compilation_contexts = [
         cc_info.compilation_context
         for cc_info in cc_infos
