@@ -570,6 +570,10 @@ def _is_xcode_at_least_version(xcode_config, desired_version):
         least as high as the given version.
     """
     current_version = xcode_config.xcode_version()
+
+    if str(current_version).startswith("/"):
+        return True
+
     if not current_version:
         fail("Could not determine Xcode version at all. This likely means " +
              "Xcode isn't available; if you think this is a mistake, please " +
