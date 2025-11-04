@@ -39,6 +39,8 @@ load(
 # buildifier: disable=bzl-visibility
 load(
     "//swift/internal:utils.bzl",
+    "expand_locations",
+    "expand_make_variables",
     "get_providers",
     "include_developer_search_paths",
 )
@@ -260,12 +262,20 @@ def compile_swift_protos_for_target(
         unsupported_features = ctx.disabled_features,
     )
 
+    additional_inputs = getattr(ctx.files, "swiftc_inputs", [])
+    swiftc_inputs = getattr(attr, "swiftc_inputs", [])
+    copts = expand_locations(ctx, getattr(attr, "copts", []), swiftc_inputs)
+    copts = expand_make_variables(ctx, copts, "copts")
+    linkopts = expand_locations(ctx, getattr(attr, "linkopts", []), swiftc_inputs)
+    linkopts = expand_make_variables(ctx, linkopts, "linkopts")
+
     # Compile the generated Swift source files as a module:
     include_dev_srch_paths = include_developer_search_paths(attr)
     compile_result = swift_common.compile(
         actions = ctx.actions,
+        additional_inputs = additional_inputs,
         cc_infos = get_providers(compiler_deps, CcInfo),
-        copts = ["-parse-as-library"] + getattr(attr, "copts", []),
+        copts = ["-parse-as-library"] + copts,
         feature_configuration = feature_configuration,
         include_dev_srch_paths = include_dev_srch_paths,
         module_name = module_name,
@@ -296,6 +306,7 @@ def compile_swift_protos_for_target(
             ],
             module_context = module_context,
             swift_toolchain = swift_toolchain,
+            user_link_flags = linkopts,
         )
     )
 

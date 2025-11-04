@@ -520,10 +520,7 @@ def compile(
 
     if split_derived_file_generation:
         all_compile_outputs = compact([
-            compile_outputs.swiftinterface_file,
-            compile_outputs.private_swiftinterface_file,
             compile_outputs.indexstore_directory,
-            compile_outputs.macro_expansion_directory,
         ]) + compile_outputs.object_files + compile_outputs.const_values_files
         all_derived_outputs = compact([
             # The `.swiftmodule` file is explicitly listed as the first output
@@ -531,9 +528,12 @@ def compile(
             # various things (such as the filename prefix for param files generated
             # for that action). This guarantees some predictability.
             compile_outputs.swiftmodule_file,
-            compile_outputs.swiftdoc_file,
-            compile_outputs.swiftsourceinfo_file,
             compile_outputs.generated_header_file,
+            compile_outputs.macro_expansion_directory,
+            compile_outputs.swiftdoc_file,
+            compile_outputs.swiftinterface_file,
+            compile_outputs.private_swiftinterface_file,
+            compile_outputs.swiftsourceinfo_file,
         ])
     else:
         all_compile_outputs = compact([
@@ -1448,7 +1448,7 @@ def _declare_per_source_output_file(actions, extension, target_name, src):
         The declared `File`.
     """
     objs_dir = "{}_objs".format(target_name)
-    owner_rel_path = owner_relative_path(src).replace(" ", "__SPACE__")
+    owner_rel_path = owner_relative_path(src)
     basename = paths.basename(owner_rel_path)
     dirname = paths.join(objs_dir, paths.dirname(owner_rel_path))
 

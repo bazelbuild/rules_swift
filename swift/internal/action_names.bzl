@@ -67,5 +67,5 @@ def all_compile_action_names():
     """Returns all actions that compile source files."""
     return [
         SWIFT_ACTION_COMPILE,
-        SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+        SWIFT_ACTION_DERIVE_FILES,
     ]

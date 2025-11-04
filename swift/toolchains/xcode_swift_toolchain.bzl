@@ -56,6 +56,7 @@ load(
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
     "SWIFT_FEATURE_DISABLE_SWIFT_SANDBOX",
     "SWIFT_FEATURE_FILE_PREFIX_MAP",
+    "SWIFT_FEATURE_MODULE_HOME_IS_CWD",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_REMAP_XCODE_PATH",
     "SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES",
@@ -627,8 +628,8 @@ def _xcode_swift_toolchain_impl(ctx):
     apple_toolchain = apple_common.apple_toolchain()
     cc_toolchain = find_cpp_toolchain(ctx)
 
-    target_triple = ctx.var.get("CC_TARGET_TRIPLE") or target_triples.normalize_for_swift(
-        target_triples.parse(cc_toolchain.target_gnu_system_name),
+    target_triple = target_triples.normalize_for_swift(
+        target_triples.parse(ctx.var.get("CC_TARGET_TRIPLE") or cc_toolchain.target_gnu_system_name),
     )
 
     xcode_config = ctx.attr._xcode_config[apple_common.XcodeVersionConfig]
@@ -686,7 +687,7 @@ def _xcode_swift_toolchain_impl(ctx):
     requested_features = features_for_build_modes(
         ctx,
         cpp_fragment = cpp_fragment,
-    ) + wmo_features_from_swiftcopts(swiftcopts = swiftcopts)
+    ) + wmo_features_from_swiftcopts(swiftcopts = ctx.attr.copts + swiftcopts)
     requested_features.extend(ctx.features)
     requested_features.extend(ctx.attr.default_enabled_features)
     requested_features.extend(default_features_for_toolchain(
@@ -708,7 +709,16 @@ def _xcode_swift_toolchain_impl(ctx):
         requested_features.append(SWIFT_FEATURE_DISABLE_SWIFT_SANDBOX)
 
     if _is_xcode_at_least_version(xcode_config, "16.0"):
-        requested_features.append(SWIFT_FEATURE__SUPPORTS_V6)
+        requested_features.extend([
+            SWIFT_FEATURE__SUPPORTS_V6,
+            # Ensure hermetic PCM files (no absolute workspace paths). This flag
+            # is actually supported on Xcode 15.x as well, but it's bugged; a
+            # `MODULE_DIRECTORY` field remains in the PCM file that has the
+            # absolute workspace path, so it's not hermetic, and worse, it
+            # causes other compilation errors in the unfortunately common case
+            # where two modules contain the same header.
+            SWIFT_FEATURE_MODULE_HOME_IS_CWD,
+        ])
 
     unsupported_features = ctx.disabled_features + [
         SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD,
@@ -736,12 +746,12 @@ def _xcode_swift_toolchain_impl(ctx):
         xcode_config = xcode_config,
     )
     all_action_configs = _all_action_configs(
-        additional_objc_copts = command_line_objc_copts(
+        additional_objc_copts = ctx.attr.objc_copts + command_line_objc_copts(
             ctx.var["COMPILATION_MODE"],
             ctx.fragments.cpp,
             ctx.fragments.objc,
         ),
-        additional_swiftc_copts = swiftcopts,
+        additional_swiftc_copts = ctx.attr.copts + swiftcopts,
         apple_toolchain = apple_toolchain,
         generated_header_rewriter = generated_header_rewriter,
         needs_resource_directory = swift_executable or toolchain_root,
@@ -929,6 +939,17 @@ configuration options that are applied to targets on a per-package basis.
                 doc = """\
 The label of the file specifying a list of protocols for extraction of conformances'
 const values.
+""",
+            ),
+            "copts": attr.string_list(
+                doc = """\
+A list of additional Swift compiler flags that should be passed to Swift compile actions.
+""",
+            ),
+            "objc_copts": attr.string_list(
+                doc = """\
+A list of additional Objective-C compiler flags that should be passed (preceded by `-Xcc`)
+to Swift compile actions *and* Swift explicit module precompile actions.
 """,
             ),
             "_cc_toolchain": attr.label(

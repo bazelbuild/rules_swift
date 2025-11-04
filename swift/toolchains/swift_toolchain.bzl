@@ -416,8 +416,8 @@ def _swift_toolchain_impl(ctx):
         os = ctx.attr.os,
         target_system_name = cc_toolchain.target_gnu_system_name,
     )
-    target_triple = ctx.var.get("CC_TARGET_TRIPLE") or target_triples.normalize_for_swift(
-        target_triples.parse(target_system_name),
+    target_triple = target_triples.normalize_for_swift(
+        target_triples.parse(ctx.var.get("CC_TARGET_TRIPLE") or target_system_name),
     )
 
     if "clang" not in cc_toolchain.compiler:
@@ -491,7 +491,7 @@ def _swift_toolchain_impl(ctx):
         target_triple = target_triple,
         sdkroot = ctx.attr.sdkroot,
         xctest_version = ctx.attr.xctest_version,
-        additional_swiftc_copts = swiftcopts,
+        additional_swiftc_copts = ctx.attr.copts + swiftcopts,
     )
 
     if ctx.attr.os == "windows":
@@ -626,6 +626,11 @@ configuration options that are applied to targets on a per-package basis.
             "version_file": attr.label(
                 mandatory = True,
                 allow_single_file = True,
+            ),
+            "copts": attr.string_list(
+                doc = """\
+A list of additional Swift compiler flags that should be passed to Swift compile actions.
+""",
             ),
             "_cc_toolchain": attr.label(
                 default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),

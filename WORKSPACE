@@ -81,3 +81,11 @@ load("@rules_shell//shell:repositories.bzl", "rules_shell_dependencies", "rules_
 rules_shell_dependencies()
 
 rules_shell_toolchains()
+
+load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
+
+protobuf_deps()
+
+load("@rules_java//java:rules_java_deps.bzl", "rules_java_dependencies")
+
+rules_java_dependencies()
