@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import Foundation
-import examples_apple_objc_interop_modulemap_PrintStream
+import PrintStream
 
 @objc(OIPrinter)
 public class Printer: NSObject {

@@ -63,8 +63,7 @@ tasks:
 
   macos_last_green:
     name: "Last Green Bazel"
-    # TODO: Use `last_green` when https://github.com/bazelbuild/bazel/pull/27330 merges
-    bazel: f2985041cb1170be4545049e1b4d25eea8a84660
+    bazel: last_green
     <<: *mac_common
 
   macos_latest_head_deps:
@@ -99,8 +98,7 @@ tasks:
 
   ubuntu2004_last_green:
     name: "Last Green Bazel"
-    # TODO: Use `last_green` when https://github.com/bazelbuild/bazel/pull/27330 merges
-    bazel: f2985041cb1170be4545049e1b4d25eea8a84660
+    bazel: last_green
     shell_commands:
       - "echo --- Downloading and extracting Swift $SWIFT_VERSION to $SWIFT_HOME"
       - "mkdir $SWIFT_HOME"
