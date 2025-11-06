@@ -62,7 +62,7 @@ tasks:
     <<: *mac_common
 
   macos_rolling:
-    name: "Current LTS"
+    name: "Latest rolling"
     bazel: rolling
     <<: *mac_common
 
@@ -102,7 +102,7 @@ tasks:
     <<: *linux_common
 
   ubuntu2004_rolling:
-    name: "Current LTS"
+    name: "Latest rolling"
     bazel: rolling
     shell_commands:
       - "echo --- Downloading and extracting Swift $SWIFT_VERSION to $SWIFT_HOME"
