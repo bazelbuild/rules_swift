@@ -61,6 +61,11 @@ tasks:
     bazel: latest
     <<: *mac_common
 
+  macos_rolling:
+    name: "Current LTS"
+    bazel: rolling
+    <<: *mac_common
+
   macos_last_green:
     name: "Last Green Bazel"
     bazel: last_green
@@ -90,6 +95,15 @@ tasks:
   ubuntu2004_latest:
     name: "Current LTS"
     bazel: latest
+    shell_commands:
+      - "echo --- Downloading and extracting Swift $SWIFT_VERSION to $SWIFT_HOME"
+      - "mkdir $SWIFT_HOME"
+      - "curl https://download.swift.org/swift-${SWIFT_VERSION}-release/ubuntu2004/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu20.04.tar.gz | tar xvz --strip-components=1 -C $SWIFT_HOME"
+    <<: *linux_common
+
+  ubuntu2004_rolling:
+    name: "Current LTS"
+    bazel: rolling
     shell_commands:
       - "echo --- Downloading and extracting Swift $SWIFT_VERSION to $SWIFT_HOME"
       - "mkdir $SWIFT_HOME"
