@@ -68,7 +68,8 @@ tasks:
 
   macos_last_green:
     name: "Last Green Bazel"
-    bazel: last_green
+    # TODO: Move back to last_green once rules_cc imports are fixed
+    bazel: 5b1f4bc6fb7d29746c9886a450e1fba1f9b8982a
     <<: *mac_common
 
   macos_latest_head_deps:
@@ -112,7 +113,8 @@ tasks:
 
   ubuntu2004_last_green:
     name: "Last Green Bazel"
-    bazel: last_green
+    # TODO: Move back to last_green once rules_cc imports are fixed
+    bazel: 5b1f4bc6fb7d29746c9886a450e1fba1f9b8982a
     shell_commands:
       - "echo --- Downloading and extracting Swift $SWIFT_VERSION to $SWIFT_HOME"
       - "mkdir $SWIFT_HOME"
