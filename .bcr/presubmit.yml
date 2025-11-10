@@ -6,10 +6,8 @@ shell_commands: &shell_commands
 matrix:
   bazel:
   - 7.x
-  # TODO: Uncomment once Bazel 8 is released
-  # - 8.x
-  # TODO: Uncomment once we support HEAD again
-  # - latest
+  - 8.x
+  - rolling
   platform:
   - ubuntu2004
 tasks:
