@@ -33,8 +33,10 @@ load(
     "SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
+    "SWIFT_FEATURE_USE_C_MODULES",
+    "SWIFT_FEATURE_EMIT_C_MODULE",
 )
-load("//swift/internal:features.bzl", "configure_features")
+load("//swift/internal:features.bzl", "configure_features", "is_feature_enabled")
 load(
     "//swift/internal:linking.bzl",
     "create_linking_context_from_compilation_outputs",
@@ -158,6 +160,18 @@ def _swift_library_impl(ctx):
 
     swift_infos = get_providers(deps, SwiftInfo)
     private_swift_infos = get_providers(private_deps, SwiftInfo)
+
+    if is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_USE_C_MODULES,
+    ) and is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_EMIT_C_MODULE,
+    ):
+        # only add system_deps if both features are enabled
+        system_deps = ctx.attr.system_deps
+        system_swift_infos = get_providers(system_deps, SwiftInfo)
+        swift_infos.extend(system_swift_infos)
 
     if ctx.attr.generates_header:
         generated_header_name = (
@@ -288,6 +302,20 @@ dependent for linking, but artifacts/flags required for compilation (such as
             # TODO(b/301253335): Once AEGs are enabled in Bazel, set the swift toolchain type in the
             # exec configuration of `plugins` attribute and enable AEGs in swift_library.
             "_use_auto_exec_groups": attr.bool(default = False),
+            # TODO : system deps
+            "system_deps": swift_deps_attr(
+                aspects = [swift_clang_module_aspect],
+                doc = """\
+Default and universal system modules necessary for Swift compilation with explicit C modules.
+It's desired that each swift_library rule target defines its own system module dependencies, 
+however, we are defining a long list of commonly used system modules here just to ease the burden 
+of the developers during the migration to explicit C modules. This attribute should be removed once 
+the explicit c modules are fully adopted and enabled by default.
+""",
+                default = [
+                    "//system_sdks:system_sdks",
+                ],
+            )
         },
     ),
     doc = """\

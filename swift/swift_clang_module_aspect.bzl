@@ -409,7 +409,7 @@ def _handle_module(
     )
 
     output_groups = {}
-
+    
     pcm_outputs = precompile_clang_module(
         actions = aspect_ctx.actions,
         cc_compilation_context = compilation_context_to_compile,
@@ -421,6 +421,7 @@ def _handle_module(
         target_name = target.label.name,
         toolchain_type = toolchain_type,
     )
+
     precompiled_module = getattr(pcm_outputs, "pcm_file", None)
     pcm_indexstore = getattr(pcm_outputs, "indexstore_directory", None)
 
@@ -734,6 +735,10 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx, toolchain_type):
         # nothing (not even transitive dependencies).
         if interop_info.suppressed:
             return providers
+
+        # Add system_pcms passed via `swift_interop_hint` to swift_infos 
+        for system_pcm in interop_info.system_pcms:
+            swift_infos.append(system_pcm[SwiftInfo])
 
         exclude_headers = interop_info.exclude_headers
         module_map_file = interop_info.module_map

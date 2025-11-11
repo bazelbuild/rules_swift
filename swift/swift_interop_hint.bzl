@@ -24,6 +24,7 @@ def _swift_interop_hint_impl(ctx):
         module_map = ctx.file.module_map,
         module_name = ctx.attr.module_name,
         suppressed = ctx.attr.suppressed,
+        system_pcms = ctx.attr.system_pcms,
     )
 
 swift_interop_hint = rule(
@@ -73,6 +74,14 @@ other non-identifier characters with underscores.
             doc = """\
 If `True`, the hinted target should suppress any module that it would otherwise
 generate.
+""",
+            mandatory = False,
+        ),
+        "system_pcms": attr.label_list(
+            doc = """\
+A list of precompiled clang modules with `SwiftInfo` providers for system modules.
+This is used to define system pcm dependencies and eventually propagated to swift_interop_info.
+swift_interop_info will pass those to compile actions. 
 """,
             mandatory = False,
         ),
