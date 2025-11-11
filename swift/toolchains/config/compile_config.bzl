@@ -57,6 +57,7 @@ load(
     "SWIFT_FEATURE_ENABLE_CPP17_INTEROP",
     "SWIFT_FEATURE_ENABLE_CPP20_INTEROP",
     "SWIFT_FEATURE_ENABLE_CPP23_INTEROP",
+    "SWIFT_FEATURE_ENABLE_EMBEDDED",
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES",
     "SWIFT_FEATURE_ENABLE_TESTING",
@@ -386,6 +387,7 @@ def compile_action_configs(
             features = [
                 [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_WMO],
                 [SWIFT_FEATURE__WMO_IN_SWIFTCOPTS],
+                [SWIFT_FEATURE_ENABLE_EMBEDDED],
             ],
         ),
 
@@ -1092,6 +1094,7 @@ def compile_action_configs(
             not_features = [
                 [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_WMO],
                 [SWIFT_FEATURE__WMO_IN_SWIFTCOPTS],
+                [SWIFT_FEATURE_ENABLE_EMBEDDED],
             ],
         ),
 
@@ -1112,6 +1115,7 @@ def compile_action_configs(
             features = [
                 [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_WMO],
                 [SWIFT_FEATURE__WMO_IN_SWIFTCOPTS],
+                [SWIFT_FEATURE_ENABLE_EMBEDDED],
             ],
             not_features = [SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS],
         ),
@@ -1335,6 +1339,17 @@ def compile_action_configs(
             ],
             features = [
                 SWIFT_FEATURE_ENABLE_CPP23_INTEROP,
+            ],
+        ),
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_COMPILE,
+            ],
+            configurators = [
+                add_arg("-enable-experimental-feature", "Embedded"),
+            ],
+            features = [
+                SWIFT_FEATURE_ENABLE_EMBEDDED,
             ],
         ),
     ]
