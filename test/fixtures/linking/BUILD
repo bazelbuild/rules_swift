@@ -34,6 +34,29 @@ cc_binary(
     deps = [":lib"],
 )
 
+swift_binary(
+    name = "bin_with_additional_linker_inputs",
+    srcs = ["main.swift"],
+    additional_linker_inputs = ["test_data.bin"],
+    linkopts = [
+        "-Wl,-sectcreate,__TEXT,__test_section,$(execpath test_data.bin)",
+    ],
+    tags = FIXTURE_TAGS,
+)
+
+swift_binary(
+    name = "bin_with_empty_additional_linker_inputs",
+    srcs = ["main.swift"],
+    additional_linker_inputs = [],
+    tags = FIXTURE_TAGS,
+)
+
+swift_binary(
+    name = "bin_without_additional_linker_inputs",
+    srcs = ["main.swift"],
+    tags = FIXTURE_TAGS,
+)
+
 bzl_library(
     name = "fake_framework",
     srcs = ["fake_framework.bzl"],
