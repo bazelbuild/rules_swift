@@ -432,6 +432,8 @@ def _swift_toolchain_impl(ctx):
             ctx.attr.xctest_version,
             ctx.label,
         )
+    elif ctx.attr.os == "none":
+        swift_linkopts_cc_info = CcInfo()
     else:
         swift_linkopts_cc_info = _swift_unix_linkopts_cc_info(
             ctx.attr.arch,
