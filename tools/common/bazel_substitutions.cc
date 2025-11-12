@@ -34,10 +34,17 @@ static const char kBazelXcodeDeveloperDir[] = "__BAZEL_XCODE_DEVELOPER_DIR__";
 // at runtime.
 static const char kBazelXcodeSdkRoot[] = "__BAZEL_XCODE_SDKROOT__";
 
-// The placeholder string used by the Apple and Swift rules to be replaced with
-// the absolute path to the custom toolchain being used
-static const char kBazelToolchainPath[] =
-    "__BAZEL_CUSTOM_XCODE_TOOLCHAIN_PATH__";
+// The placeholder string used by Bazel that should be replaced by the swift
+// toolchain root directory. For instance:
+// * when using the toolchain within Xcode, this will be something like this:
+//   .../Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain
+// * when using a standalone non-Xcode toolchain, this will be something like:
+//   .../swift-6.2-RELEASE.xctoolchain
+// Either way, swift binaries are expected to be found at this location under
+// usr/bin, swift standard libraries are expected to be found at usr/lib/swift,
+// etc...
+static const char kBazelSwiftToolchainPath[] =
+    "__BAZEL_SWIFT_TOOLCHAIN_PATH__";
 
 // Returns the value of the given environment variable, or the empty string if
 // it wasn't set.
@@ -60,17 +67,13 @@ std::string GetToolchainPath() {
 #endif
 
   char *toolchain_id = getenv("TOOLCHAINS");
-  if (toolchain_id == nullptr) {
-    return "";
-  }
-
   std::ostringstream output_stream;
   int exit_code =
-      RunSubProcess({"/usr/bin/xcrun", "--find", "clang", "--toolchain", toolchain_id},
+      RunSubProcess({"/usr/bin/xcrun", "--find", "clang"},
                     /*env=*/nullptr, &output_stream, /*stdout_to_stderr=*/true);
   if (exit_code != 0) {
-    std::cerr << output_stream.str() << "Error: TOOLCHAINS was set to '"
-              << toolchain_id << "' but xcrun failed when searching for that ID"
+    std::cerr << output_stream.str() << "Error: `TOOLCHAINS=" << toolchain_id
+              << "xcrun --find clang` failed with error code " << exit_code
               << std::endl;
     exit(EXIT_FAILURE);
   }
@@ -79,8 +82,8 @@ std::string GetToolchainPath() {
     std::cerr << "Error: TOOLCHAINS was set to '" << toolchain_id
               << "' but no toolchain with that ID was found" << std::endl;
     exit(EXIT_FAILURE);
-  } else if (output_stream.str().find("XcodeDefault.xctoolchain") !=
-             std::string::npos) {
+  } else if ((toolchain_id != nullptr)
+             && output_stream.str().find("XcodeDefault.xctoolchain") != std::string::npos) {
     // NOTE: Ideally xcrun would fail if the toolchain we asked for didn't exist
     // but it falls back to the DEVELOPER_DIR instead, so we have to check the
     // output ourselves.
@@ -110,7 +113,7 @@ BazelPlaceholderSubstitutions::BazelPlaceholderSubstitutions() {
       {kBazelXcodeSdkRoot, PlaceholderResolver([]() {
          return GetAppleEnvironmentVariable("SDKROOT");
        })},
-      {kBazelToolchainPath,
+      {kBazelSwiftToolchainPath,
        PlaceholderResolver([]() { return GetToolchainPath(); })},
   };
 }
