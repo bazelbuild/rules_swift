@@ -43,6 +43,7 @@ load(
     "SWIFT_ACTION_COMPILE_MODULE_INTERFACE",
     "SWIFT_ACTION_DERIVE_FILES",
     "SWIFT_ACTION_DUMP_AST",
+    "SWIFT_ACTION_MODULEWRAP",
     "SWIFT_ACTION_PRECOMPILE_C_MODULE",
     "SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT",
     "SWIFT_ACTION_SYNTHESIZE_INTERFACE",
@@ -333,6 +334,7 @@ def _all_action_configs(
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
+                SWIFT_ACTION_MODULEWRAP,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
                 SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
                 SWIFT_ACTION_SYNTHESIZE_INTERFACE,
@@ -570,6 +572,10 @@ def _is_xcode_at_least_version(xcode_config, desired_version):
         least as high as the given version.
     """
     current_version = xcode_config.xcode_version()
+
+    if str(current_version).startswith("/"):
+        return True
+
     if not current_version:
         fail("Could not determine Xcode version at all. This likely means " +
              "Xcode isn't available; if you think this is a mistake, please " +
@@ -628,8 +634,8 @@ def _xcode_swift_toolchain_impl(ctx):
     apple_toolchain = apple_common.apple_toolchain()
     cc_toolchain = find_cpp_toolchain(ctx)
 
-    target_triple = ctx.var.get("CC_TARGET_TRIPLE") or target_triples.normalize_for_swift(
-        target_triples.parse(cc_toolchain.target_gnu_system_name),
+    target_triple = target_triples.normalize_for_swift(
+        target_triples.parse(ctx.var.get("CC_TARGET_TRIPLE") or cc_toolchain.target_gnu_system_name),
     )
 
     xcode_config = ctx.attr._xcode_config[apple_common.XcodeVersionConfig]
@@ -687,7 +693,7 @@ def _xcode_swift_toolchain_impl(ctx):
     requested_features = features_for_build_modes(
         ctx,
         cpp_fragment = cpp_fragment,
-    ) + wmo_features_from_swiftcopts(swiftcopts = swiftcopts)
+    ) + wmo_features_from_swiftcopts(swiftcopts = ctx.attr.copts + swiftcopts)
     requested_features.extend(ctx.features)
     requested_features.extend(ctx.attr.default_enabled_features)
     requested_features.extend(default_features_for_toolchain(

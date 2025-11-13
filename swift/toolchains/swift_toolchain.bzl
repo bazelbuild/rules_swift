@@ -40,11 +40,13 @@ load(
     "//swift/internal:action_names.bzl",
     "SWIFT_ACTION_AUTOLINK_EXTRACT",
     "SWIFT_ACTION_COMPILE",
+    "SWIFT_ACTION_COMPILE_MODULE_INTERFACE",
     "SWIFT_ACTION_DERIVE_FILES",
     "SWIFT_ACTION_DUMP_AST",
     "SWIFT_ACTION_MODULEWRAP",
     "SWIFT_ACTION_PRECOMPILE_C_MODULE",
     "SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT",
+    "SWIFT_ACTION_SYNTHESIZE_INTERFACE",
 )
 load("//swift/internal:attrs.bzl", "swift_toolchain_driver_attrs")
 load("//swift/internal:autolinking.bzl", "autolink_extract_action_configs")
@@ -194,7 +196,14 @@ def _all_action_configs(os, arch, target_triple, sdkroot, xctest_version, additi
     action_configs = [
         ActionConfigInfo(
             actions = [
+                SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+                SWIFT_ACTION_DERIVE_FILES,
+                SWIFT_ACTION_DUMP_AST,
+                SWIFT_ACTION_MODULEWRAP,
+                SWIFT_ACTION_PRECOMPILE_C_MODULE,
                 SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
+                SWIFT_ACTION_SYNTHESIZE_INTERFACE,
             ],
             configurators = [
                 add_arg("-target", target_triples.str(target_triple)),
@@ -416,8 +425,8 @@ def _swift_toolchain_impl(ctx):
         os = ctx.attr.os,
         target_system_name = cc_toolchain.target_gnu_system_name,
     )
-    target_triple = ctx.var.get("CC_TARGET_TRIPLE") or target_triples.normalize_for_swift(
-        target_triples.parse(target_system_name),
+    target_triple = target_triples.normalize_for_swift(
+        target_triples.parse(ctx.var.get("CC_TARGET_TRIPLE") or target_system_name),
     )
 
     if "clang" not in cc_toolchain.compiler:
@@ -432,6 +441,8 @@ def _swift_toolchain_impl(ctx):
             ctx.attr.xctest_version,
             ctx.label,
         )
+    elif ctx.attr.os == "none":
+        swift_linkopts_cc_info = CcInfo()
     else:
         swift_linkopts_cc_info = _swift_unix_linkopts_cc_info(
             ctx.attr.arch,

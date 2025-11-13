@@ -16,6 +16,7 @@
 
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
+load("@rules_cc//cc/common:objc_info.bzl", "ObjcInfo", "new_objc_provider")
 load("//swift/internal:attrs.bzl", "swift_deps_attr")
 load(
     "//swift/internal:toolchain_utils.bzl",
@@ -45,13 +46,13 @@ def _swift_library_group_impl(ctx):
             swift_infos = (get_providers(deps, SwiftInfo) +
                            swift_toolchain.implicit_deps_providers.swift_infos),
         ),
-        # Propagate an `apple_common.Objc` provider with linking info about the
+        # Propagate an `ObjcInfo` provider with linking info about the
         # library so that linking with Apple Starlark APIs/rules works
         # correctly.
         # TODO(b/171413861): This can be removed when the Obj-C rules are
         # migrated to use `CcLinkingContext`.
-        apple_common.new_objc_provider(
-            providers = get_providers(deps, apple_common.Objc),
+        new_objc_provider(
+            providers = get_providers(deps, ObjcInfo),
         ),
     ]
 
