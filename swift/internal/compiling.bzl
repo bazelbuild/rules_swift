@@ -44,6 +44,7 @@ load(
     "SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE",
     "SWIFT_FEATURE_EMIT_SWIFTDOC",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
+    "SWIFT_FEATURE_ENABLE_EMBEDDED",
     "SWIFT_FEATURE_FULL_LTO",
     "SWIFT_FEATURE_HEADERS_ALWAYS_ACTION_INPUTS",
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
@@ -556,7 +557,7 @@ def compile(
     # `compilation_contexts` instead of merging `CcInfo`s. This is because
     # they don't need the merged linking context to disable framework
     # autolinking. If we ever remove our need for `-disable-autolink-framework`,
-    # we should change this to match `upstream`. Same for `apple_common.Objc`.
+    # we should change this to match `upstream`. Same for `ObjcInfo`.
     compilation_contexts = [
         cc_info.compilation_context
         for cc_info in cc_infos
@@ -1683,6 +1684,10 @@ def _emitted_output_nature(feature_configuration, user_compile_flags):
         is_feature_enabled(
             feature_configuration = feature_configuration,
             feature_name = SWIFT_FEATURE__WMO_IN_SWIFTCOPTS,
+        ) or
+        is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_ENABLE_EMBEDDED,
         ) or
         are_all_features_enabled(
             feature_configuration = feature_configuration,

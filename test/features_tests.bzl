@@ -110,6 +110,14 @@ disable_objc_test = make_action_command_line_test_rule(
     },
 )
 
+embedded_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:features": [
+            "swift.enable_embedded",
+        ],
+    },
+)
+
 def features_test_suite(name, tags = []):
     """Test suite for various features.
 
@@ -322,6 +330,17 @@ def features_test_suite(name, tags = []):
         targets = [
             "//test/fixtures/global_index_store:simple",
         ],
+    )
+
+    embedded_test(
+        name = "{}_embedded_test".format(name),
+        tags = all_tags,
+        expected_argv = [
+            "-enable-experimental-feature",
+            "Embedded",
+        ],
+        mnemonic = "SwiftCompile",
+        target_under_test = "//test/fixtures/basic:second",
     )
 
     native.test_suite(

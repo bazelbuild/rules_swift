@@ -18,8 +18,6 @@ class Counter {
  public:
   int Get() const;
   void Increment();
-
- private:
   int count_ = 0;
 };
 

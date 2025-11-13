@@ -54,6 +54,10 @@ load(
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
     "SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
+    "SWIFT_FEATURE_ENABLE_CPP17_INTEROP",
+    "SWIFT_FEATURE_ENABLE_CPP20_INTEROP",
+    "SWIFT_FEATURE_ENABLE_CPP23_INTEROP",
+    "SWIFT_FEATURE_ENABLE_EMBEDDED",
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES",
     "SWIFT_FEATURE_ENABLE_TESTING",
@@ -383,6 +387,7 @@ def compile_action_configs(
             features = [
                 [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_WMO],
                 [SWIFT_FEATURE__WMO_IN_SWIFTCOPTS],
+                [SWIFT_FEATURE_ENABLE_EMBEDDED],
             ],
         ),
 
@@ -1089,6 +1094,7 @@ def compile_action_configs(
             not_features = [
                 [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_WMO],
                 [SWIFT_FEATURE__WMO_IN_SWIFTCOPTS],
+                [SWIFT_FEATURE_ENABLE_EMBEDDED],
             ],
         ),
 
@@ -1109,6 +1115,7 @@ def compile_action_configs(
             features = [
                 [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_WMO],
                 [SWIFT_FEATURE__WMO_IN_SWIFTCOPTS],
+                [SWIFT_FEATURE_ENABLE_EMBEDDED],
             ],
             not_features = [SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS],
         ),
@@ -1298,6 +1305,53 @@ def compile_action_configs(
                 SWIFT_FEATURE__SUPPORTS_V6,
             ],
         ),
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_COMPILE,
+            ],
+            configurators = [
+                add_arg("-cxx-interoperability-mode=default"),
+                add_arg("-Xcc", "-std=c++17"),
+            ],
+            features = [
+                SWIFT_FEATURE_ENABLE_CPP17_INTEROP,
+            ],
+        ),
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_COMPILE,
+            ],
+            configurators = [
+                add_arg("-cxx-interoperability-mode=default"),
+                add_arg("-Xcc", "-std=c++20"),
+            ],
+            features = [
+                SWIFT_FEATURE_ENABLE_CPP20_INTEROP,
+            ],
+        ),
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_COMPILE,
+            ],
+            configurators = [
+                add_arg("-cxx-interoperability-mode=default"),
+                add_arg("-Xcc", "-std=c++23"),
+            ],
+            features = [
+                SWIFT_FEATURE_ENABLE_CPP23_INTEROP,
+            ],
+        ),
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_COMPILE,
+            ],
+            configurators = [
+                add_arg("-enable-experimental-feature", "Embedded"),
+            ],
+            features = [
+                SWIFT_FEATURE_ENABLE_EMBEDDED,
+            ],
+        ),
     ]
 
     # NOTE: The positions of these action configs in the list are important,
@@ -1358,17 +1412,38 @@ def compile_action_configs(
             ),
         )
 
+    # Force everyone to use checked continuations Obj-C async bridging,
+    # regardless of Swift language mode. See
+    # https://github.com/swiftlang/swift/issues/81846 for context.
+    #
+    # The position of this config is important; it must be applied *after* any
+    # user-specified compile flags to ensure that this one takes precedence.
+    #
+    # This can be removed if/when the compiler is fixed in the future and we
+    # drop support for compilers before the fix.
     action_configs.append(
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
-                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
-                SWIFT_ACTION_DERIVE_FILES,
-                SWIFT_ACTION_DUMP_AST,
-                SWIFT_ACTION_PRECOMPILE_C_MODULE,
-            ],
-            configurators = [_source_files_configurator],
+            actions = all_compile_action_names(),
+            configurators = [add_arg(
+                "-Xfrontend",
+                "-checked-async-objc-bridging=on",
+            )],
         ),
+    )
+
+    action_configs.extend(
+        [
+            ActionConfigInfo(
+                actions = [
+                    SWIFT_ACTION_COMPILE,
+                    SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+                    SWIFT_ACTION_DERIVE_FILES,
+                    SWIFT_ACTION_DUMP_AST,
+                    SWIFT_ACTION_PRECOMPILE_C_MODULE,
+                ],
+                configurators = [_source_files_configurator],
+            ),
+        ],
     )
 
     # Add additional input files to the sandbox (does not modify flags).

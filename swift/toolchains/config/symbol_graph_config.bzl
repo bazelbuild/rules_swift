@@ -18,7 +18,13 @@ load(
     "//swift/internal:action_names.bzl",
     "SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT",
 )
-load(":action_config.bzl", "ActionConfigInfo")
+load(
+    "//swift/internal:feature_names.bzl",
+    "SWIFT_FEATURE_ENABLE_CPP17_INTEROP",
+    "SWIFT_FEATURE_ENABLE_CPP20_INTEROP",
+    "SWIFT_FEATURE_ENABLE_CPP23_INTEROP",
+)
+load(":action_config.bzl", "ActionConfigInfo", "add_arg")
 
 def symbol_graph_action_configs():
     """Returns the list of action configs needed to extract symbol graphs.
@@ -43,6 +49,36 @@ def symbol_graph_action_configs():
             actions = [SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT],
             configurators = [
                 _symbol_graph_emit_extension_block_symbols_configurator,
+            ],
+        ),
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT],
+            configurators = [
+                add_arg("-cxx-interoperability-mode=default"),
+                add_arg("-Xcc", "-std=c++17"),
+            ],
+            features = [
+                SWIFT_FEATURE_ENABLE_CPP17_INTEROP,
+            ],
+        ),
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT],
+            configurators = [
+                add_arg("-cxx-interoperability-mode=default"),
+                add_arg("-Xcc", "-std=c++20"),
+            ],
+            features = [
+                SWIFT_FEATURE_ENABLE_CPP20_INTEROP,
+            ],
+        ),
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT],
+            configurators = [
+                add_arg("-cxx-interoperability-mode=default"),
+                add_arg("-Xcc", "-std=c++23"),
+            ],
+            features = [
+                SWIFT_FEATURE_ENABLE_CPP23_INTEROP,
             ],
         ),
     ]

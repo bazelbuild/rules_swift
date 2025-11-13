@@ -4,8 +4,8 @@ common --incompatible_allow_tags_propagation
 # Fail if a glob doesn't match anything (https://github.com/bazelbuild/bazel/issues/8195)
 build --incompatible_disallow_empty_glob
 
-build --host_macos_minimum_os=13.0
-build --macos_minimum_os=13.0
+build --host_macos_minimum_os=14.0
+build --macos_minimum_os=14.0
 
 # We don't need to bump some of our dependencies, just becuse our dev
 # dependencies cause us to use a newer version
@@ -19,6 +19,8 @@ build --experimental_enable_aspect_hints
 
 # Make sure no warnings slip into the C++ tools we vendor
 build --features treat_warnings_as_errors
+# TODO: Remove when we update protobuf
+build --copt=-Wno-deprecated-declarations --host_copt=-Wno-deprecated-declarations
 
 # The default strategy is worker, which has sandboxing disabled by default,
 # which can hide issues with non-hermetic bugs.
