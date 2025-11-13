@@ -1,7 +1,7 @@
 """Macro for Ensuring Starlark Dependencies are Specified Properly"""
 
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
-load("@io_bazel_stardoc//stardoc:stardoc.bzl", "stardoc")
+load("@stardoc//stardoc:stardoc.bzl", "stardoc")
 
 def bzl_test(name, src, deps):
     """Provides build-time assurances that `bzl_library` declarations exist and are referenced properly.
