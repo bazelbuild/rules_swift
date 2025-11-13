@@ -1,11 +1,19 @@
-load("@bazel_gazelle//:def.bzl", "gazelle", "gazelle_binary")
+load("@aspect_bazel_lib//lib:docs.bzl", "stardoc_with_diff_test", "update_docs")
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
-load("@bazel_skylib//rules:diff_test.bzl", "diff_test")
 load("@bazel_skylib//rules:write_file.bzl", "write_file")
-load("@io_bazel_stardoc//stardoc:stardoc.bzl", "stardoc")
-load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
 
-_DOC_SRCS = {
+bzl_library(
+    name = "doc",
+    srcs = ["//doc:doc.bzl"],
+    visibility = ["//doc:__pkg__"],
+    deps = [
+        "//mixed_language",
+        "//proto",
+        "//swift",
+    ],
+)
+
+_DOC_SYMBOLS = {
     "api": [
         "create_swift_interop_info",
         "derive_swift_module_name",
@@ -43,148 +51,94 @@ _DOC_SRCS = {
     ],
 }
 
-write_file(
-    name = "api_header",
-    out = "api_header.vm",
-    content = [
-        "<!-- Generated with Stardoc, Do Not Edit! -->",
-        "# Build API",
-        "",
-        "The `swift_common` module provides API access to the behavior",
-        "implemented by the Swift build rules, so that other custom rules can",
-        "invoke Swift compilation and/or linking as part of their",
-        "implementation.",
-        "",
-        "Some API is exposed as free functions outside of the `swift_common`",
-        "module.",
-    ],
+_DOC_HEADERS = {
+    "api": """\
+<!-- Generated with Stardoc, Do Not Edit! -->
+# Build API
+
+The `swift_common` module provides API access to the behavior
+implemented by the Swift build rules, so that other custom rules can
+invoke Swift compilation and/or linking as part of their
+implementation.
+
+Some API is exposed as free functions outside of the `swift_common`
+module.""",
+    "providers": """\
+<!-- Generated with Stardoc, Do Not Edit! -->
+
+The providers described below are propagated and required by various Swift
+build rules. Clients interested in writing custom rules that interface
+with the rules in this package should use these providers to communicate
+with the Swift build rules as needed.
+
+On this page:
+
+{}
+
+""".format("\n".join(["  * [{0}](#{0})".format(sym) for sym in _DOC_SYMBOLS["providers"]])),
+    "rules": """\
+<!-- Generated with Stardoc, Do Not Edit! -->
+
+${{moduleDocstring}}
+On this page:
+
+{}
+
+""".format("\n".join(["  * [{0}](#{0})".format(sym) for sym in _DOC_SYMBOLS["rules"]])),
+    "setup": """\
+<!-- Generated with Stardoc, Do Not Edit! -->
+# Workspace Setup""",
+}
+
+stardoc_with_diff_test(
+    name = "api",
+    bzl_library_target = "//doc:doc",
+    header_template = ":api_header",
+    symbol_names = _DOC_SYMBOLS["api"],
 )
 
 write_file(
-    name = "rules_header",
-    out = "rules_header.vm",
-    content = [
-        "<!-- Generated with Stardoc, Do Not Edit! -->",
-        "",
-        "${moduleDocstring}",
-        "On this page:",
-        "",
-    ] + ["  * [{0}](#{0})".format(r) for r in _DOC_SRCS["rules"]] + [
-        "",
-    ],
+    name = "api_header",
+    out = "api_header.vm",
+    content = _DOC_HEADERS["api"].splitlines(),
+)
+
+stardoc_with_diff_test(
+    name = "providers",
+    bzl_library_target = "//doc:doc",
+    header_template = ":providers_header",
+    symbol_names = _DOC_SYMBOLS["providers"],
 )
 
 write_file(
     name = "providers_header",
     out = "providers_header.vm",
-    content = [
-        "<!-- Generated with Stardoc, Do Not Edit! -->",
-        "",
-        "The providers described below are propagated and required by various Swift",
-        "build rules. Clients interested in writing custom rules that interface",
-        "with the rules in this package should use these providers to communicate",
-        "with the Swift build rules as needed.",
-        "",
-        "On this page:",
-        "",
-    ] + ["  * [{0}](#{0})".format(r) for r in _DOC_SRCS["providers"]] + [
-        "",
-    ],
+    content = _DOC_HEADERS["providers"].splitlines(),
+)
+
+stardoc_with_diff_test(
+    name = "rules",
+    bzl_library_target = "//doc:doc",
+    header_template = ":rules_header",
+    symbol_names = _DOC_SYMBOLS["rules"],
+)
+
+write_file(
+    name = "rules_header",
+    out = "rules_header.vm",
+    content = _DOC_HEADERS["rules"].splitlines(),
+)
+
+stardoc_with_diff_test(
+    name = "setup",
+    bzl_library_target = "//swift:repositories",
+    header_template = ":setup_header",
 )
 
 write_file(
     name = "setup_header",
     out = "setup_header.vm",
-    content = [
-        "<!-- Generated with Stardoc, Do Not Edit! -->",
-        "# Workspace Setup",
-    ],
+    content = _DOC_HEADERS["setup"].splitlines(),
 )
 
-[
-    stardoc(
-        name = file + "_doc",
-        out = file + ".md_",
-        header_template = file + "_header.vm",
-        input = "//doc:doc.bzl",
-        symbol_names = symbols,
-        deps = ["//doc"],
-    )
-    for [
-        file,
-        symbols,
-    ] in _DOC_SRCS.items()
-]
-
-stardoc(
-    name = "setup_doc",
-    out = "setup.md_",
-    header_template = "setup_header.vm",
-    input = "//swift:repositories.bzl",
-    deps = ["//swift:repositories"],
-)
-
-# To make these tests pass, run
-# bazel run //doc:update
-[
-    diff_test(
-        name = "test_" + file,
-        file1 = file + ".md_",
-        file2 = file + ".md",
-    )
-    for file in _DOC_SRCS.keys() + ["setup"]
-]
-
-write_file(
-    name = "gen_update",
-    out = "update.sh",
-    content = [
-        "#!/usr/bin/env bash",
-        "cd $BUILD_WORKSPACE_DIRECTORY",
-    ] + [
-        "cp -fv bazel-bin/doc/{0}.md_ doc/{0}.md".format(
-            file,
-        )
-        for file in _DOC_SRCS.keys() + ["setup"]
-    ],
-)
-
-sh_binary(
-    name = "update",
-    srcs = ["update.sh"],
-    data = [file + ".md_" for file in _DOC_SRCS.keys() + ["setup"]],
-)
-
-gazelle(
-    name = "gazelle",
-    gazelle = ":gazelle_bin",
-    visibility = ["//visibility:private"],
-)
-
-gazelle_binary(
-    name = "gazelle_bin",
-    languages = [
-        "@bazel_skylib_gazelle_plugin//bzl",
-    ],
-    visibility = ["//visibility:private"],
-)
-
-# Have to keep since bazel doesn't propagate a bzl_library for these files
-# gazelle:ignore
-bzl_library(
-    name = "bazel_tools_bzl",
-    srcs = ["@bazel_tools//tools:bzl_srcs"],
-    visibility = ["//swift:__pkg__"],
-)
-
-# gazelle:ignore
-bzl_library(
-    name = "doc",
-    srcs = ["//doc:doc.bzl"],
-    visibility = ["//doc:__pkg__"],
-    deps = [
-        "//mixed_language",
-        "//proto",
-        "//swift",
-    ],
-)
+update_docs()

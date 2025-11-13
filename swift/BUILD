@@ -31,8 +31,10 @@ bzl_library(
     name = "repositories",
     srcs = ["repositories.bzl"],
     deps = [
-        "//doc:bazel_tools_bzl",
         "//swift/internal:swift_autoconfiguration",
+        "@bazel_tools//tools/build_defs/repo:cache.bzl",
+        "@bazel_tools//tools/build_defs/repo:http.bzl",
+        "@bazel_tools//tools/build_defs/repo:utils.bzl",
     ],
 )
 
