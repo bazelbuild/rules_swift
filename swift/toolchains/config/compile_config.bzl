@@ -2135,7 +2135,7 @@ def _plugin_search_paths_configurator(prerequisites, args):
     if prerequisites.include_dev_srch_paths:
         args.add(
             "-plugin-path",
-            "__BAZEL_XCODE_DEVELOPER_DIR__/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
+            "__BAZEL_SWIFT_TOOLCHAIN_PATH__/usr/lib/swift/host/plugins/testing",
         )
 
 def _dependencies_swiftmodules_vfsoverlay_configurator(prerequisites, args, is_frontend = False):
