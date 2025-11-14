@@ -315,10 +315,10 @@ def _create_windows_toolchain(*, repository_ctx):
     """
     path_to_swiftc = repository_ctx.which("swiftc.exe")
     if not path_to_swiftc:
-        return """\
+        fail("""\
 # No 'swiftc.exe' executable found in $PATH. Not auto-generating a Windows \
 Swift toolchain.
-"""
+""")
 
     root = path_to_swiftc.dirname.dirname
     enabled_features = [
