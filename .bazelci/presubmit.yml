@@ -132,10 +132,10 @@ tasks:
     <<: *linux_common
 
   # TODO: re-enable when Windows in Bazel CI is properly configured for Swift.
-  # windows_last_green:
-  #   name: "Last Green Bazel"
-  #   bazel: last_green
-  #   <<: *windows_common
+  windows_last_green:
+    name: "Last Green Bazel"
+    bazel: last_green
+    <<: *windows_common
 
   doc_tests:
     name: "Doc tests"
