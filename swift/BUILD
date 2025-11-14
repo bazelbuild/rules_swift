@@ -19,15 +19,6 @@ bzl_library(
 )
 
 bzl_library(
-    name = "extras",
-    srcs = ["extras.bzl"],
-    deps = [
-        "@bazel_features//:deps",
-        "@build_bazel_apple_support//lib:repositories",
-    ],
-)
-
-bzl_library(
     name = "repositories",
     srcs = ["repositories.bzl"],
     deps = [

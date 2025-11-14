@@ -20,125 +20,12 @@ load(
     "swift_autoconfiguration",
 )
 
-def _maybe(repo_rule, name, **kwargs):
-    """Executes the given repository rule if it hasn't been executed already.
-
-    Args:
-      repo_rule: The repository rule to be executed (e.g., `http_archive`.)
-      name: The name of the repository to be defined by the rule.
-      **kwargs: Additional arguments passed directly to the repository rule.
-    """
-    if not native.existing_rule(name):
-        repo_rule(name = name, **kwargs)
-
 # buildifier: disable=unnamed-macro
-def swift_rules_dependencies(include_bzlmod_ready_dependencies = True):
+def swift_rules_dependencies():
     """Fetches repositories that are dependencies of `rules_swift`.
-
-    Users should call this macro in their `WORKSPACE` to ensure that all of the
-    dependencies of the Swift rules are downloaded and that they are isolated
-    from changes to those dependencies.
-
-    Args:
-        include_bzlmod_ready_dependencies: Whether or not bzlmod-ready
-            dependencies should be included.
     """
-    if include_bzlmod_ready_dependencies:
-        _maybe(
-            http_archive,
-            name = "bazel_skylib",
-            urls = [
-                "https://github.com/bazelbuild/bazel-skylib/releases/download/1.7.1/bazel-skylib-1.7.1.tar.gz",
-                "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/1.7.1/bazel-skylib-1.7.1.tar.gz",
-            ],
-            sha256 = "bc283cdfcd526a52c3201279cda4bc298652efa898b10b4db0837dc51652756f",
-        )
 
-        _maybe(
-            http_archive,
-            name = "build_bazel_apple_support",
-            url = "https://github.com/bazelbuild/apple_support/releases/download/1.23.1/apple_support.1.23.1.tar.gz",
-            sha256 = "ee20cc5c0bab47065473c8033d462374dd38d172406ecc8de5c8f08487943f2f",
-        )
-
-        _maybe(
-            http_archive,
-            name = "rules_cc",
-            sha256 = "a2fdfde2ab9b2176bd6a33afca14458039023edb1dd2e73e6823810809df4027",
-            strip_prefix = "rules_cc-0.2.14",
-            url = "https://github.com/bazelbuild/rules_cc/releases/download/0.2.14/rules_cc-0.2.14.tar.gz",
-        )
-
-        _maybe(
-            http_archive,
-            name = "com_google_protobuf",
-            urls = ["https://github.com/protocolbuffers/protobuf/releases/download/v29.0/protobuf-29.0.tar.gz"],
-            sha256 = "10a0d58f39a1a909e95e00e8ba0b5b1dc64d02997f741151953a2b3659f6e78c",
-            strip_prefix = "protobuf-29.0",
-        )
-
-        # NOTE: this is required since `com_google_protobuf` depends on a bad 7.x version
-        # and WORKSAPCE mode does not upgrade the dependency correctly.
-        # This version matches that of the resolved rules_java version in `bazel mod graph`.
-        _maybe(
-            http_archive,
-            name = "rules_java",
-            url = "https://github.com/bazelbuild/rules_java/releases/download/8.14.0/rules_java-8.14.0.tar.gz",
-            sha256 = "bbe7d94360cc9ed4607ec5fd94995fd1ec41e84257020b6f09e64055281ecb12",
-        )
-
-        _maybe(
-            http_archive,
-            name = "com_github_nlohmann_json",
-            urls = [
-                "https://github.com/nlohmann/json/releases/download/v3.6.1/include.zip",
-            ],
-            sha256 = "69cc88207ce91347ea530b227ff0776db82dcb8de6704e1a3d74f4841bc651cf",
-            type = "zip",
-            build_file = Label(
-                "//third_party:com_github_nlohmann_json/BUILD.overlay",
-            ),
-        )
-
-        _maybe(
-            http_archive,
-            name = "bazel_features",
-            sha256 = "a660027f5a87f13224ab54b8dc6e191693c554f2692fcca46e8e29ee7dabc43b",
-            strip_prefix = "bazel_features-1.30.0",
-            url = "https://github.com/bazel-contrib/bazel_features/releases/download/v1.30.0/bazel_features-v1.30.0.tar.gz",
-        )
-
-        _maybe(
-            http_archive,
-            name = "com_github_apple_swift_argument_parser",
-            urls = ["https://github.com/apple/swift-argument-parser/archive/refs/tags/1.3.1.tar.gz"],
-            sha256 = "4d964f874b251abc280ee28f0f187de3c13a6122a9561524f66a10768ca2d837",
-            strip_prefix = "swift-argument-parser-1.3.1",
-            build_file = Label(
-                "//third_party:com_github_apple_swift_argument_parser/BUILD.overlay",
-            ),
-        )
-
-        _maybe(
-            http_archive,
-            name = "rules_shell",
-            sha256 = "d8cd4a3a91fc1dc68d4c7d6b655f09def109f7186437e3f50a9b60ab436a0c53",
-            strip_prefix = "rules_shell-0.3.0",
-            url = "https://github.com/bazelbuild/rules_shell/releases/download/v0.3.0/rules_shell-v0.3.0.tar.gz",
-        )
-
-        _maybe(
-            http_archive,
-            name = "platforms",
-            urls = [
-                "https://mirror.bazel.build/github.com/bazelbuild/platforms/releases/download/0.0.11/platforms-0.0.11.tar.gz",
-                "https://github.com/bazelbuild/platforms/releases/download/0.0.11/platforms-0.0.11.tar.gz",
-            ],
-            sha256 = "29742e87275809b5e598dc2f04d86960cc7a55b3067d97221c9abbc9926bff0f",
-        )
-
-    _maybe(
-        http_archive,
+    http_archive(
         name = "com_github_apple_swift_protobuf",
         urls = ["https://github.com/apple/swift-protobuf/archive/1.20.2.tar.gz"],  # pinned to grpc-swift version
         sha256 = "3fb50bd4d293337f202d917b6ada22f9548a0a0aed9d9a4d791e6fbd8a246ebb",
@@ -148,8 +35,7 @@ def swift_rules_dependencies(include_bzlmod_ready_dependencies = True):
         ),
     )
 
-    _maybe(
-        http_archive,
+    http_archive(
         name = "com_github_grpc_grpc_swift",
         urls = ["https://github.com/grpc/grpc-swift/archive/1.16.0.tar.gz"],  # latest at time of writing
         sha256 = "58b60431d0064969f9679411264b82e40a217ae6bd34e17096d92cc4e47556a5",
@@ -159,8 +45,7 @@ def swift_rules_dependencies(include_bzlmod_ready_dependencies = True):
         ),
     )
 
-    _maybe(
-        http_archive,
+    http_archive(
         name = "com_github_apple_swift_docc_symbolkit",
         urls = ["https://github.com/apple/swift-docc-symbolkit/archive/refs/tags/swift-5.10-RELEASE.tar.gz"],
         sha256 = "de1d4b6940468ddb53b89df7aa1a81323b9712775b0e33e8254fa0f6f7469a97",
@@ -170,8 +55,7 @@ def swift_rules_dependencies(include_bzlmod_ready_dependencies = True):
         ),
     )
 
-    _maybe(
-        http_archive,
+    http_archive(
         name = "com_github_apple_swift_nio",
         urls = ["https://github.com/apple/swift-nio/archive/2.51.0.tar.gz"],  # pinned to grpc swift version + version needed to fix linux build
         sha256 = "9ec79852fd03d2e933ece3299ea6c8b8de6960625f7246fd65958409d1420215",
@@ -181,8 +65,7 @@ def swift_rules_dependencies(include_bzlmod_ready_dependencies = True):
         ),
     )
 
-    _maybe(
-        http_archive,
+    http_archive(
         name = "com_github_apple_swift_nio_http2",
         urls = ["https://github.com/apple/swift-nio-http2/archive/1.26.0.tar.gz"],  # pinned to grpc-swift version
         sha256 = "f0edfc9d6a7be1d587e5b403f2d04264bdfae59aac1d74f7d974a9022c6d2b25",
@@ -192,8 +75,7 @@ def swift_rules_dependencies(include_bzlmod_ready_dependencies = True):
         ),
     )
 
-    _maybe(
-        http_archive,
+    http_archive(
         name = "com_github_apple_swift_nio_transport_services",
         urls = ["https://github.com/apple/swift-nio-transport-services/archive/1.15.0.tar.gz"],  # pinned to grpc-swift version
         sha256 = "f3498dafa633751a52b9b7f741f7ac30c42bcbeb3b9edca6d447e0da8e693262",
@@ -203,8 +85,7 @@ def swift_rules_dependencies(include_bzlmod_ready_dependencies = True):
         ),
     )
 
-    _maybe(
-        http_archive,
+    http_archive(
         name = "com_github_apple_swift_nio_extras",
         urls = ["https://github.com/apple/swift-nio-extras/archive/1.4.0.tar.gz"],  # pinned to grpc-swift version
         sha256 = "4684b52951d9d9937bb3e8ccd6b5daedd777021ef2519ea2f18c4c922843b52b",
@@ -214,8 +95,7 @@ def swift_rules_dependencies(include_bzlmod_ready_dependencies = True):
         ),
     )
 
-    _maybe(
-        http_archive,
+    http_archive(
         name = "com_github_apple_swift_log",
         urls = ["https://github.com/apple/swift-log/archive/1.6.3.tar.gz"],  # pinned to version with linux build fix: https://github.com/apple/swift-log/pull/354
         sha256 = "5eaed6614cfaad882b8a0b5cb5d2177b533056b469ba431ad3f375193d370b70",
@@ -225,8 +105,7 @@ def swift_rules_dependencies(include_bzlmod_ready_dependencies = True):
         ),
     )
 
-    _maybe(
-        http_archive,
+    http_archive(
         name = "com_github_apple_swift_nio_ssl",
         urls = ["https://github.com/apple/swift-nio-ssl/archive/2.26.0.tar.gz"],  # pinned to version with linux build fix: https://github.com/apple/swift-nio-ssl/pull/448
         sha256 = "792882c884b2b89de0e9189557ea928bc019be2d9a89d63831876a746cbe9ce3",
@@ -236,8 +115,7 @@ def swift_rules_dependencies(include_bzlmod_ready_dependencies = True):
         ),
     )
 
-    _maybe(
-        http_archive,
+    http_archive(
         name = "com_github_apple_swift_collections",
         urls = ["https://github.com/apple/swift-collections/archive/1.0.4.tar.gz"],  # pinned to swift-nio @ grpc-swift version
         sha256 = "d9e4c8a91c60fb9c92a04caccbb10ded42f4cb47b26a212bc6b39cc390a4b096",
@@ -247,8 +125,7 @@ def swift_rules_dependencies(include_bzlmod_ready_dependencies = True):
         ),
     )
 
-    _maybe(
-        http_archive,
+    http_archive(
         name = "com_github_apple_swift_atomics",
         urls = ["https://github.com/apple/swift-atomics/archive/1.1.0.tar.gz"],  # pinned to swift-nio @ grpc-swift version
         sha256 = "1bee7f469f7e8dc49f11cfa4da07182fbc79eab000ec2c17bfdce468c5d276fb",
@@ -263,16 +140,14 @@ def swift_rules_dependencies(include_bzlmod_ready_dependencies = True):
     # TODO: we must depend on two versions of index-import to support backwards
     # compatibility between Xcode 16.3+ and older versions, we can remove the older
     # version once we drop support for Xcode 16.x.
-    _maybe(
-        http_archive,
+    http_archive(
         name = "build_bazel_rules_swift_index_import_5_8",
         build_file = Label("//third_party:build_bazel_rules_swift_index_import/BUILD.overlay"),
         canonical_id = "index-import-5.8",
         urls = ["https://github.com/MobileNativeFoundation/index-import/releases/download/5.8.0.1/index-import.tar.gz"],
         sha256 = "28c1ffa39d99e74ed70623899b207b41f79214c498c603915aef55972a851a15",
     )
-    _maybe(
-        http_archive,
+    http_archive(
         name = "build_bazel_rules_swift_index_import_6_1",
         build_file = Label("//third_party:build_bazel_rules_swift_index_import/BUILD.overlay"),
         canonical_id = "index-import-6.1",
@@ -280,13 +155,4 @@ def swift_rules_dependencies(include_bzlmod_ready_dependencies = True):
         sha256 = "9a54fc1674af6031125a9884480a1e31e1bcf48b8f558b3e8bcc6b6fcd6e8b61",
     )
 
-    _maybe(
-        swift_autoconfiguration,
-        name = "build_bazel_rules_swift_local_config",
-    )
-
-    if include_bzlmod_ready_dependencies:
-        native.register_toolchains(
-            # Use register_toolchain's target pattern expansion to register all toolchains in the package.
-            "@build_bazel_rules_swift_local_config//:all",
-        )
+    swift_autoconfiguration(name = "build_bazel_rules_swift_local_config")
