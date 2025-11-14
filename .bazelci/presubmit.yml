@@ -142,10 +142,9 @@ tasks:
       - .bazelci/update_workspace_to_deps_heads.sh
     <<: *linux_common
 
-  # TODO: re-enable when Windows in Bazel CI is properly configured for Swift.
   windows_last_green:
-    name: "Last Green Bazel"
-    bazel: last_green
+    name: "Latest Bazel"
+    bazel: latest
     <<: *windows_common
 
   doc_tests:
