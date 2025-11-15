@@ -66,3 +66,7 @@ single_version_override(
     patch_strip = 1,
     patches = ["//third_party/patches:stardoc-revert-load-statements-in-docs.patch"],
 )
+
+# TODO: Drop once we can directly use cc_binary in parent rules
+compat = use_extension("@rules_cc//cc:extensions.bzl", "compatibility_proxy")
+use_repo(compat, "cc_compatibility_proxy")
