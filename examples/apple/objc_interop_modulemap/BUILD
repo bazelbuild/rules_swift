@@ -2,7 +2,7 @@
 # vice versa when it is linked into the existing native linking rules for Apple
 # platforms.
 
-load("@rules_cc//cc:objc_library.bzl", "objc_library")
+load("//examples/apple:objc_library.bzl", "objc_library")
 load("//swift:swift_binary.bzl", "swift_binary")
 load("//swift:swift_library.bzl", "swift_library")
 
@@ -27,7 +27,6 @@ swift_library(
 objc_library(
     name = "main",
     srcs = ["main.m"],
-    enable_modules = True,
     target_compatible_with = ["@platforms//os:macos"],
     deps = [":Printer"],
 )
