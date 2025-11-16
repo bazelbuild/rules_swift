@@ -315,10 +315,10 @@ def _create_windows_toolchain(*, repository_ctx):
     """
     path_to_swiftc = repository_ctx.which("swiftc.exe")
     if not path_to_swiftc:
-        return """\
+        fail("""\
 # No 'swiftc.exe' executable found in $PATH. Not auto-generating a Windows \
 Swift toolchain.
-"""
+""")
 
     root = path_to_swiftc.dirname.dirname
     enabled_features = [
@@ -341,7 +341,7 @@ Swift toolchain.
 
     env = {
         "Path": repository_ctx.os.environ["Path"] if "Path" in repository_ctx.os.environ else repository_ctx.os.environ["PATH"],
-        "ProgramData": repository_ctx.os.environ["ProgramData"],
+        # "ProgramData": repository_ctx.os.environ["ProgramData"],
     }
 
     return """\
@@ -364,7 +364,10 @@ toolchain(
         "@platforms//os:windows",
         "@platforms//cpu:x86_64",
     ],
-    target_compatible_with = APPLE_PLATFORMS_CONSTRAINTS[arch],
+    target_compatible_with = [
+        "@platforms//os:windows",
+        "@platforms//cpu:x86_64",
+    ],
     toolchain = ":windows-toolchain",
     toolchain_type = "{toolchain_type}",
     visibility = ["//visibility:public"],
