@@ -25,7 +25,6 @@ load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 load(
     "@bazel_tools//tools/cpp:toolchain_utils.bzl",
-    "find_cpp_toolchain",
     "use_cpp_toolchain",
 )
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
@@ -93,6 +92,8 @@ load(
     "symbol_graph_action_configs",
 )
 load("//swift/toolchains/config:tool_config.bzl", "ToolConfigInfo")
+
+_CPP_TOOLCHAIN_TYPE = Label("@bazel_tools//tools/cpp:toolchain_type")
 
 def _swift_compile_resource_set(_os, inputs_size):
     # The `os` argument is unused, but the Starlark API requires both
@@ -419,7 +420,7 @@ def _parse_target_system_name(*, arch, os, target_system_name):
 
 def _swift_toolchain_impl(ctx):
     toolchain_root = ctx.attr.root
-    cc_toolchain = find_cpp_toolchain(ctx)
+    cc_toolchain = ctx.exec_groups["default"].toolchains[_CPP_TOOLCHAIN_TYPE].cc
     target_system_name = _parse_target_system_name(
         arch = ctx.attr.arch,
         os = ctx.attr.os,
@@ -717,7 +718,14 @@ The version of XCTest that the toolchain packages.
         },
     ),
     doc = "Represents a Swift compiler toolchain.",
+    exec_groups = {
+        # An execution group that has no specific platform requirements. This
+        # ensures that the execution platform of this Swift toolchain does not
+        # unnecessarily constrain the execution platform of the C++ toolchain.
+        "default": exec_group(
+            toolchains = use_cpp_toolchain(),
+        ),
+    },
     fragments = [] if bazel_features.cc.swift_fragment_removed else ["swift"],
-    toolchains = use_cpp_toolchain(),
     implementation = _swift_toolchain_impl,
 )

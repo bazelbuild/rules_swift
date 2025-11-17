@@ -2,11 +2,12 @@
 
 load(
     "@bazel_tools//tools/cpp:toolchain_utils.bzl",
-    "find_cpp_toolchain",
     "use_cpp_toolchain",
 )
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
+
+_CPP_TOOLCHAIN_TYPE = Label("@bazel_tools//tools/cpp:toolchain_type")
 
 def _impl(ctx):
     binary1 = ctx.actions.declare_file("framework1.framework/framework1")
@@ -15,7 +16,7 @@ def _impl(ctx):
     binary2 = ctx.actions.declare_file("framework2.framework/framework2")
     ctx.actions.write(binary2, "empty")
 
-    cc_toolchain = find_cpp_toolchain(ctx)
+    cc_toolchain = ctx.exec_groups["default"].toolchains[_CPP_TOOLCHAIN_TYPE].cc
     feature_configuration = cc_common.configure_features(
         ctx = ctx,
         cc_toolchain = cc_toolchain,
@@ -56,6 +57,13 @@ fake_framework = rule(
             doc = "The C++ toolchain to use.",
         ),
     },
-    toolchains = use_cpp_toolchain(),
+    exec_groups = {
+        # An execution group that has no specific platform requirements. This
+        # ensures that the execution platform of this Swift toolchain does not
+        # unnecessarily constrain the execution platform of the C++ toolchain.
+        "default": exec_group(
+            toolchains = use_cpp_toolchain(),
+        ),
+    },
     fragments = ["cpp"],
 )
