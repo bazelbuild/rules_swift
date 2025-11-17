@@ -339,20 +339,14 @@ struct RepositoryMapping {
             return exactMatch
         }
 
-        // Check for wildcard match
-        // Find the longest prefix that matches the source repository
-        var longestMatch: String? = nil
-        var longestPrefix = ""
-
         for (prefix, targetMap) in wildcardMappings {
-            if key.sourceRepoCanonicalName.hasPrefix(prefix) && prefix.count > longestPrefix.count {
+            if key.sourceRepoCanonicalName.count >= prefix.count && key.sourceRepoCanonicalName.hasPrefix(prefix) {
                 if let mapping = targetMap[key.targetRepoApparentName] {
-                    longestMatch = mapping
-                    longestPrefix = prefix
+                    return mapping
                 }
             }
         }
 
-        return longestMatch ?? defaultValue
+        return defaultValue
     }
 }
