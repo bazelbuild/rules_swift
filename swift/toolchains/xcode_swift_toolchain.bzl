@@ -1000,8 +1000,6 @@ for incremental compilation using a persistent mode.
                     fragment = "apple",
                 ),
             ),
-            # TODO(b/301253335): Enable AEGs later.
-            "_use_auto_exec_groups": attr.bool(default = False),
         },
     ),
     doc = "Represents a Swift compiler toolchain provided by Xcode.",
