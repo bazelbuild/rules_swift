@@ -43,6 +43,7 @@ load(
     "SWIFT_ACTION_COMPILE_MODULE_INTERFACE",
     "SWIFT_ACTION_DERIVE_FILES",
     "SWIFT_ACTION_DUMP_AST",
+    "SWIFT_ACTION_MODULEWRAP",
     "SWIFT_ACTION_PRECOMPILE_C_MODULE",
     "SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT",
     "SWIFT_ACTION_SYNTHESIZE_INTERFACE",
@@ -333,6 +334,7 @@ def _all_action_configs(
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
+                SWIFT_ACTION_MODULEWRAP,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
                 SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
                 SWIFT_ACTION_SYNTHESIZE_INTERFACE,
@@ -570,6 +572,10 @@ def _is_xcode_at_least_version(xcode_config, desired_version):
         least as high as the given version.
     """
     current_version = xcode_config.xcode_version()
+
+    if str(current_version).startswith("/"):
+        return True
+
     if not current_version:
         fail("Could not determine Xcode version at all. This likely means " +
              "Xcode isn't available; if you think this is a mistake, please " +
@@ -673,7 +679,7 @@ def _xcode_swift_toolchain_impl(ctx):
         fail("Do not use SWIFT_USE_TOOLCHAIN_ROOT and TOOLCHAINS" +
              "in the same build.")
     elif custom_toolchain:
-        custom_xcode_toolchain_root = "__BAZEL_CUSTOM_XCODE_TOOLCHAIN_PATH__"
+        custom_xcode_toolchain_root = "__BAZEL_SWIFT_TOOLCHAIN_PATH__"
 
     swift_linkopts_cc_info = _swift_linkopts_cc_info(
         apple_toolchain = apple_toolchain,

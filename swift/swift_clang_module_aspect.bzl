@@ -17,6 +17,7 @@
 load("@bazel_skylib//lib:sets.bzl", "sets")
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
+load("@rules_cc//cc/common:objc_info.bzl", "ObjcInfo")
 load("//swift/internal:compiling.bzl", "compile", "precompile_clang_module")
 load(
     "//swift/internal:feature_names.bzl",
@@ -267,7 +268,7 @@ def _module_info_for_target(
         return None, None
 
     if not module_name:
-        if apple_common.Objc not in target:
+        if ObjcInfo not in target:
             return None, None
 
         if aspect_ctx.rule.kind == "objc_library":
@@ -374,11 +375,11 @@ def _handle_module(
 
     compilation_contexts_to_merge_for_compilation = [compilation_context]
 
-    # Fold the `strict_includes` from `apple_common.Objc` into the Clang module
+    # Fold the `strict_includes` from `ObjcInfo` into the Clang module
     # descriptor in `SwiftInfo` so that the `Objc` provider doesn't have to be
     # passed as a separate input to Swift build APIs.
-    if apple_common.Objc in target:
-        strict_includes = target[apple_common.Objc].strict_include
+    if ObjcInfo in target:
+        strict_includes = target[ObjcInfo].strict_include
         compilation_contexts_to_merge_for_compilation.append(
             cc_common.create_compilation_context(includes = strict_includes),
         )
@@ -758,7 +759,7 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx, toolchain_type):
         unsupported_features = unsupported_features,
     )
 
-    if interop_info or apple_common.Objc in target or CcInfo in target:
+    if interop_info or ObjcInfo in target or CcInfo in target:
         return providers + _handle_module(
             aspect_ctx = aspect_ctx,
             exclude_headers = exclude_headers,
@@ -844,7 +845,7 @@ it propagates for its targets.
         implementation = _impl,
         provides = [SwiftClangModuleAspectInfo],
         required_aspect_providers = [
-            [apple_common.Objc],
+            [ObjcInfo],
             [CcInfo],
         ],
         toolchains = use_swift_toolchain(

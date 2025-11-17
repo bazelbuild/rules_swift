@@ -404,3 +404,19 @@ SWIFT_FEATURE_THIN_LTO = "swift.thin_lto"
 
 # Enable full LTO and update output-file-map correctly
 SWIFT_FEATURE_FULL_LTO = "swift.full_lto"
+
+# Enables swift cpp interop. When enabled, this feature adds -cxx-interoperability-mode=default
+# along with the corresponding -std=c++<N> options. Use this when swift needs to imports a module
+# that has C++ headers.
+SWIFT_FEATURE_ENABLE_CPP17_INTEROP = "swift.enable_cpp17_interop"
+SWIFT_FEATURE_ENABLE_CPP20_INTEROP = "swift.enable_cpp20_interop"
+SWIFT_FEATURE_ENABLE_CPP23_INTEROP = "swift.enable_cpp23_interop"
+
+# Enable embedded swift. More details at https://docs.swift.org/embedded/documentation/embedded/waystogetstarted/
+# When enabling that option, a few things will happen:
+# * WMO will be enabled automatically, otherwise the compiler will throw an error as it is a requirement for embedded swift
+# * none of the libraries in the toolchain's usr/lib/swift directory will be linked. Instead, the core swift functionalities
+#   will be provided by the swift embedded module in the usr/lib/swift/embedded toolchain directory, and swiftc will
+#   automatically include it at compile time, and provide it to the linker at link time
+# * alwayslink on swift_library() target will now default to False, as it is not required in embedded mode
+SWIFT_FEATURE_ENABLE_EMBEDDED = "swift.enable_embedded"

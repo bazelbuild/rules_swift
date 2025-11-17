@@ -54,6 +54,10 @@ load(
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
     "SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
+    "SWIFT_FEATURE_ENABLE_CPP17_INTEROP",
+    "SWIFT_FEATURE_ENABLE_CPP20_INTEROP",
+    "SWIFT_FEATURE_ENABLE_CPP23_INTEROP",
+    "SWIFT_FEATURE_ENABLE_EMBEDDED",
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES",
     "SWIFT_FEATURE_ENABLE_TESTING",
@@ -383,6 +387,7 @@ def compile_action_configs(
             features = [
                 [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_WMO],
                 [SWIFT_FEATURE__WMO_IN_SWIFTCOPTS],
+                [SWIFT_FEATURE_ENABLE_EMBEDDED],
             ],
         ),
 
@@ -1089,6 +1094,7 @@ def compile_action_configs(
             not_features = [
                 [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_WMO],
                 [SWIFT_FEATURE__WMO_IN_SWIFTCOPTS],
+                [SWIFT_FEATURE_ENABLE_EMBEDDED],
             ],
         ),
 
@@ -1109,6 +1115,7 @@ def compile_action_configs(
             features = [
                 [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_WMO],
                 [SWIFT_FEATURE__WMO_IN_SWIFTCOPTS],
+                [SWIFT_FEATURE_ENABLE_EMBEDDED],
             ],
             not_features = [SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS],
         ),
@@ -1296,6 +1303,53 @@ def compile_action_configs(
             features = [
                 SWIFT_FEATURE_ENABLE_V6,
                 SWIFT_FEATURE__SUPPORTS_V6,
+            ],
+        ),
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_COMPILE,
+            ],
+            configurators = [
+                add_arg("-cxx-interoperability-mode=default"),
+                add_arg("-Xcc", "-std=c++17"),
+            ],
+            features = [
+                SWIFT_FEATURE_ENABLE_CPP17_INTEROP,
+            ],
+        ),
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_COMPILE,
+            ],
+            configurators = [
+                add_arg("-cxx-interoperability-mode=default"),
+                add_arg("-Xcc", "-std=c++20"),
+            ],
+            features = [
+                SWIFT_FEATURE_ENABLE_CPP20_INTEROP,
+            ],
+        ),
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_COMPILE,
+            ],
+            configurators = [
+                add_arg("-cxx-interoperability-mode=default"),
+                add_arg("-Xcc", "-std=c++23"),
+            ],
+            features = [
+                SWIFT_FEATURE_ENABLE_CPP23_INTEROP,
+            ],
+        ),
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_COMPILE,
+            ],
+            configurators = [
+                add_arg("-enable-experimental-feature", "Embedded"),
+            ],
+            features = [
+                SWIFT_FEATURE_ENABLE_EMBEDDED,
             ],
         ),
     ]
@@ -2081,7 +2135,7 @@ def _plugin_search_paths_configurator(prerequisites, args):
     if prerequisites.include_dev_srch_paths:
         args.add(
             "-plugin-path",
-            "__BAZEL_XCODE_DEVELOPER_DIR__/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
+            "__BAZEL_SWIFT_TOOLCHAIN_PATH__/usr/lib/swift/host/plugins/testing",
         )
 
 def _dependencies_swiftmodules_vfsoverlay_configurator(prerequisites, args, is_frontend = False):

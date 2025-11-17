@@ -198,7 +198,7 @@ Compiles a Swift module.
 | <a id="swift_common.compile-swift_infos"></a>swift_infos |  A list of `SwiftInfo` providers from non-private dependencies of the target being compiled. The modules defined by these providers are used as dependencies of both the Swift module being compiled and the Clang module for the generated header.   |  none |
 | <a id="swift_common.compile-swift_toolchain"></a>swift_toolchain |  The `SwiftToolchainInfo` provider of the toolchain.   |  none |
 | <a id="swift_common.compile-target_name"></a>target_name |  The name of the target for which the code is being compiled, which is used to determine unique file paths for the outputs.   |  none |
-| <a id="swift_common.compile-toolchain_type"></a>toolchain_type |  The toolchain type of the `swift_toolchain` which is used for the proper selection of the execution platform inside `run_toolchain_action`.   |  `"@build_bazel_rules_swift//toolchains:toolchain_type"` |
+| <a id="swift_common.compile-toolchain_type"></a>toolchain_type |  The toolchain type of the `swift_toolchain` which is used for the proper selection of the execution platform inside `run_toolchain_action`.   |  `Label("@rules_swift//toolchains:toolchain_type")` |
 | <a id="swift_common.compile-workspace_name"></a>workspace_name |  The name of the workspace for which the code is being compiled, which is used to determine unique file paths for some outputs.   |  none |
 
 **RETURNS**
@@ -275,7 +275,7 @@ Compiles a Swift module interface.
 | <a id="swift_common.compile_module_interface-swift_infos"></a>swift_infos |  A list of `SwiftInfo` providers from dependencies of the target being compiled.   |  none |
 | <a id="swift_common.compile_module_interface-swift_toolchain"></a>swift_toolchain |  The `SwiftToolchainInfo` provider of the toolchain.   |  none |
 | <a id="swift_common.compile_module_interface-target_name"></a>target_name |  The name of the target for which the code is being compiled, which is used to determine unique file paths for the outputs.   |  none |
-| <a id="swift_common.compile_module_interface-toolchain_type"></a>toolchain_type |  The toolchain type of the `swift_toolchain` which is used for the proper selection of the execution platform inside `run_toolchain_action`.   |  `"@build_bazel_rules_swift//toolchains:toolchain_type"` |
+| <a id="swift_common.compile_module_interface-toolchain_type"></a>toolchain_type |  The toolchain type of the `swift_toolchain` which is used for the proper selection of the execution platform inside `run_toolchain_action`.   |  `Label("@rules_swift//toolchains:toolchain_type")` |
 
 **RETURNS**
 
@@ -385,7 +385,7 @@ command line parameters file, those actions will be created here.
 | :------------- | :------------- | :------------- |
 | <a id="swift_common.create_linking_context_from_compilation_outputs-actions"></a>actions |  The context's `actions` object.   |  none |
 | <a id="swift_common.create_linking_context_from_compilation_outputs-additional_inputs"></a>additional_inputs |  A `list` of `File`s containing any additional files that are referenced by `user_link_flags` and therefore need to be propagated up to the linker.   |  `[]` |
-| <a id="swift_common.create_linking_context_from_compilation_outputs-alwayslink"></a>alwayslink |  If `False`, any binary that depends on the providers returned by this function will link in all of the library's object files only if there are symbol references. See the discussion on `swift_library` `alwayslink` for why that behavior could result in undesired results.   |  `True` |
+| <a id="swift_common.create_linking_context_from_compilation_outputs-alwayslink"></a>alwayslink |  If `False`, any binary that depends on the providers returned by this function will link in all of the library's object files only if there are symbol references. See the discussion on `swift_library` `alwayslink` for why that behavior could result in undesired results. If `True`, the opposite will happen and this library will be -force_load into the link actions that depend on it. By default (`None`), the value of alwayslink will be set to `True` in the general case, and to `False` if the embedded swift feature is turned on.   |  `None` |
 | <a id="swift_common.create_linking_context_from_compilation_outputs-compilation_outputs"></a>compilation_outputs |  A `CcCompilationOutputs` value containing the object files to link. Typically, this is the second tuple element in the value returned by `compile`.   |  none |
 | <a id="swift_common.create_linking_context_from_compilation_outputs-feature_configuration"></a>feature_configuration |  A feature configuration obtained from `configure_features`.   |  none |
 | <a id="swift_common.create_linking_context_from_compilation_outputs-is_test"></a>is_test |  Deprecated. This argument will be removed in the next major release. Use the `include_dev_srch_paths` attribute instead. Represents if the `testonly` value of the context.   |  `None` |
@@ -395,7 +395,7 @@ command line parameters file, those actions will be created here.
 | <a id="swift_common.create_linking_context_from_compilation_outputs-module_context"></a>module_context |  The module context returned by `compile` containing information about the Swift module that was compiled. Typically, this is the first tuple element in the value returned by `compile`.   |  none |
 | <a id="swift_common.create_linking_context_from_compilation_outputs-name"></a>name |  A string that is used to derive the name of the library or libraries linked by this function. If this is not provided or is a falsy value, the name component of the `label` argument is used.   |  `None` |
 | <a id="swift_common.create_linking_context_from_compilation_outputs-swift_toolchain"></a>swift_toolchain |  The `SwiftToolchainInfo` provider of the toolchain.   |  none |
-| <a id="swift_common.create_linking_context_from_compilation_outputs-toolchain_type"></a>toolchain_type |  The toolchain type of the `swift_toolchain` which is used for the proper selection of the execution platform inside `run_toolchain_action`.   |  `"@build_bazel_rules_swift//toolchains:toolchain_type"` |
+| <a id="swift_common.create_linking_context_from_compilation_outputs-toolchain_type"></a>toolchain_type |  The toolchain type of the `swift_toolchain` which is used for the proper selection of the execution platform inside `run_toolchain_action`.   |  `Label("@rules_swift//toolchains:toolchain_type")` |
 | <a id="swift_common.create_linking_context_from_compilation_outputs-user_link_flags"></a>user_link_flags |  A `list` of strings containing additional flags that will be passed to the linker for any binary that links with the returned linking context.   |  `[]` |
 
 **RETURNS**
@@ -411,9 +411,9 @@ A tuple of `(CcLinkingContext, CcLinkingOutputs)` containing the linking
 
 <pre>
 swift_common.extract_symbol_graph(*, <a href="#swift_common.extract_symbol_graph-actions">actions</a>, <a href="#swift_common.extract_symbol_graph-compilation_contexts">compilation_contexts</a>, <a href="#swift_common.extract_symbol_graph-emit_extension_block_symbols">emit_extension_block_symbols</a>,
-                                  <a href="#swift_common.extract_symbol_graph-feature_configuration">feature_configuration</a>, <a href="#swift_common.extract_symbol_graph-include_dev_srch_paths">include_dev_srch_paths</a>, <a href="#swift_common.extract_symbol_graph-minimum_access_level">minimum_access_level</a>,
-                                  <a href="#swift_common.extract_symbol_graph-module_name">module_name</a>, <a href="#swift_common.extract_symbol_graph-output_dir">output_dir</a>, <a href="#swift_common.extract_symbol_graph-swift_infos">swift_infos</a>, <a href="#swift_common.extract_symbol_graph-swift_toolchain">swift_toolchain</a>,
-                                  <a href="#swift_common.extract_symbol_graph-toolchain_type">toolchain_type</a>)
+                                  <a href="#swift_common.extract_symbol_graph-exec_group">exec_group</a>, <a href="#swift_common.extract_symbol_graph-feature_configuration">feature_configuration</a>, <a href="#swift_common.extract_symbol_graph-include_dev_srch_paths">include_dev_srch_paths</a>,
+                                  <a href="#swift_common.extract_symbol_graph-minimum_access_level">minimum_access_level</a>, <a href="#swift_common.extract_symbol_graph-module_name">module_name</a>, <a href="#swift_common.extract_symbol_graph-output_dir">output_dir</a>, <a href="#swift_common.extract_symbol_graph-swift_infos">swift_infos</a>,
+                                  <a href="#swift_common.extract_symbol_graph-swift_toolchain">swift_toolchain</a>, <a href="#swift_common.extract_symbol_graph-toolchain_type">toolchain_type</a>)
 </pre>
 
 Extracts the symbol graph from a Swift module.
@@ -426,6 +426,7 @@ Extracts the symbol graph from a Swift module.
 | <a id="swift_common.extract_symbol_graph-actions"></a>actions |  The object used to register actions.   |  none |
 | <a id="swift_common.extract_symbol_graph-compilation_contexts"></a>compilation_contexts |  A list of `CcCompilationContext`s that represent C/Objective-C requirements of the target being compiled, such as Swift-compatible preprocessor defines, header search paths, and so forth. These are typically retrieved from the `CcInfo` providers of a target's dependencies.   |  none |
 | <a id="swift_common.extract_symbol_graph-emit_extension_block_symbols"></a>emit_extension_block_symbols |  A `bool` that indicates whether `extension` block information should be included in the symbol graph.   |  `None` |
+| <a id="swift_common.extract_symbol_graph-exec_group"></a>exec_group |  Runs the Swift compilation action under the given execution group's context. If `None`, the default execution group is used.   |  `None` |
 | <a id="swift_common.extract_symbol_graph-feature_configuration"></a>feature_configuration |  The Swift feature configuration.   |  none |
 | <a id="swift_common.extract_symbol_graph-include_dev_srch_paths"></a>include_dev_srch_paths |  A `bool` that indicates whether the developer framework search paths will be added to the compilation command.   |  none |
 | <a id="swift_common.extract_symbol_graph-minimum_access_level"></a>minimum_access_level |  The minimum access level of the declarations that should be extracted into the symbol graphs. The default value is `None`, which means the Swift compiler's default behavior should be used (at the time of this writing, the default behavior is "public").   |  `None` |
@@ -433,7 +434,7 @@ Extracts the symbol graph from a Swift module.
 | <a id="swift_common.extract_symbol_graph-output_dir"></a>output_dir |  A directory-type `File` into which `.symbols.json` files representing the module's symbol graph will be extracted. If extraction is successful, this directory will contain a file named `${MODULE_NAME}.symbols.json`. Optionally, if the module contains extensions to types in other modules, then there will also be files named `${MODULE_NAME}@${EXTENDED_MODULE}.symbols.json`.   |  none |
 | <a id="swift_common.extract_symbol_graph-swift_infos"></a>swift_infos |  A list of `SwiftInfo` providers from dependencies of the target being compiled. This should include both propagated and non-propagated (implementation-only) dependencies.   |  none |
 | <a id="swift_common.extract_symbol_graph-swift_toolchain"></a>swift_toolchain |  The `SwiftToolchainInfo` provider of the toolchain.   |  none |
-| <a id="swift_common.extract_symbol_graph-toolchain_type"></a>toolchain_type |  The toolchain type of the `swift_toolchain` which is used for the proper selection of the execution platform inside `run_toolchain_action`.   |  `"@build_bazel_rules_swift//toolchains:toolchain_type"` |
+| <a id="swift_common.extract_symbol_graph-toolchain_type"></a>toolchain_type |  The toolchain type of the `swift_toolchain` which is used for the proper selection of the execution platform inside `run_toolchain_action`.   |  `Label("@rules_swift//toolchains:toolchain_type")` |
 
 
 <a id="swift_common.get_toolchain"></a>
@@ -454,7 +455,7 @@ Gets the Swift toolchain associated with the rule or aspect.
 | <a id="swift_common.get_toolchain-ctx"></a>ctx |  The rule or aspect context.   |  none |
 | <a id="swift_common.get_toolchain-exec_group"></a>exec_group |  The name of the execution group that should contain the toolchain. If this is provided and the toolchain is not declared in that execution group, it will be looked up from `ctx` as a fallback instead. If this argument is `None` (the default), then the toolchain will only be looked up from `ctx.`   |  `None` |
 | <a id="swift_common.get_toolchain-mandatory"></a>mandatory |  If `False`, this function will return `None` instead of failing if no toolchain is found. Defaults to `True`.   |  `True` |
-| <a id="swift_common.get_toolchain-toolchain_type"></a>toolchain_type |  The toolchain type to use. Defaults to the standard Swift toolchain type.   |  `"@build_bazel_rules_swift//toolchains:toolchain_type"` |
+| <a id="swift_common.get_toolchain-toolchain_type"></a>toolchain_type |  The toolchain type to use. Defaults to the standard Swift toolchain type.   |  `Label("@rules_swift//toolchains:toolchain_type")` |
 | <a id="swift_common.get_toolchain-attr"></a>attr |  The name of the attribute on the calling rule or aspect that should be used to retrieve the toolchain if it is not provided by the `toolchains` argument of the rule/aspect. Note that this is only supported for legacy/migration purposes and will be removed once migration to toolchains is complete.   |  `"_toolchain"` |
 
 **RETURNS**
@@ -579,7 +580,7 @@ Extracts the symbol graph from a Swift module.
 | <a id="swift_common.synthesize_interface-output_file"></a>output_file |  A `File` into which the synthesized interface will be written.   |  none |
 | <a id="swift_common.synthesize_interface-swift_infos"></a>swift_infos |  A list of `SwiftInfo` providers from dependencies of the target being compiled. This should include both propagated and non-propagated (implementation-only) dependencies.   |  none |
 | <a id="swift_common.synthesize_interface-swift_toolchain"></a>swift_toolchain |  The `SwiftToolchainInfo` provider of the toolchain.   |  none |
-| <a id="swift_common.synthesize_interface-toolchain_type"></a>toolchain_type |  The toolchain type of the `swift_toolchain` which is used for the proper selection of the execution platform inside `run_toolchain_action`.   |  `"@build_bazel_rules_swift//toolchains:toolchain_type"` |
+| <a id="swift_common.synthesize_interface-toolchain_type"></a>toolchain_type |  The toolchain type of the `swift_toolchain` which is used for the proper selection of the execution platform inside `run_toolchain_action`.   |  `Label("@rules_swift//toolchains:toolchain_type")` |
 
 
 <a id="swift_common.use_toolchain"></a>
@@ -607,7 +608,7 @@ toolchains = use_swift_toolchain() + [other toolchains...]
 | Name  | Description | Default Value |
 | :------------- | :------------- | :------------- |
 | <a id="swift_common.use_toolchain-mandatory"></a>mandatory |  Whether or not it should be an error if the toolchain cannot be resolved. Defaults to True.   |  `True` |
-| <a id="swift_common.use_toolchain-toolchain_type"></a>toolchain_type |  The toolchain type to use. Defaults to the standard Swift toolchain type.   |  `"@build_bazel_rules_swift//toolchains:toolchain_type"` |
+| <a id="swift_common.use_toolchain-toolchain_type"></a>toolchain_type |  The toolchain type to use. Defaults to the standard Swift toolchain type.   |  `Label("@rules_swift//toolchains:toolchain_type")` |
 
 **RETURNS**
 
