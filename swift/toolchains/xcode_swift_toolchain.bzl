@@ -110,6 +110,15 @@ load("//swift/toolchains/config:tool_config.bzl", "ToolConfigInfo")
 
 _CPP_TOOLCHAIN_TYPE = Label("@bazel_tools//tools/cpp:toolchain_type")
 
+visibility("public")
+
+# These are symlink locations known to be used by xcode-select in various Xcode
+# and macOS versions to point to the selected `Developer` directory.
+_DEVELOPER_DIR_SYMLINKS = [
+    "/private/var/select/developer_dir",
+    "/var/db/xcode_select_link",
+]
+
 def _platform_developer_framework_dir(
         apple_toolchain,
         target_triple):
@@ -131,6 +140,38 @@ def _platform_developer_framework_dir(
         ),
         "Developer/Library/Frameworks",
     )
+
+def _swift_compatibility_lib_paths(*, target_triple, xcode_config):
+    """Returns the paths to the Swift compatibility libraries in the toolchain.
+
+    The returned paths are relative to the `Developer` directory; they do not
+    contain the Bazel placeholder that would be substituted with the actual
+    `Developer` directory at execution time.
+
+    Args:
+        target_triple: The target triple `struct`.
+        xcode_config: The `apple_common.XcodeVersionConfig` provider.
+
+    Returns:
+        A list of paths to the Swift compatibility libraries in the toolchain.
+    """
+
+    # We choose to ignore swift-5.0 and swift-5.5 because they correspond to
+    # such old OS versions that nobody is targeting with rules like
+    # `swift_binary` and `swift_test`. (And if they were, they would already be
+    # broken before this addition.)
+    versions = []
+    if _is_xcode_at_least_version(xcode_config, "26.0"):
+        versions.append("6.2")
+
+    platform_name = target_triples.platform_name_for_swift(target_triple)
+    return [
+        "Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-{}/{}".format(
+            version,
+            platform_name,
+        )
+        for version in versions
+    ]
 
 def _sdk_developer_framework_dir(apple_toolchain, target_triple):
     """Returns the Developer framework directory for the SDK.
@@ -156,7 +197,8 @@ def _swift_linkopts_cc_info(
         apple_toolchain,
         target_triple,
         toolchain_label,
-        toolchain_root):
+        toolchain_root,
+        xcode_config):
     """Returns a `CcInfo` containing flags that should be passed to the linker.
 
     The providers returned by this function will be used as implicit
@@ -170,11 +212,21 @@ def _swift_linkopts_cc_info(
             owner of the linker input propagating the flags.
         toolchain_root: The path to a custom Swift toolchain that could contain
             libraries required to link the binary
+        xcode_config: The `apple_common.XcodeVersionConfig` provider.
 
     Returns:
         A `CcInfo` provider that will provide linker flags to binaries that
         depend on Swift targets.
     """
+    platform_developer_framework_dir = _platform_developer_framework_dir(
+        apple_toolchain,
+        target_triple,
+    )
+    sdk_developer_framework_dir = _sdk_developer_framework_dir(
+        apple_toolchain,
+        target_triple,
+    )
+
     linkopts = []
     if toolchain_root:
         # This -L has to come before Xcode's to make sure libraries are
@@ -191,6 +243,12 @@ def _swift_linkopts_cc_info(
     )
 
     linkopts.extend([
+        "-F{}".format(path)
+        for path in compact([
+            platform_developer_framework_dir,
+            sdk_developer_framework_dir,
+        ])
+    ] + [
         "-L{}".format(swift_lib_dir),
         "-L/usr/lib/swift",
         # TODO(b/112000244): This should get added by the C++ Starlark API,
@@ -199,8 +257,45 @@ def _swift_linkopts_cc_info(
         # variables not provided by cc_common. Figure out how to handle this
         # correctly.
         "-Wl,-objc_abi_version,2",
-        "-Wl,-rpath,/usr/lib/swift",
     ])
+
+    # Compute the necessary rpaths for back-deployed compatibility libraries.
+    # Note that this implies that a `swift_{binary,compiler_plugin,test}` isn't
+    # portable to a different machine unless that machine also has the correct
+    # version of Xcode selected. Users who need to build a binary that can be
+    # moved to machines with different or no Xcode should use an appropriate
+    # rule from rules_apple, which ensures that the dylibs are bundled as part
+    # of the application.
+    #
+    # The system `/usr/lib/swift` must always be first in the list, to ensure
+    # that system libraries are preferred over those in the toolchain.
+    swift_compatibility_lib_dirs = _swift_compatibility_lib_paths(
+        target_triple = target_triple,
+        xcode_config = xcode_config,
+    )
+    rpaths = ["/usr/lib/swift"] + [
+        paths.join(developer_dir_symlink, compatibility_dir)
+        for developer_dir_symlink in _DEVELOPER_DIR_SYMLINKS
+        for compatibility_dir in swift_compatibility_lib_dirs
+    ]
+    linkopts += [
+        "-Wl,-rpath,{}".format(rpath)
+        for rpath in rpaths
+    ]
+
+    # Add the linker path to the directory containing the dylib with Swift
+    # extensions for the XCTest module.
+    if platform_developer_framework_dir:
+        linkopts.extend([
+            "-L{}".format(
+                swift_developer_lib_dir([
+                    struct(
+                        developer_path_label = "platform",
+                        path = platform_developer_framework_dir,
+                    ),
+                ]),
+            ),
+        ])
 
     return CcInfo(
         linking_context = cc_common.create_linking_context(
@@ -214,14 +309,12 @@ def _swift_linkopts_cc_info(
     )
 
 def _test_linking_context(
-        apple_toolchain,
         target_triple,
         toolchain_label,
         xcode_config):
     """Returns a `CcLinkingContext` containing linker flags for test binaries.
 
     Args:
-        apple_toolchain: The `apple_common.apple_toolchain()` object.
         target_triple: The target triple `struct`.
         toolchain_label: The label of the Swift toolchain that will act as the
             owner of the linker input propagating the flags.
@@ -231,10 +324,6 @@ def _test_linking_context(
         A `CcLinkingContext` that will provide linker flags to `swift_test`
         binaries.
     """
-    platform_developer_framework_dir = _platform_developer_framework_dir(
-        apple_toolchain,
-        target_triple,
-    )
 
     # Weakly link to XCTest. It's possible that machine that links the test
     # binary will have Xcode installed at a different path than the machine that
@@ -247,17 +336,28 @@ def _test_linking_context(
     if _is_xcode_at_least_version(xcode_config, "16.0"):
         linkopts.append("-Wl,-weak_framework,Testing")
 
-    if platform_developer_framework_dir:
+    # We use these as the rpaths for linking tests so that the required
+    # libraries are found if Xcode is installed in a different location on the
+    # machine that runs the tests than the machine used to link them.
+    for developer_dir in _DEVELOPER_DIR_SYMLINKS:
+        platform_developer_framework_dir_symlink = paths.join(
+            developer_dir,
+            "Platforms",
+            "{}.platform".format(
+                target_triples.bazel_apple_platform(target_triple).name_in_plist,
+            ),
+            "Developer/Library/Frameworks",
+        )
         linkopts.extend([
             "-Wl,-rpath,{}".format(path)
             for path in compact([
                 swift_developer_lib_dir([
                     struct(
                         developer_path_label = "platform",
-                        path = platform_developer_framework_dir,
+                        path = platform_developer_framework_dir_symlink,
                     ),
                 ]),
-                platform_developer_framework_dir,
+                platform_developer_framework_dir_symlink,
             ])
         ])
 
@@ -653,7 +753,6 @@ def _xcode_swift_toolchain_impl(ctx):
         swiftcopts.extend(ctx.attr._copts[BuildSettingInfo].value)
 
     test_linking_context = _test_linking_context(
-        apple_toolchain = apple_toolchain,
         target_triple = target_triple,
         toolchain_label = ctx.label,
         xcode_config = xcode_config,
@@ -687,6 +786,7 @@ def _xcode_swift_toolchain_impl(ctx):
         target_triple = target_triple,
         toolchain_label = ctx.label,
         toolchain_root = toolchain_root or custom_xcode_toolchain_root,
+        xcode_config = xcode_config,
     )
 
     # Compute the default requested features and conditional ones based on Xcode
