@@ -226,14 +226,8 @@ private let legacyExternalFile = /external\/([^\/]+)/
 // Extracts the canonical name of the repository containing the file
 // located at `path`.
 private func repository(from path: String) -> String {
-    if let match = path.prefixMatch(of: legacyExternalGeneratedFile) {
-        return String(match.1)
-    }
-    if let match = path.prefixMatch(of: legacyExternalFile) {
-        return String(match.1)
-    }
-    // If a file is not in an external repository, return an empty string
-    return ""
+    let match = path.prefixMatch(of: legacyExternalGeneratedFile) ?? path.prefixMatch(of: legacyExternalFile)
+    return match.map { String($0.1) } ?? ""
 }
 
 // MARK: Runfiles Paths Computation
