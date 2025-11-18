@@ -560,6 +560,7 @@ def _all_tool_configs(
         swift_executable: A custom Swift driver executable to be used during the
             build, if provided.
         toolchain_root: The root directory of the toolchain, if provided.
+        xcode_config: The Xcode configuration.
 
     Returns:
         A dictionary mapping action name to tool configuration.

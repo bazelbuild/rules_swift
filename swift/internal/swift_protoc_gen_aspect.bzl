@@ -175,7 +175,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
         transitive_module_mappings.append(swift_proto_info.module_mappings)
         transitive_pbswift_files.append(swift_proto_info.pbswift_files)
 
-    direct_module_mappings = []
+    output_groups = {}
     if direct_pbswift_files:
         feature_configuration = configure_features(
             ctx = aspect_ctx,
@@ -194,17 +194,11 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             target.label,
             feature_configuration = feature_configuration,
         )
-        direct_module_mappings.append(
-            _build_module_mapping_from_srcs(
-                module_name = module_name,
-                proto_srcs = target_proto_info.direct_sources,
-            ),
+        direct_module_mapping = _build_module_mapping_from_srcs(
+            module_name = module_name,
+            proto_srcs = target_proto_info.direct_sources,
         )
-
-    module_mappings = depset(direct_module_mappings, transitive = transitive_module_mappings)
-    output_groups = {}
-
-    if direct_pbswift_files:
+        module_mappings = depset([direct_module_mapping], transitive = transitive_module_mappings)
         transitive_module_mapping_file = _register_module_mapping_write_action(
             target.label.name,
             aspect_ctx.actions,
@@ -310,6 +304,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
                     swift_info = SwiftInfo(swift_infos = transitive_swift_infos),
                 ),
             ]
+        module_mappings = depset(transitive = transitive_module_mappings)
 
     pbswift_files = depset(
         direct = direct_pbswift_files,

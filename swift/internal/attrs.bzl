@@ -55,9 +55,8 @@ indirect (transitive) dependents.
         # Deprecated, but Starlark rules do not inherit `licenses` by default
         # (see b/169635467).
         # buildifier: disable=attr-license
-        # buildifier: disable=attr-licenses
         "licenses": attr.license(),
-    }
+    }  # buildifier: disable=attr-licenses
 
 def swift_compilation_attrs(
         additional_deps_aspects = [],
