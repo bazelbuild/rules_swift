@@ -108,7 +108,6 @@ load(
 )
 load("//swift/toolchains/config:tool_config.bzl", "ToolConfigInfo")
 
-
 _CPP_TOOLCHAIN_TYPE = Label("@bazel_tools//tools/cpp:toolchain_type")
 
 visibility("public")
