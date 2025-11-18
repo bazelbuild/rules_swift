@@ -214,22 +214,22 @@ public final class Runfiles {
     }
 }
 
-  // https://github.com/bazel-contrib/rules_go/blob/6505cf2e4f0a768497b123a74363f47b711e1d02/go/runfiles/global.go#L53-L54
-  private let legacyExternalGeneratedFile = /bazel-out\/[^\/]+\/bin\/external\/([^\/]+)/
-  private let legacyExternalFile = /external\/([^\/]+)/
+// https://github.com/bazel-contrib/rules_go/blob/6505cf2e4f0a768497b123a74363f47b711e1d02/go/runfiles/global.go#L53-L54
+private let legacyExternalGeneratedFile = /bazel-out\/[^\/]+\/bin\/external\/([^\/]+)/
+private let legacyExternalFile = /external\/([^\/]+)/
 
-  // Extracts the canonical name of the repository containing the file
-  // located at `path`.
-  private func repository(from path: String) -> String {
+// Extracts the canonical name of the repository containing the file
+// located at `path`.
+private func repository(from path: String) -> String {
     if let match = path.prefixMatch(of: legacyExternalGeneratedFile) {
-      return String(match.1)
+        return String(match.1)
     }
     if let match = path.prefixMatch(of: legacyExternalFile) {
-      return String(match.1)
+        return String(match.1)
     }
     // If a file is not in an external repository, return an empty string
     return ""
-  }
+}
 
 // MARK: Runfiles Paths Computation
 
