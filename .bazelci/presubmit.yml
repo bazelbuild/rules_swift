@@ -57,6 +57,8 @@ x_defaults:
       - "--repo_env=CXX=clang++.exe"
       # - "--repo_env=SDKROOT=%LOCALAPPDATA%\\Programs\\Swift\\Platforms\\%SWIFT_VERSION%\\Windows.platform\\Developer\\SDKs\\Windows.sdk"
       # - "--repo_env=Path=%LOCALAPPDATA%\\Programs\\Swift\\Toolchains\\%SWIFT_VERSION%+Asserts\\usr\\bin;%LOCALAPPDATA%\\Programs\\Swift\\Runtimes\\%SWIFT_VERSION%\\usr\\bin;%Path%"
+      - "--repo_env=Path=%Path%"
+      - "--repo_env=PATH=%Path%"
     build_targets:
       - "//tools/worker/..."
 
