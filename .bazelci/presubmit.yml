@@ -45,6 +45,9 @@ x_defaults:
       PATH: "%LOCALAPPDATA%\\Programs\\Swift\\Toolchains\\%SWIFT_VERSION%+Asserts\\usr\\bin;%LOCALAPPDATA%\\Programs\\Swift\\Runtimes\\%SWIFT_VERSION%\\usr\\bin;%Path%"
       SDKROOT: "%LOCALAPPDATA%\\Programs\\Swift\\Platforms\\%SWIFT_VERSION%\\Windows.platform\\Developer\\SDKs\\Windows.sdk"
     batch_commands:
+      - echo --- Installing Windows SDK
+      - curl.exe -L https://go.microsoft.com/fwlink/?linkid=2342616 -o %TEMP%\winsdkinstaller.exe
+      - PowerShell Start-Process -FilePath ${env:TEMP}\winsdkinstaller.exe -ArgumentList(\"/norestart\") -Wait -PassThru -Verb RunAs
       - echo --- Downloading and installing Swift %SWIFT_VERSION%
       - curl.exe -L https://download.swift.org/swift-6.1-release/windows10/swift-6.1-RELEASE/swift-6.1-RELEASE-windows10.exe -o %TEMP%\installer.exe
       - PowerShell Start-Process -FilePath ${env:TEMP}\installer.exe -ArgumentList(\"/install\", \"/passive\", \"/norestart\", \"/log log.txt\") -Wait -PassThru -Verb RunAs
