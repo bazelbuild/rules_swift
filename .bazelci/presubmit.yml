@@ -53,7 +53,7 @@ x_defaults:
       # Override 'sandboxed' strategy set in .bazelrc because it's not
       # available on Windows
       - "--strategy=SwiftCompile="
-      - --repo_env=CC="%LOCALAPPDATA%\\Programs\\Swift\\Toolchains\\%SWIFT_VERSION%+Asserts\\usr\\bin\\clang-cl.exe"
+      - --repo_env=CC=clang
       - --repo_env=CXX="%LOCALAPPDATA%\\Programs\\Swift\\Toolchains\\%SWIFT_VERSION%+Asserts\\usr\\bin\\clang++.exe"
       - --repo_env=USE_CLANG_CL=1
       - "--repo_env=CXX=clang++.exe"
