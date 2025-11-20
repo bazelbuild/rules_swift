@@ -1,5 +1,5 @@
 diff --git a/cc/private/toolchain/windows_cc_configure.bzl b/cc/private/toolchain/windows_cc_configure.bzl
-index 66ca5fb..3003dbc 100644
+index 66ca5fb..16b5bcf 100644
 --- a/cc/private/toolchain/windows_cc_configure.bzl
 +++ b/cc/private/toolchain/windows_cc_configure.bzl
 @@ -385,6 +385,7 @@ def setup_vc_env_vars(repository_ctx, vc_path, envvars = [], allow_empty = False
@@ -10,7 +10,15 @@ index 66ca5fb..3003dbc 100644
  
      if not allow_empty:
          _check_env_vars(env_map, cmd, expected = envvars)
-@@ -741,6 +742,8 @@ Header pruning has been disabled since Bazel failed to recognize the output of /
+@@ -723,6 +724,7 @@ def _get_msvc_vars(repository_ctx, paths, target_arch = "x64", msvc_vars_x64 = N
+     for path in escaped_include_paths.split(";"):
+         if path:
+             escaped_cxx_include_directories.append("\"%s\"" % path)
++    print("abc", build_tools)
+     if llvm_path:
+         clang_version = _get_clang_version(repository_ctx, build_tools["CL"])
+         clang_dir = _get_clang_dir(repository_ctx, llvm_path, clang_version)
+@@ -741,6 +743,8 @@ Header pruning has been disabled since Bazel failed to recognize the output of /
  This can result in unnecessary recompilation.
  Fix this by installing the English language pack for the Visual Studio installation at {} and run 'bazel sync --configure'.""".format(vc_path))
  
