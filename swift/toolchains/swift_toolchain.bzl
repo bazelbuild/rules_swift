@@ -432,7 +432,8 @@ def _swift_toolchain_impl(ctx):
     if "clang" not in cc_toolchain.compiler:
         fail("Swift requires the configured CC toolchain to be LLVM (clang). " +
              "Either use the locally installed LLVM by setting `CC=clang` in your environment " +
-             "before invoking Bazel, or configure a Bazel LLVM CC toolchain.")
+             "before invoking Bazel, or configure a Bazel LLVM CC toolchain." +
+             "The current CC toolchain uses: {}".format(cc_toolchain.compiler))
 
     if ctx.attr.os == "windows":
         swift_linkopts_cc_info = _swift_windows_linkopts_cc_info(
