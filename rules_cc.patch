@@ -1,0 +1,12 @@
+diff --git a/cc/private/toolchain/windows_cc_configure.bzl b/cc/private/toolchain/windows_cc_configure.bzl
+index 66ca5fb..f019455 100644
+--- a/cc/private/toolchain/windows_cc_configure.bzl
++++ b/cc/private/toolchain/windows_cc_configure.bzl
+@@ -385,6 +385,7 @@ def setup_vc_env_vars(repository_ctx, vc_path, envvars = [], allow_empty = False
+     for env in envs:
+         key, value = env.split("=", 1)
+         env_map[key] = escape_string(value.replace("\\", "\\\\")) if escape else value
++    print(env_map)
+ 
+     if not allow_empty:
+         _check_env_vars(env_map, cmd, expected = envvars)
