@@ -1,5 +1,18 @@
+diff --git a/cc/private/toolchain/BUILD.windows.tpl b/cc/private/toolchain/BUILD.windows.tpl
+index 1d0f8a0..a3a2aab 100644
+--- a/cc/private/toolchain/BUILD.windows.tpl
++++ b/cc/private/toolchain/BUILD.windows.tpl
+@@ -322,7 +322,7 @@ cc_toolchain_config(
+         "objcopy": "wrapper/bin/msvc_nop.bat",
+         "objdump": "wrapper/bin/msvc_nop.bat",
+         "strip": "wrapper/bin/msvc_nop.bat",
+-        "dumpbin": "%{msvc_dumpbin_path_x64}",
++        # "dumpbin": "%{msvc_dumpbin_path_x64}",
+         "cpp-module-deps-scanner": "%{msvc_deps_scanner_wrapper_path_x64}",
+     },
+     archiver_flags = ["/MACHINE:X64"],
 diff --git a/cc/private/toolchain/windows_cc_configure.bzl b/cc/private/toolchain/windows_cc_configure.bzl
-index 66ca5fb..d768ec6 100644
+index 66ca5fb..4d8bfed 100644
 --- a/cc/private/toolchain/windows_cc_configure.bzl
 +++ b/cc/private/toolchain/windows_cc_configure.bzl
 @@ -385,6 +385,7 @@ def setup_vc_env_vars(repository_ctx, vc_path, envvars = [], allow_empty = False
@@ -35,3 +48,12 @@ index 66ca5fb..d768ec6 100644
      msvc_vars = {
          "%{msvc_env_tmp_" + target_arch + "}": escaped_tmp_dir,
          "%{msvc_env_include_" + target_arch + "}": escaped_include_paths,
+@@ -751,7 +756,7 @@ Fix this by installing the English language pack for the Visual Studio installat
+         "%{msvc_ml_path_" + target_arch + "}": build_tools.get("ML", "msvc_arm_toolchain_does_not_support_ml"),
+         "%{msvc_link_path_" + target_arch + "}": build_tools["LINK"],
+         "%{msvc_lib_path_" + target_arch + "}": build_tools["LIB"],
+-        "%{msvc_dumpbin_path_" + target_arch + "}": build_tools["DUMPBIN"],
++        # "%{msvc_dumpbin_path_" + target_arch + "}": build_tools["DUMPBIN"],
+         "%{msvc_parse_showincludes_" + target_arch + "}": repr(support_parse_showincludes),
+         "%{dbg_mode_debug_flag_" + target_arch + "}": "/DEBUG:FULL" if support_debug_fastlink else "/DEBUG",
+         "%{fastbuild_mode_debug_flag_" + target_arch + "}": "/DEBUG:FASTLINK" if support_debug_fastlink else "/DEBUG",
