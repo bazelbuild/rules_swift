@@ -62,7 +62,7 @@ x_defaults:
       # - --repo_env=Path="%Path%"
       # - --repo_env=PATH="%Path%"
       - --repo_env="PATH=$($env:Path)"
-      - --repo_env=BAZEL_LLVM="$(env:LOCALAPPDATA)\\Programs\\Swift\\Toolchains\\$(env:SWIFT_VERSION)+Asserts\\usr"
+      - --repo_env=BAZEL_LLVM="$($env:LOCALAPPDATA)\\Programs\\Swift\\Toolchains\\$($env:SWIFT_VERSION)+Asserts\\usr"
 
     build_targets:
       - "//tools/worker/..."
