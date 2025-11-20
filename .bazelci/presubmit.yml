@@ -46,7 +46,7 @@ x_defaults:
       SDKROOT: "%LOCALAPPDATA%\\Programs\\Swift\\Platforms\\%SWIFT_VERSION%\\Windows.platform\\Developer\\SDKs\\Windows.sdk"
     batch_commands:
       - echo --- Downloading and installing Swift %SWIFT_VERSION%
-      - curl.exe -L https://download.swift.org/swift-6.1-release/windows10/swift-6.1-RELEASE/swift-6.1-RELEASE-windows10.exe -o %TEMP%\installer.exe
+      - curl.exe -L https://download.swift.org/swift-6.2.1-release/windows10/swift-6.2.1-RELEASE/swift-6.2.1-RELEASE-windows10.exe -o %TEMP%\installer.exe
       - PowerShell Start-Process -FilePath ${env:TEMP}\installer.exe -ArgumentList(\"/install\", \"/passive\", \"/norestart\", \"/log log.txt\") -Wait -PassThru -Verb RunAs
       - dir "%LOCALAPPDATA%\\Programs\\Swift\\Toolchains\\%SWIFT_VERSION%+Asserts\\usr\\bin"
     build_flags:
@@ -63,7 +63,7 @@ x_defaults:
       # - --repo_env=PATH="%Path%"
       - --repo_env="PATH=$($env:Path)"
       # - --repo_env=BAZEL_LLVM="$($env:LOCALAPPDATA)\\Programs\\Swift\\Toolchains\\$($env:SWIFT_VERSION)+Asserts\\usr"
-      - --repo_env=BAZEL_LLVM="C:/Users/b/AppData/Local/Programs/Swift/Toolchains/6.1.0+Asserts/usr"
+      - --repo_env=BAZEL_LLVM="C:/Users/b/AppData/Local/Programs/Swift/Toolchains/6.2.1+Asserts/usr"
 
     build_targets:
       - "//tools/..."
