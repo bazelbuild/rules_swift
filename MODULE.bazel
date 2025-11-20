@@ -72,3 +72,6 @@ single_version_override(
     patch_strip = 1,
     patches = ["//:rules_cc.patch"],
 )
+
+cc_configure = use_extension("@rules_cc//cc:extensions.bzl", "cc_configure_extension")
+use_repo(cc_configure, "local_config_cc")

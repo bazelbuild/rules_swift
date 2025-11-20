@@ -15,3 +15,12 @@ filegroup(
         "//tools:for_bazel_tests",
     ],
 )
+
+platform(
+    name = "windows",
+    constraint_values = [
+        "@platforms//cpu:x86_64",
+        "@platforms//os:windows",
+        "@bazel_tools//tools/cpp:clang-cl",
+    ],
+)
