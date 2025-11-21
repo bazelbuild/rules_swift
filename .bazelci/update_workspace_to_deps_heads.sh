@@ -22,7 +22,7 @@ else
   INPLACE=("-i")
 fi
 
-# Modify the WORKSPACE to pull in the master branches of some deps.
+# Modify the WORKSPACE to pull in the main branches of some deps.
 sed \
   "${INPLACE[@]}" \
   -e \
@@ -39,7 +39,7 @@ git_repository(\
 git_repository(\
 \    name = "build_bazel_apple_support",\
 \    remote = "https://github.com/bazelbuild/apple_support.git",\
-\    branch = "master",\
+\    branch = "main",\
 )\
 ' \
   WORKSPACE
