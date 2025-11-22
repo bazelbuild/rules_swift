@@ -114,7 +114,7 @@ void WorkProcessor::ProcessWorkRequest(
     }
 
     if (!arg.empty()) {
-      params_file_stream << arg << '\n';
+      params_file_stream << arg << std::endl;
     }
 
     prev_arg = original_arg;
@@ -134,18 +134,18 @@ void WorkProcessor::ProcessWorkRequest(
                                  .string();
       output_file_map.WriteToPath(new_path);
 
-      params_file_stream << "-output-file-map\n";
-      params_file_stream << new_path << '\n';
+      params_file_stream << "-output-file-map" << std::endl;
+      params_file_stream << new_path << std::endl;
 
       // Pass the incremental flags only if WMO is disabled. WMO would overrule
       // incremental mode anyway, but since we control the passing of this flag,
       // there's no reason to pass it when it's a no-op.
-      params_file_stream << "-incremental\n";
+      params_file_stream << "-incremental" << std::endl;
     } else {
       // If WMO or -dump-ast is forcing us out of incremental mode, just put the
       // original output file map back so the outputs end up where they should.
-      params_file_stream << "-output-file-map\n";
-      params_file_stream << output_file_map_path << '\n';
+      params_file_stream << "-output-file-map" << std::endl;
+      params_file_stream << output_file_map_path << std::endl;
     }
   }
 
@@ -198,7 +198,7 @@ void WorkProcessor::ProcessWorkRequest(
       std::filesystem::create_directories(dir_path, ec);
       if (ec) {
         stderr_stream << "swift_worker: Could not create directory " << dir_path
-                      << " (" << ec.message() << ")\n";
+                      << " (" << ec.message() << ")" << std::endl;
         FinalizeWorkRequest(request, response, EXIT_FAILURE, stderr_stream);
         return;
       }
@@ -222,7 +222,7 @@ void WorkProcessor::ProcessWorkRequest(
           stderr_stream << "swift_worker: Could not copy "
                         << expected_object_pair.second << " to "
                         << expected_object_pair.first << " (" << ec.message()
-                        << ")\n";
+                        << ")" << std::endl;
           FinalizeWorkRequest(request, response, EXIT_FAILURE, stderr_stream);
           return;
         }
@@ -238,7 +238,7 @@ void WorkProcessor::ProcessWorkRequest(
         std::filesystem::remove(cleanup_output, ec);
         if (ec) {
           stderr_stream << "swift_worker: Could not remove " << cleanup_output
-                        << " (" << ec.message() << ")\n";
+                        << " (" << ec.message() << ")" << std::endl;
           FinalizeWorkRequest(request, response, EXIT_FAILURE, stderr_stream);
           return;
         }
@@ -265,7 +265,7 @@ void WorkProcessor::ProcessWorkRequest(
         stderr_stream << "swift_worker: Could not copy "
                       << expected_object_pair.second << " to "
                       << expected_object_pair.first << " (" << ec.message()
-                      << ")\n";
+                      << ")" << std::endl;
         FinalizeWorkRequest(request, response, EXIT_FAILURE, stderr_stream);
         return;
       }
@@ -286,13 +286,13 @@ void WorkProcessor::ProcessWorkRequest(
           stderr_stream << "swift_worker: Could not copy "
                         << expected_object_pair.first << " to "
                         << expected_object_pair.second << " (" << ec.message()
-                        << ")\n";
+                        << ")" << std::endl;
           FinalizeWorkRequest(request, response, EXIT_FAILURE, stderr_stream);
           return;
         }
       } else if (exit_code == 0) {
         stderr_stream << "Failed to copy " << expected_object_pair.first
-                      << " for incremental builds, maybe it wasn't produced?\n";
+                      << " for incremental builds, maybe it wasn't produced?" << std::endl;
         FinalizeWorkRequest(request, response, EXIT_FAILURE, stderr_stream);
         return;
       }
