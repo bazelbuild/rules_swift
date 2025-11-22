@@ -4,6 +4,10 @@ common --incompatible_allow_tags_propagation
 # Fail if a glob doesn't match anything (https://github.com/bazelbuild/bazel/issues/8195)
 build --incompatible_disallow_empty_glob
 
+# Easier syntax for passing swiftc flags
+common --flag_alias=swiftcopt=@build_bazel_rules_swift//swift:copt
+common --flag_alias=host_swiftcopt=@build_bazel_rules_swift//swift:exec_copt
+
 build --host_macos_minimum_os=14.0
 build --macos_minimum_os=14.0
 
@@ -54,3 +58,4 @@ build --per_file_copt="external/.*zlib.*/.*.c@-Wno-deprecated-non-prototype"
 build:windows --copt=-Wno-builtin-macro-redefined --host_copt=-Wno-builtin-macro-redefined
 build:windows --extra_toolchains=@local_config_cc//:cc-toolchain-x64_windows-clang-cl --extra_execution_platforms=//:windows
 build:windows --features=-compiler_param_file --host_features=-compiler_param_file
+build:windows --swiftcopt=-wmo --host_swiftcopt=-wmo
