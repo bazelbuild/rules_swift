@@ -59,4 +59,5 @@ build:windows --copt=-Wno-builtin-macro-redefined --host_copt=-Wno-builtin-macro
 build:windows --extra_toolchains=@local_config_cc//:cc-toolchain-x64_windows-clang-cl --extra_execution_platforms=//:windows
 build:windows --features=-compiler_param_file --host_features=-compiler_param_file
 build:windows --swiftcopt=-wmo --host_swiftcopt=-wmo
+build:windows --swiftcopt=-v --host_swiftcopt=-v
 build:windows --worker_sandboxing=false

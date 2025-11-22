@@ -341,7 +341,7 @@ Swift toolchain.
 
     env = {
         "Path": repository_ctx.os.environ["Path"] if "Path" in repository_ctx.os.environ else repository_ctx.os.environ["PATH"],
-        # "ProgramData": repository_ctx.os.environ["ProgramData"],
+        "ProgramData": repository_ctx.os.environ["ProgramData"],
     }
 
     return """\
