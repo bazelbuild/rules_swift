@@ -46,7 +46,7 @@ static std::unique_ptr<TempFile> WriteResponseFile(
       }
       response_file_stream << ch;
     }
-    response_file_stream << "\"\n";
+    response_file_stream << "\"" << std::endl;
   }
 
   response_file_stream.close();

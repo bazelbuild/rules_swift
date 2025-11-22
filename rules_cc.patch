@@ -1,0 +1,59 @@
+diff --git a/cc/private/toolchain/BUILD.windows.tpl b/cc/private/toolchain/BUILD.windows.tpl
+index 1d0f8a0..a3a2aab 100644
+--- a/cc/private/toolchain/BUILD.windows.tpl
++++ b/cc/private/toolchain/BUILD.windows.tpl
+@@ -322,7 +322,7 @@ cc_toolchain_config(
+         "objcopy": "wrapper/bin/msvc_nop.bat",
+         "objdump": "wrapper/bin/msvc_nop.bat",
+         "strip": "wrapper/bin/msvc_nop.bat",
+-        "dumpbin": "%{msvc_dumpbin_path_x64}",
++        # "dumpbin": "%{msvc_dumpbin_path_x64}",
+         "cpp-module-deps-scanner": "%{msvc_deps_scanner_wrapper_path_x64}",
+     },
+     archiver_flags = ["/MACHINE:X64"],
+diff --git a/cc/private/toolchain/windows_cc_configure.bzl b/cc/private/toolchain/windows_cc_configure.bzl
+index 66ca5fb..4d8bfed 100644
+--- a/cc/private/toolchain/windows_cc_configure.bzl
++++ b/cc/private/toolchain/windows_cc_configure.bzl
+@@ -385,6 +385,7 @@ def setup_vc_env_vars(repository_ctx, vc_path, envvars = [], allow_empty = False
+     for env in envs:
+         key, value = env.split("=", 1)
+         env_map[key] = escape_string(value.replace("\\", "\\\\")) if escape else value
++    print(env_map)
+ 
+     if not allow_empty:
+         _check_env_vars(env_map, cmd, expected = envvars)
+@@ -594,6 +595,7 @@ def find_llvm_tool(repository_ctx, llvm_path, tool):
+     tool_path = llvm_path + "\\bin\\" + tool
+ 
+     if not repository_ctx.path(tool_path).exists:
++        print("failed to find ", tool_path)
+         return None
+ 
+     return tool_path.replace("\\", "/")
+@@ -723,6 +725,7 @@ def _get_msvc_vars(repository_ctx, paths, target_arch = "x64", msvc_vars_x64 = N
+     for path in escaped_include_paths.split(";"):
+         if path:
+             escaped_cxx_include_directories.append("\"%s\"" % path)
++    print("abc", build_tools)
+     if llvm_path:
+         clang_version = _get_clang_version(repository_ctx, build_tools["CL"])
+         clang_dir = _get_clang_dir(repository_ctx, llvm_path, clang_version)
+@@ -741,6 +744,8 @@ Header pruning has been disabled since Bazel failed to recognize the output of /
+ This can result in unnecessary recompilation.
+ Fix this by installing the English language pack for the Visual Studio installation at {} and run 'bazel sync --configure'.""".format(vc_path))
+ 
++    print("build tools are ", build_tools)
++
+     msvc_vars = {
+         "%{msvc_env_tmp_" + target_arch + "}": escaped_tmp_dir,
+         "%{msvc_env_include_" + target_arch + "}": escaped_include_paths,
+@@ -751,7 +756,7 @@ Fix this by installing the English language pack for the Visual Studio installat
+         "%{msvc_ml_path_" + target_arch + "}": build_tools.get("ML", "msvc_arm_toolchain_does_not_support_ml"),
+         "%{msvc_link_path_" + target_arch + "}": build_tools["LINK"],
+         "%{msvc_lib_path_" + target_arch + "}": build_tools["LIB"],
+-        "%{msvc_dumpbin_path_" + target_arch + "}": build_tools["DUMPBIN"],
++        # "%{msvc_dumpbin_path_" + target_arch + "}": build_tools["DUMPBIN"],
+         "%{msvc_parse_showincludes_" + target_arch + "}": repr(support_parse_showincludes),
+         "%{dbg_mode_debug_flag_" + target_arch + "}": "/DEBUG:FULL" if support_debug_fastlink else "/DEBUG",
+         "%{fastbuild_mode_debug_flag_" + target_arch + "}": "/DEBUG:FASTLINK" if support_debug_fastlink else "/DEBUG",
