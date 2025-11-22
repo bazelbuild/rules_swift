@@ -53,3 +53,4 @@ build --per_file_copt="external/.*zlib.*/.*.c@-Wno-deprecated-non-prototype"
 
 build:windows --copt=-Wno-builtin-macro-redefined --host_copt=-Wno-builtin-macro-redefined
 build:windows --extra_toolchains=@local_config_cc//:cc-toolchain-x64_windows-clang-cl --extra_execution_platforms=//:windows
+build:windows --features=-compiler_param_file --host_features=-compiler_param_file
