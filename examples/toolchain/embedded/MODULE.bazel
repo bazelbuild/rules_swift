@@ -1,0 +1,58 @@
+bazel_dep(name = "apple_support", version = "1.24.3")
+bazel_dep(name = "rules_swift", version = "3.2.0")
+local_path_override(
+    module_name = "rules_swift",
+    path = "../../..",
+)
+
+bazel_dep(name = "platforms", version = "1.0.0")
+bazel_dep(name = "rules_cc", version = "0.2.14")
+bazel_dep(name = "rules_swift_package_manager", version = "1.11.0")
+
+# rules_swift_package_manager currently pulls in rules_go v0.57.0, which has
+# this issue: https://github.com/bazel-contrib/rules_go/issues/4480
+# Which causes bazel mod to error out on bazel 8.5.0
+# When rules_swift_package_manager has upgrade their go version, remove this line.
+bazel_dep(name = "rules_go", version = "0.59.0")
+
+swift_deps = use_extension(
+    "@rules_swift_package_manager//:extensions.bzl",
+    "swift_deps",
+)
+swift_deps.from_package(
+    resolved = "//:Package.resolved",
+    swift = "//:Package.swift",
+)
+use_repo(
+    swift_deps,
+    "swift_package",
+    "swiftpkg_swift_mmio",
+    # The name of the Swift package repositories will be added to this declaration in step 4 after
+    # running `bazel mod tidy`.
+    # NOTE: The name of the Bazel external repository for a Swift package is `swiftpkg_xxx` where
+    # `xxx` is the Swift package identity, lowercase, with punctuation replaced by `hyphen`. For
+    # example, the repository name for apple/swift-nio is `swiftpkg_swift_nio`.
+)
+
+swift = use_extension("@rules_swift//swift:extensions.bzl", "swift")
+swift.toolchain(
+    name = "swift_toolchain",
+    swift_version = "6.2.1",
+)
+use_repo(
+    swift,
+    "swift_toolchain",
+    "swift_toolchain_ubuntu24.04-aarch64",
+    "swift_toolchain_xcode",
+)
+
+register_toolchains(
+    "@swift_toolchain//:cc_toolchain_embedded_ubuntu24.04",
+    "@swift_toolchain//:cc_toolchain_embedded_ubuntu24.04-aarch64",
+    "@swift_toolchain//:cc_toolchain_embedded_xcode",
+    "@swift_toolchain//:swift_toolchain_embedded_ubuntu24.04",
+    "@swift_toolchain//:swift_toolchain_embedded_ubuntu24.04-aarch64",
+    "@swift_toolchain//:swift_toolchain_embedded_xcode",
+    "@swift_toolchain//:swift_toolchain_exec_ubuntu24.04",
+    "@swift_toolchain//:swift_toolchain_exec_ubuntu24.04-aarch64",
+)

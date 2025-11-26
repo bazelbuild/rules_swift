@@ -1,0 +1,48 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("@rules_swift//swift:swift.bzl", "swift_binary", "swift_interop_hint")
+
+swift_interop_hint(
+    name = "support_hint",
+    module_name = "Support",
+)
+
+cc_library(
+    name = "boot",
+    srcs = ["Sources/Support/boot.S"],
+    hdrs = ["Sources/Support/include/Support.h"],
+    aspect_hints = [":support_hint"],
+    linkstatic = True,
+)
+
+swift_binary(
+    name = "Application",
+    srcs = ["Sources/Application/Application.swift"],
+    additional_linker_inputs = [
+        "Sources/Support/linkerscript.ld",
+    ],
+    linkopts = [
+        "-Wl,-T",
+        "-Wl,$(execpaths :Sources/Support/linkerscript.ld)",
+        "-Wl,--unresolved-symbols=ignore-in-object-files",
+        "-fuse-ld=lld",
+    ],
+    deps = [
+        ":boot",
+        "@swiftpkg_swift_mmio//:MMIO",
+    ],
+)
+
+genrule(
+    name = "ApplicationBinary",
+    srcs = [
+        ":Application",
+    ],
+    outs = ["Application.bin"],
+    cmd = """
+    $(execpath //:llvm-objcopy) -O binary \
+      $(execpaths :Application) $@
+  """,
+    tools = [
+        "//:llvm-objcopy",
+    ],
+)
