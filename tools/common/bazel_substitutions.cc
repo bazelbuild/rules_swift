@@ -49,10 +49,6 @@ static const char kBazelSwiftToolchainPath[] =
 // Returns the value of the given environment variable, or the empty string if
 // it wasn't set.
 std::string GetAppleEnvironmentVariable(const char *name) {
-#if !defined(__APPLE__)
-  return "";
-#endif
-
   char *env_value = getenv(name);
   if (env_value == nullptr) {
     std::cerr << "error: required Apple environment variable '" << name << "' was not set. Please file an issue on bazelbuild/rules_swift.\n";
@@ -62,9 +58,19 @@ std::string GetAppleEnvironmentVariable(const char *name) {
 }
 
 std::string GetToolchainPath() {
-#if !defined(__APPLE__)
-  return "";
-#endif
+  // If TOOLCHAIN_PATH is set, we will use that as a toolchain path.
+  // Otherwise, we will try to derive it from DEVELOPER_DIR and TOOLCHAINS
+  // using xcrun by calling GetToolchainPath().
+  char* toolchain_path = getenv("TOOLCHAIN_PATH");
+  if (toolchain_path != nullptr) {
+    return std::string(toolchain_path);
+  }
+
+  if (!std::filesystem::exists("/usr/bin/xcrun")) {
+    std::cerr << "Error: Toolchain path was requested, but TOOLCHAIN_PATH is not set "
+                 "and /usr/bin/xcrun does not exist" << std::endl;
+    exit(EXIT_FAILURE);
+  }
 
   char *toolchain_id = getenv("TOOLCHAINS");
   std::ostringstream output_stream;
@@ -94,9 +100,9 @@ std::string GetToolchainPath() {
     exit(EXIT_FAILURE);
   }
 
-  std::filesystem::path toolchain_path(output_stream.str());
+  std::filesystem::path clang_path(output_stream.str());
   // Remove usr/bin/clang components to get the root of the custom toolchain
-  return toolchain_path.parent_path().parent_path().parent_path().string();
+  return clang_path.parent_path().parent_path().parent_path().string();
 }
 
 }  // namespace
@@ -114,7 +120,9 @@ BazelPlaceholderSubstitutions::BazelPlaceholderSubstitutions() {
          return GetAppleEnvironmentVariable("SDKROOT");
        })},
       {kBazelSwiftToolchainPath,
-       PlaceholderResolver([]() { return GetToolchainPath(); })},
+       PlaceholderResolver([]() {
+        return GetToolchainPath();
+      })}
   };
 }
 
