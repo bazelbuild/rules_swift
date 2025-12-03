@@ -40,6 +40,7 @@ load(
     "SWIFT_FEATURE_CODEVIEW_DEBUG_INFO",
     "SWIFT_FEATURE_COVERAGE",
     "SWIFT_FEATURE_COVERAGE_PREFIX_MAP",
+    "SWIFT_FEATURE_COVERAGE_PREFIX_MAP_CANONICAL_NON_HERMETIC",
     "SWIFT_FEATURE_DBG",
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
     "SWIFT_FEATURE_DECLARE_SWIFTSOURCEINFO",
@@ -558,6 +559,17 @@ def compile_action_configs(
             features = [
                 [SWIFT_FEATURE_COVERAGE_PREFIX_MAP, SWIFT_FEATURE_COVERAGE],
             ],
+            not_features = [SWIFT_FEATURE_COVERAGE_PREFIX_MAP_CANONICAL_NON_HERMETIC],
+        ),
+        ActionConfigInfo(
+            actions = all_compile_action_names(),
+            configurators = [
+                add_arg("-Xwrapped-swift=-coverage-prefix-pwd-is-canonical"),
+            ],
+            features = [
+                [SWIFT_FEATURE_COVERAGE_PREFIX_MAP_CANONICAL_NON_HERMETIC, SWIFT_FEATURE_COVERAGE],
+            ],
+            not_features = [SWIFT_FEATURE_COVERAGE_PREFIX_MAP, SWIFT_FEATURE_FILE_PREFIX_MAP],
         ),
 
         # Ensure that .swiftsourceinfo files are tracked and not deleted by the worker

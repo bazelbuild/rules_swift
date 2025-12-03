@@ -288,11 +288,12 @@ bool SwiftRunner::ProcessArgument(
 
   // Helper function for adding path remapping flags that depend on information
   // only known at execution time.
-  auto add_prefix_map_flags = [&](const std::string &flag) {
+  auto add_prefix_map_flags = [&](const std::string &flag,
+                                  const std::string &new_path = ".") {
     // Get the actual current working directory (the execution root), which
     // we didn't know at analysis time.
     consumer(flag);
-    consumer(std::filesystem::current_path().string() + "=.");
+    consumer(std::filesystem::current_path().string() + "=" + new_path);
 
 #if __APPLE__
     std::string developer_dir = "__BAZEL_XCODE_DEVELOPER_DIR__";
@@ -316,7 +317,18 @@ bool SwiftRunner::ProcessArgument(
       } else if (new_arg == "-coverage-prefix-pwd-is-dot") {
         // Replace the $PWD with . to make the paths relative to the workspace
         // without breaking hermiticity.
-        add_prefix_map_flags("-file-prefix-map");
+        add_prefix_map_flags("-coverage-prefix-map");
+        changed = true;
+      } else if (new_arg == "-coverage-prefix-pwd-is-canonical") {
+        // Replace the $PWD with . to make the paths relative to the workspace
+        // without breaking hermiticity.
+        auto cwd = std::filesystem::current_path();
+        // The bazel execroot is a normal directory, but inside of it there are
+        // symlinks to our source tree. This fetches the true path of a known
+        // directory in order to get the actual source root of the project. This
+        // should only work with sandboxing disabled.
+        auto target_path = std::filesystem::canonical(cwd / "BUILD.bazel").parent_path();
+        add_prefix_map_flags("-coverage-prefix-map", target_path.string());
         changed = true;
       } else if (new_arg == "-file-prefix-pwd-is-dot") {
         // Replace the $PWD with . to make the paths relative to the workspace

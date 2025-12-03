@@ -69,6 +69,16 @@ SWIFT_FEATURE_DEBUG_PREFIX_MAP = "swift.debug_prefix_map"
 # of remote builds.
 SWIFT_FEATURE_COVERAGE_PREFIX_MAP = "swift.coverage_prefix_map"
 
+# If enabled, coverage builds will use the `-coverage-prefix-map` feature to
+# remap the current working directory to a canonical location, which permits
+# coverage representation in non-sandboxed builds with tools that expect
+# absolute paths such as Xcode.
+#
+# This feature should only be used with non-sandboxed builds inside of Xcode,
+# and enabling it effectively breaks Bazel's ability to rely on the remote cache
+# those builds.
+SWIFT_FEATURE_COVERAGE_PREFIX_MAP_CANONICAL_NON_HERMETIC = "swift.coverage_prefix_map_canonical_non_hermetic"
+
 # If enabled, C and Objective-C libraries that are direct or transitive
 # dependencies of a Swift library will emit explicit precompiled modules that
 # are compatible with Swift's ClangImporter and propagate them up the build
