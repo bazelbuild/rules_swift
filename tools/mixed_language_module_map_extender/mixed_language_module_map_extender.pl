@@ -17,7 +17,7 @@ use File::Spec;
 
 # Check arguments
 if ( @ARGV != 4 ||
-     ( @ARGV = 1 && ( $ARGV[0] == '-h' || $ARGV[0] == "--help" ) )
+     ( @ARGV == 1 && ( $ARGV[0] eq '-h' || $ARGV[0] eq "--help" ) )
    )
   {
     my $msg = "USAGE: $0 <output> <modulemap> <module_name> " .
