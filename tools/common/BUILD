@@ -11,8 +11,6 @@ cc_library(
     hdrs = ["bazel_substitutions.h"],
     copts = select({
         "//tools:clang-cl": [
-            "-Xclang",
-            "-fno-split-cold-code",
             "/std:c++17",
         ],
         "//tools:msvc": [
