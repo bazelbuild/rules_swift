@@ -28,7 +28,6 @@ load(
 load(":developer_dirs.bzl", "developer_dirs_linkopts")
 load(
     ":feature_names.bzl",
-    "SWIFT_FEATURE_ENABLE_EMBEDDED",
     "SWIFT_FEATURE_LLD_GC_WORKAROUND",
     "SWIFT_FEATURE_OBJC_LINK_FLAGS",
 )
@@ -192,7 +191,7 @@ def create_linking_context_from_compilation_outputs(
         *,
         actions,
         additional_inputs = [],
-        alwayslink = None,
+        alwayslink = True,
         compilation_outputs,
         feature_configuration,
         is_test = None,
@@ -224,9 +223,7 @@ def create_linking_context_from_compilation_outputs(
             `swift_library` `alwayslink` for why that behavior could result
             in undesired results. If `True`, the opposite will happen and this
             library will be -force_load into the link actions that depend on it.
-            By default (`None`), the value of alwayslink will be set to `True`
-            in the general case, and to `False` if the embedded swift feature is
-            turned on.
+            Defaults to `True`.
         compilation_outputs: A `CcCompilationOutputs` value containing the
             object files to link. Typically, this is the second tuple element in
             the value returned by `compile`.
@@ -325,12 +322,6 @@ def create_linking_context_from_compilation_outputs(
                     ),
                 ]),
             ),
-        )
-
-    if alwayslink == None:
-        alwayslink = not is_feature_enabled(
-            feature_configuration = feature_configuration,
-            feature_name = SWIFT_FEATURE_ENABLE_EMBEDDED,
         )
 
     if include_dev_srch_paths != None and is_test != None:
