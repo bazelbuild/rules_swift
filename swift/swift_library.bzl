@@ -32,9 +32,14 @@ load(
     "//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
+    "SWIFT_FEATURE_ENABLE_EMBEDDED",
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
 )
-load("//swift/internal:features.bzl", "configure_features")
+load(
+    "//swift/internal:features.bzl",
+    "configure_features",
+    "is_feature_enabled",
+)
 load(
     "//swift/internal:linking.bzl",
     "create_linking_context_from_compilation_outputs",
@@ -200,11 +205,21 @@ def _swift_library_impl(ctx):
     compilation_outputs = compile_result.compilation_outputs
     supplemental_outputs = compile_result.supplemental_outputs
 
+    # Override alwayslink to False if embedded Swift is enabled, as the
+    # features that require -force_load (like reflection) are not available
+    # in embedded mode.
+    alwayslink = ctx.attr.alwayslink
+    if alwayslink and is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_ENABLE_EMBEDDED,
+    ):
+        alwayslink = False
+
     linking_context, linking_output = (
         create_linking_context_from_compilation_outputs(
             actions = ctx.actions,
             additional_inputs = additional_inputs,
-            alwayslink = ctx.attr.alwayslink,
+            alwayslink = alwayslink,
             compilation_outputs = compilation_outputs,
             feature_configuration = feature_configuration,
             include_dev_srch_paths = include_dev_srch_paths,

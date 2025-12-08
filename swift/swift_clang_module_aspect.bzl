@@ -21,6 +21,7 @@ load("@rules_cc//cc/common:objc_info.bzl", "ObjcInfo")
 load("//swift/internal:compiling.bzl", "compile", "precompile_clang_module")
 load(
     "//swift/internal:feature_names.bzl",
+    "SWIFT_FEATURE_ENABLE_EMBEDDED",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS",
 )
@@ -553,11 +554,22 @@ def _compile_swift_overlay(
         toolchain_type = toolchain_type,
         workspace_name = aspect_ctx.workspace_name,
     )
+
+    # Override alwayslink to False if embedded Swift is enabled, as the
+    # features that require -force_load (like reflection) are not available
+    # in embedded mode.
+    alwayslink = overlay_info.alwayslink
+    if alwayslink and is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_ENABLE_EMBEDDED,
+    ):
+        alwayslink = False
+
     linking_context, _ = (
         create_linking_context_from_compilation_outputs(
             actions = aspect_ctx.actions,
             additional_inputs = overlay_info.additional_inputs,
-            alwayslink = overlay_info.alwayslink,
+            alwayslink = alwayslink,
             compilation_outputs = compile_result.compilation_outputs,
             feature_configuration = feature_configuration,
             label = overlay_info.label,
