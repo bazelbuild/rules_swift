@@ -439,6 +439,10 @@ def compile(
                 representations of constant values extracted from the source
                 files, if requested via a direct dependency.
 
+            *   `diagnostics_files`: A list of `File`s that contains serialized
+                diagnostics (.dia) emitted by the compiler when the feature
+                `swift.emit_diagnostics` is enabled.
+
             *   `indexstore_directory`: A directory-type `File` that represents
                 the indexstore output files created when the feature
                 `swift.index_while_building` is enabled.
@@ -831,6 +835,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         supplemental_outputs = struct(
             ast_files = compile_outputs.ast_files,
             const_values_files = compile_outputs.const_values_files,
+            diagnostics_files = compile_outputs.diagnostics_files,
             indexstore_directory = compile_outputs.indexstore_directory,
             macro_expansion_directory = compile_outputs.macro_expansion_directory,
         ),
