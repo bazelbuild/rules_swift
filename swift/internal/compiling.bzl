@@ -1375,6 +1375,7 @@ def _declare_compile_outputs(
                     target_name = target_name,
                     src = srcs[0],
                 ),
+                actions.declare_file("{}.dia".format(target_name)),
             ]
         else:
             diagnostics_files = []
@@ -1555,6 +1556,13 @@ def _declare_multiple_outputs_and_write_output_file_map(
         const_values_files.append(const_values_file)
         whole_module_map["const-values"] = const_values_file.path
 
+    if emit_diagnostics and is_wmo:
+        diagnostics_file = actions.declare_file(
+            "{}.dia".format(target_name),
+        )
+        diagnostics_files.append(diagnostics_file)
+        whole_module_map["diagnostics"] = diagnostics_file.path
+
     for src in srcs:
         file_outputs = {}
 
@@ -1601,7 +1609,7 @@ def _declare_multiple_outputs_and_write_output_file_map(
             const_values_files.append(const_values_file)
             file_outputs["const-values"] = const_values_file.path
 
-        if emit_diagnostics:
+        if emit_diagnostics and not is_wmo:
             diagnostics_file = _declare_per_source_output_file(
                 actions = actions,
                 extension = "dia",
