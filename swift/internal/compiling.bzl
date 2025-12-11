@@ -41,6 +41,7 @@ load(
     "SWIFT_FEATURE_DECLARE_SWIFTSOURCEINFO",
     "SWIFT_FEATURE_EMIT_BC",
     "SWIFT_FEATURE_EMIT_C_MODULE",
+    "SWIFT_FEATURE_EMIT_DIAGNOSTICS",
     "SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE",
     "SWIFT_FEATURE_EMIT_SWIFTDOC",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
@@ -522,7 +523,7 @@ def compile(
     if split_derived_file_generation:
         all_compile_outputs = compact([
             compile_outputs.indexstore_directory,
-        ]) + compile_outputs.object_files + compile_outputs.const_values_files
+        ]) + compile_outputs.object_files + compile_outputs.const_values_files + compile_outputs.diagnostics_files
         all_derived_outputs = compact([
             # The `.swiftmodule` file is explicitly listed as the first output
             # because it will always exist and because Bazel uses it as a key for
@@ -550,7 +551,7 @@ def compile(
             compile_outputs.generated_header_file,
             compile_outputs.indexstore_directory,
             compile_outputs.macro_expansion_directory,
-        ]) + compile_outputs.object_files + compile_outputs.const_values_files
+        ]) + compile_outputs.object_files + compile_outputs.const_values_files + compile_outputs.diagnostics_files
         all_derived_outputs = []
 
     # In `upstream` they call `merge_compilation_contexts` on passed in
@@ -1340,6 +1341,11 @@ def _declare_compile_outputs(
         indexstore_directory = None
         include_index_unit_paths = False
 
+    emit_diagnostics = is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_EMIT_DIAGNOSTICS,
+    )
+
     if not output_nature.emits_multiple_objects:
         # If we're emitting a single object, we don't use an object map; we just
         # declare the output file that the compiler will generate and there are
@@ -1356,6 +1362,17 @@ def _declare_compile_outputs(
         const_values_files = [
             actions.declare_file("{}.swiftconstvalues".format(target_name)),
         ]
+        if emit_diagnostics:
+            diagnostics_files = [
+                _declare_per_source_output_file(
+                    actions = actions,
+                    extension = "dia",
+                    target_name = target_name,
+                    src = srcs[0],
+                ),
+            ]
+        else:
+            diagnostics_files = []
         output_file_map = None
         derived_files_output_file_map = None
         # TODO(b/147451378): Support indexing even with a single object file.
@@ -1389,6 +1406,7 @@ def _declare_compile_outputs(
         # object files so that we can pass them all to the archive action.
         output_info = _declare_multiple_outputs_and_write_output_file_map(
             actions = actions,
+            emit_diagnostics = emit_diagnostics,
             extract_const_values = extract_const_values,
             is_wmo = output_nature.is_wmo,
             emits_bc = emits_bc,
@@ -1400,6 +1418,7 @@ def _declare_compile_outputs(
         object_files = output_info.object_files
         ast_files = output_info.ast_files
         const_values_files = output_info.const_values_files
+        diagnostics_files = output_info.diagnostics_files
         output_file_map = output_info.output_file_map
         derived_files_output_file_map = output_info.derived_files_output_file_map
 
@@ -1416,6 +1435,7 @@ def _declare_compile_outputs(
     compile_outputs = struct(
         ast_files = ast_files,
         const_values_files = const_values_files,
+        diagnostics_files = diagnostics_files,
         generated_header_file = generated_header,
         generated_module_map_file = generated_module_map,
         indexstore_directory = indexstore_directory,
@@ -1459,6 +1479,7 @@ def _declare_per_source_output_file(actions, extension, target_name, src):
 
 def _declare_multiple_outputs_and_write_output_file_map(
         actions,
+        emit_diagnostics,
         extract_const_values,
         is_wmo,
         emits_bc,
@@ -1470,6 +1491,8 @@ def _declare_multiple_outputs_and_write_output_file_map(
 
     Args:
         actions: The object used to register actions.
+        emit_diagnostics: A Boolean value indicating whether serialized
+            diagnostics files (.dia) should be emitted during this compilation.
         extract_const_values: A Boolean value indicating whether constant values
             should be extracted during this compilation.
         is_wmo: A Boolean value indicating whether whole-module-optimization was
@@ -1516,6 +1539,7 @@ def _declare_multiple_outputs_and_write_output_file_map(
 
     # Output files that will be emitted by the compiler.
     ast_files = []
+    diagnostics_files = []
     output_objs = []
     const_values_files = []
 
@@ -1572,6 +1596,16 @@ def _declare_multiple_outputs_and_write_output_file_map(
             const_values_files.append(const_values_file)
             file_outputs["const-values"] = const_values_file.path
 
+        if emit_diagnostics:
+            diagnostics_file = _declare_per_source_output_file(
+                actions = actions,
+                extension = "dia",
+                target_name = target_name,
+                src = src,
+            )
+            diagnostics_files.append(diagnostics_file)
+            file_outputs["diagnostics"] = diagnostics_file.path
+
         output_map[src.path] = file_outputs
 
     if whole_module_map:
@@ -1592,6 +1626,7 @@ def _declare_multiple_outputs_and_write_output_file_map(
         ast_files = ast_files,
         const_values_files = const_values_files,
         derived_files_output_file_map = derived_files_output_map_file,
+        diagnostics_files = diagnostics_files,
         object_files = output_objs,
         output_file_map = output_map_file,
     )
