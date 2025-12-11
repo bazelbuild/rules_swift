@@ -7,6 +7,7 @@ load(":compiler_arguments_tests.bzl", "compiler_arguments_test_suite")
 load(":const_values_tests.bzl", "const_values_test_suite")
 load(":coverage_settings_tests.bzl", "coverage_settings_test_suite")
 load(":debug_settings_tests.bzl", "debug_settings_test_suite")
+load(":diagnostics_tests.bzl", "diagnostics_test_suite")
 load(":environment_tests.bzl", "environment_test_suite")
 load(":features_tests.bzl", "features_test_suite")
 load(":generated_header_tests.bzl", "generated_header_test_suite")
@@ -44,6 +45,8 @@ const_values_test_suite(name = "const_values")
 coverage_settings_test_suite(name = "coverage_settings")
 
 debug_settings_test_suite(name = "debug_settings")
+
+diagnostics_test_suite(name = "diagnostics")
 
 environment_test_suite(name = "environment")
 
