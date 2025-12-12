@@ -485,6 +485,36 @@ Swift build rules, and they are also passed to the C++ APIs used when linking
     },
 )
 
+SwiftToolsInfo = provider(
+    doc = """\
+Propagates information about Swift toolchain tools that can be specified as
+labels to pull them into the input root.
+
+This provider allows users to specify Swift toolchain executables as explicit
+dependencies, ensuring they are available in the execution environment.
+""",
+    fields = {
+        "swift_driver": """\
+`File`. The Swift driver executable that orchestrates compilation and linking
+operations. This is the main entry point for invoking the Swift compiler
+toolchain.
+""",
+        "swift_autolink_extract": """\
+`File`. The executable that extracts autolink information from object files.
+This tool is used to determine which libraries need to be linked based on
+import statements in Swift code.
+""",
+        "swift_symbolgraph_extract": """\
+`File`. The executable that extracts symbol graph information from Swift
+modules. This tool generates structured data about APIs, which can be used
+for documentation generation and other tooling purposes.
+""",
+        "additional_linker_inputs": """\
+`List` of `File`s. Additional files to add to swift linker actions.
+""",
+    },
+)
+
 SwiftClangModuleAspectInfo = provider(
     doc = """\
 A "marker provider" (i.e., it has no fields) that is always returned when
