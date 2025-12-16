@@ -22,7 +22,7 @@ def _get_filename(version, platform_name_full):
 def _get_download_url(short_version, platform_name_full):
     version = _full_version(short_version)
     return "https://download.swift.org/{category}/{platform}/{version}/{filename}".format(
-        category = "swift-6.2.1-release",
+        category = "swift-{}-release".format(short_version),
         platform = platform_name_full.replace(".", ""),
         version = version,
         filename = _get_filename(version, platform_name_full),
@@ -97,7 +97,7 @@ standalone_toolchain = repository_rule(
             doc = "The expected SHA-256 of the file downloaded. This must match the SHA-256 of the file downloaded.",
         ),
         "swift_version": attr.string(
-            doc = "Version of the swift toolchain to be installed. Cannot be used concurrently with `swift_version_file`.",
+            doc = "Version of the swift toolchain to be installed.",
             mandatory = True,
         ),
     },
