@@ -326,6 +326,7 @@ def compile(
         generated_header_name = None,
         is_test = None,
         include_dev_srch_paths = None,
+        minimum_os_version = None,
         module_name,
         package_name,
         plugins = [],
@@ -366,6 +367,10 @@ def compile(
             Represents if the `testonly` value of the context.
         include_dev_srch_paths: A `bool` that indicates whether the developer
             framework search paths will be added to the compilation command.
+        minimum_os_version: A string representing the minimum OS version that
+            this target should be compiled for (e.g., "17.0"). If provided, this
+            is used to create a versioned target triple for the `-target` flag.
+            If `None`, the default minimum OS version from the SDK is used.
         generated_header_name: The name of the Objective-C generated header that
             should be generated for this module. If omitted, no header will be
             generated.
@@ -665,6 +670,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         genfiles_dir = feature_configuration._genfiles_dir,
         include_dev_srch_paths = include_dev_srch_paths_value,
         is_swift = True,
+        minimum_os_version = minimum_os_version,
         module_name = module_name,
         original_module_name = original_module_name,
         package_name = package_name,

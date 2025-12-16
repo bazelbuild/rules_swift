@@ -27,6 +27,10 @@ load(
     "@bazel_tools//tools/cpp:toolchain_utils.bzl",
     "use_cpp_toolchain",
 )
+load(
+    "@build_bazel_apple_support//xcode:providers.bzl",
+    "XcodeSdkVariantInfo",
+)
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load(
@@ -398,6 +402,49 @@ def _make_resource_directory_configurator(developer_dir):
 
     return _resource_directory_configurator
 
+def _make_target_triple_configurator(target_triple, xcode_sdk_info):
+    """Creates a configurator that adds the -target flag with an optional version.
+
+    Args:
+        target_triple: The triple of the platform being targeted.
+        xcode_sdk_info: The XcodeSdkVariantInfo provider, or None if not available.
+
+    Returns:
+        A configurator function that adds the -target flag to the command line.
+    """
+
+    def _target_triple_configurator(prerequisites, args):
+        # Get the user-specified minimum OS version from prerequisites
+        user_min_os = getattr(prerequisites, "minimum_os_version", None)
+
+        # Get the SDK's minimum supported OS version if available
+        sdk_min_os = None
+        if xcode_sdk_info and xcode_sdk_info.minimum_supported_os_version:
+            sdk_min_os = str(xcode_sdk_info.minimum_supported_os_version)
+
+        # Determine the effective minimum OS version:
+        # - If user specified a version, use max(user_version, sdk_min_version)
+        # - Otherwise, use SDK minimum (or None for unversioned triple)
+        effective_min_os = None
+        if user_min_os and sdk_min_os:
+            # Compare versions and use the higher one
+            user_version = apple_common.dotted_version(user_min_os)
+            sdk_version = apple_common.dotted_version(sdk_min_os)
+            if user_version >= sdk_version:
+                effective_min_os = user_min_os
+            else:
+                effective_min_os = sdk_min_os
+        elif user_min_os:
+            effective_min_os = user_min_os
+        elif sdk_min_os:
+            effective_min_os = sdk_min_os
+
+        # Generate the target triple string (versioned or unversioned)
+        target_str = target_triples.str_with_version(target_triple, effective_min_os)
+        args.add("-target", target_str)
+
+    return _target_triple_configurator
+
 def _all_action_configs(
         additional_objc_copts,
         additional_swiftc_copts,
@@ -405,7 +452,8 @@ def _all_action_configs(
         generated_header_rewriter,
         needs_resource_directory,
         target_triple,
-        xcode_config):
+        xcode_config,
+        xcode_sdk_info):
     """Returns the action configurations for the Swift toolchain.
 
     Args:
@@ -422,6 +470,7 @@ def _all_action_configs(
             directory passed explicitly to the compiler.
         target_triple: The triple of the platform being targeted.
         xcode_config: The Xcode configuration.
+        xcode_sdk_info: The XcodeSdkVariantInfo provider, or None if not available.
 
     Returns:
         The action configurations for the Swift toolchain.
@@ -441,7 +490,7 @@ def _all_action_configs(
                 SWIFT_ACTION_SYNTHESIZE_INTERFACE,
             ],
             configurators = [
-                add_arg("-target", target_triples.str(target_triple)),
+                _make_target_triple_configurator(target_triple, xcode_sdk_info),
                 add_arg("-sdk", apple_toolchain.sdk_dir()),
             ],
         ),
@@ -741,6 +790,13 @@ def _xcode_swift_toolchain_impl(ctx):
 
     xcode_config = ctx.attr._xcode_config[apple_common.XcodeVersionConfig]
 
+    # Extract SDK variant info if available. This provides the SDK's minimum
+    # supported OS version, which is used to ensure Swift code is compiled with
+    # a deployment target that the SDK supports.
+    xcode_sdk_info = None
+    if XcodeSdkVariantInfo in ctx.attr._xcode_config:
+        xcode_sdk_info = ctx.attr._xcode_config[XcodeSdkVariantInfo]
+
     # TODO: Remove once we drop bazel 7.x support
     if not bazel_features.cc.swift_fragment_removed:
         swiftcopts = list(ctx.fragments.swift.copts())
@@ -864,6 +920,7 @@ def _xcode_swift_toolchain_impl(ctx):
         needs_resource_directory = swift_executable or toolchain_root,
         target_triple = target_triple,
         xcode_config = xcode_config,
+        xcode_sdk_info = xcode_sdk_info,
     )
     swift_toolchain_developer_paths = []
     platform_developer_framework_dir = _platform_developer_framework_dir(
@@ -939,6 +996,7 @@ def _xcode_swift_toolchain_impl(ctx):
         ),
         tool_configs = all_tool_configs,
         unsupported_features = unsupported_features,
+        xcode_sdk_info = xcode_sdk_info,
     )
 
     return [
