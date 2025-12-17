@@ -23,9 +23,3 @@ swift_library(
     ],
     tags = FIXTURE_TAGS,
 )
-
-swift_library(
-    name = "simple_batch_mode",
-    srcs = ["Empty.swift"],
-    tags = FIXTURE_TAGS,
-)

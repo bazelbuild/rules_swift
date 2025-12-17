@@ -29,7 +29,11 @@ namespace {
 
 // Returns the value of the given environment variable, or the empty string if
 // it wasn't set.
-std::string GetEnvironmentVariable(absl::string_view name) {
+std::string GetAppleEnvironmentVariable(absl::string_view name) {
+#if !defined(__APPLE__)
+  return "";
+#endif
+
   std::string null_terminated_name(name.data(), name.length());
   char *env_value = getenv(null_terminated_name.c_str());
   if (env_value == nullptr) {
@@ -39,7 +43,7 @@ std::string GetEnvironmentVariable(absl::string_view name) {
   return env_value;
 }
 
-std::string GetToolchainPath() {
+std::string GetAppleToolchainPath() {
 #if !defined(__APPLE__)
   return "";
 #endif
@@ -86,15 +90,15 @@ BazelPlaceholderSubstitutions::BazelPlaceholderSubstitutions() {
   // the build rules. If the variable isn't set, we don't store a substitution;
   // if it was needed then the eventual replacement will be a no-op and the
   // command will presumably fail later.
-  if (std::string developer_dir = GetEnvironmentVariable("DEVELOPER_DIR");
+  if (std::string developer_dir = GetAppleEnvironmentVariable("DEVELOPER_DIR");
       !developer_dir.empty()) {
     substitutions_[kBazelXcodeDeveloperDir] = developer_dir;
   }
-  if (std::string sdk_root = GetEnvironmentVariable("SDKROOT");
+  if (std::string sdk_root = GetAppleEnvironmentVariable("SDKROOT");
       !sdk_root.empty()) {
     substitutions_[kBazelXcodeSdkRoot] = sdk_root;
   }
-  if (std::string toolchain_path = GetToolchainPath();
+  if (std::string toolchain_path = GetAppleToolchainPath();
       !toolchain_path.empty()) {
     substitutions_[kBazelSwiftToolchainPath] = toolchain_path;
   }

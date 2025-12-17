@@ -39,6 +39,8 @@ load(
     "//swift/internal:action_names.bzl",
     "SWIFT_ACTION_AUTOLINK_EXTRACT",
     "SWIFT_ACTION_COMPILE",
+    "SWIFT_ACTION_COMPILE_CODEGEN",
+    "SWIFT_ACTION_COMPILE_MODULE",
     "SWIFT_ACTION_COMPILE_MODULE_INTERFACE",
     "SWIFT_ACTION_DUMP_AST",
     "SWIFT_ACTION_MODULEWRAP",
@@ -147,6 +149,8 @@ def _all_tool_configs(
 
     tool_configs = {
         SWIFT_ACTION_COMPILE: compile_tool_config,
+        SWIFT_ACTION_COMPILE_CODEGEN: compile_tool_config,
+        SWIFT_ACTION_COMPILE_MODULE: compile_tool_config,
         SWIFT_ACTION_DUMP_AST: compile_tool_config,
         SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT: ToolConfigInfo(
             additional_tools = additional_tools,
@@ -459,9 +463,13 @@ def _swift_toolchain_impl(ctx):
 
     # Combine build mode features, autoconfigured features, and required
     # features.
-    features_from_swiftcopts, _ = optimization_features_from_swiftcopts(swiftcopts = swiftcopts)
+    requested_build_mode_features, _ = features_for_build_modes(ctx)
+    requested_optimization_features, _ = optimization_features_from_swiftcopts(
+        swiftcopts = swiftcopts,
+    )
     requested_features = (
-        features_for_build_modes(ctx) + features_from_swiftcopts
+        requested_build_mode_features +
+        requested_optimization_features
     )
     requested_features.extend(default_features_for_toolchain(
         target_triple = target_triple,
@@ -669,7 +677,8 @@ to the compiler for exec transition builds.
                 allow_files = True,
                 default = Label("//tools/worker"),
                 doc = """\
-An executable that wraps Swift compiler invocations.
+An executable that wraps Swift compiler invocations and also provides support
+for incremental compilation using a persistent mode.
 """,
                 executable = True,
             ),

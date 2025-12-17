@@ -592,9 +592,7 @@ def compile_action_configs(
     action_configs.append(
         # Support for order-file instrumentation.
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
-            ],
+            actions = all_compile_action_names(),
             configurators = [
                 add_arg("-sanitize=undefined"),
                 add_arg("-sanitize-coverage=func"),
@@ -851,9 +849,7 @@ def compile_action_configs(
             features = [SWIFT_FEATURE_VFSOVERLAY],
         ),
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
-            ],
+            actions = all_compile_action_names(),
             configurators = [_module_aliases_configurator],
         ),
         ActionConfigInfo(
@@ -1065,15 +1061,6 @@ def compile_action_configs(
             ],
             configurators = [_module_name_configurator],
         ),
-        ActionConfigInfo(
-            actions = all_compile_action_names() + [
-                SWIFT_ACTION_PRECOMPILE_C_MODULE,
-            ],
-            configurators = [
-                add_arg("-file-prefix-map", "__BAZEL_XCODE_DEVELOPER_DIR__=DEVELOPER_DIR"),
-            ],
-            features = [SWIFT_FEATURE_FILE_PREFIX_MAP],
-        ),
 
         # Set the package name.
         ActionConfigInfo(
@@ -1193,9 +1180,7 @@ def compile_action_configs(
             ],
         ),
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
-            ],
+            actions = all_compile_action_names(),
             configurators = [
                 add_arg("-cxx-interoperability-mode=default"),
                 add_arg("-Xcc", "-std=c++17"),
@@ -1205,9 +1190,7 @@ def compile_action_configs(
             ],
         ),
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
-            ],
+            actions = all_compile_action_names(),
             configurators = [
                 add_arg("-cxx-interoperability-mode=default"),
                 add_arg("-Xcc", "-std=c++20"),
@@ -1217,9 +1200,7 @@ def compile_action_configs(
             ],
         ),
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
-            ],
+            actions = all_compile_action_names(),
             configurators = [
                 add_arg("-cxx-interoperability-mode=default"),
                 add_arg("-Xcc", "-std=c++23"),
@@ -1229,9 +1210,7 @@ def compile_action_configs(
             ],
         ),
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
-            ],
+            actions = all_compile_action_names(),
             configurators = [
                 add_arg("-enable-experimental-feature", "Embedded"),
             ],
@@ -1261,7 +1240,7 @@ def compile_action_configs(
             ActionConfigInfo(
                 actions = all_compile_action_names() + [
                     SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
-                        SWIFT_ACTION_DUMP_AST,
+                    SWIFT_ACTION_DUMP_AST,
                     SWIFT_ACTION_PRECOMPILE_C_MODULE,
                     SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
                     SWIFT_ACTION_SYNTHESIZE_INTERFACE,
@@ -1282,7 +1261,7 @@ def compile_action_configs(
                 # actions, or if we should advise against/forbid that.
                 actions = all_compile_action_names() + [
                     SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
-                        SWIFT_ACTION_DUMP_AST,
+                    SWIFT_ACTION_DUMP_AST,
                 ],
                 configurators = [
                     lambda _, args: args.add_all(
@@ -1312,17 +1291,15 @@ def compile_action_configs(
         ),
     )
 
-    action_configs.extend(
-        [
-            ActionConfigInfo(
-                actions = all_compile_action_names() + [
-                    SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
-                    SWIFT_ACTION_DUMP_AST,
-                    SWIFT_ACTION_PRECOMPILE_C_MODULE,
-                ],
-                configurators = [_source_files_configurator],
-            ),
-        ],
+    action_configs.append(
+        ActionConfigInfo(
+            actions = all_compile_action_names() + [
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+                SWIFT_ACTION_DUMP_AST,
+                SWIFT_ACTION_PRECOMPILE_C_MODULE,
+            ],
+            configurators = [_source_files_configurator],
+        ),
     )
 
     # Add additional input files to the sandbox (does not modify flags).

@@ -316,6 +316,7 @@ bzl_library(
 bzl_library(
     name = "optimization",
     srcs = ["optimization.bzl"],
+    visibility = ["//swift:__subpackages__"],
     deps = [
         ":feature_names",
     ],

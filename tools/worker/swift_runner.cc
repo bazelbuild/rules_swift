@@ -203,7 +203,7 @@ static std::unique_ptr<TempFile> WriteDirectResponseFile(
 // the view to the end of the argument in a similar fashion to
 // `absl::ConsumePrefix()`.
 static std::optional<std::string> ConsumeArg(
-    absl::Nonnull<absl::string_view*> line) {
+    absl::string_view *absl_nonnull line) {
   size_t whitespace_count = 0;
   size_t length = line->size();
   while (whitespace_count < length && (*line)[whitespace_count] == ' ') {
@@ -728,13 +728,13 @@ bool SwiftRunner::ProcessArgument(
     // Get the actual current working directory (the execution root), which
     // we didn't know at analysis time.
     consumer(flag);
-    consumer(std::filesystem::current_path().string() + "=" + new_path);
+    consumer(absl::StrCat(GetCurrentDirectory(), "=" + new_path));
 
 #if __APPLE__
     std::string developer_dir = "__BAZEL_XCODE_DEVELOPER_DIR__";
     if (bazel_placeholder_substitutions_.Apply(developer_dir)) {
       consumer(flag);
-      consumer(absl::StrCat(developer_dir, "=/DEVELOPER_DIR"));
+      consumer(absl::StrCat(developer_dir, "=/PLACEHOLDER_DEVELOPER_DIR"));
     }
 #endif
   };
