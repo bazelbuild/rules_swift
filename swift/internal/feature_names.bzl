@@ -336,10 +336,6 @@ SWIFT_FEATURE_GENERATE_FROM_RAW_PROTO_FILES = "swift.generate_from_raw_proto_fil
 # generating a Swift file from a proto file.
 SWIFT_FEATURE_GENERATE_PATH_TO_UNDERSCORES_FROM_PROTO_FILES = "swift.generate_path_to_underscores_from_proto_files"
 
-# If enabled the skip function bodies frontend flag is passed when using derived
-# files generation. This requires Swift 5.2
-SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES = "swift.skip_function_bodies_for_derived_files"
-
 # If enabled remap the absolute path to Xcode in debug info. When used with
 # swift.coverage_prefix_map also remap the path in coverage data.
 SWIFT_FEATURE_REMAP_XCODE_PATH = "swift.remap_xcode_path"

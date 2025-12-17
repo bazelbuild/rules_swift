@@ -42,7 +42,6 @@ load(
     "SWIFT_ACTION_COMPILE_CODEGEN",
     "SWIFT_ACTION_COMPILE_MODULE",
     "SWIFT_ACTION_COMPILE_MODULE_INTERFACE",
-    "SWIFT_ACTION_DERIVE_FILES",
     "SWIFT_ACTION_DUMP_AST",
     "SWIFT_ACTION_MODULEWRAP",
     "SWIFT_ACTION_PRECOMPILE_C_MODULE",
@@ -438,7 +437,6 @@ def _all_action_configs(
         ActionConfigInfo(
             actions = all_compile_action_names() + [
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
-                SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
                 SWIFT_ACTION_MODULEWRAP,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
@@ -473,7 +471,6 @@ def _all_action_configs(
             actions = all_compile_action_names() + [
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
-                SWIFT_ACTION_DERIVE_FILES,
             ],
             configurators = [
                 add_arg(
@@ -514,7 +511,6 @@ def _all_action_configs(
         action_configs.append(
             ActionConfigInfo(
                 actions = all_compile_action_names() + [
-                    SWIFT_ACTION_DERIVE_FILES,
                     SWIFT_ACTION_DUMP_AST,
                     SWIFT_ACTION_PRECOMPILE_C_MODULE,
                     SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
@@ -617,7 +613,6 @@ def _all_tool_configs(
         SWIFT_ACTION_COMPILE: tool_config,
         SWIFT_ACTION_COMPILE_CODEGEN: tool_config,
         SWIFT_ACTION_COMPILE_MODULE: tool_config,
-        SWIFT_ACTION_DERIVE_FILES: tool_config,
         SWIFT_ACTION_DUMP_AST: tool_config,
         SWIFT_ACTION_PRECOMPILE_C_MODULE: (
             ToolConfigInfo(
