@@ -46,6 +46,7 @@ load(
     "SWIFT_ACTION_PRECOMPILE_C_MODULE",
     "SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT",
     "SWIFT_ACTION_SYNTHESIZE_INTERFACE",
+    "all_compile_action_names",
 )
 load("//swift/internal:attrs.bzl", "swift_toolchain_driver_attrs")
 load("//swift/internal:developer_dirs.bzl", "swift_developer_lib_dir")
@@ -450,9 +451,9 @@ def _all_action_configs(
     action_configs.extend([
         # Xcode path remapping
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
-                SWIFT_ACTION_DERIVE_FILES,
+            actions = all_compile_action_names() + [
+                SWIFT_ACTION_PRECOMPILE_C_MODULE,
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
             ],
             configurators = [
                 add_arg(
@@ -465,8 +466,8 @@ def _all_action_configs(
             ],
         ),
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
+                SWIFT_ACTION_PRECOMPILE_C_MODULE,
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_DERIVE_FILES,
             ],
@@ -485,9 +486,9 @@ def _all_action_configs(
             ],
         ),
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
-                SWIFT_ACTION_DERIVE_FILES,
+            actions = all_compile_action_names() + [
+                SWIFT_ACTION_PRECOMPILE_C_MODULE,
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
             ],
             configurators = [
                 add_arg(
@@ -496,10 +497,8 @@ def _all_action_configs(
                 ),
             ],
             features = [
-                [
-                    SWIFT_FEATURE_REMAP_XCODE_PATH,
-                    SWIFT_FEATURE_FILE_PREFIX_MAP,
-                ],
+                SWIFT_FEATURE_FILE_PREFIX_MAP,
+                SWIFT_FEATURE_REMAP_XCODE_PATH,
             ],
         ),
     ])
