@@ -173,9 +173,9 @@ def swift_rules_dependencies(include_bzlmod_ready_dependencies = True):
     _maybe(
         http_archive,
         name = "com_github_apple_swift_nio",
-        urls = ["https://github.com/apple/swift-nio/archive/2.42.0.tar.gz"],  # pinned to grpc swift version
-        sha256 = "e3304bc3fb53aea74a3e54bd005ede11f6dc357117d9b1db642d03aea87194a0",
-        strip_prefix = "swift-nio-2.42.0/",
+        urls = ["https://github.com/apple/swift-nio/archive/2.51.0.tar.gz"],  # pinned to grpc swift version + version needed to fix linux build
+        sha256 = "9ec79852fd03d2e933ece3299ea6c8b8de6960625f7246fd65958409d1420215",
+        strip_prefix = "swift-nio-2.51.0/",
         build_file = Label(
             "//third_party:com_github_apple_swift_nio/BUILD.overlay",
         ),
@@ -217,9 +217,9 @@ def swift_rules_dependencies(include_bzlmod_ready_dependencies = True):
     _maybe(
         http_archive,
         name = "com_github_apple_swift_log",
-        urls = ["https://github.com/apple/swift-log/archive/1.4.4.tar.gz"],  # pinned to grpc-swift version
-        sha256 = "48fe66426c784c0c20031f15dc17faf9f4c9037c192bfac2f643f65cb2321ba0",
-        strip_prefix = "swift-log-1.4.4/",
+        urls = ["https://github.com/apple/swift-log/archive/1.6.3.tar.gz"],  # pinned to version with linux build fix: https://github.com/apple/swift-log/pull/354
+        sha256 = "5eaed6614cfaad882b8a0b5cb5d2177b533056b469ba431ad3f375193d370b70",
+        strip_prefix = "swift-log-1.6.3/",
         build_file = Label(
             "//third_party:com_github_apple_swift_log/BUILD.overlay",
         ),
@@ -228,9 +228,9 @@ def swift_rules_dependencies(include_bzlmod_ready_dependencies = True):
     _maybe(
         http_archive,
         name = "com_github_apple_swift_nio_ssl",
-        urls = ["https://github.com/apple/swift-nio-ssl/archive/2.23.0.tar.gz"],  # pinned to grpc swift version
-        sha256 = "4787c63f61dd04d99e498adc3d1a628193387e41efddf8de19b8db04544d016d",
-        strip_prefix = "swift-nio-ssl-2.23.0/",
+        urls = ["https://github.com/apple/swift-nio-ssl/archive/2.26.0.tar.gz"],  # pinned to version with linux build fix: https://github.com/apple/swift-nio-ssl/pull/448
+        sha256 = "792882c884b2b89de0e9189557ea928bc019be2d9a89d63831876a746cbe9ce3",
+        strip_prefix = "swift-nio-ssl-2.26.0/",
         build_file = Label(
             "//third_party:com_github_apple_swift_nio_ssl/BUILD.overlay",
         ),
