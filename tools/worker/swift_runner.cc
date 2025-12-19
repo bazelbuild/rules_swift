@@ -908,6 +908,13 @@ void SwiftRunner::ProcessArguments(const std::vector<std::string> &args) {
   auto it = args.begin();
   tool_args_.push_back(*it++);
 
+  // NOTE: on linux tool modes like `-modulewrap` are used which must be passed
+  // outside of the args_ vector (so that its never part of a params file).
+  // check for those modes here and add them directly to tool args.
+  if (*it == "-modulewrap") {
+    tool_args_.push_back(*it++);
+  }
+
   auto consumer = [&](absl::string_view arg) {
     args_.push_back(std::string(arg));
   };
