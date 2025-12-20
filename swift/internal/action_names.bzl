@@ -20,15 +20,19 @@
 SWIFT_ACTION_AUTOLINK_EXTRACT = "SwiftAutolinkExtract"
 
 # Compiles one or more `.swift` source files into a `.swiftmodule` and
-# object files.
+# object files. This is the legacy mode that emits all outputs from a single
+# driver invocation.
 SWIFT_ACTION_COMPILE = "SwiftCompile"
+
+# Emits the object files and other per-source-file outputs for a a batch of
+# `.swift` source files in a module.
+SWIFT_ACTION_COMPILE_CODEGEN = "SwiftCompileCodegen"
+
+# Compiles one or more `.swift` source files into a `.swiftmodule`.
+SWIFT_ACTION_COMPILE_MODULE = "SwiftCompileModule"
 
 # Compiles a `.swiftinterface` file into a `.swiftmodule` file.
 SWIFT_ACTION_COMPILE_MODULE_INTERFACE = "SwiftCompileModuleInterface"
-
-# Produces files that are usually fallout of the compilation such as
-# .swiftmodule, -Swift.h and more.
-SWIFT_ACTION_DERIVE_FILES = "SwiftDeriveFiles"
 
 # Produces an AST file for each swift source file in a module.
 SWIFT_ACTION_DUMP_AST = "SwiftDumpAST"
@@ -54,8 +58,9 @@ def all_action_names():
     return (
         SWIFT_ACTION_AUTOLINK_EXTRACT,
         SWIFT_ACTION_COMPILE,
+        SWIFT_ACTION_COMPILE_CODEGEN,
+        SWIFT_ACTION_COMPILE_MODULE,
         SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
-        SWIFT_ACTION_DERIVE_FILES,
         SWIFT_ACTION_DUMP_AST,
         SWIFT_ACTION_MODULEWRAP,
         SWIFT_ACTION_PRECOMPILE_C_MODULE,
@@ -67,5 +72,6 @@ def all_compile_action_names():
     """Returns all actions that compile source files."""
     return [
         SWIFT_ACTION_COMPILE,
-        SWIFT_ACTION_DERIVE_FILES,
+        SWIFT_ACTION_COMPILE_CODEGEN,
+        SWIFT_ACTION_COMPILE_MODULE,
     ]

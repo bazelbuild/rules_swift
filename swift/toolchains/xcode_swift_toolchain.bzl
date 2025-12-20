@@ -39,8 +39,9 @@ load(
 load(
     "//swift/internal:action_names.bzl",
     "SWIFT_ACTION_COMPILE",
+    "SWIFT_ACTION_COMPILE_CODEGEN",
+    "SWIFT_ACTION_COMPILE_MODULE",
     "SWIFT_ACTION_COMPILE_MODULE_INTERFACE",
-    "SWIFT_ACTION_DERIVE_FILES",
     "SWIFT_ACTION_DUMP_AST",
     "SWIFT_ACTION_MODULEWRAP",
     "SWIFT_ACTION_PRECOMPILE_C_MODULE",
@@ -69,6 +70,10 @@ load(
     "features_for_build_modes",
 )
 load(
+    "//swift/internal:optimization.bzl",
+    "optimization_features_from_swiftcopts",
+)
+load(
     "//swift/internal:providers.bzl",
     "SwiftCrossImportOverlayInfo",
     "SwiftModuleAliasesInfo",
@@ -80,7 +85,6 @@ load(
     "compact",
     "get_swift_executable_for_toolchain",
 )
-load("//swift/internal:wmo.bzl", "wmo_features_from_swiftcopts")
 load(
     "//swift/toolchains/config:action_config.bzl",
     "ActionConfigInfo",
@@ -431,10 +435,8 @@ def _all_action_configs(
     # Basic compilation flags (target triple and toolchain search paths).
     action_configs = [
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
-                SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
                 SWIFT_ACTION_MODULEWRAP,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
@@ -469,7 +471,6 @@ def _all_action_configs(
             actions = all_compile_action_names() + [
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
-                SWIFT_ACTION_DERIVE_FILES,
             ],
             configurators = [
                 add_arg(
@@ -509,9 +510,7 @@ def _all_action_configs(
         # directory so that modules are found correctly.
         action_configs.append(
             ActionConfigInfo(
-                actions = [
-                    SWIFT_ACTION_COMPILE,
-                    SWIFT_ACTION_DERIVE_FILES,
+                actions = all_compile_action_names() + [
                     SWIFT_ACTION_DUMP_AST,
                     SWIFT_ACTION_PRECOMPILE_C_MODULE,
                     SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
@@ -607,12 +606,13 @@ def _all_tool_configs(
         execution_requirements = execution_requirements,
         resource_set = _swift_compile_resource_set,
         use_param_file = True,
-        worker_mode = "persistent",
+        wrapped_by_worker = True,
     )
 
     tool_configs = {
         SWIFT_ACTION_COMPILE: tool_config,
-        SWIFT_ACTION_DERIVE_FILES: tool_config,
+        SWIFT_ACTION_COMPILE_CODEGEN: tool_config,
+        SWIFT_ACTION_COMPILE_MODULE: tool_config,
         SWIFT_ACTION_DUMP_AST: tool_config,
         SWIFT_ACTION_PRECOMPILE_C_MODULE: (
             ToolConfigInfo(
@@ -620,7 +620,7 @@ def _all_tool_configs(
                 env = env,
                 execution_requirements = execution_requirements,
                 use_param_file = True,
-                worker_mode = "wrap",
+                wrapped_by_worker = True,
             )
         ),
         SWIFT_ACTION_COMPILE_MODULE_INTERFACE: (
@@ -631,7 +631,7 @@ def _all_tool_configs(
                 execution_requirements = execution_requirements,
                 resource_set = _swift_compile_resource_set,
                 use_param_file = True,
-                worker_mode = "wrap",
+                wrapped_by_worker = True,
             )
         ),
         SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT: (
@@ -642,7 +642,7 @@ def _all_tool_configs(
                 env = env,
                 execution_requirements = execution_requirements,
                 use_param_file = True,
-                worker_mode = "wrap",
+                wrapped_by_worker = True,
             )
         ),
     }
@@ -654,7 +654,7 @@ def _all_tool_configs(
             env = env,
             execution_requirements = execution_requirements,
             use_param_file = True,
-            worker_mode = "wrap",
+            wrapped_by_worker = True,
         )
 
     return tool_configs
@@ -790,10 +790,16 @@ def _xcode_swift_toolchain_impl(ctx):
 
     # Compute the default requested features and conditional ones based on Xcode
     # version.
-    requested_features = features_for_build_modes(
-        ctx,
-        cpp_fragment = cpp_fragment,
-    ) + wmo_features_from_swiftcopts(swiftcopts = ctx.attr.copts + swiftcopts)
+    requested_features, unsupported_features = (
+        optimization_features_from_swiftcopts(swiftcopts = ctx.attr.copts + swiftcopts)
+    )
+    build_mode_requested_features, build_mode_unsupported_features = (
+        features_for_build_modes(
+            ctx,
+            cpp_fragment = cpp_fragment,
+        )
+    )
+    requested_features.extend(build_mode_requested_features)
     requested_features.extend(ctx.features)
     requested_features.extend(ctx.attr.default_enabled_features)
     requested_features.extend(default_features_for_toolchain(
@@ -827,9 +833,12 @@ def _xcode_swift_toolchain_impl(ctx):
         ])
 
     unsupported_features = ctx.disabled_features + [
+        # `-fmodule-map-file-home-is-cwd` is incompatible with Apple's module maps,
+        # which we must use for system frameworks.
         SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD,
     ]
     unsupported_features.extend(ctx.attr.default_unsupported_features)
+    unsupported_features.extend(build_mode_unsupported_features)
 
     env = _xcode_env(target_triple = target_triple, xcode_config = xcode_config)
 
@@ -895,6 +904,7 @@ def _xcode_swift_toolchain_impl(ctx):
         clang_implicit_deps_providers = collect_implicit_deps_providers(
             ctx.attr.clang_implicit_deps,
         ),
+        codegen_batch_size = 8,
         cross_import_overlays = [
             target[SwiftCrossImportOverlayInfo]
             for target in ctx.attr.cross_import_overlays
@@ -1088,8 +1098,7 @@ to the compiler for exec transition builds.
                 allow_files = True,
                 default = Label("//tools/worker:worker_wrapper"),
                 doc = """\
-An executable that wraps Swift compiler invocations and also provides support
-for incremental compilation using a persistent mode.
+An executable that wraps Swift compiler invocations.
 """,
                 executable = True,
             ),

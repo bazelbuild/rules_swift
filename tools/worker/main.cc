@@ -12,15 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef BUILD_BAZEL_RULES_SWIFT_TOOLS_WORKER_COMPILE_WITHOUT_WORKER_H_
-#define BUILD_BAZEL_RULES_SWIFT_TOOLS_WORKER_COMPILE_WITHOUT_WORKER_H_
-
+#include <iostream>
 #include <string>
 #include <vector>
 
-// Directly invokes the Swift compiler and exits, without performing any
-// worker-related processing.
-int CompileWithoutWorker(const std::vector<std::string> &args,
-                         std::string index_import_path);
+#include "tools/worker/swift_runner.h"
 
-#endif  // BUILD_BAZEL_RULES_SWIFT_TOOLS_WORKER_COMPILE_WITHOUT_WORKER_H_
+int main(int argc, char *argv[]) {
+  std::vector<std::string> args(argv + 1, argv + argc);
+  return bazel_rules_swift::SwiftRunner(args).Run(std::cout, std::cerr);
+}

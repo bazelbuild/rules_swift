@@ -13,47 +13,29 @@
 // limitations under the License.
 
 #include "tools/common/bazel_substitutions.h"
+#include "tools/common/process.h"
 
 #include <cstdlib>
-#include <filesystem>
 #include <iostream>
-#include <map>
-#include <sstream>
 #include <string>
+#include <sstream>
 
-#include "tools/common/process.h"
+#include "absl/container/flat_hash_map.h"
+#include "absl/strings/str_replace.h"
+#include "absl/strings/string_view.h"
 
 namespace bazel_rules_swift {
 namespace {
 
-// The placeholder string used by Bazel that should be replaced by
-// `DEVELOPER_DIR` at runtime.
-static const char kBazelXcodeDeveloperDir[] = "__BAZEL_XCODE_DEVELOPER_DIR__";
-
-// The placeholder string used by Bazel that should be replaced by `SDKROOT`
-// at runtime.
-static const char kBazelXcodeSdkRoot[] = "__BAZEL_XCODE_SDKROOT__";
-
-// The placeholder string used by Bazel that should be replaced by the swift
-// toolchain root directory. For instance:
-// * when using the toolchain within Xcode, this will be something like this:
-//   .../Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain
-// * when using a standalone non-Xcode toolchain, this will be something like:
-//   .../swift-6.2-RELEASE.xctoolchain
-// Either way, swift binaries are expected to be found at this location under
-// usr/bin, swift standard libraries are expected to be found at usr/lib/swift,
-// etc...
-static const char kBazelSwiftToolchainPath[] =
-    "__BAZEL_SWIFT_TOOLCHAIN_PATH__";
-
 // Returns the value of the given environment variable, or the empty string if
 // it wasn't set.
-std::string GetAppleEnvironmentVariable(const char *name) {
+std::string GetAppleEnvironmentVariable(absl::string_view name) {
 #if !defined(__APPLE__)
   return "";
 #endif
 
-  char *env_value = getenv(name);
+  std::string null_terminated_name(name.data(), name.length());
+  char *env_value = getenv(null_terminated_name.c_str());
   if (env_value == nullptr) {
     std::cerr << "error: required Apple environment variable '" << name << "' was not set. Please file an issue on bazelbuild/rules_swift.\n";
     exit(EXIT_FAILURE);
@@ -61,29 +43,30 @@ std::string GetAppleEnvironmentVariable(const char *name) {
   return env_value;
 }
 
-std::string GetToolchainPath() {
+std::string GetAppleToolchainPath() {
 #if !defined(__APPLE__)
   return "";
 #endif
 
   char *toolchain_id = getenv("TOOLCHAINS");
-  std::ostringstream output_stream;
+  std::ostringstream stdout_stream;
+  std::ostream stderr_stream(nullptr);
   int exit_code =
       RunSubProcess({"/usr/bin/xcrun", "--find", "clang"},
-                    /*env=*/nullptr, &output_stream, /*stdout_to_stderr=*/true);
+                    /*env=*/nullptr, stdout_stream, stderr_stream);
   if (exit_code != 0) {
-    std::cerr << output_stream.str() << "Error: `TOOLCHAINS=" << toolchain_id
+    std::cerr << stdout_stream.str() << "Error: `TOOLCHAINS=" << toolchain_id
               << "xcrun --find clang` failed with error code " << exit_code
               << std::endl;
     exit(EXIT_FAILURE);
   }
 
-  if (output_stream.str().empty()) {
+  if (stdout_stream.str().empty()) {
     std::cerr << "Error: TOOLCHAINS was set to '" << toolchain_id
               << "' but no toolchain with that ID was found" << std::endl;
     exit(EXIT_FAILURE);
   } else if ((toolchain_id != nullptr)
-             && output_stream.str().find("XcodeDefault.xctoolchain") != std::string::npos) {
+             && stdout_stream.str().find("XcodeDefault.xctoolchain") != std::string::npos) {
     // NOTE: Ideally xcrun would fail if the toolchain we asked for didn't exist
     // but it falls back to the DEVELOPER_DIR instead, so we have to check the
     // output ourselves.
@@ -94,7 +77,7 @@ std::string GetToolchainPath() {
     exit(EXIT_FAILURE);
   }
 
-  std::filesystem::path toolchain_path(output_stream.str());
+  std::filesystem::path toolchain_path(stdout_stream.str());
   // Remove usr/bin/clang components to get the root of the custom toolchain
   return toolchain_path.parent_path().parent_path().parent_path().string();
 }
@@ -103,48 +86,26 @@ std::string GetToolchainPath() {
 
 BazelPlaceholderSubstitutions::BazelPlaceholderSubstitutions() {
   // When targeting Apple platforms, replace the magic Bazel placeholders with
-  // the path in the corresponding environment variable. These should be set by
-  // the build rules; only attempt to retrieve them if they're actually seen in
-  // the argument list.
-  placeholder_resolvers_ = {
-      {kBazelXcodeDeveloperDir, PlaceholderResolver([]() {
-         return GetAppleEnvironmentVariable("DEVELOPER_DIR");
-       })},
-      {kBazelXcodeSdkRoot, PlaceholderResolver([]() {
-         return GetAppleEnvironmentVariable("SDKROOT");
-       })},
-      {kBazelSwiftToolchainPath,
-       PlaceholderResolver([]() { return GetToolchainPath(); })},
-  };
+  // the path in the corresponding environment variable, which should be set by
+  // the build rules. If the variable isn't set, we don't store a substitution;
+  // if it was needed then the eventual replacement will be a no-op and the
+  // command will presumably fail later.
+  if (std::string developer_dir = GetAppleEnvironmentVariable("DEVELOPER_DIR");
+      !developer_dir.empty()) {
+    substitutions_[kBazelXcodeDeveloperDir] = developer_dir;
+  }
+  if (std::string sdk_root = GetAppleEnvironmentVariable("SDKROOT");
+      !sdk_root.empty()) {
+    substitutions_[kBazelXcodeSdkRoot] = sdk_root;
+  }
+  if (std::string toolchain_path = GetAppleToolchainPath();
+      !toolchain_path.empty()) {
+    substitutions_[kBazelSwiftToolchainPath] = toolchain_path;
+  }
 }
 
 bool BazelPlaceholderSubstitutions::Apply(std::string &arg) {
-  bool changed = false;
-
-  // Replace placeholders in the string with their actual values.
-  for (auto &pair : placeholder_resolvers_) {
-    changed |= FindAndReplace(pair.first, pair.second, arg);
-  }
-
-  return changed;
-}
-
-bool BazelPlaceholderSubstitutions::FindAndReplace(
-    const std::string &placeholder,
-    BazelPlaceholderSubstitutions::PlaceholderResolver &resolver,
-    std::string &str) {
-  int start = 0;
-  bool changed = false;
-  while ((start = str.find(placeholder, start)) != std::string::npos) {
-    std::string resolved_value = resolver.get();
-    if (resolved_value.empty()) {
-      return false;
-    }
-    changed = true;
-    str.replace(start, placeholder.length(), resolved_value);
-    start += resolved_value.length();
-  }
-  return changed;
+  return absl::StrReplaceAll(substitutions_, &arg) > 0;
 }
 
 }  // namespace bazel_rules_swift

@@ -16,5 +16,10 @@ licenses(["notice"])
 swift_library(
     name = "simple",
     srcs = ["Empty.swift"],
+    features = [
+        # TODO: b/351801556 - Remove this when it is the default on all
+        # toolchains.
+        "swift.compile_in_parallel",
+    ],
     tags = FIXTURE_TAGS,
 )

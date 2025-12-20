@@ -190,6 +190,15 @@ SWIFT_FEATURE_OPT_USES_WMO = "swift.opt_uses_wmo"
 # the `-Osize` flag instead of `-O`.
 SWIFT_FEATURE_OPT_USES_OSIZE = "swift.opt_uses_osize"
 
+# If enabled, compilations that are using whole-module optimization and also
+# request optimizations via the `-O` flag group will have cross-module
+# optimization performed. This is the default behavior for the Swift compiler
+# and for these build rules, with one exception: because CMO prevents
+# parallelized compilation, we unconditionally disable CMO for targets built in
+# an `exec` configuration under the presumption that build speed is more
+# important than runtime performance for build tools.
+SWIFT_FEATURE_OPT_USES_CMO = "swift.opt_uses_cmo"
+
 # If enabled, and if the toolchain specifies a generated header rewriting tool,
 # that tool will be invoked after compilation to rewrite the generated header in
 # place.
@@ -327,15 +336,6 @@ SWIFT_FEATURE_GENERATE_FROM_RAW_PROTO_FILES = "swift.generate_from_raw_proto_fil
 # generating a Swift file from a proto file.
 SWIFT_FEATURE_GENERATE_PATH_TO_UNDERSCORES_FROM_PROTO_FILES = "swift.generate_path_to_underscores_from_proto_files"
 
-# If enabled and whole module optimisation is being used, the `*.swiftdoc`,
-# `*.swiftmodule` and `*-Swift.h` are generated with a separate action
-# rather than as part of the compilation.
-SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION = "swift.split_derived_files_generation"
-
-# If enabled the skip function bodies frontend flag is passed when using derived
-# files generation. This requires Swift 5.2
-SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES = "swift.skip_function_bodies_for_derived_files"
-
 # If enabled remap the absolute path to Xcode in debug info. When used with
 # swift.coverage_prefix_map also remap the path in coverage data.
 SWIFT_FEATURE_REMAP_XCODE_PATH = "swift.remap_xcode_path"
@@ -364,6 +364,11 @@ SWIFT_FEATURE_LLD_GC_WORKAROUND = "swift.lld_gc_workaround"
 # objects if you know that isn't required.
 SWIFT_FEATURE_OBJC_LINK_FLAGS = "swift.objc_link_flag"
 
+# A private feature that is set by the toolchain if an optimization flag in the
+# `-O` flag group was passed on the command line using `--swiftcopt`. Users
+# should never manually enable, disable, or query this feature.
+SWIFT_FEATURE__OPT_IN_SWIFTCOPTS = "swift._opt_in_swiftcopts"
+
 # If enabled, requests the `-enforce-exclusivity=checked` swiftc flag which
 # enables runtime checking of exclusive memory access on mutation.
 SWIFT_FEATURE_CHECKED_EXCLUSIVITY = "swift.checked_exclusivity"
@@ -385,6 +390,10 @@ SWIFT_FEATURE_INTERNALIZE_AT_LINK = "swift.internalize_at_link"
 # If enabled, requests the `-disable-availability-checking` frontend flag.
 # This disables checking for potentially unavailable APIs.
 SWIFT_FEATURE_DISABLE_AVAILABILITY_CHECKING = "swift.disable_availability_checking"
+
+# If enabled, parallelize the compilation of Swift modules and their object
+# files by registering separate actions for each.
+SWIFT_FEATURE_COMPILE_IN_PARALLEL = "swift.compile_in_parallel"
 
 # A private feature that is set by the toolchain if it supports the
 # `-enable-{experimental,upcoming}-feature` flag (Swift 5.8 and above). Users

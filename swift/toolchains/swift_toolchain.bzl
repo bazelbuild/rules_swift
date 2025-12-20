@@ -39,8 +39,9 @@ load(
     "//swift/internal:action_names.bzl",
     "SWIFT_ACTION_AUTOLINK_EXTRACT",
     "SWIFT_ACTION_COMPILE",
+    "SWIFT_ACTION_COMPILE_CODEGEN",
+    "SWIFT_ACTION_COMPILE_MODULE",
     "SWIFT_ACTION_COMPILE_MODULE_INTERFACE",
-    "SWIFT_ACTION_DERIVE_FILES",
     "SWIFT_ACTION_DUMP_AST",
     "SWIFT_ACTION_MODULEWRAP",
     "SWIFT_ACTION_PRECOMPILE_C_MODULE",
@@ -61,6 +62,7 @@ load(
     "default_features_for_toolchain",
     "features_for_build_modes",
 )
+load("//swift/internal:optimization.bzl", "optimization_features_from_swiftcopts")
 load(
     "//swift/internal:providers.bzl",
     "SwiftCrossImportOverlayInfo",
@@ -72,7 +74,6 @@ load(
     "collect_implicit_deps_providers",
     "get_swift_executable_for_toolchain",
 )
-load("//swift/internal:wmo.bzl", "features_from_swiftcopts")
 load(
     "//swift/toolchains/config:action_config.bzl",
     "ActionConfigInfo",
@@ -142,19 +143,20 @@ def _all_tool_configs(
         driver_config = _driver_config(mode = "swiftc"),
         resource_set = _swift_compile_resource_set,
         use_param_file = True,
-        worker_mode = "persistent",
+        wrapped_by_worker = True,
         env = env,
     )
 
     tool_configs = {
         SWIFT_ACTION_COMPILE: compile_tool_config,
-        SWIFT_ACTION_DERIVE_FILES: compile_tool_config,
+        SWIFT_ACTION_COMPILE_CODEGEN: compile_tool_config,
+        SWIFT_ACTION_COMPILE_MODULE: compile_tool_config,
         SWIFT_ACTION_DUMP_AST: compile_tool_config,
         SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT: ToolConfigInfo(
             additional_tools = additional_tools,
             driver_config = _driver_config(mode = "swift-symbolgraph-extract"),
             use_param_file = True,
-            worker_mode = "wrap",
+            wrapped_by_worker = True,
             env = env,
         ),
     }
@@ -163,7 +165,7 @@ def _all_tool_configs(
         tool_configs[SWIFT_ACTION_AUTOLINK_EXTRACT] = ToolConfigInfo(
             additional_tools = additional_tools,
             driver_config = _driver_config(mode = "swift-autolink-extract"),
-            worker_mode = "wrap",
+            wrapped_by_worker = True,
         )
 
     if use_module_wrap:
@@ -172,7 +174,7 @@ def _all_tool_configs(
             # This must come first after the driver name.
             args = ["-modulewrap"],
             driver_config = _driver_config(mode = "swift"),
-            worker_mode = "wrap",
+            wrapped_by_worker = True,
         )
 
     return tool_configs
@@ -199,7 +201,6 @@ def _all_action_configs(os, arch, target_triple, sdkroot, xctest_version, additi
             actions = [
                 SWIFT_ACTION_COMPILE,
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
-                SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
                 SWIFT_ACTION_MODULEWRAP,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
@@ -216,7 +217,6 @@ def _all_action_configs(os, arch, target_triple, sdkroot, xctest_version, additi
             ActionConfigInfo(
                 actions = [
                     SWIFT_ACTION_COMPILE,
-                    SWIFT_ACTION_DERIVE_FILES,
                     SWIFT_ACTION_DUMP_AST,
                     SWIFT_ACTION_PRECOMPILE_C_MODULE,
                 ],
@@ -229,7 +229,6 @@ def _all_action_configs(os, arch, target_triple, sdkroot, xctest_version, additi
                 ActionConfigInfo(
                     actions = [
                         SWIFT_ACTION_COMPILE,
-                        SWIFT_ACTION_DERIVE_FILES,
                         SWIFT_ACTION_DUMP_AST,
                         SWIFT_ACTION_PRECOMPILE_C_MODULE,
                     ],
@@ -258,7 +257,6 @@ def _all_action_configs(os, arch, target_triple, sdkroot, xctest_version, additi
                     ActionConfigInfo(
                         actions = [
                             SWIFT_ACTION_COMPILE,
-                            SWIFT_ACTION_DERIVE_FILES,
                             SWIFT_ACTION_DUMP_AST,
                             SWIFT_ACTION_PRECOMPILE_C_MODULE,
                         ],
@@ -465,9 +463,13 @@ def _swift_toolchain_impl(ctx):
 
     # Combine build mode features, autoconfigured features, and required
     # features.
+    requested_build_mode_features, _ = features_for_build_modes(ctx)
+    requested_optimization_features, _ = optimization_features_from_swiftcopts(
+        swiftcopts = swiftcopts,
+    )
     requested_features = (
-        features_for_build_modes(ctx) +
-        features_from_swiftcopts(swiftcopts = swiftcopts)
+        requested_build_mode_features +
+        requested_optimization_features
     )
     requested_features.extend(default_features_for_toolchain(
         target_triple = target_triple,
@@ -534,6 +536,7 @@ def _swift_toolchain_impl(ctx):
         clang_implicit_deps_providers = (
             collect_implicit_deps_providers([])
         ),
+        codegen_batch_size = 8,
         cross_import_overlays = [
             target[SwiftCrossImportOverlayInfo]
             for target in ctx.attr.cross_import_overlays
