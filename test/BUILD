@@ -13,6 +13,7 @@ load(":generated_header_tests.bzl", "generated_header_test_suite")
 load(":imported_framework_tests.bzl", "imported_framework_test_suite")
 load(":interop_hints_tests.bzl", "interop_hints_test_suite")
 load(":mainattr_tests.bzl", "mainattr_test_suite")
+load(":minimum_os_version_tests.bzl", "minimum_os_version_test_suite")
 load(":module_cache_settings_tests.bzl", "module_cache_settings_test_suite")
 load(":module_interface_tests.bzl", "module_interface_test_suite")
 load(":module_mapping_tests.bzl", "module_mapping_test_suite")
@@ -56,6 +57,8 @@ imported_framework_test_suite(name = "imported_framework")
 interop_hints_test_suite(name = "interop_hints")
 
 mainattr_test_suite(name = "mainattr")
+
+minimum_os_version_test_suite(name = "minimum_os_version")
 
 module_cache_settings_test_suite(name = "module_cache_settings")
 

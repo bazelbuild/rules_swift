@@ -166,9 +166,9 @@ A C++ `FeatureConfiguration` value (see
 <pre>
 swift_common.compile(*, <a href="#swift_common.compile-actions">actions</a>, <a href="#swift_common.compile-additional_inputs">additional_inputs</a>, <a href="#swift_common.compile-cc_infos">cc_infos</a>, <a href="#swift_common.compile-copts">copts</a>, <a href="#swift_common.compile-defines">defines</a>, <a href="#swift_common.compile-exec_group">exec_group</a>,
                      <a href="#swift_common.compile-extra_swift_infos">extra_swift_infos</a>, <a href="#swift_common.compile-feature_configuration">feature_configuration</a>, <a href="#swift_common.compile-generated_header_name">generated_header_name</a>, <a href="#swift_common.compile-is_test">is_test</a>,
-                     <a href="#swift_common.compile-include_dev_srch_paths">include_dev_srch_paths</a>, <a href="#swift_common.compile-module_name">module_name</a>, <a href="#swift_common.compile-package_name">package_name</a>, <a href="#swift_common.compile-plugins">plugins</a>, <a href="#swift_common.compile-private_cc_infos">private_cc_infos</a>,
-                     <a href="#swift_common.compile-private_swift_infos">private_swift_infos</a>, <a href="#swift_common.compile-srcs">srcs</a>, <a href="#swift_common.compile-swift_infos">swift_infos</a>, <a href="#swift_common.compile-swift_toolchain">swift_toolchain</a>, <a href="#swift_common.compile-target_name">target_name</a>,
-                     <a href="#swift_common.compile-toolchain_type">toolchain_type</a>, <a href="#swift_common.compile-workspace_name">workspace_name</a>)
+                     <a href="#swift_common.compile-include_dev_srch_paths">include_dev_srch_paths</a>, <a href="#swift_common.compile-minimum_os_version">minimum_os_version</a>, <a href="#swift_common.compile-module_name">module_name</a>, <a href="#swift_common.compile-package_name">package_name</a>, <a href="#swift_common.compile-plugins">plugins</a>,
+                     <a href="#swift_common.compile-private_cc_infos">private_cc_infos</a>, <a href="#swift_common.compile-private_swift_infos">private_swift_infos</a>, <a href="#swift_common.compile-srcs">srcs</a>, <a href="#swift_common.compile-swift_infos">swift_infos</a>, <a href="#swift_common.compile-swift_toolchain">swift_toolchain</a>,
+                     <a href="#swift_common.compile-target_name">target_name</a>, <a href="#swift_common.compile-toolchain_type">toolchain_type</a>, <a href="#swift_common.compile-workspace_name">workspace_name</a>)
 </pre>
 
 Compiles a Swift module.
@@ -189,6 +189,7 @@ Compiles a Swift module.
 | <a id="swift_common.compile-generated_header_name"></a>generated_header_name |  The name of the Objective-C generated header that should be generated for this module. If omitted, no header will be generated.   |  `None` |
 | <a id="swift_common.compile-is_test"></a>is_test |  Deprecated. This argument will be removed in the next major release. Use the `include_dev_srch_paths` attribute instead. Represents if the `testonly` value of the context.   |  `None` |
 | <a id="swift_common.compile-include_dev_srch_paths"></a>include_dev_srch_paths |  A `bool` that indicates whether the developer framework search paths will be added to the compilation command.   |  `None` |
+| <a id="swift_common.compile-minimum_os_version"></a>minimum_os_version |  A string representing the minimum OS version that this target should be compiled for (e.g., "17.0"). If provided, this is used to create a versioned target triple for the `-target` flag. If `None`, the default minimum OS version from the SDK is used.   |  `None` |
 | <a id="swift_common.compile-module_name"></a>module_name |  The name of the Swift module being compiled. This must be present and valid; use `derive_swift_module_name` to generate a default from the target's label if needed.   |  none |
 | <a id="swift_common.compile-package_name"></a>package_name |  The semantic package of the name of the Swift module being compiled.   |  none |
 | <a id="swift_common.compile-plugins"></a>plugins |  A list of `SwiftCompilerPluginInfo` providers that represent plugins that should be loaded by the compiler.   |  `[]` |

@@ -171,6 +171,21 @@ Additional files that are referenced using `$(location ...)` in attributes that
 support location expansion.
 """,
             ),
+            "minimum_os_version": attr.string(
+                doc = """\
+The minimum OS version that this target should be built for.
+
+If not specified, the default minimum OS version is determined by the SDK's
+minimum supported OS version for the target platform. This ensures that code
+is always compiled for a deployment target that the SDK supports.
+
+The effective minimum OS version used for compilation is the maximum of:
+- The value of this attribute (if specified)
+- The SDK's minimum supported OS version for the platform (if available)
+
+This attribute has no effect on platforms that do not support versioned target triples.
+""",
+            ),
         },
         {
             "always_include_developer_search_paths": attr.bool(

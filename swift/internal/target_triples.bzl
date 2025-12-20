@@ -223,6 +223,34 @@ def _str(triple):
         result += "-{}".format(triple.environment)
     return result
 
+def _str_with_version(triple, os_version):
+    """Returns a string representation of the target triple with an OS version.
+
+    This function creates a versioned target triple string suitable for the
+    Swift compiler's `-target` flag. For example, given a triple like
+    `arm64-apple-ios` and version `17.0`, it produces `arm64-apple-ios17.0`.
+
+    Args:
+        triple: A target triple struct, as returned by `target_triples.make` or
+            `target_triples.parse`.
+        os_version: A string representing the OS version to append (e.g.,
+            `"17.0"` or `"14.0"`). If `None` or empty, the triple is returned
+            without a version (equivalent to calling `str()`).
+
+    Returns:
+        The string representation of the target triple with the OS version
+        appended to the OS component.
+    """
+    if not os_version:
+        return _str(triple)
+
+    unversioned_os = _unversioned_os(triple)
+    versioned_os = "{}{}".format(unversioned_os, os_version)
+    result = "{}-{}-{}".format(triple.cpu, triple.vendor, versioned_os)
+    if triple.environment:
+        result += "-{}".format(triple.environment)
+    return result
+
 def _split_os_version(os):
     """Splits the OS version number from the end of the given component.
 
@@ -250,5 +278,6 @@ target_triples = struct(
     parse = _parse,
     platform_name_for_swift = _platform_name_for_swift,
     str = _str,
+    str_with_version = _str_with_version,
     unversioned_os = _unversioned_os,
 )

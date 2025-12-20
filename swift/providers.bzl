@@ -482,6 +482,12 @@ These features determine various compilation and debugging behaviors of the
 Swift build rules, and they are also passed to the C++ APIs used when linking
 (so features defined in CROSSTOOL may be used here).
 """,
+        "xcode_sdk_info": """\
+An optional `XcodeSdkVariantInfo` provider from `apple_support` that contains
+information about the current Xcode SDK, including:
+
+This field may be `None` on unsupported platforms.
+""",
     },
 )
 
