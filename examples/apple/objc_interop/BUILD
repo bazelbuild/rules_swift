@@ -6,6 +6,10 @@ load("@rules_cc//cc:objc_library.bzl", "objc_library")
 load("//swift:swift_binary.bzl", "swift_binary")
 load("//swift:swift_library.bzl", "swift_library")
 
+package(
+    features = ["swift.enable_v6"],
+)
+
 licenses(["notice"])
 
 objc_library(

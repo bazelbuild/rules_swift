@@ -3,6 +3,10 @@ load("//swift:swift_compiler_plugin.bzl", "swift_compiler_plugin", "universal_sw
 load("//swift:swift_library.bzl", "swift_library")
 load("//swift:swift_test.bzl", "swift_test")
 
+package(
+    features = ["swift.enable_v6"],
+)
+
 licenses(["notice"])
 
 swift_library(
