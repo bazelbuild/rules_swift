@@ -12,6 +12,10 @@ load(
     "swift_library",
 )
 
+package(
+    features = ["swift.enable_v6"],
+)
+
 licenses(["notice"])
 
 # 1. This library has some C++ code that you want to interact with from Swift...

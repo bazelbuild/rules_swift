@@ -15,6 +15,10 @@ load(
     "swift_test",
 )
 
+package(
+    features = ["swift.enable_v6"],
+)
+
 licenses(["notice"])
 
 swift_library(

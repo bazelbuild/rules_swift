@@ -3,6 +3,10 @@ load(
     "swift_binary",
 )
 
+package(
+    features = ["swift.enable_v6"],
+)
+
 swift_binary(
     name = "test_discoverer",
     srcs = [

@@ -3,6 +3,10 @@ load(
     "swift_test",
 )
 
+package(
+    features = ["swift.enable_v6"],
+)
+
 licenses(["notice"])
 
 # A simple binary that ensures that symbols from C sources in the same target

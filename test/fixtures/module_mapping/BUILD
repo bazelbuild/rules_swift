@@ -10,6 +10,7 @@ load(":apply_mapping.bzl", "apply_mapping")
 package(
     default_testonly = True,
     default_visibility = ["//test:__subpackages__"],
+    features = ["swift.enable_v6"],
 )
 
 licenses(["notice"])
