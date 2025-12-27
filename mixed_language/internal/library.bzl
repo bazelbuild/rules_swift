@@ -45,8 +45,8 @@ load(
 # buildifier: disable=bzl-visibility
 load(
     "//swift/internal:toolchain_utils.bzl",
-    "get_swift_toolchain",
-    "use_swift_toolchain",
+    "find_all_toolchains",
+    "use_all_toolchains",
 )
 
 # buildifier: disable=bzl-visibility
@@ -83,10 +83,12 @@ def _mixed_language_library_impl(ctx):
     swift_target = ctx.attr.swift_target
     swift_info = swift_target[SwiftInfo]
 
+    toolchains = find_all_toolchains(ctx)
+
     feature_configuration = configure_features(
         ctx = ctx,
         requested_features = ctx.features,
-        swift_toolchain = get_swift_toolchain(ctx),
+        toolchains = toolchains,
         unsupported_features = ctx.disabled_features,
     )
 
@@ -262,5 +264,5 @@ Assembles a mixed language library from a clang and swift library target pair.
 """,
     fragments = ["cpp"],
     implementation = _mixed_language_library_impl,
-    toolchains = use_swift_toolchain(),
+    toolchains = use_all_toolchains(),
 )

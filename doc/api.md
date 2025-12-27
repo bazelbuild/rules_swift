@@ -167,7 +167,7 @@ A C++ `FeatureConfiguration` value (see
 swift_common.compile(*, <a href="#swift_common.compile-actions">actions</a>, <a href="#swift_common.compile-additional_inputs">additional_inputs</a>, <a href="#swift_common.compile-cc_infos">cc_infos</a>, <a href="#swift_common.compile-copts">copts</a>, <a href="#swift_common.compile-defines">defines</a>, <a href="#swift_common.compile-exec_group">exec_group</a>,
                      <a href="#swift_common.compile-extra_swift_infos">extra_swift_infos</a>, <a href="#swift_common.compile-feature_configuration">feature_configuration</a>, <a href="#swift_common.compile-generated_header_name">generated_header_name</a>, <a href="#swift_common.compile-is_test">is_test</a>,
                      <a href="#swift_common.compile-include_dev_srch_paths">include_dev_srch_paths</a>, <a href="#swift_common.compile-module_name">module_name</a>, <a href="#swift_common.compile-package_name">package_name</a>, <a href="#swift_common.compile-plugins">plugins</a>, <a href="#swift_common.compile-private_cc_infos">private_cc_infos</a>,
-                     <a href="#swift_common.compile-private_swift_infos">private_swift_infos</a>, <a href="#swift_common.compile-srcs">srcs</a>, <a href="#swift_common.compile-swift_infos">swift_infos</a>, <a href="#swift_common.compile-swift_toolchain">swift_toolchain</a>, <a href="#swift_common.compile-target_name">target_name</a>,
+                     <a href="#swift_common.compile-private_swift_infos">private_swift_infos</a>, <a href="#swift_common.compile-srcs">srcs</a>, <a href="#swift_common.compile-swift_infos">swift_infos</a>, <a href="#swift_common.compile-swift_toolchain">swift_toolchain</a>, <a href="#swift_common.compile-target_name">target_name</a>, <a href="#swift_common.compile-toolchains">toolchains</a>,
                      <a href="#swift_common.compile-toolchain_type">toolchain_type</a>, <a href="#swift_common.compile-workspace_name">workspace_name</a>)
 </pre>
 
@@ -196,8 +196,9 @@ Compiles a Swift module.
 | <a id="swift_common.compile-private_swift_infos"></a>private_swift_infos |  A list of `SwiftInfo` providers from private (implementation-only) dependencies of the target being compiled. The modules defined by these providers are used as dependencies of the Swift module being compiled but not of the Clang module for the generated header.   |  `[]` |
 | <a id="swift_common.compile-srcs"></a>srcs |  The Swift source files to compile.   |  none |
 | <a id="swift_common.compile-swift_infos"></a>swift_infos |  A list of `SwiftInfo` providers from non-private dependencies of the target being compiled. The modules defined by these providers are used as dependencies of both the Swift module being compiled and the Clang module for the generated header.   |  none |
-| <a id="swift_common.compile-swift_toolchain"></a>swift_toolchain |  The `SwiftToolchainInfo` provider of the toolchain.   |  none |
+| <a id="swift_common.compile-swift_toolchain"></a>swift_toolchain |  The `SwiftToolchainInfo` provider of the toolchain.   |  `None` |
 | <a id="swift_common.compile-target_name"></a>target_name |  The name of the target for which the code is being compiled, which is used to determine unique file paths for the outputs.   |  none |
+| <a id="swift_common.compile-toolchains"></a>toolchains |  The struct containing the Swift and C++ toolchain providers, as returned by `swift_common.find_all_toolchains()`.   |  `None` |
 | <a id="swift_common.compile-toolchain_type"></a>toolchain_type |  The toolchain type of the `swift_toolchain` which is used for the proper selection of the execution platform inside `run_toolchain_action`.   |  `Label("@rules_swift//toolchains:toolchain_type")` |
 | <a id="swift_common.compile-workspace_name"></a>workspace_name |  The name of the workspace for which the code is being compiled, which is used to determine unique file paths for some outputs.   |  none |
 
@@ -253,7 +254,7 @@ A `struct` with the following fields:
 swift_common.compile_module_interface(*, <a href="#swift_common.compile_module_interface-actions">actions</a>, <a href="#swift_common.compile_module_interface-clang_module">clang_module</a>, <a href="#swift_common.compile_module_interface-compilation_contexts">compilation_contexts</a>, <a href="#swift_common.compile_module_interface-copts">copts</a>,
                                       <a href="#swift_common.compile_module_interface-exec_group">exec_group</a>, <a href="#swift_common.compile_module_interface-feature_configuration">feature_configuration</a>, <a href="#swift_common.compile_module_interface-is_framework">is_framework</a>, <a href="#swift_common.compile_module_interface-module_name">module_name</a>,
                                       <a href="#swift_common.compile_module_interface-swiftinterface_file">swiftinterface_file</a>, <a href="#swift_common.compile_module_interface-swift_infos">swift_infos</a>, <a href="#swift_common.compile_module_interface-swift_toolchain">swift_toolchain</a>, <a href="#swift_common.compile_module_interface-target_name">target_name</a>,
-                                      <a href="#swift_common.compile_module_interface-toolchain_type">toolchain_type</a>)
+                                      <a href="#swift_common.compile_module_interface-toolchains">toolchains</a>, <a href="#swift_common.compile_module_interface-toolchain_type">toolchain_type</a>)
 </pre>
 
 Compiles a Swift module interface.
@@ -273,8 +274,9 @@ Compiles a Swift module interface.
 | <a id="swift_common.compile_module_interface-module_name"></a>module_name |  The name of the Swift module being compiled. This must be present and valid; use `derive_swift_module_name` to generate a default from the target's label if needed.   |  none |
 | <a id="swift_common.compile_module_interface-swiftinterface_file"></a>swiftinterface_file |  The Swift module interface file to compile.   |  none |
 | <a id="swift_common.compile_module_interface-swift_infos"></a>swift_infos |  A list of `SwiftInfo` providers from dependencies of the target being compiled.   |  none |
-| <a id="swift_common.compile_module_interface-swift_toolchain"></a>swift_toolchain |  The `SwiftToolchainInfo` provider of the toolchain.   |  none |
+| <a id="swift_common.compile_module_interface-swift_toolchain"></a>swift_toolchain |  The `SwiftToolchainInfo` provider of the toolchain.   |  `None` |
 | <a id="swift_common.compile_module_interface-target_name"></a>target_name |  The name of the target for which the code is being compiled, which is used to determine unique file paths for the outputs.   |  none |
+| <a id="swift_common.compile_module_interface-toolchains"></a>toolchains |  The struct containing the Swift and C++ toolchain providers, as returned by `swift_common.find_all_toolchains()`.   |  `None` |
 | <a id="swift_common.compile_module_interface-toolchain_type"></a>toolchain_type |  The toolchain type of the `swift_toolchain` which is used for the proper selection of the execution platform inside `run_toolchain_action`.   |  `Label("@rules_swift//toolchains:toolchain_type")` |
 
 **RETURNS**
@@ -292,7 +294,8 @@ A Swift module context (as returned by `create_swift_module_context`)
 ## swift_common.configure_features
 
 <pre>
-swift_common.configure_features(<a href="#swift_common.configure_features-ctx">ctx</a>, <a href="#swift_common.configure_features-swift_toolchain">swift_toolchain</a>, *, <a href="#swift_common.configure_features-requested_features">requested_features</a>, <a href="#swift_common.configure_features-unsupported_features">unsupported_features</a>)
+swift_common.configure_features(<a href="#swift_common.configure_features-ctx">ctx</a>, <a href="#swift_common.configure_features-swift_toolchain">swift_toolchain</a>, <a href="#swift_common.configure_features-toolchains">toolchains</a>, *, <a href="#swift_common.configure_features-requested_features">requested_features</a>,
+                                <a href="#swift_common.configure_features-unsupported_features">unsupported_features</a>)
 </pre>
 
 Creates a feature configuration to be passed to Swift build APIs.
@@ -310,7 +313,8 @@ configuration can extract it by calling
 | Name  | Description | Default Value |
 | :------------- | :------------- | :------------- |
 | <a id="swift_common.configure_features-ctx"></a>ctx |  The rule context.   |  none |
-| <a id="swift_common.configure_features-swift_toolchain"></a>swift_toolchain |  The `SwiftToolchainInfo` provider of the toolchain being used to build. This is used to determine features that are enabled by default or unsupported by the toolchain, and the C++ toolchain associated with the Swift toolchain is used to create the underlying C++ feature configuration.   |  none |
+| <a id="swift_common.configure_features-swift_toolchain"></a>swift_toolchain |  The `SwiftToolchainInfo` provider of the toolchain being used to build. This is used to determine features that are enabled by default or unsupported by the toolchain, and the C++ toolchain associated with the Swift toolchain is used to create the underlying C++ feature configuration.   |  `None` |
+| <a id="swift_common.configure_features-toolchains"></a>toolchains |  The toolchains that are used to determine which features are enabled by default or unsupported. This is typically obtained using `swift_common.find_all_toolchains()`.   |  `None` |
 | <a id="swift_common.configure_features-requested_features"></a>requested_features |  The list of features to be enabled. This is typically obtained using the `ctx.features` field in a rule implementation function.   |  `[]` |
 | <a id="swift_common.configure_features-unsupported_features"></a>unsupported_features |  The list of features that are unsupported by the current rule. This is typically obtained using the `ctx.disabled_features` field in a rule implementation function.   |  `[]` |
 
@@ -364,8 +368,8 @@ swift_common.create_linking_context_from_compilation_outputs(*, <a href="#swift_
                                                              <a href="#swift_common.create_linking_context_from_compilation_outputs-feature_configuration">feature_configuration</a>, <a href="#swift_common.create_linking_context_from_compilation_outputs-is_test">is_test</a>,
                                                              <a href="#swift_common.create_linking_context_from_compilation_outputs-include_dev_srch_paths">include_dev_srch_paths</a>, <a href="#swift_common.create_linking_context_from_compilation_outputs-label">label</a>,
                                                              <a href="#swift_common.create_linking_context_from_compilation_outputs-linking_contexts">linking_contexts</a>, <a href="#swift_common.create_linking_context_from_compilation_outputs-module_context">module_context</a>, <a href="#swift_common.create_linking_context_from_compilation_outputs-name">name</a>,
-                                                             <a href="#swift_common.create_linking_context_from_compilation_outputs-swift_toolchain">swift_toolchain</a>, <a href="#swift_common.create_linking_context_from_compilation_outputs-toolchain_type">toolchain_type</a>,
-                                                             <a href="#swift_common.create_linking_context_from_compilation_outputs-user_link_flags">user_link_flags</a>)
+                                                             <a href="#swift_common.create_linking_context_from_compilation_outputs-swift_toolchain">swift_toolchain</a>, <a href="#swift_common.create_linking_context_from_compilation_outputs-toolchains">toolchains</a>,
+                                                             <a href="#swift_common.create_linking_context_from_compilation_outputs-toolchain_type">toolchain_type</a>, <a href="#swift_common.create_linking_context_from_compilation_outputs-user_link_flags">user_link_flags</a>)
 </pre>
 
 Creates a linking context from the outputs of a Swift compilation.
@@ -394,7 +398,8 @@ command line parameters file, those actions will be created here.
 | <a id="swift_common.create_linking_context_from_compilation_outputs-linking_contexts"></a>linking_contexts |  A `list` of `CcLinkingContext`s containing libraries from dependencies.   |  `[]` |
 | <a id="swift_common.create_linking_context_from_compilation_outputs-module_context"></a>module_context |  The module context returned by `compile` containing information about the Swift module that was compiled. Typically, this is the first tuple element in the value returned by `compile`.   |  none |
 | <a id="swift_common.create_linking_context_from_compilation_outputs-name"></a>name |  A string that is used to derive the name of the library or libraries linked by this function. If this is not provided or is a falsy value, the name component of the `label` argument is used.   |  `None` |
-| <a id="swift_common.create_linking_context_from_compilation_outputs-swift_toolchain"></a>swift_toolchain |  The `SwiftToolchainInfo` provider of the toolchain.   |  none |
+| <a id="swift_common.create_linking_context_from_compilation_outputs-swift_toolchain"></a>swift_toolchain |  The `SwiftToolchainInfo` provider of the toolchain.   |  `None` |
+| <a id="swift_common.create_linking_context_from_compilation_outputs-toolchains"></a>toolchains |  The struct containing the Swift and C++ toolchain providers, as returned by `swift_common.find_all_toolchains()`.   |  `None` |
 | <a id="swift_common.create_linking_context_from_compilation_outputs-toolchain_type"></a>toolchain_type |  The toolchain type of the `swift_toolchain` which is used for the proper selection of the execution platform inside `run_toolchain_action`.   |  `Label("@rules_swift//toolchains:toolchain_type")` |
 | <a id="swift_common.create_linking_context_from_compilation_outputs-user_link_flags"></a>user_link_flags |  A `list` of strings containing additional flags that will be passed to the linker for any binary that links with the returned linking context.   |  `[]` |
 
@@ -413,7 +418,7 @@ A tuple of `(CcLinkingContext, CcLinkingOutputs)` containing the linking
 swift_common.extract_symbol_graph(*, <a href="#swift_common.extract_symbol_graph-actions">actions</a>, <a href="#swift_common.extract_symbol_graph-compilation_contexts">compilation_contexts</a>, <a href="#swift_common.extract_symbol_graph-emit_extension_block_symbols">emit_extension_block_symbols</a>,
                                   <a href="#swift_common.extract_symbol_graph-exec_group">exec_group</a>, <a href="#swift_common.extract_symbol_graph-feature_configuration">feature_configuration</a>, <a href="#swift_common.extract_symbol_graph-include_dev_srch_paths">include_dev_srch_paths</a>,
                                   <a href="#swift_common.extract_symbol_graph-minimum_access_level">minimum_access_level</a>, <a href="#swift_common.extract_symbol_graph-module_name">module_name</a>, <a href="#swift_common.extract_symbol_graph-output_dir">output_dir</a>, <a href="#swift_common.extract_symbol_graph-swift_infos">swift_infos</a>,
-                                  <a href="#swift_common.extract_symbol_graph-swift_toolchain">swift_toolchain</a>, <a href="#swift_common.extract_symbol_graph-toolchain_type">toolchain_type</a>)
+                                  <a href="#swift_common.extract_symbol_graph-swift_toolchain">swift_toolchain</a>, <a href="#swift_common.extract_symbol_graph-toolchains">toolchains</a>, <a href="#swift_common.extract_symbol_graph-toolchain_type">toolchain_type</a>)
 </pre>
 
 Extracts the symbol graph from a Swift module.
@@ -433,8 +438,46 @@ Extracts the symbol graph from a Swift module.
 | <a id="swift_common.extract_symbol_graph-module_name"></a>module_name |  The name of the module whose symbol graph should be extracted.   |  none |
 | <a id="swift_common.extract_symbol_graph-output_dir"></a>output_dir |  A directory-type `File` into which `.symbols.json` files representing the module's symbol graph will be extracted. If extraction is successful, this directory will contain a file named `${MODULE_NAME}.symbols.json`. Optionally, if the module contains extensions to types in other modules, then there will also be files named `${MODULE_NAME}@${EXTENDED_MODULE}.symbols.json`.   |  none |
 | <a id="swift_common.extract_symbol_graph-swift_infos"></a>swift_infos |  A list of `SwiftInfo` providers from dependencies of the target being compiled. This should include both propagated and non-propagated (implementation-only) dependencies.   |  none |
-| <a id="swift_common.extract_symbol_graph-swift_toolchain"></a>swift_toolchain |  The `SwiftToolchainInfo` provider of the toolchain.   |  none |
+| <a id="swift_common.extract_symbol_graph-swift_toolchain"></a>swift_toolchain |  The `SwiftToolchainInfo` provider of the toolchain.   |  `None` |
+| <a id="swift_common.extract_symbol_graph-toolchains"></a>toolchains |  The struct containing the Swift and C++ toolchain providers, as returned by `swift_common.find_all_toolchains()`.   |  `None` |
 | <a id="swift_common.extract_symbol_graph-toolchain_type"></a>toolchain_type |  The toolchain type of the `swift_toolchain` which is used for the proper selection of the execution platform inside `run_toolchain_action`.   |  `Label("@rules_swift//toolchains:toolchain_type")` |
+
+
+<a id="swift_common.find_all_toolchains"></a>
+
+## swift_common.find_all_toolchains
+
+<pre>
+swift_common.find_all_toolchains(<a href="#swift_common.find_all_toolchains-ctx">ctx</a>, *, <a href="#swift_common.find_all_toolchains-exec_group">exec_group</a>, <a href="#swift_common.find_all_toolchains-mandatory">mandatory</a>, <a href="#swift_common.find_all_toolchains-toolchain_type">toolchain_type</a>)
+</pre>
+
+Finds all toolchains required to build Swift code.
+
+The Swift build APIs require the C++ toolchain to link libraries and
+binaries, so this function finds both and returns them in a convenient
+structure that should be passed to the other build APIs.
+
+
+**PARAMETERS**
+
+
+| Name  | Description | Default Value |
+| :------------- | :------------- | :------------- |
+| <a id="swift_common.find_all_toolchains-ctx"></a>ctx |  The rule or aspect context.   |  none |
+| <a id="swift_common.find_all_toolchains-exec_group"></a>exec_group |  The name of the execution group that contains the Swift toolchain. If this is provided and the toolchain is not declared in that execution group, it will be looked up from `ctx` as a fallback instead. If this argument is `None` (the default), then the Swift toolchain will only be looked up from `ctx.`   |  `None` |
+| <a id="swift_common.find_all_toolchains-mandatory"></a>mandatory |  If `False`, this function will return `None` instead of failing if no toolchain is found. Defaults to `True`.   |  `True` |
+| <a id="swift_common.find_all_toolchains-toolchain_type"></a>toolchain_type |  The Swift toolchain type to use. Defaults to the standard Swift toolchain type.   |  `Label("@rules_swift//toolchains:toolchain_type")` |
+
+**RETURNS**
+
+A `struct` containing the following fields:
+
+  *   `cc`: The `cc_common.CcToolchainInfo` provider representing the C++
+      toolchain, or `None` if the C++ toolchain was not found as is not
+      mandatory.
+  *   `swift`: The `SwiftToolchainInfo` provider representing the Swift
+      toolchain, or `None` if the Swift toolchain was not found and is not
+      mandatory.
 
 
 <a id="swift_common.get_toolchain"></a>
@@ -446,6 +489,11 @@ swift_common.get_toolchain(<a href="#swift_common.get_toolchain-ctx">ctx</a>, *,
 </pre>
 
 Gets the Swift toolchain associated with the rule or aspect.
+
+> WARNING: This function is deprecated and will be removed soon. Use
+> `swift_common.find_all_toolchains()` instead to request the Swift and the
+> C++ toolchains.
+
 
 **PARAMETERS**
 
@@ -469,7 +517,7 @@ A `SwiftToolchainInfo` provider, or `None` if the toolchain was not
 ## swift_common.is_action_enabled
 
 <pre>
-swift_common.is_action_enabled(<a href="#swift_common.is_action_enabled-action_name">action_name</a>, <a href="#swift_common.is_action_enabled-swift_toolchain">swift_toolchain</a>)
+swift_common.is_action_enabled(<a href="#swift_common.is_action_enabled-action_name">action_name</a>, <a href="#swift_common.is_action_enabled-swift_toolchain">swift_toolchain</a>, <a href="#swift_common.is_action_enabled-toolchains">toolchains</a>)
 </pre>
 
 Returns True if the given action is enabled in the Swift toolchain.
@@ -487,7 +535,8 @@ example, `SwiftSynthesizeInterface` actions (created by calling
 | Name  | Description | Default Value |
 | :------------- | :------------- | :------------- |
 | <a id="swift_common.is_action_enabled-action_name"></a>action_name |  The name of the action, which corresponds to the action's mnemonic (for example, `SwiftSynthesizeInterface`).   |  none |
-| <a id="swift_common.is_action_enabled-swift_toolchain"></a>swift_toolchain |  The Swift toolchain being used to build.   |  none |
+| <a id="swift_common.is_action_enabled-swift_toolchain"></a>swift_toolchain |  The Swift toolchain being used to build.   |  `None` |
+| <a id="swift_common.is_action_enabled-toolchains"></a>toolchains |  The struct containing the Swift and C++ toolchain providers, as returned by `swift_common.find_all_toolchains()`.   |  `None` |
 
 **RETURNS**
 
@@ -529,7 +578,8 @@ check it.
 <pre>
 swift_common.precompile_clang_module(*, <a href="#swift_common.precompile_clang_module-actions">actions</a>, <a href="#swift_common.precompile_clang_module-cc_compilation_context">cc_compilation_context</a>, <a href="#swift_common.precompile_clang_module-exec_group">exec_group</a>,
                                      <a href="#swift_common.precompile_clang_module-feature_configuration">feature_configuration</a>, <a href="#swift_common.precompile_clang_module-module_map_file">module_map_file</a>, <a href="#swift_common.precompile_clang_module-module_name">module_name</a>,
-                                     <a href="#swift_common.precompile_clang_module-swift_toolchain">swift_toolchain</a>, <a href="#swift_common.precompile_clang_module-target_name">target_name</a>, <a href="#swift_common.precompile_clang_module-toolchain_type">toolchain_type</a>, <a href="#swift_common.precompile_clang_module-swift_infos">swift_infos</a>)
+                                     <a href="#swift_common.precompile_clang_module-swift_toolchain">swift_toolchain</a>, <a href="#swift_common.precompile_clang_module-target_name">target_name</a>, <a href="#swift_common.precompile_clang_module-toolchains">toolchains</a>, <a href="#swift_common.precompile_clang_module-toolchain_type">toolchain_type</a>,
+                                     <a href="#swift_common.precompile_clang_module-swift_infos">swift_infos</a>)
 </pre>
 
 Precompiles an explicit Clang module that is compatible with Swift.
@@ -545,8 +595,9 @@ Precompiles an explicit Clang module that is compatible with Swift.
 | <a id="swift_common.precompile_clang_module-feature_configuration"></a>feature_configuration |  A feature configuration obtained from `configure_features`.   |  none |
 | <a id="swift_common.precompile_clang_module-module_map_file"></a>module_map_file |  A textual module map file that defines the Clang module to be compiled.   |  none |
 | <a id="swift_common.precompile_clang_module-module_name"></a>module_name |  The name of the top-level module in the module map that will be compiled.   |  none |
-| <a id="swift_common.precompile_clang_module-swift_toolchain"></a>swift_toolchain |  The `SwiftToolchainInfo` provider of the toolchain.   |  none |
+| <a id="swift_common.precompile_clang_module-swift_toolchain"></a>swift_toolchain |  The `SwiftToolchainInfo` provider of the toolchain.   |  `None` |
 | <a id="swift_common.precompile_clang_module-target_name"></a>target_name |  The name of the target for which the code is being compiled, which is used to determine unique file paths for the outputs.   |  none |
+| <a id="swift_common.precompile_clang_module-toolchains"></a>toolchains |  The struct containing the Swift and C++ toolchain providers, as returned by `swift_common.find_all_toolchains()`.   |  `None` |
 | <a id="swift_common.precompile_clang_module-toolchain_type"></a>toolchain_type |  The toolchain type of the Swift toolchain.   |  none |
 | <a id="swift_common.precompile_clang_module-swift_infos"></a>swift_infos |  A list of `SwiftInfo` providers representing dependencies required to compile this module.   |  `[]` |
 
@@ -562,7 +613,7 @@ A struct containing the precompiled module and optional indexstore directory,
 
 <pre>
 swift_common.synthesize_interface(*, <a href="#swift_common.synthesize_interface-actions">actions</a>, <a href="#swift_common.synthesize_interface-compilation_contexts">compilation_contexts</a>, <a href="#swift_common.synthesize_interface-feature_configuration">feature_configuration</a>,
-                                  <a href="#swift_common.synthesize_interface-module_name">module_name</a>, <a href="#swift_common.synthesize_interface-output_file">output_file</a>, <a href="#swift_common.synthesize_interface-swift_infos">swift_infos</a>, <a href="#swift_common.synthesize_interface-swift_toolchain">swift_toolchain</a>,
+                                  <a href="#swift_common.synthesize_interface-module_name">module_name</a>, <a href="#swift_common.synthesize_interface-output_file">output_file</a>, <a href="#swift_common.synthesize_interface-swift_infos">swift_infos</a>, <a href="#swift_common.synthesize_interface-swift_toolchain">swift_toolchain</a>, <a href="#swift_common.synthesize_interface-toolchains">toolchains</a>,
                                   <a href="#swift_common.synthesize_interface-toolchain_type">toolchain_type</a>)
 </pre>
 
@@ -579,8 +630,46 @@ Extracts the symbol graph from a Swift module.
 | <a id="swift_common.synthesize_interface-module_name"></a>module_name |  The name of the module whose symbol graph should be extracted.   |  none |
 | <a id="swift_common.synthesize_interface-output_file"></a>output_file |  A `File` into which the synthesized interface will be written.   |  none |
 | <a id="swift_common.synthesize_interface-swift_infos"></a>swift_infos |  A list of `SwiftInfo` providers from dependencies of the target being compiled. This should include both propagated and non-propagated (implementation-only) dependencies.   |  none |
-| <a id="swift_common.synthesize_interface-swift_toolchain"></a>swift_toolchain |  The `SwiftToolchainInfo` provider of the toolchain.   |  none |
+| <a id="swift_common.synthesize_interface-swift_toolchain"></a>swift_toolchain |  The `SwiftToolchainInfo` provider of the toolchain.   |  `None` |
+| <a id="swift_common.synthesize_interface-toolchains"></a>toolchains |  The struct containing the Swift and C++ toolchain providers, as returned by `swift_common.find_all_toolchains()`.   |  `None` |
 | <a id="swift_common.synthesize_interface-toolchain_type"></a>toolchain_type |  The toolchain type of the `swift_toolchain` which is used for the proper selection of the execution platform inside `run_toolchain_action`.   |  `Label("@rules_swift//toolchains:toolchain_type")` |
+
+
+<a id="swift_common.use_all_toolchains"></a>
+
+## swift_common.use_all_toolchains
+
+<pre>
+swift_common.use_all_toolchains(*, <a href="#swift_common.use_all_toolchains-mandatory">mandatory</a>, <a href="#swift_common.use_all_toolchains-toolchain_type">toolchain_type</a>)
+</pre>
+
+Returns a list of toolchain types required to build Swift code.
+
+The Swift build APIs require the C++ toolchain to link libraries and
+binaries, so this function requests both for convenience.
+
+This function returns a list so that it can be easily composed with other
+toolchains if necessary. For example, a rule that requires toolchains other
+than Swift and C++ could write:
+
+```
+toolchains = swift_common.use_all_toolchains() + [other toolchains...]
+```
+
+
+**PARAMETERS**
+
+
+| Name  | Description | Default Value |
+| :------------- | :------------- | :------------- |
+| <a id="swift_common.use_all_toolchains-mandatory"></a>mandatory |  Whether or not it should be an error if the toolchain cannot be resolved. Defaults to True.   |  `True` |
+| <a id="swift_common.use_all_toolchains-toolchain_type"></a>toolchain_type |  The Swift toolchain type to use. Defaults to the standard Swift toolchain type.   |  `Label("@rules_swift//toolchains:toolchain_type")` |
+
+**RETURNS**
+
+A list of
+  [toolchain types](https://bazel.build/rules/lib/builtins/toolchain_type.html)
+  that should be passed to `rule()`, `aspect()`, or `exec_group()`.
 
 
 <a id="swift_common.use_toolchain"></a>
@@ -592,6 +681,10 @@ swift_common.use_toolchain(*, <a href="#swift_common.use_toolchain-mandatory">ma
 </pre>
 
 Returns a list of toolchain types needed to use the Swift toolchain.
+
+> WARNING: This function is deprecated and will be removed soon. Use
+> `swift_common.find_all_toolchains()` instead to request the Swift and the
+> C++ toolchains.
 
 This function returns a list so that it can be easily composed with other
 toolchains if necessary. For example, a rule with multiple toolchain

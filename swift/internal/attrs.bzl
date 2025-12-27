@@ -142,7 +142,7 @@ Swift 5.9+.
 """,
             ),
             "plugins": attr.label_list(
-                cfg = "exec",
+                cfg = config.exec(exec_group = "swift_plugins"),
                 doc = """\
 A list of `swift_compiler_plugin` targets that should be loaded by the compiler
 when compiling this module and any modules that directly depend on it.
