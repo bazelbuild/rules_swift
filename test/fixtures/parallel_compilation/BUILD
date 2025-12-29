@@ -6,10 +6,7 @@ load("//test/fixtures:common.bzl", "FIXTURE_TAGS")
 
 package(
     default_visibility = ["//test:__subpackages__"],
-    features = [
-        "swift.compile_in_parallel",
-        "swift.enable_v6",
-    ],
+    features = ["swift.compile_in_parallel"],
 )
 
 licenses(["notice"])

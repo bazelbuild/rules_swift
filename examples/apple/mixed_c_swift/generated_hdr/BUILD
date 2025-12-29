@@ -7,10 +7,6 @@ load(
     "swift_test",
 )
 
-package(
-    features = ["swift.enable_v6"],
-)
-
 licenses(["notice"])
 
 # A library that contains both C and Swift sources, including a public header,

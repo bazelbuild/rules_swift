@@ -8,10 +8,6 @@ load(
 )
 load("//third_party/protobuf/bazel:proto_library.bzl", "proto_library")
 
-package(
-    features = ["swift.enable_v6"],
-)
-
 licenses(["notice"])
 
 proto_library(

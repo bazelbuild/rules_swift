@@ -14,7 +14,6 @@ load(
 package(
     default_testonly = True,
     default_visibility = ["//test:__subpackages__"],
-    features = ["swift.enable_v6"],
 )
 
 licenses(["notice"])
