@@ -29,11 +29,7 @@ load("//swift:providers.bzl", "SwiftInfo", "SwiftSymbolGraphInfo")
 load("//swift:swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 load("//swift/internal:features.bzl", "configure_features")
 load("//swift/internal:symbol_graph_extracting.bzl", "extract_symbol_graph")
-load(
-    "//swift/internal:toolchain_utils.bzl",
-    "get_swift_toolchain",
-    "use_swift_toolchain",
-)
+load("//swift/internal:toolchain_utils.bzl", "find_all_toolchains", "use_all_toolchains")
 load("//swift/internal:utils.bzl", "include_developer_search_paths")
 
 def _make_swift_symbol_graph_aspect_impl(
@@ -77,10 +73,10 @@ def _make_swift_symbol_graph_aspect_impl(
         symbol_graphs = []
 
         if SwiftInfo in target:
-            swift_toolchain = get_swift_toolchain(aspect_ctx)
+            toolchains = find_all_toolchains(aspect_ctx)
             feature_configuration = configure_features(
                 ctx = aspect_ctx,
-                swift_toolchain = swift_toolchain,
+                toolchains = toolchains,
                 requested_features = aspect_ctx.features,
                 unsupported_features = aspect_ctx.disabled_features,
             )
@@ -134,7 +130,7 @@ def _make_swift_symbol_graph_aspect_impl(
                         module_name = module.name,
                         output_dir = output_dir,
                         swift_infos = [swift_info],
-                        swift_toolchain = swift_toolchain,
+                        toolchains = toolchains,
                     )
                     symbol_graphs.append(
                         struct(
@@ -295,5 +291,5 @@ default value is {default_value}.
         implementation = aspect_impl,
         provides = provides,
         requires = [swift_clang_module_aspect],
-        toolchains = use_swift_toolchain(),
+        toolchains = use_all_toolchains(),
     )

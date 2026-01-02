@@ -17,6 +17,7 @@
 load("//swift:providers.bzl", "SwiftInfo")
 load(":action_names.bzl", "SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT")
 load(":actions.bzl", "run_toolchain_action")
+load(":features.bzl", "gather_toolchains")
 load(":toolchain_utils.bzl", "SWIFT_TOOLCHAIN_TYPE")
 load(":utils.bzl", "merge_compilation_contexts")
 
@@ -32,7 +33,8 @@ def extract_symbol_graph(
         module_name,
         output_dir,
         swift_infos,
-        swift_toolchain,
+        swift_toolchain = None,
+        toolchains = None,
         toolchain_type = SWIFT_TOOLCHAIN_TYPE):
     """Extracts the symbol graph from a Swift module.
 
@@ -67,19 +69,26 @@ def extract_symbol_graph(
             target being compiled. This should include both propagated and
             non-propagated (implementation-only) dependencies.
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
+        toolchains: The struct containing the Swift and C++ toolchain providers,
+            as returned by `swift_common.find_all_toolchains()`.
         toolchain_type: The toolchain type of the `swift_toolchain` which is
             used for the proper selection of the execution platform inside
             `run_toolchain_action`.
     """
+    toolchains = gather_toolchains(
+        swift_toolchain = swift_toolchain,
+        toolchains = toolchains,
+    )
+
     merged_compilation_context = merge_compilation_contexts(
         transitive_compilation_contexts = compilation_contexts + [
             cc_info.compilation_context
-            for cc_info in swift_toolchain.implicit_deps_providers.cc_infos
+            for cc_info in toolchains.swift.implicit_deps_providers.cc_infos
         ],
     )
     merged_swift_info = SwiftInfo(
         swift_infos = (
-            swift_infos + swift_toolchain.implicit_deps_providers.swift_infos
+            swift_infos + toolchains.swift.implicit_deps_providers.swift_infos
         ),
     )
 
@@ -100,7 +109,7 @@ def extract_symbol_graph(
     prerequisites = struct(
         bin_dir = feature_configuration._bin_dir,
         cc_compilation_context = merged_compilation_context,
-        developer_dirs = swift_toolchain.developer_dirs,
+        developer_dirs = toolchains.swift.developer_dirs,
         direct_swiftdocs = direct_swiftdocs,
         emit_extension_block_symbols = emit_extension_block_symbols,
         genfiles_dir = feature_configuration._genfiles_dir,
@@ -124,6 +133,6 @@ def extract_symbol_graph(
         progress_message = (
             "Extracting symbol graph for {}".format(module_name)
         ),
-        swift_toolchain = swift_toolchain,
+        swift_toolchain = toolchains.swift,
         toolchain_type = toolchain_type,
     )
