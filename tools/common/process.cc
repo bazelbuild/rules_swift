@@ -353,8 +353,8 @@ void PosixSpawnIORedirector::ConsumeAllSubprocessOutput(
 // are controlled by the lifetime of the strings in args.
 std::vector<const char *> ConvertToCArgs(const std::vector<std::string> &args) {
   std::vector<const char *> c_args;
-  std::string filename = std::filesystem::path(args[0]).filename().string();
-  c_args.push_back(&*std::next(args[0].rbegin(), filename.length() - 1));
+  // Keep full path so Swift driver can find swift-frontend relative to argv[0]
+  c_args.push_back(args[0].c_str());
   for (int i = 1; i < args.size(); i++) {
     c_args.push_back(args[i].c_str());
   }
