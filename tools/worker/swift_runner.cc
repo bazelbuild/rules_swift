@@ -612,6 +612,8 @@ SwiftRunner::SwiftRunner(const std::vector<std::string> &args,
       force_response_file_(force_response_file),
       last_flag_was_module_name_(false),
       last_flag_was_tools_directory_(false),
+      last_flag_was_target_(false),
+      last_flag_was_module_alias_(false),
       emit_json_ast_(false) {
   ProcessArguments(args);
 }
