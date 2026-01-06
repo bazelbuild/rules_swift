@@ -60,6 +60,7 @@ load(
     "SWIFT_FEATURE_MODULE_HOME_IS_CWD",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_REMAP_XCODE_PATH",
+    "SWIFT_FEATURE__SUPPORTS_DEVELOPER_DIR",
     "SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES",
     "SWIFT_FEATURE__SUPPORTS_V6",
 )
@@ -825,6 +826,9 @@ def _xcode_swift_toolchain_impl(ctx):
             # where two modules contain the same header.
             SWIFT_FEATURE_MODULE_HOME_IS_CWD,
         ])
+
+    # Xcode toolchains always support DEVELOPER_DIR
+    requested_features.append(SWIFT_FEATURE__SUPPORTS_DEVELOPER_DIR)
 
     unsupported_features = ctx.disabled_features + [
         SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD,
