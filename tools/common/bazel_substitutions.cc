@@ -15,7 +15,6 @@
 #include "tools/common/bazel_substitutions.h"
 
 #include <cstdlib>
-#include <iostream>
 #include <string>
 
 #include "absl/container/flat_hash_map.h"
@@ -51,6 +50,18 @@ BazelPlaceholderSubstitutions::BazelPlaceholderSubstitutions() {
   if (std::string sdk_root = GetEnvironmentVariable("SDKROOT");
       !sdk_root.empty()) {
     substitutions_[kBazelXcodeSdkRoot] = sdk_root;
+  }
+}
+
+BazelPlaceholderSubstitutions::BazelPlaceholderSubstitutions(
+    const absl::flat_hash_map<std::string, std::string>& env) {
+  if (auto developer_dir = env.find("DEVELOPER_DIR");
+      developer_dir != env.end() && !developer_dir->second.empty()) {
+    substitutions_[kBazelXcodeDeveloperDir] = developer_dir->second;
+  }
+  if (auto sdk_root = env.find("SDKROOT");
+      sdk_root != env.end() && !sdk_root->second.empty()) {
+    substitutions_[kBazelXcodeSdkRoot] = sdk_root->second;
   }
 }
 

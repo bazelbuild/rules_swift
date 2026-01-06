@@ -26,6 +26,8 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/strings/string_view.h"
 #include "tools/common/bazel_substitutions.h"
+#include "tools/common/file_system.h"
+#include "tools/common/process.h"
 #include "tools/common/temp_file.h"
 
 namespace bazel_rules_swift {
@@ -76,12 +78,18 @@ class SwiftRunner {
   // The first argument is assumed to be that tool. If force_response_file is
   // true, then the remaining arguments will be unconditionally written into a
   // response file instead of being passed on the command line.
-  SwiftRunner(const std::vector<std::string> &args,
-              bool force_response_file = false);
+  //
+  // The remaining arguments are used to override the default behavior for
+  // file and process operations during testing.
+  SwiftRunner(
+      const std::vector<std::string>& args, bool force_response_file = false,
+      std::function<std::string()> get_current_directory = GetCurrentDirectory,
+      const absl::flat_hash_map<std::string, std::string>& job_env =
+          GetCurrentEnvironment());
 
   // Run the Swift compiler, redirecting stdout and stderr to the specified
   // streams.
-  int Run(std::ostream &stdout_stream, std::ostream &stderr_stream);
+  int Run(std::ostream& stdout_stream, std::ostream& stderr_stream);
 
  private:
   // Processes an argument that looks like it might be a response file (i.e., it
@@ -122,30 +130,30 @@ class SwiftRunner {
 
   // Applies substitutions to the given command line arguments and populates the
   // `tool_args_` and `args_` vectors.
-  void ProcessArguments(const std::vector<std::string> &args);
+  void ProcessArguments(const std::vector<std::string>& args);
 
   // Spawns the generated header rewriter to perform any desired transformations
   // on the Clang header emitted from a Swift compilation.
-  int PerformGeneratedHeaderRewriting(std::ostream &stdout_stream,
-                                      std::ostream &stderr_stream);
+  int PerformGeneratedHeaderRewriting(std::ostream& stdout_stream,
+                                      std::ostream& stderr_stream);
 
   // Performs a layering check for the compilation, comparing the modules that
   // were imported by Swift code being compiled to the list of dependencies
   // declared in the build graph.
-  int PerformLayeringCheck(std::ostream &stdout_stream,
-                           std::ostream &stderr_stream);
+  int PerformLayeringCheck(std::ostream& stdout_stream,
+                           std::ostream& stderr_stream);
 
   // Performs a safe JSON AST dump of the current compilation, which attempts to
   // recover from known crash issues in the Swift 6.1 implementation of the
   // feature.
-  int PerformJsonAstDump(std::ostream &stdout_stream,
-                         std::ostream &stderr_stream);
+  int PerformJsonAstDump(std::ostream& stdout_stream,
+                         std::ostream& stderr_stream);
 
   // Upgrade any of the requested warnings to errors and then print all of the
   // diagnostics to the given stream. Updates the exit code if necessary (to
   // turn a previously successful compilation into a failing one).
   void ProcessDiagnostics(absl::string_view stderr_output,
-                          std::ostream &stderr_stream, int &exit_code) const;
+                          std::ostream& stderr_stream, int& exit_code) const;
 
   // A mapping of Bazel placeholder strings to the actual paths that should be
   // substituted for them. Supports Xcode resolution on Apple OSes.
@@ -242,6 +250,35 @@ class SwiftRunner {
   // reflects the aliased name and we want to present the original module names
   // in the error messages.
   absl::flat_hash_map<std::string, std::string> alias_to_source_mapping_;
+
+  // The following members are only public for testing purposes.
+ public:
+  const std::vector<std::string>& GetToolArgs() const { return tool_args_; }
+  const std::vector<std::string>& GetArgs() const { return args_; }
+  const absl::flat_hash_map<std::string, std::string>& GetJobEnv() const {
+    return job_env_;
+  }
+  const std::string& GetTargetTriple() const { return target_triple_; }
+  const std::string& GetModuleName() const { return module_name_; }
+  const std::string& GetDepsModulesPath() const { return deps_modules_path_; }
+  const absl::flat_hash_set<std::string>& GetWarningsAsErrors() const {
+    return warnings_as_errors_;
+  }
+  const std::string& GetGeneratedHeaderRewriterPath() const {
+    return generated_header_rewriter_path_;
+  }
+  const absl::flat_hash_map<std::string, std::vector<std::string>>&
+  GetPassthroughToolArgs() const {
+    return passthrough_tool_args_;
+  }
+  const std::string& GetTargetLabel() const { return target_label_; }
+  const absl::flat_hash_map<std::string, std::string>& GetAliasToSourceMapping()
+      const {
+    return alias_to_source_mapping_;
+  }
+
+ private:
+  std::function<std::string()> get_current_directory_;
 };
 
 }  // namespace bazel_rules_swift

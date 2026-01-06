@@ -31,6 +31,10 @@ class BazelPlaceholderSubstitutions {
   // environment.
   BazelPlaceholderSubstitutions();
 
+  // Initializes the substitutions by looking them up in the given map.
+  BazelPlaceholderSubstitutions(
+      const absl::flat_hash_map<std::string, std::string> &env);
+
   // Initializes the substitutions with the given fixed strings. Intended to be
   // used for testing.
   BazelPlaceholderSubstitutions(absl::string_view developer_dir,

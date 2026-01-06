@@ -1,5 +1,6 @@
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
 
 licenses(["notice"])
 
@@ -24,6 +25,15 @@ cc_library(
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_googlesource_code_re2//:re2",
+    ],
+)
+
+cc_test(
+    name = "swift_runner_test",
+    srcs = ["swift_runner_test.cc"],
+    deps = [
+        ":swift_runner",
+        "@com_google_absl//absl/container:flat_hash_map",
     ],
 )
 

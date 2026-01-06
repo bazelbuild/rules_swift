@@ -606,15 +606,19 @@ void ExtractFlagsFromInterfaceFile(
 
 }  // namespace
 
-SwiftRunner::SwiftRunner(const std::vector<std::string> &args,
-                         bool force_response_file)
-    : job_env_(GetCurrentEnvironment()),
+SwiftRunner::SwiftRunner(
+    const std::vector<std::string>& args, bool force_response_file,
+    std::function<std::string()> get_current_directory,
+    const absl::flat_hash_map<std::string, std::string>& job_env)
+    : bazel_placeholder_substitutions_(job_env),
+      job_env_(job_env),
       force_response_file_(force_response_file),
       last_flag_was_module_name_(false),
       last_flag_was_tools_directory_(false),
       last_flag_was_target_(false),
       last_flag_was_module_alias_(false),
-      emit_json_ast_(false) {
+      emit_json_ast_(false),
+      get_current_directory_(std::move(get_current_directory)) {
   ProcessArguments(args);
 }
 
@@ -727,7 +731,7 @@ bool SwiftRunner::ProcessArgument(
     // Get the actual current working directory (the execution root), which
     // we didn't know at analysis time.
     consumer(flag);
-    consumer(absl::StrCat(GetCurrentDirectory(), "=."));
+    consumer(absl::StrCat(get_current_directory_(), "=."));
 
 #if __APPLE__
     std::string developer_dir = "__BAZEL_XCODE_DEVELOPER_DIR__";
@@ -746,7 +750,7 @@ bool SwiftRunner::ProcessArgument(
     // Make the value of `-tools-directory` absolute, otherwise swift-driver
     // will ignore it.
     std::string tools_directory = std::string(trimmed_arg);
-    consumer(absl::StrCat(GetCurrentDirectory(), "/", tools_directory));
+    consumer(absl::StrCat(get_current_directory_(), "/", tools_directory));
     last_flag_was_tools_directory_ = false;
     return true;
   } else if (last_flag_was_target_) {
@@ -794,7 +798,8 @@ bool SwiftRunner::ProcessArgument(
       // For now, this is the only major use of `TMPDIR` by the compiler, so we
       // can do this without other stuff that we don't want moving there. We may
       // need to revisit this logic if that changes.
-      job_env_["TMPDIR"] = absl::StrCat(GetCurrentDirectory(), "/", temp_dir);
+      job_env_["TMPDIR"] =
+          absl::StrCat(get_current_directory_(), "/", temp_dir);
       return true;
     }
 
