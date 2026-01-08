@@ -102,13 +102,14 @@ swift_library_group(
     testonly = True,
     deps = select({
         "ios_device_arm64": ["//system_sdks/26.0.1.17A400/iPhoneOS/arm64:all_generated_testonly_targets"],
-        "watchos_device_arm64_32": ["//system_sdks/26.0.1.17A400/WatchOS/arm64_32:all_generated_testonly_targets"],
-        "watchos_sim_arm64": ["//system_sdks/26.0.1.17A400/WatchSimulator/arm64:all_generated_testonly_targets"],
-        "watchos_sim_x86_64": ["//system_sdks/26.0.1.17A400/WatchSimulator/x86_64:all_generated_testonly_targets"],
         "ios_sim_arm64": ["//system_sdks/26.0.1.17A400/iPhoneSimulator/arm64:all_generated_testonly_targets"],
         "ios_sim_x86_64": ["//system_sdks/26.0.1.17A400/iPhoneSimulator/x86_64:all_generated_testonly_targets"],
         "macos_arm64": ["//system_sdks/26.0.1.17A400/MacOSX/arm64:all_generated_testonly_targets"],
         "macos_x86_64": ["//system_sdks/26.0.1.17A400/MacOSX/x86_64:all_generated_testonly_targets"],
+        "watchos_device_arm64_32": ["//system_sdks/26.0.1.17A400/WatchOS:all_generated_testonly_targets"],
+        "watchos_device_arm64": ["//system_sdks/26.0.1.17A400/WatchOS:all_generated_testonly_targets"],
+        "watchos_sim_arm64": ["//system_sdks/26.0.1.17A400/WatchSimulator/arm64:all_generated_testonly_targets"],
+        "watchos_sim_x86_64": ["//system_sdks/26.0.1.17A400/WatchSimulator/x86_64:all_generated_testonly_targets"],
         "//conditions:default": [],
     }),
 )
