@@ -547,10 +547,9 @@ def _compute_implied_features(requested_features, unsupported_features):
     return requested_features
 
 # The list below is taken from the feature definitions in the compiler, at
-# https://github.com/apple/swift/blob/release/6.0/include/swift/Basic/Features.def#L180-L193.
-# TODO: b/336996662 - Confirm that this is the final set of features enabled by
-# default in Swift 6 language mode when the compiler is released.
+# https://github.com/apple/swift/blob/release/6.2/include/swift/Basic/Features.def
 _SWIFT_6_EQUIVALENT_FEATURES = [
+    "swift.upcoming.NonfrozenEnumExhaustivity",  # SE-0192
     "swift.upcoming.ConciseMagicFile",  # SE-0274
     "swift.upcoming.ForwardTrailingClosures",  # SE-0286
     "swift.upcoming.StrictConcurrency",  # SE-0337
@@ -565,6 +564,7 @@ _SWIFT_6_EQUIVALENT_FEATURES = [
     "swift.upcoming.ImplicitOpenExistentials",  # SE-0352
     "swift.upcoming.RegionBasedIsolation",  # SE-0414
     "swift.upcoming.DynamicActorIsolation",  # SE-0423
+    "swift.upcoming.GlobalActorIsolatedTypesUsability",  # SE-0434
 
     # The upcoming feature flags only emit warnings about things that will
     # become errors in Swift 6. We want the `swift.enable_v6` flag specifically
