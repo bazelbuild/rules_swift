@@ -273,9 +273,12 @@ def _swift_linkopts_cc_info(
         target_triple = target_triple,
         xcode_config = xcode_config,
     )
+    developer_dir_rpath_roots = _DEVELOPER_DIR_SYMLINKS + [
+        "__BAZEL_XCODE_DEVELOPER_DIR__",
+    ]
     rpaths = ["/usr/lib/swift"] + [
         paths.join(developer_dir_symlink, compatibility_dir)
-        for developer_dir_symlink in _DEVELOPER_DIR_SYMLINKS
+        for developer_dir_symlink in developer_dir_rpath_roots
         for compatibility_dir in swift_compatibility_lib_dirs
     ]
     linkopts += [
@@ -339,7 +342,10 @@ def _test_linking_context(
     # We use these as the rpaths for linking tests so that the required
     # libraries are found if Xcode is installed in a different location on the
     # machine that runs the tests than the machine used to link them.
-    for developer_dir in _DEVELOPER_DIR_SYMLINKS:
+    developer_dir_rpath_roots = _DEVELOPER_DIR_SYMLINKS + [
+        "__BAZEL_XCODE_DEVELOPER_DIR__",
+    ]
+    for developer_dir in developer_dir_rpath_roots:
         platform_developer_framework_dir_symlink = paths.join(
             developer_dir,
             "Platforms",
