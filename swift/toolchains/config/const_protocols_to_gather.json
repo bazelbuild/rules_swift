@@ -8,5 +8,12 @@
     "AppShortcutsProvider",
     "AnyResolverProviding",
     "AppIntentsPackage",
-    "DynamicOptionsProvider"
+    "DynamicOptionsProvider",
+    "_IntentValueRepresentable",
+    "_AssistantIntentsProvider",
+    "_GenerativeFunctionExtractable",
+    "IntentValueQuery",
+    "Resolver",
+    "AppExtension",
+    "ExtensionPointDefining"
 ]
