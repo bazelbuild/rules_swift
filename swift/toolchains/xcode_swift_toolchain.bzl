@@ -116,6 +116,7 @@ visibility("public")
 # These are symlink locations known to be used by xcode-select in various Xcode
 # and macOS versions to point to the selected `Developer` directory.
 _DEVELOPER_DIR_SYMLINKS = [
+    "__BAZEL_XCODE_DEVELOPER_DIR__",
     "/private/var/select/developer_dir",
     "/var/db/xcode_select_link",
 ]
