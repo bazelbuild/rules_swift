@@ -95,6 +95,7 @@ load(
     "SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES",
     "SWIFT_FEATURE__SUPPORTS_V6",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
+    "SWIFT_FEATURE_ALLOW_SNAP_OBJC_UMBRELLA_IMPORT",
 )
 load(":action_config.bzl", "ActionConfigInfo", "ConfigResultInfo", "add_arg")
 
@@ -1425,6 +1426,25 @@ def compile_action_configs(
             ),
         )
 
+    action_configs.append(
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+                SWIFT_ACTION_DERIVE_FILES,
+                SWIFT_ACTION_DUMP_AST,
+                SWIFT_ACTION_PRECOMPILE_C_MODULE,
+                SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
+                SWIFT_ACTION_SYNTHESIZE_INTERFACE,
+            ],
+            configurators = [
+                add_arg("-Xcc", "-DSNAP_IMPORT_OBJC_UMBRELLA_HEADER=1"),
+            ],
+            features = [
+                SWIFT_FEATURE_ALLOW_SNAP_OBJC_UMBRELLA_IMPORT,
+            ],
+        ),
+    )
     action_configs.append(
         ActionConfigInfo(
             actions = [

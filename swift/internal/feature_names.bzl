@@ -436,3 +436,7 @@ SWIFT_FEATURE_ENABLE_EMBEDDED = "swift.enable_embedded"
 # A feature that exposes all dependencies as public, including
 # the targets passed to `private_deps` attribute.
 SWIFT_FEATURE_EXPOSE_PRIVATE_DEPS_AS_PUBLIC = "swift.expose_private_deps_as_public"
+
+# SNAP-specific feature to allow importing generated Objective-C umbrella
+# headers when building swift modules or precompiling C modules.
+SWIFT_FEATURE_ALLOW_SNAP_OBJC_UMBRELLA_IMPORT = "swift.allow_snap_objc_umbrella_import"
