@@ -5,6 +5,7 @@ features(
 MAC_EXEC_REQUIREMENTS = {
     "os": "macos",
     "arch": "arm64",
+    "vm_image": "snap-macos",
     "xcode_version": "16.0_16A242d"
 }
 
