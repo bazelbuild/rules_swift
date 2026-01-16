@@ -346,6 +346,7 @@ def compile(
         target_name,
         toolchains = None,
         toolchain_type = SWIFT_TOOLCHAIN_TYPE,
+        minimum_os_version = None,
         workspace_name):
     """Compiles a Swift module.
 
@@ -413,6 +414,10 @@ def compile(
         toolchain_type: The toolchain type of the `swift_toolchain` which is
             used for the proper selection of the execution platform inside
             `run_toolchain_action`.
+        minimum_os_version: Overrides the `-target` os version. Either an
+            explicit dotted version number or the string "oldest", which will
+            translate to the oldest supported deployment version for the current
+            SDK.
         workspace_name: The name of the workspace for which the code is being
              compiled, which is used to determine unique file paths for some
              outputs.
@@ -681,6 +686,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         genfiles_dir = feature_configuration._genfiles_dir,
         include_dev_srch_paths = include_dev_srch_paths_value,
         is_swift = True,
+        minimum_os_version = minimum_os_version,
         module_name = module_name,
         original_module_name = original_module_name,
         package_name = package_name,

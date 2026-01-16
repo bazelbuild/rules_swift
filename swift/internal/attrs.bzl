@@ -183,6 +183,15 @@ the target as `testonly = True`.
                 mandatory = False,
             ),
         } if include_dev_srch_paths_attrib else {},
+        {
+            "minimum_os_version": attr.string(
+                doc = """
+An optional string indicating the minimum OS version supported by the target,
+represented as a dotted version number (for example, "9.0").
+""",
+                mandatory = False,
+            ),
+        },
     )
 
 def swift_config_attrs():

@@ -127,6 +127,7 @@ def _swift_binary_impl(ctx):
             toolchains = toolchains,
             target_name = ctx.label.name,
             workspace_name = ctx.workspace_name,
+            minimum_os_version = ctx.attr.minimum_os_version,
         )
         module_contexts.append(compile_result.module_context)
         compilation_outputs = compile_result.compilation_outputs
