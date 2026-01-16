@@ -405,6 +405,54 @@ def _make_resource_directory_configurator(developer_dir):
 
     return _resource_directory_configurator
 
+def _make_target_triple_configurator(base_target_triple, sdk_dir):
+    """Creates a configurator that emits the -target and -sdk flags.
+
+    This configurator dynamically adjusts the target triple based on
+    the minimum_os_version prerequisite, if present.
+
+    Args:
+        base_target_triple: The default target triple from the toolchain.
+        sdk_dir: The SDK directory path.
+
+    Returns:
+        A configurator function.
+    """
+
+    def _target_triple_configurator(prerequisites, args):
+        min_os = getattr(prerequisites, "minimum_os_version", None)
+        if min_os:
+            os, _ = target_triples.split_os_version(base_target_triple.os)
+
+            # Handle the "oldest" sentinel value.
+            # HACK: this should be collected from the SDK's Info.plist
+            if min_os == "oldest":
+                if os == "macos":
+                    version = "10.13"
+                elif os == "ios":
+                    version = "12.0"
+                else:
+                    fail(
+                        ("Determining oldest deployment version for '{}' is " +
+                         "unsupported").format(os),
+                    )
+            else:
+                version = min_os
+
+            triple = target_triples.make(
+                cpu = base_target_triple.cpu,
+                vendor = base_target_triple.vendor,
+                os = "{}{}".format(os, version),
+                environment = base_target_triple.environment,
+            )
+        else:
+            triple = base_target_triple
+
+        args.add("-target", target_triples.str(triple))
+        args.add("-sdk", sdk_dir)
+
+    return _target_triple_configurator
+
 def _all_action_configs(
         additional_objc_copts,
         additional_swiftc_copts,
@@ -448,8 +496,10 @@ def _all_action_configs(
                 SWIFT_ACTION_SYNTHESIZE_INTERFACE,
             ],
             configurators = [
-                add_arg("-target", target_triples.str(target_triple)),
-                add_arg("-sdk", apple_toolchain.sdk_dir()),
+                _make_target_triple_configurator(
+                    base_target_triple = target_triple,
+                    sdk_dir = apple_toolchain.sdk_dir(),
+                ),
             ],
         ),
     ]
