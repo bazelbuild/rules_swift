@@ -320,13 +320,12 @@ bool SwiftRunner::ProcessArgument(
         add_prefix_map_flags("-coverage-prefix-map");
         changed = true;
       } else if (new_arg == "-coverage-prefix-pwd-is-canonical") {
-        // Replace the $PWD with . to make the paths relative to the workspace
-        // without breaking hermiticity.
-        auto cwd = std::filesystem::current_path();
+        // Replace the $PWD with the canonical (resolved) path to the source root.
         // The bazel execroot is a normal directory, but inside of it there are
         // symlinks to our source tree. This fetches the true path of a known
         // directory in order to get the actual source root of the project. This
         // should only work with sandboxing disabled.
+        auto cwd = std::filesystem::current_path();
         auto target_path = std::filesystem::canonical(cwd / "BUILD.bazel").parent_path();
         add_prefix_map_flags("-coverage-prefix-map", target_path.string());
         changed = true;
