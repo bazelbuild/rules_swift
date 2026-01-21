@@ -92,6 +92,7 @@ load(
     "SWIFT_FEATURE_VFSOVERLAY",
     "SWIFT_FEATURE__COVERAGE_PREFIX_MAP_ABSOLUTE_SOURCES_NON_HERMETIC",
     "SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS",
+    "SWIFT_FEATURE__SUPPORTS_DEVELOPER_DIR",
     "SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES",
     "SWIFT_FEATURE__SUPPORTS_V6",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
@@ -547,6 +548,16 @@ def compile_action_configs(
                 add_arg("-Xwrapped-swift=-file-prefix-pwd-is-dot"),
             ],
             features = [SWIFT_FEATURE_FILE_PREFIX_MAP],
+        ),
+        ActionConfigInfo(
+            actions = all_compile_action_names() + [
+                SWIFT_ACTION_PRECOMPILE_C_MODULE,
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+            ],
+            configurators = [
+                add_arg("-file-prefix-map", "__BAZEL_XCODE_DEVELOPER_DIR__=/PLACEHOLDER_DEVELOPER_DIR"),
+            ],
+            features = [SWIFT_FEATURE_FILE_PREFIX_MAP, SWIFT_FEATURE__SUPPORTS_DEVELOPER_DIR],
         ),
 
         # Make paths written into coverage info workspace-relative.

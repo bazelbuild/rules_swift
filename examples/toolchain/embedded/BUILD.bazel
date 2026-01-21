@@ -1,0 +1,17 @@
+package(default_visibility = ["//visibility:public"])
+
+platform(
+    name = "aarch64",
+    constraint_values = [
+        "@platforms//os:none",
+        "@platforms//cpu:aarch64",
+    ],
+)
+
+alias(
+    name = "llvm-objcopy",
+    actual = select({
+        "@platforms//os:linux": "@swift_toolchain_ubuntu24.04-aarch64//:usr/bin/llvm-objcopy",
+        "@platforms//os:macos": "@swift_toolchain_xcode//:usr/bin/llvm-objcopy",
+    }),
+)
