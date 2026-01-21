@@ -49,6 +49,7 @@ load(
     "SWIFT_FEATURE_DISABLE_SYSTEM_INDEX",
     "SWIFT_FEATURE_EMIT_BC",
     "SWIFT_FEATURE_EMIT_C_MODULE",
+    "SWIFT_FEATURE_EMIT_DIAGNOSTICS",
     "SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE",
     "SWIFT_FEATURE_EMIT_SWIFTDOC",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
@@ -157,6 +158,13 @@ def compile_action_configs(
             actions = [SWIFT_ACTION_COMPILE],
             configurators = [add_arg("-emit-bc")],
             features = [SWIFT_FEATURE_EMIT_BC],
+        ),
+
+        # Emit serialized diagnostics file(s).
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE],
+            configurators = [add_arg("-serialize-diagnostics")],
+            features = [SWIFT_FEATURE_EMIT_DIAGNOSTICS],
         ),
 
         # Add the single object file or object file map, whichever is needed.

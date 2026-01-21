@@ -432,3 +432,8 @@ SWIFT_FEATURE_ENABLE_CPP23_INTEROP = "swift.enable_cpp23_interop"
 #   automatically include it at compile time, and provide it to the linker at link time
 # * alwayslink on swift_library() target will now default to False, as it is not required in embedded mode
 SWIFT_FEATURE_ENABLE_EMBEDDED = "swift.enable_embedded"
+
+# If enabled, requests the compiler to emit serialized diagnostics files (.dia)
+# for each source file. These files contain machine-readable compiler
+# diagnostics that can be consumed by IDEs and other tools.
+SWIFT_FEATURE_EMIT_DIAGNOSTICS = "swift.emit_diagnostics"
