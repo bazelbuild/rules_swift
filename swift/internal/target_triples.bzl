@@ -249,6 +249,7 @@ target_triples = struct(
     normalize_for_swift = _normalize_for_swift,
     parse = _parse,
     platform_name_for_swift = _platform_name_for_swift,
+    split_os_version = _split_os_version,
     str = _str,
     unversioned_os = _unversioned_os,
 )
