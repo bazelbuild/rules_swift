@@ -14,8 +14,11 @@
 
 #include "tools/worker/swift_runner.h"
 
+#include <algorithm>
+#include <cctype>
 #include <filesystem>
 #include <fstream>
+#include <sstream>
 
 #include "tools/common/bazel_substitutions.h"
 #include "tools/common/process.h"
@@ -103,6 +106,308 @@ static bool StripPrefix(const std::string &prefix, std::string &str) {
   return true;
 }
 
+static std::string NormalizeDiagnosticGroup(std::string group) {
+  size_t first = group.find_first_not_of(" \t");
+  if (first == std::string::npos) {
+    return "";
+  }
+  size_t last = group.find_last_not_of(" \t");
+  group = group.substr(first, last - first + 1);
+  if (group.rfind("[#", 0) == 0 && group.back() == ']') {
+    group = group.substr(2, group.size() - 3);
+  }
+  if (!group.empty() && group.front() == '#') {
+    group.erase(0, 1);
+  }
+  return group;
+}
+
+static std::string StripAnsiCodes(const std::string &line) {
+  auto skip_csi_sequence = [&](size_t index) {
+    size_t pos = index + 2;
+    while (pos < line.size() && (line[pos] < '@' || line[pos] > '~')) {
+      ++pos;
+    }
+    return pos;
+  };
+
+  auto skip_osc_sequence = [&](size_t index) {
+    size_t pos = index + 2;
+    while (pos < line.size()) {
+      if (line[pos] == '\a') {
+        break;
+      }
+      if (line[pos] == '\x1b' && pos + 1 < line.size() &&
+          line[pos + 1] == '\\') {
+        ++pos;
+        break;
+      }
+      ++pos;
+    }
+    return pos;
+  };
+
+  auto try_skip_escape = [&](size_t *index) {
+    if (line[*index] != '\x1b' || *index + 1 >= line.size()) {
+      return false;
+    }
+    if (line[*index + 1] == '[') {
+      *index = skip_csi_sequence(*index);
+      return true;
+    }
+    if (line[*index + 1] == ']') {
+      *index = skip_osc_sequence(*index);
+      return true;
+    }
+    return false;
+  };
+
+  std::string cleaned;
+  cleaned.reserve(line.size());
+  for (size_t i = 0; i < line.size(); ++i) {
+    if (try_skip_escape(&i)) {
+      continue;
+    }
+    cleaned.push_back(line[i]);
+  }
+  return cleaned;
+}
+
+static bool LineHasSuppressedGroup(
+    const std::string &line,
+    const std::vector<std::string> &suppressed_tokens) {
+  if (suppressed_tokens.empty()) {
+    return false;
+  }
+  std::string cleaned = StripAnsiCodes(line);
+  for (const auto &token : suppressed_tokens) {
+    if (cleaned.find(token) != std::string::npos) {
+      return true;
+    }
+  }
+  return false;
+}
+
+static bool IsGroupDocLine(
+    const std::string &line,
+    std::string *group) {
+  std::string cleaned = StripAnsiCodes(line);
+  size_t nonspace = cleaned.find_first_not_of(" \t");
+  if (nonspace == std::string::npos) {
+    return false;
+  }
+  if (cleaned.compare(nonspace, 2, "[#") != 0) {
+    return false;
+  }
+  size_t closing = cleaned.find(']', nonspace + 2);
+  if (closing == std::string::npos) {
+    return false;
+  }
+  if (closing + 1 >= cleaned.size() || cleaned[closing + 1] != ':') {
+    return false;
+  }
+  if (group) {
+    *group = cleaned.substr(nonspace + 2, closing - (nonspace + 2));
+  }
+  return true;
+}
+
+enum class DiagnosticSeverity {
+  kUnknown,
+  kWarning,
+  kError,
+};
+
+static bool ConsumeColonNumber(const std::string &line, size_t *pos) {
+  if (*pos >= line.size() || line[*pos] != ':') {
+    return false;
+  }
+  size_t number_start = *pos + 1;
+  size_t number_end = number_start;
+  while (number_end < line.size() &&
+         std::isdigit(static_cast<unsigned char>(line[number_end]))) {
+    ++number_end;
+  }
+  if (number_end == number_start || number_end >= line.size() ||
+      line[number_end] != ':') {
+    return false;
+  }
+  *pos = number_end;
+  return true;
+}
+
+static DiagnosticSeverity IsDiagnosticHeader(const std::string &line) {
+  std::string cleaned = StripAnsiCodes(line);
+  size_t nonspace = cleaned.find_first_not_of(" \t");
+  if (nonspace != std::string::npos) {
+    if (cleaned.compare(nonspace, 6, "error:") == 0) {
+      return DiagnosticSeverity::kError;
+    }
+    if (cleaned.compare(nonspace, 8, "warning:") == 0) {
+      return DiagnosticSeverity::kWarning;
+    }
+  }
+  for (size_t i = 0; i < cleaned.size(); ++i) {
+    if (cleaned[i] != ':') {
+      continue;
+    }
+    size_t pos = i;
+    if (!ConsumeColonNumber(cleaned, &pos)) {
+      continue;
+    }
+    if (!ConsumeColonNumber(cleaned, &pos)) {
+      continue;
+    }
+    size_t severity_start = pos + 1;
+    if (severity_start < cleaned.size() && cleaned[severity_start] == ' ') {
+      ++severity_start;
+    }
+    if (cleaned.compare(severity_start, 8, "warning:") == 0) {
+      return DiagnosticSeverity::kWarning;
+    }
+    if (cleaned.compare(severity_start, 6, "error:") == 0) {
+      return DiagnosticSeverity::kError;
+    }
+  }
+  return DiagnosticSeverity::kUnknown;
+}
+
+class DiagnosticFilteringStreambuf : public std::streambuf {
+ public:
+  DiagnosticFilteringStreambuf(
+      std::ostream *dest,
+      const std::vector<std::string> &groups)
+      : dest_(dest),
+        groups_(groups),
+        in_diagnostic_block_(false),
+        suppress_current_block_(false),
+        current_severity_(DiagnosticSeverity::kUnknown) {
+    suppressed_tokens_.reserve(groups_.size());
+    for (const auto &group : groups_) {
+      suppressed_tokens_.push_back("[#" + group + "]");
+    }
+  }
+
+  void FlushRemainder() {
+    if (!buffer_.empty()) {
+      ProcessLine(buffer_, /*has_newline=*/false);
+      buffer_.clear();
+    }
+    FlushDiagnosticBlock();
+    dest_->flush();
+  }
+
+ protected:
+  int overflow(int ch) override {
+    if (ch == traits_type::eof()) {
+      return traits_type::not_eof(ch);
+    }
+    char c = static_cast<char>(ch);
+    return xsputn(&c, 1) == 1 ? ch : traits_type::eof();
+  }
+
+  std::streamsize xsputn(const char *s, std::streamsize n) override {
+    buffer_.append(s, static_cast<size_t>(n));
+    size_t pos = 0;
+    while ((pos = buffer_.find('\n')) != std::string::npos) {
+      std::string line = buffer_.substr(0, pos);
+      ProcessLine(line, /*has_newline=*/true);
+      buffer_.erase(0, pos + 1);
+    }
+    return n;
+  }
+
+ private:
+  struct Line {
+    std::string text;
+    bool has_newline;
+  };
+
+  void WriteLine(const Line &line) {
+    dest_->write(line.text.data(), line.text.size());
+    if (line.has_newline) {
+      dest_->put('\n');
+    }
+  }
+
+  bool ShouldSuppressCurrentBlock() const {
+    return in_diagnostic_block_ && suppress_current_block_ &&
+           current_severity_ == DiagnosticSeverity::kWarning;
+  }
+
+  void FlushDiagnosticBlock() {
+    if (!in_diagnostic_block_ || diagnostic_block_.empty()) {
+      return;
+    }
+    if (!ShouldSuppressCurrentBlock()) {
+      for (const auto &line : diagnostic_block_) {
+        WriteLine(line);
+      }
+    }
+    diagnostic_block_.clear();
+    suppress_current_block_ = false;
+    in_diagnostic_block_ = false;
+    current_severity_ = DiagnosticSeverity::kUnknown;
+  }
+
+  void ProcessLine(const std::string &line, bool has_newline) {
+    DiagnosticSeverity severity = IsDiagnosticHeader(line);
+    std::string doc_group;
+    bool is_group_doc_line = IsGroupDocLine(line, &doc_group);
+    bool is_doc_for_suppressed_group = false;
+    if (is_group_doc_line) {
+      is_doc_for_suppressed_group =
+          std::find(groups_.begin(), groups_.end(), doc_group) != groups_.end();
+      if (is_doc_for_suppressed_group) {
+        return;
+      }
+    }
+
+    if (severity != DiagnosticSeverity::kUnknown) {
+      FlushDiagnosticBlock();
+      in_diagnostic_block_ = true;
+      current_severity_ = severity;
+    }
+
+    Line current{line, has_newline};
+    if (in_diagnostic_block_) {
+      if (!is_group_doc_line &&
+          LineHasSuppressedGroup(line, suppressed_tokens_)) {
+        suppress_current_block_ = true;
+      }
+
+      diagnostic_block_.push_back(current);
+    } else {
+      WriteLine(current);
+    }
+  }
+
+  std::ostream *dest_;
+  std::string buffer_;
+  const std::vector<std::string> &groups_;
+  std::vector<std::string> suppressed_tokens_;
+  std::vector<Line> diagnostic_block_;
+  bool in_diagnostic_block_;
+  bool suppress_current_block_;
+  DiagnosticSeverity current_severity_;
+};
+
+class DiagnosticFilteringStream : public std::ostream {
+ public:
+  DiagnosticFilteringStream(
+      std::ostream *dest,
+      const std::vector<std::string> &groups)
+      : std::ostream(nullptr),
+        buffer_(dest, groups) {
+    rdbuf(&buffer_);
+  }
+
+  void FlushRemainder() { buffer_.FlushRemainder(); }
+
+ private:
+  DiagnosticFilteringStreambuf buffer_;
+};
+
 }  // namespace
 
 SwiftRunner::SwiftRunner(const std::vector<std::string> &args,
@@ -125,11 +430,22 @@ int SwiftRunner::Run(std::ostream *stderr_stream, bool stdout_to_stderr) {
     std::filesystem::remove(swift_source_info_path_);
   }
 
-  int exit_code = RunSubProcess(
-      args_, &job_env_, stderr_stream, stdout_to_stderr);
-
-  if (exit_code != 0) {
-    return exit_code;
+  int exit_code = 0;
+  bool should_filter_output = !suppress_warning_groups_.empty();
+  if (should_filter_output) {
+    DiagnosticFilteringStream filtered(stderr_stream, suppress_warning_groups_);
+    // Preserve stdout unless the caller explicitly requested redirecting it.
+    exit_code = RunSubProcess(
+        args_, &job_env_, &filtered, /*stdout_to_stderr=*/stdout_to_stderr);
+    filtered.FlushRemainder();
+    if (exit_code != 0) {
+      return exit_code;
+    }
+  } else {
+    exit_code = RunSubProcess(args_, &job_env_, stderr_stream, stdout_to_stderr);
+    if (exit_code != 0) {
+      return exit_code;
+    }
   }
 
   if (!generated_header_rewriter_path_.empty()) {
@@ -149,6 +465,9 @@ int SwiftRunner::Run(std::ostream *stderr_stream, bool stdout_to_stderr) {
 
     exit_code = RunSubProcess(
         rewriter_args, /*env=*/nullptr, stderr_stream, stdout_to_stderr);
+    if (exit_code != 0) {
+      return exit_code;
+    }
   }
 
   auto enable_global_index_store = global_index_store_import_path_ != "";
@@ -364,6 +683,16 @@ bool SwiftRunner::ProcessArgument(
       } else if (StripPrefix("-bazel-target-label=", new_arg)) {
         changed = true;
       } else if (StripPrefix("-global-index-store-import-path=", new_arg)) {
+        changed = true;
+      } else if (StripPrefix("-suppress-warning-group=", new_arg)) {
+        std::string group = NormalizeDiagnosticGroup(new_arg);
+        if (!group.empty() &&
+            std::find(
+                suppress_warning_groups_.begin(),
+                suppress_warning_groups_.end(),
+                group) == suppress_warning_groups_.end()) {
+          suppress_warning_groups_.push_back(group);
+        }
         changed = true;
       } else {
         // TODO(allevato): Report that an unknown wrapper arg was found and give
