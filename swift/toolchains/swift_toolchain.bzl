@@ -347,7 +347,8 @@ def _swift_unix_linkopts_cc_info(
         cpu,
         os,
         toolchain_label,
-        toolchain_root):
+        toolchain_root,
+        toolchain_files = None):
     """Returns a `CcInfo` containing flags that should be passed to the linker.
 
     The provider returned by this function will be used as an implicit
@@ -361,6 +362,8 @@ def _swift_unix_linkopts_cc_info(
         toolchain_label: The label of the Swift toolchain that will act as the
             owner of the linker input propagating the flags.
         toolchain_root: The toolchain's root directory.
+        toolchain_files: Optional depset of files from the Swift toolchain that
+            should be passed as additional inputs to the linker.
 
     Returns:
         A `CcInfo` provider that will provide linker flags to binaries that
@@ -396,6 +399,7 @@ def _swift_unix_linkopts_cc_info(
                 cc_common.create_linker_input(
                     owner = toolchain_label,
                     user_link_flags = depset(linkopts),
+                    additional_inputs = toolchain_files if toolchain_files else depset(),
                 ),
             ]),
         ),
@@ -450,6 +454,7 @@ def _swift_toolchain_impl(ctx):
             ctx.attr.os,
             ctx.label,
             toolchain_root,
+            ctx.attr.toolchain_files[DefaultInfo].files if ctx.attr.toolchain_files else None,
         )
 
     # TODO: Remove once we drop bazel 7.x support
@@ -494,7 +499,7 @@ def _swift_toolchain_impl(ctx):
         toolchain_root = toolchain_root,
         use_autolink_extract = SWIFT_FEATURE_USE_AUTOLINK_EXTRACT in ctx.features,
         use_module_wrap = SWIFT_FEATURE_USE_MODULE_WRAP in ctx.features,
-        additional_tools = [ctx.file.version_file],
+        additional_tools = [ctx.file.version_file] + (ctx.attr.toolchain_files[DefaultInfo].files.to_list() if ctx.attr.toolchain_files else []),
         tool_executable_suffix = ctx.attr.tool_executable_suffix,
     )
     all_action_configs = _all_action_configs(
@@ -634,6 +639,13 @@ configuration options that are applied to targets on a per-package basis.
             ),
             "root": attr.string(
                 mandatory = True,
+            ),
+            "toolchain_files": attr.label(
+                doc = """\
+A filegroup containing all the files in the Swift toolchain. These files will be\
+passed as inputs to all Swift compile and link actions, enabling sandboxed builds.\
+""",
+                mandatory = False,
             ),
             "version_file": attr.label(
                 mandatory = True,
