@@ -1819,6 +1819,11 @@ def _additional_inputs_configurator(prerequisites, _args):
 _BANNED_SWIFTCOPTS = {
 }
 
+# Same as the above, but this checks for prefixes (e.g., `-flag=` to match any
+# `-flag=value`) instead of exact matches.
+_BANNED_SWIFTCOPT_PREFIXES = {
+}
+
 def _fail_if_flag_is_banned(copt):
     """Fails the build if the given compiler flag matches a banned flag.
 
@@ -1835,6 +1840,11 @@ def _fail_if_flag_is_banned(copt):
         The original flag, if the function didn't fail.
     """
     reason = _BANNED_SWIFTCOPTS.get(copt)
+    if not reason:
+        for prefix in _BANNED_SWIFTCOPT_PREFIXES:
+            if copt.startswith(prefix):
+                reason = _BANNED_SWIFTCOPT_PREFIXES[prefix]
+                break
     if reason:
         fail("The Swift compiler flag '{}' may not be used. {}".format(
             copt,
