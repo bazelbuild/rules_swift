@@ -38,7 +38,6 @@ load(
     "SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES",
     "SWIFT_FEATURE__SUPPORTS_V6",
 )
-load(":toolchain_utils.bzl", "SWIFT_TOOLCHAIN_TYPE")
 
 def _scratch_file(repository_ctx, temp_dir, name, content = ""):
     """Creates and returns a scratch file with the given name and content.
@@ -233,21 +232,6 @@ swift_toolchain(
     root = "{root}",
     version_file = "{version_file}",
 )
-
-toolchain(
-    name = "linux-swift-toolchain-{cpu}",
-    exec_compatible_with = [
-        "@platforms//os:linux",
-        "@platforms//cpu:{cpu}",
-    ],
-    target_compatible_with = [
-        "@platforms//os:linux",
-        "@platforms//cpu:{cpu}",
-    ],
-    toolchain = ":linux-toolchain",
-    toolchain_type = "{toolchain_type}",
-    visibility = ["//visibility:public"],
-)
 """.format(
         cpu = _normalized_linux_cpu(repository_ctx.os.arch),
         feature_list = ", ".join([
@@ -255,7 +239,6 @@ toolchain(
             for feature in feature_values
         ]),
         root = root,
-        toolchain_type = SWIFT_TOOLCHAIN_TYPE,
         version_file = version_file,
     )
 
@@ -274,26 +257,11 @@ xcode_swift_toolchain(
     name = "xcode-toolchain",
     features = [{feature_list}],
 )
-
-[
-    toolchain(
-        name = "xcode-toolchain-" + arch,
-        exec_compatible_with = [
-            "@platforms//os:macos",
-        ],
-        target_compatible_with = APPLE_PLATFORMS_CONSTRAINTS[arch],
-        toolchain = ":xcode-toolchain",
-        toolchain_type = "{toolchain_type}",
-        visibility = ["//visibility:public"],
-    )
-    for arch in APPLE_PLATFORMS_CONSTRAINTS.keys()
-]
 """.format(
         feature_list = ", ".join([
             '"{}"'.format(feature)
             for feature in feature_values
         ]),
-        toolchain_type = SWIFT_TOOLCHAIN_TYPE,
     )
 
 def _get_python_bin(repository_ctx):
@@ -357,27 +325,11 @@ swift_toolchain(
   tool_executable_suffix = ".exe",
   xctest_version = "{xctest_version}",
 )
-
-toolchain(
-    name = "windows-swift-toolchain-x86_64",
-    exec_compatible_with = [
-        "@platforms//os:windows",
-        "@platforms//cpu:x86_64",
-    ],
-    target_compatible_with = [
-        "@platforms//os:windows",
-        "@platforms//cpu:x86_64",
-    ],
-    toolchain = ":windows-toolchain",
-    toolchain_type = "{toolchain_type}",
-    visibility = ["//visibility:public"],
-)
 """.format(
         features = ", ".join(['"{}"'.format(feature) for feature in enabled_features] + ['"-{}"'.format(feature) for feature in disabled_features]),
         root = root,
         env = env,
         sdkroot = repository_ctx.os.environ["SDKROOT"].replace("\\", "/"),
-        toolchain_type = SWIFT_TOOLCHAIN_TYPE,
         xctest_version = xctest_version.stdout.rstrip(),
         version_file = version_file,
     )
@@ -387,10 +339,6 @@ def _swift_autoconfiguration_impl(repository_ctx):
         "BUILD",
         "\n".join([
             """\
-load(
-    "@build_bazel_apple_support//configs:platforms.bzl",
-    "APPLE_PLATFORMS_CONSTRAINTS",
-)
 load(
     "@build_bazel_rules_swift//swift/toolchains:swift_toolchain.bzl",
     "swift_toolchain",
