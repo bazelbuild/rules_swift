@@ -40,6 +40,8 @@ load(
 )
 load(":toolchain_utils.bzl", "SWIFT_TOOLCHAIN_TYPE")
 
+SWIFT_AUTOCONFIG_DISABLE_ENV_VAR = "BAZEL_DO_NOT_DETECT_SWIFT_TOOLCHAIN"
+
 def _scratch_file(repository_ctx, temp_dir, name, content = ""):
     """Creates and returns a scratch file with the given name and content.
 
@@ -383,6 +385,15 @@ toolchain(
     )
 
 def _swift_autoconfiguration_impl(repository_ctx):
+    if repository_ctx.os.environ.get(SWIFT_AUTOCONFIG_DISABLE_ENV_VAR) == "1":
+        repository_ctx.file(
+            "BUILD",
+            "# Swift toolchain autoconfiguration was disabled by {} env variable.".format(
+                SWIFT_AUTOCONFIG_DISABLE_ENV_VAR,
+            ),
+        )
+        return
+
     repository_ctx.file(
         "BUILD",
         "\n".join([
@@ -409,7 +420,7 @@ package(default_visibility = ["//visibility:public"])
     )
 
 swift_autoconfiguration = repository_rule(
-    environ = ["CC", "PATH", "ProgramData", "Path"],
+    environ = ["CC", "PATH", "ProgramData", "Path", SWIFT_AUTOCONFIG_DISABLE_ENV_VAR],
     implementation = _swift_autoconfiguration_impl,
     local = True,
 )
