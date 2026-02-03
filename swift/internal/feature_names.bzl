@@ -237,18 +237,6 @@ SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS = "swift._num_threads_1_in_swiftcopts
 # should never manually enable, disable, or query this feature.
 SWIFT_FEATURE__OPT_IN_SWIFTCOPTS = "swift._opt_in_swiftcopts"
 
-# If enabled, requests the `-enforce-exclusivity=checked` swiftc flag which
-# enables runtime checking of exclusive memory access on mutation.
-SWIFT_FEATURE_CHECKED_EXCLUSIVITY = "swift.checked_exclusivity"
-
-# If enabled, requests the `-enable-bare-slash-regex` swiftc flag which is
-# required for forward slash regex expression literals.
-SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX = "swift.enable_bare_slash_regex"
-
-# If enabled, requests the `-disable-clang-spi` swiftc flag. Disables importing
-# Clang SPIs as Swift SPIs.
-SWIFT_FEATURE_DISABLE_CLANG_SPI = "swift.disable_clang_spi"
-
 # If enabled, allow public symbols to be internalized at link time to support
 # better dead-code stripping. This assumes that all clients of public types are
 # part of the same link unit or that public symbols linked into frameworks are

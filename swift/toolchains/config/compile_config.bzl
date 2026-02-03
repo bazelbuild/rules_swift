@@ -30,15 +30,12 @@ load(
 load(
     "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_CACHEABLE_SWIFTMODULES",
-    "SWIFT_FEATURE_CHECKED_EXCLUSIVITY",
     "SWIFT_FEATURE_COVERAGE",
     "SWIFT_FEATURE_DBG",
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
     "SWIFT_FEATURE_DISABLE_AVAILABILITY_CHECKING",
-    "SWIFT_FEATURE_DISABLE_CLANG_SPI",
     "SWIFT_FEATURE_EMIT_C_MODULE",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
-    "SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_ENABLE_TESTING",
@@ -199,13 +196,6 @@ def compile_action_configs(
             ],
             configurators = [_swift_layering_check_configurator],
             features = [SWIFT_FEATURE_LAYERING_CHECK_SWIFT],
-        ),
-
-        # Configure enforce exclusivity checks if enabled.
-        ActionConfigInfo(
-            actions = all_compile_action_names(),
-            configurators = [add_arg("-enforce-exclusivity=checked")],
-            features = [SWIFT_FEATURE_CHECKED_EXCLUSIVITY],
         ),
 
         # Configure constant value extraction.
@@ -878,27 +868,28 @@ def compile_action_configs(
             ],
         ),
 
+        # Language features and versions.
+        ActionConfigInfo(
+            actions = all_compile_action_names(),
+            configurators = [
+                _upcoming_and_experimental_features_configurator,
+                # We unconditionally enable this one, even in Swift 5 mode.
+                add_arg("-enable-upcoming-feature", "BareSlashRegexLiterals"),
+            ],
+        ),
+        ActionConfigInfo(
+            actions = all_compile_action_names(),
+            configurators = [add_arg("-swift-version", "6")],
+            features = [
+                SWIFT_FEATURE_ENABLE_V6,
+            ],
+        ),
+
         # User-defined conditional compilation flags (defined for Swift; those
         # passed directly to ClangImporter are handled above).
         ActionConfigInfo(
             actions = all_compile_action_names(),
             configurators = [_conditional_compilation_flag_configurator],
-        ),
-        ActionConfigInfo(
-            actions = all_compile_action_names() + [
-                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
-            ],
-            configurators = [add_arg("-enable-bare-slash-regex")],
-            features = [
-                SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX,
-            ],
-        ),
-        ActionConfigInfo(
-            actions = all_compile_action_names(),
-            configurators = [add_arg("-Xfrontend", "-disable-clang-spi")],
-            features = [
-                SWIFT_FEATURE_DISABLE_CLANG_SPI,
-            ],
         ),
         ActionConfigInfo(
             actions = all_compile_action_names(),
@@ -914,17 +905,6 @@ def compile_action_configs(
             configurators = [add_arg("-disable-availability-checking")],
             features = [
                 SWIFT_FEATURE_DISABLE_AVAILABILITY_CHECKING,
-            ],
-        ),
-        ActionConfigInfo(
-            actions = all_compile_action_names(),
-            configurators = [_upcoming_and_experimental_features_configurator],
-        ),
-        ActionConfigInfo(
-            actions = all_compile_action_names(),
-            configurators = [add_arg("-swift-version", "6")],
-            features = [
-                SWIFT_FEATURE_ENABLE_V6,
             ],
         ),
         ActionConfigInfo(

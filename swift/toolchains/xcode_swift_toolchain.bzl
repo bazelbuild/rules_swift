@@ -758,12 +758,6 @@ def _xcode_swift_toolchain_impl(ctx):
     requested_features.extend([
         SWIFT_FEATURE_COMPILE_IN_PARALLEL,
 
-        # Allow users to start using access levels on `import`s by default. Note
-        # that this does *not* change the default access level for `import`s to
-        # `internal`; that is controlled by the upcoming feature flag
-        # `InternalImportsByDefault`.
-        "swift.experimental.AccessLevelOnImport",
-
         # Ensure hermetic PCM files (no absolute workspace paths).
         SWIFT_FEATURE_MODULE_HOME_IS_CWD,
     ])

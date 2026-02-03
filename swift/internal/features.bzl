@@ -17,10 +17,7 @@
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load(
     ":feature_names.bzl",
-    "SWIFT_FEATURE_CHECKED_EXCLUSIVITY",
     "SWIFT_FEATURE_COVERAGE",
-    "SWIFT_FEATURE_DISABLE_CLANG_SPI",
-    "SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
     "SWIFT_FEATURE_ENABLE_TESTING",
     "SWIFT_FEATURE_FILE_PREFIX_MAP",
@@ -269,13 +266,16 @@ def default_features_for_toolchain(ctx, target_triple):
 
     # Common features we turn on regardless of target.
     features = [
-        SWIFT_FEATURE_CHECKED_EXCLUSIVITY,
-        SWIFT_FEATURE_DISABLE_CLANG_SPI,
-        SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX,
         SWIFT_FEATURE_ENABLE_BATCH_MODE,
         SWIFT_FEATURE_FILE_PREFIX_MAP,
         SWIFT_FEATURE_INTERNALIZE_AT_LINK,
         SWIFT_FEATURE_LAYERING_CHECK_SWIFT,
+
+        # Allow users to start using access levels on `import`s by default. Note
+        # that this does *not* change the default access level for `import`s to
+        # `internal`; that is controlled by the upcoming feature flag
+        # `InternalImportsByDefault`.
+        "swift.experimental.AccessLevelOnImport",
     ]
 
     return features
