@@ -18,10 +18,6 @@ load(
     "@build_bazel_rules_swift//swift/internal:action_names.bzl",
     "SWIFT_ACTION_COMPILE_MODULE_INTERFACE",
 )
-load(
-    "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
-    "SWIFT_FEATURE_EXPLICIT_INTERFACE_BUILD",
-)
 load(":action_config.bzl", "ActionConfigInfo", "add_arg")
 
 visibility([
@@ -30,31 +26,17 @@ visibility([
 
 def compile_module_interface_action_configs():
     return [
-        # Library evolution is implied since we've already produced a
-        # .swiftinterface file. So we want to unconditionally enable the flag
-        # for this action.
-        ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE_MODULE_INTERFACE],
-            configurators = [add_arg("-enable-library-evolution")],
-        ),
         ActionConfigInfo(
             actions = [SWIFT_ACTION_COMPILE_MODULE_INTERFACE],
             configurators = [
+                # Library evolution is implied since we've already produced a
+                # .swiftinterface file. So we want to unconditionally enable the
+                # flag for this action.
+                add_arg("-enable-library-evolution"),
+                add_arg("-compile-module-from-interface"),
+                _emit_explicit_module_interface_build_configurator,
                 _emit_module_path_from_module_interface_configurator,
             ],
-        ),
-        ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE_MODULE_INTERFACE],
-            configurators = [
-                add_arg("-compile-module-from-interface"),
-            ],
-        ),
-        ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE_MODULE_INTERFACE],
-            configurators = [
-                _emit_explicit_module_interface_build_configurator,
-            ],
-            features = [SWIFT_FEATURE_EXPLICIT_INTERFACE_BUILD],
         ),
     ]
 

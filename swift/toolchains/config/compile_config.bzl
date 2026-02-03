@@ -40,7 +40,6 @@ load(
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_ENABLE_TESTING",
     "SWIFT_FEATURE_ENABLE_V6",
-    "SWIFT_FEATURE_EXPLICIT_INTERFACE_BUILD",
     "SWIFT_FEATURE_FASTBUILD",
     "SWIFT_FEATURE_FILE_PREFIX_MAP",
     "SWIFT_FEATURE_FULL_DEBUG_INFO",
@@ -992,25 +991,15 @@ def compile_action_configs(
             configurators = [_source_files_configurator],
         ),
 
-        # If this is an explicit interface build, ensure that the
-        # `.swiftinterface` file is among the action inputs but don't add it to
-        # the command line because we have a worker-specific flag for that
+        # When compiling a module interface, add the `.swiftinterface` file to
+        # the action inputs but don't add its path to the command line because
+        # we use a worker-specific flag for that
         # (`-Xwrapped-swift=-explicit-compile-module-from-interface=<path>`).
-        # If it's not an explicit interface build, add it to the command line
-        # like any other source file.
         ActionConfigInfo(
             actions = [
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
             ],
             configurators = [_source_files_as_action_inputs_only_configurator],
-            features = [SWIFT_FEATURE_EXPLICIT_INTERFACE_BUILD],
-        ),
-        ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
-            ],
-            configurators = [_source_files_configurator],
-            not_features = [SWIFT_FEATURE_EXPLICIT_INTERFACE_BUILD],
         ),
     ])
 

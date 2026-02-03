@@ -44,7 +44,6 @@ bzl_library(
     deps = [
         ":action_config",
         "//swift/internal:action_names",
-        "//swift/internal:feature_names",
     ],
 )
 
