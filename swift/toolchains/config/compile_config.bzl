@@ -872,8 +872,18 @@ def compile_action_configs(
             actions = all_compile_action_names(),
             configurators = [
                 _upcoming_and_experimental_features_configurator,
-                # We unconditionally enable this one, even in Swift 5 mode.
+            ],
+        ),
+        ActionConfigInfo(
+            actions = all_compile_action_names(),
+            configurators = [
+                # Unconditionally enable this in Swift 5 mode, but not in Swift
+                # 6 mode (since it is enabled by default in Swift 6, and passing
+                # this flag causes an annoying warning).
                 add_arg("-enable-upcoming-feature", "BareSlashRegexLiterals"),
+            ],
+            not_features = [
+                SWIFT_FEATURE_ENABLE_V6,
             ],
         ),
         ActionConfigInfo(
