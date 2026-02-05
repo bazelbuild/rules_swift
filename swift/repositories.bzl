@@ -288,5 +288,5 @@ def swift_rules_dependencies(include_bzlmod_ready_dependencies = True):
     if include_bzlmod_ready_dependencies:
         native.register_toolchains(
             # Use register_toolchain's target pattern expansion to register all toolchains in the package.
-            "@build_bazel_rules_swift_local_config//:all",
+            "//swift/toolchains:all",
         )
