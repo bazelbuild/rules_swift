@@ -46,7 +46,7 @@ load(
 )
 load(
     "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
-    "SWIFT_FEATURE_COMPILE_IN_PARALLEL",
+    "SWIFT_FEATURE_COMPILE_IN_PARALLEL",  # @unused
     "SWIFT_FEATURE_MODULE_HOME_IS_CWD",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
 )
