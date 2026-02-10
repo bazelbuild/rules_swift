@@ -41,3 +41,27 @@ swift_test(
     local_defines = ["TEST_LOCAL_FOO"],
     tags = FIXTURE_TAGS,
 )
+
+swift_library(
+    name = "mixed_lib_with_local_defines",
+    srcs = [
+        "mixed_lib.h",
+        "mixed_lib.m",
+        "mixed_lib.swift",
+    ],
+    defines = ["PROPAGATED_BAR"],
+    local_defines = ["LOCAL_FOO"],
+    tags = FIXTURE_TAGS,
+)
+
+swift_library(
+    name = "mixed_lib_dependent",
+    srcs = [
+        "dependent.m",
+        "empty.swift",
+    ],
+    tags = FIXTURE_TAGS,
+    deps = [
+        ":mixed_lib_with_local_defines",
+    ],
+)
