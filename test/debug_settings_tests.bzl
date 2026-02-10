@@ -92,10 +92,7 @@ def debug_settings_test_suite(name, tags = []):
             "-gline-tables-only",
             "-Xwrapped-swift=-debug-prefix-pwd-is-dot",
         ],
-        mnemonic = select({
-            "@build_bazel_apple_support//constraints:apple": "SwiftCompile",
-            "//conditions:default": "SwiftCompileModule",
-        }),
+        mnemonic = "SwiftCompileModule",
         tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
@@ -117,10 +114,7 @@ def debug_settings_test_suite(name, tags = []):
             "-gline-tables-only",
             "-Xwrapped-swift=-debug-prefix-pwd-is-dot",
         ],
-        mnemonic = select({
-            "@build_bazel_apple_support//constraints:apple": "SwiftCompile",
-            "//conditions:default": "SwiftCompileModule",
-        }),
+        mnemonic = "SwiftCompileModule",
         tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
@@ -141,10 +135,7 @@ def debug_settings_test_suite(name, tags = []):
             "-g",
             "-Xwrapped-swift=-debug-prefix-pwd-is-dot",
         ],
-        mnemonic = select({
-            "@build_bazel_apple_support//constraints:apple": "SwiftCompile",
-            "//conditions:default": "SwiftCompileModule",
-        }),
+        mnemonic = "SwiftCompileModule",
         tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
@@ -165,10 +156,7 @@ def debug_settings_test_suite(name, tags = []):
             "-gline-tables-only",
             "-Xwrapped-swift=-debug-prefix-pwd-is-dot",
         ],
-        mnemonic = select({
-            "@build_bazel_apple_support//constraints:apple": "SwiftCompile",
-            "//conditions:default": "SwiftCompileModule",
-        }),
+        mnemonic = "SwiftCompileModule",
         tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
@@ -188,10 +176,7 @@ def debug_settings_test_suite(name, tags = []):
             "-g",
             "-gline-tables-only",
         ],
-        mnemonic = select({
-            "@build_bazel_apple_support//constraints:apple": "SwiftCompile",
-            "//conditions:default": "SwiftCompileModule",
-        }),
+        mnemonic = "SwiftCompileModule",
         tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
