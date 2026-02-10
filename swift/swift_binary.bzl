@@ -99,6 +99,7 @@ def _swift_binary_impl(ctx):
             c_copts = c_copts,
             defines = ctx.attr.defines,
             feature_configuration = feature_configuration,
+            local_defines = ctx.attr.local_defines,
             module_name = module_name,
             plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),
             srcs = srcs,

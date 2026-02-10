@@ -233,6 +233,7 @@ def _do_compile(
         c_copts = c_copts,
         defines = ctx.attr.defines,
         feature_configuration = feature_configuration,
+        local_defines = ctx.attr.local_defines,
         module_name = module_name,
         plugins = plugins,
         srcs = srcs,

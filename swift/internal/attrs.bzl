@@ -154,10 +154,25 @@ simply identifiers that are either defined or undefined. So strings in this list
 should be simple identifiers, **not** `name=value` pairs.
 
 Each string is prepended with `-D` and added to the command line. Unlike
-`copts`, these flags are added for the target and every target that depends on
-it, so use this attribute with caution. It is preferred that you add defines
-directly to `copts`, only using this feature in the rare case that a library
-needs to propagate a symbol up to those that depend on it.
+`copts` and `local_defines`, these flags are added for the target and every
+target that depends on it, so use this attribute with caution. **Therefore,
+it is preferred that you use `local_defines` instead, only using `defines` in
+the rare case that a library needs to propagate a symbol up to those that depend
+on it.**
+""",
+        ),
+        "local_defines": attr.string_list(
+            doc = """\
+A list of defines to add to the compilation command line.
+
+Each string is prepended with `-D` and added to the command line for this target
+but not to its dependents. Unlike `defines`, these flags are only added to the
+compilation command line for this target; they are **not** propagated to targets
+that depend on it.
+
+Note that unlike C-family languages, Swift defines do not have values; they are
+simply identifiers that are either defined or undefined. So strings in this list
+should be simple identifiers, **not** `name=value` pairs.
 """,
         ),
         "module_name": attr.string(

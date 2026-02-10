@@ -1727,7 +1727,7 @@ def _exclude_swift_incompatible_define(define):
 def _conditional_compilation_flag_configurator(prerequisites, args):
     """Adds (non-Clang) conditional compilation flags to the command line."""
     all_defines = depset(
-        prerequisites.defines,
+        prerequisites.defines + prerequisites.local_defines,
         transitive = [
             # Take any Swift-compatible defines from Objective-C dependencies
             # and define them for Swift.

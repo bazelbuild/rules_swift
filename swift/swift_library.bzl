@@ -190,6 +190,7 @@ def _swift_library_impl(ctx):
         feature_configuration = feature_configuration,
         generated_header_name = generated_header_name,
         hdrs = hdrs,
+        local_defines = ctx.attr.local_defines,
         module_name = module_name,
         plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),
         private_compilation_contexts = get_compilation_contexts(

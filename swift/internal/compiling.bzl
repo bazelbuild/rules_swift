@@ -280,6 +280,7 @@ def compile(
         copts = [],
         c_copts = [],
         defines = [],
+        local_defines = [],
         exec_group = None,
         feature_configuration,
         generated_header_name = None,
@@ -334,6 +335,8 @@ def compile(
             target being compiled, such as Swift-compatible preprocessor
             defines, header search paths, and so forth. These are typically
             retrieved from the `CcInfo` providers of a target's `private_deps`.
+        local_defines: Symbols that should be defined by passing `-D` to the
+            compiler for this target only.
         private_swift_infos: A list of `SwiftInfo` providers from private
             (implementation-only) dependencies of the target being compiled. The
             modules defined by these providers are used as dependencies of the
@@ -555,6 +558,7 @@ def compile(
         compilation_contexts = compilation_contexts,
         copts = c_copts,
         defines = defines,
+        local_defines = local_defines,
         feature_configuration = feature_configuration,
         private_hdrs = compile_plan.c_inputs.private_hdrs,
         public_hdrs = compile_plan.c_inputs.public_hdrs,
@@ -607,6 +611,7 @@ def compile(
         "explicit_swift_module_map_file": explicit_swift_module_map_file,
         "genfiles_dir": feature_configuration._genfiles_dir,
         "is_swift": True,
+        "local_defines": local_defines,
         "mixed_module_clang_inputs": incomplete_header_module,
         "module_name": module_name,
         "original_module_name": original_module_name,
@@ -651,6 +656,7 @@ def compile(
         compilation_contexts = compilation_contexts,
         copts = c_copts,
         defines = defines,
+        local_defines = local_defines,
         feature_configuration = feature_configuration,
         has_generated_header = bool(compile_outputs.generated_header_file),
         private_hdrs = compile_plan.c_inputs.private_hdrs,
@@ -1445,6 +1451,7 @@ def _compile_c_inputs(
         compilation_contexts,
         copts,
         defines,
+        local_defines,
         feature_configuration,
         has_generated_header = False,
         private_hdrs,
@@ -1469,6 +1476,8 @@ def _compile_c_inputs(
         copts: A list of flags that will be passed to the C/Objective-C
             compiler.
         defines: Symbols that should be defined by passing `-D` to the compiler.
+        local_defines: Symbols that should be defined by passing `-D` to the
+            compiler, but should not be propagated to dependencies.
         feature_configuration: A feature configuration obtained from
             `swift_common.configure_features`.
         has_generated_header: If True, the `public_hdrs` include a generated
@@ -1548,6 +1557,7 @@ def _compile_c_inputs(
             cc_toolchain = toolchains.cc,
             compilation_contexts = compilation_contexts,
             defines = defines,
+            local_defines = local_defines,
             feature_configuration = cc_feature_configuration,
             language = language,
             name = target_name,
@@ -1563,9 +1573,12 @@ def _compile_c_inputs(
     # context manually. This avoids having Bazel create an action that results
     # in an empty module map that won't contribute meaningfully to layering
     # checks anyway.
-    if defines:
+    if defines or local_defines:
         direct_compilation_contexts = [
-            cc_common.create_compilation_context(defines = depset(defines)),
+            cc_common.create_compilation_context(
+                defines = depset(defines),
+                local_defines = depset(local_defines),
+            ),
         ]
     else:
         direct_compilation_contexts = []

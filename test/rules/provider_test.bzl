@@ -20,7 +20,11 @@ load(
     "analysistest",
     "unittest",
 )
-load("@build_bazel_rules_swift//swift:providers.bzl", "SwiftInfo")
+load(
+    "@build_bazel_rules_swift//swift:providers.bzl",
+    "SwiftBinaryInfo",
+    "SwiftInfo",
+)
 load(
     "@build_bazel_rules_swift//test/rules:expected_files.bzl",
     "compare_expected_files",
@@ -169,6 +173,8 @@ def _lookup_provider_by_name(env, target, provider_name):
         provider = OutputGroupInfo
     elif provider_name == "RunEnvironmentInfo":
         provider = RunEnvironmentInfo
+    elif provider_name == "SwiftBinaryInfo":
+        provider = SwiftBinaryInfo
     elif provider_name == "SwiftInfo":
         provider = SwiftInfo
 
