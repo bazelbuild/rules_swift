@@ -993,6 +993,17 @@ def compile_action_configs(
         ),
     )
 
+    # The frontend job that typechecks the `.swiftinterface` produced in library
+    # evolution mode cannot succeed in a Bazel build that uses explicit modules
+    # because that typecheck job still uses the implicit module loader. Just
+    # disable the job entirely.
+    action_configs.append(
+        ActionConfigInfo(
+            actions = all_compile_action_names(),
+            configurators = [add_arg("-no-verify-emitted-module-interface")],
+        ),
+    )
+
     action_configs.extend([
         ActionConfigInfo(
             actions = all_compile_action_names() + [

@@ -1237,10 +1237,10 @@ def precompile_clang_module(
         feature_configuration,
         module_map_file,
         module_name,
+        swift_infos = [],
         target_name,
         toolchains,
-        toolchain_type = SWIFT_TOOLCHAIN_TYPE,
-        swift_infos = []):
+        toolchain_type = SWIFT_TOOLCHAIN_TYPE):
     """Precompiles an explicit Clang module that is compatible with Swift.
 
     Args:
@@ -1262,19 +1262,31 @@ def precompile_clang_module(
             to be compiled.
         module_name: The name of the top-level module in the module map that
             will be compiled.
+        swift_infos: A list of `SwiftInfo` providers representing dependencies
+            required to compile this module.
         target_name: The name of the target for which the code is being
             compiled, which is used to determine unique file paths for the
             outputs.
         toolchains: The struct containing the Swift and C++ toolchain providers,
             as returned by `swift_common.find_all_toolchains()`.
-        toolchain_type: A toolchain type of the `swift_toolchain` which is used for
-            the proper selection of the execution platform inside `run_toolchain_action`.
-        swift_infos: A list of `SwiftInfo` providers representing dependencies
-            required to compile this module.
+        toolchain_type: A toolchain type of the `swift_toolchain` which is used
+            for the proper selection of the execution platform inside
+            `run_toolchain_action`.
 
     Returns:
-        A struct containing the precompiled module and optional indexstore directory,
-        or `None` if the toolchain or target does not support precompiled modules.
+        A struct containing the following fields:
+
+        *   `clang_module`: A structure (as returned by
+            `create_clang_module_inputs`) containing the headers, module map,
+            and precompiled module. This can be used if you need to construct a
+            `SwiftInfo` provider for a pure C module (that is, if you are doing
+            something that `swift_clang_module_aspect` cannot handle on its own)
+            or it can be passing into `swift_common.compile_module_interface`
+            when compiling a textual interface that has an underlying C module.
+        *   `indexstore_directory`: The indexstore directory for the precompiled
+            module, if any.
+        *   `pcm_file`: The precompiled module file. This field is deprecated;
+            clients should retrieve it from the `clang_module` field instead.
     """
     return _precompile_clang_module(
         actions = actions,
@@ -1341,12 +1353,24 @@ def _precompile_clang_module(
             outputs.
         toolchains: The struct containing the Swift and C++ toolchain providers,
             as returned by `swift_common.find_all_toolchains()`.
-        toolchain_type: A toolchain type of the `swift_toolchain` which is used for
-            the proper selection of the execution platform inside `run_toolchain_action`.
+        toolchain_type: A toolchain type of the `swift_toolchain` which is used
+            for the proper selection of the execution platform inside
+            `run_toolchain_action`.
 
     Returns:
-        A struct containing the precompiled module and optional indexstore directory,
-        or `None` if the toolchain or target does not support precompiled modules.
+        A struct containing the following fields:
+
+        *   `clang_module`: A structure (as returned by
+            `create_clang_module_inputs`) containing the headers, module map,
+            and precompiled module. This can be used if you need to construct a
+            `SwiftInfo` provider for a pure C module (that is, if you are doing
+            something that `swift_clang_module_aspect` cannot handle on its own)
+            or it can be passing into `swift_common.compile_module_interface`
+            when compiling a textual interface that has an underlying C module.
+        *   `indexstore_directory`: The indexstore directory for the precompiled
+            module, if any.
+        *   `pcm_file`: The precompiled module file. This field is deprecated;
+            clients should retrieve it from the `clang_module` field instead.
     """
 
     # Exit early if the toolchain does not support precompiled modules or if the
@@ -1410,12 +1434,16 @@ def _precompile_clang_module(
         indexstore_directory = None
         index_unit_output_path = None
 
-    prerequisites = struct(
-        bin_dir = feature_configuration._bin_dir,
-        cc_compilation_context = compilation_context_for_explicit_module_compilation(
+    compilation_context_for_compilation = (
+        compilation_context_for_explicit_module_compilation(
             compilation_contexts = [cc_compilation_context],
             swift_infos = swift_infos,
-        ),
+        )
+    )
+
+    prerequisites = struct(
+        bin_dir = feature_configuration._bin_dir,
+        cc_compilation_context = compilation_context_for_compilation,
         genfiles_dir = feature_configuration._genfiles_dir,
         indexstore_directory = indexstore_directory,
         index_unit_output_path = index_unit_output_path,
@@ -1441,7 +1469,13 @@ def _precompile_clang_module(
     )
 
     return struct(
+        clang_module = create_clang_module_inputs(
+            compilation_context = compilation_context_for_compilation,
+            module_map = module_map_file,
+            precompiled_module = precompiled_module,
+        ),
         indexstore_directory = indexstore_directory,
+        # TODO: b/401511920 - Update clients and remove this field.
         pcm_file = precompiled_module,
     )
 
