@@ -89,6 +89,8 @@ def extract_symbol_graph(
         swift_module = module.swift
         if swift_module:
             transitive_swiftmodules.append(swift_module.swiftmodule)
+            if getattr(swift_module, "swiftdoc", None):
+                transitive_swiftmodules.append(swift_module.swiftdoc)
 
     prerequisites = struct(
         bin_dir = feature_configuration._bin_dir,
