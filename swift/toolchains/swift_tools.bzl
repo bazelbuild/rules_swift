@@ -23,7 +23,7 @@ def _swift_tools_impl(ctx):
             swift_driver = ctx.file.swift_driver,
             swift_autolink_extract = ctx.file.swift_autolink_extract,
             swift_symbolgraph_extract = ctx.file.swift_symbolgraph_extract,
-            additional_linker_inputs = depset(ctx.files.additional_linker_inputs),
+            additional_inputs = ctx.files.additional_inputs,
         ),
     ]
 
@@ -41,7 +41,7 @@ Example:
         swift_driver = "//path/to:swift-driver",
         swift_autolink_extract = "//path/to:swift-autolink-extract",
         swift_symbolgraph_extract = "//path/to:swift-symbolgraph-extract",
-        additional_linker_inputs = glob("path/to/runtime/**"),
+        additional_inputs = glob("path/to/runtime/**"),
     )
 """,
     implementation = _swift_tools_impl,
@@ -61,9 +61,9 @@ Example:
             doc = "Label of the swift-symbolgraph-extract executable.",
             mandatory = True,
         ),
-        "additional_linker_inputs": attr.label_list(
+        "additional_inputs": attr.label_list(
             allow_files = True,
-            doc = "List of labels to include in the input-tree for swift link actions.",
+            doc = "List of labels to include in the input-tree when invoking these tools.",
             mandatory = True,
         ),
     },

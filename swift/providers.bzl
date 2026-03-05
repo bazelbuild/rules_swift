@@ -509,8 +509,8 @@ import statements in Swift code.
 modules. This tool generates structured data about APIs, which can be used
 for documentation generation and other tooling purposes.
 """,
-        "additional_linker_inputs": """\
-`List` of `File`s. Additional files to add to swift linker actions.
+        "additional_inputs": """\
+`List` of `File`s. Additional files to add to the action input root when calling these tools.
 """,
     },
 )

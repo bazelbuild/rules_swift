@@ -124,7 +124,12 @@ swift_tools(
     swift_driver = "usr/bin/swiftc",
     swift_autolink_extract = "usr/bin/swift-autolink-extract",
     swift_symbolgraph_extract = "usr/bin/swift-symbolgraph-extract",
-    additional_linker_inputs = glob(["usr/lib/swift/**"]),
+    additional_inputs = glob([
+        "usr/lib/swift/**",
+    ]) + [
+        "usr/bin/swift",
+        "usr/bin/swift-frontend",
+    ],
 )
 
 swift_toolchain(
@@ -141,6 +146,7 @@ swift_toolchain(
         "-mergeable-symbols",
     ],
     features = [
+        "swift._supports_upcoming_features",
         "swift.enable_embedded",
         "swift.no_embed_debug_module",
         "swift.use_autolink_extract",
@@ -158,6 +164,7 @@ swift_toolchain(
         "@platforms//cpu:x86_64": "x86_64",
     }),
     features = [
+        "swift._supports_upcoming_features",
         "swift.no_embed_debug_module",
         "swift.use_autolink_extract",
         "-swift.file_prefix_map",
