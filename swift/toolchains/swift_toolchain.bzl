@@ -360,7 +360,7 @@ def _swift_unix_linkopts_cc_info(
         os,
         toolchain_label,
         toolchain_root,
-        additional_linker_inputs):
+        additional_inputs):
     """Returns a `CcInfo` containing flags that should be passed to the linker.
 
     The provider returned by this function will be used as an implicit
@@ -374,7 +374,7 @@ def _swift_unix_linkopts_cc_info(
         toolchain_label: The label of the Swift toolchain that will act as the
             owner of the linker input propagating the flags.
         toolchain_root: The toolchain's root directory.
-        additional_linker_inputs: depset of File objects to add to link actions.
+        additional_inputs: depset of File objects to add to link actions.
 
     Returns:
         A `CcInfo` provider that will provide linker flags to binaries that
@@ -410,7 +410,7 @@ def _swift_unix_linkopts_cc_info(
                 cc_common.create_linker_input(
                     owner = toolchain_label,
                     user_link_flags = depset(linkopts),
-                    additional_inputs = additional_linker_inputs,
+                    additional_inputs = depset(additional_inputs),
                 ),
             ]),
         ),
@@ -477,7 +477,7 @@ def _swift_toolchain_impl(ctx):
             ctx.attr.os,
             ctx.label,
             toolchain_root,
-            ctx.attr.swift_tools[SwiftToolsInfo].additional_linker_inputs if ctx.attr.swift_tools else depset(),
+            ctx.attr.swift_tools[SwiftToolsInfo].additional_inputs if ctx.attr.swift_tools else [],
         )
 
     # TODO: Remove once we drop bazel 7.x support
@@ -516,6 +516,10 @@ def _swift_toolchain_impl(ctx):
     # workspace.
     swift_executable = get_swift_executable_for_toolchain(ctx)
 
+    additional_tools = [ctx.file.version_file]
+    if ctx.attr.swift_tools:
+        additional_tools += ctx.attr.swift_tools[SwiftToolsInfo].additional_inputs
+
     all_tool_configs = _all_tool_configs(
         env = ctx.attr.env,
         swift_executable = swift_executable if not ctx.attr.swift_tools else None,
@@ -523,14 +527,14 @@ def _swift_toolchain_impl(ctx):
         toolchain_root = toolchain_root,
         use_autolink_extract = SWIFT_FEATURE_USE_AUTOLINK_EXTRACT in ctx.features,
         use_module_wrap = SWIFT_FEATURE_USE_MODULE_WRAP in ctx.features,
-        additional_tools = [ctx.file.version_file],
+        additional_tools = additional_tools,
         tool_executable_suffix = ctx.attr.tool_executable_suffix,
     )
     all_action_configs = _all_action_configs(
         os = ctx.attr.os,
         arch = ctx.attr.arch,
         target_triple = target_triple,
-        sdkroot = ctx.attr.sdkroot,
+        sdkroot = ctx.attr.sdkroot or cc_toolchain.sysroot,
         xctest_version = ctx.attr.xctest_version,
         additional_swiftc_copts = ctx.attr.copts + swiftcopts,
     )
