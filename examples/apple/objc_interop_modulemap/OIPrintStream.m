@@ -25,6 +25,9 @@
   return self;
 }
 
+- (void)print:(nonnull id)message {
+}
+
 - (void)printString:(nonnull NSString *)message {
   NSData *data = [message dataUsingEncoding:NSUTF8StringEncoding];
   [_fileHandle writeData:data];
