@@ -45,8 +45,8 @@ load(
 # buildifier: disable=bzl-visibility
 load(
     "//swift/internal:toolchain_utils.bzl",
-    "get_swift_toolchain",
-    "use_swift_toolchain",
+    "find_all_toolchains",
+    "use_all_toolchains",
 )
 
 # buildifier: disable=bzl-visibility
@@ -83,10 +83,12 @@ def _mixed_language_library_impl(ctx):
     swift_target = ctx.attr.swift_target
     swift_info = swift_target[SwiftInfo]
 
+    toolchains = find_all_toolchains(ctx)
+
     feature_configuration = configure_features(
         ctx = ctx,
         requested_features = ctx.features,
-        swift_toolchain = get_swift_toolchain(ctx),
+        toolchains = toolchains,
         unsupported_features = ctx.disabled_features,
     )
 
@@ -191,11 +193,6 @@ def _mixed_language_library_impl(ctx):
                     clang_target[DefaultInfo].files,
                 ],
             ),
-            runfiles = ctx.runfiles(
-                collect_data = True,
-                collect_default = True,
-                files = ctx.files.data,
-            ),
         ),
         cc_info,
         coverage_common.instrumented_files_info(
@@ -214,16 +211,6 @@ The non-Swift portion of the mixed language module.
 """,
                 mandatory = True,
                 providers = [CcInfo],
-            ),
-            "data": attr.label_list(
-                allow_files = True,
-                doc = """\
-The list of files needed by this target at runtime.
-
-Files and targets named in the `data` attribute will appear in the `*.runfiles`
-area of this target, if it has one. This may include data files needed by a
-binary or library, or other programs needed by it.
-""",
             ),
             "deps": swift_deps_attr(
                 aspects = [swift_clang_module_aspect],
@@ -262,5 +249,5 @@ Assembles a mixed language library from a clang and swift library target pair.
 """,
     fragments = ["cpp"],
     implementation = _mixed_language_library_impl,
-    toolchains = use_swift_toolchain(),
+    toolchains = use_all_toolchains(),
 )

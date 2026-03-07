@@ -46,6 +46,7 @@ load(
     "SWIFT_ACTION_PRECOMPILE_C_MODULE",
     "SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT",
     "SWIFT_ACTION_SYNTHESIZE_INTERFACE",
+    "all_compile_action_names",
 )
 load("//swift/internal:attrs.bzl", "swift_toolchain_driver_attrs")
 load("//swift/internal:developer_dirs.bzl", "swift_developer_lib_dir")
@@ -273,9 +274,12 @@ def _swift_linkopts_cc_info(
         target_triple = target_triple,
         xcode_config = xcode_config,
     )
+    developer_dir_rpath_roots = _DEVELOPER_DIR_SYMLINKS + [
+        "__BAZEL_XCODE_DEVELOPER_DIR__",
+    ]
     rpaths = ["/usr/lib/swift"] + [
         paths.join(developer_dir_symlink, compatibility_dir)
-        for developer_dir_symlink in _DEVELOPER_DIR_SYMLINKS
+        for developer_dir_symlink in developer_dir_rpath_roots
         for compatibility_dir in swift_compatibility_lib_dirs
     ]
     linkopts += [
@@ -339,7 +343,10 @@ def _test_linking_context(
     # We use these as the rpaths for linking tests so that the required
     # libraries are found if Xcode is installed in a different location on the
     # machine that runs the tests than the machine used to link them.
-    for developer_dir in _DEVELOPER_DIR_SYMLINKS:
+    developer_dir_rpath_roots = _DEVELOPER_DIR_SYMLINKS + [
+        "__BAZEL_XCODE_DEVELOPER_DIR__",
+    ]
+    for developer_dir in developer_dir_rpath_roots:
         platform_developer_framework_dir_symlink = paths.join(
             developer_dir,
             "Platforms",
@@ -450,9 +457,9 @@ def _all_action_configs(
     action_configs.extend([
         # Xcode path remapping
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
-                SWIFT_ACTION_DERIVE_FILES,
+            actions = all_compile_action_names() + [
+                SWIFT_ACTION_PRECOMPILE_C_MODULE,
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
             ],
             configurators = [
                 add_arg(
@@ -465,8 +472,8 @@ def _all_action_configs(
             ],
         ),
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
+                SWIFT_ACTION_PRECOMPILE_C_MODULE,
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_DERIVE_FILES,
             ],
@@ -485,9 +492,9 @@ def _all_action_configs(
             ],
         ),
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
-                SWIFT_ACTION_DERIVE_FILES,
+            actions = all_compile_action_names() + [
+                SWIFT_ACTION_PRECOMPILE_C_MODULE,
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
             ],
             configurators = [
                 add_arg(
@@ -496,10 +503,8 @@ def _all_action_configs(
                 ),
             ],
             features = [
-                [
-                    SWIFT_FEATURE_REMAP_XCODE_PATH,
-                    SWIFT_FEATURE_FILE_PREFIX_MAP,
-                ],
+                SWIFT_FEATURE_FILE_PREFIX_MAP,
+                SWIFT_FEATURE_REMAP_XCODE_PATH,
             ],
         ),
     ])

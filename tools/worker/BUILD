@@ -13,8 +13,7 @@ cc_library(
     hdrs = ["compile_with_worker.h"],
     copts = select({
         "//tools:clang-cl": [
-            "-Xclang",
-            "-fno-split-cold-code",
+            "-Xclang=-fno-split-cold-code",
             "/std:c++17",
         ],
         "//tools:msvc": [
@@ -37,8 +36,7 @@ cc_library(
     hdrs = ["compile_without_worker.h"],
     copts = select({
         "//tools:clang-cl": [
-            "-Xclang",
-            "-fno-split-cold-code",
+            "-Xclang=-fno-split-cold-code",
             "/std:c++17",
         ],
         "//tools:msvc": [
@@ -63,8 +61,7 @@ cc_library(
     hdrs = ["swift_runner.h"],
     copts = select({
         "//tools:clang-cl": [
-            "-Xclang",
-            "-fno-split-cold-code",
+            "-Xclang=-fno-split-cold-code",
             "/std:c++17",
         ],
         "//tools:msvc": [
@@ -95,8 +92,7 @@ cc_library(
     hdrs = ["worker_protocol.h"],
     copts = select({
         "//tools:clang-cl": [
-            "-Xclang",
-            "-fno-split-cold-code",
+            "-Xclang=-fno-split-cold-code",
             "/std:c++17",
         ],
         "//tools:msvc": [

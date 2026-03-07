@@ -92,15 +92,6 @@ write_file(
     ],
 )
 
-write_file(
-    name = "setup_header",
-    out = "setup_header.vm",
-    content = [
-        "<!-- Generated with Stardoc, Do Not Edit! -->",
-        "# Workspace Setup",
-    ],
-)
-
 [
     stardoc(
         name = file + "_doc",
@@ -116,14 +107,6 @@ write_file(
     ] in _DOC_SRCS.items()
 ]
 
-stardoc(
-    name = "setup_doc",
-    out = "setup.md_",
-    header_template = "setup_header.vm",
-    input = "//swift:repositories.bzl",
-    deps = ["//swift:repositories"],
-)
-
 # To make these tests pass, run
 # bazel run //doc:update
 [
@@ -132,7 +115,7 @@ stardoc(
         file1 = file + ".md_",
         file2 = file + ".md",
     )
-    for file in _DOC_SRCS.keys() + ["setup"]
+    for file in _DOC_SRCS.keys()
 ]
 
 write_file(
@@ -145,14 +128,14 @@ write_file(
         "cp -fv bazel-bin/doc/{0}.md_ doc/{0}.md".format(
             file,
         )
-        for file in _DOC_SRCS.keys() + ["setup"]
+        for file in _DOC_SRCS.keys()
     ],
 )
 
 sh_binary(
     name = "update",
     srcs = ["update.sh"],
-    data = [file + ".md_" for file in _DOC_SRCS.keys() + ["setup"]],
+    data = [file + ".md_" for file in _DOC_SRCS.keys()],
 )
 
 gazelle(

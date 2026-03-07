@@ -19,15 +19,6 @@ bzl_library(
 )
 
 bzl_library(
-    name = "extras",
-    srcs = ["extras.bzl"],
-    deps = [
-        "@bazel_features//:deps",
-        "@build_bazel_apple_support//lib:repositories",
-    ],
-)
-
-bzl_library(
     name = "repositories",
     srcs = ["repositories.bzl"],
     deps = [
@@ -66,7 +57,6 @@ bzl_library(
         "//swift/internal:providers",
         "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
-        "@bazel_skylib//lib:dicts",
         "@bazel_skylib//lib:paths",
         "@rules_cc//cc/common",
     ],

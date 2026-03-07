@@ -65,6 +65,7 @@ load(
 load(
     ":features.bzl",
     "are_all_features_enabled",
+    "gather_toolchains",
     "get_cc_feature_configuration",
     "is_feature_enabled",
     "upcoming_and_experimental_features",
@@ -148,8 +149,9 @@ def compile_module_interface(
         module_name,
         swiftinterface_file,
         swift_infos,
-        swift_toolchain,
+        swift_toolchain = None,
         target_name,
+        toolchains = None,
         toolchain_type = SWIFT_TOOLCHAIN_TYPE):
     """Compiles a Swift module interface.
 
@@ -178,6 +180,8 @@ def compile_module_interface(
         target_name: The name of the target for which the code is being
             compiled, which is used to determine unique file paths for the
             outputs.
+        toolchains: The struct containing the Swift and C++ toolchain providers,
+            as returned by `swift_common.find_all_toolchains()`.
         toolchain_type: The toolchain type of the `swift_toolchain` which is
             used for the proper selection of the execution platform inside
             `run_toolchain_action`.
@@ -190,11 +194,16 @@ def compile_module_interface(
         `CcCompilationContext` inside the Clang module substructure should be
         propagated by the `CcInfo` provider of the calling rule.
     """
+    toolchains = gather_toolchains(
+        swift_toolchain = swift_toolchain,
+        toolchains = toolchains,
+    )
+
     swiftmodule_file = actions.declare_file("{}.swiftmodule".format(module_name))
 
     implicit_swift_infos, implicit_cc_infos = get_swift_implicit_deps(
         feature_configuration = feature_configuration,
-        swift_toolchain = swift_toolchain,
+        swift_toolchain = toolchains.swift,
     )
     merged_compilation_context = merge_compilation_contexts(
         transitive_compilation_contexts = compilation_contexts + [
@@ -289,7 +298,7 @@ def compile_module_interface(
         outputs = [swiftmodule_file],
         prerequisites = prerequisites,
         progress_message = "Compiling Swift module {} from textual interface".format(module_name),
-        swift_toolchain = swift_toolchain,
+        swift_toolchain = toolchains.swift,
         toolchain_type = toolchain_type,
     )
 
@@ -333,8 +342,9 @@ def compile(
         private_swift_infos = [],
         srcs,
         swift_infos,
-        swift_toolchain,
+        swift_toolchain = None,
         target_name,
+        toolchains = None,
         toolchain_type = SWIFT_TOOLCHAIN_TYPE,
         workspace_name):
     """Compiles a Swift module.
@@ -398,6 +408,8 @@ def compile(
         target_name: The name of the target for which the code is being
             compiled, which is used to determine unique file paths for the
             outputs.
+        toolchains: The struct containing the Swift and C++ toolchain providers,
+            as returned by `swift_common.find_all_toolchains()`.
         toolchain_type: The toolchain type of the `swift_toolchain` which is
             used for the proper selection of the execution platform inside
             `run_toolchain_action`.
@@ -447,9 +459,13 @@ def compile(
                 (only in debug/fastbuild and only when the toolchain supports
                 macros).
     """
+    toolchains = gather_toolchains(
+        swift_toolchain = swift_toolchain,
+        toolchains = toolchains,
+    )
 
     # Apply the module alias for the module being compiled, if present.
-    module_alias = swift_toolchain.module_aliases.get(module_name)
+    module_alias = toolchains.swift.module_aliases.get(module_name)
     if module_alias:
         original_module_name = module_name
         module_name = module_alias
@@ -465,7 +481,7 @@ def compile(
     # module.
     generated_module_deps_swift_infos = (
         swift_infos +
-        swift_toolchain.generated_header_module_implicit_deps_providers.swift_infos
+        toolchains.swift.generated_header_module_implicit_deps_providers.swift_infos
     )
 
     # These are the `SwiftInfo` providers that will be merged with the compiled
@@ -477,13 +493,13 @@ def compile(
     # toolchain's implicit dependencies here as well. Do this and make sure it
     # doesn't break anything unexpected.
     swift_infos_to_propagate = swift_infos + _cross_imported_swift_infos(
-        swift_toolchain = swift_toolchain,
+        swift_toolchain = toolchains.swift,
         user_swift_infos = swift_infos + private_swift_infos,
     )
 
     implicit_swift_infos, implicit_cc_infos = get_swift_implicit_deps(
         feature_configuration = feature_configuration,
-        swift_toolchain = swift_toolchain,
+        swift_toolchain = toolchains.swift,
     )
     all_swift_infos = (
         swift_infos_to_propagate + private_swift_infos + implicit_swift_infos
@@ -500,7 +516,7 @@ def compile(
     for info in extra_swift_infos:
         transitive_modules.extend(info.transitive_modules.to_list())
 
-    const_gather_protocols_file = swift_toolchain.const_protocols_to_gather
+    const_gather_protocols_file = toolchains.swift.const_protocols_to_gather
 
     compile_outputs = _declare_compile_outputs(
         srcs = srcs,
@@ -659,7 +675,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         const_gather_protocols_file = const_gather_protocols_file,
         cc_linking_context = merged_cc_info.linking_context,
         defines = sets.to_list(defines_set),
-        developer_dirs = swift_toolchain.developer_dirs,
+        developer_dirs = toolchains.swift.developer_dirs,
         experimental_features = experimental_features,
         explicit_swift_module_map_file = explicit_swift_module_map_file,
         genfiles_dir = feature_configuration._genfiles_dir,
@@ -691,7 +707,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
             outputs = all_derived_outputs,
             prerequisites = prerequisites,
             progress_message = "Generating derived files for Swift module %{label}",
-            swift_toolchain = swift_toolchain,
+            swift_toolchain = toolchains.swift,
             toolchain_type = toolchain_type,
         )
 
@@ -703,7 +719,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         outputs = all_compile_outputs,
         prerequisites = prerequisites,
         progress_message = "Compiling Swift module %{label}",
-        swift_toolchain = swift_toolchain,
+        swift_toolchain = toolchains.swift,
         toolchain_type = toolchain_type,
     )
 
@@ -721,7 +737,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         outputs = compile_outputs.ast_files,
         prerequisites = prerequisites,
         progress_message = "Dumping Swift AST for %{label}",
-        swift_toolchain = swift_toolchain,
+        swift_toolchain = toolchains.swift,
         toolchain_type = toolchain_type,
     )
 
@@ -754,7 +770,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
             module_map_file = compile_outputs.generated_module_map_file,
             module_name = module_name,
             swift_infos = generated_module_deps_swift_infos,
-            swift_toolchain = swift_toolchain,
+            swift_toolchain = toolchains.swift,
             target_name = target_name,
             toolchain_type = toolchain_type,
         )
@@ -795,8 +811,8 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
                 feature_configuration = feature_configuration,
                 includes = includes,
                 public_hdrs = public_hdrs,
-                swift_toolchain = swift_toolchain,
                 target_name = target_name,
+                toolchains = toolchains,
             ),
             module_map = compile_outputs.generated_module_map_file,
             precompiled_module = precompiled_module,
@@ -847,8 +863,9 @@ def precompile_clang_module(
         feature_configuration,
         module_map_file,
         module_name,
-        swift_toolchain,
+        swift_toolchain = None,
         target_name,
+        toolchains = None,
         toolchain_type,
         swift_infos = []):
     """Precompiles an explicit Clang module that is compatible with Swift.
@@ -873,6 +890,8 @@ def precompile_clang_module(
         module_name: The name of the top-level module in the module map that
             will be compiled.
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
+        toolchains: The struct containing the Swift and C++ toolchain providers,
+            as returned by `swift_common.find_all_toolchains()`.
         target_name: The name of the target for which the code is being
             compiled, which is used to determine unique file paths for the
             outputs.
@@ -895,6 +914,7 @@ def precompile_clang_module(
         swift_infos = swift_infos,
         swift_toolchain = swift_toolchain,
         target_name = target_name,
+        toolchains = toolchains,
         toolchain_type = toolchain_type,
     )
 
@@ -908,8 +928,9 @@ def _precompile_clang_module(
         module_map_file,
         module_name,
         swift_infos = [],
-        swift_toolchain,
+        swift_toolchain = None,
         target_name,
+        toolchains = None,
         toolchain_type):
     """Precompiles an explicit Clang module that is compatible with Swift.
 
@@ -940,19 +961,25 @@ def _precompile_clang_module(
         target_name: The name of the target for which the code is being
             compiled, which is used to determine unique file paths for the
             outputs.
+        toolchains: The struct containing the Swift and C++ toolchain providers,
+            as returned by `swift_common.find_all_toolchains()`.
         toolchain_type: The toolchain type of the Swift toolchain.
 
     Returns:
         A struct containing the precompiled module and optional indexstore directory,
         or `None` if the toolchain or target does not support precompiled modules.
     """
+    toolchains = gather_toolchains(
+        swift_toolchain = swift_toolchain,
+        toolchains = toolchains,
+    )
 
     # Exit early if the toolchain does not support precompiled modules or if the
     # feature configuration for the target being built does not want a module to
     # be emitted.
     if not is_action_enabled(
         action_name = SWIFT_ACTION_PRECOMPILE_C_MODULE,
-        swift_toolchain = swift_toolchain,
+        swift_toolchain = toolchains.swift,
     ):
         return None
     if not is_feature_enabled(
@@ -968,7 +995,7 @@ def _precompile_clang_module(
     if not is_swift_generated_header:
         implicit_swift_infos, implicit_cc_infos = get_clang_implicit_deps(
             feature_configuration = feature_configuration,
-            swift_toolchain = swift_toolchain,
+            swift_toolchain = toolchains.swift,
         )
         cc_compilation_context = merge_compilation_contexts(
             direct_compilation_contexts = [cc_compilation_context],
@@ -1036,7 +1063,7 @@ def _precompile_clang_module(
         outputs = outputs,
         prerequisites = prerequisites,
         progress_message = "Precompiling C module %{label}",
-        swift_toolchain = swift_toolchain,
+        swift_toolchain = toolchains.swift,
         toolchain_type = toolchain_type,
     )
 
@@ -1053,8 +1080,8 @@ def _create_cc_compilation_context(
         feature_configuration,
         includes,
         public_hdrs,
-        swift_toolchain,
-        target_name):
+        target_name,
+        toolchains = None):
     """Creates a `CcCompilationContext` to propagate for a Swift module.
 
     The returned compilation context contains the generated Objective-C header
@@ -1075,10 +1102,11 @@ def _create_cc_compilation_context(
             context.
         public_hdrs: Public headers that should be propagated by the new
             compilation context (for example, the module's generated header).
-        swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
         target_name: The name of the target for which the code is being
             compiled, which is used to determine unique file paths for the
             outputs.
+        toolchains: The struct containing the Swift and C++ toolchain providers,
+            as returned by `swift_common.find_all_toolchains()`.
 
     Returns:
         The `CcCompilationContext` that should be propagated by the calling
@@ -1096,7 +1124,7 @@ def _create_cc_compilation_context(
     if public_hdrs:
         compilation_context, _ = cc_common.compile(
             actions = actions,
-            cc_toolchain = swift_toolchain.cc_toolchain_info,
+            cc_toolchain = toolchains.cc,
             compilation_contexts = compilation_contexts,
             defines = defines,
             feature_configuration = get_cc_feature_configuration(

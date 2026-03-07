@@ -32,9 +32,14 @@ load(
     "//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
+    "SWIFT_FEATURE_ENABLE_EMBEDDED",
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
 )
-load("//swift/internal:features.bzl", "configure_features")
+load(
+    "//swift/internal:features.bzl",
+    "configure_features",
+    "is_feature_enabled",
+)
 load(
     "//swift/internal:linking.bzl",
     "create_linking_context_from_compilation_outputs",
@@ -46,8 +51,8 @@ load(
 load("//swift/internal:providers.bzl", "SwiftCompilerPluginInfo")
 load(
     "//swift/internal:toolchain_utils.bzl",
-    "get_swift_toolchain",
-    "use_swift_toolchain",
+    "find_all_toolchains",
+    "use_all_toolchains",
 )
 load(
     "//swift/internal:utils.bzl",
@@ -148,11 +153,11 @@ def _swift_library_impl(ctx):
     if not module_name:
         module_name = derive_swift_module_name(ctx.label)
 
-    swift_toolchain = get_swift_toolchain(ctx)
+    toolchains = find_all_toolchains(ctx)
     feature_configuration = configure_features(
         ctx = ctx,
         requested_features = ctx.features + extra_features,
-        swift_toolchain = swift_toolchain,
+        toolchains = toolchains,
         unsupported_features = ctx.disabled_features,
     )
 
@@ -191,7 +196,7 @@ def _swift_library_impl(ctx):
         private_swift_infos = private_swift_infos,
         srcs = srcs,
         swift_infos = swift_infos,
-        swift_toolchain = swift_toolchain,
+        toolchains = toolchains,
         target_name = ctx.label.name,
         workspace_name = ctx.workspace_name,
     )
@@ -200,11 +205,21 @@ def _swift_library_impl(ctx):
     compilation_outputs = compile_result.compilation_outputs
     supplemental_outputs = compile_result.supplemental_outputs
 
+    # Override alwayslink to False if embedded Swift is enabled, as the
+    # features that require -force_load (like reflection) are not available
+    # in embedded mode.
+    alwayslink = ctx.attr.alwayslink
+    if alwayslink and is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_ENABLE_EMBEDDED,
+    ):
+        alwayslink = False
+
     linking_context, linking_output = (
         create_linking_context_from_compilation_outputs(
             actions = ctx.actions,
             additional_inputs = additional_inputs,
-            alwayslink = ctx.attr.alwayslink,
+            alwayslink = alwayslink,
             compilation_outputs = compilation_outputs,
             feature_configuration = feature_configuration,
             include_dev_srch_paths = include_dev_srch_paths,
@@ -219,7 +234,7 @@ def _swift_library_impl(ctx):
                 if SwiftOverlayInfo in dep
             ],
             module_context = module_context,
-            swift_toolchain = swift_toolchain,
+            toolchains = toolchains,
             user_link_flags = linkopts,
         )
     )
@@ -290,9 +305,21 @@ dependent for linking, but artifacts/flags required for compilation (such as
     doc = """\
 Compiles and links Swift code into a static library and Swift module.
 """,
+    exec_groups = {
+        # The `plugins` attribute associates its `exec` transition with this
+        # execution group. Even though the group is otherwise not used in this
+        # rule, we must resolve the Swift toolchain in this execution group so
+        # that the execution platform of the plugins will have the same
+        # constraints as the execution platform as the other uses of the same
+        # toolchain, ensuring that they don't get built for mismatched
+        # platforms.
+        "swift_plugins": exec_group(
+            toolchains = use_all_toolchains(),
+        ),
+    },
     fragments = [
         "cpp",
     ],
     implementation = _swift_library_impl,
-    toolchains = use_swift_toolchain(),
+    toolchains = use_all_toolchains(),
 )

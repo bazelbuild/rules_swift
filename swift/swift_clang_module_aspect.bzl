@@ -21,6 +21,7 @@ load("@rules_cc//cc/common:objc_info.bzl", "ObjcInfo")
 load("//swift/internal:compiling.bzl", "compile", "precompile_clang_module")
 load(
     "//swift/internal:feature_names.bzl",
+    "SWIFT_FEATURE_ENABLE_EMBEDDED",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS",
 )
@@ -46,8 +47,8 @@ load(
 load(
     "//swift/internal:toolchain_utils.bzl",
     "SWIFT_TOOLCHAIN_TYPE",
-    "get_swift_toolchain",
-    "use_swift_toolchain",
+    "find_all_toolchains",
+    "use_all_toolchains",
 )
 load(
     "//swift/internal:utils.bzl",
@@ -301,7 +302,7 @@ def _handle_module(
         module_name,
         direct_swift_infos,
         swift_infos,
-        swift_toolchain,
+        toolchains,
         toolchain_type,
         target):
     """Processes a C/Objective-C target that is a dependency of a Swift target.
@@ -322,7 +323,8 @@ def _handle_module(
         swift_infos: The `SwiftInfo` providers of the current target's
             dependencies, which should be merged into the `SwiftInfo` provider
             created and returned for this target.
-        swift_toolchain: The Swift toolchain being used to build this target.
+        toolchains: The struct containing the Swift and C++ toolchain providers,
+            as returned by `swift_common.find_all_toolchains()`.
         target: The C++ target to which the aspect is currently being applied.
         toolchain_type: The toolchain type of the Swift toolchain.
 
@@ -332,7 +334,8 @@ def _handle_module(
     attr = aspect_ctx.rule.attr
 
     all_swift_infos = (
-        direct_swift_infos + swift_infos + swift_toolchain.clang_implicit_deps_providers.swift_infos
+        direct_swift_infos + swift_infos +
+        toolchains.swift.clang_implicit_deps_providers.swift_infos
     )
 
     if CcInfo in target:
@@ -417,7 +420,7 @@ def _handle_module(
         module_map_file = module_map_file,
         module_name = module_name,
         swift_infos = swift_infos,
-        swift_toolchain = swift_toolchain,
+        toolchains = toolchains,
         target_name = target.label.name,
         toolchain_type = toolchain_type,
     )
@@ -461,7 +464,7 @@ def _handle_module(
             module_name = module_name,
             overlay_info = overlay_info,
             swift_infos = swift_infos_for_overlay,
-            swift_toolchain = swift_toolchain,
+            toolchains = toolchains,
             toolchain_type = toolchain_type,
         )
         overlay_swift_info = overlay_compile_result.swift_info
@@ -503,7 +506,7 @@ def _compile_swift_overlay(
         module_name,
         overlay_info,
         swift_infos,
-        swift_toolchain,
+        toolchains,
         toolchain_type):
     """Compiles Swift code to be used as an overlay for a C/Objective-C module.
 
@@ -518,7 +521,8 @@ def _compile_swift_overlay(
         swift_infos: A list of `SwiftInfo` providers that represent the
             dependencies of both the original C/Objective-C target and the
             Swift overlay.
-        swift_toolchain: The Swift toolchain to use when compiling.
+        toolchains: The struct containing the Swift and C++ toolchain providers,
+            as returned by `swift_common.find_all_toolchains()`.
         toolchain_type: The toolchain type of the Swift toolchain.
 
     Returns:
@@ -531,7 +535,7 @@ def _compile_swift_overlay(
     feature_configuration = configure_features(
         ctx = aspect_ctx,
         requested_features = overlay_info.enabled_features,
-        swift_toolchain = swift_toolchain,
+        toolchains = toolchains,
         unsupported_features = overlay_info.disabled_features,
     )
     compile_result = compile(
@@ -548,16 +552,27 @@ def _compile_swift_overlay(
         private_cc_infos = overlay_info.private_deps.cc_infos,
         srcs = overlay_info.srcs,
         swift_infos = swift_infos,
-        swift_toolchain = swift_toolchain,
+        toolchains = toolchains,
         target_name = overlay_info.label.name,
         toolchain_type = toolchain_type,
         workspace_name = aspect_ctx.workspace_name,
     )
+
+    # Override alwayslink to False if embedded Swift is enabled, as the
+    # features that require -force_load (like reflection) are not available
+    # in embedded mode.
+    alwayslink = overlay_info.alwayslink
+    if alwayslink and is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_ENABLE_EMBEDDED,
+    ):
+        alwayslink = False
+
     linking_context, _ = (
         create_linking_context_from_compilation_outputs(
             actions = aspect_ctx.actions,
             additional_inputs = overlay_info.additional_inputs,
-            alwayslink = overlay_info.alwayslink,
+            alwayslink = alwayslink,
             compilation_outputs = compile_result.compilation_outputs,
             feature_configuration = feature_configuration,
             label = overlay_info.label,
@@ -575,7 +590,7 @@ def _compile_swift_overlay(
                 )
             ],
             module_context = compile_result.module_context,
-            swift_toolchain = swift_toolchain,
+            toolchains = toolchains,
             toolchain_type = toolchain_type,
             user_link_flags = overlay_info.linkopts,
         )
@@ -748,14 +763,14 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx, toolchain_type):
         module_map_file = None
         module_name = None
 
-    swift_toolchain = get_swift_toolchain(
+    toolchains = find_all_toolchains(
         aspect_ctx,
         toolchain_type = toolchain_type,
     )
     feature_configuration = configure_features(
         ctx = aspect_ctx,
         requested_features = requested_features,
-        swift_toolchain = swift_toolchain,
+        toolchains = toolchains,
         unsupported_features = unsupported_features,
     )
 
@@ -768,7 +783,7 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx, toolchain_type):
             module_name = module_name,
             direct_swift_infos = direct_swift_infos,
             swift_infos = swift_infos,
-            swift_toolchain = swift_toolchain,
+            toolchains = toolchains,
             toolchain_type = toolchain_type,
             target = target,
         )
@@ -848,7 +863,7 @@ it propagates for its targets.
             [ObjcInfo],
             [CcInfo],
         ],
-        toolchains = use_swift_toolchain(
+        toolchains = use_all_toolchains(
             toolchain_type = toolchain_type,
         ),
     )

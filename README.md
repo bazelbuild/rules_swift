@@ -62,8 +62,7 @@ also ensure that the Swift compiler is available on your system path.
 
 ### 2. Configure your workspace
 
-Copy the `WORKSPACE` snippet from [the releases
-page](https://github.com/bazelbuild/rules_swift/releases).
+Copy the `MODULE.bazel` snippet from [the releases page](https://github.com/bazelbuild/rules_swift/releases).
 
 ### 3. Additional configuration (Linux only)
 

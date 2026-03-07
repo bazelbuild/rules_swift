@@ -32,6 +32,10 @@ load(
     "SwiftOverlayCompileInfo",
 )
 load(
+    "//swift/internal:toolchain_utils.bzl",
+    "use_swift_toolchain",
+)
+load(
     "//swift/internal:utils.bzl",
     "get_providers",
     "include_developer_search_paths",
@@ -178,6 +182,18 @@ be referenced by the `aspect_hints` of a single `objc_library` or `cc_library`
 target. Referencing a `swift_overlay` from multiple targets' `aspect_hints` is
 almost always an anti-pattern.
 """,
+    exec_groups = {
+        # The `plugins` attribute associates its `exec` transition with this
+        # execution group. Even though the group is otherwise not used in this
+        # rule, we must resolve the Swift toolchain in this execution group so
+        # that the execution platform of the plugins will have the same
+        # constraints as the execution platform as the other uses of the same
+        # toolchain, ensuring that they don't get built for mismatched
+        # platforms.
+        "swift_plugins": exec_group(
+            toolchains = use_swift_toolchain(),
+        ),
+    },
     fragments = ["cpp"],
     implementation = _swift_overlay_impl,
 )
