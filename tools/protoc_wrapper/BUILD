@@ -2,30 +2,6 @@ load("@build_bazel_apple_support//rules:universal_binary.bzl", "universal_binary
 
 package(default_visibility = ["//visibility:public"])
 
-# protoc
-
-universal_binary(
-    name = "universal_protoc",
-    binary = "@com_google_protobuf//:protoc",
-    tags = ["manual"],
-    target_compatible_with = select({
-        "@platforms//os:windows": ["@platforms//:incompatible"],
-        "//conditions:default": [],
-    }),
-)
-
-alias(
-    name = "protoc",
-    actual = select({
-        "//swift:universal_tools_config": ":universal_protoc",
-        "//conditions:default": "@com_google_protobuf//:protoc",
-    }),
-    target_compatible_with = select({
-        "@platforms//os:windows": ["@platforms//:incompatible"],
-        "//conditions:default": [],
-    }),
-)
-
 # protoc-gen-grpc-swift
 
 universal_binary(

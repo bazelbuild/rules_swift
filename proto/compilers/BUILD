@@ -20,7 +20,6 @@ swift_proto_compiler(
     plugin_name = "swift",
     plugin_option_allowlist = PROTO_PLUGIN_OPTION_ALLOWLIST,
     plugin_options = PROTO_PLUGIN_OPTIONS,
-    protoc = "//tools/protoc_wrapper:protoc",
     suffixes = [".pb.swift"],
     visibility = ["//visibility:public"],
     deps = [

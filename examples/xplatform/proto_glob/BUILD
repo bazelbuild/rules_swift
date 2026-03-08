@@ -1,4 +1,4 @@
-load("@com_google_protobuf//bazel:proto_library.bzl", "proto_library")
+load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("//proto:swift_proto_library.bzl", "swift_proto_library")
 load("//swift:swift_binary.bzl", "swift_binary")
 
