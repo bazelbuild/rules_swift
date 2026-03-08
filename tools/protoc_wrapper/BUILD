@@ -6,7 +6,7 @@ package(default_visibility = ["//visibility:public"])
 
 universal_binary(
     name = "universal_protoc",
-    binary = "@com_google_protobuf//:protoc",
+    binary = "@protobuf//:protoc",
     tags = ["manual"],
     target_compatible_with = select({
         "@platforms//os:windows": ["@platforms//:incompatible"],
@@ -18,7 +18,7 @@ alias(
     name = "protoc",
     actual = select({
         "//swift:universal_tools_config": ":universal_protoc",
-        "//conditions:default": "@com_google_protobuf//:protoc",
+        "//conditions:default": "@protobuf//:protoc",
     }),
     target_compatible_with = select({
         "@platforms//os:windows": ["@platforms//:incompatible"],

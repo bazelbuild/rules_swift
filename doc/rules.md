@@ -778,7 +778,7 @@ swift_proto_library(<a href="#swift_proto_library-name">name</a>, <a href="#swif
 Generates a Swift static library from one or more targets producing `ProtoInfo`.
 
 ```python
-load("@com_google_protobuf//bazel:proto_library.bzl", "proto_library")
+load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("//proto:swift_proto_library.bzl", "swift_proto_library")
 
 proto_library(
@@ -796,7 +796,7 @@ If your protos depend on protos from other targets, add dependencies between the
 swift_proto_library targets which mirror the dependencies between the proto targets.
 
 ```python
-load("@com_google_protobuf//bazel:proto_library.bzl", "proto_library")
+load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("//proto:swift_proto_library.bzl", "swift_proto_library")
 
 proto_library(
@@ -1119,5 +1119,3 @@ Once that is the case, this macro will be deprecated.
 | <a id="mixed_language_library-weak_sdk_frameworks"></a>weak_sdk_frameworks |  A list of SDK frameworks to weakly link with. For instance, "MediaAccessibility". In difference to regularly linked SDK frameworks, symbols from weakly linked frameworks do not cause an error if they are not present at runtime.   |  `[]` |
 | <a id="mixed_language_library-deps"></a>deps |  A list of targets that are dependencies of the target being built.   |  `[]` |
 | <a id="mixed_language_library-kwargs"></a>kwargs |  Additional arguments to pass to the underlying clang and swift library targets.   |  none |
-
-
