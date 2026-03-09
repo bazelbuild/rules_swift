@@ -289,6 +289,7 @@ def compile_swift_protos_for_target(
         swift_infos = get_providers(compiler_deps, SwiftInfo),
         target_name = target_label.name,
         workspace_name = ctx.workspace_name,
+        minimum_os_version = ctx.attr.minimum_os_version,
     )
 
     module_context = compile_result.module_context
