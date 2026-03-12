@@ -212,7 +212,7 @@ def _all_action_configs(os, arch, target_triple, sdkroot, xctest_version, additi
         ),
     ]
     if sdkroot:
-        action_configs = [
+        action_configs.append(
             ActionConfigInfo(
                 actions = [
                     SWIFT_ACTION_COMPILE,
@@ -222,7 +222,7 @@ def _all_action_configs(os, arch, target_triple, sdkroot, xctest_version, additi
                 ],
                 configurators = [add_arg("-sdk", sdkroot)],
             ),
-        ]
+        )
 
         if os and xctest_version:
             action_configs.append(
