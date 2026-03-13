@@ -107,6 +107,7 @@ def extract_symbol_graph(
                 direct_swiftdocs.append(swift_module.swiftdoc)
 
     prerequisites = struct(
+        additional_inputs = toolchains.cc.all_files.to_list(),
         bin_dir = feature_configuration._bin_dir,
         cc_compilation_context = merged_compilation_context,
         developer_dirs = toolchains.swift.developer_dirs,
