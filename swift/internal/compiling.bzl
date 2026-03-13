@@ -665,7 +665,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         feature_configuration = feature_configuration,
     )
     prerequisites = struct(
-        additional_inputs = additional_inputs,
+        additional_inputs = additional_inputs + toolchains.cc.all_files.to_list(),
         always_include_headers = is_feature_enabled(
             feature_configuration = feature_configuration,
             feature_name = SWIFT_FEATURE_HEADERS_ALWAYS_ACTION_INPUTS,
