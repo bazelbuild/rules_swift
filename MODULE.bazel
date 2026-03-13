@@ -48,16 +48,7 @@ bazel_dep(name = "bazel_skylib_gazelle_plugin", version = "1.5.0", dev_dependenc
 bazel_dep(name = "gazelle", version = "0.46.0", dev_dependency = True, repo_name = "bazel_gazelle")
 bazel_dep(name = "rules_go", version = "0.59.0", dev_dependency = True)  # TODO: Remove when transitives update past this version
 bazel_dep(name = "stardoc", version = "0.8.0", dev_dependency = True, repo_name = "io_bazel_stardoc")
-
-http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-
-http_archive(
-    name = "SwiftSyntax",
-    dev_dependency = True,
-    sha256 = "527a5c6d19987acbb5019efa067b0fbd127e06187a0689c3f1098fd22c1a7d43",
-    strip_prefix = "swift-syntax-01fc3e3ed4d26121c06790abf8fe5ddaa22a4cc5",
-    url = "https://github.com/apple/swift-syntax/archive/01fc3e3ed4d26121c06790abf8fe5ddaa22a4cc5.tar.gz",
-)
+bazel_dep(name = "swift-syntax", version = "602.0.0.bcr.2", dev_dependency = True, repo_name = "SwiftSyntax")
 
 # TODO: In stardoc 0.7.1+, the `load` statements added to the docs are relative to the `alias` targets which is incorrect.
 # To keep the docs without confusing load statements we patch a partial revert of: https://github.com/bazelbuild/stardoc/pull/216
