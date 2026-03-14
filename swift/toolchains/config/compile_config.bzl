@@ -680,9 +680,7 @@ def compile_action_configs(
         # identical should still be safe, because we're only passing a value
         # here that is *effectively* the same as the default.
         ActionConfigInfo(
-            actions = all_compile_action_names() + [
-                SWIFT_ACTION_PRECOMPILE_C_MODULE,
-            ],
+            actions = [SWIFT_ACTION_PRECOMPILE_C_MODULE],
             configurators = [
                 add_arg("-Xcc", "-working-directory"),
                 add_arg("-Xcc", "."),
