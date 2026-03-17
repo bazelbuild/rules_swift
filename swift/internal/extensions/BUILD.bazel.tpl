@@ -173,6 +173,7 @@ swift_toolchain(
         "@platforms//os:linux": "linux",
         "@platforms//os:macos": "macos",
     }),
+    runtime = glob(["usr/lib/swift/**/*.so"]),
     swift_tools = "tools",
     version_file = ".swift-version",
 )
