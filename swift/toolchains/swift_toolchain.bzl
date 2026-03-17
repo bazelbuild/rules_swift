@@ -410,7 +410,7 @@ def _entry_point_linkopts_provider(*, entry_point_name):
 def _parse_target_system_name(*, arch, os, target_system_name):
     """Returns the target system name set by the CC toolchain or attempts to create one based on the OS and arch."""
 
-    if target_system_name != "local":
+    if target_system_name and target_system_name != "local":
         return target_system_name
 
     if os == "linux":
