@@ -441,6 +441,10 @@ Swift build rules, and they are also passed to the C++ APIs used when linking
         "root_dir": """\
 `String`. The workspace-relative root directory of the toolchain.
 """,
+        "runtime": """\
+`List` of `File`s. Files required at runtime by compiled executables. They will
+be added to the input root at execution time.
+""",
         "swift_worker": """\
 `File`. The executable representing the worker executable used to invoke the
 compiler and other Swift tools (for both incremental and non-incremental
