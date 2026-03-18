@@ -37,6 +37,7 @@ def supplemental_compilation_output_groups(
     """
     ast_files = []
     const_values_files = []
+    diagnostics_files = []
     indexstore_files = list(additional_indexstore_files)
     macro_expansions_files = []
 
@@ -45,6 +46,8 @@ def supplemental_compilation_output_groups(
             ast_files.extend(outputs.ast_files)
         if outputs.const_values_files:
             const_values_files.extend(outputs.const_values_files)
+        if hasattr(outputs, "diagnostics_files") and outputs.diagnostics_files:
+            diagnostics_files.extend(outputs.diagnostics_files)
         if outputs.indexstore_directory:
             indexstore_files.append(outputs.indexstore_directory)
         if outputs.macro_expansion_directory:
@@ -55,6 +58,8 @@ def supplemental_compilation_output_groups(
         output_groups["swift_ast_file"] = depset(ast_files)
     if const_values_files:
         output_groups["const_values"] = depset(const_values_files)
+    if diagnostics_files:
+        output_groups["swift_diagnostics"] = depset(diagnostics_files)
     if indexstore_files:
         output_groups["swift_index_store"] = depset(indexstore_files)
     if macro_expansions_files:
