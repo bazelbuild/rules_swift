@@ -18,6 +18,7 @@ load("@bazel_skylib//lib:paths.bzl", "paths")
 load(
     "@build_bazel_rules_swift//swift:module_name.bzl",
     "physical_swift_module_name",
+    "validate_swift_module_name",
 )
 load(
     "@build_bazel_rules_swift//swift:providers.bzl",
@@ -155,6 +156,7 @@ def compile_module_interface(
                 the indexstore output files created when the feature
                 `swift.index_while_building` is enabled.
     """
+    validate_swift_module_name(module_name)
     swiftmodule_file = actions.declare_file(
         "{}_outs/{}.swiftmodule".format(target_name, module_name),
     )
@@ -399,6 +401,7 @@ def compile(
                 macros).
     """
 
+    validate_swift_module_name(module_name)
     original_module_name = module_name
     module_alias = toolchains.swift.module_aliases.get(module_name)
     if module_alias:

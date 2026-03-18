@@ -65,6 +65,7 @@ load(
     ":module_name.bzl",
     "derive_swift_module_name",
     "physical_swift_module_name",
+    "validate_swift_module_name",
 )
 load(
     ":providers.bzl",
@@ -435,6 +436,7 @@ def _handle_module(
                 ]
             else:
                 return []
+    validate_swift_module_name(source_name)
 
     compilation_contexts_to_merge_for_compilation = [compilation_context]
 

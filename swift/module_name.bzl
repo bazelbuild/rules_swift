@@ -84,8 +84,8 @@ def derive_swift_module_name(
         if not package.startswith("//"):
             package = "//{}".format(package)
         if package.endswith("/{}".format(name)):
-            return package
-        return "{}:{}".format(package, name)
+            return "`{}`".format(package)
+        return "`{}:{}`".format(package, name)
 
     package_part = _module_name_safe(package.lstrip("//"))
     name_part = _module_name_safe(name)
@@ -135,6 +135,26 @@ def physical_swift_module_name(module_name):
         module_name = "_" + module_name
     return module_name
 
+def validate_swift_module_name(module_name):
+    """Validates whether the given name is safe to use as a Swift module name.
+
+    When the name is not safe to use, the action fails with an appropriate
+    error message. This should be used before creating a Swift module to
+    quickly fail due to an invalid user configuration. The name may be any
+    non-raw identifier or a properly escaped raw identifier.
+
+    Args:
+        module_name: The source name of the module.
+    """
+    if module_name.startswith("`") and module_name.endswith("`"):
+        return
+    if _is_valid_non_raw_identifier(module_name):
+        return
+    fail(("Swift module name ({}) is not valid without escaping as a raw " +
+          "identifier. Add backtick (`) escaping to the name.").format(
+        module_name,
+    ), stack_trace = False)
+
 def _is_valid_non_raw_identifier(str):
     """Returns whether the given string is a valid non-raw identifier.
 
@@ -146,7 +166,7 @@ def _is_valid_non_raw_identifier(str):
     if first != "_" and not first.isalpha():
         return False
     for ch in str.elems()[1:]:
-        if not ch.isalnum():
+        if not (ch.isalnum() or ch == "_"):
             return False
     return True
 

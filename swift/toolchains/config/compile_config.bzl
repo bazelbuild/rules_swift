@@ -1517,6 +1517,12 @@ def _swift_module_search_path_map_fn(module):
 def _module_alias_flags(*, original, alias):
     """Returns compiler flags to set the given module alias."""
 
+    # If the module name is a raw identifier, it is preemptively escaped for
+    # use in source code. The escaping must be removed before using it in the
+    # module alias flag.
+    if original.startswith("`") and original.endswith("`"):
+        original = original[1:-1]
+
     return [
         "-module-alias",
         "{original}={alias}".format(
