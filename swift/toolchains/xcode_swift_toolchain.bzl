@@ -60,6 +60,7 @@ load(
     "SWIFT_FEATURE_MODULE_HOME_IS_CWD",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_REMAP_XCODE_PATH",
+    "SWIFT_FEATURE__SUPPORTS_DEVELOPER_DIR",
     "SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES",
     "SWIFT_FEATURE__SUPPORTS_V6",
 )
@@ -832,6 +833,9 @@ def _xcode_swift_toolchain_impl(ctx):
             SWIFT_FEATURE_MODULE_HOME_IS_CWD,
         ])
 
+    # Xcode toolchains always support DEVELOPER_DIR
+    requested_features.append(SWIFT_FEATURE__SUPPORTS_DEVELOPER_DIR)
+
     unsupported_features = ctx.disabled_features + [
         SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD,
     ]
@@ -933,6 +937,7 @@ def _xcode_swift_toolchain_impl(ctx):
             for target in ctx.attr.package_configurations
         ],
         requested_features = requested_features,
+        runtime = depset(),
         swift_worker = ctx.attr._worker[DefaultInfo].files_to_run,
         const_protocols_to_gather = ctx.file.const_protocols_to_gather,
         test_configuration = struct(
