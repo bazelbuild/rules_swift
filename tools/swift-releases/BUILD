@@ -9,7 +9,11 @@ licenses(["notice"])
 
 swift_binary(
     name = "swift-releases",
-    srcs = ["SwiftReleases.swift"],
+    srcs = [
+        "ReleasedToolchain.swift",
+        "SwiftReleases.swift",
+        "ToolchainDownloader.swift",
+    ],
     visibility = ["//visibility:public"],
     deps = [
         "@com_github_apple_swift_argument_parser//:ArgumentParser",

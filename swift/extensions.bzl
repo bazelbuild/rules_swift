@@ -59,13 +59,14 @@ def _standalone_toolchain_impl(module_ctx):
         if toolchain.swift_version_file:
             swift_version = module_ctx.read(toolchain.swift_version_file).strip()
 
-        if swift_version not in SWIFT_RELEASES:
+        if not toolchain.platform_sha256 and swift_version not in SWIFT_RELEASES:
             fail("Version `{}` is not supported by this version of rules_swift. Please choose one of: {}".format(
                 swift_version,
                 SWIFT_RELEASES.keys(),
             ))
 
-        for platform, sha256 in SWIFT_RELEASES[swift_version].items():
+        swift_releases = toolchain.platform_sha256.items() or SWIFT_RELEASES[swift_version].items()
+        for platform, sha256 in swift_releases:
             repository_name = toolchain.name + "_{}".format(platform)
             _standalone_toolchain(
                 name = repository_name,
@@ -94,6 +95,14 @@ _toolchain = tag_class(attrs = {
     "name": attr.string(
         doc = "Repository name of the generated toolchain",
         mandatory = True,
+    ),
+    "platform_sha256": attr.string_dict(
+        doc = """A string dictionary of platforms and the corresponding SHA256 of their toolchain archive.
+
+Use the `swift-releases` utility to download swift archives for a given version and calculate
+their hashes. For instance:
+`bazel run @rules_swift//tools/swift-releases -- list 6.2.4`
+""",
     ),
     "swift_version": attr.string(doc = "Version of the swift toolchain to be installed. Cannot be used concurrently with `swift_version_file`"),
     "swift_version_file": attr.label(doc = "A label to the .swift_version file to use. Cannot be used concurrently with `swift_version`"),

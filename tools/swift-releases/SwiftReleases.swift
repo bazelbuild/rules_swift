@@ -1,115 +1,9 @@
 import ArgumentParser
-import CryptoKit
 import Foundation
 
 #if canImport(FoundationNetworking)
   import FoundationNetworking
 #endif
-
-// Helper to write to stderr
-var standardError = FileHandle.standardError
-
-extension FileHandle: @retroactive TextOutputStream {
-  public func write(_ string: String) {
-    guard let data = string.data(using: .utf8) else { return }
-    self.write(data)
-  }
-}
-
-struct Release: Codable {
-  let name: String
-  let tag: String
-  let xcode: String?
-  let xcode_release: Bool?
-  let date: String?
-  let platforms: [Platform]
-
-  struct Platform: Codable {
-    let name: String
-    let platform: String
-    let docker: String?
-    let dir: String?
-    let checksum: String?
-    let archs: [String]
-  }
-}
-
-typealias ReleasesResponse = [Release]
-
-func fetchReleases() async throws -> ReleasesResponse {
-  let url = URL(string: "https://www.swift.org/api/v1/install/releases.json")!
-  let (data, response) = try await URLSession.shared.data(from: url)
-  if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode != 200 {
-    throw NSError(
-      domain: "SwiftReleaseDownloader",
-      code: httpResponse.statusCode,
-      userInfo: [NSLocalizedDescriptionKey: "HTTP error \(httpResponse.statusCode)"]
-    )
-  }
-  return try JSONDecoder().decode(ReleasesResponse.self, from: data)
-}
-
-func downloadFile(url: URL, cacheDir: String?) async throws -> Data {
-  // Check cache first if cache directory is provided
-  if let cacheDir = cacheDir {
-    let filename = url.lastPathComponent
-    let cachePath = (cacheDir as NSString).appendingPathComponent(filename)
-
-    if FileManager.default.fileExists(atPath: cachePath) {
-      print("Found \(filename) in \(cacheDir). Skipping", to: &standardError)
-      return try Data(contentsOf: URL(fileURLWithPath: cachePath))
-    }
-  }
-  print("Downloading \(url)...", to: &standardError)
-
-  let (data, response) = try await URLSession.shared.data(from: url)
-  if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode != 200 {
-    throw NSError(
-      domain: "SwiftReleaseDownloader",
-      code: httpResponse.statusCode,
-      userInfo: [
-        NSLocalizedDescriptionKey:
-          "HTTP error \(httpResponse.statusCode) for \(url.absoluteString)"
-      ]
-    )
-  }
-
-  // Save to cache if cache directory is provided
-  if let cacheDir = cacheDir {
-    let filename = url.lastPathComponent
-    let cachePath = (cacheDir as NSString).appendingPathComponent(filename)
-
-    // Create cache directory if it doesn't exist
-    try FileManager.default.createDirectory(
-      atPath: cacheDir, withIntermediateDirectories: true, attributes: nil)
-
-    // Write data to cache
-    try data.write(to: URL(fileURLWithPath: cachePath))
-    print("  Cached to: \(cachePath)", to: &standardError)
-  }
-
-  return data
-}
-
-func sha256(data: Data) -> String {
-  let hash = SHA256.hash(data: data)
-  return hash.compactMap { String(format: "%02x", $0) }.joined()
-}
-
-func getDownloadURL(tag: String, platformName: String) -> String {
-  let version = tag
-  let category = tag.lowercased()
-  let filename: String
-
-  let platformDir = platformName.replacingOccurrences(of: ".", with: "")
-  if platformName == "xcode" {
-    filename = "\(version)-osx.pkg"
-  } else {
-    filename = "\(version)-\(platformName).tar.gz"
-  }
-
-  return "https://download.swift.org/\(category)/\(platformDir)/\(version)/\(filename)"
-}
 
 @main
 struct SwiftReleases: AsyncParsableCommand {
@@ -119,6 +13,21 @@ struct SwiftReleases: AsyncParsableCommand {
     subcommands: [List.self],
     defaultSubcommand: List.self
   )
+}
+
+func checkUrl(url: String) async throws -> Bool {
+  guard let url = URL(string: url) else {
+    print("Malformed URL: \(url)")
+    throw ExitCode.failure
+  }
+
+  var request = URLRequest(url: url)
+  request.httpMethod = "HEAD"
+
+  let (_, response) = try await URLSession.shared.data(for: request)
+
+  guard let httpResponse = response as? HTTPURLResponse else { return false }
+  return httpResponse.statusCode != 404
 }
 
 extension SwiftReleases {
@@ -133,75 +42,38 @@ extension SwiftReleases {
     @Option(help: "Directory to cache downloaded archives")
     var cache: String?
 
-    func run() async throws {
-      let releases = try await fetchReleases()
+    @Option(name: .customLong("platform"), help: "Use the specified platform (required for snapshot toolchains)")
+    var platforms: [String] = []
 
-      guard let release = releases.first(where: { $0.name == version }) else {
-        print("Error: Version '\(version)' not found", to: &standardError)
-        print("Available versions:", to: &standardError)
-        for rel in releases.reversed().prefix(20) {
-          print("  - \(rel.name)", to: &standardError)
+    @Flag(
+      help: "Only make sure the URLs are valid. Do not download the archives or calculate the SHA")
+    var dryRun: Bool = false
+
+    func run() async throws {
+      let downloader = ToolchainDownloader(cacheDir: self.cache)
+
+      var platformKeys = platforms
+      if platformKeys.isEmpty {
+        if version.contains("-snapshot-") {
+          print("Can't detect available platforms for unreleased (snapshot) toolchains. Please use --platform")
+          throw ExitCode.validationFailure
         }
-        if releases.count > 20 {
-          print("  ... and \(releases.count - 20) more", to: &standardError)
-        }
-        throw ExitCode.failure
+        let releasedToolchain = try await ReleasedToolchain(version: self.version)
+        platformKeys = releasedToolchain.getPlatformKeys()
       }
 
-      // Dictionary to store platform -> sha256 mappings
+      if self.dryRun {
+        for platform in platformKeys {
+          let url = downloader.getDownloadURL(swift_version: version, platform: platform)
+          print("\(try await checkUrl(url: url) ? "OK" : "FAIL")\t\(url)")
+        }
+        return
+      }
+
       var checksums: [String: String] = [:]
-
-      // Only Linux & MacOS toolchains are supported for now.
-      // Supported Linux toolchains for a given version are in the response,
-      // but MacOS toolchains aren't. They're just assumed to be there. So we
-      // must add them manually.
-      let platforms =
-        release.platforms.filter {
-          $0.platform == "Linux"
-        } + [
-          Release.Platform(
-            name: "osx",
-            platform: "osx",
-            docker: nil,
-            dir: "xcode",
-            checksum: nil,
-            archs: ["aarch64"],
-          )
-        ]
-
-      for platform in platforms {
-        // Handle platforms with checksums (like static-sdk, wasm-sdk)
-        if let checksum = platform.checksum {
-          // For platforms with checksums, use the platform name directly
-          let platformKey = platform.platform
-          checksums[platformKey] = checksum
-          continue
-        }
-
-        // Download for each architecture
-        for arch in platform.archs {
-          let platformName =
-            platform.dir ?? platform.name.lowercased().replacingOccurrences(of: " ", with: "")
-          let platformKey: String
-          if platformName == "xcode" || arch == "x86_64" {
-            platformKey = platformName
-          } else {
-            platformKey = "\(platformName)-\(arch)"
-          }
-
-          let downloadURL = getDownloadURL(
-            tag: release.tag, platformName: platform.dir ?? platformKey)
-
-          do {
-            let url = URL(string: downloadURL)!
-            let data = try await downloadFile(url: url, cacheDir: cache)
-            let hash = sha256(data: data)
-            checksums[platformKey] = hash
-          } catch {
-            print("Error: \(error)", to: &standardError)
-            throw error
-          }
-        }
+      for platform in platformKeys {
+        checksums[platform] = try await downloader.getSha256(
+          swift_version: version, platform: platform)
       }
 
       // Print in the requested format

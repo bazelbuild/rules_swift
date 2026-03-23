@@ -6,27 +6,48 @@ Supports both macOS (.pkg) and Linux (.tar.gz) toolchain formats, with automatic
 platform detection and appropriate extraction methods.
 """
 
-def _full_version(short_version):
-    return "swift-{}-RELEASE".format(short_version)
+load("@bazel_skylib//lib:paths.bzl", "paths")
 
-# Download URLs are documented in the OpenAPI spec here: https://www.swift.org/openapi/downloadswiftorg.yaml
+# Download URLs are documented in the OpenAPI spec here:
+# https://github.com/swiftlang/swiftly/blob/20ceb4748fd55a7e0574cf426b70f978a2636418/Sources/SwiftlyDownloadAPI/openapi.yaml
 # They're of the form: https://download.swift.org/{category}/{platform}/{version}/{file}
 # To understand what category / platform / version and file refer to, we have to look at the swiftly source:
 # https://github.com/swiftlang/swiftly/blob/655f8e2a1ac0bc073a5d4d2e65f6c72334d22ca4/Sources/Swiftly/Install.swift#L280
-# _get_filename() and _get_download_url() below replicates some of the logic in swiftly's Install.execute() method
+# The functions below replicate some of the logic in swiftly's Install.execute() method
 def _get_filename(version, platform_name_full):
     return (
         version + "-osx.pkg" if platform_name_full == "xcode" else "{}-{}.tar.gz".format(version, platform_name_full)
     )
 
-def _get_download_url(short_version, platform_name_full):
-    version = _full_version(short_version)
+def _swiftly_to_openapi_version(swiftly_version):
+    if "-snapshot-" in swiftly_version:
+        (branch, _, version) = swiftly_version.split("-", 2)
+        if branch == "main":
+            return "swift-DEVELOPMENT-SNAPSHOT-{}-a".format(version)
+        return "swift-{}-DEVELOPMENT-SNAPSHOT-{}-a".format(branch, version)
+    return "swift-{}-RELEASE".format(swiftly_version)
+
+def _swiftly_version_to_category(swiftly_version):
+    if "-snapshot-" in swiftly_version:
+        (branch, _) = swiftly_version.split("-", 1)
+        if branch == "main":
+            return "development"
+        return "swift-{}-branch".format(branch)
+    return "swift-{}-release".format(swiftly_version)
+
+def _get_download_url(category, platform, version, filename):
     return "https://download.swift.org/{category}/{platform}/{version}/{filename}".format(
-        category = "swift-{}-release".format(short_version),
-        platform = platform_name_full.replace(".", ""),
+        category = category,
+        platform = platform,
         version = version,
-        filename = _get_filename(version, platform_name_full),
+        filename = filename,
     )
+
+def get_download_url(swift_version, platform):
+    category = _swiftly_version_to_category(swift_version)
+    version = _swiftly_to_openapi_version(swift_version)
+    filename = _get_filename(version, platform)
+    return _get_download_url(category, platform.replace(".", ""), version, filename)
 
 def _run(repository_ctx, command):
     result = repository_ctx.execute(command)
@@ -42,14 +63,15 @@ def _run(repository_ctx, command):
     return result.stdout.strip()
 
 def _standalone_toolchain_impl(repository_ctx):
-    filename = _get_filename(_full_version(repository_ctx.attr.swift_version), repository_ctx.attr.platform)
+    url = get_download_url(repository_ctx.attr.swift_version, repository_ctx.attr.platform)
+    filename = paths.basename(url)
     repository_ctx.download(
-        url = _get_download_url(repository_ctx.attr.swift_version, repository_ctx.attr.platform),
+        url = url,
         sha256 = repository_ctx.attr.sha256,
         output = filename,
     )
 
-    if repository_ctx.attr.platform == "xcode":
+    if filename.endswith(".pkg"):
         # .pkg file extraction can only be done on MacOS, so we will error out if the user tries to use
         # an Xcode toolchain on Linux.
         if repository_ctx.os.name != "mac os x":
