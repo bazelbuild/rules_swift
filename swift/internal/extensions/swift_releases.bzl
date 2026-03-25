@@ -16,6 +16,9 @@ The structure is:
 Supported platforms include various Linux distributions (amazonlinux2, debian12,
 fedora39, ubi9, ubuntu22.04, ubuntu24.04) in both x86_64 and aarch64 architectures,
 as well as Xcode toolchains for macOS.
+
+These dictionaries can be programatically generated with the command below:
+`bazel run //tools/swift-releases -- list <release_version>`
 """
 
 SWIFT_RELEASES = {
@@ -63,5 +66,39 @@ SWIFT_RELEASES = {
         "ubuntu24.04": "3e0b8eaf9210131a1756e6a1a9e9103bac83609a0ae604d6f2e791053f98f115",
         "ubuntu24.04-aarch64": "48dc99bcabc54feadd2942f4830be854ca2396e2db4ca4ec6b6c926a25c87d55",
         "xcode": "c1ed84cf543286c549caaccc47e0b47d8c61c3c8fedbce1205dedcbebe7601a8",
+    },
+    "6.2.4": {
+        "amazonlinux2": "969b1241a3fd9aa446cb47c1b2e4a7c72a54df9d48ec6f65aed09549095a71f5",
+        "amazonlinux2-aarch64": "41fa73da20451831b29ddd989d0828f31f7b7e51633cf59249566f356e2b0ca1",
+        "debian12": "43b7fbd1e347c6367e51520a7f86675f4095f19953bd10d44e34d21b220b55da",
+        "debian12-aarch64": "065a113020cdf4335f2dae9125f86935354c0e9fc1a9ffa996ddc8b88bc03a40",
+        "fedora39": "679bc5738a5faa911fbc5e5670c60ef4783f6e3b91fa5fc30d2542cc8d582106",
+        "fedora39-aarch64": "f6386c3c7490264fdce5c8ce463e4920bb5b95735912c83aed458d6553f68923",
+        "fedora41": "1df68b4f2764e9ac5903a861c714759ef84226e5d2b8f3c42e2d513e45902aab",
+        "fedora41-aarch64": "90416b89e9a8a458dee13f4c81c425d214dbd145d4bfc493ec7901ec9dc7f005",
+        "ubi9": "585a7b9fbcac384ecf10f024550d453687fc30c834f964191bedb4fc559e7bc5",
+        "ubi9-aarch64": "0d83fd1c5a68169fedf1e82e40390841e370a017bebe947ab378028fd8e3a96d",
+        "ubuntu22.04": "aaaa32f060838f5c5b476afaadcb8b49170e8d5b24afe9cb9df2e8ce33d4a778",
+        "ubuntu22.04-aarch64": "2650ca15c1e23c8644a7dbd36a31420444ab53413aaf18cf001c8b616cac108e",
+        "ubuntu24.04": "15608c4fa0364ef906014343d81639cf58169e8a40de2b2d3503c3f35a8bb66d",
+        "ubuntu24.04-aarch64": "420bcde2ee4b2a36e49524b15373d0cb24eb4b679103f8cc8349af8a768832b7",
+        "xcode": "9c94637fda8312901a08e572a651c3a18a672689ad867f96c9257b43775159e9",
+    },
+    "6.3": {
+        "amazonlinux2": "6b3558cb78f7b176fd586223aad62a4703cb82f9d5aee94c5d4a41e58d8bf4a1",
+        "amazonlinux2-aarch64": "b88b65fac38228e57f3bd73d74b543e9d0f6990443d75491e1cb2c1533d3c0e5",
+        "debian12": "41de2f11727733117f72e2fe5b73c8349a91eaa8d1b6bea7866772ced05a0df0",
+        "debian12-aarch64": "547595980f15b0561ac98e3910e32bbccbf2e9e62dcb64bafd6b7a80f8e6cc96",
+        "fedora39": "8102b0643a0b715cfe4eb9b50a429cb2f0355f1f7b3fa09b66413b1be194ad24",
+        "fedora39-aarch64": "0e09568dc28a2b627a9c1496c3fd5bcbd2ca98ffc0ece770c40ad64e44259133",
+        "fedora41": "43fe9fdc4be6a7128b722dad7802ceaf3b868174425b28fd7aa995e95934f0bd",
+        "fedora41-aarch64": "1470e7886c2389a03dc28626c827b6fc18b9b2c4fcbbe4425a493c801cf06d3f",
+        "ubi9": "ce6631dae1f858f8a7dbacd4f2dad9cf386e12d1087b39d3bfeb1fd9ccac5a7e",
+        "ubi9-aarch64": "2f98f861847f51bf295b9009869c992523239d1ae258d7423f6a8b7e214a63aa",
+        "ubuntu22.04": "af1dd256952a928e19ee99d67053f56120c2d20363b96f2017e2038093bfbb49",
+        "ubuntu22.04-aarch64": "cb89091dda0a136a94aaaa4eb122161dd7759bd3fd9bd5c9d890dbc90f213b6c",
+        "ubuntu24.04": "85ba7dd16960b60ae2a6b81731bae236fb7ce5339a076428fc984d960668fdbd",
+        "ubuntu24.04-aarch64": "1550c4b8fdf03f2753e82d374ca177886435e047e32656a1dcfd3f10d7893e0b",
+        "xcode": "fde42bff2e187da88f72033987be9613df1065e0ba5a629bc2c3c19688d09cbd",
     },
 }
