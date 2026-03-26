@@ -34,6 +34,7 @@ load(
     "SwiftFeatureAllowlistInfo",
     "SwiftPackageConfigurationInfo",
     "SwiftToolchainInfo",
+    "SwiftToolsInfo",
 )
 load(
     "//swift/internal:action_names.bzl",
@@ -103,6 +104,7 @@ def _swift_compile_resource_set(_os, inputs_size):
 def _all_tool_configs(
         env,
         swift_executable,
+        swift_tools,
         toolchain_root,
         use_autolink_extract,
         use_module_wrap,
@@ -113,7 +115,9 @@ def _all_tool_configs(
     Args:
         env: A custom environment to execute the tools in.
         swift_executable: A custom Swift driver executable to be used during the
-            build, if provided.
+            build, if provided. Only used if swift_tools is not used.
+        swift_tools: The set of swift tools to use during the build. Overrides
+            swift_executable if provided.
         toolchain_root: The root directory of the toolchain.
         use_autolink_extract: If True, the link action should use
             `swift-autolink-extract` to extract the complier directed linking
@@ -132,14 +136,19 @@ def _all_tool_configs(
     def _driver_config(*, mode):
         return {
             "mode": mode,
-            "swift_executable": swift_executable,
+            "swift_executable": swift_tools.swift_driver if swift_tools else swift_executable,
             "tool_executable_suffix": tool_executable_suffix,
             "toolchain_root": toolchain_root,
         }
 
+    # Current swift toolchains are stored under a usr/ prefix, so we'll assume
+    # that the toolchain path is two levels above the swift executable.
+    env = env | {"TOOLCHAIN_PATH": toolchain_root}
+
     compile_tool_config = ToolConfigInfo(
         additional_tools = additional_tools,
-        driver_config = _driver_config(mode = "swiftc"),
+        driver_config = _driver_config(mode = "swiftc") if not swift_tools else None,
+        executable = swift_tools.swift_driver if swift_tools else None,
         resource_set = _swift_compile_resource_set,
         use_param_file = True,
         worker_mode = "persistent",
@@ -152,7 +161,8 @@ def _all_tool_configs(
         SWIFT_ACTION_DUMP_AST: compile_tool_config,
         SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT: ToolConfigInfo(
             additional_tools = additional_tools,
-            driver_config = _driver_config(mode = "swift-symbolgraph-extract"),
+            driver_config = _driver_config(mode = "swift-symbolgraph-extract") if not swift_tools else None,
+            executable = swift_tools.swift_symbolgraph_extract if swift_tools else None,
             use_param_file = True,
             worker_mode = "wrap",
             env = env,
@@ -162,7 +172,8 @@ def _all_tool_configs(
     if use_autolink_extract:
         tool_configs[SWIFT_ACTION_AUTOLINK_EXTRACT] = ToolConfigInfo(
             additional_tools = additional_tools,
-            driver_config = _driver_config(mode = "swift-autolink-extract"),
+            driver_config = _driver_config(mode = "swift-autolink-extract") if not swift_tools else None,
+            executable = swift_tools.swift_autolink_extract if swift_tools else None,
             worker_mode = "wrap",
         )
 
@@ -171,7 +182,8 @@ def _all_tool_configs(
             additional_tools = additional_tools,
             # This must come first after the driver name.
             args = ["-modulewrap"],
-            driver_config = _driver_config(mode = "swift"),
+            driver_config = _driver_config(mode = "swiftc") if not swift_tools else None,
+            executable = swift_tools.swift_driver if swift_tools else None,
             worker_mode = "wrap",
         )
 
@@ -219,6 +231,7 @@ def _all_action_configs(os, arch, target_triple, sdkroot, xctest_version, additi
                     SWIFT_ACTION_DERIVE_FILES,
                     SWIFT_ACTION_DUMP_AST,
                     SWIFT_ACTION_PRECOMPILE_C_MODULE,
+                    SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
                 ],
                 configurators = [add_arg("-sdk", sdkroot)],
             ),
@@ -347,7 +360,9 @@ def _swift_unix_linkopts_cc_info(
         cpu,
         os,
         toolchain_label,
-        toolchain_root):
+        toolchain_root,
+        additional_inputs,
+        additional_rpaths):
     """Returns a `CcInfo` containing flags that should be passed to the linker.
 
     The provider returned by this function will be used as an implicit
@@ -361,6 +376,8 @@ def _swift_unix_linkopts_cc_info(
         toolchain_label: The label of the Swift toolchain that will act as the
             owner of the linker input propagating the flags.
         toolchain_root: The toolchain's root directory.
+        additional_inputs: depset of File objects to add to link actions.
+        additional_rpaths: list of additional RPATH to add at link time.
 
     Returns:
         A `CcInfo` provider that will provide linker flags to binaries that
@@ -388,6 +405,9 @@ def _swift_unix_linkopts_cc_info(
         "-ldl",
         runtime_object_path,
         "-static-libgcc",
+    ] + [
+        "-Wl,-rpath,{}".format(rpath)
+        for rpath in additional_rpaths
     ]
 
     return CcInfo(
@@ -396,6 +416,7 @@ def _swift_unix_linkopts_cc_info(
                 cc_common.create_linker_input(
                     owner = toolchain_label,
                     user_link_flags = depset(linkopts),
+                    additional_inputs = depset(additional_inputs),
                 ),
             ]),
         ),
@@ -435,6 +456,28 @@ def _swift_toolchain_impl(ctx):
              "Either use the locally installed LLVM by setting `CC=clang` in your environment " +
              "before invoking Bazel, or configure a Bazel LLVM CC toolchain.")
 
+    additional_rpaths = []
+    if ctx.attr.swift_tools:
+        if ctx.attr.swift_executable:
+            fail("`swift_executable` and `swift_tools` cannot be used concurrently. " +
+                 "If unsure, prefer using a hermetic toolchain through `swift_tools`.")
+
+        if ctx.attr.root:
+            fail("`root` and `swift_tools` cannot be used concurrently. " +
+                 "If unsure, prefer using a hermetic toolchain through `swift_tools`. " +
+                 "The toolchain root will be found relative to these tools automatically.")
+
+        toolchain_root = paths.dirname(ctx.attr.swift_tools[SwiftToolsInfo].swift_driver.dirname)
+
+        # When swift binaries / tests built with a hermetic toolchain gets executed, they need the
+        # swift standard libs in their runfiles, along with an RPATH to access them.
+        additional_rpaths.append(
+            "{}/lib/swift/{}".format(
+                paths.dirname(paths.dirname(ctx.attr.swift_tools[SwiftToolsInfo].swift_driver.short_path)),
+                ctx.attr.os,
+            ),
+        )
+
     if ctx.attr.os == "windows":
         swift_linkopts_cc_info = _swift_windows_linkopts_cc_info(
             ctx.attr.arch,
@@ -450,6 +493,8 @@ def _swift_toolchain_impl(ctx):
             ctx.attr.os,
             ctx.label,
             toolchain_root,
+            ctx.attr.swift_tools[SwiftToolsInfo].additional_inputs if ctx.attr.swift_tools else [],
+            additional_rpaths,
         )
 
     # TODO: Remove once we drop bazel 7.x support
@@ -488,20 +533,25 @@ def _swift_toolchain_impl(ctx):
     # workspace.
     swift_executable = get_swift_executable_for_toolchain(ctx)
 
+    additional_tools = [ctx.file.version_file]
+    if ctx.attr.swift_tools:
+        additional_tools += ctx.attr.swift_tools[SwiftToolsInfo].additional_inputs
+
     all_tool_configs = _all_tool_configs(
         env = ctx.attr.env,
-        swift_executable = swift_executable,
+        swift_executable = swift_executable if not ctx.attr.swift_tools else None,
+        swift_tools = ctx.attr.swift_tools[SwiftToolsInfo] if ctx.attr.swift_tools else None,
         toolchain_root = toolchain_root,
         use_autolink_extract = SWIFT_FEATURE_USE_AUTOLINK_EXTRACT in ctx.features,
         use_module_wrap = SWIFT_FEATURE_USE_MODULE_WRAP in ctx.features,
-        additional_tools = [ctx.file.version_file],
+        additional_tools = additional_tools,
         tool_executable_suffix = ctx.attr.tool_executable_suffix,
     )
     all_action_configs = _all_action_configs(
         os = ctx.attr.os,
         arch = ctx.attr.arch,
         target_triple = target_triple,
-        sdkroot = ctx.attr.sdkroot,
+        sdkroot = ctx.attr.sdkroot or cc_toolchain.sysroot,
         xctest_version = ctx.attr.xctest_version,
         additional_swiftc_copts = ctx.attr.copts + swiftcopts,
     )
@@ -561,6 +611,7 @@ def _swift_toolchain_impl(ctx):
         ],
         requested_features = requested_features,
         root_dir = toolchain_root,
+        runtime = depset(ctx.files.runtime),
         swift_worker = ctx.attr._worker[DefaultInfo].files_to_run,
         const_protocols_to_gather = ctx.file.const_protocols_to_gather,
         test_configuration = struct(
@@ -632,8 +683,12 @@ configuration options that are applied to targets on a per-package basis.
 """,
                 providers = [[SwiftPackageConfigurationInfo]],
             ),
-            "root": attr.string(
-                mandatory = True,
+            "root": attr.string(),
+            "runtime": attr.label_list(
+                doc = """\
+List of files to carry over as test data to swift executables and tests.
+""",
+                allow_files = True,
             ),
             "version_file": attr.label(
                 mandatory = True,

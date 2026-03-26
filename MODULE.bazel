@@ -30,6 +30,7 @@ use_repo(
     "build_bazel_rules_swift_local_config",
     "com_github_apple_swift_docc_symbolkit",
     "com_github_apple_swift_log",
+    "com_github_apple_swift_mmio",
     "com_github_apple_swift_nio",
     "com_github_apple_swift_nio_extras",
     "com_github_apple_swift_nio_http2",
@@ -42,6 +43,37 @@ apple_cc_configure = use_extension("@build_bazel_apple_support//crosstool:setup.
 use_repo(apple_cc_configure, "local_config_apple_cc")
 
 register_toolchains("//swift/toolchains:all")
+
+swift = use_extension("//swift:extensions.bzl", "swift", dev_dependency = True)
+swift.toolchain(
+    name = "swift_toolchain",
+    swift_version = "6.3",
+)
+use_repo(
+    swift,
+    "swift_toolchain",
+    "swift_toolchain_ubuntu22.04",
+    "swift_toolchain_ubuntu22.04-aarch64",
+    "swift_toolchain_xcode",
+)
+
+register_toolchains(
+    # We're using ubuntu22.04 here because that's what's used in the current rules_swift buildkite CI.
+    # In a perfect world, we would be able to have bazel automatically use the toolchain that just works.
+    # Unfortunately, we are not in this world yet. This would require either one of these two things to happen:
+    # * either have a constraint to select on the current distribution, which would allow us to register all
+    #   the toolchains and have bazel automatically select the right one. But there is no such constraint today.
+    # * or have a swift universal Linux toolchain. Which is not the case today.
+    # Anyway, for now we will need to update this every time we update the CI environment. Contributors might also
+    # have to update this list if they're testing on a different Linux distribution.
+    "@swift_toolchain//:cc_toolchain_embedded_ubuntu22.04",
+    "@swift_toolchain//:cc_toolchain_embedded_ubuntu22.04-aarch64",
+    "@swift_toolchain//:cc_toolchain_embedded_xcode",
+    "@swift_toolchain//:swift_toolchain_embedded_ubuntu22.04",
+    "@swift_toolchain//:swift_toolchain_embedded_ubuntu22.04-aarch64",
+    "@swift_toolchain//:swift_toolchain_embedded_xcode",
+    dev_dependency = True,
+)
 
 # Dev dependencies
 bazel_dep(name = "bazel_skylib_gazelle_plugin", version = "1.5.0", dev_dependency = True)

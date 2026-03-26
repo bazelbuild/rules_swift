@@ -507,7 +507,9 @@ def _swift_test_impl(ctx):
                 collect_data = True,
                 collect_default = True,
                 files = ctx.files.data,
-                transitive_files = ctx.attr._apple_coverage_support.files,
+                transitive_files = depset(
+                    transitive = [ctx.attr._apple_coverage_support.files, toolchains.swift.runtime],
+                ),
             ),
         ),
         OutputGroupInfo(
