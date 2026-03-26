@@ -1,0 +1,162 @@
+From fe7606c89ed47c0da534c488aa8b1db4a7d0b7a4 Mon Sep 17 00:00:00 2001
+From: Mathieu Olivari <molivari@apple.com>
+Date: Thu, 26 Mar 2026 19:43:38 +0000
+Subject: [PATCH] style(parser): remove trailing comma in OneOfParser
+ initializer
+
+Commas at the end of lists are only permitted started in 6.1, and
+rules_swift CI is still using 6.0.3 on the host machine. So we're
+patching swift_mmio until the version is upgraded.
+---
+ Plugins/SVD2SwiftPlugin/SVD2SwiftPlugin.swift                 | 2 +-
+ Sources/MMIOMacros/CompilerPluginMain.swift                   | 2 +-
+ Sources/MMIOMacros/Macros/Arguments/BitRange.swift            | 4 ++--
+ Sources/MMIOMacros/Macros/BitFieldMacro.swift                 | 2 +-
+ .../MMIOMacros/Macros/Descriptions/Description+Validate.swift | 2 +-
+ .../MMIOMacros/Macros/Descriptions/RegisterDescription.swift  | 2 +-
+ Sources/MMIOMacros/Macros/RegisterBlockMacro.swift            | 2 +-
+ Sources/MMIOMacros/Macros/RegisterBlockMemberMacro.swift      | 2 +-
+ Sources/MMIOUtilities/Parser/Parser+Swift.swift               | 2 +-
+ Sources/XMLMacros/CompilerPluginMain.swift                    | 2 +-
+ 10 files changed, 11 insertions(+), 11 deletions(-)
+
+diff --git a/Plugins/SVD2SwiftPlugin/SVD2SwiftPlugin.swift b/Plugins/SVD2SwiftPlugin/SVD2SwiftPlugin.swift
+index b6007d0..ad66f81 100644
+--- a/Plugins/SVD2SwiftPlugin/SVD2SwiftPlugin.swift
++++ b/Plugins/SVD2SwiftPlugin/SVD2SwiftPlugin.swift
+@@ -53,7 +53,7 @@ struct SVD2SwiftPlugin: BuildToolPlugin {
+     var arguments = [
+       "--plugin",
+       "--input", svdFile.path,
+-      "--output", outputDirectory.path,
++      "--output", outputDirectory.path
+     ]
+     if let accessLevel = pluginConfig.accessLevel {
+       arguments += ["--access-level", accessLevel]
+diff --git a/Sources/MMIOMacros/CompilerPluginMain.swift b/Sources/MMIOMacros/CompilerPluginMain.swift
+index 21cbbf4..12e0f19 100644
+--- a/Sources/MMIOMacros/CompilerPluginMain.swift
++++ b/Sources/MMIOMacros/CompilerPluginMain.swift
+@@ -24,6 +24,6 @@ struct CompilerPluginMain: CompilerPlugin {
+     ReservedMacro.self,
+     ReadWriteMacro.self,
+     ReadOnlyMacro.self,
+-    WriteOnlyMacro.self,
++    WriteOnlyMacro.self
+   ]
+ }
+diff --git a/Sources/MMIOMacros/Macros/Arguments/BitRange.swift b/Sources/MMIOMacros/Macros/Arguments/BitRange.swift
+index 69fee54..1495a09 100644
+--- a/Sources/MMIOMacros/Macros/Arguments/BitRange.swift
++++ b/Sources/MMIOMacros/Macros/Arguments/BitRange.swift
+@@ -227,7 +227,7 @@ private struct BitRangeParser: ParserProtocol {
+     } else {
+       let inclusiveParser = OneOfParser<Bool>(
+         ("(", false),
+-        ("[", true),
++        ("[", true)
+       )
+ 
+       guard
+@@ -252,7 +252,7 @@ private struct BitRangeParser: ParserProtocol {
+     } else {
+       let inclusiveParser = OneOfParser<Bool>(
+         (")", false),
+-        ("]", true),
++        ("]", true)
+       )
+ 
+       guard
+diff --git a/Sources/MMIOMacros/Macros/BitFieldMacro.swift b/Sources/MMIOMacros/Macros/BitFieldMacro.swift
+index 3ffe609..2baffab 100644
+--- a/Sources/MMIOMacros/Macros/BitFieldMacro.swift
++++ b/Sources/MMIOMacros/Macros/BitFieldMacro.swift
+@@ -58,7 +58,7 @@ let bitFieldMacros: [any BitFieldMacro.Type] = [
+   ReservedMacro.self,
+   ReadWriteMacro.self,
+   ReadOnlyMacro.self,
+-  WriteOnlyMacro.self,
++  WriteOnlyMacro.self
+ ]
+ 
+ public struct ReservedMacro: BitFieldMacro {
+diff --git a/Sources/MMIOMacros/Macros/Descriptions/Description+Validate.swift b/Sources/MMIOMacros/Macros/Descriptions/Description+Validate.swift
+index 4ef9b36..9f0ff10 100644
+--- a/Sources/MMIOMacros/Macros/Descriptions/Description+Validate.swift
++++ b/Sources/MMIOMacros/Macros/Descriptions/Description+Validate.swift
+@@ -429,7 +429,7 @@ extension Note {
+   static func registerOverlappingBitRanges(
+     bitRangeExpression: ExprSyntax,
+     overlappingCount: Int,
+-    overlappingGroups: [(Int, IdentifierPatternSyntax, [ExprSyntax])],
++    overlappingGroups: [(Int, IdentifierPatternSyntax, [ExprSyntax])]
+   ) -> Note {
+     let pluralizeRanges = overlappingCount != 1
+     var segments: [String] = []
+diff --git a/Sources/MMIOMacros/Macros/Descriptions/RegisterDescription.swift b/Sources/MMIOMacros/Macros/Descriptions/RegisterDescription.swift
+index 0ee99aa..1864305 100644
+--- a/Sources/MMIOMacros/Macros/Descriptions/RegisterDescription.swift
++++ b/Sources/MMIOMacros/Macros/Descriptions/RegisterDescription.swift
+@@ -83,7 +83,7 @@ extension RegisterDescription {
+           \(self.accessLevel)init(_ value: Value.Write) {
+             self.storage = value.storage
+           }
+-          """,
++          """
+         ]
+       }
+ 
+diff --git a/Sources/MMIOMacros/Macros/RegisterBlockMacro.swift b/Sources/MMIOMacros/Macros/RegisterBlockMacro.swift
+index 601189c..a30de24 100644
+--- a/Sources/MMIOMacros/Macros/RegisterBlockMacro.swift
++++ b/Sources/MMIOMacros/Macros/RegisterBlockMacro.swift
+@@ -109,7 +109,7 @@ extension RegisterBlockMacro: MMIOMemberMacro {
+         self.unsafeAddress = unsafeAddress
+         self.interposer = interposer
+       }
+-      """,
++      """
+     ]
+   }
+ }
+diff --git a/Sources/MMIOMacros/Macros/RegisterBlockMemberMacro.swift b/Sources/MMIOMacros/Macros/RegisterBlockMemberMacro.swift
+index f21d65a..ea91946 100644
+--- a/Sources/MMIOMacros/Macros/RegisterBlockMemberMacro.swift
++++ b/Sources/MMIOMacros/Macros/RegisterBlockMemberMacro.swift
+@@ -72,7 +72,7 @@ extension RegisterBlockMemberMacro {
+ 
+ let registerBlockMemberMacros: [any RegisterBlockMemberMacro.Type] = [
+   RegisterBlockScalarMemberMacro.self,
+-  RegisterBlockArrayMemberMacro.self,
++  RegisterBlockArrayMemberMacro.self
+ ]
+ 
+ public struct RegisterBlockScalarMemberMacro {
+diff --git a/Sources/MMIOUtilities/Parser/Parser+Swift.swift b/Sources/MMIOUtilities/Parser/Parser+Swift.swift
+index f1c7371..9b2212c 100644
+--- a/Sources/MMIOUtilities/Parser/Parser+Swift.swift
++++ b/Sources/MMIOUtilities/Parser/Parser+Swift.swift
+@@ -36,7 +36,7 @@ where Output: FixedWidthInteger {
+     let oneOf = OneOfParser<ParserAndBase>(
+       ("0b", .init(parser: BinaryDigitParser(), base: 2)),
+       ("0o", .init(parser: OctalDigitParser(), base: 8)),
+-      ("0x", .init(parser: HexadecimalDigitParser(), base: 16)),
++      ("0x", .init(parser: HexadecimalDigitParser(), base: 16))
+     )
+ 
+     let parserAndBase =
+diff --git a/Sources/XMLMacros/CompilerPluginMain.swift b/Sources/XMLMacros/CompilerPluginMain.swift
+index 3ede137..5a84b54 100644
+--- a/Sources/XMLMacros/CompilerPluginMain.swift
++++ b/Sources/XMLMacros/CompilerPluginMain.swift
+@@ -16,6 +16,6 @@ import SwiftSyntaxMacros
+ struct CompilerPluginMain: CompilerPlugin {
+   let providingMacros: [any Macro.Type] = [
+     XMLElementMacro.self,
+-    XMLMarkerMacro.self,
++    XMLMarkerMacro.self
+   ]
+ }
+-- 
+2.50.1 (Apple Git-155)
+

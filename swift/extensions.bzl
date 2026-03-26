@@ -40,8 +40,8 @@ non_module_deps = module_extension(implementation = _non_module_deps_impl)
 def _standalone_toolchain_impl(module_ctx):
     root_module = None
     for mod in module_ctx.modules:
-        if not mod.is_root:
-            fail("Only the root module can use the 'swift' extension")
+        if not mod.is_root and not module_ctx.is_dev_dependency:
+            fail("Only the root module can use the 'swift' extension. Packages meant to be used as deps should use dev_dependency = True")
         root_module = mod
 
     if not root_module:

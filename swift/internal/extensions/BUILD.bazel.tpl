@@ -9,6 +9,10 @@ load("@rules_cc//cc/toolchains:toolchain.bzl", "cc_toolchain")
 package(default_visibility = ["//visibility:public"])
 
 ### Convenience target. Only useful for test / debug. ###
+exports_files([
+    "usr/bin/llvm-objcopy",
+])
+
 filegroup(
     name = "files",
     srcs = glob(
@@ -126,6 +130,9 @@ swift_tools(
     swift_symbolgraph_extract = "usr/bin/swift-symbolgraph-extract",
     additional_inputs = glob([
         "usr/lib/swift/**"
+    ] + [
+        "usr/bin/swift",
+        "usr/bin/swift-frontend",
     ], exclude = [
         # for now we only tested embedded, linux and macos so we can exclude files needed for
         # other platforms.
@@ -137,9 +144,6 @@ swift_tools(
         "usr/lib/swift/iphonesimulator/**",
         "usr/lib/swift/watchsimulator/**",
         "usr/lib/swift/xros/**",
-    ] + [
-        "usr/bin/swift",
-        "usr/bin/swift-frontend",
     ]),
 )
 

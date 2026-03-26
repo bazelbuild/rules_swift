@@ -135,6 +135,20 @@ def swift_rules_dependencies():
         ),
     )
 
+    http_archive(
+        name = "com_github_apple_swift_mmio",
+        urls = ["https://github.com/apple/swift-mmio/archive/refs/tags/0.1.1.tar.gz"],  # requires for the embedded toolchain example
+        sha256 = "51334b771beadc30767c90cd24e2acab9604d62ad0bc64a3c0665e3d6f19d82c",
+        strip_prefix = "swift-mmio-0.1.1",
+        build_file = Label(
+            "//third_party:com_github_apple_swift_mmio/BUILD.overlay",
+        ),
+        patches = [
+            "//third_party:com_github_apple_swift_mmio/0001-style-parser-remove-trailing-comma-in-OneOfParser-in.patch",
+        ],
+        patch_args = ["-p1"],
+    )
+
     # When using the "global index store" feature we rely on `index-import` to allow
     # using a global index.
     # TODO: we must depend on two versions of index-import to support backwards
