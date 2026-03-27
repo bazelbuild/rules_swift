@@ -59,6 +59,10 @@ extern bool ArgumentEnablesWMO(const std::string &arg);
 //     the directory afterwards. This should resolve issues where the module
 //     cache state is not refreshed correctly in all situations, which
 //     sometimes results in hard-to-diagnose crashes in `swiftc`.
+//
+// -Xwrapped-swift=-suppress-warning-group=<group>
+//     When specified, diagnostics that include the given group (for example,
+//     `DeprecatedDeclaration`) will be filtered from the compiler output.
 class SwiftRunner {
  public:
   // Create a new spawner that launches a Swift tool with the given arguments.
@@ -182,6 +186,9 @@ class SwiftRunner {
 
   // Whether `.swiftsourceinfo` files are being generated.
   bool emit_swift_source_info_;
+
+  // Diagnostic groups to suppress from compiler output.
+  std::vector<std::string> suppress_warning_groups_;
 };
 
 #endif  // BUILD_BAZEL_RULES_SWIFT_TOOLS_WORKER_SWIFT_RUNNER_H_

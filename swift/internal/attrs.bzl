@@ -325,6 +325,15 @@ to False, as the swift features that cause -force_load to be required (such as
 reflection) are not available in that mode.
 """,
             ),
+            "suppress_warning_groups": attr.string_list(
+                doc = """\
+A list of Swift diagnostic groups to suppress in build output (for example,
+`DeprecatedDeclaration`). These diagnostics are filtered from the compiler's
+output by the wrapper and do not change the compiler's behavior. See
+https://docs.swift.org/compiler/documentation/diagnostics/diagnostic-groups/
+for available diagnostic groups.
+""",
+            ),
             "generated_header_name": attr.string(
                 doc = """\
 The name of the generated Objective-C interface header. This name must end with

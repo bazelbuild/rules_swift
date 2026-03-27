@@ -47,6 +47,17 @@ def _swift_overlay_impl(ctx):
     deps = ctx.attr.deps
     private_deps = ctx.attr.private_deps
 
+    copts = list(ctx.attr.copts)
+    if ctx.attr.suppress_warning_groups:
+        if "-print-diagnostic-groups" not in copts:
+            copts.append("-print-diagnostic-groups")
+        for group in ctx.attr.suppress_warning_groups:
+            copts.append(
+                "-Xwrapped-swift=-suppress-warning-group={}".format(
+                    group,
+                ),
+            )
+
     features = list(ctx.features)
     if ctx.attr.library_evolution:
         features.append(SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION)
@@ -59,7 +70,7 @@ def _swift_overlay_impl(ctx):
         label = ctx.label,
         srcs = ctx.files.srcs,
         additional_inputs = ctx.files.swiftc_inputs,
-        copts = ctx.attr.copts,
+        copts = copts,
         defines = ctx.attr.defines,
         disabled_features = ctx.disabled_features,
         enabled_features = ctx.features,

@@ -271,6 +271,14 @@ def compile_swift_protos_for_target(
     copts = expand_make_variables(ctx, copts, "copts")
     linkopts = expand_locations(ctx, getattr(attr, "linkopts", []), swiftc_inputs)
     linkopts = expand_make_variables(ctx, linkopts, "linkopts")
+    suppress_warning_groups = getattr(attr, "suppress_warning_groups", [])
+    if suppress_warning_groups:
+        if "-print-diagnostic-groups" not in copts:
+            copts.append("-print-diagnostic-groups")
+        for group in suppress_warning_groups:
+            copts.append(
+                "-Xwrapped-swift=-suppress-warning-group={}".format(group),
+            )
 
     # Compile the generated Swift source files as a module:
     include_dev_srch_paths = include_developer_search_paths(attr)
