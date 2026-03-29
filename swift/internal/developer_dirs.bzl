@@ -39,9 +39,12 @@ def developer_dirs_linkopts(developer_dirs):
     swift_developer_lib_dir_path = swift_developer_lib_dir(
         developer_dirs,
     )
-    return [
-        "-L%s" % swift_developer_lib_dir_path,
-    ] + [
+    linkopts = [
         "-F%s" % developer_framework.path
         for developer_framework in developer_dirs
     ]
+    if swift_developer_lib_dir_path:
+        linkopts = [
+            "-L%s" % swift_developer_lib_dir_path,
+        ] + linkopts
+    return linkopts
