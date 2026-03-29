@@ -3,6 +3,9 @@
 load("@bazel_skylib//lib:unittest.bzl", "asserts", "unittest")
 
 # buildifier: disable=bzl-visibility
+load("//swift/internal:developer_dirs.bzl", "developer_dirs_linkopts")
+
+# buildifier: disable=bzl-visibility
 load("//swift/internal:extensions/standalone_toolchain.bzl", "get_download_url")
 
 # buildifier: disable=bzl-visibility
@@ -76,6 +79,50 @@ testonly is true, always_include_developer_search_paths is true\
 
 include_developer_search_paths_test = unittest.make(_include_developer_search_paths_test)
 
+def _developer_dirs_linkopts_test(ctx):
+    env = unittest.begin(ctx)
+
+    tests = [
+        struct(
+            msg = "Empty developer dirs should not emit any linker flags",
+            developer_dirs = [],
+            exp = [],
+        ),
+        struct(
+            msg = "Non-platform developer dirs should emit only framework search paths",
+            developer_dirs = [
+                struct(
+                    developer_path_label = "developer",
+                    path = "/tmp/dev-frameworks",
+                ),
+            ],
+            exp = [
+                "-F/tmp/dev-frameworks",
+            ],
+        ),
+        struct(
+            msg = "Platform developer dirs should emit swift lib and framework search paths",
+            developer_dirs = [
+                struct(
+                    developer_path_label = "platform",
+                    path = "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+                ),
+            ],
+            exp = [
+                "-L/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+                "-F/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+            ],
+        ),
+    ]
+
+    for t in tests:
+        actual = developer_dirs_linkopts(t.developer_dirs)
+        asserts.equals(env, t.exp, actual, t.msg)
+
+    return unittest.end(env)
+
+developer_dirs_linkopts_test = unittest.make(_developer_dirs_linkopts_test)
+
 def _standalone_toolchain_download_url_test(ctx):
     env = unittest.begin(ctx)
 
@@ -124,6 +171,7 @@ standalone_toolchain_download_url_test = unittest.make(_standalone_toolchain_dow
 def utils_test_suite(name):
     return unittest.suite(
         name,
+        developer_dirs_linkopts_test,
         include_developer_search_paths_test,
         standalone_toolchain_download_url_test,
     )
