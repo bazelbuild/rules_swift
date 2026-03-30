@@ -6,6 +6,7 @@ load(":cc_library_tests.bzl", "cc_library_test_suite")
 load(":compiler_arguments_tests.bzl", "compiler_arguments_test_suite")
 load(":const_values_tests.bzl", "const_values_test_suite")
 load(":coverage_settings_tests.bzl", "coverage_settings_test_suite")
+load(":custom_toolchain_linking_tests.bzl", "custom_toolchain_linking_test_suite")
 load(":debug_settings_tests.bzl", "debug_settings_test_suite")
 load(":environment_tests.bzl", "environment_test_suite")
 load(":features_tests.bzl", "features_test_suite")
@@ -43,6 +44,8 @@ compiler_arguments_test_suite(name = "compiler_arguments")
 const_values_test_suite(name = "const_values")
 
 coverage_settings_test_suite(name = "coverage_settings")
+
+custom_toolchain_linking_test_suite(name = "custom_toolchain_linking")
 
 debug_settings_test_suite(name = "debug_settings")
 
