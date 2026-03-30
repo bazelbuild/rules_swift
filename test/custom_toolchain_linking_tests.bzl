@@ -32,6 +32,22 @@ def custom_toolchain_linking_test_suite(name, tags = []):
             "__BAZEL_SWIFT_TOOLCHAIN_PATH__/usr/lib/swift/macosx",
         ],
         tags = all_tags,
+        target_compatible_with = ["@platforms//os:macos"],
+        target_under_test = "//test/fixtures/linking:bin",
+    )
+
+    custom_toolchain_linking_test(
+        name = "{}_uses_local_linux_toolchain".format(name),
+        expected_argv = [
+            "/usr/lib/swift/linux",
+        ],
+        mnemonic = "CppLink",
+        not_expected_argv = [
+            "__BAZEL_SWIFT_TOOLCHAIN_PATH__/usr/lib/swift/macosx",
+            "__BAZEL_CUSTOM_XCODE_TOOLCHAIN_PATH__",
+        ],
+        tags = all_tags,
+        target_compatible_with = ["@platforms//os:linux"],
         target_under_test = "//test/fixtures/linking:bin",
     )
 
