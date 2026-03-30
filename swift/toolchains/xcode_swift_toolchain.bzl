@@ -780,13 +780,11 @@ def _xcode_swift_toolchain_impl(ctx):
     toolchain_root = ctx.var.get("SWIFT_USE_TOOLCHAIN_ROOT")
 
     custom_toolchain = ctx.configuration.default_shell_env.get("TOOLCHAINS")
-    custom_xcode_swift_toolchain_root = None
     custom_xcode_linker_toolchain_root = None
     if toolchain_root and custom_toolchain:
         fail("Do not use SWIFT_USE_TOOLCHAIN_ROOT and TOOLCHAINS" +
              "in the same build.")
     elif custom_toolchain:
-        custom_xcode_swift_toolchain_root = "__BAZEL_SWIFT_TOOLCHAIN_PATH__"
         custom_xcode_linker_toolchain_root = "__BAZEL_CUSTOM_XCODE_TOOLCHAIN_PATH__"
 
     swift_linkopts_cc_info = _swift_linkopts_cc_info(
