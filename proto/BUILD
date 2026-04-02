@@ -26,6 +26,7 @@ bzl_library(
     deps = [
         ":swift_proto_utils",
         "@bazel_skylib//lib:paths",
+        "@com_google_protobuf//bazel/common:proto_common_bzl",
     ],
 )
 
