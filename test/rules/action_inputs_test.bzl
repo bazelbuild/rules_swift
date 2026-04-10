@@ -3,6 +3,11 @@
 load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "unittest")
 
+def _matches_expected_input(expected_input, input_path):
+    if "/" in expected_input:
+        return expected_input == input_path
+    return expected_input == input_path.rsplit("/", 1)[-1]
+
 def _action_inputs_test_impl(ctx):
     env = analysistest.begin(ctx)
     target_under_test = analysistest.target_under_test(env)
@@ -50,13 +55,13 @@ def _action_inputs_test_impl(ctx):
     for expected_input in ctx.attr.expected_inputs:
         found = False
         for path in input_paths:
-            if expected_input in path:
+            if _matches_expected_input(expected_input, path):
                 found = True
                 break
         if not found:
             unittest.fail(
                 env,
-                "{}expected inputs to contain file matching '{}', but it did not. Inputs: {}".format(
+                "{}expected inputs to contain '{}' as a filename or path, but it did not. Inputs: {}".format(
                     message_prefix,
                     expected_input,
                     input_paths,
@@ -66,13 +71,13 @@ def _action_inputs_test_impl(ctx):
     for not_expected_input in ctx.attr.not_expected_inputs:
         found = False
         for path in input_paths:
-            if not_expected_input in path:
+            if _matches_expected_input(not_expected_input, path):
                 found = True
                 break
         if found:
             unittest.fail(
                 env,
-                "{}expected inputs to not contain file matching '{}', but it did. Inputs: {}".format(
+                "{}expected inputs to not contain '{}' as a filename or path, but it did. Inputs: {}".format(
                     message_prefix,
                     not_expected_input,
                     input_paths,
@@ -101,11 +106,11 @@ def make_action_inputs_test_rule(config_settings = {}):
             ),
             "expected_inputs": attr.string_list(
                 default = [],
-                doc = "List of file patterns that should be present in action inputs.",
+                doc = "List of filenames or short_paths that should be present in action inputs.",
             ),
             "not_expected_inputs": attr.string_list(
                 default = [],
-                doc = "List of file patterns that should not be present in action inputs.",
+                doc = "List of filenames or short_paths that should not be present in action inputs.",
             ),
         },
         config_settings = config_settings,
