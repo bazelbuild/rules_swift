@@ -2071,7 +2071,7 @@ def _module_alias_map_fn(module):
         return None
 
 def _dependencies_swiftmodules_and_swiftdocs_configurator(prerequisites, args):
-    """Adds `.swiftmodule` and `.swiftdoc` files from the transitive modules to search paths and action inputs."""
+    """Adds Swift dependency search paths and `.swiftdoc` action inputs."""
     args.add_all(
         prerequisites.transitive_modules,
         format_each = "-I%s",
@@ -2080,12 +2080,12 @@ def _dependencies_swiftmodules_and_swiftdocs_configurator(prerequisites, args):
     )
 
     return ConfigResultInfo(
-        inputs = prerequisites.transitive_swiftmodules +
+        inputs = prerequisites.transitive_swift_dependency_inputs +
                  prerequisites.direct_swiftdocs,
     )
 
 def _dependencies_swiftmodules_configurator(prerequisites, args):
-    """Adds `.swiftmodule` files from deps to search paths and action inputs."""
+    """Adds Swift dependency search paths and action inputs."""
     args.add_all(
         prerequisites.transitive_modules,
         format_each = "-I%s",
@@ -2094,7 +2094,7 @@ def _dependencies_swiftmodules_configurator(prerequisites, args):
     )
 
     return ConfigResultInfo(
-        inputs = prerequisites.transitive_swiftmodules,
+        inputs = prerequisites.transitive_swift_dependency_inputs,
     )
 
 def _module_aliases_configurator(prerequisites, args):
@@ -2152,7 +2152,6 @@ def _plugin_search_paths_configurator(prerequisites, args):
 
 def _dependencies_swiftmodules_vfsoverlay_configurator(prerequisites, args, is_frontend = False):
     """Provides a single `.swiftmodule` search path using a VFS overlay."""
-    swiftmodules = prerequisites.transitive_swiftmodules
 
     # Bug: `swiftc` doesn't pass its `-vfsoverlay` arg to the frontend.
     # Workaround: Pass `-vfsoverlay` directly via `-Xfrontend`.
@@ -2165,7 +2164,9 @@ def _dependencies_swiftmodules_vfsoverlay_configurator(prerequisites, args, is_f
     )
 
     return ConfigResultInfo(
-        inputs = swiftmodules + [prerequisites.vfsoverlay_file],
+        inputs = prerequisites.transitive_swift_dependency_inputs + [
+            prerequisites.vfsoverlay_file,
+        ],
     )
 
 def _explicit_swift_module_map_configurator(prerequisites, args, is_frontend = False):
@@ -2186,7 +2187,7 @@ def _explicit_swift_module_map_configurator(prerequisites, args, is_frontend = F
             before_each = "-Xfrontend",
         )
     return ConfigResultInfo(
-        inputs = prerequisites.transitive_swiftmodules + [
+        inputs = prerequisites.transitive_swift_dependency_inputs + [
             prerequisites.explicit_swift_module_map_file,
         ],
     )

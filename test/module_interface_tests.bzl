@@ -19,6 +19,11 @@ load(
     "//test/rules:action_command_line_test.bzl",
     "make_action_command_line_test_rule",
 )
+load(
+    "//test/rules:action_inputs_test.bzl",
+    "action_inputs_test",
+    "make_action_inputs_test_rule",
+)
 load("//test/rules:provider_test.bzl", "provider_test")
 
 explicit_swift_module_map_test = make_action_command_line_test_rule(
@@ -30,6 +35,22 @@ explicit_swift_module_map_test = make_action_command_line_test_rule(
 )
 
 vfsoverlay_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:features": [
+            "swift.vfsoverlay",
+        ],
+    },
+)
+
+explicit_swift_module_map_inputs_test = make_action_inputs_test_rule(
+    config_settings = {
+        "//command_line_option:features": [
+            "swift.use_explicit_swift_module_map",
+        ],
+    },
+)
+
+vfsoverlay_inputs_test = make_action_inputs_test_rule(
     config_settings = {
         "//command_line_option:features": [
             "swift.vfsoverlay",
@@ -52,6 +73,14 @@ def module_interface_test_suite(name, tags = []):
         name = "{}_swift_binary_imports_swiftinterface".format(name),
         targets = [
             "//test/fixtures/module_interface:client",
+        ],
+        tags = all_tags,
+    )
+
+    build_test(
+        name = "{}_swift_binary_imports_transitive_swiftinterface".format(name),
+        targets = [
+            "//test/fixtures/module_interface:transitive_client",
         ],
         tags = all_tags,
     )
@@ -111,6 +140,52 @@ def module_interface_test_suite(name, tags = []):
         ],
         mnemonic = "SwiftCompileModuleInterface",
         target_under_test = "//test/fixtures/module_interface:toy_module",
+    )
+
+    # Test that dependency swiftinterface files are included as action inputs
+    action_inputs_test(
+        name = "{}_dependencies_included_as_inputs".format(name),
+        tags = all_tags,
+        mnemonic = "SwiftCompileModuleInterface",
+        expected_inputs = [
+            "ToyModule.swiftinterface",
+        ],
+        target_under_test = "//test/fixtures/module_interface:toy_module",
+    )
+
+    action_inputs_test(
+        name = "{}_transitive_dependencies_included_as_inputs".format(name),
+        tags = all_tags,
+        mnemonic = "SwiftCompileModuleInterface",
+        expected_inputs = [
+            "ToyModule.swiftinterface",
+            "DependentToyModule.swiftinterface",
+        ],
+        target_under_test = "//test/fixtures/module_interface:dependent_toy_module",
+    )
+
+    explicit_swift_module_map_inputs_test(
+        name = "{}_explicit_swift_module_map_dependencies_included_as_inputs".format(name),
+        tags = all_tags,
+        mnemonic = "SwiftCompileModuleInterface",
+        expected_inputs = [
+            "ToyModule.swiftinterface",
+            "DependentToyModule.swiftinterface",
+            "dependent_toy_module.swift-explicit-module-map.json",
+        ],
+        target_under_test = "//test/fixtures/module_interface:dependent_toy_module",
+    )
+
+    vfsoverlay_inputs_test(
+        name = "{}_vfsoverlay_dependencies_included_as_inputs".format(name),
+        tags = all_tags,
+        mnemonic = "SwiftCompileModuleInterface",
+        expected_inputs = [
+            "ToyModule.swiftinterface",
+            "DependentToyModule.swiftinterface",
+            "dependent_toy_module.vfsoverlay.yaml",
+        ],
+        target_under_test = "//test/fixtures/module_interface:dependent_toy_module",
     )
 
     native.test_suite(
