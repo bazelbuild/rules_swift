@@ -17,6 +17,7 @@
 load("//swift:providers.bzl", "SwiftInfo")
 load(":action_names.bzl", "SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT")
 load(":actions.bzl", "run_toolchain_action")
+load(":compiling.bzl", "transitive_swift_dependency_inputs")
 load(":features.bzl", "gather_toolchains")
 load(":toolchain_utils.bzl", "SWIFT_TOOLCHAIN_TYPE")
 load(":utils.bzl", "merge_compilation_contexts")
@@ -105,6 +106,9 @@ def extract_symbol_graph(
             transitive_swiftmodules.append(swift_module.swiftmodule)
             if module.name == module_name and swift_module.swiftdoc:
                 direct_swiftdocs.append(swift_module.swiftdoc)
+    transitive_swift_dependency_inputs_list = transitive_swift_dependency_inputs(
+        transitive_modules,
+    )
 
     prerequisites = struct(
         additional_inputs = toolchains.cc.all_files.to_list(),
@@ -121,6 +125,7 @@ def extract_symbol_graph(
         output_dir = output_dir,
         target_label = feature_configuration._label,
         transitive_modules = transitive_modules,
+        transitive_swift_dependency_inputs = transitive_swift_dependency_inputs_list,
         transitive_swiftmodules = transitive_swiftmodules,
     )
 

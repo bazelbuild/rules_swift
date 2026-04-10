@@ -89,6 +89,35 @@ load(":wmo.bzl", "find_num_threads_flag_value", "is_wmo_manually_requested")
 # SWIFT_FEATURE_VFSOVERLAY is enabled.
 _SWIFTMODULES_VFS_ROOT = "/__build_bazel_rules_swift/swiftmodules"
 
+def transitive_swift_dependency_inputs(transitive_modules):
+    """Returns Swift dependency artifacts that must be present in the sandbox.
+
+    Args:
+        transitive_modules: A list of transitive Swift module contexts.
+
+    Returns:
+        A list of `.swiftmodule` files and the preferred textual interface file
+        for each Swift dependency.
+    """
+    inputs = []
+
+    for module in transitive_modules:
+        swift_module = module.swift
+        if not swift_module:
+            continue
+
+        if swift_module.swiftmodule:
+            inputs.append(swift_module.swiftmodule)
+
+        interface_file = (
+            swift_module.private_swiftinterface or
+            swift_module.swiftinterface
+        )
+        if interface_file:
+            inputs.append(interface_file)
+
+    return inputs
+
 def create_compilation_context(defines, srcs, transitive_modules):
     """Cretes a compilation context for a Swift target.
 
@@ -228,6 +257,9 @@ def compile_module_interface(
         if not swift_module:
             continue
         transitive_swiftmodules.append(swift_module.swiftmodule)
+    transitive_swift_dependency_inputs_list = transitive_swift_dependency_inputs(
+        transitive_modules,
+    )
 
     if clang_module:
         transitive_modules.append(create_swift_module_context(
@@ -284,6 +316,7 @@ def compile_module_interface(
         swiftmodule_file = swiftmodule_file,
         target_label = feature_configuration._label,
         transitive_modules = transitive_modules,
+        transitive_swift_dependency_inputs = transitive_swift_dependency_inputs_list,
         transitive_swiftmodules = transitive_swiftmodules,
         user_compile_flags = copts,
         vfsoverlay_file = vfsoverlay_file,
@@ -595,6 +628,9 @@ def compile(
                 defines_set,
                 sets.make(swift_module.defines),
             )
+    transitive_swift_dependency_inputs_list = transitive_swift_dependency_inputs(
+        transitive_modules,
+    )
 
     # We need this when generating the VFS overlay file and also when
     # configuring inputs for the compile action, so it's best to precompute it
@@ -688,6 +724,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         source_files = srcs,
         target_label = feature_configuration._label,
         transitive_modules = transitive_modules,
+        transitive_swift_dependency_inputs = transitive_swift_dependency_inputs_list,
         transitive_swiftmodules = transitive_swiftmodules,
         upcoming_features = upcoming_features,
         user_compile_flags = copts,

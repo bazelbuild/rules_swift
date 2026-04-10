@@ -2080,7 +2080,7 @@ def _module_alias_map_fn(module):
         return None
 
 def _dependencies_swiftmodules_and_swiftdocs_configurator(prerequisites, args):
-    """Adds `.swiftmodule` and `.swiftdoc` files from the transitive modules to search paths and action inputs."""
+    """Adds Swift dependency search paths and `.swiftdoc` action inputs."""
     args.add_all(
         prerequisites.transitive_modules,
         format_each = "-I%s",
@@ -2089,12 +2089,12 @@ def _dependencies_swiftmodules_and_swiftdocs_configurator(prerequisites, args):
     )
 
     return ConfigResultInfo(
-        inputs = prerequisites.transitive_swiftmodules +
+        inputs = prerequisites.transitive_swift_dependency_inputs +
                  prerequisites.direct_swiftdocs,
     )
 
 def _dependencies_swiftmodules_configurator(prerequisites, args):
-    """Adds `.swiftmodule` files from deps to search paths and action inputs."""
+    """Adds Swift dependency search paths and action inputs."""
     args.add_all(
         prerequisites.transitive_modules,
         format_each = "-I%s",
@@ -2102,19 +2102,8 @@ def _dependencies_swiftmodules_configurator(prerequisites, args):
         uniquify = True,
     )
 
-    # Include both swiftmodule and swiftinterface files as inputs to ensure
-    # they are available in the sandbox for compilation
-    transitive_inputs = []
-    for module in prerequisites.transitive_modules:
-        swift_module = module.swift
-        if swift_module:
-            if swift_module.swiftmodule:
-                transitive_inputs.append(swift_module.swiftmodule)
-            if swift_module.swiftinterface:
-                transitive_inputs.append(swift_module.swiftinterface)
-
     return ConfigResultInfo(
-        inputs = transitive_inputs,
+        inputs = prerequisites.transitive_swift_dependency_inputs,
     )
 
 def _module_aliases_configurator(prerequisites, args):
@@ -2183,19 +2172,10 @@ def _dependencies_swiftmodules_vfsoverlay_configurator(prerequisites, args, is_f
         "-I{}".format(prerequisites.vfsoverlay_search_path),
     )
 
-    # Include both swiftmodule and swiftinterface files as inputs to ensure
-    # they are available in the sandbox for compilation
-    transitive_inputs = [prerequisites.vfsoverlay_file]
-    for module in prerequisites.transitive_modules:
-        swift_module = module.swift
-        if swift_module:
-            if swift_module.swiftmodule:
-                transitive_inputs.append(swift_module.swiftmodule)
-            if swift_module.swiftinterface:
-                transitive_inputs.append(swift_module.swiftinterface)
-
     return ConfigResultInfo(
-        inputs = transitive_inputs,
+        inputs = prerequisites.transitive_swift_dependency_inputs + [
+            prerequisites.vfsoverlay_file,
+        ],
     )
 
 def _explicit_swift_module_map_configurator(prerequisites, args, is_frontend = False):
@@ -2216,7 +2196,7 @@ def _explicit_swift_module_map_configurator(prerequisites, args, is_frontend = F
             before_each = "-Xfrontend",
         )
     return ConfigResultInfo(
-        inputs = prerequisites.transitive_swiftmodules + [
+        inputs = prerequisites.transitive_swift_dependency_inputs + [
             prerequisites.explicit_swift_module_map_file,
         ],
     )
