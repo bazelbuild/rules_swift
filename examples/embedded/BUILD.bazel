@@ -1,0 +1,94 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//swift:swift.bzl", "swift_binary", "swift_interop_hint")
+load(":transition.bzl", "transition_binary")
+
+package(default_visibility = ["//visibility:public"])
+
+platform(
+    name = "aarch64-none",
+    constraint_values = [
+        "@platforms//os:none",
+        "@platforms//cpu:aarch64",
+    ],
+)
+
+config_setting(
+    name = "linux_aarch64",
+    constraint_values = [
+        "@platforms//os:linux",
+        "@platforms//cpu:aarch64",
+    ],
+)
+
+config_setting(
+    name = "linux_x86_64",
+    constraint_values = [
+        "@platforms//os:linux",
+        "@platforms//cpu:x86_64",
+    ],
+)
+
+alias(
+    name = "llvm-objcopy",
+    actual = select({
+        ":linux_aarch64": "@swift_toolchain_ubuntu22.04-aarch64//:usr/bin/llvm-objcopy",
+        ":linux_x86_64": "@swift_toolchain_ubuntu22.04//:usr/bin/llvm-objcopy",
+        "@platforms//os:macos": "@swift_toolchain_xcode//:usr/bin/llvm-objcopy",
+    }),
+)
+
+swift_interop_hint(
+    name = "support_hint",
+    module_name = "Support",
+)
+
+cc_library(
+    name = "boot",
+    srcs = ["Sources/Support/boot.S"],
+    hdrs = ["Sources/Support/include/Support.h"],
+    aspect_hints = [":support_hint"],
+    linkstatic = True,
+    # We're tagging it as manual as we only want to build them through the transition below
+    tags = ["manual"],
+)
+
+swift_binary(
+    name = "Application",
+    srcs = ["Sources/Application/Application.swift"],
+    additional_linker_inputs = [
+        "Sources/Support/linkerscript.ld",
+    ],
+    linkopts = [
+        "-Wl,-T",
+        "-Wl,$(execpaths :Sources/Support/linkerscript.ld)",
+        "-Wl,--unresolved-symbols=ignore-in-object-files",
+        "-fuse-ld=lld",
+    ],
+    # We're tagging it as manual as we only want to build them through the transition below
+    tags = ["manual"],
+    deps = [
+        ":boot",
+        "@com_github_apple_swift_mmio//:MMIO",
+    ],
+)
+
+transition_binary(
+    name = "Application.aarch64",
+    binary = ":Application",
+    platform = ":aarch64-none",
+)
+
+genrule(
+    name = "ApplicationBinary",
+    srcs = [
+        ":Application.aarch64",
+    ],
+    outs = ["Application.bin"],
+    cmd = """
+    $(execpath :llvm-objcopy) -O binary \
+      $(execpaths :Application.aarch64) $@
+  """,
+    tools = [
+        ":llvm-objcopy",
+    ],
+)

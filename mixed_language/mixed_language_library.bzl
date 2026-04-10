@@ -319,6 +319,7 @@ a mixed language Swift library, use a clang only library rule like \
     swift_library_name = name + "_swift"
     swift_library(
         name = swift_library_name,
+        data = data,
         srcs = swift_srcs,
         alwayslink = alwayslink,
         always_include_developer_search_paths = always_include_developer_search_paths,
@@ -362,6 +363,7 @@ a mixed language Swift library, use a clang only library rule like \
     clang_library_name = name + "_clang"
     objc_library(
         name = clang_library_name,
+        data = data,
         srcs = clang_srcs,
         alwayslink = alwayslink,
         hdrs = adjusted_hdrs + additional_objc_compiler_inputs,
@@ -401,7 +403,6 @@ a mixed language Swift library, use a clang only library rule like \
         name = name,
         aspect_hints = aspect_hints,
         clang_target = ":" + clang_library_name,
-        data = data,
         features = features,
         module_map = module_map,
         module_name = module_name,

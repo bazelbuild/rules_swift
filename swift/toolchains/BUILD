@@ -1,4 +1,8 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+load(
+    "@build_bazel_apple_support//configs:platforms.bzl",
+    "APPLE_PLATFORMS_CONSTRAINTS",
+)
 
 licenses(["notice"])
 
@@ -59,6 +63,65 @@ bzl_library(
         "@bazel_tools//tools/cpp:toolchain_utils.bzl",
         "@rules_cc//cc/common",
     ],
+)
+
+toolchain(
+    name = "linux-swift-toolchain_x86_64",
+    exec_compatible_with = [
+        "@platforms//os:linux",
+        "@platforms//cpu:x86_64",
+    ],
+    target_compatible_with = [
+        "@platforms//os:linux",
+        "@platforms//cpu:x86_64",
+    ],
+    toolchain = "@build_bazel_rules_swift_local_config//:linux-toolchain",
+    toolchain_type = "//toolchains:toolchain_type",
+    visibility = ["//visibility:public"],
+)
+
+toolchain(
+    name = "linux-swift-toolchain_aarch64",
+    exec_compatible_with = [
+        "@platforms//os:linux",
+        "@platforms//cpu:aarch64",
+    ],
+    target_compatible_with = [
+        "@platforms//os:linux",
+        "@platforms//cpu:aarch64",
+    ],
+    toolchain = "@build_bazel_rules_swift_local_config//:linux-toolchain",
+    toolchain_type = "//toolchains:toolchain_type",
+    visibility = ["//visibility:public"],
+)
+
+[
+    toolchain(
+        name = "xcode-toolchain-" + arch,
+        exec_compatible_with = [
+            "@platforms//os:macos",
+        ],
+        target_compatible_with = constraints,
+        toolchain = "@build_bazel_rules_swift_local_config//:xcode-toolchain",
+        toolchain_type = "//toolchains:toolchain_type",
+        visibility = ["//visibility:public"],
+    )
+    for arch, constraints in APPLE_PLATFORMS_CONSTRAINTS.items()
+]
+
+toolchain(
+    name = "windows-swift-toolchain-x86_64",
+    exec_compatible_with = [
+        "@platforms//os:windows",
+        "@platforms//cpu:x86_64",
+    ],
+    target_compatible_with = [
+        "@platforms//os:windows",
+        "@platforms//cpu:x86_64",
+    ],
+    toolchain = "@build_bazel_rules_swift_local_config//:windows-toolchain",
+    toolchain_type = "//toolchains:toolchain_type",
+    visibility = ["//visibility:public"],
 )
 
 # Consumed by Bazel integration tests.

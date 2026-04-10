@@ -30,6 +30,7 @@ swift_compiler_plugin(
         "@SwiftSyntax",
         "@SwiftSyntax//:SwiftCompilerPlugin",
         "@SwiftSyntax//:SwiftSyntaxBuilder",
+        "@SwiftSyntax//:SwiftSyntaxMacroExpansion",
         "@SwiftSyntax//:SwiftSyntaxMacros",
     ],
 )
