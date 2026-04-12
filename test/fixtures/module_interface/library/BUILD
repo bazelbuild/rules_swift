@@ -25,6 +25,25 @@ licenses(["notice"])
 # that rule propagates its pre-built inputs in `DefaultInfo`.
 
 swift_library(
+    name = "dependent_toy_module_library",
+    srcs = ["DependentToyModule.swift"],
+    library_evolution = True,
+    module_name = "DependentToyModule",
+    tags = FIXTURE_TAGS,
+    deps = [":toy_module_library"],
+)
+
+swift_library_artifact_collector(
+    name = "dependent_toy_module_artifact_collector",
+    static_library = "toy_outputs/libDependentToyModule.a",
+    swiftdoc = "toy_outputs/DependentToyModule.swiftdoc",
+    swiftinterface = "toy_outputs/DependentToyModule.swiftinterface",
+    tags = FIXTURE_TAGS,
+    target = ":dependent_toy_module_library",
+    target_compatible_with = ["@platforms//os:macos"],
+)
+
+swift_library(
     name = "toy_module_library",
     srcs = ["ToyModule.swift"],
     library_evolution = True,

@@ -69,7 +69,6 @@ def make_grpc_swift_proto_compiler(
 
     swift_proto_compiler(
         name = name,
-        protoc = "//tools/protoc_wrapper:protoc",
         plugin = "//tools/protoc_wrapper:protoc-gen-grpc-swift",
         plugin_name = name.removesuffix("_proto"),
         plugin_option_allowlist = GRPC_PLUGIN_OPTION_ALLOWLIST,

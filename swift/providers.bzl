@@ -441,6 +441,10 @@ Swift build rules, and they are also passed to the C++ APIs used when linking
         "root_dir": """\
 `String`. The workspace-relative root directory of the toolchain.
 """,
+        "runtime": """\
+`List` of `File`s. Files required at runtime by compiled executables. They will
+be added to the input root at execution time.
+""",
         "swift_worker": """\
 `File`. The executable representing the worker executable used to invoke the
 compiler and other Swift tools (for both incremental and non-incremental
@@ -481,6 +485,36 @@ command line flag.
 These features determine various compilation and debugging behaviors of the
 Swift build rules, and they are also passed to the C++ APIs used when linking
 (so features defined in CROSSTOOL may be used here).
+""",
+    },
+)
+
+SwiftToolsInfo = provider(
+    doc = """\
+Propagates information about Swift toolchain tools that can be specified as
+labels to pull them into the input root.
+
+This provider allows users to specify Swift toolchain executables as explicit
+dependencies, ensuring they are available in the execution environment.
+""",
+    fields = {
+        "swift_driver": """\
+`File`. The Swift driver executable that orchestrates compilation and linking
+operations. This is the main entry point for invoking the Swift compiler
+toolchain.
+""",
+        "swift_autolink_extract": """\
+`File`. The executable that extracts autolink information from object files.
+This tool is used to determine which libraries need to be linked based on
+import statements in Swift code.
+""",
+        "swift_symbolgraph_extract": """\
+`File`. The executable that extracts symbol graph information from Swift
+modules. This tool generates structured data about APIs, which can be used
+for documentation generation and other tooling purposes.
+""",
+        "additional_inputs": """\
+`List` of `File`s. Additional files to add to the action input root when calling these tools.
 """,
     },
 )

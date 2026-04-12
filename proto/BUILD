@@ -26,6 +26,7 @@ bzl_library(
     deps = [
         ":swift_proto_utils",
         "@bazel_skylib//lib:paths",
+        "@protobuf//bazel/common:proto_common_bzl",
     ],
 )
 
@@ -40,7 +41,7 @@ bzl_library(
         "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
         "@bazel_skylib//lib:dicts",
-        "@com_google_protobuf//bazel/common:proto_info_bzl",
+        "@protobuf//bazel/common:proto_info_bzl",
     ],
 )
 
@@ -60,7 +61,7 @@ bzl_library(
         "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
         "@bazel_skylib//lib:dicts",
-        "@com_google_protobuf//bazel/common:proto_info_bzl",
+        "@protobuf//bazel/common:proto_info_bzl",
     ],
 )
 
