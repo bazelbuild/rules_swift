@@ -23,6 +23,7 @@ tasks:
     shell_commands: *shell_commands
     build_flags:
     - "--action_env=PATH"
+    - "--incompatible_enable_proto_toolchain_resolution"
     build_targets:
     - "@rules_swift//examples/xplatform/..."
     - "-@rules_swift//examples/xplatform/macros/..." # Has a dev dependency
