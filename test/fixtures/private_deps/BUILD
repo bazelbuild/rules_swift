@@ -46,6 +46,7 @@ swift_library(
 
 cc_library(
     name = "private_cc",
+    srcs = ["private.cc"],
     hdrs = ["private.h"],
     aspect_hints = ["//swift:auto_module"],
     features = [
@@ -61,6 +62,7 @@ cc_library(
 
 cc_library(
     name = "public_cc",
+    srcs = ["public.cc"],
     hdrs = ["public.h"],
     aspect_hints = ["//swift:auto_module"],
     features = [
