@@ -6,6 +6,7 @@ shell_commands: &shell_commands
 matrix:
   bazel:
   - 8.x
+  - 9.x
   - rolling
   platform:
   - ubuntu2004
