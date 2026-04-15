@@ -61,7 +61,7 @@ bzl_library(
     name = "fake_framework",
     srcs = ["fake_framework.bzl"],
     deps = [
-        "@bazel_tools//tools/cpp:toolchain_utils.bzl",
+        "@rules_cc//cc:find_cc_toolchain_bzl",
         "@rules_cc//cc/common",
     ],
 )
