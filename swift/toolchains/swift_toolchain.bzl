@@ -388,23 +388,41 @@ def _swift_unix_linkopts_cc_info(
         "-pie",
         "-L{}".format(platform_lib_dir),
     ]
-    if not static_stdlib:
-        linkopts.append("-Wl,-rpath,{}".format(platform_lib_dir))
-    linkopts.extend([
-        "-lm",
-        "-lstdc++",
-        "-lrt",
-        "-ldl",
-    ])
     if static_stdlib:
-        # When linking the Swift runtime statically, its archives depend on
-        # pthread symbols directly rather than picking them up transitively
-        # from the shared runtime.
-        linkopts.append("-lpthread")
+        # lld's --gc-sections aggressively drops the `__{start,stop}_swift5_*`
+        # encapsulation symbols that swiftrt.o references to walk protocol
+        # conformances, type metadata, etc. With a dynamic stdlib those
+        # sections live inside libswiftCore.so and can't be GC'd from the
+        # executable; with a static stdlib they merge into the final link and
+        # disappear. Retain them.
+        linkopts.append("-Wl,-z,nostart-stop-gc")
+    else:
+        linkopts.append("-Wl,-rpath,{}".format(platform_lib_dir))
+    if not static_stdlib:
+        # Historical ordering for the dynamic case — system libs before the
+        # runtime startup object. Keeping this to avoid changing behavior for
+        # existing shared-stdlib users.
+        linkopts.extend([
+            "-lm",
+            "-lstdc++",
+            "-lrt",
+            "-ldl",
+        ])
     linkopts.extend([
         runtime_object_path,
         "-static-libgcc",
     ])
+    if static_stdlib:
+        # System libs must trail the Swift runtime archives so a single-pass
+        # linker can satisfy symbols the archives reference (e.g. libstdc++
+        # template instantiations pulled in by libswift_Concurrency.a).
+        linkopts.extend([
+            "-lm",
+            "-lstdc++",
+            "-lrt",
+            "-ldl",
+            "-lpthread",
+        ])
 
     return CcInfo(
         linking_context = cc_common.create_linking_context(
