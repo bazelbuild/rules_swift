@@ -65,8 +65,9 @@ def write_explicit_swift_module_map_file(
         if module_context.clang:
             clang_context = module_context.clang
             if clang_context.module_map:
-                # If path is not an attribute of `module_map`, then `module_map` is a string and we use it as our path.
-                module_description["clangModuleMapPath"] = getattr(clang_context.module_map, "path", clang_context.module_map)
+                if not module_context.is_system:
+                    # If path is not an attribute of `module_map`, then `module_map` is a string and we use it as our path.
+                    module_description["clangModuleMapPath"] = getattr(clang_context.module_map, "path", clang_context.module_map)
                 has_clang_description = True
             if clang_context.precompiled_module:
                 module_description["clangModulePath"] = clang_context.precompiled_module.path
