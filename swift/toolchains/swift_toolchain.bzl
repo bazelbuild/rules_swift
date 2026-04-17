@@ -12,290 +12,729 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Implementation of the `swift_binary` rule."""
+"""BUILD rules used to provide a Swift toolchain on Linux.
 
+The rules defined in this file are not intended to be used outside of the Swift
+toolchain package. If you are looking for rules to build Swift code using this
+toolchain, see `swift.bzl`.
+"""
+
+load("@bazel_features//:features.bzl", "bazel_features")
+load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
+load(
+    "@bazel_tools//tools/cpp:toolchain_utils.bzl",
+    "use_cpp_toolchain",
+)
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
-load("//swift/internal:binary_attrs.bzl", "binary_rule_attrs")
-load("//swift/internal:compiling.bzl", "compile")
+load(
+    "//swift:providers.bzl",
+    "SwiftFeatureAllowlistInfo",
+    "SwiftPackageConfigurationInfo",
+    "SwiftToolchainInfo",
+)
+load(
+    "//swift/internal:action_names.bzl",
+    "SWIFT_ACTION_AUTOLINK_EXTRACT",
+    "SWIFT_ACTION_COMPILE",
+    "SWIFT_ACTION_COMPILE_MODULE_INTERFACE",
+    "SWIFT_ACTION_DERIVE_FILES",
+    "SWIFT_ACTION_DUMP_AST",
+    "SWIFT_ACTION_MODULEWRAP",
+    "SWIFT_ACTION_PRECOMPILE_C_MODULE",
+    "SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT",
+    "SWIFT_ACTION_SYNTHESIZE_INTERFACE",
+)
+load("//swift/internal:attrs.bzl", "swift_toolchain_driver_attrs")
+load("//swift/internal:autolinking.bzl", "autolink_extract_action_configs")
 load(
     "//swift/internal:feature_names.bzl",
-    "SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT",
-)
-load("//swift/internal:features.bzl", "is_feature_enabled")
-load(
-    "//swift/internal:linking.bzl",
-    "configure_features_for_binary",
-    "create_linking_context_from_compilation_outputs",
-    "malloc_linking_context",
-    "register_link_binary_action",
+    "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
+    "SWIFT_FEATURE_STATIC_STDLIB",
+    "SWIFT_FEATURE_USE_AUTOLINK_EXTRACT",
+    "SWIFT_FEATURE_USE_GLOBAL_INDEX_STORE",
+    "SWIFT_FEATURE_USE_MODULE_WRAP",
 )
 load(
-    "//swift/internal:output_groups.bzl",
-    "supplemental_compilation_output_groups",
+    "//swift/internal:features.bzl",
+    "default_features_for_toolchain",
+    "features_for_build_modes",
 )
-load("//swift/internal:providers.bzl", "SwiftCompilerPluginInfo")
 load(
-    "//swift/internal:toolchain_utils.bzl",
-    "get_swift_toolchain",
-    "use_swift_toolchain",
+    "//swift/internal:providers.bzl",
+    "SwiftCrossImportOverlayInfo",
+    "SwiftModuleAliasesInfo",
 )
+load("//swift/internal:target_triples.bzl", "target_triples")
 load(
     "//swift/internal:utils.bzl",
-    "expand_locations",
-    "get_providers",
-    "include_developer_search_paths",
+    "collect_implicit_deps_providers",
+    "get_swift_executable_for_toolchain",
 )
-load(":module_name.bzl", "derive_swift_module_name")
+load("//swift/internal:wmo.bzl", "features_from_swiftcopts")
 load(
-    ":providers.bzl",
-    "SwiftBinaryInfo",
-    "SwiftInfo",
-    "SwiftOverlayInfo",
-    "create_swift_module_context",
+    "//swift/toolchains/config:action_config.bzl",
+    "ActionConfigInfo",
+    "add_arg",
 )
+load(
+    "//swift/toolchains/config:all_actions_config.bzl",
+    "all_actions_action_configs",
+)
+load("//swift/toolchains/config:compile_config.bzl", "compile_action_configs")
+load(
+    "//swift/toolchains/config:modulewrap_config.bzl",
+    "modulewrap_action_configs",
+)
+load(
+    "//swift/toolchains/config:symbol_graph_config.bzl",
+    "symbol_graph_action_configs",
+)
+load("//swift/toolchains/config:tool_config.bzl", "ToolConfigInfo")
 
-def _maybe_parse_as_library_copts(srcs):
-    """Returns a list of compiler flags depending on `main.swift`'s presence.
+_CPP_TOOLCHAIN_TYPE = Label("@bazel_tools//tools/cpp:toolchain_type")
 
-    Now that the `@main` attribute exists and is becoming more common, in the
-    case there is a single file not named `main.swift`, we assume that it has a
-    `@main` annotation, in which case it needs to be parsed as a library, not
-    as if it has top level code. In the case this is the wrong assumption,
-    compilation or linking will fail.
+def _swift_compile_resource_set(_os, inputs_size):
+    # The `os` argument is unused, but the Starlark API requires both
+    # positional arguments.
+    return {"cpu": 1, "memory": 200. + inputs_size * 0.015}
+
+def _all_tool_configs(
+        env,
+        swift_executable,
+        toolchain_root,
+        use_autolink_extract,
+        use_module_wrap,
+        additional_tools,
+        tool_executable_suffix):
+    """Returns the tool configurations for the Swift toolchain.
 
     Args:
-        srcs: A list of source files to check for the presence of `main.swift`.
+        env: A custom environment to execute the tools in.
+        swift_executable: A custom Swift driver executable to be used during the
+            build, if provided.
+        toolchain_root: The root directory of the toolchain.
+        use_autolink_extract: If True, the link action should use
+            `swift-autolink-extract` to extract the complier directed linking
+            flags.
+        use_module_wrap: If True, the compile action should embed the
+            swiftmodule into the final image.
+        additional_tools: A list of extra tools to pass to each driver config,
+            in a format suitable for the `tools` argument to `ctx.actions.run`.
+        tool_executable_suffix: The suffix for executable tools to use (e.g.
+            `.exe` on Windows).
 
     Returns:
-        A list of compiler flags to add to `copts`
+        A dictionary mapping action name to tool configurations.
     """
-    use_parse_as_library = len(srcs) == 1 and \
-                           srcs[0].basename != "main.swift"
-    return ["-parse-as-library"] if use_parse_as_library else []
 
-def _swift_binary_impl(ctx):
-    swift_toolchain = get_swift_toolchain(ctx)
+    def _driver_config(*, mode):
+        return {
+            "mode": mode,
+            "swift_executable": swift_executable,
+            "tool_executable_suffix": tool_executable_suffix,
+            "toolchain_root": toolchain_root,
+        }
 
-    feature_configuration = configure_features_for_binary(
-        ctx = ctx,
-        requested_features = ctx.features,
-        swift_toolchain = swift_toolchain,
-        unsupported_features = ctx.disabled_features,
+    compile_tool_config = ToolConfigInfo(
+        additional_tools = additional_tools,
+        driver_config = _driver_config(mode = "swiftc"),
+        resource_set = _swift_compile_resource_set,
+        use_param_file = True,
+        worker_mode = "persistent",
+        env = env,
     )
 
-    srcs = ctx.files.srcs
-    output_groups = {}
-    module_contexts = []
-    additional_linking_contexts = []
+    tool_configs = {
+        SWIFT_ACTION_COMPILE: compile_tool_config,
+        SWIFT_ACTION_DERIVE_FILES: compile_tool_config,
+        SWIFT_ACTION_DUMP_AST: compile_tool_config,
+        SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT: ToolConfigInfo(
+            additional_tools = additional_tools,
+            driver_config = _driver_config(mode = "swift-symbolgraph-extract"),
+            use_param_file = True,
+            worker_mode = "wrap",
+            env = env,
+        ),
+    }
 
-    # If the binary has sources, compile those first and collect the outputs to
-    # be passed to the linker.
-    if srcs:
-        module_name = ctx.attr.module_name
-        if not module_name:
-            module_name = derive_swift_module_name(ctx.label)
-        entry_point_function_name = "{}_main".format(module_name)
-
-        include_dev_srch_paths = include_developer_search_paths(ctx.attr)
-
-        compile_result = compile(
-            actions = ctx.actions,
-            additional_inputs = ctx.files.swiftc_inputs,
-            cc_infos = get_providers(ctx.attr.deps, CcInfo),
-            copts = expand_locations(
-                ctx,
-                ctx.attr.copts,
-                ctx.attr.swiftc_inputs,
-            ) + _maybe_parse_as_library_copts(srcs) + [
-                # Use a custom entry point name so that the binary's code can
-                # also be linked into another process (like a test executable)
-                # without having its main function collide.
-                "-Xfrontend",
-                "-entry-point-function-name",
-                "-Xfrontend",
-                entry_point_function_name,
-            ],
-            defines = ctx.attr.defines,
-            feature_configuration = feature_configuration,
-            include_dev_srch_paths = include_dev_srch_paths,
-            module_name = module_name,
-            package_name = ctx.attr.package_name,
-            plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),
-            srcs = srcs,
-            swift_infos = get_providers(ctx.attr.deps, SwiftInfo),
-            swift_toolchain = swift_toolchain,
-            target_name = ctx.label.name,
-            workspace_name = ctx.workspace_name,
+    if use_autolink_extract:
+        tool_configs[SWIFT_ACTION_AUTOLINK_EXTRACT] = ToolConfigInfo(
+            additional_tools = additional_tools,
+            driver_config = _driver_config(mode = "swift-autolink-extract"),
+            worker_mode = "wrap",
         )
-        module_contexts.append(compile_result.module_context)
-        compilation_outputs = compile_result.compilation_outputs
-        supplemental_outputs = compile_result.supplemental_outputs
-        output_groups = supplemental_compilation_output_groups(
-            supplemental_outputs,
+
+    if use_module_wrap:
+        tool_configs[SWIFT_ACTION_MODULEWRAP] = ToolConfigInfo(
+            additional_tools = additional_tools,
+            # This must come first after the driver name.
+            args = ["-modulewrap"],
+            driver_config = _driver_config(mode = "swift"),
+            worker_mode = "wrap",
         )
-    else:
-        compile_result = None
-        entry_point_function_name = None
-        compilation_outputs = cc_common.create_compilation_outputs()
 
-    additional_linking_contexts.append(malloc_linking_context(ctx))
+    return tool_configs
 
-    # Apply the optional debugging outputs extension if the toolchain defines
-    # one.
-    debug_outputs_provider = swift_toolchain.debug_outputs_provider
-    if debug_outputs_provider:
-        debug_extension = debug_outputs_provider(ctx = ctx)
-        additional_debug_outputs = debug_extension.additional_outputs
-        variables_extension = debug_extension.variables_extension
-    else:
-        additional_debug_outputs = []
-        variables_extension = {}
+def _all_action_configs(os, arch, target_triple, sdkroot, xctest_version, additional_swiftc_copts):
+    """Returns the action configurations for the Swift toolchain.
 
-    binary_link_flags = expand_locations(
-        ctx,
-        ctx.attr.linkopts,
-        ctx.attr.additional_linker_inputs,
-    ) + ctx.fragments.cpp.linkopts
+    Args:
+        os: The OS that we are compiling for.
+        arch: The architecture we are compiling for.
+        target_triple: The triple of the platform being targeted.
+        sdkroot: The path to the SDK that we should use to build against.
+        xctest_version: The version of XCTest to use.
+        additional_swiftc_copts: Additional Swift compiler flags obtained from
+            the `.../swift:copt` build setting.
 
-    # When linking the binary, make sure we use the correct entry point name.
-    if entry_point_function_name:
-        entry_point_linkopts = swift_toolchain.entry_point_linkopts_provider(
-            entry_point_name = entry_point_function_name,
-        ).linkopts
-    else:
-        entry_point_linkopts = []
+    Returns:
+        A list of action configurations for the toolchain.
+    """
 
-    if is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT,
-    ):
-        name = paths.join(ctx.label.name, ctx.label.name)
-    else:
-        name = ctx.label.name
+    # Basic compilation flags (target triple and toolchain search paths).
 
-    linking_outputs = register_link_binary_action(
-        actions = ctx.actions,
-        additional_inputs = ctx.files.additional_linker_inputs,
-        additional_linking_contexts = additional_linking_contexts,
-        additional_outputs = additional_debug_outputs,
-        feature_configuration = feature_configuration,
-        compilation_outputs = compilation_outputs,
-        deps = ctx.attr.deps,
-        label = ctx.label,
-        module_contexts = module_contexts,
-        name = name,
-        output_type = "executable",
-        stamp = ctx.attr.stamp,
-        swift_toolchain = swift_toolchain,
-        user_link_flags = binary_link_flags + entry_point_linkopts,
-        variables_extension = variables_extension,
-    )
-
-    providers = [
-        DefaultInfo(
-            executable = linking_outputs.executable,
-            files = depset(
-                [linking_outputs.executable] + additional_debug_outputs,
-            ),
-            runfiles = ctx.runfiles(
-                collect_data = True,
-                collect_default = True,
-                files = ctx.files.data,
-            ),
-        ),
-        coverage_common.instrumented_files_info(
-            ctx,
-            dependency_attributes = ["deps"],
-            extensions = ["swift"],
-            source_attributes = ["srcs"],
-        ),
-        OutputGroupInfo(**output_groups),
-        SwiftInfo(
-            modules = [
-                create_swift_module_context(
-                    name = module_context.name,
-                    compilation_context = module_context.compilation_context,
-                    # The rest of the fields are intentionally ommited, as we
-                    # only want to expose the compilation_context
-                )
-                for module_context in module_contexts
+    action_configs = [
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+                SWIFT_ACTION_DERIVE_FILES,
+                SWIFT_ACTION_DUMP_AST,
+                SWIFT_ACTION_MODULEWRAP,
+                SWIFT_ACTION_PRECOMPILE_C_MODULE,
+                SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
+                SWIFT_ACTION_SYNTHESIZE_INTERFACE,
             ],
-        ),
-        RunEnvironmentInfo(
-            environment = expand_locations(
-                ctx,
-                ctx.attr.env,
-                ctx.attr.swiftc_inputs + ctx.attr.additional_linker_inputs,
-            ),
+            configurators = [
+                add_arg("-target", target_triples.str(target_triple)),
+            ],
         ),
     ]
-
-    # Only create a linking context and propagate `SwiftBinaryInfo` if this rule
-    # compiled something (i.e., it had sources). If it didn't, then there's
-    # nothing to allow testing against.
-    if compile_result:
-        linking_context, _ = (
-            create_linking_context_from_compilation_outputs(
-                actions = ctx.actions,
-                additional_inputs = ctx.files.additional_linker_inputs,
-                alwayslink = True,
-                compilation_outputs = compilation_outputs,
-                feature_configuration = feature_configuration,
-                label = ctx.label,
-                linking_contexts = [
-                    dep[CcInfo].linking_context
-                    for dep in ctx.attr.deps
-                    if CcInfo in dep
-                ] + [
-                    dep[SwiftOverlayInfo].linking_context
-                    for dep in ctx.attr.deps
-                    if SwiftOverlayInfo in dep
+    if sdkroot:
+        action_configs = [
+            ActionConfigInfo(
+                actions = [
+                    SWIFT_ACTION_COMPILE,
+                    SWIFT_ACTION_DERIVE_FILES,
+                    SWIFT_ACTION_DUMP_AST,
+                    SWIFT_ACTION_PRECOMPILE_C_MODULE,
                 ],
-                module_context = compile_result.module_context,
-                swift_toolchain = swift_toolchain,
-                # Exclude the entry point linkopts from this linking context,
-                # because it is meant to be used by other binary rules that
-                # provide their own entry point while linking this "binary" in
-                # as a library.
-                user_link_flags = binary_link_flags,
-            )
-        )
-        providers.append(SwiftBinaryInfo(
-            cc_info = CcInfo(
-                compilation_context = (
-                    compile_result.module_context.clang.compilation_context
-                ),
-                linking_context = linking_context,
+                configurators = [add_arg("-sdk", sdkroot)],
             ),
-            swift_info = compile_result.swift_info,
-        ))
+        ]
 
-    return providers
+        if os and xctest_version:
+            action_configs.append(
+                ActionConfigInfo(
+                    actions = [
+                        SWIFT_ACTION_COMPILE,
+                        SWIFT_ACTION_DERIVE_FILES,
+                        SWIFT_ACTION_DUMP_AST,
+                        SWIFT_ACTION_PRECOMPILE_C_MODULE,
+                    ],
+                    configurators = [
+                        add_arg(
+                            paths.join(
+                                sdkroot,
+                                "..",
+                                "..",
+                                "Library",
+                                "XCTest-{}".format(xctest_version),
+                                "usr",
+                                "lib",
+                                "swift",
+                                os,
+                            ),
+                            format = "-I%s",
+                        ),
+                    ],
+                ),
+            )
 
-swift_binary = rule(
-    attrs = binary_rule_attrs(
-        additional_deps_providers = [[SwiftCompilerPluginInfo]],
-        stamp_default = -1,
-    ),
-    doc = """\
-Compiles and links Swift code into an executable binary.
+            # Compatibility with older builds of the Swift SDKs.
+            if arch:
+                action_configs.append(
+                    ActionConfigInfo(
+                        actions = [
+                            SWIFT_ACTION_COMPILE,
+                            SWIFT_ACTION_DERIVE_FILES,
+                            SWIFT_ACTION_DUMP_AST,
+                            SWIFT_ACTION_PRECOMPILE_C_MODULE,
+                        ],
+                        configurators = [
+                            add_arg(
+                                paths.join(
+                                    sdkroot,
+                                    "..",
+                                    "..",
+                                    "Library",
+                                    "XCTest-{}".format(xctest_version),
+                                    "usr",
+                                    "lib",
+                                    "swift",
+                                    os,
+                                    arch,
+                                ),
+                                format = "-I%s",
+                            ),
+                        ],
+                    ),
+                )
 
-On Linux, this rule produces an executable binary for the desired target
-architecture.
+    action_configs.extend(all_actions_action_configs())
+    action_configs.extend(
+        compile_action_configs(
+            additional_swiftc_copts = additional_swiftc_copts,
+        ),
+    )
+    action_configs.extend(modulewrap_action_configs())
+    action_configs.extend(autolink_extract_action_configs())
+    action_configs.extend(symbol_graph_action_configs())
 
-On Apple platforms, this rule produces a _single-architecture_ binary; it does
-not produce fat binaries. As such, this rule is mainly useful for creating Swift
-tools intended to run on the local build machine.
+    return action_configs
 
-If you want to create a multi-architecture binary or a bundled application,
-please use one of the platform-specific application rules in
-[rules_apple](https://github.com/bazelbuild/rules_apple) instead of
-`swift_binary`.
+def _swift_windows_linkopts_cc_info(
+        arch,
+        sdkroot,
+        xctest_version,
+        toolchain_label):
+    """Returns a `CcInfo` containing flags that should be passed to the linker.
+
+    The provider returned by this function will be used as an implicit
+    dependency of the toolchain to ensure that any binary containing Swift code
+    will link to the standard libraries correctly.
+
+    Args:
+        arch: The CPU architecture, which is used as part of the library path.
+        sdkroot: The path to the root of the SDK that we are building against.
+        xctest_version: The version of XCTest that we are building against.
+        toolchain_label: The label of the Swift toolchain that will act as the
+            owner of the linker input propagating the flags.
+
+    Returns:
+        A `CcInfo` provider that will provide linker flags to binaries that
+        depend on Swift targets.
+    """
+    platform_lib_dir = "{sdkroot}/usr/lib/swift/windows/{arch}".format(
+        sdkroot = sdkroot,
+        arch = arch,
+    )
+
+    runtime_object_path = "{sdkroot}/usr/lib/swift/windows/{arch}/swiftrt.obj".format(
+        sdkroot = sdkroot,
+        arch = arch,
+    )
+
+    linkopts = [
+        "-LIBPATH:{}".format(platform_lib_dir),
+        "-LIBPATH:{}".format(paths.join(sdkroot, "..", "..", "Library", "XCTest-{}".format(xctest_version), "usr", "lib", "swift", "windows", arch)),
+        runtime_object_path,
+    ]
+
+    return CcInfo(
+        linking_context = cc_common.create_linking_context(
+            linker_inputs = depset([
+                cc_common.create_linker_input(
+                    owner = toolchain_label,
+                    user_link_flags = depset(linkopts),
+                ),
+            ]),
+        ),
+    )
+
+def _swift_unix_linkopts_cc_info(
+        cpu,
+        os,
+        toolchain_label,
+        toolchain_root,
+        static_stdlib):
+    """Returns a `CcInfo` containing flags that should be passed to the linker.
+
+    The provider returned by this function will be used as an implicit
+    dependency of the toolchain to ensure that any binary containing Swift code
+    will link to the standard libraries correctly.
+
+    Args:
+        cpu: The CPU architecture, which is used as part of the library path.
+        os: The operating system name, which is used as part of the library
+            path.
+        toolchain_label: The label of the Swift toolchain that will act as the
+            owner of the linker input propagating the flags.
+        toolchain_root: The toolchain's root directory.
+        static_stdlib: If `True`, link the Swift standard library and runtime
+            statically by sourcing them from `lib/swift_static/{os}` instead of
+            `lib/swift/{os}` and omitting the runtime rpath entry.
+
+    Returns:
+        A `CcInfo` provider that will provide linker flags to binaries that
+        depend on Swift targets.
+    """
+
+    stdlib_subdir = "swift_static" if static_stdlib else "swift"
+    platform_lib_dir = "{toolchain_root}/lib/{stdlib_subdir}/{os}".format(
+        os = os,
+        stdlib_subdir = stdlib_subdir,
+        toolchain_root = toolchain_root,
+    )
+
+    runtime_object_path = "{platform_lib_dir}/{cpu}/swiftrt.o".format(
+        cpu = cpu,
+        platform_lib_dir = platform_lib_dir,
+    )
+
+    linkopts = [
+        "-pie",
+        "-L{}".format(platform_lib_dir),
+        "-Wl,-rpath,{}".format(platform_lib_dir),
+        "-lm",
+        "-lstdc++",
+        "-lrt",
+        "-ldl",
+        runtime_object_path,
+        "-static-libgcc",
+    ]
+
+    return CcInfo(
+        linking_context = cc_common.create_linking_context(
+            linker_inputs = depset([
+                cc_common.create_linker_input(
+                    owner = toolchain_label,
+                    user_link_flags = depset(linkopts),
+                ),
+            ]),
+        ),
+    )
+
+def _entry_point_linkopts_provider(*, entry_point_name):
+    """Returns linkopts to customize the entry point of a binary."""
+    return struct(
+        linkopts = ["-Wl,--defsym,main={}".format(entry_point_name)],
+    )
+
+
+def _parse_target_system_name(*, arch, os, target_system_name):
+    """Returns the target system name set by the CC toolchain or attempts to create one based on the OS and arch."""
+
+    if target_system_name != "local":
+        return target_system_name
+
+    if os == "linux":
+        return "%s-unknown-linux-gnu" % arch
+    else:
+        return "%s-unknown-%s" % (arch, os)
+
+def _swift_toolchain_impl(ctx):
+    toolchain_root = ctx.attr.root
+    cc_toolchain = ctx.exec_groups["default"].toolchains[_CPP_TOOLCHAIN_TYPE].cc
+    target_system_name = _parse_target_system_name(
+        arch = ctx.attr.arch,
+        os = ctx.attr.os,
+        target_system_name = cc_toolchain.target_gnu_system_name,
+    )
+    target_triple = target_triples.normalize_for_swift(
+        target_triples.parse(ctx.var.get("CC_TARGET_TRIPLE") or target_system_name),
+    )
+
+    if "clang" not in cc_toolchain.compiler:
+        fail("Swift requires the configured CC toolchain to be LLVM (clang). " +
+             "Either use the locally installed LLVM by setting `CC=clang` in your environment " +
+             "before invoking Bazel, or configure a Bazel LLVM CC toolchain.")
+
+    if ctx.attr.os == "windows":
+        swift_linkopts_cc_info = _swift_windows_linkopts_cc_info(
+            ctx.attr.arch,
+            ctx.attr.sdkroot,
+            ctx.attr.xctest_version,
+            ctx.label,
+        )
+    elif ctx.attr.os == "none":
+        swift_linkopts_cc_info = CcInfo()
+    else:
+        swift_linkopts_cc_info = _swift_unix_linkopts_cc_info(
+            ctx.attr.arch,
+            ctx.attr.os,
+            ctx.label,
+            toolchain_root,
+            SWIFT_FEATURE_STATIC_STDLIB in ctx.features,
+        )
+
+    # TODO: Remove once we drop bazel 7.x support
+    if not bazel_features.cc.swift_fragment_removed:
+        swiftcopts = list(ctx.fragments.swift.copts())
+    else:
+        swiftcopts = []
+
+    if "-exec-" in ctx.bin_dir.path:
+        swiftcopts.extend(ctx.attr._exec_copts[BuildSettingInfo].value)
+    else:
+        swiftcopts.extend(ctx.attr._copts[BuildSettingInfo].value)
+
+    # Combine build mode features, autoconfigured features, and required
+    # features.
+    requested_features = (
+        features_for_build_modes(ctx) +
+        features_from_swiftcopts(swiftcopts = swiftcopts)
+    )
+    requested_features.extend(default_features_for_toolchain(
+        target_triple = target_triple,
+    ))
+
+    requested_features.extend([
+        # Allow users to start using access levels on `import`s by default. Note
+        # that this does *not* change the default access level for `import`s to
+        # `internal`; that is controlled by the upcoming feature flag
+        # `InternalImportsByDefault`.
+        "swift.experimental.AccessLevelOnImport",
+    ])
+
+    requested_features.extend(ctx.features)
+
+    # Swift.org toolchains assume everything is just available on the PATH so we
+    # we don't pass any files unless we have a custom driver executable in the
+    # workspace.
+    swift_executable = get_swift_executable_for_toolchain(ctx)
+
+    all_tool_configs = _all_tool_configs(
+        env = ctx.attr.env,
+        swift_executable = swift_executable,
+        toolchain_root = toolchain_root,
+        use_autolink_extract = SWIFT_FEATURE_USE_AUTOLINK_EXTRACT in ctx.features,
+        use_module_wrap = SWIFT_FEATURE_USE_MODULE_WRAP in ctx.features,
+        additional_tools = [ctx.file.version_file],
+        tool_executable_suffix = ctx.attr.tool_executable_suffix,
+    )
+    all_action_configs = _all_action_configs(
+        os = ctx.attr.os,
+        arch = ctx.attr.arch,
+        target_triple = target_triple,
+        sdkroot = ctx.attr.sdkroot,
+        xctest_version = ctx.attr.xctest_version,
+        additional_swiftc_copts = ctx.attr.copts + swiftcopts,
+    )
+
+    if ctx.attr.os == "windows":
+        if ctx.attr.arch == "x86_64":
+            bindir = "bin64"
+        elif ctx.attr.arch == "i686":
+            bindir = "bin32"
+        elif ctx.attr.arch == "arm64":
+            bindir = "bin64a"
+        else:
+            fail("unsupported arch `{}`".format(ctx.attr.arch))
+
+        xctest = paths.normalize(paths.join(ctx.attr.sdkroot, "..", "..", "Library", "XCTest-{}".format(ctx.attr.xctest_version), "usr", bindir))
+        env = dicts.add(
+            ctx.attr.env,
+            {"Path": xctest + ";" + ctx.attr.env["Path"]},
+        )
+    else:
+        env = ctx.attr.env
+
+    # TODO(allevato): Move some of the remaining hardcoded values, like object
+    # format and Obj-C interop support, to attributes so that we can remove the
+    # assumptions that are only valid on Linux.
+    swift_toolchain_info = SwiftToolchainInfo(
+        action_configs = all_action_configs,
+        cc_language = None,
+        cc_toolchain_info = cc_toolchain,
+        clang_implicit_deps_providers = (
+            collect_implicit_deps_providers([])
+        ),
+        cross_import_overlays = [
+            target[SwiftCrossImportOverlayInfo]
+            for target in ctx.attr.cross_import_overlays
+        ],
+        debug_outputs_provider = None,
+        developer_dirs = [],
+        entry_point_linkopts_provider = _entry_point_linkopts_provider,
+        feature_allowlists = [
+            target[SwiftFeatureAllowlistInfo]
+            for target in ctx.attr.feature_allowlists
+        ],
+        generated_header_module_implicit_deps_providers = (
+            collect_implicit_deps_providers([])
+        ),
+        module_aliases = (
+            ctx.attr._module_mapping[SwiftModuleAliasesInfo].aliases
+        ),
+        implicit_deps_providers = collect_implicit_deps_providers(
+            [],
+            additional_cc_infos = [swift_linkopts_cc_info],
+        ),
+        package_configurations = [
+            target[SwiftPackageConfigurationInfo]
+            for target in ctx.attr.package_configurations
+        ],
+        requested_features = requested_features,
+        root_dir = toolchain_root,
+        swift_worker = ctx.attr._worker[DefaultInfo].files_to_run,
+        const_protocols_to_gather = ctx.file.const_protocols_to_gather,
+        test_configuration = struct(
+            binary_name = "{name}",
+            env = env,
+            execution_requirements = {},
+            objc_test_discovery = False,
+            test_linking_contexts = [],
+        ),
+        tool_configs = all_tool_configs,
+        unsupported_features = ctx.disabled_features + [
+            SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD,
+            SWIFT_FEATURE_USE_GLOBAL_INDEX_STORE,
+        ],
+    )
+
+    return [
+        platform_common.ToolchainInfo(
+            swift_toolchain = swift_toolchain_info,
+        ),
+        # TODO(b/205018581): Remove this legacy propagation when everything is
+        # migrated over to new-style toolchains.
+        swift_toolchain_info,
+    ]
+
+swift_toolchain = rule(
+    attrs = dicts.add(
+        swift_toolchain_driver_attrs(),
+        {
+            "arch": attr.string(
+                doc = """\
+The name of the architecture that this toolchain targets.
+
+This name should match the name used in the toolchain's directory layout for
+architecture-specific content, such as "x86_64" in "lib/swift/linux/x86_64".
 """,
-    executable = True,
-    fragments = ["cpp"],
-    implementation = _swift_binary_impl,
-    toolchains = use_swift_toolchain(),
+                mandatory = True,
+            ),
+            "cross_import_overlays": attr.label_list(
+                allow_empty = True,
+                doc = """\
+A list of `swift_cross_import_overlay` targets that will be automatically
+injected into the dependencies of Swift compilations if their declaring module
+and bystanding module are both already declared as dependencies.
+""",
+                mandatory = False,
+                providers = [[SwiftCrossImportOverlayInfo]],
+            ),
+            "feature_allowlists": attr.label_list(
+                doc = """\
+A list of `swift_feature_allowlist` targets that allow or prohibit packages from
+requesting or disabling features.
+""",
+                providers = [[SwiftFeatureAllowlistInfo]],
+            ),
+            "os": attr.string(
+                doc = """\
+The name of the operating system that this toolchain targets.
+
+This name should match the name used in the toolchain's directory layout for
+platform-specific content, such as "linux" in "lib/swift/linux".
+""",
+                mandatory = True,
+            ),
+            "package_configurations": attr.label_list(
+                doc = """\
+A list of `swift_package_configuration` targets that specify additional compiler
+configuration options that are applied to targets on a per-package basis.
+""",
+                providers = [[SwiftPackageConfigurationInfo]],
+            ),
+            "root": attr.string(
+                mandatory = True,
+            ),
+            "version_file": attr.label(
+                mandatory = True,
+                allow_single_file = True,
+            ),
+            "copts": attr.string_list(
+                doc = """\
+A list of additional Swift compiler flags that should be passed to Swift compile actions.
+""",
+            ),
+            "_cc_toolchain": attr.label(
+                default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
+                doc = """\
+The C++ toolchain from which other tools needed by the Swift toolchain (such as
+`clang` and `ar`) will be retrieved.
+""",
+            ),
+            "_copts": attr.label(
+                default = Label("//swift:copt"),
+                doc = """\
+The label of the `string_list` containing additional flags that should be passed
+to the compiler.
+""",
+            ),
+            "_exec_copts": attr.label(
+                default = Label("//swift:exec_copt"),
+                doc = """\
+The label of the `string_list` containing additional flags that should be passed
+to the compiler for exec transition builds.
+""",
+            ),
+            "_module_mapping": attr.label(
+                default = Label("//swift:module_mapping"),
+                providers = [[SwiftModuleAliasesInfo]],
+            ),
+            "_worker": attr.label(
+                cfg = "exec",
+                allow_files = True,
+                default = Label("//tools/worker"),
+                doc = """\
+An executable that wraps Swift compiler invocations and also provides support
+for incremental compilation using a persistent mode.
+""",
+                executable = True,
+            ),
+            "const_protocols_to_gather": attr.label(
+                default = Label(
+                    "//swift/toolchains/config:const_protocols_to_gather.json",
+                ),
+                allow_single_file = True,
+                doc = """\
+The label of the file specifying a list of protocols for extraction of conformances'
+const values.
+""",
+            ),
+            "env": attr.string_dict(
+                doc = """\
+The preserved environment variables required for the toolchain to operate
+normally.
+""",
+                mandatory = False,
+            ),
+            "sdkroot": attr.string(
+                doc = """\
+The root of a SDK to be used for building the target.
+""",
+                mandatory = False,
+            ),
+            "tool_executable_suffix": attr.string(
+                doc = """\
+The suffix to apply to the tools when invoking them.  This is a platform
+dependent value (e.g. `.exe` on Window).
+""",
+                mandatory = False,
+            ),
+            "xctest_version": attr.string(
+                doc = """\
+The version of XCTest that the toolchain packages.
+""",
+                mandatory = False,
+            ),
+        },
+    ),
+    doc = "Represents a Swift compiler toolchain.",
+    exec_groups = {
+        # An execution group that has no specific platform requirements. This
+        # ensures that the execution platform of this Swift toolchain does not
+        # unnecessarily constrain the execution platform of the C++ toolchain.
+        "default": exec_group(
+            toolchains = use_cpp_toolchain(),
+        ),
+    },
+    fragments = [] if bazel_features.cc.swift_fragment_removed else ["swift"],
+    implementation = _swift_toolchain_impl,
 )
