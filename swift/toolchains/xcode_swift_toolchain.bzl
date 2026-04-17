@@ -1069,13 +1069,6 @@ A list of additional Objective-C compiler flags that should be passed (preceded 
 to Swift compile actions *and* Swift explicit module precompile actions.
 """,
             ),
-            "_cc_toolchain": attr.label(
-                default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
-                doc = """\
-The C++ toolchain from which linking flags and other tools needed by the Swift
-toolchain (such as `clang`) will be retrieved.
-""",
-            ),
             "_copts": attr.label(
                 default = Label("//swift:copt"),
                 doc = """\

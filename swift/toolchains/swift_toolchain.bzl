@@ -699,13 +699,6 @@ List of files to carry over as test data to swift executables and tests.
 A list of additional Swift compiler flags that should be passed to Swift compile actions.
 """,
             ),
-            "_cc_toolchain": attr.label(
-                default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
-                doc = """\
-The C++ toolchain from which other tools needed by the Swift toolchain (such as
-`clang` and `ar`) will be retrieved.
-""",
-            ),
             "_copts": attr.label(
                 default = Label("//swift:copt"),
                 doc = """\
