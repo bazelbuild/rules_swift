@@ -52,6 +52,7 @@ load("//swift/internal:autolinking.bzl", "autolink_extract_action_configs")
 load(
     "//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
+    "SWIFT_FEATURE_STATIC_STDLIB",
     "SWIFT_FEATURE_USE_AUTOLINK_EXTRACT",
     "SWIFT_FEATURE_USE_GLOBAL_INDEX_STORE",
     "SWIFT_FEATURE_USE_MODULE_WRAP",
@@ -347,7 +348,8 @@ def _swift_unix_linkopts_cc_info(
         cpu,
         os,
         toolchain_label,
-        toolchain_root):
+        toolchain_root,
+        static_stdlib):
     """Returns a `CcInfo` containing flags that should be passed to the linker.
 
     The provider returned by this function will be used as an implicit
@@ -361,15 +363,19 @@ def _swift_unix_linkopts_cc_info(
         toolchain_label: The label of the Swift toolchain that will act as the
             owner of the linker input propagating the flags.
         toolchain_root: The toolchain's root directory.
+        static_stdlib: If `True`, link the Swift standard library and runtime
+            statically by sourcing them from `lib/swift_static/{os}` instead of
+            `lib/swift/{os}` and omitting the runtime rpath entry.
 
     Returns:
         A `CcInfo` provider that will provide linker flags to binaries that
         depend on Swift targets.
     """
 
-    # TODO(#8): Support statically linking the Swift runtime.
-    platform_lib_dir = "{toolchain_root}/lib/swift/{os}".format(
+    stdlib_subdir = "swift_static" if static_stdlib else "swift"
+    platform_lib_dir = "{toolchain_root}/lib/{stdlib_subdir}/{os}".format(
         os = os,
+        stdlib_subdir = stdlib_subdir,
         toolchain_root = toolchain_root,
     )
 
@@ -381,14 +387,24 @@ def _swift_unix_linkopts_cc_info(
     linkopts = [
         "-pie",
         "-L{}".format(platform_lib_dir),
-        "-Wl,-rpath,{}".format(platform_lib_dir),
+    ]
+    if not static_stdlib:
+        linkopts.append("-Wl,-rpath,{}".format(platform_lib_dir))
+    linkopts.extend([
         "-lm",
         "-lstdc++",
         "-lrt",
         "-ldl",
+    ])
+    if static_stdlib:
+        # When linking the Swift runtime statically, its archives depend on
+        # pthread symbols directly rather than picking them up transitively
+        # from the shared runtime.
+        linkopts.append("-lpthread")
+    linkopts.extend([
         runtime_object_path,
         "-static-libgcc",
-    ]
+    ])
 
     return CcInfo(
         linking_context = cc_common.create_linking_context(
@@ -450,6 +466,7 @@ def _swift_toolchain_impl(ctx):
             ctx.attr.os,
             ctx.label,
             toolchain_root,
+            SWIFT_FEATURE_STATIC_STDLIB in ctx.features,
         )
 
     # TODO: Remove once we drop bazel 7.x support

@@ -364,6 +364,13 @@ SWIFT_FEATURE_LLD_GC_WORKAROUND = "swift.lld_gc_workaround"
 # objects if you know that isn't required.
 SWIFT_FEATURE_OBJC_LINK_FLAGS = "swift.objc_link_flag"
 
+# If enabled, binaries linked with a Linux Swift toolchain will
+# statically link the Swift standard library and runtime by resolving them from
+# the toolchain's `lib/swift_static/{os}` directory instead of the shared
+# `lib/swift/{os}` directory, and will omit the runtime rpath entry that points
+# at the shared library directory.
+SWIFT_FEATURE_STATIC_STDLIB = "swift.static_stdlib"
+
 # If enabled, requests the `-enforce-exclusivity=checked` swiftc flag which
 # enables runtime checking of exclusive memory access on mutation.
 SWIFT_FEATURE_CHECKED_EXCLUSIVITY = "swift.checked_exclusivity"
