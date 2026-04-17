@@ -1,6 +1,9 @@
 # https://github.com/bazelbuild/stardoc/issues/112
 common --incompatible_allow_tags_propagation
 
+common --flag_alias=swiftcopt=@build_bazel_rules_swift//swift:copt
+common --flag_alias=host_swiftcopt=@build_bazel_rules_swift//swift:exec_copt
+
 # Fail if a glob doesn't match anything (https://github.com/bazelbuild/bazel/issues/8195)
 build --incompatible_disallow_empty_glob
 
