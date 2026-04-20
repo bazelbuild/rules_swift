@@ -412,13 +412,6 @@ def _swift_unix_linkopts_cc_info(
         "-lstdc++",
         "-lrt",
         "-ldl",
-    ])
-    if static_stdlib:
-        # When linking the Swift runtime statically, its archives depend on
-        # pthread symbols directly rather than picking them up transitively
-        # from the shared runtime.
-        linkopts.append("-lpthread")
-    linkopts.extend([
         runtime_object_path,
         "-static-libgcc",
     ])
