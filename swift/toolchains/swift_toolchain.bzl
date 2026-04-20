@@ -414,7 +414,7 @@ def _swift_unix_linkopts_cc_info(
         "-ldl",
         runtime_object_path,
         "-static-libgcc",
-    ])+ [
+    ] + [
         "-Wl,-rpath,{}".format(rpath)
         for rpath in additional_rpaths
     ]
