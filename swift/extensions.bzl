@@ -23,6 +23,9 @@ load(
     _toolchains_for_platform = "toolchains_for_platform",
     _toolchains_repository = "toolchains_repository",
 )
+load("//tools/explicit_modules:extensions.bzl", _apple_sdk = "apple_sdk")
+
+apple_sdk = _apple_sdk
 
 def _non_module_deps_impl(module_ctx):
     swift_rules_dependencies()

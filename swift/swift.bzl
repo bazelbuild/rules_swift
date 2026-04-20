@@ -27,6 +27,7 @@ load(
     _swift_compiler_plugin = "swift_compiler_plugin",
     _universal_swift_compiler_plugin = "universal_swift_compiler_plugin",
 )
+load("//swift/internal:apple_sdk_clang_module.bzl", _apple_sdk_clang_module = "apple_sdk_clang_module")
 load(
     ":providers.bzl",
     _SwiftInfo = "SwiftInfo",
@@ -80,6 +81,7 @@ SwiftToolchainInfo = _SwiftToolchainInfo
 swift_common = _swift_common
 
 # Re-export rules.
+apple_sdk_clang_module = _apple_sdk_clang_module
 swift_binary = _swift_binary
 swift_compiler_plugin = _swift_compiler_plugin
 universal_swift_compiler_plugin = _universal_swift_compiler_plugin

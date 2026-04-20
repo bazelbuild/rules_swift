@@ -1,0 +1,13 @@
+package(default_visibility = ["//visibility:public"])
+
+exports_files(["scan.py"])
+
+filegroup(
+    name = "for_bazel_tests",
+    testonly = True,
+    srcs = glob(["*.bzl"]) + [
+        "BUILD.bazel",
+        "scan.py",
+    ],
+    visibility = ["//:__subpackages__"],
+)
