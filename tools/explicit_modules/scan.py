@@ -89,7 +89,9 @@ def _render_clang_aliases(modules: list[str], sdk: str, out: TextIO):
 
 
 def _render_all_modules_group(
-    all_module_names: set[str], sdk: str, out: TextIO,
+    all_module_names: set[str],
+    sdk: str,
+    out: TextIO,
 ) -> None:
     out.write("\n")
     out.write("swift_library_group(\n")
@@ -103,13 +105,16 @@ def _render_all_modules_group(
 
 @dataclass
 class _Module:
-    def __init__(
-        self, name, sdk, module_type, direct_dependencies, module_map_path
-    ):
+    def __init__(self, name, sdk, module_type, direct_dependencies, module_map_path):
         self.name: str = name
         self.sdk: str = sdk
         self.module_type: str = module_type
-        self.direct_dependencies: list[str] = sorted(set(_canonical_name(dep_name, sdk, dep_type) for dep_type, dep_name in direct_dependencies))
+        self.direct_dependencies: list[str] = sorted(
+            set(
+                _canonical_name(dep_name, sdk, dep_type)
+                for dep_type, dep_name in direct_dependencies
+            )
+        )
         self.module_map_path: Optional[str] = module_map_path
 
     def __repr__(self):
@@ -134,9 +139,7 @@ class _Module:
             if self.direct_dependencies:
                 out.write("    deps = [\n")
                 for dep_name in self.direct_dependencies:
-                    out.write(
-                        f'        ":{dep_name}",\n'
-                    )
+                    out.write(f'        ":{dep_name}",\n')
                 out.write("    ],\n")
             out.write(")\n")
         elif self.module_type == "swift":
@@ -148,9 +151,7 @@ class _Module:
             if self.direct_dependencies:
                 out.write("    deps = [\n")
                 for dep_name in self.direct_dependencies:
-                    out.write(
-                        f'        ":{dep_name}",\n'
-                    )
+                    out.write(f'        ":{dep_name}",\n')
                 out.write("    ],\n")
             out.write(")\n")
         else:
@@ -179,7 +180,9 @@ def _parse_output(
         module = modules[i + 1]
         details = module["details"][module_type]
         deps = []
-        for dep in module["directDependencies"] + details.get("swiftOverlayDependencies", []):
+        for dep in module["directDependencies"] + details.get(
+            "swiftOverlayDependencies", []
+        ):
             deps.extend(dep.items())
 
         all_modules.append(
@@ -262,13 +265,14 @@ def _scan(
 
         # -scan-dependencies exits 0 even if some imports fail.
         errors = [
-            l for l in res.stderr.splitlines()
-            if "error:" in l
-            and not any(p.search(l) for p in _IGNORED_ERRORS)
+            l
+            for l in res.stderr.splitlines()
+            if "error:" in l and not any(p.search(l) for p in _IGNORED_ERRORS)
         ]
         if errors:
             raise RuntimeError(
-                f"[{sdk}] swiftc -scan-dependencies reported unexpected errors:\n" + "\n".join(errors)
+                f"[{sdk}] swiftc -scan-dependencies reported unexpected errors:\n"
+                + "\n".join(errors)
             )
 
         return json.loads(out_json.read_text())
@@ -295,10 +299,9 @@ def _discover_all_modules(developer_dir: Path, sdk: str) -> tuple[str, set[str]]
             if x.suffix == ".swiftmodule":
                 modules.add(x.stem)
             elif x.suffix == ".framework":
-                if (
-                    (x / "Modules/module.modulemap").exists()
-                    or (x / "Modules" / (x.stem + ".swiftmodule")).exists()
-                ):
+                if (x / "Modules/module.modulemap").exists() or (
+                    x / "Modules" / (x.stem + ".swiftmodule")
+                ).exists():
                     modules.add(x.stem)
 
     target = TARGET_FORMATS[sdk.lower()].format(
@@ -337,7 +340,9 @@ def _main() -> None:
     if requested_sdks:
         unknown = [s for s in requested_sdks if s not in _SDK_CONSTRAINTS]
         if unknown:
-            raise SystemExit(f"error: unknown SDK(s): '{unknown}'. Valid options are: {sorted(_SDK_CONSTRAINTS)}")
+            raise SystemExit(
+                f"error: unknown SDK(s): '{unknown}'. Valid options are: {sorted(_SDK_CONSTRAINTS)}"
+            )
         sdk_names = sorted(set(requested_sdks))
     else:
         sdk_names = sorted(_SDK_CONSTRAINTS.keys())
@@ -401,7 +406,7 @@ def _main() -> None:
         f.write(buf.getvalue())
 
     with open("module_names.json", "w") as f:
-        json.dump(sorted(all_modules),f, indent=2)
+        json.dump(sorted(all_modules), f, indent=2)
 
 
 if __name__ == "__main__":
