@@ -309,13 +309,13 @@ bzl_library(
 bzl_library(
     name = "feature_names",
     srcs = ["feature_names.bzl"],
-    visibility = ["//swift:__subpackages__"],
+    visibility = ["//:__subpackages__"],  # keep
 )
 
 bzl_library(
     name = "output_groups",
     srcs = ["output_groups.bzl"],
-    visibility = ["//swift:__subpackages__"],
+    visibility = ["//:__subpackages__"],  # keep
 )
 
 bzl_library(
