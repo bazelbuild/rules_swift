@@ -8,6 +8,7 @@
 
 """Tests that `--features=swift.static_stdlib` actually links the Swift runtime statically."""
 
+load("@rules_shell//shell:sh_test.bzl", "sh_test")
 load("//test/rules:static_stdlib_link_test.bzl", "with_static_stdlib")
 
 def static_stdlib_test_suite(name, tags = []):
@@ -29,7 +30,7 @@ def static_stdlib_test_suite(name, tags = []):
         target = "//test/fixtures/static_stdlib:bin",
     )
 
-    native.sh_test(
+    sh_test(
         name = "{}_not_dynamically_linked".format(name),
         srcs = ["//test/rules:verify_static_stdlib.sh"],
         args = ["$(rootpath :{}_bin)".format(name)],
