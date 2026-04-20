@@ -50,12 +50,8 @@ def _apple_sdk_clang_module_impl(ctx):
     data_runfiles = [dep[DefaultInfo].data_runfiles for dep in deps]
     default_runfiles = [dep[DefaultInfo].default_runfiles for dep in deps]
 
-    if cc_infos:
-        cc_info = cc_common.merge_cc_infos(cc_infos = cc_infos)
-        compilation_context = cc_info.compilation_context
-    else:
-        compilation_context = cc_common.create_compilation_context()
-        cc_info = CcInfo(compilation_context = compilation_context)
+    cc_info = cc_common.merge_cc_infos(cc_infos = cc_infos)
+    compilation_context = cc_info.compilation_context
 
     requested_features = ctx.features
     if is_system:
@@ -87,14 +83,14 @@ def _apple_sdk_clang_module_impl(ctx):
         module_map = module_map,
         precompiled_module = precompiled_module,
     )
-    providers = [
+    return [
         # We must repropagate the dependencies' DefaultInfos, otherwise we
         # will lose runtime dependencies that the library expects to be
         # there during a test (or a regular `bazel run`).
         DefaultInfo(
             data_runfiles = merge_runfiles(data_runfiles),
             default_runfiles = merge_runfiles(default_runfiles),
-            files = depset([module_map]) if not is_system else None,
+            files = None if is_system else depset([module_map]),
         ),
         SwiftInfo(
             modules = [
@@ -108,8 +104,6 @@ def _apple_sdk_clang_module_impl(ctx):
         ),
         cc_info,
     ]
-
-    return providers
 
 apple_sdk_clang_module = rule(
     attrs = dicts.add(
