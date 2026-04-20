@@ -250,7 +250,7 @@ def _discover_all_modules(developer_dir: Path, sdk: str) -> tuple[str, set[str]]
     )
     framework_search_paths = [
         platform_search_path,
-        sdk_path / f"System/Library/Frameworks",
+        sdk_path / "System/Library/Frameworks",
     ]
     library_search_paths = [
         sdk_path / "usr/lib/swift",
