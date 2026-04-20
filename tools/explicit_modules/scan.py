@@ -220,6 +220,7 @@ _IGNORED_ERRORS = (
     re.compile(r"[Uu]nable to (?:resolve|find) module dependency: '[^']+'"),
     re.compile(r"clang dependency scanning failure"),
     re.compile(r"could not build module '[^']+'"),
+    re.compile(r"error: module '[^']+' is incompatible with feature 'swift'"),
 )
 
 
