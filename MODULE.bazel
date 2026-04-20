@@ -76,6 +76,9 @@ register_toolchains(
     dev_dependency = True,
 )
 
+apple_sdk = use_extension("//swift:extensions.bzl", "apple_sdk")
+use_repo(apple_sdk, "apple_sdk")
+
 # Dev dependencies
 bazel_dep(name = "bazel_skylib_gazelle_plugin", version = "1.5.0", dev_dependency = True)
 bazel_dep(name = "gazelle", version = "0.46.0", dev_dependency = True, repo_name = "bazel_gazelle")
