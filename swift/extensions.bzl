@@ -15,6 +15,7 @@
 """Definitions for bzlmod module extensions."""
 
 load("@bazel_features//:features.bzl", "bazel_features")
+load("//swift/internal:repositories.bzl", "swift_rules_dependencies")
 load("//swift/internal/extensions:standalone_toolchain.bzl", _standalone_toolchain = "standalone_toolchain")
 load("//swift/internal/extensions:swift_releases.bzl", "SWIFT_RELEASES")
 load(
@@ -22,7 +23,6 @@ load(
     _toolchains_for_platform = "toolchains_for_platform",
     _toolchains_repository = "toolchains_repository",
 )
-load("//swift/internal:repositories.bzl", "swift_rules_dependencies")
 
 def _non_module_deps_impl(module_ctx):
     swift_rules_dependencies()
