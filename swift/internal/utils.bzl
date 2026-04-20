@@ -19,7 +19,13 @@ load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load("//swift:providers.bzl", "SwiftInfo")
-load(":feature_names.bzl", "SWIFT_FEATURE_NO_IMPLICIT_DEPS")
+load(
+    ":feature_names.bzl",
+    "SWIFT_FEATURE_ADD_DEFAULT_PRECOMPILED_MODULES",
+    "SWIFT_FEATURE_EMIT_C_MODULE",
+    "SWIFT_FEATURE_NO_IMPLICIT_DEPS",
+    "SWIFT_FEATURE_USE_C_MODULES",
+)
 load(":features.bzl", "is_feature_enabled")
 
 def collect_implicit_deps_providers(targets, additional_cc_infos = []):
@@ -382,6 +388,34 @@ def struct_fields(s):
         # TODO(b/36412967): Remove the `to_json` and `to_proto` checks.
         if field not in ("to_json", "to_proto")
     }
+
+def default_precompiled_modules_providers(ctx, feature_configuration):
+    """Returns extra providers if explicit modules is enabled.
+
+    Args:
+        ctx: The rule context.
+        feature_configuration: A feature configuration obtained from
+            `swift_common.configure_features`.
+
+    Returns:
+        A tuple `(cc_infos, swift_infos)`.
+    """
+    if not (
+        is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_USE_C_MODULES,
+        ) and is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_EMIT_C_MODULE,
+        ) and is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_ADD_DEFAULT_PRECOMPILED_MODULES,
+        )
+    ):
+        return [], []
+
+    dep = ctx.attr._default_precompiled_modules
+    return [dep[CcInfo]], [dep[SwiftInfo]]
 
 def include_developer_search_paths(attr):
     """Determines whether to include developer search paths.

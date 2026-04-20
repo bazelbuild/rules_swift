@@ -43,6 +43,7 @@ load(
 )
 load(
     "//swift/internal:utils.bzl",
+    "default_precompiled_modules_providers",
     "expand_locations",
     "get_providers",
     "include_developer_search_paths",
@@ -99,10 +100,15 @@ def _swift_binary_impl(ctx):
 
         include_dev_srch_paths = include_developer_search_paths(ctx.attr)
 
+        extra_cc_infos, extra_swift_infos = default_precompiled_modules_providers(
+            ctx,
+            feature_configuration,
+        )
+
         compile_result = compile(
             actions = ctx.actions,
             additional_inputs = ctx.files.swiftc_inputs,
-            cc_infos = get_providers(ctx.attr.deps, CcInfo),
+            cc_infos = get_providers(ctx.attr.deps, CcInfo) + extra_cc_infos,
             copts = expand_locations(
                 ctx,
                 ctx.attr.copts,
@@ -123,7 +129,7 @@ def _swift_binary_impl(ctx):
             package_name = ctx.attr.package_name,
             plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),
             srcs = srcs,
-            swift_infos = get_providers(ctx.attr.deps, SwiftInfo),
+            swift_infos = get_providers(ctx.attr.deps, SwiftInfo) + extra_swift_infos,
             toolchains = toolchains,
             target_name = ctx.label.name,
             workspace_name = ctx.workspace_name,

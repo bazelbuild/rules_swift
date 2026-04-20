@@ -50,6 +50,7 @@ load(
 )
 load(
     "//swift/internal:utils.bzl",
+    "default_precompiled_modules_providers",
     "expand_locations",
     "get_providers",
     "include_developer_search_paths",
@@ -330,6 +331,13 @@ def _swift_test_impl(ctx):
                 binary_info.cc_info.linking_context,
             )
     additional_linking_contexts.append(malloc_linking_context(ctx))
+
+    extra_cc_infos, extra_swift_infos = default_precompiled_modules_providers(
+        ctx,
+        feature_configuration,
+    )
+    deps_cc_infos = deps_cc_infos + extra_cc_infos
+    deps_swift_infos = deps_swift_infos + extra_swift_infos
 
     test_runner_deps_cc_infos = get_providers(test_runner_deps, CcInfo)
     test_runner_deps_swift_infos = get_providers(test_runner_deps, SwiftInfo)

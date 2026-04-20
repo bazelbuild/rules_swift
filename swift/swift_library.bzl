@@ -57,6 +57,7 @@ load(
 load(
     "//swift/internal:utils.bzl",
     "compact",
+    "default_precompiled_modules_providers",
     "expand_locations",
     "expand_make_variables",
     "get_providers",
@@ -161,7 +162,11 @@ def _swift_library_impl(ctx):
         unsupported_features = ctx.disabled_features,
     )
 
-    swift_infos = get_providers(deps, SwiftInfo)
+    extra_cc_infos, extra_swift_infos = default_precompiled_modules_providers(
+        ctx,
+        feature_configuration,
+    )
+    swift_infos = get_providers(deps, SwiftInfo) + extra_swift_infos
     private_swift_infos = get_providers(private_deps, SwiftInfo)
 
     if ctx.attr.generates_header:
@@ -183,7 +188,7 @@ def _swift_library_impl(ctx):
     compile_result = compile(
         actions = ctx.actions,
         additional_inputs = additional_inputs,
-        cc_infos = get_providers(ctx.attr.deps, CcInfo),
+        cc_infos = get_providers(ctx.attr.deps, CcInfo) + extra_cc_infos,
         copts = _maybe_parse_as_library_copts(srcs) + copts,
         defines = ctx.attr.defines,
         feature_configuration = feature_configuration,

@@ -171,6 +171,11 @@ Additional files that are referenced using `$(location ...)` in attributes that
 support location expansion.
 """,
             ),
+            "_default_precompiled_modules": attr.label(
+                aspects = additional_deps_aspects,
+                default = Label("@apple_sdk//:all_modules"),
+                providers = [[CcInfo, SwiftInfo]],
+            ),
         },
         {
             "always_include_developer_search_paths": attr.bool(

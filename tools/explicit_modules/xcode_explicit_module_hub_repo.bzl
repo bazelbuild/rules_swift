@@ -58,7 +58,7 @@ def _xcode_explicit_module_hub_repo_impl(rctx):
     manifest = json.decode(rctx.read(rctx.attr.default_manifest))
     rctx.watch(rctx.attr.default_manifest)
 
-    root_module_names = {}
+    root_module_names = {"all_modules": True}
     for name in manifest:
         root_module_names[name] = True
 
