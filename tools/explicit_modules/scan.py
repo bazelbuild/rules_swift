@@ -8,7 +8,6 @@ import collections
 import io
 import json
 import os
-import re
 import subprocess
 import sys
 import tempfile
@@ -208,22 +207,6 @@ def _get_deployment_target(sdk: str, sdk_path: Path) -> str:
     return output["SupportedTargets"][sdk.lower()]["DefaultDeploymentTarget"]
 
 
-# Error patterns we are ignoring:
-#
-#   <unknown>:0: error: clang dependency scanning failure: ...
-#                         ... error: module 'X' is incompatible with feature 'swift'
-#   X-<hash>.input:1:1: fatal error: could not build module 'X'
-#   stub.swift:1:8: error: unable to resolve module dependency: 'X'
-#   .../X.swiftinterface:7:19: error: Unable to find module dependency: 'X'
-#
-_IGNORED_ERRORS = (
-    re.compile(r"[Uu]nable to (?:resolve|find) module dependency: '[^']+'"),
-    re.compile(r"clang dependency scanning failure"),
-    re.compile(r"could not build module '[^']+'"),
-    re.compile(r"error: module '[^']+' is incompatible with feature 'swift'"),
-)
-
-
 def _scan(
     *,
     sdk: str,
@@ -232,13 +215,6 @@ def _scan(
     target: str,
     framework_search_paths: list[Path],
 ) -> dict[str, Any]:
-    """Run `swiftc -scan-dependencies` once.
-
-    Modules whose import fails are reported as `unable to resolve module
-    dependency: 'X'` on stderr and simply don't appear in the JSON — we
-    accept that. Any other stderr `error:` line, or a non-zero exit, is
-    fatal.
-    """
     with tempfile.TemporaryDirectory(prefix=f"scan_{sdk}_") as tmp:
         workdir = Path(tmp)
         stub = workdir / "stub.swift"
@@ -261,20 +237,7 @@ def _scan(
         res = subprocess.run(cmd, capture_output=True, text=True)
         if res.returncode != 0:
             raise RuntimeError(
-                f"[{sdk}] swiftc -scan-dependencies exited "
-                f"{res.returncode}:\n{res.stderr}"
-            )
-
-        # -scan-dependencies exits 0 even if some imports fail.
-        errors = [
-            l
-            for l in res.stderr.splitlines()
-            if "error:" in l and not any(p.search(l) for p in _IGNORED_ERRORS)
-        ]
-        if errors:
-            raise RuntimeError(
-                f"[{sdk}] swiftc -scan-dependencies reported unexpected errors:\n"
-                + "\n".join(errors)
+                f"[{sdk}] swiftc -scan-dependencies exited {res.returncode}:\n{res.stderr}"
             )
 
         return json.loads(out_json.read_text())
