@@ -135,3 +135,10 @@ filegroup(
         "//swift:__pkg__",
     ],
 )
+
+bzl_library(
+    name = "swift_tools",
+    srcs = ["swift_tools.bzl"],
+    visibility = ["//visibility:public"],
+    deps = ["//swift:providers"],
+)

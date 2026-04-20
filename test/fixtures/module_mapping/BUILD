@@ -1,3 +1,4 @@
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("//swift:swift_library.bzl", "swift_library")
 load("//swift:swift_module_mapping.bzl", "swift_module_mapping")
 load("//swift:swift_module_mapping_test.bzl", "swift_module_mapping_test")
@@ -89,4 +90,9 @@ swift_module_mapping_test(
     mapping = ":ExistingLibrary_module_mapping_incomplete",
     tags = FIXTURE_TAGS,
     deps = [":ExistingLibrary"],
+)
+
+bzl_library(
+    name = "apply_mapping",
+    srcs = ["apply_mapping.bzl"],
 )

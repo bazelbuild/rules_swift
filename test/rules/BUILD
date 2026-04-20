@@ -12,3 +12,21 @@ bzl_library(
 )
 
 exports_files(["swift_shell_runner.sh.template"])
+
+bzl_library(
+    name = "expected_files",
+    srcs = ["expected_files.bzl"],
+    deps = [
+        "@bazel_skylib//lib:types",
+        "@bazel_skylib//lib:unittest",
+    ],
+)
+
+bzl_library(
+    name = "synthesize_interface_applier",
+    srcs = ["synthesize_interface_applier.bzl"],
+    deps = [
+        "//swift:providers",
+        "//swift:swift_synthesize_interface_aspect",
+    ],
+)

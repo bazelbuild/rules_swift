@@ -22,12 +22,6 @@ cc_library(
 # Starlark libraries
 
 bzl_library(
-    name = "action_names",
-    srcs = ["action_names.bzl"],
-    visibility = ["//swift:__subpackages__"],
-)
-
-bzl_library(
     name = "actions",
     srcs = ["actions.bzl"],
     visibility = ["//swift:__subpackages__"],
@@ -131,27 +125,6 @@ bzl_library(
 )
 
 bzl_library(
-    name = "env_expansion",
-    srcs = ["env_expansion.bzl"],
-    visibility = ["//swift:__subpackages__"],
-)
-
-bzl_library(
-    name = "explicit_module_map_file",
-    srcs = ["explicit_module_map_file.bzl"],
-    visibility = ["//swift:__subpackages__"],
-)
-
-bzl_library(
-    name = "feature_names",
-    srcs = ["feature_names.bzl"],
-    visibility = [
-        "//mixed_language:__subpackages__",
-        "//swift:__subpackages__",
-    ],
-)
-
-bzl_library(
     name = "features",
     srcs = ["features.bzl"],
     visibility = [
@@ -216,29 +189,6 @@ bzl_library(
 )
 
 bzl_library(
-    name = "output_groups",
-    srcs = ["output_groups.bzl"],
-    visibility = [
-        "//proto:__subpackages__",
-        "//swift:__subpackages__",
-    ],
-)
-
-bzl_library(
-    name = "package_specs",
-    srcs = ["package_specs.bzl"],
-    visibility = ["//swift:__subpackages__"],
-)
-
-bzl_library(
-    name = "providers",
-    srcs = ["providers.bzl"],
-    visibility = [
-        "//swift:__subpackages__",
-    ],
-)
-
-bzl_library(
     name = "swift_autoconfiguration",
     srcs = ["swift_autoconfiguration.bzl"],
     visibility = ["//swift:__subpackages__"],
@@ -246,12 +196,6 @@ bzl_library(
         ":toolchain_utils",
         "//swift/internal:feature_names",
     ],
-)
-
-bzl_library(
-    name = "swift_interop_info",
-    srcs = ["swift_interop_info.bzl"],
-    visibility = ["//swift:__subpackages__"],
 )
 
 bzl_library(
@@ -283,12 +227,6 @@ bzl_library(
         ":utils",
         "//swift:providers",
     ],
-)
-
-bzl_library(
-    name = "target_triples",
-    srcs = ["target_triples.bzl"],
-    visibility = ["//swift:__subpackages__"],
 )
 
 bzl_library(
@@ -325,12 +263,6 @@ bzl_library(
     ],
 )
 
-bzl_library(
-    name = "vfsoverlay",
-    srcs = ["vfsoverlay.bzl"],
-    visibility = ["//swift:__subpackages__"],
-)
-
 # Consumed by Bazel integration tests.
 filegroup(
     name = "for_bazel_tests",
@@ -344,4 +276,74 @@ filegroup(
     visibility = [
         "//swift:__pkg__",
     ],
+)
+
+bzl_library(
+    name = "action_names",
+    srcs = ["action_names.bzl"],
+    visibility = ["//swift:__subpackages__"],
+)
+
+bzl_library(
+    name = "env_expansion",
+    srcs = ["env_expansion.bzl"],
+    visibility = ["//swift:__subpackages__"],
+)
+
+bzl_library(
+    name = "explicit_module_map_file",
+    srcs = ["explicit_module_map_file.bzl"],
+    visibility = ["//swift:__subpackages__"],
+)
+
+bzl_library(
+    name = "feature_names",
+    srcs = ["feature_names.bzl"],
+    visibility = ["//swift:__subpackages__"],
+)
+
+bzl_library(
+    name = "output_groups",
+    srcs = ["output_groups.bzl"],
+    visibility = ["//swift:__subpackages__"],
+)
+
+bzl_library(
+    name = "package_specs",
+    srcs = ["package_specs.bzl"],
+    visibility = ["//swift:__subpackages__"],
+)
+
+bzl_library(
+    name = "providers",
+    srcs = ["providers.bzl"],
+    visibility = ["//swift:__subpackages__"],
+)
+
+bzl_library(
+    name = "repositories",
+    srcs = ["repositories.bzl"],
+    visibility = ["//swift:__subpackages__"],
+    deps = [
+        ":swift_autoconfiguration",
+        "@bazel_tools//tools/build_defs/repo:http.bzl",
+    ],
+)
+
+bzl_library(
+    name = "swift_interop_info",
+    srcs = ["swift_interop_info.bzl"],
+    visibility = ["//swift:__subpackages__"],
+)
+
+bzl_library(
+    name = "target_triples",
+    srcs = ["target_triples.bzl"],
+    visibility = ["//swift:__subpackages__"],
+)
+
+bzl_library(
+    name = "vfsoverlay",
+    srcs = ["vfsoverlay.bzl"],
+    visibility = ["//swift:__subpackages__"],
 )
