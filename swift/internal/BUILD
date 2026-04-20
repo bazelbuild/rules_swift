@@ -288,6 +288,26 @@ bzl_library(
     ],
 )
 
+# keep
+bzl_library(
+    name = "feature_names",
+    srcs = ["feature_names.bzl"],
+    visibility = [
+        "//mixed_language:__subpackages__",
+        "//swift:__subpackages__",
+    ],
+)
+
+# keep
+bzl_library(
+    name = "output_groups",
+    srcs = ["output_groups.bzl"],
+    visibility = [
+        "//proto:__subpackages__",
+        "//swift:__subpackages__",
+    ],
+)
+
 bzl_library(
     name = "action_names",
     srcs = ["action_names.bzl"],
@@ -304,18 +324,6 @@ bzl_library(
     name = "explicit_module_map_file",
     srcs = ["explicit_module_map_file.bzl"],
     visibility = ["//swift:__subpackages__"],
-)
-
-bzl_library(
-    name = "feature_names",
-    srcs = ["feature_names.bzl"],
-    visibility = ["//:__subpackages__"],  # keep
-)
-
-bzl_library(
-    name = "output_groups",
-    srcs = ["output_groups.bzl"],
-    visibility = ["//:__subpackages__"],  # keep
 )
 
 bzl_library(
