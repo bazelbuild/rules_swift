@@ -11,4 +11,7 @@ bzl_library(
     ],
 )
 
-exports_files(["swift_shell_runner.sh.template"])
+exports_files([
+    "swift_shell_runner.sh.template",
+    "verify_static_stdlib.sh",
+])
