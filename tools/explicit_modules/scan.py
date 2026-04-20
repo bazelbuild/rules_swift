@@ -94,7 +94,6 @@ def _render_all_modules_group(
     out.write("\n")
     out.write("swift_library_group(\n")
     out.write(f'    name = "{sdk}_all_modules",\n')
-    out.write("    testonly = True,\n")
     out.write("    deps = [\n")
     for name in sorted(all_module_names):
         out.write(f'        ":{sdk}_{name}",\n')
@@ -105,13 +104,12 @@ def _render_all_modules_group(
 @dataclass
 class _Module:
     def __init__(
-        self, name, sdk, module_type, direct_dependencies, testonly, module_map_path
+        self, name, sdk, module_type, direct_dependencies, module_map_path
     ):
         self.name: str = name
         self.sdk: str = sdk
         self.module_type: str = module_type
         self.direct_dependencies: list[str] = sorted(set(_canonical_name(dep_name, sdk, dep_type) for dep_type, dep_name in direct_dependencies))
-        self.testonly = testonly
         self.module_map_path: Optional[str] = module_map_path
 
     def __repr__(self):
@@ -131,8 +129,6 @@ class _Module:
             out.write(
                 f'    name = "{_canonical_name(self.name, self.sdk, self.module_type)}",\n'
             )
-            if self.testonly:
-                out.write("    testonly = True,\n")
             out.write(f'    module_name = "{self.name}",\n')
             out.write(f'    system_module_map = "{self.module_map_path}",\n')
             if self.direct_dependencies:
@@ -149,8 +145,6 @@ class _Module:
             out.write(
                 f'    name = "{_canonical_name(self.name, self.sdk, self.module_type)}",\n'
             )
-            if self.testonly:
-                out.write("    testonly = True,\n")
             if self.direct_dependencies:
                 out.write("    deps = [\n")
                 for dep_name in self.direct_dependencies:
@@ -169,7 +163,6 @@ def _parse_output(
     *,
     output: dict[str, Any],
     sdk: str,
-    testonly_module_names: set[str],
     developer_dir: str,
     sdkroot: str,
 ) -> tuple[list[_Module], dict[str, set[str]]]:
@@ -195,7 +188,6 @@ def _parse_output(
                 sdk,
                 module_type,
                 deps,
-                module_name in testonly_module_names,
                 details.get("moduleMapPath", "")
                 .replace(sdkroot, "__BAZEL_XCODE_SDKROOT__")
                 .replace(developer_dir, "__BAZEL_XCODE_DEVELOPER_DIR__"),
@@ -296,24 +288,18 @@ def _discover_all_modules(developer_dir: Path, sdk: str) -> tuple[str, set[str]]
     ]
 
     modules = set()
-    testonly_module_names = set()
     for directory in set(framework_search_paths + library_search_paths):
-        testonly = directory == platform_search_path
         for x in directory.iterdir():
             if not x.is_dir():
                 continue
             if x.suffix == ".swiftmodule":
                 modules.add(x.stem)
-                if testonly:
-                    testonly_module_names.add(x.stem)
             elif x.suffix == ".framework":
                 if (
                     (x / "Modules/module.modulemap").exists()
                     or (x / "Modules" / (x.stem + ".swiftmodule")).exists()
                 ):
                     modules.add(x.stem)
-                    if testonly:
-                        testonly_module_names.add(x.stem)
 
     target = TARGET_FORMATS[sdk.lower()].format(
         ver=_get_deployment_target(sdk, sdk_path),
@@ -331,7 +317,6 @@ def _discover_all_modules(developer_dir: Path, sdk: str) -> tuple[str, set[str]]
         sdk=sdk,
         developer_dir=developer_dir.as_posix(),
         sdkroot=sdk_path.as_posix(),
-        testonly_module_names=testonly_module_names,
     )
     clang_only_modules = sorted(modules_by_type["clang"] - modules_by_type["swift"])
 
@@ -397,7 +382,6 @@ def _main() -> None:
     buf.write("\n")
     buf.write("alias(\n")
     buf.write('    name = "all_modules",\n')
-    buf.write("    testonly = True,\n")
     buf.write("    actual = select({\n")
     for sdk in sdk_names:
         if all_modules_by_sdk.get(sdk):
