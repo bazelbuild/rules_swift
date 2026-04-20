@@ -88,6 +88,7 @@ def precompiled_modules_test_suite(name, tags = []):
         targets = [
             "//test/fixtures/precompiled_modules:hello",
             "//test/fixtures/precompiled_modules:hello_with_explicit_deps_transitioned",
+            "//test/fixtures/precompiled_modules:objc_interop_bin_transitioned",
         ],
         tags = all_tags,
     )
