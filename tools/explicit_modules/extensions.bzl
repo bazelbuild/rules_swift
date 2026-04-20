@@ -75,7 +75,7 @@ def _generate_pinned_repos(configs):
         default_manifest = default_manifest,
     )
 
-def _generate_local_repos(module_ctx):
+def _generate_local_repos(module_ctx, sdks):
     toolchains, err = run_xcode_locator(module_ctx, _XCODE_LOCATOR_SRC)
     if err:
         fail("xcode-locator failed: " + err)
@@ -98,6 +98,7 @@ def _generate_local_repos(module_ctx):
         repo_name = "apple_sdk_xcode_" + _sanitize(tc.version)
         xcode_explicit_module_repo(
             name = repo_name,
+            sdks = sdks,
             xcode_version = tc.version,
             xcode_locator = _LOCATOR_LABEL,
         )
@@ -111,6 +112,14 @@ def _generate_local_repos(module_ctx):
         default_manifest = default_manifest,
     )
 
+def _collect_sdks(module_ctx):
+    names = {}
+    for mod in module_ctx.modules:
+        for tag in mod.tags.sdks:
+            for name in tag.names:
+                names[name] = True
+    return sorted(names.keys())
+
 def _sdk_extension_impl(module_ctx):
     configs = []
     for mod in module_ctx.modules:
@@ -120,7 +129,7 @@ def _sdk_extension_impl(module_ctx):
     if configs:
         _generate_pinned_repos(configs)
     else:
-        _generate_local_repos(module_ctx)
+        _generate_local_repos(module_ctx, _collect_sdks(module_ctx))
 
 _config_tag = tag_class(
     attrs = {
@@ -137,9 +146,26 @@ _config_tag = tag_class(
     doc = "Manually pass the explicit module BUILD file for a specific Xcode version",
 )
 
+_sdks_tag = tag_class(
+    attrs = {
+        "names": attr.string_list(
+            mandatory = True,
+            doc = (
+                "SDK names to scan (e.g. 'MacOSX', 'iPhoneOS', " +
+                "'iPhoneSimulator'). If omitted, every SDK installed in each " +
+                "Xcode is scanned."
+            ),
+        ),
+    },
+    doc = "Limit dynamic scanning to a specific subset of Apple SDKs.",
+)
+
 apple_sdk = module_extension(
     implementation = _sdk_extension_impl,
-    tag_classes = {"config": _config_tag},
+    tag_classes = {
+        "config": _config_tag,
+        "sdks": _sdks_tag,
+    },
     doc = "Configure BUILD files for explicit modules for all installed Xcode versions.",
     environ = [
         "DEVELOPER_DIR",

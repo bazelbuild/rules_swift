@@ -33,7 +33,7 @@ def _xcode_explicit_module_repo_impl(rctx):
     rctx.report_progress("Scanning SDKs for Xcode {}".format(rctx.attr.xcode_version))
     rctx.watch(rctx.attr._script)
     result = rctx.execute(
-        ["/usr/bin/python3", rctx.attr._script, "."],
+        ["/usr/bin/python3", rctx.attr._script] + list(rctx.attr.sdks),
         environment = {"DEVELOPER_DIR": developer_dir},
     )
     if result.return_code != 0:
@@ -48,6 +48,9 @@ def _xcode_explicit_module_repo_impl(rctx):
 xcode_explicit_module_repo = repository_rule(
     implementation = _xcode_explicit_module_repo_impl,
     attrs = {
+        "sdks": attr.string_list(
+            doc = "Optional list of SDK names (e.g. 'MacOSX', 'iPhoneSimulator') to scan. If empty, all SDKs are scanned.",
+        ),
         "xcode_version": attr.string(
             mandatory = True,
             doc = "Canonical Xcode version string (e.g. 26.4.0.17E192).",

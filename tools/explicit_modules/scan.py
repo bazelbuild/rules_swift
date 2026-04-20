@@ -333,9 +333,17 @@ def _discover_all_modules(developer_dir: Path, sdk: str) -> tuple[str, set[str]]
 def _main() -> None:
     developer_dir = Path(os.environ["DEVELOPER_DIR"])
 
+    requested_sdks = sys.argv[1:]
+    if requested_sdks:
+        unknown = [s for s in requested_sdks if s not in _SDK_CONSTRAINTS]
+        if unknown:
+            raise SystemExit(f"error: unknown SDK(s): '{unknown}'. Valid options are: {sorted(_SDK_CONSTRAINTS)}")
+        sdk_names = sorted(set(requested_sdks))
+    else:
+        sdk_names = sorted(_SDK_CONSTRAINTS.keys())
+
     buf = io.StringIO()
     buf.write(_HEADER)
-    sdk_names = sorted(_SDK_CONSTRAINTS.keys())
     for sdk in sdk_names:
         constraints = _SDK_CONSTRAINTS[sdk]
         buf.write("\n")
