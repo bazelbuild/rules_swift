@@ -68,6 +68,8 @@ load(
 )
 
 package(default_visibility = ["//visibility:public"])
+
+swift_library_group(name = "_empty_all_modules")
 """
 
 
@@ -364,6 +366,7 @@ def _main() -> None:
     for sdk in sdk_names:
         if all_modules_by_sdk.get(sdk):
             buf.write(f'        ":{sdk}_sdk": ":{sdk}_all_modules",\n')
+    buf.write('        "@platforms//os:none": ":_empty_all_modules",\n')
     buf.write("    }),\n")
     buf.write(")\n")
 
