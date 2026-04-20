@@ -214,9 +214,10 @@ def _get_deployment_target(sdk: str, sdk_path: Path) -> str:
 #                         ... error: module 'X' is incompatible with feature 'swift'
 #   X-<hash>.input:1:1: fatal error: could not build module 'X'
 #   stub.swift:1:8: error: unable to resolve module dependency: 'X'
+#   .../X.swiftinterface:7:19: error: Unable to find module dependency: 'X'
 #
 _IGNORED_ERRORS = (
-    re.compile(r"unable to resolve module dependency: '[^']+'"),
+    re.compile(r"[Uu]nable to (?:resolve|find) module dependency: '[^']+'"),
     re.compile(r"clang dependency scanning failure"),
     re.compile(r"could not build module '[^']+'"),
 )
