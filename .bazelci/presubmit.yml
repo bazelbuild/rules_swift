@@ -107,4 +107,12 @@ tasks:
     test_targets:
       - "doc/..."
 
+  gazelle_check:
+    name: "Gazelle up-to-date"
+    platform: ubuntu2204
+    bazel: latest
+    shell_commands:
+      - "bazel run //doc:gazelle"
+      - "git diff --exit-code || { echo '::error::Gazelle-generated BUILD files are out of date. Run: bazel run //doc:gazelle'; exit 1; }"
+
 buildifier: 8.2.1
