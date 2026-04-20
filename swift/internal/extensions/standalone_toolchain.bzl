@@ -109,7 +109,7 @@ standalone_toolchain = repository_rule(
     implementation = _standalone_toolchain_impl,
     attrs = {
         "_build_template": attr.label(
-            default = "//swift/internal:extensions/BUILD.bazel.tpl",
+            default = "//swift/internal/extensions:BUILD.bazel.tpl",
         ),
         "platform": attr.string(
             doc = "The host platform name in the swift package download URL",

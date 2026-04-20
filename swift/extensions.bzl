@@ -15,10 +15,10 @@
 """Definitions for bzlmod module extensions."""
 
 load("@bazel_features//:features.bzl", "bazel_features")
-load("//swift/internal:extensions/standalone_toolchain.bzl", _standalone_toolchain = "standalone_toolchain")
-load("//swift/internal:extensions/swift_releases.bzl", "SWIFT_RELEASES")
+load("//swift/internal/extensions:standalone_toolchain.bzl", _standalone_toolchain = "standalone_toolchain")
+load("//swift/internal/extensions:swift_releases.bzl", "SWIFT_RELEASES")
 load(
-    "//swift/internal:extensions/toolchains.bzl",
+    "//swift/internal/extensions:toolchains.bzl",
     _toolchains_for_platform = "toolchains_for_platform",
     _toolchains_repository = "toolchains_repository",
 )

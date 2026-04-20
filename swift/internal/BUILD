@@ -279,6 +279,16 @@ filegroup(
 )
 
 bzl_library(
+    name = "repositories",
+    srcs = ["repositories.bzl"],
+    visibility = ["//swift:__subpackages__"],
+    deps = [
+        ":swift_autoconfiguration",
+        "@bazel_tools//tools/build_defs/repo:http.bzl",
+    ],
+)
+
+bzl_library(
     name = "action_names",
     srcs = ["action_names.bzl"],
     visibility = ["//swift:__subpackages__"],
@@ -318,16 +328,6 @@ bzl_library(
     name = "providers",
     srcs = ["providers.bzl"],
     visibility = ["//swift:__subpackages__"],
-)
-
-bzl_library(
-    name = "repositories",
-    srcs = ["repositories.bzl"],
-    visibility = ["//swift:__subpackages__"],
-    deps = [
-        ":swift_autoconfiguration",
-        "@bazel_tools//tools/build_defs/repo:http.bzl",
-    ],
 )
 
 bzl_library(
