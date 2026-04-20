@@ -128,8 +128,29 @@ def _sdk_extension_impl(module_ctx):
 
     if configs:
         _generate_pinned_repos(configs)
+    elif module_ctx.os.name != "mac os x":
+        _apple_sdk_stub_repo(name = "apple_sdk")
     else:
         _generate_local_repos(module_ctx, _collect_sdks(module_ctx))
+
+_STUB_BUILD_FILE = """\
+load(
+    "@build_bazel_rules_swift//swift:swift_library_group.bzl",
+    "swift_library_group",
+)
+
+package(default_visibility = ["//visibility:public"])
+
+swift_library_group(name = "all_modules")
+"""
+
+def _apple_sdk_stub_repo_impl(rctx):
+    rctx.file("BUILD.bazel", _STUB_BUILD_FILE)
+
+_apple_sdk_stub_repo = repository_rule(
+    implementation = _apple_sdk_stub_repo_impl,
+    doc = "Empty hub repo used on non-macOS hosts so `@apple_sdk//:all_modules` always resolves.",
+)
 
 _config_tag = tag_class(
     attrs = {
