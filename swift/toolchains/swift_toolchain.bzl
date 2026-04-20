@@ -414,11 +414,10 @@ def _swift_unix_linkopts_cc_info(
         "-ldl",
         runtime_object_path,
         "-static-libgcc",
-    ])
-    linkopts.extend([
+    ])+ [
         "-Wl,-rpath,{}".format(rpath)
         for rpath in additional_rpaths
-    ])
+    ]
 
     return CcInfo(
         linking_context = cc_common.create_linking_context(
