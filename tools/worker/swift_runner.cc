@@ -62,7 +62,7 @@ class CompilationPlan {
 
   // Returns the list of module jobs extracted from the plan. Each job is a
   // command line that should be invoked to emit some module-wide output.
-  const std::vector<std::string> &ModuleJobs() const { return module_jobs_; }
+  const std::vector<std::string>& ModuleJobs() const { return module_jobs_; }
 
   // Returns the codegen job that is associated with the given output file, or
   // `nullopt` if none was found. The job is a command line that should be
@@ -141,7 +141,7 @@ std::vector<std::string> CompilationPlan::CodegenJobsForOutputs(
 
   absl::btree_set<int> indices;
   for (absl::string_view desired_output : outputs) {
-    for (const auto &[output, index] : codegen_job_indices_by_output_) {
+    for (const auto& [output, index] : codegen_job_indices_by_output_) {
       // We need to do a suffix search here because the driver may have
       // realpath-ed the output argument, giving us something like
       // `<path to work area>/bazel-out/...` when we're just expecting
@@ -163,7 +163,7 @@ std::vector<std::string> CompilationPlan::CodegenJobsForOutputs(
 
 // Creates a temporary file and writes the given arguments to it, one per line.
 static std::unique_ptr<TempFile> WriteResponseFile(
-    const std::vector<std::string> &args) {
+    const std::vector<std::string>& args) {
   std::unique_ptr<TempFile> response_file =
       TempFile::Create("swiftc_params.XXXXXX");
   std::ofstream response_file_stream(std::string(response_file->GetPath()));
@@ -203,7 +203,7 @@ static std::unique_ptr<TempFile> WriteDirectResponseFile(
 // the view to the end of the argument in a similar fashion to
 // `absl::ConsumePrefix()`.
 static std::optional<std::string> ConsumeArg(
-    absl::string_view *absl_nonnull line) {
+    absl::string_view* absl_nonnull line) {
   size_t whitespace_count = 0;
   size_t length = line->size();
   while (whitespace_count < length && (*line)[whitespace_count] == ' ') {
@@ -279,7 +279,7 @@ absl::btree_set<std::string> ReadDepsModules(absl::string_view path) {
 
 #if __APPLE__
 // Returns true if the given argument list starts with an invocation of `xcrun`.
-bool StartsWithXcrun(const std::vector<std::string> &args) {
+bool StartsWithXcrun(const std::vector<std::string>& args) {
   return !args.empty() && Basename(args[0]) == "xcrun";
 }
 #endif
@@ -287,10 +287,10 @@ bool StartsWithXcrun(const std::vector<std::string> &args) {
 // Spawns an executable, constructing the command line by writing `args` to a
 // response file and concatenating that after `tool_args` (which are passed
 // outside the response file).
-int SpawnJob(const std::vector<std::string> &tool_args,
-             const std::vector<std::string> &args,
-             const absl::flat_hash_map<std::string, std::string> *env,
-             std::ostream &stdout_stream, std::ostream &stderr_stream) {
+int SpawnJob(const std::vector<std::string>& tool_args,
+             const std::vector<std::string>& args,
+             const absl::flat_hash_map<std::string, std::string>* env,
+             std::ostream& stdout_stream, std::ostream& stderr_stream) {
   std::unique_ptr<TempFile> response_file = WriteResponseFile(args);
 
   std::vector<std::string> spawn_args(tool_args);
@@ -300,7 +300,7 @@ int SpawnJob(const std::vector<std::string> &tool_args,
 
 // Logs an internal error message that occurred during compilation planning and
 // provides users with a workaround.
-void LogCompilePlanError(std::ostream &stderr_stream,
+void LogCompilePlanError(std::ostream& stderr_stream,
                          absl::string_view message) {
   WithColor(stderr_stream, Color::kBoldRed) << "Internal planning error: ";
   WithColor(stderr_stream, Color::kBold) << message << std::endl;
@@ -313,9 +313,9 @@ void LogCompilePlanError(std::ostream &stderr_stream,
 
 // Executes the module-wide jobs in a compilation plan.
 int SpawnCompileModuleStep(
-    const CompilationPlan &plan, CompileStep compile_step,
-    const absl::flat_hash_map<std::string, std::string> *env,
-    std::ostream &stdout_stream, std::ostream &stderr_stream) {
+    const CompilationPlan& plan, CompileStep compile_step,
+    const absl::flat_hash_map<std::string, std::string>* env,
+    std::ostream& stdout_stream, std::ostream& stderr_stream) {
   // If we're trying to execute a SwiftCompileModule step but there aren't any
   // module jobs, then there was a bug in the planning phase.
   if (plan.ModuleJobs().empty()) {
@@ -349,9 +349,9 @@ int SpawnCompileModuleStep(
 
 // Executes the codegen jobs in a compilation plan.
 int SpawnCompileCodegenStep(
-    const CompilationPlan &plan, CompileStep compile_step,
-    const absl::flat_hash_map<std::string, std::string> *env,
-    std::ostream &stdout_stream, std::ostream &stderr_stream) {
+    const CompilationPlan& plan, CompileStep compile_step,
+    const absl::flat_hash_map<std::string, std::string>* env,
+    std::ostream& stdout_stream, std::ostream& stderr_stream) {
   // Run codegen jobs in parallel, since they should be independent of each
   // other and they are slower so they benefit more from parallelism.
   std::vector<std::unique_ptr<AsyncProcess>> processes;
@@ -394,7 +394,7 @@ int SpawnCompileCodegenStep(
   }
 
   int any_failing_exit_code = 0;
-  for (std::unique_ptr<AsyncProcess> &process : processes) {
+  for (std::unique_ptr<AsyncProcess>& process : processes) {
     absl::StatusOr<AsyncProcess::Result> result = process->WaitForTermination();
     if (!result.ok()) {
       LogCompilePlanError(
@@ -418,11 +418,11 @@ int SpawnCompileCodegenStep(
 // Spawns a single step in a parallelized compilation by getting a list of
 // frontend jobs that the driver would normally spawn and then running the one
 // that emits the output file for the requested plan step.
-int SpawnPlanStep(const std::vector<std::string> &tool_args,
-                  const std::vector<std::string> &args,
-                  const absl::flat_hash_map<std::string, std::string> *env,
-                  CompileStep compile_step, std::ostream &stdout_stream,
-                  std::ostream &stderr_stream) {
+int SpawnPlanStep(const std::vector<std::string>& tool_args,
+                  const std::vector<std::string>& args,
+                  const absl::flat_hash_map<std::string, std::string>* env,
+                  CompileStep compile_step, std::ostream& stdout_stream,
+                  std::ostream& stderr_stream) {
   // Add `-driver-print-jobs` to the command line, which will cause the driver
   // to print the command lines of the frontend jobs it would normally spawn and
   // then exit without running them.
@@ -469,7 +469,7 @@ enum class IncompatibleArgMode {
 // we invoke as additional invocations. The given iterator is also advanced if
 // necessary past any additional flags (e.g., a path following a flag).
 bool SkipIncompatibleArgs(IncompatibleArgMode mode,
-                          std::vector<std::string>::iterator &it) {
+                          std::vector<std::string>::iterator& it) {
   if (*it == "-emit-module" || *it == "-emit-module-interface" ||
       *it == "-emit-object" || *it == "-emit-objc-header" ||
       *it == "-emit-const-values" || *it == "-warnings-as-errors" ||
@@ -622,7 +622,7 @@ SwiftRunner::SwiftRunner(
   ProcessArguments(args);
 }
 
-int SwiftRunner::Run(std::ostream &stdout_stream, std::ostream &stderr_stream) {
+int SwiftRunner::Run(std::ostream& stdout_stream, std::ostream& stderr_stream) {
   int exit_code = 0;
 
   // Do the layering check before compilation. This gives a better error message
@@ -880,7 +880,7 @@ bool SwiftRunner::ProcessArgument(
   return changed;
 }
 
-void SwiftRunner::ProcessArguments(const std::vector<std::string> &args) {
+void SwiftRunner::ProcessArguments(const std::vector<std::string>& args) {
 #if __APPLE__
   // On Apple platforms, inject `/usr/bin/xcrun` in front of our command
   // invocation.
@@ -907,8 +907,8 @@ void SwiftRunner::ProcessArguments(const std::vector<std::string> &args) {
   }
 }
 
-int SwiftRunner::PerformGeneratedHeaderRewriting(std::ostream &stdout_stream,
-                                                 std::ostream &stderr_stream) {
+int SwiftRunner::PerformGeneratedHeaderRewriting(std::ostream& stdout_stream,
+                                                 std::ostream& stderr_stream) {
 #if __APPLE__
   // Skip the `xcrun` argument that's added when running on Apple platforms,
   // since the header rewriter doesn't need it.
@@ -919,7 +919,7 @@ int SwiftRunner::PerformGeneratedHeaderRewriting(std::ostream &stdout_stream,
 
   std::vector<std::string> rewriter_tool_args;
   rewriter_tool_args.push_back(generated_header_rewriter_path_);
-  const std::vector<std::string> &passthrough_args =
+  const std::vector<std::string>& passthrough_args =
       passthrough_tool_args_["generated_header_rewriter"];
   rewriter_tool_args.insert(rewriter_tool_args.end(), passthrough_args.begin(),
                             passthrough_args.end());
@@ -930,8 +930,8 @@ int SwiftRunner::PerformGeneratedHeaderRewriting(std::ostream &stdout_stream,
                   stderr_stream);
 }
 
-int SwiftRunner::PerformLayeringCheck(std::ostream &stdout_stream,
-                                      std::ostream &stderr_stream) {
+int SwiftRunner::PerformLayeringCheck(std::ostream& stdout_stream,
+                                      std::ostream& stderr_stream) {
   // Run the compiler again, this time using `-emit-imported-modules` to
   // override whatever other behavior was requested and get the list of imported
   // modules.
@@ -996,7 +996,7 @@ int SwiftRunner::PerformLayeringCheck(std::ostream &stdout_stream,
         << "dependencies of the target or they are misspelled:" << std::endl
         << std::endl;
 
-    for (const std::string &module_name : missing_deps) {
+    for (const std::string& module_name : missing_deps) {
       stderr_stream << "    " << module_name << std::endl;
     }
     stderr_stream << std::endl;
@@ -1010,8 +1010,8 @@ int SwiftRunner::PerformLayeringCheck(std::ostream &stdout_stream,
   return 0;
 }
 
-int SwiftRunner::PerformJsonAstDump(std::ostream &stdout_stream,
-                                    std::ostream &stderr_stream) {
+int SwiftRunner::PerformJsonAstDump(std::ostream& stdout_stream,
+                                    std::ostream& stderr_stream) {
   // It is assumed that the Bazel caller spawning this action has already
   // populated the output file map with `ast-dump` keys that represent the
   // per-source-file outputs.
@@ -1052,7 +1052,7 @@ int SwiftRunner::PerformJsonAstDump(std::ostream &stdout_stream,
   nlohmann::json output_file_map;
   stream >> output_file_map;
 
-  for (auto &[src, outputs] : output_file_map.items()) {
+  for (auto& [src, outputs] : output_file_map.items()) {
     if (auto ast_dump_path = outputs.find("ast-dump");
         ast_dump_path != outputs.end()) {
       std::ofstream ast_dump_file(ast_dump_path->get<std::string>());
@@ -1066,8 +1066,8 @@ int SwiftRunner::PerformJsonAstDump(std::ostream &stdout_stream,
 }
 
 void SwiftRunner::ProcessDiagnostics(absl::string_view stderr_output,
-                                     std::ostream &stderr_stream,
-                                     int &exit_code) const {
+                                     std::ostream& stderr_stream,
+                                     int& exit_code) const {
   if (stderr_output.empty()) {
     // Nothing to do if there was no output.
     return;
