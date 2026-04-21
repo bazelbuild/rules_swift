@@ -34,6 +34,9 @@ static const char kBazelXcodeDeveloperDir[] = "__BAZEL_XCODE_DEVELOPER_DIR__";
 // at runtime.
 static const char kBazelXcodeSdkRoot[] = "__BAZEL_XCODE_SDKROOT__";
 
+static const char kVfsSdkRoot[] = "__VFS_SDKROOT__";
+static const char kVfsDeveloperDir[] = "__VFS_DEVELOPER_DIR__";
+
 // The placeholder string used by Bazel that should be replaced by the swift
 // toolchain root directory. For instance:
 // * when using the toolchain within Xcode, this will be something like this:
@@ -101,6 +104,11 @@ std::string GetToolchainPath() {
 
 }  // namespace
 
+const char *BazelPlaceholderSubstitutions::kVfsSdkRootVirtualPath =
+    "/__VFS_SDKROOT__";
+const char *BazelPlaceholderSubstitutions::kVfsDeveloperDirVirtualPath =
+    "/__VFS_DEVELOPER_DIR__";
+
 BazelPlaceholderSubstitutions::BazelPlaceholderSubstitutions() {
   // When targeting Apple platforms, replace the magic Bazel placeholders with
   // the path in the corresponding environment variable. These should be set by
@@ -118,6 +126,15 @@ BazelPlaceholderSubstitutions::BazelPlaceholderSubstitutions() {
         return GetToolchainPath();
       })}
   };
+
+  vfs_placeholder_resolvers_ = {
+      {kVfsSdkRoot, PlaceholderResolver([]() {
+         return std::string(kVfsSdkRootVirtualPath);
+       })},
+      {kVfsDeveloperDir, PlaceholderResolver([]() {
+         return std::string(kVfsDeveloperDirVirtualPath);
+       })},
+  };
 }
 
 bool BazelPlaceholderSubstitutions::Apply(std::string &arg) {
@@ -126,6 +143,13 @@ bool BazelPlaceholderSubstitutions::Apply(std::string &arg) {
   // Replace placeholders in the string with their actual values.
   for (auto &pair : placeholder_resolvers_) {
     changed |= FindAndReplace(pair.first, pair.second, arg);
+  }
+
+  for (auto &pair : vfs_placeholder_resolvers_) {
+    if (FindAndReplace(pair.first, pair.second, arg)) {
+      changed = true;
+      used_vfs_placeholder_ = true;
+    }
   }
 
   return changed;

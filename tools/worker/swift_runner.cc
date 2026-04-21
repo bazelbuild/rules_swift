@@ -14,10 +14,19 @@
 
 #include "tools/worker/swift_runner.h"
 
+#include <atomic>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <optional>
 #include <utility>
+
+#include <sstream>
+#include <system_error>
+
+#if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
+#include <unistd.h>
+#endif
 
 #include "absl/strings/match.h"
 #include "absl/strings/string_view.h"
@@ -560,6 +569,16 @@ bool SwiftRunner::ProcessArgument(
         ++itr;
         new_arg = *itr;
         target_triple_ = new_arg;
+      } else if (is_emit_pcm_ && arg == "-sdk") {
+        consumer("-sdk");
+        ++itr;
+        new_arg = *itr;
+        std::string placeholder = "__BAZEL_XCODE_SDKROOT__";
+        size_t pos = new_arg.find(placeholder);
+        if (pos != std::string::npos) {
+          new_arg.replace(pos, placeholder.length(), "__VFS_SDKROOT__");
+        }
+        changed = true;
       } else if (is_dump_ast_ && ArgumentEnablesWMO(arg)) {
         // WMO is invalid for -dump-ast,
         // so omit the argument that enables WMO
@@ -616,6 +635,8 @@ std::vector<std::string> SwiftRunner::ParseArguments(Iterator itr) {
         out_args.push_back(arg);
       } else if (arg == "-dump-ast") {
         is_dump_ast_ = true;
+      } else if (arg == "-emit-pcm") {
+        is_emit_pcm_ = true;
       } else if (arg == "-emit-module-path") {
         ++it;
         arg = *it;
@@ -654,12 +675,19 @@ std::vector<std::string> SwiftRunner::ProcessArguments(
   // different vector that we write out below. If not, push them directly onto
   // the vector being returned.
   auto &args_destination = force_response_file_ ? response_file_args : new_args;
+  size_t vfs_insert_point = args_destination.size();
   while (it != parsed_args.end()) {
     ProcessArgument(it, *it, [&](const std::string &arg) {
       args_destination.push_back(arg);
     });
     ++it;
   }
+
+
+  auto vfs_flags = BuildVfsOverlayArgs();
+  if (!vfs_flags.empty()) {
+    args_destination.insert(args_destination.begin() + vfs_insert_point,
+                            vfs_flags.begin(), vfs_flags.end());
 
   if (!module_or_interface_path_.empty()) {
     ExtractFlagsFromInterfaceFile(
@@ -678,4 +706,75 @@ std::vector<std::string> SwiftRunner::ProcessArguments(
   }
 
   return new_args;
+}
+
+std::vector<std::string> SwiftRunner::BuildVfsOverlayArgs() {
+  bazel_rules_swift::BazelPlaceholderSubstitutions real_paths;
+  std::string real_sdkroot = "__BAZEL_XCODE_SDKROOT__";
+  std::string real_developer_dir = "__BAZEL_XCODE_DEVELOPER_DIR__";
+  real_paths.Apply(real_sdkroot);
+  real_paths.Apply(real_developer_dir);
+
+  static constexpr const char *kVfsOverlaySchemaVersion = "v1";
+
+  const char *env_xcode_version = std::getenv("XCODE_VERSION_OVERRIDE");
+  std::string xcode_version =
+      env_xcode_version && *env_xcode_version ? env_xcode_version : "unknown";
+  std::string sdk_name = std::filesystem::path(real_sdkroot).filename().string();
+  if (sdk_name.empty()) sdk_name = "unknown";
+
+  std::filesystem::path overlay_path = std::filesystem::path("/tmp") /
+      ("rules_swift_vfs_overlay_" + std::string(kVfsOverlaySchemaVersion) +
+       "_" + xcode_version + "_" + sdk_name + ".yaml");
+
+  const char *vfs_sdkroot = bazel_rules_swift::BazelPlaceholderSubstitutions::
+      kVfsSdkRootVirtualPath;
+  const char *vfs_developer_dir =
+      bazel_rules_swift::BazelPlaceholderSubstitutions::
+          kVfsDeveloperDirVirtualPath;
+  std::ostringstream contents;
+  contents << "{"
+           << "\"version\":0,"
+           << "\"case-sensitive\":true,"
+           << "\"overlay-relative\":false,"
+           << "\"use-external-names\":false,"
+           << "\"roots\":["
+           << "{\"type\":\"directory-remap\",\"name\":\"" << vfs_sdkroot
+           << "\",\"external-contents\":\"" << real_sdkroot << "\"},"
+           << "{\"type\":\"directory-remap\",\"name\":\"" << vfs_developer_dir
+           << "\",\"external-contents\":\"" << real_developer_dir << "\"}"
+           << "]}";
+
+  static std::atomic<uint64_t> counter{0};
+  std::filesystem::path tmp_path = overlay_path;
+  tmp_path += "." + std::to_string(::getpid()) + "-" +
+              std::to_string(counter.fetch_add(1)) + ".tmp";
+  {
+    std::ofstream out(tmp_path);
+    out << contents.str();
+    out.close();
+  }
+  std::error_code ec;
+  std::filesystem::rename(tmp_path, overlay_path, ec);
+  if (ec) {
+    std::cerr << "Failed to install VFS overlay at " << overlay_path
+              << ": " << ec.message() << "\n";
+    std::filesystem::remove(tmp_path);
+    return {};
+  }
+
+  std::string path_str = overlay_path.string();
+  std::string virtual_resource_dir =
+      std::string(vfs_developer_dir) +
+      "/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/clang";
+  std::vector<std::string> flags = {
+      "-vfsoverlay", path_str,
+      "-Xcc", "-ivfsoverlay", "-Xcc", path_str,
+      "-Xcc", "-resource-dir", "-Xcc", virtual_resource_dir,
+  };
+  if (is_emit_pcm_) {
+    flags.push_back("-resource-dir");
+    flags.push_back(virtual_resource_dir);
+  }
+  return flags;
 }

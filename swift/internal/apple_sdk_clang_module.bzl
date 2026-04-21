@@ -26,14 +26,12 @@ load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 
 def _apple_sdk_clang_module_impl(ctx):
-    if (
-        (ctx.file.module_map and ctx.attr.system_module_map) or
-        (not ctx.file.module_map and not ctx.attr.system_module_map)
-    ):
-        fail("Must specify one (and only one) of module_map and system_module_map.")
     swift_toolchain = swift_common.get_toolchain(ctx)
-    module_map = ctx.file.module_map or ctx.attr.system_module_map
-    is_system = True if ctx.attr.system_module_map else False
+    module_map = (
+        ctx.attr.system_module_map
+            .replace("__BAZEL_XCODE_SDKROOT__", "__VFS_SDKROOT__")
+            .replace("__BAZEL_XCODE_DEVELOPER_DIR__", "__VFS_DEVELOPER_DIR__")
+    )
 
     deps = ctx.attr.deps
 
@@ -54,8 +52,7 @@ def _apple_sdk_clang_module_impl(ctx):
     compilation_context = cc_info.compilation_context
 
     requested_features = ctx.features
-    if is_system:
-        requested_features.append(SWIFT_FEATURE_SYSTEM_MODULE)
+    requested_features.append(SWIFT_FEATURE_SYSTEM_MODULE)
 
     feature_configuration = swift_common.configure_features(
         ctx = ctx,
@@ -90,14 +87,13 @@ def _apple_sdk_clang_module_impl(ctx):
         DefaultInfo(
             data_runfiles = merge_runfiles(data_runfiles),
             default_runfiles = merge_runfiles(default_runfiles),
-            files = None if is_system else depset([module_map]),
         ),
         SwiftInfo(
             modules = [
                 create_swift_module_context(
                     name = module_name,
                     clang = clang_module_context,
-                    is_system = is_system,
+                    is_system = True,
                 ),
             ],
             swift_infos = swift_infos,
@@ -116,14 +112,6 @@ this target and whose headers may be referenced by the module map.
 """,
                 mandatory = False,
                 providers = [[CcInfo]],
-            ),
-            "module_map": attr.label(
-                allow_single_file = True,
-                doc = """\
-The module map file that should be loaded to import the C library dependency
-into Swift. This is mutally exclusive with `system_module_map`.
-""",
-                mandatory = False,
             ),
             "module_name": attr.string(
                 doc = """\
@@ -150,7 +138,7 @@ appropriately for, i.e.
 and
 `/Applications/Xcode.app/Contents/Developer` respectively.
 """,
-                mandatory = False,
+                mandatory = True,
             ),
         },
     ),
