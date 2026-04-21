@@ -115,4 +115,4 @@ tasks:
       - "bazel run //doc:gazelle"
       - "git diff --exit-code || { echo '::error::Gazelle-generated BUILD files are out of date. Run: bazel run //doc:gazelle'; exit 1; }"
 
-buildifier: 8.2.1
+buildifier: 8.5.1
