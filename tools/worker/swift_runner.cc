@@ -110,7 +110,8 @@ CompilationPlan::CompilationPlan(absl::string_view print_jobs_output) {
     absl::string_view command_line_without_expansions =
         possible_response_file.first;
 
-    if (absl::StrContains(command_line, " -c ")) {
+    if (absl::StrContains(command_line, " -c ") ||
+        absl::StrContains(command_line, " -dump-ast ")) {
       int index = codegen_jobs_.size();
       codegen_jobs_.push_back(std::string(command_line_without_expansions));
 
@@ -617,7 +618,6 @@ SwiftRunner::SwiftRunner(
       last_flag_was_tools_directory_(false),
       last_flag_was_target_(false),
       last_flag_was_module_alias_(false),
-      emit_json_ast_(false),
       get_current_directory_(std::move(get_current_directory)) {
   ProcessArguments(args);
 }
@@ -677,8 +677,8 @@ int SwiftRunner::Run(std::ostream& stdout_stream, std::ostream& stderr_stream) {
     }
   }
 
-  if (emit_json_ast_) {
-    PerformJsonAstDump(stdout_stream, stderr_stream);
+  if (emit_json_ast_.has_value()) {
+    PerformJsonAstDump(emit_json_ast_.value(), stdout_stream, stderr_stream);
   }
 
   return exit_code;
@@ -858,7 +858,11 @@ bool SwiftRunner::ProcessArgument(
     }
 
     if (trimmed_arg == "-emit-json-ast") {
-      emit_json_ast_ = true;
+      emit_json_ast_ = JsonAstOptions{};
+      return true;
+    }
+    if (absl::ConsumePrefix(&trimmed_arg, "-emit-json-ast=")) {
+      emit_json_ast_ = JsonAstOptions{std::string(trimmed_arg)};
       return true;
     }
 
@@ -1010,7 +1014,8 @@ int SwiftRunner::PerformLayeringCheck(std::ostream& stdout_stream,
   return 0;
 }
 
-int SwiftRunner::PerformJsonAstDump(std::ostream& stdout_stream,
+int SwiftRunner::PerformJsonAstDump(JsonAstOptions json_opts,
+                                    std::ostream& stdout_stream,
                                     std::ostream& stderr_stream) {
   // It is assumed that the Bazel caller spawning this action has already
   // populated the output file map with `ast-dump` keys that represent the
@@ -1038,8 +1043,30 @@ int SwiftRunner::PerformJsonAstDump(std::ostream& stdout_stream,
   // see them again via the AST dump.
   ast_dump_args.push_back("-suppress-warnings");
 
-  int exit_code = SpawnJob(tool_args_, ast_dump_args, /*env=*/nullptr,
-                           stdout_stream, stderr_stream);
+  int exit_code;
+  if (compile_step_.has_value()) {
+    // Need to use codegen to run the actions to create the specific AST files.
+    // When the caller didn't specify any specific AST outputs, this will run
+    // all jobs to generate all possible AST files.
+    CompileStep ast_step("SwiftCompileCodegen", json_opts.output);
+    exit_code = SpawnPlanStep(tool_args_, ast_dump_args, &job_env_, ast_step,
+                              stdout_stream, stderr_stream);
+  } else {
+    // If the caller requested a subset of AST files but is not using
+    // `-compile-step`, this will write *ALL* AST files which isn't right. The
+    // alternatives would be to:
+    // - Use SpawnPlanStep to execute specific frontend actions for the desired
+    //   outputs. It's unclear if this is safe when not otherwise using
+    //   `-compile-step` already.
+    // - Write the compiler outputs to a scratch space and copy over
+    //   specifically the files the caller wanted.
+    //
+    // Keep this as-is for now because there's no use case for emitting a subset
+    // of ASTs while building a full module.
+    exit_code = SpawnJob(tool_args_, ast_dump_args, /*env=*/nullptr,
+                         stdout_stream, stderr_stream);
+  }
+
   if (exit_code == 0) {
     return 0;
   }
@@ -1048,15 +1075,34 @@ int SwiftRunner::PerformJsonAstDump(std::ostream& stdout_stream,
   // crashing bugs in the JSON AST dump in Swift 6.1). If this happens, read the
   // output file map to determine which files were expected and write dummy
   // files so that Bazel is happy.
-  std::ifstream stream((std::string(output_file_map_path)));
-  nlohmann::json output_file_map;
-  stream >> output_file_map;
 
-  for (auto& [src, outputs] : output_file_map.items()) {
-    if (auto ast_dump_path = outputs.find("ast-dump");
-        ast_dump_path != outputs.end()) {
-      std::ofstream ast_dump_file(ast_dump_path->get<std::string>());
+  if (!json_opts.output.empty()) {
+    // Only write the AST files that were requested.
+    auto requested_ast_paths = absl::StrSplit(json_opts.output, ',');
+    for (absl::string_view ast_dump_path : requested_ast_paths) {
+      if (ast_dump_path.empty()) {
+        continue;
+      }
+      std::string path = std::string(ast_dump_path);
+      std::ofstream ast_dump_file(path);
       ast_dump_file << "{}" << std::endl;
+    }
+  } else {
+    // Write all AST files from the output map.
+    std::ifstream stream((std::string(output_file_map_path)));
+    if (!stream.is_open()) {
+      // Never fail compilation because of AST files.
+      return 0;
+    }
+    nlohmann::json output_file_map;
+    stream >> output_file_map;
+
+    for (auto& [src, outputs] : output_file_map.items()) {
+      if (auto ast_dump_path = outputs.find("ast-dump");
+          ast_dump_path != outputs.end()) {
+        std::ofstream ast_dump_file(ast_dump_path->get<std::string>());
+        ast_dump_file << "{}" << std::endl;
+      }
     }
   }
 

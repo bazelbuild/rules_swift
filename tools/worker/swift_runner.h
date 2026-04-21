@@ -42,6 +42,15 @@ struct CompileStep {
   std::string output;
 };
 
+// User specified options for extracting ASTs as JSON files.
+struct JsonAstOptions {
+  // List of all requested output ASTs as file paths.
+  //
+  // The file paths should correspond to outputs from the output file map. An
+  // empty output indicates all ASTs from the compilation should be created.
+  std::string output;
+};
+
 // Handles spawning the Swift compiler driver, making any required substitutions
 // of the command line arguments (for example, Bazel's magic Xcode placeholder
 // strings).
@@ -72,6 +81,15 @@ struct CompileStep {
 //     the directory afterwards. This should resolve issues where the module
 //     cache state is not refreshed correctly in all situations, which
 //     sometimes results in hard-to-diagnose crashes in `swiftc`.
+//
+// -Xwrapped-swift=-emit-json-ast[=<comma separated list of AST file paths>]
+//     When specified, the spawner will execute an additional compilation action
+//     to extract Swift file AST data as JSON files. The caller can request all
+//     AST files for every Swift file in the compilation by excluding the
+//     optional list of AST file paths. The caller can request a subset of AST
+//     files by specifying them as a comma separated list. Extracting a subset
+//     of files is helpful when combined with the
+//     "-Xwrapped-swift=-compile-step" options.
 class SwiftRunner {
  public:
   // Create a new spawner that launches a Swift tool with the given arguments.
@@ -146,7 +164,7 @@ class SwiftRunner {
   // Performs a safe JSON AST dump of the current compilation, which attempts to
   // recover from known crash issues in the Swift 6.1 implementation of the
   // feature.
-  int PerformJsonAstDump(std::ostream& stdout_stream,
+  int PerformJsonAstDump(JsonAstOptions json_opts, std::ostream& stdout_stream,
                          std::ostream& stderr_stream);
 
   // Upgrade any of the requested warnings to errors and then print all of the
@@ -242,7 +260,7 @@ class SwiftRunner {
   std::optional<CompileStep> compile_step_;
 
   // Whether the worker should emit a JSON AST dump of the compilation.
-  bool emit_json_ast_;
+  std::optional<JsonAstOptions> emit_json_ast_;
 
   // The inverse mapping of module aliases passed to the compiler. The
   // `-module-alias` flag takes its argument of the form `source=alias`. For
