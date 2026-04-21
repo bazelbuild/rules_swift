@@ -83,6 +83,9 @@ List of strings. Features that should be enabled when compiling the overlay.
 Bool. Whether to add the developer framework search paths when compiling the
 overlay.
 """,
+        "minimum_os_version": """\
+String. The minimum OS version to use when compiling the overlay.
+""",
         "library_evolution": """\
 Bool. Whether to compile the overlay with library evolution enabled.
 """,

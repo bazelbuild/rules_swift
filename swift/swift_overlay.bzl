@@ -64,6 +64,7 @@ def _swift_overlay_impl(ctx):
         disabled_features = ctx.disabled_features,
         enabled_features = ctx.features,
         include_dev_srch_paths = include_dev_srch_paths,
+        minimum_os_version = ctx.attr.minimum_os_version,
         library_evolution = ctx.attr.library_evolution,
         linkopts = ctx.attr.linkopts,
         plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),

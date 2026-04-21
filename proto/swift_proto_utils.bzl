@@ -282,6 +282,7 @@ def compile_swift_protos_for_target(
         exec_group = exec_group,
         feature_configuration = feature_configuration,
         include_dev_srch_paths = include_dev_srch_paths,
+        minimum_os_version = getattr(attr, "minimum_os_version", None),
         module_name = module_name,
         package_name = getattr(attr, "package_name", None),
         srcs = generated_swift_srcs,

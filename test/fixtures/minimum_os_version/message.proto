@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package minimum_os_version;
+
+message Message {
+  string value = 1;
+}

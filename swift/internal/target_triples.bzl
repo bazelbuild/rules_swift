@@ -243,6 +243,15 @@ def _unversioned_os(triple):
     """Returns the operating system of the triple without the version number."""
     return _split_os_version(triple.os)[0]
 
+def _with_os_version(triple, os_version):
+    """Returns a target triple with the OS component set to the given version."""
+    return _make(
+        cpu = triple.cpu,
+        vendor = triple.vendor,
+        os = "{}{}".format(_unversioned_os(triple), os_version),
+        environment = triple.environment,
+    )
+
 target_triples = struct(
     bazel_apple_platform = _bazel_apple_platform,
     make = _make,
@@ -251,4 +260,5 @@ target_triples = struct(
     platform_name_for_swift = _platform_name_for_swift,
     str = _str,
     unversioned_os = _unversioned_os,
+    with_os_version = _with_os_version,
 )

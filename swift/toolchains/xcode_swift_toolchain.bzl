@@ -406,6 +406,23 @@ def _make_resource_directory_configurator(developer_dir):
 
     return _resource_directory_configurator
 
+def _make_target_triple_configurator(target_triple):
+    """Creates a configurator that adds the Swift target triple."""
+
+    def _target_triple_configurator(prerequisites, args):
+        minimum_os_version = getattr(prerequisites, "minimum_os_version", None)
+        if minimum_os_version:
+            target = target_triples.with_os_version(
+                target_triple,
+                minimum_os_version,
+            )
+        else:
+            target = target_triple
+
+        args.add("-target", target_triples.str(target))
+
+    return _target_triple_configurator
+
 def _all_action_configs(
         additional_objc_copts,
         additional_swiftc_copts,
@@ -449,7 +466,7 @@ def _all_action_configs(
                 SWIFT_ACTION_SYNTHESIZE_INTERFACE,
             ],
             configurators = [
-                add_arg("-target", target_triples.str(target_triple)),
+                _make_target_triple_configurator(target_triple),
                 add_arg("-sdk", apple_toolchain.sdk_dir()),
             ],
         ),

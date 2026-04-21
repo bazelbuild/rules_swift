@@ -189,6 +189,7 @@ def _swift_library_impl(ctx):
         feature_configuration = feature_configuration,
         generated_header_name = generated_header_name,
         include_dev_srch_paths = include_dev_srch_paths,
+        minimum_os_version = ctx.attr.minimum_os_version,
         module_name = module_name,
         package_name = ctx.attr.package_name,
         plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),

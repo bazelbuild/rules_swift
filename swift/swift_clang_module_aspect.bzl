@@ -546,6 +546,7 @@ def _compile_swift_overlay(
         defines = overlay_info.defines,
         feature_configuration = feature_configuration,
         include_dev_srch_paths = overlay_info.include_dev_srch_paths,
+        minimum_os_version = overlay_info.minimum_os_version,
         module_name = module_name,
         package_name = None,
         plugins = overlay_info.plugins,

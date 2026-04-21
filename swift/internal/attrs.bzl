@@ -134,6 +134,16 @@ build label, by stripping the leading `//` and replacing `/`, `:`, and other
 non-identifier characters with underscores.
 """,
             ),
+            "minimum_os_version": attr.string(
+                doc = """\
+The minimum OS version that this target should be built for.
+
+On Apple/Xcode toolchains, if set, Swift compile actions use this value to
+construct the OS component of the target triple passed to `swiftc`. The value
+must be a dotted version number (for example, `"13.0"`). If unset, the target
+triple from the selected platform configuration is used unchanged.
+""",
+            ),
             "package_name": attr.string(
                 doc = """\
 The semantic package of the Swift target being built. Targets with the same
