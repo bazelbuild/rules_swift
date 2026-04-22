@@ -39,12 +39,6 @@ class BazelPlaceholderSubstitutions {
   // caused the string to change.
   bool Apply(std::string &arg);
 
-  bool UsedVfsPlaceholder() const { return used_vfs_placeholder_; }
-
-  static const char *kVfsSdkRootVirtualPath;
-
-  static const char *kVfsDeveloperDirVirtualPath;
-
  private:
   // A resolver for a Bazel placeholder string that retrieves and caches the
   // value the first time it is requested.
@@ -84,10 +78,6 @@ class BazelPlaceholderSubstitutions {
   // A mapping from Bazel placeholder strings to resolvers that provide their
   // values.
   std::map<std::string, PlaceholderResolver> placeholder_resolvers_;
-
-  std::map<std::string, PlaceholderResolver> vfs_placeholder_resolvers_;
-
-  bool used_vfs_placeholder_ = false;
 };
 
 }  // namespace bazel_rules_swift

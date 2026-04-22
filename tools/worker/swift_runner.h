@@ -122,8 +122,6 @@ class SwiftRunner {
   std::vector<std::string> ProcessArguments(
       const std::vector<std::string> &args);
 
-  std::vector<std::string> BuildVfsOverlayArgs();
-
   // A mapping of Bazel placeholder strings to the actual paths that should be
   // substituted for them. Supports Xcode resolution on Apple OSes.
   bazel_rules_swift::BazelPlaceholderSubstitutions
@@ -155,8 +153,6 @@ class SwiftRunner {
   // Whether the invocation is being used to dump ast files.
   // This is used to avoid implicitly adding incompatible flags.
   bool is_dump_ast_;
-
-  bool is_emit_pcm_ = false;
 
   // Whether `-file-prefix-map PWD=.` is set.
   bool file_prefix_pwd_is_dot_;
