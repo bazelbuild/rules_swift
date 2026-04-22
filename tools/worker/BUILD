@@ -52,6 +52,27 @@ cc_library(
 )
 
 cc_library(
+    name = "pcm_hermetic_runner",
+    srcs = ["pcm_hermetic_runner.cc"],
+    hdrs = ["pcm_hermetic_runner.h"],
+    copts = select({
+        "//tools:clang-cl": [
+            "-Xclang=-fno-split-cold-code",
+            "/std:c++17",
+        ],
+        "//tools:msvc": [
+            "/std:c++17",
+        ],
+        "//conditions:default": [
+            "-std=c++17",
+        ],
+    }),
+    deps = [
+        "//tools/common:process",
+    ],
+)
+
+cc_library(
     name = "swift_runner",
     srcs = [
         "output_file_map.cc",
@@ -79,6 +100,7 @@ cc_library(
         "//conditions:default": [],
     }),
     deps = [
+        ":pcm_hermetic_runner",
         "//tools/common:bazel_substitutions",
         "//tools/common:file_system",
         "//tools/common:process",

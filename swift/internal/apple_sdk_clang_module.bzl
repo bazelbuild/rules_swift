@@ -19,7 +19,11 @@ load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@build_bazel_rules_swift//swift:providers.bzl", "SwiftInfo", "create_clang_module_inputs", "create_swift_module_context")
 load("@build_bazel_rules_swift//swift:swift_common.bzl", "swift_common")
 load("@build_bazel_rules_swift//swift/internal:compiling.bzl", "precompile_clang_module")
-load("@build_bazel_rules_swift//swift/internal:feature_names.bzl", "SWIFT_FEATURE_SYSTEM_MODULE")
+load(
+    "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
+    "SWIFT_FEATURE_HERMETIC_SYSTEM_PCM",
+    "SWIFT_FEATURE_SYSTEM_MODULE",
+)
 load("@build_bazel_rules_swift//swift/internal:toolchain_utils.bzl", "SWIFT_TOOLCHAIN_TYPE")
 load("@build_bazel_rules_swift//swift/internal:utils.bzl", "merge_runfiles")
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
@@ -56,6 +60,7 @@ def _apple_sdk_clang_module_impl(ctx):
     requested_features = ctx.features
     if is_system:
         requested_features.append(SWIFT_FEATURE_SYSTEM_MODULE)
+    requested_features.append(SWIFT_FEATURE_HERMETIC_SYSTEM_PCM)
 
     feature_configuration = swift_common.configure_features(
         ctx = ctx,

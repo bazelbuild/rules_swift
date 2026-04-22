@@ -190,6 +190,9 @@ class SwiftRunner {
 
   // Whether `.swiftsourceinfo` files are being generated.
   bool emit_swift_source_info_;
+
+  // Whether `-Xwrapped-swift=-hermetic-pcm` was passed
+  bool hermetic_pcm_;
 };
 
 #endif  // BUILD_BAZEL_RULES_SWIFT_TOOLS_WORKER_SWIFT_RUNNER_H_
