@@ -26,8 +26,6 @@ namespace {
 
 constexpr const char* kDebugEnv = "RULES_SWIFT_HERMETIC_PCM_DEBUG";
 constexpr const char* kDeveloperDirSymlinkName = "__bazel_pcm_developer_dir";
-constexpr const char* kResourceDirSymlinkName = "__bazel_pcm_resource_dir";
-constexpr const char* kSdkSymlinkPrefix = "__bazel_pcm_sdk_";
 
 bool ShouldDropFlagAndValue(const std::string& arg) {
   return arg == "-external-plugin-path" ||
@@ -165,12 +163,6 @@ int RunHermeticPcm(const std::vector<std::string>& args,
     return 1;
   }
 
-  const std::string sdk_path = GetEnv("SDKROOT");
-  if (sdk_path.empty()) {
-    (*stderr_stream) << "error: hermetic-pcm: SDKROOT is not set\n";
-    return 1;
-  }
-
   std::string captured;
   int rc = CaptureFrontendCommand(args, stderr_stream, &captured);
   if (rc != 0) {
@@ -185,24 +177,18 @@ int RunHermeticPcm(const std::vector<std::string>& args,
     return 1;
   }
 
-  const std::string resource_dir = ResourceDirFromFrontend(frontend[0]);
+  std::string resource_dir = ResourceDirFromFrontend(frontend[0]);
   if (resource_dir.empty()) {
     return 1;
   }
-
-  // Different target SDKs get different symlinks so that parallel PCM
-  // actions for different platforms don't race on a shared name when
-  // sandboxing is disabled.
-  const std::string sdk_symlink_name =
-      std::string(kSdkSymlinkPrefix) +
-      std::filesystem::path(sdk_path).filename().string();
-
-  if (!Symlink(sdk_path, sdk_symlink_name, stderr_stream)) {
+  if (resource_dir.find(developer_dir) == std::string::npos) {
+    (*stderr_stream) << "error: hermetic-pcm: resource dir '" << resource_dir
+                     << "' does not contain DEVELOPER_DIR '" << developer_dir
+                     << "'\n";
     return 1;
   }
-  if (!Symlink(resource_dir, kResourceDirSymlinkName, stderr_stream)) {
-    return 1;
-  }
+  ReplaceAll(resource_dir, developer_dir, kDeveloperDirSymlinkName);
+
   if (!Symlink(developer_dir, kDeveloperDirSymlinkName, stderr_stream)) {
     return 1;
   }
@@ -216,18 +202,18 @@ int RunHermeticPcm(const std::vector<std::string>& args,
       continue;
     }
     std::string rewritten_arg = arg;
-    ReplaceAll(rewritten_arg, sdk_path, sdk_symlink_name);
     ReplaceAll(rewritten_arg, developer_dir, kDeveloperDirSymlinkName);
     rewritten.push_back(std::move(rewritten_arg));
   }
 
   // The frontend otherwise auto-derives the resource dir from argv[0],
-  // which is an absolute path into Xcode. It needs to be relative.
+  // which is an absolute path into Xcode. Pin it to the relative form.
   rewritten.push_back("-resource-dir");
-  rewritten.push_back(kResourceDirSymlinkName);
+  rewritten.push_back(resource_dir);
 
   if (!GetEnv(kDebugEnv).empty()) {
-    (*stderr_stream) << "hermetic-pcm: sdk_path='" << sdk_path << "'\n";
+    (*stderr_stream) << "hermetic-pcm: developer_dir='" << developer_dir
+                     << "'\n";
     (*stderr_stream) << "hermetic-pcm: running";
     for (const std::string& arg : rewritten) {
       (*stderr_stream) << ' ' << arg;
