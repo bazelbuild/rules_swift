@@ -60,7 +60,8 @@ int CaptureFrontendCommand(const std::vector<std::string>& args,
                          /*stdout_to_stderr=*/true);
   *captured = sink.str();
   if (rc != 0) {
-    (*stderr_stream) << "hermetic-pcm: swiftc -### exited " << rc << ":\n"
+    (*stderr_stream) << "error: hermetic-pcm: swiftc -### exited " << rc
+                     << ":\n"
                      << *captured;
   }
   return rc;
@@ -121,8 +122,8 @@ bool Symlink(const std::string& target, const std::string& link_name,
   std::filesystem::remove(link, ec);
   std::filesystem::create_directory_symlink(target, link, ec);
   if (ec) {
-    (*stderr_stream) << "hermetic-pcm: failed to symlink " << target << " -> "
-                     << link << ": " << ec.message() << "\n";
+    (*stderr_stream) << "error: hermetic-pcm: failed to symlink " << target
+                     << " -> " << link << ": " << ec.message() << "\n";
     return false;
   }
   return true;
@@ -143,13 +144,13 @@ int RunHermeticPcm(const std::vector<std::string>& args,
                    std::ostream* stderr_stream) {
   const std::string developer_dir = GetEnv("DEVELOPER_DIR");
   if (developer_dir.empty()) {
-    (*stderr_stream) << "hermetic-pcm: DEVELOPER_DIR is not set\n";
+    (*stderr_stream) << "error: hermetic-pcm: DEVELOPER_DIR is not set\n";
     return 1;
   }
 
   const std::string sdk_path = GetEnv("SDKROOT");
   if (sdk_path.empty()) {
-    (*stderr_stream) << "hermetic-pcm: SDKROOT is not set\n";
+    (*stderr_stream) << "error: hermetic-pcm: SDKROOT is not set\n";
     return 1;
   }
 
@@ -161,8 +162,9 @@ int RunHermeticPcm(const std::vector<std::string>& args,
 
   std::vector<std::string> frontend = ParseFrontendCommand(captured);
   if (frontend.empty()) {
-    (*stderr_stream) << "hermetic-pcm: could not parse frontend command from:\n"
-                     << captured;
+    (*stderr_stream)
+        << "error: hermetic-pcm: could not parse frontend command from:\n"
+        << captured;
     return 1;
   }
 
