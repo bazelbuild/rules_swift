@@ -113,6 +113,20 @@ def module_interface_test_suite(name, tags = []):
         target_under_test = "//test/fixtures/module_interface/library:toy_module_library_without_library_evolution",
     )
 
+    provider_test(
+        name = "{}_swift_library_with_additional_interfaces".format(name),
+        expected_files = [
+            "test/fixtures/module_interface/library/ToyModuleAdditional.swiftinterface",
+            "test/fixtures/module_interface/library/ToyModuleAdditional.package.swiftinterface",
+            "test/fixtures/module_interface/library/ToyModuleAdditional.spi.swiftinterface",
+            "*",
+        ],
+        field = "files",
+        provider = "DefaultInfo",
+        tags = all_tags,
+        target_under_test = "//test/fixtures/module_interface/library:toy_module_library_with_additional_interfaces",
+    )
+
     explicit_swift_module_map_test(
         name = "{}_explicit_swift_module_map_test".format(name),
         tags = all_tags,

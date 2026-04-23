@@ -68,3 +68,12 @@ swift_library(
     module_name = "ToyModuleNoEvolution",
     tags = FIXTURE_TAGS,
 )
+
+swift_library(
+    name = "toy_module_library_with_additional_interfaces",
+    srcs = ["ToyModule.swift"],
+    library_evolution = True,
+    module_name = "ToyModuleAdditional",
+    generated_swiftinterfaces = ["package", "spi.swiftinterface"],
+    tags = FIXTURE_TAGS,
+)

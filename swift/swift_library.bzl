@@ -188,6 +188,7 @@ def _swift_library_impl(ctx):
         defines = ctx.attr.defines,
         feature_configuration = feature_configuration,
         generated_header_name = generated_header_name,
+        generated_swiftinterfaces = ctx.attr.generated_swiftinterfaces,
         include_dev_srch_paths = include_dev_srch_paths,
         module_name = module_name,
         package_name = ctx.attr.package_name,
@@ -258,7 +259,7 @@ def _swift_library_impl(ctx):
         module_context.swift.swiftsourceinfo,
         linking_output.library_to_link.static_library,
         linking_output.library_to_link.pic_static_library,
-    ])
+    ]) + compile_result.supplemental_outputs.additional_swiftinterfaces
 
     return [
         DefaultInfo(
@@ -291,6 +292,12 @@ swift_library = rule(
             swift_clang_module_aspect,
         ]),
         {
+            "generated_swiftinterfaces": attr.string_list(
+                default = [],
+                doc = """\
+A list of suffixes for additional swiftinterfaces to be declared as outputs.
+""",
+            ),
             "private_deps": swift_deps_attr(
                 aspects = [swift_clang_module_aspect],
                 doc = """\

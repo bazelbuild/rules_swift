@@ -379,7 +379,8 @@ def compile(
         target_name,
         toolchains = None,
         toolchain_type = SWIFT_TOOLCHAIN_TYPE,
-        workspace_name):
+        workspace_name,
+        generated_swiftinterfaces = []):
     """Compiles a Swift module.
 
     Args:
@@ -558,6 +559,7 @@ def compile(
         feature_configuration = feature_configuration,
         generated_header_name = generated_header_name,
         generated_module_deps_swift_infos = generated_module_deps_swift_infos,
+        generated_swiftinterfaces = generated_swiftinterfaces,
         module_name = module_name,
         target_name = target_name,
         user_compile_flags = copts,
@@ -584,7 +586,7 @@ def compile(
             compile_outputs.swiftinterface_file,
             compile_outputs.private_swiftinterface_file,
             compile_outputs.swiftsourceinfo_file,
-        ])
+        ]) + compile_outputs.additional_swiftinterfaces
     else:
         all_compile_outputs = compact([
             # The `.swiftmodule` file is explicitly listed as the first output
@@ -599,7 +601,7 @@ def compile(
             compile_outputs.generated_header_file,
             compile_outputs.indexstore_directory,
             compile_outputs.macro_expansion_directory,
-        ]) + compile_outputs.object_files + compile_outputs.const_values_files
+        ]) + compile_outputs.object_files + compile_outputs.const_values_files + compile_outputs.additional_swiftinterfaces
         all_derived_outputs = []
 
     # In `upstream` they call `merge_compilation_contexts` on passed in
@@ -881,6 +883,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         module_context = module_context,
         compilation_outputs = compilation_outputs,
         supplemental_outputs = struct(
+            additional_swiftinterfaces = compile_outputs.additional_swiftinterfaces,
             ast_files = compile_outputs.ast_files,
             const_values_files = compile_outputs.const_values_files,
             indexstore_directory = compile_outputs.indexstore_directory,
@@ -1229,6 +1232,7 @@ def _declare_compile_outputs(
         feature_configuration,
         generated_header_name,
         generated_module_deps_swift_infos,
+        generated_swiftinterfaces = [],
         module_name,
         srcs,
         target_name,
@@ -1324,6 +1328,20 @@ def _declare_compile_outputs(
         )
     else:
         private_swiftinterface_file = None
+
+    additional_swiftinterfaces = []
+    for suffix in generated_swiftinterfaces:
+        if suffix.endswith(".swiftinterface"):
+            suffix = suffix[:-len(".swiftinterface")]
+        if suffix.startswith("."):
+            suffix = suffix[1:]
+        file = _declare_target_scoped_file(
+            actions = actions,
+            add_target_name_to_output_path = add_target_name_to_output_path,
+            target_name = target_name,
+            basename = "{}.{}.swiftinterface".format(module_name, suffix),
+        )
+        additional_swiftinterfaces.append(file)
 
     # If requested, generate the Swift header for this library so that it can be
     # included by Objective-C code that depends on it.
@@ -1479,6 +1497,7 @@ def _declare_compile_outputs(
         macro_expansion_directory = None
 
     compile_outputs = struct(
+        additional_swiftinterfaces = additional_swiftinterfaces,
         ast_files = ast_files,
         const_values_files = const_values_files,
         generated_header_file = generated_header,
