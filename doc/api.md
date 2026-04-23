@@ -168,7 +168,7 @@ swift_common.compile(*, <a href="#swift_common.compile-actions">actions</a>, <a 
                      <a href="#swift_common.compile-extra_swift_infos">extra_swift_infos</a>, <a href="#swift_common.compile-feature_configuration">feature_configuration</a>, <a href="#swift_common.compile-generated_header_name">generated_header_name</a>, <a href="#swift_common.compile-is_test">is_test</a>,
                      <a href="#swift_common.compile-include_dev_srch_paths">include_dev_srch_paths</a>, <a href="#swift_common.compile-module_name">module_name</a>, <a href="#swift_common.compile-package_name">package_name</a>, <a href="#swift_common.compile-plugins">plugins</a>, <a href="#swift_common.compile-private_cc_infos">private_cc_infos</a>,
                      <a href="#swift_common.compile-private_swift_infos">private_swift_infos</a>, <a href="#swift_common.compile-srcs">srcs</a>, <a href="#swift_common.compile-swift_infos">swift_infos</a>, <a href="#swift_common.compile-swift_toolchain">swift_toolchain</a>, <a href="#swift_common.compile-target_name">target_name</a>, <a href="#swift_common.compile-toolchains">toolchains</a>,
-                     <a href="#swift_common.compile-toolchain_type">toolchain_type</a>, <a href="#swift_common.compile-workspace_name">workspace_name</a>)
+                     <a href="#swift_common.compile-toolchain_type">toolchain_type</a>, <a href="#swift_common.compile-workspace_name">workspace_name</a>, <a href="#swift_common.compile-generated_swiftinterfaces">generated_swiftinterfaces</a>)
 </pre>
 
 Compiles a Swift module.
@@ -201,6 +201,7 @@ Compiles a Swift module.
 | <a id="swift_common.compile-toolchains"></a>toolchains |  The struct containing the Swift and C++ toolchain providers, as returned by `swift_common.find_all_toolchains()`.   |  `None` |
 | <a id="swift_common.compile-toolchain_type"></a>toolchain_type |  The toolchain type of the `swift_toolchain` which is used for the proper selection of the execution platform inside `run_toolchain_action`.   |  `Label("@rules_swift//toolchains:toolchain_type")` |
 | <a id="swift_common.compile-workspace_name"></a>workspace_name |  The name of the workspace for which the code is being compiled, which is used to determine unique file paths for some outputs.   |  none |
+| <a id="swift_common.compile-generated_swiftinterfaces"></a>generated_swiftinterfaces |  A list of suffixes for additional swiftinterfaces to be declared as outputs.   |  `[]` |
 
 **RETURNS**
 
