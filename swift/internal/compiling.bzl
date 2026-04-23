@@ -413,6 +413,8 @@ def compile(
         generated_header_name: The name of the Objective-C generated header that
             should be generated for this module. If omitted, no header will be
             generated.
+        generated_swiftinterfaces: A list of suffixes for additional
+            swiftinterfaces to be declared as outputs.
         module_name: The name of the Swift module being compiled. This must be
             present and valid; use `derive_swift_module_name` to generate a
             default from the target's label if needed.
@@ -1250,6 +1252,8 @@ def _declare_compile_outputs(
         generated_module_deps_swift_infos: `SwiftInfo` providers from
             dependencies of the module for the generated header of the target
             being compiled.
+        generated_swiftinterfaces: A list of suffixes for additional
+            swiftinterfaces to be declared as outputs.
         module_name: The name of the Swift module being compiled.
         srcs: The list of source files that will be compiled.
         target_name: The name (excluding package path) of the target being
