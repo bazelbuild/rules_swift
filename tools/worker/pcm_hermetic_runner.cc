@@ -42,7 +42,7 @@ std::string GetEnv(const char* name) {
 
 void ReplaceAll(std::string& arg, const std::string& needle,
                 const std::string& replacement) {
-  if (needle.empty()) return false;
+  if (needle.empty()) return;
   size_t pos = 0;
   while ((pos = arg.find(needle, pos)) != std::string::npos) {
     arg.replace(pos, needle.size(), replacement);
