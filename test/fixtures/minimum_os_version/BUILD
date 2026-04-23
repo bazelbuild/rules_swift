@@ -12,21 +12,48 @@ package(default_visibility = ["//test:__subpackages__"])
 swift_library(
     name = "library",
     srcs = ["empty.swift"],
-    minimum_os_version = "99.0",
+    minimum_os_version = "10.15",
     tags = FIXTURE_TAGS,
+)
+
+swift_library(
+    name = "library_with_selected_minimum_os_version",
+    srcs = ["empty.swift"],
+    minimum_os_version = select({
+        "@platforms//os:ios": "13.0",
+        "@platforms//os:macos": "10.15",
+        "//conditions:default": "",
+    }),
+    tags = FIXTURE_TAGS,
+)
+
+platform(
+    name = "macos_arm64_platform",
+    constraint_values = [
+        "@platforms//cpu:arm64",
+        "@platforms//os:macos",
+    ],
+)
+
+platform(
+    name = "ios_arm64_platform",
+    constraint_values = [
+        "@platforms//cpu:arm64",
+        "@platforms//os:ios",
+    ],
 )
 
 swift_binary(
     name = "binary",
     srcs = ["empty.swift"],
-    minimum_os_version = "99.0",
+    minimum_os_version = "10.15",
     tags = FIXTURE_TAGS,
 )
 
 swift_compiler_plugin(
     name = "compiler_plugin",
     srcs = ["empty.swift"],
-    minimum_os_version = "99.0",
+    minimum_os_version = "10.15",
     tags = FIXTURE_TAGS,
 )
 
@@ -34,7 +61,7 @@ swift_test(
     name = "test",
     srcs = ["empty.swift"],
     discover_tests = False,
-    minimum_os_version = "99.0",
+    minimum_os_version = "10.15",
     tags = FIXTURE_TAGS,
 )
 
@@ -46,7 +73,7 @@ proto_library(
 
 swift_proto_library(
     name = "message_swift_proto",
-    minimum_os_version = "99.0",
+    minimum_os_version = "10.15",
     protos = [":message_proto"],
     tags = FIXTURE_TAGS,
 )

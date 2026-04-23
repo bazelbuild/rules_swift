@@ -189,6 +189,23 @@ def _all_tool_configs(
 
     return tool_configs
 
+def _make_target_triple_configurator(target_triple):
+    """Creates a configurator that adds the Swift target triple."""
+
+    def _target_triple_configurator(prerequisites, args):
+        minimum_os_version = getattr(prerequisites, "minimum_os_version", None)
+        if minimum_os_version:
+            target = target_triples.with_os_version(
+                target_triple,
+                minimum_os_version,
+            )
+        else:
+            target = target_triple
+
+        args.add("-target", target_triples.str(target))
+
+    return _target_triple_configurator
+
 def _all_action_configs(os, arch, target_triple, sdkroot, xctest_version, additional_swiftc_copts):
     """Returns the action configurations for the Swift toolchain.
 
@@ -219,7 +236,7 @@ def _all_action_configs(os, arch, target_triple, sdkroot, xctest_version, additi
                 SWIFT_ACTION_SYNTHESIZE_INTERFACE,
             ],
             configurators = [
-                add_arg("-target", target_triples.str(target_triple)),
+                _make_target_triple_configurator(target_triple),
             ],
         ),
     ]

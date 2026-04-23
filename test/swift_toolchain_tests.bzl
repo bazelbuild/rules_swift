@@ -29,6 +29,14 @@ def swift_toolchain_test_suite(name, tags = []):
         target_under_test = "//test/fixtures/basic:first",
     )
 
+    toolchain_macos_arm64_with_sdkroot_test(
+        name = "{}_minimum_os_version_target_triple".format(name),
+        expected_argv = ["-target arm64-apple-macos10.15"],
+        mnemonic = "SwiftCompile",
+        tags = all_tags,
+        target_under_test = "//test/fixtures/minimum_os_version:library",
+    )
+
     native.test_suite(
         name = name,
         tags = all_tags,
