@@ -27,7 +27,7 @@ namespace {
 constexpr const char* kDebugEnv = "RULES_SWIFT_HERMETIC_PCM_DEBUG";
 constexpr const char* kDeveloperDirSymlinkName = "__bazel_pcm_developer_dir";
 constexpr const char* kResourceDirSymlinkName = "__bazel_pcm_resource_dir";
-constexpr const char* kSdkSymlinkName = "__bazel_pcm_sdk";
+constexpr const char* kSdkSymlinkPrefix = "__bazel_pcm_sdk_";
 
 bool ShouldDropFlagAndValue(const std::string& arg) {
   return arg == "-external-plugin-path" ||
@@ -119,14 +119,31 @@ bool Symlink(const std::string& target, const std::string& link_name,
              std::ostream* stderr_stream) {
   std::filesystem::path link = std::filesystem::current_path() / link_name;
   std::error_code ec;
-  std::filesystem::remove(link, ec);
   std::filesystem::create_directory_symlink(target, link, ec);
-  if (ec) {
-    (*stderr_stream) << "error: hermetic-pcm: failed to symlink " << target
-                     << " -> " << link << ": " << ec.message() << "\n";
+  if (!ec) {
+    return true;
+  }
+
+  // With sandboxing disabled, multiple PCM actions share the same execroot
+  // and can race on creation. If the symlink already exists and points at
+  // the same target, use it. We intentionally never remove the symlink: Bazel
+  // cleans the execroot, and removing here would be a new race.
+  if (ec == std::errc::file_exists) {
+    std::error_code read_ec;
+    auto existing = std::filesystem::read_symlink(link, read_ec);
+    if (!read_ec && existing == std::filesystem::path(target)) {
+      return true;
+    }
+    (*stderr_stream) << "error: hermetic-pcm: symlink " << link
+                     << " already exists but points to '"
+                     << (read_ec ? std::string("<unreadable>")
+                                 : existing.string())
+                     << "' instead of '" << target << "'\n";
     return false;
   }
-  return true;
+  (*stderr_stream) << "error: hermetic-pcm: failed to create symlink " << link
+                   << " -> " << target << ": " << ec.message() << "\n";
+  return false;
 }
 
 std::string ResourceDirFromFrontend(const std::string& frontend_binary) {
@@ -172,7 +189,15 @@ int RunHermeticPcm(const std::vector<std::string>& args,
   if (resource_dir.empty()) {
     return 1;
   }
-  if (!Symlink(sdk_path, kSdkSymlinkName, stderr_stream)) {
+
+  // Different target SDKs get different symlinks so that parallel PCM
+  // actions for different platforms don't race on a shared name when
+  // sandboxing is disabled.
+  const std::string sdk_symlink_name =
+      std::string(kSdkSymlinkPrefix) +
+      std::filesystem::path(sdk_path).filename().string();
+
+  if (!Symlink(sdk_path, sdk_symlink_name, stderr_stream)) {
     return 1;
   }
   if (!Symlink(resource_dir, kResourceDirSymlinkName, stderr_stream)) {
@@ -191,7 +216,7 @@ int RunHermeticPcm(const std::vector<std::string>& args,
       continue;
     }
     std::string rewritten_arg = arg;
-    ReplaceAll(rewritten_arg, sdk_path, kSdkSymlinkName);
+    ReplaceAll(rewritten_arg, sdk_path, sdk_symlink_name);
     ReplaceAll(rewritten_arg, developer_dir, kDeveloperDirSymlinkName);
     rewritten.push_back(std::move(rewritten_arg));
   }
