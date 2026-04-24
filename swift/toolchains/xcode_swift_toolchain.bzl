@@ -23,10 +23,7 @@ load("@bazel_features//:features.bzl", "bazel_features")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
-load(
-    "@bazel_tools//tools/cpp:toolchain_utils.bzl",
-    "use_cpp_toolchain",
-)
+load("@rules_cc//cc:find_cc_toolchain.bzl", "use_cc_toolchain")
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load(
@@ -1111,7 +1108,7 @@ for incremental compilation using a persistent mode.
         # ensures that the execution platform of this Swift toolchain does not
         # unnecessarily constrain the execution platform of the C++ toolchain.
         "default": exec_group(
-            toolchains = use_cpp_toolchain(),
+            toolchains = use_cc_toolchain(),
         ),
     },
     fragments = [
