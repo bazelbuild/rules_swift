@@ -3,9 +3,22 @@
 module(
     name = "rules_swift",
     version = "0",
-    bazel_compatibility = [">=7.0.0"],
+    bazel_compatibility = [
+        ">=7.7.0",
+        ">=8.5.0",
+    ],
     compatibility_level = 3,
     repo_name = "build_bazel_rules_swift",
+)
+
+flag_alias(
+    name = "swiftcopt",
+    starlark_flag = "//swift:copt",
+)
+
+flag_alias(
+    name = "host_swiftcopt",
+    starlark_flag = "//swift:exec_copt",
 )
 
 bazel_dep(name = "bazel_features", version = "1.30.0")
