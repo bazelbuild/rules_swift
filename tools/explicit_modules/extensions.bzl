@@ -113,8 +113,11 @@ def _generate_local_repos(module_ctx, sdks):
     )
 
 def _collect_sdks(module_ctx):
-    names = {}
+    # Default to scanning the most common SDKs to save time.
+    names = {"MacOSX": True, "iPhoneOS": True, "iPhoneSimulator": True}
     for mod in module_ctx.modules:
+        if not mod.is_root:
+            continue
         for tag in mod.tags.sdks:
             for name in tag.names:
                 names[name] = True
