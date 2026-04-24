@@ -295,8 +295,9 @@ def _discover_all_modules(developer_dir: Path, sdk: str) -> tuple[str, set[str]]
         module.render_target(buf)
     _render_clang_aliases(clang_only_modules, sdk, buf)
 
-    all_module_names = modules_by_type["swift"] | modules_by_type["clang"]
-    _render_all_modules_group(all_module_names, sdk, buf)
+    base_names = modules_by_type["swift"] | modules_by_type["clang"]
+    _render_all_modules_group(base_names, sdk, buf)
+    all_module_names = base_names | {f"{m}_clang" for m in modules_by_type["clang"]}
     return buf.getvalue(), all_module_names
 
 
