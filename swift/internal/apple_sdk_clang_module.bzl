@@ -25,20 +25,12 @@ load(
     "SWIFT_FEATURE_SYSTEM_MODULE",
 )
 load("@build_bazel_rules_swift//swift/internal:toolchain_utils.bzl", "SWIFT_TOOLCHAIN_TYPE")
-load("@build_bazel_rules_swift//swift/internal:utils.bzl", "merge_runfiles")
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 
 def _apple_sdk_clang_module_impl(ctx):
-    if (
-        (ctx.file.module_map and ctx.attr.system_module_map) or
-        (not ctx.file.module_map and not ctx.attr.system_module_map)
-    ):
-        fail("Must specify one (and only one) of module_map and system_module_map.")
     swift_toolchain = swift_common.get_toolchain(ctx)
-    module_map = ctx.file.module_map or ctx.attr.system_module_map
-    is_system = True if ctx.attr.system_module_map else False
-
+    module_map = ctx.attr.system_module_map
     deps = ctx.attr.deps
 
     if ctx.attr.module_name in ("XCTest", "XCUIAutomation", "StoreKitTest"):
@@ -51,16 +43,14 @@ def _apple_sdk_clang_module_impl(ctx):
 
     cc_infos = [cc_info_for_system_module] + [dep[CcInfo] for dep in deps]
     swift_infos = [dep[SwiftInfo] for dep in deps if SwiftInfo in dep]
-    data_runfiles = [dep[DefaultInfo].data_runfiles for dep in deps]
-    default_runfiles = [dep[DefaultInfo].default_runfiles for dep in deps]
 
     cc_info = cc_common.merge_cc_infos(cc_infos = cc_infos)
     compilation_context = cc_info.compilation_context
 
-    requested_features = ctx.features
-    if is_system:
-        requested_features.append(SWIFT_FEATURE_SYSTEM_MODULE)
-    requested_features.append(SWIFT_FEATURE_HERMETIC_SYSTEM_PCM)
+    requested_features = ctx.features + [
+        SWIFT_FEATURE_SYSTEM_MODULE,
+        SWIFT_FEATURE_HERMETIC_SYSTEM_PCM,
+    ]
 
     feature_configuration = swift_common.configure_features(
         ctx = ctx,
@@ -68,14 +58,12 @@ def _apple_sdk_clang_module_impl(ctx):
         swift_toolchain = swift_toolchain,
     )
 
-    module_name = ctx.attr.module_name
-
     pcm_outputs = precompile_clang_module(
         actions = ctx.actions,
         cc_compilation_context = compilation_context,
         feature_configuration = feature_configuration,
         module_map_file = module_map,
-        module_name = module_name,
+        module_name = ctx.attr.module_name,
         swift_infos = swift_infos,
         swift_toolchain = swift_toolchain,
         target_name = ctx.attr.name,
@@ -88,21 +76,17 @@ def _apple_sdk_clang_module_impl(ctx):
         module_map = module_map,
         precompiled_module = precompiled_module,
     )
+
     return [
-        # We must repropagate the dependencies' DefaultInfos, otherwise we
-        # will lose runtime dependencies that the library expects to be
-        # there during a test (or a regular `bazel run`).
         DefaultInfo(
-            data_runfiles = merge_runfiles(data_runfiles),
-            default_runfiles = merge_runfiles(default_runfiles),
-            files = None if is_system else depset([module_map]),
+            files = depset([precompiled_module]),
         ),
         SwiftInfo(
             modules = [
                 create_swift_module_context(
-                    name = module_name,
+                    name = ctx.attr.module_name,
                     clang = clang_module_context,
-                    is_system = is_system,
+                    is_system = True,
                 ),
             ],
             swift_infos = swift_infos,
@@ -121,14 +105,6 @@ this target and whose headers may be referenced by the module map.
 """,
                 mandatory = False,
                 providers = [[CcInfo]],
-            ),
-            "module_map": attr.label(
-                allow_single_file = True,
-                doc = """\
-The module map file that should be loaded to import the C library dependency
-into Swift. This is mutally exclusive with `system_module_map`.
-""",
-                mandatory = False,
             ),
             "module_name": attr.string(
                 doc = """\
@@ -155,7 +131,7 @@ appropriately for, i.e.
 and
 `/Applications/Xcode.app/Contents/Developer` respectively.
 """,
-                mandatory = False,
+                mandatory = True,
             ),
         },
     ),
