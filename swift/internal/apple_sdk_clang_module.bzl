@@ -79,7 +79,7 @@ def _apple_sdk_clang_module_impl(ctx):
 
     return [
         DefaultInfo(
-            files = depset([precompiled_module]),
+            files = depset([precompiled_module] if precompiled_module else []),
         ),
         SwiftInfo(
             modules = [
