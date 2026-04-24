@@ -4,12 +4,12 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional, TextIO
+import argparse
 import collections
 import io
 import json
 import os
 import subprocess
-import sys
 import tempfile
 
 
@@ -302,16 +302,63 @@ def _discover_all_modules(developer_dir: Path, sdk: str) -> tuple[str, set[str]]
 
 
 def _main() -> None:
-    developer_dir = Path(os.environ["DEVELOPER_DIR"])
+    parser = argparse.ArgumentParser(
+        description=(
+            "Scan an Xcode SDK and generate a BUILD file describing every "
+            "module in it as `apple_sdk_clang_module` / `swift_library_group` "
+            "targets."
+        ),
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        required=True,
+        type=Path,
+        help="Path to write the generated BUILD file. Required.",
+    )
+    parser.add_argument(
+        "--developer-dir",
+        type=Path,
+        default=None,
+        help=(
+            "Path to the Xcode `Developer/` directory to scan. If omitted, "
+            "the `DEVELOPER_DIR` environment variable is used."
+        ),
+    )
+    parser.add_argument(
+        "--module-names",
+        type=Path,
+        default=None,
+        # Internal flag used by the `apple_sdk` module extension; not part
+        # of the user-facing CLI.
+        help=argparse.SUPPRESS,
+    )
+    parser.add_argument(
+        "sdks",
+        nargs="*",
+        help=(
+            "SDK names to scan (e.g. MacOSX, iPhoneOS). If omitted, every "
+            "SDK installed in the Xcode is scanned."
+        ),
+    )
+    args = parser.parse_args()
 
-    requested_sdks = sys.argv[1:]
-    if requested_sdks:
-        unknown = [s for s in requested_sdks if s not in _SDK_CONSTRAINTS]
+    if args.developer_dir is not None:
+        developer_dir = args.developer_dir
+    elif os.environ.get("DEVELOPER_DIR"):
+        developer_dir = Path(os.environ["DEVELOPER_DIR"])
+    else:
+        raise SystemExit(
+            "error: --developer-dir was not given and DEVELOPER_DIR is not set"
+        )
+
+    if args.sdks:
+        unknown = [s for s in args.sdks if s not in _SDK_CONSTRAINTS]
         if unknown:
             raise SystemExit(
                 f"error: unknown SDK(s): '{unknown}'. Valid options are: {sorted(_SDK_CONSTRAINTS)}"
             )
-        sdk_names = sorted(set(requested_sdks))
+        sdk_names = sorted(set(args.sdks))
     else:
         sdk_names = sorted(_SDK_CONSTRAINTS.keys())
 
@@ -371,11 +418,12 @@ def _main() -> None:
     buf.write("    }),\n")
     buf.write(")\n")
 
-    with open("BUILD.bazel", "w") as f:
+    with open(args.output, "w") as f:
         f.write(buf.getvalue())
 
-    with open("module_names.json", "w") as f:
-        json.dump(sorted(all_modules), f, indent=2)
+    if args.module_names is not None:
+        with open(args.module_names, "w") as f:
+            json.dump(sorted(all_modules), f, indent=2)
 
 
 if __name__ == "__main__":

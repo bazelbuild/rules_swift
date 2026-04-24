@@ -1,6 +1,15 @@
+load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
+
 package(default_visibility = ["//visibility:public"])
 
 exports_files(["scan.py"])
+
+sh_binary(
+    name = "scan",
+    srcs = ["scan_wrapper.sh"],
+    args = ["$(location :scan.py)"],
+    data = ["scan.py"],
+)
 
 filegroup(
     name = "for_bazel_tests",
