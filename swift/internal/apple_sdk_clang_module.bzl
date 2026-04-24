@@ -79,6 +79,7 @@ def _apple_sdk_clang_module_impl(ctx):
 
     return [
         DefaultInfo(
+            # NOTE: This should never be none but sometimes the SDK contains empty modules
             files = depset([precompiled_module] if precompiled_module else []),
         ),
         SwiftInfo(
