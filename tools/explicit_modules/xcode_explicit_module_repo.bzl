@@ -33,7 +33,14 @@ def _xcode_explicit_module_repo_impl(rctx):
     rctx.report_progress("Scanning SDKs for Xcode {}".format(rctx.attr.xcode_version))
     rctx.watch(rctx.attr._script)
     result = rctx.execute(
-        ["/usr/bin/python3", rctx.attr._script] + list(rctx.attr.sdks),
+        [
+            "/usr/bin/python3",
+            rctx.attr._script,
+            "--output",
+            "BUILD.bazel",
+            "--module-names",
+            "module_names.json",
+        ] + list(rctx.attr.sdks),
         environment = {"DEVELOPER_DIR": developer_dir},
     )
     if result.return_code != 0:
