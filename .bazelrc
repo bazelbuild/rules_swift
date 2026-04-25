@@ -30,19 +30,6 @@ build --copt=-Wno-deprecated-declarations --host_copt=-Wno-deprecated-declaratio
 build --worker_sandboxing
 
 build --enable_platform_specific_config
-build:macos --apple_crosstool_top=@local_config_apple_cc//:toolchain
-build:macos --crosstool_top=@local_config_apple_cc//:toolchain
-build:macos --host_crosstool_top=@local_config_apple_cc//:toolchain
-
-# TODO: Remove once https://github.com/protocolbuffers/protobuf/commit/7bb756c1cc580380c689a9141b27e20c7a5d95f3 is in a release
-build --per_file_copt="external/.*protobuf.*/src/google/protobuf/stubs/strutil.cc@-Wno-deprecated-declarations"
-# TODO: Use --host_per_file_copt here once we drop bazel 5.x
-build --host_cxxopt="-Wno-deprecated-declarations"
-
-# TODO: Remove once https://github.com/protocolbuffers/protobuf/commit/85225b83c3386a282bf1e51f1be8bd2ad0bc45d0 is in a release
-build --per_file_copt="external/.*protobuf.*/.*.cc@-Wno-unused-function"
-# TODO: Use --host_per_file_copt here once we drop bazel 5.x
-build --host_cxxopt="-Wno-unused-function"
 
 # The CNIOBoringSSL library uses C++14 features like 'enable_if_t' macro support.
 # For more details on how to enable this in Bazel:
@@ -53,3 +40,7 @@ build:linux --cxxopt='-std=c++14'
 # There is an open issue about it on the zlib repository here:
 # https://github.com/madler/zlib/issues/633
 build --per_file_copt="external/.*zlib.*/.*.c@-Wno-deprecated-non-prototype"
+
+# TODO: Remove once fixed
+build --per_file_copt="external/.*protobuf.*/.*@-Wno-unused-private-field"
+build --host_per_file_copt="external/.*protobuf.*/.*@-Wno-unused-private-field"
