@@ -60,15 +60,15 @@ swift_binary(
     name = "objc_interop_bin",
     srcs = ["greeter_main.swift"],
     tags = FIXTURE_TAGS,
-    target_compatible_with = ["@platforms//os:macos"],
-    deps = [":Greeter"],
+    deps = [
+        ":Greeter",
+    ],
 )
 
 force_features_binary(
     name = "objc_interop_bin_transitioned",
     binary = ":objc_interop_bin",
     tags = FIXTURE_TAGS,
-    target_compatible_with = ["@platforms//os:macos"],
     transitive_features = [
         "swift.use_c_modules",
         "swift.emit_c_module",
