@@ -87,9 +87,6 @@ SWIFT_FEATURE__COVERAGE_PREFIX_MAP_ABSOLUTE_SOURCES_NON_HERMETIC = "swift._cover
 # graph.
 SWIFT_FEATURE_EMIT_C_MODULE = "swift.emit_c_module"
 
-# If enabled, apply nasty workarounds to try and get fully hermetic pcms.
-SWIFT_FEATURE_HERMETIC_SYSTEM_PCM = "swift._hermetic_system_pcm"
-
 # If enabled, the compilation action for a target will produce an index store.
 # https://docs.google.com/document/d/1cH2sTpgSnJZCkZtJl1aY-rzy4uGPcrI-6RrUpdATO2Q/
 SWIFT_FEATURE_INDEX_WHILE_BUILDING = "swift.index_while_building"

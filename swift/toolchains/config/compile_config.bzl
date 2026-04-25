@@ -67,7 +67,6 @@ load(
     "SWIFT_FEATURE_FULL_DEBUG_INFO",
     "SWIFT_FEATURE_FULL_LTO",
     "SWIFT_FEATURE_GLOBAL_MODULE_CACHE_USES_TMPDIR",
-    "SWIFT_FEATURE_HERMETIC_SYSTEM_PCM",
     "SWIFT_FEATURE_INDEX_INCLUDE_LOCALS",
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
     "SWIFT_FEATURE_INTERNALIZE_AT_LINK",
@@ -1276,7 +1275,6 @@ def compile_action_configs(
                 add_arg("-Xfrontend", "-prefix-serialized-debugging-options"),
                 add_arg("-Xwrapped-swift=-hermetic-pcm"),
             ],
-            features = [SWIFT_FEATURE_HERMETIC_SYSTEM_PCM],
         ),
         ActionConfigInfo(
             actions = [SWIFT_ACTION_COMPILE],
