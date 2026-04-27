@@ -120,6 +120,10 @@ bazel run -- \
  MacOSX iPhoneOS iPhoneSimulator
 ```
 
+NOTE: The format of this `BUILD` file isn't considered stable, so if you
+choose to vendor it yourself you should regenerate it whenever you
+update `rules_swift`.
+
 # Background
 
 ## Implicit modules
