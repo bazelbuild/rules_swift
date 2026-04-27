@@ -75,3 +75,37 @@ force_features_binary(
         "-swift.add_default_precompiled_modules",
     ],
 )
+
+# Implicit dependencies with objc interop
+swift_interop_hint(
+    name = "GreeterImplicit_hint",
+    module_name = "Greeter",
+    tags = FIXTURE_TAGS,
+)
+
+objc_library(
+    name = "GreeterImplicit",
+    srcs = ["Greeter.m"],
+    hdrs = ["Greeter.h"],
+    aspect_hints = [":GreeterImplicit_hint"],
+    copts = ["-fno-stack-protector"],
+    tags = FIXTURE_TAGS,
+    target_compatible_with = ["@platforms//os:macos"],
+)
+
+swift_binary(
+    name = "objc_interop_implicit_bin",
+    srcs = ["greeter_main.swift"],
+    tags = FIXTURE_TAGS,
+    deps = [":GreeterImplicit"],
+)
+
+force_features_binary(
+    name = "objc_interop_implicit_bin_transitioned",
+    binary = ":objc_interop_implicit_bin",
+    tags = FIXTURE_TAGS,
+    transitive_features = [
+        "swift.use_c_modules",
+        "swift.emit_c_module",
+    ],
+)

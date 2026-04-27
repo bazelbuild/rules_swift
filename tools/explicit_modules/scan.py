@@ -64,12 +64,12 @@ _HEADER = """\
 load(
     "@build_bazel_rules_swift//swift:swift.bzl",
     "apple_sdk_clang_module",
-    "swift_library_group",
+    "apple_sdk_module_group",
 )
 
 package(default_visibility = ["//visibility:public"])
 
-swift_library_group(name = "_empty_all_modules")
+apple_sdk_module_group(name = "_empty_all_modules")
 """
 
 
@@ -95,7 +95,7 @@ def _render_all_modules_group(
     out: TextIO,
 ) -> None:
     out.write("\n")
-    out.write("swift_library_group(\n")
+    out.write("apple_sdk_module_group(\n")
     out.write(f'    name = "{sdk}_all_modules",\n')
     out.write("    deps = [\n")
     for name in sorted(all_module_names):
@@ -145,7 +145,7 @@ class _Module:
             out.write(")\n")
         elif self.module_type == "swift":
             out.write("\n")
-            out.write("swift_library_group(\n")
+            out.write("apple_sdk_module_group(\n")
             out.write(
                 f'    name = "{_canonical_name(self.name, self.sdk, self.module_type)}",\n'
             )
@@ -303,11 +303,7 @@ def _discover_all_modules(developer_dir: Path, sdk: str) -> tuple[str, set[str]]
 
 def _main() -> None:
     parser = argparse.ArgumentParser(
-        description=(
-            "Scan an Xcode SDK and generate a BUILD file describing every "
-            "module in it as `apple_sdk_clang_module` / `swift_library_group` "
-            "targets."
-        ),
+        description="Scan Xcode and generate a BUILD file describing every system module.",
     )
     parser.add_argument(
         "-o",
