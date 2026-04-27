@@ -174,11 +174,7 @@ _sdks_tag = tag_class(
     attrs = {
         "names": attr.string_list(
             mandatory = True,
-            doc = (
-                "SDK names to scan (e.g. 'MacOSX', 'iPhoneOS', " +
-                "'iPhoneSimulator'). If omitted, every SDK installed in each " +
-                "Xcode is scanned."
-            ),
+            doc = "SDK names to scan (e.g. 'MacOSX', 'iPhoneOS')",
         ),
     },
     doc = "Limit dynamic scanning to a specific subset of Apple SDKs.",
