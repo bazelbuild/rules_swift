@@ -4,6 +4,7 @@ load("//swift:swift_interop_hint.bzl", "swift_interop_hint")
 load("//swift:swift_library.bzl", "swift_library")
 load("//test/fixtures/precompiled_modules:force_features.bzl", "force_features_binary")
 load(":extract_pcm.bzl", "extract_pcm")
+load(":extract_swiftmodule.bzl", "extract_swiftmodule")
 
 force_features_binary(
     name = "foundation_pcm",
@@ -58,7 +59,6 @@ swift_library(
 extract_pcm(
     name = "simple_swift_header_pcm",
     target = ":SimpleSwift",
-    target_compatible_with = ["@platforms//os:macos"],
 )
 
 sh_test(
@@ -66,4 +66,25 @@ sh_test(
     srcs = ["check_hermetic_pcm.sh"],
     args = ["$(rootpath :simple_swift_header_pcm)"],
     data = [":simple_swift_header_pcm"],
+)
+
+swift_library(
+    name = "Downstream",
+    srcs = ["Downstream.swift"],
+    module_name = "Downstream",
+    deps = ["@apple_sdk//:Foundation"],
+)
+
+extract_swiftmodule(
+    name = "downstream_swiftmodule",
+    target = ":Downstream",
+)
+
+# A swiftmodule that references PCMs must not have absolute paths to them or
+# Xcode in the output or debugging will fail
+sh_test(
+    name = "hermetic_downstream_swiftmodule_test",
+    srcs = ["check_hermetic_swiftmodule.sh"],
+    args = ["$(rootpath :downstream_swiftmodule)"],
+    data = [":downstream_swiftmodule"],
 )

@@ -871,6 +871,12 @@ def compile_action_configs(
             ],
             features = [SWIFT_FEATURE_SYSTEM_MODULE],
         ),
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_PRECOMPILE_C_MODULE],
+            configurators = [
+                add_arg("-Xwrapped-swift=-hermetic-pcm"),
+            ],
+        ),
     ]
 
     #### Search paths/explicit module map for Swift module dependencies
@@ -1266,14 +1272,6 @@ def compile_action_configs(
                 # available for most non system modules except for third-party
                 # frameworks which we don't have the source code for.
                 SWIFT_FEATURE_SYSTEM_MODULE,
-            ],
-        ),
-        ActionConfigInfo(
-            actions = [SWIFT_ACTION_PRECOMPILE_C_MODULE],
-            configurators = [
-                add_arg("-Xfrontend", "-serialize-debugging-options"),
-                add_arg("-Xfrontend", "-prefix-serialized-debugging-options"),
-                add_arg("-Xwrapped-swift=-hermetic-pcm"),
             ],
         ),
         ActionConfigInfo(
