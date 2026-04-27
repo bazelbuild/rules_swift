@@ -3,12 +3,19 @@
 def _force_features_transition_impl(settings, attr):
     return {
         "//command_line_option:features": settings["//command_line_option:features"] + attr.transitive_features,
+        "//command_line_option:host_features": settings["//command_line_option:host_features"] + attr.transitive_features,
     }
 
 _force_features_transition = transition(
     implementation = _force_features_transition_impl,
-    inputs = ["//command_line_option:features"],
-    outputs = ["//command_line_option:features"],
+    inputs = [
+        "//command_line_option:features",
+        "//command_line_option:host_features",
+    ],
+    outputs = [
+        "//command_line_option:features",
+        "//command_line_option:host_features",
+    ],
 )
 
 def _force_features_binary_impl(ctx):

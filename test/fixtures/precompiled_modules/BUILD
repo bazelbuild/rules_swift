@@ -1,5 +1,6 @@
 load("@rules_cc//cc:objc_library.bzl", "objc_library")
 load("//swift:swift_binary.bzl", "swift_binary")
+load("//swift:swift_compiler_plugin.bzl", "swift_compiler_plugin")
 load("//swift:swift_interop_hint.bzl", "swift_interop_hint")
 load("//test/fixtures:common.bzl", "FIXTURE_TAGS")
 load(":force_features.bzl", "force_features_binary")
@@ -93,9 +94,18 @@ objc_library(
     target_compatible_with = ["@platforms//os:macos"],
 )
 
+swift_compiler_plugin(
+    name = "stub_plugin",
+    srcs = ["StubPlugin.swift"],
+    module_name = "StubPlugin",
+    tags = FIXTURE_TAGS,
+    target_compatible_with = ["@platforms//os:macos"],
+)
+
 swift_binary(
     name = "objc_interop_implicit_bin",
     srcs = ["greeter_main.swift"],
+    plugins = [":stub_plugin"],
     tags = FIXTURE_TAGS,
     deps = [":GreeterImplicit"],
 )
@@ -107,5 +117,6 @@ force_features_binary(
     transitive_features = [
         "swift.use_c_modules",
         "swift.emit_c_module",
+        "swift.add_default_precompiled_modules",
     ],
 )

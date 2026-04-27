@@ -55,7 +55,7 @@ def precompiled_modules_test_suite(name, tags = []):
         target_under_test = "//test/fixtures/precompiled_modules:hello",
         expected_argv = [
             "-fmodule-file=Foundation",
-            "-fmodule-file=Darwin",
+            "-fmodule-file=SwiftShims",
         ],
     )
 
@@ -67,7 +67,7 @@ def precompiled_modules_test_suite(name, tags = []):
         target_under_test = "//test/fixtures/precompiled_modules:hello",
         not_expected_argv = [
             "-fmodule-file=Foundation",
-            "-fmodule-file=Darwin",
+            "-fmodule-file=SwiftShims",
         ],
     )
 
@@ -79,7 +79,19 @@ def precompiled_modules_test_suite(name, tags = []):
         target_under_test = "//test/fixtures/precompiled_modules:hello_with_explicit_deps_bin",
         expected_argv = [
             "-fmodule-file=Foundation",
-            "-fmodule-file=Darwin",
+            "-fmodule-file=SwiftShims",
+        ],
+    )
+
+    _precompiled_modules_test(
+        name = "{}_compiler_plugin_default_modules_test".format(name),
+        tags = all_tags,
+        target_compatible_with = ["@platforms//os:macos"],
+        mnemonic = "SwiftCompile",
+        target_under_test = "//test/fixtures/precompiled_modules:stub_plugin",
+        expected_argv = [
+            "-fmodule-file=Foundation",
+            "-fmodule-file=SwiftShims",
         ],
     )
 
