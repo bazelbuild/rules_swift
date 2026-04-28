@@ -340,6 +340,35 @@ bzl_library(
 )
 
 bzl_library(
+    name = "system_clang_module",
+    srcs = ["system_clang_module.bzl"],
+    visibility = ["//swift:__subpackages__"],
+    deps = [
+        "@bazel_skylib//lib:dicts",
+        "@bazel_skylib//lib:paths",
+        "@build_bazel_rules_swift//swift:providers",
+        "@build_bazel_rules_swift//swift:swift_common",
+        "@build_bazel_rules_swift//swift/internal:compiling",
+        "@build_bazel_rules_swift//swift/internal:feature_names",
+        "@build_bazel_rules_swift//swift/internal:toolchain_utils",
+        "@rules_cc//cc/common:cc_common",
+        "@rules_cc//cc/common:cc_info",
+    ],
+)
+
+bzl_library(
+    name = "system_module_group",
+    srcs = ["system_module_group.bzl"],
+    visibility = ["//swift:__subpackages__"],
+    deps = [
+        ":utils",
+        "//swift:providers",
+        "@rules_cc//cc/common:cc_common",
+        "@rules_cc//cc/common:cc_info",
+    ],
+)
+
+bzl_library(
     name = "target_triples",
     srcs = ["target_triples.bzl"],
     visibility = ["//swift:__subpackages__"],

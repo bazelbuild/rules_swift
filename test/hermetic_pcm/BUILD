@@ -1,3 +1,4 @@
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("@rules_cc//cc:objc_library.bzl", "objc_library")
 load("@rules_shell//shell:sh_test.bzl", "sh_test")
 load("//swift:swift_interop_hint.bzl", "swift_interop_hint")
@@ -86,4 +87,21 @@ sh_test(
     srcs = ["check_hermetic_swiftmodule.sh"],
     args = ["$(rootpath :downstream_swiftmodule)"],
     data = [":downstream_swiftmodule"],
+)
+
+bzl_library(
+    name = "extract_pcm",
+    srcs = ["extract_pcm.bzl"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//swift:providers",
+        "//swift:swift_clang_module_aspect",
+    ],
+)
+
+bzl_library(
+    name = "extract_swiftmodule",
+    srcs = ["extract_swiftmodule.bzl"],
+    visibility = ["//visibility:public"],
+    deps = ["//swift:providers"],
 )

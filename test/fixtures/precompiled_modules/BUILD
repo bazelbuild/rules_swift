@@ -1,3 +1,4 @@
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("@rules_cc//cc:objc_library.bzl", "objc_library")
 load("//swift:swift_binary.bzl", "swift_binary")
 load("//swift:swift_compiler_plugin.bzl", "swift_compiler_plugin")
@@ -163,4 +164,9 @@ force_features_binary(
         "swift.emit_c_module",
         "swift.add_default_precompiled_modules",
     ],
+)
+
+bzl_library(
+    name = "force_features",
+    srcs = ["force_features.bzl"],
 )
