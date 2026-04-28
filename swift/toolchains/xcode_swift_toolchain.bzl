@@ -77,6 +77,7 @@ load(
     "collect_implicit_deps_providers",
     "compact",
     "get_swift_executable_for_toolchain",
+    "is_exec_config",
 )
 load("//swift/internal:wmo.bzl", "wmo_features_from_swiftcopts")
 load(
@@ -750,7 +751,7 @@ def _xcode_swift_toolchain_impl(ctx):
     else:
         swiftcopts = []
 
-    if "-exec-" in ctx.bin_dir.path:
+    if is_exec_config(ctx):
         swiftcopts.extend(ctx.attr._exec_copts[BuildSettingInfo].value)
     else:
         swiftcopts.extend(ctx.attr._copts[BuildSettingInfo].value)
