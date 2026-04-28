@@ -73,6 +73,7 @@ xcode_explicit_module_repo = repository_rule(
         ),
     },
     doc = "Discover all explicit module targets for all SDKs in a given Xcode version.",
+    configure = True,
     environ = [
         "DEVELOPER_DIR",
         "XCODE_VERSION",
