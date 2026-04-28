@@ -88,6 +88,14 @@ system_sdk.configure_sdks(names = [
 use_repo(system_sdk, "system_sdk")
 ```
 
+Alternatively you can include all SDKs with:
+
+```bzl
+system_sdk = use_extension("@rules_swift//swift:extensions.bzl", "system_sdk")
+system_sdk.configure_sdks(include_all = True)
+use_repo(system_sdk, "system_sdk")
+```
+
 ## Providing a precomputed BUILD file
 
 By default the `@system_sdk` module extension scans all local Xcode

@@ -119,6 +119,8 @@ def _collect_sdks(module_ctx):
         if not mod.is_root:
             continue
         for tag in mod.tags.configure_sdks:
+            if tag.include_all:
+                return {}  # If we pass nothing to scan.py it will include everything
             for name in tag.names:
                 names[name] = True
     return sorted(names.keys())
@@ -173,8 +175,12 @@ _configure_xcode_tag = tag_class(
 _configure_sdks_tag = tag_class(
     attrs = {
         "names": attr.string_list(
-            mandatory = True,
+            default = [],
             doc = "SDK names to scan (e.g. 'MacOSX', 'iPhoneOS')",
+        ),
+        "include_all": attr.bool(
+            default = False,
+            doc = "Whether to include all SDKs instead of just the ones specified in 'names'.",
         ),
     },
     doc = "Limit dynamic scanning to a specific subset of Apple SDKs.",
