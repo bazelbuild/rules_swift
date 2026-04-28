@@ -80,12 +80,47 @@ def _canonical_name(name: str, sdk: str, module_type: str) -> str:
     return f"{sdk}_{name}{suffix}"
 
 
-def _render_clang_aliases(modules: list[str], sdk: str, out: TextIO):
+def _render_clang_module_groups(
+    modules: list["_Module"],
+    clang_only_names: set[str],
+    sdk: str,
+    out: TextIO,
+):
+    """Aggregate clang modules + their Swift overlays.
+
+    The clang half of a module that has both a Swift and clang portion doesn't
+    have its transitive Swift deps in its direct dependencies, so we have to
+    add those in this aggregation target. We cannot add these always because of
+    circular dependencies.
+
+    For example:
+      XCTest_clang -> Foundation_clang -> Darwin_clang
+      Darwin_swift -> Darwin_clang
+
+    If you depend on XCTest_clang from a Swift target you need to also pull in
+    Darwin_swift or you will be missing some transitive dependencies. This
+    aggregates that using our naming convention to strip the '_clang' suffix.
+    Without these targets there is no dep from Darwin_clang to Darwin_swift.
+
+    This affects importing targets that are clang-only, but have transitive
+    deps that have both clang and Swift parts.
+    """
     for module in modules:
+        if module.module_type != "clang" or module.name not in clang_only_names:
+            continue
         out.write("\n")
-        out.write("alias(\n")
-        out.write(f'    name = "{_canonical_name(module, sdk, "alias")}",\n')
-        out.write(f'    actual = ":{_canonical_name(module, sdk, "clang")}",\n')
+        out.write("apple_sdk_module_group(\n")
+        out.write(f'    name = "{_canonical_name(module.name, sdk, "alias")}",\n')
+        out.write('    deps = [\n')
+        deps = [_canonical_name(module.name, sdk, "clang")]
+        for dep in module.direct_dependencies:
+            if dep.endswith("_clang"):
+                deps.append(dep[: -len("_clang")])
+            else:
+                deps.append(dep)
+        for d in sorted(set(deps)):
+            out.write(f'        ":{d}",\n')
+        out.write("    ],\n")
         out.write(")\n")
 
 
@@ -293,7 +328,7 @@ def _discover_all_modules(developer_dir: Path, sdk: str) -> tuple[str, set[str]]
     buf = io.StringIO()
     for module in all_modules:
         module.render_target(buf)
-    _render_clang_aliases(clang_only_modules, sdk, buf)
+    _render_clang_module_groups(all_modules, set(clang_only_modules), sdk, buf)
 
     base_names = modules_by_type["swift"] | modules_by_type["clang"]
     _render_all_modules_group(base_names, sdk, buf)

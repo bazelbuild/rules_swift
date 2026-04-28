@@ -2,8 +2,9 @@ load("@rules_cc//cc:objc_library.bzl", "objc_library")
 load("//swift:swift_binary.bzl", "swift_binary")
 load("//swift:swift_compiler_plugin.bzl", "swift_compiler_plugin")
 load("//swift:swift_interop_hint.bzl", "swift_interop_hint")
+load("//swift:swift_test.bzl", "swift_test")
 load("//test/fixtures:common.bzl", "FIXTURE_TAGS")
-load(":force_features.bzl", "force_features_binary")
+load(":force_features.bzl", "force_features_binary", "force_features_test")
 
 package(default_visibility = ["//test:__subpackages__"])
 
@@ -118,5 +119,29 @@ force_features_binary(
         "swift.use_c_modules",
         "swift.emit_c_module",
         "swift.add_default_precompiled_modules",
+    ],
+)
+
+# Currently XCTest is clang-only and that requires specific dependency tree
+# handling for the output of scan-dependencies
+swift_test(
+    name = "simple_xctest",
+    srcs = ["SimpleXCTest.swift"],
+    discover_tests = False,
+    tags = FIXTURE_TAGS,
+    deps = [
+        "@apple_sdk//:SwiftShims",
+        "@apple_sdk//:XCTest",
+    ],
+)
+
+force_features_test(
+    name = "simple_xctest_transitioned",
+    binary = ":simple_xctest",
+    tags = FIXTURE_TAGS,
+    transitive_features = [
+        "swift.use_c_modules",
+        "swift.emit_c_module",
+        "-swift.add_default_precompiled_modules",
     ],
 )

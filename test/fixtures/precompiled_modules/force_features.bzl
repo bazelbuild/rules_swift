@@ -31,13 +31,38 @@ force_features_binary = rule(
         ),
         "transitive_features": attr.string_list(
             mandatory = True,
-            doc = (
-                "Feature strings appended to `//command_line_option:features` " +
-                "when analyzing `binary`."
-            ),
+            doc = "Feature strings appended to `//command_line_option:features` when analyzing `binary`.",
         ),
     },
-    doc = (
-        "Forwards `DefaultInfo` from a binary built after appending `transitive_features` to the `--features` command line option."
-    ),
+    doc = "Forwards `DefaultInfo` from a binary built after appending `transitive_features` to the `--features` command line option.",
+)
+
+def _force_features_test_impl(ctx):
+    target = ctx.attr.binary[0]
+    forwarded = ctx.actions.declare_file(ctx.label.name)
+    ctx.actions.symlink(
+        output = forwarded,
+        target_file = target.files_to_run.executable,
+        is_executable = True,
+    )
+
+    return [
+        DefaultInfo(executable = forwarded, runfiles = target[DefaultInfo].default_runfiles),
+    ]
+
+force_features_test = rule(
+    implementation = _force_features_test_impl,
+    attrs = {
+        "binary": attr.label(
+            mandatory = True,
+            cfg = _force_features_transition,
+            doc = "The test target to run under the feature transition.",
+        ),
+        "transitive_features": attr.string_list(
+            mandatory = True,
+            doc = "Feature strings appended to `//command_line_option:features` when analyzing `binary`.",
+        ),
+    },
+    doc = "Forwards a test target's executable and runfiles after appending `transitive_features` to the `--features` command line option.",
+    test = True,
 )
