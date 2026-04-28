@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Implementation of the `apple_sdk_clang_module` rule."""
+"""Implementation of the `system_clang_module` rule."""
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:paths.bzl", "paths")
@@ -27,7 +27,7 @@ load("@build_bazel_rules_swift//swift/internal:toolchain_utils.bzl", "SWIFT_TOOL
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 
-def _apple_sdk_clang_module_impl(ctx):
+def _system_clang_module_impl(ctx):
     swift_toolchain = swift_common.get_toolchain(ctx)
     module_map = ctx.attr.system_module_map
     deps = ctx.attr.deps
@@ -91,7 +91,7 @@ def _apple_sdk_clang_module_impl(ctx):
         cc_info,
     ]
 
-apple_sdk_clang_module = rule(
+system_clang_module = rule(
     attrs = dicts.add(
         {
             "deps": attr.label_list(
@@ -113,7 +113,7 @@ the modules defined in it to be imported. When building explicit modules,
 however, there is a one-to-one correspondence between top-level modules and
 BUILD targets and the module name must be known without reading the module map
 file, so it must be provided directly. Therefore, one may have multiple
-`apple_sdk_clang_module` targets that reference the same `module.modulemap` file but
+`system_clang_module` targets that reference the same `module.modulemap` file but
 with different module names and headers.
 """,
                 mandatory = True,
@@ -140,7 +140,7 @@ The `cc_library` rule in Bazel does not produce module maps that are compatible
 with Swift. In order to make interop between Swift and C possible, users have
 one of two options:
 
-1.  **Use an auto-generated module map.** In this case, the `apple_sdk_clang_module`
+1.  **Use an auto-generated module map.** In this case, the `system_clang_module`
     rule is not needed. If a `cc_library` is a direct dependency of a
     `swift_{binary,library,test}` target, a module map will be automatically
     generated for it and the module's name will be derived from the Bazel target
@@ -149,13 +149,13 @@ one of two options:
     `cc_library`; e.g., `tags = ["swift_module=MyModule"]`.
 
 2.  **Use a custom module map.** For finer control over the headers that are
-    exported by the module, use the `apple_sdk_clang_module` rule to provide a custom
+    exported by the module, use the `system_clang_module` rule to provide a custom
     module map that specifies the name of the module, its headers, and any other
     module information. The `cc_library` targets that contain the headers that
     you wish to expose to Swift should be listed in the `deps` of your
-    `apple_sdk_clang_module` (and by listing multiple targets, you can export multiple
+    `system_clang_module` (and by listing multiple targets, you can export multiple
     libraries under a single module if desired). Then, your
-    `swift_{binary,library,test}` targets should depend on the `apple_sdk_clang_module`
+    `swift_{binary,library,test}` targets should depend on the `system_clang_module`
     target, not on the underlying `cc_library` target(s).
 
 NOTE: Swift at this time does not support interop directly with C++. Any headers
@@ -163,7 +163,7 @@ referenced by a module map that is imported into Swift must have only C features
 visible, often by using preprocessor conditions like `#if __cplusplus` to hide
 any C++ declarations.
 """,
-    implementation = _apple_sdk_clang_module_impl,
+    implementation = _system_clang_module_impl,
     toolchains = swift_common.use_toolchain(),
     fragments = ["cpp"],
 )

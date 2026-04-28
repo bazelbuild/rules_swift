@@ -63,13 +63,13 @@ TARGET_FORMATS = {
 _HEADER = """\
 load(
     "@build_bazel_rules_swift//swift:swift.bzl",
-    "apple_sdk_clang_module",
-    "apple_sdk_module_group",
+    "system_clang_module",
+    "system_module_group",
 )
 
 package(default_visibility = ["//visibility:public"])
 
-apple_sdk_module_group(name = "_empty_all_modules")
+system_module_group(name = "_empty_all_modules")
 """
 
 
@@ -109,7 +109,7 @@ def _render_clang_module_groups(
         if module.module_type != "clang" or module.name not in clang_only_names:
             continue
         out.write("\n")
-        out.write("apple_sdk_module_group(\n")
+        out.write("system_module_group(\n")
         out.write(f'    name = "{_canonical_name(module.name, sdk, "alias")}",\n')
         out.write("    deps = [\n")
         deps = [_canonical_name(module.name, sdk, "clang")]
@@ -130,7 +130,7 @@ def _render_all_modules_group(
     out: TextIO,
 ) -> None:
     out.write("\n")
-    out.write("apple_sdk_module_group(\n")
+    out.write("system_module_group(\n")
     out.write(f'    name = "{sdk}_all_modules",\n')
     out.write("    deps = [\n")
     for name in sorted(all_module_names):
@@ -166,7 +166,7 @@ class _Module:
         if self.module_type == "clang":
             assert self.module_map_path
             out.write("\n")
-            out.write("apple_sdk_clang_module(\n")
+            out.write("system_clang_module(\n")
             out.write(
                 f'    name = "{_canonical_name(self.name, self.sdk, self.module_type)}",\n'
             )
@@ -180,7 +180,7 @@ class _Module:
             out.write(")\n")
         elif self.module_type == "swift":
             out.write("\n")
-            out.write("apple_sdk_module_group(\n")
+            out.write("system_module_group(\n")
             out.write(
                 f'    name = "{_canonical_name(self.name, self.sdk, self.module_type)}",\n'
             )

@@ -139,12 +139,12 @@ def _sdk_extension_impl(module_ctx):
 _STUB_BUILD_FILE = """\
 load(
     "@build_bazel_rules_swift//swift:swift.bzl",
-    "apple_sdk_module_group",
+    "system_module_group",
 )
 
 package(default_visibility = ["//visibility:public"])
 
-apple_sdk_module_group(name = "all_modules")
+system_module_group(name = "all_modules")
 """
 
 def _apple_sdk_stub_repo_impl(rctx):
