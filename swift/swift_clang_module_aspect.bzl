@@ -320,6 +320,8 @@ def _handle_module(
             legacy support).
         module_name: The name of the module, or None if it should be inferred
             from other properties of the target (for legacy support).
+        extra_cc_infos: Extra 'CcInfo' providers to pass through
+        extra_swift_infos: Extra 'SwiftInfo' providers to pass through
         direct_swift_infos: The `SwiftInfo` providers of the current target's
             dependencies, which should be merged into the `SwiftInfo` provider
             created and returned for this target.

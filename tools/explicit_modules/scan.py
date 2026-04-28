@@ -111,7 +111,7 @@ def _render_clang_module_groups(
         out.write("\n")
         out.write("apple_sdk_module_group(\n")
         out.write(f'    name = "{_canonical_name(module.name, sdk, "alias")}",\n')
-        out.write('    deps = [\n')
+        out.write("    deps = [\n")
         deps = [_canonical_name(module.name, sdk, "clang")]
         for dep in module.direct_dependencies:
             if dep.endswith("_clang"):
