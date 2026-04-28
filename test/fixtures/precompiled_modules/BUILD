@@ -145,3 +145,22 @@ force_features_test(
         "-swift.add_default_precompiled_modules",
     ],
 )
+
+# Imports C-only modules whose modulemaps live under `<sdk>/usr/include/<name>.modulemap`
+swift_binary(
+    name = "c_module_imports",
+    srcs = ["c_module_imports.swift"],
+    tags = FIXTURE_TAGS,
+    target_compatible_with = ["@platforms//os:macos"],
+)
+
+force_features_binary(
+    name = "c_module_imports_transitioned",
+    binary = ":c_module_imports",
+    tags = FIXTURE_TAGS,
+    transitive_features = [
+        "swift.use_c_modules",
+        "swift.emit_c_module",
+        "swift.add_default_precompiled_modules",
+    ],
+)

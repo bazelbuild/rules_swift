@@ -291,12 +291,15 @@ def _discover_all_modules(developer_dir: Path, sdk: str) -> tuple[str, set[str]]
     ]
     library_search_paths = [
         sdk_path / "usr/lib/swift",
+        sdk_path / "usr/include",
     ]
 
     modules = set()
     for directory in set(framework_search_paths + library_search_paths):
         for x in directory.iterdir():
             if not x.is_dir():
+                if x.suffix == ".modulemap" and x.stem != "module":
+                    modules.add(x.stem)
                 continue
             if x.suffix == ".swiftmodule":
                 modules.add(x.stem)

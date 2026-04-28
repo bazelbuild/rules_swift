@@ -38,7 +38,6 @@ def precompiled_modules_test_suite(name, tags = []):
     _precompiled_modules_test(
         name = "{}_use_c_modules_flags_test".format(name),
         tags = all_tags,
-        target_compatible_with = ["@platforms//os:macos"],
         mnemonic = "SwiftCompile",
         target_under_test = "//test/fixtures/precompiled_modules:hello",
         expected_argv = [
@@ -50,7 +49,6 @@ def precompiled_modules_test_suite(name, tags = []):
     _precompiled_modules_test(
         name = "{}_default_precompiled_modules_test".format(name),
         tags = all_tags,
-        target_compatible_with = ["@platforms//os:macos"],
         mnemonic = "SwiftCompile",
         target_under_test = "//test/fixtures/precompiled_modules:hello",
         expected_argv = [
@@ -62,7 +60,6 @@ def precompiled_modules_test_suite(name, tags = []):
     _explicit_precompiled_modules_test(
         name = "{}_no_default_precompiled_modules_test".format(name),
         tags = all_tags,
-        target_compatible_with = ["@platforms//os:macos"],
         mnemonic = "SwiftCompile",
         target_under_test = "//test/fixtures/precompiled_modules:hello",
         not_expected_argv = [
@@ -74,7 +71,6 @@ def precompiled_modules_test_suite(name, tags = []):
     _explicit_precompiled_modules_test(
         name = "{}_explicit_deps_test".format(name),
         tags = all_tags,
-        target_compatible_with = ["@platforms//os:macos"],
         mnemonic = "SwiftCompile",
         target_under_test = "//test/fixtures/precompiled_modules:hello_with_explicit_deps_bin",
         expected_argv = [
@@ -86,12 +82,23 @@ def precompiled_modules_test_suite(name, tags = []):
     _precompiled_modules_test(
         name = "{}_compiler_plugin_default_modules_test".format(name),
         tags = all_tags,
-        target_compatible_with = ["@platforms//os:macos"],
         mnemonic = "SwiftCompile",
         target_under_test = "//test/fixtures/precompiled_modules:stub_plugin",
         expected_argv = [
             "-fmodule-file=Foundation",
             "-fmodule-file=SwiftShims",
+        ],
+    )
+
+    _precompiled_modules_test(
+        name = "{}_c_module_imports_pcms_test".format(name),
+        tags = all_tags,
+        mnemonic = "SwiftCompile",
+        target_under_test = "//test/fixtures/precompiled_modules:c_module_imports",
+        expected_argv = [
+            "-fmodule-file=Compression",
+            "-fmodule-file=SQLite3",
+            "-fmodule-file=zlib",
         ],
     )
 

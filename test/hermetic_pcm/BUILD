@@ -9,7 +9,6 @@ load(":extract_swiftmodule.bzl", "extract_swiftmodule")
 force_features_binary(
     name = "foundation_pcm",
     binary = "@apple_sdk//:Foundation_clang",
-    target_compatible_with = ["@platforms//os:macos"],
     transitive_features = [
         "swift.use_c_modules",
         "swift.emit_c_module",
