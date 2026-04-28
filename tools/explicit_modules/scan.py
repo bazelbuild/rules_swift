@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import dataclass
+from collections import defaultdict
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Optional, TextIO
+from typing import Any, TextIO
 import argparse
-import collections
 import io
 import json
 import os
@@ -48,16 +48,40 @@ _SDK_CONSTRAINTS = {
         "@build_bazel_apple_support//constraints:simulator",
     ],
 }
-TARGET_FORMATS = {
-    "macosx": "arm64-apple-macos{ver}",
-    "iphoneos": "arm64-apple-ios{ver}",
-    "iphonesimulator": "arm64-apple-ios{ver}-simulator",
-    "watchos": "arm64-apple-watchos{ver}",
-    "watchsimulator": "arm64-apple-watchos{ver}-simulator",
-    "appletvos": "arm64-apple-tvos{ver}",
-    "appletvsimulator": "arm64-apple-tvos{ver}-simulator",
-    "xros": "arm64-apple-xros{ver}",
-    "xrsimulator": "arm64-apple-xros{ver}-simulator",
+_TARGETS_PER_SDK = {
+    "macosx": [
+        ("@platforms//cpu:aarch64", "arm64-apple-macos{ver}"),
+        ("@platforms//cpu:x86_64", "x86_64-apple-macos{ver}"),
+    ],
+    "iphoneos": [
+        ("@platforms//cpu:aarch64", "arm64-apple-ios{ver}"),
+    ],
+    "iphonesimulator": [
+        ("@platforms//cpu:aarch64", "arm64-apple-ios{ver}-simulator"),
+        ("@platforms//cpu:x86_64", "x86_64-apple-ios{ver}-simulator"),
+    ],
+    "watchos": [
+        ("@platforms//cpu:aarch64", "arm64-apple-watchos{ver}"),
+        ("@platforms//cpu:arm64_32", "arm64_32-apple-watchos{ver}"),
+    ],
+    "watchsimulator": [
+        ("@platforms//cpu:aarch64", "arm64-apple-watchos{ver}-simulator"),
+        ("@platforms//cpu:x86_64", "x86_64-apple-watchos{ver}-simulator"),
+    ],
+    "appletvos": [
+        ("@platforms//cpu:aarch64", "arm64-apple-tvos{ver}"),
+    ],
+    "appletvsimulator": [
+        ("@platforms//cpu:aarch64", "arm64-apple-tvos{ver}-simulator"),
+        ("@platforms//cpu:x86_64", "x86_64-apple-tvos{ver}-simulator"),
+    ],
+    "xros": [
+        ("@platforms//cpu:aarch64", "arm64-apple-xros{ver}"),
+    ],
+    "xrsimulator": [
+        ("@platforms//cpu:aarch64", "arm64-apple-xros{ver}-simulator"),
+        ("@platforms//cpu:x86_64", "x86_64-apple-xros{ver}-simulator"),
+    ],
 }
 
 _HEADER = """\
@@ -78,6 +102,11 @@ def _canonical_name(name: str, sdk: str, module_type: str) -> str:
     if module_type == "clang":
         suffix = "_clang"
     return f"{sdk}_{name}{suffix}"
+
+
+def _write_labels(out: TextIO, labels: set[str], indent: str = "        ") -> None:
+    for label in sorted(labels):
+        out.write(f'{indent}":{label}",\n')
 
 
 def _render_clang_module_groups(
@@ -113,13 +142,12 @@ def _render_clang_module_groups(
         out.write(f'    name = "{_canonical_name(module.name, sdk, "alias")}",\n')
         out.write("    deps = [\n")
         deps = [_canonical_name(module.name, sdk, "clang")]
-        for dep in module.direct_dependencies:
+        for dep in sorted(module.all_dependencies):
             if dep.endswith("_clang"):
                 deps.append(dep[: -len("_clang")])
             else:
                 deps.append(dep)
-        for d in sorted(set(deps)):
-            out.write(f'        ":{d}",\n')
+        _write_labels(out, set(deps))
         out.write("    ],\n")
         out.write(")\n")
 
@@ -133,34 +161,61 @@ def _render_all_modules_group(
     out.write("system_module_group(\n")
     out.write(f'    name = "{sdk}_all_modules",\n')
     out.write("    deps = [\n")
-    for name in sorted(all_module_names):
-        out.write(f'        ":{sdk}_{name}",\n')
+    _write_labels(out, {f"{sdk}_{name}" for name in all_module_names})
     out.write("    ],\n")
     out.write(")\n")
 
 
-@dataclass
+@dataclass(order=True)
 class _Module:
-    def __init__(self, name, sdk, module_type, direct_dependencies, module_map_path):
-        self.name: str = name
-        self.sdk: str = sdk
-        self.module_type: str = module_type
-        self.direct_dependencies: list[str] = sorted(
-            set(
-                _canonical_name(dep_name, sdk, dep_type)
-                for dep_type, dep_name in direct_dependencies
-            )
-        )
-        self.module_map_path: Optional[str] = module_map_path
+    name: str
+    module_type: str
+    sdk: str = field(compare=False)
+    module_map_path: str = field(compare=False)
+    deps_by_cpu: defaultdict[str, set[str]] = field(
+        default_factory=lambda: defaultdict(set),
+        compare=False,
+    )
 
-    def __repr__(self):
-        return f"{self.name=} {self.module_type=}"
-
-    def __lt__(self, other):
-        return (self.name, self.module_type) < (
-            other.name,
-            other.module_type,
+    def set_deps(self, cpu: str, direct_dependencies: list[tuple[str, str]]) -> None:
+        self.deps_by_cpu[cpu] = set(
+            _canonical_name(dep_name, self.sdk, dep_type)
+            for dep_type, dep_name in direct_dependencies
         )
+
+    @property
+    def all_dependencies(self) -> set[str]:
+        return set().union(*self.deps_by_cpu.values())
+
+    def _render_deps(self, out: TextIO) -> None:
+        shared_deps = set(self.all_dependencies)
+        if not shared_deps:
+            return
+
+        cpus = sorted(self.deps_by_cpu)
+        cpu_specific_deps = {cpu: self.deps_by_cpu[cpu] - shared_deps for cpu in cpus}
+        has_cpu_specific_deps = any(cpu_specific_deps.values())
+        if not has_cpu_specific_deps:
+            out.write("    deps = [\n")
+            _write_labels(out, shared_deps)
+            out.write("    ],\n")
+            return
+
+        if shared_deps:
+            out.write("    deps = [\n")
+            _write_labels(out, shared_deps)
+            out.write("    ] + select({\n")
+        else:
+            out.write("    deps = select({\n")
+        for cpu, deps in cpu_specific_deps.items():
+            if deps:
+                out.write(f'        "{cpu}": [\n')
+                _write_labels(out, deps, "            ")
+                out.write("        ],\n")
+            else:
+                out.write(f'        "{cpu}": [],\n')
+
+        out.write("    }),\n")
 
     def render_target(self, out: TextIO) -> None:
         if self.module_type == "clang":
@@ -172,11 +227,7 @@ class _Module:
             )
             out.write(f'    module_name = "{self.name}",\n')
             out.write(f'    system_module_map = "{self.module_map_path}",\n')
-            if self.direct_dependencies:
-                out.write("    deps = [\n")
-                for dep_name in self.direct_dependencies:
-                    out.write(f'        ":{dep_name}",\n')
-                out.write("    ],\n")
+            self._render_deps(out)
             out.write(")\n")
         elif self.module_type == "swift":
             out.write("\n")
@@ -184,11 +235,7 @@ class _Module:
             out.write(
                 f'    name = "{_canonical_name(self.name, self.sdk, self.module_type)}",\n'
             )
-            if self.direct_dependencies:
-                out.write("    deps = [\n")
-                for dep_name in self.direct_dependencies:
-                    out.write(f'        ":{dep_name}",\n')
-                out.write("    ],\n")
+            self._render_deps(out)
             out.write(")\n")
         else:
             raise SystemExit(
@@ -200,40 +247,43 @@ def _parse_output(
     *,
     output: dict[str, Any],
     sdk: str,
+    cpu: str,
     developer_dir: str,
     sdkroot: str,
-) -> tuple[list[_Module], dict[str, set[str]]]:
-    modules = output["modules"][2:]  # Skip stub file module
+    all_modules: dict[tuple[str, str], _Module],
+) -> None:
+    modules_json = output["modules"][2:]  # Skip the stub file pair
+    for i in range(0, len(modules_json), 2):  # (header, body) pairs one after another
+        type_json = modules_json[i]
+        assert len(type_json) == 1, f"error: unexpected module header: {type_json}"
+        key = next(iter(type_json.items()))
+        module_type, module_name = key
 
-    all_modules = []
-    modules_by_type = collections.defaultdict(set)
-    for i in range(0, len(modules), 2):  # Entries come in pairs
-        module = modules[i]
-        assert len(module) == 1
-
-        module_type, module_name = next(iter(module.items()))
-        modules_by_type[module_type].add(module_name)
-        module = modules[i + 1]
-        details = module["details"][module_type]
+        body = modules_json[i + 1]
+        details = body["details"][module_type]
         deps = []
-        for dep in module["directDependencies"] + details.get(
+        for dep in body["directDependencies"] + details.get(
             "swiftOverlayDependencies", []
         ):
             deps.extend(dep.items())
 
-        all_modules.append(
-            _Module(
-                module_name,
-                sdk,
-                module_type,
-                deps,
-                details.get("moduleMapPath", "")
-                .replace(sdkroot, "__BAZEL_XCODE_SDKROOT__")
-                .replace(developer_dir, "__BAZEL_XCODE_DEVELOPER_DIR__"),
-            )
+        module = all_modules.get(key)
+        module_map_path = (
+            details.get("moduleMapPath", "")
+            .replace(sdkroot, "__BAZEL_XCODE_SDKROOT__")
+            .replace(developer_dir, "__BAZEL_XCODE_DEVELOPER_DIR__")
         )
 
-    return sorted(all_modules), modules_by_type
+        if module is None:
+            module = all_modules[key] = _Module(
+                name=module_name,
+                module_type=module_type,
+                sdk=sdk,
+                module_map_path=module_map_path,
+            )
+
+        module.module_map_path = module.module_map_path or module_map_path
+        module.set_deps(cpu, deps)
 
 
 def _get_deployment_target(sdk: str, sdk_path: Path) -> str:
@@ -309,34 +359,39 @@ def _discover_all_modules(developer_dir: Path, sdk: str) -> tuple[str, set[str]]
                 ).exists():
                     modules.add(x.stem)
 
-    target = TARGET_FORMATS[sdk.lower()].format(
-        ver=_get_deployment_target(sdk, sdk_path),
-    )
-    scan_output = _scan(
-        sdk=sdk,
-        modules=modules,
-        sdk_path=sdk_path,
-        target=target,
-        framework_search_paths=framework_search_paths,
-    )
+    deployment_target = _get_deployment_target(sdk, sdk_path)
+    cpu_targets = _TARGETS_PER_SDK[sdk.lower()]
 
-    all_modules, modules_by_type = _parse_output(
-        output=scan_output,
-        sdk=sdk,
-        developer_dir=developer_dir.as_posix(),
-        sdkroot=sdk_path.as_posix(),
-    )
-    clang_only_modules = sorted(modules_by_type["clang"] - modules_by_type["swift"])
+    merged_modules: dict[tuple[str, str], _Module] = {}
+    for cpu, target_format in cpu_targets:
+        scan_output = _scan(
+            sdk=sdk,
+            modules=modules,
+            sdk_path=sdk_path,
+            target=target_format.format(ver=deployment_target),
+            framework_search_paths=framework_search_paths,
+        )
+        _parse_output(
+            output=scan_output,
+            sdk=sdk,
+            cpu=cpu,
+            developer_dir=developer_dir.as_posix(),
+            sdkroot=sdk_path.as_posix(),
+            all_modules=merged_modules,
+        )
+
+    all_modules = sorted(merged_modules.values())
+    swift_names = {m.name for m in all_modules if m.module_type == "swift"}
+    clang_names = {m.name for m in all_modules if m.module_type == "clang"}
+    all_module_names = swift_names | clang_names
 
     buf = io.StringIO()
     for module in all_modules:
         module.render_target(buf)
-    _render_clang_module_groups(all_modules, set(clang_only_modules), sdk, buf)
+    _render_clang_module_groups(all_modules, clang_names - swift_names, sdk, buf)
+    _render_all_modules_group(all_module_names, sdk, buf)
 
-    base_names = modules_by_type["swift"] | modules_by_type["clang"]
-    _render_all_modules_group(base_names, sdk, buf)
-    all_module_names = base_names | {f"{m}_clang" for m in modules_by_type["clang"]}
-    return buf.getvalue(), all_module_names
+    return buf.getvalue(), all_module_names | {f"{n}_clang" for n in clang_names}
 
 
 def _main() -> None:
