@@ -45,7 +45,7 @@ def _render_root_aliases(module_names, xcode_versions):
         lines.append('    name = "{}",'.format(name))
         lines.append("    actual = select({")
         for version in xcode_versions:
-            lines.append('        ":xcode_{v}": "@apple_sdk_xcode_{v}//:{n}",'.format(
+            lines.append('        ":xcode_{v}": "@system_sdk_xcode_{v}//:{n}",'.format(
                 v = _sanitize(version),
                 n = name,
             ))

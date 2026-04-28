@@ -173,7 +173,7 @@ support location expansion.
             ),
             "_default_precompiled_modules": attr.label(
                 aspects = additional_deps_aspects,
-                default = Label("@apple_sdk//:all_modules"),
+                default = Label("@system_sdk//:all_modules"),
                 providers = [[CcInfo, SwiftInfo]],
             ),
         },

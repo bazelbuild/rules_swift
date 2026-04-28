@@ -44,8 +44,8 @@ build --features=-swift.add_default_precompiled_modules --host_features=-swift.a
 Then add this to your `MODULE.bazel`:
 
 ```bzl
-apple_sdk = use_extension("@rules_swift//swift:extensions.bzl", "apple_sdk")
-use_repo(apple_sdk, "apple_sdk")
+system_sdk = use_extension("@rules_swift//swift:extensions.bzl", "system_sdk")
+use_repo(system_sdk, "system_sdk")
 ```
 
 Now you are responsible for manually adding system dependencies to your
@@ -55,7 +55,7 @@ targets' `deps`, for example:
 swift_binary(
     name = "foo",
     srcs = ["main.swift"],
-    deps = ["@apple_sdk//:SwiftUI"],
+    deps = ["@system_sdk//:SwiftUI"],
 )
 ```
 
@@ -65,44 +65,44 @@ objc_library(
     srcs = ["lib.m"],
     hdrs = ["lib.h"],
     aspect_hints = [":lib_hint"],
-    deps = ["@apple_sdk//:Foundation"],
+    deps = ["@system_sdk//:Foundation"],
 )
 ```
 
 ## Configuring what SDKs are available
 
-By default only the macOS and iOS SDKs are added to the `@apple_sdk`
+By default only the macOS and iOS SDKs are added to the `@system_sdk`
 repository, which saves time generating the underlying `BUILD` file. If
 you build for more Apple platforms, configure them in your
 `MODULE.bazel`:
 
 ```bzl
-apple_sdk = use_extension("@rules_swift//swift:extensions.bzl", "apple_sdk")
-apple_sdk.sdks(names = [
+system_sdk = use_extension("@rules_swift//swift:extensions.bzl", "system_sdk")
+system_sdk.sdks(names = [
     "MacOSX",
     "iPhoneOS",
     "iPhoneSimulator",
     "WatchOS",
     "WatchSimulator",
 ])
-use_repo(apple_sdk, "apple_sdk")
+use_repo(system_sdk, "system_sdk")
 ```
 
 ## Providing a precomputed BUILD file
 
-By default the `@apple_sdk` module extension scans all local Xcode
+By default the `@system_sdk` module extension scans all local Xcode
 versions and provides the SDK for whichever is chosen with
 `--xcode_version`. If you have a configuration where you do not want
 this local scanning to happen, you can provide the computed `BUILD` file
 yourself:
 
 ```bzl
-apple_sdk = use_extension("//swift:extensions.bzl", "apple_sdk")
-apple_sdk.config(
+system_sdk = use_extension("//swift:extensions.bzl", "system_sdk")
+system_sdk.config(
     build_file = "//path/to/vendored.BUILD",
     xcode_version = "26.4.0.17E192",
 )
-use_repo(apple_sdk, "apple_sdk")
+use_repo(system_sdk, "system_sdk")
 ```
 
 This is useful if you trigger remote macOS builds from Linux hosts. It
@@ -176,7 +176,7 @@ dependencies. Therefore for explicit modules support, Xcode scans all
 the source files being built, and builds the necessary PCMs "just in
 time." Bazel doesn't support this type of dynamic dependencies, so all
 system modules have to be understood ahead of time, which is why we
-generate the `@apple_sdk` repository, and require you add them to your
+generate the `@system_sdk` repository, and require you add them to your
 `deps` (or implicitly do that for you).
 
 Xcode also doesn't attempt to produce portable PCMs, which we do in

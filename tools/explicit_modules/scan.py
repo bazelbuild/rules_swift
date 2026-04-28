@@ -363,7 +363,7 @@ def _main() -> None:
         "--module-names",
         type=Path,
         default=None,
-        # Internal flag used by the `apple_sdk` module extension; not part
+        # Internal flag used by the `system_sdk` module extension; not part
         # of the user-facing CLI.
         help=argparse.SUPPRESS,
     )

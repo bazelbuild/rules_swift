@@ -27,7 +27,7 @@ swift_binary(
     tags = FIXTURE_TAGS,
     target_compatible_with = ["@platforms//os:macos"],
     deps = [
-        "@apple_sdk//:Foundation",
+        "@system_sdk//:Foundation",
     ],
 )
 
@@ -55,7 +55,7 @@ objc_library(
     aspect_hints = [":Greeter_hint"],
     tags = FIXTURE_TAGS,
     target_compatible_with = ["@platforms//os:macos"],
-    deps = ["@apple_sdk//:Foundation"],
+    deps = ["@system_sdk//:Foundation"],
 )
 
 swift_binary(
@@ -130,8 +130,8 @@ swift_test(
     discover_tests = False,
     tags = FIXTURE_TAGS,
     deps = [
-        "@apple_sdk//:SwiftShims",
-        "@apple_sdk//:XCTest",
+        "@system_sdk//:SwiftShims",
+        "@system_sdk//:XCTest",
     ],
 )
 

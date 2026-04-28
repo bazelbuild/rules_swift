@@ -8,7 +8,7 @@ load(":extract_swiftmodule.bzl", "extract_swiftmodule")
 
 force_features_binary(
     name = "foundation_pcm",
-    binary = "@apple_sdk//:Foundation_clang",
+    binary = "@system_sdk//:Foundation_clang",
     transitive_features = [
         "swift.use_c_modules",
         "swift.emit_c_module",
@@ -33,7 +33,7 @@ objc_library(
     hdrs = ["SimpleObj.h"],
     aspect_hints = [":SimpleObj_hint"],
     target_compatible_with = ["@platforms//os:macos"],
-    deps = ["@apple_sdk//:Foundation"],
+    deps = ["@system_sdk//:Foundation"],
 )
 
 extract_pcm(
@@ -71,7 +71,7 @@ swift_library(
     name = "Downstream",
     srcs = ["Downstream.swift"],
     module_name = "Downstream",
-    deps = ["@apple_sdk//:Foundation"],
+    deps = ["@system_sdk//:Foundation"],
 )
 
 extract_swiftmodule(

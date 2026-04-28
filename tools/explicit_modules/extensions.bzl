@@ -24,7 +24,7 @@ load(":xcode_explicit_module_repo.bzl", "xcode_explicit_module_repo")
 load(":xcode_locator_repo.bzl", "xcode_locator_repo")
 
 _XCODE_LOCATOR_SRC = Label("@bazel_tools//tools/osx:xcode_locator.m")
-_LOCATOR_REPO = "apple_sdk_xcode_locator"
+_LOCATOR_REPO = "system_sdk_xcode_locator"
 _LOCATOR_LABEL = "@{}//:xcode-locator-bin".format(_LOCATOR_REPO)
 
 def _sanitize(v):
@@ -59,7 +59,7 @@ def _generate_pinned_repos(configs):
                 ),
             )
         seen[tag.xcode_version] = True
-        repo_name = "apple_sdk_xcode_" + _sanitize(tag.xcode_version)
+        repo_name = "system_sdk_xcode_" + _sanitize(tag.xcode_version)
         precomputed_xcode_explicit_module_repo(
             name = repo_name,
             xcode_version = tag.xcode_version,
@@ -70,7 +70,7 @@ def _generate_pinned_repos(configs):
             default_manifest = "@{}//:module_names.json".format(repo_name)
 
     xcode_explicit_module_hub_repo(
-        name = "apple_sdk",
+        name = "system_sdk",
         xcode_versions = versions_ordered,
         default_manifest = default_manifest,
     )
@@ -95,7 +95,7 @@ def _generate_local_repos(module_ctx, sdks):
     versions_ordered = []
     default_manifest = None
     for tc in toolchains:
-        repo_name = "apple_sdk_xcode_" + _sanitize(tc.version)
+        repo_name = "system_sdk_xcode_" + _sanitize(tc.version)
         xcode_explicit_module_repo(
             name = repo_name,
             sdks = sdks,
@@ -107,7 +107,7 @@ def _generate_local_repos(module_ctx, sdks):
             default_manifest = "@{}//:module_names.json".format(repo_name)
 
     xcode_explicit_module_hub_repo(
-        name = "apple_sdk",
+        name = "system_sdk",
         xcode_versions = versions_ordered,
         default_manifest = default_manifest,
     )
@@ -132,7 +132,7 @@ def _sdk_extension_impl(module_ctx):
     if configs:
         _generate_pinned_repos(configs)
     elif module_ctx.os.name != "mac os x":
-        _apple_sdk_stub_repo(name = "apple_sdk")
+        _system_sdk_stub_repo(name = "system_sdk")
     else:
         _generate_local_repos(module_ctx, _collect_sdks(module_ctx))
 
@@ -147,12 +147,12 @@ package(default_visibility = ["//visibility:public"])
 system_module_group(name = "all_modules")
 """
 
-def _apple_sdk_stub_repo_impl(rctx):
+def _system_sdk_stub_repo_impl(rctx):
     rctx.file("BUILD.bazel", _STUB_BUILD_FILE)
 
-_apple_sdk_stub_repo = repository_rule(
-    implementation = _apple_sdk_stub_repo_impl,
-    doc = "Empty hub repo used on non-macOS hosts so `@apple_sdk//:all_modules` always resolves.",
+_system_sdk_stub_repo = repository_rule(
+    implementation = _system_sdk_stub_repo_impl,
+    doc = "Empty hub repo used on non-macOS hosts so `@system_sdk//:all_modules` always resolves.",
 )
 
 _config_tag = tag_class(
@@ -180,7 +180,7 @@ _sdks_tag = tag_class(
     doc = "Limit dynamic scanning to a specific subset of Apple SDKs.",
 )
 
-apple_sdk = module_extension(
+system_sdk = module_extension(
     implementation = _sdk_extension_impl,
     tag_classes = {
         "config": _config_tag,
