@@ -313,6 +313,8 @@ a mixed language Swift library, use a clang only library rule like \
         includes = includes,
         tags = internal_tags,
         textual_hdrs = textual_hdrs,
+        # PCM deps must be re-exported for consumers of this
+        deps = deps,
         **kwargs
     )
 

@@ -1,5 +1,6 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("@rules_cc//cc:objc_library.bzl", "objc_library")
+load("//mixed_language:mixed_language_library.bzl", "mixed_language_library")
 load("//swift:swift_binary.bzl", "swift_binary")
 load("//swift:swift_compiler_plugin.bzl", "swift_compiler_plugin")
 load("//swift:swift_interop_hint.bzl", "swift_interop_hint")
@@ -169,4 +170,63 @@ force_features_binary(
 bzl_library(
     name = "force_features",
     srcs = ["force_features.bzl"],
+)
+
+# Test `mixed_language_library` with explicit modules
+mixed_language_library(
+    name = "MixedGreeter",
+    hdrs = ["MixedGreeter.h"],
+    clang_srcs = ["MixedGreeter.m"],
+    module_name = "MixedGreeter",
+    swift_srcs = ["MixedGreeter.swift"],
+    tags = FIXTURE_TAGS,
+)
+
+swift_binary(
+    name = "mixed_language_bin",
+    srcs = ["mixed_greeter_main.swift"],
+    tags = FIXTURE_TAGS,
+    deps = [":MixedGreeter"],
+)
+
+force_features_binary(
+    name = "mixed_language_bin_transitioned",
+    binary = ":mixed_language_bin",
+    tags = FIXTURE_TAGS,
+    transitive_features = [
+        "swift.use_c_modules",
+        "swift.emit_c_module",
+        "swift.add_default_precompiled_modules",
+    ],
+)
+
+mixed_language_library(
+    name = "MixedGreeterExplicit",
+    hdrs = ["MixedGreeter.h"],
+    clang_srcs = ["MixedGreeter.m"],
+    module_name = "MixedGreeter",
+    swift_srcs = ["MixedGreeter.swift"],
+    tags = FIXTURE_TAGS,
+    deps = ["@system_sdk//:Foundation"],
+)
+
+swift_binary(
+    name = "mixed_language_explicit_bin",
+    srcs = ["mixed_greeter_main.swift"],
+    tags = FIXTURE_TAGS,
+    deps = [
+        ":MixedGreeterExplicit",
+        "@system_sdk//:Foundation",
+    ],
+)
+
+force_features_binary(
+    name = "mixed_language_explicit_bin_transitioned",
+    binary = ":mixed_language_explicit_bin",
+    tags = FIXTURE_TAGS,
+    transitive_features = [
+        "swift.use_c_modules",
+        "swift.emit_c_module",
+        "-swift.add_default_precompiled_modules",
+    ],
 )
