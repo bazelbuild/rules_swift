@@ -78,7 +78,7 @@ you build for more Apple platforms, configure them in your
 
 ```bzl
 system_sdk = use_extension("@rules_swift//swift:extensions.bzl", "system_sdk")
-system_sdk.sdks(names = [
+system_sdk.configure_sdks(names = [
     "MacOSX",
     "iPhoneOS",
     "iPhoneSimulator",
@@ -98,9 +98,9 @@ yourself:
 
 ```bzl
 system_sdk = use_extension("//swift:extensions.bzl", "system_sdk")
-system_sdk.config(
+system_sdk.configure_xcode(
     build_file = "//path/to/vendored.BUILD",
-    xcode_version = "26.4.0.17E192",
+    version = "26.4.0.17E192",
 )
 use_repo(system_sdk, "system_sdk")
 ```

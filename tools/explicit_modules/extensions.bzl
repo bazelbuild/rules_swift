@@ -52,20 +52,20 @@ def _generate_pinned_repos(configs):
     versions_ordered = []
     default_manifest = None
     for tag in configs:
-        if tag.xcode_version in seen:
+        if tag.version in seen:
             fail(
-                "Duplicate sdk.config() for xcode_version '{}'.".format(
-                    tag.xcode_version,
+                "Duplicate system_sdk.configure_xcode() for Xcode version '{}'.".format(
+                    tag.version,
                 ),
             )
-        seen[tag.xcode_version] = True
-        repo_name = "system_sdk_xcode_" + _sanitize(tag.xcode_version)
+        seen[tag.version] = True
+        repo_name = "system_sdk_xcode_" + _sanitize(tag.version)
         precomputed_xcode_explicit_module_repo(
             name = repo_name,
-            xcode_version = tag.xcode_version,
+            xcode_version = tag.version,
             build_file = tag.build_file,
         )
-        versions_ordered.append(tag.xcode_version)
+        versions_ordered.append(tag.version)
         if default_manifest == None:
             default_manifest = "@{}//:module_names.json".format(repo_name)
 
@@ -118,7 +118,7 @@ def _collect_sdks(module_ctx):
     for mod in module_ctx.modules:
         if not mod.is_root:
             continue
-        for tag in mod.tags.sdks:
+        for tag in mod.tags.configure_sdks:
             for name in tag.names:
                 names[name] = True
     return sorted(names.keys())
@@ -126,7 +126,7 @@ def _collect_sdks(module_ctx):
 def _sdk_extension_impl(module_ctx):
     configs = []
     for mod in module_ctx.modules:
-        for tag in mod.tags.config:
+        for tag in mod.tags.configure_xcode:
             configs.append(tag)
 
     if configs:
@@ -155,7 +155,7 @@ _system_sdk_stub_repo = repository_rule(
     doc = "Empty hub repo used on non-macOS hosts so `@system_sdk//:all_modules` always resolves.",
 )
 
-_config_tag = tag_class(
+_configure_xcode_tag = tag_class(
     attrs = {
         "xcode_version": attr.string(
             mandatory = True,
@@ -170,7 +170,7 @@ _config_tag = tag_class(
     doc = "Manually pass the explicit module BUILD file for a specific Xcode version",
 )
 
-_sdks_tag = tag_class(
+_configure_sdks_tag = tag_class(
     attrs = {
         "names": attr.string_list(
             mandatory = True,
@@ -183,10 +183,10 @@ _sdks_tag = tag_class(
 system_sdk = module_extension(
     implementation = _sdk_extension_impl,
     tag_classes = {
-        "config": _config_tag,
-        "sdks": _sdks_tag,
+        "configure_xcode": _configure_xcode_tag,
+        "configure_sdks": _configure_sdks_tag,
     },
-    doc = "Configure BUILD files for explicit modules for all installed Xcode versions.",
+    doc = "Generate BUILD files for explicit modules.",
     environ = [
         "DEVELOPER_DIR",
         "XCODE_VERSION",
