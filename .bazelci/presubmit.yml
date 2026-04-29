@@ -13,7 +13,6 @@ x_defaults:
   linux_environment: &linux_environment
     platform: ubuntu2204
     environment:
-      CC: clang
       SWIFT_VERSION: "6.0.3"
       SWIFT_HOME: "$HOME/swift-$SWIFT_VERSION"
       PATH: "$SWIFT_HOME/usr/bin:$PATH"

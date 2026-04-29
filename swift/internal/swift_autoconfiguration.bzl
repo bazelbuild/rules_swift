@@ -199,6 +199,21 @@ def _normalized_linux_cpu(cpu):
         return "x86_64"
     return cpu
 
+def _resolve_toolchain_root(repository_ctx, swiftc_path):
+    """Returns the Swift toolchain root directory for `swiftc_path`.
+
+    Swiftly installs a symlink that is changed based on the active toolchain.
+    This resolves that symlink to the actual toolchain directory.
+    """
+    result = repository_ctx.execute([swiftc_path, "-print-target-info"])
+    if result.return_code != 0:
+        fail("Failed to run '{} -print-target-info': {}".format(
+            swiftc_path,
+            result.stderr,
+        ))
+    runtime_resource_path = json.decode(result.stdout)["paths"]["runtimeResourcePath"]
+    return repository_ctx.path(runtime_resource_path).dirname.dirname
+
 def _create_linux_toolchain(*, repository_ctx):
     """Creates BUILD targets for the Swift toolchain on Linux.
 
@@ -212,7 +227,7 @@ def _create_linux_toolchain(*, repository_ctx):
 toolchain.
 """
 
-    root = path_to_swiftc.dirname.dirname
+    root = _resolve_toolchain_root(repository_ctx, path_to_swiftc)
     feature_values = _compute_feature_values(repository_ctx, path_to_swiftc)
     version_file = _write_swift_version(repository_ctx, path_to_swiftc)
 
