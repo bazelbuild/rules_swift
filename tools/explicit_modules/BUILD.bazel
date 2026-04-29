@@ -35,6 +35,12 @@ bzl_library(
 )
 
 bzl_library(
+    name = "xcode_locator_repo",
+    srcs = ["xcode_locator_repo.bzl"],
+    deps = ["@bazel_tools//tools/osx:xcode_configure.bzl"],
+)
+
+bzl_library(
     name = "precomputed_xcode_explicit_module_repo",
     srcs = ["precomputed_xcode_explicit_module_repo.bzl"],
 )
@@ -47,10 +53,4 @@ bzl_library(
 bzl_library(
     name = "xcode_explicit_module_repo",
     srcs = ["xcode_explicit_module_repo.bzl"],
-)
-
-bzl_library(
-    name = "xcode_locator_repo",
-    srcs = ["xcode_locator_repo.bzl"],
-    deps = ["@bazel_tools//tools/osx:xcode_configure.bzl"],
 )

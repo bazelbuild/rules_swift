@@ -165,11 +165,6 @@ force_features_binary(
     ],
 )
 
-bzl_library(
-    name = "force_features",
-    srcs = ["force_features.bzl"],
-)
-
 # Test `mixed_language_library` with explicit modules
 mixed_language_library(
     name = "MixedGreeter",
@@ -230,3 +225,14 @@ force_features_binary(
 )
 
 cross_platform_targets(tags = FIXTURE_TAGS)
+
+bzl_library(
+    name = "cross_platform",
+    srcs = ["cross_platform.bzl"],
+    deps = [":force_features"],
+)
+
+bzl_library(
+    name = "force_features",
+    srcs = ["force_features.bzl"],
+)
