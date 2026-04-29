@@ -14,6 +14,7 @@
 
 """Common utility definitions used by various BUILD rules."""
 
+load("@bazel_features//:features.bzl", "bazel_features")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
@@ -445,3 +446,23 @@ def get_clang_implicit_deps(*, feature_configuration, swift_toolchain):
             swift_toolchain.clang_implicit_deps_providers.swift_infos,
             swift_toolchain.clang_implicit_deps_providers.cc_infos,
         )
+
+def is_exec_config(ctx):
+    """Determines whether the current configuration is an exec configuration.
+
+    Args:
+        ctx: The rule context.
+
+    Returns:
+        Whether the current configuration is an exec configuration.
+    """
+
+    # TODO: Remove once we drop 9.x
+    if bazel_features.rules.is_tool_configuration_public and ctx.configuration.is_tool_configuration():
+        return True
+    elif ctx.bin_dir.path.endswith("-exec/bin"):  # NOTE: 9.0.0 or <8.7.0 with --experimental_platform_in_output_dir
+        return True
+    elif "-exec-" in ctx.bin_dir.path:
+        return True
+
+    return False
