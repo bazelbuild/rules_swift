@@ -17,6 +17,21 @@ x_defaults:
       SWIFT_VERSION: "6.0.3"
       SWIFT_HOME: "$HOME/swift-$SWIFT_VERSION"
       PATH: "$SWIFT_HOME/usr/bin:$PATH"
+  linux_swiftly_environment: &linux_swiftly_environment
+    platform: ubuntu2204
+    environment:
+      SWIFT_VERSION: "6.0.3"
+      PATH: "$HOME/.local/share/swiftly/bin:$PATH"
+  linux_swift_tar_install: &linux_swift_tar_install
+    - "echo --- Downloading and extracting Swift $SWIFT_VERSION to $SWIFT_HOME"
+    - "mkdir $SWIFT_HOME"
+    - "curl https://download.swift.org/swift-${SWIFT_VERSION}-release/ubuntu2204/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu22.04.tar.gz | tar xvz --strip-components=1 -C $SWIFT_HOME"
+  linux_swiftly_install: &linux_swiftly_install
+    - "echo --- Installing swiftly and Swift $SWIFT_VERSION"
+    - "curl -L -o /tmp/swiftly.tar.gz https://download.swift.org/swiftly/linux/swiftly-$(uname -m).tar.gz"
+    - "tar zxf /tmp/swiftly.tar.gz -C /tmp"
+    - "/tmp/swiftly init --assume-yes --no-modify-profile --quiet-shell-followup"
+    - "swiftly install --use $SWIFT_VERSION"
   linux_common: &linux_common
     <<: *linux_environment
     build_flags: &linux_flags
@@ -38,6 +53,11 @@ x_defaults:
       - "-//test:const_values_expected_argv"
       - "-//test:const_values_wmo_single_values_file"
       - "-//test:output_file_map_default"
+  linux_swiftly_common: &linux_swiftly_common
+    <<: *linux_common
+    environment:
+      SWIFT_VERSION: "6.0.3"
+      PATH: "$HOME/.local/share/swiftly/bin:$PATH"
   windows_common: &windows_common
     platform: windows
     build_flags:
@@ -63,32 +83,25 @@ tasks:
     bazel: last_green
     <<: *mac_common
 
+  # Keep one job exercising the legacy tar-extract install path so we notice
+  # if it regresses; the other Linux jobs use swiftly.
   ubuntu2204_latest:
     name: "Current LTS"
     bazel: latest
-    shell_commands:
-      - "echo --- Downloading and extracting Swift $SWIFT_VERSION to $SWIFT_HOME"
-      - "mkdir $SWIFT_HOME"
-      - "curl https://download.swift.org/swift-${SWIFT_VERSION}-release/ubuntu2204/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu22.04.tar.gz | tar xvz --strip-components=1 -C $SWIFT_HOME"
+    shell_commands: *linux_swift_tar_install
     <<: *linux_common
 
   ubuntu2204_rolling:
     name: "Latest rolling"
     bazel: rolling
-    shell_commands:
-      - "echo --- Downloading and extracting Swift $SWIFT_VERSION to $SWIFT_HOME"
-      - "mkdir $SWIFT_HOME"
-      - "curl https://download.swift.org/swift-${SWIFT_VERSION}-release/ubuntu2204/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu22.04.tar.gz | tar xvz --strip-components=1 -C $SWIFT_HOME"
-    <<: *linux_common
+    shell_commands: *linux_swiftly_install
+    <<: *linux_swiftly_common
 
   ubuntu2204_last_green:
     name: "Last Green Bazel"
     bazel: last_green
-    shell_commands:
-      - "echo --- Downloading and extracting Swift $SWIFT_VERSION to $SWIFT_HOME"
-      - "mkdir $SWIFT_HOME"
-      - "curl https://download.swift.org/swift-${SWIFT_VERSION}-release/ubuntu2204/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu22.04.tar.gz | tar xvz --strip-components=1 -C $SWIFT_HOME"
-    <<: *linux_common
+    shell_commands: *linux_swiftly_install
+    <<: *linux_swiftly_common
 
   # TODO: re-enable when Windows in Bazel CI is properly configured for Swift.
   # windows_last_green:
@@ -99,11 +112,8 @@ tasks:
   doc_tests:
     name: "Doc tests"
     bazel: latest
-    <<: *linux_environment
-    shell_commands:
-      - "echo --- Downloading and extracting Swift $SWIFT_VERSION to $SWIFT_HOME"
-      - "mkdir $SWIFT_HOME"
-      - "curl https://download.swift.org/swift-${SWIFT_VERSION}-release/ubuntu2204/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu22.04.tar.gz | tar xvz --strip-components=1 -C $SWIFT_HOME"
+    <<: *linux_swiftly_environment
+    shell_commands: *linux_swiftly_install
     test_targets:
       - "doc/..."
 
