@@ -160,10 +160,13 @@ std::string ResourceDirFromFrontend(const std::string& frontend_binary) {
 
 int RunHermeticPcm(const std::vector<std::string>& args,
                    std::ostream* stderr_stream) {
-  const std::string developer_dir = GetEnv("DEVELOPER_DIR");
+  std::string developer_dir = GetEnv("DEVELOPER_DIR");
   if (developer_dir.empty()) {
     (*stderr_stream) << "error: hermetic-pcm: DEVELOPER_DIR is not set\n";
     return 1;
+  }
+  while (developer_dir.size() > 1 && developer_dir.back() == '/') {
+    developer_dir.pop_back();
   }
 
   std::string captured;
