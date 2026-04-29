@@ -2,6 +2,10 @@
 
 load("@bazel_skylib//rules:build_test.bzl", "build_test")
 load(
+    "//test/fixtures/precompiled_modules:cross_platform.bzl",
+    "CROSS_PLATFORM_TARGETS",
+)
+load(
     "//test/rules:action_command_line_test.bzl",
     "make_action_command_line_test_rule",
 )
@@ -108,9 +112,9 @@ def precompiled_modules_test_suite(name, tags = []):
             "//test/fixtures/precompiled_modules:hello",
             "//test/fixtures/precompiled_modules:hello_with_explicit_deps_transitioned",
             "//test/fixtures/precompiled_modules:objc_interop_bin_transitioned",
-            "//test/fixtures/precompiled_modules:objc_interop_implicit_bin_transitioned",
-            "//test/fixtures/precompiled_modules:mixed_language_bin_transitioned",
-            "//test/fixtures/precompiled_modules:mixed_language_explicit_bin_transitioned",
+        ] + [
+            "//test/fixtures/precompiled_modules:" + t
+            for t in CROSS_PLATFORM_TARGETS
         ],
         tags = all_tags,
     )

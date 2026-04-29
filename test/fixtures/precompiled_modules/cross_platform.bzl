@@ -1,0 +1,43 @@
+"""Stamp out the explicit-modules binaries across every platform."""
+
+load(":force_features.bzl", "platform_transition_binary")
+
+_BINARIES = [
+    "objc_interop_implicit_bin",
+    "mixed_language_bin",
+    "mixed_language_explicit_bin",
+    "c_module_imports",
+]
+
+_PLATFORMS = [
+    "darwin_arm64",
+    "darwin_x86_64",
+    "ios_arm64",
+    "ios_sim_arm64",
+    "ios_x86_64",
+    "tvos_arm64",
+    "tvos_sim_arm64",
+    "tvos_x86_64",
+    "visionos_arm64",
+    "visionos_sim_arm64",
+    "watchos_arm64_32",
+    "watchos_arm64",
+    "watchos_x86_64",
+]
+
+CROSS_PLATFORM_TARGETS = [
+    "{}_{}".format(binary, platform)
+    for binary in _BINARIES
+    for platform in _PLATFORMS
+]
+
+def cross_platform_targets(tags):  # buildifier: disable=unnamed-macro
+    """Generate `<stem>_<platform>` for every (binary, platform) pair."""
+    for binary in _BINARIES:
+        for platform in _PLATFORMS:
+            platform_transition_binary(
+                name = "{}_{}".format(binary, platform),
+                binary = ":{}_transitioned".format(binary),
+                platform = "@build_bazel_apple_support//platforms:" + platform,
+                tags = tags,
+            )

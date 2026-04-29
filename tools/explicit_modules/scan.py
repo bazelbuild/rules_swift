@@ -12,6 +12,13 @@ import os
 import subprocess
 import tempfile
 
+# Modules to skip based on them being invalid (at least in the public SDKs).
+# This might have to become configurable at some point.
+_SDK_MODULE_EXCLUSIONS = {
+    "WatchOS": {"BrowserEngineKit"},
+    "WatchSimulator": {"BrowserEngineKit"},
+}
+
 
 _SDK_CONSTRAINTS = {
     "MacOSX": ["@platforms//os:macos"],
@@ -48,6 +55,7 @@ _SDK_CONSTRAINTS = {
         "@build_bazel_apple_support//constraints:simulator",
     ],
 }
+
 _TARGETS_PER_SDK = {
     "macosx": [
         ("@platforms//cpu:aarch64", "arm64-apple-macos{ver}"),
@@ -344,9 +352,12 @@ def _discover_all_modules(developer_dir: Path, sdk: str) -> tuple[str, set[str]]
         sdk_path / "usr/include",
     ]
 
+    excluded = _SDK_MODULE_EXCLUSIONS.get(sdk, set())
     modules = set()
     for directory in set(framework_search_paths + library_search_paths):
         for x in directory.iterdir():
+            if x.stem in excluded:
+                continue
             if not x.is_dir():
                 if x.suffix == ".modulemap" and x.stem != "module":
                     modules.add(x.stem)

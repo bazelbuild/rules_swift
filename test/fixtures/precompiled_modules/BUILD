@@ -6,6 +6,7 @@ load("//swift:swift_compiler_plugin.bzl", "swift_compiler_plugin")
 load("//swift:swift_interop_hint.bzl", "swift_interop_hint")
 load("//swift:swift_test.bzl", "swift_test")
 load("//test/fixtures:common.bzl", "FIXTURE_TAGS")
+load(":cross_platform.bzl", "cross_platform_targets")
 load(":force_features.bzl", "force_features_binary", "force_features_test")
 
 package(default_visibility = ["//test:__subpackages__"])
@@ -27,7 +28,6 @@ swift_binary(
         "-swift.add_default_precompiled_modules",
     ],
     tags = FIXTURE_TAGS,
-    target_compatible_with = ["@platforms//os:macos"],
     deps = [
         "@system_sdk//:Foundation",
     ],
@@ -56,7 +56,7 @@ objc_library(
     hdrs = ["Greeter.h"],
     aspect_hints = [":Greeter_hint"],
     tags = FIXTURE_TAGS,
-    target_compatible_with = ["@platforms//os:macos"],
+    target_compatible_with = ["@build_bazel_apple_support//constraints:apple"],
     deps = ["@system_sdk//:Foundation"],
 )
 
@@ -94,7 +94,7 @@ objc_library(
     aspect_hints = [":GreeterImplicit_hint"],
     copts = ["-fno-stack-protector"],
     tags = FIXTURE_TAGS,
-    target_compatible_with = ["@platforms//os:macos"],
+    target_compatible_with = ["@build_bazel_apple_support//constraints:apple"],
 )
 
 swift_compiler_plugin(
@@ -102,7 +102,6 @@ swift_compiler_plugin(
     srcs = ["StubPlugin.swift"],
     module_name = "StubPlugin",
     tags = FIXTURE_TAGS,
-    target_compatible_with = ["@platforms//os:macos"],
 )
 
 swift_binary(
@@ -153,7 +152,6 @@ swift_binary(
     name = "c_module_imports",
     srcs = ["c_module_imports.swift"],
     tags = FIXTURE_TAGS,
-    target_compatible_with = ["@platforms//os:macos"],
 )
 
 force_features_binary(
@@ -230,3 +228,5 @@ force_features_binary(
         "-swift.add_default_precompiled_modules",
     ],
 )
+
+cross_platform_targets(tags = FIXTURE_TAGS)

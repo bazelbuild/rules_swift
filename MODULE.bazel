@@ -46,6 +46,7 @@ use_repo(apple_cc_configure, "local_config_apple_cc")
 register_toolchains("//swift/toolchains:all")
 
 system_sdk = use_extension("//swift:extensions.bzl", "system_sdk")
+system_sdk.configure_sdks(include_all = True)  # NOTE: This doesn't apply to downstream repos
 use_repo(system_sdk, "system_sdk")
 
 swift = use_extension("//swift:extensions.bzl", "swift", dev_dependency = True)

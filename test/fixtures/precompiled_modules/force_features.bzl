@@ -66,3 +66,30 @@ force_features_test = rule(
     doc = "Forwards a test target's executable and runfiles after appending `transitive_features` to the `--features` command line option.",
     test = True,
 )
+
+def _platform_transition_impl(_settings, attr):
+    return {"//command_line_option:platforms": [attr.platform]}
+
+_platform_transition = transition(
+    implementation = _platform_transition_impl,
+    inputs = [],
+    outputs = ["//command_line_option:platforms"],
+)
+
+def _platform_transition_binary_impl(ctx):
+    return [DefaultInfo(files = ctx.attr.binary[0][DefaultInfo].files)]
+
+platform_transition_binary = rule(
+    implementation = _platform_transition_binary_impl,
+    attrs = {
+        "binary": attr.label(
+            mandatory = True,
+            cfg = _platform_transition,
+            doc = "The target to build under the platform transition.",
+        ),
+        "platform": attr.string(
+            mandatory = True,
+            doc = "The target platform label (e.g. `@build_bazel_apple_support//platforms:macos_x86_64`).",
+        ),
+    },
+)
