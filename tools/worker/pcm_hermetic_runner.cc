@@ -87,6 +87,9 @@ std::vector<std::string> TokenizeShellLine(const std::string& line) {
       }
       continue;
     }
+    if (!in_quotes && c == '#' && token.empty()) {
+      break;
+    }
     token.push_back(c);
   }
   if (!token.empty()) {
