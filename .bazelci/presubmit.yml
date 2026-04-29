@@ -31,7 +31,10 @@ x_defaults:
     - "curl -L -o /tmp/swiftly.tar.gz https://download.swift.org/swiftly/linux/swiftly-$(uname -m).tar.gz"
     - "tar zxf /tmp/swiftly.tar.gz -C /tmp"
     - "/tmp/swiftly init --assume-yes --no-modify-profile --quiet-shell-followup"
-    - "swiftly install --use $SWIFT_VERSION"
+    # `--post-install-file` redirects swiftly's "install these system packages"
+    # hint to a file instead of exiting non-zero. We only need swiftc here, not
+    # libcurl/lldb/etc. that the hint asks for.
+    - "swiftly install --use --post-install-file /tmp/swiftly-post-install.sh $SWIFT_VERSION"
   linux_common: &linux_common
     <<: *linux_environment
     build_flags: &linux_flags
