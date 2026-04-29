@@ -449,9 +449,10 @@ def _swift_toolchain_impl(ctx):
     )
 
     if "clang" not in cc_toolchain.compiler:
-        fail("Swift requires the configured CC toolchain to be LLVM (clang). " +
+        fail("Swift requires the configured CC toolchain use clang. " +
              "Either use the locally installed LLVM by setting `CC=clang` in your environment " +
-             "before invoking Bazel, or configure a Bazel LLVM CC toolchain.")
+             "before invoking Bazel, or configure a Bazel LLVM CC toolchain. " +
+             "The current CC toolchain is configured to use '{}'.".format(cc_toolchain.compiler))
 
     additional_rpaths = []
     if ctx.attr.swift_tools:
