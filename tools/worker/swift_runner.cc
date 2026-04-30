@@ -257,6 +257,60 @@ void ExtractFlagsFromInterfaceFile(
   }
 }
 
+std::string ShellQuote(const std::string& arg) {
+  if (arg.empty()) {
+    return "''";
+  }
+
+  if (arg.find_first_not_of(
+          "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
+          "-+=.,/:@%") == std::string::npos) {
+    return arg;
+  }
+
+  std::string result = "'";
+  for (auto ch : arg) {
+    if (ch == '\'') {
+      result.append("'\\''");
+    } else {
+      result.push_back(ch);
+    }
+  }
+  result.push_back('\'');
+  return result;
+}
+
+std::vector<std::string> ExpandTopLevelResponseFilesForDisplay(
+    const std::vector<std::string>& args) {
+  std::vector<std::string> display_args;
+  for (const auto& arg : args) {
+    if (arg.size() > 1 && arg[0] == '@') {
+      std::ifstream response_file(arg.substr(1));
+      if (response_file.good()) {
+        for (std::string line; std::getline(response_file, line);) {
+          display_args.push_back(Unescape(line));
+        }
+        continue;
+      }
+    }
+    display_args.push_back(arg);
+  }
+  return display_args;
+}
+
+void PrintVerboseInvocation(const std::vector<std::string>& args,
+                            std::ostream* stderr_stream) {
+  bool first = true;
+  for (const auto& arg : ExpandTopLevelResponseFilesForDisplay(args)) {
+    if (!first) {
+      (*stderr_stream) << ' ';
+    }
+    (*stderr_stream) << ShellQuote(arg);
+    first = false;
+  }
+  (*stderr_stream) << '\n';
+}
+
 }  // namespace
 
 SwiftRunner::SwiftRunner(const std::vector<std::string>& args,
@@ -267,7 +321,8 @@ SwiftRunner::SwiftRunner(const std::vector<std::string>& args,
       force_response_file_(force_response_file),
       is_dump_ast_(false),
       file_prefix_pwd_is_dot_(false),
-      hermetic_pcm_(false) {
+      hermetic_pcm_(false),
+      verbose_(false) {
   args_ = ProcessArguments(args);
 }
 
@@ -286,6 +341,10 @@ int SwiftRunner::Run(std::ostream* stderr_stream, bool stdout_to_stderr) {
   int exit_code = hermetic_pcm_ ? RunHermeticPcm(args_, stderr_stream)
                                 : RunSubProcess(args_, &job_env_, stderr_stream,
                                                 stdout_to_stderr);
+
+  if (verbose_) {
+    PrintVerboseInvocation(args_, stderr_stream);
+  }
 
   if (exit_code != 0) {
     return exit_code;
@@ -667,6 +726,8 @@ std::vector<std::string> SwiftRunner::ParseArguments(Iterator itr) {
         arg = *it;
         target_triple_ = arg;
         out_args.push_back(arg);
+      } else if (arg == "-v") {
+        verbose_ = true;
       }
     }
   }

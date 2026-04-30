@@ -196,6 +196,9 @@ class SwiftRunner {
 
   // Whether `-Xwrapped-swift=-hermetic-pcm` was passed
   bool hermetic_pcm_;
+
+  // Whether `-v` was passed.
+  bool verbose_;
 };
 
 #endif  // BUILD_BAZEL_RULES_SWIFT_TOOLS_WORKER_SWIFT_RUNNER_H_
