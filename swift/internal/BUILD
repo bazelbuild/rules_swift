@@ -315,8 +315,7 @@ bzl_library(
         "@build_bazel_rules_swift//swift/internal:compiling",
         "@build_bazel_rules_swift//swift/internal:feature_names",
         "@build_bazel_rules_swift//swift/internal:toolchain_utils",
-        "@rules_cc//cc/common:cc_common",
-        "@rules_cc//cc/common:cc_info",
+        "@rules_cc//cc/common",
     ],
 )
 
@@ -327,8 +326,7 @@ bzl_library(
     deps = [
         ":utils",
         "//swift:providers",
-        "@rules_cc//cc/common:cc_common",
-        "@rules_cc//cc/common:cc_info",
+        "@rules_cc//cc/common",
     ],
 )
 
