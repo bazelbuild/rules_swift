@@ -171,6 +171,14 @@ class SwiftRunner {
   // The index store path argument passed to the runner
   std::string index_store_path_;
 
+  // The target triple of the current compilation.
+  std::string target_triple_;
+
+  // The path to either the `.swiftinterface` file to compile or to a
+  // `.swiftmodule` directory in which the worker will infer the interface file
+  // to compile.
+  std::string module_or_interface_path_;
+
   // The path of the global index store  when using
   // swift.use_global_index_store. When set, this is passed to `swiftc` as the
   // `-index-store-path`. After running `swiftc` `index-import` copies relevant

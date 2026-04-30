@@ -22,23 +22,16 @@ load(":action_config.bzl", "ActionConfigInfo", "add_arg")
 
 def compile_module_interface_action_configs():
     return [
-        # Library evolution is implied since we've already produced a
-        # .swiftinterface file. So we want to unconditionally enable the flag
-        # for this action.
-        ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE_MODULE_INTERFACE],
-            configurators = [add_arg("-enable-library-evolution")],
-        ),
         ActionConfigInfo(
             actions = [SWIFT_ACTION_COMPILE_MODULE_INTERFACE],
             configurators = [
-                _emit_module_path_from_module_interface_configurator,
-            ],
-        ),
-        ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE_MODULE_INTERFACE],
-            configurators = [
+                # Library evolution is implied since we've already produced a
+                # .swiftinterface file. So we want to unconditionally enable
+                # the flag for this action.
+                add_arg("-enable-library-evolution"),
                 add_arg("-compile-module-from-interface"),
+                _emit_explicit_module_interface_build_configurator,
+                _emit_module_path_from_module_interface_configurator,
             ],
         ),
     ]
@@ -46,3 +39,12 @@ def compile_module_interface_action_configs():
 def _emit_module_path_from_module_interface_configurator(prerequisites, args):
     """Adds the `.swiftmodule` output path to the command line."""
     args.add("-o", prerequisites.swiftmodule_file)
+
+def _emit_explicit_module_interface_build_configurator(prerequisites, args):
+    """Adds flags to perform an explicit interface build to the command line."""
+
+    args.add("-explicit-interface-module-build")
+    args.add(
+        prerequisites.source_files[0],
+        format = "-Xwrapped-swift=-explicit-compile-module-from-interface=%s",
+    )
