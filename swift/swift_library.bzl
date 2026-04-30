@@ -129,6 +129,15 @@ def _swift_library_impl(ctx):
     linkopts = expand_locations(ctx, ctx.attr.linkopts, ctx.attr.swiftc_inputs)
     linkopts = expand_make_variables(ctx, linkopts, "linkopts")
     srcs = ctx.files.srcs
+    if ctx.attr.suppress_warning_groups:
+        if "-print-diagnostic-groups" not in copts:
+            copts.append("-print-diagnostic-groups")
+        for group in ctx.attr.suppress_warning_groups:
+            copts.append(
+                "-Xwrapped-swift=-suppress-warning-group={}".format(
+                    group,
+                ),
+            )
 
     module_copts = additional_per_module_swiftcopts(
         ctx.label,

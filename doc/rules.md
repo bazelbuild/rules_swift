@@ -458,7 +458,8 @@ its transitive dependencies be propagated.
 <pre>
 swift_library(<a href="#swift_library-name">name</a>, <a href="#swift_library-deps">deps</a>, <a href="#swift_library-srcs">srcs</a>, <a href="#swift_library-data">data</a>, <a href="#swift_library-always_include_developer_search_paths">always_include_developer_search_paths</a>, <a href="#swift_library-alwayslink">alwayslink</a>, <a href="#swift_library-copts">copts</a>,
               <a href="#swift_library-defines">defines</a>, <a href="#swift_library-generated_header_name">generated_header_name</a>, <a href="#swift_library-generates_header">generates_header</a>, <a href="#swift_library-library_evolution">library_evolution</a>, <a href="#swift_library-linkopts">linkopts</a>,
-              <a href="#swift_library-linkstatic">linkstatic</a>, <a href="#swift_library-module_name">module_name</a>, <a href="#swift_library-package_name">package_name</a>, <a href="#swift_library-plugins">plugins</a>, <a href="#swift_library-private_deps">private_deps</a>, <a href="#swift_library-swiftc_inputs">swiftc_inputs</a>)
+              <a href="#swift_library-linkstatic">linkstatic</a>, <a href="#swift_library-module_name">module_name</a>, <a href="#swift_library-package_name">package_name</a>, <a href="#swift_library-plugins">plugins</a>, <a href="#swift_library-private_deps">private_deps</a>, <a href="#swift_library-suppress_warning_groups">suppress_warning_groups</a>,
+              <a href="#swift_library-swiftc_inputs">swiftc_inputs</a>)
 </pre>
 
 Compiles and links Swift code into a static library and Swift module.
@@ -485,6 +486,7 @@ Compiles and links Swift code into a static library and Swift module.
 | <a id="swift_library-package_name"></a>package_name |  The semantic package of the Swift target being built. Targets with the same package_name can access APIs using the 'package' access control modifier in Swift 5.9+.   | String | optional |  `""`  |
 | <a id="swift_library-plugins"></a>plugins |  A list of `swift_compiler_plugin` targets that should be loaded by the compiler when compiling this module and any modules that directly depend on it.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 | <a id="swift_library-private_deps"></a>private_deps |  A list of targets that are implementation-only dependencies of the target being built. Libraries/linker flags from these dependencies will be propagated to dependent for linking, but artifacts/flags required for compilation (such as .swiftmodule files, C headers, and search paths) will not be propagated.<br><br>Allowed kinds of dependencies are:<br><br>*   `swift_library` (or anything propagating `SwiftInfo`)<br><br>*   `cc_library` and `objc_library` (or anything propagating `CcInfo`)   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
+| <a id="swift_library-suppress_warning_groups"></a>suppress_warning_groups |  A list of Swift diagnostic groups to suppress in build output (for example, `DeprecatedDeclaration`). These diagnostics are filtered from the compiler's output by the wrapper and do not change the compiler's behavior. See https://docs.swift.org/compiler/documentation/diagnostics/diagnostic-groups/ for available diagnostic groups.   | List of strings | optional |  `[]`  |
 | <a id="swift_library-swiftc_inputs"></a>swiftc_inputs |  Additional files that are referenced using `$(location ...)` in attributes that support location expansion.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 
 
@@ -618,7 +620,7 @@ remaining modules collected are not present in the `aliases` of the
 <pre>
 swift_overlay(<a href="#swift_overlay-name">name</a>, <a href="#swift_overlay-deps">deps</a>, <a href="#swift_overlay-srcs">srcs</a>, <a href="#swift_overlay-always_include_developer_search_paths">always_include_developer_search_paths</a>, <a href="#swift_overlay-alwayslink">alwayslink</a>, <a href="#swift_overlay-copts">copts</a>, <a href="#swift_overlay-defines">defines</a>,
               <a href="#swift_overlay-library_evolution">library_evolution</a>, <a href="#swift_overlay-linkopts">linkopts</a>, <a href="#swift_overlay-linkstatic">linkstatic</a>, <a href="#swift_overlay-package_name">package_name</a>, <a href="#swift_overlay-plugins">plugins</a>, <a href="#swift_overlay-private_deps">private_deps</a>,
-              <a href="#swift_overlay-swiftc_inputs">swiftc_inputs</a>)
+              <a href="#swift_overlay-suppress_warning_groups">suppress_warning_groups</a>, <a href="#swift_overlay-swiftc_inputs">swiftc_inputs</a>)
 </pre>
 
 A Swift overlay that sits on top of a C/Objective-C library, allowing an author
@@ -709,6 +711,7 @@ almost always an anti-pattern.
 | <a id="swift_overlay-package_name"></a>package_name |  The semantic package of the Swift target being built. Targets with the same package_name can access APIs using the 'package' access control modifier in Swift 5.9+.   | String | optional |  `""`  |
 | <a id="swift_overlay-plugins"></a>plugins |  A list of `swift_compiler_plugin` targets that should be loaded by the compiler when compiling this module and any modules that directly depend on it.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 | <a id="swift_overlay-private_deps"></a>private_deps |  A list of targets that are implementation-only dependencies of the target being built. Libraries/linker flags from these dependencies will be propagated to dependent for linking, but artifacts/flags required for compilation (such as .swiftmodule files, C headers, and search paths) will not be propagated.<br><br>Allowed kinds of dependencies are:<br><br>*   `swift_library` (or anything propagating `SwiftInfo`)<br><br>*   `cc_library` and `objc_library` (or anything propagating `CcInfo`)   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
+| <a id="swift_overlay-suppress_warning_groups"></a>suppress_warning_groups |  A list of Swift diagnostic groups to suppress in build output (for example, `DeprecatedDeclaration`). These diagnostics are filtered from the compiler's output by the wrapper and do not change the compiler's behavior. See https://docs.swift.org/compiler/documentation/diagnostics/diagnostic-groups/ for available diagnostic groups.   | List of strings | optional |  `[]`  |
 | <a id="swift_overlay-swiftc_inputs"></a>swiftc_inputs |  Additional files that are referenced using `$(location ...)` in attributes that support location expansion.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 
 
@@ -772,7 +775,8 @@ swift_proto_compiler(<a href="#swift_proto_compiler-name">name</a>, <a href="#sw
 swift_proto_library(<a href="#swift_proto_library-name">name</a>, <a href="#swift_proto_library-deps">deps</a>, <a href="#swift_proto_library-srcs">srcs</a>, <a href="#swift_proto_library-data">data</a>, <a href="#swift_proto_library-additional_compiler_deps">additional_compiler_deps</a>, <a href="#swift_proto_library-additional_compiler_info">additional_compiler_info</a>,
                     <a href="#swift_proto_library-always_include_developer_search_paths">always_include_developer_search_paths</a>, <a href="#swift_proto_library-alwayslink">alwayslink</a>, <a href="#swift_proto_library-compilers">compilers</a>, <a href="#swift_proto_library-copts">copts</a>, <a href="#swift_proto_library-defines">defines</a>,
                     <a href="#swift_proto_library-generated_header_name">generated_header_name</a>, <a href="#swift_proto_library-generates_header">generates_header</a>, <a href="#swift_proto_library-library_evolution">library_evolution</a>, <a href="#swift_proto_library-linkopts">linkopts</a>, <a href="#swift_proto_library-linkstatic">linkstatic</a>,
-                    <a href="#swift_proto_library-module_name">module_name</a>, <a href="#swift_proto_library-package_name">package_name</a>, <a href="#swift_proto_library-plugins">plugins</a>, <a href="#swift_proto_library-protos">protos</a>, <a href="#swift_proto_library-swiftc_inputs">swiftc_inputs</a>)
+                    <a href="#swift_proto_library-module_name">module_name</a>, <a href="#swift_proto_library-package_name">package_name</a>, <a href="#swift_proto_library-plugins">plugins</a>, <a href="#swift_proto_library-protos">protos</a>, <a href="#swift_proto_library-suppress_warning_groups">suppress_warning_groups</a>,
+                    <a href="#swift_proto_library-swiftc_inputs">swiftc_inputs</a>)
 </pre>
 
 Generates a Swift static library from one or more targets producing `ProtoInfo`.
@@ -837,6 +841,7 @@ swift_proto_library(
 | <a id="swift_proto_library-package_name"></a>package_name |  The semantic package of the Swift target being built. Targets with the same package_name can access APIs using the 'package' access control modifier in Swift 5.9+.   | String | optional |  `""`  |
 | <a id="swift_proto_library-plugins"></a>plugins |  A list of `swift_compiler_plugin` targets that should be loaded by the compiler when compiling this module and any modules that directly depend on it.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 | <a id="swift_proto_library-protos"></a>protos |  A list of `proto_library` targets (or targets producing `ProtoInfo`), from which the Swift source files should be generated.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
+| <a id="swift_proto_library-suppress_warning_groups"></a>suppress_warning_groups |  A list of Swift diagnostic groups to suppress in build output (for example, `DeprecatedDeclaration`). These diagnostics are filtered from the compiler's output by the wrapper and do not change the compiler's behavior. See https://docs.swift.org/compiler/documentation/diagnostics/diagnostic-groups/ for available diagnostic groups.   | List of strings | optional |  `[]`  |
 | <a id="swift_proto_library-swiftc_inputs"></a>swiftc_inputs |  Additional files that are referenced using `$(location ...)` in attributes that support location expansion.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 
 
