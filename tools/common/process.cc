@@ -347,16 +347,15 @@ void PosixSpawnIORedirector::ConsumeAllSubprocessOutput(
   }
 }
 
-// Converts an array of string arguments to char *arguments.
-// The first arg is reduced to its basename as per execve conventions.
-// Note that the lifetime of the char* arguments in the returned array
-// are controlled by the lifetime of the strings in args.
-std::vector<const char *> ConvertToCArgs(const std::vector<std::string> &args) {
-  std::vector<const char *> c_args;
-  std::string filename = std::filesystem::path(args[0]).filename().string();
-  c_args.push_back(&*std::next(args[0].rbegin(), filename.length() - 1));
-  for (int i = 1; i < args.size(); i++) {
-    c_args.push_back(args[i].c_str());
+// Converts an array of string arguments to char *arguments, terminated by a
+// nullptr.
+// It is the responsibility of the caller to free the elements of the returned
+// vector.
+std::vector<char *> ConvertToCArgs(const std::vector<std::string> &args) {
+  std::vector<char *> c_args;
+  c_args.reserve(args.size() + 1);
+  for (int i = 0; i < args.size(); i++) {
+    c_args.push_back(strdup(args[i].c_str()));
   }
   c_args.push_back(nullptr);
   return c_args;
@@ -367,7 +366,7 @@ std::vector<const char *> ConvertToCArgs(const std::vector<std::string> &args) {
 int RunSubProcess(const std::vector<std::string> &args,
                   std::map<std::string, std::string> *env,
                   std::ostream *stderr_stream, bool stdout_to_stderr) {
-  std::vector<const char *> exec_argv = ConvertToCArgs(args);
+  std::vector<char *> exec_argv = ConvertToCArgs(args);
 
   // Set up a pipe to redirect stderr from the child process so that we can
   // capture it and return it in the response message.
@@ -401,8 +400,12 @@ int RunSubProcess(const std::vector<std::string> &args,
   pid_t pid;
   int status =
       posix_spawn(&pid, args[0].c_str(), redirector->PosixSpawnFileActions(),
-                  nullptr, const_cast<char **>(exec_argv.data()), envp);
+                  nullptr, exec_argv.data(), envp);
   redirector->ConsumeAllSubprocessOutput(stderr_stream);
+
+  for (char *arg : exec_argv) {
+    free(arg);
+  }
 
   for (char* envp : new_environ) {
     if (envp) {
