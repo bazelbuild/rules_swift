@@ -169,6 +169,7 @@ def create_compilation_context(defines, srcs, transitive_modules):
 def compile_module_interface(
         *,
         actions,
+        additional_inputs = [],
         clang_module = None,
         compilation_contexts,
         copts = [],
@@ -186,6 +187,11 @@ def compile_module_interface(
 
     Args:
         actions: The context's `actions` object.
+        additional_inputs: A list of `File`s that should be available to the
+            compile action in the sandbox but are not referenced on the command
+            line. The typical use case is making a sibling `.private.swiftinterface`
+            available alongside the public `.swiftinterface` so the compiler can
+            resolve SPI references during the textual-interface build.
         clang_module: An optional underlying Clang module (as returned by
             `create_clang_module_inputs`), if present for this Swift module.
         compilation_contexts: A list of `CcCompilationContext`s that represent
@@ -329,6 +335,7 @@ def compile_module_interface(
         indexstore_directory = None
 
     prerequisites = struct(
+        additional_inputs = additional_inputs,
         bin_dir = feature_configuration._bin_dir,
         cc_compilation_context = merged_compilation_context,
         explicit_swift_module_map_file = explicit_swift_module_map_file,

@@ -1492,6 +1492,7 @@ def compile_action_configs(
         ActionConfigInfo(
             actions = [
                 SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
                 SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
