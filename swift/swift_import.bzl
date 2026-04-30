@@ -36,6 +36,7 @@ load(
 load(
     "//swift/internal:utils.bzl",
     "compact",
+    "default_precompiled_modules_providers",
     "get_compilation_contexts",
     "get_providers",
 )
@@ -98,13 +99,20 @@ def _swift_import_impl(ctx):
     swift_infos = get_providers(deps, SwiftInfo)
 
     if swiftinterface:
+        extra_cc_infos, extra_swift_infos = default_precompiled_modules_providers(
+            ctx,
+            feature_configuration,
+        )
         compile_result = compile_module_interface(
             actions = ctx.actions,
-            compilation_contexts = get_compilation_contexts(ctx.attr.deps),
+            compilation_contexts = get_compilation_contexts(ctx.attr.deps) + [
+                cc_info.compilation_context
+                for cc_info in extra_cc_infos
+            ],
             feature_configuration = feature_configuration,
             module_name = ctx.attr.module_name,
             swiftinterface_file = swiftinterface,
-            swift_infos = swift_infos,
+            swift_infos = swift_infos + extra_swift_infos,
             target_name = ctx.attr.name,
             toolchains = toolchains,
         )
@@ -197,6 +205,11 @@ The `.swiftmodule` file provided to Swift targets that depend on this target.
 May not be specified if `swiftinterface` is specified.
 """,
                 mandatory = False,
+            ),
+            "_default_precompiled_modules": attr.label(
+                aspects = [swift_clang_module_aspect],
+                default = Label("@system_sdk//:all_modules"),
+                providers = [[CcInfo, SwiftInfo]],
             ),
         },
     ),
