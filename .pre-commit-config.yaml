@@ -7,3 +7,10 @@ repos:
     hooks:
       - id: buildifier
       - id: buildifier-lint
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.11
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
