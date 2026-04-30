@@ -275,18 +275,28 @@ Compiles a Swift module interface.
 | <a id="swift_common.compile_module_interface-swiftinterface_file"></a>swiftinterface_file |  The Swift module interface file to compile.   |  none |
 | <a id="swift_common.compile_module_interface-swift_infos"></a>swift_infos |  A list of `SwiftInfo` providers from dependencies of the target being compiled.   |  none |
 | <a id="swift_common.compile_module_interface-swift_toolchain"></a>swift_toolchain |  The `SwiftToolchainInfo` provider of the toolchain.   |  `None` |
-| <a id="swift_common.compile_module_interface-target_name"></a>target_name |  The name of the target for which the code is being compiled, which is used to determine unique file paths for the outputs.   |  none |
+| <a id="swift_common.compile_module_interface-target_name"></a>target_name |  The name of the target for which the interface is being compiled, which is used to determine unique file paths for the outputs.   |  none |
 | <a id="swift_common.compile_module_interface-toolchains"></a>toolchains |  The struct containing the Swift and C++ toolchain providers, as returned by `swift_common.find_all_toolchains()`.   |  `None` |
 | <a id="swift_common.compile_module_interface-toolchain_type"></a>toolchain_type |  The toolchain type of the `swift_toolchain` which is used for the proper selection of the execution platform inside `run_toolchain_action`.   |  `Label("@rules_swift//toolchains:toolchain_type")` |
 
 **RETURNS**
 
-A Swift module context (as returned by `create_swift_module_context`)
-  that contains the Swift (and potentially C/Objective-C) compilation
-  prerequisites of the compiled module. This should typically be
-  propagated by a `SwiftInfo` provider of the calling rule, and the
-  `CcCompilationContext` inside the Clang module substructure should be
-  propagated by the `CcInfo` provider of the calling rule.
+A `struct` with the following fields:
+
+  *   `module_context`: A Swift module context (as returned by
+      `create_swift_module_context`) that contains the Swift (and
+      potentially C/Objective-C) compilation prerequisites of the compiled
+      module. This should typically be propagated by a `SwiftInfo`
+      provider of the calling rule, and the `CcCompilationContext` inside
+      the Clang module substructure should be propagated by the `CcInfo`
+      provider of the calling rule.
+
+  *   `supplemental_outputs`: A `struct` representing supplemental,
+      optional outputs. Its fields are:
+
+      *   `indexstore_directory`: A directory-type `File` that represents
+          the indexstore output files created when the feature
+          `swift.index_while_building` is enabled.
 
 
 <a id="swift_common.configure_features"></a>
