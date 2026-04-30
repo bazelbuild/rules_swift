@@ -3,6 +3,7 @@ load("@rules_cc//cc:objc_library.bzl", "objc_library")
 load("//mixed_language:mixed_language_library.bzl", "mixed_language_library")
 load("//swift:swift_binary.bzl", "swift_binary")
 load("//swift:swift_compiler_plugin.bzl", "swift_compiler_plugin")
+load("//swift:swift_import.bzl", "swift_import")
 load("//swift:swift_interop_hint.bzl", "swift_interop_hint")
 load("//swift:swift_test.bzl", "swift_test")
 load("//test/fixtures:common.bzl", "FIXTURE_TAGS")
@@ -225,6 +226,33 @@ force_features_binary(
 )
 
 cross_platform_targets(tags = FIXTURE_TAGS)
+
+swift_import(
+    name = "LowerVersionLib",
+    module_name = "LowerVersionLib",
+    swiftinterface = "LowerVersionLib.swiftinterface",  # NOTE: The macOS version in this file _must_ not be the same one we use globally, that is the behavior we're testing
+    tags = FIXTURE_TAGS,
+    target_compatible_with = ["@platforms//os:macos"],
+)
+
+swift_binary(
+    name = "lower_version_bin",
+    srcs = ["lower_version_main.swift"],
+    tags = FIXTURE_TAGS,
+    deps = [":LowerVersionLib"],
+)
+
+force_features_binary(
+    name = "lower_version_bin_transitioned",
+    binary = ":lower_version_bin",
+    tags = FIXTURE_TAGS,
+    transitive_features = [
+        "swift.use_c_modules",
+        "swift.emit_c_module",
+        "swift.add_default_precompiled_modules",
+        "swift.use_explicit_swift_module_map",  # NOTE: This is required to make sure no implicit modules are found
+    ],
+)
 
 bzl_library(
     name = "cross_platform",
