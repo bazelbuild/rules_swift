@@ -12,11 +12,11 @@ For example:
 load("@build_bazel_rules_swift//swift:swift_library.bzl", "swift_library")
 load("@build_bazel_rules_swift//proto:swift_proto_library.bzl", "swift_proto_library")
 ```
+
 On this page:
 
   * [swift_binary](#swift_binary)
   * [swift_compiler_plugin](#swift_compiler_plugin)
-  * [universal_swift_compiler_plugin](#universal_swift_compiler_plugin)
   * [swift_compiler_plugin_import](#swift_compiler_plugin_import)
   * [swift_cross_import_overlay](#swift_cross_import_overlay)
   * [swift_feature_allowlist](#swift_feature_allowlist)
@@ -24,15 +24,16 @@ On this page:
   * [swift_interop_hint](#swift_interop_hint)
   * [swift_library](#swift_library)
   * [swift_library_group](#swift_library_group)
-  * [mixed_language_library](#mixed_language_library)
   * [swift_module_mapping](#swift_module_mapping)
   * [swift_module_mapping_test](#swift_module_mapping_test)
   * [swift_overlay](#swift_overlay)
   * [swift_package_configuration](#swift_package_configuration)
-  * [swift_test](#swift_test)
+  * [swift_proto_compiler](#swift_proto_compiler)
   * [swift_proto_library](#swift_proto_library)
   * [swift_proto_library_group](#swift_proto_library_group)
-  * [swift_proto_compiler](#swift_proto_compiler)
+  * [swift_test](#swift_test)
+  * [universal_swift_compiler_plugin](#universal_swift_compiler_plugin)
+  * [mixed_language_library](#mixed_language_library)
 
 <a id="swift_binary"></a>
 

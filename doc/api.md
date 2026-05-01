@@ -8,6 +8,28 @@ implementation.
 
 Some API is exposed as free functions outside of the `swift_common`
 module.
+
+On this page:
+
+  * [create_swift_interop_info](#create_swift_interop_info)
+  * [derive_swift_module_name](#derive_swift_module_name)
+  * [is_swift_overlay](#is_swift_overlay)
+  * [swift_common.cc_feature_configuration](#swift_common.cc_feature_configuration)
+  * [swift_common.compile](#swift_common.compile)
+  * [swift_common.compile_module_interface](#swift_common.compile_module_interface)
+  * [swift_common.configure_features](#swift_common.configure_features)
+  * [swift_common.create_compilation_context](#swift_common.create_compilation_context)
+  * [swift_common.create_linking_context_from_compilation_outputs](#swift_common.create_linking_context_from_compilation_outputs)
+  * [swift_common.extract_symbol_graph](#swift_common.extract_symbol_graph)
+  * [swift_common.find_all_toolchains](#swift_common.find_all_toolchains)
+  * [swift_common.get_toolchain](#swift_common.get_toolchain)
+  * [swift_common.is_action_enabled](#swift_common.is_action_enabled)
+  * [swift_common.is_enabled](#swift_common.is_enabled)
+  * [swift_common.precompile_clang_module](#swift_common.precompile_clang_module)
+  * [swift_common.synthesize_interface](#swift_common.synthesize_interface)
+  * [swift_common.use_all_toolchains](#swift_common.use_all_toolchains)
+  * [swift_common.use_toolchain](#swift_common.use_toolchain)
+
 <a id="create_swift_interop_info"></a>
 
 ## create_swift_interop_info
