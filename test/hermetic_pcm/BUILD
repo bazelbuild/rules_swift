@@ -7,6 +7,17 @@ load("//swift:swift_library.bzl", "swift_library")
 load("//test/fixtures/precompiled_modules:force_features.bzl", "force_features_binary")
 load(":extract_pcm.bzl", "extract_pcm")
 load(":extract_swiftmodule.bzl", "extract_swiftmodule")
+load(":xcode_version_at_least.bzl", "xcode_version_at_least")
+
+xcode_version_at_least(
+    name = "xcode_at_least_26_4",
+    minimum_version = "26.4",
+)
+
+config_setting(
+    name = "supports_hermetic_swiftmodule",
+    flag_values = {":xcode_at_least_26_4": "True"},
+)
 
 force_features_binary(
     name = "foundation_pcm",
@@ -88,6 +99,10 @@ sh_test(
     srcs = ["check_hermetic_swiftmodule.sh"],
     args = ["$(rootpath :downstream_swiftmodule)"],
     data = [":downstream_swiftmodule"],
+    target_compatible_with = select({
+        ":supports_hermetic_swiftmodule": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
 )
 
 # Same hermeticity check, but the consumer swift_library depends on a
@@ -120,6 +135,10 @@ sh_test(
         "test/hermetic_pcm/noop_plugin#NoopMacroPlugin",  # Make sure the plugin path is included
     ],
     data = [":downstream_with_plugin_swiftmodule"],
+    target_compatible_with = select({
+        ":supports_hermetic_swiftmodule": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
 )
 
 bzl_library(
