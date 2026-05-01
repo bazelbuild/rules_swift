@@ -155,8 +155,8 @@ force_features_test(
 swift_binary(
     name = "c_module_imports",
     srcs = ["c_module_imports.swift"],
-    target_compatible_with = ["@build_bazel_apple_support//constraints:apple"],
     tags = FIXTURE_TAGS,
+    target_compatible_with = ["@build_bazel_apple_support//constraints:apple"],
 )
 
 force_features_binary(
