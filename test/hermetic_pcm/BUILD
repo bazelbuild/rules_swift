@@ -60,7 +60,10 @@ sh_test(
     srcs = ["check_hermetic_pcm.sh"],
     args = ["$(rootpath :simple_obj_pcm)"],
     data = [":simple_obj_pcm"],
-    target_compatible_with = ["@platforms//os:macos"],
+    target_compatible_with = select({
+        ":supports_hermetic_swiftmodule": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
 )
 
 swift_library(
@@ -160,4 +163,10 @@ bzl_library(
     srcs = ["extract_swiftmodule.bzl"],
     visibility = ["//visibility:public"],
     deps = ["//swift:providers"],
+)
+
+bzl_library(
+    name = "xcode_version_at_least",
+    srcs = ["xcode_version_at_least.bzl"],
+    visibility = ["//visibility:public"],
 )
