@@ -27,7 +27,11 @@ load(
 load("//swift:swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 
 # buildifier: disable=bzl-visibility
-load("//swift/internal:attrs.bzl", "swift_deps_attr")
+load(
+    "//swift/internal:attrs.bzl",
+    "default_precompiled_modules_attrs",
+    "swift_deps_attr",
+)
 
 # buildifier: disable=bzl-visibility
 load(
@@ -241,6 +245,7 @@ def _mixed_language_library_impl(ctx):
 
 mixed_language_library = rule(
     attrs = dicts.add(
+        default_precompiled_modules_attrs(aspects = [swift_clang_module_aspect]),
         {
             "clang_target": attr.label(
                 doc = """
@@ -273,11 +278,6 @@ The Swift portion of the mixed language module.
                 allow_single_file = True,
                 doc = "The module map for the module.",
                 mandatory = True,
-            ),
-            "_default_precompiled_modules": attr.label(
-                aspects = [swift_clang_module_aspect],
-                default = Label("@system_sdk//:all_modules"),
-                providers = [[CcInfo, SwiftInfo]],
             ),
             "_module_map_extender": attr.label(
                 cfg = "exec",

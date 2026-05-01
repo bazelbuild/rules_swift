@@ -19,6 +19,7 @@ load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load(
     "//swift/internal:attrs.bzl",
+    "default_precompiled_modules_attrs",
     "swift_common_rule_attrs",
 )
 load("//swift/internal:compiling.bzl", "compile_module_interface")
@@ -154,6 +155,7 @@ swift_import = rule(
         swift_common_rule_attrs(
             additional_deps_aspects = [swift_clang_module_aspect],
         ),
+        default_precompiled_modules_attrs(aspects = [swift_clang_module_aspect]),
         {
             "archives": attr.label_list(
                 allow_empty = True,
@@ -198,11 +200,6 @@ The `.swiftmodule` file provided to Swift targets that depend on this target.
 May not be specified if `swiftinterface` is specified.
 """,
                 mandatory = False,
-            ),
-            "_default_precompiled_modules": attr.label(
-                aspects = [swift_clang_module_aspect],
-                default = Label("@system_sdk//:all_modules"),
-                providers = [[CcInfo, SwiftInfo]],
             ),
         },
     ),

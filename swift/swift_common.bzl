@@ -25,6 +25,10 @@ load(
     "is_action_enabled",
 )
 load(
+    "//swift/internal:attrs.bzl",
+    "default_precompiled_modules_attrs",
+)
+load(
     "//swift/internal:compiling.bzl",
     "compile",
     "compile_module_interface",
@@ -66,6 +70,7 @@ swift_common = struct(
     configure_features = configure_features,
     create_compilation_context = create_compilation_context,
     create_linking_context_from_compilation_outputs = create_linking_context_from_compilation_outputs,
+    default_precompiled_modules_attrs = default_precompiled_modules_attrs,
     extract_symbol_graph = extract_symbol_graph,
     find_all_toolchains = find_all_toolchains,
     is_action_enabled = is_action_enabled,

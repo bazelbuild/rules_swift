@@ -24,6 +24,11 @@ This must have the actual user-local path to Xcode, even if that differs
 from where it was built. It is still up to you to make sure the versions
 are compatible.
 
+NOTE: Until Swift 6.3 / Xcode 26.4, with Swift macros absolute paths
+would still be embedded in the swiftmodule files. This means debugging
+in `lldb` with explicit modules would not work with cached swiftmodules
+and is therefore disabled.
+
 ## Using explicit dependencies
 
 By default we implicitly add all possible precompiled modules to the

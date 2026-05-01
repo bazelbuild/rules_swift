@@ -18,6 +18,7 @@ load("@bazel_skylib//lib:sets.bzl", "sets")
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load("@rules_cc//cc/common:objc_info.bzl", "ObjcInfo")
+load("//swift/internal:attrs.bzl", "default_precompiled_modules_attrs")
 load("//swift/internal:compiling.bzl", "compile", "precompile_clang_module")
 load(
     "//swift/internal:feature_names.bzl",
@@ -833,12 +834,7 @@ def make_swift_clang_module_aspect(*, toolchain_type):
 
     return aspect(
         attr_aspects = _MULTIPLE_TARGET_ASPECT_ATTRS,
-        attrs = {
-            "_default_precompiled_modules": attr.label(
-                default = Label("@system_sdk//:all_modules"),
-                providers = [[CcInfo, SwiftInfo]],
-            ),
-        },
+        attrs = default_precompiled_modules_attrs(),
         doc = """\
 Propagates unified `SwiftInfo` providers for targets that represent
 C/Objective-C modules.
