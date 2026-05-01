@@ -29,6 +29,7 @@ swift_binary(
         "-swift.add_default_precompiled_modules",
     ],
     tags = FIXTURE_TAGS,
+    target_compatible_with = ["@build_bazel_apple_support//constraints:apple"],
     deps = [
         "@system_sdk//:Foundation",
     ],
@@ -131,6 +132,7 @@ swift_test(
     srcs = ["SimpleXCTest.swift"],
     discover_tests = False,
     tags = FIXTURE_TAGS,
+    target_compatible_with = ["@build_bazel_apple_support//constraints:apple"],
     deps = [
         "@system_sdk//:SwiftShims",
         "@system_sdk//:XCTest",
@@ -201,7 +203,7 @@ mixed_language_library(
     module_name = "MixedGreeter",
     swift_srcs = ["MixedGreeter.swift"],
     tags = FIXTURE_TAGS,
-    target_compatible_with = ["@platforms//os:macos"],
+    target_compatible_with = ["@build_bazel_apple_support//constraints:apple"],
     deps = ["@system_sdk//:Foundation"],
 )
 
@@ -209,6 +211,7 @@ swift_binary(
     name = "mixed_language_explicit_bin",
     srcs = ["mixed_greeter_main.swift"],
     tags = FIXTURE_TAGS,
+    target_compatible_with = ["@build_bazel_apple_support//constraints:apple"],
     deps = [
         ":MixedGreeterExplicit",
         "@system_sdk//:Foundation",
