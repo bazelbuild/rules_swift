@@ -84,6 +84,7 @@ bzl_library(
     srcs = ["swift_common.bzl"],
     deps = [
         "//swift/internal:actions",
+        "//swift/internal:attrs",
         "//swift/internal:compiling",
         "//swift/internal:features",
         "//swift/internal:interface_synthesizing",
