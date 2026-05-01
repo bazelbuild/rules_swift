@@ -903,7 +903,7 @@ def precompile_clang_module(
         swift_toolchain = None,
         target_name,
         toolchains = None,
-        toolchain_type,
+        toolchain_type = SWIFT_TOOLCHAIN_TYPE,
         swift_infos = []):
     """Precompiles an explicit Clang module that is compatible with Swift.
 
@@ -937,8 +937,19 @@ def precompile_clang_module(
             required to compile this module.
 
     Returns:
-        A struct containing the precompiled module and optional indexstore directory,
-        or `None` if the toolchain or target does not support precompiled modules.
+        A struct containing the following fields:
+
+        *   `clang_module`: A structure (as returned by
+            `create_clang_module_inputs`) containing the headers, module map,
+            and precompiled module. This can be used if you need to construct a
+            `SwiftInfo` provider for a pure C module (that is, if you are doing
+            something that `swift_clang_module_aspect` cannot handle on its own)
+            or it can be passing into `swift_common.compile_module_interface`
+            when compiling a textual interface that has an underlying C module.
+        *   `indexstore_directory`: The indexstore directory for the precompiled
+            module, if any.
+        *   `pcm_file`: The precompiled module file. This field is deprecated;
+            clients should retrieve it from the `clang_module` field instead.
     """
     return _precompile_clang_module(
         actions = actions,
@@ -1003,8 +1014,19 @@ def _precompile_clang_module(
         toolchain_type: The toolchain type of the Swift toolchain.
 
     Returns:
-        A struct containing the precompiled module and optional indexstore directory,
-        or `None` if the toolchain or target does not support precompiled modules.
+        A struct containing the following fields:
+
+        *   `clang_module`: A structure (as returned by
+            `create_clang_module_inputs`) containing the headers, module map,
+            and precompiled module. This can be used if you need to construct a
+            `SwiftInfo` provider for a pure C module (that is, if you are doing
+            something that `swift_clang_module_aspect` cannot handle on its own)
+            or it can be passing into `swift_common.compile_module_interface`
+            when compiling a textual interface that has an underlying C module.
+        *   `indexstore_directory`: The indexstore directory for the precompiled
+            module, if any.
+        *   `pcm_file`: The precompiled module file. This field is deprecated;
+            clients should retrieve it from the `clang_module` field instead.
     """
     toolchains = gather_toolchains(
         swift_toolchain = swift_toolchain,
@@ -1072,12 +1094,14 @@ def _precompile_clang_module(
         indexstore_directory = None
         index_unit_output_path = None
 
+    compilation_context_for_compilation = compilation_context_for_explicit_module_compilation(
+        compilation_contexts = [cc_compilation_context],
+        swift_infos = swift_infos,
+    )
+
     prerequisites = struct(
         bin_dir = feature_configuration._bin_dir,
-        cc_compilation_context = compilation_context_for_explicit_module_compilation(
-            compilation_contexts = [cc_compilation_context],
-            swift_infos = swift_infos,
-        ),
+        cc_compilation_context = compilation_context_for_compilation,
         genfiles_dir = feature_configuration._genfiles_dir,
         include_dev_srch_paths = False,
         indexstore_directory = indexstore_directory,
@@ -1105,7 +1129,13 @@ def _precompile_clang_module(
     )
 
     return struct(
+        clang_module = create_clang_module_inputs(
+            compilation_context = compilation_context_for_compilation,
+            module_map = module_map_file,
+            precompiled_module = precompiled_module,
+        ),
         indexstore_directory = indexstore_directory,
+        # TODO: b/401511920 - Update clients and remove this field.
         pcm_file = precompiled_module,
     )
 
