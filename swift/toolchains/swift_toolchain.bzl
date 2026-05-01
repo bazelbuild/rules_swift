@@ -689,6 +689,9 @@ List of files to carry over as test data to swift executables and tests.
 """,
                 allow_files = True,
             ),
+            "parsed_version": attr.string(
+                mandatory = True,
+            ),
             "version_file": attr.label(
                 mandatory = True,
                 allow_single_file = True,

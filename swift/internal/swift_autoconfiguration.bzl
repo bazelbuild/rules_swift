@@ -132,12 +132,24 @@ def _write_swift_version(repository_ctx, swiftc_path):
     """
     result = repository_ctx.execute([swiftc_path, "-version"])
     contents = "unknown"
+    parsed = "0.0"
     if result.return_code == 0:
         contents = result.stdout.strip()
 
+        # Swift version 6.3.1 (swift-6.3.1-RELEASE) -> 6.3.1
+        # Swift version 6.4-dev -> 6.4
+        parsed = (
+            contents.splitlines()[0]
+                .split("Swift version")[-1]
+                .strip()
+                .split(" ")[0]
+                .split("-")[0]
+                .strip()
+        ) or "0.0"
+
     filename = "swift_version"
     repository_ctx.file(filename, contents, executable = False)
-    return filename
+    return filename, parsed
 
 def _compute_feature_values(repository_ctx, swiftc_path):
     """Computes a list of supported/unsupported features by running checks.
@@ -229,7 +241,7 @@ toolchain.
 
     root = _resolve_toolchain_root(repository_ctx, path_to_swiftc)
     feature_values = _compute_feature_values(repository_ctx, path_to_swiftc)
-    version_file = _write_swift_version(repository_ctx, path_to_swiftc)
+    version_file, parsed_version = _write_swift_version(repository_ctx, path_to_swiftc)
 
     # TODO: This should be removed so that private headers can be used with
     # explicit modules, but the build targets for CgRPC need to be cleaned up
@@ -245,6 +257,7 @@ swift_toolchain(
     features = [{feature_list}],
     os = "linux",
     root = "{root}",
+    parsed_version = "{parsed_version}",
     version_file = "{version_file}",
 )
 """.format(
@@ -254,6 +267,7 @@ swift_toolchain(
             for feature in feature_values
         ]),
         root = root,
+        parsed_version = parsed_version,
         version_file = version_file,
     )
 
@@ -314,7 +328,7 @@ Swift toolchain.
     ]
     disabled_features = []
 
-    version_file = _write_swift_version(repository_ctx, path_to_swiftc)
+    version_file, parsed_version = _write_swift_version(repository_ctx, path_to_swiftc)
     xctest_version = repository_ctx.execute([
         _get_python_bin(repository_ctx),
         "-c",
@@ -334,6 +348,7 @@ swift_toolchain(
   features = [{features}],
   os = "windows",
   root = "{root}",
+  parsed_version = "{parsed_version}",
   version_file = "{version_file}",
   env = {env},
   sdkroot = "{sdkroot}",
@@ -344,6 +359,7 @@ swift_toolchain(
         features = ", ".join(['"{}"'.format(feature) for feature in enabled_features] + ['"-{}"'.format(feature) for feature in disabled_features]),
         root = root,
         env = env,
+        parsed_version = parsed_version,
         sdkroot = repository_ctx.os.environ["SDKROOT"].replace("\\", "/"),
         xctest_version = xctest_version.stdout.rstrip(),
         version_file = version_file,

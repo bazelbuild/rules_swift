@@ -7,6 +7,7 @@ swift_toolchain(
     name = "_toolchain_macos_arm64_with_sdkroot",
     arch = "arm64",
     os = "macos",
+    parsed_version = "6.3",
     root = ".",
     sdkroot = "testpath",
     version_file = ".swift_version",
