@@ -43,3 +43,13 @@ swift_binary(
     srcs = ["empty.swift"],
     tags = FIXTURE_TAGS,
 )
+
+swift_library(
+    name = "lib_with_swift_version_copt",
+    srcs = ["empty.swift"],
+    copts = [
+        "-swift-version",
+        "4.2",
+    ],
+    tags = FIXTURE_TAGS,
+)
