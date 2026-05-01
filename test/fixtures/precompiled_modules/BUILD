@@ -201,6 +201,7 @@ mixed_language_library(
     module_name = "MixedGreeter",
     swift_srcs = ["MixedGreeter.swift"],
     tags = FIXTURE_TAGS,
+    target_compatible_with = ["@platforms//os:macos"],
     deps = ["@system_sdk//:Foundation"],
 )
 
