@@ -598,13 +598,24 @@ Precompiles an explicit Clang module that is compatible with Swift.
 | <a id="swift_common.precompile_clang_module-swift_toolchain"></a>swift_toolchain |  The `SwiftToolchainInfo` provider of the toolchain.   |  `None` |
 | <a id="swift_common.precompile_clang_module-target_name"></a>target_name |  The name of the target for which the code is being compiled, which is used to determine unique file paths for the outputs.   |  none |
 | <a id="swift_common.precompile_clang_module-toolchains"></a>toolchains |  The struct containing the Swift and C++ toolchain providers, as returned by `swift_common.find_all_toolchains()`.   |  `None` |
-| <a id="swift_common.precompile_clang_module-toolchain_type"></a>toolchain_type |  The toolchain type of the Swift toolchain.   |  none |
+| <a id="swift_common.precompile_clang_module-toolchain_type"></a>toolchain_type |  The toolchain type of the Swift toolchain.   |  `Label("@rules_swift//toolchains:toolchain_type")` |
 | <a id="swift_common.precompile_clang_module-swift_infos"></a>swift_infos |  A list of `SwiftInfo` providers representing dependencies required to compile this module.   |  `[]` |
 
 **RETURNS**
 
-A struct containing the precompiled module and optional indexstore directory,
-  or `None` if the toolchain or target does not support precompiled modules.
+A struct containing the following fields:
+
+  *   `clang_module`: A structure (as returned by
+      `create_clang_module_inputs`) containing the headers, module map,
+      and precompiled module. This can be used if you need to construct a
+      `SwiftInfo` provider for a pure C module (that is, if you are doing
+      something that `swift_clang_module_aspect` cannot handle on its own)
+      or it can be passing into `swift_common.compile_module_interface`
+      when compiling a textual interface that has an underlying C module.
+  *   `indexstore_directory`: The indexstore directory for the precompiled
+      module, if any.
+  *   `pcm_file`: The precompiled module file. This field is deprecated;
+      clients should retrieve it from the `clang_module` field instead.
 
 
 <a id="swift_common.synthesize_interface"></a>
