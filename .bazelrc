@@ -44,3 +44,5 @@ build --per_file_copt="external/.*zlib.*/.*.c@-Wno-deprecated-non-prototype"
 # TODO: Remove once fixed
 build --per_file_copt="external/.*protobuf.*/.*@-Wno-unused-private-field"
 build --host_per_file_copt="external/.*protobuf.*/.*@-Wno-unused-private-field"
+
+try-import %workspace%/user.bazelrc
