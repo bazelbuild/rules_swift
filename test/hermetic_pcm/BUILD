@@ -83,6 +83,10 @@ sh_test(
     srcs = ["check_hermetic_pcm.sh"],
     args = ["$(rootpath :simple_swift_header_pcm)"],
     data = [":simple_swift_header_pcm"],
+    target_compatible_with = select({
+        ":supports_hermetic_swiftmodule": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
 )
 
 swift_library(
