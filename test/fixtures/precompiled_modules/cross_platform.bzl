@@ -39,5 +39,9 @@ def cross_platform_targets(tags):  # buildifier: disable=unnamed-macro
                 name = "{}_{}".format(binary, platform),
                 binary = ":{}_transitioned".format(binary),
                 platform = "@build_bazel_apple_support//platforms:" + platform,
+                target_compatible_with = select({
+                    "//test:apple_build_tests_enabled": [],
+                    "//conditions:default": ["@platforms//:incompatible"],
+                }),
                 tags = tags,
             )

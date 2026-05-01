@@ -111,6 +111,7 @@ swift_binary(
     srcs = ["greeter_main.swift"],
     plugins = [":stub_plugin"],
     tags = FIXTURE_TAGS,
+    target_compatible_with = ["@build_bazel_apple_support//constraints:apple"],
     deps = [":GreeterImplicit"],
 )
 
@@ -154,6 +155,7 @@ force_features_test(
 swift_binary(
     name = "c_module_imports",
     srcs = ["c_module_imports.swift"],
+    target_compatible_with = ["@build_bazel_apple_support//constraints:apple"],
     tags = FIXTURE_TAGS,
 )
 
@@ -176,6 +178,7 @@ mixed_language_library(
     module_name = "MixedGreeter",
     swift_srcs = ["MixedGreeter.swift"],
     tags = FIXTURE_TAGS,
+    target_compatible_with = ["@build_bazel_apple_support//constraints:apple"],
 )
 
 swift_binary(

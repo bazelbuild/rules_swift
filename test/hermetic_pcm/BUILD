@@ -71,6 +71,7 @@ swift_library(
     srcs = ["SimpleSwift.swift"],
     generates_header = True,
     module_name = "SimpleSwift",
+    target_compatible_with = ["@build_bazel_apple_support//constraints:apple"],
 )
 
 extract_pcm(

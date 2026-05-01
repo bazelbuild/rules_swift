@@ -1,4 +1,5 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
 load(":additional_linker_inputs_tests.bzl", "additional_linker_inputs_test_suite")
 load(":ast_file_tests.bzl", "ast_file_test_suite")
 load(":bzl_test.bzl", "bzl_test")
@@ -119,5 +120,15 @@ bzl_test(
 bzl_library(
     name = "transitions",
     srcs = ["transitions.bzl"],
+)
+
+bool_flag(
+    name = "apple_build_tests",
+    build_setting_default = True,
+)
+
+config_setting(
+    name = "apple_build_tests_enabled",
+    flag_values = {":apple_build_tests": "True"},
     visibility = ["//visibility:public"],
 )

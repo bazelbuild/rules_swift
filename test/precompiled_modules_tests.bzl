@@ -54,6 +54,10 @@ def precompiled_modules_test_suite(name, tags = []):
         name = "{}_default_precompiled_modules_test".format(name),
         tags = all_tags,
         mnemonic = "SwiftCompile",
+        target_compatible_with = select({
+            "//test:apple_build_tests_enabled": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
         target_under_test = "//test/fixtures/precompiled_modules:hello",
         expected_argv = [
             "-fmodule-file=Foundation",
@@ -87,6 +91,10 @@ def precompiled_modules_test_suite(name, tags = []):
         name = "{}_compiler_plugin_default_modules_test".format(name),
         tags = all_tags,
         mnemonic = "SwiftCompile",
+        target_compatible_with = select({
+            "//test:apple_build_tests_enabled": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
         target_under_test = "//test/fixtures/precompiled_modules:stub_plugin",
         expected_argv = [
             "-fmodule-file=Foundation",
