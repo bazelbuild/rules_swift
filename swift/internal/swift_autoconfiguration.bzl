@@ -141,10 +141,11 @@ def _write_swift_version(repository_ctx, swiftc_path):
         parsed = (
             contents.splitlines()[0]
                 .split("Swift version")[-1]
+                .strip()
                 .split(" ")[0]
                 .split("-")[0]
                 .strip()
-        )
+        ) or "0.0"
 
     filename = "swift_version"
     repository_ctx.file(filename, contents, executable = False)
@@ -327,7 +328,7 @@ Swift toolchain.
     ]
     disabled_features = []
 
-    version_file = _write_swift_version(repository_ctx, path_to_swiftc)
+    version_file, parsed_version = _write_swift_version(repository_ctx, path_to_swiftc)
     xctest_version = repository_ctx.execute([
         _get_python_bin(repository_ctx),
         "-c",
@@ -347,6 +348,7 @@ swift_toolchain(
   features = [{features}],
   os = "windows",
   root = "{root}",
+  parsed_version = "{parsed_version}",
   version_file = "{version_file}",
   env = {env},
   sdkroot = "{sdkroot}",
@@ -357,6 +359,7 @@ swift_toolchain(
         features = ", ".join(['"{}"'.format(feature) for feature in enabled_features] + ['"-{}"'.format(feature) for feature in disabled_features]),
         root = root,
         env = env,
+        parsed_version = parsed_version,
         sdkroot = repository_ctx.os.environ["SDKROOT"].replace("\\", "/"),
         xctest_version = xctest_version.stdout.rstrip(),
         version_file = version_file,
