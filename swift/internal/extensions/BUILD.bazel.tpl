@@ -168,6 +168,7 @@ swift_toolchain(
         "-swift.file_prefix_map",
     ],
     os = "none",
+    parsed_version = "{swift_version}",
     swift_tools = "tools",
     version_file = ".swift-version",
 )
@@ -188,6 +189,7 @@ swift_toolchain(
         "@platforms//os:linux": "linux",
         "@platforms//os:macos": "macos",
     }),
+    parsed_version = "{swift_version}",
     runtime = glob([
         "usr/lib/swift/**/*.dylib", # On MacOS
         "usr/lib/swift/**/*.so", # On Linux
