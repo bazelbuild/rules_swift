@@ -369,6 +369,8 @@ def _discover_all_modules(developer_dir: Path, sdk: str) -> tuple[str, set[str]]
                     x / "Modules" / (x.stem + ".swiftmodule")
                 ).exists():
                     modules.add(x.stem)
+            elif (x / "module.modulemap").exists():
+                modules.add(x.stem) # /usr/include/CommonCrypto/module.modulemap
 
     deployment_target = _get_deployment_target(sdk, sdk_path)
     cpu_targets = _TARGETS_PER_SDK[sdk.lower()]
