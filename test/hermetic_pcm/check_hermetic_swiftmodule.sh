@@ -12,6 +12,7 @@ if [[ ! -f "$swiftmodule" ]]; then
   echo "error: '$swiftmodule' does not exist" >&2
   exit 2
 fi
+shift
 
 strings_out=$(strings "$swiftmodule")
 expected=(
@@ -19,14 +20,15 @@ expected=(
   "-fno-implicit-module-maps"
   "-fmodule-file=Foundation="
   "-fmodule-map-file=/PLACEHOLDER_DEVELOPER_DIR"
+  "$@"
 )
 
-# for option in "${expected[@]}"; do
-#   if ! grep -qF -- "$option" <<<"$strings_out"; then
-#     echo "error: '$swiftmodule' is missing expected embedded clang option: $option" >&2
-#     exit 1
-#   fi
-# done
+for option in "${expected[@]}"; do
+  if ! grep -qF -- "$option" <<<"$strings_out"; then
+    echo "error: '$swiftmodule' is missing expected embedded clang option: $option: $strings_out" >&2
+    exit 1
+  fi
+done
 
 # Validate that none of the embedded clang args carry an absolute path that
 # would tie the swiftmodule to the build host. Match three shapes:

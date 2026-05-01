@@ -1,6 +1,7 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("@rules_cc//cc:objc_library.bzl", "objc_library")
 load("@rules_shell//shell:sh_test.bzl", "sh_test")
+load("//swift:swift_compiler_plugin.bzl", "swift_compiler_plugin")
 load("//swift:swift_interop_hint.bzl", "swift_interop_hint")
 load("//swift:swift_library.bzl", "swift_library")
 load("//test/fixtures/precompiled_modules:force_features.bzl", "force_features_binary")
@@ -87,6 +88,38 @@ sh_test(
     srcs = ["check_hermetic_swiftmodule.sh"],
     args = ["$(rootpath :downstream_swiftmodule)"],
     data = [":downstream_swiftmodule"],
+)
+
+# Same hermeticity check, but the consumer swift_library depends on a
+# `swift_compiler_plugin`. Plugins get serialized into the swiftmodule via
+# `<executable>#<server>#<module>` and should be relative
+swift_compiler_plugin(
+    name = "noop_plugin",
+    srcs = ["NoopMacroPlugin.swift"],
+    module_name = "NoopMacroPlugin",
+)
+
+swift_library(
+    name = "DownstreamWithPlugin",
+    srcs = ["DownstreamWithPlugin.swift"],
+    module_name = "DownstreamWithPlugin",
+    plugins = [":noop_plugin"],
+    deps = ["@system_sdk//:Foundation"],
+)
+
+extract_swiftmodule(
+    name = "downstream_with_plugin_swiftmodule",
+    target = ":DownstreamWithPlugin",
+)
+
+sh_test(
+    name = "hermetic_downstream_with_plugin_swiftmodule_test",
+    srcs = ["check_hermetic_swiftmodule.sh"],
+    args = [
+        "$(rootpath :downstream_with_plugin_swiftmodule)",
+        "test/hermetic_pcm/noop_plugin#NoopMacroPlugin",  # Make sure the plugin path is included
+    ],
+    data = [":downstream_with_plugin_swiftmodule"],
 )
 
 bzl_library(
