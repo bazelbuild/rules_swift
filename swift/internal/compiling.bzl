@@ -169,6 +169,7 @@ def create_compilation_context(defines, srcs, transitive_modules):
 def compile_module_interface(
         *,
         actions,
+        additional_inputs = [],
         clang_module = None,
         compilation_contexts,
         copts = [],
@@ -186,6 +187,11 @@ def compile_module_interface(
 
     Args:
         actions: The context's `actions` object.
+        additional_inputs: A list of `File`s that should be available to the
+            compile action in the sandbox but are not referenced on the command
+            line. The typical use case is making a sibling `.private.swiftinterface`
+            available alongside the public `.swiftinterface` so the compiler can
+            resolve SPI references during the textual-interface build.
         clang_module: An optional underlying Clang module (as returned by
             `create_clang_module_inputs`), if present for this Swift module.
         compilation_contexts: A list of `CcCompilationContext`s that represent
@@ -206,7 +212,7 @@ def compile_module_interface(
         swift_infos: A list of `SwiftInfo` providers from dependencies of the
             target being compiled.
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
-        target_name: The name of the target for which the code is being
+        target_name: The name of the target for which the interface is being
             compiled, which is used to determine unique file paths for the
             outputs.
         toolchains: The struct containing the Swift and C++ toolchain providers,
@@ -216,19 +222,32 @@ def compile_module_interface(
             `run_toolchain_action`.
 
     Returns:
-        A Swift module context (as returned by `create_swift_module_context`)
-        that contains the Swift (and potentially C/Objective-C) compilation
-        prerequisites of the compiled module. This should typically be
-        propagated by a `SwiftInfo` provider of the calling rule, and the
-        `CcCompilationContext` inside the Clang module substructure should be
-        propagated by the `CcInfo` provider of the calling rule.
+        A `struct` with the following fields:
+
+        *   `module_context`: A Swift module context (as returned by
+            `create_swift_module_context`) that contains the Swift (and
+            potentially C/Objective-C) compilation prerequisites of the compiled
+            module. This should typically be propagated by a `SwiftInfo`
+            provider of the calling rule, and the `CcCompilationContext` inside
+            the Clang module substructure should be propagated by the `CcInfo`
+            provider of the calling rule.
+
+        *   `supplemental_outputs`: A `struct` representing supplemental,
+            optional outputs. Its fields are:
+
+            *   `indexstore_directory`: A directory-type `File` that represents
+                the indexstore output files created when the feature
+                `swift.index_while_building` is enabled.
     """
     toolchains = gather_toolchains(
         swift_toolchain = swift_toolchain,
         toolchains = toolchains,
     )
 
-    swiftmodule_file = actions.declare_file("{}.swiftmodule".format(module_name))
+    swiftmodule_file = actions.declare_file(
+        "{}_outs/{}.swiftmodule".format(target_name, module_name),
+    )
+    outputs = [swiftmodule_file]
 
     implicit_swift_infos, implicit_cc_infos = get_swift_implicit_deps(
         feature_configuration = feature_configuration,
@@ -304,11 +323,24 @@ def compile_module_interface(
     else:
         explicit_swift_module_map_file = None
 
+    if is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_INDEX_WHILE_BUILDING,
+    ):
+        indexstore_directory = actions.declare_directory(
+            "{}.swiftinterface.indexstore".format(target_name),
+        )
+        outputs.append(indexstore_directory)
+    else:
+        indexstore_directory = None
+
     prerequisites = struct(
+        additional_inputs = additional_inputs,
         bin_dir = feature_configuration._bin_dir,
         cc_compilation_context = merged_compilation_context,
         explicit_swift_module_map_file = explicit_swift_module_map_file,
         genfiles_dir = feature_configuration._genfiles_dir,
+        indexstore_directory = indexstore_directory,
         is_swift = True,
         module_name = module_name,
         objc_include_paths_workaround = depset(),
@@ -328,7 +360,7 @@ def compile_module_interface(
         action_name = SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
         exec_group = exec_group,
         feature_configuration = feature_configuration,
-        outputs = [swiftmodule_file],
+        outputs = outputs,
         prerequisites = prerequisites,
         progress_message = "Compiling Swift module {} from textual interface".format(module_name),
         swift_toolchain = toolchains.swift,
@@ -347,13 +379,19 @@ def compile_module_interface(
             feature_name = SWIFT_FEATURE_SYSTEM_MODULE,
         ),
         swift = create_swift_module_inputs(
+            indexstore = indexstore_directory,
             swiftdoc = None,
             swiftinterface = swiftinterface_file,
             swiftmodule = swiftmodule_file,
         ),
     )
 
-    return module_context
+    return struct(
+        module_context = module_context,
+        supplemental_outputs = struct(
+            indexstore_directory = indexstore_directory,
+        ),
+    )
 
 def compile(
         *,

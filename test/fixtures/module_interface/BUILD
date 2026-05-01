@@ -45,3 +45,14 @@ swift_import(
     swiftinterface = "//test/fixtures/module_interface/library:toy_outputs/ToyModule.swiftinterface",
     tags = FIXTURE_TAGS,
 )
+
+swift_import(
+    name = "toy_module_duplicate",
+    archives = [
+        "//test/fixtures/module_interface/library:toy_outputs/libToyModule.a",
+    ],
+    module_name = "ToyModule",
+    swiftdoc = "//test/fixtures/module_interface/library:toy_outputs/ToyModule.swiftdoc",
+    swiftinterface = "//test/fixtures/module_interface/library:toy_outputs/ToyModule.swiftinterface",
+    tags = FIXTURE_TAGS,
+)

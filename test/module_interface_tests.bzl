@@ -26,6 +26,22 @@ load(
 )
 load("//test/rules:provider_test.bzl", "provider_test")
 
+explicit_interface_indexstore_command_line_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:features": [
+            "swift.index_while_building",
+        ],
+    },
+)
+
+explicit_interface_indexstore_inputs_test = make_action_inputs_test_rule(
+    config_settings = {
+        "//command_line_option:features": [
+            "swift.index_while_building",
+        ],
+    },
+)
+
 explicit_swift_module_map_test = make_action_command_line_test_rule(
     config_settings = {
         "//command_line_option:features": [
@@ -81,6 +97,15 @@ def module_interface_test_suite(name, tags = []):
         name = "{}_swift_binary_imports_transitive_swiftinterface".format(name),
         targets = [
             "//test/fixtures/module_interface:transitive_client",
+        ],
+        tags = all_tags,
+    )
+
+    build_test(
+        name = "{}_swift_imports_with_same_module_name_do_not_conflict".format(name),
+        targets = [
+            "//test/fixtures/module_interface:toy_module",
+            "//test/fixtures/module_interface:toy_module_duplicate",
         ],
         tags = all_tags,
     )
@@ -162,6 +187,28 @@ def module_interface_test_suite(name, tags = []):
             "DependentToyModule.swiftinterface",
         ],
         target_under_test = "//test/fixtures/module_interface:dependent_toy_module",
+    )
+
+    explicit_interface_indexstore_command_line_test(
+        name = "{}_explicit_interface_indexstore_command_line_test".format(name),
+        tags = all_tags,
+        expected_argv = [
+            "-index-store-path $(BIN_DIR)/test/fixtures/module_interface/toy_module.swiftinterface.indexstore",
+            "-explicit-interface-module-build",
+            "-Xwrapped-swift=-explicit-compile-module-from-interface=$(BIN_DIR)/test/fixtures/module_interface/library/toy_outputs/ToyModule.swiftinterface",
+        ],
+        mnemonic = "SwiftCompileModuleInterface",
+        target_under_test = "//test/fixtures/module_interface:toy_module",
+    )
+
+    explicit_interface_indexstore_inputs_test(
+        name = "{}_explicit_interface_indexstore_inputs_test".format(name),
+        tags = all_tags,
+        mnemonic = "SwiftCompileModuleInterface",
+        expected_inputs = [
+            "ToyModule.swiftinterface",
+        ],
+        target_under_test = "//test/fixtures/module_interface:toy_module",
     )
 
     explicit_swift_module_map_inputs_test(

@@ -1194,6 +1194,7 @@ def compile_action_configs(
         ActionConfigInfo(
             actions = [
                 SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
             ],
             configurators = [_index_while_building_configurator],
             features = [SWIFT_FEATURE_INDEX_WHILE_BUILDING],
@@ -1201,6 +1202,7 @@ def compile_action_configs(
         ActionConfigInfo(
             actions = [
                 SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
             ],
             configurators = [add_arg("-index-include-locals")],
             features = [
@@ -1300,6 +1302,15 @@ def compile_action_configs(
                 SWIFT_ACTION_DERIVE_FILES,
             ],
             configurators = [add_arg("-Xfrontend", "-disable-availability-checking")],
+            features = [
+                SWIFT_FEATURE_DISABLE_AVAILABILITY_CHECKING,
+            ],
+        ),
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+            ],
+            configurators = [add_arg("-disable-availability-checking")],
             features = [
                 SWIFT_FEATURE_DISABLE_AVAILABILITY_CHECKING,
             ],
@@ -1479,12 +1490,22 @@ def compile_action_configs(
             ActionConfigInfo(
                 actions = [
                     SWIFT_ACTION_COMPILE,
-                    SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                     SWIFT_ACTION_DERIVE_FILES,
                     SWIFT_ACTION_DUMP_AST,
                     SWIFT_ACTION_PRECOMPILE_C_MODULE,
                 ],
                 configurators = [_source_files_configurator],
+            ),
+            # When compiling a module interface, add the `.swiftinterface` file
+            # to the action inputs but don't add its path to the command line
+            # because we use a worker-specific flag
+            # for that
+            # (`-Xwrapped-swift=-explicit-compile-module-from-interface=<path>`).
+            ActionConfigInfo(
+                actions = [
+                    SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+                ],
+                configurators = [_source_files_as_action_inputs_only_configurator],
             ),
         ],
     )
@@ -1494,6 +1515,7 @@ def compile_action_configs(
         ActionConfigInfo(
             actions = [
                 SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
                 SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
@@ -2249,6 +2271,15 @@ def _global_index_store_configurator(prerequisites, args):
 def _source_files_configurator(prerequisites, args):
     """Adds source files to the command line and required inputs."""
     args.add_all(prerequisites.source_files)
+    return _source_files_as_action_inputs_only_configurator(prerequisites, args)
+
+def _source_files_as_action_inputs_only_configurator(prerequisites, _args):
+    """Adds source files to the required inputs but not the command line.
+
+    This configurator assumes that the source files are already provided to the
+    command line through some other means (for example, through a
+    worker-specific flag).
+    """
 
     # Only add source files to the input file set if they are not strings (for
     # example, the module map of a system framework will be passed in as a file

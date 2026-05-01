@@ -80,8 +80,11 @@ cc_library(
     }),
     deps = [
         "//tools/common:bazel_substitutions",
+        "//tools/common:file_system",
         "//tools/common:process",
+        "//tools/common:target_triple",
         "//tools/common:temp_file",
+        "@abseil-cpp//absl/strings",
         "@com_github_nlohmann_json//:json",
     ],
 )
