@@ -1314,6 +1314,18 @@ def compile_action_configs(
                 SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES,
             ],
         ),
+        # Swift 6.2+ warns building swiftmodule files without any -language-mode
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_DERIVE_FILES,
+            ],
+            configurators = [add_arg("-swift-version", "5")],
+            not_features = [
+                SWIFT_FEATURE_ENABLE_V6,
+                SWIFT_FEATURE__SUPPORTS_V6,
+            ],
+        ),
         ActionConfigInfo(
             actions = [
                 SWIFT_ACTION_COMPILE,
