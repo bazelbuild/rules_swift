@@ -33,8 +33,6 @@ On this page:
   * [swift_proto_library](#swift_proto_library)
   * [swift_proto_library_group](#swift_proto_library_group)
   * [swift_proto_compiler](#swift_proto_compiler)
-  * [deprecated_swift_grpc_library](#deprecated_swift_grpc_library)
-  * [deprecated_swift_proto_library](#deprecated_swift_proto_library)
 
 <a id="swift_binary"></a>
 
