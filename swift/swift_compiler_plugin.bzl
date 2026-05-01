@@ -78,7 +78,7 @@ def _swift_compiler_plugin_impl(ctx):
     entry_point_function_name = "{}_main".format(module_name)
 
     extra_cc_infos, extra_swift_infos = default_precompiled_modules_providers(
-        ctx,
+        ctx.attr._default_precompiled_modules,
         feature_configuration,
     )
 

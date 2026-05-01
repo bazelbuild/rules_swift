@@ -182,7 +182,7 @@ def _mixed_language_library_impl(ctx):
     )
 
     extra_cc_infos, extra_swift_infos = default_precompiled_modules_providers(
-        ctx,
+        ctx.attr._default_precompiled_modules,
         feature_configuration,
     )
     deps_swift_infos = get_providers(ctx.attr.deps, SwiftInfo) + extra_swift_infos

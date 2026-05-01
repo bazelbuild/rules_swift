@@ -101,7 +101,7 @@ def _swift_binary_impl(ctx):
         include_dev_srch_paths = include_developer_search_paths(ctx.attr)
 
         extra_cc_infos, extra_swift_infos = default_precompiled_modules_providers(
-            ctx,
+            ctx.attr._default_precompiled_modules,
             feature_configuration,
         )
 

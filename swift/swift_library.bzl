@@ -163,7 +163,7 @@ def _swift_library_impl(ctx):
     )
 
     extra_cc_infos, extra_swift_infos = default_precompiled_modules_providers(
-        ctx,
+        ctx.attr._default_precompiled_modules,
         feature_configuration,
     )
     swift_infos = get_providers(deps, SwiftInfo) + extra_swift_infos

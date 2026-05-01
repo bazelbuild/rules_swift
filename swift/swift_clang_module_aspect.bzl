@@ -786,7 +786,7 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx, toolchain_type):
 
     if interop_info or ObjcInfo in target or CcInfo in target:
         extra_cc_infos, extra_swift_infos = default_precompiled_modules_providers(
-            aspect_ctx,
+            aspect_ctx.attr._default_precompiled_modules,
             feature_configuration,
         )
         return providers + _handle_module(

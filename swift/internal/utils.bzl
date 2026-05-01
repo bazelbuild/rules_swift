@@ -389,11 +389,12 @@ def struct_fields(s):
         if field not in ("to_json", "to_proto")
     }
 
-def default_precompiled_modules_providers(ctx, feature_configuration):
+def default_precompiled_modules_providers(default_precompiled_modules, feature_configuration):
     """Returns extra providers if explicit modules is enabled.
 
     Args:
-        ctx: The rule context.
+        default_precompiled_modules: The target containing all the default
+            modules to propagate if the relevant features are enabled.
         feature_configuration: A feature configuration obtained from
             `swift_common.configure_features`.
 
@@ -414,8 +415,16 @@ def default_precompiled_modules_providers(ctx, feature_configuration):
     ):
         return [], []
 
-    dep = ctx.attr._default_precompiled_modules
-    return [dep[CcInfo]], [dep[SwiftInfo]]
+    if not default_precompiled_modules:
+        fail(
+            "The `swift.add_default_precompiled_modules` feature is enabled " +
+            "but the calling rule did not pass a `default_precompiled_modules`.",
+        )
+
+    return (
+        [default_precompiled_modules[CcInfo]],
+        [default_precompiled_modules[SwiftInfo]],
+    )
 
 def include_developer_search_paths(attr):
     """Determines whether to include developer search paths.

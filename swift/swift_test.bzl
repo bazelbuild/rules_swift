@@ -333,7 +333,7 @@ def _swift_test_impl(ctx):
     additional_linking_contexts.append(malloc_linking_context(ctx))
 
     extra_cc_infos, extra_swift_infos = default_precompiled_modules_providers(
-        ctx,
+        ctx.attr._default_precompiled_modules,
         feature_configuration,
     )
     deps_cc_infos = deps_cc_infos + extra_cc_infos

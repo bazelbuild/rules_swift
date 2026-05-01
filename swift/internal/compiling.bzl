@@ -76,6 +76,7 @@ load(
     ":utils.bzl",
     "compact",
     "compilation_context_for_explicit_module_compilation",
+    "default_precompiled_modules_providers",
     "get_clang_implicit_deps",
     "get_swift_implicit_deps",
     "merge_compilation_contexts",
@@ -173,6 +174,7 @@ def compile_module_interface(
         clang_module = None,
         compilation_contexts,
         copts = [],
+        default_precompiled_modules = None,
         exec_group = None,
         feature_configuration,
         is_framework = False,
@@ -200,6 +202,10 @@ def compile_module_interface(
             forth. These are typically retrieved from the `CcInfo` providers of
             a target's dependencies.
         copts: A list of compiler flags that apply to the target being built.
+        default_precompiled_modules: A target propagating all default
+            precompiled modules to add as an implicit dependency when the relevant
+            features are enabled. Only optional to maintain compatibility with
+            older callers.
         exec_group: Runs the Swift compilation action under the given execution
             group's context. If `None`, the default execution group is used.
         feature_configuration: A feature configuration obtained from
@@ -253,14 +259,18 @@ def compile_module_interface(
         feature_configuration = feature_configuration,
         swift_toolchain = toolchains.swift,
     )
+    extra_cc_infos, extra_swift_infos = default_precompiled_modules_providers(
+        default_precompiled_modules,
+        feature_configuration,
+    )
     merged_compilation_context = merge_compilation_contexts(
         transitive_compilation_contexts = compilation_contexts + [
             cc_info.compilation_context
-            for cc_info in implicit_cc_infos
+            for cc_info in implicit_cc_infos + extra_cc_infos
         ],
     )
     merged_swift_info = SwiftInfo(
-        swift_infos = swift_infos + implicit_swift_infos,
+        swift_infos = swift_infos + implicit_swift_infos + extra_swift_infos,
     )
 
     # Flattening this `depset` is necessary because we need to extract the
