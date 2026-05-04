@@ -40,13 +40,10 @@ def _system_clang_module_impl(ctx):
     else:
         compilation_context_for_system_module = cc_common.create_compilation_context()
 
-    cc_info_for_system_module = CcInfo(compilation_context = compilation_context_for_system_module)
-
-    cc_infos = [cc_info_for_system_module] + [dep[CcInfo] for dep in deps]
     swift_infos = [dep[SwiftInfo] for dep in deps if SwiftInfo in dep]
-
-    cc_info = cc_common.merge_cc_infos(cc_infos = cc_infos)
-    compilation_context = cc_info.compilation_context
+    cc_info = cc_common.merge_cc_infos(cc_infos = [
+        CcInfo(compilation_context = compilation_context_for_system_module),
+    ] + [dep[CcInfo] for dep in deps])
 
     requested_features = ctx.features + [
         SWIFT_FEATURE_SYSTEM_MODULE,
@@ -62,7 +59,7 @@ def _system_clang_module_impl(ctx):
 
     pcm_outputs = precompile_clang_module(
         actions = ctx.actions,
-        cc_compilation_context = compilation_context,
+        cc_compilation_context = cc_info.compilation_context,
         feature_configuration = feature_configuration,
         module_map_file = module_map,
         module_name = ctx.attr.module_name,
