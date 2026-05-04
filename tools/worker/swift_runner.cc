@@ -14,9 +14,11 @@
 
 #include "tools/worker/swift_runner.h"
 
+#include <cctype>
 #include <filesystem>
 #include <fstream>
 #include <optional>
+#include <set>
 #include <sstream>
 #include <utility>
 
@@ -217,10 +219,224 @@ std::optional<std::string> InferInterfacePath(
   return std::nullopt;
 }
 
+// Reads the entire contents of `path` into a string. Returns `std::nullopt` if
+// the file cannot be opened.
+std::optional<std::string> ReadEntireFile(const std::string &path) {
+  std::ifstream in(path);
+  if (!in.is_open()) {
+    return std::nullopt;
+  }
+  std::stringstream buf;
+  buf << in.rdbuf();
+  return buf.str();
+}
+
+// Extracts the set of imported module names from a `.swiftinterface`. Looks at
+// lines starting with `import` (after any leading whitespace and any number of
+// `@<attr>` attribute prefixes) and captures the first identifier of the
+// dotted module path, e.g. for `@_exported import Foo.Bar` returns "Foo".
+std::set<std::string> ImportedModulesIn(absl::string_view content) {
+  std::set<std::string> modules;
+  size_t pos = 0;
+  while (pos < content.size()) {
+    size_t eol = content.find('\n', pos);
+    absl::string_view line = content.substr(
+        pos, (eol == absl::string_view::npos ? content.size() : eol) - pos);
+    pos = (eol == absl::string_view::npos ? content.size() : eol + 1);
+
+    // Skip leading whitespace.
+    while (!line.empty() && (line.front() == ' ' || line.front() == '\t')) {
+      line.remove_prefix(1);
+    }
+    // Skip any leading `@attr` attributes (e.g., `@_exported`, `@_implementationOnly`,
+    // `@testable`), each followed by whitespace.
+    while (!line.empty() && line.front() == '@') {
+      size_t i = 1;
+      while (i < line.size() && (std::isalnum(static_cast<unsigned char>(line[i])) ||
+                                 line[i] == '_')) {
+        ++i;
+      }
+      if (i == line.size() || (line[i] != ' ' && line[i] != '\t')) break;
+      line.remove_prefix(i);
+      while (!line.empty() && (line.front() == ' ' || line.front() == '\t')) {
+        line.remove_prefix(1);
+      }
+    }
+
+    if (!absl::ConsumePrefix(&line, "import")) continue;
+    if (line.empty() || (line.front() != ' ' && line.front() != '\t')) continue;
+    while (!line.empty() && (line.front() == ' ' || line.front() == '\t')) {
+      line.remove_prefix(1);
+    }
+
+    // Skip an optional declaration-kind keyword used in scoped imports, e.g.
+    // `import class Foo.Bar`.
+    static constexpr absl::string_view kKinds[] = {
+        "typealias", "struct", "class", "enum", "protocol", "let", "var", "func",
+    };
+    for (absl::string_view kind : kKinds) {
+      if (absl::ConsumePrefix(&line, kind) && !line.empty() &&
+          (line.front() == ' ' || line.front() == '\t')) {
+        while (!line.empty() && (line.front() == ' ' || line.front() == '\t')) {
+          line.remove_prefix(1);
+        }
+        break;
+      }
+    }
+
+    // Capture the first identifier of the dotted module path.
+    size_t i = 0;
+    while (i < line.size() && (std::isalnum(static_cast<unsigned char>(line[i])) ||
+                               line[i] == '_')) {
+      ++i;
+    }
+    if (i > 0) {
+      modules.emplace(line.substr(0, i));
+    }
+  }
+  return modules;
+}
+
+// Rewrites occurrences of `<M>.<M><Suffix>` to `<M><Suffix>` for any `<M>` in
+// `modules`. Returns the rewritten string and sets `*changed` to true if any
+// substitution was applied.
+//
+// This works around a Swift 6.3 dotted-name resolution change that breaks
+// textual interfaces emitted by older compilers when a module name and a
+// top-level class in that module share a name (e.g., `GTMSessionFetcher`):
+// the resolver picks the class first and reports references like
+// `GTMSessionFetcher.GTMSessionFetcherAuthorizer` as missing nested types.
+// Stripping the `<M>.` prefix restores unqualified module-level lookup, which
+// resolves correctly because the symbol is uniquely declared in the imported
+// module.
+std::string RewriteSelfQualifiedReferences(
+    absl::string_view content, const std::set<std::string> &modules,
+    bool *changed) {
+  *changed = false;
+  std::string out;
+  out.reserve(content.size());
+
+  auto is_id_start = [](char c) {
+    return std::isalpha(static_cast<unsigned char>(c)) || c == '_';
+  };
+  auto is_id_cont = [](char c) {
+    return std::isalnum(static_cast<unsigned char>(c)) || c == '_';
+  };
+
+  size_t i = 0;
+  while (i < content.size()) {
+    // Only consider tokens that begin at an identifier boundary.
+    bool at_boundary = (i == 0 || !is_id_cont(content[i - 1]));
+    if (at_boundary && is_id_start(content[i])) {
+      size_t j = i + 1;
+      while (j < content.size() && is_id_cont(content[j])) ++j;
+      absl::string_view first = content.substr(i, j - i);
+      if (j < content.size() && content[j] == '.' && j + 1 < content.size() &&
+          is_id_start(content[j + 1]) &&
+          modules.find(std::string(first)) != modules.end()) {
+        size_t k = j + 1;
+        size_t l = k + 1;
+        while (l < content.size() && is_id_cont(content[l])) ++l;
+        absl::string_view second = content.substr(k, l - k);
+        // Only rewrite when the second identifier starts with the module name,
+        // which is the exact pattern triggered by the Swift 6.3 lookup change.
+        // This avoids touching legitimate `Module.NestedType` references.
+        if (second.size() > first.size() &&
+            second.substr(0, first.size()) == first) {
+          out.append(second.data(), second.size());
+          i = l;
+          *changed = true;
+          continue;
+        }
+      }
+      out.append(content.data() + i, j - i);
+      i = j;
+      continue;
+    }
+    out.push_back(content[i]);
+    ++i;
+  }
+  return out;
+}
+
+// If the swiftinterface at `interface_path` contains references of the form
+// `<M>.<M>X` for any imported module `<M>`, writes a rewritten copy (and a
+// sibling `.private.swiftinterface` if one exists, since swiftc loads it by
+// filename convention) into a fresh temp directory and returns the path of the
+// rewritten public interface. Otherwise returns `interface_path` unchanged.
+//
+// The temp directory is appended to `temp_dirs` so it lives until the runner
+// exits.
+std::string MaybeRewriteSwiftInterface(
+    const std::string &interface_path,
+    std::vector<std::unique_ptr<TempDirectory>> *temp_dirs) {
+  std::optional<std::string> content = ReadEntireFile(interface_path);
+  if (!content) {
+    return interface_path;
+  }
+
+  std::set<std::string> modules = ImportedModulesIn(*content);
+  if (modules.empty()) {
+    return interface_path;
+  }
+
+  bool changed = false;
+  std::string rewritten = RewriteSelfQualifiedReferences(*content, modules, &changed);
+  if (!changed) {
+    return interface_path;
+  }
+
+  auto tmpdir = TempDirectory::Create("rules_swift_iface_fix.XXXXXX");
+  if (!tmpdir) {
+    return interface_path;
+  }
+
+  std::filesystem::path orig(interface_path);
+  std::filesystem::path tmp_path =
+      std::filesystem::path(tmpdir->GetPath()) / orig.filename();
+  {
+    std::ofstream out(tmp_path);
+    out << rewritten;
+  }
+
+  // Mirror the sibling `.private.swiftinterface` (if any) so SPI references
+  // continue to resolve. swiftc finds it by replacing the public interface's
+  // suffix, so it must live next to the rewritten public file.
+  static constexpr absl::string_view kIfaceSuffix = ".swiftinterface";
+  static constexpr absl::string_view kPrivateSuffix = ".private.swiftinterface";
+  std::string filename = orig.filename().string();
+  if (absl::EndsWith(filename, kIfaceSuffix) &&
+      !absl::EndsWith(filename, kPrivateSuffix)) {
+    std::string private_filename =
+        filename.substr(0, filename.size() - kIfaceSuffix.size()) +
+        std::string(kPrivateSuffix);
+    std::filesystem::path private_orig =
+        orig.parent_path() / private_filename;
+    if (PathExists(private_orig.string())) {
+      if (auto private_content = ReadEntireFile(private_orig.string())) {
+        bool private_changed = false;
+        std::string private_rewritten = RewriteSelfQualifiedReferences(
+            *private_content, modules, &private_changed);
+        std::ofstream pout(std::filesystem::path(tmpdir->GetPath()) /
+                           private_filename);
+        pout << (private_changed ? private_rewritten : *private_content);
+      }
+    }
+  }
+
+  temp_dirs->push_back(std::move(tmpdir));
+  return tmp_path.string();
+}
+
 // Extracts flags from the given `.swiftinterface` file and passes them to the
-// given consumer.
+// given consumer. If `fix_dotted_self_qualifier_lookup` is true, the interface
+// (and its sibling `.private.swiftinterface`, if any) may be rewritten into a
+// temp directory before being passed to swiftc; the rewritten path is what is
+// emitted to the consumer.
 void ExtractFlagsFromInterfaceFile(
     absl::string_view module_or_interface_path, absl::string_view target_triple,
+    bool fix_dotted_self_qualifier_lookup,
+    std::vector<std::unique_ptr<TempDirectory>> *temp_dirs,
     std::function<void(absl::string_view)> consumer) {
   std::string interface_path;
   if (absl::EndsWith(module_or_interface_path, ".swiftinterface")) {
@@ -232,6 +448,10 @@ void ExtractFlagsFromInterfaceFile(
       return;
     }
     interface_path = *inferred_path;
+  }
+
+  if (fix_dotted_self_qualifier_lookup) {
+    interface_path = MaybeRewriteSwiftInterface(interface_path, temp_dirs);
   }
 
   // Add the path to the interface file as a source file argument, then extract
@@ -274,7 +494,8 @@ SwiftRunner::SwiftRunner(const std::vector<std::string> &args,
       force_response_file_(force_response_file),
       is_dump_ast_(false),
       file_prefix_pwd_is_dot_(false),
-      hermetic_pcm_(false) {
+      hermetic_pcm_(false),
+      fix_dotted_self_qualifier_lookup_(false) {
   args_ = ProcessArguments(args);
 }
 
@@ -572,6 +793,8 @@ bool SwiftRunner::ProcessArgument(
         consumer("-explicit-swift-module-map-file");
         consumer(ProcessExplicitSwiftModuleMapFile(new_arg));
         changed = true;
+      } else if (new_arg == "-fix-dotted-self-qualifier-lookup") {
+        changed = true;
       } else {
         // TODO(allevato): Report that an unknown wrapper arg was found and give
         // the caller a way to exit gracefully.
@@ -647,6 +870,8 @@ std::vector<std::string> SwiftRunner::ParseArguments(Iterator itr) {
       } else if (StripPrefix(
                      "-explicit-compile-module-from-interface=", arg)) {
         module_or_interface_path_ = arg;
+      } else if (arg == "-fix-dotted-self-qualifier-lookup") {
+        fix_dotted_self_qualifier_lookup_ = true;
       }
     } else {
       if (arg == "-output-file-map") {
@@ -709,6 +934,7 @@ std::vector<std::string> SwiftRunner::ProcessArguments(
   if (!module_or_interface_path_.empty()) {
     ExtractFlagsFromInterfaceFile(
         module_or_interface_path_, target_triple_,
+        fix_dotted_self_qualifier_lookup_, &temp_directories_,
         [&](absl::string_view arg) {
           args_destination.push_back(std::string(arg));
         });

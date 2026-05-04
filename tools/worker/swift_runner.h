@@ -198,6 +198,13 @@ class SwiftRunner {
 
   // Whether `-Xwrapped-swift=-hermetic-pcm` was passed
   bool hermetic_pcm_;
+
+  // Whether `-Xwrapped-swift=-fix-dotted-self-qualifier-lookup` was passed.
+  // When true, the worker rewrites the .swiftinterface (and any sibling
+  // .private.swiftinterface) into a temp directory before invoking swiftc,
+  // stripping `<M>.<M>X` qualifiers that fail to resolve under Swift 6.3
+  // when `<M>` names both an imported module and a class within it.
+  bool fix_dotted_self_qualifier_lookup_;
 };
 
 #endif  // BUILD_BAZEL_RULES_SWIFT_TOOLS_WORKER_SWIFT_RUNNER_H_

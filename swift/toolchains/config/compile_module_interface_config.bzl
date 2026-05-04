@@ -18,6 +18,10 @@ load(
     "//swift/internal:action_names.bzl",
     "SWIFT_ACTION_COMPILE_MODULE_INTERFACE",
 )
+load(
+    "//swift/internal:feature_names.bzl",
+    "SWIFT_FEATURE_FIX_DOTTED_SELF_QUALIFIER_LOOKUP",
+)
 load(":action_config.bzl", "ActionConfigInfo", "add_arg")
 
 def compile_module_interface_action_configs():
@@ -33,6 +37,13 @@ def compile_module_interface_action_configs():
                 _emit_explicit_module_interface_build_configurator,
                 _emit_module_path_from_module_interface_configurator,
             ],
+        ),
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE_MODULE_INTERFACE],
+            configurators = [
+                add_arg("-Xwrapped-swift=-fix-dotted-self-qualifier-lookup"),
+            ],
+            features = [SWIFT_FEATURE_FIX_DOTTED_SELF_QUALIFIER_LOOKUP],
         ),
     ]
 

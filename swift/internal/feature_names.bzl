@@ -444,3 +444,15 @@ SWIFT_FEATURE_ENABLE_EMBEDDED = "swift.enable_embedded"
 # Before swift 6.3 using macros lead to absolute paths in swiftmodule files
 # even with -prefix-serialized-debugging-options
 SWIFT_FEATURE__SUPPORTS_HERMETIC_SWIFTMODULE = "swift._supports_hermetic_swiftmodule"
+
+# Workaround for a Swift 6.3 textual-interface compile failure where dotted
+# names of the form `<Module>.<Module>X` fail to resolve when `<Module>` is
+# both the imported module name and the name of a class in that module
+# (e.g., `GTMSessionFetcher.GTMSessionFetcherAuthorizer`). Swift 6.0 picked
+# the module first; 6.3 picks the class first and reports the protocol as a
+# missing nested type. When this feature is enabled, the
+# `SwiftCompileModuleInterface` worker rewrites such references to the
+# unqualified form (`GTMSessionFetcherAuthorizer`) before invoking swiftc,
+# preserving sibling `.private.swiftinterface` files so SPI lookups still
+# resolve.
+SWIFT_FEATURE_FIX_DOTTED_SELF_QUALIFIER_LOOKUP = "swift.fix_dotted_self_qualifier_lookup"
