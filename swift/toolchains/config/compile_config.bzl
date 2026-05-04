@@ -879,13 +879,14 @@ def compile_action_configs(
             ],
             features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
         ),
-        ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE_MODULE_INTERFACE],
-            configurators = [
-                add_arg("-disable-implicit-swift-modules"),
-            ],
-            features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
-        ),
+        # TODO: Pass through system modules and pass this to all actions
+        # ActionConfigInfo(
+        #     actions = [SWIFT_ACTION_COMPILE_MODULE_INTERFACE],
+        #     configurators = [
+        #         add_arg("-disable-implicit-swift-modules"),
+        #     ],
+        #     features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
+        # ),
         ActionConfigInfo(
             actions = [
                 SWIFT_ACTION_COMPILE,
