@@ -19,20 +19,14 @@ load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load("//swift:providers.bzl", "SwiftInfo", "SwiftToolsInfo")
 load(":providers.bzl", "SwiftCompilerPluginInfo")
 
-def default_precompiled_modules_attrs(aspects = []):
+def default_precompiled_modules_attrs():
     """Returns an attr dict that wires the `_default_precompiled_modules` attr.
-
-    Args:
-        aspects: Optional list of aspects to apply to the dep. Pass an empty
-            list (the default) for use on aspects, since aspects can't apply
-            other aspects to their own attrs.
 
     Returns:
         A dict with a single `_default_precompiled_modules` entry.
     """
     return {
         "_default_precompiled_modules": attr.label(
-            aspects = aspects,
             default = Label("@system_sdk//:all_modules"),
             providers = [[CcInfo, SwiftInfo]],
         ),
@@ -122,7 +116,7 @@ def swift_compilation_attrs(
             additional_deps_aspects = additional_deps_aspects,
             additional_deps_providers = additional_deps_providers,
         ),
-        default_precompiled_modules_attrs(aspects = additional_deps_aspects),
+        default_precompiled_modules_attrs(),
         {
             "copts": attr.string_list(
                 doc = """\

@@ -162,7 +162,7 @@ swift_import = rule(
         swift_common_rule_attrs(
             additional_deps_aspects = [swift_clang_module_aspect],
         ),
-        default_precompiled_modules_attrs(aspects = [swift_clang_module_aspect]),
+        default_precompiled_modules_attrs(),
         {
             "archives": attr.label_list(
                 allow_empty = True,

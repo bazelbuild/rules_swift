@@ -245,7 +245,7 @@ def _mixed_language_library_impl(ctx):
 
 mixed_language_library = rule(
     attrs = dicts.add(
-        default_precompiled_modules_attrs(aspects = [swift_clang_module_aspect]),
+        default_precompiled_modules_attrs(),
         {
             "clang_target": attr.label(
                 doc = """
