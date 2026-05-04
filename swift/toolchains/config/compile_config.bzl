@@ -850,6 +850,10 @@ def compile_action_configs(
                 add_arg("-Xcc", "-emit-module"),
                 add_arg("-Xcc", "-Xclang"),
                 add_arg("-Xcc", "-fsystem-module"),
+                # The clang importer emits ClangDeclarationImport diagnostics
+                # against `NS_SWIFT_NAME` annotations in the SDK that we cannot
+                # fix.
+                add_arg("-suppress-warnings"),
             ],
             features = [SWIFT_FEATURE_SYSTEM_MODULE],
         ),
