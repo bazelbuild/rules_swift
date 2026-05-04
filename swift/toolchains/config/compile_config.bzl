@@ -713,6 +713,8 @@ def compile_action_configs(
             configurators = [
                 add_arg("-Xcc", "-Xclang"),
                 add_arg("-Xcc", "-fmodule-file-home-is-cwd"),
+                add_arg("-Xcc", "-Xclang"),
+                add_arg("-Xcc", "-fno-modules-check-relocated"),
             ],
             features = [[
                 SWIFT_FEATURE_EMIT_C_MODULE,
