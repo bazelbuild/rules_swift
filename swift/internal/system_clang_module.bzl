@@ -32,7 +32,7 @@ load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 def _system_clang_module_impl(ctx):
     swift_toolchain = swift_common.get_toolchain(ctx)
     module_map = ctx.attr.system_module_map
-    deps = ctx.attr.deps
+    deps = ctx.attr.modules
 
     if ctx.attr.module_name in ("XCTest", "XCUIAutomation", "StoreKitTest"):
         framework_dir = paths.dirname(paths.dirname(paths.dirname(module_map)))
@@ -97,11 +97,13 @@ def _system_clang_module_impl(ctx):
 system_clang_module = rule(
     attrs = dicts.add(
         {
-            "deps": attr.label_list(
+            "modules": attr.label_list(
                 allow_empty = True,
                 doc = """\
-A list of C targets (or anything propagating `CcInfo`) that are dependencies of
-this target and whose headers may be referenced by the module map.
+A list of C targets (or anything propagating `CcInfo`) that this module
+depends on. Named `modules` instead of `deps` so the standard Swift
+`swift_clang_module_aspect` (which traverses `deps`) doesn't recurse into
+the SDK module graph from consumers.
 """,
                 mandatory = False,
                 providers = [[CcInfo]],

@@ -23,19 +23,21 @@ def _system_module_group_impl(ctx):
     return [
         DefaultInfo(),
         cc_common.merge_cc_infos(
-            cc_infos = [d[CcInfo] for d in ctx.attr.deps if CcInfo in d],
+            cc_infos = [d[CcInfo] for d in ctx.attr.modules if CcInfo in d],
         ),
-        SwiftInfo(swift_infos = get_providers(ctx.attr.deps, SwiftInfo)),
+        SwiftInfo(swift_infos = get_providers(ctx.attr.modules, SwiftInfo)),
     ]
 
 system_module_group = rule(
     attrs = {
-        "deps": attr.label_list(providers = [[CcInfo, SwiftInfo]]),
+        "modules": attr.label_list(providers = [[CcInfo, SwiftInfo]]),
     },
     doc = """\
 Aggregates `system_clang_module` (and other `system_module_group`) targets,
-merging their `CcInfo` and `SwiftInfo` providers without attaching
-`swift_clang_module_aspect` to the dependencies to avoid circular dependencies.
+merging their `CcInfo` and `SwiftInfo` providers. Uses a `modules` attribute
+(not `deps`) so the standard Swift `swift_clang_module_aspect`, which
+traverses `deps`, doesn't recurse into the SDK module graph and explode the
+`SwiftInfo` it propagates.
 """,
     implementation = _system_module_group_impl,
 )

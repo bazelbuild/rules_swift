@@ -148,7 +148,7 @@ def _render_clang_module_groups(
         out.write("\n")
         out.write("system_module_group(\n")
         out.write(f'    name = "{_canonical_name(module.name, sdk, "alias")}",\n')
-        out.write("    deps = [\n")
+        out.write("    modules = [\n")
         deps = [_canonical_name(module.name, sdk, "clang")]
         for dep in sorted(module.all_dependencies):
             if dep.endswith("_clang"):
@@ -168,7 +168,7 @@ def _render_all_modules_group(
     out.write("\n")
     out.write("system_module_group(\n")
     out.write(f'    name = "{sdk}_all_modules",\n')
-    out.write("    deps = [\n")
+    out.write("    modules = [\n")
     _write_labels(out, {f"{sdk}_{name}" for name in all_module_names})
     out.write("    ],\n")
     out.write(")\n")
@@ -204,17 +204,17 @@ class _Module:
         cpu_specific_deps = {cpu: self.deps_by_cpu[cpu] - shared_deps for cpu in cpus}
         has_cpu_specific_deps = any(cpu_specific_deps.values())
         if not has_cpu_specific_deps:
-            out.write("    deps = [\n")
+            out.write("    modules = [\n")
             _write_labels(out, shared_deps)
             out.write("    ],\n")
             return
 
         if shared_deps:
-            out.write("    deps = [\n")
+            out.write("    modules = [\n")
             _write_labels(out, shared_deps)
             out.write("    ] + select({\n")
         else:
-            out.write("    deps = select({\n")
+            out.write("    modules = select({\n")
         for cpu, deps in cpu_specific_deps.items():
             if deps:
                 out.write(f'        "{cpu}": [\n')
