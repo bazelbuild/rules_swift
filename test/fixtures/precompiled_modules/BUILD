@@ -29,7 +29,10 @@ swift_binary(
         "-swift.add_default_precompiled_modules",
     ],
     tags = FIXTURE_TAGS,
-    target_compatible_with = ["@build_bazel_apple_support//constraints:apple"],
+    target_compatible_with = select({
+        "@build_bazel_apple_support//configs:apple": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = [
         "@system_sdk//:Foundation",
     ],
@@ -58,7 +61,10 @@ objc_library(
     hdrs = ["Greeter.h"],
     aspect_hints = [":Greeter_hint"],
     tags = FIXTURE_TAGS,
-    target_compatible_with = ["@build_bazel_apple_support//constraints:apple"],
+    target_compatible_with = select({
+        "@build_bazel_apple_support//configs:apple": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = ["@system_sdk//:Foundation"],
 )
 
@@ -96,7 +102,10 @@ objc_library(
     aspect_hints = [":GreeterImplicit_hint"],
     copts = ["-fno-stack-protector"],
     tags = FIXTURE_TAGS,
-    target_compatible_with = ["@build_bazel_apple_support//constraints:apple"],
+    target_compatible_with = select({
+        "@build_bazel_apple_support//configs:apple": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
 )
 
 swift_compiler_plugin(
@@ -111,7 +120,10 @@ swift_binary(
     srcs = ["greeter_main.swift"],
     plugins = [":stub_plugin"],
     tags = FIXTURE_TAGS,
-    target_compatible_with = ["@build_bazel_apple_support//constraints:apple"],
+    target_compatible_with = select({
+        "@build_bazel_apple_support//configs:apple": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = [":GreeterImplicit"],
 )
 
@@ -133,7 +145,10 @@ swift_test(
     srcs = ["SimpleXCTest.swift"],
     discover_tests = False,
     tags = FIXTURE_TAGS,
-    target_compatible_with = ["@build_bazel_apple_support//constraints:apple"],
+    target_compatible_with = select({
+        "@build_bazel_apple_support//configs:apple": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = [
         "@system_sdk//:SwiftShims",
         "@system_sdk//:XCTest",
@@ -156,7 +171,10 @@ swift_binary(
     name = "c_module_imports",
     srcs = ["c_module_imports.swift"],
     tags = FIXTURE_TAGS,
-    target_compatible_with = ["@build_bazel_apple_support//constraints:apple"],
+    target_compatible_with = select({
+        "@build_bazel_apple_support//configs:apple": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
 )
 
 force_features_binary(
@@ -178,7 +196,10 @@ mixed_language_library(
     module_name = "MixedGreeter",
     swift_srcs = ["MixedGreeter.swift"],
     tags = FIXTURE_TAGS,
-    target_compatible_with = ["@build_bazel_apple_support//constraints:apple"],
+    target_compatible_with = select({
+        "@build_bazel_apple_support//configs:apple": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
 )
 
 swift_binary(
@@ -206,7 +227,10 @@ mixed_language_library(
     module_name = "MixedGreeter",
     swift_srcs = ["MixedGreeter.swift"],
     tags = FIXTURE_TAGS,
-    target_compatible_with = ["@build_bazel_apple_support//constraints:apple"],
+    target_compatible_with = select({
+        "@build_bazel_apple_support//configs:apple": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = ["@system_sdk//:Foundation"],
 )
 
@@ -214,7 +238,10 @@ swift_binary(
     name = "mixed_language_explicit_bin",
     srcs = ["mixed_greeter_main.swift"],
     tags = FIXTURE_TAGS,
-    target_compatible_with = ["@build_bazel_apple_support//constraints:apple"],
+    target_compatible_with = select({
+        "@build_bazel_apple_support//configs:apple": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = [
         ":MixedGreeterExplicit",
         "@system_sdk//:Foundation",

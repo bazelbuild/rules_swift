@@ -22,7 +22,10 @@ config_setting(
 force_features_binary(
     name = "foundation_pcm",
     binary = "@system_sdk//:Foundation_clang",
-    target_compatible_with = ["@build_bazel_apple_support//constraints:apple"],
+    target_compatible_with = select({
+        "@build_bazel_apple_support//configs:apple": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     transitive_features = [
         "swift.use_c_modules",
         "swift.emit_c_module",
@@ -46,7 +49,10 @@ objc_library(
     srcs = ["SimpleObj.m"],
     hdrs = ["SimpleObj.h"],
     aspect_hints = [":SimpleObj_hint"],
-    target_compatible_with = ["@build_bazel_apple_support//constraints:apple"],
+    target_compatible_with = select({
+        "@build_bazel_apple_support//configs:apple": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = ["@system_sdk//:Foundation"],
 )
 
@@ -71,7 +77,10 @@ swift_library(
     srcs = ["SimpleSwift.swift"],
     generates_header = True,
     module_name = "SimpleSwift",
-    target_compatible_with = ["@build_bazel_apple_support//constraints:apple"],
+    target_compatible_with = select({
+        "@build_bazel_apple_support//configs:apple": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
 )
 
 extract_pcm(
@@ -94,7 +103,10 @@ swift_library(
     name = "Downstream",
     srcs = ["Downstream.swift"],
     module_name = "Downstream",
-    target_compatible_with = ["@build_bazel_apple_support//constraints:apple"],
+    target_compatible_with = select({
+        "@build_bazel_apple_support//configs:apple": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = ["@system_sdk//:Foundation"],
 )
 
@@ -130,7 +142,10 @@ swift_library(
     srcs = ["DownstreamWithPlugin.swift"],
     module_name = "DownstreamWithPlugin",
     plugins = [":noop_plugin"],
-    target_compatible_with = ["@build_bazel_apple_support//constraints:apple"],
+    target_compatible_with = select({
+        "@build_bazel_apple_support//configs:apple": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = ["@system_sdk//:Foundation"],
 )
 
