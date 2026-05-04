@@ -218,6 +218,8 @@ def _all_action_configs(os, arch, target_triple, sdkroot, xctest_version, additi
             ],
             configurators = [
                 add_arg("-target", target_triples.str(target_triple)),
+                # https://github.com/swiftlang/llvm-project/issues/12826
+                add_arg("-Xcc", "--target={}".format(target_triples.str(target_triple))),
             ],
         ),
     ]
