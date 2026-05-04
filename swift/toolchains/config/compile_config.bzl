@@ -93,6 +93,7 @@ load(
     "SWIFT_FEATURE__COVERAGE_PREFIX_MAP_ABSOLUTE_SOURCES_NON_HERMETIC",
     "SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS",
     "SWIFT_FEATURE__SUPPORTS_DEVELOPER_DIR",
+    "SWIFT_FEATURE__SUPPORTS_HERMETIC_SWIFTMODULE",
     "SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES",
     "SWIFT_FEATURE__SUPPORTS_V6",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
@@ -417,6 +418,17 @@ def compile_action_configs(
             not_features = [
                 [SWIFT_FEATURE_OPT],
                 [SWIFT_FEATURE_CACHEABLE_SWIFTMODULES],
+            ],
+        ),
+        ActionConfigInfo(
+            actions = all_compile_action_names(),
+            configurators = [
+                add_arg("-Xfrontend", "-serialize-debugging-options"),
+                add_arg("-Xfrontend", "-prefix-serialized-debugging-options"),
+            ],
+            features = [
+                SWIFT_FEATURE_USE_C_MODULES,
+                SWIFT_FEATURE__SUPPORTS_HERMETIC_SWIFTMODULE,
             ],
         ),
 

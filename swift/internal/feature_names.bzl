@@ -436,3 +436,7 @@ SWIFT_FEATURE_ENABLE_CPP23_INTEROP = "swift.enable_cpp23_interop"
 #   automatically include it at compile time, and provide it to the linker at link time
 # * alwayslink on swift_library() target will now default to False, as it is not required in embedded mode
 SWIFT_FEATURE_ENABLE_EMBEDDED = "swift.enable_embedded"
+
+# Before swift 6.3 using macros lead to absolute paths in swiftmodule files
+# even with -prefix-serialized-debugging-options
+SWIFT_FEATURE__SUPPORTS_HERMETIC_SWIFTMODULE = "swift._supports_hermetic_swiftmodule"
