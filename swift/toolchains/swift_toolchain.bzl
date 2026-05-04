@@ -53,6 +53,7 @@ load(
     "SWIFT_FEATURE_USE_AUTOLINK_EXTRACT",
     "SWIFT_FEATURE_USE_GLOBAL_INDEX_STORE",
     "SWIFT_FEATURE_USE_MODULE_WRAP",
+    "SWIFT_FEATURE__SUPPORTS_HERMETIC_SWIFTMODULE",
 )
 load(
     "//swift/internal:features.bzl",
@@ -524,6 +525,9 @@ def _swift_toolchain_impl(ctx):
         # `InternalImportsByDefault`.
         "swift.experimental.AccessLevelOnImport",
     ])
+
+    if apple_common.dotted_version(ctx.attr.parsed_version) >= apple_common.dotted_version("6.3"):
+        requested_features.append(SWIFT_FEATURE__SUPPORTS_HERMETIC_SWIFTMODULE)
 
     requested_features.extend(ctx.features)
 

@@ -58,6 +58,7 @@ load(
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_REMAP_XCODE_PATH",
     "SWIFT_FEATURE__SUPPORTS_DEVELOPER_DIR",
+    "SWIFT_FEATURE__SUPPORTS_HERMETIC_SWIFTMODULE",
     "SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES",
     "SWIFT_FEATURE__SUPPORTS_V6",
 )
@@ -830,6 +831,9 @@ def _xcode_swift_toolchain_impl(ctx):
             # where two modules contain the same header.
             SWIFT_FEATURE_MODULE_HOME_IS_CWD,
         ])
+
+    if _is_xcode_at_least_version(xcode_config, "26.4"):
+        requested_features.append(SWIFT_FEATURE__SUPPORTS_HERMETIC_SWIFTMODULE)
 
     # Xcode toolchains always support DEVELOPER_DIR
     requested_features.append(SWIFT_FEATURE__SUPPORTS_DEVELOPER_DIR)
