@@ -221,6 +221,21 @@ def _all_action_configs(os, arch, target_triple, sdkroot, xctest_version, additi
                 add_arg("-target", target_triples.str(target_triple)),
             ],
         ),
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+                SWIFT_ACTION_DERIVE_FILES,
+                SWIFT_ACTION_DUMP_AST,
+                SWIFT_ACTION_PRECOMPILE_C_MODULE,
+                SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
+                SWIFT_ACTION_SYNTHESIZE_INTERFACE,
+            ],
+            configurators = [
+                # https://github.com/swiftlang/llvm-project/issues/12826
+                add_arg("-Xcc", "--target={}".format(target_triples.str(target_triple))),
+            ],
+        ),
     ]
     if sdkroot:
         action_configs.append(
