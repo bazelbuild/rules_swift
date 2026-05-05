@@ -470,7 +470,6 @@ def _all_action_configs(
                 SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
-                SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
                 SWIFT_ACTION_SYNTHESIZE_INTERFACE,
             ],
             configurators = [
@@ -482,6 +481,7 @@ def _all_action_configs(
             # Actions that run directly with -frontend so -Xfrontend is invalid
             actions = [
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+                SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
             ],
             configurators = [
                 add_arg("-clang-target", sdk_version_triple),
