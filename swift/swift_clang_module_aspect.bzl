@@ -413,6 +413,16 @@ def _handle_module(
 
     output_groups = {}
 
+    # Private -D flags might be needed to compile the PCM
+    # TODO: Only grab local_defines once that has existed for long enough
+    local_defines = [
+        copt
+        for copt in getattr(attr, "copts", [])
+        if copt.startswith("-D") and "$(" not in copt
+    ]
+    for define in getattr(attr, "local_defines", []):
+        local_defines.append("-D" + define)
+
     pcm_outputs = precompile_clang_module(
         actions = aspect_ctx.actions,
         cc_compilation_context = compilation_context_to_compile,
@@ -423,6 +433,7 @@ def _handle_module(
         toolchains = toolchains,
         target_name = target.label.name,
         toolchain_type = toolchain_type,
+        user_compile_flags = local_defines,
     )
     precompiled_module = getattr(pcm_outputs, "pcm_file", None)
     pcm_indexstore = getattr(pcm_outputs, "indexstore_directory", None)
