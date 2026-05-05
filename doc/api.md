@@ -450,17 +450,11 @@ A tuple of `(CcLinkingContext, CcLinkingOutputs)` containing the linking
 ## swift_common.default_precompiled_modules_attrs
 
 <pre>
-swift_common.default_precompiled_modules_attrs(<a href="#swift_common.default_precompiled_modules_attrs-aspects">aspects</a>)
+swift_common.default_precompiled_modules_attrs()
 </pre>
 
 Returns an attr dict that wires the `_default_precompiled_modules` attr.
 
-**PARAMETERS**
-
-
-| Name  | Description | Default Value |
-| :------------- | :------------- | :------------- |
-| <a id="swift_common.default_precompiled_modules_attrs-aspects"></a>aspects |  Optional list of aspects to apply to the dep. Pass an empty list (the default) for use on aspects, since aspects can't apply other aspects to their own attrs.   |  `[]` |
 
 **RETURNS**
 
@@ -660,7 +654,7 @@ check it.
 swift_common.precompile_clang_module(*, <a href="#swift_common.precompile_clang_module-actions">actions</a>, <a href="#swift_common.precompile_clang_module-cc_compilation_context">cc_compilation_context</a>, <a href="#swift_common.precompile_clang_module-exec_group">exec_group</a>,
                                      <a href="#swift_common.precompile_clang_module-feature_configuration">feature_configuration</a>, <a href="#swift_common.precompile_clang_module-module_map_file">module_map_file</a>, <a href="#swift_common.precompile_clang_module-module_name">module_name</a>,
                                      <a href="#swift_common.precompile_clang_module-swift_toolchain">swift_toolchain</a>, <a href="#swift_common.precompile_clang_module-target_name">target_name</a>, <a href="#swift_common.precompile_clang_module-toolchains">toolchains</a>, <a href="#swift_common.precompile_clang_module-toolchain_type">toolchain_type</a>,
-                                     <a href="#swift_common.precompile_clang_module-swift_infos">swift_infos</a>)
+                                     <a href="#swift_common.precompile_clang_module-swift_infos">swift_infos</a>, <a href="#swift_common.precompile_clang_module-user_compile_flags">user_compile_flags</a>)
 </pre>
 
 Precompiles an explicit Clang module that is compatible with Swift.
@@ -681,6 +675,7 @@ Precompiles an explicit Clang module that is compatible with Swift.
 | <a id="swift_common.precompile_clang_module-toolchains"></a>toolchains |  The struct containing the Swift and C++ toolchain providers, as returned by `swift_common.find_all_toolchains()`.   |  `None` |
 | <a id="swift_common.precompile_clang_module-toolchain_type"></a>toolchain_type |  The toolchain type of the Swift toolchain.   |  `Label("@rules_swift//toolchains:toolchain_type")` |
 | <a id="swift_common.precompile_clang_module-swift_infos"></a>swift_infos |  A list of `SwiftInfo` providers representing dependencies required to compile this module.   |  `[]` |
+| <a id="swift_common.precompile_clang_module-user_compile_flags"></a>user_compile_flags |  Additional Clang flags to pass to the precompile action. Each flag is forwarded to the underlying clang invocation via `-Xcc`.   |  `[]` |
 
 **RETURNS**
 

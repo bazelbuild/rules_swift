@@ -114,12 +114,6 @@ bzl_library(
     deps = ["//swift:providers"],
 )
 
-bzl_library(
-    name = "transitions",
-    srcs = ["transitions.bzl"],
-    visibility = ["//test:__subpackages__"],
-)
-
 bzl_test(
     name = "swift_bzl_test",
     src = "swift_bzl_macro.bzl",
@@ -134,5 +128,11 @@ bool_flag(
 config_setting(
     name = "apple_build_tests_enabled",
     flag_values = {":apple_build_tests": "True"},
+    visibility = ["//visibility:public"],
+)
+
+bzl_library(
+    name = "transitions",
+    srcs = ["transitions.bzl"],
     visibility = ["//visibility:public"],
 )
