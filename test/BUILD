@@ -1,6 +1,7 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
 load(":additional_linker_inputs_tests.bzl", "additional_linker_inputs_test_suite")
+load(":aspect_tests.bzl", "aspect_tests")
 load(":ast_file_tests.bzl", "ast_file_test_suite")
 load(":bzl_test.bzl", "bzl_test")
 load(":cc_library_tests.bzl", "cc_library_test_suite")
@@ -35,6 +36,8 @@ load(":xctest_runner_tests.bzl", "xctest_runner_test_suite")
 licenses(["notice"])
 
 additional_linker_inputs_test_suite(name = "additional_linker_inputs")
+
+aspect_tests(name = "aspect_tests")
 
 ast_file_test_suite(name = "ast_file")
 
