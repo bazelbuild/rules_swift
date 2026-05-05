@@ -41,6 +41,8 @@ force_features_binary(
     name = "user_explicit_modules",
     binary = ":user",
     tags = FIXTURE_TAGS,
+    # TODO: Remove when we support explicit modules on Linux
+    target_compatible_with = ["@platforms//os:macos"],
     transitive_features = [
         "swift.use_c_modules",
         "swift.emit_c_module",
