@@ -45,4 +45,6 @@ force_features_binary(
         "swift.use_c_modules",
         "swift.emit_c_module",
     ],
+    # TODO: Remove when we support explicit modules on Linux
+    target_compatible_with = ["@platforms//os:macos"],
 )
