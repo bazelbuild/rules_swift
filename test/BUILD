@@ -107,6 +107,12 @@ bzl_library(
     deps = ["//swift:providers"],
 )
 
+bzl_library(
+    name = "transitions",
+    srcs = ["transitions.bzl"],
+    visibility = ["//test:__subpackages__"],
+)
+
 bzl_test(
     name = "swift_bzl_test",
     src = "swift_bzl_macro.bzl",
