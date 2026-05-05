@@ -159,7 +159,7 @@ _system_sdk_stub_repo = repository_rule(
 
 _configure_xcode_tag = tag_class(
     attrs = {
-        "xcode_version": attr.string(
+        "version": attr.string(
             mandatory = True,
             doc = "Canonical Xcode version string (e.g. 26.4.0.17E192).",
         ),

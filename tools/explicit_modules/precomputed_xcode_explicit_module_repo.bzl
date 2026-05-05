@@ -35,7 +35,7 @@ def _precomputed_xcode_explicit_module_repo_impl(rctx):
     rctx.file("BUILD.bazel", content)
     rctx.file(
         "module_names.json",
-        json.encode({"all": _extract_all_module_names(content)}),
+        json.encode(_extract_all_module_names(content)),
     )
 
 precomputed_xcode_explicit_module_repo = repository_rule(
