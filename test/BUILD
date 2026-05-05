@@ -126,11 +126,6 @@ bzl_test(
     deps = ["//swift:providers"],
 )
 
-bzl_library(
-    name = "transitions",
-    srcs = ["transitions.bzl"],
-)
-
 bool_flag(
     name = "apple_build_tests",
     build_setting_default = True,
