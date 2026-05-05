@@ -128,6 +128,8 @@ def _collect_sdks(module_ctx):
 def _sdk_extension_impl(module_ctx):
     configs = []
     for mod in module_ctx.modules:
+        if not mod.is_root:
+            continue
         for tag in mod.tags.configure_xcode:
             configs.append(tag)
 
