@@ -1,8 +1,8 @@
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("//swift:swift_binary.bzl", "swift_binary")
 load("//swift:swift_interop_hint.bzl", "swift_interop_hint")
+load("//test:transitions.bzl", "force_features_binary")
 load("//test/fixtures:common.bzl", "FIXTURE_TAGS")
-load("//test/fixtures/precompiled_modules:force_features.bzl", "force_features_binary")
 
 package(default_visibility = ["//test:__subpackages__"])
 

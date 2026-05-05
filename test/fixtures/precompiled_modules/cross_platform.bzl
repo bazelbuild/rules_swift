@@ -1,6 +1,6 @@
 """Stamp out the explicit-modules binaries across every platform."""
 
-load(":force_features.bzl", "platform_transition_binary")
+load("//test:transitions.bzl", "platform_transition_binary")
 
 _BINARIES = [
     "objc_interop_implicit_bin",

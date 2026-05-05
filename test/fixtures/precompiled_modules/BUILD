@@ -6,9 +6,9 @@ load("//swift:swift_compiler_plugin.bzl", "swift_compiler_plugin")
 load("//swift:swift_import.bzl", "swift_import")
 load("//swift:swift_interop_hint.bzl", "swift_interop_hint")
 load("//swift:swift_test.bzl", "swift_test")
+load("//test:transitions.bzl", "force_features_binary", "force_features_test")
 load("//test/fixtures:common.bzl", "FIXTURE_TAGS")
 load(":cross_platform.bzl", "cross_platform_targets")
-load(":force_features.bzl", "force_features_binary", "force_features_test")
 
 package(default_visibility = ["//test:__subpackages__"])
 
@@ -291,10 +291,5 @@ force_features_binary(
 bzl_library(
     name = "cross_platform",
     srcs = ["cross_platform.bzl"],
-    deps = [":force_features"],
-)
-
-bzl_library(
-    name = "force_features",
-    srcs = ["force_features.bzl"],
+    deps = ["//test:transitions"],
 )
