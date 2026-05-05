@@ -434,6 +434,14 @@ def _all_action_configs(
     Returns:
         The action configurations for the Swift toolchain.
     """
+    sdk_version_triple = target_triples.str(target_triples.make(
+        cpu = target_triple.cpu,
+        vendor = target_triple.vendor,
+        os = target_triples.unversioned_os(target_triple) + str(xcode_config.sdk_version_for_platform(
+            target_triples.bazel_apple_platform(target_triple),
+        )),
+        environment = target_triple.environment,
+    ))
 
     # Basic compilation flags (target triple and toolchain search paths).
     action_configs = [
@@ -450,12 +458,37 @@ def _all_action_configs(
             ],
             configurators = [
                 add_arg("-target", target_triples.str(target_triple)),
-                # https://github.com/swiftlang/llvm-project/issues/12826
-                add_arg("-Xcc", "--target={}".format(target_triples.str(target_triple))),
                 add_arg("-sdk", apple_toolchain.sdk_dir()),
             ],
         ),
     ]
+
+    # https://github.com/swiftlang/llvm-project/issues/12826
+    action_configs.extend([
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_DERIVE_FILES,
+                SWIFT_ACTION_DUMP_AST,
+                SWIFT_ACTION_PRECOMPILE_C_MODULE,
+                SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
+                SWIFT_ACTION_SYNTHESIZE_INTERFACE,
+            ],
+            configurators = [
+                add_arg("-Xfrontend", "-clang-target"),
+                add_arg("-Xfrontend", sdk_version_triple),
+            ],
+        ),
+        ActionConfigInfo(
+            # Actions that run directly with -frontend so -Xfrontend is invalid
+            actions = [
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+            ],
+            configurators = [
+                add_arg("-clang-target", sdk_version_triple),
+            ],
+        ),
+    ])
 
     action_configs.extend([
         # Xcode path remapping
