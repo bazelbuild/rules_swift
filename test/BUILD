@@ -135,4 +135,9 @@ bzl_library(
     name = "transitions",
     srcs = ["transitions.bzl"],
     visibility = ["//visibility:public"],
+    deps = [
+        "//swift:providers",
+        "@rules_cc//cc/common:cc_info",
+        "@rules_cc//cc/common:objc_info",
+    ],
 )

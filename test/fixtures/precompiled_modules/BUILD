@@ -317,6 +317,7 @@ swift_binary(
     name = "min_os_bin",
     srcs = ["min_os_main.swift"],
     tags = FIXTURE_TAGS,
+    target_compatible_with = ["@platforms//os:macos"],
     deps = [
         ":min_os_lib_at_13",
         "@system_sdk//:Foundation",

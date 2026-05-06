@@ -367,6 +367,12 @@ bzl_library(
 )
 
 bzl_library(
+    name = "system_module_transition",
+    srcs = ["system_module_transition.bzl"],
+    visibility = ["//swift:__subpackages__"],
+)
+
+bzl_library(
     name = "target_triples",
     srcs = ["target_triples.bzl"],
     visibility = ["//swift:__subpackages__"],
