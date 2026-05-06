@@ -1,5 +1,9 @@
 """Custom transition rules helpful for tests."""
 
+load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
+load("@rules_cc//cc/common:objc_info.bzl", "ObjcInfo")
+load("//swift:providers.bzl", "SwiftInfo")
+
 def _force_features_transition_impl(settings, attr):
     return {
         "//command_line_option:features": settings["//command_line_option:features"] + attr.transitive_features,
@@ -90,6 +94,43 @@ platform_transition_binary = rule(
         "platform": attr.string(
             mandatory = True,
             doc = "The target platform label (e.g. `@build_bazel_apple_support//platforms:macos_x86_64`).",
+        ),
+    },
+)
+
+def _min_os_transition_impl(_settings, attr):
+    return {"//command_line_option:macos_minimum_os": attr.minimum_os}
+
+_min_os_transition = transition(
+    implementation = _min_os_transition_impl,
+    inputs = [],
+    outputs = ["//command_line_option:macos_minimum_os"],
+)
+
+def _force_macos_min_os_impl(ctx):
+    target = ctx.attr.target[0]
+    providers = []
+    if SwiftInfo in target:
+        providers.append(target[SwiftInfo])
+    if CcInfo in target:
+        providers.append(target[CcInfo])
+    if ObjcInfo in target:
+        providers.append(target[ObjcInfo])
+    return providers + [
+        DefaultInfo(files = target[DefaultInfo].files),
+    ]
+
+force_macos_min_os = rule(
+    implementation = _force_macos_min_os_impl,
+    attrs = {
+        "target": attr.label(
+            cfg = _min_os_transition,
+            doc = "The target to forward under the transition.",
+            mandatory = True,
+        ),
+        "minimum_os": attr.string(
+            doc = "Value to set `--macos_minimum_os` to",
+            mandatory = True,
         ),
     },
 )

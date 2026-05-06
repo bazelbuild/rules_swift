@@ -5,8 +5,14 @@ load("//swift:swift_binary.bzl", "swift_binary")
 load("//swift:swift_compiler_plugin.bzl", "swift_compiler_plugin")
 load("//swift:swift_import.bzl", "swift_import")
 load("//swift:swift_interop_hint.bzl", "swift_interop_hint")
+load("//swift:swift_library.bzl", "swift_library")
 load("//swift:swift_test.bzl", "swift_test")
-load("//test:transitions.bzl", "force_features_binary", "force_features_test")
+load(
+    "//test:transitions.bzl",
+    "force_features_binary",
+    "force_features_test",
+    "force_macos_min_os",
+)
 load("//test/fixtures:common.bzl", "FIXTURE_TAGS")
 load(":cross_platform.bzl", "cross_platform_targets")
 
@@ -285,6 +291,49 @@ force_features_binary(
         "swift.emit_c_module",
         "swift.add_default_precompiled_modules",
         "swift.use_explicit_swift_module_map",  # NOTE: This is required to make sure no implicit modules are found
+    ],
+)
+
+swift_library(
+    name = "min_os_lib",
+    srcs = ["min_os_lib.swift"],
+    module_name = "MinOSLib",
+    tags = FIXTURE_TAGS,
+    target_compatible_with = ["@platforms//os:macos"],
+    deps = [
+        ":Greeter",
+        "@system_sdk//:Foundation",
+    ],
+)
+
+force_macos_min_os(
+    name = "min_os_lib_at_13",
+    minimum_os = "13.0",  # NOTE: Needs to be different from --macos_minimum_os in .bazelrc
+    tags = FIXTURE_TAGS,
+    target = ":min_os_lib",
+)
+
+swift_binary(
+    name = "min_os_bin",
+    srcs = ["min_os_main.swift"],
+    tags = FIXTURE_TAGS,
+    deps = [
+        ":min_os_lib_at_13",
+        "@system_sdk//:Foundation",
+    ],
+)
+
+# Testing the diamond dependency with different OS versions on
+# @system_sdk//:Foundation through Greeter's PCM. If we do this wrong Greeter's
+# PCM will see the wrong Foundation.pcm when being imported.
+force_features_binary(
+    name = "min_os_bin_transitioned",
+    binary = ":min_os_bin",
+    tags = FIXTURE_TAGS,
+    transitive_features = [
+        "swift.use_c_modules",
+        "swift.emit_c_module",
+        "-swift.add_default_precompiled_modules",
     ],
 )
 

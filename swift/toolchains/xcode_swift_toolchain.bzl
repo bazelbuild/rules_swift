@@ -434,14 +434,18 @@ def _all_action_configs(
     Returns:
         The action configurations for the Swift toolchain.
     """
-    sdk_version_triple = target_triples.str(target_triples.make(
-        cpu = target_triple.cpu,
-        vendor = target_triple.vendor,
-        os = target_triples.unversioned_os(target_triple) + str(xcode_config.sdk_version_for_platform(
-            target_triples.bazel_apple_platform(target_triple),
-        )),
-        environment = target_triple.environment,
-    ))
+    sdk_version_triple = target_triples.str(
+        target_triples.normalize_for_swift(
+            target_triples.make(
+                cpu = target_triple.cpu,
+                vendor = target_triple.vendor,
+                os = target_triples.unversioned_os(target_triple) + str(xcode_config.sdk_version_for_platform(
+                    target_triples.bazel_apple_platform(target_triple),
+                )) + ".0",
+                environment = target_triple.environment,
+            ),
+        ),
+    )
 
     # Basic compilation flags (target triple and toolchain search paths).
     action_configs = [
@@ -452,7 +456,6 @@ def _all_action_configs(
                 SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
                 SWIFT_ACTION_MODULEWRAP,
-                SWIFT_ACTION_PRECOMPILE_C_MODULE,
                 SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
                 SWIFT_ACTION_SYNTHESIZE_INTERFACE,
             ],
@@ -476,6 +479,16 @@ def _all_action_configs(
             configurators = [
                 add_arg("-Xfrontend", "-clang-target"),
                 add_arg("-Xfrontend", sdk_version_triple),
+            ],
+        ),
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_PRECOMPILE_C_MODULE,
+            ],
+            configurators = [
+                # NOTE: This seems wrong but is also what Xcode does
+                add_arg("-target", sdk_version_triple),
+                add_arg("-sdk", apple_toolchain.sdk_dir()),
             ],
         ),
         ActionConfigInfo(
