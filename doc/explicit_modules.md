@@ -103,10 +103,10 @@ use_repo(system_sdk, "system_sdk")
 
 ## Ignoring broken SDK modules
 
-If you're using the implicitly added deps, rules_swift builds every
+If you're using the implicitly added deps, `rules_swift` builds every
 module it finds. In this case if the SDK has any modules that are
-broken, you can disable building them. To do this add something like
-this to your `MODULE.bazel`:
+broken, you need to disable discovering  them. To do this add something
+like this to your `MODULE.bazel`:
 
 ```bzl
 system_sdk.configure_sdks(
@@ -125,7 +125,8 @@ system_sdk.configure_sdks(
 )
 ```
 
-To do this when vendoring your SDK, pass `--exclude-module WatchOS:BrowserEngineKit` etc.
+To do this when vendoring your SDK, pass `--exclude-module
+WatchOS:BrowserEngineKit` etc to the scan script.
 
 ## Providing a precomputed BUILD file
 
@@ -170,7 +171,7 @@ Currently only 1 variant of PCMs are produced. These PCMs do not pass
 enabled. This can cause build failures for `swift_library` targets that
 pass this manually that look like this:
 
-``
+```
 <unknown>:0: error: Objective-C App Extension was disabled in PCH file but is currently enabled
 <unknown>:0: error: module file bazel-out/...swift.pcm cannot be loaded due to a configuration mismatch with the current compilation
 ```
@@ -185,7 +186,7 @@ copts = [
 ],
 ```
 
-This should be harmless because Swift still validates when type
+This _should_ be harmless because Swift still validates when type
 checking.
 
 # Background
@@ -235,13 +236,13 @@ This allows us to share PCMs across machines, and with compilation and
 
 ## Differences from Xcode
 
-Unlike bazel Xcode doesn't require you strictly define your
-dependencies. Therefore for explicit modules support, Xcode scans all
-the source files being built, and builds the necessary PCMs "just in
-time." Bazel doesn't support this type of dynamic dependencies, so all
-system modules have to be understood ahead of time, which is why we
-generate the `@system_sdk` repository, and require you add them to your
-`deps` (or implicitly do that for you).
+Unlike bazel, Xcode doesn't require you strictly define your
+dependencies. For explicit modules support, Xcode scans all the source
+files being built, and builds only the necessary PCMs "just in time."
+Bazel doesn't support this type of dynamic dependencies, so all system
+modules have to be understood ahead of time, which is why we generate
+the `@system_sdk` repository, and require you add them to your `deps`
+(or implicitly do that for you).
 
 Xcode also doesn't attempt to produce portable PCMs, which we do in
 bazel.
