@@ -9,8 +9,8 @@ this.
 To opt in to explicit modules add this in your `.bazelrc`:
 
 ```
-build --features=swift.use_c_modules --host_features=swift.use_c_modules
 build --features=swift.emit_c_module --host_features=swift.emit_c_module
+build --features=swift.use_c_modules --host_features=swift.use_c_modules
 ```
 
 In order to debug your application in `lldb` you do need to correctly
