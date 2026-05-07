@@ -163,6 +163,31 @@ NOTE: The format of this `BUILD` file isn't considered stable, so if you
 choose to vendor it yourself you should regenerate it whenever you
 update `rules_swift`.
 
+## Handling `-application-extension`
+
+Currently only 1 variant of PCMs are produced. These PCMs do not pass
+`-application-extension` and therefore are not produced with that
+enabled. This can cause build failures for `swift_library` targets that
+pass this manually that look like this:
+
+``
+<unknown>:0: error: Objective-C App Extension was disabled in PCH file but is currently enabled
+<unknown>:0: error: module file bazel-out/...swift.pcm cannot be loaded due to a configuration mismatch with the current compilation
+```
+
+To work around this you can change your `copts` to this:
+
+```bzl
+copts = [
+    "-application-extension",
+    "-Xcc",
+    "-fno-application-extension",
+],
+```
+
+This should be harmless because Swift still validates when type
+checking.
+
 # Background
 
 ## Implicit modules
