@@ -829,10 +829,28 @@ def compile_action_configs(
                 SWIFT_ACTION_SYNTHESIZE_INTERFACE,
             ],
             configurators = [
-                add_arg("-disable-building-interface"),  # Make sure Swift doesn't implicitly translate swiftinterface -> swiftmodule
                 add_arg("-Xcc", "-fno-implicit-module-maps"),
                 add_arg("-Xcc", "-fno-implicit-modules"),
             ],
+            features = [SWIFT_FEATURE_USE_C_MODULES],
+        ),
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_DERIVE_FILES,
+                SWIFT_ACTION_DUMP_AST,
+                SWIFT_ACTION_PRECOMPILE_C_MODULE,
+                SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
+                SWIFT_ACTION_SYNTHESIZE_INTERFACE,
+            ],
+            configurators = [
+                add_arg("-Xfrontend", "-disable-building-interface"),  # Make sure Swift doesn't implicitly translate swiftinterface -> swiftmodule
+            ],
+            features = [SWIFT_FEATURE_USE_C_MODULES],
+        ),
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE_MODULE_INTERFACE],
+            configurators = [add_arg("-disable-building-interface")],
             features = [SWIFT_FEATURE_USE_C_MODULES],
         ),
         # When using C modules, disable the implicit module cache.
