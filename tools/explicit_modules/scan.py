@@ -128,10 +128,45 @@ def _write_labels(out: TextIO, labels: set[str], indent: str = "        ") -> No
         out.write(f'{indent}":{label}",\n')
 
 
+def _normalize_system_path(path: str, *, developer_dir: str, sdkroot: str) -> str:
+    return (
+        path.replace(sdkroot, "__BAZEL_XCODE_SDKROOT__")
+        .replace(developer_dir, "__BAZEL_XCODE_DEVELOPER_DIR__")
+    )
+
+
+def _write_string_attr(
+    out: TextIO,
+    *,
+    name: str,
+    values_by_cpu: dict[str, str],
+) -> None:
+    values = set(values_by_cpu.values())
+    if len(values) == 1:
+        out.write(f'    {name} = "{next(iter(values))}",\n')
+        return
+
+    out.write(f"    {name} = select({{\n")
+    for cpu, value in sorted(values_by_cpu.items()):
+        out.write(f'        "{cpu}": "{value}",\n')
+    out.write("    }),\n")
+
+
+def _write_transition_attrs(
+    out: TextIO,
+    *,
+    sdk: str,
+    sdk_version: str,
+) -> None:
+    out.write(f'    sdk_name = "{sdk}",\n')
+    out.write(f'    sdk_version = "{sdk_version}",\n')
+
+
 def _render_clang_module_groups(
     modules: list["_Module"],
     clang_only_names: set[str],
     sdk: str,
+    sdk_version: str,
     out: TextIO,
 ):
     """Aggregate clang modules + their Swift overlays.
@@ -168,12 +203,14 @@ def _render_clang_module_groups(
                 deps.append(dep)
         _write_labels(out, set(deps))
         out.write("    ],\n")
+        _write_transition_attrs(out, sdk=sdk, sdk_version=sdk_version)
         out.write(")\n")
 
 
 def _render_all_modules_group(
     all_module_names: set[str],
     sdk: str,
+    sdk_version: str,
     out: TextIO,
 ) -> None:
     out.write("\n")
@@ -182,6 +219,7 @@ def _render_all_modules_group(
     out.write("    modules = [\n")
     _write_labels(out, {f"{sdk}_{name}" for name in all_module_names})
     out.write("    ],\n")
+    _write_transition_attrs(out, sdk=sdk, sdk_version=sdk_version)
     out.write(")\n")
 
 
@@ -190,7 +228,13 @@ class _Module:
     name: str
     module_type: str
     sdk: str = field(compare=False)
+    sdk_version: str = field(compare=False)
     module_map_path: str = field(compare=False)
+    is_framework: bool = field(default=False, compare=False)
+    swiftinterface_paths_by_cpu: dict[str, str] = field(
+        default_factory=dict,
+        compare=False,
+    )
     deps_by_cpu: defaultdict[str, set[str]] = field(
         default_factory=lambda: defaultdict(set),
         compare=False,
@@ -202,9 +246,23 @@ class _Module:
             for dep_type, dep_name in direct_dependencies
         )
 
+    def set_swiftinterface(
+        self,
+        *,
+        cpu: str,
+        is_framework: bool,
+        swiftinterface_path: str,
+    ) -> None:
+        self.swiftinterface_paths_by_cpu[cpu] = swiftinterface_path
+        self.is_framework = self.is_framework or is_framework
+
     @property
     def all_dependencies(self) -> set[str]:
         return set().union(*self.deps_by_cpu.values())
+
+    @property
+    def should_compile_swiftinterface(self) -> bool:
+        return bool(self.swiftinterface_paths_by_cpu)
 
     def _render_deps(self, out: TextIO) -> None:
         shared_deps = set(self.all_dependencies)
@@ -245,16 +303,40 @@ class _Module:
                 f'    name = "{_canonical_name(self.name, self.sdk, self.module_type)}",\n'
             )
             out.write(f'    module_name = "{self.name}",\n')
-            out.write(f'    system_module_map = "{self.module_map_path}",\n')
             self._render_deps(out)
+            _write_transition_attrs(
+                out,
+                sdk=self.sdk,
+                sdk_version=self.sdk_version,
+            )
+            out.write(f'    system_module_map = "{self.module_map_path}",\n')
             out.write(")\n")
         elif self.module_type == "swift":
             out.write("\n")
-            out.write("system_module_group(\n")
+            if self.should_compile_swiftinterface:
+                out.write("system_swiftinterface(\n")
+            else:
+                out.write("system_module_group(\n")
             out.write(
                 f'    name = "{_canonical_name(self.name, self.sdk, self.module_type)}",\n'
             )
-            self._render_deps(out)
+            if self.should_compile_swiftinterface:
+                if self.is_framework:
+                    out.write("    is_framework = True,\n")
+                out.write(f'    module_name = "{self.name}",\n')
+                self._render_deps(out)
+                _write_string_attr(
+                    out,
+                    name = "system_swiftinterface",
+                    values_by_cpu = self.swiftinterface_paths_by_cpu,
+                )
+            else:
+                self._render_deps(out)
+                _write_transition_attrs(
+                    out,
+                    sdk=self.sdk,
+                    sdk_version=self.sdk_version,
+                )
             out.write(")\n")
         else:
             raise SystemExit(
@@ -266,6 +348,7 @@ def _parse_output(
     *,
     output: dict[str, Any],
     sdk: str,
+    sdk_version: str,
     cpu: str,
     developer_dir: str,
     sdkroot: str,
@@ -287,21 +370,34 @@ def _parse_output(
             deps.extend(dep.items())
 
         module = all_modules.get(key)
-        module_map_path = (
-            details.get("moduleMapPath", "")
-            .replace(sdkroot, "__BAZEL_XCODE_SDKROOT__")
-            .replace(developer_dir, "__BAZEL_XCODE_DEVELOPER_DIR__")
+        module_map_path = _normalize_system_path(
+            details.get("moduleMapPath", ""),
+            developer_dir = developer_dir,
+            sdkroot = sdkroot,
         )
-
         if module is None:
             module = all_modules[key] = _Module(
                 name=module_name,
                 module_type=module_type,
                 sdk=sdk,
+                sdk_version=sdk_version,
                 module_map_path=module_map_path,
             )
 
         module.module_map_path = module.module_map_path or module_map_path
+        if module_type == "swift":
+            has_prebuilt_swiftmodule = bool(details.get("compiledModuleCandidates", []))
+            if not has_prebuilt_swiftmodule:
+                module.set_swiftinterface(
+                    cpu = cpu,
+                    is_framework = bool(details.get("isFramework", False)),
+                    swiftinterface_path = _normalize_system_path(
+                        details["moduleInterfacePath"],
+                        developer_dir = developer_dir,
+                        sdkroot = sdkroot,
+                    )
+                )
+
         module.set_deps(cpu, deps)
 
 
@@ -320,6 +416,7 @@ def _scan(
     sdk_path: Path,
     target: str,
     framework_search_paths: list[Path],
+    swift_search_paths: list[Path],
 ) -> dict[str, Any]:
     with tempfile.TemporaryDirectory(prefix=f"scan_{sdk}_") as tmp:
         workdir = Path(tmp)
@@ -339,7 +436,10 @@ def _scan(
             target,
             "-o",
             str(out_json),
-        ] + [f"-F{p}" for p in framework_search_paths]
+        ] + [f"-F{p}" for p in framework_search_paths] + [
+            f"-I{p}"
+            for p in swift_search_paths
+        ]
         res = subprocess.run(cmd, capture_output=True, text=True)
         if res.returncode != 0:
             raise RuntimeError(
@@ -350,13 +450,14 @@ def _scan(
 
 
 def _discover_all_modules(developer_dir: Path, sdk: str) -> tuple[str, set[str]]:
-    sdk_path = developer_dir / f"Platforms/{sdk}.platform/Developer/SDKs/{sdk}.sdk"
-    platform_search_path = (
-        developer_dir / f"Platforms/{sdk}.platform/Developer/Library/Frameworks"
-    )
+    platform_developer_path = developer_dir / f"Platforms/{sdk}.platform/Developer"
+    sdk_path = platform_developer_path / f"SDKs/{sdk}.sdk"
     framework_search_paths = [
-        platform_search_path,
+        platform_developer_path / "Library/Frameworks",
         sdk_path / "System/Library/Frameworks",
+    ]
+    swift_search_paths = [
+        platform_developer_path / "usr/lib",
     ]
     library_search_paths = [
         sdk_path / "usr/lib/swift",
@@ -365,7 +466,7 @@ def _discover_all_modules(developer_dir: Path, sdk: str) -> tuple[str, set[str]]
 
     excluded = _SDK_MODULE_EXCLUSIONS.get(sdk, set())
     modules = set()
-    for directory in set(framework_search_paths + library_search_paths):
+    for directory in set(framework_search_paths + library_search_paths + swift_search_paths):
         for x in directory.iterdir():
             if x.stem in excluded:
                 continue
@@ -394,10 +495,12 @@ def _discover_all_modules(developer_dir: Path, sdk: str) -> tuple[str, set[str]]
             sdk_path=sdk_path,
             target=target_format.format(ver=deployment_target),
             framework_search_paths=framework_search_paths,
+            swift_search_paths=swift_search_paths,
         )
         _parse_output(
             output=scan_output,
             sdk=sdk,
+            sdk_version=deployment_target,
             cpu=cpu,
             developer_dir=developer_dir.as_posix(),
             sdkroot=sdk_path.as_posix(),
@@ -412,8 +515,14 @@ def _discover_all_modules(developer_dir: Path, sdk: str) -> tuple[str, set[str]]
     buf = io.StringIO()
     for module in all_modules:
         module.render_target(buf)
-    _render_clang_module_groups(all_modules, clang_names - swift_names, sdk, buf)
-    _render_all_modules_group(all_module_names, sdk, buf)
+    _render_clang_module_groups(
+        all_modules,
+        clang_names - swift_names,
+        sdk,
+        deployment_target,
+        buf,
+    )
+    _render_all_modules_group(all_module_names, sdk, deployment_target, buf)
 
     return buf.getvalue(), all_module_names | {f"{n}_clang" for n in clang_names}
 
