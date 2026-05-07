@@ -1,6 +1,6 @@
 """Stamp out the explicit-modules binaries across every platform."""
 
-load("//test:transitions.bzl", "platform_transition_binary")
+load("//test:transitions.bzl", "transition_binary")
 
 _BINARIES = [
     "c_module_imports",
@@ -35,9 +35,9 @@ def cross_platform_targets(tags):  # buildifier: disable=unnamed-macro
     """Generate `<stem>_<platform>` for every (binary, platform) pair."""
     for binary in _BINARIES:
         for platform in _PLATFORMS:
-            platform_transition_binary(
+            transition_binary(
                 name = "{}_{}".format(binary, platform),
-                binary = ":{}_transitioned".format(binary),
+                target = ":{}_transitioned".format(binary),
                 platform = "@build_bazel_apple_support//platforms:" + platform,
                 target_compatible_with = select({
                     "//test:apple_build_tests_enabled": [],

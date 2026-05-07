@@ -1,7 +1,7 @@
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("//swift:swift_binary.bzl", "swift_binary")
 load("//swift:swift_interop_hint.bzl", "swift_interop_hint")
-load("//test:transitions.bzl", "force_features_binary")
+load("//test:transitions.bzl", "transition_binary")
 load("//test/fixtures:common.bzl", "FIXTURE_TAGS")
 
 package(default_visibility = ["//test:__subpackages__"])
@@ -37,10 +37,10 @@ swift_binary(
     deps = [":Defines"],
 )
 
-force_features_binary(
+transition_binary(
     name = "user_explicit_modules",
-    binary = ":user",
     tags = FIXTURE_TAGS,
+    target = ":user",
     # TODO: Remove when we support explicit modules on Linux
     target_compatible_with = ["@platforms//os:macos"],
     transitive_features = [

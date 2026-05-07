@@ -4,7 +4,7 @@ load("@rules_shell//shell:sh_test.bzl", "sh_test")
 load("//swift:swift_compiler_plugin.bzl", "swift_compiler_plugin")
 load("//swift:swift_interop_hint.bzl", "swift_interop_hint")
 load("//swift:swift_library.bzl", "swift_library")
-load("//test:transitions.bzl", "force_features_binary")
+load("//test:transitions.bzl", "transition_binary")
 load(":extract_pcm.bzl", "extract_pcm")
 load(":extract_swiftmodule.bzl", "extract_swiftmodule")
 load(":xcode_version_at_least.bzl", "xcode_version_at_least")
@@ -19,9 +19,9 @@ config_setting(
     flag_values = {":xcode_at_least_26_4": "True"},
 )
 
-force_features_binary(
+transition_binary(
     name = "foundation_pcm",
-    binary = "@system_sdk//:Foundation_clang",
+    target = "@system_sdk//:Foundation_clang",
     target_compatible_with = select({
         "@build_bazel_apple_support//configs:apple": [],
         "//conditions:default": ["@platforms//:incompatible"],

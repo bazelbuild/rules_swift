@@ -9,9 +9,8 @@ load("//swift:swift_library.bzl", "swift_library")
 load("//swift:swift_test.bzl", "swift_test")
 load(
     "//test:transitions.bzl",
-    "force_features_binary",
-    "force_features_test",
-    "force_macos_min_os",
+    "transition_binary",
+    "transition_test",
 )
 load("//test/fixtures:common.bzl", "FIXTURE_TAGS")
 load(":cross_platform.bzl", "cross_platform_targets")
@@ -44,10 +43,10 @@ swift_binary(
     ],
 )
 
-force_features_binary(
+transition_binary(
     name = "hello_with_explicit_deps_transitioned",
-    binary = ":hello_with_explicit_deps_bin",
     tags = FIXTURE_TAGS,
+    target = ":hello_with_explicit_deps_bin",
     transitive_features = [
         "swift.use_c_modules",
         "swift.emit_c_module",
@@ -83,10 +82,10 @@ swift_binary(
     ],
 )
 
-force_features_binary(
+transition_binary(
     name = "objc_interop_bin_transitioned",
-    binary = ":objc_interop_bin",
     tags = FIXTURE_TAGS,
+    target = ":objc_interop_bin",
     transitive_features = [
         "swift.use_c_modules",
         "swift.emit_c_module",
@@ -133,10 +132,10 @@ swift_binary(
     deps = [":GreeterImplicit"],
 )
 
-force_features_binary(
+transition_binary(
     name = "objc_interop_implicit_bin_transitioned",
-    binary = ":objc_interop_implicit_bin",
     tags = FIXTURE_TAGS,
+    target = ":objc_interop_implicit_bin",
     transitive_features = [
         "swift.use_c_modules",
         "swift.emit_c_module",
@@ -161,10 +160,10 @@ swift_test(
     ],
 )
 
-force_features_test(
+transition_test(
     name = "simple_xctest_transitioned",
-    binary = ":simple_xctest",
     tags = FIXTURE_TAGS,
+    target = ":simple_xctest",
     transitive_features = [
         "swift.use_c_modules",
         "swift.emit_c_module",
@@ -180,11 +179,11 @@ swift_test(
     tags = FIXTURE_TAGS,
 )
 
-force_features_test(
+transition_test(
     name = "xctest_with_testing_transitioned",
-    binary = ":xctest_with_testing",
     compilation_mode = "dbg",  # forces a different stack protector mode which can expose issues
     tags = FIXTURE_TAGS,
+    target = ":xctest_with_testing",
     transitive_features = [
         "swift.emit_c_module",
         "swift.use_c_modules",
@@ -203,10 +202,10 @@ swift_binary(
     }),
 )
 
-force_features_binary(
+transition_binary(
     name = "c_module_imports_transitioned",
-    binary = ":c_module_imports",
     tags = FIXTURE_TAGS,
+    target = ":c_module_imports",
     transitive_features = [
         "swift.use_c_modules",
         "swift.emit_c_module",
@@ -235,10 +234,10 @@ swift_binary(
     deps = [":MixedGreeter"],
 )
 
-force_features_binary(
+transition_binary(
     name = "mixed_language_bin_transitioned",
-    binary = ":mixed_language_bin",
     tags = FIXTURE_TAGS,
+    target = ":mixed_language_bin",
     transitive_features = [
         "swift.use_c_modules",
         "swift.emit_c_module",
@@ -274,10 +273,10 @@ swift_binary(
     ],
 )
 
-force_features_binary(
+transition_binary(
     name = "mixed_language_explicit_bin_transitioned",
-    binary = ":mixed_language_explicit_bin",
     tags = FIXTURE_TAGS,
+    target = ":mixed_language_explicit_bin",
     transitive_features = [
         "swift.use_c_modules",
         "swift.emit_c_module",
@@ -302,10 +301,10 @@ swift_binary(
     deps = [":LowerVersionLib"],
 )
 
-force_features_binary(
+transition_binary(
     name = "lower_version_bin_transitioned",
-    binary = ":lower_version_bin",
     tags = FIXTURE_TAGS,
+    target = ":lower_version_bin",
     transitive_features = [
         "swift.use_c_modules",
         "swift.emit_c_module",
@@ -326,7 +325,7 @@ swift_library(
     ],
 )
 
-force_macos_min_os(
+transition_binary(
     name = "min_os_lib_at_13",
     minimum_os = "13.0",  # NOTE: Needs to be different from --macos_minimum_os in .bazelrc
     tags = FIXTURE_TAGS,
@@ -347,10 +346,10 @@ swift_binary(
 # Testing the diamond dependency with different OS versions on
 # @system_sdk//:Foundation through Greeter's PCM. If we do this wrong Greeter's
 # PCM will see the wrong Foundation.pcm when being imported.
-force_features_binary(
+transition_binary(
     name = "min_os_bin_transitioned",
-    binary = ":min_os_bin",
     tags = FIXTURE_TAGS,
+    target = ":min_os_bin",
     transitive_features = [
         "swift.use_c_modules",
         "swift.emit_c_module",
