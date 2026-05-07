@@ -119,9 +119,10 @@ def precompiled_modules_test_suite(name, tags = []):
         targets = [
             "//test/fixtures/precompiled_modules:hello",
             "//test/fixtures/precompiled_modules:hello_with_explicit_deps_transitioned",
-            "//test/fixtures/precompiled_modules:objc_interop_bin_transitioned",
             "//test/fixtures/precompiled_modules:lower_version_bin_transitioned",
             "//test/fixtures/precompiled_modules:min_os_bin_transitioned",
+            "//test/fixtures/precompiled_modules:objc_interop_bin_transitioned",
+            "//test/fixtures/precompiled_modules:xctest_with_testing_transitioned",
         ] + [
             "//test/fixtures/precompiled_modules:" + t
             for t in CROSS_PLATFORM_TARGETS

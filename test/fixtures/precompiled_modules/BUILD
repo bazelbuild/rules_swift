@@ -172,6 +172,30 @@ force_features_test(
     ],
 )
 
+# Test modules don't have prebuilt swiftmodule files so they are handled differently
+swift_test(
+    name = "xctest_with_testing",
+    srcs = ["XCTestWithTesting.swift"],
+    discover_tests = False,
+    tags = FIXTURE_TAGS,
+    target_compatible_with = select({
+        "@build_bazel_apple_support//configs:apple": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+)
+
+force_features_test(
+    name = "xctest_with_testing_transitioned",
+    binary = ":xctest_with_testing",
+    compilation_mode = "dbg",  # forces a different stack protector mode which can expose issues
+    tags = FIXTURE_TAGS,
+    transitive_features = [
+        "swift.emit_c_module",
+        "swift.use_c_modules",
+        "swift.use_explicit_swift_module_map",
+    ],
+)
+
 # Imports C-only modules whose modulemaps live under `<sdk>/usr/include/<name>.modulemap`
 swift_binary(
     name = "c_module_imports",

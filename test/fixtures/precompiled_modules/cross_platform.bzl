@@ -3,10 +3,10 @@
 load("//test:transitions.bzl", "platform_transition_binary")
 
 _BINARIES = [
-    "objc_interop_implicit_bin",
+    "c_module_imports",
     "mixed_language_bin",
     "mixed_language_explicit_bin",
-    "c_module_imports",
+    "objc_interop_implicit_bin",
 ]
 
 _PLATFORMS = [
