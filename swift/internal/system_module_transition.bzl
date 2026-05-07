@@ -26,7 +26,7 @@ _SDK_NAME_TO_MIN_OS_OPTION = {
     "WatchSimulator": "//command_line_option:watchos_minimum_os",
 }
 
-def zero_min_os_transition_attrs():
+def sdk_min_os_transition_attrs():
     return {
         "sdk_name": attr.string(
             doc = "The SDK name whose version should be used for `--minimum_os_version`.",
@@ -51,7 +51,7 @@ def _sdk_min_os_transition_impl(settings, attr):
     values[_GENERIC_MIN_OS_OPTION] = attr.sdk_version
     return values
 
-zero_min_os_transition = transition(
+sdk_min_os_transition = transition(
     implementation = _sdk_min_os_transition_impl,
     inputs = _MIN_OS_OPTIONS,
     outputs = _MIN_OS_OPTIONS,

@@ -24,7 +24,7 @@ load(
     "SWIFT_FEATURE_SYSTEM_MODULE",
     "SWIFT_FEATURE_USE_C_MODULES",
 )
-load("@build_bazel_rules_swift//swift/internal:system_module_transition.bzl", "zero_min_os_transition", "zero_min_os_transition_attrs")
+load("@build_bazel_rules_swift//swift/internal:system_module_transition.bzl", "sdk_min_os_transition", "sdk_min_os_transition_attrs")
 load("@build_bazel_rules_swift//swift/internal:toolchain_utils.bzl", "SWIFT_TOOLCHAIN_TYPE")
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
@@ -95,8 +95,8 @@ def _system_clang_module_impl(ctx):
     ]
 
 system_clang_module = rule(
-    cfg = zero_min_os_transition,
-    attrs = zero_min_os_transition_attrs() | {
+    cfg = sdk_min_os_transition,
+    attrs = sdk_min_os_transition_attrs() | {
         "modules": attr.label_list(
             allow_empty = True,
             doc = """\
