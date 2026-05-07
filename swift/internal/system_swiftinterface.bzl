@@ -19,8 +19,10 @@ load("@build_bazel_rules_swift//swift:swift_common.bzl", "swift_common")
 load("@build_bazel_rules_swift//swift/internal:compiling.bzl", "compile_module_interface")
 load(
     "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
+    "SWIFT_FEATURE_EMIT_C_MODULE",
     "SWIFT_FEATURE_SUPPRESS_WARNINGS",
     "SWIFT_FEATURE_SYSTEM_MODULE",
+    "SWIFT_FEATURE_USE_C_MODULES",
 )
 load("@build_bazel_rules_swift//swift/internal:toolchain_utils.bzl", "SWIFT_TOOLCHAIN_TYPE")
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
@@ -48,8 +50,10 @@ def _system_swiftinterface_impl(ctx):
     feature_configuration = swift_common.configure_features(
         ctx = ctx,
         requested_features = ctx.features + [
-            SWIFT_FEATURE_SYSTEM_MODULE,
+            SWIFT_FEATURE_EMIT_C_MODULE,
             SWIFT_FEATURE_SUPPRESS_WARNINGS,  # System swiftinterface files have many warnings that we can't do anything about
+            SWIFT_FEATURE_SYSTEM_MODULE,
+            SWIFT_FEATURE_USE_C_MODULES,
         ],
         swift_toolchain = swift_toolchain,
     )
