@@ -34,10 +34,7 @@ class TargetTriple {
   // Creates a new target triple from the given components.
   TargetTriple(absl::string_view arch, absl::string_view vendor,
                absl::string_view os, absl::string_view environment)
-      : arch_(arch),
-        vendor_(vendor),
-        os_(os),
-        environment_(environment) {}
+      : arch_(arch), vendor_(vendor), os_(os), environment_(environment) {}
 
   // Parses the given target triple string into its component parts.
   static std::optional<TargetTriple> Parse(absl::string_view target_triple) {
@@ -75,7 +72,7 @@ class TargetTriple {
   // the OS component (if any).
   TargetTriple WithoutOSVersion() const {
     std::pair<absl::string_view, absl::string_view> os_and_version =
-    absl::StrSplit(os_, absl::MaxSplits(absl::ByAnyChar("0123456789"), 1));
+        absl::StrSplit(os_, absl::MaxSplits(absl::ByAnyChar("0123456789"), 1));
     return TargetTriple(arch_, vendor_, os_and_version.first, environment_);
   }
 

@@ -3,7 +3,7 @@
 @implementation Greeter
 
 + (NSString *)greeting {
-    return @"Hello from Objective-C!";
+  return @"Hello from Objective-C!";
 }
 
 @end
