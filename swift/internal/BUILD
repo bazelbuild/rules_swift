@@ -308,14 +308,14 @@ bzl_library(
     srcs = ["system_clang_module.bzl"],
     visibility = ["//swift:__subpackages__"],
     deps = [
+        "//swift:providers",
+        "//swift:swift_common",
+        "//swift/internal:compiling",
+        "//swift/internal:feature_names",
+        "//swift/internal:system_module_transition",
+        "//swift/internal:toolchain_utils",
         "@bazel_skylib//lib:dicts",
         "@bazel_skylib//lib:paths",
-        "@build_bazel_rules_swift//swift:providers",
-        "@build_bazel_rules_swift//swift:swift_common",
-        "@build_bazel_rules_swift//swift/internal:compiling",
-        "@build_bazel_rules_swift//swift/internal:feature_names",
-        "@build_bazel_rules_swift//swift/internal:system_module_transition",
-        "@build_bazel_rules_swift//swift/internal:toolchain_utils",
         "@rules_cc//cc/common",
     ],
 )
@@ -327,8 +327,8 @@ bzl_library(
     deps = [
         ":utils",
         "//swift:providers",
+        "//swift/internal:system_module_transition",
         "@bazel_skylib//lib:dicts",
-        "@build_bazel_rules_swift//swift/internal:system_module_transition",
         "@rules_cc//cc/common",
     ],
 )
@@ -338,11 +338,11 @@ bzl_library(
     srcs = ["system_swiftinterface.bzl"],
     visibility = ["//swift:__subpackages__"],
     deps = [
-        "@build_bazel_rules_swift//swift:providers",
-        "@build_bazel_rules_swift//swift:swift_common",
-        "@build_bazel_rules_swift//swift/internal:compiling",
-        "@build_bazel_rules_swift//swift/internal:feature_names",
-        "@build_bazel_rules_swift//swift/internal:toolchain_utils",
+        "//swift:providers",
+        "//swift:swift_common",
+        "//swift/internal:compiling",
+        "//swift/internal:feature_names",
+        "//swift/internal:toolchain_utils",
         "@rules_cc//cc/common",
     ],
 )
