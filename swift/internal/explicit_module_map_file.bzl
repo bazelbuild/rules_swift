@@ -35,13 +35,10 @@ def write_explicit_swift_module_map_file(
     module_descriptions = {}
 
     for module_context in module_contexts:
-        if module_context.name in module_descriptions:
-            # As of Swift 6.2, only one entry per module is permitted.
-            continue
-
-        # Set attributes that are applicable to a swift module entry or a
-        # clang module entry
-        module_description = {
+        # You can only have 1 entry per module name. If we have a system module
+        # that has both a clang and swift half, we need to merge them.
+        existing = module_descriptions.get(module_context.name)
+        module_description = existing or {
             "moduleName": module_context.name,
             "isFramework": False,
         }
@@ -50,18 +47,17 @@ def write_explicit_swift_module_map_file(
         if module_context.is_framework:
             module_description["isFramework"] = module_context.is_framework
 
-        # Append a swift moule entry if available
-        has_swift_description = False
-
+        has_swift_description = "modulePath" in module_description
         if module_context.swift:
             swift_context = module_context.swift
             if swift_context.swiftmodule:
                 has_swift_description = True
                 module_description["modulePath"] = swift_context.swiftmodule.path
 
-        # Append a clang module entry if available
-        has_clang_description = False
-
+        has_clang_description = (
+            "clangModulePath" in module_description or
+            "clangModuleMapPath" in module_description
+        )
         if module_context.clang:
             clang_context = module_context.clang
             if clang_context.module_map:

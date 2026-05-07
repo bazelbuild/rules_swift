@@ -35,6 +35,7 @@ build --enable_platform_specific_config
 
 common:linux --repo_env=CC=clang
 build:linux --cxxopt='-std=c++17' --host_cxxopt='-std=c++17'
+common:linux --//test:apple_build_tests=False
 
 # This C2K warning causes zlib to fail to compile.
 # There is an open issue about it on the zlib repository here:

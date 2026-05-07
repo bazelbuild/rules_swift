@@ -11,7 +11,7 @@ module(
 bazel_dep(name = "bazel_features", version = "1.46.0")
 bazel_dep(name = "bazel_skylib", version = "1.7.1")
 bazel_dep(name = "abseil-cpp", version = "20250814.1")
-bazel_dep(name = "apple_support", version = "1.24.2", repo_name = "build_bazel_apple_support")
+bazel_dep(name = "apple_support", version = "2.5.4", repo_name = "build_bazel_apple_support")
 bazel_dep(name = "rules_cc", version = "0.2.14")
 bazel_dep(name = "rules_shell", version = "0.3.0")
 bazel_dep(name = "platforms", version = "0.0.11")
@@ -44,6 +44,45 @@ apple_cc_configure = use_extension("@build_bazel_apple_support//crosstool:setup.
 use_repo(apple_cc_configure, "local_config_apple_cc")
 
 register_toolchains("//swift/toolchains:all")
+
+system_sdk = use_extension("//swift:extensions.bzl", "system_sdk")
+system_sdk.configure_sdks(
+    # NOTE: This doesn't apply to downstream repos
+    exclude_modules = {
+        "AppleTVOS": [
+            "CoreAudio_Private",  # TODO: Remove once CI >= Xcode 26.4
+        ],
+        "AppleTVSimulator": [
+            "CoreAudio_Private",  # TODO: Remove once CI >= Xcode 26.4
+        ],
+        "iPhoneSimulator": [
+            "AssetsLibrary",  #  TODO: Remove once CI >= Xcode 26.4
+            "CoreAudio_Private",
+        ],
+        "iPhoneOS": [
+            "AssetsLibrary",  #  TODO: Remove once CI >= Xcode 26.4
+            "CoreAudio_Private",  # TODO: Remove once CI >= Xcode 26.4
+        ],
+        "XROS": [
+            "AccessoryTransportExtension",
+            "CoreAudio_Private",  # TODO: Remove once CI >= Xcode 26.4
+        ],
+        "XRSimulator": [
+            "AccessoryTransportExtension",
+            "CoreAudio_Private",  # TODO: Remove once CI >= Xcode 26.4
+        ],
+        "WatchOS": [
+            "BrowserEngineKit",
+            "CoreAudio_Private",  # TODO: Remove once CI >= Xcode 26.4
+        ],
+        "WatchSimulator": [
+            "BrowserEngineKit",
+            "CoreAudio_Private",  # TODO: Remove once CI >= Xcode 26.4
+        ],
+    },
+    include_all = True,
+)
+use_repo(system_sdk, "system_sdk")
 
 swift = use_extension("//swift:extensions.bzl", "swift", dev_dependency = True)
 swift.toolchain(

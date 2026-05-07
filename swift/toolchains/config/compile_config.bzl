@@ -445,6 +445,7 @@ def compile_action_configs(
         ActionConfigInfo(
             actions = [
                 SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
             ],
@@ -727,6 +728,8 @@ def compile_action_configs(
                 add_arg("-Xcc", "-fmodule-file-home-is-cwd"),
                 add_arg("-Xcc", "-Xclang"),
                 add_arg("-Xcc", "-fno-modules-check-relocated"),
+                add_arg("-Xcc", "-Xclang"),
+                add_arg("-Xcc", "-fmodules-hash-content"),
             ],
             features = [[
                 SWIFT_FEATURE_EMIT_C_MODULE,
@@ -825,21 +828,32 @@ def compile_action_configs(
                 SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
                 SWIFT_ACTION_SYNTHESIZE_INTERFACE,
             ],
-            configurators = [add_arg("-Xcc", "-fno-implicit-module-maps")],
+            configurators = [
+                add_arg("-Xcc", "-fno-implicit-module-maps"),
+                add_arg("-Xcc", "-fno-implicit-modules"),
+            ],
             features = [SWIFT_FEATURE_USE_C_MODULES],
         ),
-        # When using C modules, disable the implicit module cache.
         ActionConfigInfo(
             actions = [
                 SWIFT_ACTION_COMPILE,
-                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+                SWIFT_ACTION_DERIVE_FILES,
+                SWIFT_ACTION_DUMP_AST,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
                 SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
                 SWIFT_ACTION_SYNTHESIZE_INTERFACE,
             ],
-            configurators = [add_arg("-Xcc", "-fno-implicit-modules")],
+            configurators = [
+                add_arg("-Xfrontend", "-disable-building-interface"),  # Make sure Swift doesn't implicitly translate swiftinterface -> swiftmodule
+            ],
             features = [SWIFT_FEATURE_USE_C_MODULES],
         ),
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE_MODULE_INTERFACE],
+            configurators = [add_arg("-disable-building-interface")],
+            features = [SWIFT_FEATURE_USE_C_MODULES],
+        ),
+        # When using C modules, disable the implicit module cache.
         ActionConfigInfo(
             actions = [SWIFT_ACTION_PRECOMPILE_C_MODULE],
             configurators = [_c_layering_check_configurator],
@@ -870,6 +884,12 @@ def compile_action_configs(
                 add_arg("-suppress-warnings"),
             ],
             features = [SWIFT_FEATURE_SYSTEM_MODULE],
+        ),
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_PRECOMPILE_C_MODULE],
+            configurators = [
+                add_arg("-Xwrapped-swift=-hermetic-pcm"),
+            ],
         ),
     ]
 
@@ -1431,6 +1451,12 @@ def compile_action_configs(
                 SWIFT_ACTION_DUMP_AST,
             ],
             configurators = [_user_compile_flags_configurator],
+        ),
+    )
+    action_configs.append(
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_PRECOMPILE_C_MODULE],
+            configurators = [_precompile_user_compile_flags_configurator],
         ),
     )
     if additional_objc_copts:
@@ -2243,19 +2269,14 @@ def _dependencies_swiftmodules_vfsoverlay_configurator(prerequisites, args, is_f
 def _explicit_swift_module_map_configurator(prerequisites, args, is_frontend = False):
     """Adds the explicit Swift module map file to the command line."""
     if is_frontend:
-        # If we're calling frontend directly we don't need to prepend each
-        # argument with -Xfrontend. Doing so will crash the invocation.
         args.add(
-            "-explicit-swift-module-map-file",
             prerequisites.explicit_swift_module_map_file,
+            format = "-Xwrapped-swift=-frontend-explicit-swift-module-map-file=%s",
         )
     else:
-        args.add_all(
-            [
-                "-explicit-swift-module-map-file",
-                prerequisites.explicit_swift_module_map_file,
-            ],
-            before_each = "-Xfrontend",
+        args.add(
+            prerequisites.explicit_swift_module_map_file,
+            format = "-Xwrapped-swift=-driver-explicit-swift-module-map-file=%s",
         )
     return ConfigResultInfo(
         inputs = prerequisites.transitive_swift_dependency_inputs + [
@@ -2314,6 +2335,18 @@ def _user_compile_flags_configurator(prerequisites, args):
     args.add_all(
         prerequisites.user_compile_flags,
         map_each = _fail_if_flag_is_banned,
+    )
+
+def _precompile_user_compile_flags_configurator(prerequisites, args):
+    """Forwards the underlying clang library's copts to the precompile action.
+
+    Each flag is wrapped in `-Xcc` so that swiftc passes it through to clang
+    when emitting the `.pcm`. This lets flags like `-DSWIFT_PACKAGE` reach
+    the precompile, since they don't propagate via `CcInfo`.
+    """
+    args.add_all(
+        prerequisites.user_compile_flags,
+        before_each = "-Xcc",
     )
 
 def _make_wmo_thread_count_configurator(should_check_flags):

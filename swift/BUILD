@@ -84,6 +84,7 @@ bzl_library(
     srcs = ["swift_common.bzl"],
     deps = [
         "//swift/internal:actions",
+        "//swift/internal:attrs",
         "//swift/internal:compiling",
         "//swift/internal:features",
         "//swift/internal:interface_synthesizing",
@@ -339,6 +340,9 @@ bzl_library(
         ":swift_symbol_graph_aspect",
         ":swift_synthesize_interface_aspect",
         ":swift_test",
+        "//swift/internal:system_clang_module",
+        "//swift/internal:system_module_group",
+        "//swift/internal:system_swiftinterface",
     ],
 )
 

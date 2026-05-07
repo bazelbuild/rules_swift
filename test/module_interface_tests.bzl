@@ -142,7 +142,7 @@ def module_interface_test_suite(name, tags = []):
         name = "{}_explicit_swift_module_map_test".format(name),
         tags = all_tags,
         expected_argv = [
-            "-explicit-swift-module-map-file $(BIN_DIR)/test/fixtures/module_interface/toy_module.swift-explicit-module-map.json",
+            "-Xwrapped-swift=-frontend-explicit-swift-module-map-file=$(BIN_DIR)/test/fixtures/module_interface/toy_module.swift-explicit-module-map.json",
         ],
         not_expected_argv = [
             "-Xfrontend",
@@ -160,7 +160,7 @@ def module_interface_test_suite(name, tags = []):
         ],
         not_expected_argv = [
             "-I$(BIN_DIR)/test/fixtures/module_interface",
-            "-explicit-swift-module-map-file",
+            "-Xwrapped-swift=-frontend-explicit-swift-module-map-file=",
             "-Xfrontend",
         ],
         mnemonic = "SwiftCompileModuleInterface",

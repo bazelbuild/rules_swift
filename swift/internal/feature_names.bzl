@@ -200,6 +200,10 @@ SWIFT_FEATURE_REWRITE_GENERATED_HEADER = "swift.rewrite_generated_header"
 # them.
 SWIFT_FEATURE_USE_C_MODULES = "swift.use_c_modules"
 
+# If enabled (and `swift.use_c_modules` and `swift.emit_c_module` are also
+# enabled), add all system pcms to the implicit deps of all targets.
+SWIFT_FEATURE_ADD_DEFAULT_PRECOMPILED_MODULES = "swift.add_default_precompiled_modules"
+
 # If enabled, Swift modules for dependencies will be passed to the compiler
 # using a JSON file instead of `-I` search paths.
 SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP = "swift.use_explicit_swift_module_map"

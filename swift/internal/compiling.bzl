@@ -848,6 +848,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
             swift_toolchain = toolchains.swift,
             target_name = target_name,
             toolchain_type = toolchain_type,
+            user_compile_flags = [],
         )
         if pcm_outputs:
             precompiled_module = pcm_outputs.pcm_file
@@ -942,7 +943,8 @@ def precompile_clang_module(
         target_name,
         toolchains = None,
         toolchain_type = SWIFT_TOOLCHAIN_TYPE,
-        swift_infos = []):
+        swift_infos = [],
+        user_compile_flags = []):
     """Precompiles an explicit Clang module that is compatible with Swift.
 
     Args:
@@ -973,6 +975,9 @@ def precompile_clang_module(
         toolchain_type: The toolchain type of the Swift toolchain.
         swift_infos: A list of `SwiftInfo` providers representing dependencies
             required to compile this module.
+        user_compile_flags: Additional Clang flags to pass to the precompile
+            action. Each flag is forwarded to the underlying clang invocation
+            via `-Xcc`.
 
     Returns:
         A struct containing the following fields:
@@ -1002,6 +1007,7 @@ def precompile_clang_module(
         target_name = target_name,
         toolchains = toolchains,
         toolchain_type = toolchain_type,
+        user_compile_flags = user_compile_flags,
     )
 
 def _precompile_clang_module(
@@ -1017,7 +1023,8 @@ def _precompile_clang_module(
         swift_toolchain = None,
         target_name,
         toolchains = None,
-        toolchain_type):
+        toolchain_type,
+        user_compile_flags):
     """Precompiles an explicit Clang module that is compatible with Swift.
 
     Args:
@@ -1050,6 +1057,9 @@ def _precompile_clang_module(
         toolchains: The struct containing the Swift and C++ toolchain providers,
             as returned by `swift_common.find_all_toolchains()`.
         toolchain_type: The toolchain type of the Swift toolchain.
+        user_compile_flags: Additional Clang flags to pass to the precompile
+            action. Each flag is forwarded to the underlying clang invocation
+            via `-Xcc`.
 
     Returns:
         A struct containing the following fields:
@@ -1152,6 +1162,7 @@ def _precompile_clang_module(
         source_files = [module_map_file],
         target_label = feature_configuration._label,
         transitive_modules = transitive_modules,
+        user_compile_flags = user_compile_flags,
     )
 
     run_toolchain_action(

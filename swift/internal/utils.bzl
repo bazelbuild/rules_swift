@@ -19,7 +19,13 @@ load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load("//swift:providers.bzl", "SwiftInfo")
-load(":feature_names.bzl", "SWIFT_FEATURE_NO_IMPLICIT_DEPS")
+load(
+    ":feature_names.bzl",
+    "SWIFT_FEATURE_ADD_DEFAULT_PRECOMPILED_MODULES",
+    "SWIFT_FEATURE_EMIT_C_MODULE",
+    "SWIFT_FEATURE_NO_IMPLICIT_DEPS",
+    "SWIFT_FEATURE_USE_C_MODULES",
+)
 load(":features.bzl", "is_feature_enabled")
 
 def collect_implicit_deps_providers(targets, additional_cc_infos = []):
@@ -382,6 +388,43 @@ def struct_fields(s):
         # TODO(b/36412967): Remove the `to_json` and `to_proto` checks.
         if field not in ("to_json", "to_proto")
     }
+
+def default_precompiled_modules_providers(default_precompiled_modules, feature_configuration):
+    """Returns extra providers if explicit modules is enabled.
+
+    Args:
+        default_precompiled_modules: The target containing all the default
+            modules to propagate if the relevant features are enabled.
+        feature_configuration: A feature configuration obtained from
+            `swift_common.configure_features`.
+
+    Returns:
+        A tuple `(cc_infos, swift_infos)`.
+    """
+    if not (
+        is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_USE_C_MODULES,
+        ) and is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_EMIT_C_MODULE,
+        ) and is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_ADD_DEFAULT_PRECOMPILED_MODULES,
+        )
+    ):
+        return [], []
+
+    if not default_precompiled_modules:
+        fail(
+            "The `swift.add_default_precompiled_modules` feature is enabled " +
+            "but the calling rule did not pass a `default_precompiled_modules`.",
+        )
+
+    return (
+        [default_precompiled_modules[CcInfo]],
+        [default_precompiled_modules[SwiftInfo]],
+    )
 
 def include_developer_search_paths(attr):
     """Determines whether to include developer search paths.

@@ -101,6 +101,11 @@ class SwiftRunner {
       const std::string &arg,
       std::function<void(const std::string &)> consumer);
 
+  // Applies placeholder substitutions to an explicit Swift module map file.
+  // The rewritten JSON is written to a temporary file and that path is
+  // returned.
+  std::string ProcessExplicitSwiftModuleMapFile(const std::string &path);
+
   // Applies substitutions for a single argument and passes the new arguments
   // (or the original, if no substitution was needed) to the consumer. Returns
   // true if any substitutions were made (that is, if the arguments passed to
@@ -190,6 +195,9 @@ class SwiftRunner {
 
   // Whether `.swiftsourceinfo` files are being generated.
   bool emit_swift_source_info_;
+
+  // Whether `-Xwrapped-swift=-hermetic-pcm` was passed
+  bool hermetic_pcm_;
 };
 
 #endif  // BUILD_BAZEL_RULES_SWIFT_TOOLS_WORKER_SWIFT_RUNNER_H_

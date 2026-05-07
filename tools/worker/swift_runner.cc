@@ -16,7 +16,9 @@
 
 #include <filesystem>
 #include <fstream>
+#include <iomanip>
 #include <optional>
+#include <sstream>
 #include <utility>
 
 #include "absl/strings/match.h"
@@ -29,6 +31,7 @@
 #include "tools/common/target_triple.h"
 #include "tools/common/temp_file.h"
 #include "tools/worker/output_file_map.h"
+#include "tools/worker/pcm_hermetic_runner.h"
 
 bool ArgumentEnablesWMO(const std::string &arg) {
   return arg == "-wmo" || arg == "-whole-module-optimization" ||
@@ -215,6 +218,56 @@ std::optional<std::string> InferInterfacePath(
   return std::nullopt;
 }
 
+// Necessary so the MODULE_INTERFACE_PATH in the swiftmodule doesn't have an
+// absolute path to Xcode
+void CreateVFSOverlayForInterface(
+    absl::string_view interface_path,
+    std::function<void(absl::string_view)> consumer) {
+  std::filesystem::path source{std::string(interface_path)};
+  if (!source.is_absolute()) {
+    consumer(source.string());
+    return;
+  }
+
+  std::filesystem::path module_dir = source.parent_path().filename();
+  if (module_dir.empty()) {
+    module_dir = "swiftmodule";
+  }
+  std::filesystem::path virtual_dir =
+      std::filesystem::path(".rules_swift_interface_sources") / module_dir;
+  std::filesystem::path virtual_path = virtual_dir / source.filename();
+  std::filesystem::path overlay_path = virtual_dir / "swiftinterface-vfsoverlay.yaml";
+
+  std::error_code ec;
+  std::filesystem::create_directories(virtual_dir, ec);
+  if (ec) {
+    consumer(source.string());
+    return;
+  }
+
+  std::ofstream overlay_file(overlay_path);
+  if (!overlay_file) {
+    consumer(source.string());
+    return;
+  }
+  overlay_file << "{\"version\":0,\"case-sensitive\":true,"
+               << "\"overlay-relative\":false,\"use-external-names\":false,"
+               << "\"roots\":[{\"type\":\"directory\",\"name\":"
+               << std::quoted(virtual_dir.string()) << ",\"contents\":["
+               << "{\"type\":\"file\",\"name\":"
+               << std::quoted(source.filename().string())
+               << ",\"external-contents\":" << std::quoted(source.string())
+               << "}]}]}";
+  overlay_file.close();
+  if (!overlay_file) {
+    consumer(source.string());
+    return;
+  }
+
+  consumer("-vfsoverlay" + overlay_path.string());
+  consumer(virtual_path.string());
+}
+
 // Extracts flags from the given `.swiftinterface` file and passes them to the
 // given consumer.
 void ExtractFlagsFromInterfaceFile(
@@ -234,7 +287,7 @@ void ExtractFlagsFromInterfaceFile(
 
   // Add the path to the interface file as a source file argument, then extract
   // the flags from it and add them as well.
-  consumer(interface_path);
+  CreateVFSOverlayForInterface(interface_path, consumer);
 
   std::ifstream interface_file{std::string(interface_path)};
   std::string line;
@@ -271,7 +324,8 @@ SwiftRunner::SwiftRunner(const std::vector<std::string> &args,
       index_import_path_(index_import_path),
       force_response_file_(force_response_file),
       is_dump_ast_(false),
-      file_prefix_pwd_is_dot_(false) {
+      file_prefix_pwd_is_dot_(false),
+      hermetic_pcm_(false) {
   args_ = ProcessArguments(args);
 }
 
@@ -285,8 +339,10 @@ int SwiftRunner::Run(std::ostream *stderr_stream, bool stdout_to_stderr) {
     std::filesystem::remove(swift_source_info_path_);
   }
 
-  int exit_code = RunSubProcess(
-      args_, &job_env_, stderr_stream, stdout_to_stderr);
+  int exit_code =
+      hermetic_pcm_
+          ? RunHermeticPcm(args_, stderr_stream)
+          : RunSubProcess(args_, &job_env_, stderr_stream, stdout_to_stderr);
 
   if (exit_code != 0) {
     return exit_code;
@@ -440,6 +496,30 @@ bool SwiftRunner::ProcessPossibleResponseFile(
   return changed;
 }
 
+std::string SwiftRunner::ProcessExplicitSwiftModuleMapFile(
+    const std::string &path) {
+  std::string module_map_path = path;
+  std::ifstream module_map_file(module_map_path);
+  if (!module_map_file.good()) {
+    return module_map_path;
+  }
+
+  std::stringstream buffer;
+  buffer << module_map_file.rdbuf();
+  std::string contents = buffer.str();
+  bazel_placeholder_substitutions_.Apply(contents);
+
+  auto rewritten_module_map =
+      TempFile::Create("swift_explicit_module_map.XXXXXX");
+  std::ofstream rewritten_module_map_stream(rewritten_module_map->GetPath());
+  rewritten_module_map_stream << contents;
+  rewritten_module_map_stream.close();
+
+  module_map_path = rewritten_module_map->GetPath();
+  temp_files_.push_back(std::move(rewritten_module_map));
+  return module_map_path;
+}
+
 template <typename Iterator>
 bool SwiftRunner::ProcessArgument(
     Iterator &itr, const std::string &arg,
@@ -524,10 +604,24 @@ bool SwiftRunner::ProcessArgument(
         changed = true;
       } else if (StripPrefix("-global-index-store-import-path=", new_arg)) {
         changed = true;
+      } else if (new_arg == "-hermetic-pcm") {
+        changed = true;
       } else if (StripPrefix(
                      "-explicit-compile-module-from-interface=", new_arg)) {
         module_or_interface_path_ = new_arg;
         bazel_placeholder_substitutions_.Apply(module_or_interface_path_);
+        changed = true;
+      } else if (StripPrefix(
+                     "-driver-explicit-swift-module-map-file=", new_arg)) {
+        consumer("-Xfrontend");
+        consumer("-explicit-swift-module-map-file");
+        consumer("-Xfrontend");
+        consumer(ProcessExplicitSwiftModuleMapFile(new_arg));
+        changed = true;
+      } else if (StripPrefix(
+                     "-frontend-explicit-swift-module-map-file=", new_arg)) {
+        consumer("-explicit-swift-module-map-file");
+        consumer(ProcessExplicitSwiftModuleMapFile(new_arg));
         changed = true;
       } else {
         // TODO(allevato): Report that an unknown wrapper arg was found and give
@@ -573,7 +667,7 @@ bool SwiftRunner::ProcessArgument(
       // to ensure that our defensive quoting kicks in if an argument contains
       // a space, even if no other changes would have been made.
       changed = bazel_placeholder_substitutions_.Apply(new_arg) ||
-                new_arg.find_first_of(' ') != std::string::npos;
+                changed || new_arg.find_first_of(' ') != std::string::npos;
       consumer(new_arg);
     }
   }
@@ -599,6 +693,8 @@ std::vector<std::string> SwiftRunner::ParseArguments(Iterator itr) {
         file_prefix_pwd_is_dot_ = true;
       } else if (arg == "-emit-swiftsourceinfo") {
         emit_swift_source_info_ = true;
+      } else if (arg == "-hermetic-pcm") {
+        hermetic_pcm_ = true;
       } else if (StripPrefix(
                      "-explicit-compile-module-from-interface=", arg)) {
         module_or_interface_path_ = arg;

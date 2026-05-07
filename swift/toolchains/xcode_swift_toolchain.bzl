@@ -49,6 +49,7 @@ load("//swift/internal:attrs.bzl", "swift_toolchain_driver_attrs")
 load("//swift/internal:developer_dirs.bzl", "swift_developer_lib_dir")
 load(
     "//swift/internal:feature_names.bzl",
+    "SWIFT_FEATURE_ADD_DEFAULT_PRECOMPILED_MODULES",
     "SWIFT_FEATURE_COVERAGE",
     "SWIFT_FEATURE_COVERAGE_PREFIX_MAP",
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
@@ -433,6 +434,19 @@ def _all_action_configs(
     Returns:
         The action configurations for the Swift toolchain.
     """
+    sdk_version = str(xcode_config.sdk_version_for_platform(
+        target_triples.bazel_apple_platform(target_triple),
+    ))
+    sdk_version_triple = target_triples.str(
+        target_triples.normalize_for_swift(
+            target_triples.make(
+                cpu = target_triple.cpu,
+                vendor = target_triple.vendor,
+                os = target_triples.unversioned_os(target_triple) + sdk_version,
+                environment = target_triple.environment,
+            ),
+        ),
+    )
 
     # Basic compilation flags (target triple and toolchain search paths).
     action_configs = [
@@ -443,18 +457,50 @@ def _all_action_configs(
                 SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
                 SWIFT_ACTION_MODULEWRAP,
-                SWIFT_ACTION_PRECOMPILE_C_MODULE,
                 SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
                 SWIFT_ACTION_SYNTHESIZE_INTERFACE,
             ],
             configurators = [
                 add_arg("-target", target_triples.str(target_triple)),
-                # https://github.com/swiftlang/llvm-project/issues/12826
-                add_arg("-Xcc", "--target={}".format(target_triples.str(target_triple))),
                 add_arg("-sdk", apple_toolchain.sdk_dir()),
             ],
         ),
     ]
+
+    # https://github.com/swiftlang/llvm-project/issues/12826
+    action_configs.extend([
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_PRECOMPILE_C_MODULE],
+            configurators = [
+                # NOTE: This seems wrong but is also what Xcode does
+                add_arg("-target", sdk_version_triple),
+                add_arg("-sdk", apple_toolchain.sdk_dir()),
+            ],
+        ),
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_DERIVE_FILES,
+                SWIFT_ACTION_DUMP_AST,
+                SWIFT_ACTION_PRECOMPILE_C_MODULE,
+                SWIFT_ACTION_SYNTHESIZE_INTERFACE,
+            ],
+            configurators = [
+                add_arg("-Xfrontend", "-clang-target"),
+                add_arg("-Xfrontend", sdk_version_triple),
+            ],
+        ),
+        ActionConfigInfo(
+            # Actions that run directly with -frontend so -Xfrontend is invalid
+            actions = [
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+                SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
+            ],
+            configurators = [
+                add_arg("-clang-target", sdk_version_triple),
+            ],
+        ),
+    ])
 
     action_configs.extend([
         # Xcode path remapping
@@ -547,9 +593,7 @@ def _all_action_configs(
                 ),
                 add_arg(
                     "-target-sdk-version",
-                    str(xcode_config.sdk_version_for_platform(
-                        target_triples.bazel_apple_platform(target_triple),
-                    )),
+                    sdk_version,
                 ),
             ],
         ),
@@ -839,6 +883,9 @@ def _xcode_swift_toolchain_impl(ctx):
 
     # Xcode toolchains always support DEVELOPER_DIR
     requested_features.append(SWIFT_FEATURE__SUPPORTS_DEVELOPER_DIR)
+
+    # If explicit modules are enabled, implicitly add all precompiled modules as deps by default
+    requested_features.append(SWIFT_FEATURE_ADD_DEFAULT_PRECOMPILED_MODULES)
 
     unsupported_features = ctx.disabled_features + [
         SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD,

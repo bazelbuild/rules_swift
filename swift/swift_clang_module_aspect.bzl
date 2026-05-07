@@ -18,6 +18,7 @@ load("@bazel_skylib//lib:sets.bzl", "sets")
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load("@rules_cc//cc/common:objc_info.bzl", "ObjcInfo")
+load("//swift/internal:attrs.bzl", "default_precompiled_modules_attrs")
 load("//swift/internal:compiling.bzl", "compile", "precompile_clang_module")
 load(
     "//swift/internal:feature_names.bzl",
@@ -54,6 +55,7 @@ load(
     "//swift/internal:utils.bzl",
     "compact",
     "compilation_context_for_explicit_module_compilation",
+    "default_precompiled_modules_providers",
 )
 load(":module_name.bzl", "derive_swift_module_name")
 load(
@@ -297,6 +299,8 @@ def _module_info_for_target(
 def _handle_module(
         aspect_ctx,
         exclude_headers,
+        extra_cc_infos,
+        extra_swift_infos,
         feature_configuration,
         module_map_file,
         module_name,
@@ -317,6 +321,8 @@ def _handle_module(
             legacy support).
         module_name: The name of the module, or None if it should be inferred
             from other properties of the target (for legacy support).
+        extra_cc_infos: Extra 'CcInfo' providers to pass through
+        extra_swift_infos: Extra 'SwiftInfo' providers to pass through
         direct_swift_infos: The `SwiftInfo` providers of the current target's
             dependencies, which should be merged into the `SwiftInfo` provider
             created and returned for this target.
@@ -332,6 +338,8 @@ def _handle_module(
         A list of providers that should be returned by the aspect.
     """
     attr = aspect_ctx.rule.attr
+
+    swift_infos = swift_infos + extra_swift_infos
 
     all_swift_infos = (
         direct_swift_infos + swift_infos +
@@ -376,7 +384,10 @@ def _handle_module(
         else:
             return []
 
-    compilation_contexts_to_merge_for_compilation = [compilation_context]
+    compilation_contexts_to_merge_for_compilation = [compilation_context] + [
+        cc_info.compilation_context
+        for cc_info in extra_cc_infos
+    ]
 
     # Fold the `strict_includes` from `ObjcInfo` into the Clang module
     # descriptor in `SwiftInfo` so that the `Objc` provider doesn't have to be
@@ -413,6 +424,16 @@ def _handle_module(
 
     output_groups = {}
 
+    # Private -D flags might be needed to compile the PCM
+    # TODO: Only grab local_defines once that has existed for long enough
+    local_defines = [
+        copt
+        for copt in getattr(attr, "copts", [])
+        if copt.startswith("-D") and "$(" not in copt
+    ]
+    for define in getattr(attr, "local_defines", []):
+        local_defines.append("-D" + define)
+
     pcm_outputs = precompile_clang_module(
         actions = aspect_ctx.actions,
         cc_compilation_context = compilation_context_to_compile,
@@ -423,6 +444,7 @@ def _handle_module(
         toolchains = toolchains,
         target_name = target.label.name,
         toolchain_type = toolchain_type,
+        user_compile_flags = local_defines,
     )
     precompiled_module = getattr(pcm_outputs, "pcm_file", None)
     pcm_indexstore = getattr(pcm_outputs, "indexstore_directory", None)
@@ -775,9 +797,15 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx, toolchain_type):
     )
 
     if interop_info or ObjcInfo in target or CcInfo in target:
+        extra_cc_infos, extra_swift_infos = default_precompiled_modules_providers(
+            aspect_ctx.attr._default_precompiled_modules,
+            feature_configuration,
+        )
         return providers + _handle_module(
             aspect_ctx = aspect_ctx,
             exclude_headers = exclude_headers,
+            extra_cc_infos = extra_cc_infos,
+            extra_swift_infos = extra_swift_infos,
             feature_configuration = feature_configuration,
             module_map_file = module_map_file,
             module_name = module_name,
@@ -817,6 +845,7 @@ def make_swift_clang_module_aspect(*, toolchain_type):
 
     return aspect(
         attr_aspects = _MULTIPLE_TARGET_ASPECT_ATTRS,
+        attrs = default_precompiled_modules_attrs(),
         doc = """\
 Propagates unified `SwiftInfo` providers for targets that represent
 C/Objective-C modules.

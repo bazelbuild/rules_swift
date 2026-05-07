@@ -1,5 +1,7 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
 load(":additional_linker_inputs_tests.bzl", "additional_linker_inputs_test_suite")
+load(":aspect_tests.bzl", "aspect_tests")
 load(":ast_file_tests.bzl", "ast_file_test_suite")
 load(":bzl_test.bzl", "bzl_test")
 load(":cc_library_tests.bzl", "cc_library_test_suite")
@@ -18,6 +20,7 @@ load(":module_interface_tests.bzl", "module_interface_test_suite")
 load(":module_mapping_tests.bzl", "module_mapping_test_suite")
 load(":output_file_map_tests.bzl", "output_file_map_test_suite")
 load(":pch_output_dir_tests.bzl", "pch_output_dir_test_suite")
+load(":precompiled_modules_tests.bzl", "precompiled_modules_test_suite")
 load(":private_deps_tests.bzl", "private_deps_test_suite")
 load(":private_swiftinterface_tests.bzl", "private_swiftinterface_test_suite")
 load(":runtime_deps_tests.bzl", "runtime_deps_test_suite")
@@ -33,6 +36,8 @@ load(":xctest_runner_tests.bzl", "xctest_runner_test_suite")
 licenses(["notice"])
 
 additional_linker_inputs_test_suite(name = "additional_linker_inputs")
+
+aspect_tests(name = "aspect_tests")
 
 ast_file_test_suite(name = "ast_file")
 
@@ -88,6 +93,8 @@ synthesize_interface_test_suite(
 
 pch_output_dir_test_suite(name = "pch_output_dir_settings")
 
+precompiled_modules_test_suite(name = "precompiled_modules")
+
 private_swiftinterface_test_suite(name = "private_swiftinterface")
 
 utils_test_suite(name = "utils")
@@ -113,8 +120,23 @@ bzl_test(
     deps = ["//swift:providers"],
 )
 
+bool_flag(
+    name = "apple_build_tests",
+    build_setting_default = True,
+)
+
+config_setting(
+    name = "apple_build_tests_enabled",
+    flag_values = {":apple_build_tests": "True"},
+    visibility = ["//visibility:public"],
+)
+
 bzl_library(
     name = "transitions",
     srcs = ["transitions.bzl"],
     visibility = ["//visibility:public"],
+    deps = [
+        "//swift:providers",
+        "@rules_cc//cc/common",
+    ],
 )

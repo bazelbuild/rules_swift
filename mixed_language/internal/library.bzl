@@ -27,7 +27,17 @@ load(
 load("//swift:swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 
 # buildifier: disable=bzl-visibility
-load("//swift/internal:attrs.bzl", "swift_deps_attr")
+load(
+    "//swift/internal:attrs.bzl",
+    "default_precompiled_modules_attrs",
+    "swift_deps_attr",
+)
+
+# buildifier: disable=bzl-visibility
+load(
+    "//swift/internal:compiling.bzl",
+    "precompile_clang_module",
+)
 
 # buildifier: disable=bzl-visibility
 load(
@@ -45,12 +55,18 @@ load(
 # buildifier: disable=bzl-visibility
 load(
     "//swift/internal:toolchain_utils.bzl",
+    "SWIFT_TOOLCHAIN_TYPE",
     "find_all_toolchains",
     "use_all_toolchains",
 )
 
 # buildifier: disable=bzl-visibility
-load("//swift/internal:utils.bzl", "get_providers")
+load(
+    "//swift/internal:utils.bzl",
+    "compilation_context_for_explicit_module_compilation",
+    "default_precompiled_modules_providers",
+    "get_providers",
+)
 
 def _write_extended_module_map(
         *,
@@ -168,6 +184,30 @@ def _mixed_language_library_impl(ctx):
         ],
         cc_infos = [swift_target[CcInfo], clang_target[CcInfo]],
     )
+
+    extra_cc_infos, extra_swift_infos = default_precompiled_modules_providers(
+        ctx.attr._default_precompiled_modules,
+        feature_configuration,
+    )
+    deps_swift_infos = get_providers(ctx.attr.deps, SwiftInfo) + extra_swift_infos
+    pcm_outputs = precompile_clang_module(
+        actions = actions,
+        cc_compilation_context = compilation_context_for_explicit_module_compilation(
+            compilation_contexts = [
+                cc_info.compilation_context,
+            ] + [info.compilation_context for info in extra_cc_infos],
+            swift_infos = deps_swift_infos,
+        ),
+        feature_configuration = feature_configuration,
+        module_map_file = extended_module_map,
+        module_name = module_name,
+        swift_infos = deps_swift_infos,
+        toolchains = toolchains,
+        target_name = name,
+        toolchain_type = SWIFT_TOOLCHAIN_TYPE,
+    )
+    precompiled_module = getattr(pcm_outputs, "pcm_file", None)
+
     swift_info = SwiftInfo(
         modules = [
             create_swift_module_context(
@@ -175,13 +215,14 @@ def _mixed_language_library_impl(ctx):
                 clang = create_clang_module_inputs(
                     compilation_context = cc_info.compilation_context,
                     module_map = extended_module_map,
+                    precompiled_module = precompiled_module,
                 ),
                 swift = swift_module.swift,
             ),
         ],
         # Collect transitive modules, without including `swift_target` (which is
         # covered with the `create_module` above)
-        swift_infos = get_providers(ctx.attr.deps, SwiftInfo),
+        swift_infos = deps_swift_infos,
     )
 
     return [
@@ -204,6 +245,7 @@ def _mixed_language_library_impl(ctx):
 
 mixed_language_library = rule(
     attrs = dicts.add(
+        default_precompiled_modules_attrs(),
         {
             "clang_target": attr.label(
                 doc = """

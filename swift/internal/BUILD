@@ -304,6 +304,50 @@ bzl_library(
 )
 
 bzl_library(
+    name = "system_clang_module",
+    srcs = ["system_clang_module.bzl"],
+    visibility = ["//swift:__subpackages__"],
+    deps = [
+        "//swift:providers",
+        "//swift:swift_common",
+        "//swift/internal:compiling",
+        "//swift/internal:feature_names",
+        "//swift/internal:system_module_transition",
+        "//swift/internal:toolchain_utils",
+        "@bazel_skylib//lib:dicts",
+        "@bazel_skylib//lib:paths",
+        "@rules_cc//cc/common",
+    ],
+)
+
+bzl_library(
+    name = "system_module_group",
+    srcs = ["system_module_group.bzl"],
+    visibility = ["//swift:__subpackages__"],
+    deps = [
+        ":utils",
+        "//swift:providers",
+        "//swift/internal:system_module_transition",
+        "@bazel_skylib//lib:dicts",
+        "@rules_cc//cc/common",
+    ],
+)
+
+bzl_library(
+    name = "system_swiftinterface",
+    srcs = ["system_swiftinterface.bzl"],
+    visibility = ["//swift:__subpackages__"],
+    deps = [
+        "//swift:providers",
+        "//swift:swift_common",
+        "//swift/internal:compiling",
+        "//swift/internal:feature_names",
+        "//swift/internal:toolchain_utils",
+        "@rules_cc//cc/common",
+    ],
+)
+
+bzl_library(
     name = "action_names",
     srcs = ["action_names.bzl"],
     visibility = ["//swift:__subpackages__"],
@@ -336,6 +380,12 @@ bzl_library(
 bzl_library(
     name = "swift_interop_info",
     srcs = ["swift_interop_info.bzl"],
+    visibility = ["//swift:__subpackages__"],
+)
+
+bzl_library(
+    name = "system_module_transition",
+    srcs = ["system_module_transition.bzl"],
     visibility = ["//swift:__subpackages__"],
 )
 
