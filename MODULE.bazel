@@ -71,6 +71,7 @@ system_sdk.configure_sdks(
         ],
         "WatchOS": [
             "BrowserEngineKit",
+            "CoreAudio_Private",
         ],
         "WatchSimulator": [
             "BrowserEngineKit",
