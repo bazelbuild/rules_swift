@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, TextIO
@@ -16,7 +16,17 @@ import tempfile
 # This might have to become configurable at some point.
 _SDK_MODULE_EXCLUSIONS = {
     "WatchOS": {"BrowserEngineKit"},
-    "WatchSimulator": {"BrowserEngineKit"},
+    "WatchSimulator": {"BrowserEngineKit",
+                       "CoreAudio_Private",
+                       },
+    "AppleTVSimulator": {
+                       "CoreAudio_Private",
+                       },
+    "iPhoneSimulator": {
+                       "CoreAudio_Private",
+                       },
+    "XRSimulator": {"AccessoryTransportExtension"},
+    "XROS": {"AccessoryTransportExtension"},
 }
 
 
