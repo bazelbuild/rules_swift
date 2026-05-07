@@ -49,15 +49,19 @@ system_sdk = use_extension("//swift:extensions.bzl", "system_sdk")
 system_sdk.configure_sdks(
     # NOTE: This doesn't apply to downstream repos
     exclude_modules = {
+        "AppleTVOS": [
+            "CoreAudio_Private",
+        ],
         "AppleTVSimulator": [
             "CoreAudio_Private",
         ],
-        "WatchOS": [
-            "BrowserEngineKit",
-        ],
-        "WatchSimulator": [
-            "BrowserEngineKit",
+        "iPhoneSimulator": [
+            "AssetsLibrary",  # This one is fixed in newer SDKs but not on CI
             "CoreAudio_Private",
+        ],
+        "iPhoneOS": [
+            "AssetsLibrary",  # This one is fixed in newer SDKs but not on CI
+            "CoreAudio_Private",  # This one is gone from new SDKs but still on CI
         ],
         "XROS": [
             "AccessoryTransportExtension",
@@ -65,12 +69,11 @@ system_sdk.configure_sdks(
         "XRSimulator": [
             "AccessoryTransportExtension",
         ],
-        "iPhoneOS": [
-            "AssetsLibrary",  # This one is fixed in newer SDKs but not on CI
-            "CoreAudio_Private",  # This one is gone from new SDKs but still on CI
+        "WatchOS": [
+            "BrowserEngineKit",
         ],
-        "iPhoneSimulator": [
-            "AssetsLibrary",  # This one is fixed in newer SDKs but not on CI
+        "WatchSimulator": [
+            "BrowserEngineKit",
             "CoreAudio_Private",
         ],
     },
