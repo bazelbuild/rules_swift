@@ -24,6 +24,7 @@ load(":xcode_explicit_module_repo.bzl", "xcode_explicit_module_repo")
 load(":xcode_locator_repo.bzl", "xcode_locator_repo")
 
 _XCODE_LOCATOR_SRC = Label("@bazel_tools//tools/osx:xcode_locator.m")
+_SCANNER_SCRIPT = Label("//tools/explicit_modules:scan.py")
 _LOCATOR_REPO = "system_sdk_xcode_locator"
 _LOCATOR_LABEL = "@{}//:xcode-locator-bin".format(_LOCATOR_REPO)
 
@@ -126,6 +127,8 @@ def _collect_sdks(module_ctx):
     return sorted(names.keys())
 
 def _sdk_extension_impl(module_ctx):
+    module_ctx.watch(_SCANNER_SCRIPT)
+
     configs = []
     for mod in module_ctx.modules:
         if not mod.is_root:
