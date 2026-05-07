@@ -17,6 +17,7 @@
 #include <filesystem>
 #include <fstream>
 #include <optional>
+#include <sstream>
 #include <utility>
 
 #include "absl/strings/match.h"
@@ -444,6 +445,30 @@ bool SwiftRunner::ProcessPossibleResponseFile(
   return changed;
 }
 
+std::string SwiftRunner::ProcessExplicitSwiftModuleMapFile(
+    const std::string &path) {
+  std::string module_map_path = path;
+  std::ifstream module_map_file(module_map_path);
+  if (!module_map_file.good()) {
+    return module_map_path;
+  }
+
+  std::stringstream buffer;
+  buffer << module_map_file.rdbuf();
+  std::string contents = buffer.str();
+  bazel_placeholder_substitutions_.Apply(contents);
+
+  auto rewritten_module_map =
+      TempFile::Create("swift_explicit_module_map.XXXXXX");
+  std::ofstream rewritten_module_map_stream(rewritten_module_map->GetPath());
+  rewritten_module_map_stream << contents;
+  rewritten_module_map_stream.close();
+
+  module_map_path = rewritten_module_map->GetPath();
+  temp_files_.push_back(std::move(rewritten_module_map));
+  return module_map_path;
+}
+
 template <typename Iterator>
 bool SwiftRunner::ProcessArgument(
     Iterator &itr, const std::string &arg,
@@ -534,6 +559,18 @@ bool SwiftRunner::ProcessArgument(
                      "-explicit-compile-module-from-interface=", new_arg)) {
         module_or_interface_path_ = new_arg;
         bazel_placeholder_substitutions_.Apply(module_or_interface_path_);
+        changed = true;
+      } else if (StripPrefix(
+                     "-driver-explicit-swift-module-map-file=", new_arg)) {
+        consumer("-Xfrontend");
+        consumer("-explicit-swift-module-map-file");
+        consumer("-Xfrontend");
+        consumer(ProcessExplicitSwiftModuleMapFile(new_arg));
+        changed = true;
+      } else if (StripPrefix(
+                     "-frontend-explicit-swift-module-map-file=", new_arg)) {
+        consumer("-explicit-swift-module-map-file");
+        consumer(ProcessExplicitSwiftModuleMapFile(new_arg));
         changed = true;
       } else {
         // TODO(allevato): Report that an unknown wrapper arg was found and give
