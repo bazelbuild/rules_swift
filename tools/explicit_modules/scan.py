@@ -15,18 +15,28 @@ import tempfile
 # Modules to skip based on them being invalid (at least in the public SDKs).
 # This might have to become configurable at some point.
 _SDK_MODULE_EXCLUSIONS = {
-    "WatchOS": {"BrowserEngineKit"},
-    "WatchSimulator": {"BrowserEngineKit",
-                       "CoreAudio_Private",
-                       },
     "AppleTVSimulator": {
-                       "CoreAudio_Private",
-                       },
+        "CoreAudio_Private",
+    },
+    "iPhoneOS": {
+        "CoreAudio_Private",
+    },
     "iPhoneSimulator": {
-                       "CoreAudio_Private",
-                       },
-    "XRSimulator": {"AccessoryTransportExtension"},
-    "XROS": {"AccessoryTransportExtension"},
+        "CoreAudio_Private",
+    },
+    "WatchOS": {
+        "BrowserEngineKit",
+    },
+    "WatchSimulator": {
+        "BrowserEngineKit",
+        "CoreAudio_Private",
+    },
+    "XRSimulator": {
+        "AccessoryTransportExtension",
+    },
+    "XROS": {
+        "AccessoryTransportExtension",
+    },
 }
 
 
@@ -129,9 +139,8 @@ def _write_labels(out: TextIO, labels: set[str], indent: str = "        ") -> No
 
 
 def _normalize_system_path(path: str, *, developer_dir: str, sdkroot: str) -> str:
-    return (
-        path.replace(sdkroot, "__BAZEL_XCODE_SDKROOT__")
-        .replace(developer_dir, "__BAZEL_XCODE_DEVELOPER_DIR__")
+    return path.replace(sdkroot, "__BAZEL_XCODE_SDKROOT__").replace(
+        developer_dir, "__BAZEL_XCODE_DEVELOPER_DIR__"
     )
 
 
@@ -327,8 +336,8 @@ class _Module:
                 self._render_deps(out)
                 _write_string_attr(
                     out,
-                    name = "system_swiftinterface",
-                    values_by_cpu = self.swiftinterface_paths_by_cpu,
+                    name="system_swiftinterface",
+                    values_by_cpu=self.swiftinterface_paths_by_cpu,
                 )
             else:
                 self._render_deps(out)
@@ -372,8 +381,8 @@ def _parse_output(
         module = all_modules.get(key)
         module_map_path = _normalize_system_path(
             details.get("moduleMapPath", ""),
-            developer_dir = developer_dir,
-            sdkroot = sdkroot,
+            developer_dir=developer_dir,
+            sdkroot=sdkroot,
         )
         if module is None:
             module = all_modules[key] = _Module(
@@ -389,13 +398,13 @@ def _parse_output(
             has_prebuilt_swiftmodule = bool(details.get("compiledModuleCandidates", []))
             if not has_prebuilt_swiftmodule:
                 module.set_swiftinterface(
-                    cpu = cpu,
-                    is_framework = bool(details.get("isFramework", False)),
-                    swiftinterface_path = _normalize_system_path(
+                    cpu=cpu,
+                    is_framework=bool(details.get("isFramework", False)),
+                    swiftinterface_path=_normalize_system_path(
                         details["moduleInterfacePath"],
-                        developer_dir = developer_dir,
-                        sdkroot = sdkroot,
-                    )
+                        developer_dir=developer_dir,
+                        sdkroot=sdkroot,
+                    ),
                 )
 
         module.set_deps(cpu, deps)
@@ -425,21 +434,22 @@ def _scan(
         stub.write_text(
             "\n".join(f"import {m}" for m in sorted(modules)) + "\n",
         )
-        cmd = [
-            "xcrun",
-            "swiftc",
-            "-scan-dependencies",
-            str(stub),
-            "-sdk",
-            str(sdk_path),
-            "-target",
-            target,
-            "-o",
-            str(out_json),
-        ] + [f"-F{p}" for p in framework_search_paths] + [
-            f"-I{p}"
-            for p in swift_search_paths
-        ]
+        cmd = (
+            [
+                "xcrun",
+                "swiftc",
+                "-scan-dependencies",
+                str(stub),
+                "-sdk",
+                str(sdk_path),
+                "-target",
+                target,
+                "-o",
+                str(out_json),
+            ]
+            + [f"-F{p}" for p in framework_search_paths]
+            + [f"-I{p}" for p in swift_search_paths]
+        )
         res = subprocess.run(cmd, capture_output=True, text=True)
         if res.returncode != 0:
             raise RuntimeError(
@@ -466,7 +476,9 @@ def _discover_all_modules(developer_dir: Path, sdk: str) -> tuple[str, set[str]]
 
     excluded = _SDK_MODULE_EXCLUSIONS.get(sdk, set())
     modules = set()
-    for directory in set(framework_search_paths + library_search_paths + swift_search_paths):
+    for directory in set(
+        framework_search_paths + library_search_paths + swift_search_paths
+    ):
         for x in directory.iterdir():
             if x.stem in excluded:
                 continue
@@ -482,7 +494,7 @@ def _discover_all_modules(developer_dir: Path, sdk: str) -> tuple[str, set[str]]
                 ).exists():
                     modules.add(x.stem)
             elif (x / "module.modulemap").exists():
-                modules.add(x.stem) # /usr/include/CommonCrypto/module.modulemap
+                modules.add(x.stem)  # /usr/include/CommonCrypto/module.modulemap
 
     deployment_target = _get_deployment_target(sdk, sdk_path)
     cpu_targets = _TARGETS_PER_SDK[sdk.lower()]
