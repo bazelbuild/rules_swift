@@ -525,9 +525,7 @@ def _discover_all_modules(
 
 def _parse_exclude_modules(values: list[str]) -> dict[str, set[str]]:
     if not values:
-        return {
-            sdk: set(modules) for sdk, modules in _DEFAULT_EXCLUDED_MODULES.items()
-        }
+        return {sdk: set(modules) for sdk, modules in _DEFAULT_EXCLUDED_MODULES.items()}
 
     excluded_modules: defaultdict[str, set[str]] = defaultdict(set)
     for value in values:
