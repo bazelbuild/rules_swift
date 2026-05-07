@@ -107,6 +107,7 @@ load(
     "@build_bazel_rules_swift//swift:swift.bzl",
     "system_clang_module",
     "system_module_group",
+    "system_swiftinterface",
 )
 
 package(default_visibility = ["//visibility:public"])

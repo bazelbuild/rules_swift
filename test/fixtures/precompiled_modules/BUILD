@@ -178,10 +178,6 @@ swift_test(
     srcs = ["XCTestWithTesting.swift"],
     discover_tests = False,
     tags = FIXTURE_TAGS,
-    target_compatible_with = select({
-        "@build_bazel_apple_support//configs:apple": [],
-        "//conditions:default": ["@platforms//:incompatible"],
-    }),
 )
 
 force_features_test(

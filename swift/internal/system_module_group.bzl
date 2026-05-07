@@ -17,7 +17,7 @@
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load("//swift:providers.bzl", "SwiftInfo")
-load(":system_module_transition.bzl", "zero_min_os_transition")
+load(":system_module_transition.bzl", "zero_min_os_transition", "zero_min_os_transition_attrs")
 load(":utils.bzl", "get_providers")
 
 def _system_module_group_impl(ctx):
@@ -30,7 +30,7 @@ def _system_module_group_impl(ctx):
     ]
 
 system_module_group = rule(
-    attrs = {
+    attrs = zero_min_os_transition_attrs() | {
         "modules": attr.label_list(providers = [[CcInfo, SwiftInfo]]),
     },
     cfg = zero_min_os_transition,

@@ -14,7 +14,6 @@
 
 """Implementation of the `system_clang_module` rule."""
 
-load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@build_bazel_rules_swift//swift:providers.bzl", "SwiftInfo", "create_clang_module_inputs", "create_swift_module_context")
 load("@build_bazel_rules_swift//swift:swift_common.bzl", "swift_common")
@@ -25,7 +24,7 @@ load(
     "SWIFT_FEATURE_SYSTEM_MODULE",
     "SWIFT_FEATURE_USE_C_MODULES",
 )
-load("@build_bazel_rules_swift//swift/internal:system_module_transition.bzl", "zero_min_os_transition")
+load("@build_bazel_rules_swift//swift/internal:system_module_transition.bzl", "zero_min_os_transition", "zero_min_os_transition_attrs")
 load("@build_bazel_rules_swift//swift/internal:toolchain_utils.bzl", "SWIFT_TOOLCHAIN_TYPE")
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
@@ -97,21 +96,20 @@ def _system_clang_module_impl(ctx):
 
 system_clang_module = rule(
     cfg = zero_min_os_transition,
-    attrs = dicts.add(
-        {
-            "modules": attr.label_list(
-                allow_empty = True,
-                doc = """\
+    attrs = zero_min_os_transition_attrs() | {
+        "modules": attr.label_list(
+            allow_empty = True,
+            doc = """\
 A list of C targets (or anything propagating `CcInfo`) that this module
 depends on. Named `modules` instead of `deps` so the standard Swift
 `swift_clang_module_aspect` (which traverses `deps`) doesn't recurse into
 the SDK module graph from consumers.
 """,
-                mandatory = False,
-                providers = [[CcInfo]],
-            ),
-            "module_name": attr.string(
-                doc = """\
+            mandatory = False,
+            providers = [[CcInfo]],
+        ),
+        "module_name": attr.string(
+            doc = """\
 The name of the top-level module in the module map that this target represents.
 
 A single `module.modulemap` file can define multiple top-level modules. When
@@ -123,10 +121,10 @@ file, so it must be provided directly. Therefore, one may have multiple
 `system_clang_module` targets that reference the same `module.modulemap` file but
 with different module names and headers.
 """,
-                mandatory = True,
-            ),
-            "system_module_map": attr.string(
-                doc = """\
+            mandatory = True,
+        ),
+        "system_module_map": attr.string(
+            doc = """\
 The path to a system framework module map. This is mutually exclusive with `module_map`.
 
 Variables `__BAZEL_XCODE_SDKROOT__` and `__BAZEL_XCODE_DEVELOPER_DIR__` will be substitued
@@ -135,10 +133,9 @@ appropriately for, i.e.
 and
 `/Applications/Xcode.app/Contents/Developer` respectively.
 """,
-                mandatory = True,
-            ),
-        },
-    ),
+            mandatory = True,
+        ),
+    },
     doc = """\
 Wraps one or more C targets in a new module map that allows it to be imported
 into Swift to access its C interfaces.
