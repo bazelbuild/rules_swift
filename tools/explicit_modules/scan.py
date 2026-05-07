@@ -19,6 +19,7 @@ _SDK_MODULE_EXCLUSIONS = {
         "CoreAudio_Private",
     },
     "iPhoneOS": {
+        "AssetsLibrary",  # TODO: This one is fixed in newer SDKs
         "CoreAudio_Private",
     },
     "iPhoneSimulator": {
