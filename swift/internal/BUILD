@@ -314,6 +314,7 @@ bzl_library(
         "@build_bazel_rules_swift//swift:swift_common",
         "@build_bazel_rules_swift//swift/internal:compiling",
         "@build_bazel_rules_swift//swift/internal:feature_names",
+        "@build_bazel_rules_swift//swift/internal:system_module_transition",
         "@build_bazel_rules_swift//swift/internal:toolchain_utils",
         "@rules_cc//cc/common",
     ],
@@ -326,6 +327,22 @@ bzl_library(
     deps = [
         ":utils",
         "//swift:providers",
+        "@bazel_skylib//lib:dicts",
+        "@build_bazel_rules_swift//swift/internal:system_module_transition",
+        "@rules_cc//cc/common",
+    ],
+)
+
+bzl_library(
+    name = "system_swiftinterface",
+    srcs = ["system_swiftinterface.bzl"],
+    visibility = ["//swift:__subpackages__"],
+    deps = [
+        "@build_bazel_rules_swift//swift:providers",
+        "@build_bazel_rules_swift//swift:swift_common",
+        "@build_bazel_rules_swift//swift/internal:compiling",
+        "@build_bazel_rules_swift//swift/internal:feature_names",
+        "@build_bazel_rules_swift//swift/internal:toolchain_utils",
         "@rules_cc//cc/common",
     ],
 )
