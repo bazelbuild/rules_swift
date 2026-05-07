@@ -616,7 +616,7 @@ bool SwiftRunner::ProcessArgument(
       // to ensure that our defensive quoting kicks in if an argument contains
       // a space, even if no other changes would have been made.
       changed = bazel_placeholder_substitutions_.Apply(new_arg) ||
-                new_arg.find_first_of(' ') != std::string::npos;
+                changed || new_arg.find_first_of(' ') != std::string::npos;
       consumer(new_arg);
     }
   }
