@@ -59,36 +59,40 @@ _DEFAULT_EXCLUDED_MODULES = {
 
 _TARGETS_PER_SDK = {
     "macosx": [
-        ("@platforms//cpu:aarch64", "arm64-apple-macos{ver}"),
+        ("@platforms//cpu:arm64", "arm64-apple-macos{ver}"),
+        ("@platforms//cpu:arm64e", "arm64e-apple-macos{ver}"),
         ("@platforms//cpu:x86_64", "x86_64-apple-macos{ver}"),
     ],
     "iphoneos": [
-        ("@platforms//cpu:aarch64", "arm64-apple-ios{ver}"),
+        ("@platforms//cpu:arm64", "arm64-apple-ios{ver}"),
+        ("@platforms//cpu:arm64e", "arm64-apple-ios{ver}"),
     ],
     "iphonesimulator": [
-        ("@platforms//cpu:aarch64", "arm64-apple-ios{ver}-simulator"),
+        ("@platforms//cpu:arm64", "arm64-apple-ios{ver}-simulator"),
         ("@platforms//cpu:x86_64", "x86_64-apple-ios{ver}-simulator"),
     ],
     "watchos": [
-        ("@platforms//cpu:aarch64", "arm64-apple-watchos{ver}"),
+        ("@platforms//cpu:arm64", "arm64-apple-watchos{ver}"),
         ("@platforms//cpu:arm64_32", "arm64_32-apple-watchos{ver}"),
+        ("@platforms//cpu:arm64e", "arm64e-apple-watchos{ver}"),
     ],
     "watchsimulator": [
-        ("@platforms//cpu:aarch64", "arm64-apple-watchos{ver}-simulator"),
+        ("@platforms//cpu:arm64", "arm64-apple-watchos{ver}-simulator"),
         ("@platforms//cpu:x86_64", "x86_64-apple-watchos{ver}-simulator"),
     ],
     "appletvos": [
-        ("@platforms//cpu:aarch64", "arm64-apple-tvos{ver}"),
+        ("@platforms//cpu:arm64", "arm64-apple-tvos{ver}"),
     ],
     "appletvsimulator": [
-        ("@platforms//cpu:aarch64", "arm64-apple-tvos{ver}-simulator"),
+        ("@platforms//cpu:arm64", "arm64-apple-tvos{ver}-simulator"),
         ("@platforms//cpu:x86_64", "x86_64-apple-tvos{ver}-simulator"),
     ],
     "xros": [
-        ("@platforms//cpu:aarch64", "arm64-apple-xros{ver}"),
+        ("@platforms//cpu:arm64", "arm64-apple-xros{ver}"),
+        ("@platforms//cpu:arm64e", "arm64e-apple-xros{ver}"),
     ],
     "xrsimulator": [
-        ("@platforms//cpu:aarch64", "arm64-apple-xros{ver}-simulator"),
+        ("@platforms//cpu:arm64", "arm64-apple-xros{ver}-simulator"),
         ("@platforms//cpu:x86_64", "x86_64-apple-xros{ver}-simulator"),
     ],
 }
