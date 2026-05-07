@@ -47,9 +47,9 @@ class TempFile {
   // object goes out of scope.
   static std::unique_ptr<TempFile> Create(const std::string &path_template) {
     std::error_code ec;
-    std::filesystem::path temporary{std::filesystem::temp_directory_path(ec) / path_template};
-    if (ec)
-      return nullptr;
+    std::filesystem::path temporary{std::filesystem::temp_directory_path(ec) /
+                                    path_template};
+    if (ec) return nullptr;
 
     std::string path = temporary.string();
 
@@ -99,9 +99,9 @@ class TempDirectory {
   static std::unique_ptr<TempDirectory> Create(
       const std::string &path_template) {
     std::error_code ec;
-    std::filesystem::path temporary{std::filesystem::temp_directory_path(ec) / path_template};
-    if (ec)
-      return nullptr;
+    std::filesystem::path temporary{std::filesystem::temp_directory_path(ec) /
+                                    path_template};
+    if (ec) return nullptr;
 
     std::string path = temporary.string();
 
@@ -124,8 +124,7 @@ class TempDirectory {
     srand(reinterpret_cast<uintptr_t>(path.data()));
     for (unsigned retry = 256; retry; --retry) {
       randname(path.data() + path.length() - 6);
-      if (!_mkdir(path.c_str()))
-        break;
+      if (!_mkdir(path.c_str())) break;
     }
 #else
     if (::mkdtemp(path.data()) == nullptr) {

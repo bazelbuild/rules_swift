@@ -236,7 +236,8 @@ void CreateVFSOverlayForInterface(
   std::filesystem::path virtual_dir =
       std::filesystem::path(".rules_swift_interface_sources") / module_dir;
   std::filesystem::path virtual_path = virtual_dir / source.filename();
-  std::filesystem::path overlay_path = virtual_dir / "swiftinterface-vfsoverlay.yaml";
+  std::filesystem::path overlay_path =
+      virtual_dir / "swiftinterface-vfsoverlay.yaml";
 
   std::error_code ec;
   std::filesystem::create_directories(virtual_dir, ec);
@@ -319,7 +320,8 @@ void ExtractFlagsFromInterfaceFile(
 }  // namespace
 
 SwiftRunner::SwiftRunner(const std::vector<std::string> &args,
-                         std::string index_import_path, bool force_response_file)
+                         std::string index_import_path,
+                         bool force_response_file)
     : job_env_(GetCurrentEnvironment()),
       index_import_path_(index_import_path),
       force_response_file_(force_response_file),
@@ -330,19 +332,20 @@ SwiftRunner::SwiftRunner(const std::vector<std::string> &args,
 }
 
 int SwiftRunner::Run(std::ostream *stderr_stream, bool stdout_to_stderr) {
-  // In rules_swift < 3.x the .swiftsourceinfo files are unconditionally written to the module path.
-  // In rules_swift >= 3.x these same files are no longer tracked by Bazel unless explicitly requested.
-  // When using non-sandboxed mode, previous builds will contain these files and cause build failures
-  // when Swift tries to use them, in order to work around this compatibility issue, we check the module path for
-  // the presence of .swiftsourceinfo files and if they are present but not requested, we remove them.
+  // In rules_swift < 3.x the .swiftsourceinfo files are unconditionally written
+  // to the module path. In rules_swift >= 3.x these same files are no longer
+  // tracked by Bazel unless explicitly requested. When using non-sandboxed
+  // mode, previous builds will contain these files and cause build failures
+  // when Swift tries to use them, in order to work around this compatibility
+  // issue, we check the module path for the presence of .swiftsourceinfo files
+  // and if they are present but not requested, we remove them.
   if (swift_source_info_path_ != "" && !emit_swift_source_info_) {
     std::filesystem::remove(swift_source_info_path_);
   }
 
-  int exit_code =
-      hermetic_pcm_
-          ? RunHermeticPcm(args_, stderr_stream)
-          : RunSubProcess(args_, &job_env_, stderr_stream, stdout_to_stderr);
+  int exit_code = hermetic_pcm_ ? RunHermeticPcm(args_, stderr_stream)
+                                : RunSubProcess(args_, &job_env_, stderr_stream,
+                                                stdout_to_stderr);
 
   if (exit_code != 0) {
     return exit_code;
@@ -363,8 +366,8 @@ int SwiftRunner::Run(std::ostream *stderr_stream, bool stdout_to_stderr) {
     rewriter_args.insert(rewriter_args.end(),
                          args_.begin() + initial_args_to_skip, args_.end());
 
-    exit_code = RunSubProcess(
-        rewriter_args, /*env=*/nullptr, stderr_stream, stdout_to_stderr);
+    exit_code = RunSubProcess(rewriter_args, /*env=*/nullptr, stderr_stream,
+                              stdout_to_stderr);
   }
 
   auto enable_global_index_store = global_index_store_import_path_ != "";
@@ -402,8 +405,8 @@ int SwiftRunner::Run(std::ostream *stderr_stream, bool stdout_to_stderr) {
     // Copy back from the global index store to bazel's index store
     ii_args.push_back((exec_root / global_index_store_import_path_).string());
     ii_args.push_back((exec_root / index_store_path_).string());
-    exit_code = RunSubProcess(
-        ii_args, /*env=*/nullptr, stderr_stream, /*stdout_to_stderr=*/true);
+    exit_code = RunSubProcess(ii_args, /*env=*/nullptr, stderr_stream,
+                              /*stdout_to_stderr=*/true);
   }
   return exit_code;
 }
@@ -560,13 +563,14 @@ bool SwiftRunner::ProcessArgument(
         add_prefix_map_flags("-coverage-prefix-map");
         changed = true;
       } else if (new_arg == "-coverage-prefix-pwd-is-canonical") {
-        // Replace the $PWD with the canonical (resolved) path to the source root.
-        // The bazel execroot is a normal directory, but inside of it there are
-        // symlinks to our source tree. This fetches the true path of a known
-        // directory in order to get the actual source root of the project. This
-        // should only work with sandboxing disabled.
+        // Replace the $PWD with the canonical (resolved) path to the source
+        // root. The bazel execroot is a normal directory, but inside of it
+        // there are symlinks to our source tree. This fetches the true path of
+        // a known directory in order to get the actual source root of the
+        // project. This should only work with sandboxing disabled.
         auto cwd = std::filesystem::current_path();
-        auto target_path = std::filesystem::canonical(cwd / "BUILD.bazel").parent_path();
+        auto target_path =
+            std::filesystem::canonical(cwd / "BUILD.bazel").parent_path();
         add_prefix_map_flags("-coverage-prefix-map", target_path.string());
         changed = true;
       } else if (new_arg == "-file-prefix-pwd-is-dot") {
@@ -606,20 +610,20 @@ bool SwiftRunner::ProcessArgument(
         changed = true;
       } else if (new_arg == "-hermetic-pcm") {
         changed = true;
-      } else if (StripPrefix(
-                     "-explicit-compile-module-from-interface=", new_arg)) {
+      } else if (StripPrefix("-explicit-compile-module-from-interface=",
+                             new_arg)) {
         module_or_interface_path_ = new_arg;
         bazel_placeholder_substitutions_.Apply(module_or_interface_path_);
         changed = true;
-      } else if (StripPrefix(
-                     "-driver-explicit-swift-module-map-file=", new_arg)) {
+      } else if (StripPrefix("-driver-explicit-swift-module-map-file=",
+                             new_arg)) {
         consumer("-Xfrontend");
         consumer("-explicit-swift-module-map-file");
         consumer("-Xfrontend");
         consumer(ProcessExplicitSwiftModuleMapFile(new_arg));
         changed = true;
-      } else if (StripPrefix(
-                     "-frontend-explicit-swift-module-map-file=", new_arg)) {
+      } else if (StripPrefix("-frontend-explicit-swift-module-map-file=",
+                             new_arg)) {
         consumer("-explicit-swift-module-map-file");
         consumer(ProcessExplicitSwiftModuleMapFile(new_arg));
         changed = true;
@@ -666,8 +670,8 @@ bool SwiftRunner::ProcessArgument(
       // Bazel doesn't quote arguments in multi-line params files, so we need
       // to ensure that our defensive quoting kicks in if an argument contains
       // a space, even if no other changes would have been made.
-      changed = bazel_placeholder_substitutions_.Apply(new_arg) ||
-                changed || new_arg.find_first_of(' ') != std::string::npos;
+      changed = bazel_placeholder_substitutions_.Apply(new_arg) || changed ||
+                new_arg.find_first_of(' ') != std::string::npos;
       consumer(new_arg);
     }
   }
@@ -695,8 +699,7 @@ std::vector<std::string> SwiftRunner::ParseArguments(Iterator itr) {
         emit_swift_source_info_ = true;
       } else if (arg == "-hermetic-pcm") {
         hermetic_pcm_ = true;
-      } else if (StripPrefix(
-                     "-explicit-compile-module-from-interface=", arg)) {
+      } else if (StripPrefix("-explicit-compile-module-from-interface=", arg)) {
         module_or_interface_path_ = arg;
       }
     } else {
@@ -716,7 +719,8 @@ std::vector<std::string> SwiftRunner::ParseArguments(Iterator itr) {
         ++it;
         arg = *it;
         std::filesystem::path module_path(arg);
-        swift_source_info_path_ = module_path.replace_extension(".swiftsourceinfo").string();
+        swift_source_info_path_ =
+            module_path.replace_extension(".swiftsourceinfo").string();
         out_args.push_back(arg);
       } else if (arg == "-target") {
         ++it;
@@ -759,8 +763,7 @@ std::vector<std::string> SwiftRunner::ProcessArguments(
 
   if (!module_or_interface_path_.empty()) {
     ExtractFlagsFromInterfaceFile(
-        module_or_interface_path_, target_triple_,
-        [&](absl::string_view arg) {
+        module_or_interface_path_, target_triple_, [&](absl::string_view arg) {
           args_destination.push_back(std::string(arg));
         });
   }

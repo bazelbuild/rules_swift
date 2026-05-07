@@ -66,8 +66,7 @@ class SwiftRunner {
   // true, then the remaining arguments will be unconditionally written into a
   // response file instead of being passed on the command line.
   SwiftRunner(const std::vector<std::string> &args,
-              std::string index_import_path,
-              bool force_response_file = false);
+              std::string index_import_path, bool force_response_file = false);
 
   // Run the Swift compiler, redirecting stderr to the specified stream. If
   // stdout_to_stderr is true, then stdout is also redirected to that stream.

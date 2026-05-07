@@ -3,7 +3,7 @@
 @implementation MixedGreeterObjC
 
 + (NSString *)objcGreeting {
-    return @"Hello from Obj-C side of mixed module!";
+  return @"Hello from Obj-C side of mixed module!";
 }
 
 @end

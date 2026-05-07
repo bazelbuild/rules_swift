@@ -29,7 +29,7 @@
 #include <stdlib.h>
 #else
 extern "C" {
-  extern char **environ;
+extern char **environ;
 }
 #endif
 
@@ -40,9 +40,9 @@ std::map<std::string, std::string> GetCurrentEnvironment() {
     std::string envString(envp[i]);
     size_t equalsPos = envString.find('=');
     if (equalsPos != std::string::npos) {
-        std::string key = envString.substr(0, equalsPos);
-        std::string value = envString.substr(equalsPos + 1);
-        result[key] = value;
+      std::string key = envString.substr(0, equalsPos);
+      std::string value = envString.substr(equalsPos + 1);
+      result[key] = value;
     }
   }
   return result;
@@ -90,8 +90,8 @@ class WindowsIORedirector {
   static std::unique_ptr<WindowsIORedirector> Create(bool include_stdout,
                                                      std::error_code &ec) {
     HANDLE hIO[2][2] = {
-      {INVALID_HANDLE_VALUE, INVALID_HANDLE_VALUE},
-      {INVALID_HANDLE_VALUE, INVALID_HANDLE_VALUE},
+        {INVALID_HANDLE_VALUE, INVALID_HANDLE_VALUE},
+        {INVALID_HANDLE_VALUE, INVALID_HANDLE_VALUE},
     };
 
     SECURITY_ATTRIBUTES saAttr;
@@ -385,7 +385,7 @@ int RunSubProcess(const std::vector<std::string> &args,
     // below whenever we exit.
     for (const auto &[key, value] : *env) {
       std::string pair = key + "=" + value;
-      char* c_str = new char[pair.length() + 1];
+      char *c_str = new char[pair.length() + 1];
       std::strcpy(c_str, pair.c_str());
       new_environ.push_back(c_str);
     }
@@ -407,7 +407,7 @@ int RunSubProcess(const std::vector<std::string> &args,
     free(arg);
   }
 
-  for (char* envp : new_environ) {
+  for (char *envp : new_environ) {
     if (envp) {
       delete[] envp;
     }

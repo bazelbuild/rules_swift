@@ -4,7 +4,8 @@
 @implementation MixedAnswerPrivateObjc
 
 + (NSString *)mixedAnswerPrivateObjc {
-    return [NSString stringWithFormat:@"%@_%@", @"mixedAnswerPrivateObjc", [MixedAnswerSwift swiftToObjcMixedAnswer]];
+  return [NSString stringWithFormat:@"%@_%@", @"mixedAnswerPrivateObjc",
+                                    [MixedAnswerSwift swiftToObjcMixedAnswer]];
 }
 
 @end

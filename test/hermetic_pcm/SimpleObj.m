@@ -3,7 +3,7 @@
 @implementation SimpleObj
 
 + (NSString *)greeting {
-    return @"hello";
+  return @"hello";
 }
 
 @end

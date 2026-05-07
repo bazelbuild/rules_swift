@@ -26,11 +26,12 @@ using bazel::tools::cpp::runfiles::Runfiles;
 
 int main(int argc, char *argv[]) {
   std::string index_import_path;
-  #ifdef BAZEL_CURRENT_REPOSITORY
-    std::unique_ptr<Runfiles> runfiles(Runfiles::Create(argv[0], BAZEL_CURRENT_REPOSITORY));
-  #else
-    std::unique_ptr<Runfiles> runfiles(Runfiles::Create(argv[0]));
-  #endif  // BAZEL_CURRENT_REPOSITORY
+#ifdef BAZEL_CURRENT_REPOSITORY
+  std::unique_ptr<Runfiles> runfiles(
+      Runfiles::Create(argv[0], BAZEL_CURRENT_REPOSITORY));
+#else
+  std::unique_ptr<Runfiles> runfiles(Runfiles::Create(argv[0]));
+#endif  // BAZEL_CURRENT_REPOSITORY
   if (runfiles != nullptr) {
     // TODO: Remove once we drop support for Xcode 16.x.
     // Determine which version of index-import to use based on the environment
