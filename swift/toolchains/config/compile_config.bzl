@@ -2258,19 +2258,14 @@ def _dependencies_swiftmodules_vfsoverlay_configurator(prerequisites, args, is_f
 def _explicit_swift_module_map_configurator(prerequisites, args, is_frontend = False):
     """Adds the explicit Swift module map file to the command line."""
     if is_frontend:
-        # If we're calling frontend directly we don't need to prepend each
-        # argument with -Xfrontend. Doing so will crash the invocation.
         args.add(
-            "-explicit-swift-module-map-file",
             prerequisites.explicit_swift_module_map_file,
+            format = "-Xwrapped-swift=-frontend-explicit-swift-module-map-file=%s",
         )
     else:
-        args.add_all(
-            [
-                "-explicit-swift-module-map-file",
-                prerequisites.explicit_swift_module_map_file,
-            ],
-            before_each = "-Xfrontend",
+        args.add(
+            prerequisites.explicit_swift_module_map_file,
+            format = "-Xwrapped-swift=-driver-explicit-swift-module-map-file=%s",
         )
     return ConfigResultInfo(
         inputs = prerequisites.transitive_swift_dependency_inputs + [
