@@ -12,35 +12,6 @@ import os
 import subprocess
 import tempfile
 
-# Modules to skip based on them being invalid (at least in the public SDKs).
-# This might have to become configurable at some point.
-_SDK_MODULE_EXCLUSIONS = {
-    "AppleTVSimulator": {
-        "CoreAudio_Private",
-    },
-    "iPhoneOS": {
-        "AssetsLibrary",  # TODO: This one is fixed in newer SDKs
-        "CoreAudio_Private",
-    },
-    "iPhoneSimulator": {
-        "CoreAudio_Private",
-    },
-    "WatchOS": {
-        "BrowserEngineKit",
-    },
-    "WatchSimulator": {
-        "BrowserEngineKit",
-        "CoreAudio_Private",
-    },
-    "XRSimulator": {
-        "AccessoryTransportExtension",
-    },
-    "XROS": {
-        "AccessoryTransportExtension",
-    },
-}
-
-
 _SDK_CONSTRAINTS = {
     "MacOSX": ["@platforms//os:macos"],
     "iPhoneOS": [
@@ -460,7 +431,11 @@ def _scan(
         return json.loads(out_json.read_text())
 
 
-def _discover_all_modules(developer_dir: Path, sdk: str) -> tuple[str, set[str]]:
+def _discover_all_modules(
+    developer_dir: Path,
+    sdk: str,
+    excluded_modules: set[str],
+) -> tuple[str, set[str]]:
     platform_developer_path = developer_dir / f"Platforms/{sdk}.platform/Developer"
     sdk_path = platform_developer_path / f"SDKs/{sdk}.sdk"
     framework_search_paths = [
@@ -475,13 +450,12 @@ def _discover_all_modules(developer_dir: Path, sdk: str) -> tuple[str, set[str]]
         sdk_path / "usr/include",
     ]
 
-    excluded = _SDK_MODULE_EXCLUSIONS.get(sdk, set())
     modules = set()
     for directory in set(
         framework_search_paths + library_search_paths + swift_search_paths
     ):
         for x in directory.iterdir():
-            if x.stem in excluded:
+            if x.stem in excluded_modules:
                 continue
             if not x.is_dir():
                 if x.suffix == ".modulemap" and x.stem != "module":
@@ -540,6 +514,22 @@ def _discover_all_modules(developer_dir: Path, sdk: str) -> tuple[str, set[str]]
     return buf.getvalue(), all_module_names | {f"{n}_clang" for n in clang_names}
 
 
+def _parse_exclude_modules(values: list[str]) -> dict[str, set[str]]:
+    excluded_modules: defaultdict[str, set[str]] = defaultdict(set)
+    for value in values:
+        sdk, sep, module = value.partition(":")
+        if not sep or not sdk or not module:
+            raise SystemExit(
+                "error: --exclude-module values must be formatted as 'SDK:Module'"
+            )
+        if sdk not in _SDK_CONSTRAINTS:
+            raise SystemExit(
+                f"error: unknown SDK in --exclude-module '{sdk}'. Valid options are: {sorted(_SDK_CONSTRAINTS)}"
+            )
+        excluded_modules[sdk].add(module)
+    return dict(excluded_modules)
+
+
 def _main() -> None:
     parser = argparse.ArgumentParser(
         description="Scan Xcode and generate a BUILD file describing every system module.",
@@ -567,6 +557,16 @@ def _main() -> None:
         # Internal flag used by the `system_sdk` module extension; not part
         # of the user-facing CLI.
         help=argparse.SUPPRESS,
+    )
+    parser.add_argument(
+        "--exclude-module",
+        action="append",
+        default=[],
+        metavar="SDK:MODULE",
+        help=(
+            "Exclude a module from a specific SDK scan. May be repeated "
+            "(for example: --exclude-module WatchOS:BrowserEngineKit)."
+        ),
     )
     parser.add_argument(
         "sdks",
@@ -597,6 +597,8 @@ def _main() -> None:
     else:
         sdk_names = sorted(_SDK_CONSTRAINTS.keys())
 
+    excluded_modules = _parse_exclude_modules(args.exclude_module)
+
     buf = io.StringIO()
     buf.write(_HEADER)
     for sdk in sdk_names:
@@ -616,7 +618,12 @@ def _main() -> None:
     per_sdk_text: dict[str, str] = {}
     with ThreadPoolExecutor(max_workers=len(sdk_names)) as pool:
         futures = {
-            pool.submit(_discover_all_modules, developer_dir, sdk): sdk
+            pool.submit(
+                _discover_all_modules,
+                developer_dir,
+                sdk,
+                excluded_modules.get(sdk, set()),
+            ): sdk
             for sdk in sdk_names
         }
         for fut in as_completed(futures):

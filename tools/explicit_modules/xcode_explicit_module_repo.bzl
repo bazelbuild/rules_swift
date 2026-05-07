@@ -28,6 +28,13 @@ def _resolve_developer_dir(rctx):
         )
     return output
 
+def _exclude_module_args(exclude_modules):
+    args = []
+    for sdk, modules in sorted(exclude_modules.items()):
+        for module in sorted(modules):
+            args.extend(["--exclude-module", "{}:{}".format(sdk, module)])
+    return args
+
 def _xcode_explicit_module_repo_impl(rctx):
     developer_dir = _resolve_developer_dir(rctx)
     rctx.report_progress("Scanning SDKs for Xcode {}".format(rctx.attr.xcode_version))
@@ -40,7 +47,7 @@ def _xcode_explicit_module_repo_impl(rctx):
             "BUILD.bazel",
             "--module-names",
             "module_names.json",
-        ] + list(rctx.attr.sdks),
+        ] + _exclude_module_args(rctx.attr.exclude_modules) + list(rctx.attr.sdks),
         environment = {"DEVELOPER_DIR": developer_dir},
     )
     if result.return_code != 0:
@@ -55,6 +62,10 @@ def _xcode_explicit_module_repo_impl(rctx):
 xcode_explicit_module_repo = repository_rule(
     implementation = _xcode_explicit_module_repo_impl,
     attrs = {
+        "exclude_modules": attr.string_list_dict(
+            default = {},
+            doc = "Dictionary of SDK names to module names that should be excluded from scanning.",
+        ),
         "sdks": attr.string_list(
             doc = "Optional list of SDK names (e.g. 'MacOSX', 'iPhoneSimulator') to scan. If empty, all SDKs are scanned.",
         ),

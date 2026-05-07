@@ -101,6 +101,32 @@ system_sdk.configure_sdks(include_all = True)
 use_repo(system_sdk, "system_sdk")
 ```
 
+## Ignoring broken SDK modules
+
+If you're using the implicitly added deps, rules_swift builds every
+module it finds. In this case if the SDK has any modules that are
+broken, you can disable building them. To do this add something like
+this to your `MODULE.bazel`:
+
+```bzl
+system_sdk.configure_sdks(
+    exclude_modules = {
+        "WatchOS": [
+            "BrowserEngineKit",
+        ],
+        "WatchSimulator": [
+            "BrowserEngineKit",
+            "CoreAudio_Private",
+        ],
+        "iPhoneSimulator": [
+            "CoreAudio_Private",
+        ],
+    },
+)
+```
+
+To do this when vendoring your SDK, pass `--exclude-module WatchOS:BrowserEngineKit` etc.
+
 ## Providing a precomputed BUILD file
 
 By default the `@system_sdk` module extension scans all local Xcode

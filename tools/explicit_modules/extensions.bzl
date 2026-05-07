@@ -76,7 +76,7 @@ def _generate_pinned_repos(configs):
         default_manifest = default_manifest,
     )
 
-def _generate_local_repos(module_ctx, sdks):
+def _generate_local_repos(module_ctx, sdks, exclude_modules):
     toolchains, err = run_xcode_locator(module_ctx, _XCODE_LOCATOR_SRC)
     if err:
         fail("xcode-locator failed: " + err)
@@ -99,6 +99,7 @@ def _generate_local_repos(module_ctx, sdks):
         repo_name = "system_sdk_xcode_" + _sanitize(tc.version)
         xcode_explicit_module_repo(
             name = repo_name,
+            exclude_modules = exclude_modules,
             sdks = sdks,
             xcode_version = tc.version,
             xcode_locator = _LOCATOR_LABEL,
@@ -113,18 +114,37 @@ def _generate_local_repos(module_ctx, sdks):
         default_manifest = default_manifest,
     )
 
-def _collect_sdks(module_ctx):
+def _add_exclude_modules(result, exclude_modules):
+    for sdk, modules in exclude_modules.items():
+        modules_for_sdk = result.get(sdk)
+        if modules_for_sdk == None:
+            modules_for_sdk = {}
+            result[sdk] = modules_for_sdk
+        for module in modules:
+            modules_for_sdk[module] = True
+
+def _freeze_exclude_modules(exclude_modules):
+    return {
+        sdk: sorted(modules.keys())
+        for sdk, modules in exclude_modules.items()
+    }
+
+def _collect_sdk_config(module_ctx):
     # Default to scanning the most common SDKs to save time.
     names = {"MacOSX": True, "iPhoneOS": True, "iPhoneSimulator": True}
+    include_all = False
+    exclude_modules = {}
     for mod in module_ctx.modules:
         if not mod.is_root:
             continue
         for tag in mod.tags.configure_sdks:
             if tag.include_all:
-                return {}  # If we pass nothing to scan.py it will include everything
+                include_all = True
             for name in tag.names:
                 names[name] = True
-    return sorted(names.keys())
+            _add_exclude_modules(exclude_modules, tag.exclude_modules)
+    sdks = [] if include_all else sorted(names.keys())
+    return sdks, _freeze_exclude_modules(exclude_modules)
 
 def _sdk_extension_impl(module_ctx):
     module_ctx.watch(_SCANNER_SCRIPT)
@@ -141,7 +161,8 @@ def _sdk_extension_impl(module_ctx):
     elif module_ctx.os.name != "mac os x":
         _system_sdk_stub_repo(name = "system_sdk")
     else:
-        _generate_local_repos(module_ctx, _collect_sdks(module_ctx))
+        sdks, exclude_modules = _collect_sdk_config(module_ctx)
+        _generate_local_repos(module_ctx, sdks, exclude_modules)
 
 _STUB_BUILD_FILE = """\
 load(
@@ -179,6 +200,10 @@ _configure_xcode_tag = tag_class(
 
 _configure_sdks_tag = tag_class(
     attrs = {
+        "exclude_modules": attr.string_list_dict(
+            default = {},
+            doc = "Dictionary of SDK names to module names that should be excluded from scanning.",
+        ),
         "names": attr.string_list(
             default = [],
             doc = "SDK names to scan (e.g. 'MacOSX', 'iPhoneOS')",
