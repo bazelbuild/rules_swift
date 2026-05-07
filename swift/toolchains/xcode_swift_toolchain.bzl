@@ -434,14 +434,15 @@ def _all_action_configs(
     Returns:
         The action configurations for the Swift toolchain.
     """
+    sdk_version = str(xcode_config.sdk_version_for_platform(
+        target_triples.bazel_apple_platform(target_triple),
+    ))
     sdk_version_triple = target_triples.str(
         target_triples.normalize_for_swift(
             target_triples.make(
                 cpu = target_triple.cpu,
                 vendor = target_triple.vendor,
-                os = target_triples.unversioned_os(target_triple) + str(xcode_config.sdk_version_for_platform(
-                    target_triples.bazel_apple_platform(target_triple),
-                )) + ".0",
+                os = target_triples.unversioned_os(target_triple) + sdk_version,
                 environment = target_triple.environment,
             ),
         ),
@@ -592,9 +593,7 @@ def _all_action_configs(
                 ),
                 add_arg(
                     "-target-sdk-version",
-                    str(xcode_config.sdk_version_for_platform(
-                        target_triples.bazel_apple_platform(target_triple),
-                    )),
+                    sdk_version,
                 ),
             ],
         ),
