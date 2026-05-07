@@ -27,14 +27,6 @@ _XCODE_LOCATOR_SRC = Label("@bazel_tools//tools/osx:xcode_locator.m")
 _SCANNER_SCRIPT = Label("//tools/explicit_modules:scan.py")
 _LOCATOR_REPO = "system_sdk_xcode_locator"
 _LOCATOR_LABEL = "@{}//:xcode-locator-bin".format(_LOCATOR_REPO)
-_DEFAULT_EXCLUDED_MODULES = {
-    "AppleTVSimulator": ["CoreAudio_Private"],
-    "iPhoneSimulator": ["CoreAudio_Private"],
-    "WatchOS": ["BrowserEngineKit"],
-    "WatchSimulator": ["BrowserEngineKit", "CoreAudio_Private"],
-    "XROS": ["AccessoryTransportExtension"],
-    "XRSimulator": ["AccessoryTransportExtension"],
-}
 
 def _sanitize(v):
     return v.replace(".", "_").replace("-", "_")
@@ -209,7 +201,7 @@ _configure_xcode_tag = tag_class(
 _configure_sdks_tag = tag_class(
     attrs = {
         "exclude_modules": attr.string_list_dict(
-            default = _DEFAULT_EXCLUDED_MODULES,
+            default = {},
             doc = "Dictionary of SDK names to module names that should be excluded from scanning.",
         ),
         "names": attr.string_list(

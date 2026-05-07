@@ -48,6 +48,15 @@ _SDK_CONSTRAINTS = {
     ],
 }
 
+_DEFAULT_EXCLUDED_MODULES = {
+    "AppleTVSimulator": {"CoreAudio_Private"},
+    "iPhoneSimulator": {"CoreAudio_Private"},
+    "WatchOS": {"BrowserEngineKit"},
+    "WatchSimulator": {"BrowserEngineKit", "CoreAudio_Private"},
+    "XROS": {"AccessoryTransportExtension"},
+    "XRSimulator": {"AccessoryTransportExtension"},
+}
+
 _TARGETS_PER_SDK = {
     "macosx": [
         ("@platforms//cpu:aarch64", "arm64-apple-macos{ver}"),
@@ -515,6 +524,11 @@ def _discover_all_modules(
 
 
 def _parse_exclude_modules(values: list[str]) -> dict[str, set[str]]:
+    if not values:
+        return {
+            sdk: set(modules) for sdk, modules in _DEFAULT_EXCLUDED_MODULES.items()
+        }
+
     excluded_modules: defaultdict[str, set[str]] = defaultdict(set)
     for value in values:
         sdk, sep, module = value.partition(":")
