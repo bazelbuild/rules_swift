@@ -84,6 +84,10 @@ load(
 )
 load("//swift/toolchains/config:compile_config.bzl", "compile_action_configs")
 load(
+    "//swift/toolchains/config:compile_module_interface_config.bzl",
+    "compile_module_interface_action_configs",
+)
+load(
     "//swift/toolchains/config:modulewrap_config.bzl",
     "modulewrap_action_configs",
 )
@@ -165,6 +169,17 @@ def _all_tool_configs(
             use_param_file = True,
             worker_mode = "wrap",
             env = env,
+        ),
+        SWIFT_ACTION_COMPILE_MODULE_INTERFACE: (
+            ToolConfigInfo(
+                driver_config = _driver_config(mode = "swiftc") if not swift_tools else None,
+                args = ["-frontend"],
+                executable = swift_tools.swift_driver if swift_tools else None,
+                resource_set = _swift_compile_resource_set,
+                use_param_file = True,
+                worker_mode = "wrap",
+                env = env,
+            )
         ),
     }
 
@@ -318,6 +333,7 @@ def _all_action_configs(os, arch, target_triple, sdkroot, xctest_version, additi
     action_configs.extend(modulewrap_action_configs())
     action_configs.extend(autolink_extract_action_configs())
     action_configs.extend(symbol_graph_action_configs())
+    action_configs.extend(compile_module_interface_action_configs())
 
     return action_configs
 
