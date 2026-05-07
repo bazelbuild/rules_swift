@@ -70,6 +70,7 @@ system_sdk.configure_sdks(
             "CoreAudio_Private",  # This one is gone from new SDKs but still on CI
         ],
         "iPhoneSimulator": [
+            "AssetsLibrary",  # This one is fixed in newer SDKs but not on CI
             "CoreAudio_Private",
         ],
     },
