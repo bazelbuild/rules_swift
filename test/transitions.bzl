@@ -6,6 +6,9 @@ load("//swift:providers.bzl", "SwiftInfo")
 
 def _force_features_transition_impl(settings, attr):
     return {
+        "//command_line_option:compilation_mode": (
+            attr.compilation_mode or settings["//command_line_option:compilation_mode"]
+        ),
         "//command_line_option:features": settings["//command_line_option:features"] + attr.transitive_features,
         "//command_line_option:host_features": settings["//command_line_option:host_features"] + attr.transitive_features,
     }
@@ -13,10 +16,12 @@ def _force_features_transition_impl(settings, attr):
 _force_features_transition = transition(
     implementation = _force_features_transition_impl,
     inputs = [
+        "//command_line_option:compilation_mode",
         "//command_line_option:features",
         "//command_line_option:host_features",
     ],
     outputs = [
+        "//command_line_option:compilation_mode",
         "//command_line_option:features",
         "//command_line_option:host_features",
     ],
@@ -32,6 +37,14 @@ force_features_binary = rule(
             mandatory = True,
             cfg = _force_features_transition,
             doc = "The binary target to build under the feature transition.",
+        ),
+        "compilation_mode": attr.string(
+            default = "",
+            doc = (
+                "Optional value to force `--compilation_mode` to (e.g. `dbg`, " +
+                "`opt`). Empty (the default) leaves the inherited setting alone."
+            ),
+            values = ["", "dbg", "fastbuild", "opt"],
         ),
         "transitive_features": attr.string_list(
             mandatory = True,
@@ -61,6 +74,14 @@ force_features_test = rule(
             mandatory = True,
             cfg = _force_features_transition,
             doc = "The test target to run under the feature transition.",
+        ),
+        "compilation_mode": attr.string(
+            default = "",
+            doc = (
+                "Optional value to force `--compilation_mode` to (e.g. `dbg`, " +
+                "`opt`). Empty (the default) leaves the inherited setting alone."
+            ),
+            values = ["", "dbg", "fastbuild", "opt"],
         ),
         "transitive_features": attr.string_list(
             mandatory = True,
