@@ -128,6 +128,28 @@ sh_test(
     }),
 )
 
+extract_swiftmodule(
+    name = "testing_swiftmodule",
+    target = "@system_sdk//:Testing",
+)
+
+# Direct system Swift modules should not embed absolute Xcode paths either,
+# including the swiftinterface source path serialized into the swiftmodule.
+sh_test(
+    name = "hermetic_testing_swiftmodule_test",
+    srcs = ["check_hermetic_swiftmodule.sh"],
+    args = [
+        "$(rootpath :testing_swiftmodule)",
+        "--no-default-expected",
+        "Testing",
+    ],
+    data = [":testing_swiftmodule"],
+    target_compatible_with = select({
+        ":supports_hermetic_swiftmodule": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+)
+
 # Same hermeticity check, but the consumer swift_library depends on a
 # `swift_compiler_plugin`. Plugins get serialized into the swiftmodule via
 # `<executable>#<server>#<module>` and should be relative

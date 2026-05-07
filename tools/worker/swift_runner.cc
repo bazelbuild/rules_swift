@@ -16,6 +16,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <iomanip>
 #include <optional>
 #include <sstream>
 #include <utility>
@@ -217,6 +218,56 @@ std::optional<std::string> InferInterfacePath(
   return std::nullopt;
 }
 
+// Necessary so the MODULE_INTERFACE_PATH in the swiftmodule doesn't have an
+// absolute path to Xcode
+void CreateVFSOverlayForInterface(
+    absl::string_view interface_path,
+    std::function<void(absl::string_view)> consumer) {
+  std::filesystem::path source{std::string(interface_path)};
+  if (!source.is_absolute()) {
+    consumer(source.string());
+    return;
+  }
+
+  std::filesystem::path module_dir = source.parent_path().filename();
+  if (module_dir.empty()) {
+    module_dir = "swiftmodule";
+  }
+  std::filesystem::path virtual_dir =
+      std::filesystem::path(".rules_swift_interface_sources") / module_dir;
+  std::filesystem::path virtual_path = virtual_dir / source.filename();
+  std::filesystem::path overlay_path = virtual_dir / "swiftinterface-vfsoverlay.yaml";
+
+  std::error_code ec;
+  std::filesystem::create_directories(virtual_dir, ec);
+  if (ec) {
+    consumer(source.string());
+    return;
+  }
+
+  std::ofstream overlay_file(overlay_path);
+  if (!overlay_file) {
+    consumer(source.string());
+    return;
+  }
+  overlay_file << "{\"version\":0,\"case-sensitive\":true,"
+               << "\"overlay-relative\":false,\"use-external-names\":false,"
+               << "\"roots\":[{\"type\":\"directory\",\"name\":"
+               << std::quoted(virtual_dir.string()) << ",\"contents\":["
+               << "{\"type\":\"file\",\"name\":"
+               << std::quoted(source.filename().string())
+               << ",\"external-contents\":" << std::quoted(source.string())
+               << "}]}]}";
+  overlay_file.close();
+  if (!overlay_file) {
+    consumer(source.string());
+    return;
+  }
+
+  consumer("-vfsoverlay" + overlay_path.string());
+  consumer(virtual_path.string());
+}
+
 // Extracts flags from the given `.swiftinterface` file and passes them to the
 // given consumer.
 void ExtractFlagsFromInterfaceFile(
@@ -236,7 +287,7 @@ void ExtractFlagsFromInterfaceFile(
 
   // Add the path to the interface file as a source file argument, then extract
   // the flags from it and add them as well.
-  consumer(interface_path);
+  CreateVFSOverlayForInterface(interface_path, consumer);
 
   std::ifstream interface_file{std::string(interface_path)};
   std::string line;
