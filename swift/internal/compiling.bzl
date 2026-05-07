@@ -850,9 +850,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
             toolchain_type = toolchain_type,
             user_compile_flags = [],
         )
-        precompiled_module = (
-            compile_result.clang_module.precompiled_module if compile_result else None
-        )
+        precompiled_module = compile_result.clang_module.precompiled_module if compile_result else None
     else:
         precompiled_module = None
 

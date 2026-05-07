@@ -206,9 +206,7 @@ def _mixed_language_library_impl(ctx):
         target_name = name,
         toolchain_type = SWIFT_TOOLCHAIN_TYPE,
     )
-    precompiled_module = (
-        compile_result.clang_module.precompiled_module if compile_result else None
-    )
+    precompiled_module = compile_result.clang_module.precompiled_module if compile_result else None
 
     swift_info = SwiftInfo(
         modules = [

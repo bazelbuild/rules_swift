@@ -446,10 +446,8 @@ def _handle_module(
         toolchain_type = toolchain_type,
         user_compile_flags = local_defines,
     )
-    precompiled_module = (
-        compile_result.clang_module.precompiled_module if compile_result else None
-    )
-    pcm_indexstore = compile_result.indexstore_directory
+    precompiled_module = compile_result.clang_module.precompiled_module if compile_result else None
+    pcm_indexstore = compile_result.indexstore_directory if compile_result else None
 
     clang_module_context = create_clang_module_inputs(
         compilation_context = compilation_context,

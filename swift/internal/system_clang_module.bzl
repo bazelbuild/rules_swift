@@ -68,9 +68,7 @@ def _system_clang_module_impl(ctx):
         target_name = ctx.attr.name,
         toolchain_type = SWIFT_TOOLCHAIN_TYPE,
     )
-    precompiled_module = (
-        compile_result.clang_module.precompiled_module if compile_result else None
-    )
+    precompiled_module = compile_result.clang_module.precompiled_module if compile_result else None
 
     clang_module_context = create_clang_module_inputs(
         compilation_context = cc_info.compilation_context,
