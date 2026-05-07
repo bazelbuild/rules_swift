@@ -469,6 +469,14 @@ def _all_action_configs(
     # https://github.com/swiftlang/llvm-project/issues/12826
     action_configs.extend([
         ActionConfigInfo(
+            actions = [SWIFT_ACTION_PRECOMPILE_C_MODULE],
+            configurators = [
+                # NOTE: This seems wrong but is also what Xcode does
+                add_arg("-target", sdk_version_triple),
+                add_arg("-sdk", apple_toolchain.sdk_dir()),
+            ],
+        ),
+        ActionConfigInfo(
             actions = [
                 SWIFT_ACTION_COMPILE,
                 SWIFT_ACTION_DERIVE_FILES,
@@ -479,16 +487,6 @@ def _all_action_configs(
             configurators = [
                 add_arg("-Xfrontend", "-clang-target"),
                 add_arg("-Xfrontend", sdk_version_triple),
-            ],
-        ),
-        ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_PRECOMPILE_C_MODULE,
-            ],
-            configurators = [
-                # NOTE: This seems wrong but is also what Xcode does
-                add_arg("-target", sdk_version_triple),
-                add_arg("-sdk", apple_toolchain.sdk_dir()),
             ],
         ),
         ActionConfigInfo(
