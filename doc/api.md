@@ -690,8 +690,6 @@ A struct containing the following fields:
       when compiling a textual interface that has an underlying C module.
   *   `indexstore_directory`: The indexstore directory for the precompiled
       module, if any.
-  *   `pcm_file`: The precompiled module file. This field is deprecated;
-      clients should retrieve it from the `clang_module` field instead.
 
 
 <a id="swift_common.synthesize_interface"></a>
@@ -795,5 +793,4 @@ toolchains = use_swift_toolchain() + [other toolchains...]
 A list of
   [toolchain types](https://bazel.build/rules/lib/builtins/toolchain_type.html)
   that should be passed to `rule()`, `aspect()`, or `exec_group()`.
-
 
