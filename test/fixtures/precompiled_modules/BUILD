@@ -302,6 +302,29 @@ objc_library(
 )
 
 swift_verify_test(
+    name = "foundation_requires_explicit_dep",
+    srcs = ["foundation_requires_explicit_dep.swift"],
+    module_name = "FoundationRequiresExplicitDep",
+    tags = FIXTURE_TAGS,
+    target_compatible_with = select({
+        "@build_bazel_apple_support//configs:apple": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    deps = ["@system_sdk//:CoreFoundation"],
+)
+
+transition_test(
+    name = "foundation_requires_explicit_dep_transitioned",
+    tags = FIXTURE_TAGS,
+    target = ":foundation_requires_explicit_dep",
+    transitive_features = [
+        "swift.use_c_modules",
+        "swift.emit_c_module",
+        "-swift.add_default_precompiled_modules",
+    ],
+)
+
+swift_verify_test(
     name = "application_extension_unavailable",
     srcs = ["ApplicationExtensionLib.swift"],
     copts = [
