@@ -48,6 +48,57 @@ bool copy_file(const std::filesystem::path &from,
 #endif
 }
 
+static bool TouchFile(const std::filesystem::path &path,
+                      std::ostringstream &output) {
+  std::error_code ec;
+  if (!path.parent_path().empty()) {
+    std::filesystem::create_directories(path.parent_path(), ec);
+    if (ec) {
+      output << "swift_worker: Could not create directory "
+             << path.parent_path() << " (" << ec.message() << ")\n";
+      return false;
+    }
+  }
+
+  std::ofstream stream(path);
+  if (!stream) {
+    output << "swift_worker: Could not create " << path << "\n";
+    return false;
+  }
+
+  return true;
+}
+
+static bool CreateVerifyOutputs(const std::string &output_file_map_path,
+                                const std::string &emit_module_path,
+                                std::ostringstream &output) {
+  if (!output_file_map_path.empty()) {
+    OutputFileMap output_file_map;
+    output_file_map.ReadFromPath(output_file_map_path, "", "");
+    for (const auto &expected_output_pair :
+         output_file_map.incremental_outputs()) {
+      if (!TouchFile(expected_output_pair.first, output)) {
+        return false;
+      }
+    }
+  }
+
+  if (!emit_module_path.empty()) {
+    if (!TouchFile(emit_module_path, output)) {
+      return false;
+    }
+
+    std::string swiftdoc_path = std::filesystem::path(emit_module_path)
+                                    .replace_extension(".swiftdoc")
+                                    .string();
+    if (!TouchFile(swiftdoc_path, output)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 static void FinalizeWorkRequest(
     const bazel_rules_swift::worker_protocol::WorkRequest &request,
     bazel_rules_swift::worker_protocol::WorkResponse &response, int exit_code,
@@ -86,6 +137,7 @@ void WorkProcessor::ProcessWorkRequest(
   std::string emit_objc_header_path;
   bool is_wmo = false;
   bool is_dump_ast = false;
+  bool is_verify = false;
   bool emit_swift_source_info = false;
 
   std::string prev_arg;
@@ -100,6 +152,8 @@ void WorkProcessor::ProcessWorkRequest(
       arg.clear();
     } else if (arg == "-dump-ast") {
       is_dump_ast = true;
+    } else if (arg == "-verify") {
+      is_verify = true;
     } else if (prev_arg == "-output-file-map") {
       // Peel off the `-output-file-map` argument, so we can rewrite it if
       // necessary later.
@@ -253,6 +307,12 @@ void WorkProcessor::ProcessWorkRequest(
   int exit_code = swift_runner.Run(&stderr_stream, /*stdout_to_stderr=*/true);
   if (exit_code != 0) {
     FinalizeWorkRequest(request, response, exit_code, stderr_stream);
+    return;
+  }
+
+  if (is_verify && !CreateVerifyOutputs(output_file_map_path, emit_module_path,
+                                        stderr_stream)) {
+    FinalizeWorkRequest(request, response, EXIT_FAILURE, stderr_stream);
     return;
   }
 
