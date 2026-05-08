@@ -13,6 +13,7 @@ load(
     "transition_test",
 )
 load("//test/fixtures:common.bzl", "FIXTURE_TAGS")
+load("//test/rules:swift_verify_test.bzl", "swift_verify_test")
 load(":cross_platform.bzl", "cross_platform_targets")
 
 package(default_visibility = ["//test:__subpackages__"])
@@ -277,6 +278,52 @@ transition_binary(
     name = "mixed_language_explicit_bin_transitioned",
     tags = FIXTURE_TAGS,
     target = ":mixed_language_explicit_bin",
+    transitive_features = [
+        "swift.use_c_modules",
+        "swift.emit_c_module",
+        "-swift.add_default_precompiled_modules",
+    ],
+)
+
+swift_interop_hint(
+    name = "ExtensionUnavailableObjC_hint",
+    module_name = "ExtensionUnavailableObjC",
+    tags = FIXTURE_TAGS,
+)
+
+objc_library(
+    name = "ExtensionUnavailableObjC",
+    srcs = ["ExtensionUnavailableObjC.m"],
+    hdrs = ["ExtensionUnavailableObjC.h"],
+    aspect_hints = [":ExtensionUnavailableObjC_hint"],
+    tags = FIXTURE_TAGS,
+    target_compatible_with = ["@platforms//os:macos"],
+    deps = ["@system_sdk//:Foundation"],
+)
+
+swift_verify_test(
+    name = "application_extension_unavailable",
+    srcs = ["ApplicationExtensionLib.swift"],
+    copts = [
+        "-application-extension",
+        "-Xfrontend",
+        "-verify-ignore-unrelated",
+        "-Xcc",
+        "-fno-application-extension",
+    ],
+    module_name = "ApplicationExtensionLib",
+    tags = FIXTURE_TAGS,
+    target_compatible_with = ["@platforms//os:macos"],
+    deps = [
+        ":ExtensionUnavailableObjC",
+        "@system_sdk//:Foundation",
+    ],
+)
+
+transition_test(
+    name = "application_extension_unavailable_transitioned",
+    tags = FIXTURE_TAGS,
+    target = ":application_extension_unavailable",
     transitive_features = [
         "swift.use_c_modules",
         "swift.emit_c_module",
