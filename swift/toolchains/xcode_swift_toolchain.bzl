@@ -451,10 +451,8 @@ def _all_action_configs(
     # Basic compilation flags (target triple and toolchain search paths).
     action_configs = [
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
-                SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
                 SWIFT_ACTION_MODULEWRAP,
                 SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
@@ -478,9 +476,7 @@ def _all_action_configs(
             ],
         ),
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
-                SWIFT_ACTION_DERIVE_FILES,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_DUMP_AST,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
                 SWIFT_ACTION_SYNTHESIZE_INTERFACE,
@@ -523,7 +519,6 @@ def _all_action_configs(
             actions = all_compile_action_names() + [
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
-                SWIFT_ACTION_DERIVE_FILES,
             ],
             configurators = [
                 add_arg(
@@ -563,9 +558,7 @@ def _all_action_configs(
         # directory so that modules are found correctly.
         action_configs.append(
             ActionConfigInfo(
-                actions = [
-                    SWIFT_ACTION_COMPILE,
-                    SWIFT_ACTION_DERIVE_FILES,
+                actions = all_compile_action_names() + [
                     SWIFT_ACTION_DUMP_AST,
                     SWIFT_ACTION_PRECOMPILE_C_MODULE,
                     SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
