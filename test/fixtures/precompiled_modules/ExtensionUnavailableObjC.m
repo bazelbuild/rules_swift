@@ -3,7 +3,7 @@
 @implementation ExtensionUnavailableAPI
 
 + (NSString *)extensionUnavailableMessage {
-  return @"extension unavailable Objective-C API";
+    return @"extension unavailable Objective-C API";
 }
 
 @end

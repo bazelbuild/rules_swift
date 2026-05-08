@@ -450,20 +450,6 @@ be added to the input root at execution time.
 compiler and other Swift tools (for both incremental and non-incremental
 compiles).
 """,
-        "system_modules": """\
-A `struct` with the following fields, which represent providers from targets
-that should be added as implicit dependencies of any compilation or
-linking target:
-
-*   `cc_infos`: A list of `CcInfo` providers from targets specified as the
-    toolchain's implicit dependencies.
-
-*   `swift_infos`: A list of `SwiftInfo` providers from targets specified as the
-    toolchain's implicit dependencies.
-
-For ease of use, this field is never `None`; it will always be a valid `struct`
-containing the fields described above, even if those lists are empty.
-""",
         "test_configuration": """\
 `Struct` containing the following fields:
 

@@ -389,7 +389,18 @@ def struct_fields(s):
         if field not in ("to_json", "to_proto")
     }
 
-def _toolchain_system_modules(*, feature_configuration, swift_toolchain):
+def default_precompiled_modules_providers(default_precompiled_modules, feature_configuration):
+    """Returns extra providers if explicit modules is enabled.
+
+    Args:
+        default_precompiled_modules: The target containing all the default
+            modules to propagate if the relevant features are enabled.
+        feature_configuration: A feature configuration obtained from
+            `swift_common.configure_features`.
+
+    Returns:
+        A tuple `(cc_infos, swift_infos)`.
+    """
     if not (
         is_feature_enabled(
             feature_configuration = feature_configuration,
@@ -402,12 +413,18 @@ def _toolchain_system_modules(*, feature_configuration, swift_toolchain):
             feature_name = SWIFT_FEATURE_ADD_DEFAULT_PRECOMPILED_MODULES,
         )
     ):
-        return struct(
-            cc_infos = [],
-            swift_infos = [],
+        return [], []
+
+    if not default_precompiled_modules:
+        fail(
+            "The `swift.add_default_precompiled_modules` feature is enabled " +
+            "but the calling rule did not pass a `default_precompiled_modules`.",
         )
 
-    return swift_toolchain.system_modules
+    return (
+        [default_precompiled_modules[CcInfo]],
+        [default_precompiled_modules[SwiftInfo]],
+    )
 
 def include_developer_search_paths(attr):
     """Determines whether to include developer search paths.
@@ -443,17 +460,11 @@ def get_swift_implicit_deps(*, feature_configuration, swift_toolchain):
         feature_name = SWIFT_FEATURE_NO_IMPLICIT_DEPS,
     ):
         return [], []
-
-    system_modules = _toolchain_system_modules(
-        feature_configuration = feature_configuration,
-        swift_toolchain = swift_toolchain,
-    )
-    return (
-        swift_toolchain.implicit_deps_providers.swift_infos +
-        system_modules.swift_infos,
-        swift_toolchain.implicit_deps_providers.cc_infos +
-        system_modules.cc_infos,
-    )
+    else:
+        return (
+            swift_toolchain.implicit_deps_providers.swift_infos,
+            swift_toolchain.implicit_deps_providers.cc_infos,
+        )
 
 def get_clang_implicit_deps(*, feature_configuration, swift_toolchain):
     """Returns the Swift and C++ providers for implicit Clang dependencies.
@@ -473,17 +484,11 @@ def get_clang_implicit_deps(*, feature_configuration, swift_toolchain):
         feature_name = SWIFT_FEATURE_NO_IMPLICIT_DEPS,
     ):
         return [], []
-
-    system_modules = _toolchain_system_modules(
-        feature_configuration = feature_configuration,
-        swift_toolchain = swift_toolchain,
-    )
-    return (
-        swift_toolchain.clang_implicit_deps_providers.swift_infos +
-        system_modules.swift_infos,
-        swift_toolchain.clang_implicit_deps_providers.cc_infos +
-        system_modules.cc_infos,
-    )
+    else:
+        return (
+            swift_toolchain.clang_implicit_deps_providers.swift_infos,
+            swift_toolchain.clang_implicit_deps_providers.cc_infos,
+        )
 
 def is_exec_config(ctx):
     """Determines whether the current configuration is an exec configuration.

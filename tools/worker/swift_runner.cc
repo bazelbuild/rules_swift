@@ -327,8 +327,7 @@ SwiftRunner::SwiftRunner(const std::vector<std::string> &args,
       force_response_file_(force_response_file),
       is_dump_ast_(false),
       file_prefix_pwd_is_dot_(false),
-      hermetic_pcm_(false),
-      verbose_(false) {
+      hermetic_pcm_(false) {
   args_ = ProcessArguments(args);
 }
 
@@ -347,29 +346,6 @@ int SwiftRunner::Run(std::ostream *stderr_stream, bool stdout_to_stderr) {
   int exit_code = hermetic_pcm_ ? RunHermeticPcm(args_, stderr_stream)
                                 : RunSubProcess(args_, &job_env_, stderr_stream,
                                                 stdout_to_stderr);
-
-  if (verbose_) {
-    (*stderr_stream) << "swift_runner: invocation:";
-    for (const auto &arg : args_) {
-      (*stderr_stream) << ' ' << arg;
-
-      // Expand top-level response files inline so the printed command line is
-      // self-contained and reproducible from the log. Don't recurse: nested
-      // `@file` references inside the response file are printed verbatim.
-      if (arg.size() <= 1 || arg[0] != '@') {
-        continue;
-      }
-      std::ifstream response_file(arg.substr(1));
-      if (!response_file.good()) {
-        continue;
-      }
-      (*stderr_stream) << " #";
-      for (std::string line; std::getline(response_file, line);) {
-        (*stderr_stream) << ' ' << line;
-      }
-    }
-    (*stderr_stream) << '\n';
-  }
 
   if (exit_code != 0) {
     return exit_code;
@@ -726,11 +702,6 @@ std::vector<std::string> SwiftRunner::ParseArguments(Iterator itr) {
       } else if (StripPrefix("-explicit-compile-module-from-interface=", arg)) {
         module_or_interface_path_ = arg;
       }
-    } else if (arg == "-v") {
-      // `-v` makes swiftc itself verbose; we also use it as the trigger for
-      // the worker to echo the spawn line so a caller can copy/paste the
-      // exact invocation that ran.
-      verbose_ = true;
     } else {
       if (arg == "-output-file-map") {
         ++it;

@@ -49,6 +49,7 @@ load(
 )
 load(
     "//swift/internal:utils.bzl",
+    "default_precompiled_modules_providers",
     "expand_locations",
     "get_providers",
 )
@@ -76,10 +77,15 @@ def _swift_compiler_plugin_impl(ctx):
         module_name = derive_swift_module_name(ctx.label)
     entry_point_function_name = "{}_main".format(module_name)
 
+    extra_cc_infos, extra_swift_infos = default_precompiled_modules_providers(
+        ctx.attr._default_precompiled_modules,
+        feature_configuration,
+    )
+
     compile_result = compile(
         actions = ctx.actions,
         additional_inputs = ctx.files.swiftc_inputs,
-        cc_infos = get_providers(deps, CcInfo),
+        cc_infos = get_providers(deps, CcInfo) + extra_cc_infos,
         copts = expand_locations(
             ctx,
             ctx.attr.copts,
@@ -103,7 +109,7 @@ def _swift_compiler_plugin_impl(ctx):
         package_name = ctx.attr.package_name,
         plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),
         srcs = srcs,
-        swift_infos = get_providers(deps, SwiftInfo),
+        swift_infos = get_providers(deps, SwiftInfo) + extra_swift_infos,
         toolchains = toolchains,
         target_name = ctx.label.name,
         workspace_name = ctx.workspace_name,

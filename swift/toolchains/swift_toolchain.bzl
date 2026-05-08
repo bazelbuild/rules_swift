@@ -44,7 +44,6 @@ load(
     "SWIFT_ACTION_PRECOMPILE_C_MODULE",
     "SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT",
     "SWIFT_ACTION_SYNTHESIZE_INTERFACE",
-    "all_compile_action_names",
 )
 load("//swift/internal:attrs.bzl", "swift_toolchain_driver_attrs")
 load("//swift/internal:autolinking.bzl", "autolink_extract_action_configs")
@@ -223,8 +222,10 @@ def _all_action_configs(os, arch, target_triple, sdkroot, xctest_version, additi
     # Basic compilation flags (target triple and toolchain search paths).
     action_configs = [
         ActionConfigInfo(
-            actions = all_compile_action_names() + [
+            actions = [
+                SWIFT_ACTION_COMPILE,
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+                SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
                 SWIFT_ACTION_MODULEWRAP,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
@@ -236,8 +237,10 @@ def _all_action_configs(os, arch, target_triple, sdkroot, xctest_version, additi
             ],
         ),
         ActionConfigInfo(
-            actions = all_compile_action_names() + [
+            actions = [
+                SWIFT_ACTION_COMPILE,
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+                SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
                 SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
@@ -252,7 +255,9 @@ def _all_action_configs(os, arch, target_triple, sdkroot, xctest_version, additi
     if sdkroot:
         action_configs.append(
             ActionConfigInfo(
-                actions = all_compile_action_names() + [
+                actions = [
+                    SWIFT_ACTION_COMPILE,
+                    SWIFT_ACTION_DERIVE_FILES,
                     SWIFT_ACTION_DUMP_AST,
                     SWIFT_ACTION_PRECOMPILE_C_MODULE,
                     SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
@@ -264,7 +269,9 @@ def _all_action_configs(os, arch, target_triple, sdkroot, xctest_version, additi
         if os and xctest_version:
             action_configs.append(
                 ActionConfigInfo(
-                    actions = all_compile_action_names() + [
+                    actions = [
+                        SWIFT_ACTION_COMPILE,
+                        SWIFT_ACTION_DERIVE_FILES,
                         SWIFT_ACTION_DUMP_AST,
                         SWIFT_ACTION_PRECOMPILE_C_MODULE,
                     ],
@@ -291,7 +298,9 @@ def _all_action_configs(os, arch, target_triple, sdkroot, xctest_version, additi
             if arch:
                 action_configs.append(
                     ActionConfigInfo(
-                        actions = all_compile_action_names() + [
+                        actions = [
+                            SWIFT_ACTION_COMPILE,
+                            SWIFT_ACTION_DERIVE_FILES,
                             SWIFT_ACTION_DUMP_AST,
                             SWIFT_ACTION_PRECOMPILE_C_MODULE,
                         ],
@@ -633,7 +642,6 @@ def _swift_toolchain_impl(ctx):
         requested_features = requested_features,
         root_dir = toolchain_root,
         runtime = depset(ctx.files.runtime),
-        system_modules = collect_implicit_deps_providers([]),
         swift_worker = ctx.attr._worker[DefaultInfo].files_to_run,
         const_protocols_to_gather = ctx.file.const_protocols_to_gather,
         test_configuration = struct(
