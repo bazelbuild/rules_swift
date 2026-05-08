@@ -30,7 +30,7 @@ def _swift_verify_test_impl(ctx):
             output_groups = provider
             break
 
-    test_executable = ctx.actions.declare_file(ctx.label.name)
+    test_executable = ctx.actions.declare_file(ctx.label.name + "_verify_test.sh")
     ctx.actions.write(
         content = "#!/bin/bash\nexit 0\n",
         is_executable = True,
