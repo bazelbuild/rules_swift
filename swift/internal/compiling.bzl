@@ -836,7 +836,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
             )
         )
 
-        pcm_outputs = _precompile_clang_module(
+        compile_result = _precompile_clang_module(
             actions = actions,
             cc_compilation_context = compilation_context_to_compile,
             exec_group = exec_group,
@@ -850,10 +850,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
             toolchain_type = toolchain_type,
             user_compile_flags = [],
         )
-        if pcm_outputs:
-            precompiled_module = pcm_outputs.pcm_file
-        else:
-            precompiled_module = None
+        precompiled_module = compile_result.clang_module.precompiled_module if compile_result else None
     else:
         precompiled_module = None
 
@@ -991,8 +988,6 @@ def precompile_clang_module(
             when compiling a textual interface that has an underlying C module.
         *   `indexstore_directory`: The indexstore directory for the precompiled
             module, if any.
-        *   `pcm_file`: The precompiled module file. This field is deprecated;
-            clients should retrieve it from the `clang_module` field instead.
     """
     return _precompile_clang_module(
         actions = actions,
@@ -1073,8 +1068,6 @@ def _precompile_clang_module(
             when compiling a textual interface that has an underlying C module.
         *   `indexstore_directory`: The indexstore directory for the precompiled
             module, if any.
-        *   `pcm_file`: The precompiled module file. This field is deprecated;
-            clients should retrieve it from the `clang_module` field instead.
     """
     toolchains = gather_toolchains(
         swift_toolchain = swift_toolchain,
@@ -1184,8 +1177,6 @@ def _precompile_clang_module(
             precompiled_module = precompiled_module,
         ),
         indexstore_directory = indexstore_directory,
-        # TODO: b/401511920 - Update clients and remove this field.
-        pcm_file = precompiled_module,
     )
 
 def _create_cc_compilation_context(
