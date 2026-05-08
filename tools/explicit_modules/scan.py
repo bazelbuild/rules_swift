@@ -107,10 +107,7 @@ load(
 
 package(default_visibility = ["//visibility:public"])
 
-system_module_group(
-    name = "_empty_all_modules",
-    creates_module = False,
-)
+system_module_group(name = "_empty_all_modules")
 """
 
 
@@ -213,7 +210,6 @@ def _render_all_modules_group(
     out.write("\n")
     out.write("system_module_group(\n")
     out.write(f'    name = "{sdk}_all_modules",\n')
-    out.write("    creates_module = False,\n")
     out.write("    modules = [\n")
     _write_labels(out, {f"{sdk}_{name}" for name in all_module_names})
     out.write("    ],\n")

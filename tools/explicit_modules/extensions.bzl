@@ -172,10 +172,7 @@ load(
 
 package(default_visibility = ["//visibility:public"])
 
-system_module_group(
-    name = "all_modules",
-    creates_module = False,
-)
+system_module_group(name = "all_modules")
 """
 
 def _system_sdk_stub_repo_impl(rctx):
