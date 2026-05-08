@@ -19,19 +19,6 @@ load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load("//swift:providers.bzl", "SwiftInfo", "SwiftToolsInfo")
 load(":providers.bzl", "SwiftCompilerPluginInfo")
 
-def default_precompiled_modules_attrs():
-    """Returns an attr dict that wires the `_default_precompiled_modules` attr.
-
-    Returns:
-        A dict with a single `_default_precompiled_modules` entry.
-    """
-    return {
-        "_default_precompiled_modules": attr.label(
-            default = Label("@system_sdk//:all_modules"),
-            providers = [[CcInfo, SwiftInfo]],
-        ),
-    }
-
 def swift_common_rule_attrs(
         additional_deps_aspects = [],
         additional_deps_providers = []):
@@ -116,7 +103,6 @@ def swift_compilation_attrs(
             additional_deps_aspects = additional_deps_aspects,
             additional_deps_providers = additional_deps_providers,
         ),
-        default_precompiled_modules_attrs(),
         {
             "copts": attr.string_list(
                 doc = """\

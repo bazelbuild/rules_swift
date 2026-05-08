@@ -19,7 +19,6 @@ load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load(
     "//swift/internal:attrs.bzl",
-    "default_precompiled_modules_attrs",
     "swift_common_rule_attrs",
 )
 load("//swift/internal:compiling.bzl", "compile_module_interface")
@@ -37,7 +36,6 @@ load(
 load(
     "//swift/internal:utils.bzl",
     "compact",
-    "default_precompiled_modules_providers",
     "get_compilation_contexts",
     "get_providers",
 )
@@ -100,20 +98,13 @@ def _swift_import_impl(ctx):
     swift_infos = get_providers(deps, SwiftInfo)
 
     if swiftinterface:
-        extra_cc_infos, extra_swift_infos = default_precompiled_modules_providers(
-            ctx.attr._default_precompiled_modules,
-            feature_configuration,
-        )
         compile_result = compile_module_interface(
             actions = ctx.actions,
-            compilation_contexts = get_compilation_contexts(ctx.attr.deps) + [
-                cc_info.compilation_context
-                for cc_info in extra_cc_infos
-            ],
+            compilation_contexts = get_compilation_contexts(ctx.attr.deps),
             feature_configuration = feature_configuration,
             module_name = ctx.attr.module_name,
             swiftinterface_file = swiftinterface,
-            swift_infos = swift_infos + extra_swift_infos,
+            swift_infos = swift_infos,
             target_name = ctx.attr.name,
             toolchains = toolchains,
         )
@@ -162,7 +153,6 @@ swift_import = rule(
         swift_common_rule_attrs(
             additional_deps_aspects = [swift_clang_module_aspect],
         ),
-        default_precompiled_modules_attrs(),
         {
             "archives": attr.label_list(
                 allow_empty = True,

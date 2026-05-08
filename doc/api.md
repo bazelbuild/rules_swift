@@ -20,8 +20,6 @@ On this page:
   * [swift_common.configure_features](#swift_common.configure_features)
   * [swift_common.create_compilation_context](#swift_common.create_compilation_context)
   * [swift_common.create_linking_context_from_compilation_outputs](#swift_common.create_linking_context_from_compilation_outputs)
-  * [swift_common.default_precompiled_modules_attrs](#swift_common.default_precompiled_modules_attrs)
-  * [swift_common.default_precompiled_modules_providers](#swift_common.default_precompiled_modules_providers)
   * [swift_common.extract_symbol_graph](#swift_common.extract_symbol_graph)
   * [swift_common.find_all_toolchains](#swift_common.find_all_toolchains)
   * [swift_common.get_toolchain](#swift_common.get_toolchain)
@@ -443,46 +441,6 @@ command line parameters file, those actions will be created here.
 A tuple of `(CcLinkingContext, CcLinkingOutputs)` containing the linking
   context to be propagated by the caller's `CcInfo` provider and the
   artifact representing the library that was linked, respectively.
-
-
-<a id="swift_common.default_precompiled_modules_attrs"></a>
-
-## swift_common.default_precompiled_modules_attrs
-
-<pre>
-swift_common.default_precompiled_modules_attrs()
-</pre>
-
-Returns an attr dict that wires the `_default_precompiled_modules` attr.
-
-
-**RETURNS**
-
-A dict with a single `_default_precompiled_modules` entry.
-
-
-<a id="swift_common.default_precompiled_modules_providers"></a>
-
-## swift_common.default_precompiled_modules_providers
-
-<pre>
-swift_common.default_precompiled_modules_providers(<a href="#swift_common.default_precompiled_modules_providers-default_precompiled_modules">default_precompiled_modules</a>,
-                                                   <a href="#swift_common.default_precompiled_modules_providers-feature_configuration">feature_configuration</a>)
-</pre>
-
-Returns extra providers if explicit modules is enabled.
-
-**PARAMETERS**
-
-
-| Name  | Description | Default Value |
-| :------------- | :------------- | :------------- |
-| <a id="swift_common.default_precompiled_modules_providers-default_precompiled_modules"></a>default_precompiled_modules |  The target containing all the default modules to propagate if the relevant features are enabled.   |  none |
-| <a id="swift_common.default_precompiled_modules_providers-feature_configuration"></a>feature_configuration |  A feature configuration obtained from `swift_common.configure_features`.   |  none |
-
-**RETURNS**
-
-A tuple `(cc_infos, swift_infos)`.
 
 
 <a id="swift_common.extract_symbol_graph"></a>
