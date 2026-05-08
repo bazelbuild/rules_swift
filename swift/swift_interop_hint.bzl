@@ -81,11 +81,6 @@ generate.
 Defines an aspect hint that associates non-Swift BUILD targets with additional
 information required for them to be imported by Swift.
 
-> [!NOTE]
-> Bazel 6 users must set the `--experimental_enable_aspect_hints` flag to utilize
-> this rule. In addition, downstream consumers of rules that utilize this rule
-> must also set the flag. The flag is enabled by default in Bazel 7.
-
 Some build rules, such as `objc_library`, support interoperability with Swift
 simply by depending on them; a module map is generated automatically. This is
 for convenience, because the common case is that most `objc_library` targets

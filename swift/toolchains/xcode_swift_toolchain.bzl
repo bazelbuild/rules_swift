@@ -792,11 +792,7 @@ def _xcode_swift_toolchain_impl(ctx):
 
     xcode_config = ctx.attr._xcode_config[apple_common.XcodeVersionConfig]
 
-    # TODO: Remove once we drop bazel 7.x support
-    if not bazel_features.cc.swift_fragment_removed:
-        swiftcopts = list(ctx.fragments.swift.copts())
-    else:
-        swiftcopts = []
+    swiftcopts = []
 
     if is_exec_config(ctx):
         swiftcopts.extend(ctx.attr._exec_copts[BuildSettingInfo].value)
