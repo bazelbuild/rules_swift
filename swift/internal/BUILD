@@ -249,6 +249,7 @@ bzl_library(
         "//swift:__subpackages__",
     ],
     deps = [
+        ":providers",
         "@bazel_features//:features",
         "@bazel_skylib//lib:paths",
         "@rules_cc//cc/common",

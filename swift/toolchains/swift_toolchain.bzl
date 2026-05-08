@@ -64,11 +64,13 @@ load(
 load(
     "//swift/internal:providers.bzl",
     "SwiftCrossImportOverlayInfo",
+    "SwiftCrossImportOverlaysInfo",
     "SwiftModuleAliasesInfo",
 )
 load("//swift/internal:target_triples.bzl", "target_triples")
 load(
     "//swift/internal:utils.bzl",
+    "collect_cross_import_overlays",
     "collect_implicit_deps_providers",
     "get_swift_executable_for_toolchain",
     "is_exec_config",
@@ -605,10 +607,7 @@ def _swift_toolchain_impl(ctx):
         clang_implicit_deps_providers = (
             collect_implicit_deps_providers([])
         ),
-        cross_import_overlays = [
-            target[SwiftCrossImportOverlayInfo]
-            for target in ctx.attr.cross_import_overlays
-        ],
+        cross_import_overlays = collect_cross_import_overlays(ctx.attr.cross_import_overlays),
         debug_outputs_provider = None,
         developer_dirs = [],
         entry_point_linkopts_provider = _entry_point_linkopts_provider,
@@ -675,12 +674,16 @@ architecture-specific content, such as "x86_64" in "lib/swift/linux/x86_64".
             "cross_import_overlays": attr.label_list(
                 allow_empty = True,
                 doc = """\
-A list of `swift_cross_import_overlay` targets that will be automatically
-injected into the dependencies of Swift compilations if their declaring module
-and bystanding module are both already declared as dependencies.
+A list of `swift_cross_import_overlay` or `swift_cross_import_overlay_group`
+targets that will be automatically injected into the dependencies of Swift
+compilations if their declaring module and bystanding module are both already
+declared as dependencies.
 """,
                 mandatory = False,
-                providers = [[SwiftCrossImportOverlayInfo]],
+                providers = [
+                    [SwiftCrossImportOverlayInfo],
+                    [SwiftCrossImportOverlaysInfo],
+                ],
             ),
             "feature_allowlists": attr.label_list(
                 doc = """\

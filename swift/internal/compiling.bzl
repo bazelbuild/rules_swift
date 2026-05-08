@@ -57,6 +57,7 @@ load(
     "SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION",
     "SWIFT_FEATURE_SYSTEM_MODULE",
     "SWIFT_FEATURE_THIN_LTO",
+    "SWIFT_FEATURE_USE_C_MODULES",
     "SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP",
     "SWIFT_FEATURE_VFSOVERLAY",
     "SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS",
@@ -568,10 +569,21 @@ def compile(
     # TODO(allevato): It would potentially clean things up if we included the
     # toolchain's implicit dependencies here as well. Do this and make sure it
     # doesn't break anything unexpected.
-    swift_infos_to_propagate = swift_infos + _cross_imported_swift_infos(
-        swift_toolchain = toolchains.swift,
-        user_swift_infos = swift_infos + private_swift_infos + implicit_swift_infos,
-    )
+    if is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_USE_C_MODULES,
+    ):
+        cross_imported_overlays = _cross_imported_overlays(
+            swift_toolchain = toolchains.swift,
+            user_swift_infos = swift_infos + private_swift_infos + implicit_swift_infos,
+        )
+    else:
+        cross_imported_overlays = []
+    swift_infos_to_propagate = swift_infos + [
+        swift_info
+        for overlay in cross_imported_overlays
+        for swift_info in overlay.swift_infos
+    ]
     all_swift_infos = (
         swift_infos_to_propagate + private_swift_infos + implicit_swift_infos
     )
@@ -748,6 +760,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         cc_compilation_context = merged_cc_info.compilation_context,
         const_gather_protocols_file = const_gather_protocols_file,
         cc_linking_context = merged_cc_info.linking_context,
+        cross_import_overlays = cross_imported_overlays,
         defines = sets.to_list(defines_set),
         developer_dirs = toolchains.swift.developer_dirs,
         experimental_features = experimental_features,
@@ -1262,8 +1275,11 @@ def _create_cc_compilation_context(
         transitive_compilation_contexts = compilation_contexts,
     )
 
-def _cross_imported_swift_infos(*, swift_toolchain, user_swift_infos):
-    """Returns `SwiftInfo` providers for any cross-imported modules.
+def _cross_imported_overlays(
+        *,
+        swift_toolchain,
+        user_swift_infos):
+    """Returns cross-import overlays needed for a compilation.
 
     Args:
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
@@ -1274,8 +1290,8 @@ def _cross_imported_swift_infos(*, swift_toolchain, user_swift_infos):
             compilation prerequisites, if any.
 
     Returns:
-        A list of `SwiftInfo` providers representing cross-import overlays
-        needed for compilation.
+        A list of `SwiftCrossImportOverlayInfo` providers needed for
+        compilation.
     """
 
     # Build a "set" containing the module names of direct dependencies so that
@@ -1288,13 +1304,13 @@ def _cross_imported_swift_infos(*, swift_toolchain, user_swift_infos):
     # For each cross-import overlay registered with the toolchain, add its
     # `SwiftInfo` providers to the list if both its declaring and bystanding
     # modules were imported.
-    overlay_swift_infos = []
+    overlays = []
     for overlay in swift_toolchain.cross_import_overlays:
         if (overlay.declaring_module in direct_module_names and
             overlay.bystanding_module in direct_module_names):
-            overlay_swift_infos.extend(overlay.swift_infos)
+            overlays.append(overlay)
 
-    return overlay_swift_infos
+    return overlays
 
 def _declare_compile_outputs(
         *,

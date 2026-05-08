@@ -404,6 +404,37 @@ transition_binary(
     ],
 )
 
+swift_binary(
+    name = "cross_import_overlay",
+    srcs = [
+        # NOTE: The current API requires a cross import overlay, but we might
+        # need to find another one in the future if this one moves.
+        "cross_import_overlay.swift",
+        "main.swift",
+    ],
+    copts = ["-suppress-warnings"],
+    tags = FIXTURE_TAGS,
+    target_compatible_with = select({
+        "@build_bazel_apple_support//configs:apple": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    deps = [
+        "@system_sdk//:MapKit",
+        "@system_sdk//:SwiftUI",
+    ],
+)
+
+transition_binary(
+    name = "cross_import_overlay_transitioned",
+    tags = FIXTURE_TAGS,
+    target = ":cross_import_overlay",
+    transitive_features = [
+        "swift.use_c_modules",
+        "swift.emit_c_module",
+        "-swift.add_default_precompiled_modules",
+    ],
+)
+
 bzl_library(
     name = "cross_platform",
     srcs = ["cross_platform.bzl"],
