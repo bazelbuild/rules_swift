@@ -71,13 +71,11 @@ load(
 load(
     "//swift/internal:providers.bzl",
     "SwiftCrossImportOverlayInfo",
-    "SwiftCrossImportOverlaysInfo",
     "SwiftModuleAliasesInfo",
 )
 load("//swift/internal:target_triples.bzl", "target_triples")
 load(
     "//swift/internal:utils.bzl",
-    "collect_cross_import_overlays",
     "collect_implicit_deps_providers",
     "compact",
     "get_swift_executable_for_toolchain",
@@ -453,8 +451,10 @@ def _all_action_configs(
     # Basic compilation flags (target triple and toolchain search paths).
     action_configs = [
         ActionConfigInfo(
-            actions = all_compile_action_names() + [
+            actions = [
+                SWIFT_ACTION_COMPILE,
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+                SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
                 SWIFT_ACTION_MODULEWRAP,
                 SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
@@ -478,7 +478,9 @@ def _all_action_configs(
             ],
         ),
         ActionConfigInfo(
-            actions = all_compile_action_names() + [
+            actions = [
+                SWIFT_ACTION_COMPILE,
+                SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
                 SWIFT_ACTION_SYNTHESIZE_INTERFACE,
@@ -521,6 +523,7 @@ def _all_action_configs(
             actions = all_compile_action_names() + [
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+                SWIFT_ACTION_DERIVE_FILES,
             ],
             configurators = [
                 add_arg(
@@ -560,7 +563,9 @@ def _all_action_configs(
         # directory so that modules are found correctly.
         action_configs.append(
             ActionConfigInfo(
-                actions = all_compile_action_names() + [
+                actions = [
+                    SWIFT_ACTION_COMPILE,
+                    SWIFT_ACTION_DERIVE_FILES,
                     SWIFT_ACTION_DUMP_AST,
                     SWIFT_ACTION_PRECOMPILE_C_MODULE,
                     SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
@@ -947,7 +952,10 @@ def _xcode_swift_toolchain_impl(ctx):
         clang_implicit_deps_providers = collect_implicit_deps_providers(
             ctx.attr.clang_implicit_deps,
         ),
-        cross_import_overlays = collect_cross_import_overlays(ctx.attr.cross_import_overlays),
+        cross_import_overlays = [
+            target[SwiftCrossImportOverlayInfo]
+            for target in ctx.attr.cross_import_overlays
+        ],
         developer_dirs = swift_toolchain_developer_paths,
         entry_point_linkopts_provider = _entry_point_linkopts_provider,
         feature_allowlists = [
@@ -977,9 +985,6 @@ def _xcode_swift_toolchain_impl(ctx):
         ],
         requested_features = requested_features,
         runtime = depset(),
-        system_modules = collect_implicit_deps_providers(
-            [ctx.attr.system_modules] if ctx.attr.system_modules else [],
-        ),
         swift_worker = ctx.attr._worker[DefaultInfo].files_to_run,
         const_protocols_to_gather = ctx.file.const_protocols_to_gather,
         test_configuration = struct(
@@ -1026,16 +1031,12 @@ implicit dependencies.
             "cross_import_overlays": attr.label_list(
                 allow_empty = True,
                 doc = """\
-A list of `swift_cross_import_overlay` or `swift_cross_import_overlay_group`
-targets that will be automatically injected into the dependencies of Swift
-compilations if their declaring module and bystanding module are both already
-declared as dependencies.
+A list of `swift_cross_import_overlay` targets that will be automatically
+injected into the dependencies of Swift compilations if their declaring module
+and bystanding module are both already declared as dependencies.
 """,
                 mandatory = False,
-                providers = [
-                    [SwiftCrossImportOverlayInfo],
-                    [SwiftCrossImportOverlaysInfo],
-                ],
+                providers = [[SwiftCrossImportOverlayInfo]],
             ),
             "default_enabled_features": attr.string_list(
                 doc = """\
@@ -1114,14 +1115,6 @@ A list of additional Swift compiler flags that should be passed to Swift compile
 A list of additional Objective-C compiler flags that should be passed (preceded by `-Xcc`)
 to Swift compile actions *and* Swift explicit module precompile actions.
 """,
-            ),
-            "system_modules": attr.label(
-                doc = """\
-The target of all the implicit system module dependencies to add if explicit
-modules are enabled.
-""",
-                mandatory = False,
-                providers = [[CcInfo, SwiftInfo]],
             ),
             "_copts": attr.label(
                 default = Label("//swift:copt"),

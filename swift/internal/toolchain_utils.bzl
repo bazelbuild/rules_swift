@@ -21,7 +21,6 @@ load(
 )
 
 SWIFT_TOOLCHAIN_TYPE = Label("//toolchains:toolchain_type")
-SWIFT_SDK_TOOLCHAIN_TYPE = Label("//toolchains:sdk_toolchain_type")
 
 def find_all_toolchains(
         ctx,

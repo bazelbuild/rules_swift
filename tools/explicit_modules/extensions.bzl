@@ -167,13 +167,10 @@ def _sdk_extension_impl(module_ctx):
 _STUB_BUILD_FILE = """\
 load(
     "@build_bazel_rules_swift//swift:swift.bzl",
-    "swift_cross_import_overlay_group",
     "system_module_group",
 )
 
 package(default_visibility = ["//visibility:public"])
-
-swift_cross_import_overlay_group(name = "all_cross_import_overlays")
 
 system_module_group(
     name = "all_modules",

@@ -4,7 +4,6 @@ load("//test:transitions.bzl", "transition_binary")
 
 _BINARIES = [
     "c_module_imports",
-    "cross_import_overlay",
     "mixed_language_bin",
     "mixed_language_explicit_bin",
     "objc_interop_implicit_bin",

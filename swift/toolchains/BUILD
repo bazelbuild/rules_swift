@@ -97,20 +97,6 @@ toolchain(
 
 [
     toolchain(
-        name = "xcode-sdk-toolchain-" + arch,
-        exec_compatible_with = [
-            "@platforms//os:macos",
-        ],
-        target_compatible_with = constraints,
-        toolchain = "@build_bazel_rules_swift_local_config//:xcode-sdk-toolchain",
-        toolchain_type = "//toolchains:sdk_toolchain_type",
-        visibility = ["//visibility:public"],
-    )
-    for arch, constraints in APPLE_PLATFORMS_CONSTRAINTS.items()
-]
-
-[
-    toolchain(
         name = "xcode-toolchain-" + arch,
         exec_compatible_with = [
             "@platforms//os:macos",

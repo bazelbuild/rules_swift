@@ -24,7 +24,7 @@ load(
     "SWIFT_FEATURE_SYSTEM_MODULE",
     "SWIFT_FEATURE_USE_C_MODULES",
 )
-load("@build_bazel_rules_swift//swift/internal:toolchain_utils.bzl", "SWIFT_SDK_TOOLCHAIN_TYPE")
+load("@build_bazel_rules_swift//swift/internal:toolchain_utils.bzl", "SWIFT_TOOLCHAIN_TYPE")
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 
@@ -38,7 +38,7 @@ def _direct_clang_module_for_name(deps, module_name):
     return None
 
 def _system_swiftinterface_impl(ctx):
-    swift_toolchain = swift_common.get_toolchain(ctx, toolchain_type = SWIFT_SDK_TOOLCHAIN_TYPE)
+    swift_toolchain = swift_common.get_toolchain(ctx)
     deps = ctx.attr.modules
     swift_infos = [dep[SwiftInfo] for dep in deps if SwiftInfo in dep]
     cc_info = cc_common.merge_cc_infos(cc_infos = [
@@ -69,7 +69,7 @@ def _system_swiftinterface_impl(ctx):
         swift_infos = swift_infos,
         swift_toolchain = swift_toolchain,
         target_name = ctx.attr.name,
-        toolchain_type = SWIFT_SDK_TOOLCHAIN_TYPE,
+        toolchain_type = SWIFT_TOOLCHAIN_TYPE,
     )
 
     compiled_module = compile_result.module_context.swift.swiftmodule
@@ -129,6 +129,6 @@ Compiles an Xcode-provided Swift textual interface into a `.swiftmodule` for a
 system module that is not available in the toolchain's prebuilt module cache.
 """,
     implementation = _system_swiftinterface_impl,
-    toolchains = swift_common.use_toolchain(toolchain_type = SWIFT_SDK_TOOLCHAIN_TYPE),
+    toolchains = swift_common.use_toolchain(),
     fragments = ["cpp"],
 )

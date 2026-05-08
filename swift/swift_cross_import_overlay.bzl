@@ -12,13 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Implementation of cross-import overlay rules."""
+"""Implementation of the `swift_cross_import_overlay` rule."""
 
-load(
-    "//swift/internal:providers.bzl",
-    "SwiftCrossImportOverlayInfo",
-    "SwiftCrossImportOverlaysInfo",
-)
+load("//swift/internal:providers.bzl", "SwiftCrossImportOverlayInfo")
 load(":providers.bzl", "SwiftInfo")
 
 def _get_sole_module_name(swift_info, attr):
@@ -42,7 +38,6 @@ def _swift_cross_import_overlay_impl(ctx):
             bystanding_module = bystanding_module,
             declaring_module = declaring_module,
             swift_infos = [dep[SwiftInfo] for dep in ctx.attr.deps],
-            swiftoverlay_file = ctx.attr.swiftoverlay,
         ),
     ]
 
@@ -97,10 +92,6 @@ dependencies when a target depends on both `declaring_module` and
             mandatory = True,
             providers = [[SwiftInfo]],
         ),
-        "swiftoverlay": attr.string(
-            doc = "The path to the SDK `.swiftoverlay` file that declares this cross-import.",
-            mandatory = True,
-        ),
     },
     doc = """\
 Declares a cross-import overlay that will be automatically added as a dependency
@@ -126,24 +117,4 @@ a public feature of the compiler and its design and implementation may change in
 the future, this rule is not recommended for other widespread use.
 """,
     implementation = _swift_cross_import_overlay_impl,
-)
-
-def _swift_cross_import_overlay_group_impl(ctx):
-    return [
-        SwiftCrossImportOverlaysInfo(
-            overlays = [
-                target[SwiftCrossImportOverlayInfo]
-                for target in ctx.attr.overlays
-            ],
-        ),
-    ]
-
-swift_cross_import_overlay_group = rule(
-    attrs = {
-        "overlays": attr.label_list(
-            allow_empty = True,
-            providers = [[SwiftCrossImportOverlayInfo]],
-        ),
-    },
-    implementation = _swift_cross_import_overlay_group_impl,
 )
