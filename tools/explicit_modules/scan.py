@@ -487,18 +487,27 @@ def _discover_all_modules(
     deployment_target = _get_deployment_target(sdk, sdk_path)
     cpu_targets = _TARGETS_PER_SDK[sdk.lower()]
 
+    with ThreadPoolExecutor(max_workers=len(cpu_targets)) as pool:
+        scan_futures = {
+            pool.submit(
+                _scan,
+                sdk=sdk,
+                modules=modules,
+                sdk_path=sdk_path,
+                target=target_format.format(ver=deployment_target),
+                framework_search_paths=framework_search_paths,
+                swift_search_paths=swift_search_paths,
+            ): cpu
+            for cpu, target_format in cpu_targets
+        }
+        scan_outputs = {
+            scan_futures[fut]: fut.result() for fut in as_completed(scan_futures)
+        }
+
     merged_modules: dict[tuple[str, str], _Module] = {}
-    for cpu, target_format in cpu_targets:
-        scan_output = _scan(
-            sdk=sdk,
-            modules=modules,
-            sdk_path=sdk_path,
-            target=target_format.format(ver=deployment_target),
-            framework_search_paths=framework_search_paths,
-            swift_search_paths=swift_search_paths,
-        )
+    for cpu, _ in cpu_targets:
         _parse_output(
-            output=scan_output,
+            output=scan_outputs[cpu],
             sdk=sdk,
             sdk_version=deployment_target,
             cpu=cpu,
