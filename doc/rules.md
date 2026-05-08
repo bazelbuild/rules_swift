@@ -197,7 +197,7 @@ using `swift_compiler_plugin`.
 
 <pre>
 swift_cross_import_overlay(<a href="#swift_cross_import_overlay-name">name</a>, <a href="#swift_cross_import_overlay-deps">deps</a>, <a href="#swift_cross_import_overlay-bystanding_module">bystanding_module</a>, <a href="#swift_cross_import_overlay-bystanding_module_name">bystanding_module_name</a>, <a href="#swift_cross_import_overlay-declaring_module">declaring_module</a>,
-                           <a href="#swift_cross_import_overlay-declaring_module_name">declaring_module_name</a>)
+                           <a href="#swift_cross_import_overlay-declaring_module_name">declaring_module_name</a>, <a href="#swift_cross_import_overlay-swiftoverlay">swiftoverlay</a>)
 </pre>
 
 Declares a cross-import overlay that will be automatically added as a dependency
@@ -233,6 +233,7 @@ the future, this rule is not recommended for other widespread use.
 | <a id="swift_cross_import_overlay-bystanding_module_name"></a>bystanding_module_name |  The name of the bystanding module from the target specified by the `bystanding_module` attribute. This is inferred if `bystanding_module` only exports a single direct module; this name must be specified if `bystanding_module` exports more than one.   | String | optional |  `""`  |
 | <a id="swift_cross_import_overlay-declaring_module"></a>declaring_module |  A label for the target representing the first of the two modules (the other being `bystanding_module`) that must be imported for the cross-import overlay modules to be imported. This is the module that contains the `.swiftcrossimport` overlay definition that connects it to the bystander and to the overlay modules.   | <a href="https://bazel.build/concepts/labels">Label</a> | required |  |
 | <a id="swift_cross_import_overlay-declaring_module_name"></a>declaring_module_name |  The name of the declaring module from the target specified by the `declaring_module` attribute. This is inferred if `declaring_module` only exports a single direct module; this name must be specified if `declaring_module` exports more than one.   | String | optional |  `""`  |
+| <a id="swift_cross_import_overlay-swiftoverlay"></a>swiftoverlay |  The path to the SDK `.swiftoverlay` file that declares this cross-import.   | String | required |  |
 
 
 <a id="swift_feature_allowlist"></a>
@@ -1113,5 +1114,4 @@ Once that is the case, this macro will be deprecated.
 | <a id="mixed_language_library-weak_sdk_frameworks"></a>weak_sdk_frameworks |  A list of SDK frameworks to weakly link with. For instance, "MediaAccessibility". In difference to regularly linked SDK frameworks, symbols from weakly linked frameworks do not cause an error if they are not present at runtime.   |  `[]` |
 | <a id="mixed_language_library-deps"></a>deps |  A list of targets that are dependencies of the target being built.   |  `[]` |
 | <a id="mixed_language_library-kwargs"></a>kwargs |  Additional arguments to pass to the underlying clang and swift library targets.   |  none |
-
 

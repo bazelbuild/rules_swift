@@ -100,12 +100,16 @@ _TARGETS_PER_SDK = {
 _HEADER = """\
 load(
     "@build_bazel_rules_swift//swift:swift.bzl",
+    "swift_cross_import_overlay",
+    "swift_cross_import_overlay_group",
     "system_clang_module",
     "system_module_group",
     "system_swiftinterface",
 )
 
 package(default_visibility = ["//visibility:public"])
+
+swift_cross_import_overlay_group(name = "_empty_cross_import_overlays")
 
 system_module_group(
     name = "_empty_all_modules",
@@ -219,6 +223,55 @@ def _render_all_modules_group(
     out.write("    ],\n")
     _write_transition_attrs(out, sdk=sdk, sdk_version=sdk_version)
     out.write(")\n")
+
+
+def _render_cross_import_overlay_targets(
+    overlays: list["_CrossImportOverlay"],
+    sdk: str,
+    out: TextIO,
+) -> None:
+    for overlay in overlays:
+        out.write("\n")
+        out.write("swift_cross_import_overlay(\n")
+        out.write(f'    name = "{overlay.target_name}",\n')
+        out.write(
+            f'    bystanding_module = ":{_canonical_name(overlay.bystanding_module, sdk, "alias")}",\n'
+        )
+        out.write(
+            f'    declaring_module = ":{_canonical_name(overlay.declaring_module, sdk, "alias")}",\n'
+        )
+        out.write("    deps = [\n")
+        _write_labels(
+            out,
+            {
+                _canonical_name(module, sdk, "alias")
+                for module in overlay.overlay_modules
+            },
+        )
+        out.write("    ],\n")
+        out.write(f'    swiftoverlay = "{overlay.swiftoverlay_path}",\n')
+        out.write(")\n")
+
+    out.write("\n")
+    out.write("swift_cross_import_overlay_group(\n")
+    out.write(f'    name = "{sdk}_all_cross_import_overlays",\n')
+    out.write("    overlays = [\n")
+    _write_labels(out, {overlay.target_name for overlay in overlays})
+    out.write("    ],\n")
+    out.write(")\n")
+
+
+@dataclass(order=True, frozen=True)
+class _CrossImportOverlay:
+    declaring_module: str
+    bystanding_module: str
+    overlay_modules: tuple[str, ...]
+    swiftoverlay_path: str
+    sdk: str = field(compare=False)
+
+    @property
+    def target_name(self) -> str:
+        return f"{self.sdk}_{self.declaring_module}_{self.bystanding_module}_cross_import_overlay"
 
 
 @dataclass(order=True)
@@ -399,6 +452,101 @@ def _parse_output(
         module.set_deps(cpu, deps)
 
 
+def _strip_yaml_comment(line: str) -> str:
+    return line.split("#", 1)[0].strip()
+
+
+def _parse_yaml_scalar(value: str) -> str:
+    value = value.strip()
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in ("'", '"'):
+        return value[1:-1]
+    return value
+
+
+def _get_overlay_deps(path: Path) -> tuple[str, ...]:
+    version = None
+    modules = []
+    in_modules = False
+    pending_module = False
+
+    for raw_line in path.read_text().splitlines():
+        line = _strip_yaml_comment(raw_line)
+        if not line or line == "---":
+            continue
+
+        if line.startswith("version:"):
+            version = _parse_yaml_scalar(line.partition(":")[2])
+            continue
+
+        if line == "modules:":
+            in_modules = True
+            continue
+
+        if not in_modules:
+            raise ValueError(f"{path}: unexpected line before modules: {raw_line}")
+
+        if line == "-":
+            pending_module = True
+            continue
+
+        if line.startswith("- "):
+            entry = line[2:].strip()
+            if not entry.startswith("name:"):
+                raise ValueError(f"{path}: expected module name entry: {raw_line}")
+            modules.append(_parse_yaml_scalar(entry.partition(":")[2]))
+            pending_module = False
+            continue
+
+        if pending_module and line.startswith("name:"):
+            modules.append(_parse_yaml_scalar(line.partition(":")[2]))
+            pending_module = False
+            continue
+
+        raise ValueError(f"{path}: unexpected modules entry: {raw_line}")
+
+    if version != "1":
+        raise ValueError(f"{path}: expected version: 1, got {version!r}")
+    if not modules:
+        raise ValueError(f"{path}: expected at least one overlay module")
+    return tuple(modules)
+
+
+def _discover_cross_import_overlays(
+    *,
+    cross_import_dirs: set[Path],
+    developer_dir: str,
+    sdk: str,
+    sdk_path: str,
+    all_modules: set[str],
+) -> list[_CrossImportOverlay]:
+    overlays = []
+    for cross_import_dir in cross_import_dirs:
+        for overlay_file in cross_import_dir.glob("*.swiftoverlay"):
+            # The SDK can contain overlays referencing modules they don't ship.
+            # For example there are some overlays in the macOS SDK that depend
+            # on UIKit
+            if (
+                cross_import_dir.stem not in all_modules
+                or overlay_file.stem not in all_modules
+            ):
+                continue
+
+            overlays.append(
+                _CrossImportOverlay(
+                    declaring_module=cross_import_dir.stem,
+                    bystanding_module=overlay_file.stem,
+                    overlay_modules=_get_overlay_deps(overlay_file),
+                    sdk=sdk,
+                    swiftoverlay_path=_normalize_system_path(
+                        overlay_file.as_posix(),
+                        developer_dir=developer_dir,
+                        sdkroot=sdk_path,
+                    ),
+                )
+            )
+    return sorted(overlays)
+
+
 def _get_deployment_target(sdk: str, sdk_path: Path) -> str:
     settings = sdk_path / "SDKSettings.json"
     with open(settings) as f:
@@ -481,11 +629,16 @@ def _discover_all_modules(
     ]
 
     modules: set[str] = set()
+    cross_import_dirs: set[Path] = set()
     for directory in set(
         framework_search_paths + library_search_paths + swift_search_paths
     ):
         for x in directory.iterdir():
             if x.stem in excluded_modules:
+                continue
+            if x.suffix == ".swiftcrossimport":
+                modules.add(x.stem)
+                cross_import_dirs.add(x)
                 continue
             if not x.is_dir():
                 if x.suffix == ".modulemap":
@@ -497,15 +650,26 @@ def _discover_all_modules(
             if x.suffix == ".swiftmodule":
                 modules.add(x.stem)
             elif x.suffix == ".framework":
-                if (x / "Modules/module.modulemap").exists() or (
-                    x / "Modules" / (x.stem + ".swiftmodule")
+                modules_dir = x / "Modules"
+                if (modules_dir / "module.modulemap").exists() or (
+                    modules_dir / (x.stem + ".swiftmodule")
                 ).exists():
                     modules.add(x.stem)
+                    cross_import_dir = modules_dir / f"{x.stem}.swiftcrossimport"
+                    if cross_import_dir.is_dir():
+                        cross_import_dirs.add(cross_import_dir)
             elif (x / "module.modulemap").exists():
                 modules.add(x.stem)  # /usr/include/CommonCrypto/module.modulemap
 
     deployment_target = _get_deployment_target(sdk, sdk_path)
     cpu_targets = _TARGETS_PER_SDK[sdk.lower()]
+    cross_import_overlays = _discover_cross_import_overlays(
+        cross_import_dirs=cross_import_dirs,
+        developer_dir=developer_dir.as_posix(),
+        sdk=sdk,
+        sdk_path=sdk_path.as_posix(),
+        all_modules=modules,
+    )
 
     with ThreadPoolExecutor(max_workers=len(cpu_targets)) as pool:
         scan_futures = {
@@ -544,6 +708,7 @@ def _discover_all_modules(
     buf = io.StringIO()
     for module in all_modules:
         module.render_target(buf)
+    _render_cross_import_overlay_targets(cross_import_overlays, sdk, buf)
     _render_clang_module_groups(
         all_modules,
         clang_names - swift_names,
@@ -702,6 +867,17 @@ def _main() -> None:
         if all_modules_by_sdk.get(sdk):
             buf.write(f'        ":{sdk}_sdk": ":{sdk}_all_modules",\n')
     buf.write('        "@platforms//os:none": ":_empty_all_modules",\n')
+    buf.write("    }),\n")
+    buf.write(")\n")
+
+    buf.write("\n")
+    buf.write("alias(\n")
+    buf.write('    name = "all_cross_import_overlays",\n')
+    buf.write("    actual = select({\n")
+    for sdk in sdk_names:
+        if all_modules_by_sdk.get(sdk):
+            buf.write(f'        ":{sdk}_sdk": ":{sdk}_all_cross_import_overlays",\n')
+    buf.write('        "@platforms//os:none": ":_empty_cross_import_overlays",\n')
     buf.write("    }),\n")
     buf.write(")\n")
 

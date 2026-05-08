@@ -27,6 +27,11 @@ load(
     "SWIFT_FEATURE_USE_C_MODULES",
 )
 load(":features.bzl", "is_feature_enabled")
+load(
+    ":providers.bzl",
+    "SwiftCrossImportOverlayInfo",
+    "SwiftCrossImportOverlaysInfo",
+)
 
 def collect_implicit_deps_providers(targets, additional_cc_infos = []):
     """Returns a struct with important providers from a list of implicit deps.
@@ -59,6 +64,24 @@ def collect_implicit_deps_providers(targets, additional_cc_infos = []):
         cc_infos = cc_infos + additional_cc_infos,
         swift_infos = swift_infos,
     )
+
+def collect_cross_import_overlays(targets):
+    """Returns cross-import overlay providers from targets or groups.
+
+    Args:
+        targets: A list of targets that provide `SwiftCrossImportOverlayInfo` or
+            `SwiftCrossImportOverlaysInfo`.
+
+    Returns:
+        A list of `SwiftCrossImportOverlayInfo` providers.
+    """
+    overlays = []
+    for target in targets:
+        if SwiftCrossImportOverlayInfo in target:
+            overlays.append(target[SwiftCrossImportOverlayInfo])
+        if SwiftCrossImportOverlaysInfo in target:
+            overlays.extend(target[SwiftCrossImportOverlaysInfo].overlays)
+    return overlays
 
 def compact(sequence):
     """Returns a copy of the sequence with any `None` items removed.
