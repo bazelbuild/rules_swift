@@ -543,6 +543,11 @@ def compile(
     else:
         original_module_name = None
 
+    implicit_swift_infos, implicit_cc_infos = get_swift_implicit_deps(
+        feature_configuration = feature_configuration,
+        swift_toolchain = toolchains.swift,
+    )
+
     # Collect the `SwiftInfo` providers that represent the dependencies of the
     # Objective-C generated header module -- this includes the dependencies of
     # the Swift module, plus any additional dependencies that the toolchain says
@@ -551,7 +556,7 @@ def compile(
     # `use` declarations), and later in this function when precompiling the
     # module.
     generated_module_deps_swift_infos = (
-        swift_infos +
+        swift_infos + implicit_swift_infos +
         toolchains.swift.generated_header_module_implicit_deps_providers.swift_infos
     )
 
@@ -565,12 +570,7 @@ def compile(
     # doesn't break anything unexpected.
     swift_infos_to_propagate = swift_infos + _cross_imported_swift_infos(
         swift_toolchain = toolchains.swift,
-        user_swift_infos = swift_infos + private_swift_infos,
-    )
-
-    implicit_swift_infos, implicit_cc_infos = get_swift_implicit_deps(
-        feature_configuration = feature_configuration,
-        swift_toolchain = toolchains.swift,
+        user_swift_infos = swift_infos + private_swift_infos + implicit_swift_infos,
     )
     all_swift_infos = (
         swift_infos_to_propagate + private_swift_infos + implicit_swift_infos
@@ -1092,24 +1092,28 @@ def _precompile_clang_module(
         "{}.swift.pcm".format(target_name),
     )
 
+    additional_swift_infos = []
+    additional_compilation_contexts = []
     if not is_swift_generated_header:
         implicit_swift_infos, implicit_cc_infos = get_clang_implicit_deps(
             feature_configuration = feature_configuration,
             swift_toolchain = toolchains.swift,
         )
+        additional_swift_infos.extend(implicit_swift_infos)
+        additional_compilation_contexts.extend([
+            cc_info.compilation_context
+            for cc_info in implicit_cc_infos
+        ])
+
+    if additional_compilation_contexts:
         cc_compilation_context = merge_compilation_contexts(
             direct_compilation_contexts = [cc_compilation_context],
-            transitive_compilation_contexts = [
-                cc_info.compilation_context
-                for cc_info in implicit_cc_infos
-            ],
+            transitive_compilation_contexts = additional_compilation_contexts,
         )
-    else:
-        implicit_swift_infos, _ = [], []
 
-    if not is_swift_generated_header and implicit_swift_infos:
+    if additional_swift_infos:
         swift_infos = list(swift_infos)
-        swift_infos.extend(implicit_swift_infos)
+        swift_infos.extend(additional_swift_infos)
 
     if swift_infos:
         merged_swift_info = SwiftInfo(swift_infos = swift_infos)
