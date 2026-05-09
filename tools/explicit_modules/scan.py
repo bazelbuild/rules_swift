@@ -444,6 +444,19 @@ def _scan(
         return json.loads(out_json.read_text())
 
 
+def _parse_modulemap_for_modules(modulemap_path: Path) -> set[str]:
+    modules = set()
+    for line in modulemap_path.read_text().splitlines():
+        line = line.strip()
+        if line.startswith("module "):
+            module_name = line.split()[1]
+            modules.add(module_name)
+        elif line.startswith("extern module "):
+            module_name = line.split()[2]
+            modules.add(module_name)
+    return modules
+
+
 def _discover_all_modules(
     developer_dir: Path,
     sdk: str,
@@ -463,7 +476,7 @@ def _discover_all_modules(
         sdk_path / "usr/include",
     ]
 
-    modules = set()
+    modules: set[str] = set()
     for directory in set(
         framework_search_paths + library_search_paths + swift_search_paths
     ):
@@ -471,8 +484,11 @@ def _discover_all_modules(
             if x.stem in excluded_modules:
                 continue
             if not x.is_dir():
-                if x.suffix == ".modulemap" and x.stem != "module":
-                    modules.add(x.stem)
+                if x.suffix == ".modulemap":
+                    if x.stem == "module":
+                        modules |= _parse_modulemap_for_modules(x)
+                    else:
+                        modules.add(x.stem)
                 continue
             if x.suffix == ".swiftmodule":
                 modules.add(x.stem)
