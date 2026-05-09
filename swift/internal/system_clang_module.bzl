@@ -25,12 +25,12 @@ load(
     "SWIFT_FEATURE_USE_C_MODULES",
 )
 load("@build_bazel_rules_swift//swift/internal:system_module_transition.bzl", "sdk_min_os_transition", "sdk_min_os_transition_attrs")
-load("@build_bazel_rules_swift//swift/internal:toolchain_utils.bzl", "SWIFT_TOOLCHAIN_TYPE")
+load("@build_bazel_rules_swift//swift/internal:toolchain_utils.bzl", "SWIFT_SDK_TOOLCHAIN_TYPE")
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 
 def _system_clang_module_impl(ctx):
-    swift_toolchain = swift_common.get_toolchain(ctx)
+    swift_toolchain = swift_common.get_toolchain(ctx, toolchain_type = SWIFT_SDK_TOOLCHAIN_TYPE)
     module_map = ctx.attr.system_module_map
     deps = ctx.attr.modules
 
@@ -66,7 +66,7 @@ def _system_clang_module_impl(ctx):
         swift_infos = swift_infos,
         swift_toolchain = swift_toolchain,
         target_name = ctx.attr.name,
-        toolchain_type = SWIFT_TOOLCHAIN_TYPE,
+        toolchain_type = SWIFT_SDK_TOOLCHAIN_TYPE,
     )
     precompiled_module = compile_result.clang_module.precompiled_module if compile_result else None
 
@@ -127,6 +127,6 @@ The path to a system framework module map.
         ),
     },
     implementation = _system_clang_module_impl,
-    toolchains = swift_common.use_toolchain(),
+    toolchains = swift_common.use_toolchain(toolchain_type = SWIFT_SDK_TOOLCHAIN_TYPE),
     fragments = ["cpp"],
 )
