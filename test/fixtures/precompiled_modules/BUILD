@@ -354,6 +354,30 @@ transition_test(
     ],
 )
 
+swift_library(
+    name = "mapkit_swift_ui_overlay",
+    srcs = ["MapKitSwiftUIOverlay.swift"],
+    module_name = "MapKitSwiftUIOverlay",
+    tags = FIXTURE_TAGS,
+    target_compatible_with = ["@platforms//os:macos"],
+    deps = [
+        "@system_sdk//:MapKit",
+        "@system_sdk//:SwiftUI",
+        "@system_sdk//:_MapKit_SwiftUI",
+    ],
+)
+
+transition_binary(
+    name = "mapkit_swift_ui_overlay_transitioned",
+    tags = FIXTURE_TAGS,
+    target = ":mapkit_swift_ui_overlay",
+    transitive_features = [
+        "swift.use_c_modules",
+        "swift.emit_c_module",
+        "-swift.add_default_precompiled_modules",
+    ],
+)
+
 cross_platform_targets(tags = FIXTURE_TAGS)
 
 swift_import(
