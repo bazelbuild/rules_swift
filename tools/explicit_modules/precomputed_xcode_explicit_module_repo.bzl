@@ -37,7 +37,6 @@ def _precomputed_xcode_explicit_module_repo_impl(rctx):
         "module_names.json",
         json.encode(_extract_all_module_names(content)),
     )
-    rctx.file("cross_import_overlays.json", json.encode({}))
 
 precomputed_xcode_explicit_module_repo = repository_rule(
     implementation = _precomputed_xcode_explicit_module_repo_impl,

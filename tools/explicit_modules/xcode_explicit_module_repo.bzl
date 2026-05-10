@@ -47,8 +47,6 @@ def _xcode_explicit_module_repo_impl(rctx):
             "BUILD.bazel",
             "--module-names",
             "module_names.json",
-            "--cross-import-overlays-json",
-            "cross_import_overlays.json",
         ] + _exclude_module_args(rctx.attr.exclude_modules) + list(rctx.attr.sdks),
         environment = {"DEVELOPER_DIR": developer_dir},
     )

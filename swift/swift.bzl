@@ -48,6 +48,10 @@ load(
     ":swift_cross_import_overlay.bzl",
     _swift_cross_import_overlay = "swift_cross_import_overlay",
 )
+load(
+    ":swift_cross_import_overlays_group.bzl",
+    _swift_cross_import_overlays_group = "swift_cross_import_overlays_group",
+)
 load(":swift_common.bzl", _swift_common = "swift_common")
 load(
     ":swift_extract_symbol_graph.bzl",
@@ -93,6 +97,7 @@ system_swiftinterface = _system_swiftinterface
 swift_binary = _swift_binary
 swift_compiler_plugin = _swift_compiler_plugin
 swift_cross_import_overlay = _swift_cross_import_overlay
+swift_cross_import_overlays_group = _swift_cross_import_overlays_group
 universal_swift_compiler_plugin = _universal_swift_compiler_plugin
 swift_extract_symbol_graph = _swift_extract_symbol_graph
 swift_feature_allowlist = _swift_feature_allowlist

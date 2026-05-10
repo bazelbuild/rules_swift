@@ -101,6 +101,7 @@ _HEADER = """\
 load(
     "@build_bazel_rules_swift//swift:swift.bzl",
     "swift_cross_import_overlay",
+    "swift_cross_import_overlays_group",
     "system_clang_module",
     "system_module_group",
     "system_swiftinterface",
@@ -779,16 +780,6 @@ def _main() -> None:
         help=argparse.SUPPRESS,
     )
     parser.add_argument(
-        "--cross-import-overlays-json",
-        type=Path,
-        default=None,
-        # Internal flag used by the `system_sdk` module extension; not part
-        # of the user-facing CLI. Writes a JSON map of
-        # ``{sdk_name: [overlay_target_name, ...]}`` so the hub repo can wrap
-        # the labels with absolute references back to this scanner's repo.
-        help=argparse.SUPPRESS,
-    )
-    parser.add_argument(
         "--exclude-module",
         action="append",
         default=[],
@@ -892,21 +883,28 @@ def _main() -> None:
     buf.write("    }),\n")
     buf.write(")\n")
 
+    buf.write("\n")
+    buf.write("swift_cross_import_overlays_group(\n")
+    buf.write('    name = "cross_import_overlays",\n')
+    buf.write("    overlays = select({\n")
+    for sdk in sdk_names:
+        names = overlays_by_sdk.get(sdk, [])
+        if not names:
+            continue
+        buf.write(f'        ":{sdk}_sdk": [\n')
+        for name in names:
+            buf.write(f'            ":{name}",\n')
+        buf.write("        ],\n")
+    buf.write('        "//conditions:default": [],\n')
+    buf.write("    }),\n")
+    buf.write(")\n")
+
     with open(args.output, "w") as f:
         f.write(buf.getvalue())
 
     if args.module_names is not None:
         with open(args.module_names, "w") as f:
             json.dump(sorted(all_modules), f, indent=2)
-
-    if args.cross_import_overlays_json is not None:
-        with open(args.cross_import_overlays_json, "w") as f:
-            json.dump(
-                {sdk: overlays_by_sdk.get(sdk, []) for sdk in sdk_names},
-                f,
-                indent=2,
-                sort_keys=True,
-            )
 
 
 if __name__ == "__main__":

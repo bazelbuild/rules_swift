@@ -53,6 +53,18 @@ which doesn't trigger the compiler's auto-import gate.
     },
 )
 
+SwiftCrossImportOverlaysGroupInfo = provider(
+    doc = """\
+A flattened collection of `SwiftCrossImportOverlayInfo` providers, used to pass
+many cross-import overlays through a single toolchain attribute.
+""",
+    fields = {
+        "overlays": """\
+A list of `SwiftCrossImportOverlayInfo` providers, one per overlay declaration.
+""",
+    },
+)
+
 SwiftModuleAliasesInfo = provider(
     doc = "Defines a remapping of Swift module names.",
     fields = {

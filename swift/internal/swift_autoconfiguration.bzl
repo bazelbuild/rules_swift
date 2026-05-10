@@ -282,8 +282,6 @@ def _create_xcode_toolchain():
     ]
 
     return """\
-load("@system_sdk//:cross_import_overlays.bzl", "CROSS_IMPORT_OVERLAYS")
-
 xcode_swift_toolchain(
     name = "xcode-sdk-toolchain",
     features = [{feature_list}],
@@ -291,7 +289,7 @@ xcode_swift_toolchain(
 
 xcode_swift_toolchain(
     name = "xcode-toolchain",
-    cross_import_overlays = CROSS_IMPORT_OVERLAYS,
+    cross_import_overlays = "@system_sdk//:cross_import_overlays",
     features = [{feature_list}],
     system_modules = "@system_sdk//:all_modules",
 )

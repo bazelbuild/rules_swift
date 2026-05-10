@@ -52,7 +52,6 @@ def _generate_pinned_repos(configs):
     seen = {}
     versions_ordered = []
     default_manifest = None
-    default_overlays_json = None
     for tag in configs:
         if tag.version in seen:
             fail(
@@ -70,13 +69,11 @@ def _generate_pinned_repos(configs):
         versions_ordered.append(tag.version)
         if default_manifest == None:
             default_manifest = "@{}//:module_names.json".format(repo_name)
-            default_overlays_json = "@{}//:cross_import_overlays.json".format(repo_name)
 
     xcode_explicit_module_hub_repo(
         name = "system_sdk",
         xcode_versions = versions_ordered,
         default_manifest = default_manifest,
-        default_overlays_json = default_overlays_json,
     )
 
 def _generate_local_repos(module_ctx, sdks, exclude_modules):
@@ -98,7 +95,6 @@ def _generate_local_repos(module_ctx, sdks, exclude_modules):
 
     versions_ordered = []
     default_manifest = None
-    default_overlays_json = None
     for tc in toolchains:
         repo_name = "system_sdk_xcode_" + _sanitize(tc.version)
         xcode_explicit_module_repo(
@@ -111,13 +107,11 @@ def _generate_local_repos(module_ctx, sdks, exclude_modules):
         versions_ordered.append(tc.version)
         if tc.developer_dir == default_path:
             default_manifest = "@{}//:module_names.json".format(repo_name)
-            default_overlays_json = "@{}//:cross_import_overlays.json".format(repo_name)
 
     xcode_explicit_module_hub_repo(
         name = "system_sdk",
         xcode_versions = versions_ordered,
         default_manifest = default_manifest,
-        default_overlays_json = default_overlays_json,
     )
 
 def _add_exclude_modules(result, exclude_modules):
@@ -184,15 +178,8 @@ system_module_group(
 )
 """
 
-_STUB_CROSS_IMPORT_OVERLAYS_BZL = """\
-# Generated stub - non-macOS hosts have no SDK cross-import overlays.
-
-CROSS_IMPORT_OVERLAYS = []
-"""
-
 def _system_sdk_stub_repo_impl(rctx):
     rctx.file("BUILD.bazel", _STUB_BUILD_FILE)
-    rctx.file("cross_import_overlays.bzl", _STUB_CROSS_IMPORT_OVERLAYS_BZL)
 
 _system_sdk_stub_repo = repository_rule(
     implementation = _system_sdk_stub_repo_impl,
