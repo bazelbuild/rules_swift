@@ -606,8 +606,7 @@ def _swift_toolchain_impl(ctx):
             collect_implicit_deps_providers([])
         ),
         cross_import_overlays = (
-            ctx.attr.cross_import_overlays[SwiftCrossImportOverlaysGroupInfo].overlays
-            if ctx.attr.cross_import_overlays else []
+            ctx.attr.cross_import_overlays[SwiftCrossImportOverlaysGroupInfo].overlays if ctx.attr.cross_import_overlays else []
         ),
         debug_outputs_provider = None,
         developer_dirs = [],

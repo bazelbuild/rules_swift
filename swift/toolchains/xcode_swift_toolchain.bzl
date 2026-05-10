@@ -946,8 +946,7 @@ def _xcode_swift_toolchain_impl(ctx):
             ctx.attr.clang_implicit_deps,
         ),
         cross_import_overlays = (
-            ctx.attr.cross_import_overlays[SwiftCrossImportOverlaysGroupInfo].overlays
-            if ctx.attr.cross_import_overlays else []
+            ctx.attr.cross_import_overlays[SwiftCrossImportOverlaysGroupInfo].overlays if ctx.attr.cross_import_overlays else []
         ),
         developer_dirs = swift_toolchain_developer_paths,
         entry_point_linkopts_provider = _entry_point_linkopts_provider,

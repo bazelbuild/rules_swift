@@ -279,7 +279,7 @@ def _parse_swiftoverlay(path: Path) -> list[str]:
             if not raw_line[:1].isspace():
                 in_modules = False
             elif stripped.startswith("- name:"):
-                value = stripped[len("- name:"):].strip().strip('"').strip("'")
+                value = stripped[len("- name:") :].strip().strip('"').strip("'")
                 if value:
                     overlay_modules.append(value)
     return overlay_modules
@@ -314,8 +314,7 @@ def _scan_cross_import_overlays(
             if bystanding not in known_swift_modules or bystanding == declaring:
                 continue
             overlay_modules = [
-                m for m in _parse_swiftoverlay(overlay_file)
-                if m in known_swift_modules
+                m for m in _parse_swiftoverlay(overlay_file) if m in known_swift_modules
             ]
             if not overlay_modules:
                 continue
