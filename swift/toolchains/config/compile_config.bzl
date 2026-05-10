@@ -938,6 +938,12 @@ def compile_action_configs(
             configurators = [_plugins_configurator],
         ),
         ActionConfigInfo(
+            actions = all_compile_action_names() + [
+                SWIFT_ACTION_DUMP_AST,
+            ],
+            configurators = [_cross_import_overlays_configurator],
+        ),
+        ActionConfigInfo(
             actions = [
                 SWIFT_ACTION_COMPILE,
             ],
@@ -2188,6 +2194,23 @@ def _explicit_swift_module_map_configurator(prerequisites, args, is_frontend = F
             prerequisites.explicit_swift_module_map_file,
         ],
     )
+
+def _cross_import_overlays_configurator(prerequisites, args):
+    """Force-imports SDK cross-import overlay modules.
+
+    Under explicit modules, the compiler's normal auto-import gate doesn't fire
+    because SDK frameworks like MapKit are loaded as clang PCMs rather than as
+    Swift modules. For each overlay module injected by
+    `_cross_imported_swift_infos`, emit `-Xfrontend -import-module -Xfrontend
+    <module>` to load it directly. The Bazel-side gate already ensured both the
+    declaring and bystanding modules are in the user's deps.
+    """
+    force_imports = getattr(prerequisites, "cross_import_overlay_force_imports", None)
+    if not force_imports:
+        return None
+    for module_name in force_imports:
+        args.add_all(["-Xfrontend", "-import-module", "-Xfrontend", module_name])
+    return None
 
 def _module_name_configurator(prerequisites, args):
     """Adds the module name flag to the command line."""

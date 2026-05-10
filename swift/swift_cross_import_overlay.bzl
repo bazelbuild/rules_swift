@@ -33,11 +33,19 @@ def _swift_cross_import_overlay_impl(ctx):
         ctx.attr.declaring_module[SwiftInfo],
         "declaring_module",
     )
+
+    overlay_module_names = []
+    for dep in ctx.attr.deps:
+        for module in dep[SwiftInfo].direct_modules:
+            if module.swift:
+                overlay_module_names.append(module.name)
+
     return [
         SwiftCrossImportOverlayInfo(
             bystanding_module = bystanding_module,
             declaring_module = declaring_module,
             swift_infos = [dep[SwiftInfo] for dep in ctx.attr.deps],
+            overlay_module_names = overlay_module_names,
         ),
     ]
 

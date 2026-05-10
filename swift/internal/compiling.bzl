@@ -568,10 +568,11 @@ def compile(
     # TODO(allevato): It would potentially clean things up if we included the
     # toolchain's implicit dependencies here as well. Do this and make sure it
     # doesn't break anything unexpected.
-    swift_infos_to_propagate = swift_infos + _cross_imported_swift_infos(
+    cross_import_result = _cross_imported_swift_infos(
         swift_toolchain = toolchains.swift,
         user_swift_infos = swift_infos + private_swift_infos + implicit_swift_infos,
     )
+    swift_infos_to_propagate = swift_infos + cross_import_result.swift_infos
     all_swift_infos = (
         swift_infos_to_propagate + private_swift_infos + implicit_swift_infos
     )
@@ -748,6 +749,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         cc_compilation_context = merged_cc_info.compilation_context,
         const_gather_protocols_file = const_gather_protocols_file,
         cc_linking_context = merged_cc_info.linking_context,
+        cross_import_overlay_force_imports = cross_import_result.overlay_force_imports,
         defines = sets.to_list(defines_set),
         developer_dirs = toolchains.swift.developer_dirs,
         experimental_features = experimental_features,
@@ -1263,7 +1265,7 @@ def _create_cc_compilation_context(
     )
 
 def _cross_imported_swift_infos(*, swift_toolchain, user_swift_infos):
-    """Returns `SwiftInfo` providers for any cross-imported modules.
+    """Returns cross-import overlay information for the target being compiled.
 
     Args:
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
@@ -1274,8 +1276,15 @@ def _cross_imported_swift_infos(*, swift_toolchain, user_swift_infos):
             compilation prerequisites, if any.
 
     Returns:
-        A list of `SwiftInfo` providers representing cross-import overlays
-        needed for compilation.
+        A `struct` with two fields:
+
+        *   `swift_infos`: A list of `SwiftInfo` providers representing the
+            cross-import overlay modules that need to be added as dependencies.
+        *   `overlay_force_imports`: A list of overlay module names. The compile
+            action turns each into `-Xfrontend -import-module -Xfrontend
+            <name>`, force-importing the overlay because under explicit modules
+            the SDK's declaring module is loaded as a clang PCM and the
+            compiler's auto-import gate never fires.
     """
 
     # Build a "set" containing the module names of direct dependencies so that
@@ -1285,16 +1294,22 @@ def _cross_imported_swift_infos(*, swift_toolchain, user_swift_infos):
         for module_context in swift_info.direct_modules:
             direct_module_names[module_context.name] = True
 
-    # For each cross-import overlay registered with the toolchain, add its
-    # `SwiftInfo` providers to the list if both its declaring and bystanding
+    # For each cross-import overlay registered with the toolchain, collect its
+    # providers and overlay module names if both its declaring and bystanding
     # modules were imported.
     overlay_swift_infos = []
+    overlay_force_imports = []
     for overlay in swift_toolchain.cross_import_overlays:
         if (overlay.declaring_module in direct_module_names and
             overlay.bystanding_module in direct_module_names):
             overlay_swift_infos.extend(overlay.swift_infos)
+            if overlay.overlay_module_names:
+                overlay_force_imports.extend(overlay.overlay_module_names)
 
-    return overlay_swift_infos
+    return struct(
+        swift_infos = overlay_swift_infos,
+        overlay_force_imports = overlay_force_imports,
+    )
 
 def _declare_compile_outputs(
         *,

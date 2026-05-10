@@ -363,7 +363,6 @@ swift_library(
     deps = [
         "@system_sdk//:MapKit",
         "@system_sdk//:SwiftUI",
-        "@system_sdk//:_MapKit_SwiftUI",
     ],
 )
 

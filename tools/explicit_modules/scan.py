@@ -100,6 +100,7 @@ _TARGETS_PER_SDK = {
 _HEADER = """\
 load(
     "@build_bazel_rules_swift//swift:swift.bzl",
+    "swift_cross_import_overlay",
     "system_clang_module",
     "system_module_group",
     "system_swiftinterface",
@@ -219,6 +220,141 @@ def _render_all_modules_group(
     out.write("    ],\n")
     _write_transition_attrs(out, sdk=sdk, sdk_version=sdk_version)
     out.write(")\n")
+
+
+@dataclass(frozen=True, order=True)
+class _CrossImportOverlay:
+    declaring: str
+    bystanding: str
+    overlay_modules: tuple[str, ...]
+
+
+def _cross_import_overlay_name(overlay: "_CrossImportOverlay", sdk: str) -> str:
+    return f"{sdk}_xio_{overlay.declaring}_{overlay.bystanding}"
+
+
+def _render_cross_import_overlay(
+    overlay: "_CrossImportOverlay",
+    sdk: str,
+    out: TextIO,
+) -> None:
+    out.write("\n")
+    out.write("swift_cross_import_overlay(\n")
+    out.write(f'    name = "{_cross_import_overlay_name(overlay, sdk)}",\n')
+    out.write(f'    declaring_module = ":{sdk}_{overlay.declaring}",\n')
+    out.write(f'    declaring_module_name = "{overlay.declaring}",\n')
+    out.write(f'    bystanding_module = ":{sdk}_{overlay.bystanding}",\n')
+    out.write(f'    bystanding_module_name = "{overlay.bystanding}",\n')
+    out.write("    deps = [\n")
+    _write_labels(out, {f"{sdk}_{m}" for m in overlay.overlay_modules})
+    out.write("    ],\n")
+    out.write(")\n")
+
+
+def _parse_swiftoverlay(path: Path) -> list[str]:
+    """Parse an Apple ``.swiftoverlay`` YAML file.
+
+    Observed schema (stable across SDK versions):
+
+        ---
+        version: 1
+        modules:
+          - name: _MapKit_SwiftUI
+
+    The parser is intentionally tiny and tolerates blank lines, comments,
+    and quoted name values; it does not depend on a YAML library because
+    this script runs as a repository rule with stock ``python3``.
+    """
+    overlay_modules: list[str] = []
+    in_modules = False
+    for raw_line in path.read_text().splitlines():
+        stripped = raw_line.strip()
+        if not stripped or stripped.startswith("#") or stripped == "---":
+            continue
+        if stripped.startswith("modules:"):
+            in_modules = True
+            continue
+        if in_modules:
+            if not raw_line[:1].isspace():
+                in_modules = False
+            elif stripped.startswith("- name:"):
+                value = stripped[len("- name:"):].strip().strip('"').strip("'")
+                if value:
+                    overlay_modules.append(value)
+    return overlay_modules
+
+
+def _scan_cross_import_overlays(
+    framework_search_paths: list[Path],
+    swift_module_search_paths: list[Path],
+    known_swift_modules: set[str],
+) -> list[_CrossImportOverlay]:
+    """Walk the SDK for ``.swiftcrossimport`` directories and build overlays.
+
+    Apple ships cross-import overlay metadata in two locations:
+
+      * ``<Framework>.framework/Modules/<Decl>.swiftcrossimport/<Byst>.swiftoverlay``
+      * ``<swift_search_path>/<Decl>.swiftmodule.swiftcrossimport/<Byst>.swiftoverlay``
+        (for non-framework Swift modules)
+
+    The same logical pair may be declared from either side, so the result
+    is keyed on the alphabetically-sorted ``(declaring, bystanding)`` pair
+    with overlay modules unioned and deduped.
+    """
+    overlays_by_pair: defaultdict[tuple[str, str], set[str]] = defaultdict(set)
+
+    def _ingest(declaring: str, overlay_dir: Path) -> None:
+        if declaring not in known_swift_modules:
+            return
+        for overlay_file in overlay_dir.iterdir():
+            if overlay_file.suffix != ".swiftoverlay" or not overlay_file.is_file():
+                continue
+            bystanding = overlay_file.stem
+            if bystanding not in known_swift_modules or bystanding == declaring:
+                continue
+            overlay_modules = [
+                m for m in _parse_swiftoverlay(overlay_file)
+                if m in known_swift_modules
+            ]
+            if not overlay_modules:
+                continue
+            pair = tuple(sorted([declaring, bystanding]))
+            overlays_by_pair[pair].update(overlay_modules)
+
+    for fw_root in framework_search_paths:
+        if not fw_root.is_dir():
+            continue
+        for fw in fw_root.iterdir():
+            if fw.suffix != ".framework":
+                continue
+            modules_dir = fw / "Modules"
+            if not modules_dir.is_dir():
+                continue
+            for entry in modules_dir.iterdir():
+                if entry.suffix != ".swiftcrossimport" or not entry.is_dir():
+                    continue
+                _ingest(entry.stem, entry)
+
+    for swift_root in swift_module_search_paths:
+        if not swift_root.is_dir():
+            continue
+        for entry in swift_root.iterdir():
+            if not entry.is_dir():
+                continue
+            name = entry.name
+            if name.endswith(".swiftmodule.swiftcrossimport"):
+                _ingest(name[: -len(".swiftmodule.swiftcrossimport")], entry)
+            elif name.endswith(".swiftcrossimport"):
+                _ingest(name[: -len(".swiftcrossimport")], entry)
+
+    return [
+        _CrossImportOverlay(
+            declaring=pair[0],
+            bystanding=pair[1],
+            overlay_modules=tuple(sorted(modules)),
+        )
+        for pair, modules in sorted(overlays_by_pair.items())
+    ]
 
 
 @dataclass(order=True)
@@ -351,6 +487,7 @@ def _parse_output(
     developer_dir: str,
     sdkroot: str,
     all_modules: dict[tuple[str, str], _Module],
+    overlay_module_names: set[str],
 ) -> None:
     modules_json = output["modules"][2:]  # Skip the stub file pair
     for i in range(0, len(modules_json), 2):  # (header, body) pairs one after another
@@ -385,12 +522,22 @@ def _parse_output(
         module.module_map_path = module.module_map_path or module_map_path
         if module_type == "swift":
             has_prebuilt_swiftmodule = bool(details.get("compiledModuleCandidates", []))
-            if not has_prebuilt_swiftmodule:
+            # Cross-import overlay modules (e.g. `_MapKit_SwiftUI`) are typically
+            # listed in the SDK's prebuilt-modules cache, so the normal
+            # "skip swiftinterface when prebuilt exists" path leaves them as
+            # no-op `system_module_group`s with no compiled `.swiftmodule` to
+            # inject. Under explicit modules the compiler can't fall back to
+            # discovering the prebuilt itself, so we must force compilation
+            # of the swiftinterface for these modules.
+            interface_path = details.get("moduleInterfacePath")
+            if interface_path and (
+                not has_prebuilt_swiftmodule or module_name in overlay_module_names
+            ):
                 module.set_swiftinterface(
                     cpu=cpu,
                     is_framework=bool(details.get("isFramework", False)),
                     swiftinterface_path=_normalize_system_path(
-                        details["moduleInterfacePath"],
+                        interface_path,
                         developer_dir=developer_dir,
                         sdkroot=sdkroot,
                     ),
@@ -465,7 +612,7 @@ def _discover_all_modules(
     developer_dir: Path,
     sdk: str,
     excluded_modules: set[str],
-) -> tuple[str, set[str]]:
+) -> tuple[str, set[str], list[str]]:
     platform_developer_path = developer_dir / f"Platforms/{sdk}.platform/Developer"
     sdk_path = platform_developer_path / f"SDKs/{sdk}.sdk"
     framework_search_paths = [
@@ -504,6 +651,15 @@ def _discover_all_modules(
             elif (x / "module.modulemap").exists():
                 modules.add(x.stem)  # /usr/include/CommonCrypto/module.modulemap
 
+    cross_import_overlays = _scan_cross_import_overlays(
+        framework_search_paths,
+        [sdk_path / "usr/lib/swift"] + swift_search_paths,
+        modules,
+    )
+    overlay_module_names: set[str] = set()
+    for overlay in cross_import_overlays:
+        overlay_module_names.update(overlay.overlay_modules)
+
     deployment_target = _get_deployment_target(sdk, sdk_path)
     cpu_targets = _TARGETS_PER_SDK[sdk.lower()]
 
@@ -534,6 +690,7 @@ def _discover_all_modules(
             developer_dir=developer_dir.as_posix(),
             sdkroot=sdk_path.as_posix(),
             all_modules=merged_modules,
+            overlay_module_names=overlay_module_names,
         )
 
     all_modules = sorted(merged_modules.values())
@@ -553,7 +710,25 @@ def _discover_all_modules(
     )
     _render_all_modules_group(all_module_names, sdk, deployment_target, buf)
 
-    return buf.getvalue(), all_module_names | {f"{n}_clang" for n in clang_names}
+    # Only render overlays where every referenced module showed up as a Swift
+    # module in the scan-deps output, so the generated label references are
+    # guaranteed to resolve.
+    overlay_target_names: list[str] = []
+    for overlay in cross_import_overlays:
+        if overlay.declaring not in swift_names:
+            continue
+        if overlay.bystanding not in swift_names:
+            continue
+        if not all(m in swift_names for m in overlay.overlay_modules):
+            continue
+        _render_cross_import_overlay(overlay, sdk, buf)
+        overlay_target_names.append(_cross_import_overlay_name(overlay, sdk))
+
+    return (
+        buf.getvalue(),
+        all_module_names | {f"{n}_clang" for n in clang_names},
+        sorted(overlay_target_names),
+    )
 
 
 def _parse_exclude_modules(values: list[str]) -> dict[str, set[str]]:
@@ -601,6 +776,16 @@ def _main() -> None:
         default=None,
         # Internal flag used by the `system_sdk` module extension; not part
         # of the user-facing CLI.
+        help=argparse.SUPPRESS,
+    )
+    parser.add_argument(
+        "--cross-import-overlays-json",
+        type=Path,
+        default=None,
+        # Internal flag used by the `system_sdk` module extension; not part
+        # of the user-facing CLI. Writes a JSON map of
+        # ``{sdk_name: [overlay_target_name, ...]}`` so the hub repo can wrap
+        # the labels with absolute references back to this scanner's repo.
         help=argparse.SUPPRESS,
     )
     parser.add_argument(
@@ -659,6 +844,7 @@ def _main() -> None:
         buf.write(")\n")
 
     all_modules_by_sdk: dict[str, set[str]] = {}
+    overlays_by_sdk: dict[str, list[str]] = {}
     all_modules: set[str] = set()
     per_sdk_text: dict[str, str] = {}
     with ThreadPoolExecutor(max_workers=len(sdk_names)) as pool:
@@ -673,9 +859,10 @@ def _main() -> None:
         }
         for fut in as_completed(futures):
             sdk = futures[fut]
-            output, modules = fut.result()
+            output, modules, overlay_target_names = fut.result()
             per_sdk_text[sdk] = output
             all_modules_by_sdk[sdk] = modules
+            overlays_by_sdk[sdk] = overlay_target_names
             all_modules |= modules
 
     for sdk in sdk_names:
@@ -711,6 +898,15 @@ def _main() -> None:
     if args.module_names is not None:
         with open(args.module_names, "w") as f:
             json.dump(sorted(all_modules), f, indent=2)
+
+    if args.cross_import_overlays_json is not None:
+        with open(args.cross_import_overlays_json, "w") as f:
+            json.dump(
+                {sdk: overlays_by_sdk.get(sdk, []) for sdk in sdk_names},
+                f,
+                indent=2,
+                sort_keys=True,
+            )
 
 
 if __name__ == "__main__":

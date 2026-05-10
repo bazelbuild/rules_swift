@@ -43,6 +43,13 @@ A list of `SwiftInfo` providers that describe the cross-import overlay modules
 that should be injected into the dependencies of a compilation when both the
 `declaring_module` and `bystanding_module` are imported.
 """,
+        "overlay_module_names": """\
+A list of the overlay module names that should be force-imported via
+`-Xfrontend -import-module -Xfrontend <name>` when both the declaring and
+bystanding modules appear in the user's deps. Force-import is needed because
+under explicit modules the SDK's declaring module is loaded as a clang PCM,
+which doesn't trigger the compiler's auto-import gate.
+""",
     },
 )
 

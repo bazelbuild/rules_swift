@@ -44,6 +44,10 @@ load(
     ":swift_clang_module_aspect.bzl",
     _swift_clang_module_aspect = "swift_clang_module_aspect",
 )
+load(
+    ":swift_cross_import_overlay.bzl",
+    _swift_cross_import_overlay = "swift_cross_import_overlay",
+)
 load(":swift_common.bzl", _swift_common = "swift_common")
 load(
     ":swift_extract_symbol_graph.bzl",
@@ -88,6 +92,7 @@ system_module_group = _system_module_group
 system_swiftinterface = _system_swiftinterface
 swift_binary = _swift_binary
 swift_compiler_plugin = _swift_compiler_plugin
+swift_cross_import_overlay = _swift_cross_import_overlay
 universal_swift_compiler_plugin = _universal_swift_compiler_plugin
 swift_extract_symbol_graph = _swift_extract_symbol_graph
 swift_feature_allowlist = _swift_feature_allowlist
