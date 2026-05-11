@@ -931,6 +931,11 @@ def compile_action_configs(
         ),
         ActionConfigInfo(
             actions = all_compile_action_names(),
+            configurators = [_cross_import_overlays_configurator],
+            features = [SWIFT_FEATURE_USE_C_MODULES],
+        ),
+        ActionConfigInfo(
+            actions = all_compile_action_names(),
             configurators = [_module_aliases_configurator],
         ),
         ActionConfigInfo(
@@ -2151,6 +2156,15 @@ def _plugin_search_paths_configurator(prerequisites, args):
             "-plugin-path",
             "__BAZEL_SWIFT_TOOLCHAIN_PATH__/usr/lib/swift/host/plugins/testing",
         )
+
+def _cross_import_overlays_configurator(prerequisites, args):
+    """Adds cross-import overlay declarations to the command line."""
+    if prerequisites.cross_import_overlays:
+        args.add("-Xfrontend", "-disable-cross-import-overlay-search")
+    for overlay in prerequisites.cross_import_overlays:
+        args.add("-Xfrontend", "-swift-module-cross-import")
+        args.add("-Xfrontend", overlay.declaring_module)
+        args.add("-Xfrontend", overlay.swiftoverlay_file)
 
 def _dependencies_swiftmodules_vfsoverlay_configurator(prerequisites, args, is_frontend = False):
     """Provides a single `.swiftmodule` search path using a VFS overlay."""

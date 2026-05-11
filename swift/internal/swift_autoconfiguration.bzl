@@ -289,8 +289,9 @@ xcode_swift_toolchain(
 
 xcode_swift_toolchain(
     name = "xcode-toolchain",
+    cross_import_overlays = ["@system_sdk//:all_cross_import_overlays"],
     features = [{feature_list}],
-    system_modules = "@system_sdk//:all_modules"
+    system_modules = "@system_sdk//:all_modules",
 )
 """.format(
         feature_list = ", ".join([

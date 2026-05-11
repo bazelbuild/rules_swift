@@ -43,6 +43,18 @@ A list of `SwiftInfo` providers that describe the cross-import overlay modules
 that should be injected into the dependencies of a compilation when both the
 `declaring_module` and `bystanding_module` are imported.
 """,
+        "swiftoverlay_file": """\
+The path to the SDK `.swiftoverlay` file that declares this cross-import.
+""",
+    },
+)
+
+SwiftCrossImportOverlaysInfo = provider(
+    doc = "A collection of cross-import overlay module definitions.",
+    fields = {
+        "overlays": """\
+A list of `SwiftCrossImportOverlayInfo` providers.
+""",
     },
 )
 
