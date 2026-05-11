@@ -330,10 +330,13 @@ def features_test_suite(name, tags = []):
         expected_argv = [
             "-Wl,-rpath,__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/MacOSX.platform/Developer/usr/lib",
             "-Wl,-rpath,__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+            "-Wl,-rpath,__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
             "-Wl,-rpath,/private/var/select/developer_dir/Platforms/MacOSX.platform/Developer/usr/lib",
             "-Wl,-rpath,/private/var/select/developer_dir/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+            "-Wl,-rpath,/private/var/select/developer_dir/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
             "-Wl,-rpath,/var/db/xcode_select_link/Platforms/MacOSX.platform/Developer/usr/lib",
             "-Wl,-rpath,/var/db/xcode_select_link/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+            "-Wl,-rpath,/var/db/xcode_select_link/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
         ],
         mnemonic = "CppLink",
         target_under_test = "//test/fixtures/xctest_runner:PassingUnitTests",

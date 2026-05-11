@@ -124,12 +124,12 @@ _DEVELOPER_DIR_SYMLINKS = [
 ]
 
 def _platform_developer_framework_dir(
-        apple_toolchain,
+        developer_dir,
         target_triple):
     """Returns the Developer framework directory for the platform.
 
     Args:
-        apple_toolchain: The `apple_common.apple_toolchain()` object.
+        developer_dir: The path to Xcode's "Developer" directory.
         target_triple: The triple of the platform being targeted.
 
     Returns:
@@ -137,7 +137,7 @@ def _platform_developer_framework_dir(
         exists, otherwise `None`.
     """
     return paths.join(
-        apple_toolchain.developer_dir(),
+        developer_dir,
         "Platforms",
         "{}.platform".format(
             target_triples.bazel_apple_platform(target_triple).name_in_plist,
@@ -223,7 +223,7 @@ def _swift_linkopts_cc_info(
         depend on Swift targets.
     """
     platform_developer_framework_dir = _platform_developer_framework_dir(
-        apple_toolchain,
+        apple_toolchain.developer_dir(),
         target_triple,
     )
     sdk_developer_framework_dir = _sdk_developer_framework_dir(
@@ -315,48 +315,40 @@ def _swift_linkopts_cc_info(
         ),
     )
 
-def _test_linking_context(
-        target_triple,
-        toolchain_label,
-        xcode_config):
+def _test_linking_context(target_triple, toolchain_label):
     """Returns a `CcLinkingContext` containing linker flags for test binaries.
 
     Args:
         target_triple: The target triple `struct`.
         toolchain_label: The label of the Swift toolchain that will act as the
             owner of the linker input propagating the flags.
-        xcode_config: The Xcode configuration.
 
     Returns:
         A `CcLinkingContext` that will provide linker flags to `swift_test`
         binaries.
     """
 
-    # Weakly link to XCTest. It's possible that machine that links the test
-    # binary will have Xcode installed at a different path than the machine that
-    # runs the binary. To handle this, the binary `dlopen`s XCTest at startup
-    # using the path Bazel passes in the test action's environment.
-    linkopts = [
-        "-Wl,-weak_framework,XCTest",
-        "-Wl,-weak-lXCTestSwiftSupport",
-    ]
-    if _is_xcode_at_least_version(xcode_config, "16.0"):
-        linkopts.append("-Wl,-weak_framework,Testing")
-
-    # We use these as the rpaths for linking tests so that the required
-    # libraries are found if Xcode is installed in a different location on the
-    # machine that runs the tests than the machine used to link them.
+    # xcode-select creates the following symlink(s) to the developer directory
+    # (we list both because the behavior changed between versions of macOS).
+    # We also include Bazel's developer directory placeholder for local test
+    # actions. These let the required libraries be found if Xcode is installed
+    # in a different location on the machine that runs the tests than the
+    # machine used to link them.
     developer_dir_rpath_roots = _DEVELOPER_DIR_SYMLINKS + [
         "__BAZEL_XCODE_DEVELOPER_DIR__",
     ]
+    linkopts = []
     for developer_dir in developer_dir_rpath_roots:
-        platform_developer_framework_dir_symlink = paths.join(
+        platform_developer_framework_dir = _platform_developer_framework_dir(
             developer_dir,
-            "Platforms",
-            "{}.platform".format(
-                target_triples.bazel_apple_platform(target_triple).name_in_plist,
-            ),
-            "Developer/Library/Frameworks",
+            target_triple,
+        )
+
+        # NOTE: We shouldn't do this but it's required since we don't rely on
+        # the xctest command line tool to launch our binaries
+        platform_developer_private_framework_dir = paths.join(
+            paths.dirname(platform_developer_framework_dir),
+            "PrivateFrameworks",
         )
         linkopts.extend([
             "-Wl,-rpath,{}".format(path)
@@ -364,10 +356,11 @@ def _test_linking_context(
                 swift_developer_lib_dir([
                     struct(
                         developer_path_label = "platform",
-                        path = platform_developer_framework_dir_symlink,
+                        path = platform_developer_framework_dir,
                     ),
                 ]),
-                platform_developer_framework_dir_symlink,
+                platform_developer_framework_dir,
+                platform_developer_private_framework_dir,
             ])
         ])
 
@@ -797,7 +790,6 @@ def _xcode_swift_toolchain_impl(ctx):
     test_linking_context = _test_linking_context(
         target_triple = target_triple,
         toolchain_label = ctx.label,
-        xcode_config = xcode_config,
     )
 
     # `--define=SWIFT_USE_TOOLCHAIN_ROOT=<path>` is a rapid development feature
@@ -918,7 +910,7 @@ def _xcode_swift_toolchain_impl(ctx):
     )
     swift_toolchain_developer_paths = []
     platform_developer_framework_dir = _platform_developer_framework_dir(
-        apple_toolchain,
+        apple_toolchain.developer_dir(),
         target_triple,
     )
     if platform_developer_framework_dir:
