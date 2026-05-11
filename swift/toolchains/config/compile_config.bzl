@@ -35,6 +35,7 @@ load(
 )
 load(
     "//swift/internal:feature_names.bzl",
+    "SWIFT_FEATURE_ADD_DEFAULT_PRECOMPILED_MODULES",
     "SWIFT_FEATURE_CACHEABLE_SWIFTMODULES",
     "SWIFT_FEATURE_CHECKED_EXCLUSIVITY",
     "SWIFT_FEATURE_CODEVIEW_DEBUG_INFO",
@@ -834,6 +835,17 @@ def compile_action_configs(
             configurators = [_c_layering_check_configurator],
             features = [SWIFT_FEATURE_LAYERING_CHECK],
             not_features = [SWIFT_FEATURE_SYSTEM_MODULE],
+        ),
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_PRECOMPILE_C_MODULE],
+            configurators = [
+                add_arg("-Xcc", "-Werror=non-modular-include-in-module"),
+            ],
+            features = [SWIFT_FEATURE_EMIT_C_MODULE],
+            not_features = [
+                [SWIFT_FEATURE_ADD_DEFAULT_PRECOMPILED_MODULES],
+                [SWIFT_FEATURE_SYSTEM_MODULE],
+            ],
         ),
         ActionConfigInfo(
             actions = [SWIFT_ACTION_PRECOMPILE_C_MODULE],
