@@ -1115,3 +1115,4 @@ Once that is the case, this macro will be deprecated.
 | <a id="mixed_language_library-deps"></a>deps |  A list of targets that are dependencies of the target being built.   |  `[]` |
 | <a id="mixed_language_library-kwargs"></a>kwargs |  Additional arguments to pass to the underlying clang and swift library targets.   |  none |
 
+
