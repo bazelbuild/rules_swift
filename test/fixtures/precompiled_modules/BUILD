@@ -479,7 +479,7 @@ swift_test(
     target_compatible_with = ["@platforms//os:macos"],
     deps = [
         ":pollute_appkit_dep",
-        "@system_sdk//:Testing", # Testing + AppKit currently have a cross import overlay which must be imported
+        "@system_sdk//:Testing",  # Testing + AppKit currently have a cross import overlay which must be imported
     ],
 )
 
