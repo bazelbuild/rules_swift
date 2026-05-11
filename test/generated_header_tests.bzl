@@ -94,6 +94,7 @@ def generated_header_test_suite(name, tags = []):
         mnemonic = "SwiftPrecompileCModule",
         tags = all_tags,
         target_under_test = "//test/fixtures/generated_header:auto_header",
+        target_compatible_with = ["@platforms//os:macos"],
     )
 
     _default_precompiled_modules_test(
@@ -104,6 +105,7 @@ def generated_header_test_suite(name, tags = []):
         ],
         tags = all_tags,
         target_under_test = "//test/fixtures/generated_header:auto_header",
+        target_compatible_with = ["@platforms//os:macos"],
     )
 
     # Verify that no generated header is created if the target doesn't request
