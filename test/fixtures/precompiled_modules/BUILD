@@ -427,6 +427,36 @@ transition_binary(
     ],
 )
 
+swift_test(
+    name = "linking_cross_import_overlay",
+    srcs = [
+        # NOTE: The current API requires a cross import overlay, but we might
+        # need to find another one in the future if this one moves.
+        "cross_import_overlay_pollution.swift",
+        "main.swift",
+    ],
+    discover_tests = False,
+    tags = FIXTURE_TAGS,
+    target_compatible_with = ["@platforms//os:macos"],
+    deps = [
+        "@system_sdk//:AppKit",
+        "@system_sdk//:Testing",
+    ],
+)
+
+transition_test(
+    name = "linking_cross_import_overlay_transitioned",
+    testonly = True,
+    tags = FIXTURE_TAGS,
+    target = ":cross_import_overlay_dep_pollution",
+    transitive_features = [
+        "swift.use_c_modules",
+        "swift.emit_c_module",
+        "-swift.add_default_precompiled_modules",
+        # NOTE: Must not enable swift.use_explicit_swift_module_map which affects linking logic
+    ],
+)
+
 swift_binary(
     name = "cross_import_overlay",
     srcs = ["main.swift"],

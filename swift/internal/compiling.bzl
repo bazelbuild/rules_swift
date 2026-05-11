@@ -119,6 +119,54 @@ def transitive_swift_dependency_inputs(transitive_modules):
 
     return inputs
 
+def _explicit_swift_module_map_info(
+        *,
+        actions,
+        feature_configuration,
+        target_name,
+        transitive_modules,
+        vfsoverlay_file):
+    """Returns the explicit Swift module map file and matching Swift inputs."""
+    if is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP,
+    ):
+        if vfsoverlay_file:
+            fail("Cannot use both `swift.vfsoverlay` and `swift.use_explicit_swift_module_map` features at the same time.")
+
+        module_contexts = transitive_modules
+        filename = "{}.swift-explicit-module-map.json".format(target_name)
+        inputs = []
+    elif is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_USE_C_MODULES,
+    ):
+        # Keep non-system Swift deps on search paths, but include system
+        # modules to make sure everything loads them with the same behavior
+        module_contexts = [
+            module
+            for module in transitive_modules
+            if module.is_system
+        ]
+        if not module_contexts:
+            return struct(file = None, inputs = [])
+
+        filename = "{}.swift-system-explicit-module-map.json".format(target_name)
+        inputs = transitive_swift_dependency_inputs(module_contexts)
+    else:
+        return struct(file = None, inputs = [])
+
+    explicit_swift_module_map_file = actions.declare_file(filename)
+    write_explicit_swift_module_map_file(
+        actions = actions,
+        explicit_swift_module_map_file = explicit_swift_module_map_file,
+        module_contexts = module_contexts,
+    )
+    return struct(
+        file = explicit_swift_module_map_file,
+        inputs = inputs,
+    )
+
 def create_compilation_context(defines, srcs, transitive_modules):
     """Cretes a compilation context for a Swift target.
 
@@ -306,23 +354,13 @@ def compile_module_interface(
     else:
         vfsoverlay_file = None
 
-    if is_feature_enabled(
+    explicit_swift_module_map_info = _explicit_swift_module_map_info(
+        actions = actions,
         feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP,
-    ):
-        if vfsoverlay_file:
-            fail("Cannot use both `swift.vfsoverlay` and `swift.use_explicit_swift_module_map` features at the same time.")
-
-        explicit_swift_module_map_file = actions.declare_file(
-            "{}.swift-explicit-module-map.json".format(target_name),
-        )
-        write_explicit_swift_module_map_file(
-            actions = actions,
-            explicit_swift_module_map_file = explicit_swift_module_map_file,
-            module_contexts = transitive_modules,
-        )
-    else:
-        explicit_swift_module_map_file = None
+        target_name = target_name,
+        transitive_modules = transitive_modules,
+        vfsoverlay_file = vfsoverlay_file,
+    )
 
     if is_feature_enabled(
         feature_configuration = feature_configuration,
@@ -339,7 +377,8 @@ def compile_module_interface(
         additional_inputs = additional_inputs,
         bin_dir = feature_configuration._bin_dir,
         cc_compilation_context = merged_compilation_context,
-        explicit_swift_module_map_file = explicit_swift_module_map_file,
+        explicit_swift_module_map_file = explicit_swift_module_map_info.file,
+        explicit_swift_module_map_inputs = explicit_swift_module_map_info.inputs or transitive_swift_dependency_inputs_list,
         genfiles_dir = feature_configuration._genfiles_dir,
         indexstore_directory = indexstore_directory,
         is_swift = True,
@@ -701,25 +740,13 @@ def compile(
     else:
         vfsoverlay_file = None
 
-    if is_feature_enabled(
+    explicit_swift_module_map_info = _explicit_swift_module_map_info(
+        actions = actions,
         feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP,
-    ):
-        if vfsoverlay_file:
-            fail("Cannot use both `swift.vfsoverlay` and `swift.use_explicit_swift_module_map` features at the same time.")
-
-        # Generate the JSON file that contains the manifest of Swift
-        # dependencies.
-        explicit_swift_module_map_file = actions.declare_file(
-            "{}.swift-explicit-module-map.json".format(target_name),
-        )
-        write_explicit_swift_module_map_file(
-            actions = actions,
-            explicit_swift_module_map_file = explicit_swift_module_map_file,
-            module_contexts = transitive_modules,
-        )
-    else:
-        explicit_swift_module_map_file = None
+        target_name = target_name,
+        transitive_modules = transitive_modules,
+        vfsoverlay_file = vfsoverlay_file,
+    )
 
     # As of the time of this writing (Xcode 15.0), macros are the only kind of
     # plugins that are available. Since macros do source-level transformations,
@@ -764,7 +791,8 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         defines = sets.to_list(defines_set),
         developer_dirs = toolchains.swift.developer_dirs,
         experimental_features = experimental_features,
-        explicit_swift_module_map_file = explicit_swift_module_map_file,
+        explicit_swift_module_map_file = explicit_swift_module_map_info.file,
+        explicit_swift_module_map_inputs = explicit_swift_module_map_info.inputs,
         genfiles_dir = feature_configuration._genfiles_dir,
         include_dev_srch_paths = include_dev_srch_paths_value,
         is_swift = True,
