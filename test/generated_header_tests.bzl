@@ -14,6 +14,10 @@
 
 """Tests for `swift_library.generated_header`."""
 
+load(
+    "//test/rules:action_command_line_test.bzl",
+    "make_action_command_line_test_rule",
+)
 load("//test/rules:analysis_failure_test.bzl", "analysis_failure_test")
 load(
     "//test/rules:provider_test.bzl",
@@ -24,6 +28,26 @@ load(
 private_deps_with_target_name_test = make_provider_test_rule(
     config_settings = {
         "//command_line_option:features": ["swift.add_target_name_to_output"],
+    },
+)
+
+_default_precompiled_modules_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:features": [
+            "swift.use_c_modules",
+            "swift.emit_c_module",
+            "swift.add_default_precompiled_modules",
+        ],
+    },
+)
+
+_explicit_precompiled_modules_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:features": [
+            "swift.use_c_modules",
+            "swift.emit_c_module",
+            "-swift.add_default_precompiled_modules",
+        ],
     },
 )
 
@@ -58,6 +82,26 @@ def generated_header_test_suite(name, tags = []):
         ],
         field = "files",
         provider = "DefaultInfo",
+        tags = all_tags,
+        target_under_test = "//test/fixtures/generated_header:auto_header",
+    )
+
+    _explicit_precompiled_modules_test(
+        name = "{}_generated_header_pcm_errors_on_non_modular_includes".format(name),
+        expected_argv = [
+            "-Xcc -Werror=non-modular-include-in-module",
+        ],
+        mnemonic = "SwiftPrecompileCModule",
+        tags = all_tags,
+        target_under_test = "//test/fixtures/generated_header:auto_header",
+    )
+
+    _default_precompiled_modules_test(
+        name = "{}_generated_header_pcm_allows_default_precompiled_modules".format(name),
+        mnemonic = "SwiftPrecompileCModule",
+        not_expected_argv = [
+            "-Xcc -Werror=non-modular-include-in-module",
+        ],
         tags = all_tags,
         target_under_test = "//test/fixtures/generated_header:auto_header",
     )
