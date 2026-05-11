@@ -1296,18 +1296,20 @@ def _cross_imported_overlays(
 
     # Build a "set" containing the module names of direct dependencies so that
     # we can do quicker hash-based lookups below.
-    direct_module_names = {}
+    module_names = {}
     for swift_info in user_swift_infos:
-        for module_context in swift_info.direct_modules:
-            direct_module_names[module_context.name] = True
+        # TODO: Ideally this would only be the direct dependencies, but unless
+        # you enforce layering_check it's easy to rely on this
+        for module_context in swift_info.transitive_modules.to_list():
+            module_names[module_context.name] = True
 
     # For each cross-import overlay registered with the toolchain, add its
     # `SwiftInfo` providers to the list if both its declaring and bystanding
     # modules were imported.
     overlays = []
     for overlay in swift_toolchain.cross_import_overlays:
-        if (overlay.declaring_module in direct_module_names and
-            overlay.bystanding_module in direct_module_names):
+        if (overlay.declaring_module in module_names and
+            overlay.bystanding_module in module_names):
             overlays.append(overlay)
 
     return overlays

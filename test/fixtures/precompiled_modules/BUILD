@@ -458,6 +458,45 @@ transition_binary(
     ],
 )
 
+swift_library(
+    name = "pollute_appkit_dep",
+    srcs = ["empty.swift"],
+    tags = FIXTURE_TAGS,
+    target_compatible_with = ["@platforms//os:macos"],
+    deps = ["@system_sdk//:AppKit"],  # This dep becomes available to consumers who don't enable swift.layering_check
+)
+
+swift_test(
+    name = "cross_import_overlay_dep_pollution",
+    srcs = [
+        # NOTE: The current API requires a cross import overlay, but we might
+        # need to find another one in the future if this one moves.
+        "cross_import_overlay_pollution.swift",
+        "main.swift",
+    ],
+    discover_tests = False,
+    tags = FIXTURE_TAGS,
+    target_compatible_with = ["@platforms//os:macos"],
+    deps = [
+        ":pollute_appkit_dep",
+        "@system_sdk//:Testing", # Testing + AppKit currently have a cross import overlay which must be imported
+    ],
+)
+
+transition_test(
+    name = "cross_import_overlay_dep_pollution_transitioned",
+    testonly = True,
+    minimum_os = "26.0",
+    tags = FIXTURE_TAGS,
+    target = ":cross_import_overlay_dep_pollution",
+    transitive_features = [
+        "swift.use_c_modules",
+        "swift.emit_c_module",
+        "-swift.add_default_precompiled_modules",
+        "swift.use_explicit_swift_module_map",
+    ],
+)
+
 bzl_library(
     name = "cross_platform",
     srcs = ["cross_platform.bzl"],
