@@ -497,6 +497,20 @@ transition_test(
     ],
 )
 
+transition_test(
+    name = "cross_import_overlay_dep_pollution_default_precompiled_modules_transitioned",
+    testonly = True,
+    minimum_os = "26.0",
+    tags = FIXTURE_TAGS,
+    target = ":cross_import_overlay_dep_pollution",
+    transitive_features = [
+        "swift.use_c_modules",
+        "swift.emit_c_module",
+        "swift.add_default_precompiled_modules",
+        "swift.use_explicit_swift_module_map",
+    ],
+)
+
 bzl_library(
     name = "cross_platform",
     srcs = ["cross_platform.bzl"],
