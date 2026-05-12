@@ -36,7 +36,12 @@ def _system_swiftmodule_impl(ctx):
         swift = create_swift_module_inputs(
             swiftdoc = None,
             swiftinterface = None,
-            swiftmodule = ctx.attr.swiftmodule,
+            # Leave `swiftmodule` (the `File` slot) unset so consumers that
+            # iterate transitive Swift deps as `File`s don't choke on a
+            # string. The placeholder path is exposed via `swiftmodule_path`
+            # for the explicit Swift module map writer to consume.
+            swiftmodule = None,
+            swiftmodule_path = ctx.attr.swiftmodule,
         ),
     )
 

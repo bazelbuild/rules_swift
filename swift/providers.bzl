@@ -675,6 +675,7 @@ def create_swift_module_inputs(
         swiftdoc,
         swiftinterface = None,
         swiftmodule,
+        swiftmodule_path = None,
         swiftsourceinfo = None):
     """Creates a value representing a Swift module use as a Swift dependency.
 
@@ -701,8 +702,15 @@ def create_swift_module_inputs(
         swiftdoc: The `.swiftdoc` file emitted by the compiler for this module.
         swiftinterface: The `.swiftinterface` file emitted by the compiler for
             this module. May be `None` if no module interface file was emitted.
-        swiftmodule: The `.swiftmodule` file emitted by the compiler for this
-            module.
+        swiftmodule: The `.swiftmodule` `File` emitted by the compiler for this
+            module. May be `None` for modules whose binary swiftmodule lives
+            outside the build (see `swiftmodule_path`).
+        swiftmodule_path: An optional string path to a prebuilt `.swiftmodule`
+            that is not a Bazel `File` (e.g. an SDK swiftmodule referenced via
+            `__BAZEL_XCODE_SDKROOT__`/`__BAZEL_XCODE_DEVELOPER_DIR__`
+            placeholders). Consumed by the explicit Swift module map writer
+            and resolved at action time by the Swift worker; consumers that
+            iterate `swiftmodule` as `File`s should ignore this field.
         swiftsourceinfo: The `.swiftsourceinfo` file emitted by the compiler for
             this module. May be `None` if no source info file was emitted.
 
@@ -721,5 +729,6 @@ def create_swift_module_inputs(
         swiftdoc = swiftdoc,
         swiftinterface = swiftinterface,
         swiftmodule = swiftmodule,
+        swiftmodule_path = swiftmodule_path,
         swiftsourceinfo = swiftsourceinfo,
     )

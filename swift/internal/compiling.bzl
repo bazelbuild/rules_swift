@@ -113,10 +113,7 @@ def transitive_swift_dependency_inputs(transitive_modules, include_interfaces = 
         if not swift_module:
             continue
 
-        # `system_swiftmodule` stores a placeholder string here instead of a
-        # `File`; the prebuilt SDK swiftmodule is resolved at action time via
-        # the explicit module map JSON, not as a Bazel input.
-        if swift_module.swiftmodule and type(swift_module.swiftmodule) == "File":
+        if swift_module.swiftmodule:
             inputs.append(swift_module.swiftmodule)
 
         if include_interfaces:
@@ -208,7 +205,7 @@ def create_compilation_context(defines, srcs, transitive_modules):
         swift_module = module.swift
         if not swift_module:
             continue
-        if type(swift_module.swiftmodule) == "File":
+        if swift_module.swiftmodule:
             swiftmodules.append(swift_module.swiftmodule)
         if swift_module.defines:
             defines_set = sets.union(
@@ -333,7 +330,7 @@ def compile_module_interface(
         swift_module = module.swift
         if not swift_module:
             continue
-        if type(swift_module.swiftmodule) == "File":
+        if swift_module.swiftmodule:
             transitive_swiftmodules.append(swift_module.swiftmodule)
     transitive_swift_dependency_inputs_list = transitive_swift_dependency_inputs(
         transitive_modules,
@@ -725,7 +722,7 @@ def compile(
         swift_module = module.swift
         if not swift_module:
             continue
-        if type(swift_module.swiftmodule) == "File":
+        if swift_module.swiftmodule:
             transitive_swiftmodules.append(swift_module.swiftmodule)
         if swift_module.defines:
             defines_set = sets.union(
