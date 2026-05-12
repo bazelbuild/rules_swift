@@ -2083,7 +2083,13 @@ def _swift_module_search_path_map_fn(module):
         The dirname of the module's `.swiftmodule` file.
     """
     if module.swift:
-        search_path = module.swift.swiftmodule.dirname
+        # `system_swiftmodule` stores the prebuilt SDK path as a placeholder
+        # string here (no Bazel `File`); `paths.dirname` works on both.
+        swiftmodule = module.swift.swiftmodule
+        if type(swiftmodule) == "File":
+            search_path = swiftmodule.dirname
+        else:
+            search_path = paths.dirname(swiftmodule)
 
         # If the dirname also ends in .swiftmodule, remove it as well so that
         # the compiler finds the module *directory*.

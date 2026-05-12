@@ -21,7 +21,6 @@ load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 
 def _system_swiftmodule_impl(ctx):
-    swiftmodule = ctx.file.swiftmodule
     deps = ctx.attr.modules
     swift_infos = get_providers(deps, SwiftInfo)
     cc_info = cc_common.merge_cc_infos(cc_infos = [
@@ -37,12 +36,12 @@ def _system_swiftmodule_impl(ctx):
         swift = create_swift_module_inputs(
             swiftdoc = None,
             swiftinterface = None,
-            swiftmodule = swiftmodule,
+            swiftmodule = ctx.attr.swiftmodule,
         ),
     )
 
     return [
-        DefaultInfo(files = depset([swiftmodule])),
+        DefaultInfo(),
         SwiftInfo(
             modules = [module_context],
             swift_infos = swift_infos,
@@ -71,21 +70,23 @@ recurse into the SDK module graph from consumers.
             mandatory = False,
             providers = [[CcInfo, SwiftInfo]],
         ),
-        "swiftmodule": attr.label(
-            allow_single_file = True,
+        "swiftmodule": attr.string(
             doc = """\
-The prebuilt `.swiftmodule` file from the toolchain to surface directly. This
-file is consumed without recompilation and lands in the consumer's explicit
-module map as the `modulePath` for this Swift module.
+Path to the prebuilt `.swiftmodule` file shipped by the toolchain (typically
+under `<toolchain>/usr/lib/swift/<platform>/prebuilt-modules/<sdk-version>/`).
+The string flows directly into the consumer's explicit Swift module map as
+the `modulePath`; the worker substitutes `__BAZEL_XCODE_SDKROOT__` and
+`__BAZEL_XCODE_DEVELOPER_DIR__` placeholders in the JSON map at action time
+so swiftc can open the SDK file without Bazel staging it as an input.
 """,
             mandatory = True,
         ),
     },
     doc = """\
-Surfaces a prebuilt SDK `.swiftmodule` (typically from
-`<toolchain>/usr/lib/swift/<platform>/prebuilt-modules/<sdk-version>/`) as a
-Bazel `File` so consumers can reference it via the explicit Swift module map
-without paying a per-target interface compile.
+Surfaces a prebuilt SDK `.swiftmodule` so consumers can reference it via the
+explicit Swift module map without paying a per-target interface compile. The
+path is treated like `system_swiftinterface`'s interface path: a placeholder
+string resolved at action time, not a Bazel-tracked input.
 """,
     implementation = _system_swiftmodule_impl,
 )

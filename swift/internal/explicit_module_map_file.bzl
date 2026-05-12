@@ -52,7 +52,16 @@ def write_explicit_swift_module_map_file(
             swift_context = module_context.swift
             if swift_context.swiftmodule:
                 has_swift_description = True
-                module_description["modulePath"] = swift_context.swiftmodule.path
+                # `system_swiftmodule` passes a placeholder string here (the
+                # toolchain-resolved prebuilt path) instead of a `File`. The
+                # worker substitutes `__BAZEL_XCODE_SDKROOT__` etc. inside
+                # the rendered JSON at action time, so writing the string
+                # through unchanged is correct.
+                module_description["modulePath"] = getattr(
+                    swift_context.swiftmodule,
+                    "path",
+                    swift_context.swiftmodule,
+                )
 
         has_clang_description = (
             "clangModulePath" in module_description or
