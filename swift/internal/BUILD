@@ -350,6 +350,18 @@ bzl_library(
 )
 
 bzl_library(
+    name = "system_swiftmodule",
+    srcs = ["system_swiftmodule.bzl"],
+    visibility = ["//swift:__subpackages__"],
+    deps = [
+        ":utils",
+        "//swift:providers",
+        "//swift/internal:system_module_transition",
+        "@rules_cc//cc/common",
+    ],
+)
+
+bzl_library(
     name = "action_names",
     srcs = ["action_names.bzl"],
     visibility = ["//swift:__subpackages__"],

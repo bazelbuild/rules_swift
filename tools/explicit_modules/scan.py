@@ -105,9 +105,15 @@ load(
     "system_clang_module",
     "system_module_group",
     "system_swiftinterface",
+    "system_swiftmodule",
 )
 
 package(default_visibility = ["//visibility:public"])
+
+# Prebuilt SDK swiftmodules are symlinked into this directory by the
+# `xcode_explicit_module_repo` repository rule and consumed by
+# `system_swiftmodule(...)` targets emitted below.
+exports_files(glob(["prebuilt-modules/**"], allow_empty = True))
 
 swift_cross_import_overlay_group(name = "_empty_cross_import_overlays")
 
@@ -286,6 +292,10 @@ class _Module:
         default_factory=dict,
         compare=False,
     )
+    prebuilt_swiftmodule_paths_by_cpu: dict[str, str] = field(
+        default_factory=dict,
+        compare=False,
+    )
     deps_by_cpu: defaultdict[str, set[str]] = field(
         default_factory=lambda: defaultdict(set),
         compare=False,
@@ -307,9 +317,23 @@ class _Module:
         self.swiftinterface_paths_by_cpu[cpu] = swiftinterface_path
         self.is_framework = self.is_framework or is_framework
 
+    def set_prebuilt_swiftmodule(
+        self,
+        *,
+        cpu: str,
+        is_framework: bool,
+        swiftmodule_path: str,
+    ) -> None:
+        self.prebuilt_swiftmodule_paths_by_cpu[cpu] = swiftmodule_path
+        self.is_framework = self.is_framework or is_framework
+
     @property
     def all_dependencies(self) -> set[str]:
         return set().union(*self.deps_by_cpu.values())
+
+    @property
+    def should_use_prebuilt_swiftmodule(self) -> bool:
+        return bool(self.prebuilt_swiftmodule_paths_by_cpu)
 
     @property
     def should_compile_swiftinterface(self) -> bool:
@@ -345,6 +369,38 @@ class _Module:
 
         out.write("    }),\n")
 
+    def prebuilt_swiftmodule_link_paths_by_cpu(self) -> dict[str, str]:
+        """Per-cpu repo-relative paths where prebuilt swiftmodules will be symlinked."""
+        result = {}
+        for cpu, source in self.prebuilt_swiftmodule_paths_by_cpu.items():
+            basename = os.path.basename(source)
+            result[cpu] = f"prebuilt-modules/{self.sdk}/{self.name}.swiftmodule/{basename}"
+        return result
+
+    def prebuilt_swiftmodule_manifest_entries(self) -> list[tuple[str, str]]:
+        """(link_path, target_path) pairs for the prebuilt-module symlink manifest."""
+        seen = {}
+        for cpu, target in self.prebuilt_swiftmodule_paths_by_cpu.items():
+            link = self.prebuilt_swiftmodule_link_paths_by_cpu()[cpu]
+            seen[link] = target
+        return sorted(seen.items())
+
+    def _render_swift_label_attr(
+        self,
+        out: TextIO,
+        *,
+        name: str,
+        labels_by_cpu: dict[str, str],
+    ) -> None:
+        unique = set(labels_by_cpu.values())
+        if len(unique) == 1:
+            out.write(f'    {name} = "{next(iter(unique))}",\n')
+            return
+        out.write(f"    {name} = select({{\n")
+        for cpu, label in sorted(labels_by_cpu.items()):
+            out.write(f'        "{cpu}": "{label}",\n')
+        out.write("    }),\n")
+
     def render_target(self, out: TextIO) -> None:
         if self.module_type == "clang":
             assert self.module_map_path
@@ -364,14 +420,31 @@ class _Module:
             out.write(")\n")
         elif self.module_type == "swift":
             out.write("\n")
-            if self.should_compile_swiftinterface:
+            if self.should_use_prebuilt_swiftmodule:
+                out.write("system_swiftmodule(\n")
+            elif self.should_compile_swiftinterface:
                 out.write("system_swiftinterface(\n")
             else:
                 out.write("system_module_group(\n")
             out.write(
                 f'    name = "{_canonical_name(self.name, self.sdk, self.module_type)}",\n'
             )
-            if self.should_compile_swiftinterface:
+            if self.should_use_prebuilt_swiftmodule:
+                if self.is_framework:
+                    out.write("    is_framework = True,\n")
+                out.write(f'    module_name = "{self.name}",\n')
+                self._render_deps(out)
+                _write_transition_attrs(
+                    out,
+                    sdk=self.sdk,
+                    sdk_version=self.sdk_version,
+                )
+                self._render_swift_label_attr(
+                    out,
+                    name="swiftmodule",
+                    labels_by_cpu=self.prebuilt_swiftmodule_link_paths_by_cpu(),
+                )
+            elif self.should_compile_swiftinterface:
                 if self.is_framework:
                     out.write("    is_framework = True,\n")
                 out.write(f'    module_name = "{self.name}",\n')
@@ -442,16 +515,25 @@ def _parse_output(
 
         module.module_map_path = module.module_map_path or module_map_path
         if module_type == "swift":
-            # Only route Swift modules through `system_swiftinterface` when
-            # the toolchain has no prebuilt `.swiftmodule` available. SDK
-            # frameworks like AVFoundation reach `os` (and other modules)
-            # implicitly during interface compilation but don't list them
-            # in `-scan-dependencies` output, so the explicit-map compile
-            # fails with `module 'os' is needed but has not been provided`.
-            # Routing prebuilt-having modules through `system_module_group`
-            # avoids the per-module interface compile entirely.
-            has_prebuilt_swiftmodule = bool(details.get("compiledModuleCandidates", []))
-            if not has_prebuilt_swiftmodule:
+            # Prefer the prebuilt `.swiftmodule` shipped in the toolchain
+            # over compiling from textual interface: the prebuilt is just a
+            # file the consumer can reference via the explicit module map's
+            # `modulePath`, with no per-target compile action. The interface
+            # path is only used as a fallback when the toolchain ships no
+            # prebuilt for this module (e.g. `Cxx`, `CxxStdlib`,
+            # `Playgrounds`). Routing prebuilt-having modules through the
+            # prebuilt also sidesteps the swiftc scanner's gap of not
+            # reporting transitive deps of an interface compile (e.g.
+            # AVFoundation's interface implicitly reaches `os` but the
+            # scanner doesn't surface that).
+            candidates = details.get("compiledModuleCandidates", [])
+            if candidates:
+                module.set_prebuilt_swiftmodule(
+                    cpu=cpu,
+                    is_framework=bool(details.get("isFramework", False)),
+                    swiftmodule_path=candidates[0],
+                )
+            elif details.get("moduleInterfacePath"):
                 module.set_swiftinterface(
                     cpu=cpu,
                     is_framework=bool(details.get("isFramework", False)),
@@ -731,7 +813,16 @@ def _discover_all_modules(
     )
     _render_all_modules_group(all_module_names, sdk, deployment_target, buf)
 
-    return buf.getvalue(), all_module_names | {f"{n}_clang" for n in clang_names}
+    prebuilt_manifest: list[tuple[str, str]] = []
+    for module in all_modules:
+        if module.module_type == "swift" and module.should_use_prebuilt_swiftmodule:
+            prebuilt_manifest.extend(module.prebuilt_swiftmodule_manifest_entries())
+
+    return (
+        buf.getvalue(),
+        all_module_names | {f"{n}_clang" for n in clang_names},
+        prebuilt_manifest,
+    )
 
 
 def _parse_exclude_modules(values: list[str]) -> dict[str, set[str]]:
@@ -779,6 +870,16 @@ def _main() -> None:
         default=None,
         # Internal flag used by the `system_sdk` module extension; not part
         # of the user-facing CLI.
+        help=argparse.SUPPRESS,
+    )
+    parser.add_argument(
+        "--prebuilt-modules-manifest",
+        type=Path,
+        default=None,
+        # Internal flag: writes a JSON list of `{link, target}` pairs that
+        # the repository rule should symlink into the generated repo so the
+        # `system_swiftmodule(swiftmodule = ...)` labels resolve to real
+        # Bazel files. Not part of the user-facing CLI.
         help=argparse.SUPPRESS,
     )
     parser.add_argument(
@@ -839,6 +940,7 @@ def _main() -> None:
     all_modules_by_sdk: dict[str, set[str]] = {}
     all_modules: set[str] = set()
     per_sdk_text: dict[str, str] = {}
+    prebuilt_manifest: dict[str, str] = {}
     with ThreadPoolExecutor(max_workers=len(sdk_names)) as pool:
         futures = {
             pool.submit(
@@ -851,10 +953,17 @@ def _main() -> None:
         }
         for fut in as_completed(futures):
             sdk = futures[fut]
-            output, modules = fut.result()
+            output, modules, prebuilt_entries = fut.result()
             per_sdk_text[sdk] = output
             all_modules_by_sdk[sdk] = modules
             all_modules |= modules
+            for link, target in prebuilt_entries:
+                existing = prebuilt_manifest.get(link)
+                if existing is not None and existing != target:
+                    raise SystemExit(
+                        f"prebuilt-module symlink conflict: {link} -> {existing} vs {target}"
+                    )
+                prebuilt_manifest[link] = target
 
     for sdk in sdk_names:
         buf.write(per_sdk_text[sdk])
@@ -900,6 +1009,14 @@ def _main() -> None:
     if args.module_names is not None:
         with open(args.module_names, "w") as f:
             json.dump(sorted(all_modules), f, indent=2)
+
+    if args.prebuilt_modules_manifest is not None:
+        manifest = [
+            {"link": link, "target": prebuilt_manifest[link]}
+            for link in sorted(prebuilt_manifest)
+        ]
+        with open(args.prebuilt_modules_manifest, "w") as f:
+            json.dump(manifest, f, indent=2)
 
 
 if __name__ == "__main__":

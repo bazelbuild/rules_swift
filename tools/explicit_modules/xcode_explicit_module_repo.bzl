@@ -47,6 +47,8 @@ def _xcode_explicit_module_repo_impl(rctx):
             "BUILD.bazel",
             "--module-names",
             "module_names.json",
+            "--prebuilt-modules-manifest",
+            "prebuilt_modules.json",
         ] + _exclude_module_args(rctx.attr.exclude_modules) + list(rctx.attr.sdks),
         environment = {"DEVELOPER_DIR": developer_dir},
     )
@@ -58,6 +60,16 @@ def _xcode_explicit_module_repo_impl(rctx):
                 result.stderr,
             ),
         )
+
+    # Surface every prebuilt SDK swiftmodule as a real Bazel `File` so
+    # `system_swiftmodule(swiftmodule = ...)` labels resolve. The scanner
+    # records each per-cpu prebuilt path in `prebuilt_modules.json`; we
+    # symlink the toolchain file into the repo at the matching relative
+    # path. Symlinking (rather than copying) is cheap and avoids dragging
+    # hundreds of MB of swiftmodules into the repo cache.
+    manifest = json.decode(rctx.read("prebuilt_modules.json"))
+    for entry in manifest:
+        rctx.symlink(entry["target"], entry["link"])
 
 xcode_explicit_module_repo = repository_rule(
     implementation = _xcode_explicit_module_repo_impl,

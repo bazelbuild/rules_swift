@@ -30,6 +30,7 @@ load(
 load("//swift/internal:system_clang_module.bzl", _system_clang_module = "system_clang_module")
 load("//swift/internal:system_module_group.bzl", _system_module_group = "system_module_group")
 load("//swift/internal:system_swiftinterface.bzl", _system_swiftinterface = "system_swiftinterface")
+load("//swift/internal:system_swiftmodule.bzl", _system_swiftmodule = "system_swiftmodule")
 load(
     ":providers.bzl",
     _SwiftInfo = "SwiftInfo",
@@ -103,6 +104,7 @@ swift_test = _swift_test
 system_clang_module = _system_clang_module
 system_module_group = _system_module_group
 system_swiftinterface = _system_swiftinterface
+system_swiftmodule = _system_swiftmodule
 universal_swift_compiler_plugin = _universal_swift_compiler_plugin
 
 # Re-export public aspects.
