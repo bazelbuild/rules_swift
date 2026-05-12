@@ -429,12 +429,7 @@ transition_binary(
 
 swift_binary(
     name = "cross_import_overlay",
-    srcs = [
-        # NOTE: The current API requires a cross import overlay, but we might
-        # need to find another one in the future if this one moves.
-        "cross_import_overlay.swift",
-        "main.swift",
-    ],
+    srcs = ["main.swift"],
     copts = ["-suppress-warnings"],
     tags = FIXTURE_TAGS,
     target_compatible_with = select({
@@ -468,12 +463,7 @@ swift_library(
 
 swift_test(
     name = "cross_import_overlay_dep_pollution",
-    srcs = [
-        # NOTE: The current API requires a cross import overlay, but we might
-        # need to find another one in the future if this one moves.
-        "cross_import_overlay_pollution.swift",
-        "main.swift",
-    ],
+    srcs = ["main.swift"],
     discover_tests = False,
     tags = FIXTURE_TAGS,
     target_compatible_with = ["@platforms//os:macos"],
