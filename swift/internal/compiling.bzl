@@ -90,15 +90,21 @@ load(":wmo.bzl", "find_num_threads_flag_value", "is_wmo_manually_requested")
 # SWIFT_FEATURE_VFSOVERLAY is enabled.
 _SWIFTMODULES_VFS_ROOT = "/__build_bazel_rules_swift/swiftmodules"
 
-def transitive_swift_dependency_inputs(transitive_modules):
+def transitive_swift_dependency_inputs(transitive_modules, include_interfaces = True):
     """Returns Swift dependency artifacts that must be present in the sandbox.
 
     Args:
         transitive_modules: A list of transitive Swift module contexts.
+        include_interfaces: If True (the default), include the textual
+            `.swiftinterface` (or `.private.swiftinterface`) for each
+            dependency in addition to the binary `.swiftmodule`. When the
+            consumer is using `swift.use_explicit_swift_module_map`, the
+            binary `.swiftmodule` is sufficient and the interface files are
+            unused inputs that only inflate the action's sandbox.
 
     Returns:
-        A list of `.swiftmodule` files and the preferred textual interface file
-        for each Swift dependency.
+        A list of `.swiftmodule` files and (when `include_interfaces` is
+        True) the preferred textual interface file for each Swift dependency.
     """
     inputs = []
 
@@ -110,12 +116,13 @@ def transitive_swift_dependency_inputs(transitive_modules):
         if swift_module.swiftmodule:
             inputs.append(swift_module.swiftmodule)
 
-        interface_file = (
-            swift_module.private_swiftinterface or
-            swift_module.swiftinterface
-        )
-        if interface_file:
-            inputs.append(interface_file)
+        if include_interfaces:
+            interface_file = (
+                swift_module.private_swiftinterface or
+                swift_module.swiftinterface
+            )
+            if interface_file:
+                inputs.append(interface_file)
 
     return inputs
 
@@ -325,6 +332,10 @@ def compile_module_interface(
         transitive_swiftmodules.append(swift_module.swiftmodule)
     transitive_swift_dependency_inputs_list = transitive_swift_dependency_inputs(
         transitive_modules,
+        include_interfaces = not is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP,
+        ),
     )
 
     if clang_module:
@@ -717,6 +728,10 @@ def compile(
             )
     transitive_swift_dependency_inputs_list = transitive_swift_dependency_inputs(
         transitive_modules,
+        include_interfaces = not is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP,
+        ),
     )
 
     # We need this when generating the VFS overlay file and also when

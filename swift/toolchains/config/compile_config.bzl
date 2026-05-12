@@ -924,14 +924,35 @@ def compile_action_configs(
             features = [SWIFT_FEATURE_USE_C_MODULES],
             not_features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],  # If this feature is enabled we still use this file just with more contents
         ),
-        # TODO: Pass through system modules and pass this to all actions
-        # ActionConfigInfo(
-        #     actions = [SWIFT_ACTION_COMPILE_MODULE_INTERFACE],
-        #     configurators = [
-        #         add_arg("-disable-implicit-swift-modules"),
-        #     ],
-        #     features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
-        # ),
+        # `-disable-implicit-swift-modules` forbids swiftc from doing
+        # implicit Swift module loading on every invocation, which is the
+        # main performance gap for sandboxed (non-worker) explicit-module
+        # builds vs. implicit-module builds with persistent workers. This
+        # requires that every Swift module dependency, including the
+        # standard library and core system modules (`Swift`, `_Concurrency`,
+        # `_StringProcessing`, `SwiftOnoneSupport`, ...), is routed through
+        # the explicit module map. `swift.add_default_precompiled_modules`
+        # is what causes the SDK system_modules dep to flow into every
+        # consumer's transitive deps, so its swiftmodules land in the
+        # explicit map JSON; without it, modules like `SwiftOnoneSupport`
+        # (loaded automatically by swiftc under `-Onone`) are missing and
+        # the compile fails.
+        ActionConfigInfo(
+            actions = all_compile_action_names() + [SWIFT_ACTION_DUMP_AST],
+            configurators = [add_arg("-Xfrontend", "-disable-implicit-swift-modules")],
+            features = [
+                SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP,
+                SWIFT_FEATURE_ADD_DEFAULT_PRECOMPILED_MODULES,
+            ],
+        ),
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE_MODULE_INTERFACE],
+            configurators = [add_arg("-disable-implicit-swift-modules")],
+            features = [
+                SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP,
+                SWIFT_FEATURE_ADD_DEFAULT_PRECOMPILED_MODULES,
+            ],
+        ),
         ActionConfigInfo(
             actions = all_compile_action_names() + [
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,

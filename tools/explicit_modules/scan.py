@@ -376,6 +376,11 @@ class _Module:
                     out.write("    is_framework = True,\n")
                 out.write(f'    module_name = "{self.name}",\n')
                 self._render_deps(out)
+                _write_transition_attrs(
+                    out,
+                    sdk=self.sdk,
+                    sdk_version=self.sdk_version,
+                )
                 _write_string_attr(
                     out,
                     name="system_swiftinterface",
@@ -437,6 +442,14 @@ def _parse_output(
 
         module.module_map_path = module.module_map_path or module_map_path
         if module_type == "swift":
+            # Only route Swift modules through `system_swiftinterface` when
+            # the toolchain has no prebuilt `.swiftmodule` available. SDK
+            # frameworks like AVFoundation reach `os` (and other modules)
+            # implicitly during interface compilation but don't list them
+            # in `-scan-dependencies` output, so the explicit-map compile
+            # fails with `module 'os' is needed but has not been provided`.
+            # Routing prebuilt-having modules through `system_module_group`
+            # avoids the per-module interface compile entirely.
             has_prebuilt_swiftmodule = bool(details.get("compiledModuleCandidates", []))
             if not has_prebuilt_swiftmodule:
                 module.set_swiftinterface(

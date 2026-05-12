@@ -216,8 +216,12 @@ def module_interface_test_suite(name, tags = []):
         tags = all_tags,
         mnemonic = "SwiftCompileModuleInterface",
         expected_inputs = [
-            "ToyModule.swiftinterface",
+            # The action's own source interface and the JSON map are required;
+            # dependency `.swiftinterface` files are intentionally omitted under
+            # `swift.use_explicit_swift_module_map` because the binary
+            # `.swiftmodule` listed in the map is sufficient.
             "DependentToyModule.swiftinterface",
+            "ToyModule.swiftmodule",
             "dependent_toy_module.swift-explicit-module-map.json",
         ],
         target_under_test = "//test/fixtures/module_interface:dependent_toy_module",

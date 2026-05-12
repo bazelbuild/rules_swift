@@ -22,8 +22,12 @@ load(
     "SWIFT_FEATURE_EMIT_C_MODULE",
     "SWIFT_FEATURE_SUPPRESS_WARNINGS",
     "SWIFT_FEATURE_SYSTEM_MODULE",
+    "SWIFT_FEATURE_ADD_DEFAULT_PRECOMPILED_MODULES",
     "SWIFT_FEATURE_USE_C_MODULES",
+    "SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP",
+    "SWIFT_FEATURE_VFSOVERLAY",
 )
+load("@build_bazel_rules_swift//swift/internal:system_module_transition.bzl", "sdk_min_os_transition", "sdk_min_os_transition_attrs")
 load("@build_bazel_rules_swift//swift/internal:toolchain_utils.bzl", "SWIFT_SDK_TOOLCHAIN_TYPE")
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
@@ -54,6 +58,31 @@ def _system_swiftinterface_impl(ctx):
             SWIFT_FEATURE_SUPPRESS_WARNINGS,  # System swiftinterface files have many warnings that we can't do anything about
             SWIFT_FEATURE_SYSTEM_MODULE,
             SWIFT_FEATURE_USE_C_MODULES,
+            # The interface compile must always run with the explicit
+            # module map and `-disable-implicit-swift-modules`. SDK Swift
+            # interfaces strict-check that they're being compiled by the
+            # same compiler that produced the SDK; the implicit-modules
+            # path can drift on a swiftc/SDK version mismatch and fail
+            # the check. The explicit-map path threads each Swift
+            # dependency in deliberately, which is what the rest of the
+            # interface validation expects.
+            SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP,
+        ],
+        # The interface compile is internal explicit-modules infrastructure;
+        # vfsoverlay is mutually exclusive with the explicit module map (see
+        # `compile_module_interface`), and the consumer's choice of vfsoverlay
+        # has no bearing on how this SDK module is built.
+        #
+        # `add_default_precompiled_modules` is force-disabled here so that
+        # `-disable-implicit-swift-modules` does *not* fire for SDK
+        # interface compiles. The scanner only declares the direct module
+        # deps in `modules = [...]`; with implicit loading off, swiftc
+        # rejects transitive references like `os` that are reachable from
+        # the consumer's `system_modules` dep but not from the
+        # `system_swiftinterface` rule's own deps.
+        unsupported_features = [
+            SWIFT_FEATURE_ADD_DEFAULT_PRECOMPILED_MODULES,
+            SWIFT_FEATURE_VFSOVERLAY,
         ],
         swift_toolchain = swift_toolchain,
     )
@@ -95,7 +124,8 @@ def _system_swiftinterface_impl(ctx):
     ]
 
 system_swiftinterface = rule(
-    attrs = {
+    cfg = sdk_min_os_transition,
+    attrs = sdk_min_os_transition_attrs() | {
         "is_framework": attr.bool(
             default = False,
             doc = "Whether the compiled Swift interface represents a framework module.",
