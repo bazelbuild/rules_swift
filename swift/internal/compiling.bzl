@@ -136,7 +136,6 @@ def _explicit_swift_module_map_info(
 
         module_contexts = transitive_modules
         filename = "{}.swift-explicit-module-map.json".format(target_name)
-        inputs = []
     elif is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_USE_C_MODULES,
@@ -152,7 +151,6 @@ def _explicit_swift_module_map_info(
             return struct(file = None, inputs = [])
 
         filename = "{}.swift-system-explicit-module-map.json".format(target_name)
-        inputs = transitive_swift_dependency_inputs(module_contexts)
     else:
         return struct(file = None, inputs = [])
 
@@ -164,7 +162,7 @@ def _explicit_swift_module_map_info(
     )
     return struct(
         file = explicit_swift_module_map_file,
-        inputs = inputs,
+        inputs = transitive_swift_dependency_inputs(module_contexts),
     )
 
 def create_compilation_context(defines, srcs, transitive_modules):
@@ -378,7 +376,7 @@ def compile_module_interface(
         bin_dir = feature_configuration._bin_dir,
         cc_compilation_context = merged_compilation_context,
         explicit_swift_module_map_file = explicit_swift_module_map_info.file,
-        explicit_swift_module_map_inputs = explicit_swift_module_map_info.inputs or transitive_swift_dependency_inputs_list,
+        explicit_swift_module_map_inputs = explicit_swift_module_map_info.inputs,
         genfiles_dir = feature_configuration._genfiles_dir,
         indexstore_directory = indexstore_directory,
         is_swift = True,
