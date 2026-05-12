@@ -114,6 +114,28 @@ def precompiled_modules_test_suite(name, tags = []):
         ],
     )
 
+    _explicit_precompiled_modules_test(
+        name = "{}_cross_import_overlay_dep_pollution_no_default_precompiled_modules_test".format(name),
+        tags = all_tags,
+        mnemonic = "SwiftCompile",
+        target_under_test = "//test/fixtures/precompiled_modules:cross_import_overlay_dep_pollution",
+        expected_argv = [
+            "-Xfrontend -disable-cross-import-overlay-search",
+            "-Xfrontend -swift-module-cross-import -Xfrontend Testing -Xfrontend",  # Any cross module import is ok, different Xcode version have different ones
+        ],
+    )
+
+    _precompiled_modules_test(
+        name = "{}_cross_import_overlay_dep_pollution_default_precompiled_modules_test".format(name),
+        tags = all_tags,
+        mnemonic = "SwiftCompile",
+        target_under_test = "//test/fixtures/precompiled_modules:cross_import_overlay_dep_pollution",
+        expected_argv = [
+            "-Xfrontend -disable-cross-import-overlay-search",
+            "-Xfrontend -swift-module-cross-import -Xfrontend Testing -Xfrontend",  # Any cross module import is ok, different Xcode version have different ones
+        ],
+    )
+
     build_test(
         name = "{}_build_test".format(name),
         targets = [

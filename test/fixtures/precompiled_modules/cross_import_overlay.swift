@@ -20,5 +20,3 @@ struct Pin: Identifiable {
     let id = "1"
     let coordinate: CLLocationCoordinate2D
 }
-
-
