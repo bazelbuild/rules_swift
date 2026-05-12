@@ -5,6 +5,7 @@ load(
     "//test/fixtures/precompiled_modules:cross_platform.bzl",
     "CROSS_PLATFORM_TARGETS",
 )
+load("//test/hermetic_pcm:xcode_version_at_least.bzl", "xcode_version_at_least")
 load(
     "//test/rules:action_command_line_test.bzl",
     "make_action_command_line_test_rule",
@@ -38,6 +39,16 @@ def precompiled_modules_test_suite(name, tags = []):
         tags: Additional tags to apply to each test.
     """
     all_tags = [name] + tags
+
+    xcode_version_at_least(
+        name = "xcode_at_least_26_4",
+        minimum_version = "26.4",
+    )
+
+    native.config_setting(
+        name = "has_testing_appkit_overlay",
+        flag_values = {":xcode_at_least_26_4": "True"},
+    )
 
     _precompiled_modules_test(
         name = "{}_use_c_modules_flags_test".format(name),
@@ -136,6 +147,22 @@ def precompiled_modules_test_suite(name, tags = []):
         ],
     )
 
+    _explicit_precompiled_modules_test(
+        name = "{}_linking_cross_import_overlay_transitioned_test".format(name),
+        tags = all_tags,
+        mnemonic = "SwiftCompile",
+        target_under_test = "//test/fixtures/precompiled_modules:linking_cross_import_overlay",
+        expected_argv = [
+            "-Xwrapped-swift=-driver-explicit-swift-module-map-file=$(BIN_DIR)/test/fixtures/precompiled_modules/linking_cross_import_overlay.swift-system-explicit-module-map.json",
+            "-Xfrontend -disable-cross-import-overlay-search",
+            "-Xfrontend -swift-module-cross-import -Xfrontend Testing -Xfrontend __BAZEL_XCODE_DEVELOPER_DIR__/Platforms/MacOSX.platform/Developer/Library/Frameworks/Testing.framework/Modules/Testing.swiftcrossimport/AppKit.swiftoverlay",
+        ],
+        target_compatible_with = select({
+            ":has_testing_appkit_overlay": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
+    )
+
     build_test(
         name = "{}_build_test".format(name),
         targets = [
@@ -143,6 +170,7 @@ def precompiled_modules_test_suite(name, tags = []):
             "//test/fixtures/precompiled_modules:foundation_requires_explicit_dep_transitioned",
             "//test/fixtures/precompiled_modules:hello",
             "//test/fixtures/precompiled_modules:hello_with_explicit_deps_transitioned",
+            "//test/fixtures/precompiled_modules:linking_cross_import_overlay_transitioned",
             "//test/fixtures/precompiled_modules:lower_version_bin_transitioned",
             "//test/fixtures/precompiled_modules:min_os_bin_transitioned",
             "//test/fixtures/precompiled_modules:objc_interop_bin_transitioned",

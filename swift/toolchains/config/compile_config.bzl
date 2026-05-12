@@ -902,6 +902,28 @@ def compile_action_configs(
             ],
             features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
         ),
+        ActionConfigInfo(
+            actions = all_compile_action_names() + [
+                SWIFT_ACTION_DUMP_AST,
+            ],
+            configurators = [
+                _explicit_swift_module_map_configurator,
+            ],
+            features = [SWIFT_FEATURE_USE_C_MODULES],
+            not_features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],  # If this feature is enabled we still use this file just with more contents
+        ),
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE_MODULE_INTERFACE],
+            configurators = [
+                lambda prerequisites, args: _explicit_swift_module_map_configurator(
+                    prerequisites,
+                    args,
+                    is_frontend = True,
+                ),
+            ],
+            features = [SWIFT_FEATURE_USE_C_MODULES],
+            not_features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],  # If this feature is enabled we still use this file just with more contents
+        ),
         # TODO: Pass through system modules and pass this to all actions
         # ActionConfigInfo(
         #     actions = [SWIFT_ACTION_COMPILE_MODULE_INTERFACE],
@@ -2199,6 +2221,9 @@ def _dependencies_swiftmodules_vfsoverlay_configurator(prerequisites, args, is_f
 
 def _explicit_swift_module_map_configurator(prerequisites, args, is_frontend = False):
     """Adds the explicit Swift module map file to the command line."""
+    if not prerequisites.explicit_swift_module_map_file:
+        return ConfigResultInfo()
+
     if is_frontend:
         args.add(
             prerequisites.explicit_swift_module_map_file,
@@ -2210,7 +2235,7 @@ def _explicit_swift_module_map_configurator(prerequisites, args, is_frontend = F
             format = "-Xwrapped-swift=-driver-explicit-swift-module-map-file=%s",
         )
     return ConfigResultInfo(
-        inputs = prerequisites.transitive_swift_dependency_inputs + [
+        inputs = prerequisites.explicit_swift_module_map_inputs + [
             prerequisites.explicit_swift_module_map_file,
         ],
     )
