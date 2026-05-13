@@ -1,5 +1,6 @@
 """Tests for the default precompiled-modules injection."""
 
+load("@bazel_skylib//lib:unittest.bzl", "analysistest", "unittest")
 load("@bazel_skylib//rules:build_test.bzl", "build_test")
 load(
     "//test/fixtures/precompiled_modules:cross_platform.bzl",
@@ -27,6 +28,164 @@ _explicit_precompiled_modules_test = make_action_command_line_test_rule(
             "swift.use_c_modules",
             "swift.emit_c_module",
             "-swift.add_default_precompiled_modules",
+        ],
+    },
+)
+
+def _system_swiftinterface_sdk_min_os_test_impl(ctx):
+    env = analysistest.begin(ctx)
+    actions = analysistest.target_actions(env)
+    matching_actions = [
+        action
+        for action in actions
+        if action.mnemonic == "SwiftCompileModuleInterface"
+    ]
+
+    if len(matching_actions) != 1:
+        unittest.fail(
+            env,
+            "Expected exactly one SwiftCompileModuleInterface action, but found {}. Available actions: {}".format(
+                len(matching_actions),
+                [action.mnemonic for action in actions],
+            ),
+        )
+        return analysistest.end(env)
+
+    argv = matching_actions[0].argv
+    target_triple = None
+    for i in range(len(argv) - 1):
+        if argv[i] == "-target":
+            target_triple = argv[i + 1]
+            break
+
+    if not target_triple:
+        unittest.fail(
+            env,
+            "Expected SwiftCompileModuleInterface action to pass -target. Arguments were: {}".format(argv),
+        )
+        return analysistest.end(env)
+
+    if not target_triple.endswith(ctx.attr.expected_target_suffix):
+        unittest.fail(
+            env,
+            "Expected system Swift interface -target to use the SDK min OS, but got '{}'. Arguments were: {}".format(
+                target_triple,
+                argv,
+            ),
+        )
+
+    return analysistest.end(env)
+
+_system_swiftinterface_macos_sdk_min_os_test = analysistest.make(
+    _system_swiftinterface_sdk_min_os_test_impl,
+    attrs = {
+        "expected_target_suffix": attr.string(mandatory = True),
+    },
+    config_settings = {
+        "//command_line_option:macos_minimum_os": "14.0",
+    },
+)
+
+_system_swiftinterface_ios_sdk_min_os_test = analysistest.make(
+    _system_swiftinterface_sdk_min_os_test_impl,
+    attrs = {
+        "expected_target_suffix": attr.string(mandatory = True),
+    },
+    config_settings = {
+        "//command_line_option:ios_minimum_os": "12.0",
+        "//command_line_option:platforms": [
+            Label("@build_bazel_apple_support//platforms:ios_arm64"),
+        ],
+    },
+)
+
+_system_swiftinterface_ios_simulator_sdk_min_os_test = analysistest.make(
+    _system_swiftinterface_sdk_min_os_test_impl,
+    attrs = {
+        "expected_target_suffix": attr.string(mandatory = True),
+    },
+    config_settings = {
+        "//command_line_option:ios_minimum_os": "12.0",
+        "//command_line_option:platforms": [
+            Label("@build_bazel_apple_support//platforms:ios_sim_arm64"),
+        ],
+    },
+)
+
+_system_swiftinterface_tvos_sdk_min_os_test = analysistest.make(
+    _system_swiftinterface_sdk_min_os_test_impl,
+    attrs = {
+        "expected_target_suffix": attr.string(mandatory = True),
+    },
+    config_settings = {
+        "//command_line_option:tvos_minimum_os": "12.0",
+        "//command_line_option:platforms": [
+            Label("@build_bazel_apple_support//platforms:tvos_arm64"),
+        ],
+    },
+)
+
+_system_swiftinterface_tvos_simulator_sdk_min_os_test = analysistest.make(
+    _system_swiftinterface_sdk_min_os_test_impl,
+    attrs = {
+        "expected_target_suffix": attr.string(mandatory = True),
+    },
+    config_settings = {
+        "//command_line_option:tvos_minimum_os": "12.0",
+        "//command_line_option:platforms": [
+            Label("@build_bazel_apple_support//platforms:tvos_sim_arm64"),
+        ],
+    },
+)
+
+_system_swiftinterface_watchos_sdk_min_os_test = analysistest.make(
+    _system_swiftinterface_sdk_min_os_test_impl,
+    attrs = {
+        "expected_target_suffix": attr.string(mandatory = True),
+    },
+    config_settings = {
+        "//command_line_option:watchos_minimum_os": "9.0",
+        "//command_line_option:platforms": [
+            Label("@build_bazel_apple_support//platforms:watchos_device_arm64"),
+        ],
+    },
+)
+
+_system_swiftinterface_watchos_simulator_sdk_min_os_test = analysistest.make(
+    _system_swiftinterface_sdk_min_os_test_impl,
+    attrs = {
+        "expected_target_suffix": attr.string(mandatory = True),
+    },
+    config_settings = {
+        "//command_line_option:watchos_minimum_os": "9.0",
+        "//command_line_option:platforms": [
+            Label("@build_bazel_apple_support//platforms:watchos_x86_64"),
+        ],
+    },
+)
+
+_system_swiftinterface_visionos_sdk_min_os_test = analysistest.make(
+    _system_swiftinterface_sdk_min_os_test_impl,
+    attrs = {
+        "expected_target_suffix": attr.string(mandatory = True),
+    },
+    config_settings = {
+        "//command_line_option:minimum_os_version": "1.0",
+        "//command_line_option:platforms": [
+            Label("@build_bazel_apple_support//platforms:visionos_arm64"),
+        ],
+    },
+)
+
+_system_swiftinterface_visionos_simulator_sdk_min_os_test = analysistest.make(
+    _system_swiftinterface_sdk_min_os_test_impl,
+    attrs = {
+        "expected_target_suffix": attr.string(mandatory = True),
+    },
+    config_settings = {
+        "//command_line_option:minimum_os_version": "1.0",
+        "//command_line_option:platforms": [
+            Label("@build_bazel_apple_support//platforms:visionos_sim_arm64"),
         ],
     },
 )
@@ -161,6 +320,105 @@ def precompiled_modules_test_suite(name, tags = []):
             ":has_testing_appkit_overlay": [],
             "//conditions:default": ["@platforms//:incompatible"],
         }),
+    )
+
+    _system_swiftinterface_macos_sdk_min_os_test(
+        name = "{}_system_swiftinterface_uses_sdk_min_os_test".format(name),
+        expected_target_suffix = "-apple-macos26.4",
+        tags = all_tags,
+        target_compatible_with = select({
+            "//test:apple_build_tests_enabled": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
+        target_under_test = "//test/fixtures/precompiled_modules:system_swiftinterface_with_sdk_min_os",
+    )
+
+    _system_swiftinterface_ios_sdk_min_os_test(
+        name = "{}_system_swiftinterface_ios_uses_sdk_min_os_test".format(name),
+        expected_target_suffix = "-apple-ios26.4",
+        tags = all_tags,
+        target_compatible_with = select({
+            "//test:apple_build_tests_enabled": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
+        target_under_test = "//test/fixtures/precompiled_modules:system_swiftinterface_ios_with_sdk_min_os",
+    )
+
+    _system_swiftinterface_ios_simulator_sdk_min_os_test(
+        name = "{}_system_swiftinterface_ios_simulator_uses_sdk_min_os_test".format(name),
+        expected_target_suffix = "-apple-ios26.4-simulator",
+        tags = all_tags,
+        target_compatible_with = select({
+            "//test:apple_build_tests_enabled": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
+        target_under_test = "//test/fixtures/precompiled_modules:system_swiftinterface_ios_simulator_with_sdk_min_os",
+    )
+
+    _system_swiftinterface_tvos_sdk_min_os_test(
+        name = "{}_system_swiftinterface_tvos_uses_sdk_min_os_test".format(name),
+        expected_target_suffix = "-apple-tvos26.4",
+        tags = all_tags,
+        target_compatible_with = select({
+            "//test:apple_build_tests_enabled": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
+        target_under_test = "//test/fixtures/precompiled_modules:system_swiftinterface_tvos_with_sdk_min_os",
+    )
+
+    _system_swiftinterface_tvos_simulator_sdk_min_os_test(
+        name = "{}_system_swiftinterface_tvos_simulator_uses_sdk_min_os_test".format(name),
+        expected_target_suffix = "-apple-tvos26.4-simulator",
+        tags = all_tags,
+        target_compatible_with = select({
+            "//test:apple_build_tests_enabled": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
+        target_under_test = "//test/fixtures/precompiled_modules:system_swiftinterface_tvos_simulator_with_sdk_min_os",
+    )
+
+    _system_swiftinterface_watchos_sdk_min_os_test(
+        name = "{}_system_swiftinterface_watchos_uses_sdk_min_os_test".format(name),
+        expected_target_suffix = "-apple-watchos26.4",
+        tags = all_tags,
+        target_compatible_with = select({
+            "//test:apple_build_tests_enabled": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
+        target_under_test = "//test/fixtures/precompiled_modules:system_swiftinterface_watchos_with_sdk_min_os",
+    )
+
+    _system_swiftinterface_watchos_simulator_sdk_min_os_test(
+        name = "{}_system_swiftinterface_watchos_simulator_uses_sdk_min_os_test".format(name),
+        expected_target_suffix = "-apple-watchos26.4-simulator",
+        tags = all_tags,
+        target_compatible_with = select({
+            "//test:apple_build_tests_enabled": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
+        target_under_test = "//test/fixtures/precompiled_modules:system_swiftinterface_watchos_simulator_with_sdk_min_os",
+    )
+
+    _system_swiftinterface_visionos_sdk_min_os_test(
+        name = "{}_system_swiftinterface_visionos_uses_sdk_min_os_test".format(name),
+        expected_target_suffix = "-apple-xros26.4",
+        tags = all_tags,
+        target_compatible_with = select({
+            "//test:apple_build_tests_enabled": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
+        target_under_test = "//test/fixtures/precompiled_modules:system_swiftinterface_visionos_with_sdk_min_os",
+    )
+
+    _system_swiftinterface_visionos_simulator_sdk_min_os_test(
+        name = "{}_system_swiftinterface_visionos_simulator_uses_sdk_min_os_test".format(name),
+        expected_target_suffix = "-apple-xros26.4-simulator",
+        tags = all_tags,
+        target_compatible_with = select({
+            "//test:apple_build_tests_enabled": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
+        target_under_test = "//test/fixtures/precompiled_modules:system_swiftinterface_visionos_simulator_with_sdk_min_os",
     )
 
     build_test(

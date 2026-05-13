@@ -1,6 +1,7 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("@rules_cc//cc:objc_library.bzl", "objc_library")
 load("//mixed_language:mixed_language_library.bzl", "mixed_language_library")
+load("//swift:swift.bzl", "system_swiftinterface")
 load("//swift:swift_binary.bzl", "swift_binary")
 load("//swift:swift_compiler_plugin.bzl", "swift_compiler_plugin")
 load("//swift:swift_import.bzl", "swift_import")
@@ -362,6 +363,139 @@ swift_import(
     swiftinterface = "LowerVersionLib.swiftinterface",  # NOTE: The macOS version in this file _must_ not be the same one we use globally, that is the behavior we're testing
     tags = FIXTURE_TAGS,
     target_compatible_with = ["@platforms//os:macos"],
+)
+
+# Mirrors scan.py output for SDK textual interfaces. The analysis test only
+# inspects the registered argv, so this path is not read.
+system_swiftinterface(
+    name = "system_swiftinterface_with_sdk_min_os",
+    module_name = "Testing",
+    sdk_name = "MacOSX",
+    sdk_version = "26.4",
+    system_swiftinterface = "__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/MacOSX.platform/Developer/Library/Frameworks/Testing.framework/Modules/Testing.swiftmodule/arm64-apple-macos.swiftinterface",
+    tags = FIXTURE_TAGS,
+    target_compatible_with = ["@platforms//os:macos"],
+)
+
+system_swiftinterface(
+    name = "system_swiftinterface_ios_with_sdk_min_os",
+    is_framework = True,
+    module_name = "Testing",
+    sdk_name = "iPhoneOS",
+    sdk_version = "26.4",
+    system_swiftinterface = "__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/iPhoneOS.platform/Developer/Library/Frameworks/Testing.framework/Modules/Testing.swiftmodule/arm64-apple-ios.swiftinterface",
+    tags = FIXTURE_TAGS,
+    target_compatible_with = ["@platforms//os:ios"],
+)
+
+system_swiftinterface(
+    name = "system_swiftinterface_ios_simulator_with_sdk_min_os",
+    is_framework = True,
+    module_name = "Testing",
+    sdk_name = "iPhoneSimulator",
+    sdk_version = "26.4",
+    system_swiftinterface = select({
+        "@platforms//cpu:arm64": "__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks/Testing.framework/Modules/Testing.swiftmodule/arm64-apple-ios-simulator.swiftinterface",
+        "@platforms//cpu:x86_64": "__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks/Testing.framework/Modules/Testing.swiftmodule/x86_64-apple-ios-simulator.swiftinterface",
+    }),
+    tags = FIXTURE_TAGS,
+    target_compatible_with = [
+        "@platforms//os:ios",
+        "@build_bazel_apple_support//constraints:simulator",
+    ],
+)
+
+system_swiftinterface(
+    name = "system_swiftinterface_tvos_with_sdk_min_os",
+    is_framework = True,
+    module_name = "Testing",
+    sdk_name = "AppleTVOS",
+    sdk_version = "26.4",
+    system_swiftinterface = "__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/AppleTVOS.platform/Developer/Library/Frameworks/Testing.framework/Modules/Testing.swiftmodule/arm64-apple-tvos.swiftinterface",
+    tags = FIXTURE_TAGS,
+    target_compatible_with = [
+        "@platforms//os:tvos",
+        "@build_bazel_apple_support//constraints:device",
+    ],
+)
+
+system_swiftinterface(
+    name = "system_swiftinterface_tvos_simulator_with_sdk_min_os",
+    is_framework = True,
+    module_name = "Testing",
+    sdk_name = "AppleTVSimulator",
+    sdk_version = "26.4",
+    system_swiftinterface = select({
+        "@platforms//cpu:arm64": "__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/AppleTVSimulator.platform/Developer/Library/Frameworks/Testing.framework/Modules/Testing.swiftmodule/arm64-apple-tvos-simulator.swiftinterface",
+        "@platforms//cpu:x86_64": "__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/AppleTVSimulator.platform/Developer/Library/Frameworks/Testing.framework/Modules/Testing.swiftmodule/x86_64-apple-tvos-simulator.swiftinterface",
+    }),
+    tags = FIXTURE_TAGS,
+    target_compatible_with = [
+        "@platforms//os:tvos",
+        "@build_bazel_apple_support//constraints:simulator",
+    ],
+)
+
+system_swiftinterface(
+    name = "system_swiftinterface_watchos_with_sdk_min_os",
+    is_framework = True,
+    module_name = "Testing",
+    sdk_name = "WatchOS",
+    sdk_version = "26.4",
+    system_swiftinterface = "__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/WatchOS.platform/Developer/Library/Frameworks/Testing.framework/Modules/Testing.swiftmodule/arm64-apple-watchos.swiftinterface",
+    tags = FIXTURE_TAGS,
+    target_compatible_with = [
+        "@platforms//os:watchos",
+        "@build_bazel_apple_support//constraints:device",
+    ],
+)
+
+system_swiftinterface(
+    name = "system_swiftinterface_watchos_simulator_with_sdk_min_os",
+    is_framework = True,
+    module_name = "Testing",
+    sdk_name = "WatchSimulator",
+    sdk_version = "26.4",
+    system_swiftinterface = select({
+        "@platforms//cpu:arm64": "__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/WatchSimulator.platform/Developer/Library/Frameworks/Testing.framework/Modules/Testing.swiftmodule/arm64-apple-watchos-simulator.swiftinterface",
+        "@platforms//cpu:x86_64": "__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/WatchSimulator.platform/Developer/Library/Frameworks/Testing.framework/Modules/Testing.swiftmodule/x86_64-apple-watchos-simulator.swiftinterface",
+    }),
+    tags = FIXTURE_TAGS,
+    target_compatible_with = [
+        "@platforms//os:watchos",
+        "@build_bazel_apple_support//constraints:simulator",
+    ],
+)
+
+system_swiftinterface(
+    name = "system_swiftinterface_visionos_with_sdk_min_os",
+    is_framework = True,
+    module_name = "Testing",
+    sdk_name = "XROS",
+    sdk_version = "26.4",
+    system_swiftinterface = "__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/XROS.platform/Developer/Library/Frameworks/Testing.framework/Modules/Testing.swiftmodule/arm64-apple-xros.swiftinterface",
+    tags = FIXTURE_TAGS,
+    target_compatible_with = [
+        "@platforms//os:visionos",
+        "@build_bazel_apple_support//constraints:device",
+    ],
+)
+
+system_swiftinterface(
+    name = "system_swiftinterface_visionos_simulator_with_sdk_min_os",
+    is_framework = True,
+    module_name = "Testing",
+    sdk_name = "XRSimulator",
+    sdk_version = "26.4",
+    system_swiftinterface = select({
+        "@platforms//cpu:arm64": "__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/XRSimulator.platform/Developer/Library/Frameworks/Testing.framework/Modules/Testing.swiftmodule/arm64-apple-xros-simulator.swiftinterface",
+        "@platforms//cpu:x86_64": "__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/XRSimulator.platform/Developer/Library/Frameworks/Testing.framework/Modules/Testing.swiftmodule/x86_64-apple-xros-simulator.swiftinterface",
+    }),
+    tags = FIXTURE_TAGS,
+    target_compatible_with = [
+        "@platforms//os:visionos",
+        "@build_bazel_apple_support//constraints:simulator",
+    ],
 )
 
 swift_binary(
