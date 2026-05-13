@@ -52,6 +52,24 @@ cc_library(
 )
 
 cc_library(
+    name = "hermetic_symlink",
+    srcs = ["hermetic_symlink.cc"],
+    hdrs = ["hermetic_symlink.h"],
+    copts = select({
+        "//tools:clang-cl": [
+            "-Xclang=-fno-split-cold-code",
+            "/std=c++17",
+        ],
+        "//tools:msvc": [
+            "/std=c++17",
+        ],
+        "//conditions:default": [
+            "-std=c++17",
+        ],
+    }),
+)
+
+cc_library(
     name = "pcm_hermetic_runner",
     srcs = ["pcm_hermetic_runner.cc"],
     hdrs = ["pcm_hermetic_runner.h"],
@@ -68,6 +86,7 @@ cc_library(
         ],
     }),
     deps = [
+        ":hermetic_symlink",
         "//tools/common:process",
     ],
 )
@@ -100,6 +119,7 @@ cc_library(
         "//conditions:default": [],
     }),
     deps = [
+        ":hermetic_symlink",
         ":pcm_hermetic_runner",
         "//tools/common:bazel_substitutions",
         "//tools/common:file_system",

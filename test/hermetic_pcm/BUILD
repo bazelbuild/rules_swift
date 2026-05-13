@@ -1,6 +1,7 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("@rules_cc//cc:objc_library.bzl", "objc_library")
 load("@rules_shell//shell:sh_test.bzl", "sh_test")
+load("//swift:swift.bzl", "system_swiftinterface")
 load("//swift:swift_compiler_plugin.bzl", "swift_compiler_plugin")
 load("//swift:swift_interop_hint.bzl", "swift_interop_hint")
 load("//swift:swift_library.bzl", "swift_library")
@@ -148,6 +149,41 @@ sh_test(
         ":supports_hermetic_swiftmodule": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
+)
+
+system_swiftinterface(
+    name = "non_xcode_swiftinterface_module",
+    module_name = "LowerVersionLib",
+    modules = [
+        "@system_sdk//:Foundation",
+        "@system_sdk//:Swift",
+        "@system_sdk//:SwiftShims",
+        "@system_sdk//:_Concurrency",
+        "@system_sdk//:_StringProcessing",
+        "@system_sdk//:_SwiftConcurrencyShims",
+    ],
+    swiftinterface = "//test/fixtures/precompiled_modules:LowerVersionLib.swiftinterface",
+    target_compatible_with = ["@platforms//os:macos"],
+)
+
+extract_swiftmodule(
+    name = "non_xcode_swiftinterface_swiftmodule",
+    target = ":non_xcode_swiftinterface_module",
+)
+
+# A swiftinterface outside DEVELOPER_DIR can come from an external framework.
+# It must still be compiled through a relative path so the resulting swiftmodule
+# does not serialize a host-specific absolute source path.
+sh_test(
+    name = "non_xcode_swiftinterface_swiftmodule_test",
+    srcs = ["check_hermetic_swiftmodule.sh"],
+    args = [
+        "$(rootpath :non_xcode_swiftinterface_swiftmodule)",
+        "--no-default-expected",
+        "test/fixtures/precompiled_modules/LowerVersionLib.swiftinterface",
+    ],
+    data = [":non_xcode_swiftinterface_swiftmodule"],
+    target_compatible_with = ["@platforms//os:macos"],
 )
 
 # Same hermeticity check, but the consumer swift_library depends on a

@@ -21,11 +21,11 @@
 #include <vector>
 
 #include "tools/common/process.h"
+#include "tools/worker/hermetic_symlink.h"
 
 namespace {
 
 constexpr const char* kDebugEnv = "RULES_SWIFT_HERMETIC_PCM_DEBUG";
-constexpr const char* kDeveloperDirSymlinkName = "__bazel_pcm_developer_dir";
 
 bool ShouldDropFlagAndValue(const std::string& arg) {
   return arg == "-external-plugin-path" ||
@@ -116,37 +116,6 @@ std::vector<std::string> ParseFrontendCommand(const std::string& output) {
   return TokenizeShellLine(last_line);
 }
 
-bool Symlink(const std::string& target, const std::string& link_name,
-             std::ostream* stderr_stream) {
-  std::filesystem::path link = std::filesystem::current_path() / link_name;
-  std::error_code ec;
-  std::filesystem::create_directory_symlink(target, link, ec);
-  if (!ec) {
-    return true;
-  }
-
-  // With sandboxing disabled, multiple PCM actions share the same execroot
-  // and can race on creation. If the symlink already exists and points at
-  // the same target, use it. We intentionally never remove the symlink: Bazel
-  // cleans the execroot, and removing here would be a new race.
-  if (ec == std::errc::file_exists) {
-    std::error_code read_ec;
-    auto existing = std::filesystem::read_symlink(link, read_ec);
-    if (!read_ec && existing == std::filesystem::path(target)) {
-      return true;
-    }
-    (*stderr_stream) << "error: hermetic-pcm: symlink " << link
-                     << " already exists but points to '"
-                     << (read_ec ? std::string("<unreadable>")
-                                 : existing.string())
-                     << "' instead of '" << target << "'\n";
-    return false;
-  }
-  (*stderr_stream) << "error: hermetic-pcm: failed to create symlink " << link
-                   << " -> " << target << ": " << ec.message() << "\n";
-  return false;
-}
-
 std::string ResourceDirFromFrontend(const std::string& frontend_binary) {
   if (frontend_binary.empty()) return {};
   std::filesystem::path p(frontend_binary);
@@ -165,9 +134,7 @@ int RunHermeticPcm(const std::vector<std::string>& args,
     (*stderr_stream) << "error: hermetic-pcm: DEVELOPER_DIR is not set\n";
     return 1;
   }
-  while (developer_dir.size() > 1 && developer_dir.back() == '/') {
-    developer_dir.pop_back();
-  }
+  developer_dir = bazel_rules_swift::NormalizeDeveloperDir(developer_dir);
 
   std::string captured;
   int rc = CaptureFrontendCommand(args, stderr_stream, &captured);
@@ -193,11 +160,13 @@ int RunHermeticPcm(const std::vector<std::string>& args,
                      << "'\n";
     return 1;
   }
-  ReplaceAll(resource_dir, developer_dir, kDeveloperDirSymlinkName);
-
-  if (!Symlink(developer_dir, kDeveloperDirSymlinkName, stderr_stream)) {
+  if (!bazel_rules_swift::EnsureDeveloperDirSymlink(developer_dir)) {
     return 1;
   }
+
+  std::string developer_dir_symlink_name =
+      bazel_rules_swift::DeveloperDirSymlinkName();
+  ReplaceAll(resource_dir, developer_dir, developer_dir_symlink_name);
 
   std::vector<std::string> rewritten;
   rewritten.reserve(frontend.size() + 2);
@@ -208,7 +177,7 @@ int RunHermeticPcm(const std::vector<std::string>& args,
       continue;
     }
     std::string rewritten_arg = arg;
-    ReplaceAll(rewritten_arg, developer_dir, kDeveloperDirSymlinkName);
+    ReplaceAll(rewritten_arg, developer_dir, developer_dir_symlink_name);
     rewritten.push_back(std::move(rewritten_arg));
   }
 
