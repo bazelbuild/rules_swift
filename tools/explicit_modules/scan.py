@@ -376,6 +376,11 @@ class _Module:
                     out.write("    is_framework = True,\n")
                 out.write(f'    module_name = "{self.name}",\n')
                 self._render_deps(out)
+                _write_transition_attrs(
+                    out,
+                    sdk=self.sdk,
+                    sdk_version=self.sdk_version,
+                )
                 _write_string_attr(
                     out,
                     name="system_swiftinterface",

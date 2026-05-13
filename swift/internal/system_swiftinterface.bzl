@@ -24,6 +24,7 @@ load(
     "SWIFT_FEATURE_SYSTEM_MODULE",
     "SWIFT_FEATURE_USE_C_MODULES",
 )
+load("@build_bazel_rules_swift//swift/internal:system_module_transition.bzl", "sdk_min_os_transition", "sdk_min_os_transition_attrs")
 load("@build_bazel_rules_swift//swift/internal:toolchain_utils.bzl", "SWIFT_SDK_TOOLCHAIN_TYPE")
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
@@ -95,7 +96,8 @@ def _system_swiftinterface_impl(ctx):
     ]
 
 system_swiftinterface = rule(
-    attrs = {
+    cfg = sdk_min_os_transition,
+    attrs = sdk_min_os_transition_attrs() | {
         "is_framework": attr.bool(
             default = False,
             doc = "Whether the compiled Swift interface represents a framework module.",

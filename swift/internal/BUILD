@@ -343,6 +343,7 @@ bzl_library(
         "//swift:swift_common",
         "//swift/internal:compiling",
         "//swift/internal:feature_names",
+        "//swift/internal:system_module_transition",
         "//swift/internal:toolchain_utils",
         "@rules_cc//cc/common",
     ],
