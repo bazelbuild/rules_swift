@@ -169,7 +169,13 @@ def _explicit_swift_module_map_info(
     )
     return struct(
         file = explicit_swift_module_map_file,
-        inputs = transitive_swift_dependency_inputs(module_contexts),
+        inputs = transitive_swift_dependency_inputs(
+            module_contexts,
+            include_interfaces = not is_feature_enabled(
+                feature_configuration = feature_configuration,
+                feature_name = SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP,
+            ),
+        ),
     )
 
 def create_compilation_context(defines, srcs, transitive_modules):
