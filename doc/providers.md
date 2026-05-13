@@ -406,7 +406,7 @@ A `struct` containing the given values provided as arguments.
 <pre>
 create_swift_module_inputs(*, <a href="#create_swift_module_inputs-ast_files">ast_files</a>, <a href="#create_swift_module_inputs-const_protocols_to_gather">const_protocols_to_gather</a>, <a href="#create_swift_module_inputs-defines">defines</a>, <a href="#create_swift_module_inputs-generated_header">generated_header</a>,
                            <a href="#create_swift_module_inputs-indexstore">indexstore</a>, <a href="#create_swift_module_inputs-original_module_name">original_module_name</a>, <a href="#create_swift_module_inputs-plugins">plugins</a>, <a href="#create_swift_module_inputs-private_swiftinterface">private_swiftinterface</a>,
-                           <a href="#create_swift_module_inputs-swiftdoc">swiftdoc</a>, <a href="#create_swift_module_inputs-swiftinterface">swiftinterface</a>, <a href="#create_swift_module_inputs-swiftmodule">swiftmodule</a>, <a href="#create_swift_module_inputs-swiftsourceinfo">swiftsourceinfo</a>)
+                           <a href="#create_swift_module_inputs-swiftdoc">swiftdoc</a>, <a href="#create_swift_module_inputs-swiftinterface">swiftinterface</a>, <a href="#create_swift_module_inputs-swiftmodule">swiftmodule</a>, <a href="#create_swift_module_inputs-swiftmodule_path">swiftmodule_path</a>, <a href="#create_swift_module_inputs-swiftsourceinfo">swiftsourceinfo</a>)
 </pre>
 
 Creates a value representing a Swift module use as a Swift dependency.
@@ -426,7 +426,8 @@ Creates a value representing a Swift module use as a Swift dependency.
 | <a id="create_swift_module_inputs-private_swiftinterface"></a>private_swiftinterface |  The `.private.swiftinterface` file emitted by the compiler for this module. May be `None` if no private module interface file was emitted.   |  `None` |
 | <a id="create_swift_module_inputs-swiftdoc"></a>swiftdoc |  The `.swiftdoc` file emitted by the compiler for this module.   |  none |
 | <a id="create_swift_module_inputs-swiftinterface"></a>swiftinterface |  The `.swiftinterface` file emitted by the compiler for this module. May be `None` if no module interface file was emitted.   |  `None` |
-| <a id="create_swift_module_inputs-swiftmodule"></a>swiftmodule |  The `.swiftmodule` file emitted by the compiler for this module.   |  none |
+| <a id="create_swift_module_inputs-swiftmodule"></a>swiftmodule |  The `.swiftmodule` `File` emitted by the compiler for this module. May be `None` for modules whose binary swiftmodule lives outside the build (see `swiftmodule_path`).   |  none |
+| <a id="create_swift_module_inputs-swiftmodule_path"></a>swiftmodule_path |  An optional string path to a prebuilt `.swiftmodule` that is not a Bazel `File` (e.g. an SDK swiftmodule referenced via `__BAZEL_XCODE_SDKROOT__`/`__BAZEL_XCODE_DEVELOPER_DIR__` placeholders). Consumed by the explicit Swift module map writer and resolved at action time by the Swift worker; consumers that iterate `swiftmodule` as `File`s should ignore this field.   |  `None` |
 | <a id="create_swift_module_inputs-swiftsourceinfo"></a>swiftsourceinfo |  The `.swiftsourceinfo` file emitted by the compiler for this module. May be `None` if no source info file was emitted.   |  `None` |
 
 **RETURNS**
