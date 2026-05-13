@@ -354,6 +354,25 @@ transition_test(
     ],
 )
 
+swift_library(
+    name = "can_import_undeclared_sdk_module",
+    srcs = ["can_import_undeclared_sdk_module.swift"],
+    tags = FIXTURE_TAGS,
+    target_compatible_with = ["@platforms//os:macos"],
+    deps = ["@system_sdk//:Foundation"],
+)
+
+transition_binary(
+    name = "can_import_undeclared_sdk_module_transitioned",
+    tags = FIXTURE_TAGS,
+    target = ":can_import_undeclared_sdk_module",
+    transitive_features = [
+        "swift.use_c_modules",
+        "swift.emit_c_module",
+        "-swift.add_default_precompiled_modules",
+    ],
+)
+
 cross_platform_targets(tags = FIXTURE_TAGS)
 
 swift_import(
