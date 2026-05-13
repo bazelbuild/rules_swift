@@ -19,10 +19,10 @@ load("@build_bazel_rules_swift//swift:swift_common.bzl", "swift_common")
 load("@build_bazel_rules_swift//swift/internal:compiling.bzl", "compile_module_interface")
 load(
     "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
+    "SWIFT_FEATURE_ADD_DEFAULT_PRECOMPILED_MODULES",
     "SWIFT_FEATURE_EMIT_C_MODULE",
     "SWIFT_FEATURE_SUPPRESS_WARNINGS",
     "SWIFT_FEATURE_SYSTEM_MODULE",
-    "SWIFT_FEATURE_ADD_DEFAULT_PRECOMPILED_MODULES",
     "SWIFT_FEATURE_USE_C_MODULES",
     "SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP",
     "SWIFT_FEATURE_VFSOVERLAY",
