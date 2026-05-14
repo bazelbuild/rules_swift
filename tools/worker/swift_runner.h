@@ -27,7 +27,7 @@
 
 // Returns true if the given command line argument enables whole-module
 // optimization in the compiler.
-extern bool ArgumentEnablesWMO(const std::string &arg);
+extern bool ArgumentEnablesWMO(const std::string& arg);
 
 // Handles spawning the Swift compiler driver, making any required substitutions
 // of the command line arguments (for example, Bazel's magic Xcode placeholder
@@ -65,12 +65,12 @@ class SwiftRunner {
   // The first argument is assumed to be that tool. If force_response_file is
   // true, then the remaining arguments will be unconditionally written into a
   // response file instead of being passed on the command line.
-  SwiftRunner(const std::vector<std::string> &args,
+  SwiftRunner(const std::vector<std::string>& args,
               std::string index_import_path, bool force_response_file = false);
 
   // Run the Swift compiler, redirecting stderr to the specified stream. If
   // stdout_to_stderr is true, then stdout is also redirected to that stream.
-  int Run(std::ostream *stderr_stream, bool stdout_to_stderr = false);
+  int Run(std::ostream* stderr_stream, bool stdout_to_stderr = false);
 
  private:
   // Processes an argument that looks like it might be a response file (i.e., it
@@ -97,13 +97,12 @@ class SwiftRunner {
   //   written to a new response file, a response file argument pointing to that
   //   file is passed to the consumer, and the method returns true.
   bool ProcessPossibleResponseFile(
-      const std::string &arg,
-      std::function<void(const std::string &)> consumer);
+      const std::string& arg, std::function<void(const std::string&)> consumer);
 
   // Applies placeholder substitutions to an explicit Swift module map file.
   // The rewritten JSON is written to a temporary file and that path is
   // returned.
-  std::string ProcessExplicitSwiftModuleMapFile(const std::string &path);
+  std::string ProcessExplicitSwiftModuleMapFile(const std::string& path);
 
   // Applies substitutions for a single argument and passes the new arguments
   // (or the original, if no substitution was needed) to the consumer. Returns
@@ -113,8 +112,8 @@ class SwiftRunner {
   // This method has file system side effects, creating temporary files and
   // directories as needed for a particular substitution.
   template <typename Iterator>
-  bool ProcessArgument(Iterator &itr, const std::string &arg,
-                       std::function<void(const std::string &)> consumer);
+  bool ProcessArgument(Iterator& itr, const std::string& arg,
+                       std::function<void(const std::string&)> consumer);
 
   // Parses arguments to ivars and returns a vector of strings from the
   // iterator. This method doesn't actually mutate any of the arguments.
@@ -124,7 +123,7 @@ class SwiftRunner {
   // Applies substitutions to the given command line arguments, returning the
   // results in a new vector.
   std::vector<std::string> ProcessArguments(
-      const std::vector<std::string> &args);
+      const std::vector<std::string>& args);
 
   // A mapping of Bazel placeholder strings to the actual paths that should be
   // substituted for them. Supports Xcode resolution on Apple OSes.

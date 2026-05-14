@@ -33,8 +33,8 @@
 
 namespace {
 
-bool copy_file(const std::filesystem::path &from,
-               const std::filesystem::path &to, std::error_code &ec) noexcept {
+bool copy_file(const std::filesystem::path& from,
+               const std::filesystem::path& to, std::error_code& ec) noexcept {
 #if defined(__APPLE__)
   if (copyfile(from.string().c_str(), to.string().c_str(), nullptr,
                COPYFILE_ALL | COPYFILE_CLONE) < 0) {
@@ -48,8 +48,8 @@ bool copy_file(const std::filesystem::path &from,
 #endif
 }
 
-static bool TouchFile(const std::filesystem::path &path,
-                      std::ostringstream &output) {
+static bool TouchFile(const std::filesystem::path& path,
+                      std::ostringstream& output) {
   std::error_code ec;
   if (!path.parent_path().empty()) {
     std::filesystem::create_directories(path.parent_path(), ec);
@@ -69,13 +69,13 @@ static bool TouchFile(const std::filesystem::path &path,
   return true;
 }
 
-static bool CreateVerifyOutputs(const std::string &output_file_map_path,
-                                const std::string &emit_module_path,
-                                std::ostringstream &output) {
+static bool CreateVerifyOutputs(const std::string& output_file_map_path,
+                                const std::string& emit_module_path,
+                                std::ostringstream& output) {
   if (!output_file_map_path.empty()) {
     OutputFileMap output_file_map;
     output_file_map.ReadFromPath(output_file_map_path, "", "");
-    for (const auto &expected_output_pair :
+    for (const auto& expected_output_pair :
          output_file_map.incremental_outputs()) {
       if (!TouchFile(expected_output_pair.first, output)) {
         return false;
@@ -100,9 +100,9 @@ static bool CreateVerifyOutputs(const std::string &output_file_map_path,
 }
 
 static void FinalizeWorkRequest(
-    const bazel_rules_swift::worker_protocol::WorkRequest &request,
-    bazel_rules_swift::worker_protocol::WorkResponse &response, int exit_code,
-    const std::ostringstream &output) {
+    const bazel_rules_swift::worker_protocol::WorkRequest& request,
+    bazel_rules_swift::worker_protocol::WorkResponse& response, int exit_code,
+    const std::ostringstream& output) {
   response.exit_code = exit_code;
   response.output = output.str();
   response.request_id = request.request_id;
@@ -111,15 +111,15 @@ static void FinalizeWorkRequest(
 
 };  // end namespace
 
-WorkProcessor::WorkProcessor(const std::vector<std::string> &args,
+WorkProcessor::WorkProcessor(const std::vector<std::string>& args,
                              std::string index_import_path)
     : index_import_path_(index_import_path) {
   universal_args_.insert(universal_args_.end(), args.begin(), args.end());
 }
 
 void WorkProcessor::ProcessWorkRequest(
-    const bazel_rules_swift::worker_protocol::WorkRequest &request,
-    bazel_rules_swift::worker_protocol::WorkResponse &response) {
+    const bazel_rules_swift::worker_protocol::WorkRequest& request,
+    bazel_rules_swift::worker_protocol::WorkResponse& response) {
   std::vector<std::string> processed_args(universal_args_);
 
   // Bazel's worker spawning strategy reads the arguments from the params file
@@ -213,7 +213,7 @@ void WorkProcessor::ProcessWorkRequest(
   if (is_incremental) {
     std::set<std::string> dir_paths;
 
-    for (const auto &expected_object_pair :
+    for (const auto& expected_object_pair :
          output_file_map.incremental_inputs()) {
       const auto expected_object_path =
           std::filesystem::path(expected_object_pair.second);
@@ -237,7 +237,7 @@ void WorkProcessor::ProcessWorkRequest(
       dir_paths.insert(dir_path);
     }
 
-    for (const auto &expected_object_pair :
+    for (const auto& expected_object_pair :
          output_file_map.incremental_outputs()) {
       // Bazel creates the intermediate directories for the files declared at
       // analysis time, but we need to manually create the ones for the
@@ -249,7 +249,7 @@ void WorkProcessor::ProcessWorkRequest(
       dir_paths.insert(dir_path);
     }
 
-    for (const auto &dir_path : dir_paths) {
+    for (const auto& dir_path : dir_paths) {
       std::error_code ec;
       std::filesystem::create_directories(dir_path, ec);
       if (ec) {
@@ -266,12 +266,12 @@ void WorkProcessor::ProcessWorkRequest(
     // to remove some files that exist in the incremental storage area.
     auto inputs = output_file_map.incremental_inputs();
     bool all_inputs_exist = std::all_of(
-        inputs.cbegin(), inputs.cend(), [](const auto &expected_object_pair) {
+        inputs.cbegin(), inputs.cend(), [](const auto& expected_object_pair) {
           return std::filesystem::exists(expected_object_pair.second);
         });
 
     if (all_inputs_exist) {
-      for (const auto &expected_object_pair : inputs) {
+      for (const auto& expected_object_pair : inputs) {
         std::error_code ec;
         copy_file(expected_object_pair.second, expected_object_pair.first, ec);
         if (ec) {
@@ -285,7 +285,7 @@ void WorkProcessor::ProcessWorkRequest(
       }
     } else {
       auto cleanup_outputs = output_file_map.incremental_cleanup_outputs();
-      for (const auto &cleanup_output : cleanup_outputs) {
+      for (const auto& cleanup_output : cleanup_outputs) {
         if (!std::filesystem::exists(cleanup_output)) {
           continue;
         }
@@ -319,7 +319,7 @@ void WorkProcessor::ProcessWorkRequest(
   if (is_incremental) {
     // Copy the output files from the incremental storage area back to the
     // locations where Bazel declared the files.
-    for (const auto &expected_object_pair :
+    for (const auto& expected_object_pair :
          output_file_map.incremental_outputs()) {
       std::error_code ec;
       copy_file(expected_object_pair.second, expected_object_pair.first, ec);
@@ -335,7 +335,7 @@ void WorkProcessor::ProcessWorkRequest(
 
     // Copy the replaced input files back to the incremental storage for the
     // next run.
-    for (const auto &expected_object_pair :
+    for (const auto& expected_object_pair :
          output_file_map.incremental_inputs()) {
       if (std::filesystem::exists(expected_object_pair.first)) {
         if (std::filesystem::exists(expected_object_pair.second)) {

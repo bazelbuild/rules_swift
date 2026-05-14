@@ -19,21 +19,21 @@
 using ::swiftexample::Counter;
 
 counter_t counter_create() {
-  Counter *counter = new Counter();
+  Counter* counter = new Counter();
   return static_cast<counter_t>(counter);
 }
 
 void counter_release(counter_t c) {
-  Counter *counter = static_cast<Counter *>(c);
+  Counter* counter = static_cast<Counter*>(c);
   delete counter;
 }
 
 int counter_get(counter_t c) {
-  Counter *counter = static_cast<Counter *>(c);
+  Counter* counter = static_cast<Counter*>(c);
   return counter->Get();
 }
 
 void counter_increment(counter_t c) {
-  Counter *counter = static_cast<Counter *>(c);
+  Counter* counter = static_cast<Counter*>(c);
   counter->Increment();
 }

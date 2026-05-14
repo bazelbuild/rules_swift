@@ -37,15 +37,15 @@
 class TempFile {
  public:
   // Explicitly make TempFile non-copyable and movable.
-  TempFile(const TempFile &) = delete;
-  TempFile &operator=(const TempFile &) = delete;
-  TempFile(TempFile &&) = default;
-  TempFile &operator=(TempFile &&) = default;
+  TempFile(const TempFile&) = delete;
+  TempFile& operator=(const TempFile&) = delete;
+  TempFile(TempFile&&) = default;
+  TempFile& operator=(TempFile&&) = default;
 
   // Create a new temporary file using the given path template string (the same
   // form used by `mkstemp`). The file will automatically be deleted when the
   // object goes out of scope.
-  static std::unique_ptr<TempFile> Create(const std::string &path_template) {
+  static std::unique_ptr<TempFile> Create(const std::string& path_template) {
     std::error_code ec;
     std::filesystem::path temporary{std::filesystem::temp_directory_path(ec) /
                                     path_template};
@@ -79,7 +79,7 @@ class TempFile {
   std::string GetPath() const { return path_; }
 
  private:
-  explicit TempFile(const std::string &path) : path_(path) {}
+  explicit TempFile(const std::string& path) : path_(path) {}
 
   std::string path_;
 };
@@ -88,16 +88,16 @@ class TempFile {
 class TempDirectory {
  public:
   // Explicitly make TempDirectory non-copyable and movable.
-  TempDirectory(const TempDirectory &) = delete;
-  TempDirectory &operator=(const TempDirectory &) = delete;
-  TempDirectory(TempDirectory &&) = default;
-  TempDirectory &operator=(TempDirectory &&) = default;
+  TempDirectory(const TempDirectory&) = delete;
+  TempDirectory& operator=(const TempDirectory&) = delete;
+  TempDirectory(TempDirectory&&) = default;
+  TempDirectory& operator=(TempDirectory&&) = default;
 
   // Create a new temporary directory using the given path template string (the
   // same form used by `mkdtemp`). The file will automatically be deleted when
   // the object goes out of scope.
   static std::unique_ptr<TempDirectory> Create(
-      const std::string &path_template) {
+      const std::string& path_template) {
     std::error_code ec;
     std::filesystem::path temporary{std::filesystem::temp_directory_path(ec) /
                                     path_template};
@@ -112,7 +112,7 @@ class TempDirectory {
       return nullptr;
     }
 
-    auto randname = [](char *buffer) {
+    auto randname = [](char* buffer) {
       static const char kAlphabet[] =
           "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01123456789";
       constexpr size_t kAlphabetSize = sizeof(kAlphabet) - 1;
@@ -146,7 +146,7 @@ class TempDirectory {
   std::string GetPath() const { return path_; }
 
  private:
-  explicit TempDirectory(const std::string &path) : path_(path) {}
+  explicit TempDirectory(const std::string& path) : path_(path) {}
 
   std::string path_;
 };
