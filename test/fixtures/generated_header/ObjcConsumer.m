@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#import "test/fixtures/generated_header/generated_header_with_c_dep-Swift.h"
+#import "test/fixtures/generated_header/GeneratedHeaderObjcWrapper.h"
 
-void useGeneratedHeader(GHUsesCDependency *object, NSObject *value) {
-  (void)[object box:value];
+void useGeneratedHeader(NSObject *object, NSObject *value) {
+  useGeneratedHeaderThroughWrapper(object, value);
 }

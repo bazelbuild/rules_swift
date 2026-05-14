@@ -12,7 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-@import Foundation;
+#import "test/fixtures/generated_header/GeneratedHeaderObjcWrapper.h"
 
-@interface GHCBox<ObjectType> : NSObject
-@end
+@import GeneratedHeaderCDependency;
+@import GeneratedHeaderWithCDep;
+
+void useGeneratedHeaderThroughWrapper(NSObject *object, NSObject *value) {
+  GHUsesCDependency *typedObject = (GHUsesCDependency *)object;
+  (void)[typedObject box:value];
+}
