@@ -66,19 +66,9 @@ objc_library(
     srcs = ["CDependency.m"],
     hdrs = ["CDependency.h"],
     aspect_hints = [":c_dependency_hint"],
-    enable_modules = True,
     tags = FIXTURE_TAGS,
     target_compatible_with = ["@platforms//os:macos"],
     deps = ["@system_sdk//:Foundation"],
-)
-
-objc_library(
-    name = "c_dependency_wrapper",
-    srcs = ["CDependencyWrapper.m"],
-    enable_modules = True,
-    tags = FIXTURE_TAGS,
-    target_compatible_with = ["@platforms//os:macos"],
-    deps = [":c_dependency"],
 )
 
 swift_interop_hint(
@@ -90,22 +80,10 @@ swift_interop_hint(
 swift_library(
     name = "generated_header_with_c_dep",
     srcs = ["UsesCDependency.swift"],
-    features = ["swift.propagate_generated_module_map"],
     generates_header = True,
-    module_name = "GeneratedHeaderWithCDep",
     tags = FIXTURE_TAGS,
     target_compatible_with = ["@platforms//os:macos"],
-    deps = [":c_dependency_wrapper"],
-)
-
-objc_library(
-    name = "generated_header_objc_wrapper",
-    srcs = ["GeneratedHeaderObjcWrapper.m"],
-    hdrs = ["GeneratedHeaderObjcWrapper.h"],
-    enable_modules = True,
-    tags = FIXTURE_TAGS,
-    target_compatible_with = ["@platforms//os:macos"],
-    deps = [":generated_header_with_c_dep"],
+    deps = [":c_dependency"],
 )
 
 objc_library(
@@ -114,5 +92,5 @@ objc_library(
     enable_modules = True,
     tags = FIXTURE_TAGS,
     target_compatible_with = ["@platforms//os:macos"],
-    deps = [":generated_header_objc_wrapper"],
+    deps = [":generated_header_with_c_dep"],
 )
