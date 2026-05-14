@@ -50,6 +50,7 @@ load(
 )
 load(
     "//swift/internal:utils.bzl",
+    "compact",
     "expand_locations",
     "get_providers",
     "include_developer_search_paths",
@@ -496,12 +497,18 @@ def _swift_test_impl(ctx):
         {"TEST_BINARIES_FOR_LLVM_COV": linking_outputs.executable.short_path},
         expanded_env.get_expanded_env(ctx, {}),
     )
+    default_compile_outputs = compact([
+        getattr(outputs, "stats_directory", None)
+        for outputs in all_supplemental_outputs
+    ])
 
     return [
         DefaultInfo(
             executable = linking_outputs.executable,
             files = depset(
-                [linking_outputs.executable] + additional_debug_outputs,
+                [linking_outputs.executable] +
+                additional_debug_outputs +
+                default_compile_outputs,
             ),
             runfiles = ctx.runfiles(
                 collect_data = True,

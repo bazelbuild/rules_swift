@@ -592,6 +592,11 @@ bool SwiftRunner::ProcessArgument(
         job_env_["TEMPDIR"] = new_arg;
         job_env_.erase("TMPDIR");
 #endif
+      } else if (StripPrefix("-stats-output-dir=", new_arg)) {
+        changed = true;
+        std::filesystem::create_directories(new_arg);
+        consumer("-stats-output-dir");
+        consumer(new_arg);
       } else if (new_arg == "-ephemeral-module-cache") {
         // Create a temporary directory to hold the module cache, which will be
         // deleted after compilation is finished.

@@ -42,6 +42,7 @@ load(
     "SWIFT_FEATURE_EMIT_BC",
     "SWIFT_FEATURE_EMIT_C_MODULE",
     "SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE",
+    "SWIFT_FEATURE_EMIT_STATS",
     "SWIFT_FEATURE_EMIT_SWIFTDOC",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
     "SWIFT_FEATURE_ENABLE_EMBEDDED",
@@ -567,6 +568,9 @@ def compile(
                 represents the location where macro expansion files were written
                 (only in debug/fastbuild and only when the toolchain supports
                 macros).
+
+            *   `stats_directory`: A directory-type `File` that represents the
+                location where Swift compilation statistics were written.
     """
     toolchains = gather_toolchains(
         swift_toolchain = swift_toolchain,
@@ -658,6 +662,7 @@ def compile(
     if split_derived_file_generation:
         all_compile_outputs = compact([
             compile_outputs.indexstore_directory,
+            compile_outputs.stats_directory,
         ]) + compile_outputs.object_files + compile_outputs.const_values_files
         all_derived_outputs = compact([
             # The `.swiftmodule` file is explicitly listed as the first output
@@ -686,6 +691,7 @@ def compile(
             compile_outputs.generated_header_file,
             compile_outputs.indexstore_directory,
             compile_outputs.macro_expansion_directory,
+            compile_outputs.stats_directory,
         ]) + compile_outputs.object_files + compile_outputs.const_values_files
         all_derived_outputs = []
 
@@ -960,6 +966,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
             const_values_files = compile_outputs.const_values_files,
             indexstore_directory = compile_outputs.indexstore_directory,
             macro_expansion_directory = compile_outputs.macro_expansion_directory,
+            stats_directory = compile_outputs.stats_directory,
         ),
         swift_info = SwiftInfo(
             modules = [module_context],
@@ -1523,6 +1530,16 @@ def _declare_compile_outputs(
         indexstore_directory = None
         include_index_unit_paths = False
 
+    if is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_EMIT_STATS,
+    ):
+        stats_directory = actions.declare_directory(
+            "{}.swift-stats".format(target_name),
+        )
+    else:
+        stats_directory = None
+
     if not output_nature.emits_multiple_objects:
         # If we're emitting a single object, we don't use an object map; we just
         # declare the output file that the compiler will generate and there are
@@ -1607,6 +1624,7 @@ def _declare_compile_outputs(
         object_files = object_files,
         output_file_map = output_file_map,
         derived_files_output_file_map = derived_files_output_file_map,
+        stats_directory = stats_directory,
         swiftdoc_file = swiftdoc_file,
         swiftinterface_file = swiftinterface_file,
         swiftmodule_file = swiftmodule_file,

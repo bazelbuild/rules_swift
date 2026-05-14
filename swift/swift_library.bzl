@@ -256,6 +256,7 @@ def _swift_library_impl(ctx):
         module_context.swift.private_swiftinterface,
         module_context.swift.swiftmodule,
         module_context.swift.swiftsourceinfo,
+        supplemental_outputs.stats_directory,
         linking_output.library_to_link.static_library,
         linking_output.library_to_link.pic_static_library,
     ])

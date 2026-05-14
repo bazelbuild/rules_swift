@@ -43,6 +43,7 @@ load(
 )
 load(
     "//swift/internal:utils.bzl",
+    "compact",
     "expand_locations",
     "get_providers",
     "include_developer_search_paths",
@@ -88,6 +89,7 @@ def _swift_binary_impl(ctx):
     output_groups = {}
     module_contexts = []
     additional_linking_contexts = []
+    default_compile_outputs = []
 
     # If the binary has sources, compile those first and collect the outputs to
     # be passed to the linker.
@@ -134,6 +136,9 @@ def _swift_binary_impl(ctx):
         output_groups = supplemental_compilation_output_groups(
             supplemental_outputs,
         )
+        default_compile_outputs = compact([
+            supplemental_outputs.stats_directory,
+        ])
     else:
         compile_result = None
         entry_point_function_name = None
@@ -196,7 +201,9 @@ def _swift_binary_impl(ctx):
         DefaultInfo(
             executable = linking_outputs.executable,
             files = depset(
-                [linking_outputs.executable] + additional_debug_outputs,
+                [linking_outputs.executable] +
+                additional_debug_outputs +
+                default_compile_outputs,
             ),
             runfiles = ctx.runfiles(
                 collect_data = True,

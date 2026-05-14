@@ -49,6 +49,7 @@ load(
 )
 load(
     "//swift/internal:utils.bzl",
+    "compact",
     "expand_locations",
     "get_providers",
 )
@@ -112,6 +113,9 @@ def _swift_compiler_plugin_impl(ctx):
     module_contexts.append(module_context)
     compilation_outputs = compile_result.compilation_outputs
     supplemental_outputs = compile_result.supplemental_outputs
+    default_compile_outputs = compact([
+        supplemental_outputs.stats_directory,
+    ])
 
     # Apply the optional debugging outputs extension if the toolchain defines
     # one.
@@ -189,7 +193,9 @@ def _swift_compiler_plugin_impl(ctx):
         DefaultInfo(
             executable = binary_linking_outputs.executable,
             files = depset(
-                [binary_linking_outputs.executable] + additional_debug_outputs,
+                [binary_linking_outputs.executable] +
+                additional_debug_outputs +
+                default_compile_outputs,
             ),
             runfiles = ctx.runfiles(
                 collect_data = True,

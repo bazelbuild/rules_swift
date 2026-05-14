@@ -104,12 +104,18 @@ def _swift_proto_library_group_impl(ctx):
     direct_swift_proto_cc_info = proto_target[SwiftProtoCcInfo]
     direct_swift_info = proto_target[SwiftInfo]
     direct_swift_proto_info = proto_target[SwiftProtoInfo]
+    direct_stats_files = getattr(
+        direct_output_group_info,
+        "swift_stats",
+        depset(),
+    ).to_list()
     direct_files = compact(
         [module.swift.swiftdoc for module in direct_swift_info.direct_modules] +
         [module.swift.swiftinterface for module in direct_swift_info.direct_modules] +
         [module.swift.private_swiftinterface for module in direct_swift_info.direct_modules] +
         [module.swift.swiftmodule for module in direct_swift_info.direct_modules] +
-        [module.swift.swiftsourceinfo for module in direct_swift_info.direct_modules],
+        [module.swift.swiftsourceinfo for module in direct_swift_info.direct_modules] +
+        direct_stats_files,
     )
 
     return [

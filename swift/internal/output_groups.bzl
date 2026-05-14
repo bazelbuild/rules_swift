@@ -39,6 +39,7 @@ def supplemental_compilation_output_groups(
     const_values_files = []
     indexstore_files = list(additional_indexstore_files)
     macro_expansions_files = []
+    stats_files = []
 
     for outputs in supplemental_outputs:
         if outputs.ast_files:
@@ -49,6 +50,9 @@ def supplemental_compilation_output_groups(
             indexstore_files.append(outputs.indexstore_directory)
         if outputs.macro_expansion_directory:
             macro_expansions_files.append(outputs.macro_expansion_directory)
+        stats_directory = getattr(outputs, "stats_directory", None)
+        if stats_directory:
+            stats_files.append(stats_directory)
 
     output_groups = {}
     if ast_files:
@@ -59,4 +63,6 @@ def supplemental_compilation_output_groups(
         output_groups["swift_index_store"] = depset(indexstore_files)
     if macro_expansions_files:
         output_groups["macro_expansions"] = depset(macro_expansions_files)
+    if stats_files:
+        output_groups["swift_stats"] = depset(stats_files)
     return output_groups

@@ -51,6 +51,7 @@ load(
     "SWIFT_FEATURE_EMIT_BC",
     "SWIFT_FEATURE_EMIT_C_MODULE",
     "SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE",
+    "SWIFT_FEATURE_EMIT_STATS",
     "SWIFT_FEATURE_EMIT_SWIFTDOC",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
     "SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX",
@@ -281,6 +282,13 @@ def compile_action_configs(
         ActionConfigInfo(
             actions = [SWIFT_ACTION_COMPILE],
             configurators = [_constant_value_extraction_configurator],
+        ),
+
+        # Configure compiler statistics output.
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE],
+            configurators = [_stats_output_configurator],
+            features = [SWIFT_FEATURE_EMIT_STATS],
         ),
 
         # Link Time Optimization (LTO).
@@ -2396,6 +2404,14 @@ def _constant_value_extraction_configurator(prerequisites, args):
     )
     return ConfigResultInfo(
         inputs = [prerequisites.const_gather_protocols_file],
+    )
+
+def _stats_output_configurator(prerequisites, args):
+    """Adds flags related to Swift compile statistics output."""
+    args.add(
+        "-Xwrapped-swift=-stats-output-dir={}".format(
+            prerequisites.stats_directory.path,
+        ),
     )
 
 def _upcoming_and_experimental_features_configurator(prerequisites, args):
