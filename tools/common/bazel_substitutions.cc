@@ -69,9 +69,10 @@ std::string GetToolchainPath() {
 
   char* toolchain_id = getenv("TOOLCHAINS");
   std::ostringstream output_stream;
-  int exit_code =
-      RunSubProcess({"/usr/bin/xcrun", "--find", "clang"},
-                    /*env=*/nullptr, &output_stream, /*stdout_to_stderr=*/true);
+  int exit_code = RunSubProcess({"/usr/bin/xcrun", "--find", "clang"},
+                                /*env=*/nullptr, &output_stream,
+                                /*stdout_to_stderr=*/true,
+                                /*print_timestamps=*/false);
   if (exit_code != 0) {
     std::cerr << output_stream.str() << "Error: `TOOLCHAINS=" << toolchain_id
               << "xcrun --find clang` failed with error code " << exit_code

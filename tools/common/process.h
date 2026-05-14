@@ -26,7 +26,8 @@
 // code of the spawned process.
 int RunSubProcess(const std::vector<std::string>& args,
                   std::map<std::string, std::string>* env,
-                  std::ostream* stderr_stream, bool stdout_to_stderr = false);
+                  std::ostream* stderr_stream, bool stdout_to_stderr = false,
+                  bool print_timestamps = true);
 
 // Prints a temporary worker timestamp diagnostic to the given stderr stream.
 void PrintWorkerTimestamp(std::ostream* stderr_stream, const char* event);

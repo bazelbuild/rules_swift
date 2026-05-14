@@ -236,7 +236,8 @@ std::string GetCommandLine(const std::vector<std::string>& arguments) {
 
 int RunSubProcess(const std::vector<std::string>& args,
                   std::map<std::string, std::string>* env,
-                  std::ostream* stderr_stream, bool stdout_to_stderr) {
+                  std::ostream* stderr_stream, bool stdout_to_stderr,
+                  bool print_timestamps) {
   std::error_code ec;
   std::unique_ptr<WindowsIORedirector> redirector =
       WindowsIORedirector::Create(stdout_to_stderr, ec);
@@ -247,7 +248,9 @@ int RunSubProcess(const std::vector<std::string>& args,
   }
 
   PROCESS_INFORMATION piProcess = {0};
-  PrintWorkerTimestamp(stderr_stream, "exec", args);
+  if (print_timestamps) {
+    PrintWorkerTimestamp(stderr_stream, "exec", args);
+  }
   if (!CreateProcessA(NULL, GetCommandLine(args).data(), nullptr, nullptr, TRUE,
                       0, nullptr, nullptr, &redirector->siStartInfo,
                       &piProcess)) {
@@ -266,7 +269,9 @@ int RunSubProcess(const std::vector<std::string>& args,
     (*stderr_stream) << "wait for process failure (error " << dwLastError
                      << ")\n";
     CloseHandle(piProcess.hProcess);
-    PrintWorkerTimestamp(stderr_stream, "after-exec", args);
+    if (print_timestamps) {
+      PrintWorkerTimestamp(stderr_stream, "after-exec", args);
+    }
     return dwLastError;
   }
 
@@ -276,12 +281,16 @@ int RunSubProcess(const std::vector<std::string>& args,
     (*stderr_stream) << "unable to get exit code (error " << dwLastError
                      << ")\n";
     CloseHandle(piProcess.hProcess);
-    PrintWorkerTimestamp(stderr_stream, "after-exec", args);
+    if (print_timestamps) {
+      PrintWorkerTimestamp(stderr_stream, "after-exec", args);
+    }
     return dwLastError;
   }
 
   CloseHandle(piProcess.hProcess);
-  PrintWorkerTimestamp(stderr_stream, "after-exec", args);
+  if (print_timestamps) {
+    PrintWorkerTimestamp(stderr_stream, "after-exec", args);
+  }
   return dwExitCode;
 }
 
@@ -404,7 +413,8 @@ std::vector<char*> ConvertToCArgs(const std::vector<std::string>& args) {
 
 int RunSubProcess(const std::vector<std::string>& args,
                   std::map<std::string, std::string>* env,
-                  std::ostream* stderr_stream, bool stdout_to_stderr) {
+                  std::ostream* stderr_stream, bool stdout_to_stderr,
+                  bool print_timestamps) {
   std::vector<char*> exec_argv = ConvertToCArgs(args);
 
   // Set up a pipe to redirect stderr from the child process so that we can
@@ -437,7 +447,9 @@ int RunSubProcess(const std::vector<std::string>& args,
   }
 
   pid_t pid;
-  PrintWorkerTimestamp(stderr_stream, "exec", args);
+  if (print_timestamps) {
+    PrintWorkerTimestamp(stderr_stream, "exec", args);
+  }
   int status =
       posix_spawn(&pid, args[0].c_str(), redirector->PosixSpawnFileActions(),
                   nullptr, exec_argv.data(), envp);
@@ -462,29 +474,39 @@ int RunSubProcess(const std::vector<std::string>& args,
     if (wait_status < 0) {
       (*stderr_stream) << "error: waiting on child process '" << args[0]
                        << "'. " << strerror(errno) << "\n";
-      PrintWorkerTimestamp(stderr_stream, "after-exec", args);
+      if (print_timestamps) {
+        PrintWorkerTimestamp(stderr_stream, "after-exec", args);
+      }
       return wait_status;
     }
 
     if (WIFEXITED(status)) {
       int exit_code = WEXITSTATUS(status);
-      PrintWorkerTimestamp(stderr_stream, "after-exec", args);
+      if (print_timestamps) {
+        PrintWorkerTimestamp(stderr_stream, "after-exec", args);
+      }
       return exit_code;
     }
 
     if (WIFSIGNALED(status)) {
       int signal = WTERMSIG(status);
-      PrintWorkerTimestamp(stderr_stream, "after-exec", args);
+      if (print_timestamps) {
+        PrintWorkerTimestamp(stderr_stream, "after-exec", args);
+      }
       return signal;
     }
 
     // Unhandled case, if we hit this we should handle it above.
-    PrintWorkerTimestamp(stderr_stream, "after-exec", args);
+    if (print_timestamps) {
+      PrintWorkerTimestamp(stderr_stream, "after-exec", args);
+    }
     return 42;
   } else {
     (*stderr_stream) << "error: forking process failed '" << args[0] << "'. "
                      << strerror(status) << "\n";
-    PrintWorkerTimestamp(stderr_stream, "after-exec", args);
+    if (print_timestamps) {
+      PrintWorkerTimestamp(stderr_stream, "after-exec", args);
+    }
     return status;
   }
 }

@@ -54,8 +54,11 @@ int CaptureFrontendCommand(const std::vector<std::string>& args,
   driver_args.push_back("-###");
 
   std::stringstream sink;
+  PrintWorkerTimestamp(stderr_stream, "exec", driver_args);
   int rc = RunSubProcess(driver_args, /*env=*/nullptr, &sink,
-                         /*stdout_to_stderr=*/true);
+                         /*stdout_to_stderr=*/true,
+                         /*print_timestamps=*/false);
+  PrintWorkerTimestamp(stderr_stream, "after-exec", driver_args);
   *captured = sink.str();
   if (rc != 0) {
     (*stderr_stream) << "error: hermetic-pcm: swiftc -### exited " << rc
