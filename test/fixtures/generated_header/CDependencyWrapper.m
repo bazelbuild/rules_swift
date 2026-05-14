@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-@import Foundation;
+#import "test/fixtures/generated_header/CDependency.h"
 
-@interface GHCBox<ObjectType> : NSObject
-@end
+void forceCDependencyWrapper(void) {
+  (void)[GHCBox class];
+}
