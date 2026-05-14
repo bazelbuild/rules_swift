@@ -705,7 +705,7 @@ std::vector<std::string> SwiftRunner::ProcessArguments(
     ExtractFlagsFromInterfaceFile(
         module_or_interface_path_, target_triple_,
         [&]() {
-          const char* developer_dir = std::getenv("DEVELOPER_DIR");
+          const char *developer_dir = std::getenv("DEVELOPER_DIR");
           if (developer_dir != nullptr) return std::string(developer_dir);
           return std::string();
         },
