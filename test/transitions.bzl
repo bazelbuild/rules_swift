@@ -27,10 +27,10 @@ def _transition_impl(settings, attr):
         _COMPILATION_MODE: attr.compilation_mode or settings[_COMPILATION_MODE],
         _FEATURES: settings[_FEATURES] + attr.transitive_features,
         _HOST_FEATURES: settings[_HOST_FEATURES] + attr.transitive_features,
-        _IOS_MINIMUM_OS: attr.minimum_os or settings[_IOS_MINIMUM_OS],
-        _MACOS_MINIMUM_OS: attr.minimum_os or settings[_MACOS_MINIMUM_OS],
+        _IOS_MINIMUM_OS: attr.ios_minimum_os or settings[_IOS_MINIMUM_OS],
+        _MACOS_MINIMUM_OS: attr.macos_minimum_os or attr.minimum_os or settings[_MACOS_MINIMUM_OS],
         _PLATFORMS: [attr.platform] if attr.platform else settings[_PLATFORMS],
-        _TVOS_MINIMUM_OS: attr.minimum_os or settings[_TVOS_MINIMUM_OS],
+        _TVOS_MINIMUM_OS: attr.tvos_minimum_os or settings[_TVOS_MINIMUM_OS],
     }
 
 _transition = transition(
@@ -49,7 +49,16 @@ _TRANSITION_ATTRS = {
         values = ["", "dbg", "fastbuild", "opt"],
     ),
     "minimum_os": attr.string(
-        doc = "Optional value to set the Apple platform minimum OS to.",
+        doc = "Optional value to set `--macos_minimum_os` to.",
+    ),
+    "ios_minimum_os": attr.string(
+        doc = "Optional value to set `--ios_minimum_os` to.",
+    ),
+    "macos_minimum_os": attr.string(
+        doc = "Optional value to set `--macos_minimum_os` to.",
+    ),
+    "tvos_minimum_os": attr.string(
+        doc = "Optional value to set `--tvos_minimum_os` to.",
     ),
     "platform": attr.string(
         doc = "Optional target platform label (e.g. `@build_bazel_apple_support//platforms:macos_x86_64`).",

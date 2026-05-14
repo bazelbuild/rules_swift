@@ -208,7 +208,7 @@ swift_binary(
 
 transition_binary(
     name = "available_testing_import_ios_12",
-    minimum_os = "12.0",
+    ios_minimum_os = "12.0",
     platform = "@build_bazel_apple_support//platforms:ios_arm64",
     tags = FIXTURE_TAGS,
     target = ":available_testing_import",
