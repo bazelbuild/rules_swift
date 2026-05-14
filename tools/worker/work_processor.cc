@@ -112,8 +112,10 @@ static void FinalizeWorkRequest(
 };  // end namespace
 
 WorkProcessor::WorkProcessor(const std::vector<std::string>& args,
-                             std::string index_import_path)
-    : index_import_path_(index_import_path) {
+                             std::string index_import_path,
+                             std::string startup_timestamp)
+    : index_import_path_(index_import_path),
+      startup_timestamp_(startup_timestamp) {
   universal_args_.insert(universal_args_.end(), args.begin(), args.end());
 }
 
@@ -209,6 +211,10 @@ void WorkProcessor::ProcessWorkRequest(
   params_file_stream.close();
 
   std::ostringstream stderr_stream;
+  if (!reported_startup_timestamp_) {
+    stderr_stream << "rules_swift_worker main " << startup_timestamp_ << "\n";
+    reported_startup_timestamp_ = true;
+  }
 
   if (is_incremental) {
     std::set<std::string> dir_paths;

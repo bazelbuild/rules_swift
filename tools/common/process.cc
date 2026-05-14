@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <ctime>
 #include <iostream>
 #include <iterator>
 #include <map>
@@ -32,6 +33,35 @@ extern "C" {
 extern char** environ;
 }
 #endif
+
+namespace {
+
+std::string FormatLocalTime() {
+  std::time_t now = std::time(nullptr);
+
+  std::tm local_time;
+#if defined(_WIN32)
+  localtime_s(&local_time, &now);
+#else
+  localtime_r(&now, &local_time);
+#endif
+
+  char time_buffer[9];
+  std::strftime(time_buffer, sizeof(time_buffer), "%H:%M:%S", &local_time);
+  return time_buffer;
+}
+
+void PrintWorkerTimestamp(std::ostream* stderr_stream, const char* event,
+                          const std::vector<std::string>& args) {
+  (*stderr_stream) << "rules_swift_worker " << event << " "
+                   << FormatLocalTime();
+  if (!args.empty()) {
+    (*stderr_stream) << " " << args[0];
+  }
+  (*stderr_stream) << "\n";
+}
+
+}  // namespace
 
 std::map<std::string, std::string> GetCurrentEnvironment() {
   std::map<std::string, std::string> result;
@@ -212,6 +242,7 @@ int RunSubProcess(const std::vector<std::string>& args,
   }
 
   PROCESS_INFORMATION piProcess = {0};
+  PrintWorkerTimestamp(stderr_stream, "exec", args);
   if (!CreateProcessA(NULL, GetCommandLine(args).data(), nullptr, nullptr, TRUE,
                       0, nullptr, nullptr, &redirector->siStartInfo,
                       &piProcess)) {
@@ -230,6 +261,7 @@ int RunSubProcess(const std::vector<std::string>& args,
     (*stderr_stream) << "wait for process failure (error " << dwLastError
                      << ")\n";
     CloseHandle(piProcess.hProcess);
+    PrintWorkerTimestamp(stderr_stream, "after-exec", args);
     return dwLastError;
   }
 
@@ -239,10 +271,12 @@ int RunSubProcess(const std::vector<std::string>& args,
     (*stderr_stream) << "unable to get exit code (error " << dwLastError
                      << ")\n";
     CloseHandle(piProcess.hProcess);
+    PrintWorkerTimestamp(stderr_stream, "after-exec", args);
     return dwLastError;
   }
 
   CloseHandle(piProcess.hProcess);
+  PrintWorkerTimestamp(stderr_stream, "after-exec", args);
   return dwExitCode;
 }
 
@@ -398,6 +432,7 @@ int RunSubProcess(const std::vector<std::string>& args,
   }
 
   pid_t pid;
+  PrintWorkerTimestamp(stderr_stream, "exec", args);
   int status =
       posix_spawn(&pid, args[0].c_str(), redirector->PosixSpawnFileActions(),
                   nullptr, exec_argv.data(), envp);
@@ -422,22 +457,29 @@ int RunSubProcess(const std::vector<std::string>& args,
     if (wait_status < 0) {
       (*stderr_stream) << "error: waiting on child process '" << args[0]
                        << "'. " << strerror(errno) << "\n";
+      PrintWorkerTimestamp(stderr_stream, "after-exec", args);
       return wait_status;
     }
 
     if (WIFEXITED(status)) {
-      return WEXITSTATUS(status);
+      int exit_code = WEXITSTATUS(status);
+      PrintWorkerTimestamp(stderr_stream, "after-exec", args);
+      return exit_code;
     }
 
     if (WIFSIGNALED(status)) {
-      return WTERMSIG(status);
+      int signal = WTERMSIG(status);
+      PrintWorkerTimestamp(stderr_stream, "after-exec", args);
+      return signal;
     }
 
     // Unhandled case, if we hit this we should handle it above.
+    PrintWorkerTimestamp(stderr_stream, "after-exec", args);
     return 42;
   } else {
     (*stderr_stream) << "error: forking process failed '" << args[0] << "'. "
                      << strerror(status) << "\n";
+    PrintWorkerTimestamp(stderr_stream, "after-exec", args);
     return status;
   }
 }

@@ -73,12 +73,13 @@
 // it can find them as well.
 
 int CompileWithWorker(const std::vector<std::string>& args,
-                      std::string index_import_path) {
+                      std::string index_import_path,
+                      std::string startup_timestamp) {
   // Pass the "universal arguments" to the Swift work processor. They will be
   // rewritten to replace any placeholders if necessary, and then passed at the
   // beginning of any process invocation. Note that these arguments include the
   // tool itself (i.e., "swiftc").
-  WorkProcessor swift_worker(args, index_import_path);
+  WorkProcessor swift_worker(args, index_import_path, startup_timestamp);
 
   while (true) {
     std::optional<bazel_rules_swift::worker_protocol::WorkRequest> request =

@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include <algorithm>
-#include <iostream>
+#include <ctime>
 #include <string>
 #include <vector>
 
@@ -24,7 +24,28 @@
 
 using bazel::tools::cpp::runfiles::Runfiles;
 
+namespace {
+
+std::string FormatLocalTime() {
+  std::time_t now = std::time(nullptr);
+
+  std::tm local_time;
+#if defined(_WIN32)
+  localtime_s(&local_time, &now);
+#else
+  localtime_r(&now, &local_time);
+#endif
+
+  char time_buffer[9];
+  std::strftime(time_buffer, sizeof(time_buffer), "%H:%M:%S", &local_time);
+  return time_buffer;
+}
+
+}  // namespace
+
 int main(int argc, char* argv[]) {
+  std::string startup_timestamp = FormatLocalTime();
+
   std::string index_import_path;
 #ifdef BAZEL_CURRENT_REPOSITORY
   std::unique_ptr<Runfiles> runfiles(
@@ -60,5 +81,5 @@ int main(int argc, char* argv[]) {
 
   // Remove the special flag before starting the worker processing loop.
   args.erase(persistent_worker_it);
-  return CompileWithWorker(args, index_import_path);
+  return CompileWithWorker(args, index_import_path, startup_timestamp);
 }

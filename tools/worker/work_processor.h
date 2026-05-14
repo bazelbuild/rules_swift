@@ -28,7 +28,7 @@ class WorkProcessor {
   // Initializes a new work processor with the given universal arguments from
   // the job invocation.
   WorkProcessor(const std::vector<std::string>& args,
-                std::string index_import_path);
+                std::string index_import_path, std::string startup_timestamp);
 
   // Processes the given work request and writes its exit code and stderr output
   // (if any) into the given response.
@@ -39,6 +39,8 @@ class WorkProcessor {
  private:
   std::vector<std::string> universal_args_;
   std::string index_import_path_;
+  std::string startup_timestamp_;
+  bool reported_startup_timestamp_ = false;
 };
 
 #endif  // BUILD_BAZEL_RULES_SWIFT_TOOLS_WORKER_WORK_PROCESSOR_H
