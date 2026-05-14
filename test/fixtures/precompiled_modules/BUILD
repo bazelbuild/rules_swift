@@ -199,7 +199,10 @@ swift_binary(
     # version, that is what we're testing
     features = ["-treat_warnings_as_errors"],
     tags = FIXTURE_TAGS,
-    target_compatible_with = ["@platforms//os:ios"],
+    target_compatible_with = ["@platforms//os:ios"] + select({
+        "@build_bazel_apple_support//configs:apple": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = ["@system_sdk//:Testing"],
 )
 
@@ -209,6 +212,10 @@ transition_binary(
     platform = "@build_bazel_apple_support//platforms:ios_arm64",
     tags = FIXTURE_TAGS,
     target = ":available_testing_import",
+    target_compatible_with = select({
+        "@build_bazel_apple_support//configs:apple": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     transitive_features = [
         "swift.emit_c_module",
         "swift.use_c_modules",
