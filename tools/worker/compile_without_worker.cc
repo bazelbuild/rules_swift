@@ -18,10 +18,13 @@
 #include <string>
 #include <vector>
 
+#include "tools/common/process.h"
 #include "tools/worker/swift_runner.h"
 
 int CompileWithoutWorker(const std::vector<std::string>& args,
                          std::string index_import_path) {
+  std::ostream* stderr_stream = &std::cerr;
+  PrintWorkerTimestamp(stderr_stream, "main");
   return SwiftRunner(args, index_import_path)
-      .Run(&std::cerr, /*stdout_to_stderr=*/false);
+      .Run(stderr_stream, /*stdout_to_stderr=*/false);
 }

@@ -21,7 +21,6 @@
 // Starts the worker processing loop and listens to stdin for work requests from
 // Bazel.
 int CompileWithWorker(const std::vector<std::string>& args,
-                      std::string index_import_path,
-                      std::string startup_timestamp);
+                      std::string index_import_path);
 
 #endif  // BUILD_BAZEL_RULES_SWIFT_TOOLS_WORKER_COMPILE_WITH_WORKER_H_

@@ -51,6 +51,13 @@ std::string FormatLocalTime() {
   return time_buffer;
 }
 
+}  // namespace
+
+void PrintWorkerTimestamp(std::ostream* stderr_stream, const char* event) {
+  (*stderr_stream) << "rules_swift_worker " << event << " " << FormatLocalTime()
+                   << "\n";
+}
+
 void PrintWorkerTimestamp(std::ostream* stderr_stream, const char* event,
                           const std::vector<std::string>& args) {
   (*stderr_stream) << "rules_swift_worker " << event << " "
@@ -60,8 +67,6 @@ void PrintWorkerTimestamp(std::ostream* stderr_stream, const char* event,
   }
   (*stderr_stream) << "\n";
 }
-
-}  // namespace
 
 std::map<std::string, std::string> GetCurrentEnvironment() {
   std::map<std::string, std::string> result;

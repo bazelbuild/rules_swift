@@ -16,6 +16,7 @@
 #define BUILD_BAZEL_RULES_SWIFT_TOOLS_WRAPPERS_PROCESS_H
 
 #include <map>
+#include <ostream>
 #include <string>
 #include <vector>
 
@@ -26,6 +27,11 @@
 int RunSubProcess(const std::vector<std::string>& args,
                   std::map<std::string, std::string>* env,
                   std::ostream* stderr_stream, bool stdout_to_stderr = false);
+
+// Prints a temporary worker timestamp diagnostic to the given stderr stream.
+void PrintWorkerTimestamp(std::ostream* stderr_stream, const char* event);
+void PrintWorkerTimestamp(std::ostream* stderr_stream, const char* event,
+                          const std::vector<std::string>& args);
 
 // Returns a hash map containing the current process's environment.
 std::map<std::string, std::string> GetCurrentEnvironment();

@@ -26,6 +26,7 @@ cc_library(
     deps = [
         ":swift_runner",
         ":worker_protocol",
+        "//tools/common:process",
         "//tools/common:temp_file",
     ],
 )
@@ -48,6 +49,7 @@ cc_library(
     }),
     deps = [
         ":swift_runner",
+        "//tools/common:process",
     ],
 )
 
@@ -159,6 +161,7 @@ cc_binary(
     deps = [
         ":compile_with_worker",
         ":compile_without_worker",
+        "//tools/common:process",
         "@bazel_tools//tools/cpp/runfiles",
     ],
 )
