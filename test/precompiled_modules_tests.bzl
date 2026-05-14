@@ -167,6 +167,7 @@ def precompiled_modules_test_suite(name, tags = []):
         name = "{}_build_test".format(name),
         targets = [
             "//test/fixtures/precompiled_modules:application_extension_unavailable_transitioned",
+            "//test/fixtures/precompiled_modules:available_testing_import_ios_12",
             "//test/fixtures/precompiled_modules:foundation_requires_explicit_dep_transitioned",
             "//test/fixtures/precompiled_modules:hello",
             "//test/fixtures/precompiled_modules:hello_with_explicit_deps_transitioned",

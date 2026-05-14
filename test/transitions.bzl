@@ -7,15 +7,19 @@ load("//swift:providers.bzl", "SwiftInfo")
 _COMPILATION_MODE = "//command_line_option:compilation_mode"
 _FEATURES = "//command_line_option:features"
 _HOST_FEATURES = "//command_line_option:host_features"
+_IOS_MINIMUM_OS = "//command_line_option:ios_minimum_os"
 _MACOS_MINIMUM_OS = "//command_line_option:macos_minimum_os"
 _PLATFORMS = "//command_line_option:platforms"
+_TVOS_MINIMUM_OS = "//command_line_option:tvos_minimum_os"
 
 _TRANSITION_OPTIONS = [
     _COMPILATION_MODE,
     _FEATURES,
     _HOST_FEATURES,
+    _IOS_MINIMUM_OS,
     _MACOS_MINIMUM_OS,
     _PLATFORMS,
+    _TVOS_MINIMUM_OS,
 ]
 
 def _transition_impl(settings, attr):
@@ -23,8 +27,10 @@ def _transition_impl(settings, attr):
         _COMPILATION_MODE: attr.compilation_mode or settings[_COMPILATION_MODE],
         _FEATURES: settings[_FEATURES] + attr.transitive_features,
         _HOST_FEATURES: settings[_HOST_FEATURES] + attr.transitive_features,
-        _MACOS_MINIMUM_OS: attr.minimum_os or settings[_MACOS_MINIMUM_OS],
+        _IOS_MINIMUM_OS: attr.ios_minimum_os or settings[_IOS_MINIMUM_OS],
+        _MACOS_MINIMUM_OS: attr.macos_minimum_os or attr.minimum_os or settings[_MACOS_MINIMUM_OS],
         _PLATFORMS: [attr.platform] if attr.platform else settings[_PLATFORMS],
+        _TVOS_MINIMUM_OS: attr.tvos_minimum_os or settings[_TVOS_MINIMUM_OS],
     }
 
 _transition = transition(
@@ -44,6 +50,15 @@ _TRANSITION_ATTRS = {
     ),
     "minimum_os": attr.string(
         doc = "Optional value to set `--macos_minimum_os` to.",
+    ),
+    "ios_minimum_os": attr.string(
+        doc = "Optional value to set `--ios_minimum_os` to.",
+    ),
+    "macos_minimum_os": attr.string(
+        doc = "Optional value to set `--macos_minimum_os` to.",
+    ),
+    "tvos_minimum_os": attr.string(
+        doc = "Optional value to set `--tvos_minimum_os` to.",
     ),
     "platform": attr.string(
         doc = "Optional target platform label (e.g. `@build_bazel_apple_support//platforms:macos_x86_64`).",

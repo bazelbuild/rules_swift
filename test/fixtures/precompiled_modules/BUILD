@@ -192,6 +192,37 @@ transition_test(
     ],
 )
 
+swift_binary(
+    name = "available_testing_import",
+    srcs = ["available_testing_import.swift"],
+    # Ignore linker warning about deployment target being lower than framework
+    # version, that is what we're testing
+    features = ["-treat_warnings_as_errors"],
+    tags = FIXTURE_TAGS,
+    target_compatible_with = ["@platforms//os:ios"] + select({
+        "@build_bazel_apple_support//configs:apple": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    deps = ["@system_sdk//:Testing"],
+)
+
+transition_binary(
+    name = "available_testing_import_ios_12",
+    ios_minimum_os = "12.0",
+    platform = "@build_bazel_apple_support//platforms:ios_arm64",
+    tags = FIXTURE_TAGS,
+    target = ":available_testing_import",
+    target_compatible_with = select({
+        "@build_bazel_apple_support//configs:apple": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    transitive_features = [
+        "swift.emit_c_module",
+        "swift.use_c_modules",
+        "swift.use_explicit_swift_module_map",
+    ],
+)
+
 # Imports C-only modules whose modulemaps live under `<sdk>/usr/include/<name>.modulemap`
 swift_binary(
     name = "c_module_imports",

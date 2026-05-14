@@ -295,22 +295,8 @@ void ExtractFlagsFromInterfaceFile(
   while (std::getline(interface_file, line)) {
     absl::string_view line_view = line;
     if (absl::ConsumePrefix(&line_view, "// swift-module-flags: ")) {
-      bool skip_next = false;
       while (std::optional<std::string> flag = ConsumeArg(&line_view)) {
-        if (skip_next) {
-          skip_next = false;
-        } else if (*flag == "-target") {
-          // We have to skip the target triple in the interface file because it
-          // might be slightly different from the one the rest of our
-          // dependencies were compiled with. For example, if we are targeting
-          // `arm64-apple-macos`, that is the architecture that any Clang
-          // module dependencies will have used. If the module uses
-          // `arm64e-apple-macos` instead, then it will not be compatible with
-          // those Clang modules.
-          skip_next = true;
-        } else {
-          consumer(*flag);
-        }
+        consumer(*flag);
       }
       return;
     }
