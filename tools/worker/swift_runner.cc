@@ -14,9 +14,9 @@
 
 #include "tools/worker/swift_runner.h"
 
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
-#include <iomanip>
 #include <optional>
 #include <sstream>
 #include <utility>
@@ -30,6 +30,7 @@
 #include "tools/common/process.h"
 #include "tools/common/target_triple.h"
 #include "tools/common/temp_file.h"
+#include "tools/worker/hermetic_symlink.h"
 #include "tools/worker/output_file_map.h"
 #include "tools/worker/pcm_hermetic_runner.h"
 
@@ -218,61 +219,11 @@ std::optional<std::string> InferInterfacePath(
   return std::nullopt;
 }
 
-// Necessary so the MODULE_INTERFACE_PATH in the swiftmodule doesn't have an
-// absolute path to Xcode
-void CreateVFSOverlayForInterface(
-    absl::string_view interface_path,
-    std::function<void(absl::string_view)> consumer) {
-  std::filesystem::path source{std::string(interface_path)};
-  if (!source.is_absolute()) {
-    consumer(source.string());
-    return;
-  }
-
-  std::filesystem::path module_dir = source.parent_path().filename();
-  if (module_dir.empty()) {
-    module_dir = "swiftmodule";
-  }
-  std::filesystem::path virtual_dir =
-      std::filesystem::path(".rules_swift_interface_sources") / module_dir;
-  std::filesystem::path virtual_path = virtual_dir / source.filename();
-  std::filesystem::path overlay_path =
-      virtual_dir / "swiftinterface-vfsoverlay.yaml";
-
-  std::error_code ec;
-  std::filesystem::create_directories(virtual_dir, ec);
-  if (ec) {
-    consumer(source.string());
-    return;
-  }
-
-  std::ofstream overlay_file(overlay_path);
-  if (!overlay_file) {
-    consumer(source.string());
-    return;
-  }
-  overlay_file << "{\"version\":0,\"case-sensitive\":true,"
-               << "\"overlay-relative\":false,\"use-external-names\":false,"
-               << "\"roots\":[{\"type\":\"directory\",\"name\":"
-               << std::quoted(virtual_dir.string()) << ",\"contents\":["
-               << "{\"type\":\"file\",\"name\":"
-               << std::quoted(source.filename().string())
-               << ",\"external-contents\":" << std::quoted(source.string())
-               << "}]}]}";
-  overlay_file.close();
-  if (!overlay_file) {
-    consumer(source.string());
-    return;
-  }
-
-  consumer("-vfsoverlay" + overlay_path.string());
-  consumer(virtual_path.string());
-}
-
 // Extracts flags from the given `.swiftinterface` file and passes them to the
 // given consumer.
 void ExtractFlagsFromInterfaceFile(
     absl::string_view module_or_interface_path, absl::string_view target_triple,
+    std::function<std::string()> developer_dir_supplier,
     std::function<void(absl::string_view)> consumer) {
   std::string interface_path;
   if (absl::EndsWith(module_or_interface_path, ".swiftinterface")) {
@@ -288,9 +239,12 @@ void ExtractFlagsFromInterfaceFile(
 
   // Add the path to the interface file as a source file argument, then extract
   // the flags from it and add them as well.
-  CreateVFSOverlayForInterface(interface_path, consumer);
+  std::string symlinked_interface_path =
+      bazel_rules_swift::SymlinkedInterfacePath(interface_path,
+                                                developer_dir_supplier);
+  consumer(symlinked_interface_path);
 
-  std::ifstream interface_file{std::string(interface_path)};
+  std::ifstream interface_file{std::string(symlinked_interface_path)};
   std::string line;
   while (std::getline(interface_file, line)) {
     absl::string_view line_view = line;
@@ -749,7 +703,13 @@ std::vector<std::string> SwiftRunner::ProcessArguments(
 
   if (!module_or_interface_path_.empty()) {
     ExtractFlagsFromInterfaceFile(
-        module_or_interface_path_, target_triple_, [&](absl::string_view arg) {
+        module_or_interface_path_, target_triple_,
+        [&]() {
+          const char *developer_dir = std::getenv("DEVELOPER_DIR");
+          if (developer_dir != nullptr) return std::string(developer_dir);
+          return std::string();
+        },
+        [&](absl::string_view arg) {
           args_destination.push_back(std::string(arg));
         });
   }

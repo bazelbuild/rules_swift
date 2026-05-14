@@ -20,6 +20,8 @@ package(default_visibility = ["//test:__subpackages__"])
 
 licenses(["notice"])
 
+exports_files(["LowerVersionLib.swiftinterface"])
+
 swift_binary(
     name = "hello",
     srcs = ["main.swift"],

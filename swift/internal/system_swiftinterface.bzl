@@ -39,6 +39,10 @@ def _direct_clang_module_for_name(deps, module_name):
 
 def _system_swiftinterface_impl(ctx):
     swift_toolchain = swift_common.get_toolchain(ctx, toolchain_type = SWIFT_SDK_TOOLCHAIN_TYPE)
+    if ctx.attr.system_swiftinterface and ctx.file.swiftinterface:
+        fail("exactly one of system_swiftinterface or swiftinterface must be set")
+
+    swiftinterface_file = ctx.file.swiftinterface or ctx.attr.system_swiftinterface
     deps = ctx.attr.modules
     swift_infos = [dep[SwiftInfo] for dep in deps if SwiftInfo in dep]
     cc_info = cc_common.merge_cc_infos(cc_infos = [
@@ -65,7 +69,7 @@ def _system_swiftinterface_impl(ctx):
         feature_configuration = feature_configuration,
         is_framework = ctx.attr.is_framework,
         module_name = ctx.attr.module_name,
-        swiftinterface_file = ctx.attr.system_swiftinterface,
+        swiftinterface_file = swiftinterface_file,
         swift_infos = swift_infos,
         swift_toolchain = swift_toolchain,
         target_name = ctx.attr.name,
@@ -121,7 +125,10 @@ The path to a system Swift textual interface.
 Variables `__BAZEL_XCODE_SDKROOT__` and `__BAZEL_XCODE_DEVELOPER_DIR__` will be
 substituted.
 """,
-            mandatory = True,
+        ),
+        "swiftinterface": attr.label(
+            allow_single_file = [".swiftinterface"],
+            doc = "A declared Swift textual interface file to compile.",
         ),
     },
     doc = """\
