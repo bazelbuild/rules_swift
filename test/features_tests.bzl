@@ -351,9 +351,6 @@ def features_test_suite(name, tags = []):
         name = "{}_swift_test_rpath_roots_link_test".format(name),
         tags = all_tags,
         expected_argv = [
-            "-Wl,-rpath,__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/MacOSX.platform/Developer/usr/lib",
-            "-Wl,-rpath,__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/MacOSX.platform/Developer/Library/Frameworks",
-            "-Wl,-rpath,__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
             "-Wl,-rpath,/private/var/select/developer_dir/Platforms/MacOSX.platform/Developer/usr/lib",
             "-Wl,-rpath,/private/var/select/developer_dir/Platforms/MacOSX.platform/Developer/Library/Frameworks",
             "-Wl,-rpath,/private/var/select/developer_dir/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",

@@ -277,12 +277,9 @@ def _swift_linkopts_cc_info(
         target_triple = target_triple,
         xcode_config = xcode_config,
     )
-    developer_dir_rpath_roots = _DEVELOPER_DIR_SYMLINKS + [
-        "__BAZEL_XCODE_DEVELOPER_DIR__",
-    ]
     rpaths = ["/usr/lib/swift"] + [
         paths.join(developer_dir_symlink, compatibility_dir)
-        for developer_dir_symlink in developer_dir_rpath_roots
+        for developer_dir_symlink in _DEVELOPER_DIR_SYMLINKS
         for compatibility_dir in swift_compatibility_lib_dirs
     ]
     linkopts += [
@@ -328,17 +325,11 @@ def _test_linking_context(target_triple, toolchain_label):
         binaries.
     """
 
-    # xcode-select creates the following symlink(s) to the developer directory
-    # (we list both because the behavior changed between versions of macOS).
-    # We also include Bazel's developer directory placeholder for local test
-    # actions. These let the required libraries be found if Xcode is installed
-    # in a different location on the machine that runs the tests than the
-    # machine used to link them.
-    developer_dir_rpath_roots = _DEVELOPER_DIR_SYMLINKS + [
-        "__BAZEL_XCODE_DEVELOPER_DIR__",
-    ]
+    # We use these as the rpaths for linking tests so that the required
+    # libraries are found if Xcode is installed in a different location on the
+    # machine that runs the tests than the machine used to link them.
     linkopts = []
-    for developer_dir in developer_dir_rpath_roots:
+    for developer_dir in _DEVELOPER_DIR_SYMLINKS:
         platform_developer_framework_dir = _platform_developer_framework_dir(
             developer_dir,
             target_triple,
