@@ -34,7 +34,7 @@
 #include "tools/worker/output_file_map.h"
 #include "tools/worker/pcm_hermetic_runner.h"
 
-bool ArgumentEnablesWMO(const std::string& arg) {
+bool ArgumentEnablesWMO(const std::string &arg) {
   return arg == "-wmo" || arg == "-whole-module-optimization" ||
          arg == "-force-single-frontend-invocation";
 }
@@ -46,11 +46,11 @@ using bazel_rules_swift::TargetTriple;
 
 // Creates a temporary file and writes the given arguments to it, one per line.
 static std::unique_ptr<TempFile> WriteResponseFile(
-    const std::vector<std::string>& args) {
+    const std::vector<std::string> &args) {
   auto response_file = TempFile::Create("swiftc_params.XXXXXX");
   std::ofstream response_file_stream(response_file->GetPath());
 
-  for (const auto& arg : args) {
+  for (const auto &arg : args) {
     // When Clang/Swift write out a response file to communicate from driver to
     // frontend, they just quote every argument to be safe; we duplicate that
     // instead of trying to be "smarter" and only quoting when necessary.
@@ -69,7 +69,7 @@ static std::unique_ptr<TempFile> WriteResponseFile(
 }
 
 // Unescape and unquote an argument read from a line of a response file.
-static std::string Unescape(const std::string& arg) {
+static std::string Unescape(const std::string &arg) {
   std::string result;
   auto length = arg.size();
   for (size_t i = 0; i < length; ++i) {
@@ -111,7 +111,7 @@ static std::string Unescape(const std::string& arg) {
 // any leading whitespace and also handling quoted/escaped arguments), advancing
 // the view to the end of the argument in a similar fashion to
 // `absl::ConsumePrefix()`.
-static std::optional<std::string> ConsumeArg(absl::string_view* line) {
+static std::optional<std::string> ConsumeArg(absl::string_view *line) {
   size_t whitespace_count = 0;
   size_t length = line->size();
   while (whitespace_count < length && (*line)[whitespace_count] == ' ') {
@@ -171,7 +171,7 @@ static std::optional<std::string> ConsumeArg(absl::string_view* line) {
 // If `str` starts with `prefix`, `str` is mutated to remove `prefix` and the
 // function returns true. Otherwise, `str` is left unmodified and the function
 // returns `false`.
-static bool StripPrefix(const std::string& prefix, std::string& str) {
+static bool StripPrefix(const std::string &prefix, std::string &str) {
   if (str.find(prefix) != 0) {
     return false;
   }
@@ -259,7 +259,7 @@ void ExtractFlagsFromInterfaceFile(
 
 }  // namespace
 
-SwiftRunner::SwiftRunner(const std::vector<std::string>& args,
+SwiftRunner::SwiftRunner(const std::vector<std::string> &args,
                          std::string index_import_path,
                          bool force_response_file)
     : job_env_(GetCurrentEnvironment()),
@@ -271,7 +271,7 @@ SwiftRunner::SwiftRunner(const std::vector<std::string>& args,
   args_ = ProcessArguments(args);
 }
 
-int SwiftRunner::Run(std::ostream* stderr_stream, bool stdout_to_stderr) {
+int SwiftRunner::Run(std::ostream *stderr_stream, bool stdout_to_stderr) {
   // In rules_swift < 3.x the .swiftsourceinfo files are unconditionally written
   // to the module path. In rules_swift >= 3.x these same files are no longer
   // tracked by Bazel unless explicitly requested. When using non-sandboxed
@@ -341,7 +341,7 @@ int SwiftRunner::Run(std::ostream* stderr_stream, bool stdout_to_stderr) {
       }
     }
 
-    const std::filesystem::path& exec_root = std::filesystem::current_path();
+    const std::filesystem::path &exec_root = std::filesystem::current_path();
     // Copy back from the global index store to bazel's index store
     ii_args.push_back((exec_root / global_index_store_import_path_).string());
     ii_args.push_back((exec_root / index_store_path_).string());
@@ -357,11 +357,11 @@ class StreamIteratorEnd {};
 // Basic iterator over an ifstream
 class StreamIterator {
  public:
-  StreamIterator(std::ifstream& file) : file_{file} { next(); }
+  StreamIterator(std::ifstream &file) : file_{file} { next(); }
 
-  const std::string& operator*() const { return str_; }
+  const std::string &operator*() const { return str_; }
 
-  StreamIterator& operator++() {
+  StreamIterator &operator++() {
     next();
     return *this;
   }
@@ -371,24 +371,24 @@ class StreamIterator {
  private:
   void next() { std::getline(file_, str_); }
 
-  std::ifstream& file_;
+  std::ifstream &file_;
   std::string str_;
 };
 
 class ArgsFile {
  public:
-  ArgsFile(std::ifstream& file) : file_(file) {}
+  ArgsFile(std::ifstream &file) : file_(file) {}
 
   StreamIterator begin() { return StreamIterator{file_}; }
 
   StreamIteratorEnd end() { return StreamIteratorEnd{}; }
 
  private:
-  std::ifstream& file_;
+  std::ifstream &file_;
 };
 
 bool SwiftRunner::ProcessPossibleResponseFile(
-    const std::string& arg, std::function<void(const std::string&)> consumer) {
+    const std::string &arg, std::function<void(const std::string &)> consumer) {
   auto path = arg.substr(1);
   std::ifstream original_file(path);
   ArgsFile args_file(original_file);
@@ -421,7 +421,7 @@ bool SwiftRunner::ProcessPossibleResponseFile(
   std::string arg_from_file;
   std::vector<std::string> new_args;
   for (auto it = args.begin(); it != args.end(); ++it) {
-    changed |= ProcessArgument(it, *it, [&](const std::string& processed_arg) {
+    changed |= ProcessArgument(it, *it, [&](const std::string &processed_arg) {
       new_args.push_back(processed_arg);
     });
   }
@@ -440,7 +440,7 @@ bool SwiftRunner::ProcessPossibleResponseFile(
 }
 
 std::string SwiftRunner::ProcessExplicitSwiftModuleMapFile(
-    const std::string& path) {
+    const std::string &path) {
   std::string module_map_path = path;
   std::ifstream module_map_file(module_map_path);
   if (!module_map_file.good()) {
@@ -465,14 +465,14 @@ std::string SwiftRunner::ProcessExplicitSwiftModuleMapFile(
 
 template <typename Iterator>
 bool SwiftRunner::ProcessArgument(
-    Iterator& itr, const std::string& arg,
-    std::function<void(const std::string&)> consumer) {
+    Iterator &itr, const std::string &arg,
+    std::function<void(const std::string &)> consumer) {
   bool changed = false;
 
   // Helper function for adding path remapping flags that depend on information
   // only known at execution time.
-  auto add_prefix_map_flags = [&](const std::string& flag,
-                                  const std::string& new_path = ".") {
+  auto add_prefix_map_flags = [&](const std::string &flag,
+                                  const std::string &new_path = ".") {
     // Get the actual current working directory (the execution root), which
     // we didn't know at analysis time.
     consumer(flag);
@@ -674,7 +674,7 @@ std::vector<std::string> SwiftRunner::ParseArguments(Iterator itr) {
 }
 
 std::vector<std::string> SwiftRunner::ProcessArguments(
-    const std::vector<std::string>& args) {
+    const std::vector<std::string> &args) {
   std::vector<std::string> new_args;
   std::vector<std::string> response_file_args;
 
@@ -693,9 +693,9 @@ std::vector<std::string> SwiftRunner::ProcessArguments(
   // If we're forcing response files, push the remaining processed args onto a
   // different vector that we write out below. If not, push them directly onto
   // the vector being returned.
-  auto& args_destination = force_response_file_ ? response_file_args : new_args;
+  auto &args_destination = force_response_file_ ? response_file_args : new_args;
   while (it != parsed_args.end()) {
-    ProcessArgument(it, *it, [&](const std::string& arg) {
+    ProcessArgument(it, *it, [&](const std::string &arg) {
       args_destination.push_back(arg);
     });
     ++it;
