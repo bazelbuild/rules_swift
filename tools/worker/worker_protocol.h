@@ -92,10 +92,10 @@ struct WorkResponse {
 // a complete JSON object). This function returns `nullopt` if the request could
 // not be read (for example, because the JSON was malformed, or the stream was
 // closed).
-std::optional<WorkRequest> ReadWorkRequest(std::istream &stream);
+std::optional<WorkRequest> ReadWorkRequest(std::istream& stream);
 
 // Writes the given `WorkResponse` as compact JSON to the given stream.
-void WriteWorkResponse(const WorkResponse &response, std::ostream &stream);
+void WriteWorkResponse(const WorkResponse& response, std::ostream& stream);
 
 }  // namespace bazel_rules_swift::worker_protocol
 

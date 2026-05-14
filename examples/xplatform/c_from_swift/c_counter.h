@@ -17,7 +17,7 @@ extern "C" {
 #endif
 
 // An opaque type that represents a pointer to the C++ Counter type in C APIs.
-typedef void *counter_t;
+typedef void* counter_t;
 
 // C functions that correspond to the C++ interface.
 counter_t counter_create();

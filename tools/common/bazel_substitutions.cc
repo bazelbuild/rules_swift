@@ -47,8 +47,8 @@ static const char kBazelSwiftToolchainPath[] = "__BAZEL_SWIFT_TOOLCHAIN_PATH__";
 
 // Returns the value of the given environment variable, or the empty string if
 // it wasn't set.
-std::string GetAppleEnvironmentVariable(const char *name) {
-  char *env_value = getenv(name);
+std::string GetAppleEnvironmentVariable(const char* name) {
+  char* env_value = getenv(name);
   if (env_value == nullptr) {
     std::cerr
         << "error: required Apple environment variable '" << name
@@ -62,12 +62,12 @@ std::string GetToolchainPath() {
   // If TOOLCHAIN_PATH is set, we will use that as a toolchain path.
   // Otherwise, we will try to derive it from DEVELOPER_DIR and TOOLCHAINS
   // using xcrun by calling GetToolchainPath().
-  char *toolchain_path = getenv("TOOLCHAIN_PATH");
+  char* toolchain_path = getenv("TOOLCHAIN_PATH");
   if (toolchain_path != nullptr) {
     return std::string(toolchain_path);
   }
 
-  char *toolchain_id = getenv("TOOLCHAINS");
+  char* toolchain_id = getenv("TOOLCHAINS");
   std::ostringstream output_stream;
   int exit_code =
       RunSubProcess({"/usr/bin/xcrun", "--find", "clang"},
@@ -119,11 +119,11 @@ BazelPlaceholderSubstitutions::BazelPlaceholderSubstitutions() {
        PlaceholderResolver([]() { return GetToolchainPath(); })}};
 }
 
-bool BazelPlaceholderSubstitutions::Apply(std::string &arg) {
+bool BazelPlaceholderSubstitutions::Apply(std::string& arg) {
   bool changed = false;
 
   // Replace placeholders in the string with their actual values.
-  for (auto &pair : placeholder_resolvers_) {
+  for (auto& pair : placeholder_resolvers_) {
     changed |= FindAndReplace(pair.first, pair.second, arg);
   }
 
@@ -131,9 +131,9 @@ bool BazelPlaceholderSubstitutions::Apply(std::string &arg) {
 }
 
 bool BazelPlaceholderSubstitutions::FindAndReplace(
-    const std::string &placeholder,
-    BazelPlaceholderSubstitutions::PlaceholderResolver &resolver,
-    std::string &str) {
+    const std::string& placeholder,
+    BazelPlaceholderSubstitutions::PlaceholderResolver& resolver,
+    std::string& str) {
   int start = 0;
   bool changed = false;
   while ((start = str.find(placeholder, start)) != std::string::npos) {
