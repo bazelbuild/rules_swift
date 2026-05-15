@@ -871,6 +871,7 @@ def _execute_compile_plan(
     )
     for number, batch in enumerate(batches, 1):
         object_prereqs = dict(prerequisites)
+        object_prereqs["batch_number"] = number
 
         # If there is only one batch (for small libraries, or libraries of any
         # size compiled with whole-module optimization), we omit the requested

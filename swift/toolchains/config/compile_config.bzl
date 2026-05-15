@@ -62,6 +62,7 @@ load(
     "SWIFT_FEATURE_USE_C_MODULES",
     "SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP",
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
+    "SWIFT_FEATURE__LAYERING_CHECK_ON_CODEGEN",
     "SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
 )
@@ -195,6 +196,17 @@ def compile_action_configs(
             ],
             configurators = [_swift_layering_check_configurator],
             features = [SWIFT_FEATURE_LAYERING_CHECK_SWIFT],
+            not_features = [SWIFT_FEATURE__LAYERING_CHECK_ON_CODEGEN],
+        ),
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_COMPILE_CODEGEN,
+            ],
+            configurators = [_swift_layering_check_configurator],
+            features = [
+                SWIFT_FEATURE_LAYERING_CHECK_SWIFT,
+                SWIFT_FEATURE__LAYERING_CHECK_ON_CODEGEN,
+            ],
         ),
 
         # Configure constant value extraction.
@@ -1125,6 +1137,15 @@ def _emit_objc_header_path_configurator(prerequisites, args):
 
 def _swift_layering_check_configurator(prerequisites, args):
     """Adds flags for Swift layering checks to the command line."""
+
+    # If we got here because the layering-check-on-codegen feature was enabled,
+    # we still only want to do it on the first batch.
+    compile_step = getattr(prerequisites, "compile_step", None)
+    if compile_step and compile_step.action == SWIFT_ACTION_COMPILE_CODEGEN:
+        batch_number = getattr(prerequisites, "batch_number", 1)
+        if batch_number != 1:
+            return None
+
     args.add(
         "-Xwrapped-swift=-layering-check-deps-modules={}".format(
             prerequisites.deps_modules_file.path,

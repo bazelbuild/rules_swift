@@ -23,6 +23,10 @@ load(
     "compile",
 )
 load(
+    "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
+    "SWIFT_FEATURE__LAYERING_CHECK_ON_CODEGEN",
+)
+load(
     "@build_bazel_rules_swift//swift/internal:linking.bzl",
     "configure_features_for_binary",
     "create_linking_context_from_compilation_outputs",
@@ -59,7 +63,12 @@ def _swift_compiler_plugin_impl(ctx):
     toolchains = find_all_toolchains(ctx)
     feature_configuration = configure_features_for_binary(
         ctx = ctx,
-        requested_features = ctx.features,
+        requested_features = ctx.features + [
+            # The `SwiftCompileModule` action may not run if the module output
+            # of the binary is never used. Perform layering checks on the first
+            # codegen action instead.
+            SWIFT_FEATURE__LAYERING_CHECK_ON_CODEGEN,
+        ],
         toolchains = toolchains,
         unsupported_features = ctx.disabled_features,
     )

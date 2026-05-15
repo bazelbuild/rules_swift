@@ -77,7 +77,10 @@ def local_defines_test_suite(name, tags = []):
     action_command_line_test(
         name = "{}_binary_has_local_defines".format(name),
         expected_argv = ["-DBIN_LOCAL_FOO"],
-        mnemonic = "SwiftCompile",
+        mnemonic = select({
+            "@build_bazel_apple_support//constraints:apple": "SwiftCompile",
+            "//conditions:default": "SwiftCompileModule",
+        }),
         tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/local_defines:bin_with_local_defines",
     )
@@ -86,7 +89,10 @@ def local_defines_test_suite(name, tags = []):
     action_command_line_test(
         name = "{}_test_has_local_defines".format(name),
         expected_argv = ["-DTEST_LOCAL_FOO"],
-        mnemonic = "SwiftCompile",
+        mnemonic = select({
+            "@build_bazel_apple_support//constraints:apple": "SwiftCompile",
+            "//conditions:default": "SwiftCompileModule",
+        }),
         tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/local_defines:test_with_local_defines",
     )

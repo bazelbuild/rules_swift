@@ -100,6 +100,13 @@ SWIFT_FEATURE_LAYERING_CHECK_FOR_C_DEPS = "swift.layering_check_for_c_deps"
 # any module that is not listed among the direct dependencies of the target.
 SWIFT_FEATURE_LAYERING_CHECK_SWIFT = "swift.layering_check_swift"
 
+# If enabled, the layering check will be performed during the
+# `SwiftCompileCodegen` action (specifically the first batch) instead of the
+# `SwiftCompileModule` action. This is necessary for targets like terminal
+# binaries where the module action might be pruned by Bazel when its output is
+# not used downstream.
+SWIFT_FEATURE__LAYERING_CHECK_ON_CODEGEN = "swift._layering_check_on_codegen"
+
 # If enabled, the C or Objective-C target should be compiled as a system module.
 SWIFT_FEATURE_SYSTEM_MODULE = "swift.system_module"
 

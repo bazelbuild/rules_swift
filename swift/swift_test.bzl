@@ -23,6 +23,10 @@ load(
     "compile",
 )
 load(
+    "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
+    "SWIFT_FEATURE__LAYERING_CHECK_ON_CODEGEN",
+)
+load(
     "@build_bazel_rules_swift//swift/internal:linking.bzl",
     "configure_features_for_binary",
     "malloc_linking_context",
@@ -244,9 +248,16 @@ def _do_compile(
 
 def _swift_test_impl(ctx):
     toolchains = find_all_toolchains(ctx)
+
+    extra_requested_features = [] if ctx.attr.discover_tests else [
+        # The `SwiftCompileModule` action may not run if the module output of
+        # the test binary is never used. Perform layering checks on the first
+        # codegen action instead.
+        SWIFT_FEATURE__LAYERING_CHECK_ON_CODEGEN,
+    ]
     feature_configuration = configure_features_for_binary(
         ctx = ctx,
-        requested_features = ctx.features,
+        requested_features = ctx.features + extra_requested_features,
         toolchains = toolchains,
         unsupported_features = ctx.disabled_features,
     )
