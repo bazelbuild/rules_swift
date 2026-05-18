@@ -15,7 +15,7 @@ In your `MODULE.bazel`:
 
 ```bzl
 swift = use_extension(
-    "@build_bazel_rules_swift//swift:extensions.bzl",
+    "@rules_swift//swift:extensions.bzl",
     "swift",
 )
 
@@ -122,7 +122,7 @@ swift.toolchain(
 Generate the dictionary with the bundled `swift-releases` helper:
 
 ```sh
-bazel run @build_bazel_rules_swift//tools/swift-releases -- list 6.3
+bazel run @rules_swift//tools/swift-releases -- list 6.3
 ```
 
 This downloads each release archive and prints a ready-to-paste mapping
@@ -142,7 +142,7 @@ Snapshots are not in the bundled checksum table, so you must provide
 snapshots (it can't enumerate platforms automatically):
 
 ```sh
-bazel run @build_bazel_rules_swift//tools/swift-releases -- list \
+bazel run @rules_swift//tools/swift-releases -- list \
     main-snapshot-2024-08-01 --platform xcode --platform ubuntu22.04
 ```
 
@@ -155,7 +155,7 @@ locally, declare it as a dev dependency:
 
 ```bzl
 swift = use_extension(
-    "@build_bazel_rules_swift//swift:extensions.bzl",
+    "@rules_swift//swift:extensions.bzl",
     "swift",
     dev_dependency = True,
 )

@@ -6,5 +6,4 @@ module(
 bazel_dep(
     name = "rules_swift",
     version = "0",
-    repo_name = "build_bazel_rules_swift",
 )

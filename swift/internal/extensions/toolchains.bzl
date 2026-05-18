@@ -27,7 +27,7 @@ toolchain(
         "@platforms//os:none",
     ],
     toolchain = "@{toolchain_repository}//:swift_toolchain_embedded",
-    toolchain_type = "@build_bazel_rules_swift//toolchains:toolchain_type",
+    toolchain_type = "@rules_swift//toolchains:toolchain_type",
     visibility = ["//visibility:public"],
 )
 
@@ -37,7 +37,7 @@ toolchain(
     exec_compatible_with = {exec_compatible_with},
     target_compatible_with = {exec_compatible_with},
     toolchain = "@{toolchain_repository}//:swift_toolchain_exec",
-    toolchain_type = "@build_bazel_rules_swift//toolchains:toolchain_type",
+    toolchain_type = "@rules_swift//toolchains:toolchain_type",
     visibility = ["//visibility:public"],
 )
 

@@ -14,13 +14,13 @@
 
 """Implementation of the `swift_compiler_plugin` rule."""
 
-load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load("@build_bazel_apple_support//lib:apple_support.bzl", "apple_support")
-load("@build_bazel_apple_support//lib:lipo.bzl", "lipo")
+load("@apple_support//lib:apple_support.bzl", "apple_support")
+load("@apple_support//lib:lipo.bzl", "lipo")
 load(
-    "@build_bazel_apple_support//lib:transitions.bzl",
+    "@apple_support//lib:transitions.bzl",
     "macos_universal_transition",
 )
+load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load("//swift/internal:binary_attrs.bzl", "binary_rule_attrs")
@@ -261,9 +261,9 @@ swift_compiler_plugin(
     name = "Macros",
     srcs = glob(["Macros/*.swift"]),
     deps = [
-        "@SwiftSyntax",
-        "@SwiftSyntax//:SwiftCompilerPlugin",
-        "@SwiftSyntax//:SwiftSyntaxMacros",
+        "@swift-syntax//:SwiftSyntax",
+        "@swift-syntax//:SwiftCompilerPlugin",
+        "@swift-syntax//:SwiftSyntaxMacros",
     ],
 )
 
@@ -273,7 +273,7 @@ swift_test(
     srcs = glob(["MacrosTests/*.swift"]),
     deps = [
         ":Macros",
-        "@SwiftSyntax//:SwiftSyntaxMacrosTestSupport",
+        "@swift-syntax//:SwiftSyntaxMacrosTestSupport",
     ],
 )
 
@@ -402,9 +402,9 @@ swift_compiler_plugin(
     name = "Macros",
     srcs = glob(["Macros/*.swift"]),
     deps = [
-        "@SwiftSyntax",
-        "@SwiftSyntax//:SwiftCompilerPlugin",
-        "@SwiftSyntax//:SwiftSyntaxMacros",
+        "@swift-syntax//:SwiftSyntax",
+        "@swift-syntax//:SwiftCompilerPlugin",
+        "@swift-syntax//:SwiftSyntaxMacros",
     ],
 )
 

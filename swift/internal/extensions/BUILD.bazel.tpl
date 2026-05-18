@@ -1,5 +1,5 @@
-load("@build_bazel_rules_swift//swift/toolchains:swift_toolchain.bzl", "swift_toolchain")
-load("@build_bazel_rules_swift//swift/toolchains:swift_tools.bzl", "swift_tools")
+load("@rules_swift//swift/toolchains:swift_toolchain.bzl", "swift_toolchain")
+load("@rules_swift//swift/toolchains:swift_tools.bzl", "swift_tools")
 load("@rules_cc//cc/toolchains:args.bzl", "cc_args")
 load("@rules_cc//cc/toolchains:make_variable.bzl", "cc_make_variable")
 load("@rules_cc//cc/toolchains:tool.bzl", "cc_tool")

@@ -26,7 +26,7 @@ making building targets with a lot of dependencies much faster.
 You can alternately create a config to build for the desired platform in your `.bazelrc` file:
 
 ```
-build:ios_simulator --platforms=@build_bazel_apple_support//platforms:ios_sim_arm64
+build:ios_simulator --platforms=@apple_support//platforms:ios_sim_arm64
 ```
 
 And apply it when building:

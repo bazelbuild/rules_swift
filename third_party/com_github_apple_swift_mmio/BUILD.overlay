@@ -1,6 +1,6 @@
-load("@build_bazel_rules_swift//swift:swift_compiler_plugin.bzl", "swift_compiler_plugin")
-load("@build_bazel_rules_swift//swift:swift_interop_hint.bzl", "swift_interop_hint")
-load("@build_bazel_rules_swift//swift:swift_library.bzl", "swift_library")
+load("@rules_swift//swift:swift_compiler_plugin.bzl", "swift_compiler_plugin")
+load("@rules_swift//swift:swift_interop_hint.bzl", "swift_interop_hint")
+load("@rules_swift//swift:swift_library.bzl", "swift_library")
 load("@rules_cc//cc:defs.bzl", "cc_library")
 
 swift_interop_hint(
@@ -65,14 +65,14 @@ swift_compiler_plugin(
     module_name = "MMIOMacros",
     visibility = ["//visibility:public"],
     deps = [
-        "@SwiftSyntax",
-        "@SwiftSyntax//:SwiftCompilerPlugin",
-        "@SwiftSyntax//:SwiftDiagnostics",
-        "@SwiftSyntax//:SwiftOperators",
-        "@SwiftSyntax//:SwiftSyntaxBuilder",
-        "@SwiftSyntax//:SwiftSyntaxMacroExpansion",
-        "@SwiftSyntax//:SwiftSyntaxMacros",
         "@com_github_apple_swift_mmio//:MMIOUtilities",
+        "@swift-syntax//:SwiftCompilerPlugin",
+        "@swift-syntax//:SwiftDiagnostics",
+        "@swift-syntax//:SwiftOperators",
+        "@swift-syntax//:SwiftSyntax",
+        "@swift-syntax//:SwiftSyntaxBuilder",
+        "@swift-syntax//:SwiftSyntaxMacroExpansion",
+        "@swift-syntax//:SwiftSyntaxMacros",
     ],
 )
 

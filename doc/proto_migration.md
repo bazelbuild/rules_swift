@@ -207,8 +207,8 @@ These can be migrated to the following new `swift_proto_library` targets:
 swift_proto_library(
     name = "service_server_swift_proto",
     compilers = [
-        "@build_bazel_rules_swift//proto/compilers:swift_proto",
-        "@build_bazel_rules_swift//proto/compilers:swift_server_proto",
+        "@rules_swift//proto/compilers:swift_proto",
+        "@rules_swift//proto/compilers:swift_server_proto",
     ],
     protos = [":service_proto"],
 )
@@ -216,8 +216,8 @@ swift_proto_library(
 swift_proto_library(
     name = "service_client_swift_proto",
     compilers = [
-        "@build_bazel_rules_swift//proto/compilers:swift_client_proto",
-        "@build_bazel_rules_swift//proto/compilers:swift_proto",
+        "@rules_swift//proto/compilers:swift_client_proto",
+        "@rules_swift//proto/compilers:swift_proto",
     ],
     protos = [":service_proto"],
 )
@@ -230,7 +230,7 @@ swift_proto_library(
     compiler_deps = [
         ":service_client_swift_proto",
     ],
-    compilers = ["@build_bazel_rules_swift//proto/compilers:swift_test_client_proto"],
+    compilers = ["@rules_swift//proto/compilers:swift_test_client_proto"],
     protos = [":service_proto"],
 )
 ```

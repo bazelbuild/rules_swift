@@ -11,7 +11,7 @@ source "${RUNFILES_DIR:-/dev/null}/$f" 2>/dev/null || \
   { echo>&2 "ERROR: cannot find $f"; exit 1; }; f=; set -e
 # --- end runfiles.bash initialization v3 ---
 
-CUSTOM_PROTO_COMPILER_PLUGIN_PATH=$(rlocation build_bazel_rules_swift/examples/xplatform/custom_swift_proto_compiler/rules/custom_proto_compiler_plugin)
+CUSTOM_PROTO_COMPILER_PLUGIN_PATH=$(rlocation rules_swift/examples/xplatform/custom_swift_proto_compiler/rules/custom_proto_compiler_plugin)
 $CUSTOM_PROTO_COMPILER_PLUGIN_PATH
 
 # Touch all of the declared Swift sources to create an empty file.

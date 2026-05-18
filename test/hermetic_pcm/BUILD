@@ -24,7 +24,7 @@ transition_binary(
     name = "foundation_pcm",
     target = "@system_sdk//:Foundation_clang",
     target_compatible_with = select({
-        "@build_bazel_apple_support//configs:apple": [],
+        "@apple_support//configs:apple": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     transitive_features = [
@@ -51,7 +51,7 @@ objc_library(
     hdrs = ["SimpleObj.h"],
     aspect_hints = [":SimpleObj_hint"],
     target_compatible_with = select({
-        "@build_bazel_apple_support//configs:apple": [],
+        "@apple_support//configs:apple": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     deps = ["@system_sdk//:Foundation"],
@@ -79,7 +79,7 @@ swift_library(
     generates_header = True,
     module_name = "SimpleSwift",
     target_compatible_with = select({
-        "@build_bazel_apple_support//configs:apple": [],
+        "@apple_support//configs:apple": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
 )
@@ -105,7 +105,7 @@ swift_library(
     srcs = ["Downstream.swift"],
     module_name = "Downstream",
     target_compatible_with = select({
-        "@build_bazel_apple_support//configs:apple": [],
+        "@apple_support//configs:apple": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     deps = ["@system_sdk//:Foundation"],
@@ -218,7 +218,7 @@ swift_library(
     module_name = "DownstreamWithPlugin",
     plugins = [":noop_plugin"],
     target_compatible_with = select({
-        "@build_bazel_apple_support//configs:apple": [],
+        "@apple_support//configs:apple": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     deps = ["@system_sdk//:Foundation"],
