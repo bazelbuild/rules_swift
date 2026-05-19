@@ -81,14 +81,10 @@ visibility("public")
 
 _MULTIPLE_TARGET_ASPECT_ATTRS = [
     "deps",
-    # TODO(b/151667396): Remove j2objc-specific attributes when possible.
-    "exports",
-    "runtime_deps",
 ]
 
-# TODO(b/151667396): Remove j2objc-specific attributes when possible.
+# TODO(b/151667396): Fully delete this.
 _DIRECT_ASPECT_ATTRS = [
-    "exports",
 ]
 
 def _compute_all_excluded_headers(*, exclude_headers, target):
@@ -281,14 +277,6 @@ def _module_info_for_target(
         The return value may be `None` if the target does not represent a
         Swift-compatible module.
     """
-
-    # Ignore `j2objc_library` targets. They exist to apply an aspect to their
-    # dependencies, but the modules that should be imported are associated with
-    # those dependencies. We'll produce errors if we try to read those headers
-    # again from this target and create another module map with them.
-    # TODO(b/151667396): Remove j2objc-specific knowledge.
-    if aspect_ctx.rule.kind == "j2objc_library":
-        return None
 
     # If a target doesn't have any headers, then don't generate a module map for
     # it. Such modules define nothing and only waste space on the compilation
