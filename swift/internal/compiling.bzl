@@ -41,6 +41,7 @@ load(
     "SWIFT_FEATURE_DECLARE_SWIFTSOURCEINFO",
     "SWIFT_FEATURE_EMIT_BC",
     "SWIFT_FEATURE_EMIT_C_MODULE",
+    "SWIFT_FEATURE_EMIT_LOCALIZED_STRINGS",
     "SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE",
     "SWIFT_FEATURE_EMIT_SWIFTDOC",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
@@ -563,6 +564,12 @@ def compile(
                 the indexstore output files created when the feature
                 `swift.index_while_building` is enabled.
 
+            *   `localized_strings_directory`: A directory-type `File` that
+                represents the location where the Swift compiler's
+                `.stringsdata` localized-string files were written (one per
+                source file), created when the feature
+                `swift.emit_localized_strings` is enabled.
+
             *   `macro_expansion_directory`: A directory-type `File` that
                 represents the location where macro expansion files were written
                 (only in debug/fastbuild and only when the toolchain supports
@@ -658,6 +665,7 @@ def compile(
     if split_derived_file_generation:
         all_compile_outputs = compact([
             compile_outputs.indexstore_directory,
+            compile_outputs.localized_strings_directory,
         ]) + compile_outputs.object_files + compile_outputs.const_values_files
         all_derived_outputs = compact([
             # The `.swiftmodule` file is explicitly listed as the first output
@@ -685,6 +693,7 @@ def compile(
             compile_outputs.swiftsourceinfo_file,
             compile_outputs.generated_header_file,
             compile_outputs.indexstore_directory,
+            compile_outputs.localized_strings_directory,
             compile_outputs.macro_expansion_directory,
         ]) + compile_outputs.object_files + compile_outputs.const_values_files
         all_derived_outputs = []
@@ -959,6 +968,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
             ast_files = compile_outputs.ast_files,
             const_values_files = compile_outputs.const_values_files,
             indexstore_directory = compile_outputs.indexstore_directory,
+            localized_strings_directory = compile_outputs.localized_strings_directory,
             macro_expansion_directory = compile_outputs.macro_expansion_directory,
         ),
         swift_info = SwiftInfo(
@@ -1536,6 +1546,23 @@ def _declare_compile_outputs(
         indexstore_directory = None
         include_index_unit_paths = False
 
+    # Configure localized-string extraction if requested. The compiler emits one
+    # `.stringsdata` file per source file into this directory; the file set is
+    # not known at analysis time, so (like the index store) it must be a
+    # declared directory output.
+    if (
+        is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_EMIT_LOCALIZED_STRINGS,
+        ) and
+        not _is_localized_strings_path_overridden(user_compile_flags)
+    ):
+        localized_strings_directory = actions.declare_directory(
+            "{}.stringsdata".format(target_name),
+        )
+    else:
+        localized_strings_directory = None
+
     if not output_nature.emits_multiple_objects:
         # If we're emitting a single object, we don't use an object map; we just
         # declare the output file that the compiler will generate and there are
@@ -1615,6 +1642,7 @@ def _declare_compile_outputs(
         generated_header_file = generated_header,
         generated_module_map_file = generated_module_map,
         indexstore_directory = indexstore_directory,
+        localized_strings_directory = localized_strings_directory,
         macro_expansion_directory = macro_expansion_directory,
         private_swiftinterface_file = private_swiftinterface_file,
         object_files = object_files,
@@ -1851,6 +1879,24 @@ def _is_index_store_path_overridden(copts):
     """
     for opt in copts:
         if opt == "-index-store-path":
+            return True
+    return False
+
+def _is_localized_strings_path_overridden(copts):
+    """Checks if localized-string emission must be disabled.
+
+    Localized-string emission is disabled when the copts include a custom
+    `-emit-localized-strings-path`, to avoid declaring an output directory that
+    the compiler will not write into.
+
+    Args:
+        copts: The list of copts to be scanned.
+
+    Returns:
+        True if localized-string emission must be disabled, otherwise False.
+    """
+    for opt in copts:
+        if opt == "-emit-localized-strings-path":
             return True
     return False
 

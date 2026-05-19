@@ -264,6 +264,12 @@ A `struct` with the following fields:
           the indexstore output files created when the feature
           `swift.index_while_building` is enabled.
 
+      *   `localized_strings_directory`: A directory-type `File` that
+          represents the location where the Swift compiler's
+          `.stringsdata` localized-string files were written (one per
+          source file), created when the feature
+          `swift.emit_localized_strings` is enabled.
+
       *   `macro_expansion_directory`: A directory-type `File` that
           represents the location where macro expansion files were written
           (only in debug/fastbuild and only when the toolchain supports
