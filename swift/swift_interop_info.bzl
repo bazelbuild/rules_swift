@@ -37,6 +37,7 @@ visibility("public")
 
 def create_swift_interop_info(
         *,
+        compilation_context = None,
         direct_swift_infos = [],
         exclude_headers = [],
         module_map = None,
@@ -78,6 +79,12 @@ def create_swift_interop_info(
     implicit attributes) but also to exclude dependencies if necessary.
 
     Args:
+        compilation_context: A `CcCompilationContext` that provides the headers
+            for the module, or `None` (the default) if the headers should be
+            derived from the target's `CcInfo` provider. This should only be
+            used if a target explicitly needs to use a different compilation
+            context for Swift than it does for C/Objective-C, which is a very
+            rare situation.
         direct_swift_infos: A list of `SwiftInfo` providers from dependencies,
             which will be merged with the new `SwiftInfo` created by the aspect
             as direct data.
@@ -123,6 +130,7 @@ def create_swift_interop_info(
                  "is specified.")
 
     return SwiftInteropInfo(
+        compilation_context = compilation_context,
         direct_swift_infos = direct_swift_infos,
         exclude_headers = exclude_headers,
         module_map = module_map,

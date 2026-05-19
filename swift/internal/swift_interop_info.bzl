@@ -36,6 +36,13 @@ Contains minimal information required to allow `swift_clang_module_aspect` to
 manage the creation of a `SwiftInfo` provider for a C/Objective-C target.
 """,
     fields = {
+        "compilation_context": """\
+A `CcCompilationContext` that provides the headers for the module, or `None`
+(the default) if the headers should be derived from the target's `CcInfo`
+provider. This should only be used if a target explicitly needs to use a
+different compilation context for Swift than it does for C/Objective-C, which is
+a very rare situation.
+""",
         "direct_swift_infos": """\
 A list of `SwiftInfo` providers from dependencies of the target, which will be
 merged with the new `SwiftInfo` created by the aspect as direct.
