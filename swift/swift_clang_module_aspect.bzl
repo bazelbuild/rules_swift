@@ -67,7 +67,9 @@ load(
 )
 load(":swift_interop_info.bzl", "create_swift_interop_info")
 
-_MULTIPLE_TARGET_ASPECT_ATTRS = [
+visibility("public")
+
+_ASPECT_ATTRS = [
     "deps",
 ]
 
@@ -398,7 +400,7 @@ def _handle_module(
     # we have it. If we don't, use the `SwiftInfo`-wrapped compilation context
     # instead.
     additional_swift_infos = []
-    for attr_name in _MULTIPLE_TARGET_ASPECT_ATTRS:
+    for attr_name in _ASPECT_ATTRS:
         for dep in getattr(attr, attr_name, []):
             if CcInfo in dep:
                 compilation_contexts_to_merge_for_compilation.append(
@@ -620,23 +622,20 @@ def _collect_swift_infos_from_deps(aspect_ctx):
         aspect_ctx: The aspect's context.
 
     Returns:
-        A tuple of lists of `SwiftInfo` providers from dependencies of the target to which
-        the aspect was applied. The first list contains those from attributes that should be treated
-        as direct, while the second list contains those from all other attributes.
+        A list of `SwiftInfo` providers from the dependencies of the rule to
+        which the aspect is applied.
     """
-    direct_swift_infos = []
     swift_infos = []
 
     attr = aspect_ctx.rule.attr
-    for attr_name in _MULTIPLE_TARGET_ASPECT_ATTRS:
-        infos = [
+    for attr_name in _ASPECT_ATTRS:
+        swift_infos.extend([
             dep[SwiftInfo]
             for dep in getattr(attr, attr_name, [])
             if SwiftInfo in dep
-        ]
-        swift_infos.extend(infos)
+        ])
 
-    return direct_swift_infos, swift_infos
+    return swift_infos
 
 def _find_swift_interop_info(target, aspect_ctx):
     """Finds a `SwiftInteropInfo` provider associated with the target.
@@ -670,7 +669,6 @@ def _find_swift_interop_info(target, aspect_ctx):
         # and merge `SwiftInfo` providers from relevant dependencies.
         interop_target = target
         interop_from_rule = True
-        default_direct_swift_infos = []
         default_swift_infos = []
     else:
         # If the target's rule implementation does not directly provide
@@ -682,7 +680,7 @@ def _find_swift_interop_info(target, aspect_ctx):
         # after the call site of this function.
         interop_target = None
         interop_from_rule = False
-        default_direct_swift_infos, default_swift_infos = _collect_swift_infos_from_deps(aspect_ctx)
+        default_swift_infos = _collect_swift_infos_from_deps(aspect_ctx)
 
     # We don't break this loop early when we find a matching hint, because we
     # want to give an error message if there are two aspect hints that provide
@@ -711,13 +709,13 @@ def _find_swift_interop_info(target, aspect_ctx):
             interop_target = hint
 
     if interop_target:
-        return interop_target[SwiftInteropInfo], default_direct_swift_infos, default_swift_infos
+        return interop_target[SwiftInteropInfo], default_swift_infos
     if found_overlay:
         # If no explicit interop hint was present but a `swift_overlay` was, we
         # still want that to imply the same thing as the `auto_module` hint
         # since it's the obvious right thing to do.
-        return create_swift_interop_info(), default_direct_swift_infos, default_swift_infos
-    return None, default_direct_swift_infos, default_swift_infos
+        return create_swift_interop_info(), default_swift_infos
+    return None, default_swift_infos
 
 def _find_swift_overlay_compile_info(aspect_ctx):
     """Returns the `SwiftOverlayCompileInfo` from an aspect hint, if present.
@@ -767,7 +765,8 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx, toolchain_type):
     unsupported_features = aspect_ctx.disabled_features
 
     compilation_context = None
-    interop_info, direct_swift_infos, swift_infos = _find_swift_interop_info(target, aspect_ctx)
+    direct_swift_infos = []
+    interop_info, swift_infos = _find_swift_interop_info(target, aspect_ctx)
     if interop_info:
         # If the module should be suppressed, return immediately and propagate
         # nothing (not even transitive dependencies).
@@ -854,7 +853,7 @@ def make_swift_clang_module_aspect(*, toolchain_type):
         )
 
     return aspect(
-        attr_aspects = _MULTIPLE_TARGET_ASPECT_ATTRS,
+        attr_aspects = _ASPECT_ATTRS,
         doc = """\
 Propagates unified `SwiftInfo` providers for targets that represent
 C/Objective-C modules.
