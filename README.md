@@ -75,6 +75,13 @@ environment variable `CC=clang` when invoking Bazel.
 This step is not necessary for macOS users because the Xcode toolchain always
 uses `clang`.
 
+## Building with a Standalone Swift Toolchain
+
+As an alternative to the host's Swift install, `rules_swift` can download
+and register a hermetic Swift toolchain from swift.org. See
+[doc/standalone_toolchain.md](doc/standalone_toolchain.md) for setup
+instructions.
+
 ## Building with Custom Toolchains
 
 **macOS hosts:** You can build with a custom Swift toolchain (downloaded
