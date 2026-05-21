@@ -13,6 +13,7 @@
 # limitations under the License.
 """An aspect attached to `proto_library` targets to generate Swift artifacts."""
 
+load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 load(
     "@build_bazel_rules_swift//swift:module_name.bzl",
     "derive_swift_module_name",
@@ -147,6 +148,7 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
     toolchains = find_all_toolchains(aspect_ctx)
     proto_lang_toolchain_info = aspect_ctx.attr._proto_lang_toolchain[proto_common.ProtoLangToolchainInfo]
     target_proto_info = target[ProtoInfo]
+    disable_proto_reflection = aspect_ctx.attr._disable_proto_reflection[BuildSettingInfo].value
 
     if proto_common.experimental_should_generate_code(
         proto_info = target_proto_info,
@@ -208,6 +210,8 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
         extra_args = aspect_ctx.actions.args()
         extra_args.add("--swift_opt=FileNaming=FullPath")
         extra_args.add("--swift_opt=Visibility=Public")
+        if disable_proto_reflection:
+            extra_args.add("--swift_opt=ExperimentalHiddenNames=All")
         extra_args.add(
             transitive_module_mapping_file,
             format = "--swift_opt=ProtoPathModuleMappings=%s",
@@ -233,10 +237,19 @@ def _swift_protoc_gen_aspect_impl(target, aspect_ctx):
             if SwiftInfo in p:
                 transitive_swift_infos.append(p[SwiftInfo])
 
+        pbswift_copts = ["-parse-as-library"]
+        if disable_proto_reflection:
+            pbswift_copts.extend([
+                "-Xfrontend",
+                "-disable-reflection-metadata",
+                "-Xfrontend",
+                "-disable-reflection-names",
+            ])
+
         compile_result = compile(
             actions = aspect_ctx.actions,
             compilation_contexts = get_compilation_contexts(support_deps),
-            copts = ["-parse-as-library"],
+            copts = pbswift_copts,
             feature_configuration = feature_configuration,
             module_name = module_name,
             srcs = direct_pbswift_files,
@@ -327,6 +340,9 @@ swift_protoc_gen_aspect = aspect(
     attrs = swift_config_attrs() | {
         "_proto_lang_toolchain": attr.label(
             default = swift_proto_lang_toolchain_label(),
+        ),
+        "_disable_proto_reflection": attr.label(
+            default = Label("@build_bazel_rules_swift//swift:disable_proto_reflection"),
         ),
     },
     doc = """\

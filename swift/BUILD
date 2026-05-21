@@ -1,4 +1,5 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
 load(
     "//swift/internal:build_settings.bzl",
     "per_module_swiftcopt_flag",
@@ -318,6 +319,29 @@ per_module_swiftcopt_flag(
     name = "per_module_swiftcopt",
     build_setting_default = "",
     visibility = ["//visibility:public"],
+)
+
+# If set, this causes generated Swift protos to have their type, field, and enum
+# value names suppressed, and their Swift reflection metadata will be removed as
+# well.
+#
+# This flag can be used to reduce publicly visible strings from appearing in
+# your binary, but be aware of these major caveats:
+#
+# *   You cannot use Text Format or JSON parsing/serialization with such protos,
+#     as the field/enum names will not be available. Binary format is
+#     unaffected.
+# *   You will not see the contents of such protos or names of enum values if
+#     you convert them to or interpolate them into strings.
+# *   There may yet be other places where Swift frameworks use reflection
+#     metadata that would break with this flag.
+#
+# Use this flag only if you understand the implications and test your code
+# thoroughly.
+bool_flag(
+    name = "disable_proto_reflection",
+    build_setting_default = False,
+    visibility = ["//:__subpackages__"],
 )
 
 # Allows a user to override the default Swift driver during a build, if the
