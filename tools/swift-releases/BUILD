@@ -16,6 +16,6 @@ swift_binary(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        "@com_github_apple_swift_argument_parser//:ArgumentParser",
+        "@swift_argument_parser//:ArgumentParser",
     ],
 )

@@ -17,11 +17,7 @@ bazel_dep(name = "rules_shell", version = "0.3.0")
 bazel_dep(name = "platforms", version = "0.0.11")
 bazel_dep(name = "protobuf", version = "34.0.bcr.1")
 bazel_dep(name = "nlohmann_json", version = "3.12.0.bcr.1", repo_name = "com_github_nlohmann_json")
-bazel_dep(
-    name = "swift_argument_parser",
-    version = "1.7.0",
-    repo_name = "com_github_apple_swift_argument_parser",
-)
+bazel_dep(name = "swift_argument_parser", version = "1.7.0")
 
 non_module_deps = use_extension("//swift:extensions.bzl", "non_module_deps")
 use_repo(
