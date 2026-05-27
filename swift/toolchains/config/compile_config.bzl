@@ -497,11 +497,12 @@ def compile_action_configs(
             configurators = [
                 add_arg("-Xcc", "-Xclang"),
                 add_arg("-Xcc", "-fmodule-file-home-is-cwd"),
+                add_arg("-Xcc", "-ffile-prefix-map=__BAZEL_XCODE_DEVELOPER_DIR__=/DEVELOPER_DIR"),
             ],
             features = [[
                 SWIFT_FEATURE_EMIT_C_MODULE,
                 SWIFT_FEATURE_USE_C_MODULES,
-                SWIFT_FEATURE_MODULE_HOME_IS_CWD,
+                # SWIFT_FEATURE_MODULE_HOME_IS_CWD,
             ]],
         ),
         # Treat paths in .modulemap files as workspace-relative, not modulemap-

@@ -28,8 +28,6 @@ load(
     "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
-    "SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS",
-    "SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS",
     "SWIFT_FEATURE_USE_RESPONSE_FILES",
 )
 
@@ -186,7 +184,6 @@ def _compute_feature_values(repository_ctx, swiftc_path):
 _FEATURE_CHECKS = {
     SWIFT_FEATURE_DEBUG_PREFIX_MAP: _check_debug_prefix_map,
     SWIFT_FEATURE_ENABLE_BATCH_MODE: _check_enable_batch_mode,
-    SWIFT_FEATURE_SUPPORTS_PRIVATE_DEPS: _check_supports_private_deps,
     SWIFT_FEATURE_USE_RESPONSE_FILES: _check_use_response_files,
 }
 
@@ -205,11 +202,6 @@ def _create_linux_toolchain(repository_ctx):
     root = path_to_swiftc.dirname.dirname
     feature_values = _compute_feature_values(repository_ctx, path_to_swiftc)
     version_file = _write_swift_version(repository_ctx, path_to_swiftc)
-
-    # TODO: This should be removed so that private headers can be used with
-    # explicit modules, but the build targets for CgRPC need to be cleaned up
-    # first because they contain C++ code.
-    feature_values.append(SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS)
 
     repository_ctx.file(
         "BUILD",
@@ -246,17 +238,13 @@ def _create_xcode_toolchain(repository_ctx):
       repository_ctx: The repository rule context.
     """
     feature_values = [
-        # TODO: This should be removed so that private headers can be used with
-        # explicit modules, but the build targets for CgRPC need to be cleaned
-        # up first because they contain C++ code.
-        SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS,
     ]
 
     repository_ctx.file(
         "BUILD",
         """
 load(
-    "@build_bazel_rules_swift//swift/internal:xcode_swift_toolchain.bzl",
+    "@//swift/toolchains:xcode_swift_toolchain.bzl",
     "xcode_swift_toolchain",
 )
 

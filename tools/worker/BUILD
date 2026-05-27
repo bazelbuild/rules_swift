@@ -9,7 +9,8 @@ cc_library(
     srcs = ["swift_runner.cc"],
     hdrs = ["swift_runner.h"],
     deps = [
-        "//third_party/json",
+        # "//third_party/json",
+        "@com_github_nlohmann_json//:json",
         "//tools/common:bazel_substitutions",
         "//tools/common:color",
         "//tools/common:file_system",

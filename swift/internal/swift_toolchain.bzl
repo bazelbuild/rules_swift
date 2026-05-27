@@ -21,6 +21,8 @@ toolchain, see `swift.bzl`.
 
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
+load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
+load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load(":actions.bzl", "swift_action_names")
 load(":attrs.bzl", "swift_toolchain_driver_attrs")
 load(":autolinking.bzl", "autolink_extract_action_configs")

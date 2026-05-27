@@ -46,7 +46,8 @@
 #include "tools/common/process.h"
 #include "tools/common/target_triple.h"
 #include "tools/common/temp_file.h"
-#include "third_party/json/src/json.hpp"
+#include <nlohmann/json.hpp>
+
 #include "re2/re2.h"
 
 namespace bazel_rules_swift {

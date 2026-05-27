@@ -34,6 +34,8 @@ SWIFT_FEATURE_DBG = "swift.dbg"
 SWIFT_FEATURE_FASTBUILD = "swift.fastbuild"
 SWIFT_FEATURE_OPT = "swift.opt"
 
+SWIFT_FEATURE_USE_RESPONSE_FILES = "swift.use_response_files"
+
 # If this feature is enabled, the toolchain should enable the features that are
 # available in Swift 6 language mode. If the toolchain supports
 # `-swift-version 6`, it will do so using that flag. If it is older, it will
