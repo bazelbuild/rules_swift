@@ -361,6 +361,10 @@ int SwiftRunner::Run(std::ostream* stderr_stream, bool stdout_to_stderr) {
     std::vector<std::string> rewriter_args;
     rewriter_args.reserve(args_.size() + 2 - initial_args_to_skip);
     rewriter_args.push_back(generated_header_rewriter_path_);
+    const std::vector<std::string>& passthrough_args =
+        passthrough_tool_args_["generated_header_rewriter"];
+    rewriter_args.insert(rewriter_args.end(), passthrough_args.begin(),
+                         passthrough_args.end());
     rewriter_args.push_back("--");
     rewriter_args.insert(rewriter_args.end(),
                          args_.begin() + initial_args_to_skip, args_.end());
@@ -603,6 +607,8 @@ bool SwiftRunner::ProcessArgument(
         changed = true;
       } else if (StripPrefix("-generated-header-rewriter=", new_arg)) {
         changed = true;
+      } else if (StripPrefix("-tool-arg=", new_arg)) {
+        changed = true;
       } else if (StripPrefix("-bazel-target-label=", new_arg)) {
         changed = true;
       } else if (StripPrefix("-global-index-store-import-path=", new_arg)) {
@@ -690,6 +696,11 @@ std::vector<std::string> SwiftRunner::ParseArguments(Iterator itr) {
         global_index_store_import_path_ = arg;
       } else if (StripPrefix("-generated-header-rewriter=", arg)) {
         generated_header_rewriter_path_ = arg;
+      } else if (StripPrefix("-tool-arg=", arg)) {
+        std::pair<std::string, std::string> arg_and_value =
+            absl::StrSplit(arg, absl::MaxSplits('=', 1));
+        passthrough_tool_args_[arg_and_value.first].push_back(
+            std::string(arg_and_value.second));
       } else if (StripPrefix("-bazel-target-label=", arg)) {
         target_label_ = arg;
       } else if (arg == "-file-prefix-pwd-is-dot") {

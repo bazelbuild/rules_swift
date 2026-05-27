@@ -126,6 +126,7 @@ cc_library(
         "//tools/common:process",
         "//tools/common:target_triple",
         "//tools/common:temp_file",
+        "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/strings",
         "@com_github_nlohmann_json//:json",
     ],
