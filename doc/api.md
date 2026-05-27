@@ -96,7 +96,7 @@ A provider whose type/layout is an implementation detail and should not
 ## derive_swift_module_name
 
 <pre>
-derive_swift_module_name(<a href="#derive_swift_module_name-args">*args</a>)
+derive_swift_module_name(<a href="#derive_swift_module_name-args">*args</a>, <a href="#derive_swift_module_name-feature_configuration">feature_configuration</a>)
 </pre>
 
 Returns a derived module name from the given build label.
@@ -122,6 +122,7 @@ This mapping is intended to be fairly predictable, but not reversible.
 
 | Name  | Description | Default Value |
 | :------------- | :------------- | :------------- |
+| <a id="derive_swift_module_name-feature_configuration"></a>feature_configuration |  The Swift feature configuration being used when compiling the target. This currently does nothing; it will be used by upcoming changes to manage the migration of module names to raw identifiers that use the Bazel target label.   |  `None` |
 | <a id="derive_swift_module_name-args"></a>args |  Either a single argument of type `Label`, or two arguments of type `str` where the first argument is the package name and the second argument is the target name.   |  none |
 
 **RETURNS**
