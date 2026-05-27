@@ -112,8 +112,6 @@ load(
 )
 load("//swift/toolchains/config:tool_config.bzl", "ToolConfigInfo")
 
-_CPP_TOOLCHAIN_TYPE = Label("@bazel_tools//tools/cpp:toolchain_type")
-
 visibility("public")
 
 # These are symlink locations known to be used by xcode-select in various Xcode
@@ -763,7 +761,7 @@ def _dsym_provider(*, ctx):
 def _xcode_swift_toolchain_impl(ctx):
     cpp_fragment = ctx.fragments.cpp
     apple_toolchain = apple_common.apple_toolchain()
-    cc_toolchain = ctx.exec_groups["default"].toolchains[_CPP_TOOLCHAIN_TYPE].cc
+    cc_toolchain = find_cpp_toolchain(ctx)
 
     target_triple = target_triples.normalize_for_swift(
         target_triples.parse(ctx.var.get("CC_TARGET_TRIPLE") or cc_toolchain.target_gnu_system_name),
@@ -1143,14 +1141,7 @@ for incremental compilation using a persistent mode.
         },
     ),
     doc = "Represents a Swift compiler toolchain provided by Xcode.",
-    exec_groups = {
-        # An execution group that has no specific platform requirements. This
-        # ensures that the execution platform of this Swift toolchain does not
-        # unnecessarily constrain the execution platform of the C++ toolchain.
-        "default": exec_group(
-            toolchains = use_cc_toolchain(),
-        ),
-    },
+    toolchains = use_cc_toolchain(),
     fragments = [
         "cpp",
         "objc",
