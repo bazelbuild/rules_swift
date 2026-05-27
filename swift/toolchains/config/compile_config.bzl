@@ -415,6 +415,7 @@ def compile_action_configs(
             actions = all_compile_action_names(),
             configurators = [
                 add_arg("-Xfrontend", "-serialize-debugging-options"),
+                add_arg("-Xfrontend", "-prefix-serialized-debugging-options"),
             ],
             not_features = [
                 [SWIFT_FEATURE_OPT],
