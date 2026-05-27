@@ -36,7 +36,6 @@ load(
     "SWIFT_FEATURE_USE_AUTOLINK_EXTRACT",
     "SWIFT_FEATURE_USE_MODULE_WRAP",
     "SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES",
-    "SWIFT_FEATURE__SUPPORTS_V6",
 )
 
 def _scratch_file(repository_ctx, temp_dir, name, content = ""):
@@ -203,7 +202,6 @@ _FEATURE_CHECKS = {
     SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES: (
         _check_supports_upcoming_features
     ),
-    SWIFT_FEATURE__SUPPORTS_V6: _check_supports_language_mode_6,
 }
 
 def _normalized_linux_cpu(cpu):

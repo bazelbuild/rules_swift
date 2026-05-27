@@ -96,7 +96,6 @@ load(
     "SWIFT_FEATURE__SUPPORTS_DEVELOPER_DIR",
     "SWIFT_FEATURE__SUPPORTS_HERMETIC_SWIFTMODULE",
     "SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES",
-    "SWIFT_FEATURE__SUPPORTS_V6",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
 )
 load(":action_config.bzl", "ActionConfigInfo", "ConfigResultInfo", "add_arg")
@@ -1330,7 +1329,6 @@ def compile_action_configs(
             configurators = [add_arg("-swift-version", "5")],
             not_features = [
                 SWIFT_FEATURE_ENABLE_V6,
-                SWIFT_FEATURE__SUPPORTS_V6,
             ],
         ),
         ActionConfigInfo(
@@ -1338,7 +1336,6 @@ def compile_action_configs(
             configurators = [add_arg("-swift-version", "6")],
             features = [
                 SWIFT_FEATURE_ENABLE_V6,
-                SWIFT_FEATURE__SUPPORTS_V6,
             ],
         ),
         ActionConfigInfo(

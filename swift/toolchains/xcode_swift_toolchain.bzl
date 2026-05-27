@@ -61,7 +61,6 @@ load(
     "SWIFT_FEATURE__SUPPORTS_DEVELOPER_DIR",
     "SWIFT_FEATURE__SUPPORTS_HERMETIC_SWIFTMODULE",
     "SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES",
-    "SWIFT_FEATURE__SUPPORTS_V6",
 )
 load(
     "//swift/internal:features.bzl",
@@ -832,25 +831,12 @@ def _xcode_swift_toolchain_impl(ctx):
         # `internal`; that is controlled by the upcoming feature flag
         # `InternalImportsByDefault`.
         "swift.experimental.AccessLevelOnImport",
+        SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES,
+        SWIFT_FEATURE_DISABLE_SWIFT_SANDBOX,
+
+        # Ensure hermetic PCM files (no absolute workspace paths).
+        SWIFT_FEATURE_MODULE_HOME_IS_CWD,
     ])
-
-    if _is_xcode_at_least_version(xcode_config, "14.3"):
-        requested_features.append(SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES)
-
-    if _is_xcode_at_least_version(xcode_config, "15.3"):
-        requested_features.append(SWIFT_FEATURE_DISABLE_SWIFT_SANDBOX)
-
-    if _is_xcode_at_least_version(xcode_config, "16.0"):
-        requested_features.extend([
-            SWIFT_FEATURE__SUPPORTS_V6,
-            # Ensure hermetic PCM files (no absolute workspace paths). This flag
-            # is actually supported on Xcode 15.x as well, but it's bugged; a
-            # `MODULE_DIRECTORY` field remains in the PCM file that has the
-            # absolute workspace path, so it's not hermetic, and worse, it
-            # causes other compilation errors in the unfortunately common case
-            # where two modules contain the same header.
-            SWIFT_FEATURE_MODULE_HOME_IS_CWD,
-        ])
 
     if _is_xcode_at_least_version(xcode_config, "26.4"):
         requested_features.append(SWIFT_FEATURE__SUPPORTS_HERMETIC_SWIFTMODULE)
