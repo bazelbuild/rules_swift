@@ -1229,6 +1229,7 @@ def _create_cc_compilation_context(
         defines,
         feature_configuration,
         includes,
+        has_generated_header = False,
         public_hdrs,
         target_name,
         toolchains = None):
@@ -1250,6 +1251,8 @@ def _create_cc_compilation_context(
             `configure_features`.
         includes: Include paths that should be propagated by the new compilation
             context.
+        has_generated_header: If True, the `public_hdrs` include a generated
+            Objective-C header.
         public_hdrs: Public headers that should be propagated by the new
             compilation context (for example, the module's generated header).
         target_name: The name of the target for which the code is being
@@ -1272,14 +1275,24 @@ def _create_cc_compilation_context(
     # layering checks will fail when the Objective-C code tries to import the
     # `swift_library`'s headers.
     if public_hdrs:
+        # If we have a generated header, we need to create the feature
+        # configuration that disables `parse_headers` for the compilation
+        # action.
+        if has_generated_header:
+            cc_feature_configuration = (
+                feature_configuration._cc_feature_configuration_no_parse_headers()
+            )
+        else:
+            cc_feature_configuration = get_cc_feature_configuration(
+                feature_configuration = feature_configuration,
+            )
+
         compilation_context, _ = cc_common.compile(
             actions = actions,
             cc_toolchain = toolchains.cc,
             compilation_contexts = compilation_contexts,
             defines = defines,
-            feature_configuration = get_cc_feature_configuration(
-                feature_configuration = feature_configuration,
-            ),
+            feature_configuration = cc_feature_configuration,
             name = target_name,
             includes = includes,
             public_hdrs = public_hdrs,
