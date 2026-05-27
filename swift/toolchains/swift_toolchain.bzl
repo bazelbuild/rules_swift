@@ -536,14 +536,6 @@ def _swift_toolchain_impl(ctx):
         target_triple = target_triple,
     ))
 
-    requested_features.extend([
-        # Allow users to start using access levels on `import`s by default. Note
-        # that this does *not* change the default access level for `import`s to
-        # `internal`; that is controlled by the upcoming feature flag
-        # `InternalImportsByDefault`.
-        "swift.experimental.AccessLevelOnImport",
-    ])
-
     if apple_common.dotted_version(ctx.attr.parsed_version) >= apple_common.dotted_version("6.3"):
         requested_features.append(SWIFT_FEATURE__SUPPORTS_HERMETIC_SWIFTMODULE)
 

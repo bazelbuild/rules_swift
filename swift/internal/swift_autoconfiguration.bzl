@@ -35,7 +35,6 @@ load(
     "SWIFT_FEATURE_NO_EMBED_DEBUG_MODULE",
     "SWIFT_FEATURE_USE_AUTOLINK_EXTRACT",
     "SWIFT_FEATURE_USE_MODULE_WRAP",
-    "SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES",
 )
 
 def _scratch_file(repository_ctx, temp_dir, name, content = ""):
@@ -89,16 +88,6 @@ print("Hello")
         "-z",
         "-Xlinker",
         "nostart-stop-gc",
-    )
-
-def _check_supports_upcoming_features(repository_ctx, swiftc_path, _temp_dir):
-    """Returns True if `swiftc` supports the `-enable-{experimental,upcoming}-feature` flags."""
-    return _swift_succeeds(
-        repository_ctx,
-        swiftc_path,
-        "-version",
-        "-enable-upcoming-feature",
-        "BareRegexLiteralSyntax",
     )
 
 def _write_swift_version(repository_ctx, swiftc_path):
@@ -183,9 +172,6 @@ def _compute_feature_values(repository_ctx, swiftc_path):
 # should return True if the feature is supported.
 _FEATURE_CHECKS = {
     SWIFT_FEATURE_LLD_GC_WORKAROUND: _check_supports_lld_gc_workaround,
-    SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES: (
-        _check_supports_upcoming_features
-    ),
 }
 
 def _normalized_linux_cpu(cpu):

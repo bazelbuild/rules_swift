@@ -19,13 +19,10 @@ load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load(
     ":feature_names.bzl",
     "SWIFT_FEATURE_CACHEABLE_SWIFTMODULES",
-    "SWIFT_FEATURE_CHECKED_EXCLUSIVITY",
     "SWIFT_FEATURE_COVERAGE",
     "SWIFT_FEATURE_COVERAGE_PREFIX_MAP",
-    "SWIFT_FEATURE_DISABLE_CLANG_SPI",
     "SWIFT_FEATURE_DISABLE_SYSTEM_INDEX",
     "SWIFT_FEATURE_EMIT_SWIFTDOC",
-    "SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
     "SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES",
     "SWIFT_FEATURE_ENABLE_TESTING",
@@ -301,18 +298,21 @@ def default_features_for_toolchain(target_triple):
     # Common features we turn on regardless of target.
     features = [
         SWIFT_FEATURE_CACHEABLE_SWIFTMODULES,
-        SWIFT_FEATURE_CHECKED_EXCLUSIVITY,
         SWIFT_FEATURE_COVERAGE_PREFIX_MAP,
-        SWIFT_FEATURE_DISABLE_CLANG_SPI,
         SWIFT_FEATURE_DISABLE_SYSTEM_INDEX,
         SWIFT_FEATURE_EMIT_SWIFTDOC,
-        SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX,
         SWIFT_FEATURE_ENABLE_BATCH_MODE,
         SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES,
         SWIFT_FEATURE_FILE_PREFIX_MAP,
         SWIFT_FEATURE_INTERNALIZE_AT_LINK,
         SWIFT_FEATURE_OPT_USES_WMO,
         SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE,
+
+        # Allow users to start using access levels on `import`s by default. Note
+        # that this does *not* change the default access level for `import`s to
+        # `internal`; that is controlled by the upcoming feature flag
+        # `InternalImportsByDefault`.
+        "swift.experimental.AccessLevelOnImport",
     ]
 
     # Apple specific features
