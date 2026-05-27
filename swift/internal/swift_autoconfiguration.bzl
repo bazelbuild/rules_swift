@@ -36,7 +36,6 @@ load(
     "SWIFT_FEATURE_USE_AUTOLINK_EXTRACT",
     "SWIFT_FEATURE_USE_MODULE_WRAP",
     "SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES",
-    "SWIFT_FEATURE__SUPPORTS_V6",
 )
 
 def _scratch_file(repository_ctx, temp_dir, name, content = ""):
@@ -70,22 +69,6 @@ def _swift_succeeds(repository_ctx, swiftc_path, *args):
     """
     swift_result = repository_ctx.execute([swiftc_path] + list(args))
     return swift_result.return_code == 0
-
-def _check_supports_language_mode_6(repository_ctx, swiftc_path, _temp_dir):
-    """Returns True if the swift compiler supports language mode 6."""
-    result = repository_ctx.execute([swiftc_path, "-version"])
-    if result.return_code == 0:
-        _, _, almost_version = result.stdout.partition("swiftlang-")
-        if not almost_version:
-            return False
-
-        major_version, _, _ = almost_version.partition(".")
-        if not major_version:
-            return False
-
-        return int(major_version) >= 6
-
-    return False
 
 def _check_supports_lld_gc_workaround(repository_ctx, swiftc_path, temp_dir):
     """Returns True if lld is being used and it supports nostart-stop-gc."""
@@ -203,7 +186,6 @@ _FEATURE_CHECKS = {
     SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES: (
         _check_supports_upcoming_features
     ),
-    SWIFT_FEATURE__SUPPORTS_V6: _check_supports_language_mode_6,
 }
 
 def _normalized_linux_cpu(cpu):

@@ -29,7 +29,6 @@ load(
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
     "SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES",
     "SWIFT_FEATURE_ENABLE_TESTING",
-    "SWIFT_FEATURE_ENABLE_V6",
     "SWIFT_FEATURE_FILE_PREFIX_MAP",
     "SWIFT_FEATURE_FULL_DEBUG_INFO",
     "SWIFT_FEATURE_INTERNALIZE_AT_LINK",
@@ -38,7 +37,6 @@ load(
     "SWIFT_FEATURE_OPT_USES_WMO",
     "SWIFT_FEATURE_REMAP_XCODE_PATH",
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
-    "SWIFT_FEATURE__SUPPORTS_V6",
 )
 load(":package_specs.bzl", "label_matches_package_specs")
 load(":target_triples.bzl", "target_triples")
@@ -532,56 +530,5 @@ def _compute_features(
     feature_updater.update_features([], swift_toolchain.unsupported_features)
 
     all_disabled_features = feature_updater.disabled_features()
-    all_requested_features = _compute_implied_features(
-        requested_features = feature_updater.requested_features(),
-        unsupported_features = all_disabled_features,
-    )
+    all_requested_features = feature_updater.requested_features()
     return (all_requested_features, all_disabled_features)
-
-def _compute_implied_features(requested_features, unsupported_features):
-    """Compute additional features that should be implied by combinations.
-
-    To avoid an explosion of generalized complexity, this is being done only for
-    features related to language mode support, instead of building it out as a
-    feature for use elsewhere in the toolchain.
-    """
-
-    # If a user requests Swift language mode 6 on a compiler that doesn't
-    # support `-swift-version 6`, we instead enable all of the upcoming features
-    # that will be on by default in Swift 6 mode. This provides an early
-    # migration path for those users.
-    if (SWIFT_FEATURE_ENABLE_V6 in requested_features and
-        SWIFT_FEATURE__SUPPORTS_V6 not in requested_features):
-        for feature in _SWIFT_6_EQUIVALENT_FEATURES:
-            # Only add it if the user did not explicitly ask for it to be
-            # suppressed.
-            if feature not in unsupported_features:
-                requested_features.append(feature)
-
-    return requested_features
-
-# The list below is taken from the feature definitions in the compiler, at
-# https://github.com/apple/swift/blob/release/6.2/include/swift/Basic/Features.def
-_SWIFT_6_EQUIVALENT_FEATURES = [
-    "swift.upcoming.NonfrozenEnumExhaustivity",  # SE-0192
-    "swift.upcoming.ConciseMagicFile",  # SE-0274
-    "swift.upcoming.ForwardTrailingClosures",  # SE-0286
-    "swift.upcoming.StrictConcurrency",  # SE-0337
-    "swift.experimental.StrictConcurrency=complete",  # same as above on older compilers
-    "swift.upcoming.BareSlashRegexLiterals",  # SE-0354
-    "swift.upcoming.DeprecateApplicationMain",  # SE-0383
-    "swift.upcoming.ImportObjcForwardDeclarations",  # SE-0384
-    "swift.upcoming.DisableOutwardActorInference",  # SE-0401
-    "swift.upcoming.IsolatedDefaultValues",  # SE-0411
-    "swift.upcoming.GlobalConcurrency",  # SE-0412
-    "swift.upcoming.InferSendableFromCaptures",  # SE-0418
-    "swift.upcoming.ImplicitOpenExistentials",  # SE-0352
-    "swift.upcoming.RegionBasedIsolation",  # SE-0414
-    "swift.upcoming.DynamicActorIsolation",  # SE-0423
-    "swift.upcoming.GlobalActorIsolatedTypesUsability",  # SE-0434
-
-    # The upcoming feature flags only emit warnings about things that will
-    # become errors in Swift 6. We want the `swift.enable_v6` flag specifically
-    # to enforce the same error behavior.
-    "swift.werror.error_in_future_swift_version",
-]

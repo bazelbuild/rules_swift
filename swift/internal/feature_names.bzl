@@ -399,11 +399,6 @@ SWIFT_FEATURE__SUPPORTS_DEVELOPER_DIR = "swift._supports_developer_dir"
 # should never manually, enable, disable, or query this feature.
 SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES = "swift._supports_upcoming_features"
 
-# A private feature that is set by the toolchain if it supports
-# `-swift-version 6` (Swift 6.0 and above). Users should never manually enable,
-# disable, or query this feature.
-SWIFT_FEATURE__SUPPORTS_V6 = "swift._supports_v6"
-
 # Disables Swift sandbox which prevents issues with nested sandboxing when Swift code contains system-provided macros.
 # If enabled '#Preview' macro provided by SwiftUI fails to build and probably other system-provided macros.
 # Enabled by default for Swift 5.10+ on macOS.
