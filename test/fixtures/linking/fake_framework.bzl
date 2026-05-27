@@ -2,7 +2,7 @@
 
 load(
     "@rules_cc//cc:find_cc_toolchain.bzl",
-    "CC_TOOLCHAIN_TYPE",
+    "find_cc_toolchain",
     "use_cc_toolchain",
 )
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
@@ -15,7 +15,7 @@ def _impl(ctx):
     binary2 = ctx.actions.declare_file("framework2.framework/framework2")
     ctx.actions.write(binary2, "empty")
 
-    cc_toolchain = ctx.exec_groups["default"].toolchains[CC_TOOLCHAIN_TYPE].cc
+    cc_toolchain = find_cc_toolchain(ctx)
     feature_configuration = cc_common.configure_features(
         ctx = ctx,
         cc_toolchain = cc_toolchain,
@@ -56,13 +56,6 @@ fake_framework = rule(
             doc = "The C++ toolchain to use.",
         ),
     },
-    exec_groups = {
-        # An execution group that has no specific platform requirements. This
-        # ensures that the execution platform of this Swift toolchain does not
-        # unnecessarily constrain the execution platform of the C++ toolchain.
-        "default": exec_group(
-            toolchains = use_cc_toolchain(),
-        ),
-    },
+    toolchains = use_cc_toolchain(),
     fragments = ["cpp"],
 )

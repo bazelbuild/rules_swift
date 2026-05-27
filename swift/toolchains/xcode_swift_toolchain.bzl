@@ -23,7 +23,7 @@ load("@bazel_features//:features.bzl", "bazel_features")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
-load("@rules_cc//cc:find_cc_toolchain.bzl", "use_cc_toolchain")
+load("@rules_cc//cc:find_cc_toolchain.bzl", "find_cc_toolchain", "use_cc_toolchain")
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load(
@@ -111,8 +111,6 @@ load(
     "synthesize_interface_action_configs",
 )
 load("//swift/toolchains/config:tool_config.bzl", "ToolConfigInfo")
-
-_CPP_TOOLCHAIN_TYPE = Label("@bazel_tools//tools/cpp:toolchain_type")
 
 visibility("public")
 
@@ -763,7 +761,7 @@ def _dsym_provider(*, ctx):
 def _xcode_swift_toolchain_impl(ctx):
     cpp_fragment = ctx.fragments.cpp
     apple_toolchain = apple_common.apple_toolchain()
-    cc_toolchain = ctx.exec_groups["default"].toolchains[_CPP_TOOLCHAIN_TYPE].cc
+    cc_toolchain = find_cc_toolchain(ctx)
 
     target_triple = target_triples.normalize_for_swift(
         target_triples.parse(ctx.var.get("CC_TARGET_TRIPLE") or cc_toolchain.target_gnu_system_name),
@@ -1143,14 +1141,7 @@ for incremental compilation using a persistent mode.
         },
     ),
     doc = "Represents a Swift compiler toolchain provided by Xcode.",
-    exec_groups = {
-        # An execution group that has no specific platform requirements. This
-        # ensures that the execution platform of this Swift toolchain does not
-        # unnecessarily constrain the execution platform of the C++ toolchain.
-        "default": exec_group(
-            toolchains = use_cc_toolchain(),
-        ),
-    },
+    toolchains = use_cc_toolchain(),
     fragments = [
         "cpp",
         "objc",
