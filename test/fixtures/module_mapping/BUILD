@@ -2,6 +2,7 @@ load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("//swift:swift_library.bzl", "swift_library")
 load("//swift:swift_module_mapping.bzl", "swift_module_mapping")
 load("//swift:swift_module_mapping_test.bzl", "swift_module_mapping_test")
+load("//test:transitions.bzl", "transition_binary")
 load(
     "//test/fixtures:common.bzl",
     "FIXTURE_TAGS",
@@ -48,6 +49,13 @@ apply_mapping(
     mapping = ":MySDK_module_mapping",
     tags = FIXTURE_TAGS,
     target = ":MySDK",
+)
+
+transition_binary(
+    name = "MySDK_with_mapping_and_layering_check",
+    tags = FIXTURE_TAGS,
+    target = ":MySDK_with_mapping",
+    transitive_features = ["swift.layering_check_swift"],
 )
 
 swift_library(

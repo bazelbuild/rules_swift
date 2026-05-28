@@ -366,7 +366,8 @@ bool SkipLayeringCheckIncompatibleArgs(std::vector<std::string>::iterator& it) {
   }
   if (*it == "-o" || *it == "-output-file-map" || *it == "-emit-module-path" ||
       *it == "-emit-module-interface-path" || *it == "-emit-objc-header-path" ||
-      *it == "-emit-clang-header-path" || *it == "-num-threads") {
+      *it == "-emit-clang-header-path" || *it == "-emit-const-values-path" ||
+      *it == "-num-threads") {
     // This flag has a value after it that we also need to skip.
     ++it;
     return true;
