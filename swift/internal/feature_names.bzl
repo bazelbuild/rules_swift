@@ -131,6 +131,10 @@ SWIFT_FEATURE_LAYERING_CHECK_FOR_C_DEPS = "swift.layering_check_for_c_deps"
 # any module that is not listed among the direct dependencies of the target.
 SWIFT_FEATURE_LAYERING_CHECK_SWIFT = "swift.layering_check_swift"
 
+# If enabled with `swift.layering_check_swift`, Swift layering checks will also
+# be applied to targets in external repositories.
+SWIFT_FEATURE_LAYERING_CHECK_EXTERNAL_SWIFT = "swift.layering_check_external_swift"
+
 # If enabled, the C or Objective-C target should be compiled as a system module.
 SWIFT_FEATURE_SYSTEM_MODULE = "swift.system_module"
 

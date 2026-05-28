@@ -50,6 +50,7 @@ load(
     "SWIFT_FEATURE_FULL_LTO",
     "SWIFT_FEATURE_HEADERS_ALWAYS_ACTION_INPUTS",
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
+    "SWIFT_FEATURE_LAYERING_CHECK_EXTERNAL_SWIFT",
     "SWIFT_FEATURE_LAYERING_CHECK_SWIFT",
     "SWIFT_FEATURE_MODULAR_INDEXING",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
@@ -757,10 +758,18 @@ def compile(
         vfsoverlay_file = vfsoverlay_file,
     )
 
-    if is_feature_enabled(
+    swift_layering_check_enabled = is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_LAYERING_CHECK_SWIFT,
-    ):
+    )
+
+    if swift_layering_check_enabled and feature_configuration._label.repo_name:
+        swift_layering_check_enabled = is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_LAYERING_CHECK_EXTERNAL_SWIFT,
+        )
+
+    if swift_layering_check_enabled:
         # For performance, don't worry about uniquing the module names; since
         # Bazel doesn't allow repeated `deps` the only time a duplicate might
         # appear is if someone explicitly depends on an implicit dependency that

@@ -15,6 +15,15 @@ layering_check_swift_test = make_action_command_line_test_rule(
     },
 )
 
+layering_check_external_swift_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:features": [
+            "swift.layering_check_swift",
+            "swift.layering_check_external_swift",
+        ],
+    },
+)
+
 def layering_check_test_suite(name, tags = []):
     """Tests Swift layering-check behavior.
 
@@ -42,6 +51,26 @@ def layering_check_test_suite(name, tags = []):
         mnemonic = "SwiftCompile",
         tags = all_tags,
         target_under_test = "//test/fixtures/compiler_arguments:no_package_name",
+    )
+
+    layering_check_swift_test(
+        name = "{}_external_swift_disabled_by_default".format(name),
+        not_expected_argv = [
+            "-Xwrapped-swift=-layering-check-deps-modules",
+        ],
+        mnemonic = "SwiftCompile",
+        tags = all_tags,
+        target_under_test = "@rules_swift_layering_check_external_test//:lib",
+    )
+
+    layering_check_external_swift_test(
+        name = "{}_external_swift_enabled".format(name),
+        expected_argv = [
+            "-Xwrapped-swift=-layering-check-deps-modules",
+        ],
+        mnemonic = "SwiftCompile",
+        tags = all_tags,
+        target_under_test = "@rules_swift_layering_check_external_test//:lib",
     )
 
     build_test(

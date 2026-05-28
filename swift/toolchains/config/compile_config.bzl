@@ -1630,6 +1630,9 @@ def _emit_objc_header_path_configurator(prerequisites, args):
 
 def _swift_layering_check_configurator(prerequisites, args):
     """Adds flags for Swift layering checks to the command line."""
+    if not prerequisites.deps_modules_file:
+        return ConfigResultInfo()
+
     args.add(
         "-Xwrapped-swift=-layering-check-deps-modules={}".format(
             prerequisites.deps_modules_file.path,
