@@ -69,6 +69,7 @@ tasks:
     bazel: latest
     shell_commands:
       - "test/fixtures/layering_check/layering_check_failure_test.sh"
+      - "test/shell/warnings_as_errors_test.sh"
 
   ubuntu2204_latest:
     name: "Current LTS"
