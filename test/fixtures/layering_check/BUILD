@@ -53,6 +53,10 @@ transition_binary(
     name = "foundation_consumer_default_precompiled_modules",
     tags = FIXTURE_TAGS,
     target = ":foundation_consumer",
+    target_compatible_with = select({
+        "@build_bazel_apple_support//configs:apple": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     transitive_features = [
         "swift.use_c_modules",
         "swift.emit_c_module",
@@ -64,6 +68,10 @@ transition_binary(
     name = "foundation_consumer_violation_precompiled_modules",
     tags = FIXTURE_TAGS,
     target = ":foundation_consumer",
+    target_compatible_with = select({
+        "@build_bazel_apple_support//configs:apple": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     transitive_features = [
         "swift.use_c_modules",
         "swift.emit_c_module",
@@ -99,6 +107,10 @@ transition_binary(
     name = "layering_violation_explicit_modules",
     tags = FIXTURE_TAGS,
     target = ":layering_violation",
+    target_compatible_with = select({
+        "@build_bazel_apple_support//configs:apple": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     transitive_features = [
         "swift.use_c_modules",
         "swift.emit_c_module",
@@ -111,6 +123,10 @@ transition_binary(
     name = "layering_violation_explicit_modules_default_precompiled_modules",
     tags = FIXTURE_TAGS,
     target = ":layering_violation",
+    target_compatible_with = select({
+        "@build_bazel_apple_support//configs:apple": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     transitive_features = [
         "swift.use_c_modules",
         "swift.emit_c_module",
