@@ -782,6 +782,8 @@ def compile(
         transitive_module_names = [
             module_context.name
             for module_context in transitive_modules
+            # If we want to validate system modules that happens below
+            if not module_context.is_system
         ]
         if validate_system_modules:
             # Default precompiled modules are disabled, so SDK modules are no
