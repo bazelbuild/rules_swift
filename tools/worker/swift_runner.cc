@@ -419,7 +419,19 @@ int SwiftRunner::Run(std::ostream* stderr_stream, bool stdout_to_stderr) {
     std::filesystem::remove(swift_source_info_path_);
   }
 
-  int exit_code;
+  int exit_code = 0;
+
+  // Do the layering check before compilation. This gives a better error
+  // message if a Swift module imports a module that depends on a Clang module
+  // outside the transitive closure; otherwise the compile can fail first with
+  // "cannot load underlying module for '...'."
+  if (!deps_modules_path_.empty()) {
+    exit_code = PerformLayeringCheck(*stderr_stream, stdout_to_stderr);
+    if (exit_code != 0) {
+      return exit_code;
+    }
+  }
+
   if (hermetic_pcm_) {
     auto response_file = WriteResponseFile(args_);
     std::vector<std::string> spawn_args =
@@ -437,13 +449,6 @@ int SwiftRunner::Run(std::ostream* stderr_stream, bool stdout_to_stderr) {
 
   if (exit_code != 0) {
     return exit_code;
-  }
-
-  if (!deps_modules_path_.empty()) {
-    exit_code = PerformLayeringCheck(*stderr_stream, stdout_to_stderr);
-    if (exit_code != 0) {
-      return exit_code;
-    }
   }
 
   if (!generated_header_rewriter_path_.empty()) {
