@@ -3,6 +3,8 @@
 load("//test:transitions.bzl", "transition_binary")
 
 _BINARIES = [
+    "avfoundation_import",
+    "avfoundation_import_json",
     "c_module_imports",
     "cross_import_overlay",
     "mixed_language_bin",

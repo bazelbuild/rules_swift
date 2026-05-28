@@ -623,6 +623,7 @@ def _swift_toolchain_impl(ctx):
         root_dir = toolchain_root,
         runtime = depset(ctx.files.runtime),
         system_modules = collect_implicit_deps_providers([]),
+        implicit_system_modules = collect_implicit_deps_providers([]),
         swift_worker = ctx.attr._worker[DefaultInfo].files_to_run,
         const_protocols_to_gather = ctx.file.const_protocols_to_gather,
         test_configuration = struct(

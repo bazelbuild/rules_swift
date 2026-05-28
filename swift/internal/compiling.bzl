@@ -105,7 +105,7 @@ def transitive_swift_dependency_inputs(transitive_modules):
         if not swift_module:
             continue
 
-        if swift_module.swiftmodule:
+        if type(swift_module.swiftmodule) == "File":
             inputs.append(swift_module.swiftmodule)
 
         interface_file = (

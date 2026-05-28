@@ -576,6 +576,42 @@ transition_test(
     ],
 )
 
+# This combo currently fails on iOS because implicit module loading
+# attempts to find a module that we don't provide it. This dep graph
+# might change in the future and no longer be testing what we want.
+swift_binary(
+    name = "avfoundation_import",
+    srcs = ["avfoundation_import.swift"],
+    tags = FIXTURE_TAGS,
+    deps = [
+        "@system_sdk//:AVFoundation",
+        "@system_sdk//:Foundation",
+    ],
+)
+
+transition_binary(
+    name = "avfoundation_import_transitioned",
+    tags = FIXTURE_TAGS,
+    target = ":avfoundation_import",
+    transitive_features = [
+        "swift.use_c_modules",
+        "swift.emit_c_module",
+        "-swift.add_default_precompiled_modules",
+    ],
+)
+
+transition_binary(
+    name = "avfoundation_import_json_transitioned",
+    tags = FIXTURE_TAGS,
+    target = ":avfoundation_import",
+    transitive_features = [
+        "swift.use_c_modules",
+        "swift.emit_c_module",
+        "-swift.add_default_precompiled_modules",
+        "swift.use_explicit_swift_module_map",
+    ],
+)
+
 bzl_library(
     name = "cross_platform",
     srcs = ["cross_platform.bzl"],
