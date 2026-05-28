@@ -49,6 +49,7 @@ load(
     "SWIFT_FEATURE_FULL_LTO",
     "SWIFT_FEATURE_HEADERS_ALWAYS_ACTION_INPUTS",
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
+    "SWIFT_FEATURE_LAYERING_CHECK_SWIFT",
     "SWIFT_FEATURE_MODULAR_INDEXING",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_NO_GENERATED_MODULE_MAP",
@@ -755,6 +756,31 @@ def compile(
         vfsoverlay_file = vfsoverlay_file,
     )
 
+    if is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_LAYERING_CHECK_SWIFT,
+    ):
+        # For performance, don't worry about uniquing the module names; since
+        # Bazel doesn't allow repeated `deps` the only time a duplicate might
+        # appear is if someone explicitly depends on an implicit dependency that
+        # came from the toolchain. This is relatively unlikely, and the worker
+        # will dedupe it anyway.
+        direct_module_names = []
+        for dep_swift_info in all_swift_infos:
+            for dep_module_context in dep_swift_info.direct_modules:
+                direct_module_names.append(dep_module_context.name)
+
+        deps_modules_file = actions.declare_file(
+            "{}.deps-module-mapping".format(target_name),
+        )
+        _write_deps_modules_file(
+            actions = actions,
+            deps_modules_file = deps_modules_file,
+            direct_module_names = direct_module_names,
+        )
+    else:
+        deps_modules_file = None
+
     # As of the time of this writing (Xcode 15.0), macros are the only kind of
     # plugins that are available. Since macros do source-level transformations,
     # we only need to load plugins directly used by the module being compiled.
@@ -796,6 +822,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         cc_linking_context = merged_cc_info.linking_context,
         cross_import_overlays = cross_imported_overlays,
         defines = sets.to_list(defines_set),
+        deps_modules_file = deps_modules_file,
         developer_dirs = toolchains.swift.developer_dirs,
         experimental_features = experimental_features,
         explicit_swift_module_map_file = explicit_swift_module_map_info.file,
@@ -1929,4 +1956,30 @@ def _emitted_output_nature(feature_configuration, user_compile_flags):
     return struct(
         emits_multiple_objects = not (is_wmo and is_single_threaded),
         is_wmo = is_wmo,
+    )
+
+def _write_deps_modules_file(
+        actions,
+        deps_modules_file,
+        direct_module_names):
+    """Writes a file containing the module names of direct dependencies.
+
+    This file is used by the Swift worker process to perform layering checks;
+    its contents are compared against the modules actually imported by the Swift
+    code.
+
+    Args:
+        actions: The object used to register actions.
+        deps_modules_file: The output file that will contain the list of
+            imported module names.
+        direct_module_names: The list of names of modules that are the direct
+            dependencies of the code being compiled.
+    """
+    deps_mapping = actions.args()
+    deps_mapping.set_param_file_format("multiline")
+    deps_mapping.add_all(direct_module_names)
+
+    actions.write(
+        content = deps_mapping,
+        output = deps_modules_file,
     )

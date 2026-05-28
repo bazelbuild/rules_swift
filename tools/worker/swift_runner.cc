@@ -21,12 +21,15 @@
 #include <sstream>
 #include <utility>
 
+#include "absl/container/btree_set.h"
 #include "absl/strings/match.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
 #include "absl/strings/substitute.h"
 #include "tools/common/bazel_substitutions.h"
+#include "tools/common/color.h"
 #include "tools/common/file_system.h"
+#include "tools/common/path_utils.h"
 #include "tools/common/process.h"
 #include "tools/common/target_triple.h"
 #include "tools/common/temp_file.h"
@@ -41,8 +44,7 @@ bool ArgumentEnablesWMO(const std::string& arg) {
 
 namespace {
 
-using bazel_rules_swift::PathExists;
-using bazel_rules_swift::TargetTriple;
+using namespace bazel_rules_swift;
 
 // Creates a temporary file and writes the given arguments to it, one per line.
 static std::unique_ptr<TempFile> WriteResponseFile(
@@ -300,6 +302,18 @@ void PrintVerboseInvocation(const std::vector<std::string>& args,
   (*stderr_stream) << '\n';
 }
 
+// Reads the list of module names that are direct dependencies of the code being
+// compiled.
+absl::btree_set<std::string> ReadDepsModules(absl::string_view path) {
+  absl::btree_set<std::string> deps_modules;
+  std::ifstream deps_file_stream(std::string(path.data(), path.size()));
+  std::string line;
+  while (std::getline(deps_file_stream, line)) {
+    deps_modules.insert(std::string(line));
+  }
+  return deps_modules;
+}
+
 }  // namespace
 
 SwiftRunner::SwiftRunner(const std::vector<std::string>& args,
@@ -337,6 +351,10 @@ int SwiftRunner::Run(std::ostream* stderr_stream, bool stdout_to_stderr) {
 
   if (exit_code != 0) {
     return exit_code;
+  }
+
+  if (!deps_modules_path_.empty()) {
+    exit_code = PerformLayeringCheck(*stderr_stream, stdout_to_stderr);
   }
 
   if (!generated_header_rewriter_path_.empty()) {
@@ -769,4 +787,68 @@ std::vector<std::string> SwiftRunner::ProcessArguments(
   }
 
   return new_args;
+}
+
+int SwiftRunner::PerformLayeringCheck(std::ostream& stderr_stream,
+                                      bool stdout_to_stderr) {
+  // Run the compiler again, this time using `-emit-imported-modules` to
+  // override whatever other behavior was requested and get the list of imported
+  // modules.
+  std::string imported_modules_path =
+      ReplaceExtension(deps_modules_path_, ".imported-modules",
+                       /*all_extensions=*/true);
+
+  std::vector<std::string> emit_imports_args;
+  emit_imports_args.reserve(args_.size() + 3);
+  emit_imports_args.assign(args_.begin(), args_.end());
+  emit_imports_args.push_back("-emit-imported-modules");
+  emit_imports_args.push_back("-o");
+  emit_imports_args.push_back(imported_modules_path);
+  int exit_code = RunSubProcess(emit_imports_args, &job_env_, &stderr_stream,
+                                stdout_to_stderr);
+  if (exit_code != 0) {
+    WithColor(stderr_stream, Color::kBoldRed) << std::endl << "error: ";
+    WithColor(stderr_stream, Color::kBoldWhite)
+        << "Swift compilation succeeded, but an unexpected compiler error "
+           "occurred when performing the layering check.";
+    stderr_stream << std::endl << std::endl;
+    return exit_code;
+  }
+
+  absl::btree_set<std::string> deps_modules =
+      ReadDepsModules(deps_modules_path_);
+
+  // Use a `btree_set` so that the output is automatically sorted
+  // lexicographically.
+  absl::btree_set<std::string> missing_deps;
+  std::ifstream imported_modules_stream(imported_modules_path);
+  std::string module_name;
+  while (std::getline(imported_modules_stream, module_name)) {
+    if (!deps_modules.contains(module_name)) {
+      missing_deps.insert(module_name);
+    }
+  }
+
+  if (!missing_deps.empty()) {
+    stderr_stream << std::endl;
+    WithColor(stderr_stream, Color::kBoldRed) << "error: ";
+    WithColor(stderr_stream, Color::kBoldWhite) << "Layering violation in ";
+    WithColor(stderr_stream, Color::kBoldGreen) << target_label_ << std::endl;
+    stderr_stream
+        << "The following modules were imported, but they are not direct "
+        << "dependencies of the target:" << std::endl
+        << std::endl;
+
+    for (const std::string& module_name : missing_deps) {
+      stderr_stream << "    " << module_name << std::endl;
+    }
+    stderr_stream << std::endl;
+
+    WithColor(stderr_stream, Color::kBoldWhite)
+        << "Please add the correct 'deps' to " << target_label_
+        << " to import those modules." << std::endl;
+    return 1;
+  }
+
+  return 0;
 }
