@@ -1294,6 +1294,13 @@ def compile_action_configs(
             ],
         ),
         ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE],
+            configurators = [
+                add_arg("-debug-diagnostic-names"),
+                _warnings_as_errors_configurator,
+            ],
+        ),
+        ActionConfigInfo(
             actions = all_compile_action_names() + [
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
             ],
@@ -2431,6 +2438,13 @@ def _upcoming_and_experimental_features_configurator(prerequisites, args):
     args.add_all(
         prerequisites.experimental_features,
         before_each = "-enable-experimental-feature",
+    )
+
+def _warnings_as_errors_configurator(prerequisites, args):
+    """Adds warning diagnostic IDs to upgrade to errors."""
+    args.add_all(
+        prerequisites.warnings_as_errors,
+        format_each = "-Xwrapped-swift=-warning-as-error=%s",
     )
 
 def _additional_inputs_configurator(prerequisites, _args):

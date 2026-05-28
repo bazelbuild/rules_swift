@@ -133,6 +133,7 @@ cc_library(
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/strings",
         "@com_github_nlohmann_json//:json",
+        "@re2",
     ],
 )
 

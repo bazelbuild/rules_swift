@@ -101,6 +101,10 @@ load(
     "compile_module_interface_action_configs",
 )
 load(
+    "//swift/toolchains/config:default_warnings_as_errors.bzl",
+    "default_warnings_as_errors_features",
+)
+load(
     "//swift/toolchains/config:symbol_graph_config.bzl",
     "symbol_graph_action_configs",
 )
@@ -837,6 +841,7 @@ def _xcode_swift_toolchain_impl(ctx):
     requested_features.extend(default_features_for_toolchain(
         target_triple = target_triple,
     ))
+    requested_features.extend(default_warnings_as_errors_features())
 
     requested_features.extend([
         SWIFT_FEATURE_DISABLE_SWIFT_SANDBOX,

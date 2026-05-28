@@ -54,6 +54,7 @@ bzl_library(
         "//swift/toolchains/config:all_actions_config",
         "//swift/toolchains/config:compile_config",
         "//swift/toolchains/config:compile_module_interface_config",
+        "//swift/toolchains/config:default_warnings_as_errors",
         "//swift/toolchains/config:symbol_graph_config",
         "//swift/toolchains/config:synthesize_interface_config",
         "//swift/toolchains/config:tool_config",

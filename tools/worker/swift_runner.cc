@@ -24,9 +24,11 @@
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/strings/match.h"
+#include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
 #include "absl/strings/substitute.h"
+#include "re2/re2.h"
 #include "tools/common/bazel_substitutions.h"
 #include "tools/common/color.h"
 #include "tools/common/file_system.h"
@@ -457,14 +459,20 @@ int SwiftRunner::Run(std::ostream* stderr_stream, bool stdout_to_stderr) {
     }
   }
 
+  std::ostringstream captured_stderr_stream;
+  std::ostream* compile_stderr_stream =
+      warnings_as_errors_.empty() ? stderr_stream : &captured_stderr_stream;
   if (hermetic_pcm_) {
     auto response_file = WriteResponseFile(args_);
     std::vector<std::string> spawn_args =
         ArgsWithResponseFile(tool_args_, args_, *response_file);
-    exit_code = RunHermeticPcm(spawn_args, stderr_stream);
+    exit_code = RunHermeticPcm(spawn_args, compile_stderr_stream);
   } else {
-    exit_code =
-        SpawnJob(tool_args_, args_, &job_env_, stderr_stream, stdout_to_stderr);
+    exit_code = SpawnJob(tool_args_, args_, &job_env_, compile_stderr_stream,
+                         stdout_to_stderr);
+  }
+  if (!warnings_as_errors_.empty()) {
+    ProcessDiagnostics(captured_stderr_stream.str(), *stderr_stream, exit_code);
   }
 
   if (verbose_) {
@@ -523,6 +531,67 @@ int SwiftRunner::Run(std::ostream* stderr_stream, bool stdout_to_stderr) {
                               /*stdout_to_stderr=*/true);
   }
   return exit_code;
+}
+
+void SwiftRunner::ProcessDiagnostics(absl::string_view stderr_output,
+                                     std::ostream& stderr_stream,
+                                     int& exit_code) const {
+  if (stderr_output.empty()) {
+    // Nothing to do if there was no output.
+    return;
+  }
+
+  // Match the "warning: " prefix on a message, also capturing the preceding
+  // ANSI color sequence if present.
+  RE2 warning_pattern("((\\x1b\\[(?:\\d+)(?:;\\d+)*m)?warning:\\s)");
+  // When `-debug-diagnostic-names` is enabled, names are printed as identifiers
+  // in square brackets, either at the end of the string or followed by a
+  // semicolon (for wrapped diagnostics). Nothing guarantees this for the
+  // wrapped case -- it is just observed convention -- but it is sufficient
+  // while the compiler doesn't give us a more proper way to detect these.
+  RE2 diagnostic_name_pattern("\\[([_A-Za-z][_A-Za-z0-9]*)\\](;|$)");
+
+  for (absl::string_view line : absl::StrSplit(stderr_output, '\n')) {
+    std::unique_ptr<std::string> modified_line;
+
+    absl::string_view warning_label;
+    std::optional<absl::string_view> ansi_sequence;
+    if (RE2::PartialMatch(line, warning_pattern, &warning_label,
+                          &ansi_sequence)) {
+      absl::string_view diagnostic_name;
+      absl::string_view line_cursor = line;
+
+      // Search the diagnostic line for all possible diagnostic names surrounded
+      // by square brackets.
+      while (RE2::FindAndConsume(&line_cursor, diagnostic_name_pattern,
+                                 &diagnostic_name)) {
+        if (warnings_as_errors_.contains(diagnostic_name)) {
+          modified_line = std::make_unique<std::string>(line);
+          std::ostringstream error_label;
+          if (ansi_sequence.has_value()) {
+            error_label << Color(Color::kBoldRed);
+          }
+          error_label << "error (upgraded from warning): ";
+          modified_line->replace(warning_label.data() - line.data(),
+                                 warning_label.length(), error_label.str());
+          if (exit_code == 0) {
+            exit_code = 1;
+          }
+
+          // In the event that there are multiple diagnostics on the same line
+          // (this is the case, for example, with "this is an error in Swift 6"
+          // messages), we can stop after we find the first match; the whole
+          // line will become an error.
+          break;
+        }
+      }
+    }
+    if (modified_line) {
+      stderr_stream << *modified_line << std::endl;
+    } else {
+      stderr_stream << line << std::endl;
+    }
+  }
 }
 
 bool SwiftRunner::ProcessPossibleResponseFile(
@@ -752,6 +821,8 @@ std::vector<std::string> SwiftRunner::ParseArguments(Iterator itr) {
         global_index_store_import_path_ = std::string(value);
       } else if (absl::ConsumePrefix(&value, "-generated-header-rewriter=")) {
         generated_header_rewriter_path_ = std::string(value);
+      } else if (absl::ConsumePrefix(&value, "-warning-as-error=")) {
+        warnings_as_errors_.insert(std::string(value));
       } else if (absl::ConsumePrefix(&value, "-tool-arg=")) {
         std::pair<std::string, std::string> arg_and_value =
             absl::StrSplit(value, absl::MaxSplits('=', 1));

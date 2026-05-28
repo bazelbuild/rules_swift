@@ -74,6 +74,7 @@ load(
     "get_cc_feature_configuration",
     "is_feature_enabled",
     "upcoming_and_experimental_features",
+    "warnings_as_errors_from_features",
 )
 load(":module_maps.bzl", "write_module_map")
 load(":toolchain_utils.bzl", "SWIFT_TOOLCHAIN_TYPE")
@@ -844,6 +845,9 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
     upcoming_features, experimental_features = upcoming_and_experimental_features(
         feature_configuration = feature_configuration,
     )
+    warnings_as_errors = warnings_as_errors_from_features(
+        feature_configuration = feature_configuration,
+    )
     prerequisites = struct(
         additional_inputs = additional_inputs + toolchains.cc.all_files.to_list(),
         always_include_headers = is_feature_enabled(
@@ -875,6 +879,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         transitive_swiftmodules = transitive_swiftmodules,
         upcoming_features = upcoming_features,
         user_compile_flags = copts,
+        warnings_as_errors = warnings_as_errors,
         vfsoverlay_file = vfsoverlay_file,
         vfsoverlay_search_path = _SWIFTMODULES_VFS_ROOT,
         workspace_name = workspace_name,
