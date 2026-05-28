@@ -95,7 +95,10 @@ def _swift_binary_impl(ctx):
     if srcs:
         module_name = ctx.attr.module_name
         if not module_name:
-            module_name = derive_swift_module_name(ctx.label)
+            module_name = derive_swift_module_name(
+                ctx.label,
+                feature_configuration = feature_configuration,
+            )
         entry_point_name = entry_point_function_name(module_name)
 
         include_dev_srch_paths = include_developer_search_paths(ctx.attr)
