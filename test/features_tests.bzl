@@ -69,24 +69,6 @@ disable_swift_sandbox_test = make_action_command_line_test_rule(
     },
 )
 
-vfsoverlay_test = make_action_command_line_test_rule(
-    config_settings = {
-        "//command_line_option:features": [
-            "swift.vfsoverlay",
-        ],
-    },
-)
-
-# Test with enabled `swift.add_target_name_to_output` feature
-vfsoverlay_with_target_name_test = make_action_command_line_test_rule(
-    config_settings = {
-        "//command_line_option:features": [
-            "swift.vfsoverlay",
-            "swift.add_target_name_to_output",
-        ],
-    },
-)
-
 explicit_swift_module_map_test = make_action_command_line_test_rule(
     config_settings = {
         "//command_line_option:features": [
@@ -235,21 +217,6 @@ def features_test_suite(name, tags = []):
         target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
-    vfsoverlay_test(
-        name = "{}_vfsoverlay_test".format(name),
-        tags = all_tags,
-        expected_argv = [
-            "-Xfrontend -vfsoverlay$(BIN_DIR)/test/fixtures/basic/second.vfsoverlay.yaml",
-            "-I/__build_bazel_rules_swift/swiftmodules",
-        ],
-        not_expected_argv = [
-            "-I$(BIN_DIR)/test/fixtures/basic",
-            "-Xwrapped-swift=-driver-explicit-swift-module-map-file",
-        ],
-        mnemonic = "SwiftCompile",
-        target_under_test = "//test/fixtures/basic:second",
-    )
-
     explicit_swift_module_map_test(
         name = "{}_explicit_swift_module_map_test".format(name),
         tags = all_tags,
@@ -258,8 +225,6 @@ def features_test_suite(name, tags = []):
         ],
         not_expected_argv = [
             "-I$(BIN_DIR)/test/fixtures/basic",
-            "-I/__build_bazel_rules_swift/swiftmodules",
-            "-Xfrontend -vfsoverlay$(BIN_DIR)/test/fixtures/basic/second.vfsoverlay.yaml",
         ],
         mnemonic = "SwiftCompile",
         target_under_test = "//test/fixtures/basic:second",
@@ -284,8 +249,6 @@ def features_test_suite(name, tags = []):
         ],
         not_expected_argv = [
             "-I$(BIN_DIR)/test/fixtures/basic/second",
-            "-I/__build_bazel_rules_swift/swiftmodules",
-            "-Xfrontend -vfsoverlay$(BIN_DIR)/test/fixtures/basic/second.vfsoverlay.yaml",
         ],
         mnemonic = "SwiftCompile",
         target_under_test = "//test/fixtures/basic:second",

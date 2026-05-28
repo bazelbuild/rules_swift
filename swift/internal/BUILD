@@ -94,7 +94,6 @@ bzl_library(
         ":features",
         ":module_maps",
         ":utils",
-        ":vfsoverlay",
         ":wmo",
         "//swift:providers",
         "@bazel_skylib//lib:paths",
@@ -393,11 +392,5 @@ bzl_library(
 bzl_library(
     name = "target_triples",
     srcs = ["target_triples.bzl"],
-    visibility = ["//swift:__subpackages__"],
-)
-
-bzl_library(
-    name = "vfsoverlay",
-    srcs = ["vfsoverlay.bzl"],
     visibility = ["//swift:__subpackages__"],
 )

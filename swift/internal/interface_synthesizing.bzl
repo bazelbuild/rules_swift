@@ -79,11 +79,6 @@ def synthesize_interface(
     # conditionally.
     transitive_modules = merged_swift_info.transitive_modules.to_list()
 
-    transitive_swiftmodules = []
-    for module in transitive_modules:
-        swift_module = module.swift
-        if swift_module:
-            transitive_swiftmodules.append(swift_module.swiftmodule)
     transitive_swift_dependency_inputs_list = transitive_swift_dependency_inputs(
         transitive_modules,
     )
@@ -98,7 +93,6 @@ def synthesize_interface(
         target_label = feature_configuration._label,
         transitive_modules = transitive_modules,
         transitive_swift_dependency_inputs = transitive_swift_dependency_inputs_list,
-        transitive_swiftmodules = transitive_swiftmodules,
     )
 
     run_toolchain_action(

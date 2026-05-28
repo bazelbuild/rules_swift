@@ -260,13 +260,6 @@ SWIFT_FEATURE_USE_AUTOLINK_EXTRACT = "swift.use_autolink_extract"
 # not be used by users of the toolchain.
 SWIFT_FEATURE_USE_MODULE_WRAP = "swift.use_module_wrap"
 
-# If enabled, Swift compilation actions will create a virtual file system
-# overlay containing all its dependencies' `.swiftmodule` files and use that
-# overlay as its sole search path. This improves build performance by avoiding
-# worst-case O(N^2) search (N modules, each in its own subdirectory), especially
-# when access to those paths involves traversing a networked file system.
-SWIFT_FEATURE_VFSOVERLAY = "swift.vfsoverlay"
-
 # If enabled, builds using the "dbg" compilation mode will explicitly disable
 # swiftc from producing swiftmodules containing embedded file paths, which are
 # inherently non-portable across machines.
