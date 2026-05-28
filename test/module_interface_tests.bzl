@@ -17,6 +17,7 @@
 load("@bazel_skylib//rules:build_test.bzl", "build_test")
 load(
     "//test/rules:action_command_line_test.bzl",
+    "action_command_line_test",
     "make_action_command_line_test_rule",
 )
 load(
@@ -154,6 +155,20 @@ def module_interface_test_suite(name, tags = []):
             "ToyModule.swiftinterface",
             "DependentToyModule.swiftinterface",
         ],
+        target_under_test = "//test/fixtures/module_interface:dependent_toy_module",
+    )
+
+    action_command_line_test(
+        name = "{}_compile_module_interface_uses_swift_module_file".format(name),
+        tags = all_tags,
+        expected_argv = [
+            "-swift-module-file=ToyModule=$(BIN_DIR)/test/fixtures/module_interface/toy_module_outs/ToyModule.swiftmodule",
+        ],
+        not_expected_argv = [
+            "-Xfrontend -swift-module-file=ToyModule",
+            "-I$(BIN_DIR)/test/fixtures/module_interface/toy_module_outs",
+        ],
+        mnemonic = "SwiftCompileModuleInterface",
         target_under_test = "//test/fixtures/module_interface:dependent_toy_module",
     )
 

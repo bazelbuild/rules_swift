@@ -221,7 +221,7 @@ SWIFT_FEATURE_USE_C_MODULES = "swift.use_c_modules"
 SWIFT_FEATURE_ADD_DEFAULT_PRECOMPILED_MODULES = "swift.add_default_precompiled_modules"
 
 # If enabled, Swift modules for dependencies will be passed to the compiler
-# using a JSON file instead of `-I` search paths.
+# using a JSON file instead of per-module frontend flags.
 SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP = "swift.use_explicit_swift_module_map"
 
 # If enabled, Swift compilation actions will use the same global Clang module

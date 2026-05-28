@@ -134,8 +134,9 @@ def _explicit_swift_module_map_info(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_USE_C_MODULES,
     ):
-        # Keep non-system Swift deps on search paths, but include system
-        # modules to make sure everything loads them with the same behavior
+        # Keep non-system Swift deps on per-module frontend flags, but include
+        # system modules to make sure everything loads them with the same
+        # behavior.
         module_contexts = [
             module
             for module in transitive_modules
