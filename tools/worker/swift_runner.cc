@@ -761,6 +761,13 @@ std::vector<std::string> SwiftRunner::ParseArguments(Iterator itr) {
       ++it;
       module_name_ = *it;
       out_args.push_back(*it);
+    } else if (arg == "-module-alias") {
+      ++it;
+      std::pair<std::string, std::string> source_and_alias =
+          absl::StrSplit(*it, absl::MaxSplits('=', 1));
+      alias_to_source_mapping_[source_and_alias.second] =
+          source_and_alias.first;
+      out_args.push_back(*it);
     } else if (arg == "-target") {
       ++it;
       target_triple_ = *it;
@@ -859,19 +866,27 @@ int SwiftRunner::PerformLayeringCheck(std::ostream& stderr_stream,
   absl::btree_set<std::string> deps_modules =
       ReadDepsModules(deps_modules_path_);
 
-  // A module can import itself when the Swift module has an underlying Clang
-  // module, such as with `@_exported import X` in a Swift overlay for X.
-  deps_modules.insert(module_name_);
-
   // Use a `btree_set` so that the output is automatically sorted
   // lexicographically.
   absl::btree_set<std::string> missing_deps;
   std::ifstream imported_modules_stream(imported_modules_path);
   std::string module_name;
   while (std::getline(imported_modules_stream, module_name)) {
-    if (!IsModuleIgnorableForLayeringCheck(module_name) &&
+    // A module can import itself when the Swift module has an underlying Clang
+    // module, such as with `@_exported import X` in a Swift overlay for X.
+    if (module_name != module_name_ &&
+        !IsModuleIgnorableForLayeringCheck(module_name) &&
         !deps_modules.contains(module_name)) {
-      missing_deps.insert(module_name);
+      // Swift's `-emit-imported-modules` output reports resolved aliased module
+      // names. Map them back to the names users write in source before
+      // reporting missing deps.
+      if (auto alias_and_source_name =
+              alias_to_source_mapping_.find(module_name);
+          alias_and_source_name != alias_to_source_mapping_.end()) {
+        missing_deps.insert(alias_and_source_name->second);
+      } else {
+        missing_deps.insert(module_name);
+      }
     }
   }
 

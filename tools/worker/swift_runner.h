@@ -197,6 +197,11 @@ class SwiftRunner {
   // The name of the module currently being compiled.
   std::string module_name_;
 
+  // Inverse mapping of module aliases passed to the compiler. `-module-alias`
+  // takes an argument of the form `source=alias`; layering checks report the
+  // resolved alias, but diagnostics should print the source name users import.
+  absl::flat_hash_map<std::string, std::string> alias_to_source_mapping_;
+
   // The path of the output map file
   std::string output_file_map_path_;
 
