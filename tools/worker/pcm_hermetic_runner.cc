@@ -16,6 +16,7 @@
 
 #include <cstdlib>
 #include <filesystem>
+#include <map>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -49,13 +50,13 @@ void ReplaceAll(std::string& arg, const std::string& needle,
 }
 
 int CaptureFrontendCommand(const std::vector<std::string>& args,
+                           std::map<std::string, std::string>* env,
                            std::ostream* stderr_stream, std::string* captured) {
   std::vector<std::string> driver_args = args;
   driver_args.push_back("-###");
 
   std::stringstream sink;
-  int rc = RunSubProcess(driver_args, /*env=*/nullptr, &sink,
-                         /*stdout_to_stderr=*/true);
+  int rc = RunSubProcess(driver_args, env, &sink, /*stdout_to_stderr=*/true);
   *captured = sink.str();
   if (rc != 0) {
     (*stderr_stream) << "error: hermetic-pcm: swiftc -### exited " << rc
@@ -128,6 +129,7 @@ std::string ResourceDirFromFrontend(const std::string& frontend_binary) {
 }  // namespace
 
 int RunHermeticPcm(const std::vector<std::string>& args,
+                   std::map<std::string, std::string>* env,
                    std::ostream* stderr_stream) {
   std::string developer_dir = GetEnv("DEVELOPER_DIR");
   if (developer_dir.empty()) {
@@ -137,7 +139,7 @@ int RunHermeticPcm(const std::vector<std::string>& args,
   developer_dir = bazel_rules_swift::NormalizeDeveloperDir(developer_dir);
 
   std::string captured;
-  int rc = CaptureFrontendCommand(args, stderr_stream, &captured);
+  int rc = CaptureFrontendCommand(args, env, stderr_stream, &captured);
   if (rc != 0) {
     return rc;
   }
@@ -196,6 +198,6 @@ int RunHermeticPcm(const std::vector<std::string>& args,
     (*stderr_stream) << '\n';
   }
 
-  return RunSubProcess(rewritten, /*env=*/nullptr, stderr_stream,
+  return RunSubProcess(rewritten, env, stderr_stream,
                        /*stdout_to_stderr=*/false);
 }
