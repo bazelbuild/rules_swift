@@ -60,6 +60,17 @@ transition_binary(
     ],
 )
 
+transition_binary(
+    name = "foundation_consumer_violation_precompiled_modules",
+    tags = FIXTURE_TAGS,
+    target = ":foundation_consumer",
+    transitive_features = [
+        "swift.use_c_modules",
+        "swift.emit_c_module",
+        "-swift.add_default_precompiled_modules",
+    ],
+)
+
 swift_library(
     name = "TransitiveDependency",
     srcs = ["TransitiveDependency.swift"],

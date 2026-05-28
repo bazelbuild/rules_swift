@@ -9,6 +9,7 @@ trap 'rm -f "$log"' EXIT
 check_failure() {
   local target="$1"
   local expected_label="${2:-$target}"
+  local expected_module="${3:-TransitiveDependency}"
 
   if "$bazel" build "$target" &>"$log"; then
     cat "$log"
@@ -19,7 +20,7 @@ check_failure() {
   for expected in \
     "Layering violation in" \
     "$expected_label" \
-    "TransitiveDependency" \
+    "$expected_module" \
     "Please add the correct 'deps'"; do
     if ! grep -Fq "$expected" "$log"; then
       cat "$log"
@@ -29,6 +30,10 @@ check_failure() {
   done
 }
 
+check_failure \
+  "//test/fixtures/layering_check:foundation_consumer_violation_precompiled_modules" \
+  "//test/fixtures/layering_check:foundation_consumer" \
+  "Foundation"
 check_failure "//test/fixtures/layering_check:layering_violation"
 check_failure \
   "//test/fixtures/layering_check:layering_violation_explicit_modules" \

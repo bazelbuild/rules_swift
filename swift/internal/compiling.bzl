@@ -782,8 +782,15 @@ def compile(
         transitive_module_names = [
             module_context.name
             for module_context in transitive_modules
-            if validate_system_modules or not module_context.is_system
         ]
+        if validate_system_modules:
+            # Default precompiled modules are disabled, so SDK modules are no
+            # longer implicit imports and should participate in layering checks.
+            for swift_info in toolchains.swift.system_modules.swift_infos:
+                transitive_module_names.extend([
+                    module_context.name
+                    for module_context in swift_info.transitive_modules.to_list()
+                ])
 
         deps_modules_file = actions.declare_file(
             "{}.deps-module-mapping".format(target_name),
