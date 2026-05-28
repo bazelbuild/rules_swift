@@ -168,17 +168,6 @@ static std::optional<std::string> ConsumeArg(absl::string_view* line) {
   return result;
 }
 
-// If `str` starts with `prefix`, `str` is mutated to remove `prefix` and the
-// function returns true. Otherwise, `str` is left unmodified and the function
-// returns `false`.
-static bool StripPrefix(const std::string& prefix, std::string& str) {
-  if (str.find(prefix) != 0) {
-    return false;
-  }
-  str.erase(0, prefix.size());
-  return true;
-}
-
 // Infers the path to the `.swiftinterface` file inside a `.swiftmodule`
 // directory based on the given target triple.
 //
@@ -530,7 +519,10 @@ template <typename Iterator>
 bool SwiftRunner::ProcessArgument(
     Iterator& itr, const std::string& arg,
     std::function<void(const std::string&)> consumer) {
-  bool changed = false;
+  // Response files are expanded and their contents processed recursively.
+  if (arg[0] == '@') {
+    return ProcessPossibleResponseFile(arg, consumer);
+  }
 
   // Helper function for adding path remapping flags that depend on information
   // only known at execution time.
@@ -550,196 +542,178 @@ bool SwiftRunner::ProcessArgument(
 #endif
   };
 
-  if (arg[0] == '@') {
-    changed = ProcessPossibleResponseFile(arg, consumer);
-  } else {
-    std::string new_arg = arg;
-    if (StripPrefix("-Xwrapped-swift=", new_arg)) {
-      if (new_arg == "-debug-prefix-pwd-is-dot") {
-        // Replace the $PWD with . to make the paths relative to the workspace
-        // without breaking hermiticity.
-        add_prefix_map_flags("-debug-prefix-map");
-        changed = true;
-      } else if (new_arg == "-coverage-prefix-pwd-is-dot") {
-        // Replace the $PWD with . to make the paths relative to the workspace
-        // without breaking hermiticity.
-        add_prefix_map_flags("-coverage-prefix-map");
-        changed = true;
-      } else if (new_arg == "-coverage-prefix-pwd-is-canonical") {
-        // Replace the $PWD with the canonical (resolved) path to the source
-        // root. The bazel execroot is a normal directory, but inside of it
-        // there are symlinks to our source tree. This fetches the true path of
-        // a known directory in order to get the actual source root of the
-        // project. This should only work with sandboxing disabled.
-        auto cwd = std::filesystem::current_path();
-        auto target_path =
-            std::filesystem::canonical(cwd / "BUILD.bazel").parent_path();
-        add_prefix_map_flags("-coverage-prefix-map", target_path.string());
-        changed = true;
-      } else if (new_arg == "-file-prefix-pwd-is-dot") {
-        // Replace the $PWD with . to make the paths relative to the workspace
-        // without breaking hermiticity.
-        add_prefix_map_flags("-file-prefix-map");
-        changed = true;
-      } else if (StripPrefix("-macro-expansion-dir=", new_arg)) {
-        changed = true;
-        std::filesystem::create_directories(new_arg);
-#if __APPLE__
-        job_env_["TMPDIR"] = new_arg;
-#else
-        // TEMPDIR is read by C++ but not Swift. Swift requires the temprorary
-        // directory to be an absolute path and otherwise fails (or ignores it
-        // silently on macOS) so we need to set one that Swift does not read.
-        // C++ prioritizes TMPDIR over TEMPDIR so we need to wipe out the other
-        // one. The downside is that anything else reading TMPDIR will not use
-        // the one potentially set by the user.
-        job_env_["TEMPDIR"] = new_arg;
-        job_env_.erase("TMPDIR");
-#endif
-      } else if (new_arg == "-ephemeral-module-cache") {
-        // Create a temporary directory to hold the module cache, which will be
-        // deleted after compilation is finished.
-        auto module_cache_dir =
-            TempDirectory::Create("swift_module_cache.XXXXXX");
-        consumer("-module-cache-path");
-        consumer(module_cache_dir->GetPath());
-        temp_directories_.push_back(std::move(module_cache_dir));
-        changed = true;
-      } else if (StripPrefix("-generated-header-rewriter=", new_arg)) {
-        changed = true;
-      } else if (StripPrefix("-tool-arg=", new_arg)) {
-        changed = true;
-      } else if (StripPrefix("-bazel-target-label=", new_arg)) {
-        changed = true;
-      } else if (StripPrefix("-global-index-store-import-path=", new_arg)) {
-        changed = true;
-      } else if (new_arg == "-hermetic-pcm") {
-        changed = true;
-      } else if (StripPrefix("-explicit-compile-module-from-interface=",
-                             new_arg)) {
-        module_or_interface_path_ = new_arg;
-        bazel_placeholder_substitutions_.Apply(module_or_interface_path_);
-        changed = true;
-      } else if (StripPrefix("-driver-explicit-swift-module-map-file=",
-                             new_arg)) {
-        consumer("-Xfrontend");
-        consumer("-explicit-swift-module-map-file");
-        consumer("-Xfrontend");
-        consumer(ProcessExplicitSwiftModuleMapFile(new_arg));
-        changed = true;
-      } else if (StripPrefix("-frontend-explicit-swift-module-map-file=",
-                             new_arg)) {
-        consumer("-explicit-swift-module-map-file");
-        consumer(ProcessExplicitSwiftModuleMapFile(new_arg));
-        changed = true;
-      } else {
-        // TODO(allevato): Report that an unknown wrapper arg was found and give
-        // the caller a way to exit gracefully.
-        changed = true;
-      }
-    } else {
-      // Process default arguments
-      if (arg == "-index-store-path") {
-        consumer("-index-store-path");
-        ++itr;
-
-        // If there was a global index store set, pass that to swiftc.
-        // Otherwise, pass the users. We later copy index data onto the users.
-        if (global_index_store_import_path_ != "") {
-          new_arg = global_index_store_import_path_;
-        } else {
-          new_arg = index_store_path_;
-        }
-        changed = true;
-      } else if (arg == "-output-file-map") {
-        // Save the output file map to the value proceeding
-        // `-output-file-map`
-        consumer("-output-file-map");
-        ++itr;
-        new_arg = output_file_map_path_;
-        changed = true;
-      } else if (arg == "-target") {
-        consumer("-target");
-        ++itr;
-        new_arg = *itr;
-        target_triple_ = new_arg;
-      } else if (is_dump_ast_ && ArgumentEnablesWMO(arg)) {
-        // WMO is invalid for -dump-ast,
-        // so omit the argument that enables WMO
-        return true;  // return to avoid consuming the arg
-      }
-
-      // Apply any other text substitutions needed in the argument (i.e., for
-      // Apple toolchains).
-      //
-      // Bazel doesn't quote arguments in multi-line params files, so we need
-      // to ensure that our defensive quoting kicks in if an argument contains
-      // a space, even if no other changes would have been made.
-      changed = bazel_placeholder_substitutions_.Apply(new_arg) || changed ||
-                new_arg.find_first_of(' ') != std::string::npos;
-      consumer(new_arg);
+  // `-Xwrapped-swift=` arguments are consumed entirely by the worker and are
+  // not passed on to the Swift tool. The flags handled below either expand
+  // into real compiler flags or have execution-time side effects; flags that
+  // only record state are recognized in `ParseArguments` and dropped by the
+  // catch-all at the end of this block.
+  absl::string_view wrapped_arg = arg;
+  if (absl::ConsumePrefix(&wrapped_arg, "-Xwrapped-swift=")) {
+    if (wrapped_arg == "-debug-prefix-pwd-is-dot") {
+      // Replace the $PWD with . to make the paths relative to the workspace
+      // without breaking hermiticity.
+      add_prefix_map_flags("-debug-prefix-map");
+      return true;
     }
+    if (wrapped_arg == "-coverage-prefix-pwd-is-dot") {
+      // Replace the $PWD with . to make the paths relative to the workspace
+      // without breaking hermiticity.
+      add_prefix_map_flags("-coverage-prefix-map");
+      return true;
+    }
+    if (wrapped_arg == "-coverage-prefix-pwd-is-canonical") {
+      // Replace the $PWD with the canonical (resolved) path to the source
+      // root. The bazel execroot is a normal directory, but inside of it
+      // there are symlinks to our source tree. This fetches the true path of
+      // a known directory in order to get the actual source root of the
+      // project. This should only work with sandboxing disabled.
+      auto cwd = std::filesystem::current_path();
+      auto target_path =
+          std::filesystem::canonical(cwd / "BUILD.bazel").parent_path();
+      add_prefix_map_flags("-coverage-prefix-map", target_path.string());
+      return true;
+    }
+    if (wrapped_arg == "-file-prefix-pwd-is-dot") {
+      // Replace the $PWD with . to make the paths relative to the workspace
+      // without breaking hermiticity.
+      file_prefix_pwd_is_dot_ = true;
+      add_prefix_map_flags("-file-prefix-map");
+      return true;
+    }
+    if (absl::ConsumePrefix(&wrapped_arg, "-macro-expansion-dir=")) {
+      std::string macro_expansion_dir(wrapped_arg);
+      std::filesystem::create_directories(macro_expansion_dir);
+#if __APPLE__
+      job_env_["TMPDIR"] = macro_expansion_dir;
+#else
+      // TEMPDIR is read by C++ but not Swift. Swift requires the temprorary
+      // directory to be an absolute path and otherwise fails (or ignores it
+      // silently on macOS) so we need to set one that Swift does not read.
+      // C++ prioritizes TMPDIR over TEMPDIR so we need to wipe out the other
+      // one. The downside is that anything else reading TMPDIR will not use
+      // the one potentially set by the user.
+      job_env_["TEMPDIR"] = macro_expansion_dir;
+      job_env_.erase("TMPDIR");
+#endif
+      return true;
+    }
+    if (wrapped_arg == "-ephemeral-module-cache") {
+      // Create a temporary directory to hold the module cache, which will be
+      // deleted after compilation is finished.
+      auto module_cache_dir =
+          TempDirectory::Create("swift_module_cache.XXXXXX");
+      consumer("-module-cache-path");
+      consumer(module_cache_dir->GetPath());
+      temp_directories_.push_back(std::move(module_cache_dir));
+      return true;
+    }
+    if (absl::ConsumePrefix(&wrapped_arg,
+                            "-driver-explicit-swift-module-map-file=")) {
+      consumer("-Xfrontend");
+      consumer("-explicit-swift-module-map-file");
+      consumer("-Xfrontend");
+      consumer(ProcessExplicitSwiftModuleMapFile(std::string(wrapped_arg)));
+      return true;
+    }
+    if (absl::ConsumePrefix(&wrapped_arg,
+                            "-frontend-explicit-swift-module-map-file=")) {
+      consumer("-explicit-swift-module-map-file");
+      consumer(ProcessExplicitSwiftModuleMapFile(std::string(wrapped_arg)));
+      return true;
+    }
+
+    // Any other `-Xwrapped-swift=` flag was recognized for its side effects in
+    // `ParseArguments` and is dropped here.
+    //
+    // TODO(allevato): Report that an unknown wrapper arg was found and give
+    // the caller a way to exit gracefully.
+    return true;
   }
 
+  std::string new_arg = arg;
+  bool changed = false;
+  if (arg == "-index-store-path") {
+    consumer("-index-store-path");
+    ++itr;
+    index_store_path_ = *itr;
+
+    // If there was a global index store set, pass that to swiftc.
+    // Otherwise, pass the users. We later copy index data onto the users.
+    new_arg = global_index_store_import_path_.empty()
+                  ? index_store_path_
+                  : global_index_store_import_path_;
+    changed = true;
+  } else if (is_dump_ast_ && ArgumentEnablesWMO(arg)) {
+    // WMO is invalid for -dump-ast,
+    // so omit the argument that enables WMO
+    return true;  // return to avoid consuming the arg
+  }
+
+  // Apply any other text substitutions needed in the argument (i.e., for
+  // Apple toolchains).
+  //
+  // Bazel doesn't quote arguments in multi-line params files, so we need
+  // to ensure that our defensive quoting kicks in if an argument contains
+  // a space, even if no other changes would have been made.
+  changed = bazel_placeholder_substitutions_.Apply(new_arg) || changed ||
+            new_arg.find_first_of(' ') != std::string::npos;
+  consumer(new_arg);
   return changed;
 }
 
 template <typename Iterator>
 std::vector<std::string> SwiftRunner::ParseArguments(Iterator itr) {
+  // Reads every argument into a vector (so the stream backing a response file
+  // is only read once) while recording the state that `ProcessArgument` and
+  // `Run` rely on. Crucially, this also collects the state that is consulted
+  // while *rewriting* other arguments (the global index store path and whether
+  // this is a `-dump-ast` invocation), so that those decisions are independent
+  // of the order in which the arguments appear.
   std::vector<std::string> out_args;
   for (auto it = itr.begin(); it != itr.end(); ++it) {
-    auto arg = *it;
+    std::string arg = *it;
     out_args.push_back(arg);
 
-    if (StripPrefix("-Xwrapped-swift=", arg)) {
-      if (StripPrefix("-global-index-store-import-path=", arg)) {
-        global_index_store_import_path_ = arg;
-      } else if (StripPrefix("-generated-header-rewriter=", arg)) {
-        generated_header_rewriter_path_ = arg;
-      } else if (StripPrefix("-tool-arg=", arg)) {
+    absl::string_view value = arg;
+    if (absl::ConsumePrefix(&value, "-Xwrapped-swift=")) {
+      if (absl::ConsumePrefix(&value, "-global-index-store-import-path=")) {
+        global_index_store_import_path_ = std::string(value);
+      } else if (absl::ConsumePrefix(&value, "-generated-header-rewriter=")) {
+        generated_header_rewriter_path_ = std::string(value);
+      } else if (absl::ConsumePrefix(&value, "-tool-arg=")) {
         std::pair<std::string, std::string> arg_and_value =
-            absl::StrSplit(arg, absl::MaxSplits('=', 1));
+            absl::StrSplit(value, absl::MaxSplits('=', 1));
         passthrough_tool_args_[arg_and_value.first].push_back(
-            std::string(arg_and_value.second));
-      } else if (StripPrefix("-bazel-target-label=", arg)) {
-        target_label_ = arg;
-      } else if (arg == "-file-prefix-pwd-is-dot") {
-        file_prefix_pwd_is_dot_ = true;
-      } else if (arg == "-emit-swiftsourceinfo") {
+            arg_and_value.second);
+      } else if (absl::ConsumePrefix(&value, "-bazel-target-label=")) {
+        target_label_ = std::string(value);
+      } else if (value == "-emit-swiftsourceinfo") {
         emit_swift_source_info_ = true;
-      } else if (arg == "-hermetic-pcm") {
+      } else if (value == "-hermetic-pcm") {
         hermetic_pcm_ = true;
-      } else if (StripPrefix("-explicit-compile-module-from-interface=", arg)) {
-        module_or_interface_path_ = arg;
+      } else if (absl::ConsumePrefix(
+                     &value, "-explicit-compile-module-from-interface=")) {
+        module_or_interface_path_ = std::string(value);
+        bazel_placeholder_substitutions_.Apply(module_or_interface_path_);
       }
-    } else {
-      if (arg == "-output-file-map") {
-        ++it;
-        arg = *it;
-        output_file_map_path_ = arg;
-        out_args.push_back(arg);
-      } else if (arg == "-index-store-path") {
-        ++it;
-        arg = *it;
-        index_store_path_ = arg;
-        out_args.push_back(arg);
-      } else if (arg == "-dump-ast") {
-        is_dump_ast_ = true;
-      } else if (arg == "-emit-module-path") {
-        ++it;
-        arg = *it;
-        std::filesystem::path module_path(arg);
-        swift_source_info_path_ =
-            module_path.replace_extension(".swiftsourceinfo").string();
-        out_args.push_back(arg);
-      } else if (arg == "-target") {
-        ++it;
-        arg = *it;
-        target_triple_ = arg;
-        out_args.push_back(arg);
-      } else if (arg == "-v") {
-        verbose_ = true;
-      }
+    } else if (arg == "-output-file-map") {
+      ++it;
+      output_file_map_path_ = *it;
+      out_args.push_back(*it);
+    } else if (arg == "-dump-ast") {
+      is_dump_ast_ = true;
+    } else if (arg == "-emit-module-path") {
+      ++it;
+      std::filesystem::path module_path(*it);
+      swift_source_info_path_ =
+          module_path.replace_extension(".swiftsourceinfo").string();
+      out_args.push_back(*it);
+    } else if (arg == "-target") {
+      ++it;
+      target_triple_ = *it;
+      out_args.push_back(*it);
+    } else if (arg == "-v") {
+      verbose_ = true;
     }
   }
   return out_args;
