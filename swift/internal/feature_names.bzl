@@ -87,6 +87,14 @@ SWIFT_FEATURE__COVERAGE_PREFIX_MAP_ABSOLUTE_SOURCES_NON_HERMETIC = "swift._cover
 # graph.
 SWIFT_FEATURE_EMIT_C_MODULE = "swift.emit_c_module"
 
+# If enabled, the compilation action for a target will produce the Swift
+# compiler's localized-string data (one `.stringsdata` file per source file,
+# collected into a directory). This is the Bazel equivalent of Xcode's "Use
+# Compiler to Extract Swift Strings" (`SWIFT_EMIT_LOC_STRINGS`) build setting.
+# The resulting directory is exposed via the `swift_localized_strings` output
+# group and is suitable as input to `xcstringstool sync`.
+SWIFT_FEATURE_EMIT_LOCALIZED_STRINGS = "swift.emit_localized_strings"
+
 # If enabled, the compilation action for a target will produce an index store.
 # https://docs.google.com/document/d/1cH2sTpgSnJZCkZtJl1aY-rzy4uGPcrI-6RrUpdATO2Q/
 SWIFT_FEATURE_INDEX_WHILE_BUILDING = "swift.index_while_building"

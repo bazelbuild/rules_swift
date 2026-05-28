@@ -14,6 +14,7 @@ load(":features_tests.bzl", "features_test_suite")
 load(":generated_header_tests.bzl", "generated_header_test_suite")
 load(":imported_framework_tests.bzl", "imported_framework_test_suite")
 load(":interop_hints_tests.bzl", "interop_hints_test_suite")
+load(":localized_strings_tests.bzl", "localized_strings_test_suite")
 load(":mainattr_tests.bzl", "mainattr_test_suite")
 load(":module_cache_settings_tests.bzl", "module_cache_settings_test_suite")
 load(":module_interface_tests.bzl", "module_interface_test_suite")
@@ -60,6 +61,8 @@ generated_header_test_suite(name = "generated_header")
 imported_framework_test_suite(name = "imported_framework")
 
 interop_hints_test_suite(name = "interop_hints")
+
+localized_strings_test_suite(name = "localized_strings")
 
 mainattr_test_suite(name = "mainattr")
 

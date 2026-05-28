@@ -48,6 +48,7 @@ load(
     "SWIFT_FEATURE_DISABLE_SYSTEM_INDEX",
     "SWIFT_FEATURE_EMIT_BC",
     "SWIFT_FEATURE_EMIT_C_MODULE",
+    "SWIFT_FEATURE_EMIT_LOCALIZED_STRINGS",
     "SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE",
     "SWIFT_FEATURE_EMIT_SWIFTDOC",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
@@ -1203,6 +1204,15 @@ def compile_action_configs(
             configurators = [_index_while_building_configurator],
             features = [SWIFT_FEATURE_INDEX_WHILE_BUILDING],
         ),
+
+        # Configure localized-string extraction. Emission requires a real
+        # compile (it does not happen under `-typecheck`), so this is only
+        # registered for the compile action.
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE],
+            configurators = [_emit_localized_strings_configurator],
+            features = [SWIFT_FEATURE_EMIT_LOCALIZED_STRINGS],
+        ),
         ActionConfigInfo(
             actions = [
                 SWIFT_ACTION_COMPILE,
@@ -2239,6 +2249,14 @@ def _index_while_building_configurator(prerequisites, args):
     if index_output_path:
         args.add("-Xcc", "-index-unit-output-path")
         args.add("-Xcc", index_output_path)
+
+def _emit_localized_strings_configurator(prerequisites, args):
+    """Adds flags for localized-string extraction to the command line."""
+    args.add("-emit-localized-strings")
+    args.add(
+        "-emit-localized-strings-path",
+        prerequisites.localized_strings_directory.path,
+    )
 
 def _global_index_store_configurator(prerequisites, args):
     """Adds flags for index-store generation to the command line."""
