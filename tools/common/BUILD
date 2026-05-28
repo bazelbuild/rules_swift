@@ -41,9 +41,42 @@ cc_library(
 )
 
 cc_library(
+    name = "color",
+    hdrs = ["color.h"],
+    copts = selects.with_or({
+        ("//tools:clang-cl", "//tools:msvc"): [
+            "/std:c++17",
+        ],
+        "//conditions:default": [
+            "-std=c++17",
+        ],
+    }),
+    deps = [
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+cc_library(
     name = "file_system",
     srcs = ["file_system.cc"],
     hdrs = ["file_system.h"],
+    copts = selects.with_or({
+        ("//tools:clang-cl", "//tools:msvc"): [
+            "/std:c++17",
+        ],
+        "//conditions:default": [
+            "-std=c++17",
+        ],
+    }),
+    deps = [
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "path_utils",
+    srcs = ["path_utils.cc"],
+    hdrs = ["path_utils.h"],
     copts = selects.with_or({
         ("//tools:clang-cl", "//tools:msvc"): [
             "/std:c++17",
