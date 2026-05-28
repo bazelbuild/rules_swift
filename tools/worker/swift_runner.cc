@@ -757,6 +757,10 @@ std::vector<std::string> SwiftRunner::ParseArguments(Iterator itr) {
       swift_source_info_path_ =
           module_path.replace_extension(".swiftsourceinfo").string();
       out_args.push_back(*it);
+    } else if (arg == "-module-name") {
+      ++it;
+      module_name_ = *it;
+      out_args.push_back(*it);
     } else if (arg == "-target") {
       ++it;
       target_triple_ = *it;
@@ -854,6 +858,10 @@ int SwiftRunner::PerformLayeringCheck(std::ostream& stderr_stream,
 
   absl::btree_set<std::string> deps_modules =
       ReadDepsModules(deps_modules_path_);
+
+  // A module can import itself when the Swift module has an underlying Clang
+  // module, such as with `@_exported import X` in a Swift overlay for X.
+  deps_modules.insert(module_name_);
 
   // Use a `btree_set` so that the output is automatically sorted
   // lexicographically.

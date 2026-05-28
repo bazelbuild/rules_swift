@@ -194,6 +194,9 @@ class SwiftRunner {
   // actually allowed to import.
   std::string deps_modules_path_;
 
+  // The name of the module currently being compiled.
+  std::string module_name_;
+
   // The path of the output map file
   std::string output_file_map_path_;
 
