@@ -64,8 +64,8 @@ class SwiftRunner {
  public:
   // Create a new spawner that launches a Swift tool with the given arguments.
   // The first argument is assumed to be that tool. If force_response_file is
-  // true, then the remaining arguments will be unconditionally written into a
-  // response file instead of being passed on the command line.
+  // true, then readable response files are flattened so their arguments are
+  // written into the response file created when the job is spawned.
   SwiftRunner(const std::vector<std::string>& args,
               std::string index_import_path, bool force_response_file = false);
 
@@ -92,11 +92,8 @@ class SwiftRunner {
   //   returns true.
   //
   // - If the spawner is not forcing response files, then the arguments in this
-  //   response file are read and processed. If none of the arguments changed,
-  //   then this function passes the original response file argument to the
-  //   consumer and returns false. If some arguments did change, then they are
-  //   written to a new response file, a response file argument pointing to that
-  //   file is passed to the consumer, and the method returns true.
+  //   response file are read, processed, and sent directly to the consumer.
+  //   The method returns true if any argument changed.
   bool ProcessPossibleResponseFile(
       const std::string& arg, std::function<void(const std::string&)> consumer);
 
@@ -121,10 +118,14 @@ class SwiftRunner {
   template <typename Iterator>
   std::vector<std::string> ParseArguments(Iterator itr);
 
-  // Applies substitutions to the given command line arguments, returning the
-  // results in a new vector.
-  std::vector<std::string> ProcessArguments(
-      const std::vector<std::string>& args);
+  // Applies substitutions to the given command line arguments and populates the
+  // `tool_args_` and `args_` vectors.
+  void ProcessArguments(const std::vector<std::string>& args);
+
+  // Spawns the generated header rewriter to perform any desired transformations
+  // on the Clang header emitted from a Swift compilation.
+  int PerformGeneratedHeaderRewriting(std::ostream& stderr_stream,
+                                      bool stdout_to_stderr);
 
   // Performs a layering check for the compilation, comparing the modules that
   // were imported by Swift code being compiled to the list of dependencies
@@ -136,7 +137,14 @@ class SwiftRunner {
   bazel_rules_swift::BazelPlaceholderSubstitutions
       bazel_placeholder_substitutions_;
 
-  // The arguments, post-substitution, passed to the spawner.
+  // The portion of the command line that indicates which tool should be
+  // spawned; that is, the name/path of the binary, possibly preceded by `xcrun`
+  // on Apple platforms. This part of the path should never be written into a
+  // response file.
+  std::vector<std::string> tool_args_;
+
+  // The arguments, post-substitution, passed to the spawner. This does not
+  // include the binary path, and may be written into a response file.
   std::vector<std::string> args_;
 
   // The environment that should be passed to the original job (but not to other
@@ -155,8 +163,8 @@ class SwiftRunner {
   // up after the driver has terminated.
   std::vector<std::unique_ptr<TempDirectory>> temp_directories_;
 
-  // Arguments will be unconditionally written into a response file and passed
-  // to the tool that way.
+  // Whether readable input response files should be flattened into the response
+  // file created when spawning the Swift job.
   bool force_response_file_;
 
   // Whether the invocation is being used to dump ast files.

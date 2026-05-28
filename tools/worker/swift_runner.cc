@@ -314,6 +314,75 @@ absl::btree_set<std::string> ReadDepsModules(absl::string_view path) {
   return deps_modules;
 }
 
+#if __APPLE__
+// Returns true if the given argument list starts with an invocation of `xcrun`.
+bool StartsWithXcrun(const std::vector<std::string>& args) {
+  return !args.empty() && Basename(args[0]) == "xcrun";
+}
+#endif
+
+// Spawns an executable, constructing the command line by writing `args` to a
+// response file and concatenating that after `tool_args` (which are passed
+// outside the response file).
+int SpawnJob(const std::vector<std::string>& tool_args,
+             const std::vector<std::string>& args,
+             std::map<std::string, std::string>* env,
+             std::ostream* stderr_stream, bool stdout_to_stderr) {
+  auto response_file = WriteResponseFile(args);
+
+  std::vector<std::string> spawn_args(tool_args);
+  spawn_args.push_back("@" + response_file->GetPath());
+  return RunSubProcess(spawn_args, env, stderr_stream, stdout_to_stderr);
+}
+
+std::vector<std::string> ArgsWithResponseFile(
+    const std::vector<std::string>& tool_args,
+    const std::vector<std::string>& args, const TempFile& response_file) {
+  std::vector<std::string> spawn_args(tool_args);
+  spawn_args.push_back("@" + response_file.GetPath());
+  return spawn_args;
+}
+
+std::vector<std::string> FullArgsForDisplay(
+    const std::vector<std::string>& tool_args,
+    const std::vector<std::string>& args) {
+  std::vector<std::string> display_args(tool_args);
+  display_args.insert(display_args.end(), args.begin(), args.end());
+  return display_args;
+}
+
+// Returns a value indicating whether an argument on the Swift command line
+// should be skipped because it is incompatible with the
+// `-emit-imported-modules` flag used for layering checks. The given iterator is
+// also advanced if necessary past any additional flags (e.g., a path following
+// a flag).
+bool SkipLayeringCheckIncompatibleArgs(std::vector<std::string>::iterator& it) {
+  if (*it == "-emit-module" || *it == "-emit-module-interface" ||
+      *it == "-emit-object" || *it == "-emit-objc-header") {
+    // Skip just this argument.
+    return true;
+  }
+  if (*it == "-o" || *it == "-output-file-map" || *it == "-emit-module-path" ||
+      *it == "-emit-module-interface-path" || *it == "-emit-objc-header-path" ||
+      *it == "-emit-clang-header-path") {
+    // This flag has a path after it that we also need to skip.
+    ++it;
+    return true;
+  }
+
+  // Don't skip the flag.
+  return false;
+}
+
+// Returns true if the module can be ignored for the purposes of layering check
+// (that is, it does not need to be in `deps` even if imported).
+//
+// This is mainly a workaround in case code explicitly, though unnecessarily,
+// imports `Swift`.
+bool IsModuleIgnorableForLayeringCheck(absl::string_view module_name) {
+  return module_name == "Swift";
+}
+
 }  // namespace
 
 SwiftRunner::SwiftRunner(const std::vector<std::string>& args,
@@ -326,7 +395,7 @@ SwiftRunner::SwiftRunner(const std::vector<std::string>& args,
       file_prefix_pwd_is_dot_(false),
       hermetic_pcm_(false),
       verbose_(false) {
-  args_ = ProcessArguments(args);
+  ProcessArguments(args);
 }
 
 int SwiftRunner::Run(std::ostream* stderr_stream, bool stdout_to_stderr) {
@@ -341,12 +410,20 @@ int SwiftRunner::Run(std::ostream* stderr_stream, bool stdout_to_stderr) {
     std::filesystem::remove(swift_source_info_path_);
   }
 
-  int exit_code = hermetic_pcm_ ? RunHermeticPcm(args_, stderr_stream)
-                                : RunSubProcess(args_, &job_env_, stderr_stream,
-                                                stdout_to_stderr);
+  int exit_code;
+  if (hermetic_pcm_) {
+    auto response_file = WriteResponseFile(args_);
+    std::vector<std::string> spawn_args =
+        ArgsWithResponseFile(tool_args_, args_, *response_file);
+    exit_code = RunHermeticPcm(spawn_args, stderr_stream);
+  } else {
+    exit_code =
+        SpawnJob(tool_args_, args_, &job_env_, stderr_stream, stdout_to_stderr);
+  }
 
   if (verbose_) {
-    PrintVerboseInvocation(args_, stderr_stream);
+    PrintVerboseInvocation(FullArgsForDisplay(tool_args_, args_),
+                           stderr_stream);
   }
 
   if (exit_code != 0) {
@@ -355,29 +432,17 @@ int SwiftRunner::Run(std::ostream* stderr_stream, bool stdout_to_stderr) {
 
   if (!deps_modules_path_.empty()) {
     exit_code = PerformLayeringCheck(*stderr_stream, stdout_to_stderr);
+    if (exit_code != 0) {
+      return exit_code;
+    }
   }
 
   if (!generated_header_rewriter_path_.empty()) {
-#if __APPLE__
-    // Skip the `xcrun` argument that's added when running on Apple platforms.
-    int initial_args_to_skip = 1;
-#else
-    int initial_args_to_skip = 0;
-#endif
-
-    std::vector<std::string> rewriter_args;
-    rewriter_args.reserve(args_.size() + 2 - initial_args_to_skip);
-    rewriter_args.push_back(generated_header_rewriter_path_);
-    const std::vector<std::string>& passthrough_args =
-        passthrough_tool_args_["generated_header_rewriter"];
-    rewriter_args.insert(rewriter_args.end(), passthrough_args.begin(),
-                         passthrough_args.end());
-    rewriter_args.push_back("--");
-    rewriter_args.insert(rewriter_args.end(),
-                         args_.begin() + initial_args_to_skip, args_.end());
-
-    exit_code = RunSubProcess(rewriter_args, /*env=*/nullptr, stderr_stream,
-                              stdout_to_stderr);
+    exit_code =
+        PerformGeneratedHeaderRewriting(*stderr_stream, stdout_to_stderr);
+    if (exit_code != 0) {
+      return exit_code;
+    }
   }
 
   auto enable_global_index_store = global_index_store_import_path_ != "";
@@ -421,47 +486,10 @@ int SwiftRunner::Run(std::ostream* stderr_stream, bool stdout_to_stderr) {
   return exit_code;
 }
 
-// Marker for end of iteration
-class StreamIteratorEnd {};
-
-// Basic iterator over an ifstream
-class StreamIterator {
- public:
-  StreamIterator(std::ifstream& file) : file_{file} { next(); }
-
-  const std::string& operator*() const { return str_; }
-
-  StreamIterator& operator++() {
-    next();
-    return *this;
-  }
-
-  bool operator!=(StreamIteratorEnd) const { return !!file_; }
-
- private:
-  void next() { std::getline(file_, str_); }
-
-  std::ifstream& file_;
-  std::string str_;
-};
-
-class ArgsFile {
- public:
-  ArgsFile(std::ifstream& file) : file_(file) {}
-
-  StreamIterator begin() { return StreamIterator{file_}; }
-
-  StreamIteratorEnd end() { return StreamIteratorEnd{}; }
-
- private:
-  std::ifstream& file_;
-};
-
 bool SwiftRunner::ProcessPossibleResponseFile(
     const std::string& arg, std::function<void(const std::string&)> consumer) {
   auto path = arg.substr(1);
   std::ifstream original_file(path);
-  ArgsFile args_file(original_file);
 
   // If we couldn't open it, maybe it's not a file; maybe it's just some other
   // argument that starts with "@" such as "@loader_path/..."
@@ -470,40 +498,27 @@ bool SwiftRunner::ProcessPossibleResponseFile(
     return false;
   }
 
-  // Read the file to a vector to prevent double I/O
-  auto args = ParseArguments(args_file);
+  std::vector<std::string> args;
+  for (std::string arg_from_file; std::getline(original_file, arg_from_file);) {
+    // Arguments in response files might be quoted/escaped. When forcing
+    // response files, unescape them before storing them in the processed
+    // argument vector.
+    args.push_back(force_response_file_ ? Unescape(arg_from_file)
+                                        : arg_from_file);
+  }
 
-  // If we're forcing response files, process and send the arguments from this
-  // file directly to the consumer; they'll all get written to the same response
-  // file at the end of processing all the arguments.
+  auto parsed_args = ParseArguments(args);
   if (force_response_file_) {
-    for (auto it = args.begin(); it != args.end(); ++it) {
-      // Arguments in response files might be quoted/escaped, so we need to
-      // unescape them ourselves.
-      ProcessArgument(it, Unescape(*it), consumer);
+    for (auto it = parsed_args.begin(); it != parsed_args.end(); ++it) {
+      ProcessArgument(it, *it, consumer);
     }
     return true;
   }
 
-  // Otherwise, open the file, process the arguments, and rewrite it if any of
-  // them have changed.
+  // Otherwise, open the file and process the arguments.
   bool changed = false;
-  std::string arg_from_file;
-  std::vector<std::string> new_args;
-  for (auto it = args.begin(); it != args.end(); ++it) {
-    changed |= ProcessArgument(it, *it, [&](const std::string& processed_arg) {
-      new_args.push_back(processed_arg);
-    });
-  }
-
-  if (changed) {
-    auto new_file = WriteResponseFile(new_args);
-    consumer("@" + new_file->GetPath());
-    temp_files_.push_back(std::move(new_file));
-  } else {
-    // If none of the arguments changed, just keep the original response file
-    // argument.
-    consumer(arg);
+  for (auto it = parsed_args.begin(); it != parsed_args.end(); ++it) {
+    changed |= ProcessArgument(it, *it, consumer);
   }
 
   return changed;
@@ -705,6 +720,8 @@ std::vector<std::string> SwiftRunner::ParseArguments(Iterator itr) {
             arg_and_value.second);
       } else if (absl::ConsumePrefix(&value, "-bazel-target-label=")) {
         target_label_ = std::string(value);
+      } else if (absl::ConsumePrefix(&value, "-layering-check-deps-modules=")) {
+        deps_modules_path_ = std::string(value);
       } else if (value == "-emit-swiftsourceinfo") {
         emit_swift_source_info_ = true;
       } else if (value == "-hermetic-pcm") {
@@ -737,31 +754,22 @@ std::vector<std::string> SwiftRunner::ParseArguments(Iterator itr) {
   return out_args;
 }
 
-std::vector<std::string> SwiftRunner::ProcessArguments(
-    const std::vector<std::string>& args) {
-  std::vector<std::string> new_args;
-  std::vector<std::string> response_file_args;
-
+void SwiftRunner::ProcessArguments(const std::vector<std::string>& args) {
 #if __APPLE__
   // On Apple platforms, inject `/usr/bin/xcrun` in front of our command
   // invocation.
-  new_args.push_back("/usr/bin/xcrun");
+  tool_args_.push_back("/usr/bin/xcrun");
 #endif
 
   // The tool is assumed to be the first argument. Push it directly.
   auto parsed_args = ParseArguments(args);
 
   auto it = parsed_args.begin();
-  new_args.push_back(*it++);
+  tool_args_.push_back(*it++);
 
-  // If we're forcing response files, push the remaining processed args onto a
-  // different vector that we write out below. If not, push them directly onto
-  // the vector being returned.
-  auto& args_destination = force_response_file_ ? response_file_args : new_args;
   while (it != parsed_args.end()) {
-    ProcessArgument(it, *it, [&](const std::string& arg) {
-      args_destination.push_back(arg);
-    });
+    ProcessArgument(it, *it,
+                    [&](const std::string& arg) { args_.push_back(arg); });
     ++it;
   }
 
@@ -773,20 +781,31 @@ std::vector<std::string> SwiftRunner::ProcessArguments(
           if (developer_dir != nullptr) return std::string(developer_dir);
           return std::string();
         },
-        [&](absl::string_view arg) {
-          args_destination.push_back(std::string(arg));
-        });
+        [&](absl::string_view arg) { args_.push_back(std::string(arg)); });
   }
+}
 
-  if (force_response_file_) {
-    // Write the processed args to the response file, and push the path to that
-    // file (preceded by '@') onto the arg list being returned.
-    auto new_file = WriteResponseFile(response_file_args);
-    new_args.push_back("@" + new_file->GetPath());
-    temp_files_.push_back(std::move(new_file));
-  }
+int SwiftRunner::PerformGeneratedHeaderRewriting(std::ostream& stderr_stream,
+                                                 bool stdout_to_stderr) {
+#if __APPLE__
+  // Skip the `xcrun` argument that's added when running on Apple platforms,
+  // since the header rewriter doesn't need it.
+  int tool_binary_index = StartsWithXcrun(tool_args_) ? 1 : 0;
+#else
+  int tool_binary_index = 0;
+#endif
 
-  return new_args;
+  std::vector<std::string> rewriter_tool_args;
+  rewriter_tool_args.push_back(generated_header_rewriter_path_);
+  const std::vector<std::string>& passthrough_args =
+      passthrough_tool_args_["generated_header_rewriter"];
+  rewriter_tool_args.insert(rewriter_tool_args.end(), passthrough_args.begin(),
+                            passthrough_args.end());
+  rewriter_tool_args.push_back("--");
+  rewriter_tool_args.push_back(tool_args_[tool_binary_index]);
+
+  return SpawnJob(rewriter_tool_args, args_, /*env=*/nullptr, &stderr_stream,
+                  stdout_to_stderr);
 }
 
 int SwiftRunner::PerformLayeringCheck(std::ostream& stderr_stream,
@@ -799,16 +818,20 @@ int SwiftRunner::PerformLayeringCheck(std::ostream& stderr_stream,
                        /*all_extensions=*/true);
 
   std::vector<std::string> emit_imports_args;
-  emit_imports_args.reserve(args_.size() + 3);
-  emit_imports_args.assign(args_.begin(), args_.end());
+  for (auto it = args_.begin(); it != args_.end(); ++it) {
+    if (!SkipLayeringCheckIncompatibleArgs(it)) {
+      emit_imports_args.push_back(*it);
+    }
+  }
+
   emit_imports_args.push_back("-emit-imported-modules");
   emit_imports_args.push_back("-o");
   emit_imports_args.push_back(imported_modules_path);
-  int exit_code = RunSubProcess(emit_imports_args, &job_env_, &stderr_stream,
-                                stdout_to_stderr);
+  int exit_code = SpawnJob(tool_args_, emit_imports_args, &job_env_,
+                           &stderr_stream, stdout_to_stderr);
   if (exit_code != 0) {
     WithColor(stderr_stream, Color::kBoldRed) << std::endl << "error: ";
-    WithColor(stderr_stream, Color::kBoldWhite)
+    WithColor(stderr_stream, Color::kBold)
         << "Swift compilation succeeded, but an unexpected compiler error "
            "occurred when performing the layering check.";
     stderr_stream << std::endl << std::endl;
@@ -824,7 +847,8 @@ int SwiftRunner::PerformLayeringCheck(std::ostream& stderr_stream,
   std::ifstream imported_modules_stream(imported_modules_path);
   std::string module_name;
   while (std::getline(imported_modules_stream, module_name)) {
-    if (!deps_modules.contains(module_name)) {
+    if (!IsModuleIgnorableForLayeringCheck(module_name) &&
+        !deps_modules.contains(module_name)) {
       missing_deps.insert(module_name);
     }
   }
@@ -832,7 +856,7 @@ int SwiftRunner::PerformLayeringCheck(std::ostream& stderr_stream,
   if (!missing_deps.empty()) {
     stderr_stream << std::endl;
     WithColor(stderr_stream, Color::kBoldRed) << "error: ";
-    WithColor(stderr_stream, Color::kBoldWhite) << "Layering violation in ";
+    WithColor(stderr_stream, Color::kBold) << "Layering violation in ";
     WithColor(stderr_stream, Color::kBoldGreen) << target_label_ << std::endl;
     stderr_stream
         << "The following modules were imported, but they are not direct "
@@ -844,7 +868,7 @@ int SwiftRunner::PerformLayeringCheck(std::ostream& stderr_stream,
     }
     stderr_stream << std::endl;
 
-    WithColor(stderr_stream, Color::kBoldWhite)
+    WithColor(stderr_stream, Color::kBold)
         << "Please add the correct 'deps' to " << target_label_
         << " to import those modules." << std::endl;
     return 1;
