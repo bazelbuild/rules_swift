@@ -322,17 +322,25 @@ bool StartsWithXcrun(const std::vector<std::string>& args) {
 }
 #endif
 
+bool SupportsResponseFileInvocation(const std::vector<std::string>& args) {
+  return args.empty() || args.front() != "-modulewrap";
+}
+
 // Spawns an executable, constructing the command line by writing `args` to a
-// response file and concatenating that after `tool_args` (which are passed
-// outside the response file).
+// response file when the Swift invocation mode supports it and concatenating
+// that after `tool_args` (which are passed outside the response file).
 int SpawnJob(const std::vector<std::string>& tool_args,
              const std::vector<std::string>& args,
              std::map<std::string, std::string>* env,
              std::ostream* stderr_stream, bool stdout_to_stderr) {
-  auto response_file = WriteResponseFile(args);
-
   std::vector<std::string> spawn_args(tool_args);
-  spawn_args.push_back("@" + response_file->GetPath());
+  if (SupportsResponseFileInvocation(args)) {
+    auto response_file = WriteResponseFile(args);
+    spawn_args.push_back("@" + response_file->GetPath());
+    return RunSubProcess(spawn_args, env, stderr_stream, stdout_to_stderr);
+  }
+
+  spawn_args.insert(spawn_args.end(), args.begin(), args.end());
   return RunSubProcess(spawn_args, env, stderr_stream, stdout_to_stderr);
 }
 
