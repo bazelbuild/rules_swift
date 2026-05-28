@@ -344,6 +344,7 @@ bzl_library(
         "//swift/internal:system_clang_module",
         "//swift/internal:system_module_group",
         "//swift/internal:system_swiftinterface",
+        "//swift/internal:system_swiftmodule",
     ],
 )
 

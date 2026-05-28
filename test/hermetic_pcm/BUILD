@@ -130,6 +130,23 @@ sh_test(
 )
 
 extract_swiftmodule(
+    name = "downstream_explicit_swiftmodule",
+    extra_features = ["swift.use_explicit_swift_module_map"],
+    target = ":Downstream",
+)
+
+sh_test(
+    name = "hermetic_downstream_explicit_swiftmodule_test",
+    srcs = ["check_hermetic_swiftmodule.sh"],
+    args = ["$(rootpath :downstream_explicit_swiftmodule)"],
+    data = [":downstream_explicit_swiftmodule"],
+    target_compatible_with = select({
+        ":supports_hermetic_swiftmodule": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+)
+
+extract_swiftmodule(
     name = "testing_swiftmodule",
     target = "@system_sdk//:Testing",
 )
@@ -220,6 +237,26 @@ sh_test(
         "test/hermetic_pcm/noop_plugin#NoopMacroPlugin",  # Make sure the plugin path is included
     ],
     data = [":downstream_with_plugin_swiftmodule"],
+    target_compatible_with = select({
+        ":supports_hermetic_swiftmodule": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+)
+
+extract_swiftmodule(
+    name = "downstream_with_plugin_explicit_swiftmodule",
+    extra_features = ["swift.use_explicit_swift_module_map"],
+    target = ":DownstreamWithPlugin",
+)
+
+sh_test(
+    name = "hermetic_downstream_with_plugin_explicit_swiftmodule_test",
+    srcs = ["check_hermetic_swiftmodule.sh"],
+    args = [
+        "$(rootpath :downstream_with_plugin_explicit_swiftmodule)",
+        "test/hermetic_pcm/noop_plugin#NoopMacroPlugin",  # Make sure the plugin path is included
+    ],
+    data = [":downstream_with_plugin_explicit_swiftmodule"],
     target_compatible_with = select({
         ":supports_hermetic_swiftmodule": [],
         "//conditions:default": ["@platforms//:incompatible"],

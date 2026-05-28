@@ -57,6 +57,18 @@ _DEFAULT_EXCLUDED_MODULES = {
     "XRSimulator": {"AccessoryTransportExtension"},
 }
 
+# Modules that the Swift compiler implicitly imports based on internal
+# conditions. These must be available for all compiles in case the compiler
+# decides it needs them.
+_IMPLICIT_SYSTEM_MODULES = (
+    "_Concurrency",
+    "_StringProcessing",
+    "_SwiftConcurrencyShims",
+    "Swift",
+    "SwiftOnoneSupport",
+    "SwiftShims",
+)
+
 _TARGETS_PER_SDK = {
     "macosx": [
         ("@platforms//cpu:arm64", "arm64-apple-macos{ver}"),
@@ -105,6 +117,7 @@ load(
     "system_clang_module",
     "system_module_group",
     "system_swiftinterface",
+    "system_swiftmodule",
 )
 
 package(default_visibility = ["//visibility:public"])
@@ -113,6 +126,11 @@ swift_cross_import_overlay_group(name = "_empty_cross_import_overlays")
 
 system_module_group(
     name = "_empty_all_modules",
+    creates_module = False,
+)
+
+system_module_group(
+    name = "_empty_implicit_modules",
     creates_module = False,
 )
 """
@@ -225,6 +243,21 @@ def _render_all_modules_group(
     out.write(")\n")
 
 
+def _render_implicit_modules_group(
+    implicit_module_names: set[str],
+    sdk: str,
+    out: TextIO,
+) -> None:
+    out.write("\n")
+    out.write("system_module_group(\n")
+    out.write(f'    name = "{sdk}_implicit_modules",\n')
+    out.write("    creates_module = False,\n")
+    out.write("    modules = [\n")
+    _write_labels(out, {f"{sdk}_{name}" for name in implicit_module_names})
+    out.write("    ],\n")
+    out.write(")\n")
+
+
 def _render_cross_import_overlay_targets(
     overlays: list["_CrossImportOverlay"],
     sdk: str,
@@ -286,6 +319,10 @@ class _Module:
         default_factory=dict,
         compare=False,
     )
+    swiftmodule_paths_by_cpu: dict[str, str] = field(
+        default_factory=dict,
+        compare=False,
+    )
     deps_by_cpu: defaultdict[str, set[str]] = field(
         default_factory=lambda: defaultdict(set),
         compare=False,
@@ -304,7 +341,25 @@ class _Module:
         is_framework: bool,
         swiftinterface_path: str,
     ) -> None:
+        if self.swiftmodule_paths_by_cpu:
+            raise SystemExit(
+                f"error: module {self.name} has both swiftinterface and swiftmodule candidates, which is unexpected"
+            )
         self.swiftinterface_paths_by_cpu[cpu] = swiftinterface_path
+        self.is_framework = self.is_framework or is_framework
+
+    def set_swiftmodule(
+        self,
+        *,
+        cpu: str,
+        is_framework: bool,
+        swiftmodule_path: str,
+    ) -> None:
+        if self.swiftinterface_paths_by_cpu:
+            raise SystemExit(
+                f"error: module {self.name} has both swiftinterface and swiftmodule candidates, which is unexpected"
+            )
+        self.swiftmodule_paths_by_cpu[cpu] = swiftmodule_path
         self.is_framework = self.is_framework or is_framework
 
     @property
@@ -366,27 +421,39 @@ class _Module:
             out.write("\n")
             if self.should_compile_swiftinterface:
                 out.write("system_swiftinterface(\n")
+            elif self.swiftmodule_paths_by_cpu:
+                out.write("system_swiftmodule(\n")
             else:
-                out.write("system_module_group(\n")
+                raise SystemExit(
+                    f"error: swift module {self.name} has no swiftinterface or swiftmodule candidates, which is unexpected"
+                )
             out.write(
                 f'    name = "{_canonical_name(self.name, self.sdk, self.module_type)}",\n'
             )
+            if self.is_framework:
+                out.write("    is_framework = True,\n")
+            out.write(f'    module_name = "{self.name}",\n')
+            self._render_deps(out)
             if self.should_compile_swiftinterface:
-                if self.is_framework:
-                    out.write("    is_framework = True,\n")
-                out.write(f'    module_name = "{self.name}",\n')
-                self._render_deps(out)
                 _write_string_attr(
                     out,
                     name="system_swiftinterface",
                     values_by_cpu=self.swiftinterface_paths_by_cpu,
                 )
-            else:
-                self._render_deps(out)
+            elif self.swiftmodule_paths_by_cpu:
+                _write_string_attr(
+                    out,
+                    name="swiftmodule",
+                    values_by_cpu=self.swiftmodule_paths_by_cpu,
+                )
                 _write_transition_attrs(
                     out,
                     sdk=self.sdk,
                     sdk_version=self.sdk_version,
+                )
+            else:
+                raise SystemExit(
+                    f"error: swift module {self.name} has no swiftinterface or swiftmodule candidates, which is unexpected"
                 )
             out.write(")\n")
         else:
@@ -437,8 +504,22 @@ def _parse_output(
 
         module.module_map_path = module.module_map_path or module_map_path
         if module_type == "swift":
-            has_prebuilt_swiftmodule = bool(details.get("compiledModuleCandidates", []))
-            if not has_prebuilt_swiftmodule:
+            compiled_module_candidates = details.get("compiledModuleCandidates", [])
+            if compiled_module_candidates:
+                if len(compiled_module_candidates) > 1:
+                    raise SystemExit(
+                        f"error: expected at most one compiled module candidate for {module_name} got: {compiled_module_candidates}"
+                    )
+                module.set_swiftmodule(
+                    cpu=cpu,
+                    is_framework=bool(details.get("isFramework", False)),
+                    swiftmodule_path=_normalize_system_path(
+                        compiled_module_candidates[0],
+                        developer_dir=developer_dir,
+                        sdkroot=sdkroot,
+                    ),
+                )
+            else:
                 module.set_swiftinterface(
                     cpu=cpu,
                     is_framework=bool(details.get("isFramework", False)),
@@ -717,6 +798,11 @@ def _discover_all_modules(
         buf,
     )
     _render_all_modules_group(all_module_names, sdk, deployment_target, buf)
+    _render_implicit_modules_group(
+        {name for name in _IMPLICIT_SYSTEM_MODULES if name in all_module_names},
+        sdk,
+        buf,
+    )
 
     return buf.getvalue(), all_module_names | {f"{n}_clang" for n in clang_names}
 
@@ -867,6 +953,17 @@ def _main() -> None:
         if all_modules_by_sdk.get(sdk):
             buf.write(f'        ":{sdk}_sdk": ":{sdk}_all_modules",\n')
     buf.write('        "@platforms//os:none": ":_empty_all_modules",\n')
+    buf.write("    }),\n")
+    buf.write(")\n")
+
+    buf.write("\n")
+    buf.write("alias(\n")
+    buf.write('    name = "implicit_modules",\n')
+    buf.write("    actual = select({\n")
+    for sdk in sdk_names:
+        if all_modules_by_sdk.get(sdk):
+            buf.write(f'        ":{sdk}_sdk": ":{sdk}_implicit_modules",\n')
+    buf.write('        "@platforms//os:none": ":_empty_implicit_modules",\n')
     buf.write("    }),\n")
     buf.write(")\n")
 

@@ -956,6 +956,9 @@ def _xcode_swift_toolchain_impl(ctx):
         system_modules = collect_implicit_deps_providers(
             [ctx.attr.system_modules] if ctx.attr.system_modules else [],
         ),
+        implicit_system_modules = collect_implicit_deps_providers(
+            [ctx.attr.implicit_system_modules] if ctx.attr.implicit_system_modules else [],
+        ),
         swift_worker = ctx.attr._worker[DefaultInfo].files_to_run,
         const_protocols_to_gather = ctx.file.const_protocols_to_gather,
         test_configuration = struct(
@@ -1090,6 +1093,14 @@ A list of additional Swift compiler flags that should be passed to Swift compile
 A list of additional Objective-C compiler flags that should be passed (preceded by `-Xcc`)
 to Swift compile actions *and* Swift explicit module precompile actions.
 """,
+            ),
+            "implicit_system_modules": attr.label(
+                doc = """\
+The target of the system modules that every Swift compilation implicitly
+requires.
+""",
+                mandatory = False,
+                providers = [[CcInfo, SwiftInfo]],
             ),
             "system_modules": attr.label(
                 doc = """\

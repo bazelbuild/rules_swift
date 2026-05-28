@@ -80,10 +80,16 @@ def precompiled_modules_test_suite(name, tags = []):
         name = "{}_no_default_precompiled_modules_test".format(name),
         tags = all_tags,
         mnemonic = "SwiftCompile",
+        target_compatible_with = select({
+            "@build_bazel_apple_support//configs:apple": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
         target_under_test = "//test/fixtures/precompiled_modules:hello",
+        expected_argv = [
+            "-fmodule-file=SwiftShims",
+        ],
         not_expected_argv = [
             "-fmodule-file=Foundation",
-            "-fmodule-file=SwiftShims",
         ],
     )
 
