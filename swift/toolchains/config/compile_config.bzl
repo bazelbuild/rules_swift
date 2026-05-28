@@ -37,7 +37,6 @@ load(
     "//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_ADD_DEFAULT_PRECOMPILED_MODULES",
     "SWIFT_FEATURE_CACHEABLE_SWIFTMODULES",
-    "SWIFT_FEATURE_CHECKED_EXCLUSIVITY",
     "SWIFT_FEATURE_CODEVIEW_DEBUG_INFO",
     "SWIFT_FEATURE_COVERAGE",
     "SWIFT_FEATURE_COVERAGE_PREFIX_MAP",
@@ -45,7 +44,6 @@ load(
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
     "SWIFT_FEATURE_DECLARE_SWIFTSOURCEINFO",
     "SWIFT_FEATURE_DISABLE_AVAILABILITY_CHECKING",
-    "SWIFT_FEATURE_DISABLE_CLANG_SPI",
     "SWIFT_FEATURE_DISABLE_SWIFT_SANDBOX",
     "SWIFT_FEATURE_DISABLE_SYSTEM_INDEX",
     "SWIFT_FEATURE_EMIT_BC",
@@ -53,7 +51,6 @@ load(
     "SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE",
     "SWIFT_FEATURE_EMIT_SWIFTDOC",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
-    "SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
     "SWIFT_FEATURE_ENABLE_CPP17_INTEROP",
     "SWIFT_FEATURE_ENABLE_CPP20_INTEROP",
@@ -95,7 +92,6 @@ load(
     "SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS",
     "SWIFT_FEATURE__SUPPORTS_DEVELOPER_DIR",
     "SWIFT_FEATURE__SUPPORTS_HERMETIC_SWIFTMODULE",
-    "SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
 )
 load(":action_config.bzl", "ActionConfigInfo", "ConfigResultInfo", "add_arg")
@@ -267,13 +263,6 @@ def compile_action_configs(
         ActionConfigInfo(
             actions = [SWIFT_ACTION_DERIVE_FILES],
             configurators = [_emit_objc_header_path_configurator],
-        ),
-
-        # Configure enforce exclusivity checks if enabled.
-        ActionConfigInfo(
-            actions = all_compile_action_names(),
-            configurators = [add_arg("-enforce-exclusivity=checked")],
-            features = [SWIFT_FEATURE_CHECKED_EXCLUSIVITY],
         ),
 
         # Configure constant value extraction.
@@ -1279,6 +1268,43 @@ def compile_action_configs(
             configurators = [_frameworks_disable_autolink_configurator],
         ),
 
+        # Language features and versions.
+        ActionConfigInfo(
+            actions = all_compile_action_names(),
+            configurators = [
+                _upcoming_and_experimental_features_configurator,
+            ],
+        ),
+        ActionConfigInfo(
+            actions = all_compile_action_names() + [
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+            ],
+            configurators = [
+                # Unconditionally enable this in Swift 5 mode, but not in Swift
+                # 6 mode (since it is enabled by default in Swift 6, and passing
+                # this flag causes an annoying warning).
+                add_arg("-enable-upcoming-feature", "BareSlashRegexLiterals"),
+            ],
+            not_features = [
+                SWIFT_FEATURE_ENABLE_V6,
+            ],
+        ),
+        ActionConfigInfo(
+            actions = all_compile_action_names(),
+            configurators = [add_arg("-swift-version", "6")],
+            features = [
+                SWIFT_FEATURE_ENABLE_V6,
+            ],
+        ),
+        # Swift 6.2+ warns building swiftmodule files without any -language-mode
+        ActionConfigInfo(
+            actions = all_compile_action_names(),
+            configurators = [add_arg("-swift-version", "5")],
+            not_features = [
+                SWIFT_FEATURE_ENABLE_V6,
+            ],
+        ),
+
         # User-defined conditional compilation flags (defined for Swift; those
         # passed directly to ClangImporter are handled above).
         ActionConfigInfo(
@@ -1286,20 +1312,6 @@ def compile_action_configs(
                 SWIFT_ACTION_DUMP_AST,
             ],
             configurators = [_conditional_compilation_flag_configurator],
-        ),
-        ActionConfigInfo(
-            actions = all_compile_action_names() + [
-                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
-            ],
-            configurators = [add_arg("-enable-bare-slash-regex")],
-            features = [SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX],
-        ),
-        ActionConfigInfo(
-            actions = all_compile_action_names(),
-            configurators = [add_arg("-Xfrontend", "-disable-clang-spi")],
-            features = [
-                SWIFT_FEATURE_DISABLE_CLANG_SPI,
-            ],
         ),
         ActionConfigInfo(
             actions = all_compile_action_names(),
@@ -1315,28 +1327,6 @@ def compile_action_configs(
             configurators = [add_arg("-disable-availability-checking")],
             features = [
                 SWIFT_FEATURE_DISABLE_AVAILABILITY_CHECKING,
-            ],
-        ),
-        ActionConfigInfo(
-            actions = all_compile_action_names(),
-            configurators = [_upcoming_and_experimental_features_configurator],
-            features = [
-                SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES,
-            ],
-        ),
-        # Swift 6.2+ warns building swiftmodule files without any -language-mode
-        ActionConfigInfo(
-            actions = all_compile_action_names(),
-            configurators = [add_arg("-swift-version", "5")],
-            not_features = [
-                SWIFT_FEATURE_ENABLE_V6,
-            ],
-        ),
-        ActionConfigInfo(
-            actions = all_compile_action_names(),
-            configurators = [add_arg("-swift-version", "6")],
-            features = [
-                SWIFT_FEATURE_ENABLE_V6,
             ],
         ),
         ActionConfigInfo(

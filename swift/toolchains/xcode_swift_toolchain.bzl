@@ -60,7 +60,6 @@ load(
     "SWIFT_FEATURE_REMAP_XCODE_PATH",
     "SWIFT_FEATURE__SUPPORTS_DEVELOPER_DIR",
     "SWIFT_FEATURE__SUPPORTS_HERMETIC_SWIFTMODULE",
-    "SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES",
 )
 load(
     "//swift/internal:features.bzl",
@@ -840,12 +839,6 @@ def _xcode_swift_toolchain_impl(ctx):
     ))
 
     requested_features.extend([
-        # Allow users to start using access levels on `import`s by default. Note
-        # that this does *not* change the default access level for `import`s to
-        # `internal`; that is controlled by the upcoming feature flag
-        # `InternalImportsByDefault`.
-        "swift.experimental.AccessLevelOnImport",
-        SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES,
         SWIFT_FEATURE_DISABLE_SWIFT_SANDBOX,
 
         # Ensure hermetic PCM files (no absolute workspace paths).
