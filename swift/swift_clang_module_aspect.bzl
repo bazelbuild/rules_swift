@@ -376,8 +376,7 @@ def _handle_module(
         if all_swift_infos:
             return [
                 SwiftInfo(
-                    direct_swift_infos = direct_swift_infos,
-                    swift_infos = swift_infos,
+                    direct_swift_infos = direct_swift_infos + swift_infos,
                 ),
             ]
         else:
