@@ -16,17 +16,3 @@ swift_library(
     generates_header = False,
     tags = FIXTURE_TAGS,
 )
-
-swift_library(
-    name = "multiple_files_localized_strings_path_override",
-    srcs = [
-        "Empty.swift",
-        "Empty2.swift",
-    ],
-    copts = [
-        "-emit-localized-strings-path",
-        "/tmp/user/override",
-    ],
-    generates_header = False,
-    tags = FIXTURE_TAGS,
-)

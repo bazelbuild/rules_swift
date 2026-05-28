@@ -2262,21 +2262,10 @@ def _index_while_building_configurator(prerequisites, args):
 
 def _emit_localized_strings_configurator(prerequisites, args):
     """Adds flags for localized-string extraction to the command line."""
-
-    # `localized_strings_directory` is `None` when the user supplied their own
-    # `-emit-localized-strings-path` via copts; in that case the user's flags
-    # are honored and we add nothing to avoid double-specifying the path.
-    localized_strings_directory = getattr(
-        prerequisites,
-        "localized_strings_directory",
-        None,
-    )
-    if not localized_strings_directory:
-        return
     args.add("-emit-localized-strings")
     args.add(
         "-emit-localized-strings-path",
-        localized_strings_directory.path,
+        prerequisites.localized_strings_directory.path,
     )
 
 def _global_index_store_configurator(prerequisites, args):

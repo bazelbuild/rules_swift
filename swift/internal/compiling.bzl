@@ -1550,12 +1550,9 @@ def _declare_compile_outputs(
     # `.stringsdata` file per source file into this directory; the file set is
     # not known at analysis time, so (like the index store) it must be a
     # declared directory output.
-    if (
-        is_feature_enabled(
-            feature_configuration = feature_configuration,
-            feature_name = SWIFT_FEATURE_EMIT_LOCALIZED_STRINGS,
-        ) and
-        not _is_localized_strings_path_overridden(user_compile_flags)
+    if is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_EMIT_LOCALIZED_STRINGS,
     ):
         localized_strings_directory = actions.declare_directory(
             "{}.stringsdata".format(target_name),
@@ -1879,24 +1876,6 @@ def _is_index_store_path_overridden(copts):
     """
     for opt in copts:
         if opt == "-index-store-path":
-            return True
-    return False
-
-def _is_localized_strings_path_overridden(copts):
-    """Checks if localized-string emission must be disabled.
-
-    Localized-string emission is disabled when the copts include a custom
-    `-emit-localized-strings-path`, to avoid declaring an output directory that
-    the compiler will not write into.
-
-    Args:
-        copts: The list of copts to be scanned.
-
-    Returns:
-        True if localized-string emission must be disabled, otherwise False.
-    """
-    for opt in copts:
-        if opt == "-emit-localized-strings-path":
             return True
     return False
 

@@ -148,23 +148,6 @@ def localized_strings_test_suite(name, tags = []):
         target_under_test = "//test/fixtures/multiple_files",
     )
 
-    # A target-level `-emit-localized-strings-path` copt is respected:
-    # rules_swift does not declare its own directory or add its own flag, so
-    # the path is not double-specified.
-    localized_strings_action_test(
-        name = "{}_user_path_override_respected".format(name),
-        expected_argv = [
-            "-emit-localized-strings-path /tmp/user/override",
-        ],
-        not_expected_argv = [
-            "-emit-localized-strings",
-            "multiple_files_localized_strings_path_override.stringsdata",
-        ],
-        mnemonic = "SwiftCompile",
-        tags = all_tags,
-        target_under_test = "//test/fixtures/multiple_files:multiple_files_localized_strings_path_override",
-    )
-
     native.test_suite(
         name = name,
         tags = all_tags,
