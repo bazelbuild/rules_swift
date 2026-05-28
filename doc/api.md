@@ -35,8 +35,9 @@ On this page:
 ## create_swift_interop_info
 
 <pre>
-create_swift_interop_info(*, <a href="#create_swift_interop_info-direct_swift_infos">direct_swift_infos</a>, <a href="#create_swift_interop_info-exclude_headers">exclude_headers</a>, <a href="#create_swift_interop_info-module_map">module_map</a>, <a href="#create_swift_interop_info-module_name">module_name</a>,
-                          <a href="#create_swift_interop_info-requested_features">requested_features</a>, <a href="#create_swift_interop_info-suppressed">suppressed</a>, <a href="#create_swift_interop_info-swift_infos">swift_infos</a>, <a href="#create_swift_interop_info-unsupported_features">unsupported_features</a>)
+create_swift_interop_info(*, <a href="#create_swift_interop_info-compilation_context">compilation_context</a>, <a href="#create_swift_interop_info-direct_swift_infos">direct_swift_infos</a>, <a href="#create_swift_interop_info-exclude_headers">exclude_headers</a>, <a href="#create_swift_interop_info-module_map">module_map</a>,
+                          <a href="#create_swift_interop_info-module_name">module_name</a>, <a href="#create_swift_interop_info-requested_features">requested_features</a>, <a href="#create_swift_interop_info-suppressed">suppressed</a>, <a href="#create_swift_interop_info-swift_infos">swift_infos</a>,
+                          <a href="#create_swift_interop_info-unsupported_features">unsupported_features</a>)
 </pre>
 
 Returns a provider that lets a target expose C/Objective-C APIs to Swift.
@@ -77,6 +78,7 @@ implicit attributes) but also to exclude dependencies if necessary.
 
 | Name  | Description | Default Value |
 | :------------- | :------------- | :------------- |
+| <a id="create_swift_interop_info-compilation_context"></a>compilation_context |  A `CcCompilationContext` that provides the headers for the module, or `None` (the default) if the headers should be derived from the target's `CcInfo` provider. This should only be used if a target explicitly needs to use a different compilation context for Swift than it does for C/Objective-C, which is a very rare situation.   |  `None` |
 | <a id="create_swift_interop_info-direct_swift_infos"></a>direct_swift_infos |  A list of `SwiftInfo` providers from dependencies, which will be merged with the new `SwiftInfo` created by the aspect as direct data.   |  `[]` |
 | <a id="create_swift_interop_info-exclude_headers"></a>exclude_headers |  A `list` of `File`s representing headers that should be excluded from the module if the module map is generated.   |  `[]` |
 | <a id="create_swift_interop_info-module_map"></a>module_map |  A `File` representing an existing module map that should be used to represent the module, or `None` (the default) if the module map should be generated based on the headers in the target's compilation context. If this argument is provided, then `module_name` must also be provided.   |  `None` |

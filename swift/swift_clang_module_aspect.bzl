@@ -301,6 +301,7 @@ def _module_info_for_target(
 
 def _handle_module(
         aspect_ctx,
+        compilation_context,
         exclude_headers,
         feature_configuration,
         module_map_file,
@@ -314,6 +315,8 @@ def _handle_module(
 
     Args:
         aspect_ctx: The aspect's context.
+        compilation_context: The `CcCompilationContext` that provides the
+            headers for the module.
         exclude_headers: A `list` of `File`s representing header files to
             exclude, if any, if we are generating the module map.
         feature_configuration: The current feature configuration.
@@ -344,11 +347,6 @@ def _handle_module(
     )
 
     all_swift_infos = direct_swift_infos + swift_infos + implicit_swift_infos
-
-    if CcInfo in target:
-        compilation_context = target[CcInfo].compilation_context
-    else:
-        compilation_context = None
 
     # Collect the names of Clang modules that the module being built directly
     # depends on.
@@ -768,6 +766,7 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx, toolchain_type):
     requested_features = aspect_ctx.features
     unsupported_features = aspect_ctx.disabled_features
 
+    compilation_context = None
     interop_info, direct_swift_infos, swift_infos = _find_swift_interop_info(target, aspect_ctx)
     if interop_info:
         # If the module should be suppressed, return immediately and propagate
@@ -779,6 +778,7 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx, toolchain_type):
         module_map_file = interop_info.module_map
         module_name = interop_info.module_name
 
+        compilation_context = interop_info.compilation_context
         direct_swift_infos.extend(interop_info.direct_swift_infos)
         swift_infos.extend(interop_info.swift_infos)
         requested_features.extend(interop_info.requested_features)
@@ -787,6 +787,12 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx, toolchain_type):
         exclude_headers = []
         module_map_file = None
         module_name = None
+
+    # If the target has a `CcInfo` and we didn't get an explicit compilation
+    # context from `SwiftInteropInfo`, then we can use the `CcInfo`'s
+    # compilation context.
+    if not compilation_context and CcInfo in target:
+        compilation_context = target[CcInfo].compilation_context
 
     toolchains = find_all_toolchains(
         aspect_ctx,
@@ -808,6 +814,7 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx, toolchain_type):
     if interop_info or ObjcInfo in target or CcInfo in target:
         return providers + _handle_module(
             aspect_ctx = aspect_ctx,
+            compilation_context = compilation_context,
             exclude_headers = exclude_headers,
             feature_configuration = feature_configuration,
             module_map_file = module_map_file,
