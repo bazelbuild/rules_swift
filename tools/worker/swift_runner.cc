@@ -303,16 +303,32 @@ void PrintVerboseInvocation(const std::vector<std::string>& args,
   (*stderr_stream) << '\n';
 }
 
-// Reads the list of module names that are direct dependencies of the code being
+struct LayeringCheckModules {
+  absl::btree_set<std::string> direct_modules;
+  absl::btree_set<std::string> transitive_modules;
+};
+
+// Reads the direct and transitive dependency module names of the code being
 // compiled.
-absl::btree_set<std::string> ReadDepsModules(absl::string_view path) {
-  absl::btree_set<std::string> deps_modules;
+LayeringCheckModules ReadLayeringCheckModules(absl::string_view path) {
+  LayeringCheckModules modules;
   std::ifstream deps_file_stream(std::string(path.data(), path.size()));
   std::string line;
   while (std::getline(deps_file_stream, line)) {
-    deps_modules.insert(std::string(line));
+    absl::string_view value = line;
+    if (absl::ConsumePrefix(&value, "direct:")) {
+      modules.direct_modules.insert(std::string(value));
+      modules.transitive_modules.insert(std::string(value));
+    } else if (absl::ConsumePrefix(&value, "transitive:")) {
+      modules.transitive_modules.insert(std::string(value));
+    } else {
+      // Compatibility with the original file format, which contained one
+      // direct module name per line.
+      modules.direct_modules.insert(line);
+      modules.transitive_modules.insert(line);
+    }
   }
-  return deps_modules;
+  return modules;
 }
 
 #if __APPLE__
@@ -872,8 +888,8 @@ int SwiftRunner::PerformLayeringCheck(std::ostream& stderr_stream,
     return exit_code;
   }
 
-  absl::btree_set<std::string> deps_modules =
-      ReadDepsModules(deps_modules_path_);
+  LayeringCheckModules layering_check_modules =
+      ReadLayeringCheckModules(deps_modules_path_);
 
   // Use a `btree_set` so that the output is automatically sorted
   // lexicographically.
@@ -885,7 +901,8 @@ int SwiftRunner::PerformLayeringCheck(std::ostream& stderr_stream,
     // module, such as with `@_exported import X` in a Swift overlay for X.
     if (module_name != module_name_ &&
         !IsModuleIgnorableForLayeringCheck(module_name) &&
-        !deps_modules.contains(module_name)) {
+        layering_check_modules.transitive_modules.contains(module_name) &&
+        !layering_check_modules.direct_modules.contains(module_name)) {
       // Swift's `-emit-imported-modules` output reports resolved aliased module
       // names. Map them back to the names users write in source before
       // reporting missing deps.

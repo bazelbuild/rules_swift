@@ -47,7 +47,9 @@ def layering_check_test_suite(name, tags = []):
     build_test(
         name = "{}_build_test".format(name),
         targets = [
-            "//test/fixtures/layering_check:self_importing_consumer_layering_check",
+            "//test/fixtures/layering_check:foundation_consumer",
+            "//test/fixtures/layering_check:foundation_consumer_default_precompiled_modules",
+            "//test/fixtures/layering_check:self_importing_consumer",
             "//test/fixtures/module_mapping:MySDK_with_mapping_and_layering_check",
         ],
         tags = all_tags,

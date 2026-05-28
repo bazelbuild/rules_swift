@@ -1,5 +1,4 @@
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
-load("//swift:swift_binary.bzl", "swift_binary")
 load("//swift:swift_interop_hint.bzl", "swift_interop_hint")
 load("//swift:swift_library.bzl", "swift_library")
 load("//swift:swift_overlay.bzl", "swift_overlay")
@@ -8,6 +7,7 @@ load("//test/fixtures:common.bzl", "FIXTURE_TAGS")
 
 package(
     default_visibility = ["//test:__subpackages__"],
+    features = ["swift.layering_check_swift"],
 )
 
 licenses(["notice"])
@@ -42,11 +42,22 @@ swift_library(
     deps = [":SelfImporting"],
 )
 
-transition_binary(
-    name = "self_importing_consumer_layering_check",
+swift_library(
+    name = "foundation_consumer",
+    srcs = ["FoundationConsumer.swift"],
+    module_name = "FoundationConsumer",
     tags = FIXTURE_TAGS,
-    target = ":self_importing_consumer",
-    transitive_features = ["swift.layering_check_swift"],
+)
+
+transition_binary(
+    name = "foundation_consumer_default_precompiled_modules",
+    tags = FIXTURE_TAGS,
+    target = ":foundation_consumer",
+    transitive_features = [
+        "swift.use_c_modules",
+        "swift.emit_c_module",
+        "swift.add_default_precompiled_modules",
+    ],
 )
 
 swift_library(
@@ -64,10 +75,34 @@ swift_library(
     deps = [":TransitiveDependency"],
 )
 
-swift_binary(
+swift_library(
     name = "layering_violation",
     srcs = ["LayeringViolation.swift"],
-    features = ["swift.layering_check_swift"],
+    module_name = "LayeringViolation",
     tags = FIXTURE_TAGS,
     deps = [":DirectDependency"],
+)
+
+transition_binary(
+    name = "layering_violation_explicit_modules",
+    tags = FIXTURE_TAGS,
+    target = ":layering_violation",
+    transitive_features = [
+        "swift.use_c_modules",
+        "swift.emit_c_module",
+        "swift.use_explicit_swift_module_map",
+        "-swift.add_default_precompiled_modules",
+    ],
+)
+
+transition_binary(
+    name = "layering_violation_explicit_modules_default_precompiled_modules",
+    tags = FIXTURE_TAGS,
+    target = ":layering_violation",
+    transitive_features = [
+        "swift.use_c_modules",
+        "swift.emit_c_module",
+        "swift.use_explicit_swift_module_map",
+        "swift.add_default_precompiled_modules",
+    ],
 )

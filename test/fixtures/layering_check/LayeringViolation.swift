@@ -15,9 +15,6 @@
 import DirectDependency
 import TransitiveDependency
 
-@main
-struct Main {
-  static func main() {
-    print("\(directValue()) \(transitiveValue())")
-  }
+public func layeringViolationValue() -> String {
+  return "\(directValue()) \(transitiveValue())"
 }

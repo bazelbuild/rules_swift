@@ -770,6 +770,11 @@ def compile(
             for dep_module_context in dep_swift_info.direct_modules:
                 direct_module_names.append(dep_module_context.name)
 
+        transitive_module_names = [
+            module_context.name
+            for module_context in transitive_modules
+        ]
+
         deps_modules_file = actions.declare_file(
             "{}.deps-module-mapping".format(target_name),
         )
@@ -777,6 +782,7 @@ def compile(
             actions = actions,
             deps_modules_file = deps_modules_file,
             direct_module_names = direct_module_names,
+            transitive_module_names = transitive_module_names,
         )
     else:
         deps_modules_file = None
@@ -1961,12 +1967,15 @@ def _emitted_output_nature(feature_configuration, user_compile_flags):
 def _write_deps_modules_file(
         actions,
         deps_modules_file,
-        direct_module_names):
+        direct_module_names,
+        transitive_module_names):
     """Writes a file containing the module names of direct dependencies.
 
-    This file is used by the Swift worker process to perform layering checks;
-    its contents are compared against the modules actually imported by the Swift
-    code.
+    This file is used by the Swift worker process to perform layering checks.
+    Direct modules are the modules that the Swift code is allowed to import
+    explicitly. Transitive modules are used to filter the imported module list
+    to modules that are known to come from the Bazel dependency graph, which
+    lets SDK/toolchain modules imported implicitly by the compiler be ignored.
 
     Args:
         actions: The object used to register actions.
@@ -1974,10 +1983,13 @@ def _write_deps_modules_file(
             imported module names.
         direct_module_names: The list of names of modules that are the direct
             dependencies of the code being compiled.
+        transitive_module_names: The list of names of modules in the target's
+            transitive dependency graph.
     """
     deps_mapping = actions.args()
     deps_mapping.set_param_file_format("multiline")
-    deps_mapping.add_all(direct_module_names)
+    deps_mapping.add_all(direct_module_names, format_each = "direct:%s")
+    deps_mapping.add_all(transitive_module_names, format_each = "transitive:%s")
 
     actions.write(
         content = deps_mapping,
