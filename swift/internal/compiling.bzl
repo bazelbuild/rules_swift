@@ -37,6 +37,7 @@ load(":actions.bzl", "is_action_enabled", "run_toolchain_action")
 load(":explicit_module_map_file.bzl", "write_explicit_swift_module_map_file")
 load(
     ":feature_names.bzl",
+    "SWIFT_FEATURE_ADD_DEFAULT_PRECOMPILED_MODULES",
     "SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT",
     "SWIFT_FEATURE_DECLARE_SWIFTSOURCEINFO",
     "SWIFT_FEATURE_EMIT_BC",
@@ -770,9 +771,18 @@ def compile(
             for dep_module_context in dep_swift_info.direct_modules:
                 direct_module_names.append(dep_module_context.name)
 
+        validate_system_modules = is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_USE_C_MODULES,
+        ) and not is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_ADD_DEFAULT_PRECOMPILED_MODULES,
+        )
+
         transitive_module_names = [
             module_context.name
             for module_context in transitive_modules
+            if validate_system_modules or not module_context.is_system
         ]
 
         deps_modules_file = actions.declare_file(

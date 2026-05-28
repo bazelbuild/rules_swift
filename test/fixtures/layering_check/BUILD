@@ -65,6 +65,7 @@ swift_library(
     srcs = ["TransitiveDependency.swift"],
     module_name = "TransitiveDependency",
     tags = FIXTURE_TAGS,
+    deps = ["@system_sdk//:SwiftShims"],
 )
 
 swift_library(
