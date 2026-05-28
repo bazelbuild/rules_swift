@@ -50,16 +50,23 @@ def layering_check_test_suite(name, tags = []):
             "//test/fixtures/layering_check:foundation_consumer",
             "//test/fixtures/layering_check:self_importing_consumer",
             "//test/fixtures/module_mapping:MySDK_with_mapping_and_layering_check",
-        ] + select({
-            "@build_bazel_apple_support//configs:apple": [
-                "//test/fixtures/layering_check:foundation_consumer_default_precompiled_modules",
-            ],
-            "//conditions:default": [],
-        }),
+        ],
         tags = all_tags,
         target_compatible_with = select({
             "@platforms//os:windows": ["@platforms//:incompatible"],
             "//conditions:default": [],
+        }),
+    )
+
+    build_test(
+        name = "{}_apple_build_test".format(name),
+        targets = [
+            "//test/fixtures/layering_check:foundation_consumer_default_precompiled_modules",
+        ],
+        tags = all_tags,
+        target_compatible_with = select({
+            "@build_bazel_apple_support//configs:apple": [],
+            "//conditions:default": ["@platforms//:incompatible"],
         }),
     )
 
