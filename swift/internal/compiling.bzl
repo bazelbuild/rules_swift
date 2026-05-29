@@ -63,7 +63,6 @@ load(
     "SWIFT_FEATURE_THIN_LTO",
     "SWIFT_FEATURE_USE_C_MODULES",
     "SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP",
-    "SWIFT_FEATURE_VFSOVERLAY",
     "SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
 )
@@ -87,12 +86,7 @@ load(
     "owner_relative_path",
     "struct_fields",
 )
-load(":vfsoverlay.bzl", "write_vfsoverlay")
 load(":wmo.bzl", "find_num_threads_flag_value", "is_wmo_manually_requested")
-
-# VFS root where all .swiftmodule files will be placed when
-# SWIFT_FEATURE_VFSOVERLAY is enabled.
-_SWIFTMODULES_VFS_ROOT = "/__build_bazel_rules_swift/swiftmodules"
 
 def transitive_swift_dependency_inputs(transitive_modules):
     """Returns Swift dependency artifacts that must be present in the sandbox.
@@ -128,16 +122,12 @@ def _explicit_swift_module_map_info(
         actions,
         feature_configuration,
         target_name,
-        transitive_modules,
-        vfsoverlay_file):
+        transitive_modules):
     """Returns the explicit Swift module map file and matching Swift inputs."""
     if is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP,
     ):
-        if vfsoverlay_file:
-            fail("Cannot use both `swift.vfsoverlay` and `swift.use_explicit_swift_module_map` features at the same time.")
-
         module_contexts = transitive_modules
         filename = "{}.swift-explicit-module-map.json".format(target_name)
     elif is_feature_enabled(
@@ -321,12 +311,6 @@ def compile_module_interface(
     # than the same `depset` being flattened and re-merged multiple times up
     # the build graph.
     transitive_modules = merged_swift_info.transitive_modules.to_list()
-    transitive_swiftmodules = []
-    for module in transitive_modules:
-        swift_module = module.swift
-        if not swift_module:
-            continue
-        transitive_swiftmodules.append(swift_module.swiftmodule)
     transitive_swift_dependency_inputs_list = transitive_swift_dependency_inputs(
         transitive_modules,
     )
@@ -337,31 +321,11 @@ def compile_module_interface(
             clang = clang_module,
         ))
 
-    # We need this when generating the VFS overlay file and also when
-    # configuring inputs for the compile action, so it's best to precompute it
-    # here.
-    if is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_VFSOVERLAY,
-    ):
-        vfsoverlay_file = actions.declare_file(
-            "{}.vfsoverlay.yaml".format(target_name),
-        )
-        write_vfsoverlay(
-            actions = actions,
-            swiftmodules = transitive_swiftmodules,
-            vfsoverlay_file = vfsoverlay_file,
-            virtual_swiftmodule_root = _SWIFTMODULES_VFS_ROOT,
-        )
-    else:
-        vfsoverlay_file = None
-
     explicit_swift_module_map_info = _explicit_swift_module_map_info(
         actions = actions,
         feature_configuration = feature_configuration,
         target_name = target_name,
         transitive_modules = transitive_modules,
-        vfsoverlay_file = vfsoverlay_file,
     )
 
     if is_feature_enabled(
@@ -391,10 +355,7 @@ def compile_module_interface(
         target_label = feature_configuration._label,
         transitive_modules = transitive_modules,
         transitive_swift_dependency_inputs = transitive_swift_dependency_inputs_list,
-        transitive_swiftmodules = transitive_swiftmodules,
         user_compile_flags = copts,
-        vfsoverlay_file = vfsoverlay_file,
-        vfsoverlay_search_path = _SWIFTMODULES_VFS_ROOT,
     )
 
     run_toolchain_action(
@@ -715,13 +676,11 @@ def compile(
                    implicit_cc_infos,
     )
 
-    transitive_swiftmodules = []
     defines_set = sets.make(defines)
     for module in transitive_modules:
         swift_module = module.swift
         if not swift_module:
             continue
-        transitive_swiftmodules.append(swift_module.swiftmodule)
         if swift_module.defines:
             defines_set = sets.union(
                 defines_set,
@@ -731,31 +690,11 @@ def compile(
         transitive_modules,
     )
 
-    # We need this when generating the VFS overlay file and also when
-    # configuring inputs for the compile action, so it's best to precompute it
-    # here.
-    if is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_VFSOVERLAY,
-    ):
-        vfsoverlay_file = actions.declare_file(
-            "{}.vfsoverlay.yaml".format(target_name),
-        )
-        write_vfsoverlay(
-            actions = actions,
-            swiftmodules = transitive_swiftmodules,
-            vfsoverlay_file = vfsoverlay_file,
-            virtual_swiftmodule_root = _SWIFTMODULES_VFS_ROOT,
-        )
-    else:
-        vfsoverlay_file = None
-
     explicit_swift_module_map_info = _explicit_swift_module_map_info(
         actions = actions,
         feature_configuration = feature_configuration,
         target_name = target_name,
         transitive_modules = transitive_modules,
-        vfsoverlay_file = vfsoverlay_file,
     )
 
     swift_layering_check_enabled = is_feature_enabled(
@@ -872,11 +811,8 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         target_label = feature_configuration._label,
         transitive_modules = transitive_modules,
         transitive_swift_dependency_inputs = transitive_swift_dependency_inputs_list,
-        transitive_swiftmodules = transitive_swiftmodules,
         upcoming_features = upcoming_features,
         user_compile_flags = copts,
-        vfsoverlay_file = vfsoverlay_file,
-        vfsoverlay_search_path = _SWIFTMODULES_VFS_ROOT,
         workspace_name = workspace_name,
         # Merge the compile outputs into the prerequisites.
         **struct_fields(compile_outputs)

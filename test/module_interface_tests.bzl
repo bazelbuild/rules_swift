@@ -50,26 +50,10 @@ explicit_swift_module_map_test = make_action_command_line_test_rule(
     },
 )
 
-vfsoverlay_test = make_action_command_line_test_rule(
-    config_settings = {
-        "//command_line_option:features": [
-            "swift.vfsoverlay",
-        ],
-    },
-)
-
 explicit_swift_module_map_inputs_test = make_action_inputs_test_rule(
     config_settings = {
         "//command_line_option:features": [
             "swift.use_explicit_swift_module_map",
-        ],
-    },
-)
-
-vfsoverlay_inputs_test = make_action_inputs_test_rule(
-    config_settings = {
-        "//command_line_option:features": [
-            "swift.vfsoverlay",
         ],
     },
 )
@@ -151,22 +135,6 @@ def module_interface_test_suite(name, tags = []):
         target_under_test = "//test/fixtures/module_interface:toy_module",
     )
 
-    vfsoverlay_test(
-        name = "{}_vfsoverlay_test".format(name),
-        tags = all_tags,
-        expected_argv = [
-            "-vfsoverlay$(BIN_DIR)/test/fixtures/module_interface/toy_module.vfsoverlay.yaml",
-            "-I/__build_bazel_rules_swift/swiftmodules",
-        ],
-        not_expected_argv = [
-            "-I$(BIN_DIR)/test/fixtures/module_interface",
-            "-Xwrapped-swift=-frontend-explicit-swift-module-map-file=",
-            "-Xfrontend",
-        ],
-        mnemonic = "SwiftCompileModuleInterface",
-        target_under_test = "//test/fixtures/module_interface:toy_module",
-    )
-
     # Test that dependency swiftinterface files are included as action inputs
     action_inputs_test(
         name = "{}_dependencies_included_as_inputs".format(name),
@@ -219,18 +187,6 @@ def module_interface_test_suite(name, tags = []):
             "ToyModule.swiftinterface",
             "DependentToyModule.swiftinterface",
             "dependent_toy_module.swift-explicit-module-map.json",
-        ],
-        target_under_test = "//test/fixtures/module_interface:dependent_toy_module",
-    )
-
-    vfsoverlay_inputs_test(
-        name = "{}_vfsoverlay_dependencies_included_as_inputs".format(name),
-        tags = all_tags,
-        mnemonic = "SwiftCompileModuleInterface",
-        expected_inputs = [
-            "ToyModule.swiftinterface",
-            "DependentToyModule.swiftinterface",
-            "dependent_toy_module.vfsoverlay.yaml",
         ],
         target_under_test = "//test/fixtures/module_interface:dependent_toy_module",
     )

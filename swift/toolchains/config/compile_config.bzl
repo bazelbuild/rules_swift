@@ -89,7 +89,6 @@ load(
     "SWIFT_FEATURE_USE_GLOBAL_INDEX_STORE",
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
     "SWIFT_FEATURE_USE_PCH_OUTPUT_DIR",
-    "SWIFT_FEATURE_VFSOVERLAY",
     "SWIFT_FEATURE__COVERAGE_PREFIX_MAP_ABSOLUTE_SOURCES_NON_HERMETIC",
     "SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS",
     "SWIFT_FEATURE__SUPPORTS_DEVELOPER_DIR",
@@ -937,29 +936,8 @@ def compile_action_configs(
             ],
             configurators = [_dependencies_swiftmodules_configurator],
             not_features = [
-                [SWIFT_FEATURE_VFSOVERLAY],
                 [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
             ],
-        ),
-        ActionConfigInfo(
-            actions = all_compile_action_names() + [
-                SWIFT_ACTION_DUMP_AST,
-            ],
-            configurators = [
-                _dependencies_swiftmodules_vfsoverlay_configurator,
-            ],
-            features = [SWIFT_FEATURE_VFSOVERLAY],
-        ),
-        ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE_MODULE_INTERFACE],
-            configurators = [
-                lambda prerequisites, args: _dependencies_swiftmodules_vfsoverlay_configurator(
-                    prerequisites,
-                    args,
-                    is_frontend = True,
-                ),
-            ],
-            features = [SWIFT_FEATURE_VFSOVERLAY],
         ),
         ActionConfigInfo(
             actions = all_compile_action_names(),
@@ -2215,25 +2193,6 @@ def _cross_import_overlays_configurator(prerequisites, args):
         args.add("-Xfrontend", "-swift-module-cross-import")
         args.add("-Xfrontend", overlay.declaring_module)
         args.add("-Xfrontend", overlay.swiftoverlay_file)
-
-def _dependencies_swiftmodules_vfsoverlay_configurator(prerequisites, args, is_frontend = False):
-    """Provides a single `.swiftmodule` search path using a VFS overlay."""
-
-    # Bug: `swiftc` doesn't pass its `-vfsoverlay` arg to the frontend.
-    # Workaround: Pass `-vfsoverlay` directly via `-Xfrontend`.
-    if not is_frontend:
-        args.add("-Xfrontend")
-
-    args.add(
-        "-vfsoverlay{}".format(prerequisites.vfsoverlay_file.path),
-        "-I{}".format(prerequisites.vfsoverlay_search_path),
-    )
-
-    return ConfigResultInfo(
-        inputs = prerequisites.transitive_swift_dependency_inputs + [
-            prerequisites.vfsoverlay_file,
-        ],
-    )
 
 def _explicit_swift_module_map_configurator(prerequisites, args, is_frontend = False):
     """Adds the explicit Swift module map file to the command line."""
