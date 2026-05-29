@@ -189,6 +189,51 @@ copts = [
 This _should_ be harmless because Swift still validates when type
 checking.
 
+## Handling frameworks with missing dependencies
+
+When using explicit modules, precompiled frameworks are evaluated at a
+different time than they are with implicit modules. Specifically the
+`modulemap` or `swiftinterface` files are compiled in the context of
+their own target, instead of in the context of the importing target.
+
+This means any dependencies the precompiled framework has, likely on
+other precompiled frameworks, have to be correctly defined in the
+`BUILD` file.
+
+Currently Swift Package Manager doesn't support dependencies on
+`binaryTarget`s, which means if you're using
+[`rules_swift_package_manager`](https://github.com/cgrindel/rules_swift_package_manager),
+you have to manually add the dependencies through your `MODULE.bazel`
+file. The build failures do not always indicate exactly what
+dependencies are missing, but the end result will look something like
+this:
+
+```bzl
+swift_deps.configure_package(
+    name = "swiftpkg_facebook_ios_sdk",
+    target_deps = {
+        "FBAEMKit": [":FBSDKCoreKit_Basics"],
+        "FBSDKCoreKit": [
+            ":FBAEMKit",
+            ":FBSDKCoreKit_Basics",
+        ],
+        "FBSDKGamingServicesKit": [
+            ":FBSDKCoreKit",
+            ":FBSDKCoreKit_Basics",
+            ":FBSDKShareKit",
+        ],
+        "FBSDKLoginKit": [
+            ":FBSDKCoreKit",
+            ":FBSDKCoreKit_Basics",
+        ],
+        "FBSDKShareKit": [
+            ":FBSDKCoreKit",
+            ":FBSDKCoreKit_Basics",
+        ],
+    },
+)
+```
+
 # Background
 
 ## Implicit modules
