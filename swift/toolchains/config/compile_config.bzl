@@ -919,7 +919,7 @@ def compile_action_configs(
                 ),
             ],
             features = [SWIFT_FEATURE_USE_C_MODULES],
-            not_features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],  # If this feature is enabled we still use this file just with more contents
+            not_features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
         ),
         # TODO: Pass through system modules and pass this to all actions
         # ActionConfigInfo(
