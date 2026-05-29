@@ -32,7 +32,7 @@ class Color {
   static const Color kBoldWhite;
   static const Color kReset;
 
-  friend std::ostream &operator<<(std::ostream &stream, Color color) {
+  friend std::ostream& operator<<(std::ostream& stream, Color color) {
     return stream << "\x1b[" << color.code_ << "m";
   }
 
@@ -58,26 +58,30 @@ class WithColor {
  public:
   // Wraps the given `ostream` so that its output is in `color` for the duration
   // of the wrapper's lifetime.
-  WithColor(std::ostream &stream, Color color) : stream_(stream) {
+  WithColor(std::ostream& stream, Color color) : stream_(stream) {
     stream << color;
+  }
+
+  WithColor(std::ostream* stream, Color color) : stream_(*stream) {
+    (*stream) << color;
   }
 
   ~WithColor() { stream_ << Color::kReset; }
 
   template <typename T>
-  WithColor &operator<<(const T &value) {
+  WithColor& operator<<(const T& value) {
     stream_ << value;
     return *this;
   }
 
-  WithColor &operator<<(std::ostream &(*modifier)(std::ostream &)) {
+  WithColor& operator<<(std::ostream& (*modifier)(std::ostream&)) {
     modifier(stream_);
     return *this;
   }
 
  private:
   // The wrapped `ostream`.
-  std::ostream &stream_;
+  std::ostream& stream_;
 };
 
 }  // namespace bazel_rules_swift

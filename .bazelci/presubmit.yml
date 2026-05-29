@@ -62,6 +62,14 @@ tasks:
     bazel: last_green
     <<: *mac_common
 
+  macos_latest_shell_scripts:
+    name: "macOS shell tests"
+    platform: macos_arm64
+    xcode_version: "26.2"
+    bazel: latest
+    shell_commands:
+      - "test/fixtures/layering_check/layering_check_failure_test.sh"
+
   ubuntu2204_latest:
     name: "Current LTS"
     bazel: latest

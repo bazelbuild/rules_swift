@@ -69,7 +69,8 @@ load(
     "SWIFT_FEATURE_INDEX_INCLUDE_LOCALS",
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
     "SWIFT_FEATURE_INTERNALIZE_AT_LINK",
-    "SWIFT_FEATURE_LAYERING_CHECK",
+    "SWIFT_FEATURE_LAYERING_CHECK_FOR_C_DEPS",
+    "SWIFT_FEATURE_LAYERING_CHECK_SWIFT",
     "SWIFT_FEATURE_MODULAR_INDEXING",
     "SWIFT_FEATURE_MODULE_HOME_IS_CWD",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
@@ -264,6 +265,13 @@ def compile_action_configs(
         ActionConfigInfo(
             actions = [SWIFT_ACTION_DERIVE_FILES],
             configurators = [_emit_objc_header_path_configurator],
+        ),
+
+        # Emit the list of imported modules for layering checks.
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE],
+            configurators = [_swift_layering_check_configurator],
+            features = [SWIFT_FEATURE_LAYERING_CHECK_SWIFT],
         ),
 
         # Configure constant value extraction.
@@ -823,7 +831,7 @@ def compile_action_configs(
         ActionConfigInfo(
             actions = [SWIFT_ACTION_PRECOMPILE_C_MODULE],
             configurators = [_c_layering_check_configurator],
-            features = [SWIFT_FEATURE_LAYERING_CHECK],
+            features = [SWIFT_FEATURE_LAYERING_CHECK_FOR_C_DEPS],
             not_features = [SWIFT_FEATURE_SYSTEM_MODULE],
         ),
         ActionConfigInfo(
@@ -1619,6 +1627,20 @@ def _emit_objc_header_path_configurator(prerequisites, args):
     """Adds the generated header output path to the command line."""
     if prerequisites.generated_header_file:
         args.add("-emit-objc-header-path", prerequisites.generated_header_file)
+
+def _swift_layering_check_configurator(prerequisites, args):
+    """Adds flags for Swift layering checks to the command line."""
+    if not prerequisites.deps_modules_file:
+        return ConfigResultInfo()
+
+    args.add(
+        "-Xwrapped-swift=-layering-check-deps-modules={}".format(
+            prerequisites.deps_modules_file.path,
+        ),
+    )
+    return ConfigResultInfo(
+        inputs = [prerequisites.deps_modules_file],
+    )
 
 def _global_module_cache_configurator(prerequisites, args):
     """Adds flags to enable the global module cache."""
