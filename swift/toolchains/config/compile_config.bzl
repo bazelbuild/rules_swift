@@ -2085,7 +2085,7 @@ def _swift_module_file_map_fn(module):
     Returns:
         The `-swift-module-file` flag for the module's `.swiftmodule` file.
     """
-    if module.swift and module.swift.swiftmodule and module.is_system:
+    if module.swift and module.swift.swiftmodule:
         return "-swift-module-file={name}={path}".format(
             name = module.name,
             path = module.swift.swiftmodule.path,
