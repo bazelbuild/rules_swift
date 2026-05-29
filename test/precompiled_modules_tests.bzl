@@ -31,6 +31,17 @@ _explicit_precompiled_modules_test = make_action_command_line_test_rule(
     },
 )
 
+_json_explicit_swift_modules_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:features": [
+            "swift.use_c_modules",
+            "swift.emit_c_module",
+            "-swift.add_default_precompiled_modules",
+            "swift.use_explicit_swift_module_map",
+        ],
+    },
+)
+
 def precompiled_modules_test_suite(name, tags = []):
     """Test precompiled modules behavior.
 
@@ -153,7 +164,7 @@ def precompiled_modules_test_suite(name, tags = []):
         mnemonic = "SwiftCompile",
         target_under_test = "//test/fixtures/precompiled_modules:linking_cross_import_overlay",
         expected_argv = [
-            "-Xwrapped-swift=-driver-explicit-swift-module-map-file=$(BIN_DIR)/test/fixtures/precompiled_modules/linking_cross_import_overlay.swift-system-explicit-module-map.json",
+            "-Xfrontend -swift-module-file=Testing",
             "-Xfrontend -disable-cross-import-overlay-search",
             "-Xfrontend -swift-module-cross-import -Xfrontend Testing -Xfrontend __BAZEL_XCODE_DEVELOPER_DIR__/Platforms/MacOSX.platform/Developer/Library/Frameworks/Testing.framework/Modules/Testing.swiftcrossimport/AppKit.swiftoverlay",
         ],
@@ -161,6 +172,19 @@ def precompiled_modules_test_suite(name, tags = []):
             ":has_testing_appkit_overlay": [],
             "//conditions:default": ["@platforms//:incompatible"],
         }),
+    )
+
+    _json_explicit_swift_modules_test(
+        name = "{}_json_explicit_swift_module_map_disables_swift_module_file_test".format(name),
+        tags = all_tags,
+        mnemonic = "SwiftCompile",
+        target_under_test = "//test/fixtures/precompiled_modules:linking_cross_import_overlay",
+        expected_argv = [
+            "-Xwrapped-swift=-driver-explicit-swift-module-map-file=$(BIN_DIR)/test/fixtures/precompiled_modules/linking_cross_import_overlay.swift-explicit-module-map.json",
+        ],
+        not_expected_argv = [
+            "-swift-module-file",
+        ],
     )
 
     build_test(

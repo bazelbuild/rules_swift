@@ -162,6 +162,8 @@ system_swiftinterface(
         "@system_sdk//:_StringProcessing",
         "@system_sdk//:_SwiftConcurrencyShims",
     ],
+    sdk_name = "MacOSX",
+    sdk_version = "10.15",
     swiftinterface = "//test/fixtures/precompiled_modules:LowerVersionLib.swiftinterface",
     target_compatible_with = ["@platforms//os:macos"],
 )

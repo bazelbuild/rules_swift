@@ -130,23 +130,8 @@ def _explicit_swift_module_map_info(
     ):
         module_contexts = transitive_modules
         filename = "{}.swift-explicit-module-map.json".format(target_name)
-    elif is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_USE_C_MODULES,
-    ):
-        # Keep non-system Swift deps on search paths, but include system
-        # modules to make sure everything loads them with the same behavior
-        module_contexts = [
-            module
-            for module in transitive_modules
-            if module.is_system
-        ]
-        if not module_contexts:
-            return struct(file = None, inputs = [])
-
-        filename = "{}.swift-system-explicit-module-map.json".format(target_name)
     else:
-        return struct(file = None, inputs = [])
+        return None
 
     explicit_swift_module_map_file = actions.declare_file(filename)
     write_explicit_swift_module_map_file(
@@ -154,10 +139,7 @@ def _explicit_swift_module_map_info(
         explicit_swift_module_map_file = explicit_swift_module_map_file,
         module_contexts = module_contexts,
     )
-    return struct(
-        file = explicit_swift_module_map_file,
-        inputs = transitive_swift_dependency_inputs(module_contexts),
-    )
+    return explicit_swift_module_map_file
 
 def create_compilation_context(defines, srcs, transitive_modules):
     """Cretes a compilation context for a Swift target.
@@ -343,8 +325,7 @@ def compile_module_interface(
         additional_inputs = additional_inputs,
         bin_dir = feature_configuration._bin_dir,
         cc_compilation_context = merged_compilation_context,
-        explicit_swift_module_map_file = explicit_swift_module_map_info.file,
-        explicit_swift_module_map_inputs = explicit_swift_module_map_info.inputs,
+        explicit_swift_module_map_file = explicit_swift_module_map_info,
         genfiles_dir = feature_configuration._genfiles_dir,
         indexstore_directory = indexstore_directory,
         is_swift = True,
@@ -798,8 +779,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         deps_modules_file = deps_modules_file,
         developer_dirs = toolchains.swift.developer_dirs,
         experimental_features = experimental_features,
-        explicit_swift_module_map_file = explicit_swift_module_map_info.file,
-        explicit_swift_module_map_inputs = explicit_swift_module_map_info.inputs,
+        explicit_swift_module_map_file = explicit_swift_module_map_info,
         genfiles_dir = feature_configuration._genfiles_dir,
         include_dev_srch_paths = include_dev_srch_paths_value,
         is_swift = True,
