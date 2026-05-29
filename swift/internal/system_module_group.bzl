@@ -17,23 +17,13 @@
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load("//swift:providers.bzl", "SwiftInfo", "create_swift_module_context")
-load(":system_module_transition.bzl", "sdk_min_os_transition", "sdk_min_os_transition_attrs")
 load(":utils.bzl", "get_providers")
-
-def _inferred_module_name(ctx):
-    target_name = ctx.label.name
-    sdk_name = ctx.attr.sdk_name
-    if sdk_name:
-        prefix = sdk_name + "_"
-        if target_name.startswith(prefix):
-            return target_name[len(prefix):]
-    return target_name
 
 def _system_module_group_impl(ctx):
     modules = []
     if ctx.attr.creates_module:
         modules.append(create_swift_module_context(
-            name = _inferred_module_name(ctx),
+            name = ctx.label.name.split("_", 1)[-1],
             is_system = True,
         ))
 
@@ -49,14 +39,13 @@ def _system_module_group_impl(ctx):
     ]
 
 system_module_group = rule(
-    attrs = sdk_min_os_transition_attrs() | {
+    attrs = {
         "creates_module": attr.bool(
             default = True,
             doc = "Whether this group propagates a direct system module inferred from the target name.",
         ),
         "modules": attr.label_list(providers = [[CcInfo, SwiftInfo]]),
     },
-    cfg = sdk_min_os_transition,
     doc = """\
 Aggregates `system_clang_module` (and other `system_module_group`) targets,
 merging their `CcInfo` and `SwiftInfo` providers. Uses a `modules` attribute

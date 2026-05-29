@@ -167,7 +167,6 @@ def _render_clang_module_groups(
     modules: list["_Module"],
     clang_only_names: set[str],
     sdk: str,
-    sdk_version: str,
     out: TextIO,
 ):
     """Aggregate clang modules + their Swift overlays.
@@ -204,14 +203,12 @@ def _render_clang_module_groups(
                 deps.append(dep)
         _write_labels(out, set(deps))
         out.write("    ],\n")
-        _write_transition_attrs(out, sdk=sdk, sdk_version=sdk_version)
         out.write(")\n")
 
 
 def _render_all_modules_group(
     all_module_names: set[str],
     sdk: str,
-    sdk_version: str,
     out: TextIO,
 ) -> None:
     out.write("\n")
@@ -221,7 +218,6 @@ def _render_all_modules_group(
     out.write("    modules = [\n")
     _write_labels(out, {f"{sdk}_{name}" for name in all_module_names})
     out.write("    ],\n")
-    _write_transition_attrs(out, sdk=sdk, sdk_version=sdk_version)
     out.write(")\n")
 
 
@@ -381,13 +377,13 @@ class _Module:
                     name="system_swiftinterface",
                     values_by_cpu=self.swiftinterface_paths_by_cpu,
                 )
-            else:
-                self._render_deps(out)
                 _write_transition_attrs(
                     out,
                     sdk=self.sdk,
                     sdk_version=self.sdk_version,
                 )
+            else:
+                self._render_deps(out)
             out.write(")\n")
         else:
             raise SystemExit(
@@ -713,10 +709,9 @@ def _discover_all_modules(
         all_modules,
         clang_names - swift_names,
         sdk,
-        deployment_target,
         buf,
     )
-    _render_all_modules_group(all_module_names, sdk, deployment_target, buf)
+    _render_all_modules_group(all_module_names, sdk, buf)
 
     return buf.getvalue(), all_module_names | {f"{n}_clang" for n in clang_names}
 
