@@ -16,6 +16,7 @@
 #define BUILD_BAZEL_RULES_SWIFT_TOOLS_WORKER_PCM_HERMETIC_RUNNER_H_
 
 #include <iostream>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -33,6 +34,7 @@
 //      any absolute SDK path to a workspace-relative symlink we manage.
 //   3. Run the rewritten frontend command.
 int RunHermeticPcm(const std::vector<std::string>& args,
+                   std::map<std::string, std::string>* env,
                    std::ostream* stderr_stream);
 
 #endif  // BUILD_BAZEL_RULES_SWIFT_TOOLS_WORKER_PCM_HERMETIC_RUNNER_H_

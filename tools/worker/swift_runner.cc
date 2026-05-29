@@ -461,7 +461,7 @@ int SwiftRunner::Run(std::ostream* stderr_stream, bool stdout_to_stderr) {
     auto response_file = WriteResponseFile(args_);
     std::vector<std::string> spawn_args =
         ArgsWithResponseFile(tool_args_, args_, *response_file);
-    exit_code = RunHermeticPcm(spawn_args, stderr_stream);
+    exit_code = RunHermeticPcm(spawn_args, &job_env_, stderr_stream);
   } else {
     exit_code =
         SpawnJob(tool_args_, args_, &job_env_, stderr_stream, stdout_to_stderr);
