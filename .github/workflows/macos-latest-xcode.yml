@@ -1,0 +1,34 @@
+name: Test
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: macOS 26 / Xcode 26.x
+    runs-on: macos-26
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select latest Xcode 26
+        run: |
+          set -euo pipefail
+
+          sudo xcode-select -s /Applications/Xcode_26.4.app
+
+      - name: Test
+        run: |
+          set -euo pipefail
+
+          # This target is guarded by //test/hermetic_pcm:xcode_at_least_26_4.
+          bazel test --test_output=errors -- //test/hermetic_pcm:hermetic_testing_swiftmodule_test //...
