@@ -29,18 +29,20 @@ _SDK_NAME_TO_MIN_OS_OPTION = {
 def sdk_min_os_transition_attrs():
     return {
         "sdk_name": attr.string(
-            mandatory = True,
             doc = "The SDK name whose version should be used for `--minimum_os_version`.",
         ),
         "sdk_version": attr.string(
-            mandatory = True,
             doc = "The SDK version to use as the minimum OS version.",
         ),
     }
 
 def _sdk_min_os_transition_impl(settings, attr):
-    if not attr.sdk_name or not attr.sdk_version:
-        fail("sdk_name and sdk_version must be set.")
+    # Empty module group
+    if not attr.sdk_name:
+        return settings
+
+    if not attr.sdk_version:
+        fail("sdk_version must be set when sdk_name is set.")
 
     values = {option: settings[option] for option in _MIN_OS_OPTIONS}
     current_min_os_option = _SDK_NAME_TO_MIN_OS_OPTION.get(attr.sdk_name)
