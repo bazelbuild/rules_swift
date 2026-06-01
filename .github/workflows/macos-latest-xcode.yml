@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   test:
-    name: macOS 26 / Xcode 26.x
+    name: Test
     runs-on: macos-26
     timeout-minutes: 120
 
@@ -20,11 +20,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Select latest Xcode 26
+      - name: Select Xcode
         run: |
           set -euo pipefail
 
           sudo xcode-select -s /Applications/Xcode_26.4.app
+          xcodebuild -version
 
       - name: Test
         run: |
