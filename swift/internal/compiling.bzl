@@ -134,6 +134,12 @@ def _explicit_swift_module_map_info(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_USE_C_MODULES,
     ):
+        if not is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_ADD_DEFAULT_PRECOMPILED_MODULES,
+        ):
+            fail("swift.use_explicit_swift_module_map must be enabled in order to disable -swift.add_default_precompiled_modules.")
+
         # Keep non-system Swift deps on search paths, but include system
         # modules to make sure everything loads them with the same behavior
         module_contexts = [
