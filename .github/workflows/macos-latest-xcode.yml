@@ -25,6 +25,7 @@ jobs:
           set -euo pipefail
 
           sudo xcode-select -s /Applications/Xcode_26.4.app
+          xcode-select -p
           xcodebuild -version
 
       - name: Test
@@ -32,4 +33,5 @@ jobs:
           set -euo pipefail
 
           # This target is guarded by //test/hermetic_pcm:xcode_at_least_26_4.
-          bazel test --test_output=errors -- //test/hermetic_pcm:hermetic_testing_swiftmodule_test //...
+          developer_dir=$(xcode-select -p)
+          DEVELOPER_DIR="$developer_dir" bazel test --test_output=errors -- //test/hermetic_pcm:hermetic_testing_swiftmodule_test //...
