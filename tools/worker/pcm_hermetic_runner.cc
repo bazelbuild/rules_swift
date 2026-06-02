@@ -162,9 +162,7 @@ int RunHermeticPcm(const std::vector<std::string>& args,
                      << "'\n";
     return 1;
   }
-  if (!bazel_rules_swift::EnsureDeveloperDirSymlink(developer_dir)) {
-    return 1;
-  }
+  bazel_rules_swift::EnsureDeveloperDirSymlinkFromEnv();
 
   std::string developer_dir_symlink_name =
       bazel_rules_swift::DeveloperDirSymlinkName();

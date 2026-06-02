@@ -229,14 +229,18 @@ void ExtractFlagsFromInterfaceFile(
     interface_path = *inferred_path;
   }
 
+  std::filesystem::path source{std::string(interface_path)};
+  if (source.is_absolute()) {
+    std::cerr << "error: swiftinterface compile paths must be relative for "
+                 "hermetic builds: "
+              << source << "\n";
+    std::exit(EXIT_FAILURE);
+  }
+
   // Add the path to the interface file as a source file argument, then extract
   // the flags from it and add them as well.
-  std::string symlinked_interface_path =
-      bazel_rules_swift::SymlinkedInterfacePath(interface_path,
-                                                developer_dir_supplier);
-  consumer(symlinked_interface_path);
-
-  std::ifstream interface_file{std::string(symlinked_interface_path)};
+  consumer(interface_path);
+  std::ifstream interface_file{interface_path};
   std::string line;
   while (std::getline(interface_file, line)) {
     absl::string_view line_view = line;
@@ -429,6 +433,7 @@ SwiftRunner::SwiftRunner(const std::vector<std::string>& args,
       file_prefix_pwd_is_dot_(false),
       hermetic_pcm_(false),
       verbose_(false) {
+  EnsureDeveloperDirSymlinkFromEnv();
   ProcessArguments(args);
 }
 
