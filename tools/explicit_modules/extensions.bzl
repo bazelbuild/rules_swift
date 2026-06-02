@@ -46,7 +46,7 @@ def _default_xcode_path(module_ctx):
     # TODO: Should this be supported?
     if output == "/Library/Developer/CommandLineTools":
         return None
-    return output
+    return str(module_ctx.path(output).realpath)
 
 def _generate_pinned_repos(configs):
     seen = {}
@@ -107,6 +107,15 @@ def _generate_local_repos(module_ctx, sdks, exclude_modules):
         versions_ordered.append(tc.version)
         if tc.developer_dir == default_path:
             default_manifest = "@{}//:module_names.json".format(repo_name)
+
+    if default_manifest == None:
+        fail("Selected Xcode '{}' was not found by xcode-locator. Found Xcodes:\n{}".format(
+            default_path,
+            "\n".join([
+                "  {} ({})".format(tc.developer_dir, tc.version)
+                for tc in toolchains
+            ]),
+        ))
 
     xcode_explicit_module_hub_repo(
         name = "system_sdk",
