@@ -1,5 +1,6 @@
 load("//swift:swift_library.bzl", "swift_library")
 load("//swift:swift_library_group.bzl", "swift_library_group")
+load("//test:transitions.bzl", "transition_binary")
 load("//test/fixtures:common.bzl", "FIXTURE_TAGS")
 
 package(
@@ -27,4 +28,13 @@ swift_library(
     module_name = "second",
     tags = FIXTURE_TAGS,
     deps = ["library_group"],
+)
+
+transition_binary(
+    name = "second_explicit_swift_module_map_transitioned",
+    tags = FIXTURE_TAGS,
+    target = ":second",
+    transitive_features = [
+        "swift.use_explicit_swift_module_map",
+    ],
 )

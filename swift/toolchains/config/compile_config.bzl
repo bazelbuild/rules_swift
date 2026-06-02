@@ -836,12 +836,18 @@ def compile_action_configs(
             configurators = [
                 add_arg("-Xfrontend", "-disable-implicit-swift-modules"),
             ],
-            features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
+            features = [
+                SWIFT_FEATURE_USE_C_MODULES,
+                SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP,
+            ],
         ),
         ActionConfigInfo(
             actions = [SWIFT_ACTION_COMPILE_MODULE_INTERFACE],
             configurators = [add_arg("-disable-implicit-swift-modules")],
-            features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
+            features = [
+                SWIFT_FEATURE_USE_C_MODULES,
+                SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP,
+            ],
         ),
         # When using C modules, disable the implicit module cache.
         ActionConfigInfo(
