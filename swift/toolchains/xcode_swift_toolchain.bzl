@@ -788,6 +788,7 @@ def _xcode_swift_toolchain_impl(ctx):
         additional_objc_copts = command_line_objc_copts(
             ctx.var["COMPILATION_MODE"],
             ctx.fragments.cpp,
+            ctx.fragments.objc,
         ),
         additional_swiftc_copts = swiftcopts,
         apple_toolchain = apple_toolchain,
