@@ -241,6 +241,14 @@ def features_test_suite(name, tags = []):
         target_under_test = "//test/fixtures/basic:second",
     )
 
+    build_test(
+        name = "{}_explicit_swift_module_map_build_test".format(name),
+        tags = all_tags,
+        targets = [
+            "//test/fixtures/basic:second_explicit_swift_module_map_transitioned",
+        ],
+    )
+
     explicit_swift_module_map_with_target_name_test(
         name = "{}_explicit_swift_module_map_with_target_name_test".format(name),
         tags = all_tags,
