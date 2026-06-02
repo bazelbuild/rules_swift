@@ -126,7 +126,7 @@ def module_interface_test_suite(name, tags = []):
         name = "{}_explicit_swift_module_map_test".format(name),
         tags = all_tags,
         expected_argv = [
-            "-Xwrapped-swift=-frontend-explicit-swift-module-map-file=$(BIN_DIR)/test/fixtures/module_interface/toy_module.swift-explicit-module-map.json",
+            "-explicit-swift-module-map-file $(BIN_DIR)/test/fixtures/module_interface/toy_module.swift-explicit-module-map.json",
         ],
         not_expected_argv = [
             "-Xfrontend",
