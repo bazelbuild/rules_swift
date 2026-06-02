@@ -1051,9 +1051,16 @@ def compile_action_configs(
                 SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
                 SWIFT_ACTION_SYNTHESIZE_INTERFACE,
             ],
-            configurators = [
-                _dependencies_clang_modules_configurator,
-                _dependencies_clang_modulemaps_configurator,
+            configurators = [_dependencies_clang_modules_configurator],
+            features = [SWIFT_FEATURE_USE_C_MODULES],
+        ),
+        ActionConfigInfo(
+            actions = all_compile_action_names() + [
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+                SWIFT_ACTION_DUMP_AST,
+                SWIFT_ACTION_PRECOMPILE_C_MODULE,
+                SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
+                SWIFT_ACTION_SYNTHESIZE_INTERFACE,
             ],
             configurators = [_dependencies_clang_modulemaps_configurator],
             not_features = [SWIFT_FEATURE_USE_C_MODULES],
