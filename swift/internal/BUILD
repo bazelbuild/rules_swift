@@ -374,6 +374,7 @@ bzl_library(
     name = "explicit_module_map_file",
     srcs = ["explicit_module_map_file.bzl"],
     visibility = ["//swift:__subpackages__"],
+    deps = ["@bazel_skylib//lib:paths"],
 )
 
 bzl_library(
