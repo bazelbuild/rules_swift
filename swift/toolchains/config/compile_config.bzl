@@ -1044,13 +1044,12 @@ def compile_action_configs(
 
     return action_configs
 
-def command_line_objc_copts(compilation_mode, cpp_fragment, objc_fragment):
+def command_line_objc_copts(compilation_mode, cpp_fragment):
     """Returns copts that should be passed to `clang` from the `objc` fragment.
 
     Args:
         compilation_mode: The current compilation mode.
         cpp_fragment: The `cpp` configuration fragment.
-        objc_fragment: The `objc` configuration fragment.
 
     Returns:
         A list of `clang` copts, each of which is preceded by `-Xcc` so that
@@ -1067,25 +1066,29 @@ def command_line_objc_copts(compilation_mode, cpp_fragment, objc_fragment):
     # the long term, we should query crosstool for the flags we're interested in
     # and pass those to ClangImporter, and do this across all platforms. As an
     # immediate short-term workaround, we preserve the old behavior by passing
-    # the exact set of flags that Bazel was originally passing if the list we
-    # get back from the configuration fragment is empty.
-    legacy_copts = objc_fragment.copts_for_current_compilation_mode
-    if not legacy_copts:
-        if compilation_mode == "dbg":
-            legacy_copts = [
-                "-O0",
-                "-DDEBUG=1",
-                "-fstack-protector",
-                "-fstack-protector-all",
-            ]
-        elif compilation_mode == "opt":
-            legacy_copts = [
-                "-Os",
-                "-DNDEBUG=1",
-                "-Wno-unused-variable",
-                "-Winit-self",
-                "-Wno-extra",
-            ]
+    # the exact set of flags that Bazel was originally passing.
+    if compilation_mode == "dbg":
+        legacy_copts = [
+            "-O0",
+            "-DDEBUG=1",
+            "-fstack-protector",
+            "-fstack-protector-all",
+        ]
+    elif compilation_mode == "opt":
+        legacy_copts = [
+            "-Os",
+            "-DNDEBUG=1",
+            "-Wno-unused-variable",
+            "-Winit-self",
+            "-Wno-extra",
+        ]
+    elif compilation_mode == "fastbuild":
+        legacy_copts = [
+            "-O1",
+            "-DDEBUG=1",
+        ]
+    else:
+        legacy_copts = []
 
     clang_copts = cpp_fragment.objccopts + legacy_copts
     return [copt for copt in clang_copts if copt != "-g"]
