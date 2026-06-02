@@ -32,6 +32,5 @@ jobs:
         run: |
           set -euo pipefail
 
-          # This target is guarded by //test/hermetic_pcm:xcode_at_least_26_4.
           developer_dir=$(xcode-select -p)
           DEVELOPER_DIR="$developer_dir" bazel test --test_output=errors --build_tests_only --test_tag_filters=xcode-26.4 --  //...
