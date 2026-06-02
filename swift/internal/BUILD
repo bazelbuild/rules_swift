@@ -359,6 +359,13 @@ bzl_library(
 )
 
 bzl_library(
+    name = "explicit_module_map_file",
+    srcs = ["explicit_module_map_file.bzl"],
+    visibility = ["//swift:__subpackages__"],
+    deps = ["@bazel_skylib//lib:paths"],
+)
+
+bzl_library(
     name = "action_names",
     srcs = ["action_names.bzl"],
     visibility = ["//swift:__subpackages__"],
@@ -368,13 +375,6 @@ bzl_library(
     name = "env_expansion",
     srcs = ["env_expansion.bzl"],
     visibility = ["//swift:__subpackages__"],
-)
-
-bzl_library(
-    name = "explicit_module_map_file",
-    srcs = ["explicit_module_map_file.bzl"],
-    visibility = ["//swift:__subpackages__"],
-    deps = ["@bazel_skylib//lib:paths"],
 )
 
 bzl_library(
