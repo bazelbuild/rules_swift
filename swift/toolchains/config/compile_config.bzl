@@ -1924,16 +1924,13 @@ def _dependencies_clang_modulemaps_configurator(prerequisites, args):
         prefer_precompiled_modules = False,
     )
 
-def _dependencies_clang_modules_configurator(prerequisites, args, include_modules = True):
+def _dependencies_clang_modules_configurator(prerequisites, args):
     """Configures precompiled Clang modules from dependencies."""
-    if include_modules:
-        modules = [
-            module
-            for module in prerequisites.transitive_modules
-            if module.clang
-        ]
-    else:
-        modules = []
+    modules = [
+        module
+        for module in prerequisites.transitive_modules
+        if module.clang
+    ]
 
     # Uniquify the arguments because different modules might be defined in the
     # same module map file, so it only needs to be present once on the command
