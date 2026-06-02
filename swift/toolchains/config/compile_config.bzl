@@ -944,7 +944,9 @@ def compile_action_configs(
                 SWIFT_ACTION_DUMP_AST,
             ],
             configurators = [_dependencies_swiftmodules_configurator],
-            not_features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
+            not_features = [
+                [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
+            ],
         ),
         ActionConfigInfo(
             actions = all_compile_action_names(),
