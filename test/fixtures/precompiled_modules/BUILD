@@ -206,6 +206,43 @@ transition_test(
     ],
 )
 
+swift_test(
+    name = "xctest_explicit_deps_with_testing",
+    srcs = ["XCTestWithTesting.swift"],
+    discover_tests = False,
+    tags = FIXTURE_TAGS,
+    deps = [
+        "@system_sdk//:Testing",
+        "@system_sdk//:XCTest",
+    ],
+)
+
+transition_test(
+    name = "xctest_explicit_deps_with_testing_transitioned",
+    compilation_mode = "dbg",  # forces a different stack protector mode which can expose issues
+    tags = FIXTURE_TAGS,
+    target = ":xctest_explicit_deps_with_testing",
+    transitive_features = [
+        "-swift.add_default_precompiled_modules",
+        "swift.emit_c_module",
+        "swift.use_c_modules",
+        "swift.use_explicit_swift_module_map",
+    ],
+)
+
+transition_test(
+    name = "xctest_explicit_deps_with_testing_no_modulemap_transitioned",
+    compilation_mode = "dbg",  # forces a different stack protector mode which can expose issues
+    tags = FIXTURE_TAGS,
+    target = ":xctest_explicit_deps_with_testing",
+    transitive_features = [
+        "-swift.add_default_precompiled_modules",
+        "swift.emit_c_module",
+        "swift.use_c_modules",
+        # NOTE: Must not enable swift.use_explicit_swift_module_map which affects linking logic
+    ],
+)
+
 swift_binary(
     name = "available_testing_import",
     srcs = ["available_testing_import.swift"],
