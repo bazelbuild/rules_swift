@@ -319,6 +319,7 @@ def _render_cross_import_overlay_targets(
         out.write(
             f'    declaring_module = ":{_canonical_name(overlay.declaring_module, sdk, "alias")}",\n'
         )
+        out.write(f'    swiftoverlay = "{overlay.swiftoverlay_path}",\n')
         out.write("    deps = [\n")
         _write_labels(
             out,
@@ -328,7 +329,6 @@ def _render_cross_import_overlay_targets(
             },
         )
         out.write("    ],\n")
-        out.write(f'    swiftoverlay = "{overlay.swiftoverlay_path}",\n')
         out.write(")\n")
 
     out.write("\n")
@@ -487,15 +487,15 @@ class _Module:
                     values_by_cpu=self.swiftinterface_paths_by_cpu,
                 )
             elif self.swiftmodule_paths_by_cpu:
-                _write_string_attr(
-                    out,
-                    name="swiftmodule",
-                    values_by_cpu=self.swiftmodule_paths_by_cpu,
-                )
                 _write_transition_attrs(
                     out,
                     sdk=self.sdk,
                     sdk_version=self.sdk_version,
+                )
+                _write_string_attr(
+                    out,
+                    name="swiftmodule",
+                    values_by_cpu=self.swiftmodule_paths_by_cpu,
                 )
             else:
                 raise SystemExit(
