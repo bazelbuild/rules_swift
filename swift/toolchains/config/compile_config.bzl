@@ -939,6 +939,14 @@ def compile_action_configs(
             not_features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],  # If this feature is enabled we still use this file just with more contents
         ),
         ActionConfigInfo(
+            actions = all_compile_action_names() + [
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+                SWIFT_ACTION_DUMP_AST,
+            ],
+            configurators = [_dependencies_swiftmodules_configurator],
+            not_features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
+        ),
+        ActionConfigInfo(
             actions = all_compile_action_names(),
             configurators = [_cross_import_overlays_configurator],
             features = [SWIFT_FEATURE_USE_C_MODULES],
