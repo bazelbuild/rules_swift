@@ -194,6 +194,18 @@ transition_test(
     ],
 )
 
+transition_test(
+    name = "xctest_with_testing_no_modulemap_transitioned",
+    compilation_mode = "dbg",  # forces a different stack protector mode which can expose issues
+    tags = FIXTURE_TAGS,
+    target = ":xctest_with_testing",
+    transitive_features = [
+        "swift.emit_c_module",
+        "swift.use_c_modules",
+        # NOTE: Must not enable swift.use_explicit_swift_module_map which affects linking logic
+    ],
+)
+
 swift_binary(
     name = "available_testing_import",
     srcs = ["available_testing_import.swift"],
