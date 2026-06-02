@@ -61,7 +61,7 @@ def write_explicit_swift_module_map_file(
                 path = getattr(clang_context.module_map, "path", clang_context.module_map)
                 if path and paths.is_absolute(path):
                     fail("clang module map paths must be relative to the execroot, but got an absolute path: {}".format(path))
-                clang_description["clangModuleMapPath"] = getattr(clang_context.module_map, "path", clang_context.module_map)
+                clang_description["clangModuleMapPath"] = path
             if clang_context.precompiled_module:
                 clang_description["clangModulePath"] = clang_context.precompiled_module.path
             if clang_description:
