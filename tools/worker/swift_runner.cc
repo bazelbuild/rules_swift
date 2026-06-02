@@ -17,8 +17,8 @@
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 #include <optional>
-#include <sstream>
 #include <utility>
 
 #include "absl/container/btree_set.h"
@@ -568,30 +568,6 @@ bool SwiftRunner::ProcessPossibleResponseFile(
   return changed;
 }
 
-std::string SwiftRunner::ProcessExplicitSwiftModuleMapFile(
-    const std::string& path) {
-  std::string module_map_path = path;
-  std::ifstream module_map_file(module_map_path);
-  if (!module_map_file.good()) {
-    return module_map_path;
-  }
-
-  std::stringstream buffer;
-  buffer << module_map_file.rdbuf();
-  std::string contents = buffer.str();
-  bazel_placeholder_substitutions_.Apply(contents);
-
-  auto rewritten_module_map =
-      TempFile::Create("swift_explicit_module_map.XXXXXX");
-  std::ofstream rewritten_module_map_stream(rewritten_module_map->GetPath());
-  rewritten_module_map_stream << contents;
-  rewritten_module_map_stream.close();
-
-  module_map_path = rewritten_module_map->GetPath();
-  temp_files_.push_back(std::move(rewritten_module_map));
-  return module_map_path;
-}
-
 template <typename Iterator>
 bool SwiftRunner::ProcessArgument(
     Iterator& itr, const std::string& arg,
@@ -682,20 +658,6 @@ bool SwiftRunner::ProcessArgument(
       consumer("-module-cache-path");
       consumer(module_cache_dir->GetPath());
       temp_directories_.push_back(std::move(module_cache_dir));
-      return true;
-    }
-    if (absl::ConsumePrefix(&wrapped_arg,
-                            "-driver-explicit-swift-module-map-file=")) {
-      consumer("-Xfrontend");
-      consumer("-explicit-swift-module-map-file");
-      consumer("-Xfrontend");
-      consumer(ProcessExplicitSwiftModuleMapFile(std::string(wrapped_arg)));
-      return true;
-    }
-    if (absl::ConsumePrefix(&wrapped_arg,
-                            "-frontend-explicit-swift-module-map-file=")) {
-      consumer("-explicit-swift-module-map-file");
-      consumer(ProcessExplicitSwiftModuleMapFile(std::string(wrapped_arg)));
       return true;
     }
 

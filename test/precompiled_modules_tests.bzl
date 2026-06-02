@@ -159,7 +159,7 @@ def precompiled_modules_test_suite(name, tags = []):
         mnemonic = "SwiftCompile",
         target_under_test = "//test/fixtures/precompiled_modules:linking_cross_import_overlay",
         expected_argv = [
-            "-Xwrapped-swift=-driver-explicit-swift-module-map-file=$(BIN_DIR)/test/fixtures/precompiled_modules/linking_cross_import_overlay.swift-system-explicit-module-map.json",
+            "-Xfrontend -explicit-swift-module-map-file -Xfrontend $(BIN_DIR)/test/fixtures/precompiled_modules/linking_cross_import_overlay.swift-system-explicit-module-map.json",
             "-Xfrontend -disable-cross-import-overlay-search",
             "-Xfrontend -swift-module-cross-import -Xfrontend Testing -Xfrontend",
             "Testing.framework/Modules/Testing.swiftcrossimport/AppKit.swiftoverlay",

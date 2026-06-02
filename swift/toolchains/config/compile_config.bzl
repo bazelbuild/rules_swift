@@ -2215,14 +2215,19 @@ def _explicit_swift_module_map_configurator(prerequisites, args, is_frontend = F
         return ConfigResultInfo()
 
     if is_frontend:
+        # If we're calling frontend directly we don't need to prepend each
+        # argument with -Xfrontend. Doing so will crash the invocation.
         args.add(
+            "-explicit-swift-module-map-file",
             prerequisites.explicit_swift_module_map_file,
-            format = "-Xwrapped-swift=-frontend-explicit-swift-module-map-file=%s",
         )
     else:
-        args.add(
-            prerequisites.explicit_swift_module_map_file,
-            format = "-Xwrapped-swift=-driver-explicit-swift-module-map-file=%s",
+        args.add_all(
+            [
+                "-explicit-swift-module-map-file",
+                prerequisites.explicit_swift_module_map_file,
+            ],
+            before_each = "-Xfrontend",
         )
     return ConfigResultInfo(
         inputs = prerequisites.explicit_swift_module_map_inputs + [
