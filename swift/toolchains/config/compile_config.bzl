@@ -836,12 +836,12 @@ def compile_action_configs(
             configurators = [
                 add_arg("-Xfrontend", "-disable-implicit-swift-modules"),
             ],
-            features = [SWIFT_FEATURE_USE_C_MODULES],
+            features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
         ),
         ActionConfigInfo(
             actions = [SWIFT_ACTION_COMPILE_MODULE_INTERFACE],
             configurators = [add_arg("-disable-implicit-swift-modules")],
-            features = [SWIFT_FEATURE_USE_C_MODULES],
+            features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
         ),
         # When using C modules, disable the implicit module cache.
         ActionConfigInfo(
@@ -2073,7 +2073,9 @@ def _swift_module_search_path_map_fn(module):
         if type(swiftmodule) == "File":
             search_path = swiftmodule.dirname
         else:
-            search_path = swiftmodule
+            # String paths to swiftmodule files should be handled through
+            # explicit module json files
+            return None
 
         # If the dirname also ends in .swiftmodule, remove it as well so that
         # the compiler finds the module *directory*.
