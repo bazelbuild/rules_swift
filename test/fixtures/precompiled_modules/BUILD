@@ -35,7 +35,6 @@ swift_binary(
         "swift.use_c_modules",
         "swift.emit_c_module",
         "-swift.add_default_precompiled_modules",
-        "swift.use_explicit_swift_module_map",
     ],
     tags = FIXTURE_TAGS,
     target_compatible_with = select({
@@ -55,7 +54,6 @@ transition_binary(
         "swift.use_c_modules",
         "swift.emit_c_module",
         "-swift.add_default_precompiled_modules",
-        "swift.use_explicit_swift_module_map",
     ],
 )
 
@@ -95,7 +93,6 @@ transition_binary(
         "swift.use_c_modules",
         "swift.emit_c_module",
         "-swift.add_default_precompiled_modules",
-        "swift.use_explicit_swift_module_map",
     ],
 )
 
@@ -174,7 +171,6 @@ transition_test(
         "swift.use_c_modules",
         "swift.emit_c_module",
         "-swift.add_default_precompiled_modules",
-        # "swift.use_explicit_swift_module_map",
     ],
 )
 
@@ -374,7 +370,6 @@ transition_binary(
         "swift.use_c_modules",
         "swift.emit_c_module",
         "-swift.add_default_precompiled_modules",
-        "swift.use_explicit_swift_module_map",
     ],
 )
 
@@ -414,7 +409,6 @@ transition_test(
         "swift.use_c_modules",
         "swift.emit_c_module",
         "-swift.add_default_precompiled_modules",
-        "swift.use_explicit_swift_module_map",
     ],
 )
 
@@ -445,7 +439,6 @@ transition_test(
         "swift.use_c_modules",
         "swift.emit_c_module",
         "-swift.add_default_precompiled_modules",
-        "swift.use_explicit_swift_module_map",
     ],
 )
 
@@ -519,7 +512,6 @@ transition_binary(
         "swift.use_c_modules",
         "swift.emit_c_module",
         "-swift.add_default_precompiled_modules",
-        "swift.use_explicit_swift_module_map",
     ],
 )
 
@@ -549,7 +541,7 @@ transition_test(
         "swift.use_c_modules",
         "swift.emit_c_module",
         "-swift.add_default_precompiled_modules",
-        "swift.use_explicit_swift_module_map",
+        # NOTE: Must not enable swift.use_explicit_swift_module_map which affects linking logic
     ],
 )
 
@@ -576,7 +568,6 @@ transition_binary(
         "swift.use_c_modules",
         "swift.emit_c_module",
         "-swift.add_default_precompiled_modules",
-        "swift.use_explicit_swift_module_map",
     ],
 )
 
