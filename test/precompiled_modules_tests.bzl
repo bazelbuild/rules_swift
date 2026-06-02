@@ -161,7 +161,8 @@ def precompiled_modules_test_suite(name, tags = []):
         expected_argv = [
             "-Xwrapped-swift=-driver-explicit-swift-module-map-file=$(BIN_DIR)/test/fixtures/precompiled_modules/linking_cross_import_overlay.swift-system-explicit-module-map.json",
             "-Xfrontend -disable-cross-import-overlay-search",
-            "-Xfrontend -swift-module-cross-import -Xfrontend Testing -Xfrontend __BAZEL_XCODE_DEVELOPER_DIR__/Platforms/MacOSX.platform/Developer/Library/Frameworks/Testing.framework/Modules/Testing.swiftcrossimport/AppKit.swiftoverlay",
+            "-Xfrontend -swift-module-cross-import -Xfrontend Testing -Xfrontend",
+            "Testing.framework/Modules/Testing.swiftcrossimport/AppKit.swiftoverlay",
         ],
         target_compatible_with = select({
             ":has_testing_appkit_overlay": [],

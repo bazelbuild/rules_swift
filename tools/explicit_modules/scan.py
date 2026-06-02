@@ -148,9 +148,55 @@ def _write_labels(out: TextIO, labels: set[str], indent: str = "        ") -> No
         out.write(f'{indent}":{label}",\n')
 
 
-def _normalize_system_path(path: str, *, developer_dir: str, sdkroot: str) -> str:
-    return path.replace(sdkroot, "__BAZEL_XCODE_SDKROOT__").replace(
-        developer_dir, "__BAZEL_XCODE_DEVELOPER_DIR__"
+def _get_full_xcode_version(developer_dir: Path) -> str:
+    env = dict(os.environ)
+    env["DEVELOPER_DIR"] = developer_dir.as_posix()
+    output = subprocess.check_output(
+        ["xcodebuild", "-version"],
+        env=env,
+        text=True,
+    )
+
+    short_version = None
+    build_version = None
+    for line in output.splitlines():
+        if line.startswith("Xcode "):
+            short_version = line[len("Xcode ") :].strip()
+        elif line.startswith("Build version "):
+            build_version = line[len("Build version ") :].strip()
+
+    if not short_version or not build_version:
+        raise SystemExit(f"error: unexpected output: '{output}'")
+
+    parts = short_version.split(".")
+    while len(parts) < 3:
+        parts.append("0")
+    return "{}.{}".format(".".join(parts), build_version)
+
+
+def _developer_dir_symlink_name(developer_dir: Path) -> str:
+    xcode_version = _get_full_xcode_version(developer_dir)
+    return "__bazel_developer_dir_" + xcode_version.replace(".", "_")
+
+
+def _replace_path_prefix(path: str, *, old: str, new: str) -> str:
+    if not path:
+        return path
+    if path.startswith(old + "/"):
+        return new + path[len(old) :]
+    raise SystemExit(f"error: expected path '{path}' to start with '{old}'")
+
+
+def _normalize_system_path(
+    path: str,
+    *,
+    developer_dir: str,
+    developer_dir_symlink_name: str,
+) -> str:
+    return _replace_path_prefix(
+        path,
+        old=developer_dir,
+        new=developer_dir_symlink_name,
     )
 
 
@@ -469,7 +515,7 @@ def _parse_output(
     sdk_version: str,
     cpu: str,
     developer_dir: str,
-    sdkroot: str,
+    developer_dir_symlink_name: str,
     all_modules: dict[tuple[str, str], _Module],
 ) -> None:
     modules_json = output["modules"][2:]  # Skip the stub file pair
@@ -491,7 +537,7 @@ def _parse_output(
         module_map_path = _normalize_system_path(
             details.get("moduleMapPath", ""),
             developer_dir=developer_dir,
-            sdkroot=sdkroot,
+            developer_dir_symlink_name=developer_dir_symlink_name,
         )
         if module is None:
             module = all_modules[key] = _Module(
@@ -516,7 +562,7 @@ def _parse_output(
                     swiftmodule_path=_normalize_system_path(
                         compiled_module_candidates[0],
                         developer_dir=developer_dir,
-                        sdkroot=sdkroot,
+                        developer_dir_symlink_name=developer_dir_symlink_name,
                     ),
                 )
             else:
@@ -526,7 +572,7 @@ def _parse_output(
                     swiftinterface_path=_normalize_system_path(
                         details["moduleInterfacePath"],
                         developer_dir=developer_dir,
-                        sdkroot=sdkroot,
+                        developer_dir_symlink_name=developer_dir_symlink_name,
                     ),
                 )
 
@@ -596,8 +642,8 @@ def _discover_cross_import_overlays(
     *,
     cross_import_dirs: set[Path],
     developer_dir: str,
+    developer_dir_symlink_name: str,
     sdk: str,
-    sdk_path: str,
     all_modules: set[str],
 ) -> list[_CrossImportOverlay]:
     overlays = []
@@ -621,7 +667,7 @@ def _discover_cross_import_overlays(
                     swiftoverlay_path=_normalize_system_path(
                         overlay_file.as_posix(),
                         developer_dir=developer_dir,
-                        sdkroot=sdk_path,
+                        developer_dir_symlink_name=developer_dir_symlink_name,
                     ),
                 )
             )
@@ -692,6 +738,7 @@ def _parse_modulemap_for_modules(modulemap_path: Path) -> set[str]:
 
 def _discover_all_modules(
     developer_dir: Path,
+    developer_dir_symlink_name: str,
     sdk: str,
     excluded_modules: set[str],
 ) -> tuple[str, set[str]]:
@@ -747,8 +794,8 @@ def _discover_all_modules(
     cross_import_overlays = _discover_cross_import_overlays(
         cross_import_dirs=cross_import_dirs,
         developer_dir=developer_dir.as_posix(),
+        developer_dir_symlink_name=developer_dir_symlink_name,
         sdk=sdk,
-        sdk_path=sdk_path.as_posix(),
         all_modules=modules,
     )
 
@@ -777,7 +824,7 @@ def _discover_all_modules(
             sdk_version=deployment_target,
             cpu=cpu,
             developer_dir=developer_dir.as_posix(),
-            sdkroot=sdk_path.as_posix(),
+            developer_dir_symlink_name=developer_dir_symlink_name,
             all_modules=merged_modules,
         )
 
@@ -883,6 +930,10 @@ def _main() -> None:
             "error: --developer-dir was not given and DEVELOPER_DIR is not set"
         )
 
+    # If DEVELOPER_DIR is a symlink to Xcode that will fail later because
+    # xcode_locator only finds real paths.
+    developer_dir = developer_dir.resolve()
+
     if args.sdks:
         unknown = [s for s in args.sdks if s not in _SDK_CONSTRAINTS]
         if unknown:
@@ -894,6 +945,7 @@ def _main() -> None:
         sdk_names = sorted(_SDK_CONSTRAINTS.keys())
 
     excluded_modules = _parse_exclude_modules(args.exclude_module)
+    developer_dir_symlink_name = _developer_dir_symlink_name(developer_dir)
 
     buf = io.StringIO()
     buf.write(_HEADER)
@@ -917,6 +969,7 @@ def _main() -> None:
             pool.submit(
                 _discover_all_modules,
                 developer_dir,
+                developer_dir_symlink_name,
                 sdk,
                 excluded_modules.get(sdk, set()),
             ): sdk

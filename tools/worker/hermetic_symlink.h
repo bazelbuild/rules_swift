@@ -41,11 +41,10 @@ bool EnsureDirectorySymlink(const std::filesystem::path& link,
 // where concurrent actions can race to create the same symlink.
 bool EnsureDeveloperDirSymlink(const std::string& developer_dir);
 
-// Returns a path to `interface_path` through a hermetic symlink when needed, so
-// Swift does not serialize an absolute Xcode path into the swiftmodule.
-std::string SymlinkedInterfacePath(
-    std::string_view interface_path,
-    std::function<std::string()> developer_dir_supplier);
+// Ensures that DeveloperDirSymlinkName() in the current working directory
+// points to the current DEVELOPER_DIR. This is a no-op if DEVELOPER_DIR is
+// unavailable, and exits if the symlink cannot be created.
+void EnsureDeveloperDirSymlinkFromEnv();
 
 }  // namespace bazel_rules_swift
 
