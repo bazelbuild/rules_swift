@@ -1060,13 +1060,27 @@ def compile_action_configs(
         # whichever are being used for this build.
         ActionConfigInfo(
             actions = all_compile_action_names() + [
-                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_DUMP_AST,
-                SWIFT_ACTION_PRECOMPILE_C_MODULE,
                 SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
                 SWIFT_ACTION_SYNTHESIZE_INTERFACE,
             ],
             configurators = [_dependencies_clang_modules_configurator],
+            features = [SWIFT_FEATURE_USE_C_MODULES],
+        ),
+        # These actions do not support reading system modules from the
+        # explicit module map json file
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+                SWIFT_ACTION_PRECOMPILE_C_MODULE,
+            ],
+            configurators = [
+                lambda prerequisites, args: _dependencies_clang_modules_configurator(
+                    prerequisites,
+                    args,
+                    ignore_system = False,
+                ),
+            ],
             features = [SWIFT_FEATURE_USE_C_MODULES],
         ),
         ActionConfigInfo(
@@ -1874,7 +1888,7 @@ def _clang_modulemap_dependency_args(module, ignore_system = True):
 
     return ["-fmodule-map-file={}".format(module_map_path)]
 
-def _clang_module_dependency_args(module):
+def _clang_module_dependency_args(module, ignore_system = True):
     """Returns `swiftc` arguments for a precompiled Clang module, if possible.
 
     If a precompiled module is present for this module, then flags for both it
@@ -1886,11 +1900,15 @@ def _clang_module_dependency_args(module):
     Args:
         module: A struct containing information about the module, as defined by
             `create_swift_module_context`.
+        ignore_system: If True system modules produce no arguments.
 
     Returns:
         A list of arguments, possibly empty, to pass to `swiftc` (without the
         `-Xcc` prefix).
     """
+    if module.is_system and ignore_system:
+        return []
+
     if module.clang.precompiled_module:
         # If we're consuming an explicit module, we must also provide the
         # textual module map, whether or not it's a system module.
@@ -1904,6 +1922,9 @@ def _clang_module_dependency_args(module):
         # If we have no explicit module, then only include module maps for
         # non-system modules.
         return _clang_modulemap_dependency_args(module)
+
+def _clang_module_dependency_args_include_system(module):
+    return _clang_module_dependency_args(module, ignore_system = False)
 
 def _dependencies_clang_modulemaps_configurator(prerequisites, args):
     """Configures Clang module maps from dependencies."""
@@ -1939,7 +1960,7 @@ def _dependencies_clang_modulemaps_configurator(prerequisites, args):
         prefer_precompiled_modules = False,
     )
 
-def _dependencies_clang_modules_configurator(prerequisites, args):
+def _dependencies_clang_modules_configurator(prerequisites, args, ignore_system = True):
     """Configures precompiled Clang modules from dependencies."""
     modules = [
         module
@@ -1950,10 +1971,11 @@ def _dependencies_clang_modules_configurator(prerequisites, args):
     # Uniquify the arguments because different modules might be defined in the
     # same module map file, so it only needs to be present once on the command
     # line.
+    mapper = _clang_module_dependency_args if ignore_system else _clang_module_dependency_args_include_system
     args.add_all(
         modules,
         before_each = "-Xcc",
-        map_each = _clang_module_dependency_args,
+        map_each = mapper,
         uniquify = True,
     )
 
@@ -2054,6 +2076,12 @@ def _swift_module_search_path_map_fn(module):
     Returns:
         The dirname of the module's `.swiftmodule` file.
     """
+
+    # System swiftmodule files always come through the explicit json file which
+    # affects linking behavior
+    if module.is_system:
+        return None
+
     if module.swift:
         swiftmodule = module.swift.swiftmodule
         if type(swiftmodule) == "File":

@@ -14,6 +14,8 @@
 
 """Generates the JSON manifest used to pass Swift modules to the compiler."""
 
+load("@bazel_skylib//lib:paths.bzl", "paths")
+
 def write_explicit_swift_module_map_file(
         *,
         actions,
@@ -32,49 +34,38 @@ def write_explicit_swift_module_map_file(
         module_contexts: A list of module contexts that provide the Swift
             dependencies for the compilation.
     """
+
+    # If a module has a clang + swift half, they are separate entries in the json file
     module_descriptions = {}
-
     for module_context in module_contexts:
-        # You can only have 1 entry per module name. If we have a system module
-        # that has both a clang and swift half, we need to merge them.
-        existing = module_descriptions.get(module_context.name)
-        module_description = existing or {
+        base_description = {
+            "isFramework": module_context.is_framework,
+            "isSystem": module_context.is_system,
             "moduleName": module_context.name,
-            "isFramework": False,
         }
-        if module_context.is_system:
-            module_description["isSystem"] = module_context.is_system
-        if module_context.is_framework:
-            module_description["isFramework"] = module_context.is_framework
 
-        has_swift_description = "modulePath" in module_description
-        if module_context.swift:
-            swift_context = module_context.swift
-            if swift_context.swiftmodule:
-                if type(swift_context.swiftmodule) == "File":
-                    swiftmodule_path = swift_context.swiftmodule.path
-                else:
-                    swiftmodule_path = swift_context.swiftmodule
-                has_swift_description = True
-                module_description["modulePath"] = swiftmodule_path
+        if module_context.swift and module_context.swift.swiftmodule:
+            if type(module_context.swift.swiftmodule) == "File":
+                swiftmodule_path = module_context.swift.swiftmodule.path
+            else:
+                swiftmodule_path = module_context.swift.swiftmodule
+            module_descriptions["swift:{}".format(module_context.name)] = base_description | {
+                "modulePath": swiftmodule_path,
+            }
 
-        has_clang_description = (
-            "clangModulePath" in module_description or
-            "clangModuleMapPath" in module_description
-        )
         if module_context.clang:
+            clang_description = {}
             clang_context = module_context.clang
             if clang_context.module_map:
-                if not module_context.is_system:
-                    # If path is not an attribute of `module_map`, then `module_map` is a string and we use it as our path.
-                    module_description["clangModuleMapPath"] = getattr(clang_context.module_map, "path", clang_context.module_map)
-                has_clang_description = True
+                # If path is not an attribute of `module_map`, then `module_map` is a string and we use it as our path.
+                path = getattr(clang_context.module_map, "path", clang_context.module_map)
+                if path and paths.is_absolute(path):
+                    fail("clang module map paths must be relative to the execroot, but got an absolute path: {}".format(path))
+                clang_description["clangModuleMapPath"] = getattr(clang_context.module_map, "path", clang_context.module_map)
             if clang_context.precompiled_module:
-                module_description["clangModulePath"] = clang_context.precompiled_module.path
-                has_clang_description = True
-
-        if has_swift_description or has_clang_description:
-            module_descriptions[module_context.name] = module_description
+                clang_description["clangModulePath"] = clang_context.precompiled_module.path
+            if clang_description:
+                module_descriptions["clang:{}".format(module_context.name)] = base_description | clang_description | {"isBridgingHeaderDependency": False}
 
     actions.write(
         content = json.encode(module_descriptions.values()),
