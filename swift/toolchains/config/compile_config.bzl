@@ -939,24 +939,6 @@ def compile_action_configs(
             not_features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],  # If this feature is enabled we still use this file just with more contents
         ),
         ActionConfigInfo(
-            actions = all_compile_action_names() + [
-                SWIFT_ACTION_DUMP_AST,
-            ],
-            configurators = [_swift_module_file_dependencies_swiftmodules_configurator],
-            not_features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
-        ),
-        ActionConfigInfo(
-            actions = [SWIFT_ACTION_COMPILE_MODULE_INTERFACE],
-            configurators = [
-                lambda prerequisites, args: _swift_module_file_dependencies_swiftmodules_configurator(
-                    prerequisites,
-                    args,
-                    is_frontend = True,
-                ),
-            ],
-            not_features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
-        ),
-        ActionConfigInfo(
             actions = all_compile_action_names(),
             configurators = [_cross_import_overlays_configurator],
             features = [SWIFT_FEATURE_USE_C_MODULES],
@@ -2091,48 +2073,6 @@ def _swift_module_search_path_map_fn(module):
         return search_path
     else:
         return None
-
-def _swift_module_file_map_fn(module):
-    """Returns a frontend flag that maps a module name to its `.swiftmodule`.
-
-    This function is intended to be used as a mapping function for modules
-    passed into `Args.add_all`.
-
-    Args:
-        module: The module structure (as returned by
-            `create_swift_module_context`) extracted from the transitive
-            modules of a `SwiftInfo` provider.
-
-    Returns:
-        The `-swift-module-file` flag for the module's `.swiftmodule` file.
-    """
-    if module.swift and module.swift.swiftmodule:
-        return "-swift-module-file={name}={path}".format(
-            name = module.name,
-            path = getattr(module.swift.swiftmodule, "path", module.swift.swiftmodule),
-        )
-    else:
-        return None
-
-def _swift_module_file_dependencies_swiftmodules_configurator(prerequisites, args, is_frontend = False):
-    """Adds explicit Swift dependency module files and action inputs."""
-    if is_frontend:
-        args.add_all(
-            prerequisites.transitive_modules,
-            map_each = _swift_module_file_map_fn,
-            uniquify = True,
-        )
-    else:
-        args.add_all(
-            prerequisites.transitive_modules,
-            before_each = "-Xfrontend",
-            map_each = _swift_module_file_map_fn,
-            uniquify = True,
-        )
-
-    return ConfigResultInfo(
-        inputs = prerequisites.transitive_swift_dependency_inputs,
-    )
 
 def _module_alias_flags(name, original):
     """Returns compiler flags to set the given module alias."""
