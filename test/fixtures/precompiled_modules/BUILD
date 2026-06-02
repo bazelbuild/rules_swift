@@ -217,6 +217,10 @@ swift_test(
     srcs = ["XCTestWithTesting.swift"],
     discover_tests = False,
     tags = FIXTURE_TAGS,
+    target_compatible_with = select({
+        "@build_bazel_apple_support//configs:apple": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = [
         "@system_sdk//:Testing",
         "@system_sdk//:XCTest",
