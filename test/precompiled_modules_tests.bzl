@@ -71,6 +71,9 @@ def precompiled_modules_test_suite(name, tags = []):
         }),
         target_under_test = "//test/fixtures/precompiled_modules:hello",
         expected_argv = [
+            "-Xfrontend -explicit-swift-module-map-file -Xfrontend $(BIN_DIR)/test/fixtures/precompiled_modules/hello.swift-system-explicit-module-map.json",
+        ],
+        not_expected_argv = [
             "-fmodule-file=Foundation",
             "-fmodule-file=SwiftShims",
         ],
@@ -86,10 +89,11 @@ def precompiled_modules_test_suite(name, tags = []):
         }),
         target_under_test = "//test/fixtures/precompiled_modules:hello",
         expected_argv = [
-            "-fmodule-file=SwiftShims",
+            "-Xfrontend -explicit-swift-module-map-file -Xfrontend $(BIN_DIR)/test/fixtures/precompiled_modules/hello.swift-system-explicit-module-map.json",
         ],
         not_expected_argv = [
             "-fmodule-file=Foundation",
+            "-fmodule-file=SwiftShims",
         ],
     )
 
@@ -99,6 +103,9 @@ def precompiled_modules_test_suite(name, tags = []):
         mnemonic = "SwiftCompile",
         target_under_test = "//test/fixtures/precompiled_modules:hello_with_explicit_deps_bin",
         expected_argv = [
+            "-Xfrontend -explicit-swift-module-map-file -Xfrontend $(BIN_DIR)/test/fixtures/precompiled_modules/hello_with_explicit_deps_bin.swift-system-explicit-module-map.json",
+        ],
+        not_expected_argv = [
             "-fmodule-file=Foundation",
             "-fmodule-file=SwiftShims",
         ],
@@ -114,6 +121,9 @@ def precompiled_modules_test_suite(name, tags = []):
         }),
         target_under_test = "//test/fixtures/precompiled_modules:stub_plugin",
         expected_argv = [
+            "-Xfrontend -explicit-swift-module-map-file -Xfrontend $(BIN_DIR)/test/fixtures/precompiled_modules/stub_plugin.swift-system-explicit-module-map.json",
+        ],
+        not_expected_argv = [
             "-fmodule-file=Foundation",
             "-fmodule-file=SwiftShims",
         ],
@@ -125,6 +135,9 @@ def precompiled_modules_test_suite(name, tags = []):
         mnemonic = "SwiftCompile",
         target_under_test = "//test/fixtures/precompiled_modules:c_module_imports",
         expected_argv = [
+            "-Xfrontend -explicit-swift-module-map-file -Xfrontend $(BIN_DIR)/test/fixtures/precompiled_modules/c_module_imports.swift-system-explicit-module-map.json",
+        ],
+        not_expected_argv = [
             "-fmodule-file=Compression",
             "-fmodule-file=SQLite3",
             "-fmodule-file=zlib",
