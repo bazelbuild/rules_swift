@@ -3,7 +3,7 @@
 module(
     name = "rules_swift",
     version = "0",
-    bazel_compatibility = [">=8.0.0"],
+    bazel_compatibility = [">=8.2.0"],
     compatibility_level = 3,
     repo_name = "build_bazel_rules_swift",
 )
@@ -18,6 +18,9 @@ bazel_dep(name = "platforms", version = "0.0.11")
 bazel_dep(name = "protobuf", version = "34.0.bcr.1")
 bazel_dep(name = "nlohmann_json", version = "3.12.0.bcr.1", repo_name = "com_github_nlohmann_json")
 bazel_dep(name = "swift_argument_parser", version = "1.7.0")
+
+# Included as a nodeps dependency
+bazel_dep(name = "rules_swift_package_manager", version = "1.18.1", repo_name = None)
 
 non_module_deps = use_extension("//swift:extensions.bzl", "non_module_deps")
 use_repo(
