@@ -902,7 +902,11 @@ def compile_action_configs(
                 SWIFT_ACTION_DUMP_AST,
             ],
             configurators = [
-                _explicit_swift_module_map_configurator,
+                lambda prerequisites, args: _explicit_swift_module_map_configurator(
+                    prerequisites,
+                    args,
+                    collect_clang_module_inputs = True,
+                ),
             ],
             features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
         ),
@@ -1061,6 +1065,13 @@ def compile_action_configs(
         ActionConfigInfo(
             actions = all_compile_action_names() + [
                 SWIFT_ACTION_DUMP_AST,
+            ],
+            configurators = [_dependencies_clang_modules_configurator],
+            features = [SWIFT_FEATURE_USE_C_MODULES],
+            not_features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
+        ),
+        ActionConfigInfo(
+            actions = [
                 SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
                 SWIFT_ACTION_SYNTHESIZE_INTERFACE,
             ],
@@ -2223,7 +2234,11 @@ def _cross_import_overlays_configurator(prerequisites, args):
         args.add("-Xfrontend", overlay.declaring_module)
         args.add("-Xfrontend", overlay.swiftoverlay_file)
 
-def _explicit_swift_module_map_configurator(prerequisites, args, is_frontend = False):
+def _explicit_swift_module_map_configurator(
+        prerequisites,
+        args,
+        is_frontend = False,
+        collect_clang_module_inputs = False):
     """Adds the explicit Swift module map file to the command line."""
     if not prerequisites.explicit_swift_module_map_file:
         return ConfigResultInfo()
@@ -2243,10 +2258,32 @@ def _explicit_swift_module_map_configurator(prerequisites, args, is_frontend = F
             ],
             before_each = "-Xfrontend",
         )
+    inputs = prerequisites.explicit_swift_module_map_inputs + [
+        prerequisites.explicit_swift_module_map_file,
+    ]
+    transitive_inputs = []
+    if collect_clang_module_inputs:
+        modules = [
+            module
+            for module in prerequisites.transitive_modules
+            if module.clang
+        ]
+        clang_module_inputs = _collect_clang_module_inputs(
+            always_include_headers = getattr(
+                prerequisites,
+                "always_include_headers",
+                False,
+            ),
+            explicit_module_compilation_context = None,
+            modules = modules,
+            prefer_precompiled_modules = True,
+        )
+        inputs += clang_module_inputs.inputs
+        transitive_inputs = clang_module_inputs.transitive_inputs
+
     return ConfigResultInfo(
-        inputs = prerequisites.explicit_swift_module_map_inputs + [
-            prerequisites.explicit_swift_module_map_file,
-        ],
+        inputs = inputs,
+        transitive_inputs = transitive_inputs,
     )
 
 def _module_name_configurator(prerequisites, args):
