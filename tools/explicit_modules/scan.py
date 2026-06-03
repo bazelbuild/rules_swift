@@ -57,6 +57,18 @@ _DEFAULT_EXCLUDED_MODULES = {
     "XRSimulator": {"AccessoryTransportExtension"},
 }
 
+# Modules that the Swift compiler implicitly imports based on internal
+# conditions. These must be available for all compiles in case the compiler
+# decides it needs them.
+_IMPLICIT_SYSTEM_MODULES = (
+    "_Concurrency",
+    "_StringProcessing",
+    "_SwiftConcurrencyShims",
+    "Swift",
+    "SwiftOnoneSupport",
+    "SwiftShims",
+)
+
 _TARGETS_PER_SDK = {
     "macosx": [
         ("@platforms//cpu:arm64", "arm64-apple-macos{ver}"),
@@ -105,6 +117,7 @@ load(
     "system_clang_module",
     "system_module_group",
     "system_swiftinterface",
+    "system_swiftmodule",
 )
 
 package(default_visibility = ["//visibility:public"])
@@ -113,6 +126,11 @@ swift_cross_import_overlay_group(name = "_empty_cross_import_overlays")
 
 system_module_group(
     name = "_empty_all_modules",
+    creates_module = False,
+)
+
+system_module_group(
+    name = "_empty_implicit_modules",
     creates_module = False,
 )
 """
@@ -130,9 +148,55 @@ def _write_labels(out: TextIO, labels: set[str], indent: str = "        ") -> No
         out.write(f'{indent}":{label}",\n')
 
 
-def _normalize_system_path(path: str, *, developer_dir: str, sdkroot: str) -> str:
-    return path.replace(sdkroot, "__BAZEL_XCODE_SDKROOT__").replace(
-        developer_dir, "__BAZEL_XCODE_DEVELOPER_DIR__"
+def _get_full_xcode_version(developer_dir: Path) -> str:
+    env = dict(os.environ)
+    env["DEVELOPER_DIR"] = developer_dir.as_posix()
+    output = subprocess.check_output(
+        ["xcodebuild", "-version"],
+        env=env,
+        text=True,
+    )
+
+    short_version = None
+    build_version = None
+    for line in output.splitlines():
+        if line.startswith("Xcode "):
+            short_version = line[len("Xcode ") :].strip()
+        elif line.startswith("Build version "):
+            build_version = line[len("Build version ") :].strip()
+
+    if not short_version or not build_version:
+        raise SystemExit(f"error: unexpected output: '{output}'")
+
+    parts = short_version.split(".")
+    while len(parts) < 3:
+        parts.append("0")
+    return "{}.{}".format(".".join(parts), build_version)
+
+
+def _developer_dir_symlink_name(developer_dir: Path) -> str:
+    xcode_version = _get_full_xcode_version(developer_dir)
+    return "__bazel_developer_dir_" + xcode_version.replace(".", "_")
+
+
+def _replace_path_prefix(path: str, *, old: str, new: str) -> str:
+    if not path:
+        return path
+    if path.startswith(old + "/"):
+        return new + path[len(old) :]
+    raise SystemExit(f"error: expected path '{path}' to start with '{old}'")
+
+
+def _normalize_system_path(
+    path: str,
+    *,
+    developer_dir: str,
+    developer_dir_symlink_name: str,
+) -> str:
+    return _replace_path_prefix(
+        path,
+        old=developer_dir,
+        new=developer_dir_symlink_name,
     )
 
 
@@ -225,6 +289,21 @@ def _render_all_modules_group(
     out.write(")\n")
 
 
+def _render_implicit_modules_group(
+    implicit_module_names: set[str],
+    sdk: str,
+    out: TextIO,
+) -> None:
+    out.write("\n")
+    out.write("system_module_group(\n")
+    out.write(f'    name = "{sdk}_implicit_modules",\n')
+    out.write("    creates_module = False,\n")
+    out.write("    modules = [\n")
+    _write_labels(out, {f"{sdk}_{name}" for name in implicit_module_names})
+    out.write("    ],\n")
+    out.write(")\n")
+
+
 def _render_cross_import_overlay_targets(
     overlays: list["_CrossImportOverlay"],
     sdk: str,
@@ -240,6 +319,7 @@ def _render_cross_import_overlay_targets(
         out.write(
             f'    declaring_module = ":{_canonical_name(overlay.declaring_module, sdk, "alias")}",\n'
         )
+        out.write(f'    swiftoverlay = "{overlay.swiftoverlay_path}",\n')
         out.write("    deps = [\n")
         _write_labels(
             out,
@@ -249,7 +329,6 @@ def _render_cross_import_overlay_targets(
             },
         )
         out.write("    ],\n")
-        out.write(f'    swiftoverlay = "{overlay.swiftoverlay_path}",\n')
         out.write(")\n")
 
     out.write("\n")
@@ -286,6 +365,10 @@ class _Module:
         default_factory=dict,
         compare=False,
     )
+    swiftmodule_paths_by_cpu: dict[str, str] = field(
+        default_factory=dict,
+        compare=False,
+    )
     deps_by_cpu: defaultdict[str, set[str]] = field(
         default_factory=lambda: defaultdict(set),
         compare=False,
@@ -304,7 +387,25 @@ class _Module:
         is_framework: bool,
         swiftinterface_path: str,
     ) -> None:
+        if self.swiftmodule_paths_by_cpu:
+            raise SystemExit(
+                f"error: module {self.name} has both swiftinterface and swiftmodule candidates, which is unexpected"
+            )
         self.swiftinterface_paths_by_cpu[cpu] = swiftinterface_path
+        self.is_framework = self.is_framework or is_framework
+
+    def set_swiftmodule(
+        self,
+        *,
+        cpu: str,
+        is_framework: bool,
+        swiftmodule_path: str,
+    ) -> None:
+        if self.swiftinterface_paths_by_cpu:
+            raise SystemExit(
+                f"error: module {self.name} has both swiftinterface and swiftmodule candidates, which is unexpected"
+            )
+        self.swiftmodule_paths_by_cpu[cpu] = swiftmodule_path
         self.is_framework = self.is_framework or is_framework
 
     @property
@@ -366,27 +467,39 @@ class _Module:
             out.write("\n")
             if self.should_compile_swiftinterface:
                 out.write("system_swiftinterface(\n")
+            elif self.swiftmodule_paths_by_cpu:
+                out.write("system_swiftmodule(\n")
             else:
-                out.write("system_module_group(\n")
+                raise SystemExit(
+                    f"error: swift module {self.name} has no swiftinterface or swiftmodule candidates, which is unexpected"
+                )
             out.write(
                 f'    name = "{_canonical_name(self.name, self.sdk, self.module_type)}",\n'
             )
+            if self.is_framework:
+                out.write("    is_framework = True,\n")
+            out.write(f'    module_name = "{self.name}",\n')
+            self._render_deps(out)
             if self.should_compile_swiftinterface:
-                if self.is_framework:
-                    out.write("    is_framework = True,\n")
-                out.write(f'    module_name = "{self.name}",\n')
-                self._render_deps(out)
                 _write_string_attr(
                     out,
                     name="system_swiftinterface",
                     values_by_cpu=self.swiftinterface_paths_by_cpu,
                 )
-            else:
-                self._render_deps(out)
+            elif self.swiftmodule_paths_by_cpu:
                 _write_transition_attrs(
                     out,
                     sdk=self.sdk,
                     sdk_version=self.sdk_version,
+                )
+                _write_string_attr(
+                    out,
+                    name="swiftmodule",
+                    values_by_cpu=self.swiftmodule_paths_by_cpu,
+                )
+            else:
+                raise SystemExit(
+                    f"error: swift module {self.name} has no swiftinterface or swiftmodule candidates, which is unexpected"
                 )
             out.write(")\n")
         else:
@@ -402,7 +515,7 @@ def _parse_output(
     sdk_version: str,
     cpu: str,
     developer_dir: str,
-    sdkroot: str,
+    developer_dir_symlink_name: str,
     all_modules: dict[tuple[str, str], _Module],
 ) -> None:
     modules_json = output["modules"][2:]  # Skip the stub file pair
@@ -424,7 +537,7 @@ def _parse_output(
         module_map_path = _normalize_system_path(
             details.get("moduleMapPath", ""),
             developer_dir=developer_dir,
-            sdkroot=sdkroot,
+            developer_dir_symlink_name=developer_dir_symlink_name,
         )
         if module is None:
             module = all_modules[key] = _Module(
@@ -437,15 +550,29 @@ def _parse_output(
 
         module.module_map_path = module.module_map_path or module_map_path
         if module_type == "swift":
-            has_prebuilt_swiftmodule = bool(details.get("compiledModuleCandidates", []))
-            if not has_prebuilt_swiftmodule:
+            compiled_module_candidates = details.get("compiledModuleCandidates", [])
+            if compiled_module_candidates:
+                if len(compiled_module_candidates) > 1:
+                    raise SystemExit(
+                        f"error: expected at most one compiled module candidate for {module_name} got: {compiled_module_candidates}"
+                    )
+                module.set_swiftmodule(
+                    cpu=cpu,
+                    is_framework=bool(details.get("isFramework", False)),
+                    swiftmodule_path=_normalize_system_path(
+                        compiled_module_candidates[0],
+                        developer_dir=developer_dir,
+                        developer_dir_symlink_name=developer_dir_symlink_name,
+                    ),
+                )
+            else:
                 module.set_swiftinterface(
                     cpu=cpu,
                     is_framework=bool(details.get("isFramework", False)),
                     swiftinterface_path=_normalize_system_path(
                         details["moduleInterfacePath"],
                         developer_dir=developer_dir,
-                        sdkroot=sdkroot,
+                        developer_dir_symlink_name=developer_dir_symlink_name,
                     ),
                 )
 
@@ -515,8 +642,8 @@ def _discover_cross_import_overlays(
     *,
     cross_import_dirs: set[Path],
     developer_dir: str,
+    developer_dir_symlink_name: str,
     sdk: str,
-    sdk_path: str,
     all_modules: set[str],
 ) -> list[_CrossImportOverlay]:
     overlays = []
@@ -540,7 +667,7 @@ def _discover_cross_import_overlays(
                     swiftoverlay_path=_normalize_system_path(
                         overlay_file.as_posix(),
                         developer_dir=developer_dir,
-                        sdkroot=sdk_path,
+                        developer_dir_symlink_name=developer_dir_symlink_name,
                     ),
                 )
             )
@@ -611,6 +738,7 @@ def _parse_modulemap_for_modules(modulemap_path: Path) -> set[str]:
 
 def _discover_all_modules(
     developer_dir: Path,
+    developer_dir_symlink_name: str,
     sdk: str,
     excluded_modules: set[str],
 ) -> tuple[str, set[str]]:
@@ -666,8 +794,8 @@ def _discover_all_modules(
     cross_import_overlays = _discover_cross_import_overlays(
         cross_import_dirs=cross_import_dirs,
         developer_dir=developer_dir.as_posix(),
+        developer_dir_symlink_name=developer_dir_symlink_name,
         sdk=sdk,
-        sdk_path=sdk_path.as_posix(),
         all_modules=modules,
     )
 
@@ -696,7 +824,7 @@ def _discover_all_modules(
             sdk_version=deployment_target,
             cpu=cpu,
             developer_dir=developer_dir.as_posix(),
-            sdkroot=sdk_path.as_posix(),
+            developer_dir_symlink_name=developer_dir_symlink_name,
             all_modules=merged_modules,
         )
 
@@ -717,6 +845,11 @@ def _discover_all_modules(
         buf,
     )
     _render_all_modules_group(all_module_names, sdk, deployment_target, buf)
+    _render_implicit_modules_group(
+        {name for name in _IMPLICIT_SYSTEM_MODULES if name in all_module_names},
+        sdk,
+        buf,
+    )
 
     return buf.getvalue(), all_module_names | {f"{n}_clang" for n in clang_names}
 
@@ -797,6 +930,10 @@ def _main() -> None:
             "error: --developer-dir was not given and DEVELOPER_DIR is not set"
         )
 
+    # If DEVELOPER_DIR is a symlink to Xcode that will fail later because
+    # xcode_locator only finds real paths.
+    developer_dir = developer_dir.resolve()
+
     if args.sdks:
         unknown = [s for s in args.sdks if s not in _SDK_CONSTRAINTS]
         if unknown:
@@ -808,6 +945,7 @@ def _main() -> None:
         sdk_names = sorted(_SDK_CONSTRAINTS.keys())
 
     excluded_modules = _parse_exclude_modules(args.exclude_module)
+    developer_dir_symlink_name = _developer_dir_symlink_name(developer_dir)
 
     buf = io.StringIO()
     buf.write(_HEADER)
@@ -831,6 +969,7 @@ def _main() -> None:
             pool.submit(
                 _discover_all_modules,
                 developer_dir,
+                developer_dir_symlink_name,
                 sdk,
                 excluded_modules.get(sdk, set()),
             ): sdk
@@ -867,6 +1006,17 @@ def _main() -> None:
         if all_modules_by_sdk.get(sdk):
             buf.write(f'        ":{sdk}_sdk": ":{sdk}_all_modules",\n')
     buf.write('        "@platforms//os:none": ":_empty_all_modules",\n')
+    buf.write("    }),\n")
+    buf.write(")\n")
+
+    buf.write("\n")
+    buf.write("alias(\n")
+    buf.write('    name = "implicit_modules",\n')
+    buf.write("    actual = select({\n")
+    for sdk in sdk_names:
+        if all_modules_by_sdk.get(sdk):
+            buf.write(f'        ":{sdk}_sdk": ":{sdk}_implicit_modules",\n')
+    buf.write('        "@platforms//os:none": ":_empty_implicit_modules",\n')
     buf.write("    }),\n")
     buf.write(")\n")
 

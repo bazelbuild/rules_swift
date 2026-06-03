@@ -259,6 +259,7 @@ xcode_swift_toolchain(
     name = "xcode-toolchain",
     cross_import_overlays = ["@system_sdk//:all_cross_import_overlays"],
     features = [{feature_list}],
+    implicit_system_modules = "@system_sdk//:implicit_modules",
     system_modules = "@system_sdk//:all_modules",
 )
 """.format(

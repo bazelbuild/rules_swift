@@ -23,7 +23,7 @@ else
     "-fno-implicit-modules"
     "-fno-implicit-module-maps"
     "-fmodule-file=Foundation="
-    "-fmodule-map-file=/PLACEHOLDER_DEVELOPER_DIR"
+    "-fmodule-map-file=__bazel_developer_dir"
   )
 fi
 expected+=("$@")

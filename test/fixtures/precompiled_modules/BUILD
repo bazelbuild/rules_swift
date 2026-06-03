@@ -206,6 +206,49 @@ transition_test(
     ],
 )
 
+# The Testing module currently leads to linking errors if it is not passed
+# through an explicit swift module json file.
+swift_test(
+    name = "xctest_explicit_deps_with_testing",
+    srcs = ["XCTestWithTesting.swift"],
+    discover_tests = False,
+    tags = FIXTURE_TAGS,
+    target_compatible_with = select({
+        "@build_bazel_apple_support//configs:apple": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    deps = [
+        "@system_sdk//:Testing",
+        "@system_sdk//:XCTest",
+    ],
+)
+
+transition_test(
+    name = "xctest_explicit_deps_with_testing_transitioned",
+    compilation_mode = "dbg",  # forces a different stack protector mode which can expose issues
+    tags = FIXTURE_TAGS,
+    target = ":xctest_explicit_deps_with_testing",
+    transitive_features = [
+        "-swift.add_default_precompiled_modules",
+        "swift.emit_c_module",
+        "swift.use_c_modules",
+        "swift.use_explicit_swift_module_map",
+    ],
+)
+
+transition_test(
+    name = "xctest_explicit_deps_with_testing_no_modulemap_transitioned",
+    compilation_mode = "dbg",  # forces a different stack protector mode which can expose issues
+    tags = FIXTURE_TAGS,
+    target = ":xctest_explicit_deps_with_testing",
+    transitive_features = [
+        "-swift.add_default_precompiled_modules",
+        "swift.emit_c_module",
+        "swift.use_c_modules",
+        # NOTE: Must not enable swift.use_explicit_swift_module_map which affects linking logic
+    ],
+)
+
 swift_binary(
     name = "available_testing_import",
     srcs = ["available_testing_import.swift"],
@@ -572,6 +615,43 @@ transition_test(
         "swift.use_c_modules",
         "swift.emit_c_module",
         "swift.add_default_precompiled_modules",
+        "swift.use_explicit_swift_module_map",
+    ],
+)
+
+# This combo currently fails on iOS because implicit module loading
+# attempts to find a module that we don't provide it. This dep graph
+# might change in the future and no longer be testing what we want.
+swift_binary(
+    name = "avfoundation_import",
+    srcs = ["avfoundation_import.swift"],
+    tags = FIXTURE_TAGS,
+    deps = [
+        "@system_sdk//:AVFoundation",
+        "@system_sdk//:Foundation",
+    ],
+)
+
+transition_binary(
+    name = "avfoundation_import_transitioned",
+    tags = FIXTURE_TAGS,
+    target = ":avfoundation_import",
+    transitive_features = [
+        "swift.use_c_modules",
+        "swift.emit_c_module",
+        "-swift.add_default_precompiled_modules",
+        "swift.use_explicit_swift_module_map",
+    ],
+)
+
+transition_binary(
+    name = "avfoundation_import_json_transitioned",
+    tags = FIXTURE_TAGS,
+    target = ":avfoundation_import",
+    transitive_features = [
+        "swift.use_c_modules",
+        "swift.emit_c_module",
+        "-swift.add_default_precompiled_modules",
         "swift.use_explicit_swift_module_map",
     ],
 )

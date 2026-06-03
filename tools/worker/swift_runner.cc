@@ -17,8 +17,8 @@
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 #include <optional>
-#include <sstream>
 #include <utility>
 
 #include "absl/container/btree_set.h"
@@ -229,14 +229,18 @@ void ExtractFlagsFromInterfaceFile(
     interface_path = *inferred_path;
   }
 
+  std::filesystem::path source{std::string(interface_path)};
+  if (source.is_absolute()) {
+    std::cerr << "error: swiftinterface compile paths must be relative for "
+                 "hermetic builds: "
+              << source << "\n";
+    std::exit(EXIT_FAILURE);
+  }
+
   // Add the path to the interface file as a source file argument, then extract
   // the flags from it and add them as well.
-  std::string symlinked_interface_path =
-      bazel_rules_swift::SymlinkedInterfacePath(interface_path,
-                                                developer_dir_supplier);
-  consumer(symlinked_interface_path);
-
-  std::ifstream interface_file{std::string(symlinked_interface_path)};
+  consumer(interface_path);
+  std::ifstream interface_file{interface_path};
   std::string line;
   while (std::getline(interface_file, line)) {
     absl::string_view line_view = line;
@@ -429,6 +433,7 @@ SwiftRunner::SwiftRunner(const std::vector<std::string>& args,
       file_prefix_pwd_is_dot_(false),
       hermetic_pcm_(false),
       verbose_(false) {
+  EnsureDeveloperDirSymlinkFromEnv();
   ProcessArguments(args);
 }
 
@@ -563,30 +568,6 @@ bool SwiftRunner::ProcessPossibleResponseFile(
   return changed;
 }
 
-std::string SwiftRunner::ProcessExplicitSwiftModuleMapFile(
-    const std::string& path) {
-  std::string module_map_path = path;
-  std::ifstream module_map_file(module_map_path);
-  if (!module_map_file.good()) {
-    return module_map_path;
-  }
-
-  std::stringstream buffer;
-  buffer << module_map_file.rdbuf();
-  std::string contents = buffer.str();
-  bazel_placeholder_substitutions_.Apply(contents);
-
-  auto rewritten_module_map =
-      TempFile::Create("swift_explicit_module_map.XXXXXX");
-  std::ofstream rewritten_module_map_stream(rewritten_module_map->GetPath());
-  rewritten_module_map_stream << contents;
-  rewritten_module_map_stream.close();
-
-  module_map_path = rewritten_module_map->GetPath();
-  temp_files_.push_back(std::move(rewritten_module_map));
-  return module_map_path;
-}
-
 template <typename Iterator>
 bool SwiftRunner::ProcessArgument(
     Iterator& itr, const std::string& arg,
@@ -677,20 +658,6 @@ bool SwiftRunner::ProcessArgument(
       consumer("-module-cache-path");
       consumer(module_cache_dir->GetPath());
       temp_directories_.push_back(std::move(module_cache_dir));
-      return true;
-    }
-    if (absl::ConsumePrefix(&wrapped_arg,
-                            "-driver-explicit-swift-module-map-file=")) {
-      consumer("-Xfrontend");
-      consumer("-explicit-swift-module-map-file");
-      consumer("-Xfrontend");
-      consumer(ProcessExplicitSwiftModuleMapFile(std::string(wrapped_arg)));
-      return true;
-    }
-    if (absl::ConsumePrefix(&wrapped_arg,
-                            "-frontend-explicit-swift-module-map-file=")) {
-      consumer("-explicit-swift-module-map-file");
-      consumer(ProcessExplicitSwiftModuleMapFile(std::string(wrapped_arg)));
       return true;
     }
 

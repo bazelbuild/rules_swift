@@ -221,7 +221,7 @@ def features_test_suite(name, tags = []):
         name = "{}_explicit_swift_module_map_test".format(name),
         tags = all_tags,
         expected_argv = [
-            "-Xwrapped-swift=-driver-explicit-swift-module-map-file=$(BIN_DIR)/test/fixtures/basic/second.swift-explicit-module-map.json",
+            "-Xfrontend -explicit-swift-module-map-file -Xfrontend $(BIN_DIR)/test/fixtures/basic/second.swift-explicit-module-map.json",
         ],
         not_expected_argv = [
             "-I$(BIN_DIR)/test/fixtures/basic",
@@ -241,11 +241,19 @@ def features_test_suite(name, tags = []):
         target_under_test = "//test/fixtures/basic:second",
     )
 
+    build_test(
+        name = "{}_explicit_swift_module_map_build_test".format(name),
+        tags = all_tags,
+        targets = [
+            "//test/fixtures/basic:second_explicit_swift_module_map_transitioned",
+        ],
+    )
+
     explicit_swift_module_map_with_target_name_test(
         name = "{}_explicit_swift_module_map_with_target_name_test".format(name),
         tags = all_tags,
         expected_argv = [
-            "-Xwrapped-swift=-driver-explicit-swift-module-map-file=$(BIN_DIR)/test/fixtures/basic/second.swift-explicit-module-map.json",
+            "-Xfrontend -explicit-swift-module-map-file -Xfrontend $(BIN_DIR)/test/fixtures/basic/second.swift-explicit-module-map.json",
         ],
         not_expected_argv = [
             "-I$(BIN_DIR)/test/fixtures/basic/second",

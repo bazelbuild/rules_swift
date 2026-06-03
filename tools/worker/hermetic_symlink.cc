@@ -88,40 +88,14 @@ bool EnsureDeveloperDirSymlink(const std::string& developer_dir) {
   return EnsureDirectorySymlink(link, developer_path);
 }
 
-std::string SymlinkedInterfacePath(
-    std::string_view interface_path,
-    std::function<std::string()> developer_dir_supplier) {
-  std::filesystem::path source{std::string(interface_path)};
-  // Relative swiftinterface paths will be recorded relatively, so we don't need
-  // workarounds
-  if (!source.is_absolute()) {
-    return source.string();
+void EnsureDeveloperDirSymlinkFromEnv() {
+  const char* developer_dir = std::getenv("DEVELOPER_DIR");
+  if (developer_dir == nullptr || developer_dir[0] == '\0') {
+    return;
   }
-
-  std::string developer_dir = NormalizeDeveloperDir(developer_dir_supplier());
-  if (developer_dir.empty()) {
-    std::cerr << "error: DEVELOPER_DIR is not set, but is required to "
-                 "compile Swift interfaces with absolute paths\n";
-    std::exit(EXIT_FAILURE);
-  }
-
-  std::filesystem::path developer_path{developer_dir};
-  auto relative_to_developer = source.lexically_relative(developer_path);
-  if (relative_to_developer.empty()) {
-    std::cerr << "error: absolute path " << source
-              << " is not within DEVELOPER_DIR " << developer_path
-              << ", which is required to compile Swift interfaces with "
-                 "absolute paths\n";
-    std::exit(EXIT_FAILURE);
-  }
-
   if (!EnsureDeveloperDirSymlink(developer_dir)) {
     std::exit(EXIT_FAILURE);
   }
-
-  return (std::filesystem::path(DeveloperDirSymlinkName()) /
-          relative_to_developer)
-      .string();
 }
 
 }  // namespace bazel_rules_swift

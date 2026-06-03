@@ -413,24 +413,28 @@ def struct_fields(s):
     }
 
 def _toolchain_system_modules(*, feature_configuration, swift_toolchain):
-    if not (
+    use_explicit_modules = (
         is_feature_enabled(
             feature_configuration = feature_configuration,
             feature_name = SWIFT_FEATURE_USE_C_MODULES,
         ) and is_feature_enabled(
             feature_configuration = feature_configuration,
             feature_name = SWIFT_FEATURE_EMIT_C_MODULE,
-        ) and is_feature_enabled(
-            feature_configuration = feature_configuration,
-            feature_name = SWIFT_FEATURE_ADD_DEFAULT_PRECOMPILED_MODULES,
         )
-    ):
+    )
+    if not use_explicit_modules:
         return struct(
             cc_infos = [],
             swift_infos = [],
         )
 
-    return swift_toolchain.system_modules
+    if is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_ADD_DEFAULT_PRECOMPILED_MODULES,
+    ):
+        return swift_toolchain.system_modules
+
+    return swift_toolchain.implicit_system_modules
 
 def include_developer_search_paths(attr):
     """Determines whether to include developer search paths.

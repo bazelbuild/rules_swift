@@ -821,6 +821,29 @@ def compile_action_configs(
             configurators = [add_arg("-disable-building-interface")],
             features = [SWIFT_FEATURE_USE_C_MODULES],
         ),
+        ActionConfigInfo(
+            actions = all_compile_action_names() + [
+                SWIFT_ACTION_DUMP_AST,
+                SWIFT_ACTION_PRECOMPILE_C_MODULE,
+                SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
+                SWIFT_ACTION_SYNTHESIZE_INTERFACE,
+            ],
+            configurators = [
+                add_arg("-Xfrontend", "-disable-implicit-swift-modules"),
+            ],
+            features = [
+                SWIFT_FEATURE_USE_C_MODULES,
+                SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP,
+            ],
+        ),
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE_MODULE_INTERFACE],
+            configurators = [add_arg("-disable-implicit-swift-modules")],
+            features = [
+                SWIFT_FEATURE_USE_C_MODULES,
+                SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP,
+            ],
+        ),
         # When using C modules, disable the implicit module cache.
         ActionConfigInfo(
             actions = [SWIFT_ACTION_PRECOMPILE_C_MODULE],
@@ -916,14 +939,6 @@ def compile_action_configs(
             features = [SWIFT_FEATURE_USE_C_MODULES],
             not_features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],  # If this feature is enabled we still use this file just with more contents
         ),
-        # TODO: Pass through system modules and pass this to all actions
-        # ActionConfigInfo(
-        #     actions = [SWIFT_ACTION_COMPILE_MODULE_INTERFACE],
-        #     configurators = [
-        #         add_arg("-disable-implicit-swift-modules"),
-        #     ],
-        #     features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
-        # ),
         ActionConfigInfo(
             actions = all_compile_action_names() + [
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
@@ -2040,7 +2055,13 @@ def _swift_module_search_path_map_fn(module):
         The dirname of the module's `.swiftmodule` file.
     """
     if module.swift:
-        search_path = module.swift.swiftmodule.dirname
+        swiftmodule = module.swift.swiftmodule
+        if type(swiftmodule) == "File":
+            search_path = swiftmodule.dirname
+        else:
+            # String paths to swiftmodule files should be handled through
+            # explicit module json files
+            return None
 
         # If the dirname also ends in .swiftmodule, remove it as well so that
         # the compiler finds the module *directory*.
@@ -2180,14 +2201,19 @@ def _explicit_swift_module_map_configurator(prerequisites, args, is_frontend = F
         return ConfigResultInfo()
 
     if is_frontend:
+        # If we're calling frontend directly we don't need to prepend each
+        # argument with -Xfrontend. Doing so will crash the invocation.
         args.add(
+            "-explicit-swift-module-map-file",
             prerequisites.explicit_swift_module_map_file,
-            format = "-Xwrapped-swift=-frontend-explicit-swift-module-map-file=%s",
         )
     else:
-        args.add(
-            prerequisites.explicit_swift_module_map_file,
-            format = "-Xwrapped-swift=-driver-explicit-swift-module-map-file=%s",
+        args.add_all(
+            [
+                "-explicit-swift-module-map-file",
+                prerequisites.explicit_swift_module_map_file,
+            ],
+            before_each = "-Xfrontend",
         )
     return ConfigResultInfo(
         inputs = prerequisites.explicit_swift_module_map_inputs + [

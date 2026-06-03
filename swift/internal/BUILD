@@ -328,7 +328,18 @@ bzl_library(
         ":utils",
         "//swift:providers",
         "//swift/internal:system_module_transition",
-        "@bazel_skylib//lib:dicts",
+        "@rules_cc//cc/common",
+    ],
+)
+
+bzl_library(
+    name = "system_swiftmodule",
+    srcs = ["system_swiftmodule.bzl"],
+    visibility = ["//swift:__subpackages__"],
+    deps = [
+        ":utils",
+        "//swift:providers",
+        "//swift/internal:system_module_transition",
         "@rules_cc//cc/common",
     ],
 )

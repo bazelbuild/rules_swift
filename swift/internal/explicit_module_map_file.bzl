@@ -51,8 +51,12 @@ def write_explicit_swift_module_map_file(
         if module_context.swift:
             swift_context = module_context.swift
             if swift_context.swiftmodule:
+                if type(swift_context.swiftmodule) == "File":
+                    swiftmodule_path = swift_context.swiftmodule.path
+                else:
+                    swiftmodule_path = swift_context.swiftmodule
                 has_swift_description = True
-                module_description["modulePath"] = swift_context.swiftmodule.path
+                module_description["modulePath"] = swiftmodule_path
 
         has_clang_description = (
             "clangModulePath" in module_description or

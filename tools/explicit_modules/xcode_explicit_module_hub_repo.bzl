@@ -61,6 +61,7 @@ def _xcode_explicit_module_hub_repo_impl(rctx):
     root_module_names = {
         "all_cross_import_overlays": True,
         "all_modules": True,
+        "implicit_modules": True,
     }
     for name in manifest:
         root_module_names[name] = True

@@ -80,10 +80,16 @@ def precompiled_modules_test_suite(name, tags = []):
         name = "{}_no_default_precompiled_modules_test".format(name),
         tags = all_tags,
         mnemonic = "SwiftCompile",
+        target_compatible_with = select({
+            "@build_bazel_apple_support//configs:apple": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
         target_under_test = "//test/fixtures/precompiled_modules:hello",
+        expected_argv = [
+            "-fmodule-file=SwiftShims",
+        ],
         not_expected_argv = [
             "-fmodule-file=Foundation",
-            "-fmodule-file=SwiftShims",
         ],
     )
 
@@ -153,9 +159,10 @@ def precompiled_modules_test_suite(name, tags = []):
         mnemonic = "SwiftCompile",
         target_under_test = "//test/fixtures/precompiled_modules:linking_cross_import_overlay",
         expected_argv = [
-            "-Xwrapped-swift=-driver-explicit-swift-module-map-file=$(BIN_DIR)/test/fixtures/precompiled_modules/linking_cross_import_overlay.swift-system-explicit-module-map.json",
+            "-Xfrontend -explicit-swift-module-map-file -Xfrontend $(BIN_DIR)/test/fixtures/precompiled_modules/linking_cross_import_overlay.swift-system-explicit-module-map.json",
             "-Xfrontend -disable-cross-import-overlay-search",
-            "-Xfrontend -swift-module-cross-import -Xfrontend Testing -Xfrontend __BAZEL_XCODE_DEVELOPER_DIR__/Platforms/MacOSX.platform/Developer/Library/Frameworks/Testing.framework/Modules/Testing.swiftcrossimport/AppKit.swiftoverlay",
+            "-Xfrontend -swift-module-cross-import -Xfrontend Testing -Xfrontend",
+            "Testing.framework/Modules/Testing.swiftcrossimport/AppKit.swiftoverlay",
         ],
         target_compatible_with = select({
             ":has_testing_appkit_overlay": [],
@@ -175,8 +182,10 @@ def precompiled_modules_test_suite(name, tags = []):
             "//test/fixtures/precompiled_modules:lower_version_bin_transitioned",
             "//test/fixtures/precompiled_modules:min_os_bin_transitioned",
             "//test/fixtures/precompiled_modules:objc_interop_bin_transitioned",
-            "//test/fixtures/precompiled_modules:xctest_with_testing_transitioned",
+            "//test/fixtures/precompiled_modules:xctest_explicit_deps_with_testing_no_modulemap_transitioned",
+            "//test/fixtures/precompiled_modules:xctest_explicit_deps_with_testing_transitioned",
             "//test/fixtures/precompiled_modules:xctest_with_testing_no_modulemap_transitioned",
+            "//test/fixtures/precompiled_modules:xctest_with_testing_transitioned",
         ] + [
             "//test/fixtures/precompiled_modules:" + t
             for t in CROSS_PLATFORM_TARGETS

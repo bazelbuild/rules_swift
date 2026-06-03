@@ -7,11 +7,12 @@ _FEATURES = [
     "swift.emit_c_module",
 ]
 
-def _features_transition_impl(settings, _attr):
+def _features_transition_impl(settings, attr):
     features = list(settings["//command_line_option:features"])
     for feature in _FEATURES:
         if feature not in features:
             features.append(feature)
+    features.extend(attr.extra_features)
     return {"//command_line_option:features": features}
 
 _features_transition = transition(
@@ -40,6 +41,9 @@ extract_swiftmodule = rule(
             cfg = _features_transition,
             doc = "A Swift target carrying SwiftInfo whose `.swiftmodule` should be extracted.",
             providers = [[SwiftInfo]],
+        ),
+        "extra_features": attr.string_list(
+            doc = "Additional features to apply when extracting the `.swiftmodule`.",
         ),
     },
     doc = "Re-exposes the `.swiftmodule` from a target's `SwiftInfo` as `DefaultInfo.files`.",
