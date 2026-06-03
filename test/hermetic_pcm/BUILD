@@ -67,7 +67,6 @@ sh_test(
     srcs = ["check_hermetic_pcm.sh"],
     args = ["$(rootpath :simple_obj_pcm)"],
     data = [":simple_obj_pcm"],
-    tags = ["xcode-26.4"],
     target_compatible_with = select({
         ":supports_hermetic_swiftmodule": [],
         "//conditions:default": ["@platforms//:incompatible"],
@@ -95,7 +94,6 @@ sh_test(
     srcs = ["check_hermetic_pcm.sh"],
     args = ["$(rootpath :simple_swift_header_pcm)"],
     data = [":simple_swift_header_pcm"],
-    tags = ["xcode-26.4"],
     target_compatible_with = select({
         ":supports_hermetic_swiftmodule": [],
         "//conditions:default": ["@platforms//:incompatible"],
@@ -125,7 +123,6 @@ sh_test(
     srcs = ["check_hermetic_swiftmodule.sh"],
     args = ["$(rootpath :downstream_swiftmodule)"],
     data = [":downstream_swiftmodule"],
-    tags = ["xcode-26.4"],
     target_compatible_with = select({
         ":supports_hermetic_swiftmodule": [],
         "//conditions:default": ["@platforms//:incompatible"],
@@ -148,7 +145,6 @@ sh_test(
         "Testing",
     ],
     data = [":testing_swiftmodule"],
-    tags = ["xcode-26.4"],
     target_compatible_with = select({
         ":supports_hermetic_swiftmodule": [],
         "//conditions:default": ["@platforms//:incompatible"],
@@ -224,7 +220,6 @@ sh_test(
         "test/hermetic_pcm/noop_plugin#NoopMacroPlugin",  # Make sure the plugin path is included
     ],
     data = [":downstream_with_plugin_swiftmodule"],
-    tags = ["xcode-26.4"],
     target_compatible_with = select({
         ":supports_hermetic_swiftmodule": [],
         "//conditions:default": ["@platforms//:incompatible"],

@@ -33,4 +33,12 @@ jobs:
           set -euo pipefail
 
           developer_dir=$(xcode-select -p)
-          DEVELOPER_DIR="$developer_dir" bazel test --test_output=errors --build_tests_only --test_tag_filters=xcode-26.4 --  //...
+          test_targets_file=$(mktemp)
+          trap 'rm -f "$test_targets_file"' EXIT
+
+          DEVELOPER_DIR="$developer_dir" bazel query 'tests(rdeps(//..., //test/hermetic_pcm:xcode_at_least_26_4))' > "$test_targets_file"
+          if [[ ! -s "$test_targets_file" ]]; then
+            echo "No tests found for //test/hermetic_pcm:xcode_at_least_26_4" >&2
+            exit 1
+          fi
+          DEVELOPER_DIR="$developer_dir" bazel test --test_output=errors --build_tests_only --target_pattern_file="$test_targets_file"
