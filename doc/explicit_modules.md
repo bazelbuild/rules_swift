@@ -13,8 +13,18 @@ build --features=swift.emit_c_module --host_features=swift.emit_c_module
 build --features=swift.use_c_modules --host_features=swift.use_c_modules
 ```
 
-In order to debug your application in `lldb` you do need to correctly
-set the source map so that it can discover the correct Xcode path:
+If possible you should also enable this feature (currently this might
+negatively impact the IDE experience, more testing is needed):
+
+```
+build --features=swift.use_explicit_swift_module_map --host_features=swift.use_explicit_swift_module_map
+```
+
+## Debugging
+
+In order to debug your application built with explicit modules in `lldb`
+you do need to correctly set the source map so that it can discover the
+correct Xcode path:
 
 ```
 settings set target.source-map /PLACEHOLDER_DEVELOPER_DIR /Applications/Xcode-26.4.0-RC1.app/Contents/Developer
@@ -186,8 +196,8 @@ copts = [
 ],
 ```
 
-This _should_ be harmless because Swift still validates when type
-checking.
+This _should_ be harmless because Swift still validates application
+extension usage when type checking.
 
 ## Handling frameworks with missing dependencies
 
