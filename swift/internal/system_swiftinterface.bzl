@@ -26,7 +26,6 @@ load(
     "SWIFT_FEATURE_SYSTEM_MODULE",
     "SWIFT_FEATURE_USE_C_MODULES",
 )
-load("@rules_swift//swift/internal:system_module_transition.bzl", "sdk_min_os_transition", "sdk_min_os_transition_attrs")
 load("@rules_swift//swift/internal:toolchain_utils.bzl", "SWIFT_SDK_TOOLCHAIN_TYPE")
 
 def _direct_clang_module_for_name(deps, module_name):
