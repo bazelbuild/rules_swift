@@ -15,19 +15,19 @@
 """Implementation of the `system_clang_module` rule."""
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("@build_bazel_rules_swift//swift:providers.bzl", "SwiftInfo", "create_clang_module_inputs", "create_swift_module_context")
-load("@build_bazel_rules_swift//swift:swift_common.bzl", "swift_common")
-load("@build_bazel_rules_swift//swift/internal:compiling.bzl", "precompile_clang_module")
+load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
+load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
+load("@rules_swift//swift:providers.bzl", "SwiftInfo", "create_clang_module_inputs", "create_swift_module_context")
+load("@rules_swift//swift:swift_common.bzl", "swift_common")
+load("@rules_swift//swift/internal:compiling.bzl", "precompile_clang_module")
 load(
-    "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
+    "@rules_swift//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_EMIT_C_MODULE",
     "SWIFT_FEATURE_SYSTEM_MODULE",
     "SWIFT_FEATURE_USE_C_MODULES",
 )
-load("@build_bazel_rules_swift//swift/internal:system_module_transition.bzl", "sdk_min_os_transition", "sdk_min_os_transition_attrs")
-load("@build_bazel_rules_swift//swift/internal:toolchain_utils.bzl", "SWIFT_SDK_TOOLCHAIN_TYPE")
-load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
-load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
+load("@rules_swift//swift/internal:system_module_transition.bzl", "sdk_min_os_transition", "sdk_min_os_transition_attrs")
+load("@rules_swift//swift/internal:toolchain_utils.bzl", "SWIFT_SDK_TOOLCHAIN_TYPE")
 
 def _system_clang_module_impl(ctx):
     swift_toolchain = swift_common.get_toolchain(ctx, toolchain_type = SWIFT_SDK_TOOLCHAIN_TYPE)

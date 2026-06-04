@@ -94,7 +94,7 @@ def layering_check_test_suite(name, tags = []):
         ],
         tags = all_tags,
         target_compatible_with = select({
-            "@build_bazel_apple_support//configs:apple": [],
+            "@apple_support//configs:apple": [],
             "//conditions:default": ["@platforms//:incompatible"],
         }),
     )

@@ -1,4 +1,4 @@
-load("@build_bazel_apple_support//rules:universal_binary.bzl", "universal_binary")
+load("@apple_support//rules:universal_binary.bzl", "universal_binary")
 
 package(default_visibility = ["//visibility:public"])
 

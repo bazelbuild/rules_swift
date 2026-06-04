@@ -15,7 +15,7 @@
 """Tests for environment attributes on `swift_{binary,test}."""
 
 load(
-    "@build_bazel_rules_swift//test/rules:provider_test.bzl",
+    "@rules_swift//test/rules:provider_test.bzl",
     "provider_test",
 )
 

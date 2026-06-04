@@ -54,7 +54,7 @@ transition_binary(
     tags = FIXTURE_TAGS,
     target = ":foundation_consumer",
     target_compatible_with = select({
-        "@build_bazel_apple_support//configs:apple": [],
+        "@apple_support//configs:apple": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     transitive_features = [
@@ -69,7 +69,7 @@ transition_binary(
     tags = FIXTURE_TAGS,
     target = ":foundation_consumer",
     target_compatible_with = select({
-        "@build_bazel_apple_support//configs:apple": [],
+        "@apple_support//configs:apple": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     transitive_features = [
@@ -108,7 +108,7 @@ transition_binary(
     tags = FIXTURE_TAGS,
     target = ":layering_violation",
     target_compatible_with = select({
-        "@build_bazel_apple_support//configs:apple": [],
+        "@apple_support//configs:apple": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     transitive_features = [
@@ -124,7 +124,7 @@ transition_binary(
     tags = FIXTURE_TAGS,
     target = ":layering_violation",
     target_compatible_with = select({
-        "@build_bazel_apple_support//configs:apple": [],
+        "@apple_support//configs:apple": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     transitive_features = [

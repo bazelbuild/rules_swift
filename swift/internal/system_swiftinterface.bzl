@@ -14,19 +14,19 @@
 
 """Compile a system SDK swiftinterface to a consumable swiftmodule."""
 
-load("@build_bazel_rules_swift//swift:providers.bzl", "SwiftInfo", "create_swift_module_context", "create_swift_module_inputs")
-load("@build_bazel_rules_swift//swift:swift_common.bzl", "swift_common")
-load("@build_bazel_rules_swift//swift/internal:compiling.bzl", "compile_module_interface")
+load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
+load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
+load("@rules_swift//swift:providers.bzl", "SwiftInfo", "create_swift_module_context", "create_swift_module_inputs")
+load("@rules_swift//swift:swift_common.bzl", "swift_common")
+load("@rules_swift//swift/internal:compiling.bzl", "compile_module_interface")
 load(
-    "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
+    "@rules_swift//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_EMIT_C_MODULE",
     "SWIFT_FEATURE_SUPPRESS_WARNINGS",
     "SWIFT_FEATURE_SYSTEM_MODULE",
     "SWIFT_FEATURE_USE_C_MODULES",
 )
-load("@build_bazel_rules_swift//swift/internal:toolchain_utils.bzl", "SWIFT_SDK_TOOLCHAIN_TYPE")
-load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
-load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
+load("@rules_swift//swift/internal:toolchain_utils.bzl", "SWIFT_SDK_TOOLCHAIN_TYPE")
 
 def _direct_clang_module_for_name(deps, module_name):
     for dep in deps:

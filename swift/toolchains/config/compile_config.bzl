@@ -1661,7 +1661,7 @@ def _tmpdir_module_cache_configurator(prerequisites, args):
     args.add(
         "-module-cache-path",
         paths.join(
-            "/tmp/__build_bazel_rules_swift",
+            "/tmp/__rules_swift",
             "swift_module_cache",
             prerequisites.workspace_name,
         ),

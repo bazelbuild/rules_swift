@@ -347,11 +347,11 @@ def _swift_autoconfiguration_impl(repository_ctx):
         "\n".join([
             """\
 load(
-    "@build_bazel_rules_swift//swift/toolchains:swift_toolchain.bzl",
+    "@rules_swift//swift/toolchains:swift_toolchain.bzl",
     "swift_toolchain",
 )
 load(
-    "@build_bazel_rules_swift//swift/toolchains:xcode_swift_toolchain.bzl",
+    "@rules_swift//swift/toolchains:xcode_swift_toolchain.bzl",
     "xcode_swift_toolchain",
 )
 

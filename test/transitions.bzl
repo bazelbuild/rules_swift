@@ -61,7 +61,7 @@ _TRANSITION_ATTRS = {
         doc = "Optional value to set `--tvos_minimum_os` to.",
     ),
     "platform": attr.string(
-        doc = "Optional target platform label (e.g. `@build_bazel_apple_support//platforms:macos_x86_64`).",
+        doc = "Optional target platform label (e.g. `@apple_support//platforms:macos_x86_64`).",
     ),
     "transitive_features": attr.string_list(
         doc = "Feature strings appended to `//command_line_option:features` and `//command_line_option:host_features`.",

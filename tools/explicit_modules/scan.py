@@ -16,35 +16,35 @@ _SDK_CONSTRAINTS = {
     "MacOSX": ["@platforms//os:macos"],
     "iPhoneOS": [
         "@platforms//os:ios",
-        "@build_bazel_apple_support//constraints:device",
+        "@apple_support//constraints:device",
     ],
     "iPhoneSimulator": [
         "@platforms//os:ios",
-        "@build_bazel_apple_support//constraints:simulator",
+        "@apple_support//constraints:simulator",
     ],
     "AppleTVOS": [
         "@platforms//os:tvos",
-        "@build_bazel_apple_support//constraints:device",
+        "@apple_support//constraints:device",
     ],
     "AppleTVSimulator": [
         "@platforms//os:tvos",
-        "@build_bazel_apple_support//constraints:simulator",
+        "@apple_support//constraints:simulator",
     ],
     "WatchOS": [
         "@platforms//os:watchos",
-        "@build_bazel_apple_support//constraints:device",
+        "@apple_support//constraints:device",
     ],
     "WatchSimulator": [
         "@platforms//os:watchos",
-        "@build_bazel_apple_support//constraints:simulator",
+        "@apple_support//constraints:simulator",
     ],
     "XROS": [
         "@platforms//os:visionos",
-        "@build_bazel_apple_support//constraints:device",
+        "@apple_support//constraints:device",
     ],
     "XRSimulator": [
         "@platforms//os:visionos",
-        "@build_bazel_apple_support//constraints:simulator",
+        "@apple_support//constraints:simulator",
     ],
 }
 
@@ -111,7 +111,7 @@ _TARGETS_PER_SDK = {
 
 _HEADER = """\
 load(
-    "@build_bazel_rules_swift//swift:swift.bzl",
+    "@rules_swift//swift:swift.bzl",
     "swift_cross_import_overlay",
     "swift_cross_import_overlay_group",
     "system_clang_module",

@@ -9,8 +9,8 @@ directly.
 For example:
 
 ```build
-load("@build_bazel_rules_swift//swift:swift_library.bzl", "swift_library")
-load("@build_bazel_rules_swift//proto:swift_proto_library.bzl", "swift_proto_library")
+load("@rules_swift//swift:swift_library.bzl", "swift_library")
+load("@rules_swift//proto:swift_proto_library.bzl", "swift_proto_library")
 ```
 
 On this page:
@@ -116,9 +116,9 @@ swift_compiler_plugin(
     name = "Macros",
     srcs = glob(["Macros/*.swift"]),
     deps = [
-        "@SwiftSyntax",
-        "@SwiftSyntax//:SwiftCompilerPlugin",
-        "@SwiftSyntax//:SwiftSyntaxMacros",
+        "@swift-syntax//:SwiftSyntax",
+        "@swift-syntax//:SwiftCompilerPlugin",
+        "@swift-syntax//:SwiftSyntaxMacros",
     ],
 )
 
@@ -128,7 +128,7 @@ swift_test(
     srcs = glob(["MacrosTests/*.swift"]),
     deps = [
         ":Macros",
-        "@SwiftSyntax//:SwiftSyntaxMacrosTestSupport",
+        "@swift-syntax//:SwiftSyntaxMacrosTestSupport",
     ],
 )
 
@@ -335,7 +335,7 @@ If you want to import a non-Swift, non-Objective-C target into Swift using the
 module name that is automatically derived from the BUILD label, there is no need
 to declare an instance of `swift_interop_hint`. A canonical one that requests
 module name derivation has been provided in
-`@build_bazel_rules_swift//swift:auto_module`. Simply add it to the `aspect_hints` of
+`@rules_swift//swift:auto_module`. Simply add it to the `aspect_hints` of
 the target you wish to import:
 
 ```build
@@ -344,7 +344,7 @@ cc_library(
     name = "somelib",
     srcs = ["somelib.c"],
     hdrs = ["somelib.h"],
-    aspect_hints = ["@build_bazel_rules_swift//swift:auto_module"],
+    aspect_hints = ["@rules_swift//swift:auto_module"],
 )
 ```
 
@@ -417,7 +417,7 @@ that it can compile and which do not.
 
 In these cases, there is no need to declare an instance of `swift_interop_hint`.
 A canonical one that suppresses module generation has been provided in
-`@build_bazel_rules_swift//swift:no_module`. Simply add it to the `aspect_hints` of
+`@rules_swift//swift:no_module`. Simply add it to the `aspect_hints` of
 the target whose module you wish to suppress:
 
 ```build
@@ -426,7 +426,7 @@ objc_library(
     name = "somelib",
     srcs = ["somelib.mm"],
     hdrs = ["somelib.h"],
-    aspect_hints = ["@build_bazel_rules_swift//swift:no_module"],
+    aspect_hints = ["@rules_swift//swift:no_module"],
 )
 ```
 
@@ -552,11 +552,11 @@ swift_module_mapping(
 ```
 
 Then, pass the label of that target to Bazel using the
-`--@build_bazel_rules_swift//swift:module_mapping` build flag:
+`--@rules_swift//swift:module_mapping` build flag:
 
 ```shell
 bazel build //some/package:Framework \
-    --@build_bazel_rules_swift//swift:module_mapping=//some/package:mapping
+    --@rules_swift//swift:module_mapping=//some/package:mapping
 ```
 
 When `Utils` is compiled, it will be given the module name `GameUtils` instead.
@@ -1029,9 +1029,9 @@ swift_compiler_plugin(
     name = "Macros",
     srcs = glob(["Macros/*.swift"]),
     deps = [
-        "@SwiftSyntax",
-        "@SwiftSyntax//:SwiftCompilerPlugin",
-        "@SwiftSyntax//:SwiftSyntaxMacros",
+        "@swift-syntax//:SwiftSyntax",
+        "@swift-syntax//:SwiftCompilerPlugin",
+        "@swift-syntax//:SwiftSyntaxMacros",
     ],
 )
 

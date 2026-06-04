@@ -94,11 +94,11 @@ swift_module_mapping(
 ```
 
 Then, pass the label of that target to Bazel using the
-`--@build_bazel_rules_swift//swift:module_mapping` build flag:
+`--@rules_swift//swift:module_mapping` build flag:
 
 ```shell
 bazel build //some/package:Framework \\
-    --@build_bazel_rules_swift//swift:module_mapping=//some/package:mapping
+    --@rules_swift//swift:module_mapping=//some/package:mapping
 ```
 
 When `Utils` is compiled, it will be given the module name `GameUtils` instead.

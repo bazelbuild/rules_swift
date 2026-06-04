@@ -37,11 +37,11 @@ int main(int argc, char* argv[]) {
     // Determine which version of index-import to use based on the environment
     auto env = GetCurrentEnvironment();
     if (env.find("__RULES_SWIFT_USE_LEGACY_INDEX_IMPORT") != env.end()) {
-      index_import_path = runfiles->Rlocation(
-          "build_bazel_rules_swift_index_import_5_8/index-import");
+      index_import_path =
+          runfiles->Rlocation("rules_swift_index_import_5_8/index-import");
     } else {
-      index_import_path = runfiles->Rlocation(
-          "build_bazel_rules_swift_index_import_6_1/index-import");
+      index_import_path =
+          runfiles->Rlocation("rules_swift_index_import_6_1/index-import");
     }
   }
 

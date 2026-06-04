@@ -96,7 +96,7 @@ If you want to import a non-Swift, non-Objective-C target into Swift using the
 module name that is automatically derived from the BUILD label, there is no need
 to declare an instance of `swift_interop_hint`. A canonical one that requests
 module name derivation has been provided in
-`@build_bazel_rules_swift//swift:auto_module`. Simply add it to the `aspect_hints` of
+`@rules_swift//swift:auto_module`. Simply add it to the `aspect_hints` of
 the target you wish to import:
 
 ```build
@@ -105,7 +105,7 @@ cc_library(
     name = "somelib",
     srcs = ["somelib.c"],
     hdrs = ["somelib.h"],
-    aspect_hints = ["@build_bazel_rules_swift//swift:auto_module"],
+    aspect_hints = ["@rules_swift//swift:auto_module"],
 )
 ```
 
@@ -178,7 +178,7 @@ that it can compile and which do not.
 
 In these cases, there is no need to declare an instance of `swift_interop_hint`.
 A canonical one that suppresses module generation has been provided in
-`@build_bazel_rules_swift//swift:no_module`. Simply add it to the `aspect_hints` of
+`@rules_swift//swift:no_module`. Simply add it to the `aspect_hints` of
 the target whose module you wish to suppress:
 
 ```build
@@ -187,7 +187,7 @@ objc_library(
     name = "somelib",
     srcs = ["somelib.mm"],
     hdrs = ["somelib.h"],
-    aspect_hints = ["@build_bazel_rules_swift//swift:no_module"],
+    aspect_hints = ["@rules_swift//swift:no_module"],
 )
 ```
 

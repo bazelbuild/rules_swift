@@ -14,7 +14,7 @@ swift_binary(
     name = "my_binary",
     ...
     data = ["//path/to/my/data.txt"],
-    deps = ["@build_bazel_rules_swift//swift/runfiles"],
+    deps = ["@rules_swift//swift/runfiles"],
 )
 ```
 

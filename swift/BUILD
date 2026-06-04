@@ -107,10 +107,10 @@ bzl_library(
         "//swift/internal:output_groups",
         "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
+        "@apple_support//lib:apple_support",
+        "@apple_support//lib:lipo",
+        "@apple_support//lib:transitions",
         "@bazel_skylib//lib:dicts",
-        "@build_bazel_apple_support//lib:apple_support",
-        "@build_bazel_apple_support//lib:lipo",
-        "@build_bazel_apple_support//lib:transitions",
         "@rules_cc//cc/common",
     ],
 )
@@ -403,7 +403,7 @@ per_module_swiftcopt_flag(
 # //tools/protoc_wrapper:protoc for swift_grpc_library and swift_proto_library,
 # unless you set --proto_compiler manually.
 # If you use this flag, we recommend to also set
-# --proto_compiler=@build_bazel_rules_swift//tools/protoc_wrapper:protoc to
+# --proto_compiler=@rules_swift//tools/protoc_wrapper:protoc to
 # ensure that the same proto compiler is used across your builds.
 bool_flag(
     name = "universal_tools",

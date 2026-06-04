@@ -1,8 +1,8 @@
-load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load(
-    "@build_bazel_apple_support//configs:platforms.bzl",
+    "@apple_support//configs:platforms.bzl",
     "APPLE_PLATFORMS_CONSTRAINTS",
 )
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 
 licenses(["notice"])
 
@@ -75,7 +75,7 @@ toolchain(
         "@platforms//os:linux",
         "@platforms//cpu:x86_64",
     ],
-    toolchain = "@build_bazel_rules_swift_local_config//:linux-toolchain",
+    toolchain = "@rules_swift_local_config//:linux-toolchain",
     toolchain_type = "//toolchains:toolchain_type",
     visibility = ["//visibility:public"],
 )
@@ -90,7 +90,7 @@ toolchain(
         "@platforms//os:linux",
         "@platforms//cpu:aarch64",
     ],
-    toolchain = "@build_bazel_rules_swift_local_config//:linux-toolchain",
+    toolchain = "@rules_swift_local_config//:linux-toolchain",
     toolchain_type = "//toolchains:toolchain_type",
     visibility = ["//visibility:public"],
 )
@@ -102,7 +102,7 @@ toolchain(
             "@platforms//os:macos",
         ],
         target_compatible_with = constraints,
-        toolchain = "@build_bazel_rules_swift_local_config//:xcode-sdk-toolchain",
+        toolchain = "@rules_swift_local_config//:xcode-sdk-toolchain",
         toolchain_type = "//toolchains:sdk_toolchain_type",
         visibility = ["//visibility:public"],
     )
@@ -116,7 +116,7 @@ toolchain(
             "@platforms//os:macos",
         ],
         target_compatible_with = constraints,
-        toolchain = "@build_bazel_rules_swift_local_config//:xcode-toolchain",
+        toolchain = "@rules_swift_local_config//:xcode-toolchain",
         toolchain_type = "//toolchains:toolchain_type",
         visibility = ["//visibility:public"],
     )
@@ -133,7 +133,7 @@ toolchain(
         "@platforms//os:windows",
         "@platforms//cpu:x86_64",
     ],
-    toolchain = "@build_bazel_rules_swift_local_config//:windows-toolchain",
+    toolchain = "@rules_swift_local_config//:windows-toolchain",
     toolchain_type = "//toolchains:toolchain_type",
     visibility = ["//visibility:public"],
 )

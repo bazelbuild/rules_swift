@@ -21,8 +21,8 @@ directly.
 For example:
 
 ```build
-load("@build_bazel_rules_swift//swift:swift_library.bzl", "swift_library")
-load("@build_bazel_rules_swift//proto:swift_proto_library.bzl", "swift_proto_library")
+load("@rules_swift//swift:swift_library.bzl", "swift_library")
+load("@rules_swift//proto:swift_proto_library.bzl", "swift_proto_library")
 ```
 """
 

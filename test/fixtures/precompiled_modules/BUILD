@@ -38,7 +38,7 @@ swift_binary(
     ],
     tags = FIXTURE_TAGS,
     target_compatible_with = select({
-        "@build_bazel_apple_support//configs:apple": [],
+        "@apple_support//configs:apple": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     deps = [
@@ -70,7 +70,7 @@ objc_library(
     aspect_hints = [":Greeter_hint"],
     tags = FIXTURE_TAGS,
     target_compatible_with = select({
-        "@build_bazel_apple_support//configs:apple": [],
+        "@apple_support//configs:apple": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     deps = ["@system_sdk//:Foundation"],
@@ -111,7 +111,7 @@ objc_library(
     copts = ["-fno-stack-protector"],
     tags = FIXTURE_TAGS,
     target_compatible_with = select({
-        "@build_bazel_apple_support//configs:apple": [],
+        "@apple_support//configs:apple": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
 )
@@ -129,7 +129,7 @@ swift_binary(
     plugins = [":stub_plugin"],
     tags = FIXTURE_TAGS,
     target_compatible_with = select({
-        "@build_bazel_apple_support//configs:apple": [],
+        "@apple_support//configs:apple": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     deps = [":GreeterImplicit"],
@@ -154,7 +154,7 @@ swift_test(
     discover_tests = False,
     tags = FIXTURE_TAGS,
     target_compatible_with = select({
-        "@build_bazel_apple_support//configs:apple": [],
+        "@apple_support//configs:apple": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     deps = [
@@ -214,7 +214,7 @@ swift_test(
     discover_tests = False,
     tags = FIXTURE_TAGS,
     target_compatible_with = select({
-        "@build_bazel_apple_support//configs:apple": [],
+        "@apple_support//configs:apple": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     deps = [
@@ -257,7 +257,7 @@ swift_binary(
     features = ["-treat_warnings_as_errors"],
     tags = FIXTURE_TAGS,
     target_compatible_with = ["@platforms//os:ios"] + select({
-        "@build_bazel_apple_support//configs:apple": [],
+        "@apple_support//configs:apple": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     deps = ["@system_sdk//:Testing"],
@@ -266,11 +266,11 @@ swift_binary(
 transition_binary(
     name = "available_testing_import_ios_12",
     ios_minimum_os = "12.0",
-    platform = "@build_bazel_apple_support//platforms:ios_arm64",
+    platform = "@apple_support//platforms:ios_arm64",
     tags = FIXTURE_TAGS,
     target = ":available_testing_import",
     target_compatible_with = select({
-        "@build_bazel_apple_support//configs:apple": [],
+        "@apple_support//configs:apple": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     transitive_features = [
@@ -286,7 +286,7 @@ swift_binary(
     srcs = ["c_module_imports.swift"],
     tags = FIXTURE_TAGS,
     target_compatible_with = select({
-        "@build_bazel_apple_support//configs:apple": [],
+        "@apple_support//configs:apple": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
 )
@@ -311,7 +311,7 @@ mixed_language_library(
     swift_srcs = ["MixedGreeter.swift"],
     tags = FIXTURE_TAGS,
     target_compatible_with = select({
-        "@build_bazel_apple_support//configs:apple": [],
+        "@apple_support//configs:apple": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
 )
@@ -342,7 +342,7 @@ mixed_language_library(
     swift_srcs = ["MixedGreeter.swift"],
     tags = FIXTURE_TAGS,
     target_compatible_with = select({
-        "@build_bazel_apple_support//configs:apple": [],
+        "@apple_support//configs:apple": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     deps = ["@system_sdk//:Foundation"],
@@ -353,7 +353,7 @@ swift_binary(
     srcs = ["mixed_greeter_main.swift"],
     tags = FIXTURE_TAGS,
     target_compatible_with = select({
-        "@build_bazel_apple_support//configs:apple": [],
+        "@apple_support//configs:apple": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     deps = [
@@ -395,7 +395,7 @@ swift_verify_test(
     module_name = "FoundationRequiresExplicitDep",
     tags = FIXTURE_TAGS,
     target_compatible_with = select({
-        "@build_bazel_apple_support//configs:apple": [],
+        "@apple_support//configs:apple": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     deps = ["@system_sdk//:CoreFoundation"],
@@ -551,7 +551,7 @@ swift_binary(
     copts = ["-suppress-warnings"],
     tags = FIXTURE_TAGS,
     target_compatible_with = select({
-        "@build_bazel_apple_support//configs:apple": [],
+        "@apple_support//configs:apple": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     deps = [

@@ -235,7 +235,7 @@ SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE = "swift.use_global_module_cache"
 
 # If enabled, and Swift compilation actions will use the shared Clang module
 # cache path written to
-# `/private/tmp/__build_bazel_rules_swift/swift_module_cache/REPOSITORY_NAME`.
+# `/private/tmp/__rules_swift/swift_module_cache/REPOSITORY_NAME`.
 # This makes the embedded Clang module breadcrumbs deterministic between Bazel
 # instances, because they are always embedded as absolute paths. Note that the
 # use of this cache is non-hermetic--the cached modules are not wiped between
