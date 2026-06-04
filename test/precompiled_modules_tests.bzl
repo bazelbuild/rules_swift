@@ -84,7 +84,7 @@ def precompiled_modules_test_suite(name, tags = []):
         tags = all_tags,
         mnemonic = "SwiftCompile",
         target_compatible_with = select({
-            "@build_bazel_apple_support//configs:apple": [],
+            "@apple_support//configs:apple": [],
             "//conditions:default": ["@platforms//:incompatible"],
         }),
         target_under_test = "//test/fixtures/precompiled_modules:hello",
