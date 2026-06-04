@@ -1298,15 +1298,7 @@ def compile_action_configs(
             actions = all_compile_action_names() + [
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
             ],
-            configurators = [
-                # Unconditionally enable this in Swift 5 mode, but not in Swift
-                # 6 mode (since it is enabled by default in Swift 6, and passing
-                # this flag causes an annoying warning).
-                add_arg("-enable-upcoming-feature", "BareSlashRegexLiterals"),
-            ],
-            not_features = [
-                SWIFT_FEATURE_ENABLE_V6,
-            ],
+            configurators = [add_arg("-enable-bare-slash-regex")],
         ),
         ActionConfigInfo(
             actions = all_compile_action_names(),
