@@ -24,7 +24,8 @@ build --features=swift.use_explicit_swift_module_map --host_features=swift.use_e
 
 In order to debug your application built with explicit modules in `lldb`
 you do need to correctly set the source map so that it can discover the
-correct Xcode path:
+correct Xcode path (this is done automatically if you're debugging with
+[`rules_xcodeproj`](https://github.com/MobileNativeFoundation/rules_xcodeproj)):
 
 ```
 settings set target.source-map /PLACEHOLDER_DEVELOPER_DIR /Applications/Xcode-26.4.0-RC1.app/Contents/Developer
