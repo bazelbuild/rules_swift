@@ -58,6 +58,7 @@ load(
     "SWIFT_FEATURE_MODULE_HOME_IS_CWD",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_REMAP_XCODE_PATH",
+    "SWIFT_FEATURE_USE_C_MODULES",
     "SWIFT_FEATURE__SUPPORTS_DEVELOPER_DIR",
     "SWIFT_FEATURE__SUPPORTS_HERMETIC_SWIFTMODULE",
 )
@@ -458,6 +459,7 @@ def _all_action_configs(
                 add_arg("-Xfrontend", "-clang-target"),
                 add_arg("-Xfrontend", sdk_version_triple),
             ],
+            features = [SWIFT_FEATURE_USE_C_MODULES],
         ),
         ActionConfigInfo(
             # Actions that run directly with -frontend so -Xfrontend is invalid
@@ -468,6 +470,7 @@ def _all_action_configs(
             configurators = [
                 add_arg("-clang-target", sdk_version_triple),
             ],
+            features = [SWIFT_FEATURE_USE_C_MODULES],
         ),
     ])
 
