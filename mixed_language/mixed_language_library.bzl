@@ -306,6 +306,7 @@ a mixed language Swift library, use a clang only library rule like \
     headers_library_name = name + "_headers"
     objc_library(
         name = headers_library_name,
+        testonly = testonly,
         hdrs = adjusted_hdrs,
         aspect_hints = aspect_hints + [":" + internal_swift_interop_name],
         defines = clang_defines,

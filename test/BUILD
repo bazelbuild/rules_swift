@@ -17,6 +17,7 @@ load(":interop_hints_tests.bzl", "interop_hints_test_suite")
 load(":layering_check_tests.bzl", "layering_check_test_suite")
 load(":localized_strings_tests.bzl", "localized_strings_test_suite")
 load(":mainattr_tests.bzl", "mainattr_test_suite")
+load(":mixed_language_tests.bzl", "mixed_language_test_suite")
 load(":module_cache_settings_tests.bzl", "module_cache_settings_test_suite")
 load(":module_interface_tests.bzl", "module_interface_test_suite")
 load(":module_mapping_tests.bzl", "module_mapping_test_suite")
@@ -68,6 +69,8 @@ layering_check_test_suite(name = "layering_check")
 localized_strings_test_suite(name = "localized_strings")
 
 mainattr_test_suite(name = "mainattr")
+
+mixed_language_test_suite(name = "mixed_language")
 
 module_cache_settings_test_suite(name = "module_cache_settings")
 
