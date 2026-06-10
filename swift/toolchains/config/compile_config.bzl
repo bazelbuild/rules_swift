@@ -58,6 +58,7 @@ load(
     "SWIFT_FEATURE_OPT_USES_OSIZE",
     "SWIFT_FEATURE_OPT_USES_WMO",
     "SWIFT_FEATURE_REWRITE_GENERATED_HEADER",
+    "SWIFT_FEATURE_STRICT_MEMORY_SAFETY",
     "SWIFT_FEATURE_SYSTEM_MODULE",
     "SWIFT_FEATURE_USE_C_MODULES",
     "SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP",
@@ -909,6 +910,13 @@ def compile_action_configs(
         ActionConfigInfo(
             actions = all_compile_action_names(),
             configurators = [_conditional_compilation_flag_configurator],
+        ),
+        ActionConfigInfo(
+            actions = all_compile_action_names(),
+            configurators = [add_arg("-strict-memory-safety")],
+            features = [
+                SWIFT_FEATURE_STRICT_MEMORY_SAFETY,
+            ],
         ),
         ActionConfigInfo(
             actions = all_compile_action_names(),

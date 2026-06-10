@@ -247,6 +247,9 @@ SWIFT_FEATURE_INTERNALIZE_AT_LINK = "swift.internalize_at_link"
 # This disables checking for potentially unavailable APIs.
 SWIFT_FEATURE_DISABLE_AVAILABILITY_CHECKING = "swift.disable_availability_checking"
 
+# If enabled, requests the `-strict-memory-safety` compiler flag.
+SWIFT_FEATURE_STRICT_MEMORY_SAFETY = "swift.strict_memory_safety"
+
 # If enabled, parallelize the compilation of Swift modules and their object
 # files by registering separate actions for each.
 SWIFT_FEATURE_COMPILE_IN_PARALLEL = "swift.compile_in_parallel"
