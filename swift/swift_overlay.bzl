@@ -62,7 +62,7 @@ def _swift_overlay_impl(ctx):
         copts = ctx.attr.copts,
         defines = ctx.attr.defines,
         disabled_features = ctx.disabled_features,
-        enabled_features = ctx.features,
+        enabled_features = features,
         include_dev_srch_paths = include_dev_srch_paths,
         library_evolution = ctx.attr.library_evolution,
         linkopts = ctx.attr.linkopts,
