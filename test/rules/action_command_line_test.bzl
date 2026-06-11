@@ -73,18 +73,20 @@ def _action_command_line_test_impl(ctx):
         if expected + " " not in concatenated_args:
             unittest.fail(
                 env,
-                "{}expected argv to contain '{}', but it did not".format(
+                "{}expected argv to contain '{}', but it did not. Actual argv: {}".format(
                     message_prefix,
                     expected,
+                    action.argv,
                 ),
             )
     for not_expected in ctx.attr.not_expected_argv:
         if not_expected + " " in concatenated_args:
             unittest.fail(
                 env,
-                "{}expected argv to not contain '{}', but it did".format(
+                "{}expected argv to not contain '{}', but it did. Actual argv: {}".format(
                     message_prefix,
                     not_expected,
+                    action.argv,
                 ),
             )
 

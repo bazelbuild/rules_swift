@@ -27,6 +27,7 @@ licenses(["notice"])
 swift_library(
     name = "toy_module_library",
     srcs = ["ToyModule.swift"],
+    features = ["-swift.enable_v6"],
     library_evolution = True,
     module_name = "ToyModule",
     tags = FIXTURE_TAGS,
@@ -46,5 +47,14 @@ swift_library(
     srcs = ["ToyModule.swift"],
     library_evolution = False,
     module_name = "ToyModuleNoEvolution",
+    tags = FIXTURE_TAGS,
+)
+
+swift_library(
+    name = "toy_module_library_with_evolution_and_v6",
+    srcs = ["ToyModule.swift"],
+    features = ["swift.enable_v6"],
+    library_evolution = True,
+    module_name = "ToyModuleV6",
     tags = FIXTURE_TAGS,
 )

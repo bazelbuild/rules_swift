@@ -904,6 +904,16 @@ def compile_action_configs(
                 SWIFT_FEATURE_ENABLE_V6,
             ],
         ),
+        ActionConfigInfo(
+            actions = all_compile_action_names(),
+            configurators = [add_arg("-swift-version", "5")],
+            features = [
+                SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION,
+            ],
+            not_features = [
+                SWIFT_FEATURE_ENABLE_V6,
+            ],
+        ),
 
         # User-defined conditional compilation flags (defined for Swift; those
         # passed directly to ClangImporter are handled above).

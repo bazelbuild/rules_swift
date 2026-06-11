@@ -19,6 +19,10 @@ load(
     "build_test",
 )
 load(
+    "@build_bazel_rules_swift//test/rules:action_command_line_test.bzl",
+    "action_command_line_test",
+)
+load(
     "@build_bazel_rules_swift//test/rules:provider_test.bzl",
     "provider_test",
 )
@@ -70,6 +74,32 @@ def module_interface_test_suite(name, tags = []):
         provider = "DefaultInfo",
         tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/module_interface/library:toy_module_library_without_library_evolution",
+    )
+
+    # Verify that -swift-version 5 is passed when library_evolution is True.
+    action_command_line_test(
+        name = "{}_swift_library_with_evolution_passes_swift_version_5".format(name),
+        expected_argv = ["-swift-version 5"],
+        mnemonic = select({
+            "@build_bazel_apple_support//constraints:apple": "SwiftCompile",
+            "//conditions:default": "SwiftCompileModule",
+        }),
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/module_interface/library:toy_module_library",
+    )
+
+    # Verify that -swift-version 6 is passed (and not 5) when
+    # library_evolution is True and v6 is enabled.
+    action_command_line_test(
+        name = "{}_swift_library_with_evolution_and_v6_passes_swift_version_6".format(name),
+        expected_argv = ["-swift-version 6"],
+        not_expected_argv = ["-swift-version 5"],
+        mnemonic = select({
+            "@build_bazel_apple_support//constraints:apple": "SwiftCompile",
+            "//conditions:default": "SwiftCompileModule",
+        }),
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/module_interface/library:toy_module_library_with_evolution_and_v6",
     )
 
     native.test_suite(
