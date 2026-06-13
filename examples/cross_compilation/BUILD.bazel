@@ -60,6 +60,26 @@ transition_binary(
     platform = ":wasm32-wasip1",
 )
 
+# A static web app embedding the reactor: `index.html` + `Reactor.wasm` in one
+# directory. Serve it (e.g. `python3 -m http.server -d
+# bazel-bin/examples/cross_compilation/web_app`) and open it — the page calls
+# the reactor's exports from JavaScript and shows the greeting Swift produced.
+# `web/verify.mjs` does the same headlessly under Node. See `web/README.md`.
+genrule(
+    name = "web_app",
+    srcs = [
+        "web/index.html",
+        ":Reactor.wasm",
+    ],
+    outs = [
+        "web_app/index.html",
+        "web_app/Reactor.wasm",
+    ],
+    cmd = "cp $(location web/index.html) $(RULEDIR)/web_app/index.html && " +
+          "cp $(location :Reactor.wasm) $(RULEDIR)/web_app/Reactor.wasm",
+    tags = ["manual"],
+)
+
 # ---------------------------------------------------------------------------
 # Android: a JNI shared library, loaded by Kotlin via `System.loadLibrary`.
 # ---------------------------------------------------------------------------
