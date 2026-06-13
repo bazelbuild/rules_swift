@@ -186,6 +186,19 @@ register_toolchains(
 )
 ```
 
+If you build on a single host platform, you can register everything the
+extension generates (standalone, embedded, and Swift-SDK toolchains) in one
+line instead of listing the matrix:
+
+```bzl
+register_toolchains("@swift_toolchain//:all")
+```
+
+Avoid `:all` when you configure multiple Linux distributions, for the same
+reason the standalone host toolchains are registered explicitly: rules_swift
+cannot yet auto-select a distribution, so `:all` would make the host/exec
+toolchain ambiguous across them.
+
 Then build with a platform carrying the matching constraints, for example:
 
 ```bzl
@@ -213,14 +226,39 @@ bazel build //my:binary --platforms=//:wasm32-wasip1
 See `examples/cross_compilation` for a complete example, including building
 through a platform transition.
 
+### Shared libraries and WebAssembly reactors
+
+A plain `swift_binary` links an executable: a WASI *command* module for
+WebAssembly, or an ordinary executable for Android. To produce the artifacts
+those ecosystems actually load, set `linkshared = True`:
+
+* **Android (JNI):** produces `lib<name>.so`, loadable with
+  `System.loadLibrary`. Export functions with `@_cdecl`; the Android Swift
+  SDK's `Android` module provides the JNI types, so the entry points can be
+  written entirely in Swift.
+* **WebAssembly (reactor):** produces `<name>.wasm` linked with
+  `-mexec-model=reactor` — no `main`, initializers run via the exported
+  `_initialize`, and the module exposes the functions a JS host calls. Keep
+  each exported function with `linkopts = ["-Xlinker", "--export=<symbol>"]`.
+
+A `swift_binary(linkshared = True)` may depend on ordinary `swift_library`
+targets (and link them statically), so the platform-specific entry point and
+the shared business logic stay in separate, normal libraries.
+`examples/cross_compilation` builds a reactor and an Android JNI library this
+way, both depending on the same `Greeter` `swift_library`, and
+`examples/cross_compilation/android_app` shows the Kotlin app that loads the
+JNI library.
+
 Details worth knowing:
 
 * The Swift standard library is linked statically from the SDK, matching
   the behavior of `swiftc` with these SDKs. WebAssembly binaries are
   self-contained `wasm32-wasip1` modules (runnable with `wasmtime` et al.).
 * Android binaries link against the NDK's `libc++_shared.so`, which must be
-  packaged with the application; the NDK repository exposes it as
-  `@<toolchain_name>_android_ndk_<host_os>//:libcxx_shared_<arch>`.
+  packaged with the application. Reference it host-independently as
+  `@<toolchain_name>//:libcxx_shared_<arch>` (e.g.
+  `@swift_toolchain//:libcxx_shared_aarch64`); the alias selects the NDK for
+  the build host automatically.
 * The `android_sdk` tag downloads the Android NDK (for its sysroot and
   clang) in addition to the Swift SDK. The NDK is only fetched when an
   Android target is actually built; WebAssembly-only builds do not download
@@ -230,6 +268,20 @@ Details worth knowing:
   curated list of releases (see
   `swift/internal/extensions/swift_sdk_releases.bzl`); for other releases,
   pass `sha256` explicitly.
+
+### Coexistence with `rules_apple`
+
+A common setup cross-compiles to WebAssembly/Android *and* builds the same
+app's Apple targets with `rules_apple`. The two resolve together cleanly: this
+line of `rules_swift` is `compatibility_level = 3` (the same as released
+`rules_swift` 3.x), so a current `rules_apple` release — 4.5.3 or the 5.0.0
+release candidates, both built against `rules_swift` 3.x — works alongside it.
+Bazel's version resolution keeps the higher of each shared transitive
+dependency (`apple_support`, `rules_cc`), which are backward compatible, so no
+extra pinning is required. If you are tracking this work from a fork via
+`git_override`, depend on such a `rules_apple` release; once the change lands
+in a published `rules_swift` that `rules_apple` itself depends on, the
+`git_override` is no longer needed.
 
 ## Using the extension from a non-root module
 

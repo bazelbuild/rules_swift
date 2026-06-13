@@ -131,6 +131,9 @@ cc_toolchain(
         "@rules_cc//cc/toolchains/args/archiver_flags:feature",
         "@rules_cc//cc/toolchains/args/libraries_to_link:feature",
         "@rules_cc//cc/toolchains/args/link_flags:feature",
+        # Needed so `swift_binary(linkshared = True)` links a shared library
+        # (passes `-shared` for the dynamic_library link action).
+        "@rules_cc//cc/toolchains/args/shared_flag:feature",
     ],
     make_variables = [
         ":cc_target_triple_{suffix}",

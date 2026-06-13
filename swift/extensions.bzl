@@ -36,6 +36,7 @@ load(
 )
 load(
     "//swift/internal/extensions:toolchains.bzl",
+    _android_libcxx_aliases = "android_libcxx_aliases",
     _android_sdk_toolchains_for_platform = "android_sdk_toolchains_for_platform",
     _toolchains_for_platform = "toolchains_for_platform",
     _toolchains_repository = "toolchains_repository",
@@ -133,16 +134,24 @@ def _setup_android_sdk(*, tag, toolchain_name, swift_version, platforms):
         ndk_sha256s = ANDROID_NDK_RELEASES[ndk_version]
 
     host_oses = {_ndk_host_os(platform): None for platform in platforms}
+    ndk_repos_by_host = {}
     for host_os in host_oses:
+        ndk_repo = "{}_android_ndk_{}".format(toolchain_name, host_os)
+        ndk_repos_by_host[host_os] = ndk_repo
         http_archive(
-            name = "{}_android_ndk_{}".format(toolchain_name, host_os),
+            name = ndk_repo,
             build_file_content = ANDROID_NDK_BUILD_FILE_CONTENT,
             sha256 = ndk_sha256s.get(host_os, ""),
             strip_prefix = "android-ndk-" + ndk_version,
             url = android_ndk_download_url(ndk_version, host_os),
         )
 
-    build_file_content = ""
+    # Host-independent aliases for the NDK's `libc++_shared.so`, so an APK rule
+    # can bundle it without naming the build host.
+    build_file_content = _android_libcxx_aliases(
+        ndk_repos_by_host = ndk_repos_by_host,
+        archs = ANDROID_ARCHS,
+    )
     for platform in platforms:
         ndk_repo = "{}_android_ndk_{}".format(toolchain_name, _ndk_host_os(platform))
         repository_name = "{}_android_sdk_{}".format(toolchain_name, platform)
