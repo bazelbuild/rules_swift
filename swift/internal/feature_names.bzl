@@ -321,6 +321,13 @@ SWIFT_FEATURE_DECLARE_SWIFTSOURCEINFO = "swift.emit_swiftsourceinfo"
 # system command line limit.
 SWIFT_FEATURE_NO_EMBED_DEBUG_MODULE = "swift.no_embed_debug_module"
 
+# If enabled, the entry point of a `swift_binary` is not renamed to a
+# target-specific symbol (which is otherwise aliased back to `main` at link
+# time so that the binary's code can also be linked into another binary, such
+# as a test executable). Toolchains whose linkers cannot create such aliases
+# (e.g. wasm-ld, which has no `--defsym`) should enable this feature.
+SWIFT_FEATURE_NO_ENTRY_POINT_RENAME = "swift.no_entry_point_rename"
+
 # If enabled, the toolchain will directly generate from the raw proto files
 # and not from the DescriptorSets.
 #

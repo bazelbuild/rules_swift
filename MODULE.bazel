@@ -82,7 +82,13 @@ use_repo(system_sdk, "system_sdk")
 swift = use_extension("//swift:extensions.bzl", "swift", dev_dependency = True)
 swift.toolchain(
     name = "swift_toolchain",
-    swift_version = "6.3",
+    swift_version = "6.3.2",
+)
+swift.wasm_sdk(
+    toolchain_name = "swift_toolchain",
+)
+swift.android_sdk(
+    toolchain_name = "swift_toolchain",
 )
 use_repo(
     swift,
@@ -107,6 +113,30 @@ register_toolchains(
     "@swift_toolchain//:swift_toolchain_embedded_ubuntu22.04",
     "@swift_toolchain//:swift_toolchain_embedded_ubuntu22.04-aarch64",
     "@swift_toolchain//:swift_toolchain_embedded_xcode",
+    dev_dependency = True,
+)
+
+register_toolchains(
+    # Swift SDK toolchains for cross-compiling to WebAssembly and Android;
+    # used by //examples/cross_compilation.
+    "@swift_toolchain//:cc_toolchain_android_aarch64_ubuntu22.04",
+    "@swift_toolchain//:cc_toolchain_android_aarch64_ubuntu22.04-aarch64",
+    "@swift_toolchain//:cc_toolchain_android_aarch64_xcode",
+    "@swift_toolchain//:cc_toolchain_android_x86_64_ubuntu22.04",
+    "@swift_toolchain//:cc_toolchain_android_x86_64_ubuntu22.04-aarch64",
+    "@swift_toolchain//:cc_toolchain_android_x86_64_xcode",
+    "@swift_toolchain//:cc_toolchain_wasm32_ubuntu22.04",
+    "@swift_toolchain//:cc_toolchain_wasm32_ubuntu22.04-aarch64",
+    "@swift_toolchain//:cc_toolchain_wasm32_xcode",
+    "@swift_toolchain//:swift_toolchain_android_aarch64_ubuntu22.04",
+    "@swift_toolchain//:swift_toolchain_android_aarch64_ubuntu22.04-aarch64",
+    "@swift_toolchain//:swift_toolchain_android_aarch64_xcode",
+    "@swift_toolchain//:swift_toolchain_android_x86_64_ubuntu22.04",
+    "@swift_toolchain//:swift_toolchain_android_x86_64_ubuntu22.04-aarch64",
+    "@swift_toolchain//:swift_toolchain_android_x86_64_xcode",
+    "@swift_toolchain//:swift_toolchain_wasm32_ubuntu22.04",
+    "@swift_toolchain//:swift_toolchain_wasm32_ubuntu22.04-aarch64",
+    "@swift_toolchain//:swift_toolchain_wasm32_xcode",
     dev_dependency = True,
 )
 

@@ -443,6 +443,41 @@ def _swift_unix_linkopts_cc_info(
         ),
     )
 
+def _swift_sdk_linkopts_cc_info(
+        toolchain_label,
+        linkopts,
+        linker_inputs):
+    """Returns a `CcInfo` with linker flags provided by the toolchain target.
+
+    This is used for toolchains that target platforms whose Swift runtime
+    libraries come from a Swift SDK (such as WebAssembly or Android) rather
+    than from the host toolchain or system; the repository that defines the
+    toolchain provides the exact search paths and runtime objects to link.
+
+    Args:
+        toolchain_label: The label of the Swift toolchain that will act as the
+            owner of the linker input propagating the flags.
+        linkopts: A list of linker flags from the toolchain's `linkopts`
+            attribute.
+        linker_inputs: A list of `File`s that should be available to link
+            actions using these flags.
+
+    Returns:
+        A `CcInfo` provider that will provide linker flags to binaries that
+        depend on Swift targets.
+    """
+    return CcInfo(
+        linking_context = cc_common.create_linking_context(
+            linker_inputs = depset([
+                cc_common.create_linker_input(
+                    owner = toolchain_label,
+                    user_link_flags = depset(linkopts),
+                    additional_inputs = depset(linker_inputs),
+                ),
+            ]),
+        ),
+    )
+
 def _entry_point_linkopts_provider(*, entry_point_name):
     """Returns linkopts to customize the entry point of a binary."""
     return struct(
@@ -509,6 +544,12 @@ def _swift_toolchain_impl(ctx):
         )
     elif ctx.attr.os == "none":
         swift_linkopts_cc_info = CcInfo()
+    elif ctx.attr.linkopts or ctx.attr.linker_inputs:
+        swift_linkopts_cc_info = _swift_sdk_linkopts_cc_info(
+            ctx.label,
+            ctx.attr.linkopts,
+            ctx.files.linker_inputs,
+        )
     else:
         swift_linkopts_cc_info = _swift_unix_linkopts_cc_info(
             ctx.attr.arch,
@@ -762,6 +803,25 @@ The preserved environment variables required for the toolchain to operate
 normally.
 """,
                 mandatory = False,
+            ),
+            "linker_inputs": attr.label_list(
+                allow_files = True,
+                doc = """\
+Files that must be available to link actions when `linkopts` is set, such as
+the Swift runtime libraries of a Swift SDK.
+""",
+            ),
+            "linkopts": attr.string_list(
+                doc = """\
+Linker flags that must be passed when linking binaries that contain Swift
+code, such as search paths for (and inputs from) the `linker_inputs`
+attribute.
+
+When set, these flags *replace* the default flags that the toolchain would
+otherwise compute for the target operating system; they are meant to be used
+by toolchains whose Swift runtime libraries come from a Swift SDK (for
+example, WebAssembly or Android) rather than from the host toolchain.
+""",
             ),
             "sdkroot": attr.string(
                 doc = """\

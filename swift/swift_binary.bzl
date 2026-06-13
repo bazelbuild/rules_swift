@@ -22,6 +22,7 @@ load("//swift/internal:compiling.bzl", "compile")
 load(
     "//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT",
+    "SWIFT_FEATURE_NO_ENTRY_POINT_RENAME",
 )
 load("//swift/internal:features.bzl", "is_feature_enabled")
 load(
@@ -99,7 +100,24 @@ def _swift_binary_impl(ctx):
                 ctx.label,
                 feature_configuration = feature_configuration,
             )
-        entry_point_name = entry_point_function_name(module_name)
+
+        if is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_NO_ENTRY_POINT_RENAME,
+        ):
+            entry_point_name = None
+            entry_point_copts = []
+        else:
+            # Use a custom entry point name so that the binary's code can
+            # also be linked into another process (like a test executable)
+            # without having its main function collide.
+            entry_point_name = entry_point_function_name(module_name)
+            entry_point_copts = [
+                "-Xfrontend",
+                "-entry-point-function-name",
+                "-Xfrontend",
+                entry_point_name,
+            ]
 
         include_dev_srch_paths = include_developer_search_paths(ctx.attr)
 
@@ -111,15 +129,7 @@ def _swift_binary_impl(ctx):
                 ctx,
                 ctx.attr.copts,
                 ctx.attr.swiftc_inputs,
-            ) + _maybe_parse_as_library_copts(srcs) + [
-                # Use a custom entry point name so that the binary's code can
-                # also be linked into another process (like a test executable)
-                # without having its main function collide.
-                "-Xfrontend",
-                "-entry-point-function-name",
-                "-Xfrontend",
-                entry_point_name,
-            ],
+            ) + _maybe_parse_as_library_copts(srcs) + entry_point_copts,
             defines = ctx.attr.defines,
             feature_configuration = feature_configuration,
             include_dev_srch_paths = include_dev_srch_paths,
