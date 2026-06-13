@@ -39,12 +39,16 @@ x_defaults:
       - "-//test:output_file_map_default"
   windows_common: &windows_common
     platform: windows
-    build_flags:
-      # Override 'sandboxed' strategy set in .bazelrc because it's not
-      # available on Windows
-      - "--strategy=SwiftCompile="
     build_targets:
       - "//tools/..."
+      # Cross-platform Swift examples that exercise the Windows host toolchain:
+      # a `swift_binary` executable and a `linkshared` Windows DLL.
+      - "//examples/xplatform/hello_world"
+      - "//examples/xplatform/shared_library"
+    test_targets:
+      # Exercises XCTest discovery, the test runner, and `swift_test` execution
+      # on Windows.
+      - "//examples/xplatform/xctest"
 
 tasks:
   macos_latest:
@@ -113,11 +117,20 @@ tasks:
       - "curl https://download.swift.org/swift-${SWIFT_VERSION}-release/ubuntu2204/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu22.04.tar.gz | tar xvz --strip-components=1 -C $SWIFT_HOME"
     <<: *linux_common
 
-  # TODO: re-enable when Windows in Bazel CI is properly configured for Swift.
-  # windows_last_green:
-  #   name: "Last Green Bazel"
-  #   bazel: last_green
-  #   <<: *windows_common
+  windows:
+    name: "Current LTS"
+    bazel: latest
+    environment:
+      SWIFT_VERSION: "6.0.3"
+    # Install the Swift for Windows toolchain before building. The swift.org
+    # installer is a self-extracting bundle that supports an unattended install
+    # and sets `SDKROOT`/`Path` machine-wide, which the Swift autoconfiguration
+    # repository rule reads to discover the toolchain. Visual Studio (MSVC) is
+    # already present on the Bazel CI Windows image and is used for linking.
+    batch_commands:
+      - "curl -sSL -o %TEMP%\\swift-installer.exe https://download.swift.org/swift-%SWIFT_VERSION%-release/windows10/swift-%SWIFT_VERSION%-RELEASE/swift-%SWIFT_VERSION%-RELEASE-windows10.exe"
+      - "%TEMP%\\swift-installer.exe -q"
+    <<: *windows_common
 
   doc_tests:
     name: "Doc tests"

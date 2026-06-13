@@ -179,6 +179,22 @@ def _normalized_linux_cpu(cpu):
         return "x86_64"
     return cpu
 
+def _normalized_windows_cpu(cpu):
+    """Normalizes a host CPU name to the value Swift uses on Windows.
+
+    The returned value is used both as the toolchain's `arch` and as the
+    architecture component of the Swift SDK's library layout (for example
+    `usr/lib/swift/windows/x86_64`) and the target triple.
+    """
+    cpu = cpu.lower()
+    if cpu in ("amd64", "x86_64", "x64"):
+        return "x86_64"
+    if cpu in ("arm64", "aarch64"):
+        return "aarch64"
+    if cpu in ("x86", "i686"):
+        return "i686"
+    return cpu
+
 def _resolve_toolchain_root(repository_ctx, swiftc_path):
     """Returns the Swift toolchain root directory for `swiftc_path`.
 
@@ -269,15 +285,27 @@ xcode_swift_toolchain(
         ]),
     )
 
+def _python_executable_works(repository_ctx, python_bin):
+    """Returns True if `python_bin` is a real, runnable Python interpreter.
+
+    On Windows, `python3.exe`/`python.exe` found on `PATH` are frequently the
+    Microsoft Store "App execution alias" stubs rather than real interpreters:
+    when run non-interactively they print a message pointing at the Store and
+    exit nonzero. Probe the candidate so those stubs are skipped in favor of a
+    working interpreter later on `PATH`.
+    """
+    if not python_bin:
+        return False
+    result = repository_ctx.execute([python_bin, "-c", "print('ok')"])
+    return result.return_code == 0 and result.stdout.strip() == "ok"
+
 def _get_python_bin(repository_ctx):
     if "PYTHON_BIN_PATH" in repository_ctx.os.environ:
         return repository_ctx.os.environ.get("PYTHON_BIN_PATH").strip()
-    out = repository_ctx.which("python3.exe")
-    if out:
-        return out
-    out = repository_ctx.which("python.exe")
-    if out:
-        return out
+    for name in ("python3.exe", "python.exe", "python3", "python"):
+        candidate = repository_ctx.which(name)
+        if _python_executable_works(repository_ctx, candidate):
+            return candidate
     return None
 
 def _create_windows_toolchain(*, repository_ctx):
@@ -294,6 +322,7 @@ Swift toolchain.
 """
 
     root = path_to_swiftc.dirname.dirname
+    arch = _normalized_windows_cpu(repository_ctx.os.arch)
     enabled_features = [
         SWIFT_FEATURE_CODEVIEW_DEBUG_INFO,
         SWIFT_FEATURE_DECLARE_SWIFTSOURCEINFO,
@@ -305,11 +334,25 @@ Swift toolchain.
     disabled_features = []
 
     version_file, parsed_version = _write_swift_version(repository_ctx, path_to_swiftc)
+
+    # Normalize SDKROOT to forward slashes with no trailing separator: the raw
+    # environment value typically ends in a backslash, which is both invalid at
+    # the end of a Python raw-string literal (used below) and produces doubled
+    # separators when joined.
+    sdkroot = repository_ctx.os.environ["SDKROOT"].replace("\\", "/").rstrip("/")
+
+    # The platform `Info.plist` (which records the bundled XCTest version) sits
+    # three levels above the SDK root, i.e. `<platform>/Info.plist`.
+    info_plist = sdkroot + "/../../../Info.plist"
+    python_bin = _get_python_bin(repository_ctx)
+    if not python_bin:
+        fail("Could not find a working Python 3 interpreter on PATH; it is " +
+             "required to read the XCTest version from the Swift SDK's Info.plist.")
     xctest_version = repository_ctx.execute([
-        _get_python_bin(repository_ctx),
+        python_bin,
         "-c",
-        "import os, plistlib; " +
-        "print(plistlib.loads(open(os.path.join(r'{}', '..', '..', '..', 'Info.plist'), 'rb').read(), fmt=plistlib.FMT_XML)['DefaultProperties']['XCTEST_VERSION'])".format(repository_ctx.os.environ["SDKROOT"]),
+        "import plistlib; " +
+        "print(plistlib.load(open(r'{}', 'rb'))['DefaultProperties']['XCTEST_VERSION'])".format(info_plist),
     ])
 
     env = {
@@ -320,7 +363,7 @@ Swift toolchain.
     return """\
 swift_toolchain(
   name = "windows-toolchain",
-  arch = "x86_64",
+  arch = "{arch}",
   features = [{features}],
   os = "windows",
   root = "{root}",
@@ -332,11 +375,12 @@ swift_toolchain(
   xctest_version = "{xctest_version}",
 )
 """.format(
+        arch = arch,
         features = ", ".join(['"{}"'.format(feature) for feature in enabled_features] + ['"-{}"'.format(feature) for feature in disabled_features]),
         root = root,
         env = env,
         parsed_version = parsed_version,
-        sdkroot = repository_ctx.os.environ["SDKROOT"].replace("\\", "/"),
+        sdkroot = sdkroot,
         xctest_version = xctest_version.stdout.rstrip(),
         version_file = version_file,
     )

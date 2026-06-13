@@ -33,6 +33,30 @@
 
 namespace {
 
+#if defined(_WIN32)
+// On Windows, `std::filesystem` honors the legacy MAX_PATH (260 character) limit
+// unless a path uses the extended-length "\\?\" prefix. The incremental storage
+// area (`bazel-out/.../_swift_incremental/...`) routinely produces paths longer
+// than that, so normalize to an absolute, normalized, backslash-separated path
+// with the prefix applied before performing filesystem operations.
+std::filesystem::path LongPath(const std::filesystem::path& path) {
+  std::error_code ec;
+  std::filesystem::path absolute = std::filesystem::absolute(path, ec);
+  if (ec) {
+    return path;
+  }
+  std::wstring native = absolute.lexically_normal().make_preferred().wstring();
+  if (native.compare(0, 4, L"\\\\?\\") != 0) {
+    native.insert(0, L"\\\\?\\");
+  }
+  return std::filesystem::path(native);
+}
+#else
+std::filesystem::path LongPath(const std::filesystem::path& path) {
+  return path;
+}
+#endif
+
 bool copy_file(const std::filesystem::path& from,
                const std::filesystem::path& to, std::error_code& ec) noexcept {
 #if defined(__APPLE__)
@@ -44,7 +68,7 @@ bool copy_file(const std::filesystem::path& from,
   ec = std::error_code();
   return true;
 #else
-  return std::filesystem::copy_file(from, to, ec);
+  return std::filesystem::copy_file(LongPath(from), LongPath(to), ec);
 #endif
 }
 
@@ -52,7 +76,7 @@ static bool TouchFile(const std::filesystem::path& path,
                       std::ostringstream& output) {
   std::error_code ec;
   if (!path.parent_path().empty()) {
-    std::filesystem::create_directories(path.parent_path(), ec);
+    std::filesystem::create_directories(LongPath(path.parent_path()), ec);
     if (ec) {
       output << "swift_worker: Could not create directory "
              << path.parent_path() << " (" << ec.message() << ")\n";
@@ -60,7 +84,7 @@ static bool TouchFile(const std::filesystem::path& path,
     }
   }
 
-  std::ofstream stream(path);
+  std::ofstream stream(LongPath(path));
   if (!stream) {
     output << "swift_worker: Could not create " << path << "\n";
     return false;
@@ -227,7 +251,7 @@ void WorkProcessor::ProcessWorkRequest(
       // requested.
       if (!emit_swift_source_info &&
           expected_object_path.extension() == ".swiftsourceinfo") {
-        std::filesystem::remove(expected_object_path);
+        std::filesystem::remove(LongPath(expected_object_path));
       }
 
       // Bazel creates the intermediate directories for the files declared at
@@ -251,7 +275,7 @@ void WorkProcessor::ProcessWorkRequest(
 
     for (const auto& dir_path : dir_paths) {
       std::error_code ec;
-      std::filesystem::create_directories(dir_path, ec);
+      std::filesystem::create_directories(LongPath(dir_path), ec);
       if (ec) {
         stderr_stream << "swift_worker: Could not create directory " << dir_path
                       << " (" << ec.message() << ")\n";
@@ -267,7 +291,7 @@ void WorkProcessor::ProcessWorkRequest(
     auto inputs = output_file_map.incremental_inputs();
     bool all_inputs_exist = std::all_of(
         inputs.cbegin(), inputs.cend(), [](const auto& expected_object_pair) {
-          return std::filesystem::exists(expected_object_pair.second);
+          return std::filesystem::exists(LongPath(expected_object_pair.second));
         });
 
     if (all_inputs_exist) {
@@ -286,12 +310,12 @@ void WorkProcessor::ProcessWorkRequest(
     } else {
       auto cleanup_outputs = output_file_map.incremental_cleanup_outputs();
       for (const auto& cleanup_output : cleanup_outputs) {
-        if (!std::filesystem::exists(cleanup_output)) {
+        if (!std::filesystem::exists(LongPath(cleanup_output))) {
           continue;
         }
 
         std::error_code ec;
-        std::filesystem::remove(cleanup_output, ec);
+        std::filesystem::remove(LongPath(cleanup_output), ec);
         if (ec) {
           stderr_stream << "swift_worker: Could not remove " << cleanup_output
                         << " (" << ec.message() << ")\n";
@@ -337,10 +361,10 @@ void WorkProcessor::ProcessWorkRequest(
     // next run.
     for (const auto& expected_object_pair :
          output_file_map.incremental_inputs()) {
-      if (std::filesystem::exists(expected_object_pair.first)) {
-        if (std::filesystem::exists(expected_object_pair.second)) {
+      if (std::filesystem::exists(LongPath(expected_object_pair.first))) {
+        if (std::filesystem::exists(LongPath(expected_object_pair.second))) {
           // CopyFile fails if the file already exists
-          std::filesystem::remove(expected_object_pair.second);
+          std::filesystem::remove(LongPath(expected_object_pair.second));
         }
         std::error_code ec;
         copy_file(expected_object_pair.first, expected_object_pair.second, ec);

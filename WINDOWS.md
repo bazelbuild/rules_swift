@@ -64,43 +64,77 @@ So the expectation on a properly-provisioned Windows box is that a plain
    Swift installer's environment** also present, so `swiftc.exe` is on `PATH` and
    `SDKROOT` / `Path` / `ProgramData` are set when the repository rule runs.
 4. **Python 3** on `PATH` — the autoconfiguration shells out to it to read the
-   XCTest version from the SDK `Info.plist`.
+   XCTest version from the SDK `Info.plist`. A real interpreter is required; the
+   Microsoft Store `python3.exe` execution-alias stub is detected and skipped.
+5. **`bash` on `PATH` and `BAZEL_SH` set** (e.g. Git for Windows' `bash.exe`) —
+   needed only for `bazel test`, whose generic test wrapper is a shell script.
 
 ## How to build / verify
 
 From the rules_swift checkout, in a provisioned VS+Swift shell:
 
 ```bat
-bazel build //examples/...
-bazel test  //test/...
+set BAZEL_SH=C:\Program Files\Git\bin\bash.exe
+bazel build //examples/xplatform/hello_world //examples/xplatform/shared_library
+bazel test  //examples/xplatform/xctest
 ```
 
-A minimal smoke target is the embedded/simple `swift_binary` examples. If the
-host toolchain resolves, `bazel cquery 'config(//examples/...)'` and the build
-should select `windows-swift-toolchain-x86_64`.
+`hello_world` is the minimal `swift_binary` smoke target, `shared_library`
+exercises the `linkshared` → `.dll` path, and `xctest` exercises `swift_test`
+(XCTest discovery, the runner, and execution). If the host toolchain resolves,
+the build selects `windows-swift-toolchain-x86_64`.
 
-## Known gaps / things to verify (the actual PC work)
+## Status (verified on a native Windows host)
 
-The Windows scaffolding exists but is **not currently exercised in CI** — the
-`windows_last_green` task in `.bazelci/presubmit.yml` is commented out, and the
-`windows_common` config only builds `//tools/...`. So treat this as "verify and
-fix bit-rot," not "implement from scratch." Concrete things to check:
+The checklist below was worked through end-to-end on a real Windows 11 host
+(Swift 6.3.2 for Windows + Visual Studio 2022 Build Tools / MSVC 14.44, Bazel
+9.1.1). Verifying it surfaced several pieces of bit-rot and a handful of
+genuinely missing Windows code paths; all are fixed on this branch.
 
-1. **Does autoconfiguration resolve cleanly** with a current Swift-for-Windows
-   layout? The `Info.plist` path math
-   (`SDKROOT/../../../Info.plist`) and the `usr/lib/swift/windows/<arch>` layout
-   may have shifted across Swift releases.
-2. **End-to-end link** of a `swift_binary` (does `swiftrt.obj` + the `-LIBPATH:`
-   flags + the MSVC cc toolchain produce a runnable `.exe`?).
-3. **`linkshared` → `.dll`.** Confirm `swift_binary(linkshared = True)` produces
-   a proper Windows DLL (with an import lib) — the same attribute used for the
-   Android `.so` / wasm reactor in this PR. This is the path a SwiftUI-on-Windows
-   renderer would consume (see the consumer-side counterpart doc).
-4. **arm64 Windows.** Only `x86_64` is registered; `aarch64` Windows would be an
-   additive toolchain entry.
-5. **XCTest** discovery/version on Windows (the `XCTest-<version>` LIBPATH).
-6. **Re-enable a Windows CI task** once the above passes, even if scoped to a
-   small example, so it doesn't regress again.
+1. **Autoconfiguration resolves cleanly.** ✅ The `Info.plist` path math and the
+   `usr/lib/swift/windows/<arch>` layout still match a current Swift release.
+   Two latent bugs were fixed, both of which had left `xctest_version` empty:
+   - `_get_python_bin` returned the Microsoft Store `python3.exe` *execution
+     alias* (a stub that exits nonzero) instead of a real interpreter. It now
+     probes candidates and skips non-working ones.
+   - `SDKROOT` from the environment ends in a backslash, which was interpolated
+     into a Python raw-string literal (`r'...\'`) — a syntax error. The SDK root
+     is now normalized (forward slashes, no trailing separator) before use.
+2. **End-to-end `swift_binary` link.** ✅ `//examples/xplatform/hello_world`
+   builds to a runnable `.exe` and prints "Hello, world!". Two fixes were
+   required: the toolchain rejected the MSVC cc toolchain (`msvc-cl`) because of
+   a hard `clang`-only check (now skipped on Windows), and the entry-point alias
+   used GNU `ld`'s `--defsym`, which MSVC `link.exe` rejects (now
+   `/ALTERNATENAME` on Windows).
+3. **`linkshared` → `.dll`.** ✅ `swift_binary(linkshared = True)` produces a
+   Windows `.dll` plus an import `.lib`; see the new
+   `//examples/xplatform/shared_library` example.
+4. **arm64 Windows.** ⚠️ Implemented but **unverified** (no arm64 host was
+   available). Autoconfiguration now detects the host CPU instead of hardcoding
+   `x86_64`, the toolchain understands the `aarch64` library/`bin64a` layout,
+   and a `windows-swift-toolchain-aarch64` toolchain is registered.
+5. **XCTest.** ✅ The `XCTest-<version>` `LIBPATH`/`-I` paths resolve.
+   `swift_test` runs end-to-end (`//examples/xplatform/xctest` passes). Getting
+   there required: adding the XCTest include paths to the symbol-graph-extract
+   action (test discovery), emitting the `-msvc` target-triple environment (the
+   symbol-graph tool matches the module triple exactly), porting the
+   `//tools/test_observer` runner to Windows (`SRWLOCK`, `GetProcAddress`, a
+   swift-corelibs XCTest runner shared with Linux), running the discovery tool
+   with the Swift runtime on `PATH`, sanitizing spaces out of object paths
+   (`lib.exe`/`link.exe` response-file parsing), making the persistent worker
+   long-path (`\\?\`) aware, and suppressing the benign `LNK4217` that static
+   linking of `dllimport` symbols produces.
+6. **Windows CI.** ⚠️ Re-enabled in `.bazelci/presubmit.yml` (a `windows` task
+   that builds the Swift examples and runs the `xctest` test). The Swift-install
+   prologue and BazelCI Windows image provisioning are the one piece **not**
+   validated here, since that requires the CI infrastructure rather than a local
+   host; it may need adjustment when first run.
+
+A general (not Windows-only) requirement also surfaced: `bazel test` on Windows
+needs a `bash` for the test wrapper, so `BAZEL_SH` must point at a `bash.exe`
+(e.g. Git for Windows). `worker` sandboxing is disabled on Windows in `.bazelrc`
+(`build:windows --noworker_sandboxing`) because a running executable cannot be
+deleted to clean the sandbox.
 
 ## Hermeticity
 
