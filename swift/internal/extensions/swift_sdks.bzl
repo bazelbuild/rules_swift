@@ -315,6 +315,16 @@ def _swift_wasm_sdk_impl(repository_ctx):
             "-lwasi-emulated-mman",
             "-lwasi-emulated-signal",
             "-lwasi-emulated-process-clocks",
+            # Place the linear-memory data and the indirect function table at the
+            # same bases `swiftc` uses for its own wasm links. The Swift driver
+            # always passes these to wasm-ld; in particular `--table-base=4096`
+            # is required — optimized (`-O`) Swift relies on the indirect
+            # function table starting where the runtime/codegen expects it, and
+            # without it generic-metadata instantiation reads out of bounds at
+            # runtime (`__swift_instantiateGenericMetadata` faults). `-Onone`
+            # happens to tolerate the default base, which masks the bug.
+            "-Wl,--global-base=4096",
+            "-Wl,--table-base=4096",
         ]),
         os = "wasi",
         sdkroot = wasi_sdk,
