@@ -14,6 +14,7 @@ All targets are tagged `manual` because they download the Swift SDK bundles
 |---|---|---|
 | `:Greeter` | `.swiftmodule` + `.a` | A normal `swift_library` reused by both entry points below |
 | `:Reactor.wasm` | `Reactor.wasm` | A WebAssembly **reactor** (`swift_binary(linkshared)`), no `main`, with exported functions |
+| `:web_app` | `web_app/` | A static site embedding `Reactor.wasm`, driven from JS — see [`web/README.md`](web/README.md) |
 | `:libSwiftJNI.so` | `libSwiftJNI.so` | An Android **JNI shared library** (`swift_binary(linkshared)`) that calls `:Greeter` |
 
 ```sh
@@ -21,6 +22,11 @@ All targets are tagged `manual` because they download the Swift SDK bundles
 bazel build //examples/cross_compilation:Reactor.wasm
 wasmtime run --invoke greeting_length \
     bazel-bin/examples/cross_compilation/Reactor.wasm
+
+# WebAssembly in a browser: a static site that calls the reactor from JS.
+bazel build //examples/cross_compilation:web_app
+python3 -m http.server -d bazel-bin/examples/cross_compilation/web_app 8000
+#   …then open http://localhost:8000  (see web/README.md)
 
 # Android JNI shared library:
 bazel build //examples/cross_compilation:libSwiftJNI.so
