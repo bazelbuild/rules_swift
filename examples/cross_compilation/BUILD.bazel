@@ -3,9 +3,9 @@ load("//swift:swift.bzl", "swift_binary", "swift_library")
 
 package(default_visibility = ["//visibility:public"])
 
-# Platforms covered by the Swift SDK toolchains that the `swift` module
-# extension's `wasm_sdk` and `android_sdk` tags define (and that the dev
-# MODULE.bazel of this repository registers).
+# Platforms covered by the Swift SDK toolchains registered by this repository's
+# dev `MODULE.bazel` (via the `swift` extension's `wasm_sdk`/`android_sdk`
+# tags). Build the targets below with `--platforms` set to one of these.
 platform(
     name = "wasm32-wasip1",
     constraint_values = [
@@ -22,44 +22,61 @@ platform(
     ],
 )
 
-platform(
-    name = "android-x86_64",
-    constraint_values = [
-        "@platforms//cpu:x86_64",
-        "@platforms//os:android",
-    ],
-)
-
+# A plain library dependency, compiled for whichever platform depends on it.
+# Both platform-specific entry points below call into it, demonstrating that a
+# normal `swift_library` is reused unchanged across targets.
 swift_library(
-    name = "Library",
-    srcs = ["Sources/Library/Library.swift"],
-    module_name = "Library",
-    # Only built through the platform transitions below.
+    name = "Greeter",
+    srcs = ["Sources/Greeter/Greeter.swift"],
+    module_name = "Greeter",
     tags = ["manual"],
 )
+
+# ---------------------------------------------------------------------------
+# WebAssembly: a reactor module (no `main`; exports functions for a JS host).
+# ---------------------------------------------------------------------------
 
 swift_binary(
-    name = "Binary",
-    srcs = ["Sources/Binary/main.swift"],
-    # Only built through the platform transitions below.
+    name = "Reactor",
+    srcs = ["Sources/Reactor/Reactor.swift"],
+    # Keep the exported functions in the linked module. `@_cdecl` names them;
+    # wasm-ld still needs an explicit `--export=` to retain each one.
+    linkopts = [
+        "-Xlinker",
+        "--export=greeting_into",
+        "-Xlinker",
+        "--export=greeting_length",
+    ],
+    linkshared = True,
     tags = ["manual"],
-    deps = [":Library"],
+    deps = [":Greeter"],
 )
 
+# Build `:Reactor` for the wasm platform. Consumers can instead set
+# `--platforms=//examples/cross_compilation:wasm32-wasip1` on the command line.
 transition_binary(
-    name = "Binary.wasm32-wasip1",
-    binary = ":Binary",
+    name = "Reactor.wasm",
+    binary = ":Reactor",
     platform = ":wasm32-wasip1",
 )
 
-transition_binary(
-    name = "Binary.android-aarch64",
-    binary = ":Binary",
-    platform = ":android-aarch64",
+# ---------------------------------------------------------------------------
+# Android: a JNI shared library, loaded by Kotlin via `System.loadLibrary`.
+# ---------------------------------------------------------------------------
+
+# `linkshared` produces `libSwiftJNI.so`. The JNI entry point is written in
+# Swift (it `import`s the SDK's `Android` module for the JNI types) and calls
+# into the `Greeter` library. See `android_app/` for the APK that loads it.
+swift_binary(
+    name = "SwiftJNI",
+    srcs = ["Sources/SwiftJNI/SwiftJNI.swift"],
+    linkshared = True,
+    tags = ["manual"],
+    deps = [":Greeter"],
 )
 
 transition_binary(
-    name = "Binary.android-x86_64",
-    binary = ":Binary",
-    platform = ":android-x86_64",
+    name = "libSwiftJNI.so",
+    binary = ":SwiftJNI",
+    platform = ":android-aarch64",
 )

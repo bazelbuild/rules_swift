@@ -118,7 +118,12 @@ register_toolchains(
 
 register_toolchains(
     # Swift SDK toolchains for cross-compiling to WebAssembly and Android;
-    # used by //examples/cross_compilation.
+    # used by //examples/cross_compilation. As with the embedded toolchains
+    # above, we register only the host platforms used by CI rather than
+    # `@swift_toolchain//:all`, because rules_swift cannot yet auto-select a
+    # Linux distribution and `:all` would make the host/exec toolchain
+    # ambiguous across distros. A consumer that builds on a single host
+    # platform can simply register `@swift_toolchain//:all`.
     "@swift_toolchain//:cc_toolchain_android_aarch64_ubuntu22.04",
     "@swift_toolchain//:cc_toolchain_android_aarch64_ubuntu22.04-aarch64",
     "@swift_toolchain//:cc_toolchain_android_aarch64_xcode",
