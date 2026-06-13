@@ -1,0 +1,65 @@
+load("//examples/embedded:transition.bzl", "transition_binary")
+load("//swift:swift.bzl", "swift_binary", "swift_library")
+
+package(default_visibility = ["//visibility:public"])
+
+# Platforms covered by the Swift SDK toolchains that the `swift` module
+# extension's `wasm_sdk` and `android_sdk` tags define (and that the dev
+# MODULE.bazel of this repository registers).
+platform(
+    name = "wasm32-wasip1",
+    constraint_values = [
+        "@platforms//cpu:wasm32",
+        "@platforms//os:wasi",
+    ],
+)
+
+platform(
+    name = "android-aarch64",
+    constraint_values = [
+        "@platforms//cpu:aarch64",
+        "@platforms//os:android",
+    ],
+)
+
+platform(
+    name = "android-x86_64",
+    constraint_values = [
+        "@platforms//cpu:x86_64",
+        "@platforms//os:android",
+    ],
+)
+
+swift_library(
+    name = "Library",
+    srcs = ["Sources/Library/Library.swift"],
+    module_name = "Library",
+    # Only built through the platform transitions below.
+    tags = ["manual"],
+)
+
+swift_binary(
+    name = "Binary",
+    srcs = ["Sources/Binary/main.swift"],
+    # Only built through the platform transitions below.
+    tags = ["manual"],
+    deps = [":Library"],
+)
+
+transition_binary(
+    name = "Binary.wasm32-wasip1",
+    binary = ":Binary",
+    platform = ":wasm32-wasip1",
+)
+
+transition_binary(
+    name = "Binary.android-aarch64",
+    binary = ":Binary",
+    platform = ":android-aarch64",
+)
+
+transition_binary(
+    name = "Binary.android-x86_64",
+    binary = ":Binary",
+    platform = ":android-x86_64",
+)

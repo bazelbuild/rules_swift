@@ -146,6 +146,91 @@ bazel run @rules_swift//tools/swift-releases -- list \
     main-snapshot-2024-08-01 --platform xcode --platform ubuntu22.04
 ```
 
+## Cross-compiling with Swift SDKs (WebAssembly and Android)
+
+swift.org publishes "Swift SDK" artifact bundles (the bundles consumed by
+`swift sdk install`) that let the host compiler cross-compile for platforms
+it cannot target by itself. The `swift` extension can download these and
+define matching Swift and C/C++ toolchains, so that plain `swift_library`
+and `swift_binary` targets build for those platforms under `--platforms`.
+
+Add the `wasm_sdk` and/or `android_sdk` tags, referencing the `toolchain`
+tag by name (the Swift module format is not stable across compiler
+versions, so the SDK is always downloaded for exactly the toolchain's
+version):
+
+```bzl
+swift.toolchain(
+    name = "swift_toolchain",
+    swift_version = "6.3.2",
+)
+
+swift.wasm_sdk(
+    toolchain_name = "swift_toolchain",
+)
+
+swift.android_sdk(
+    toolchain_name = "swift_toolchain",
+    # api_level = 28,  # the default
+)
+
+register_toolchains(
+    # WebAssembly (wasm32-unknown-wasip1), per host platform you build on.
+    "@swift_toolchain//:swift_toolchain_wasm32_xcode",
+    "@swift_toolchain//:cc_toolchain_wasm32_xcode",
+    # Android, per architecture and host platform.
+    "@swift_toolchain//:swift_toolchain_android_aarch64_xcode",
+    "@swift_toolchain//:cc_toolchain_android_aarch64_xcode",
+    "@swift_toolchain//:swift_toolchain_android_x86_64_xcode",
+    "@swift_toolchain//:cc_toolchain_android_x86_64_xcode",
+)
+```
+
+Then build with a platform carrying the matching constraints, for example:
+
+```bzl
+platform(
+    name = "wasm32-wasip1",
+    constraint_values = [
+        "@platforms//cpu:wasm32",
+        "@platforms//os:wasi",
+    ],
+)
+
+platform(
+    name = "android-aarch64",
+    constraint_values = [
+        "@platforms//cpu:aarch64",
+        "@platforms//os:android",
+    ],
+)
+```
+
+```sh
+bazel build //my:binary --platforms=//:wasm32-wasip1
+```
+
+See `examples/cross_compilation` for a complete example, including building
+through a platform transition.
+
+Details worth knowing:
+
+* The Swift standard library is linked statically from the SDK, matching
+  the behavior of `swiftc` with these SDKs. WebAssembly binaries are
+  self-contained `wasm32-wasip1` modules (runnable with `wasmtime` et al.).
+* Android binaries link against the NDK's `libc++_shared.so`, which must be
+  packaged with the application; the NDK repository exposes it as
+  `@<toolchain_name>_android_ndk_<host_os>//:libcxx_shared_<arch>`.
+* The `android_sdk` tag downloads the Android NDK (for its sysroot and
+  clang) in addition to the Swift SDK. The NDK is only fetched when an
+  Android target is actually built; WebAssembly-only builds do not download
+  it. The NDK version and checksums can be overridden with the
+  `ndk_version` and `ndk_sha256s` attributes.
+* As with toolchains, checksums for the SDK bundles are bundled for a
+  curated list of releases (see
+  `swift/internal/extensions/swift_sdk_releases.bzl`); for other releases,
+  pass `sha256` explicitly.
+
 ## Using the extension from a non-root module
 
 The extension is intended for the root module — it fails if a non-root
