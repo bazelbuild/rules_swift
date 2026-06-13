@@ -94,6 +94,7 @@ def _generate_test_discovery_srcs(
         *,
         actions,
         deps,
+        env = {},
         name,
         objc_test_discovery,
         owner_module_name,
@@ -109,6 +110,9 @@ def _generate_test_discovery_srcs(
     Args:
         actions: The context's actions object.
         deps: The list of direct dependencies of the test target.
+        env: Environment variables to set when running the discovery tool. On
+            Windows this must include a `Path` that contains the Swift runtime
+            DLLs, otherwise the (Swift) discovery executable fails to launch.
         name: The name of the target being built, which will be used to derive
             the basename of the directory containing the generated files.
         objc_test_discovery: If `True`, the runner should use Objective-C-based
@@ -197,6 +201,7 @@ def _generate_test_discovery_srcs(
 
     actions.run(
         arguments = [args],
+        env = env,
         executable = test_discoverer,
         exec_group = _DISCOVER_TESTS_EXEC_GROUP,
         inputs = inputs,
@@ -411,6 +416,7 @@ def _swift_test_impl(ctx):
         discovery_srcs = _generate_test_discovery_srcs(
             actions = ctx.actions,
             deps = ctx.attr.deps,
+            env = toolchains.swift.test_configuration.env,
             name = ctx.label.name,
             objc_test_discovery = objc_test_discovery,
             owner_module_name = module_name,
