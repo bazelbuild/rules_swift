@@ -122,16 +122,20 @@ tasks:
     bazel: latest
     environment:
       SWIFT_VERSION: "6.0.3"
-    # Install the Swift for Windows toolchain before building. The swift.org
-    # installer is a self-extracting bundle that supports an unattended install
-    # and sets `SDKROOT`/`Path` machine-wide, which the Swift autoconfiguration
-    # repository rule reads to discover the toolchain. Visual Studio (MSVC) is
-    # already present on the Bazel CI Windows image and is used for linking.
-    # (BazelCI runs `shell_commands` as a batch script on Windows — the
-    # "Setup (Batch Commands)" step; `batch_commands` is not a recognized key.)
-    shell_commands:
+    # Install the Swift for Windows toolchain before building (BazelCI runs a
+    # task's `batch_commands` as a batch script on Windows). The DIAG lines
+    # below print where the installer landed swiftc.exe and what Path/SDKROOT it
+    # set, so we can expose them to the build via `environment:` (the installer
+    # sets them machine-wide, which the already-running CI process doesn't pick
+    # up). Visual Studio (MSVC) is already on the image and is used for linking.
+    batch_commands:
       - "curl -sSL -o %TEMP%\\swift-installer.exe https://download.swift.org/swift-%SWIFT_VERSION%-release/windows10/swift-%SWIFT_VERSION%-RELEASE/swift-%SWIFT_VERSION%-RELEASE-windows10.exe"
       - "%TEMP%\\swift-installer.exe -q"
+      - "echo ==DIAG where swiftc== & where swiftc.exe"
+      - "echo ==DIAG find swiftc== & dir /s /b \"%LOCALAPPDATA%\\Programs\\Swift\\swiftc.exe\" \"%ProgramFiles%\\Swift\\swiftc.exe\" \"%ProgramFiles(x86)%\\Swift\\swiftc.exe\" \"%SystemDrive%\\Library\\Developer\\Toolchains\\*\\usr\\bin\\swiftc.exe\""
+      - "echo ==DIAG HKCU env== & reg query \"HKCU\\Environment\""
+      - "echo ==DIAG HKLM env== & reg query \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment\""
+      - "echo ==DIAG done=="
     <<: *windows_common
 
   doc_tests:
