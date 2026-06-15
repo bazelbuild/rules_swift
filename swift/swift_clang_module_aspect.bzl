@@ -418,7 +418,10 @@ def _handle_module(
                 ]
             else:
                 return []
-    validate_swift_module_name(source_name)
+    validate_swift_module_name(
+        source_name,
+        feature_configuration = feature_configuration,
+    )
 
     compilation_contexts_to_merge_for_compilation = [compilation_context]
 

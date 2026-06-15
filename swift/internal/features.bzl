@@ -157,6 +157,7 @@ def configure_features(
         )
 
     return struct(
+        _aspect_id = aspect_id,
         _cc_feature_configuration = cc_feature_configuration,
         _cc_feature_configuration_no_parse_headers = cc_feature_configuration_no_parse_headers,
         _enabled_features = all_requestable_features,

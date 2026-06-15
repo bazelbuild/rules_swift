@@ -156,7 +156,10 @@ def compile_module_interface(
                 the indexstore output files created when the feature
                 `swift.index_while_building` is enabled.
     """
-    validate_swift_module_name(module_name)
+    validate_swift_module_name(
+        module_name,
+        feature_configuration = feature_configuration,
+    )
     swiftmodule_file = actions.declare_file(
         "{}_outs/{}.swiftmodule".format(target_name, module_name),
     )
@@ -401,7 +404,10 @@ def compile(
                 macros).
     """
 
-    validate_swift_module_name(module_name)
+    validate_swift_module_name(
+        module_name,
+        feature_configuration = feature_configuration,
+    )
     original_module_name = module_name
     module_alias = toolchains.swift.module_aliases.get(module_name)
     if module_alias:
