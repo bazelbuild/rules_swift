@@ -455,6 +455,19 @@ def _swift_android_sdk_impl(repository_ctx):
             # statically linking the stdlib for Android; see
             # `swift_static-{arch}/android/static-stdlib-args.lnk` in the SDK.
             # The 16 KiB max page size is required by Android 15+.
+            #
+            # NOTE: that `.lnk` also passes `-Wl,--exclude-libs,ALL`, which we
+            # deliberately omit. `swiftc` compiles the user's code into the main
+            # object files and only the Swift runtime arrives via static
+            # archives, so `--exclude-libs,ALL` hides just the runtime there. In
+            # the Bazel model a `swift_binary`'s deps (`swift_library`) are
+            # themselves static archives, so `--exclude-libs,ALL` also demotes
+            # the user's own exported symbols (e.g. `@_cdecl("Java_…")` JNI entry
+            # points defined in a library) to local — they vanish from `.dynsym`
+            # and `System.loadLibrary` can't bind them. Omitting it lets a
+            # `linkshared` library export its symbols; a consumer that wants to
+            # hide the runtime can pass a linker version script listing the
+            # symbols to export (the standard way to control a JNI `.so`).
             linkopts = _build_list([
                 "{}/android/{}/swiftrt.o".format(resource_dir, arch),
                 "-L{}/android".format(resource_dir),
@@ -462,7 +475,6 @@ def _swift_android_sdk_impl(repository_ctx):
                 "-llog",
                 "-lm",
                 "-lstdc++",
-                "-Wl,--exclude-libs,ALL",
                 "-Wl,-z,max-page-size=16384",
             ]),
             os = "android",
