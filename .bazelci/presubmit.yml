@@ -135,6 +135,7 @@ tasks:
     batch_commands:
       - "curl -sSL -o %TEMP%\\swift-installer.exe https://download.swift.org/swift-%SWIFT_VERSION%-release/windows10/swift-%SWIFT_VERSION%-RELEASE/swift-%SWIFT_VERSION%-RELEASE-windows10.exe"
       - "%TEMP%\\swift-installer.exe -q"
+      - "echo ==DIAG VCENV== & call \"%BAZEL_VC%\\Auxiliary\\Build\\vcvars64.bat\" >nul & set | findstr /B /I \"INCLUDE= LIB= LIBPATH= UCRTVersion= VCToolsInstallDir= WindowsSdkDir= WindowsSDKVersion=\" & echo ==DIAG END=="
     <<: *windows_common
 
   doc_tests:
