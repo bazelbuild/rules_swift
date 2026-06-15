@@ -173,6 +173,8 @@ def _sdk_extension_impl(module_ctx):
         sdks, exclude_modules = _collect_sdk_config(module_ctx)
         _generate_local_repos(module_ctx, sdks, exclude_modules)
 
+    return module_ctx.extension_metadata(reproducible = True)
+
 _STUB_BUILD_FILE = """\
 load(
     "@rules_swift//swift:swift.bzl",
