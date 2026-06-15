@@ -195,8 +195,12 @@ def _execroot_relative_path(path):
         baking into command line flags.
     """
     path_str = str(path)
+
+    # buildifier: disable=external-path
     if "/external/" not in path_str:
         fail("Expected a path inside an external repository, got: " + path_str)
+
+    # buildifier: disable=external-path
     return "external/" + path_str.rsplit("/external/", 1)[1]
 
 def _build_list(items, indent = "    "):
