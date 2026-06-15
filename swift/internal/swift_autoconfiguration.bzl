@@ -357,7 +357,10 @@ Swift toolchain.
 
     env = {
         "Path": repository_ctx.os.environ["Path"] if "Path" in repository_ctx.os.environ else repository_ctx.os.environ["PATH"],
-        "ProgramData": repository_ctx.os.environ["ProgramData"],
+        # `ProgramData` is normally present in a Windows process environment, but
+        # is not guaranteed to be (e.g. a service-account CI agent), so fall back
+        # to its conventional value rather than failing toolchain configuration.
+        "ProgramData": repository_ctx.os.environ.get("ProgramData", "C:\\ProgramData"),
     }
 
     return """\
