@@ -82,6 +82,15 @@ def interop_hints_test_suite(name, tags = []):
         target_compatible_with = ["@platforms//os:macos"],
     )
 
+    # Verify that a suppressing aspect hint can override interop info returned
+    # directly from a custom rule.
+    provider_test(
+        name = "{}_custom_rule_interop_info_suppressed".format(name),
+        does_not_propagate_provider = "SwiftInfo",
+        tags = all_tags,
+        target_under_test = "//test/fixtures/interop_hints:custom_interop_rule_suppressed",
+    )
+
     native.test_suite(
         name = name,
         tags = all_tags,

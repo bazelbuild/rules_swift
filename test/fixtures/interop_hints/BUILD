@@ -13,6 +13,10 @@ load(
     "FIXTURE_TAGS",
     "forward_swift_info_from_swift_clang_module_aspect",
 )
+load(
+    ":custom_interop_rule.bzl",
+    "custom_interop_rule",
+)
 
 package(
     default_visibility = ["//test:__subpackages__"],
@@ -124,5 +128,17 @@ objc_library(
 swift_library(
     name = "empty_lib",
     srcs = ["Empty.swift"],
+    tags = FIXTURE_TAGS,
+)
+
+forward_swift_info_from_swift_clang_module_aspect(
+    name = "custom_interop_rule_suppressed",
+    tags = FIXTURE_TAGS,
+    target = ":custom_interop_rule_suppressed_lib",
+)
+
+custom_interop_rule(
+    name = "custom_interop_rule_suppressed_lib",
+    aspect_hints = ["//swift:no_module"],
     tags = FIXTURE_TAGS,
 )
