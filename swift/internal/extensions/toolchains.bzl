@@ -135,6 +135,36 @@ def android_sdk_toolchains_for_platform(platform, sdk_repository, archs):
         )
     return content
 
+def static_linux_sdk_toolchains_for_platform(platform, sdk_repository, archs):
+    """Returns `toolchain` declarations for a Static Linux Swift SDK.
+
+    Args:
+        platform: The host platform name (e.g. "xcode" or "ubuntu22.04") whose
+            standalone toolchain the SDK is paired with.
+        sdk_repository: The name of the repository created by
+            `swift_static_linux_sdk_repository`.
+        archs: The Static Linux architectures ("aarch64", "x86_64") to declare
+            toolchains for.
+
+    Returns:
+        BUILD file content declaring the Swift and C++ toolchains.
+    """
+    content = ""
+    for arch in archs:
+        content += _SDK_TOOLCHAIN_PLATFORM.format(
+            exec_compatible_with = _exec_compatible_with_for_platform(platform),
+            platform = platform,
+            sdk_repository = sdk_repository,
+            target = "static_linux_" + arch,
+            target_compatible_with = [
+                "@platforms//os:linux",
+                "@platforms//cpu:" + arch,
+                "@rules_swift//swift/toolchains:static_linux",
+            ],
+            target_suffix = "static_linux_" + arch,
+        )
+    return content
+
 _NDK_HOST_OS_CONSTRAINT = {
     "darwin": "@platforms//os:macos",
     "linux": "@platforms//os:linux",

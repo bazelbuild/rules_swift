@@ -6,6 +6,17 @@ load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 
 licenses(["notice"])
 
+constraint_setting(
+    name = "swift_sdk",
+    visibility = ["//visibility:public"],
+)
+
+constraint_value(
+    name = "static_linux",
+    constraint_setting = ":swift_sdk",
+    visibility = ["//visibility:public"],
+)
+
 bzl_library(
     name = "swift_toolchain",
     srcs = ["swift_toolchain.bzl"],

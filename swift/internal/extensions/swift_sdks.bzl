@@ -2,8 +2,8 @@
 
 A "Swift SDK" is the artifact bundle published by swift.org for
 cross-compiling Swift to platforms that the host toolchain cannot target by
-itself (currently WebAssembly and Android); they are the bundles that
-`swift sdk install` consumes.
+itself (currently WebAssembly, Android, and Static Linux); they are the
+bundles that `swift sdk install` consumes.
 
 Each repository created by these rules pairs one Swift SDK with one standalone
 host toolchain repository (created by `standalone_toolchain`) and defines:
@@ -238,6 +238,29 @@ def _download_sdk_bundle(repository_ctx):
         ))
     return bundles[0]
 
+def _relative_metadata_path(value, field, triple):
+    """Validates a path read from SDK metadata."""
+    if type(value) != "string" or not value:
+        fail("Expected `{}` for `{}` in swift-sdk.json to be a non-empty string.".format(
+            field,
+            triple,
+        ))
+    if value.startswith("/") or ".." in value.split("/"):
+        fail("Expected `{}` for `{}` in swift-sdk.json to be a relative path below the SDK directory, got `{}`.".format(
+            field,
+            triple,
+            value,
+        ))
+    return value
+
+def _static_linux_resource_path(target_settings, triple):
+    resource_path = target_settings.get("swiftStaticResourcesPath")
+    field = "swiftStaticResourcesPath"
+    if not resource_path:
+        resource_path = target_settings.get("swiftResourcesPath")
+        field = "swiftResourcesPath"
+    return _relative_metadata_path(resource_path, field, triple)
+
 def _common_attrs():
     return {
         "sha256": attr.string(
@@ -371,6 +394,149 @@ toolchains that target `wasm32-unknown-wasip1` using a standalone host
 toolchain's compiler.
 """,
     implementation = _swift_wasm_sdk_impl,
+)
+
+# The architectures the Static Linux Swift SDK provides resources for and that
+# `@platforms//cpu` can express.
+STATIC_LINUX_ARCHS = ["aarch64", "x86_64"]
+
+def _swift_static_linux_sdk_impl(repository_ctx):
+    bundle_dir = _download_sdk_bundle(repository_ctx)
+    toolchain_repo = repository_ctx.attr.toolchain_repo
+
+    repo_root = "external/" + repository_ctx.name
+    sdk_dir_relative = "{}/{}/swift-linux-musl".format(
+        bundle_dir,
+        bundle_dir.removesuffix(".artifactbundle"),
+    )
+    if not repository_ctx.path(sdk_dir_relative + "/swift-sdk.json").exists:
+        fail("The Static Linux Swift SDK bundle has an unexpected layout; " +
+             "missing {}/{}/swift-sdk.json".format(repo_root, sdk_dir_relative))
+    swift_sdk_metadata = json.decode(
+        repository_ctx.read(sdk_dir_relative + "/swift-sdk.json"),
+    )
+    target_triples = swift_sdk_metadata.get("targetTriples")
+    if type(target_triples) != "dict":
+        fail("The Static Linux Swift SDK bundle has an unexpected layout; " +
+             "swift-sdk.json is missing `targetTriples`.")
+
+    build_content = _BUILD_HEADER_TEMPLATE.format(
+        bundle_dir = bundle_dir,
+        compiler_inputs = _build_list([
+            ":sdk_files",
+            "@{}//:{}".format(toolchain_repo, _HOST_COMPILER_INPUTS),
+        ]),
+        toolchain_repo = toolchain_repo,
+    )
+
+    build_content += _CC_TOOLCHAIN_TEMPLATE.format(
+        ar = "@{}//:usr/bin/llvm-ar".format(toolchain_repo),
+        clang = "@{}//:usr/bin/clang".format(toolchain_repo),
+        clang_data = _build_list([
+            ":sdk_files",
+            "@{}//:{}".format(toolchain_repo, _HOST_LINKER_INPUTS),
+        ]),
+    )
+
+    for arch in STATIC_LINUX_ARCHS:
+        triple = "{}-swift-linux-musl".format(arch)
+        suffix = "static_linux_{}".format(arch)
+        target_settings = target_triples.get(triple)
+        if type(target_settings) != "dict":
+            fail("The Static Linux Swift SDK bundle does not define target triple `{}`.".format(
+                triple,
+            ))
+        sdkroot_relative = "{}/{}".format(
+            sdk_dir_relative,
+            _relative_metadata_path(
+                target_settings.get("sdkRootPath"),
+                "sdkRootPath",
+                triple,
+            ),
+        )
+        resource_dir_relative = "{}/{}".format(
+            sdk_dir_relative,
+            _static_linux_resource_path(target_settings, triple),
+        )
+        sdkroot = "{}/{}".format(repo_root, sdkroot_relative)
+        if not repository_ctx.path(sdkroot_relative).exists:
+            fail("The Static Linux Swift SDK bundle has an unexpected layout; " +
+                 "missing " + sdkroot)
+        resource_dir = "{}/{}".format(repo_root, resource_dir_relative)
+        if not repository_ctx.path(resource_dir_relative).exists:
+            fail("The Static Linux Swift SDK bundle has an unexpected layout; " +
+                 "missing " + resource_dir)
+        linux_static_dir = resource_dir + "/linux-static"
+
+        build_content += _SWIFT_TOOLCHAIN_TEMPLATE.format(
+            arch = arch,
+            copts = _build_list([
+                "-resource-dir",
+                resource_dir,
+            ]),
+            features = _build_list([
+                "swift.module_map_no_private_headers",
+                "swift.no_embed_debug_module",
+                "swift.use_autolink_extract",
+                # The file prefix map would make the worker resolve the Xcode
+                # developer directory on macOS hosts, which this toolchain
+                # does not depend on.
+                "-swift.file_prefix_map",
+            ]),
+            linker_inputs = _build_list([":sdk_files"]),
+            # These are the runtime objects and libraries that `swiftc` adds
+            # for a Static Linux executable; see
+            # `swift_static/linux-static/static-executable-args.lnk` in the SDK.
+            linkopts = _build_list([
+                "{}/{}/swiftrt.o".format(linux_static_dir, arch),
+                "-L{}".format(linux_static_dir),
+                "-static",
+                "-lswiftCore",
+                "-lswift_RegexParser",
+                "-Wl,-u,pthread_self",
+                "-Wl,-u,pthread_once",
+                "-Wl,-u,pthread_key_create",
+                "-ldispatch",
+                "-lBlocksRuntime",
+                "-lpthread",
+                "-ldl",
+                "-lc++",
+                "-lm",
+            ]),
+            os = "linux",
+            sdkroot = sdkroot,
+            suffix = suffix,
+            swift_version = repository_ctx.attr.swift_version,
+        )
+
+        build_content += _CC_TOOLCHAIN_FOR_TARGET_TEMPLATE.format(
+            args = _build_list([
+                "--target=" + triple,
+                "--sysroot=" + sdkroot,
+                "-resource-dir",
+                resource_dir + "/clang",
+            ]),
+            link_args = _build_list([
+                "-fuse-ld=lld",
+                # Pure C++ final links do not see the Swift toolchain's
+                # linkopts, so the companion CC toolchain must provide the C++
+                # runtime itself.
+                "-lc++",
+            ]),
+            suffix = suffix,
+            triple = triple,
+        )
+
+    repository_ctx.file("BUILD.bazel", build_content)
+
+swift_static_linux_sdk_repository = repository_rule(
+    attrs = _common_attrs(),
+    doc = """\
+Downloads the Static Linux Swift SDK artifact bundle and defines Swift and C++
+toolchains that target `{aarch64,x86_64}-swift-linux-musl` using a standalone
+host toolchain's compiler.
+""",
+    implementation = _swift_static_linux_sdk_impl,
 )
 
 # The architectures the Android Swift SDK provides resources for and that

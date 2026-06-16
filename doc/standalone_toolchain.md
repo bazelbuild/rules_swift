@@ -146,7 +146,7 @@ bazel run @rules_swift//tools/swift-releases -- list \
     main-snapshot-2024-08-01 --platform xcode --platform ubuntu22.04
 ```
 
-## Cross-compiling with Swift SDKs (WebAssembly and Android)
+## Cross-compiling with Swift SDKs
 
 swift.org publishes "Swift SDK" artifact bundles (the bundles consumed by
 `swift sdk install`) that let the host compiler cross-compile for platforms
@@ -154,7 +154,7 @@ it cannot target by itself. The `swift` extension can download these and
 define matching Swift and C/C++ toolchains, so that plain `swift_library`
 and `swift_binary` targets build for those platforms under `--platforms`.
 
-Add the `wasm_sdk` and/or `android_sdk` tags, referencing the `toolchain`
+Add the SDK tags you need, referencing the `toolchain`
 tag by name (the Swift module format is not stable across compiler
 versions, so the SDK is always downloaded for exactly the toolchain's
 version):
@@ -174,6 +174,10 @@ swift.android_sdk(
     # api_level = 28,  # the default
 )
 
+swift.static_linux_sdk(
+    toolchain_name = "swift_toolchain",
+)
+
 register_toolchains(
     # WebAssembly (wasm32-unknown-wasip1), per host platform you build on.
     "@swift_toolchain//:swift_toolchain_wasm32_xcode",
@@ -183,21 +187,38 @@ register_toolchains(
     "@swift_toolchain//:cc_toolchain_android_aarch64_xcode",
     "@swift_toolchain//:swift_toolchain_android_x86_64_xcode",
     "@swift_toolchain//:cc_toolchain_android_x86_64_xcode",
+    # Static Linux (musl), per architecture and host platform.
+    "@swift_toolchain//:swift_toolchain_static_linux_x86_64_xcode",
+    "@swift_toolchain//:cc_toolchain_static_linux_x86_64_xcode",
+    "@swift_toolchain//:swift_toolchain_static_linux_aarch64_xcode",
+    "@swift_toolchain//:cc_toolchain_static_linux_aarch64_xcode",
 )
 ```
 
-If you build on a single host platform, you can register everything the
-extension generates (standalone, embedded, and Swift-SDK toolchains) in one
-line instead of listing the matrix:
+The `_xcode` suffix in these labels is the existing standalone-toolchain
+platform name for the Swift.org macOS `.pkg`; it does not mean the Xcode-bundled
+Swift toolchain is used.
+
+Register Static Linux SDK toolchains before any generic same-architecture Linux
+Swift toolchains (for example `//swift/toolchains:all`). Static Linux platforms
+still carry `@platforms//os:linux`, so a generic Linux toolchain can also match;
+Bazel uses registration order to choose among compatible toolchains.
+
+If you build on a single host platform and are not targeting Static Linux from
+a same-architecture Linux host, you can register everything the extension
+generates (standalone, embedded, and Swift-SDK toolchains) in one line instead
+of listing the matrix:
 
 ```bzl
 register_toolchains("@swift_toolchain//:all")
 ```
 
-Avoid `:all` when you configure multiple Linux distributions, for the same
-reason the standalone host toolchains are registered explicitly: rules_swift
-cannot yet auto-select a distribution, so `:all` would make the host/exec
-toolchain ambiguous across them.
+For Static Linux on Linux hosts, prefer explicit registration so the Static
+Linux SDK toolchain labels appear before any same-architecture generic Linux
+toolchain labels. Also avoid `:all` when you configure multiple Linux
+distributions, for the same reason the standalone host toolchains are registered
+explicitly: rules_swift cannot yet auto-select a distribution, so `:all` would
+make the host/exec toolchain ambiguous across them.
 
 Then build with a platform carrying the matching constraints, for example:
 
@@ -215,6 +236,15 @@ platform(
     constraint_values = [
         "@platforms//cpu:aarch64",
         "@platforms//os:android",
+    ],
+)
+
+platform(
+    name = "static-linux-x86_64",
+    constraint_values = [
+        "@platforms//cpu:x86_64",
+        "@platforms//os:linux",
+        "@rules_swift//swift/toolchains:static_linux",
     ],
 )
 ```
@@ -253,21 +283,26 @@ Details worth knowing:
 
 * The Swift standard library is linked statically from the SDK, matching
   the behavior of `swiftc` with these SDKs. WebAssembly binaries are
-  self-contained `wasm32-wasip1` modules (runnable with `wasmtime` et al.).
+  self-contained `wasm32-wasip1` modules (runnable with `wasmtime` et al.);
+  Static Linux binaries are fully static `*-swift-linux-musl` executables.
 * Android binaries link against the NDK's `libc++_shared.so`, which must be
   packaged with the application. Reference it host-independently as
   `@<toolchain_name>//:libcxx_shared_<arch>` (e.g.
   `@swift_toolchain//:libcxx_shared_aarch64`); the alias selects the NDK for
   the build host automatically.
+* Static Linux toolchains require the
+  `@rules_swift//swift/toolchains:static_linux` constraint in the target
+  platform. This prevents the musl SDK toolchain from being selected for normal
+  Linux/glibc platforms.
 * The `android_sdk` tag downloads the Android NDK (for its sysroot and
   clang) in addition to the Swift SDK. The NDK is only fetched when an
   Android target is actually built; WebAssembly-only builds do not download
   it. The NDK version and checksums can be overridden with the
   `ndk_version` and `ndk_sha256s` attributes.
 * As with toolchains, checksums for the SDK bundles are bundled for a
-  curated list of releases (see
-  `swift/internal/extensions/swift_sdk_releases.bzl`); for other releases,
-  pass `sha256` explicitly.
+  curated list of Swift/SDK version pairs (see
+  `swift/internal/extensions/swift_sdk_releases.bzl`); when using an
+  unlisted SDK version, pass `sha256` explicitly.
 
 ### Coexistence with `rules_apple`
 
