@@ -1,4 +1,3 @@
-load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc:objc_library.bzl", "objc_library")
 load(
@@ -142,13 +141,4 @@ custom_interop_rule(
     name = "custom_interop_rule_suppressed_lib",
     aspect_hints = ["//swift:no_module"],
     tags = FIXTURE_TAGS,
-)
-
-bzl_library(
-    name = "custom_interop_rule",
-    srcs = ["custom_interop_rule.bzl"],
-    deps = [
-        "//swift:swift_interop_info",
-        "@rules_cc//cc/common:cc_info",
-    ],
 )
