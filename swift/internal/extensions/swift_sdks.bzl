@@ -521,6 +521,7 @@ def _swift_static_linux_sdk_impl(repository_ctx):
                 # Pure C++ final links do not see the Swift toolchain's
                 # linkopts, so the companion CC toolchain must provide the C++
                 # runtime itself.
+                "-static",
                 "-lc++",
             ]),
             suffix = suffix,
