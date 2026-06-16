@@ -1,4 +1,3 @@
-load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("//swift:swift_binary.bzl", "swift_binary")
 load("//swift:swift_library.bzl", "swift_library")
@@ -55,13 +54,4 @@ swift_binary(
     name = "bin_without_additional_linker_inputs",
     srcs = ["main.swift"],
     tags = FIXTURE_TAGS,
-)
-
-bzl_library(
-    name = "fake_framework",
-    srcs = ["fake_framework.bzl"],
-    deps = [
-        "@rules_cc//cc:find_cc_toolchain_bzl",
-        "@rules_cc//cc/common",
-    ],
 )

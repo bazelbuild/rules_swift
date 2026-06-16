@@ -1,4 +1,3 @@
-load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
 load(":additional_linker_inputs_tests.bzl", "additional_linker_inputs_test_suite")
 load(":aspect_tests.bzl", "aspect_tests")
@@ -116,13 +115,6 @@ test_suite(
     name = "all_tests",
 )
 
-bzl_library(
-    name = "swift_bzl_macro",
-    srcs = ["swift_bzl_macro.bzl"],
-    visibility = ["//visibility:private"],
-    deps = ["//swift:providers"],
-)
-
 bzl_test(
     name = "swift_bzl_test",
     src = "swift_bzl_macro.bzl",
@@ -138,14 +130,4 @@ config_setting(
     name = "apple_build_tests_enabled",
     flag_values = {":apple_build_tests": "True"},
     visibility = ["//visibility:public"],
-)
-
-bzl_library(
-    name = "transitions",
-    srcs = ["transitions.bzl"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//swift:providers",
-        "@rules_cc//cc/common",
-    ],
 )

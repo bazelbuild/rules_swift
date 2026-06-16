@@ -1,4 +1,3 @@
-load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("@rules_cc//cc:objc_library.bzl", "objc_library")
 load("@rules_shell//shell:sh_test.bzl", "sh_test")
 load("//swift:swift.bzl", "system_swiftinterface")
@@ -261,27 +260,4 @@ sh_test(
         ":supports_hermetic_swiftmodule": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
-)
-
-bzl_library(
-    name = "extract_pcm",
-    srcs = ["extract_pcm.bzl"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//swift:providers",
-        "//swift:swift_clang_module_aspect",
-    ],
-)
-
-bzl_library(
-    name = "extract_swiftmodule",
-    srcs = ["extract_swiftmodule.bzl"],
-    visibility = ["//visibility:public"],
-    deps = ["//swift:providers"],
-)
-
-bzl_library(
-    name = "xcode_version_at_least",
-    srcs = ["xcode_version_at_least.bzl"],
-    visibility = ["//visibility:public"],
 )
