@@ -689,7 +689,8 @@ def _find_swift_interop_info(target, aspect_ctx):
         if SwiftOverlayCompileInfo in hint:
             found_overlay = True
         if SwiftInteropInfo in hint:
-            if interop_target:
+            overrides = hint[SwiftInteropInfo].suppressed
+            if not overrides and interop_target:
                 if interop_from_rule:
                     fail(("Conflicting Swift interop info from the target " +
                           "'{target}' ({rule} rule) and the aspect hint " +
@@ -706,6 +707,7 @@ def _find_swift_interop_info(target, aspect_ctx):
                         hint2 = str(hint.label),
                     ))
             interop_target = hint
+            break
 
     if interop_target:
         return interop_target[SwiftInteropInfo], default_swift_infos
