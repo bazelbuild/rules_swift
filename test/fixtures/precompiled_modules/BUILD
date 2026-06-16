@@ -1,4 +1,3 @@
-load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("@rules_cc//cc:objc_library.bzl", "objc_library")
 load("//mixed_language:mixed_language_library.bzl", "mixed_language_library")
 load("//swift:swift_binary.bzl", "swift_binary")
@@ -654,10 +653,4 @@ transition_binary(
         "-swift.add_default_precompiled_modules",
         "swift.use_explicit_swift_module_map",
     ],
-)
-
-bzl_library(
-    name = "cross_platform",
-    srcs = ["cross_platform.bzl"],
-    deps = ["//test:transitions"],
 )

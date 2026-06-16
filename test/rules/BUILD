@@ -1,32 +1,3 @@
-load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
-
 package(default_visibility = ["//test:__subpackages__"])
 
-bzl_library(
-    name = "swift_library_artifact_collector",
-    srcs = ["swift_library_artifact_collector.bzl"],
-    deps = [
-        "//swift:providers",
-        "@rules_cc//cc/common",
-    ],
-)
-
 exports_files(["swift_shell_runner.sh.template"])
-
-bzl_library(
-    name = "expected_files",
-    srcs = ["expected_files.bzl"],
-    deps = [
-        "@bazel_skylib//lib:types",
-        "@bazel_skylib//lib:unittest",
-    ],
-)
-
-bzl_library(
-    name = "synthesize_interface_applier",
-    srcs = ["synthesize_interface_applier.bzl"],
-    deps = [
-        "//swift:providers",
-        "//swift:swift_synthesize_interface_aspect",
-    ],
-)
