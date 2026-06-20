@@ -450,6 +450,24 @@ be added to the input root at execution time.
 compiler and other Swift tools (for both incremental and non-incremental
 compiles).
 """,
+        "system_modules": """\
+A `struct` with the following fields, which represent providers from targets
+that should be added as implicit dependencies of any compilation or
+linking target:
+
+*   `cc_infos`: A list of `CcInfo` providers from targets specified as the
+    toolchain's implicit dependencies.
+
+*   `swift_infos`: A list of `SwiftInfo` providers from targets specified as the
+    toolchain's implicit dependencies.
+
+For ease of use, this field is never `None`; it will always be a valid `struct`
+containing the fields described above, even if those lists are empty.
+""",
+        "implicit_system_modules": """\
+A `struct` with in the same shape as `system_modules` for the system modules
+that every Swift compilation implicitly requires.
+""",
         "test_configuration": """\
 `Struct` containing the following fields:
 
@@ -688,7 +706,8 @@ def create_swift_module_inputs(
         swiftinterface: The `.swiftinterface` file emitted by the compiler for
             this module. May be `None` if no module interface file was emitted.
         swiftmodule: The `.swiftmodule` file emitted by the compiler for this
-            module.
+            module, or a string path to a system-provided prebuilt
+            `.swiftmodule` file.
         swiftsourceinfo: The `.swiftsourceinfo` file emitted by the compiler for
             this module. May be `None` if no source info file was emitted.
 

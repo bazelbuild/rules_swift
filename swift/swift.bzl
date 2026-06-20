@@ -23,10 +23,14 @@ meant for build rule use only.
 """
 
 load(
-    "@build_bazel_rules_swift//swift:swift_compiler_plugin.bzl",
+    "@rules_swift//swift:swift_compiler_plugin.bzl",
     _swift_compiler_plugin = "swift_compiler_plugin",
     _universal_swift_compiler_plugin = "universal_swift_compiler_plugin",
 )
+load("//swift/internal:system_clang_module.bzl", _system_clang_module = "system_clang_module")
+load("//swift/internal:system_module_group.bzl", _system_module_group = "system_module_group")
+load("//swift/internal:system_swiftinterface.bzl", _system_swiftinterface = "system_swiftinterface")
+load("//swift/internal:system_swiftmodule.bzl", _system_swiftmodule = "system_swiftmodule")
 load(
     ":providers.bzl",
     _SwiftInfo = "SwiftInfo",
@@ -42,6 +46,11 @@ load(
     _swift_clang_module_aspect = "swift_clang_module_aspect",
 )
 load(":swift_common.bzl", _swift_common = "swift_common")
+load(
+    ":swift_cross_import_overlay.bzl",
+    _swift_cross_import_overlay = "swift_cross_import_overlay",
+    _swift_cross_import_overlay_group = "swift_cross_import_overlay_group",
+)
 load(
     ":swift_extract_symbol_graph.bzl",
     _swift_extract_symbol_graph = "swift_extract_symbol_graph",
@@ -82,7 +91,8 @@ swift_common = _swift_common
 # Re-export rules.
 swift_binary = _swift_binary
 swift_compiler_plugin = _swift_compiler_plugin
-universal_swift_compiler_plugin = _universal_swift_compiler_plugin
+swift_cross_import_overlay = _swift_cross_import_overlay
+swift_cross_import_overlay_group = _swift_cross_import_overlay_group
 swift_extract_symbol_graph = _swift_extract_symbol_graph
 swift_feature_allowlist = _swift_feature_allowlist
 swift_import = _swift_import
@@ -91,6 +101,11 @@ swift_library = _swift_library
 swift_library_group = _swift_library_group
 swift_package_configuration = _swift_package_configuration
 swift_test = _swift_test
+system_clang_module = _system_clang_module
+system_module_group = _system_module_group
+system_swiftinterface = _system_swiftinterface
+system_swiftmodule = _system_swiftmodule
+universal_swift_compiler_plugin = _universal_swift_compiler_plugin
 
 # Re-export public aspects.
 swift_clang_module_aspect = _swift_clang_module_aspect

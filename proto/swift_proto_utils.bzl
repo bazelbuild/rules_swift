@@ -314,15 +314,6 @@ def compile_swift_protos_for_target(
         )
     )
 
-    # Extract the swift toolchain and configure the features:
-    swift_toolchain = swift_common.get_toolchain(ctx)
-    feature_configuration = swift_common.configure_features(
-        ctx = ctx,
-        requested_features = ctx.features,
-        swift_toolchain = swift_toolchain,
-        unsupported_features = ctx.disabled_features,
-    )
-
     # Gather the transitive cc info providers:
     transitive_cc_infos = get_providers(
         compiler_deps,

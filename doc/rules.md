@@ -9,14 +9,14 @@ directly.
 For example:
 
 ```build
-load("@build_bazel_rules_swift//swift:swift_library.bzl", "swift_library")
-load("@build_bazel_rules_swift//proto:swift_proto_library.bzl", "swift_proto_library")
+load("@rules_swift//swift:swift_library.bzl", "swift_library")
+load("@rules_swift//proto:swift_proto_library.bzl", "swift_proto_library")
 ```
+
 On this page:
 
   * [swift_binary](#swift_binary)
   * [swift_compiler_plugin](#swift_compiler_plugin)
-  * [universal_swift_compiler_plugin](#universal_swift_compiler_plugin)
   * [swift_compiler_plugin_import](#swift_compiler_plugin_import)
   * [swift_cross_import_overlay](#swift_cross_import_overlay)
   * [swift_feature_allowlist](#swift_feature_allowlist)
@@ -24,17 +24,16 @@ On this page:
   * [swift_interop_hint](#swift_interop_hint)
   * [swift_library](#swift_library)
   * [swift_library_group](#swift_library_group)
-  * [mixed_language_library](#mixed_language_library)
   * [swift_module_mapping](#swift_module_mapping)
   * [swift_module_mapping_test](#swift_module_mapping_test)
   * [swift_overlay](#swift_overlay)
   * [swift_package_configuration](#swift_package_configuration)
-  * [swift_test](#swift_test)
+  * [swift_proto_compiler](#swift_proto_compiler)
   * [swift_proto_library](#swift_proto_library)
   * [swift_proto_library_group](#swift_proto_library_group)
-  * [swift_proto_compiler](#swift_proto_compiler)
-  * [deprecated_swift_grpc_library](#deprecated_swift_grpc_library)
-  * [deprecated_swift_proto_library](#deprecated_swift_proto_library)
+  * [swift_test](#swift_test)
+  * [universal_swift_compiler_plugin](#universal_swift_compiler_plugin)
+  * [mixed_language_library](#mixed_language_library)
 
 <a id="swift_binary"></a>
 
@@ -51,8 +50,8 @@ On Linux, this rule produces an executable binary for the desired target
 architecture.
 
 On Apple platforms, this rule produces a _single-architecture_ binary; it does
-not produce fat binaries. As such, this rule is mainly useful for creating Swift
-tools intended to run on the local build machine.
+not produce universal binaries. As such, this rule is mainly useful for
+creating Swift tools intended to run on the local build machine.
 
 If you want to create a multi-architecture binary or a bundled application,
 please use one of the platform-specific application rules in
@@ -117,9 +116,9 @@ swift_compiler_plugin(
     name = "Macros",
     srcs = glob(["Macros/*.swift"]),
     deps = [
-        "@SwiftSyntax",
-        "@SwiftSyntax//:SwiftCompilerPlugin",
-        "@SwiftSyntax//:SwiftSyntaxMacros",
+        "@swift-syntax//:SwiftSyntax",
+        "@swift-syntax//:SwiftCompilerPlugin",
+        "@swift-syntax//:SwiftSyntaxMacros",
     ],
 )
 
@@ -129,7 +128,7 @@ swift_test(
     srcs = glob(["MacrosTests/*.swift"]),
     deps = [
         ":Macros",
-        "@SwiftSyntax//:SwiftSyntaxMacrosTestSupport",
+        "@swift-syntax//:SwiftSyntaxMacrosTestSupport",
     ],
 )
 
@@ -198,7 +197,7 @@ using `swift_compiler_plugin`.
 
 <pre>
 swift_cross_import_overlay(<a href="#swift_cross_import_overlay-name">name</a>, <a href="#swift_cross_import_overlay-deps">deps</a>, <a href="#swift_cross_import_overlay-bystanding_module">bystanding_module</a>, <a href="#swift_cross_import_overlay-bystanding_module_name">bystanding_module_name</a>, <a href="#swift_cross_import_overlay-declaring_module">declaring_module</a>,
-                           <a href="#swift_cross_import_overlay-declaring_module_name">declaring_module_name</a>)
+                           <a href="#swift_cross_import_overlay-declaring_module_name">declaring_module_name</a>, <a href="#swift_cross_import_overlay-swiftoverlay">swiftoverlay</a>)
 </pre>
 
 Declares a cross-import overlay that will be automatically added as a dependency
@@ -234,6 +233,7 @@ the future, this rule is not recommended for other widespread use.
 | <a id="swift_cross_import_overlay-bystanding_module_name"></a>bystanding_module_name |  The name of the bystanding module from the target specified by the `bystanding_module` attribute. This is inferred if `bystanding_module` only exports a single direct module; this name must be specified if `bystanding_module` exports more than one.   | String | optional |  `""`  |
 | <a id="swift_cross_import_overlay-declaring_module"></a>declaring_module |  A label for the target representing the first of the two modules (the other being `bystanding_module`) that must be imported for the cross-import overlay modules to be imported. This is the module that contains the `.swiftcrossimport` overlay definition that connects it to the bystander and to the overlay modules.   | <a href="https://bazel.build/concepts/labels">Label</a> | required |  |
 | <a id="swift_cross_import_overlay-declaring_module_name"></a>declaring_module_name |  The name of the declaring module from the target specified by the `declaring_module` attribute. This is inferred if `declaring_module` only exports a single direct module; this name must be specified if `declaring_module` exports more than one.   | String | optional |  `""`  |
+| <a id="swift_cross_import_overlay-swiftoverlay"></a>swiftoverlay |  The path to the SDK `.swiftoverlay` file that declares this cross-import.   | String | required |  |
 
 
 <a id="swift_feature_allowlist"></a>
@@ -320,11 +320,6 @@ swift_interop_hint(<a href="#swift_interop_hint-name">name</a>, <a href="#swift_
 Defines an aspect hint that associates non-Swift BUILD targets with additional
 information required for them to be imported by Swift.
 
-> [!NOTE]
-> Bazel 6 users must set the `--experimental_enable_aspect_hints` flag to utilize
-> this rule. In addition, downstream consumers of rules that utilize this rule
-> must also set the flag. The flag is enabled by default in Bazel 7.
-
 Some build rules, such as `objc_library`, support interoperability with Swift
 simply by depending on them; a module map is generated automatically. This is
 for convenience, because the common case is that most `objc_library` targets
@@ -340,7 +335,7 @@ If you want to import a non-Swift, non-Objective-C target into Swift using the
 module name that is automatically derived from the BUILD label, there is no need
 to declare an instance of `swift_interop_hint`. A canonical one that requests
 module name derivation has been provided in
-`@build_bazel_rules_swift//swift:auto_module`. Simply add it to the `aspect_hints` of
+`@rules_swift//swift:auto_module`. Simply add it to the `aspect_hints` of
 the target you wish to import:
 
 ```build
@@ -349,7 +344,7 @@ cc_library(
     name = "somelib",
     srcs = ["somelib.c"],
     hdrs = ["somelib.h"],
-    aspect_hints = ["@build_bazel_rules_swift//swift:auto_module"],
+    aspect_hints = ["@rules_swift//swift:auto_module"],
 )
 ```
 
@@ -422,7 +417,7 @@ that it can compile and which do not.
 
 In these cases, there is no need to declare an instance of `swift_interop_hint`.
 A canonical one that suppresses module generation has been provided in
-`@build_bazel_rules_swift//swift:no_module`. Simply add it to the `aspect_hints` of
+`@rules_swift//swift:no_module`. Simply add it to the `aspect_hints` of
 the target whose module you wish to suppress:
 
 ```build
@@ -431,7 +426,7 @@ objc_library(
     name = "somelib",
     srcs = ["somelib.mm"],
     hdrs = ["somelib.h"],
-    aspect_hints = ["@build_bazel_rules_swift//swift:no_module"],
+    aspect_hints = ["@rules_swift//swift:no_module"],
 )
 ```
 
@@ -557,11 +552,11 @@ swift_module_mapping(
 ```
 
 Then, pass the label of that target to Bazel using the
-`--@build_bazel_rules_swift//swift:module_mapping` build flag:
+`--@rules_swift//swift:module_mapping` build flag:
 
 ```shell
 bazel build //some/package:Framework \
-    --@build_bazel_rules_swift//swift:module_mapping=//some/package:mapping
+    --@rules_swift//swift:module_mapping=//some/package:mapping
 ```
 
 When `Utils` is compiled, it will be given the module name `GameUtils` instead.
@@ -1034,9 +1029,9 @@ swift_compiler_plugin(
     name = "Macros",
     srcs = glob(["Macros/*.swift"]),
     deps = [
-        "@SwiftSyntax",
-        "@SwiftSyntax//:SwiftCompilerPlugin",
-        "@SwiftSyntax//:SwiftSyntaxMacros",
+        "@swift-syntax//:SwiftSyntax",
+        "@swift-syntax//:SwiftCompilerPlugin",
+        "@swift-syntax//:SwiftSyntaxMacros",
     ],
 )
 

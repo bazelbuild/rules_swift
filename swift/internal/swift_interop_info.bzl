@@ -32,6 +32,17 @@ Contains minimal information required to allow `swift_clang_module_aspect` to
 manage the creation of a `SwiftInfo` provider for a C/Objective-C target.
 """,
     fields = {
+        "compilation_context": """\
+A `CcCompilationContext` that provides the headers for the module, or `None`
+(the default) if the headers should be derived from the target's `CcInfo`
+provider. This should only be used if a target explicitly needs to use a
+different compilation context for Swift than it does for C/Objective-C, which is
+a very rare situation.
+""",
+        "direct_swift_infos": """\
+A list of `SwiftInfo` providers from dependencies of the target, which will be
+merged with the new `SwiftInfo` created by the aspect as direct.
+""",
         "exclude_headers": """\
 A `list` of `File`s representing headers that should be excluded from the
 module, if a module map is being automatically generated based on the headers in
@@ -51,9 +62,7 @@ A list of features that should be enabled for the target, in addition to those
 supplied in the `features` attribute, unless the feature is otherwise marked as
 unsupported (either on the target or by the toolchain). This allows the rule
 implementation to supply an additional set of fixed features that should always
-be enabled when the aspect processes that target; for example, a rule can
-request that `swift.emit_c_module` always be enabled for its targets even if it
-is not explicitly enabled in the toolchain or on the target directly.
+be enabled when the Swift build rules process that target.
 """,
         "suppressed": """\
 A `bool` indicating whether the module that the aspect would create for the
@@ -67,10 +76,7 @@ merged with the new `SwiftInfo` created by the aspect.
 A list of features that should be disabled for the target, in addition to those
 supplied as negations in the `features` attribute. This allows the rule
 implementation to supply an additional set of fixed features that should always
-be disabled when the aspect processes that target; for example, a rule that
-processes frameworks with headers that do not follow strict layering can request
-that `swift.strict_module` always be disabled for its targets even if it is
-enabled by default in the toolchain.
+be disabled when the Swift build rules process that target.
 """,
     },
 )

@@ -32,12 +32,12 @@ class BazelPlaceholderSubstitutions {
 
   // Initializes the substitutions with the given fixed strings. Intended to be
   // used for testing.
-  BazelPlaceholderSubstitutions(const std::string &developer_dir,
-                                const std::string &sdk_root);
+  BazelPlaceholderSubstitutions(const std::string& developer_dir,
+                                const std::string& sdk_root);
 
   // Applies any necessary substitutions to `arg` and returns true if this
   // caused the string to change.
-  bool Apply(std::string &arg);
+  bool Apply(std::string& arg);
 
  private:
   // A resolver for a Bazel placeholder string that retrieves and caches the
@@ -72,8 +72,8 @@ class BazelPlaceholderSubstitutions {
 
   // Finds and replaces all instances of `placeholder` with the value provided
   // by `resolver`, in-place on `str`. Returns true if the string was changed.
-  bool FindAndReplace(const std::string &placeholder,
-                      PlaceholderResolver &resolver, std::string &str);
+  bool FindAndReplace(const std::string& placeholder,
+                      PlaceholderResolver& resolver, std::string& str);
 
   // A mapping from Bazel placeholder strings to resolvers that provide their
   // values.

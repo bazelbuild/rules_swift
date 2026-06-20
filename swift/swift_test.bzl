@@ -339,7 +339,10 @@ def _swift_test_impl(ctx):
 
     module_name = ctx.attr.module_name
     if not module_name:
-        module_name = derive_swift_module_name(ctx.label)
+        module_name = derive_swift_module_name(
+            ctx.label,
+            feature_configuration = feature_configuration,
+        )
 
     include_dev_srch_paths = include_developer_search_paths(ctx.attr)
 
@@ -508,7 +511,7 @@ def _swift_test_impl(ctx):
                 collect_default = True,
                 files = ctx.files.data,
                 transitive_files = depset(
-                    transitive = [ctx.attr._apple_coverage_support.files, toolchains.swift.runtime],
+                    transitive = [toolchains.swift.runtime],
                 ),
             ),
         ),
@@ -584,12 +587,6 @@ a zero exit code for success or a non-zero exit code for failure.
 Specifies additional environment variables to inherit from the external
 environment when the test is executed by `bazel test`.
 """,
-            ),
-            "_apple_coverage_support": attr.label(
-                cfg = "exec",
-                default = Label(
-                    "@build_bazel_apple_support//tools:coverage_support",
-                ),
             ),
             "_swizzle_absolute_xcttestsourcelocation": attr.label(
                 default = Label(

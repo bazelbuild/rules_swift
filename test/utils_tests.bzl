@@ -6,10 +6,10 @@ load("@bazel_skylib//lib:unittest.bzl", "asserts", "unittest")
 load("//swift/internal:developer_dirs.bzl", "developer_dirs_linkopts")
 
 # buildifier: disable=bzl-visibility
-load("//swift/internal:extensions/standalone_toolchain.bzl", "get_download_url")
+load("//swift/internal:utils.bzl", "include_developer_search_paths")
 
 # buildifier: disable=bzl-visibility
-load("//swift/internal:utils.bzl", "include_developer_search_paths")
+load("//swift/internal/extensions:standalone_toolchain.bzl", "get_download_url")
 
 def _include_developer_search_paths_test(ctx):
     env = unittest.begin(ctx)

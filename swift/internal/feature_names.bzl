@@ -87,6 +87,14 @@ SWIFT_FEATURE__COVERAGE_PREFIX_MAP_ABSOLUTE_SOURCES_NON_HERMETIC = "swift._cover
 # graph.
 SWIFT_FEATURE_EMIT_C_MODULE = "swift.emit_c_module"
 
+# If enabled, the compilation action for a target will produce the Swift
+# compiler's localized-string data (one `.stringsdata` file per source file,
+# collected into a directory). This is the Bazel equivalent of Xcode's "Use
+# Compiler to Extract Swift Strings" (`SWIFT_EMIT_LOC_STRINGS`) build setting.
+# The resulting directory is exposed via the `swift_localized_strings` output
+# group and is suitable as input to `xcstringstool sync`.
+SWIFT_FEATURE_EMIT_LOCALIZED_STRINGS = "swift.emit_localized_strings"
+
 # If enabled, the compilation action for a target will produce an index store.
 # https://docs.google.com/document/d/1cH2sTpgSnJZCkZtJl1aY-rzy4uGPcrI-6RrUpdATO2Q/
 SWIFT_FEATURE_INDEX_WHILE_BUILDING = "swift.index_while_building"
@@ -117,7 +125,15 @@ SWIFT_FEATURE_MODULAR_INDEXING = "swift.modular_indexing"
 # If enabled, when compiling an explicit C or Objectve-C module, every header
 # included by the module being compiled must belong to one of the modules listed
 # in its dependencies. This is ignored for system modules.
-SWIFT_FEATURE_LAYERING_CHECK = "swift.layering_check"
+SWIFT_FEATURE_LAYERING_CHECK_FOR_C_DEPS = "swift.layering_check_for_c_deps"
+
+# If enabled, an error will be emitted when compiling Swift code if it imports
+# any module that is not listed among the direct dependencies of the target.
+SWIFT_FEATURE_LAYERING_CHECK_SWIFT = "swift.layering_check_swift"
+
+# If enabled with `swift.layering_check_swift`, Swift layering checks will also
+# be applied to targets in external repositories.
+SWIFT_FEATURE_LAYERING_CHECK_EXTERNAL_SWIFT = "swift.layering_check_external_swift"
 
 # If enabled, the C or Objective-C target should be compiled as a system module.
 SWIFT_FEATURE_SYSTEM_MODULE = "swift.system_module"
@@ -200,6 +216,10 @@ SWIFT_FEATURE_REWRITE_GENERATED_HEADER = "swift.rewrite_generated_header"
 # them.
 SWIFT_FEATURE_USE_C_MODULES = "swift.use_c_modules"
 
+# If enabled (and `swift.use_c_modules` and `swift.emit_c_module` are also
+# enabled), add all system pcms to the implicit deps of all targets.
+SWIFT_FEATURE_ADD_DEFAULT_PRECOMPILED_MODULES = "swift.add_default_precompiled_modules"
+
 # If enabled, Swift modules for dependencies will be passed to the compiler
 # using a JSON file instead of `-I` search paths.
 SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP = "swift.use_explicit_swift_module_map"
@@ -215,7 +235,7 @@ SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE = "swift.use_global_module_cache"
 
 # If enabled, and Swift compilation actions will use the shared Clang module
 # cache path written to
-# `/private/tmp/__build_bazel_rules_swift/swift_module_cache/REPOSITORY_NAME`.
+# `/private/tmp/__rules_swift/swift_module_cache/REPOSITORY_NAME`.
 # This makes the embedded Clang module breadcrumbs deterministic between Bazel
 # instances, because they are always embedded as absolute paths. Note that the
 # use of this cache is non-hermetic--the cached modules are not wiped between
@@ -247,13 +267,6 @@ SWIFT_FEATURE_USE_AUTOLINK_EXTRACT = "swift.use_autolink_extract"
 # which have differing behaviour for debug information handling.  This should
 # not be used by users of the toolchain.
 SWIFT_FEATURE_USE_MODULE_WRAP = "swift.use_module_wrap"
-
-# If enabled, Swift compilation actions will create a virtual file system
-# overlay containing all its dependencies' `.swiftmodule` files and use that
-# overlay as its sole search path. This improves build performance by avoiding
-# worst-case O(N^2) search (N modules, each in its own subdirectory), especially
-# when access to those paths involves traversing a networked file system.
-SWIFT_FEATURE_VFSOVERLAY = "swift.vfsoverlay"
 
 # If enabled, builds using the "dbg" compilation mode will explicitly disable
 # swiftc from producing swiftmodules containing embedded file paths, which are
@@ -364,18 +377,6 @@ SWIFT_FEATURE_LLD_GC_WORKAROUND = "swift.lld_gc_workaround"
 # objects if you know that isn't required.
 SWIFT_FEATURE_OBJC_LINK_FLAGS = "swift.objc_link_flag"
 
-# If enabled, requests the `-enforce-exclusivity=checked` swiftc flag which
-# enables runtime checking of exclusive memory access on mutation.
-SWIFT_FEATURE_CHECKED_EXCLUSIVITY = "swift.checked_exclusivity"
-
-# If enabled, requests the `-enable-bare-slash-regex` swiftc flag which is
-# required for forward slash regex expression literals.
-SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX = "swift.supports_bare_slash_regex"
-
-# If enabled, requests the `-disable-clang-spi` swiftc flag. Disables importing
-# Clang SPIs as Swift SPIs.
-SWIFT_FEATURE_DISABLE_CLANG_SPI = "swift.disable_clang_spi"
-
 # If enabled, allow public symbols to be internalized at link time to support
 # better dead-code stripping. This assumes that all clients of public types are
 # part of the same link unit or that public symbols linked into frameworks are
@@ -389,16 +390,6 @@ SWIFT_FEATURE_DISABLE_AVAILABILITY_CHECKING = "swift.disable_availability_checki
 # A private feature that is set by the toolchain if it supports DEVELOPER_DIR.
 # Users should never manually enable, disable or query this feature.
 SWIFT_FEATURE__SUPPORTS_DEVELOPER_DIR = "swift._supports_developer_dir"
-
-# A private feature that is set by the toolchain if it supports the
-# `-enable-{experimental,upcoming}-feature` flag (Swift 5.8 and above). Users
-# should never manually, enable, disable, or query this feature.
-SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES = "swift._supports_upcoming_features"
-
-# A private feature that is set by the toolchain if it supports
-# `-swift-version 6` (Swift 6.0 and above). Users should never manually enable,
-# disable, or query this feature.
-SWIFT_FEATURE__SUPPORTS_V6 = "swift._supports_v6"
 
 # Disables Swift sandbox which prevents issues with nested sandboxing when Swift code contains system-provided macros.
 # If enabled '#Preview' macro provided by SwiftUI fails to build and probably other system-provided macros.
@@ -436,3 +427,7 @@ SWIFT_FEATURE_ENABLE_CPP23_INTEROP = "swift.enable_cpp23_interop"
 #   automatically include it at compile time, and provide it to the linker at link time
 # * alwayslink on swift_library() target will now default to False, as it is not required in embedded mode
 SWIFT_FEATURE_ENABLE_EMBEDDED = "swift.enable_embedded"
+
+# Before swift 6.3 using macros lead to absolute paths in swiftmodule files
+# even with -prefix-serialized-debugging-options
+SWIFT_FEATURE__SUPPORTS_HERMETIC_SWIFTMODULE = "swift._supports_hermetic_swiftmodule"

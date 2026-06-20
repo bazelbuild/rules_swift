@@ -155,18 +155,18 @@ def swift_rules_dependencies():
     # compatibility between Xcode 16.3+ and older versions, we can remove the older
     # version once we drop support for Xcode 16.x.
     http_archive(
-        name = "build_bazel_rules_swift_index_import_5_8",
-        build_file = Label("//third_party:build_bazel_rules_swift_index_import/BUILD.overlay"),
+        name = "rules_swift_index_import_5_8",
+        build_file = Label("//third_party:rules_swift_index_import/BUILD.overlay"),
         canonical_id = "index-import-5.8",
         urls = ["https://github.com/MobileNativeFoundation/index-import/releases/download/5.8.0.1/index-import.tar.gz"],
         sha256 = "28c1ffa39d99e74ed70623899b207b41f79214c498c603915aef55972a851a15",
     )
     http_archive(
-        name = "build_bazel_rules_swift_index_import_6_1",
-        build_file = Label("//third_party:build_bazel_rules_swift_index_import/BUILD.overlay"),
+        name = "rules_swift_index_import_6_1",
+        build_file = Label("//third_party:rules_swift_index_import/BUILD.overlay"),
         canonical_id = "index-import-6.1",
         urls = ["https://github.com/MobileNativeFoundation/index-import/releases/download/6.1.0.1/index-import.tar.gz"],
         sha256 = "9a54fc1674af6031125a9884480a1e31e1bcf48b8f558b3e8bcc6b6fcd6e8b61",
     )
 
-    swift_autoconfiguration(name = "build_bazel_rules_swift_local_config")
+    swift_autoconfiguration(name = "rules_swift_local_config")

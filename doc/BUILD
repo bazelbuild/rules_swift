@@ -1,47 +1,79 @@
-load("@bazel_gazelle//:def.bzl", "gazelle", "gazelle_binary")
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("@bazel_skylib//rules:diff_test.bzl", "diff_test")
 load("@bazel_skylib//rules:write_file.bzl", "write_file")
-load("@io_bazel_stardoc//stardoc:stardoc.bzl", "stardoc")
+load("@gazelle//:def.bzl", "gazelle", "gazelle_binary")
 load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
+load("@stardoc//stardoc:stardoc.bzl", "stardoc")
 
 _DOC_SRCS = {
-    "api": [
-        "create_swift_interop_info",
-        "derive_swift_module_name",
-        "is_swift_overlay",
-        "swift_common",
-    ],
-    "providers": [
-        "SwiftInfo",
-        "SwiftToolchainInfo",
-        "SwiftProtoCompilerInfo",
-        "SwiftProtoInfo",
-    ],
-    "rules": [
-        "swift_binary",
-        "swift_compiler_plugin",
-        "universal_swift_compiler_plugin",
-        "swift_compiler_plugin_import",
-        "swift_cross_import_overlay",
-        "swift_feature_allowlist",
-        "swift_import",
-        "swift_interop_hint",
-        "swift_library",
-        "swift_library_group",
-        "mixed_language_library",
-        "swift_module_mapping",
-        "swift_module_mapping_test",
-        "swift_overlay",
-        "swift_package_configuration",
-        "swift_test",
-        "swift_proto_library",
-        "swift_proto_library_group",
-        "swift_proto_compiler",
-        "deprecated_swift_grpc_library",
-        "deprecated_swift_proto_library",
-    ],
+    "api": (
+        "//doc:api.bzl",
+        [
+            "//swift:module_name",
+            "//swift:swift_common",
+            "//swift:swift_interop_info",
+            "//swift:swift_overlay_helpers",
+        ],
+    ),
+    "providers": (
+        "//swift:providers.bzl",
+        ["//swift:providers"],
+    ),
+    "rules": (
+        "//doc:rules.bzl",
+        [
+            "//mixed_language:mixed_language_library",
+            "//proto:swift_proto_compiler",
+            "//proto:swift_proto_library",
+            "//proto:swift_proto_library_group",
+            "//swift:swift_binary",
+            "//swift:swift_compiler_plugin",
+            "//swift:swift_compiler_plugin_import",
+            "//swift:swift_cross_import_overlay",
+            "//swift:swift_feature_allowlist",
+            "//swift:swift_import",
+            "//swift:swift_interop_hint",
+            "//swift:swift_library",
+            "//swift:swift_library_group",
+            "//swift:swift_module_mapping",
+            "//swift:swift_module_mapping_test",
+            "//swift:swift_overlay",
+            "//swift:swift_package_configuration",
+            "//swift:swift_test",
+        ],
+    ),
 }
+
+write_file(
+    name = "toc_template",
+    out = "table_of_contents.vm",
+    content = [
+        "",
+        "On this page:",
+        "",
+        "#foreach ($rule in $ruleInfos)",
+        "  * [$rule.ruleName](#$rule.ruleName)",
+        "#end",
+        "#foreach ($providerInfo in $providerInfos)",
+        "  * [$providerInfo.providerName](#$providerInfo.providerName)",
+        "#end",
+        "#foreach ($macroInfo in $macroInfos)",
+        "  * [$macroInfo.macroName](#$macroInfo.macroName)",
+        "#end",
+        "#foreach ($functionInfo in $functionInfos)",
+        "  * [$functionInfo.functionName](#$functionInfo.functionName)",
+        "#end",
+        "#foreach ($aspectInfo in $aspectInfos)",
+        "  * [$aspectInfo.aspectName](#$aspectInfo.aspectName)",
+        "#end",
+        "#foreach ($repositoryRuleInfo in $repositoryRuleInfos)",
+        "  * [$repositoryRuleInfo.ruleName](#$repositoryRuleInfo.ruleName)",
+        "#end",
+        "#foreach ($moduleExtensionInfo in $moduleExtensionInfos)",
+        "  * [$moduleExtensionInfo.extensionName](#$moduleExtensionInfo.extensionName)",
+        "#end",
+    ],
+)
 
 write_file(
     name = "api_header",
@@ -67,10 +99,6 @@ write_file(
         "<!-- Generated with Stardoc, Do Not Edit! -->",
         "",
         "${moduleDocstring}",
-        "On this page:",
-        "",
-    ] + ["  * [{0}](#{0})".format(r) for r in _DOC_SRCS["rules"]] + [
-        "",
     ],
 )
 
@@ -85,10 +113,6 @@ write_file(
         "with the rules in this package should use these providers to communicate",
         "with the Swift build rules as needed.",
         "",
-        "On this page:",
-        "",
-    ] + ["  * [{0}](#{0})".format(r) for r in _DOC_SRCS["providers"]] + [
-        "",
     ],
 )
 
@@ -97,14 +121,11 @@ write_file(
         name = file + "_doc",
         out = file + ".md_",
         header_template = file + "_header.vm",
-        input = "//doc:doc.bzl",
-        symbol_names = symbols,
-        deps = ["//doc"],
+        input = input,
+        table_of_contents_template = "table_of_contents.vm",
+        deps = deps,
     )
-    for [
-        file,
-        symbols,
-    ] in _DOC_SRCS.items()
+    for file, (input, deps) in _DOC_SRCS.items()
 ]
 
 # To make these tests pass, run
@@ -158,16 +179,4 @@ bzl_library(
     name = "bazel_tools_bzl",
     srcs = ["@bazel_tools//tools:bzl_srcs"],
     visibility = ["//swift:__pkg__"],
-)
-
-# gazelle:ignore
-bzl_library(
-    name = "doc",
-    srcs = ["//doc:doc.bzl"],
-    visibility = ["//doc:__pkg__"],
-    deps = [
-        "//mixed_language",
-        "//proto",
-        "//swift",
-    ],
 )

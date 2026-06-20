@@ -27,14 +27,14 @@ class WorkProcessor {
  public:
   // Initializes a new work processor with the given universal arguments from
   // the job invocation.
-  WorkProcessor(const std::vector<std::string> &args,
+  WorkProcessor(const std::vector<std::string>& args,
                 std::string index_import_path);
 
   // Processes the given work request and writes its exit code and stderr output
   // (if any) into the given response.
   void ProcessWorkRequest(
-      const bazel_rules_swift::worker_protocol::WorkRequest &request,
-      bazel_rules_swift::worker_protocol::WorkResponse &response);
+      const bazel_rules_swift::worker_protocol::WorkRequest& request,
+      bazel_rules_swift::worker_protocol::WorkResponse& response);
 
  private:
   std::vector<std::string> universal_args_;

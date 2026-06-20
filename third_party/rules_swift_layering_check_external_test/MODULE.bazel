@@ -1,0 +1,9 @@
+module(
+    name = "rules_swift_layering_check_external_test",
+    version = "0.0.0",
+)
+
+bazel_dep(
+    name = "rules_swift",
+    version = "0",
+)

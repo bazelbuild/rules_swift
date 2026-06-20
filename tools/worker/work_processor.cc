@@ -33,8 +33,8 @@
 
 namespace {
 
-bool copy_file(const std::filesystem::path &from,
-               const std::filesystem::path &to, std::error_code &ec) noexcept {
+bool copy_file(const std::filesystem::path& from,
+               const std::filesystem::path& to, std::error_code& ec) noexcept {
 #if defined(__APPLE__)
   if (copyfile(from.string().c_str(), to.string().c_str(), nullptr,
                COPYFILE_ALL | COPYFILE_CLONE) < 0) {
@@ -48,10 +48,61 @@ bool copy_file(const std::filesystem::path &from,
 #endif
 }
 
+static bool TouchFile(const std::filesystem::path& path,
+                      std::ostringstream& output) {
+  std::error_code ec;
+  if (!path.parent_path().empty()) {
+    std::filesystem::create_directories(path.parent_path(), ec);
+    if (ec) {
+      output << "swift_worker: Could not create directory "
+             << path.parent_path() << " (" << ec.message() << ")\n";
+      return false;
+    }
+  }
+
+  std::ofstream stream(path);
+  if (!stream) {
+    output << "swift_worker: Could not create " << path << "\n";
+    return false;
+  }
+
+  return true;
+}
+
+static bool CreateVerifyOutputs(const std::string& output_file_map_path,
+                                const std::string& emit_module_path,
+                                std::ostringstream& output) {
+  if (!output_file_map_path.empty()) {
+    OutputFileMap output_file_map;
+    output_file_map.ReadFromPath(output_file_map_path, "", "");
+    for (const auto& expected_output_pair :
+         output_file_map.incremental_outputs()) {
+      if (!TouchFile(expected_output_pair.first, output)) {
+        return false;
+      }
+    }
+  }
+
+  if (!emit_module_path.empty()) {
+    if (!TouchFile(emit_module_path, output)) {
+      return false;
+    }
+
+    std::string swiftdoc_path = std::filesystem::path(emit_module_path)
+                                    .replace_extension(".swiftdoc")
+                                    .string();
+    if (!TouchFile(swiftdoc_path, output)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 static void FinalizeWorkRequest(
-    const bazel_rules_swift::worker_protocol::WorkRequest &request,
-    bazel_rules_swift::worker_protocol::WorkResponse &response, int exit_code,
-    const std::ostringstream &output) {
+    const bazel_rules_swift::worker_protocol::WorkRequest& request,
+    bazel_rules_swift::worker_protocol::WorkResponse& response, int exit_code,
+    const std::ostringstream& output) {
   response.exit_code = exit_code;
   response.output = output.str();
   response.request_id = request.request_id;
@@ -60,15 +111,15 @@ static void FinalizeWorkRequest(
 
 };  // end namespace
 
-WorkProcessor::WorkProcessor(const std::vector<std::string> &args,
+WorkProcessor::WorkProcessor(const std::vector<std::string>& args,
                              std::string index_import_path)
     : index_import_path_(index_import_path) {
   universal_args_.insert(universal_args_.end(), args.begin(), args.end());
 }
 
 void WorkProcessor::ProcessWorkRequest(
-    const bazel_rules_swift::worker_protocol::WorkRequest &request,
-    bazel_rules_swift::worker_protocol::WorkResponse &response) {
+    const bazel_rules_swift::worker_protocol::WorkRequest& request,
+    bazel_rules_swift::worker_protocol::WorkResponse& response) {
   std::vector<std::string> processed_args(universal_args_);
 
   // Bazel's worker spawning strategy reads the arguments from the params file
@@ -86,21 +137,26 @@ void WorkProcessor::ProcessWorkRequest(
   std::string emit_objc_header_path;
   bool is_wmo = false;
   bool is_dump_ast = false;
+  bool is_verify = false;
   bool emit_swift_source_info = false;
 
   std::string prev_arg;
   for (std::string arg : request.arguments) {
     std::string original_arg = arg;
 
-    // Handle arguments, in some cases we rewrite the argument entirely and in others we simply use it to determine
-    // specific behavior.
+    // Handle arguments, in some cases we rewrite the argument entirely and in
+    // others we simply use it to determine specific behavior.
     if (arg == "-output-file-map") {
-      // Peel off the `-output-file-map` argument, so we can rewrite it if necessary later.
+      // Peel off the `-output-file-map` argument, so we can rewrite it if
+      // necessary later.
       arg.clear();
     } else if (arg == "-dump-ast") {
       is_dump_ast = true;
+    } else if (arg == "-verify") {
+      is_verify = true;
     } else if (prev_arg == "-output-file-map") {
-      // Peel off the `-output-file-map` argument, so we can rewrite it if necessary later.
+      // Peel off the `-output-file-map` argument, so we can rewrite it if
+      // necessary later.
       output_file_map_path = arg;
       arg.clear();
     } else if (prev_arg == "-emit-module-path") {
@@ -157,31 +213,31 @@ void WorkProcessor::ProcessWorkRequest(
   if (is_incremental) {
     std::set<std::string> dir_paths;
 
-    for (const auto &expected_object_pair :
+    for (const auto& expected_object_pair :
          output_file_map.incremental_inputs()) {
+      const auto expected_object_path =
+          std::filesystem::path(expected_object_pair.second);
 
-      const auto expected_object_path = std::filesystem::path(expected_object_pair.second);
-
-      // In rules_swift < 3.x the .swiftsourceinfo files are unconditionally written to the module path.
-      // In rules_swift >= 3.x these same files are no longer tracked by Bazel unless explicitly requested.
-      // When using non-sandboxed mode, previous builds will contain these files and cause build failures
-      // when Swift tries to use them, in order to work around this compatibility issue, we remove them if they are
-      // present but not requested.
-      if (!emit_swift_source_info && expected_object_path.extension() == ".swiftsourceinfo") {
+      // In rules_swift < 3.x the .swiftsourceinfo files are unconditionally
+      // written to the module path. In rules_swift >= 3.x these same files are
+      // no longer tracked by Bazel unless explicitly requested. When using
+      // non-sandboxed mode, previous builds will contain these files and cause
+      // build failures when Swift tries to use them, in order to work around
+      // this compatibility issue, we remove them if they are present but not
+      // requested.
+      if (!emit_swift_source_info &&
+          expected_object_path.extension() == ".swiftsourceinfo") {
         std::filesystem::remove(expected_object_path);
       }
 
       // Bazel creates the intermediate directories for the files declared at
       // analysis time, but not any any deeper directories, like one can have
       // with -emit-objc-header-path, so we need to create those.
-      const std::string dir_path =
-          expected_object_path
-              .parent_path()
-              .string();
+      const std::string dir_path = expected_object_path.parent_path().string();
       dir_paths.insert(dir_path);
     }
 
-    for (const auto &expected_object_pair :
+    for (const auto& expected_object_pair :
          output_file_map.incremental_outputs()) {
       // Bazel creates the intermediate directories for the files declared at
       // analysis time, but we need to manually create the ones for the
@@ -193,7 +249,7 @@ void WorkProcessor::ProcessWorkRequest(
       dir_paths.insert(dir_path);
     }
 
-    for (const auto &dir_path : dir_paths) {
+    for (const auto& dir_path : dir_paths) {
       std::error_code ec;
       std::filesystem::create_directories(dir_path, ec);
       if (ec) {
@@ -210,12 +266,12 @@ void WorkProcessor::ProcessWorkRequest(
     // to remove some files that exist in the incremental storage area.
     auto inputs = output_file_map.incremental_inputs();
     bool all_inputs_exist = std::all_of(
-        inputs.cbegin(), inputs.cend(), [](const auto &expected_object_pair) {
+        inputs.cbegin(), inputs.cend(), [](const auto& expected_object_pair) {
           return std::filesystem::exists(expected_object_pair.second);
         });
 
     if (all_inputs_exist) {
-      for (const auto &expected_object_pair : inputs) {
+      for (const auto& expected_object_pair : inputs) {
         std::error_code ec;
         copy_file(expected_object_pair.second, expected_object_pair.first, ec);
         if (ec) {
@@ -229,7 +285,7 @@ void WorkProcessor::ProcessWorkRequest(
       }
     } else {
       auto cleanup_outputs = output_file_map.incremental_cleanup_outputs();
-      for (const auto &cleanup_output : cleanup_outputs) {
+      for (const auto& cleanup_output : cleanup_outputs) {
         if (!std::filesystem::exists(cleanup_output)) {
           continue;
         }
@@ -254,10 +310,16 @@ void WorkProcessor::ProcessWorkRequest(
     return;
   }
 
+  if (is_verify && !CreateVerifyOutputs(output_file_map_path, emit_module_path,
+                                        stderr_stream)) {
+    FinalizeWorkRequest(request, response, EXIT_FAILURE, stderr_stream);
+    return;
+  }
+
   if (is_incremental) {
     // Copy the output files from the incremental storage area back to the
     // locations where Bazel declared the files.
-    for (const auto &expected_object_pair :
+    for (const auto& expected_object_pair :
          output_file_map.incremental_outputs()) {
       std::error_code ec;
       copy_file(expected_object_pair.second, expected_object_pair.first, ec);
@@ -273,7 +335,7 @@ void WorkProcessor::ProcessWorkRequest(
 
     // Copy the replaced input files back to the incremental storage for the
     // next run.
-    for (const auto &expected_object_pair :
+    for (const auto& expected_object_pair :
          output_file_map.incremental_inputs()) {
       if (std::filesystem::exists(expected_object_pair.first)) {
         if (std::filesystem::exists(expected_object_pair.second)) {

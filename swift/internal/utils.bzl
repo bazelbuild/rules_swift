@@ -14,12 +14,24 @@
 
 """Common utility definitions used by various BUILD rules."""
 
+load("@bazel_features//:features.bzl", "bazel_features")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load("//swift:providers.bzl", "SwiftInfo")
-load(":feature_names.bzl", "SWIFT_FEATURE_NO_IMPLICIT_DEPS")
+load(
+    ":feature_names.bzl",
+    "SWIFT_FEATURE_ADD_DEFAULT_PRECOMPILED_MODULES",
+    "SWIFT_FEATURE_EMIT_C_MODULE",
+    "SWIFT_FEATURE_NO_IMPLICIT_DEPS",
+    "SWIFT_FEATURE_USE_C_MODULES",
+)
 load(":features.bzl", "is_feature_enabled")
+load(
+    ":providers.bzl",
+    "SwiftCrossImportOverlayInfo",
+    "SwiftCrossImportOverlaysInfo",
+)
 
 def collect_implicit_deps_providers(targets, additional_cc_infos = []):
     """Returns a struct with important providers from a list of implicit deps.
@@ -52,6 +64,24 @@ def collect_implicit_deps_providers(targets, additional_cc_infos = []):
         cc_infos = cc_infos + additional_cc_infos,
         swift_infos = swift_infos,
     )
+
+def collect_cross_import_overlays(targets):
+    """Returns cross-import overlay providers from targets or groups.
+
+    Args:
+        targets: A list of targets that provide `SwiftCrossImportOverlayInfo` or
+            `SwiftCrossImportOverlaysInfo`.
+
+    Returns:
+        A list of `SwiftCrossImportOverlayInfo` providers.
+    """
+    overlays = []
+    for target in targets:
+        if SwiftCrossImportOverlayInfo in target:
+            overlays.append(target[SwiftCrossImportOverlayInfo])
+        if SwiftCrossImportOverlaysInfo in target:
+            overlays.extend(target[SwiftCrossImportOverlaysInfo].overlays)
+    return overlays
 
 def compact(sequence):
     """Returns a copy of the sequence with any `None` items removed.
@@ -382,6 +412,30 @@ def struct_fields(s):
         if field not in ("to_json", "to_proto")
     }
 
+def _toolchain_system_modules(*, feature_configuration, swift_toolchain):
+    use_explicit_modules = (
+        is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_USE_C_MODULES,
+        ) and is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_EMIT_C_MODULE,
+        )
+    )
+    if not use_explicit_modules:
+        return struct(
+            cc_infos = [],
+            swift_infos = [],
+        )
+
+    if is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_ADD_DEFAULT_PRECOMPILED_MODULES,
+    ):
+        return swift_toolchain.system_modules
+
+    return swift_toolchain.implicit_system_modules
+
 def include_developer_search_paths(attr):
     """Determines whether to include developer search paths.
 
@@ -416,11 +470,17 @@ def get_swift_implicit_deps(*, feature_configuration, swift_toolchain):
         feature_name = SWIFT_FEATURE_NO_IMPLICIT_DEPS,
     ):
         return [], []
-    else:
-        return (
-            swift_toolchain.implicit_deps_providers.swift_infos,
-            swift_toolchain.implicit_deps_providers.cc_infos,
-        )
+
+    system_modules = _toolchain_system_modules(
+        feature_configuration = feature_configuration,
+        swift_toolchain = swift_toolchain,
+    )
+    return (
+        swift_toolchain.implicit_deps_providers.swift_infos +
+        system_modules.swift_infos,
+        swift_toolchain.implicit_deps_providers.cc_infos +
+        system_modules.cc_infos,
+    )
 
 def get_clang_implicit_deps(*, feature_configuration, swift_toolchain):
     """Returns the Swift and C++ providers for implicit Clang dependencies.
@@ -440,8 +500,34 @@ def get_clang_implicit_deps(*, feature_configuration, swift_toolchain):
         feature_name = SWIFT_FEATURE_NO_IMPLICIT_DEPS,
     ):
         return [], []
-    else:
-        return (
-            swift_toolchain.clang_implicit_deps_providers.swift_infos,
-            swift_toolchain.clang_implicit_deps_providers.cc_infos,
-        )
+
+    system_modules = _toolchain_system_modules(
+        feature_configuration = feature_configuration,
+        swift_toolchain = swift_toolchain,
+    )
+    return (
+        swift_toolchain.clang_implicit_deps_providers.swift_infos +
+        system_modules.swift_infos,
+        swift_toolchain.clang_implicit_deps_providers.cc_infos +
+        system_modules.cc_infos,
+    )
+
+def is_exec_config(ctx):
+    """Determines whether the current configuration is an exec configuration.
+
+    Args:
+        ctx: The rule context.
+
+    Returns:
+        Whether the current configuration is an exec configuration.
+    """
+
+    # TODO: Remove once we drop 9.x
+    if bazel_features.rules.is_tool_configuration_public and ctx.configuration.is_tool_configuration():
+        return True
+    elif ctx.bin_dir.path.endswith("-exec/bin"):  # NOTE: 9.0.0 or <8.7.0 with --experimental_platform_in_output_dir
+        return True
+    elif "-exec-" in ctx.bin_dir.path:
+        return True
+
+    return False

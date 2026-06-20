@@ -1,6 +1,13 @@
 import ArgumentParser
-import CryptoKit
 import Foundation
+
+#if canImport(CryptoKit)
+  import CryptoKit
+#endif
+
+#if canImport(FoundationNetworking)
+  import FoundationNetworking
+#endif
 
 extension FileHandle: @retroactive TextOutputStream {
   public func write(_ string: String) {
@@ -102,7 +109,48 @@ struct ToolchainDownloader {
       throw ExitCode.failure
     }
     let data = try await downloadFile(url: url)
-    let hash = SHA256.hash(data: data)
-    return hash.compactMap { String(format: "%02x", $0) }.joined()
+    return try sha256(of: data)
+  }
+
+  private func sha256(of data: Data) throws -> String {
+    #if canImport(CryptoKit)
+      let hash = SHA256.hash(data: data)
+      return hash.compactMap { String(format: "%02x", $0) }.joined()
+    #else
+      // CryptoKit is Apple-only. On Linux, shell out to `sha256sum` (part of
+      // GNU coreutils, present on every distro we care about). The tool is a
+      // maintainer utility run via `bazel run`, so the subprocess overhead is
+      // not a concern here.
+      let tempURL = URL(fileURLWithPath: NSTemporaryDirectory())
+        .appendingPathComponent(UUID().uuidString)
+      try data.write(to: tempURL)
+      defer { try? FileManager.default.removeItem(at: tempURL) }
+
+      let process = Process()
+      process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+      process.arguments = ["sha256sum", tempURL.path]
+      let stdout = Pipe()
+      process.standardOutput = stdout
+      try process.run()
+      process.waitUntilExit()
+      guard process.terminationStatus == 0 else {
+        throw NSError(
+          domain: "ToolchainDownloader",
+          code: Int(process.terminationStatus),
+          userInfo: [NSLocalizedDescriptionKey: "sha256sum exited with status \(process.terminationStatus)"]
+        )
+      }
+      let output = stdout.fileHandleForReading.readDataToEndOfFile()
+      guard let line = String(data: output, encoding: .utf8),
+        let hex = line.split(separator: " ").first
+      else {
+        throw NSError(
+          domain: "ToolchainDownloader",
+          code: -1,
+          userInfo: [NSLocalizedDescriptionKey: "Could not parse sha256sum output"]
+        )
+      }
+      return String(hex)
+    #endif
   }
 }

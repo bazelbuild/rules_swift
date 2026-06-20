@@ -80,7 +80,9 @@ public final class SwiftTestingRunner: Sendable {
     for try await testOrSuite in try await listTests() {
       switch testOrSuite {
       case .suite(let suiteID):
-        discoveredSuites.withLock { $0.insert(suiteID) }
+        discoveredSuites.withLock { discoveredSuites in
+          _ = discoveredSuites.insert(suiteID)
+        }
       case .test(let test):
         collector.addTest(test)
       }
@@ -174,9 +176,17 @@ public final class SwiftTestingRunner: Sendable {
     // We only care about test events that have a test ID and an instant (when they occurred).
     guard
       case .string(let kind) = payload["kind"],
-      case .string(let testID) = payload["testID"],
-      // Ignore suites. The xUnit recorder reconstructs the hierarchy.
-      !discoveredSuites.withLock({ $0.contains(testID) }),
+      case .string(let testID) = payload["testID"]
+    else {
+      return
+    }
+
+    // Ignore suites. The xUnit recorder reconstructs the hierarchy.
+    let isDiscoveredSuite = discoveredSuites.withLock { discoveredSuites in
+      discoveredSuites.contains(testID)
+    }
+    guard
+      !isDiscoveredSuite,
       case .object(let instantJSON) = payload["instant"],
       case .number(let absolute) = instantJSON["absolute"]
     else {
@@ -184,6 +194,18 @@ public final class SwiftTestingRunner: Sendable {
     }
     let instant = EncodedInstant(seconds: absolute.doubleValue)
     let nameComponents = nameComponents(for: testID)
+
+    // Later versions of swift-testing (after Xcode 16.0) stopped reporting suites that don't use
+    // the `@Suite` attribute in the `listTests` request
+    // (https://github.com/swiftlang/swift-testing/issues/1099). It's not clear if this is
+    // intentional or not, but we still need to be able to distinguish suites from test functions to
+    // produce the correct tree structure in the test recorder. We can distinguish them by observing
+    // that the last component of a test function ID (after the source location is stripped off, as
+    // `nameComponents` does above) will have trailing parentheses, while suites will just be the
+    // name of the type.
+    guard let last = nameComponents.last, last.hasSuffix(")") else {
+      return
+    }
 
     switch kind {
     case "testStarted":

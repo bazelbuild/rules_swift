@@ -43,8 +43,8 @@ def _swift_library_group_impl(ctx):
             dependency_attributes = ["deps"],
         ),
         SwiftInfo(
-            swift_infos = (get_providers(deps, SwiftInfo) +
-                           toolchains.swift.implicit_deps_providers.swift_infos),
+            direct_swift_infos = get_providers(deps, SwiftInfo),
+            swift_infos = toolchains.swift.implicit_deps_providers.swift_infos,
         ),
         # Propagate an `ObjcInfo` provider with linking info about the
         # library so that linking with Apple Starlark APIs/rules works

@@ -1,8 +1,8 @@
-load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load(
-    "@build_bazel_apple_support//configs:platforms.bzl",
+    "@apple_support//configs:platforms.bzl",
     "APPLE_PLATFORMS_CONSTRAINTS",
 )
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 
 licenses(["notice"])
 
@@ -31,7 +31,7 @@ bzl_library(
         "@bazel_skylib//lib:dicts",
         "@bazel_skylib//lib:paths",
         "@bazel_skylib//rules:common_settings",
-        "@bazel_tools//tools/cpp:toolchain_utils.bzl",
+        "@rules_cc//cc:find_cc_toolchain_bzl",
         "@rules_cc//cc/common",
     ],
 )
@@ -60,7 +60,7 @@ bzl_library(
         "@bazel_skylib//lib:dicts",
         "@bazel_skylib//lib:paths",
         "@bazel_skylib//rules:common_settings",
-        "@bazel_tools//tools/cpp:toolchain_utils.bzl",
+        "@rules_cc//cc:find_cc_toolchain_bzl",
         "@rules_cc//cc/common",
     ],
 )
@@ -75,7 +75,7 @@ toolchain(
         "@platforms//os:linux",
         "@platforms//cpu:x86_64",
     ],
-    toolchain = "@build_bazel_rules_swift_local_config//:linux-toolchain",
+    toolchain = "@rules_swift_local_config//:linux-toolchain",
     toolchain_type = "//toolchains:toolchain_type",
     visibility = ["//visibility:public"],
 )
@@ -90,10 +90,24 @@ toolchain(
         "@platforms//os:linux",
         "@platforms//cpu:aarch64",
     ],
-    toolchain = "@build_bazel_rules_swift_local_config//:linux-toolchain",
+    toolchain = "@rules_swift_local_config//:linux-toolchain",
     toolchain_type = "//toolchains:toolchain_type",
     visibility = ["//visibility:public"],
 )
+
+[
+    toolchain(
+        name = "xcode-sdk-toolchain-" + arch,
+        exec_compatible_with = [
+            "@platforms//os:macos",
+        ],
+        target_compatible_with = constraints,
+        toolchain = "@rules_swift_local_config//:xcode-sdk-toolchain",
+        toolchain_type = "//toolchains:sdk_toolchain_type",
+        visibility = ["//visibility:public"],
+    )
+    for arch, constraints in APPLE_PLATFORMS_CONSTRAINTS.items()
+]
 
 [
     toolchain(
@@ -102,7 +116,7 @@ toolchain(
             "@platforms//os:macos",
         ],
         target_compatible_with = constraints,
-        toolchain = "@build_bazel_rules_swift_local_config//:xcode-toolchain",
+        toolchain = "@rules_swift_local_config//:xcode-toolchain",
         toolchain_type = "//toolchains:toolchain_type",
         visibility = ["//visibility:public"],
     )
@@ -119,7 +133,7 @@ toolchain(
         "@platforms//os:windows",
         "@platforms//cpu:x86_64",
     ],
-    toolchain = "@build_bazel_rules_swift_local_config//:windows-toolchain",
+    toolchain = "@rules_swift_local_config//:windows-toolchain",
     toolchain_type = "//toolchains:toolchain_type",
     visibility = ["//visibility:public"],
 )
@@ -134,4 +148,11 @@ filegroup(
     visibility = [
         "//swift:__pkg__",
     ],
+)
+
+bzl_library(
+    name = "swift_tools",
+    srcs = ["swift_tools.bzl"],
+    visibility = ["//visibility:public"],
+    deps = ["//swift:providers"],
 )

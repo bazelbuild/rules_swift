@@ -14,13 +14,13 @@
 
 """Implementation of the `swift_compiler_plugin` rule."""
 
-load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load("@build_bazel_apple_support//lib:apple_support.bzl", "apple_support")
-load("@build_bazel_apple_support//lib:lipo.bzl", "lipo")
+load("@apple_support//lib:apple_support.bzl", "apple_support")
+load("@apple_support//lib:lipo.bzl", "lipo")
 load(
-    "@build_bazel_apple_support//lib:transitions.bzl",
+    "@apple_support//lib:transitions.bzl",
     "macos_universal_transition",
 )
+load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load("//swift/internal:binary_attrs.bzl", "binary_rule_attrs")
@@ -34,6 +34,7 @@ load(
     "//swift/internal:linking.bzl",
     "configure_features_for_binary",
     "create_linking_context_from_compilation_outputs",
+    "entry_point_function_name",
     "malloc_linking_context",
     "register_link_binary_action",
 )
@@ -73,8 +74,11 @@ def _swift_compiler_plugin_impl(ctx):
 
     module_name = ctx.attr.module_name
     if not module_name:
-        module_name = derive_swift_module_name(ctx.label)
-    entry_point_function_name = "{}_main".format(module_name)
+        module_name = derive_swift_module_name(
+            ctx.label,
+            feature_configuration = feature_configuration,
+        )
+    entry_point_name = entry_point_function_name(module_name)
 
     compile_result = compile(
         actions = ctx.actions,
@@ -94,7 +98,7 @@ def _swift_compiler_plugin_impl(ctx):
             "-Xfrontend",
             "-entry-point-function-name",
             "-Xfrontend",
-            entry_point_function_name,
+            entry_point_name,
         ],
         defines = ctx.attr.defines,
         feature_configuration = feature_configuration,
@@ -155,7 +159,7 @@ def _swift_compiler_plugin_impl(ctx):
             # When linking the plugin binary, make sure we use the correct entry
             # point name.
             toolchains.swift.entry_point_linkopts_provider(
-                entry_point_name = entry_point_function_name,
+                entry_point_name = entry_point_name,
             ).linkopts
         ),
         variables_extension = variables_extension,
@@ -257,9 +261,9 @@ swift_compiler_plugin(
     name = "Macros",
     srcs = glob(["Macros/*.swift"]),
     deps = [
-        "@SwiftSyntax",
-        "@SwiftSyntax//:SwiftCompilerPlugin",
-        "@SwiftSyntax//:SwiftSyntaxMacros",
+        "@swift-syntax//:SwiftSyntax",
+        "@swift-syntax//:SwiftCompilerPlugin",
+        "@swift-syntax//:SwiftSyntaxMacros",
     ],
 )
 
@@ -269,7 +273,7 @@ swift_test(
     srcs = glob(["MacrosTests/*.swift"]),
     deps = [
         ":Macros",
-        "@SwiftSyntax//:SwiftSyntaxMacrosTestSupport",
+        "@swift-syntax//:SwiftSyntaxMacrosTestSupport",
     ],
 )
 
@@ -398,9 +402,9 @@ swift_compiler_plugin(
     name = "Macros",
     srcs = glob(["Macros/*.swift"]),
     deps = [
-        "@SwiftSyntax",
-        "@SwiftSyntax//:SwiftCompilerPlugin",
-        "@SwiftSyntax//:SwiftSyntaxMacros",
+        "@swift-syntax//:SwiftSyntax",
+        "@swift-syntax//:SwiftCompilerPlugin",
+        "@swift-syntax//:SwiftSyntaxMacros",
     ],
 )
 

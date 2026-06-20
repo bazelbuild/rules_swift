@@ -117,12 +117,6 @@ struct TestDiscoverer: ParsableCommand {
       struct Main {
         static func main() {
           do {
-            try loadTestingLibraries()
-          } catch {
-            print("Fatal error loading runtime libraries: \\(error)")
-            exit(1)
-          }
-          do {
             try XCTestRunner.run(__allDiscoveredXCTests())
           } catch {
             print("Fatal error running XCTest tests: \\(error)")
@@ -135,17 +129,18 @@ struct TestDiscoverer: ParsableCommand {
               print("Fatal error running swift-testing tests: \\(error)")
               exit(1)
             }
+            let recorder = XUnitTestRecorder.shared
+            guard recorder.didTestsRun else {
+              print("ERROR: No tests were discovered.")
+              exit(1)
+            }
             do {
-              try XUnitTestRecorder.shared.writeXML()
+              try recorder.writeXML()
             } catch {
               print("Fatal error writing test results to XML: \\(error)")
               exit(1)
             }
-            guard XUnitTestRecorder.shared.testCount > 0 else {
-              print("ERROR: No tests were executed")
-              exit(1)
-            }
-            exit(XUnitTestRecorder.shared.hasFailure ? 1 : 0)
+            exit(recorder.hasFailure ? 1 : 0)
           }
           _asyncMainDrainQueue()
         }

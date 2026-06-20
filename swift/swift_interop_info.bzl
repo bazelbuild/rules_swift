@@ -32,6 +32,8 @@ load("//swift/internal:swift_interop_info.bzl", "SwiftInteropInfo")
 
 def create_swift_interop_info(
         *,
+        compilation_context = None,
+        direct_swift_infos = [],
         exclude_headers = [],
         module_map = None,
         module_name = None,
@@ -72,6 +74,15 @@ def create_swift_interop_info(
     implicit attributes) but also to exclude dependencies if necessary.
 
     Args:
+        compilation_context: A `CcCompilationContext` that provides the headers
+            for the module, or `None` (the default) if the headers should be
+            derived from the target's `CcInfo` provider. This should only be
+            used if a target explicitly needs to use a different compilation
+            context for Swift than it does for C/Objective-C, which is a very
+            rare situation.
+        direct_swift_infos: A list of `SwiftInfo` providers from dependencies,
+            which will be merged with the new `SwiftInfo` created by the aspect
+            as direct data.
         exclude_headers: A `list` of `File`s representing headers that should be
             excluded from the module if the module map is generated.
         module_map: A `File` representing an existing module map that should be
@@ -89,10 +100,7 @@ def create_swift_interop_info(
             target or by the toolchain). This allows the rule implementation to
             have additional control over features that should be supported by
             default for all instances of that rule as if it were creating the
-            feature configuration itself; for example, a rule can request that
-            `swift.emit_c_module` always be enabled for its targets even if it
-            is not explicitly enabled in the toolchain or on the target
-            directly.
+            feature configuration itself.
         suppressed: A `bool` indicating whether the module that the aspect would
             create for the target should instead be suppressed.
         swift_infos: A list of `SwiftInfo` providers from dependencies, which
@@ -102,11 +110,7 @@ def create_swift_interop_info(
             supplied as negations in the `features` attribute. This allows the
             rule implementation to have additional control over features that
             should be disabled by default for all instances of that rule as if
-            it were creating the feature configuration itself; for example, a
-            rule that processes frameworks with headers that do not follow
-            strict layering can request that `swift.strict_module` always be
-            disabled for its targets even if it is enabled by default in the
-            toolchain.
+            it were creating the feature configuration itself.
 
     Returns:
         A provider whose type/layout is an implementation detail and should not
@@ -121,11 +125,13 @@ def create_swift_interop_info(
                  "is specified.")
 
     return SwiftInteropInfo(
+        compilation_context = compilation_context,
+        direct_swift_infos = direct_swift_infos,
         exclude_headers = exclude_headers,
         module_map = module_map,
         module_name = module_name,
         requested_features = requested_features,
         suppressed = suppressed,
-        swift_infos = swift_infos,
+        swift_infos = direct_swift_infos + swift_infos,
         unsupported_features = unsupported_features,
     )

@@ -14,7 +14,6 @@
 
 """Implementation of the `mixed_language_library` rule."""
 
-load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
@@ -27,7 +26,16 @@ load(
 load("//swift:swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
 
 # buildifier: disable=bzl-visibility
-load("//swift/internal:attrs.bzl", "swift_deps_attr")
+load(
+    "//swift/internal:attrs.bzl",
+    "swift_deps_attr",
+)
+
+# buildifier: disable=bzl-visibility
+load(
+    "//swift/internal:compiling.bzl",
+    "precompile_clang_module",
+)
 
 # buildifier: disable=bzl-visibility
 load(
@@ -45,12 +53,17 @@ load(
 # buildifier: disable=bzl-visibility
 load(
     "//swift/internal:toolchain_utils.bzl",
+    "SWIFT_TOOLCHAIN_TYPE",
     "find_all_toolchains",
     "use_all_toolchains",
 )
 
 # buildifier: disable=bzl-visibility
-load("//swift/internal:utils.bzl", "get_providers")
+load(
+    "//swift/internal:utils.bzl",
+    "compilation_context_for_explicit_module_compilation",
+    "get_providers",
+)
 
 def _write_extended_module_map(
         *,
@@ -168,6 +181,26 @@ def _mixed_language_library_impl(ctx):
         ],
         cc_infos = [swift_target[CcInfo], clang_target[CcInfo]],
     )
+
+    deps_swift_infos = get_providers(ctx.attr.deps, SwiftInfo)
+    compile_result = precompile_clang_module(
+        actions = actions,
+        cc_compilation_context = compilation_context_for_explicit_module_compilation(
+            compilation_contexts = [
+                cc_info.compilation_context,
+            ],
+            swift_infos = deps_swift_infos,
+        ),
+        feature_configuration = feature_configuration,
+        module_map_file = extended_module_map,
+        module_name = module_name,
+        swift_infos = deps_swift_infos,
+        toolchains = toolchains,
+        target_name = name,
+        toolchain_type = SWIFT_TOOLCHAIN_TYPE,
+    )
+    precompiled_module = compile_result.clang_module.precompiled_module if compile_result else None
+
     swift_info = SwiftInfo(
         modules = [
             create_swift_module_context(
@@ -175,13 +208,14 @@ def _mixed_language_library_impl(ctx):
                 clang = create_clang_module_inputs(
                     compilation_context = cc_info.compilation_context,
                     module_map = extended_module_map,
+                    precompiled_module = precompiled_module,
                 ),
                 swift = swift_module.swift,
             ),
         ],
         # Collect transitive modules, without including `swift_target` (which is
         # covered with the `create_module` above)
-        swift_infos = get_providers(ctx.attr.deps, SwiftInfo),
+        swift_infos = deps_swift_infos,
     )
 
     return [
@@ -203,47 +237,45 @@ def _mixed_language_library_impl(ctx):
     ]
 
 mixed_language_library = rule(
-    attrs = dicts.add(
-        {
-            "clang_target": attr.label(
-                doc = """
+    attrs = {
+        "clang_target": attr.label(
+            doc = """
 The non-Swift portion of the mixed language module.
 """,
-                mandatory = True,
-                providers = [CcInfo],
-            ),
-            "deps": swift_deps_attr(
-                aspects = [swift_clang_module_aspect],
-                doc = "Dependencies of the target being built.",
-            ),
-            "swift_target": attr.label(
-                doc = """
+            mandatory = True,
+            providers = [CcInfo],
+        ),
+        "deps": swift_deps_attr(
+            aspects = [swift_clang_module_aspect],
+            doc = "Dependencies of the target being built.",
+        ),
+        "swift_target": attr.label(
+            doc = """
 The Swift portion of the mixed language module.
 """,
-                mandatory = True,
-                providers = [SwiftInfo],
-            ),
-            "umbrella_header": attr.label(
-                allow_single_file = True,
-                doc = "The umbrella header for the module.",
-                mandatory = True,
-            ),
-            "module_name": attr.string(
-                doc = "The name of the module.",
-                mandatory = True,
-            ),
-            "module_map": attr.label(
-                allow_single_file = True,
-                doc = "The module map for the module.",
-                mandatory = True,
-            ),
-            "_module_map_extender": attr.label(
-                cfg = "exec",
-                executable = True,
-                default = Label("//tools/mixed_language_module_map_extender"),
-            ),
-        },
-    ),
+            mandatory = True,
+            providers = [SwiftInfo],
+        ),
+        "umbrella_header": attr.label(
+            allow_single_file = True,
+            doc = "The umbrella header for the module.",
+            mandatory = True,
+        ),
+        "module_name": attr.string(
+            doc = "The name of the module.",
+            mandatory = True,
+        ),
+        "module_map": attr.label(
+            allow_single_file = True,
+            doc = "The module map for the module.",
+            mandatory = True,
+        ),
+        "_module_map_extender": attr.label(
+            cfg = "exec",
+            executable = True,
+            default = Label("//tools/mixed_language_module_map_extender"),
+        ),
+    },
     doc = """\
 Assembles a mixed language library from a clang and swift library target pair.
 """,

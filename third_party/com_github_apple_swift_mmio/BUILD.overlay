@@ -1,6 +1,6 @@
-load("@build_bazel_rules_swift//swift:swift_compiler_plugin.bzl", "swift_compiler_plugin")
-load("@build_bazel_rules_swift//swift:swift_interop_hint.bzl", "swift_interop_hint")
-load("@build_bazel_rules_swift//swift:swift_library.bzl", "swift_library")
+load("@rules_swift//swift:swift_compiler_plugin.bzl", "swift_compiler_plugin")
+load("@rules_swift//swift:swift_interop_hint.bzl", "swift_interop_hint")
+load("@rules_swift//swift:swift_library.bzl", "swift_library")
 load("@rules_cc//cc:defs.bzl", "cc_library")
 
 swift_interop_hint(
@@ -11,6 +11,7 @@ swift_interop_hint(
 
 cc_library(
     name = "MMIOVolatile",
+    hdrs = glob(["Sources/MMIOVolatile/**/*.h"]),
     aspect_hints = [":MMIOVolatile.swift_hint"],
     copts = [
         "-fblocks",
@@ -18,87 +19,83 @@ cc_library(
         "-fPIC",
         "-DSWIFT_PACKAGE=1",
     ],
-    hdrs = glob(["Sources/MMIOVolatile/**/*.h"]),
     visibility = ["//visibility:public"],
 )
 
 swift_library(
     name = "MMIOUtilities",
+    package_name = "swift-mmio",
+    srcs = glob(["Sources/MMIOUtilities/**/*.swift"]),
     always_include_developer_search_paths = True,
-    alwayslink = True,
     copts = [
         "-DSWIFT_PACKAGE",
         "-Xcc",
         "-DSWIFT_PACKAGE",
-        "-swift-version",
-        "6",
     ],
     features = [
+        "swift.enable_v6",
         "swift.upcoming.ExistentialAny",
+        "swift.upcoming.InferIsolatedConformances",
         "swift.upcoming.InternalImportsByDefault",
         "swift.upcoming.MemberImportVisibility",
         "swift.upcoming.NonisolatedNonsendingByDefault",
-        "swift.upcoming.InferIsolatedConformances",
     ],
-    package_name = "swift-mmio",
-    srcs = glob(["Sources/MMIOUtilities/**/*.swift"]),
     tags = ["manual"],
     visibility = ["//:__subpackages__"],
+    alwayslink = True,
 )
 
 swift_compiler_plugin(
     name = "MMIOMacros",
+    package_name = "swift-mmio",
+    srcs = glob(["Sources/MMIOMacros/**/*.swift"]),
     copts = [
         "-DSWIFT_PACKAGE",
         "-Xcc",
         "-DSWIFT_PACKAGE",
-        "-swift-version",
-        "6",
-    ],
-    deps = [
-        "@com_github_apple_swift_mmio//:MMIOUtilities",
-        "@SwiftSyntax//:SwiftCompilerPlugin",
-        "@SwiftSyntax//:SwiftDiagnostics",
-        "@SwiftSyntax//:SwiftOperators",
-        "@SwiftSyntax//:SwiftSyntax",
-        "@SwiftSyntax//:SwiftSyntaxBuilder",
-        "@SwiftSyntax//:SwiftSyntaxMacroExpansion",
-        "@SwiftSyntax//:SwiftSyntaxMacros",
     ],
     features = [
+        "swift.enable_v6",
         "swift.upcoming.ExistentialAny",
+        "swift.upcoming.InferIsolatedConformances",
         "swift.upcoming.InternalImportsByDefault",
         "swift.upcoming.MemberImportVisibility",
         "swift.upcoming.NonisolatedNonsendingByDefault",
-        "swift.upcoming.InferIsolatedConformances",
     ],
     module_name = "MMIOMacros",
-    package_name = "swift-mmio",
-    srcs = glob(["Sources/MMIOMacros/**/*.swift"]),
     visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_apple_swift_mmio//:MMIOUtilities",
+        "@swift-syntax//:SwiftCompilerPlugin",
+        "@swift-syntax//:SwiftDiagnostics",
+        "@swift-syntax//:SwiftOperators",
+        "@swift-syntax//:SwiftSyntax",
+        "@swift-syntax//:SwiftSyntaxBuilder",
+        "@swift-syntax//:SwiftSyntaxMacroExpansion",
+        "@swift-syntax//:SwiftSyntaxMacros",
+    ],
 )
 
 swift_library(
     name = "MMIO",
+    package_name = "swift-mmio",
+    srcs = glob(["Sources/MMIO/**/*.swift"]),
     always_include_developer_search_paths = True,
-    alwayslink = True,
     copts = [
         "-DSWIFT_PACKAGE",
         "-Xcc",
         "-DSWIFT_PACKAGE",
-        "-swift-version",
-        "6",
     ],
-    deps = ["//:MMIOVolatile"],
     features = [
+        "swift.enable_v6",
         "swift.upcoming.ExistentialAny",
+        "swift.upcoming.InferIsolatedConformances",
         "swift.upcoming.InternalImportsByDefault",
         "swift.upcoming.MemberImportVisibility",
         "swift.upcoming.NonisolatedNonsendingByDefault",
-        "swift.upcoming.InferIsolatedConformances",
     ],
-    package_name = "swift-mmio",
     plugins = ["//:MMIOMacros"],
-    srcs = glob(["Sources/MMIO/**/*.swift"]),
     visibility = ["//visibility:public"],
+    deps = ["//:MMIOVolatile"],
+    alwayslink = True,
 )

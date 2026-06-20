@@ -23,10 +23,7 @@ load("@bazel_features//:features.bzl", "bazel_features")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
-load(
-    "@bazel_tools//tools/cpp:toolchain_utils.bzl",
-    "use_cpp_toolchain",
-)
+load("@rules_cc//cc:find_cc_toolchain.bzl", "find_cc_toolchain", "use_cc_toolchain")
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load(
@@ -47,6 +44,7 @@ load(
     "SWIFT_ACTION_PRECOMPILE_C_MODULE",
     "SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT",
     "SWIFT_ACTION_SYNTHESIZE_INTERFACE",
+    "all_compile_action_names",
 )
 load("//swift/internal:attrs.bzl", "swift_toolchain_driver_attrs")
 load("//swift/internal:autolinking.bzl", "autolink_extract_action_configs")
@@ -56,6 +54,7 @@ load(
     "SWIFT_FEATURE_USE_AUTOLINK_EXTRACT",
     "SWIFT_FEATURE_USE_GLOBAL_INDEX_STORE",
     "SWIFT_FEATURE_USE_MODULE_WRAP",
+    "SWIFT_FEATURE__SUPPORTS_HERMETIC_SWIFTMODULE",
 )
 load(
     "//swift/internal:features.bzl",
@@ -65,13 +64,16 @@ load(
 load(
     "//swift/internal:providers.bzl",
     "SwiftCrossImportOverlayInfo",
+    "SwiftCrossImportOverlaysInfo",
     "SwiftModuleAliasesInfo",
 )
 load("//swift/internal:target_triples.bzl", "target_triples")
 load(
     "//swift/internal:utils.bzl",
+    "collect_cross_import_overlays",
     "collect_implicit_deps_providers",
     "get_swift_executable_for_toolchain",
+    "is_exec_config",
 )
 load("//swift/internal:wmo.bzl", "features_from_swiftcopts")
 load(
@@ -85,6 +87,10 @@ load(
 )
 load("//swift/toolchains/config:compile_config.bzl", "compile_action_configs")
 load(
+    "//swift/toolchains/config:compile_module_interface_config.bzl",
+    "compile_module_interface_action_configs",
+)
+load(
     "//swift/toolchains/config:modulewrap_config.bzl",
     "modulewrap_action_configs",
 )
@@ -93,8 +99,6 @@ load(
     "symbol_graph_action_configs",
 )
 load("//swift/toolchains/config:tool_config.bzl", "ToolConfigInfo")
-
-_CPP_TOOLCHAIN_TYPE = Label("@bazel_tools//tools/cpp:toolchain_type")
 
 def _swift_compile_resource_set(_os, inputs_size):
     # The `os` argument is unused, but the Starlark API requires both
@@ -167,6 +171,17 @@ def _all_tool_configs(
             worker_mode = "wrap",
             env = env,
         ),
+        SWIFT_ACTION_COMPILE_MODULE_INTERFACE: (
+            ToolConfigInfo(
+                driver_config = _driver_config(mode = "swiftc") if not swift_tools else None,
+                args = ["-frontend"],
+                executable = swift_tools.swift_driver if swift_tools else None,
+                resource_set = _swift_compile_resource_set,
+                use_param_file = True,
+                worker_mode = "wrap",
+                env = env,
+            )
+        ),
     }
 
     if use_autolink_extract:
@@ -208,10 +223,8 @@ def _all_action_configs(os, arch, target_triple, sdkroot, xctest_version, additi
     # Basic compilation flags (target triple and toolchain search paths).
     action_configs = [
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
+            actions = all_compile_action_names() + [
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
-                SWIFT_ACTION_DERIVE_FILES,
                 SWIFT_ACTION_DUMP_AST,
                 SWIFT_ACTION_MODULEWRAP,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
@@ -222,13 +235,24 @@ def _all_action_configs(os, arch, target_triple, sdkroot, xctest_version, additi
                 add_arg("-target", target_triples.str(target_triple)),
             ],
         ),
+        ActionConfigInfo(
+            actions = all_compile_action_names() + [
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+                SWIFT_ACTION_DUMP_AST,
+                SWIFT_ACTION_PRECOMPILE_C_MODULE,
+                SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
+                SWIFT_ACTION_SYNTHESIZE_INTERFACE,
+            ],
+            configurators = [
+                # https://github.com/swiftlang/llvm-project/issues/12826
+                add_arg("-Xcc", "--target={}".format(target_triples.str(target_triple))),
+            ],
+        ),
     ]
     if sdkroot:
         action_configs.append(
             ActionConfigInfo(
-                actions = [
-                    SWIFT_ACTION_COMPILE,
-                    SWIFT_ACTION_DERIVE_FILES,
+                actions = all_compile_action_names() + [
                     SWIFT_ACTION_DUMP_AST,
                     SWIFT_ACTION_PRECOMPILE_C_MODULE,
                     SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
@@ -240,9 +264,7 @@ def _all_action_configs(os, arch, target_triple, sdkroot, xctest_version, additi
         if os and xctest_version:
             action_configs.append(
                 ActionConfigInfo(
-                    actions = [
-                        SWIFT_ACTION_COMPILE,
-                        SWIFT_ACTION_DERIVE_FILES,
+                    actions = all_compile_action_names() + [
                         SWIFT_ACTION_DUMP_AST,
                         SWIFT_ACTION_PRECOMPILE_C_MODULE,
                     ],
@@ -269,9 +291,7 @@ def _all_action_configs(os, arch, target_triple, sdkroot, xctest_version, additi
             if arch:
                 action_configs.append(
                     ActionConfigInfo(
-                        actions = [
-                            SWIFT_ACTION_COMPILE,
-                            SWIFT_ACTION_DERIVE_FILES,
+                        actions = all_compile_action_names() + [
                             SWIFT_ACTION_DUMP_AST,
                             SWIFT_ACTION_PRECOMPILE_C_MODULE,
                         ],
@@ -304,6 +324,7 @@ def _all_action_configs(os, arch, target_triple, sdkroot, xctest_version, additi
     action_configs.extend(modulewrap_action_configs())
     action_configs.extend(autolink_extract_action_configs())
     action_configs.extend(symbol_graph_action_configs())
+    action_configs.extend(compile_module_interface_action_configs())
 
     return action_configs
 
@@ -441,7 +462,7 @@ def _parse_target_system_name(*, arch, os, target_system_name):
 
 def _swift_toolchain_impl(ctx):
     toolchain_root = ctx.attr.root
-    cc_toolchain = ctx.exec_groups["default"].toolchains[_CPP_TOOLCHAIN_TYPE].cc
+    cc_toolchain = find_cc_toolchain(ctx)
     target_system_name = _parse_target_system_name(
         arch = ctx.attr.arch,
         os = ctx.attr.os,
@@ -452,9 +473,10 @@ def _swift_toolchain_impl(ctx):
     )
 
     if "clang" not in cc_toolchain.compiler:
-        fail("Swift requires the configured CC toolchain to be LLVM (clang). " +
+        fail("Swift requires the configured CC toolchain use clang. " +
              "Either use the locally installed LLVM by setting `CC=clang` in your environment " +
-             "before invoking Bazel, or configure a Bazel LLVM CC toolchain.")
+             "before invoking Bazel, or configure a Bazel LLVM CC toolchain. " +
+             "The current CC toolchain is configured to use '{}'.".format(cc_toolchain.compiler))
 
     additional_rpaths = []
     if ctx.attr.swift_tools:
@@ -497,13 +519,9 @@ def _swift_toolchain_impl(ctx):
             additional_rpaths,
         )
 
-    # TODO: Remove once we drop bazel 7.x support
-    if not bazel_features.cc.swift_fragment_removed:
-        swiftcopts = list(ctx.fragments.swift.copts())
-    else:
-        swiftcopts = []
+    swiftcopts = []
 
-    if "-exec-" in ctx.bin_dir.path:
+    if is_exec_config(ctx):
         swiftcopts.extend(ctx.attr._exec_copts[BuildSettingInfo].value)
     else:
         swiftcopts.extend(ctx.attr._copts[BuildSettingInfo].value)
@@ -518,13 +536,8 @@ def _swift_toolchain_impl(ctx):
         target_triple = target_triple,
     ))
 
-    requested_features.extend([
-        # Allow users to start using access levels on `import`s by default. Note
-        # that this does *not* change the default access level for `import`s to
-        # `internal`; that is controlled by the upcoming feature flag
-        # `InternalImportsByDefault`.
-        "swift.experimental.AccessLevelOnImport",
-    ])
+    if apple_common.dotted_version(ctx.attr.parsed_version) >= apple_common.dotted_version("6.3"):
+        requested_features.append(SWIFT_FEATURE__SUPPORTS_HERMETIC_SWIFTMODULE)
 
     requested_features.extend(ctx.features)
 
@@ -584,10 +597,7 @@ def _swift_toolchain_impl(ctx):
         clang_implicit_deps_providers = (
             collect_implicit_deps_providers([])
         ),
-        cross_import_overlays = [
-            target[SwiftCrossImportOverlayInfo]
-            for target in ctx.attr.cross_import_overlays
-        ],
+        cross_import_overlays = collect_cross_import_overlays(ctx.attr.cross_import_overlays),
         debug_outputs_provider = None,
         developer_dirs = [],
         entry_point_linkopts_provider = _entry_point_linkopts_provider,
@@ -612,6 +622,8 @@ def _swift_toolchain_impl(ctx):
         requested_features = requested_features,
         root_dir = toolchain_root,
         runtime = depset(ctx.files.runtime),
+        system_modules = collect_implicit_deps_providers([]),
+        implicit_system_modules = collect_implicit_deps_providers([]),
         swift_worker = ctx.attr._worker[DefaultInfo].files_to_run,
         const_protocols_to_gather = ctx.file.const_protocols_to_gather,
         test_configuration = struct(
@@ -653,12 +665,16 @@ architecture-specific content, such as "x86_64" in "lib/swift/linux/x86_64".
             "cross_import_overlays": attr.label_list(
                 allow_empty = True,
                 doc = """\
-A list of `swift_cross_import_overlay` targets that will be automatically
-injected into the dependencies of Swift compilations if their declaring module
-and bystanding module are both already declared as dependencies.
+A list of `swift_cross_import_overlay` or `swift_cross_import_overlay_group`
+targets that will be automatically injected into the dependencies of Swift
+compilations if their declaring module and bystanding module are both already
+declared as dependencies.
 """,
                 mandatory = False,
-                providers = [[SwiftCrossImportOverlayInfo]],
+                providers = [
+                    [SwiftCrossImportOverlayInfo],
+                    [SwiftCrossImportOverlaysInfo],
+                ],
             ),
             "feature_allowlists": attr.label_list(
                 doc = """\
@@ -690,6 +706,9 @@ List of files to carry over as test data to swift executables and tests.
 """,
                 allow_files = True,
             ),
+            "parsed_version": attr.string(
+                mandatory = True,
+            ),
             "version_file": attr.label(
                 mandatory = True,
                 allow_single_file = True,
@@ -697,13 +716,6 @@ List of files to carry over as test data to swift executables and tests.
             "copts": attr.string_list(
                 doc = """\
 A list of additional Swift compiler flags that should be passed to Swift compile actions.
-""",
-            ),
-            "_cc_toolchain": attr.label(
-                default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
-                doc = """\
-The C++ toolchain from which other tools needed by the Swift toolchain (such as
-`clang` and `ar`) will be retrieved.
 """,
             ),
             "_copts": attr.label(
@@ -773,14 +785,7 @@ The version of XCTest that the toolchain packages.
         },
     ),
     doc = "Represents a Swift compiler toolchain.",
-    exec_groups = {
-        # An execution group that has no specific platform requirements. This
-        # ensures that the execution platform of this Swift toolchain does not
-        # unnecessarily constrain the execution platform of the C++ toolchain.
-        "default": exec_group(
-            toolchains = use_cpp_toolchain(),
-        ),
-    },
+    toolchains = use_cc_toolchain(),
     fragments = [] if bazel_features.cc.swift_fragment_removed else ["swift"],
     implementation = _swift_toolchain_impl,
 )

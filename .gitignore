@@ -1,5 +1,6 @@
 /bazel-*
 /MODULE.bazel.lock
+/user.bazelrc
 
 .*.sw?
 *~

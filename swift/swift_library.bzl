@@ -71,11 +71,11 @@ def _maybe_parse_as_library_copts(srcs):
 
     Builds on Apple platforms typically don't use `swift_binary`; they use
     different linking logic (https://github.com/bazelbuild/rules_apple) to
-    produce fat binaries and bundles. This means that all such application code
-    will typically be in a `swift_library` target, and that includes a possible
-    custom main entry point. For this reason, we need to support the creation of
-    `swift_library` targets containing a `main.swift` file, which should *not*
-    pass the `-parse-as-library` flag to the compiler.
+    produce universal binaries and bundles. This means that all such application
+    code will typically be in a `swift_library` target, and that includes a
+    possible custom main entry point. For this reason, we need to support the
+    creation of `swift_library` targets containing a `main.swift` file, which
+    should *not* pass the `-parse-as-library` flag to the compiler.
 
     Args:
         srcs: A list of source files to check for the presence of `main.swift`.
@@ -149,10 +149,6 @@ def _swift_library_impl(ctx):
         extra_features.append(SWIFT_FEATURE_EMIT_SWIFTINTERFACE)
         extra_features.append(SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE)
 
-    module_name = ctx.attr.module_name
-    if not module_name:
-        module_name = derive_swift_module_name(ctx.label)
-
     toolchains = find_all_toolchains(ctx)
     feature_configuration = configure_features(
         ctx = ctx,
@@ -160,6 +156,13 @@ def _swift_library_impl(ctx):
         toolchains = toolchains,
         unsupported_features = ctx.disabled_features,
     )
+
+    module_name = ctx.attr.module_name
+    if not module_name:
+        module_name = derive_swift_module_name(
+            ctx.label,
+            feature_configuration = feature_configuration,
+        )
 
     swift_infos = get_providers(deps, SwiftInfo)
     private_swift_infos = get_providers(private_deps, SwiftInfo)

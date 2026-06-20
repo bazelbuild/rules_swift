@@ -1,0 +1,56 @@
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
+
+package(default_visibility = ["//visibility:public"])
+
+exports_files(["scan.py"])
+
+sh_binary(
+    name = "scan",
+    srcs = ["scan_wrapper.sh"],
+    args = ["$(location :scan.py)"],
+    data = ["scan.py"],
+)
+
+filegroup(
+    name = "for_bazel_tests",
+    testonly = True,
+    srcs = glob(["*.bzl"]) + [
+        "BUILD.bazel",
+        "scan.py",
+    ],
+    visibility = ["//:__subpackages__"],
+)
+
+bzl_library(
+    name = "extensions",
+    srcs = ["extensions.bzl"],
+    deps = [
+        ":precomputed_xcode_explicit_module_repo",
+        ":xcode_explicit_module_hub_repo",
+        ":xcode_explicit_module_repo",
+        ":xcode_locator_repo",
+        "@bazel_tools//tools/osx:xcode_configure.bzl",
+    ],
+)
+
+bzl_library(
+    name = "xcode_locator_repo",
+    srcs = ["xcode_locator_repo.bzl"],
+    deps = ["@bazel_tools//tools/osx:xcode_configure.bzl"],
+)
+
+bzl_library(
+    name = "precomputed_xcode_explicit_module_repo",
+    srcs = ["precomputed_xcode_explicit_module_repo.bzl"],
+)
+
+bzl_library(
+    name = "xcode_explicit_module_hub_repo",
+    srcs = ["xcode_explicit_module_hub_repo.bzl"],
+)
+
+bzl_library(
+    name = "xcode_explicit_module_repo",
+    srcs = ["xcode_explicit_module_repo.bzl"],
+)

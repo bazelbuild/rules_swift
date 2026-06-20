@@ -19,17 +19,13 @@ load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load(
     ":feature_names.bzl",
     "SWIFT_FEATURE_CACHEABLE_SWIFTMODULES",
-    "SWIFT_FEATURE_CHECKED_EXCLUSIVITY",
     "SWIFT_FEATURE_COVERAGE",
     "SWIFT_FEATURE_COVERAGE_PREFIX_MAP",
-    "SWIFT_FEATURE_DISABLE_CLANG_SPI",
     "SWIFT_FEATURE_DISABLE_SYSTEM_INDEX",
     "SWIFT_FEATURE_EMIT_SWIFTDOC",
-    "SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
     "SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES",
     "SWIFT_FEATURE_ENABLE_TESTING",
-    "SWIFT_FEATURE_ENABLE_V6",
     "SWIFT_FEATURE_FILE_PREFIX_MAP",
     "SWIFT_FEATURE_FULL_DEBUG_INFO",
     "SWIFT_FEATURE_INTERNALIZE_AT_LINK",
@@ -38,7 +34,6 @@ load(
     "SWIFT_FEATURE_OPT_USES_WMO",
     "SWIFT_FEATURE_REMAP_XCODE_PATH",
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
-    "SWIFT_FEATURE__SUPPORTS_V6",
 )
 load(":package_specs.bzl", "label_matches_package_specs")
 load(":target_triples.bzl", "target_triples")
@@ -141,14 +136,12 @@ def configure_features(
     requested_features = list(requested_features)
     unsupported_features = list(unsupported_features)
 
-    # Always disable these two features so that any `cc_common` APIs called by
+    # Always disable this feature so that any `cc_common` APIs called by
     # `swift_common` APIs don't cause certain actions to be created (for
     # example, when using `cc_common.compile` to create the compilation context
     # for a generated header).
-    unsupported_features.extend([
-        "cc_include_scanning",
-        "parse_headers",
-    ])
+    unsupported_features = list(unsupported_features)
+    unsupported_features.append("cc_include_scanning")
 
     if ctx.coverage_instrumented():
         requested_features.append(SWIFT_FEATURE_COVERAGE)
@@ -190,8 +183,24 @@ def configure_features(
         requested_features = all_requestable_features,
         unsupported_features = all_unsupported_features,
     )
+
+    # Swift generated Objective-C headers are not compatible with
+    # `parse_headers` actions. But, we don't want to disable `parse_headers` for
+    # all actions performed by the toolchain, only the one that compiles the
+    # generated header into an explicit module. So, we (lazily) create a second
+    # feature configuration that will be used by that specific action.
+    def cc_feature_configuration_no_parse_headers():
+        return cc_common.configure_features(
+            ctx = ctx,
+            cc_toolchain = swift_toolchain.cc_toolchain_info,
+            language = swift_toolchain.cc_language,
+            requested_features = all_requestable_features,
+            unsupported_features = all_unsupported_features + ["parse_headers"],
+        )
+
     return struct(
         _cc_feature_configuration = cc_feature_configuration,
+        _cc_feature_configuration_no_parse_headers = cc_feature_configuration_no_parse_headers,
         _enabled_features = all_requestable_features,
         # This is naughty, but APIs like `cc_common.compile` do far worse and
         # "cheat" by accessing the full rule context through a back-reference in
@@ -289,18 +298,21 @@ def default_features_for_toolchain(target_triple):
     # Common features we turn on regardless of target.
     features = [
         SWIFT_FEATURE_CACHEABLE_SWIFTMODULES,
-        SWIFT_FEATURE_CHECKED_EXCLUSIVITY,
         SWIFT_FEATURE_COVERAGE_PREFIX_MAP,
-        SWIFT_FEATURE_DISABLE_CLANG_SPI,
         SWIFT_FEATURE_DISABLE_SYSTEM_INDEX,
         SWIFT_FEATURE_EMIT_SWIFTDOC,
-        SWIFT_FEATURE_ENABLE_BARE_SLASH_REGEX,
         SWIFT_FEATURE_ENABLE_BATCH_MODE,
         SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES,
         SWIFT_FEATURE_FILE_PREFIX_MAP,
         SWIFT_FEATURE_INTERNALIZE_AT_LINK,
         SWIFT_FEATURE_OPT_USES_WMO,
         SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE,
+
+        # Allow users to start using access levels on `import`s by default. Note
+        # that this does *not* change the default access level for `import`s to
+        # `internal`; that is controlled by the upcoming feature flag
+        # `InternalImportsByDefault`.
+        "swift.experimental.AccessLevelOnImport",
     ]
 
     # Apple specific features
@@ -518,56 +530,5 @@ def _compute_features(
     feature_updater.update_features([], swift_toolchain.unsupported_features)
 
     all_disabled_features = feature_updater.disabled_features()
-    all_requested_features = _compute_implied_features(
-        requested_features = feature_updater.requested_features(),
-        unsupported_features = all_disabled_features,
-    )
+    all_requested_features = feature_updater.requested_features()
     return (all_requested_features, all_disabled_features)
-
-def _compute_implied_features(requested_features, unsupported_features):
-    """Compute additional features that should be implied by combinations.
-
-    To avoid an explosion of generalized complexity, this is being done only for
-    features related to language mode support, instead of building it out as a
-    feature for use elsewhere in the toolchain.
-    """
-
-    # If a user requests Swift language mode 6 on a compiler that doesn't
-    # support `-swift-version 6`, we instead enable all of the upcoming features
-    # that will be on by default in Swift 6 mode. This provides an early
-    # migration path for those users.
-    if (SWIFT_FEATURE_ENABLE_V6 in requested_features and
-        SWIFT_FEATURE__SUPPORTS_V6 not in requested_features):
-        for feature in _SWIFT_6_EQUIVALENT_FEATURES:
-            # Only add it if the user did not explicitly ask for it to be
-            # suppressed.
-            if feature not in unsupported_features:
-                requested_features.append(feature)
-
-    return requested_features
-
-# The list below is taken from the feature definitions in the compiler, at
-# https://github.com/apple/swift/blob/release/6.2/include/swift/Basic/Features.def
-_SWIFT_6_EQUIVALENT_FEATURES = [
-    "swift.upcoming.NonfrozenEnumExhaustivity",  # SE-0192
-    "swift.upcoming.ConciseMagicFile",  # SE-0274
-    "swift.upcoming.ForwardTrailingClosures",  # SE-0286
-    "swift.upcoming.StrictConcurrency",  # SE-0337
-    "swift.experimental.StrictConcurrency=complete",  # same as above on older compilers
-    "swift.upcoming.BareSlashRegexLiterals",  # SE-0354
-    "swift.upcoming.DeprecateApplicationMain",  # SE-0383
-    "swift.upcoming.ImportObjcForwardDeclarations",  # SE-0384
-    "swift.upcoming.DisableOutwardActorInference",  # SE-0401
-    "swift.upcoming.IsolatedDefaultValues",  # SE-0411
-    "swift.upcoming.GlobalConcurrency",  # SE-0412
-    "swift.upcoming.InferSendableFromCaptures",  # SE-0418
-    "swift.upcoming.ImplicitOpenExistentials",  # SE-0352
-    "swift.upcoming.RegionBasedIsolation",  # SE-0414
-    "swift.upcoming.DynamicActorIsolation",  # SE-0423
-    "swift.upcoming.GlobalActorIsolatedTypesUsability",  # SE-0434
-
-    # The upcoming feature flags only emit warnings about things that will
-    # become errors in Swift 6. We want the `swift.enable_v6` flag specifically
-    # to enforce the same error behavior.
-    "swift.werror.error_in_future_swift_version",
-]

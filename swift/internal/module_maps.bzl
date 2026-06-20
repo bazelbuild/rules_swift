@@ -16,9 +16,6 @@
 
 load("@bazel_skylib//lib:sets.bzl", "sets")
 
-# TODO(#723): Remove these disables once https://github.com/bazelbuild/buildtools/issues/926 is fixed
-# buildifier: disable=return-value
-# buildifier: disable=function-docstring-return
 def write_module_map(
         actions,
         module_map_file,

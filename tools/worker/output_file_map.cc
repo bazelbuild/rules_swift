@@ -53,22 +53,22 @@ static std::string MakeIncrementalOutputPath(std::string path,
 
 };  // end namespace
 
-void OutputFileMap::ReadFromPath(const std::string &path,
-                                 const std::string &emit_module_path,
-                                 const std::string &emit_objc_header_path) {
+void OutputFileMap::ReadFromPath(const std::string& path,
+                                 const std::string& emit_module_path,
+                                 const std::string& emit_objc_header_path) {
   std::ifstream stream(path);
   stream >> json_;
   UpdateForIncremental(path, emit_module_path, emit_objc_header_path);
 }
 
-void OutputFileMap::WriteToPath(const std::string &path) {
+void OutputFileMap::WriteToPath(const std::string& path) {
   std::ofstream stream(path);
   stream << json_;
 }
 
 void OutputFileMap::UpdateForIncremental(
-    const std::string &path, const std::string &emit_module_path,
-    const std::string &emit_objc_header_path) {
+    const std::string& path, const std::string& emit_module_path,
+    const std::string& emit_objc_header_path) {
   bool derived =
       path.find(".derived_output_file_map.json") != std::string::npos;
 
@@ -87,7 +87,7 @@ void OutputFileMap::UpdateForIncremental(
   module_map["swift-dependencies"] = swiftdeps_path;
   new_output_file_map[""] = module_map;
 
-  for (auto &element : json_.items()) {
+  for (auto& element : json_.items()) {
     auto src = element.key();
     auto outputs = element.value();
 
@@ -95,14 +95,14 @@ void OutputFileMap::UpdateForIncremental(
     std::string swiftdeps_path;
 
     // Process the outputs for the current source file.
-    for (auto &output : outputs.items()) {
+    for (auto& output : outputs.items()) {
       auto kind = output.key();
       auto path = output.value().get<std::string>();
 
       if (kind == "object" || kind == "const-values") {
-        // If the file kind is "object" or "const-values", we want to update the path to point to
-        // the incremental storage area and then add a "swift-dependencies"
-        // in the same location.
+        // If the file kind is "object" or "const-values", we want to update the
+        // path to point to the incremental storage area and then add a
+        // "swift-dependencies" in the same location.
         auto new_path = MakeIncrementalOutputPath(path, derived);
         src_map[kind] = new_path;
         incremental_outputs[path] = new_path;

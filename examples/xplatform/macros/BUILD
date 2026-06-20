@@ -27,11 +27,11 @@ swift_compiler_plugin(
     ],
     module_name = "StringifyMacroPlugin",
     deps = [
-        "@SwiftSyntax",
-        "@SwiftSyntax//:SwiftCompilerPlugin",
-        "@SwiftSyntax//:SwiftSyntaxBuilder",
-        "@SwiftSyntax//:SwiftSyntaxMacroExpansion",
-        "@SwiftSyntax//:SwiftSyntaxMacros",
+        "@swift-syntax//:SwiftCompilerPlugin",
+        "@swift-syntax//:SwiftSyntax",
+        "@swift-syntax//:SwiftSyntaxBuilder",
+        "@swift-syntax//:SwiftSyntaxMacroExpansion",
+        "@swift-syntax//:SwiftSyntaxMacros",
     ],
 )
 
@@ -57,8 +57,8 @@ swift_test(
     srcs = ["StringifyMacroTests.swift"],
     deps = [
         ":stringify_macro",
-        "@SwiftSyntax",
-        "@SwiftSyntax//:SwiftSyntaxBuilder",
-        "@SwiftSyntax//:SwiftSyntaxMacros",
+        "@swift-syntax//:SwiftSyntax",
+        "@swift-syntax//:SwiftSyntaxBuilder",
+        "@swift-syntax//:SwiftSyntaxMacros",
     ],
 )

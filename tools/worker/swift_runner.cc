@@ -14,28 +14,46 @@
 
 #include "tools/worker/swift_runner.h"
 
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <iostream>
+#include <optional>
+#include <utility>
 
+#include "absl/container/btree_set.h"
+#include "absl/container/flat_hash_set.h"
+#include "absl/strings/match.h"
+#include "absl/strings/string_view.h"
+#include "absl/strings/strip.h"
+#include "absl/strings/substitute.h"
 #include "tools/common/bazel_substitutions.h"
+#include "tools/common/color.h"
+#include "tools/common/file_system.h"
+#include "tools/common/path_utils.h"
 #include "tools/common/process.h"
+#include "tools/common/target_triple.h"
 #include "tools/common/temp_file.h"
+#include "tools/worker/hermetic_symlink.h"
 #include "tools/worker/output_file_map.h"
+#include "tools/worker/pcm_hermetic_runner.h"
 
-bool ArgumentEnablesWMO(const std::string &arg) {
+bool ArgumentEnablesWMO(const std::string& arg) {
   return arg == "-wmo" || arg == "-whole-module-optimization" ||
          arg == "-force-single-frontend-invocation";
 }
 
 namespace {
 
+using namespace bazel_rules_swift;
+
 // Creates a temporary file and writes the given arguments to it, one per line.
 static std::unique_ptr<TempFile> WriteResponseFile(
-    const std::vector<std::string> &args) {
+    const std::vector<std::string>& args) {
   auto response_file = TempFile::Create("swiftc_params.XXXXXX");
   std::ofstream response_file_stream(response_file->GetPath());
 
-  for (const auto &arg : args) {
+  for (const auto& arg : args) {
     // When Clang/Swift write out a response file to communicate from driver to
     // frontend, they just quote every argument to be safe; we duplicate that
     // instead of trying to be "smarter" and only quoting when necessary.
@@ -54,7 +72,7 @@ static std::unique_ptr<TempFile> WriteResponseFile(
 }
 
 // Unescape and unquote an argument read from a line of a response file.
-static std::string Unescape(const std::string &arg) {
+static std::string Unescape(const std::string& arg) {
   std::string result;
   auto length = arg.size();
   for (size_t i = 0; i < length; ++i) {
@@ -92,63 +110,383 @@ static std::string Unescape(const std::string &arg) {
   return result;
 }
 
-// If `str` starts with `prefix`, `str` is mutated to remove `prefix` and the
-// function returns true. Otherwise, `str` is left unmodified and the function
-// returns `false`.
-static bool StripPrefix(const std::string &prefix, std::string &str) {
-  if (str.find(prefix) != 0) {
-    return false;
+// Consumes and returns a single argument from the given command line (skipping
+// any leading whitespace and also handling quoted/escaped arguments), advancing
+// the view to the end of the argument in a similar fashion to
+// `absl::ConsumePrefix()`.
+static std::optional<std::string> ConsumeArg(absl::string_view* line) {
+  size_t whitespace_count = 0;
+  size_t length = line->size();
+  while (whitespace_count < length && (*line)[whitespace_count] == ' ') {
+    whitespace_count++;
   }
-  str.erase(0, prefix.size());
-  return true;
+  if (whitespace_count > 0) {
+    line->remove_prefix(whitespace_count);
+  }
+
+  if (line->empty()) {
+    return std::nullopt;
+  }
+
+  std::string result;
+  length = line->size();
+  size_t i = 0;
+  for (i = 0; i < length; ++i) {
+    char ch = (*line)[i];
+
+    if (ch == ' ') {
+      break;
+    }
+
+    // If it's a backslash, consume it and append the character that follows.
+    if (ch == '\\' && i + 1 < length) {
+      ++i;
+      result.push_back((*line)[i]);
+      continue;
+    }
+
+    // If it's a quote, process everything up to the matching quote, unescaping
+    // backslashed characters as needed.
+    if (ch == '"' || ch == '\'') {
+      char quote = ch;
+      ++i;
+      while (i != length && (*line)[i] != quote) {
+        if ((*line)[i] == '\\' && i + 1 < length) {
+          ++i;
+        }
+        result.push_back((*line)[i]);
+        ++i;
+      }
+      if (i == length) {
+        break;
+      }
+      continue;
+    }
+
+    // It's a regular character.
+    result.push_back(ch);
+  }
+
+  line->remove_prefix(i);
+  return result;
+}
+
+// Infers the path to the `.swiftinterface` file inside a `.swiftmodule`
+// directory based on the given target triple.
+//
+// This roughly mirrors the logic in the Swift frontend's
+// `forEachTargetModuleBasename` function at
+// https://github.com/swiftlang/swift/blob/d36b06747a54689a09ca6771b04798fc42b3e701/lib/Serialization/SerializedModuleLoader.cpp#L55.
+std::optional<std::string> InferInterfacePath(
+    absl::string_view module_path, absl::string_view target_triple_string) {
+  std::optional<TargetTriple> parsed_triple =
+      TargetTriple::Parse(target_triple_string);
+  if (!parsed_triple.has_value()) {
+    return std::nullopt;
+  }
+
+  // The target triple passed to us by the build rules has already been
+  // normalized (e.g., `macos` instead of `macosx`), so we don't have to do as
+  // much work here as the frontend normally would.
+  TargetTriple normalized_triple = parsed_triple->WithoutOSVersion();
+
+  // First, try the triple we were given.
+  std::string attempt = absl::Substitute("$0/$1.swiftinterface", module_path,
+                                         normalized_triple.TripleString());
+  if (PathExists(attempt)) {
+    return attempt;
+  }
+
+  // Next, if the target triple is `arm64`, we can also load an `arm64e`
+  // interface, so try that.
+  if (normalized_triple.Arch() == "arm64") {
+    TargetTriple arm64e_triple = normalized_triple.WithArch("arm64e");
+    attempt = absl::Substitute("$0/$1.swiftinterface", module_path,
+                               arm64e_triple.TripleString());
+    if (PathExists(attempt)) {
+      return attempt;
+    }
+  }
+
+  return std::nullopt;
+}
+
+// Extracts flags from the given `.swiftinterface` file and passes them to the
+// given consumer.
+void ExtractFlagsFromInterfaceFile(
+    absl::string_view module_or_interface_path, absl::string_view target_triple,
+    std::function<std::string()> developer_dir_supplier,
+    std::function<void(absl::string_view)> consumer) {
+  std::string interface_path;
+  if (absl::EndsWith(module_or_interface_path, ".swiftinterface")) {
+    interface_path = std::string(module_or_interface_path);
+  } else {
+    std::optional<std::string> inferred_path =
+        InferInterfacePath(module_or_interface_path, target_triple);
+    if (!inferred_path.has_value()) {
+      return;
+    }
+    interface_path = *inferred_path;
+  }
+
+  std::filesystem::path source{std::string(interface_path)};
+  if (source.is_absolute()) {
+    std::cerr << "error: swiftinterface compile paths must be relative for "
+                 "hermetic builds: "
+              << source << "\n";
+    std::exit(EXIT_FAILURE);
+  }
+
+  // Add the path to the interface file as a source file argument, then extract
+  // the flags from it and add them as well.
+  consumer(interface_path);
+  std::ifstream interface_file{interface_path};
+  std::string line;
+  while (std::getline(interface_file, line)) {
+    absl::string_view line_view = line;
+    if (absl::ConsumePrefix(&line_view, "// swift-module-flags: ")) {
+      while (std::optional<std::string> flag = ConsumeArg(&line_view)) {
+        consumer(*flag);
+      }
+      return;
+    }
+  }
+}
+
+std::string ShellQuote(const std::string& arg) {
+  if (arg.empty()) {
+    return "''";
+  }
+
+  if (arg.find_first_not_of(
+          "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
+          "-+=.,/:@%") == std::string::npos) {
+    return arg;
+  }
+
+  std::string result = "'";
+  for (auto ch : arg) {
+    if (ch == '\'') {
+      result.append("'\\''");
+    } else {
+      result.push_back(ch);
+    }
+  }
+  result.push_back('\'');
+  return result;
+}
+
+std::vector<std::string> ExpandTopLevelResponseFilesForDisplay(
+    const std::vector<std::string>& args) {
+  std::vector<std::string> display_args;
+  for (const auto& arg : args) {
+    if (arg.size() > 1 && arg[0] == '@') {
+      std::ifstream response_file(arg.substr(1));
+      if (response_file.good()) {
+        for (std::string line; std::getline(response_file, line);) {
+          display_args.push_back(Unescape(line));
+        }
+        continue;
+      }
+    }
+    display_args.push_back(arg);
+  }
+  return display_args;
+}
+
+void PrintVerboseInvocation(const std::vector<std::string>& args,
+                            std::ostream* stderr_stream) {
+  bool first = true;
+  for (const auto& arg : ExpandTopLevelResponseFilesForDisplay(args)) {
+    if (!first) {
+      (*stderr_stream) << ' ';
+    }
+    (*stderr_stream) << ShellQuote(arg);
+    first = false;
+  }
+  (*stderr_stream) << '\n';
+}
+
+struct LayeringCheckModules {
+  absl::btree_set<std::string> direct_modules;
+  absl::btree_set<std::string> transitive_modules;
+};
+
+// Reads the direct and transitive dependency module names of the code being
+// compiled.
+LayeringCheckModules ReadLayeringCheckModules(absl::string_view path) {
+  LayeringCheckModules modules;
+  std::ifstream deps_file_stream(std::string(path.data(), path.size()));
+  std::string line;
+  while (std::getline(deps_file_stream, line)) {
+    absl::string_view value = line;
+    if (absl::ConsumePrefix(&value, "direct:")) {
+      modules.direct_modules.insert(std::string(value));
+      modules.transitive_modules.insert(std::string(value));
+    } else if (absl::ConsumePrefix(&value, "transitive:")) {
+      modules.transitive_modules.insert(std::string(value));
+    } else {
+      // Compatibility with the original file format, which contained one
+      // direct module name per line.
+      modules.direct_modules.insert(line);
+      modules.transitive_modules.insert(line);
+    }
+  }
+  return modules;
+}
+
+#if __APPLE__
+// Returns true if the given argument list starts with an invocation of `xcrun`.
+bool StartsWithXcrun(const std::vector<std::string>& args) {
+  return !args.empty() && Basename(args[0]) == "xcrun";
+}
+#endif
+
+bool SupportsResponseFileInvocation(const std::vector<std::string>& args) {
+  return args.empty() || args.front() != "-modulewrap";
+}
+
+// Spawns an executable, constructing the command line by writing `args` to a
+// response file when the Swift invocation mode supports it and concatenating
+// that after `tool_args` (which are passed outside the response file).
+int SpawnJob(const std::vector<std::string>& tool_args,
+             const std::vector<std::string>& args,
+             std::map<std::string, std::string>* env,
+             std::ostream* stderr_stream, bool stdout_to_stderr) {
+  std::vector<std::string> spawn_args(tool_args);
+  if (SupportsResponseFileInvocation(args)) {
+    auto response_file = WriteResponseFile(args);
+    spawn_args.push_back("@" + response_file->GetPath());
+    return RunSubProcess(spawn_args, env, stderr_stream, stdout_to_stderr);
+  }
+
+  spawn_args.insert(spawn_args.end(), args.begin(), args.end());
+  return RunSubProcess(spawn_args, env, stderr_stream, stdout_to_stderr);
+}
+
+std::vector<std::string> ArgsWithResponseFile(
+    const std::vector<std::string>& tool_args,
+    const std::vector<std::string>& args, const TempFile& response_file) {
+  std::vector<std::string> spawn_args(tool_args);
+  spawn_args.push_back("@" + response_file.GetPath());
+  return spawn_args;
+}
+
+std::vector<std::string> FullArgsForDisplay(
+    const std::vector<std::string>& tool_args,
+    const std::vector<std::string>& args) {
+  std::vector<std::string> display_args(tool_args);
+  display_args.insert(display_args.end(), args.begin(), args.end());
+  return display_args;
+}
+
+// Returns a value indicating whether an argument on the Swift command line
+// should be skipped because it is incompatible with the
+// `-emit-imported-modules` flag used for layering checks. The given iterator is
+// also advanced if necessary past any additional flags (e.g., a path following
+// a flag).
+bool SkipLayeringCheckIncompatibleArgs(std::vector<std::string>::iterator& it) {
+  if (*it == "-emit-module" || *it == "-emit-module-interface" ||
+      *it == "-emit-object" || *it == "-emit-objc-header" ||
+      *it == "-whole-module-optimization") {
+    // Skip just this argument.
+    return true;
+  }
+  if (*it == "-o" || *it == "-output-file-map" || *it == "-emit-module-path" ||
+      *it == "-emit-module-interface-path" || *it == "-emit-objc-header-path" ||
+      *it == "-emit-clang-header-path" || *it == "-emit-const-values-path" ||
+      *it == "-num-threads") {
+    // This flag has a value after it that we also need to skip.
+    ++it;
+    return true;
+  }
+
+  // Don't skip the flag.
+  return false;
+}
+
+// Modules that can be imported without an explicit dependency. Specifically,
+// the standard library is always provided, along with other modules that are
+// distributed as part of the standard library even though they are separate
+// modules.
+static const absl::flat_hash_set<absl::string_view>
+    kModulesIgnorableForLayeringCheck = {
+        "Builtin",      "Swift",        "SwiftOnoneSupport",
+        "_Backtracing", "_Concurrency", "_StringProcessing",
+};
+
+// Returns true if the module can be ignored for the purposes of layering check
+// (that is, it does not need to be in `deps` even if imported).
+bool IsModuleIgnorableForLayeringCheck(absl::string_view module_name) {
+  return kModulesIgnorableForLayeringCheck.contains(module_name);
 }
 
 }  // namespace
 
-SwiftRunner::SwiftRunner(const std::vector<std::string> &args,
-                         std::string index_import_path, bool force_response_file)
+SwiftRunner::SwiftRunner(const std::vector<std::string>& args,
+                         std::string index_import_path,
+                         bool force_response_file)
     : job_env_(GetCurrentEnvironment()),
       index_import_path_(index_import_path),
       force_response_file_(force_response_file),
       is_dump_ast_(false),
-      file_prefix_pwd_is_dot_(false) {
-  args_ = ProcessArguments(args);
+      file_prefix_pwd_is_dot_(false),
+      hermetic_pcm_(false),
+      verbose_(false) {
+  EnsureDeveloperDirSymlinkFromEnv();
+  ProcessArguments(args);
 }
 
-int SwiftRunner::Run(std::ostream *stderr_stream, bool stdout_to_stderr) {
-  // In rules_swift < 3.x the .swiftsourceinfo files are unconditionally written to the module path.
-  // In rules_swift >= 3.x these same files are no longer tracked by Bazel unless explicitly requested.
-  // When using non-sandboxed mode, previous builds will contain these files and cause build failures
-  // when Swift tries to use them, in order to work around this compatibility issue, we check the module path for
-  // the presence of .swiftsourceinfo files and if they are present but not requested, we remove them.
+int SwiftRunner::Run(std::ostream* stderr_stream, bool stdout_to_stderr) {
+  // In rules_swift < 3.x the .swiftsourceinfo files are unconditionally written
+  // to the module path. In rules_swift >= 3.x these same files are no longer
+  // tracked by Bazel unless explicitly requested. When using non-sandboxed
+  // mode, previous builds will contain these files and cause build failures
+  // when Swift tries to use them, in order to work around this compatibility
+  // issue, we check the module path for the presence of .swiftsourceinfo files
+  // and if they are present but not requested, we remove them.
   if (swift_source_info_path_ != "" && !emit_swift_source_info_) {
     std::filesystem::remove(swift_source_info_path_);
   }
 
-  int exit_code = RunSubProcess(
-      args_, &job_env_, stderr_stream, stdout_to_stderr);
+  int exit_code = 0;
+
+  // Do the layering check before compilation. This gives a better error
+  // message if a Swift module imports a module that depends on a Clang module
+  // outside the transitive closure; otherwise the compile can fail first with
+  // "cannot load underlying module for '...'."
+  if (!deps_modules_path_.empty()) {
+    exit_code = PerformLayeringCheck(*stderr_stream, stdout_to_stderr);
+    if (exit_code != 0) {
+      return exit_code;
+    }
+  }
+
+  if (hermetic_pcm_) {
+    auto response_file = WriteResponseFile(args_);
+    std::vector<std::string> spawn_args =
+        ArgsWithResponseFile(tool_args_, args_, *response_file);
+    exit_code = RunHermeticPcm(spawn_args, &job_env_, stderr_stream);
+  } else {
+    exit_code =
+        SpawnJob(tool_args_, args_, &job_env_, stderr_stream, stdout_to_stderr);
+  }
+
+  if (verbose_) {
+    PrintVerboseInvocation(FullArgsForDisplay(tool_args_, args_),
+                           stderr_stream);
+  }
 
   if (exit_code != 0) {
     return exit_code;
   }
 
   if (!generated_header_rewriter_path_.empty()) {
-#if __APPLE__
-    // Skip the `xcrun` argument that's added when running on Apple platforms.
-    int initial_args_to_skip = 1;
-#else
-    int initial_args_to_skip = 0;
-#endif
-
-    std::vector<std::string> rewriter_args;
-    rewriter_args.reserve(args_.size() + 2 - initial_args_to_skip);
-    rewriter_args.push_back(generated_header_rewriter_path_);
-    rewriter_args.push_back("--");
-    rewriter_args.insert(rewriter_args.end(),
-                         args_.begin() + initial_args_to_skip, args_.end());
-
-    exit_code = RunSubProcess(
-        rewriter_args, /*env=*/nullptr, stderr_stream, stdout_to_stderr);
+    exit_code =
+        PerformGeneratedHeaderRewriting(*stderr_stream, stdout_to_stderr);
+    if (exit_code != 0) {
+      return exit_code;
+    }
   }
 
   auto enable_global_index_store = global_index_store_import_path_ != "";
@@ -182,57 +520,20 @@ int SwiftRunner::Run(std::ostream *stderr_stream, bool stdout_to_stderr) {
       }
     }
 
-    const std::filesystem::path &exec_root = std::filesystem::current_path();
+    const std::filesystem::path& exec_root = std::filesystem::current_path();
     // Copy back from the global index store to bazel's index store
     ii_args.push_back((exec_root / global_index_store_import_path_).string());
     ii_args.push_back((exec_root / index_store_path_).string());
-    exit_code = RunSubProcess(
-        ii_args, /*env=*/nullptr, stderr_stream, /*stdout_to_stderr=*/true);
+    exit_code = RunSubProcess(ii_args, /*env=*/nullptr, stderr_stream,
+                              /*stdout_to_stderr=*/true);
   }
   return exit_code;
 }
 
-// Marker for end of iteration
-class StreamIteratorEnd {};
-
-// Basic iterator over an ifstream
-class StreamIterator {
- public:
-  StreamIterator(std::ifstream &file) : file_{file} { next(); }
-
-  const std::string &operator*() const { return str_; }
-
-  StreamIterator &operator++() {
-    next();
-    return *this;
-  }
-
-  bool operator!=(StreamIteratorEnd) const { return !!file_; }
-
- private:
-  void next() { std::getline(file_, str_); }
-
-  std::ifstream &file_;
-  std::string str_;
-};
-
-class ArgsFile {
- public:
-  ArgsFile(std::ifstream &file) : file_(file) {}
-
-  StreamIterator begin() { return StreamIterator{file_}; }
-
-  StreamIteratorEnd end() { return StreamIteratorEnd{}; }
-
- private:
-  std::ifstream &file_;
-};
-
 bool SwiftRunner::ProcessPossibleResponseFile(
-    const std::string &arg, std::function<void(const std::string &)> consumer) {
+    const std::string& arg, std::function<void(const std::string&)> consumer) {
   auto path = arg.substr(1);
   std::ifstream original_file(path);
-  ArgsFile args_file(original_file);
 
   // If we couldn't open it, maybe it's not a file; maybe it's just some other
   // argument that starts with "@" such as "@loader_path/..."
@@ -241,40 +542,27 @@ bool SwiftRunner::ProcessPossibleResponseFile(
     return false;
   }
 
-  // Read the file to a vector to prevent double I/O
-  auto args = ParseArguments(args_file);
+  std::vector<std::string> args;
+  for (std::string arg_from_file; std::getline(original_file, arg_from_file);) {
+    // Arguments in response files might be quoted/escaped. When forcing
+    // response files, unescape them before storing them in the processed
+    // argument vector.
+    args.push_back(force_response_file_ ? Unescape(arg_from_file)
+                                        : arg_from_file);
+  }
 
-  // If we're forcing response files, process and send the arguments from this
-  // file directly to the consumer; they'll all get written to the same response
-  // file at the end of processing all the arguments.
+  auto parsed_args = ParseArguments(args);
   if (force_response_file_) {
-    for (auto it = args.begin(); it != args.end(); ++it) {
-      // Arguments in response files might be quoted/escaped, so we need to
-      // unescape them ourselves.
-      ProcessArgument(it, Unescape(*it), consumer);
+    for (auto it = parsed_args.begin(); it != parsed_args.end(); ++it) {
+      ProcessArgument(it, *it, consumer);
     }
     return true;
   }
 
-  // Otherwise, open the file, process the arguments, and rewrite it if any of
-  // them have changed.
+  // Otherwise, open the file and process the arguments.
   bool changed = false;
-  std::string arg_from_file;
-  std::vector<std::string> new_args;
-  for (auto it = args.begin(); it != args.end(); ++it) {
-    changed |= ProcessArgument(it, *it, [&](const std::string &processed_arg) {
-      new_args.push_back(processed_arg);
-    });
-  }
-
-  if (changed) {
-    auto new_file = WriteResponseFile(new_args);
-    consumer("@" + new_file->GetPath());
-    temp_files_.push_back(std::move(new_file));
-  } else {
-    // If none of the arguments changed, just keep the original response file
-    // argument.
-    consumer(arg);
+  for (auto it = parsed_args.begin(); it != parsed_args.end(); ++it) {
+    changed |= ProcessArgument(it, *it, consumer);
   }
 
   return changed;
@@ -282,14 +570,17 @@ bool SwiftRunner::ProcessPossibleResponseFile(
 
 template <typename Iterator>
 bool SwiftRunner::ProcessArgument(
-    Iterator &itr, const std::string &arg,
-    std::function<void(const std::string &)> consumer) {
-  bool changed = false;
+    Iterator& itr, const std::string& arg,
+    std::function<void(const std::string&)> consumer) {
+  // Response files are expanded and their contents processed recursively.
+  if (arg[0] == '@') {
+    return ProcessPossibleResponseFile(arg, consumer);
+  }
 
   // Helper function for adding path remapping flags that depend on information
   // only known at execution time.
-  auto add_prefix_map_flags = [&](const std::string &flag,
-                                  const std::string &new_path = ".") {
+  auto add_prefix_map_flags = [&](const std::string& flag,
+                                  const std::string& new_path = ".") {
     // Get the actual current working directory (the execution root), which
     // we didn't know at analysis time.
     consumer(flag);
@@ -304,193 +595,314 @@ bool SwiftRunner::ProcessArgument(
 #endif
   };
 
-  if (arg[0] == '@') {
-    changed = ProcessPossibleResponseFile(arg, consumer);
-  } else {
-    std::string new_arg = arg;
-    if (StripPrefix("-Xwrapped-swift=", new_arg)) {
-      if (new_arg == "-debug-prefix-pwd-is-dot") {
-        // Replace the $PWD with . to make the paths relative to the workspace
-        // without breaking hermiticity.
-        add_prefix_map_flags("-debug-prefix-map");
-        changed = true;
-      } else if (new_arg == "-coverage-prefix-pwd-is-dot") {
-        // Replace the $PWD with . to make the paths relative to the workspace
-        // without breaking hermiticity.
-        add_prefix_map_flags("-coverage-prefix-map");
-        changed = true;
-      } else if (new_arg == "-coverage-prefix-pwd-is-canonical") {
-        // Replace the $PWD with . to make the paths relative to the workspace
-        // without breaking hermiticity.
-        auto cwd = std::filesystem::current_path();
-        // The bazel execroot is a normal directory, but inside of it there are
-        // symlinks to our source tree. This fetches the true path of a known
-        // directory in order to get the actual source root of the project. This
-        // should only work with sandboxing disabled.
-        auto target_path = std::filesystem::canonical(cwd / "BUILD.bazel").parent_path();
-        add_prefix_map_flags("-coverage-prefix-map", target_path.string());
-        changed = true;
-      } else if (new_arg == "-file-prefix-pwd-is-dot") {
-        // Replace the $PWD with . to make the paths relative to the workspace
-        // without breaking hermiticity.
-        add_prefix_map_flags("-file-prefix-map");
-        changed = true;
-      } else if (StripPrefix("-macro-expansion-dir=", new_arg)) {
-        changed = true;
-        std::filesystem::create_directories(new_arg);
-#if __APPLE__
-        job_env_["TMPDIR"] = new_arg;
-#else
-        // TEMPDIR is read by C++ but not Swift. Swift requires the temprorary
-        // directory to be an absolute path and otherwise fails (or ignores it
-        // silently on macOS) so we need to set one that Swift does not read.
-        // C++ prioritizes TMPDIR over TEMPDIR so we need to wipe out the other
-        // one. The downside is that anything else reading TMPDIR will not use
-        // the one potentially set by the user.
-        job_env_["TEMPDIR"] = new_arg;
-        job_env_.erase("TMPDIR");
-#endif
-      } else if (new_arg == "-ephemeral-module-cache") {
-        // Create a temporary directory to hold the module cache, which will be
-        // deleted after compilation is finished.
-        auto module_cache_dir =
-            TempDirectory::Create("swift_module_cache.XXXXXX");
-        consumer("-module-cache-path");
-        consumer(module_cache_dir->GetPath());
-        temp_directories_.push_back(std::move(module_cache_dir));
-        changed = true;
-      } else if (StripPrefix("-generated-header-rewriter=", new_arg)) {
-        changed = true;
-      } else if (StripPrefix("-bazel-target-label=", new_arg)) {
-        changed = true;
-      } else if (StripPrefix("-global-index-store-import-path=", new_arg)) {
-        changed = true;
-      } else {
-        // TODO(allevato): Report that an unknown wrapper arg was found and give
-        // the caller a way to exit gracefully.
-        changed = true;
-      }
-    } else {
-      // Process default arguments
-      if (arg == "-index-store-path") {
-        consumer("-index-store-path");
-        ++itr;
-
-        // If there was a global index store set, pass that to swiftc.
-        // Otherwise, pass the users. We later copy index data onto the users.
-        if (global_index_store_import_path_ != "") {
-          new_arg = global_index_store_import_path_;
-        } else {
-          new_arg = index_store_path_;
-        }
-        changed = true;
-      } else if (arg == "-output-file-map") {
-        // Save the output file map to the value proceeding
-        // `-output-file-map`
-        consumer("-output-file-map");
-        ++itr;
-        new_arg = output_file_map_path_;
-        changed = true;
-      } else if (is_dump_ast_ && ArgumentEnablesWMO(arg)) {
-        // WMO is invalid for -dump-ast,
-        // so omit the argument that enables WMO
-        return true;  // return to avoid consuming the arg
-      }
-
-      // Apply any other text substitutions needed in the argument (i.e., for
-      // Apple toolchains).
-      //
-      // Bazel doesn't quote arguments in multi-line params files, so we need
-      // to ensure that our defensive quoting kicks in if an argument contains
-      // a space, even if no other changes would have been made.
-      changed = bazel_placeholder_substitutions_.Apply(new_arg) ||
-                new_arg.find_first_of(' ') != std::string::npos;
-      consumer(new_arg);
+  // `-Xwrapped-swift=` arguments are consumed entirely by the worker and are
+  // not passed on to the Swift tool. The flags handled below either expand
+  // into real compiler flags or have execution-time side effects; flags that
+  // only record state are recognized in `ParseArguments` and dropped by the
+  // catch-all at the end of this block.
+  absl::string_view wrapped_arg = arg;
+  if (absl::ConsumePrefix(&wrapped_arg, "-Xwrapped-swift=")) {
+    if (wrapped_arg == "-debug-prefix-pwd-is-dot") {
+      // Replace the $PWD with . to make the paths relative to the workspace
+      // without breaking hermiticity.
+      add_prefix_map_flags("-debug-prefix-map");
+      return true;
     }
+    if (wrapped_arg == "-coverage-prefix-pwd-is-dot") {
+      // Replace the $PWD with . to make the paths relative to the workspace
+      // without breaking hermiticity.
+      add_prefix_map_flags("-coverage-prefix-map");
+      return true;
+    }
+    if (wrapped_arg == "-coverage-prefix-pwd-is-canonical") {
+      // Replace the $PWD with the canonical (resolved) path to the source
+      // root. The bazel execroot is a normal directory, but inside of it
+      // there are symlinks to our source tree. This fetches the true path of
+      // a known directory in order to get the actual source root of the
+      // project. This should only work with sandboxing disabled.
+      auto cwd = std::filesystem::current_path();
+      auto target_path =
+          std::filesystem::canonical(cwd / "BUILD.bazel").parent_path();
+      add_prefix_map_flags("-coverage-prefix-map", target_path.string());
+      return true;
+    }
+    if (wrapped_arg == "-file-prefix-pwd-is-dot") {
+      // Replace the $PWD with . to make the paths relative to the workspace
+      // without breaking hermiticity.
+      file_prefix_pwd_is_dot_ = true;
+      add_prefix_map_flags("-file-prefix-map");
+      return true;
+    }
+    if (absl::ConsumePrefix(&wrapped_arg, "-macro-expansion-dir=")) {
+      std::string macro_expansion_dir(wrapped_arg);
+      std::filesystem::create_directories(macro_expansion_dir);
+#if __APPLE__
+      job_env_["TMPDIR"] = macro_expansion_dir;
+#else
+      // TEMPDIR is read by C++ but not Swift. Swift requires the temprorary
+      // directory to be an absolute path and otherwise fails (or ignores it
+      // silently on macOS) so we need to set one that Swift does not read.
+      // C++ prioritizes TMPDIR over TEMPDIR so we need to wipe out the other
+      // one. The downside is that anything else reading TMPDIR will not use
+      // the one potentially set by the user.
+      job_env_["TEMPDIR"] = macro_expansion_dir;
+      job_env_.erase("TMPDIR");
+#endif
+      return true;
+    }
+    if (wrapped_arg == "-ephemeral-module-cache") {
+      // Create a temporary directory to hold the module cache, which will be
+      // deleted after compilation is finished.
+      auto module_cache_dir =
+          TempDirectory::Create("swift_module_cache.XXXXXX");
+      consumer("-module-cache-path");
+      consumer(module_cache_dir->GetPath());
+      temp_directories_.push_back(std::move(module_cache_dir));
+      return true;
+    }
+
+    // Any other `-Xwrapped-swift=` flag was recognized for its side effects in
+    // `ParseArguments` and is dropped here.
+    //
+    // TODO(allevato): Report that an unknown wrapper arg was found and give
+    // the caller a way to exit gracefully.
+    return true;
   }
 
+  std::string new_arg = arg;
+  bool changed = false;
+  if (arg == "-index-store-path") {
+    consumer("-index-store-path");
+    ++itr;
+    index_store_path_ = *itr;
+
+    // If there was a global index store set, pass that to swiftc.
+    // Otherwise, pass the users. We later copy index data onto the users.
+    new_arg = global_index_store_import_path_.empty()
+                  ? index_store_path_
+                  : global_index_store_import_path_;
+    changed = true;
+  } else if (is_dump_ast_ && ArgumentEnablesWMO(arg)) {
+    // WMO is invalid for -dump-ast,
+    // so omit the argument that enables WMO
+    return true;  // return to avoid consuming the arg
+  }
+
+  // Apply any other text substitutions needed in the argument (i.e., for
+  // Apple toolchains).
+  //
+  // Bazel doesn't quote arguments in multi-line params files, so we need
+  // to ensure that our defensive quoting kicks in if an argument contains
+  // a space, even if no other changes would have been made.
+  changed = bazel_placeholder_substitutions_.Apply(new_arg) || changed ||
+            new_arg.find_first_of(' ') != std::string::npos;
+  consumer(new_arg);
   return changed;
 }
 
 template <typename Iterator>
 std::vector<std::string> SwiftRunner::ParseArguments(Iterator itr) {
+  // Reads every argument into a vector (so the stream backing a response file
+  // is only read once) while recording the state that `ProcessArgument` and
+  // `Run` rely on. Crucially, this also collects the state that is consulted
+  // while *rewriting* other arguments (the global index store path and whether
+  // this is a `-dump-ast` invocation), so that those decisions are independent
+  // of the order in which the arguments appear.
   std::vector<std::string> out_args;
   for (auto it = itr.begin(); it != itr.end(); ++it) {
-    auto arg = *it;
+    std::string arg = *it;
     out_args.push_back(arg);
 
-    if (StripPrefix("-Xwrapped-swift=", arg)) {
-      if (StripPrefix("-global-index-store-import-path=", arg)) {
-        global_index_store_import_path_ = arg;
-      } else if (StripPrefix("-generated-header-rewriter=", arg)) {
-        generated_header_rewriter_path_ = arg;
-      } else if (StripPrefix("-bazel-target-label=", arg)) {
-        target_label_ = arg;
-      } else if (arg == "-file-prefix-pwd-is-dot") {
-        file_prefix_pwd_is_dot_ = true;
-      } else if (arg == "-emit-swiftsourceinfo") {
+    absl::string_view value = arg;
+    if (absl::ConsumePrefix(&value, "-Xwrapped-swift=")) {
+      if (absl::ConsumePrefix(&value, "-global-index-store-import-path=")) {
+        global_index_store_import_path_ = std::string(value);
+      } else if (absl::ConsumePrefix(&value, "-generated-header-rewriter=")) {
+        generated_header_rewriter_path_ = std::string(value);
+      } else if (absl::ConsumePrefix(&value, "-tool-arg=")) {
+        std::pair<std::string, std::string> arg_and_value =
+            absl::StrSplit(value, absl::MaxSplits('=', 1));
+        passthrough_tool_args_[arg_and_value.first].push_back(
+            arg_and_value.second);
+      } else if (absl::ConsumePrefix(&value, "-bazel-target-label=")) {
+        target_label_ = std::string(value);
+      } else if (absl::ConsumePrefix(&value, "-layering-check-deps-modules=")) {
+        deps_modules_path_ = std::string(value);
+      } else if (value == "-emit-swiftsourceinfo") {
         emit_swift_source_info_ = true;
+      } else if (value == "-hermetic-pcm") {
+        hermetic_pcm_ = true;
+      } else if (absl::ConsumePrefix(
+                     &value, "-explicit-compile-module-from-interface=")) {
+        module_or_interface_path_ = std::string(value);
+        bazel_placeholder_substitutions_.Apply(module_or_interface_path_);
       }
-    } else {
-      if (arg == "-output-file-map") {
-        ++it;
-        arg = *it;
-        output_file_map_path_ = arg;
-        out_args.push_back(arg);
-      } else if (arg == "-index-store-path") {
-        ++it;
-        arg = *it;
-        index_store_path_ = arg;
-        out_args.push_back(arg);
-      } else if (arg == "-dump-ast") {
-        is_dump_ast_ = true;
-      } else if (arg == "-emit-module-path") {
-        ++it;
-        arg = *it;
-        std::filesystem::path module_path(arg);
-        swift_source_info_path_ = module_path.replace_extension(".swiftsourceinfo").string();
-        out_args.push_back(arg);
-      }
+    } else if (arg == "-output-file-map") {
+      ++it;
+      output_file_map_path_ = *it;
+      out_args.push_back(*it);
+    } else if (arg == "-dump-ast") {
+      is_dump_ast_ = true;
+    } else if (arg == "-emit-module-path") {
+      ++it;
+      std::filesystem::path module_path(*it);
+      swift_source_info_path_ =
+          module_path.replace_extension(".swiftsourceinfo").string();
+      out_args.push_back(*it);
+    } else if (arg == "-module-name") {
+      ++it;
+      module_name_ = *it;
+      out_args.push_back(*it);
+    } else if (arg == "-module-alias") {
+      ++it;
+      std::pair<std::string, std::string> source_and_alias =
+          absl::StrSplit(*it, absl::MaxSplits('=', 1));
+      alias_to_source_mapping_[source_and_alias.second] =
+          source_and_alias.first;
+      out_args.push_back(*it);
+    } else if (arg == "-target") {
+      ++it;
+      target_triple_ = *it;
+      out_args.push_back(*it);
+    } else if (arg == "-v") {
+      verbose_ = true;
     }
   }
   return out_args;
 }
 
-std::vector<std::string> SwiftRunner::ProcessArguments(
-    const std::vector<std::string> &args) {
-  std::vector<std::string> new_args;
-  std::vector<std::string> response_file_args;
-
+void SwiftRunner::ProcessArguments(const std::vector<std::string>& args) {
 #if __APPLE__
   // On Apple platforms, inject `/usr/bin/xcrun` in front of our command
   // invocation.
-  new_args.push_back("/usr/bin/xcrun");
+  tool_args_.push_back("/usr/bin/xcrun");
 #endif
 
   // The tool is assumed to be the first argument. Push it directly.
   auto parsed_args = ParseArguments(args);
 
   auto it = parsed_args.begin();
-  new_args.push_back(*it++);
+  tool_args_.push_back(*it++);
 
-  // If we're forcing response files, push the remaining processed args onto a
-  // different vector that we write out below. If not, push them directly onto
-  // the vector being returned.
-  auto &args_destination = force_response_file_ ? response_file_args : new_args;
   while (it != parsed_args.end()) {
-    ProcessArgument(it, *it, [&](const std::string &arg) {
-      args_destination.push_back(arg);
-    });
+    ProcessArgument(it, *it,
+                    [&](const std::string& arg) { args_.push_back(arg); });
     ++it;
   }
 
-  if (force_response_file_) {
-    // Write the processed args to the response file, and push the path to that
-    // file (preceded by '@') onto the arg list being returned.
-    auto new_file = WriteResponseFile(response_file_args);
-    new_args.push_back("@" + new_file->GetPath());
-    temp_files_.push_back(std::move(new_file));
+  if (!module_or_interface_path_.empty()) {
+    ExtractFlagsFromInterfaceFile(
+        module_or_interface_path_, target_triple_,
+        [&]() {
+          const char* developer_dir = std::getenv("DEVELOPER_DIR");
+          if (developer_dir != nullptr) return std::string(developer_dir);
+          return std::string();
+        },
+        [&](absl::string_view arg) { args_.push_back(std::string(arg)); });
+  }
+}
+
+int SwiftRunner::PerformGeneratedHeaderRewriting(std::ostream& stderr_stream,
+                                                 bool stdout_to_stderr) {
+#if __APPLE__
+  // Skip the `xcrun` argument that's added when running on Apple platforms,
+  // since the header rewriter doesn't need it.
+  int tool_binary_index = StartsWithXcrun(tool_args_) ? 1 : 0;
+#else
+  int tool_binary_index = 0;
+#endif
+
+  std::vector<std::string> rewriter_tool_args;
+  rewriter_tool_args.push_back(generated_header_rewriter_path_);
+  const std::vector<std::string>& passthrough_args =
+      passthrough_tool_args_["generated_header_rewriter"];
+  rewriter_tool_args.insert(rewriter_tool_args.end(), passthrough_args.begin(),
+                            passthrough_args.end());
+  rewriter_tool_args.push_back("--");
+  rewriter_tool_args.push_back(tool_args_[tool_binary_index]);
+
+  return SpawnJob(rewriter_tool_args, args_, /*env=*/nullptr, &stderr_stream,
+                  stdout_to_stderr);
+}
+
+int SwiftRunner::PerformLayeringCheck(std::ostream& stderr_stream,
+                                      bool stdout_to_stderr) {
+  // Run the compiler again, this time using `-emit-imported-modules` to
+  // override whatever other behavior was requested and get the list of imported
+  // modules.
+  std::string imported_modules_path =
+      ReplaceExtension(deps_modules_path_, ".imported-modules",
+                       /*all_extensions=*/true);
+
+  std::vector<std::string> emit_imports_args;
+  for (auto it = args_.begin(); it != args_.end(); ++it) {
+    if (!SkipLayeringCheckIncompatibleArgs(it)) {
+      emit_imports_args.push_back(*it);
+    }
   }
 
-  return new_args;
+  emit_imports_args.push_back("-emit-imported-modules");
+  emit_imports_args.push_back("-o");
+  emit_imports_args.push_back(imported_modules_path);
+  int exit_code = SpawnJob(tool_args_, emit_imports_args, &job_env_,
+                           &stderr_stream, stdout_to_stderr);
+  if (exit_code != 0) {
+    WithColor(stderr_stream, Color::kBoldRed) << std::endl << "error: ";
+    WithColor(stderr_stream, Color::kBold)
+        << "Swift compilation succeeded, but an unexpected compiler error "
+           "occurred when performing the layering check.";
+    stderr_stream << std::endl << std::endl;
+    return exit_code;
+  }
+
+  LayeringCheckModules layering_check_modules =
+      ReadLayeringCheckModules(deps_modules_path_);
+
+  // Use a `btree_set` so that the output is automatically sorted
+  // lexicographically.
+  absl::btree_set<std::string> missing_deps;
+  std::ifstream imported_modules_stream(imported_modules_path);
+  std::string module_name;
+  while (std::getline(imported_modules_stream, module_name)) {
+    // A module can import itself when the Swift module has an underlying Clang
+    // module, such as with `@_exported import X` in a Swift overlay for X.
+    if (module_name != module_name_ &&
+        !IsModuleIgnorableForLayeringCheck(module_name) &&
+        layering_check_modules.transitive_modules.contains(module_name) &&
+        !layering_check_modules.direct_modules.contains(module_name)) {
+      // Swift's `-emit-imported-modules` output reports resolved aliased module
+      // names. Map them back to the names users write in source before
+      // reporting missing deps.
+      if (auto alias_and_source_name =
+              alias_to_source_mapping_.find(module_name);
+          alias_and_source_name != alias_to_source_mapping_.end()) {
+        missing_deps.insert(alias_and_source_name->second);
+      } else {
+        missing_deps.insert(module_name);
+      }
+    }
+  }
+
+  if (!missing_deps.empty()) {
+    stderr_stream << std::endl;
+    WithColor(stderr_stream, Color::kBoldRed) << "error: ";
+    WithColor(stderr_stream, Color::kBold) << "Layering violation in ";
+    WithColor(stderr_stream, Color::kBoldGreen) << target_label_ << std::endl;
+    stderr_stream
+        << "The following modules were imported, but they are not direct "
+        << "dependencies of the target:" << std::endl
+        << std::endl;
+
+    for (const std::string& module_name : missing_deps) {
+      stderr_stream << "    " << module_name << std::endl;
+    }
+    stderr_stream << std::endl;
+
+    WithColor(stderr_stream, Color::kBold)
+        << "Please add the correct 'deps' to " << target_label_
+        << " to import those modules." << std::endl;
+    return 1;
+  }
+
+  return 0;
 }

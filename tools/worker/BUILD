@@ -1,4 +1,4 @@
-load("@build_bazel_apple_support//rules:universal_binary.bzl", "universal_binary")
+load("@apple_support//rules:universal_binary.bzl", "universal_binary")
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 
 licenses(["notice"])
@@ -52,6 +52,46 @@ cc_library(
 )
 
 cc_library(
+    name = "hermetic_symlink",
+    srcs = ["hermetic_symlink.cc"],
+    hdrs = ["hermetic_symlink.h"],
+    copts = select({
+        "//tools:clang-cl": [
+            "-Xclang=-fno-split-cold-code",
+            "/std=c++17",
+        ],
+        "//tools:msvc": [
+            "/std=c++17",
+        ],
+        "//conditions:default": [
+            "-std=c++17",
+        ],
+    }),
+)
+
+cc_library(
+    name = "pcm_hermetic_runner",
+    srcs = ["pcm_hermetic_runner.cc"],
+    hdrs = ["pcm_hermetic_runner.h"],
+    copts = select({
+        "//tools:clang-cl": [
+            "-Xclang=-fno-split-cold-code",
+            "/std:c++17",
+        ],
+        "//tools:msvc": [
+            "/std:c++17",
+        ],
+        "//conditions:default": [
+            "-std=c++17",
+        ],
+    }),
+    deps = [
+        ":hermetic_symlink",
+        "//tools/common:process",
+    ],
+)
+
+cc_library(
     name = "swift_runner",
     srcs = [
         "output_file_map.cc",
@@ -72,17 +112,27 @@ cc_library(
         ],
     }),
     data = select({
-        "@build_bazel_apple_support//configs:apple": [
-            "@build_bazel_rules_swift_index_import_5_8//:index_import",
-            "@build_bazel_rules_swift_index_import_6_1//:index_import",
+        "@apple_support//configs:apple": [
+            "@rules_swift_index_import_5_8//:index_import",
+            "@rules_swift_index_import_6_1//:index_import",
         ],
         "//conditions:default": [],
     }),
     deps = [
+        ":hermetic_symlink",
+        ":pcm_hermetic_runner",
         "//tools/common:bazel_substitutions",
+        "//tools/common:color",
+        "//tools/common:file_system",
+        "//tools/common:path_utils",
         "//tools/common:process",
+        "//tools/common:target_triple",
         "//tools/common:temp_file",
-        "@com_github_nlohmann_json//:json",
+        "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/strings",
+        "@nlohmann_json//:json",
     ],
 )
 
@@ -103,7 +153,7 @@ cc_library(
         ],
     }),
     deps = [
-        "@com_github_nlohmann_json//:json",
+        "@nlohmann_json//:json",
     ],
 )
 

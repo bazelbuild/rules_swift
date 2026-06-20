@@ -72,7 +72,7 @@
 // we copy those outputs into the locations where Bazel declared them, so that
 // it can find them as well.
 
-int CompileWithWorker(const std::vector<std::string> &args,
+int CompileWithWorker(const std::vector<std::string>& args,
                       std::string index_import_path) {
   // Pass the "universal arguments" to the Swift work processor. They will be
   // rewritten to replace any placeholders if necessary, and then passed at the

@@ -1,0 +1,25 @@
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+
+exports_files(
+    ["BUILD.bazel.tpl"],
+    visibility = ["//visibility:public"],
+)
+
+bzl_library(
+    name = "standalone_toolchain",
+    srcs = ["standalone_toolchain.bzl"],
+    visibility = ["//swift:__subpackages__"],
+    deps = ["@bazel_skylib//lib:paths"],
+)
+
+bzl_library(
+    name = "swift_releases",
+    srcs = ["swift_releases.bzl"],
+    visibility = ["//swift:__subpackages__"],
+)
+
+bzl_library(
+    name = "toolchains",
+    srcs = ["toolchains.bzl"],
+    visibility = ["//swift:__subpackages__"],
+)

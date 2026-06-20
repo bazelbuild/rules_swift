@@ -13,7 +13,6 @@ x_defaults:
   linux_environment: &linux_environment
     platform: ubuntu2204
     environment:
-      CC: clang
       SWIFT_VERSION: "6.0.3"
       SWIFT_HOME: "$HOME/swift-$SWIFT_VERSION"
       PATH: "$SWIFT_HOME/usr/bin:$PATH"
@@ -63,6 +62,14 @@ tasks:
     bazel: last_green
     <<: *mac_common
 
+  macos_latest_shell_scripts:
+    name: "macOS shell tests"
+    platform: macos_arm64
+    xcode_version: "26.2"
+    bazel: latest
+    shell_commands:
+      - "test/fixtures/layering_check/layering_check_failure_test.sh"
+
   ubuntu2204_latest:
     name: "Current LTS"
     bazel: latest
@@ -107,4 +114,12 @@ tasks:
     test_targets:
       - "doc/..."
 
-buildifier: 8.2.1
+  gazelle_check:
+    name: "Gazelle up-to-date"
+    platform: ubuntu2204
+    bazel: latest
+    shell_commands:
+      - "bazel run //doc:gazelle"
+      - "git diff --exit-code || { echo '::error::Gazelle-generated BUILD files are out of date. Run: bazel run //doc:gazelle'; exit 1; }"
+
+buildifier: 8.5.1

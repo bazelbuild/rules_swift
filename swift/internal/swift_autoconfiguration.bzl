@@ -35,8 +35,6 @@ load(
     "SWIFT_FEATURE_NO_EMBED_DEBUG_MODULE",
     "SWIFT_FEATURE_USE_AUTOLINK_EXTRACT",
     "SWIFT_FEATURE_USE_MODULE_WRAP",
-    "SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES",
-    "SWIFT_FEATURE__SUPPORTS_V6",
 )
 
 def _scratch_file(repository_ctx, temp_dir, name, content = ""):
@@ -71,22 +69,6 @@ def _swift_succeeds(repository_ctx, swiftc_path, *args):
     swift_result = repository_ctx.execute([swiftc_path] + list(args))
     return swift_result.return_code == 0
 
-def _check_supports_language_mode_6(repository_ctx, swiftc_path, _temp_dir):
-    """Returns True if the swift compiler supports language mode 6."""
-    result = repository_ctx.execute([swiftc_path, "-version"])
-    if result.return_code == 0:
-        _, _, almost_version = result.stdout.partition("swiftlang-")
-        if not almost_version:
-            return False
-
-        major_version, _, _ = almost_version.partition(".")
-        if not major_version:
-            return False
-
-        return int(major_version) >= 6
-
-    return False
-
 def _check_supports_lld_gc_workaround(repository_ctx, swiftc_path, temp_dir):
     """Returns True if lld is being used and it supports nostart-stop-gc."""
     source_file = _scratch_file(
@@ -108,16 +90,6 @@ print("Hello")
         "nostart-stop-gc",
     )
 
-def _check_supports_upcoming_features(repository_ctx, swiftc_path, _temp_dir):
-    """Returns True if `swiftc` supports the `-enable-{experimental,upcoming}-feature` flags."""
-    return _swift_succeeds(
-        repository_ctx,
-        swiftc_path,
-        "-version",
-        "-enable-upcoming-feature",
-        "BareRegexLiteralSyntax",
-    )
-
 def _write_swift_version(repository_ctx, swiftc_path):
     """Write a file containing the current Swift version info
 
@@ -132,12 +104,24 @@ def _write_swift_version(repository_ctx, swiftc_path):
     """
     result = repository_ctx.execute([swiftc_path, "-version"])
     contents = "unknown"
+    parsed = "0.0"
     if result.return_code == 0:
         contents = result.stdout.strip()
 
+        # Swift version 6.3.1 (swift-6.3.1-RELEASE) -> 6.3.1
+        # Swift version 6.4-dev -> 6.4
+        parsed = (
+            contents.splitlines()[0]
+                .split("Swift version")[-1]
+                .strip()
+                .split(" ")[0]
+                .split("-")[0]
+                .strip()
+        ) or "0.0"
+
     filename = "swift_version"
     repository_ctx.file(filename, contents, executable = False)
-    return filename
+    return filename, parsed
 
 def _compute_feature_values(repository_ctx, swiftc_path):
     """Computes a list of supported/unsupported features by running checks.
@@ -188,16 +172,27 @@ def _compute_feature_values(repository_ctx, swiftc_path):
 # should return True if the feature is supported.
 _FEATURE_CHECKS = {
     SWIFT_FEATURE_LLD_GC_WORKAROUND: _check_supports_lld_gc_workaround,
-    SWIFT_FEATURE__SUPPORTS_UPCOMING_FEATURES: (
-        _check_supports_upcoming_features
-    ),
-    SWIFT_FEATURE__SUPPORTS_V6: _check_supports_language_mode_6,
 }
 
 def _normalized_linux_cpu(cpu):
     if cpu in ("amd64"):
         return "x86_64"
     return cpu
+
+def _resolve_toolchain_root(repository_ctx, swiftc_path):
+    """Returns the Swift toolchain root directory for `swiftc_path`.
+
+    Swiftly installs a symlink that is changed based on the active toolchain.
+    This resolves that symlink to the actual toolchain directory.
+    """
+    result = repository_ctx.execute([swiftc_path, "-print-target-info"])
+    if result.return_code != 0:
+        fail("Failed to run '{} -print-target-info': {}".format(
+            swiftc_path,
+            result.stderr,
+        ))
+    runtime_resource_path = json.decode(result.stdout)["paths"]["runtimeResourcePath"]
+    return repository_ctx.path(runtime_resource_path).dirname.dirname
 
 def _create_linux_toolchain(*, repository_ctx):
     """Creates BUILD targets for the Swift toolchain on Linux.
@@ -212,9 +207,9 @@ def _create_linux_toolchain(*, repository_ctx):
 toolchain.
 """
 
-    root = path_to_swiftc.dirname.dirname
+    root = _resolve_toolchain_root(repository_ctx, path_to_swiftc)
     feature_values = _compute_feature_values(repository_ctx, path_to_swiftc)
-    version_file = _write_swift_version(repository_ctx, path_to_swiftc)
+    version_file, parsed_version = _write_swift_version(repository_ctx, path_to_swiftc)
 
     # TODO: This should be removed so that private headers can be used with
     # explicit modules, but the build targets for CgRPC need to be cleaned up
@@ -230,6 +225,7 @@ swift_toolchain(
     features = [{feature_list}],
     os = "linux",
     root = "{root}",
+    parsed_version = "{parsed_version}",
     version_file = "{version_file}",
 )
 """.format(
@@ -239,6 +235,7 @@ swift_toolchain(
             for feature in feature_values
         ]),
         root = root,
+        parsed_version = parsed_version,
         version_file = version_file,
     )
 
@@ -254,8 +251,16 @@ def _create_xcode_toolchain():
 
     return """\
 xcode_swift_toolchain(
-    name = "xcode-toolchain",
+    name = "xcode-sdk-toolchain",
     features = [{feature_list}],
+)
+
+xcode_swift_toolchain(
+    name = "xcode-toolchain",
+    cross_import_overlays = ["@system_sdk//:all_cross_import_overlays"],
+    features = [{feature_list}],
+    implicit_system_modules = "@system_sdk//:implicit_modules",
+    system_modules = "@system_sdk//:all_modules",
 )
 """.format(
         feature_list = ", ".join([
@@ -299,7 +304,7 @@ Swift toolchain.
     ]
     disabled_features = []
 
-    version_file = _write_swift_version(repository_ctx, path_to_swiftc)
+    version_file, parsed_version = _write_swift_version(repository_ctx, path_to_swiftc)
     xctest_version = repository_ctx.execute([
         _get_python_bin(repository_ctx),
         "-c",
@@ -319,6 +324,7 @@ swift_toolchain(
   features = [{features}],
   os = "windows",
   root = "{root}",
+  parsed_version = "{parsed_version}",
   version_file = "{version_file}",
   env = {env},
   sdkroot = "{sdkroot}",
@@ -329,6 +335,7 @@ swift_toolchain(
         features = ", ".join(['"{}"'.format(feature) for feature in enabled_features] + ['"-{}"'.format(feature) for feature in disabled_features]),
         root = root,
         env = env,
+        parsed_version = parsed_version,
         sdkroot = repository_ctx.os.environ["SDKROOT"].replace("\\", "/"),
         xctest_version = xctest_version.stdout.rstrip(),
         version_file = version_file,
@@ -340,11 +347,11 @@ def _swift_autoconfiguration_impl(repository_ctx):
         "\n".join([
             """\
 load(
-    "@build_bazel_rules_swift//swift/toolchains:swift_toolchain.bzl",
+    "@rules_swift//swift/toolchains:swift_toolchain.bzl",
     "swift_toolchain",
 )
 load(
-    "@build_bazel_rules_swift//swift/toolchains:xcode_swift_toolchain.bzl",
+    "@rules_swift//swift/toolchains:xcode_swift_toolchain.bzl",
     "xcode_swift_toolchain",
 )
 

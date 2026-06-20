@@ -99,11 +99,9 @@ def extract_symbol_graph(
     transitive_modules = merged_swift_info.transitive_modules.to_list()
 
     direct_swiftdocs = []
-    transitive_swiftmodules = []
     for module in transitive_modules:
         swift_module = module.swift
         if swift_module:
-            transitive_swiftmodules.append(swift_module.swiftmodule)
             if module.name == module_name and swift_module.swiftdoc:
                 direct_swiftdocs.append(swift_module.swiftdoc)
     transitive_swift_dependency_inputs_list = transitive_swift_dependency_inputs(
@@ -126,7 +124,6 @@ def extract_symbol_graph(
         target_label = feature_configuration._label,
         transitive_modules = transitive_modules,
         transitive_swift_dependency_inputs = transitive_swift_dependency_inputs_list,
-        transitive_swiftmodules = transitive_swiftmodules,
     )
 
     run_toolchain_action(

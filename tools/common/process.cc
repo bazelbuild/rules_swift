@@ -29,20 +29,20 @@
 #include <stdlib.h>
 #else
 extern "C" {
-  extern char **environ;
+extern char** environ;
 }
 #endif
 
 std::map<std::string, std::string> GetCurrentEnvironment() {
   std::map<std::string, std::string> result;
-  char **envp = environ;
+  char** envp = environ;
   for (int i = 0; envp[i] != nullptr; ++i) {
     std::string envString(envp[i]);
     size_t equalsPos = envString.find('=');
     if (equalsPos != std::string::npos) {
-        std::string key = envString.substr(0, equalsPos);
-        std::string value = envString.substr(equalsPos + 1);
-        result[key] = value;
+      std::string key = envString.substr(0, equalsPos);
+      std::string value = envString.substr(equalsPos + 1);
+      result[key] = value;
     }
   }
   return result;
@@ -74,11 +74,11 @@ class WindowsIORedirector {
  public:
   STARTUPINFOA siStartInfo;
 
-  WindowsIORedirector(const WindowsIORedirector &) = delete;
-  WindowsIORedirector &operator=(const WindowsIORedirector &) = delete;
+  WindowsIORedirector(const WindowsIORedirector&) = delete;
+  WindowsIORedirector& operator=(const WindowsIORedirector&) = delete;
 
-  WindowsIORedirector(WindowsIORedirector &&) = default;
-  WindowsIORedirector &operator=(WindowsIORedirector &&) = default;
+  WindowsIORedirector(WindowsIORedirector&&) = default;
+  WindowsIORedirector& operator=(WindowsIORedirector&&) = default;
 
   ~WindowsIORedirector() {
     assert(hIO_[In][Rd] == INVALID_HANDLE_VALUE);
@@ -88,10 +88,10 @@ class WindowsIORedirector {
   }
 
   static std::unique_ptr<WindowsIORedirector> Create(bool include_stdout,
-                                                     std::error_code &ec) {
+                                                     std::error_code& ec) {
     HANDLE hIO[2][2] = {
-      {INVALID_HANDLE_VALUE, INVALID_HANDLE_VALUE},
-      {INVALID_HANDLE_VALUE, INVALID_HANDLE_VALUE},
+        {INVALID_HANDLE_VALUE, INVALID_HANDLE_VALUE},
+        {INVALID_HANDLE_VALUE, INVALID_HANDLE_VALUE},
     };
 
     SECURITY_ATTRIBUTES saAttr;
@@ -117,11 +117,11 @@ class WindowsIORedirector {
         new WindowsIORedirector(hIO, include_stdout));
   }
 
-  void ConsumeAllSubprocessOutput(std::ostream *stderr_stream);
+  void ConsumeAllSubprocessOutput(std::ostream* stderr_stream);
 };
 
 void WindowsIORedirector::ConsumeAllSubprocessOutput(
-    std::ostream *stderr_stream) {
+    std::ostream* stderr_stream) {
   CloseHandle(hIO_[Out][Wr]);
   hIO_[Out][Wr] = INVALID_HANDLE_VALUE;
 
@@ -136,7 +136,7 @@ void WindowsIORedirector::ConsumeAllSubprocessOutput(
     stderr_stream->write(stderr_buffer, dwNumberOfBytesRead);
 }
 
-std::string GetCommandLine(const std::vector<std::string> &arguments) {
+std::string GetCommandLine(const std::vector<std::string>& arguments) {
   // To escape the command line, we surround the argument with quotes.
   // However, the complication comes due to how the Windows command line
   // parser treats backslashes (\) and quotes (").
@@ -158,7 +158,7 @@ std::string GetCommandLine(const std::vector<std::string> &arguments) {
   // In general:
   //  - 2n \ followed by " => n \ followed by the " metacharacter
   //  - 2n + 1 \ followed by " => n \ followed by a literal "
-  auto quote = [](const std::string &argument) -> std::string {
+  auto quote = [](const std::string& argument) -> std::string {
     if (argument.find_first_of(" \t\n\"") == std::string::npos) return argument;
 
     std::ostringstream buffer;
@@ -199,9 +199,9 @@ std::string GetCommandLine(const std::vector<std::string> &arguments) {
 }
 }  // namespace
 
-int RunSubProcess(const std::vector<std::string> &args,
-                  std::map<std::string, std::string> *env,
-                  std::ostream *stderr_stream, bool stdout_to_stderr) {
+int RunSubProcess(const std::vector<std::string>& args,
+                  std::map<std::string, std::string>* env,
+                  std::ostream* stderr_stream, bool stdout_to_stderr) {
   std::error_code ec;
   std::unique_ptr<WindowsIORedirector> redirector =
       WindowsIORedirector::Create(stdout_to_stderr, ec);
@@ -278,10 +278,10 @@ class PosixSpawnIORedirector {
   }
 
   // Explicitly make PosixSpawnIORedirector non-copyable and movable.
-  PosixSpawnIORedirector(const PosixSpawnIORedirector &) = delete;
-  PosixSpawnIORedirector &operator=(const PosixSpawnIORedirector &) = delete;
-  PosixSpawnIORedirector(PosixSpawnIORedirector &&) = default;
-  PosixSpawnIORedirector &operator=(PosixSpawnIORedirector &&) = default;
+  PosixSpawnIORedirector(const PosixSpawnIORedirector&) = delete;
+  PosixSpawnIORedirector& operator=(const PosixSpawnIORedirector&) = delete;
+  PosixSpawnIORedirector(PosixSpawnIORedirector&&) = default;
+  PosixSpawnIORedirector& operator=(PosixSpawnIORedirector&&) = default;
 
   ~PosixSpawnIORedirector() {
     SafeClose(&stderr_pipe_[0]);
@@ -291,15 +291,15 @@ class PosixSpawnIORedirector {
 
   // Returns the pointer to a posix_spawn_file_actions_t value that should be
   // passed to posix_spawn to enable this redirection.
-  posix_spawn_file_actions_t *PosixSpawnFileActions() { return &file_actions_; }
+  posix_spawn_file_actions_t* PosixSpawnFileActions() { return &file_actions_; }
 
   // Returns a pointer to the two-element file descriptor array for the stderr
   // pipe.
-  int *StderrPipe() { return stderr_pipe_; }
+  int* StderrPipe() { return stderr_pipe_; }
 
   // Consumes all the data output to stderr by the subprocess and writes it to
   // the given output stream.
-  void ConsumeAllSubprocessOutput(std::ostream *stderr_stream);
+  void ConsumeAllSubprocessOutput(std::ostream* stderr_stream);
 
  private:
   explicit PosixSpawnIORedirector(int stderr_pipe[], bool stdoutToStderr) {
@@ -317,7 +317,7 @@ class PosixSpawnIORedirector {
   }
 
   // Closes a file descriptor only if it hasn't already been closed.
-  void SafeClose(int *fd) {
+  void SafeClose(int* fd) {
     if (*fd >= 0) {
       close(*fd);
       *fd = -1;
@@ -329,7 +329,7 @@ class PosixSpawnIORedirector {
 };
 
 void PosixSpawnIORedirector::ConsumeAllSubprocessOutput(
-    std::ostream *stderr_stream) {
+    std::ostream* stderr_stream) {
   SafeClose(&stderr_pipe_[1]);
 
   char stderr_buffer[1024];
@@ -347,16 +347,15 @@ void PosixSpawnIORedirector::ConsumeAllSubprocessOutput(
   }
 }
 
-// Converts an array of string arguments to char *arguments.
-// The first arg is reduced to its basename as per execve conventions.
-// Note that the lifetime of the char* arguments in the returned array
-// are controlled by the lifetime of the strings in args.
-std::vector<const char *> ConvertToCArgs(const std::vector<std::string> &args) {
-  std::vector<const char *> c_args;
-  std::string filename = std::filesystem::path(args[0]).filename().string();
-  c_args.push_back(&*std::next(args[0].rbegin(), filename.length() - 1));
-  for (int i = 1; i < args.size(); i++) {
-    c_args.push_back(args[i].c_str());
+// Converts an array of string arguments to char *arguments, terminated by a
+// nullptr.
+// It is the responsibility of the caller to free the elements of the returned
+// vector.
+std::vector<char*> ConvertToCArgs(const std::vector<std::string>& args) {
+  std::vector<char*> c_args;
+  c_args.reserve(args.size() + 1);
+  for (int i = 0; i < args.size(); i++) {
+    c_args.push_back(strdup(args[i].c_str()));
   }
   c_args.push_back(nullptr);
   return c_args;
@@ -364,10 +363,10 @@ std::vector<const char *> ConvertToCArgs(const std::vector<std::string> &args) {
 
 }  // namespace
 
-int RunSubProcess(const std::vector<std::string> &args,
-                  std::map<std::string, std::string> *env,
-                  std::ostream *stderr_stream, bool stdout_to_stderr) {
-  std::vector<const char *> exec_argv = ConvertToCArgs(args);
+int RunSubProcess(const std::vector<std::string>& args,
+                  std::map<std::string, std::string>* env,
+                  std::ostream* stderr_stream, bool stdout_to_stderr) {
+  std::vector<char*> exec_argv = ConvertToCArgs(args);
 
   // Set up a pipe to redirect stderr from the child process so that we can
   // capture it and return it in the response message.
@@ -378,13 +377,13 @@ int RunSubProcess(const std::vector<std::string> &args,
     return 254;
   }
 
-  char **envp;
-  std::vector<char *> new_environ;
+  char** envp;
+  std::vector<char*> new_environ;
 
   if (env) {
     // Copy the environment as an array of C strings, with guaranteed cleanup
     // below whenever we exit.
-    for (const auto &[key, value] : *env) {
+    for (const auto& [key, value] : *env) {
       std::string pair = key + "=" + value;
       char* c_str = new char[pair.length() + 1];
       std::strcpy(c_str, pair.c_str());
@@ -401,8 +400,12 @@ int RunSubProcess(const std::vector<std::string> &args,
   pid_t pid;
   int status =
       posix_spawn(&pid, args[0].c_str(), redirector->PosixSpawnFileActions(),
-                  nullptr, const_cast<char **>(exec_argv.data()), envp);
+                  nullptr, exec_argv.data(), envp);
   redirector->ConsumeAllSubprocessOutput(stderr_stream);
+
+  for (char* arg : exec_argv) {
+    free(arg);
+  }
 
   for (char* envp : new_environ) {
     if (envp) {

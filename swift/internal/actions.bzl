@@ -18,10 +18,6 @@ load("@bazel_skylib//lib:types.bzl", "types")
 load("//swift/toolchains/config:action_config.bzl", "ConfigResultInfo")
 load(":features.bzl", "are_all_features_enabled", "gather_toolchains")
 
-# This is a proxy for being on bazel 7.x which has
-# --incompatible_merge_fixed_and_default_shell_env enabled by default
-USE_DEFAULT_SHELL_ENV = not hasattr(apple_common, "apple_crosstool_transition")
-
 def _apply_action_configs(
         action_name,
         args,
@@ -248,6 +244,6 @@ def run_toolchain_action(
             tools,
             transitive = action_inputs.additional_tools,
         ),
-        use_default_shell_env = USE_DEFAULT_SHELL_ENV,
+        use_default_shell_env = True,
         **kwargs
     )

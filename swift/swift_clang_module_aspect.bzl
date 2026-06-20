@@ -54,6 +54,7 @@ load(
     "//swift/internal:utils.bzl",
     "compact",
     "compilation_context_for_explicit_module_compilation",
+    "get_clang_implicit_deps",
 )
 load(":module_name.bzl", "derive_swift_module_name")
 load(
@@ -64,8 +65,11 @@ load(
     "create_clang_module_inputs",
     "create_swift_module_context",
 )
+load(":swift_interop_info.bzl", "create_swift_interop_info")
 
-_MULTIPLE_TARGET_ASPECT_ATTRS = [
+visibility("public")
+
+_ASPECT_ATTRS = [
     "deps",
 ]
 
@@ -279,7 +283,10 @@ def _module_info_for_target(
         # was some other `Objc`-providing target, derive the module name
         # now.
         if not module_name:
-            module_name = derive_swift_module_name(target.label)
+            module_name = derive_swift_module_name(
+                target.label,
+                feature_configuration = feature_configuration,
+            )
 
     module_map_file = _generate_module_map(
         actions = aspect_ctx.actions,
@@ -296,6 +303,7 @@ def _module_info_for_target(
 
 def _handle_module(
         aspect_ctx,
+        compilation_context,
         exclude_headers,
         feature_configuration,
         module_map_file,
@@ -309,6 +317,8 @@ def _handle_module(
 
     Args:
         aspect_ctx: The aspect's context.
+        compilation_context: The `CcCompilationContext` that provides the
+            headers for the module.
         exclude_headers: A `list` of `File`s representing header files to
             exclude, if any, if we are generating the module map.
         feature_configuration: The current feature configuration.
@@ -333,15 +343,12 @@ def _handle_module(
     """
     attr = aspect_ctx.rule.attr
 
-    all_swift_infos = (
-        direct_swift_infos + swift_infos +
-        toolchains.swift.clang_implicit_deps_providers.swift_infos
+    implicit_swift_infos, _ = get_clang_implicit_deps(
+        feature_configuration = feature_configuration,
+        swift_toolchain = toolchains.swift,
     )
 
-    if CcInfo in target:
-        compilation_context = target[CcInfo].compilation_context
-    else:
-        compilation_context = None
+    all_swift_infos = direct_swift_infos + swift_infos + implicit_swift_infos
 
     # Collect the names of Clang modules that the module being built directly
     # depends on.
@@ -369,8 +376,7 @@ def _handle_module(
         if all_swift_infos:
             return [
                 SwiftInfo(
-                    direct_swift_infos = direct_swift_infos,
-                    swift_infos = swift_infos,
+                    direct_swift_infos = direct_swift_infos + swift_infos,
                 ),
             ]
         else:
@@ -393,7 +399,7 @@ def _handle_module(
     # we have it. If we don't, use the `SwiftInfo`-wrapped compilation context
     # instead.
     additional_swift_infos = []
-    for attr_name in _MULTIPLE_TARGET_ASPECT_ATTRS:
+    for attr_name in _ASPECT_ATTRS:
         for dep in getattr(attr, attr_name, []):
             if CcInfo in dep:
                 compilation_contexts_to_merge_for_compilation.append(
@@ -413,7 +419,17 @@ def _handle_module(
 
     output_groups = {}
 
-    pcm_outputs = precompile_clang_module(
+    # Private -D flags might be needed to compile the PCM
+    # TODO: Only grab local_defines once that has existed for long enough
+    local_defines = [
+        copt
+        for copt in getattr(attr, "copts", [])
+        if copt.startswith("-D") and "$(" not in copt
+    ]
+    for define in getattr(attr, "local_defines", []):
+        local_defines.append("-D" + define)
+
+    compile_result = precompile_clang_module(
         actions = aspect_ctx.actions,
         cc_compilation_context = compilation_context_to_compile,
         feature_configuration = feature_configuration,
@@ -423,9 +439,10 @@ def _handle_module(
         toolchains = toolchains,
         target_name = target.label.name,
         toolchain_type = toolchain_type,
+        user_compile_flags = local_defines,
     )
-    precompiled_module = getattr(pcm_outputs, "pcm_file", None)
-    pcm_indexstore = getattr(pcm_outputs, "indexstore_directory", None)
+    precompiled_module = compile_result.clang_module.precompiled_module if compile_result else None
+    pcm_indexstore = compile_result.indexstore_directory if compile_result else None
 
     clang_module_context = create_clang_module_inputs(
         compilation_context = compilation_context,
@@ -604,23 +621,20 @@ def _collect_swift_infos_from_deps(aspect_ctx):
         aspect_ctx: The aspect's context.
 
     Returns:
-        A tuple of lists of `SwiftInfo` providers from dependencies of the target to which
-        the aspect was applied. The first list contains those from attributes that should be treated
-        as direct, while the second list contains those from all other attributes.
+        A list of `SwiftInfo` providers from the dependencies of the rule to
+        which the aspect is applied.
     """
-    direct_swift_infos = []
     swift_infos = []
 
     attr = aspect_ctx.rule.attr
-    for attr_name in _MULTIPLE_TARGET_ASPECT_ATTRS:
-        infos = [
+    for attr_name in _ASPECT_ATTRS:
+        swift_infos.extend([
             dep[SwiftInfo]
             for dep in getattr(attr, attr_name, [])
             if SwiftInfo in dep
-        ]
-        swift_infos.extend(infos)
+        ])
 
-    return direct_swift_infos, swift_infos
+    return swift_infos
 
 def _find_swift_interop_info(target, aspect_ctx):
     """Finds a `SwiftInteropInfo` provider associated with the target.
@@ -654,7 +668,6 @@ def _find_swift_interop_info(target, aspect_ctx):
         # and merge `SwiftInfo` providers from relevant dependencies.
         interop_target = target
         interop_from_rule = True
-        default_direct_swift_infos = []
         default_swift_infos = []
     else:
         # If the target's rule implementation does not directly provide
@@ -666,15 +679,18 @@ def _find_swift_interop_info(target, aspect_ctx):
         # after the call site of this function.
         interop_target = None
         interop_from_rule = False
-        default_direct_swift_infos, default_swift_infos = _collect_swift_infos_from_deps(aspect_ctx)
+        default_swift_infos = _collect_swift_infos_from_deps(aspect_ctx)
 
     # We don't break this loop early when we find a matching hint, because we
     # want to give an error message if there are two aspect hints that provide
     # `SwiftInteropInfo` (or if both the rule and an aspect hint do).
-    # TODO: remove usage of `getattr` and use `aspect_ctx.rule.attr.aspect_hints` directly when we drop Bazel 6.
-    for hint in getattr(aspect_ctx.rule.attr, "aspect_hints", []):
+    found_overlay = False
+    for hint in aspect_ctx.rule.attr.aspect_hints:
+        if SwiftOverlayCompileInfo in hint:
+            found_overlay = True
         if SwiftInteropInfo in hint:
-            if interop_target:
+            overrides = hint[SwiftInteropInfo].suppressed
+            if not overrides and interop_target:
                 if interop_from_rule:
                     fail(("Conflicting Swift interop info from the target " +
                           "'{target}' ({rule} rule) and the aspect hint " +
@@ -691,10 +707,16 @@ def _find_swift_interop_info(target, aspect_ctx):
                         hint2 = str(hint.label),
                     ))
             interop_target = hint
+            break
 
     if interop_target:
-        return interop_target[SwiftInteropInfo], default_direct_swift_infos, default_swift_infos
-    return None, default_direct_swift_infos, default_swift_infos
+        return interop_target[SwiftInteropInfo], default_swift_infos
+    if found_overlay:
+        # If no explicit interop hint was present but a `swift_overlay` was, we
+        # still want that to imply the same thing as the `auto_module` hint
+        # since it's the obvious right thing to do.
+        return create_swift_interop_info(), default_swift_infos
+    return None, default_swift_infos
 
 def _find_swift_overlay_compile_info(aspect_ctx):
     """Returns the `SwiftOverlayCompileInfo` from an aspect hint, if present.
@@ -743,7 +765,9 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx, toolchain_type):
     requested_features = aspect_ctx.features
     unsupported_features = aspect_ctx.disabled_features
 
-    interop_info, direct_swift_infos, swift_infos = _find_swift_interop_info(target, aspect_ctx)
+    compilation_context = None
+    direct_swift_infos = []
+    interop_info, swift_infos = _find_swift_interop_info(target, aspect_ctx)
     if interop_info:
         # If the module should be suppressed, return immediately and propagate
         # nothing (not even transitive dependencies).
@@ -752,9 +776,10 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx, toolchain_type):
 
         exclude_headers = interop_info.exclude_headers
         module_map_file = interop_info.module_map
-        module_name = (
-            interop_info.module_name or derive_swift_module_name(target.label)
-        )
+        module_name = interop_info.module_name
+
+        compilation_context = interop_info.compilation_context
+        direct_swift_infos.extend(interop_info.direct_swift_infos)
         swift_infos.extend(interop_info.swift_infos)
         requested_features.extend(interop_info.requested_features)
         unsupported_features.extend(interop_info.unsupported_features)
@@ -762,6 +787,12 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx, toolchain_type):
         exclude_headers = []
         module_map_file = None
         module_name = None
+
+    # If the target has a `CcInfo` and we didn't get an explicit compilation
+    # context from `SwiftInteropInfo`, then we can use the `CcInfo`'s
+    # compilation context.
+    if not compilation_context and CcInfo in target:
+        compilation_context = target[CcInfo].compilation_context
 
     toolchains = find_all_toolchains(
         aspect_ctx,
@@ -774,9 +805,16 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx, toolchain_type):
         unsupported_features = unsupported_features,
     )
 
+    if interop_info and not module_name:
+        module_name = derive_swift_module_name(
+            target.label,
+            feature_configuration = feature_configuration,
+        )
+
     if interop_info or ObjcInfo in target or CcInfo in target:
         return providers + _handle_module(
             aspect_ctx = aspect_ctx,
+            compilation_context = compilation_context,
             exclude_headers = exclude_headers,
             feature_configuration = feature_configuration,
             module_map_file = module_map_file,
@@ -816,7 +854,7 @@ def make_swift_clang_module_aspect(*, toolchain_type):
         )
 
     return aspect(
-        attr_aspects = _MULTIPLE_TARGET_ASPECT_ATTRS,
+        attr_aspects = _ASPECT_ATTRS,
         doc = """\
 Propagates unified `SwiftInfo` providers for targets that represent
 C/Objective-C modules.
