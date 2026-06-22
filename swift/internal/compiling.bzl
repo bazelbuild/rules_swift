@@ -2062,11 +2062,136 @@ def _declare_per_source_output_file(actions, extension, target_name, src):
         paths.join(dirname, "{}.{}".format(basename, extension)),
     )
 
-def _format_output_file_map_entry(entry):
-    """Formats a single entry in the output file map as a JSON string."""
-    return '  "{}": {}'.format(entry.src, json.encode(entry.outputs))
+# The kinds of outputs that can be produced by a Swift compilation. These names
+# correspond to the strings used as keys in the output file map.
+_OUTPUT_KINDS = struct(
+    ast_dump = "ast-dump",
+    const_values = "const-values",
+    llvm_bc = "llvm-bc",
+    swift_dependencies = "swift-dependencies",
+    index_unit_output_path = "index-unit-output-path",
+    object = "object",
+)
 
-def _write_output_file_map(actions, map_entries, output_map_file):
+# The file extensions used for each kind of output.
+_PER_SOURCE_OUTPUT_EXTENSIONS = {
+    _OUTPUT_KINDS.ast_dump: "ast",
+    _OUTPUT_KINDS.const_values: "swiftconstvalues",
+    _OUTPUT_KINDS.llvm_bc: "bc",
+    _OUTPUT_KINDS.swift_dependencies: "swiftdeps",
+    _OUTPUT_KINDS.index_unit_output_path: "o",
+    _OUTPUT_KINDS.object: "o",
+}
+
+def _add_per_source_output(
+        *,
+        actions,
+        kind,
+        file_list_to_update,
+        output_dict_to_update,
+        src,
+        target_name):
+    """Declares a specific output for a Swift compile action.
+
+    Args:
+        actions: The object used to register actions.
+        kind: The kind of output to declare.
+        file_list_to_update: A list of `File`s to add the declared output to.
+            This list is mutated in place.
+        output_dict_to_update: A dictionary of output file paths to update with
+            the declared output, with the key being the output kind. This
+            dictionary is mutated in place.
+        src: The source file that the output is associated with.
+        target_name: The name of the target being built.
+
+    Returns:
+        The declared output `File`.
+    """
+    extension = _PER_SOURCE_OUTPUT_EXTENSIONS[kind]
+    objs_dir = "{}_objs".format(target_name)
+
+    # Spaces in object file paths break response-file parsing on Windows
+    owner_rel_path = owner_relative_path(src).replace(" ", "_")
+    basename = paths.basename(owner_rel_path)
+    dirname = paths.join(objs_dir, paths.dirname(owner_rel_path))
+
+    if src.is_directory:
+        file = actions.declare_directory(
+            paths.join(dirname, "{}.{}".format(basename, extension)),
+        )
+    else:
+        file = actions.declare_file(
+            paths.join(dirname, "{}.{}".format(basename, extension)),
+        )
+
+    file_list_to_update.append(file)
+    output_dict_to_update[kind] = file.path
+    return file
+
+def _add_whole_module_output(
+        *,
+        actions,
+        kind,
+        file_list_to_update,
+        output_dict_to_update,
+        target_name):
+    """Declares a whole-module output file for a Swift compile action.
+
+    Args:
+        actions: The object used to register actions.
+        kind: The kind of output to declare.
+        file_list_to_update: A list of `File`s to add the declared output to.
+            This list is mutated in place.
+        output_dict_to_update: A dictionary of output file paths to update with
+            the declared output, with the key being the output kind. This
+            dictionary is mutated in place.
+        target_name: The name of the target being built.
+
+    Returns:
+        The declared output `File`.
+    """
+    extension = _PER_SOURCE_OUTPUT_EXTENSIONS[kind]
+    file = actions.declare_file("{}.{}".format(target_name, extension))
+
+    file_list_to_update.append(file)
+    output_dict_to_update[kind] = file.path
+    return file
+
+def _format_output_file_map_entry(entry, directory_expander = None):
+    """Formats a structured entry in the output file map as a JSON string.
+
+    If the source file in the entry is a directory, then it will be expanded
+    into multiple JSON entries, one per file in the directory.
+    """
+
+    # The whole module map entry has an empty string as its key.
+    if entry.src == "":
+        return '  "{}": {}'.format(entry.src, json.encode(entry.outputs))
+
+    if entry.src.is_directory:
+        if not directory_expander:
+            fail("directory_expander is required for directory entries")
+
+        results = []
+        for f in directory_expander.expand(entry.src):
+            rel_path = paths.relativize(f.path, entry.src.path)
+            file_outputs = {}
+            for k, v in entry.outputs.items():
+                ext = _PER_SOURCE_OUTPUT_EXTENSIONS.get(k)
+                if k == _OUTPUT_KINDS.index_unit_output_path and _OUTPUT_KINDS.llvm_bc in entry.outputs:
+                    ext = "bc"
+                if ext:
+                    file_outputs[k] = paths.join(v, rel_path + "." + ext)
+                else:
+                    file_outputs[k] = paths.join(v, rel_path)
+            results.append(
+                '  "{}": {}'.format(f.path, json.encode(file_outputs)),
+            )
+        return results
+
+    return '  "{}": {}'.format(entry.src.path, json.encode(entry.outputs))
+
+def _write_output_file_map(actions, map_entries, output_map_file, srcs):
     """Writes an output file map, deferring JSON generation to execution time."""
 
     # Gather the output map entries into an `Args` object to be written to the
@@ -2081,6 +2206,19 @@ def _write_output_file_map(actions, map_entries, output_map_file):
         map_each = _format_output_file_map_entry,
     )
     output_map_args.add("}")
+
+    # The `map_entries` structs added to the `Args` object deeply reference the
+    # `File`s, but the `map_each` function's directory expander only knows how
+    # to expand directories that are *directly* added to the `Args` object. So,
+    # we add them all here with a nullifying `map_each` function so that they
+    # don't produce any output but can still be expanded.
+    tree_artifacts = [src for src in srcs if src.is_directory]
+    if tree_artifacts:
+        output_map_args.add_all(
+            tree_artifacts,
+            map_each = lambda x: None,
+            allow_closure = True,
+        )
 
     actions.write(
         content = output_map_args,
@@ -2150,75 +2288,63 @@ def _declare_multiple_outputs_and_write_output_file_map(
     const_values_files = []
 
     if extract_const_values and is_wmo:
-        const_values_file = actions.declare_file(
-            "{}.swiftconstvalues".format(target_name),
+        _add_whole_module_output(
+            actions = actions,
+            file_list_to_update = const_values_files,
+            kind = _OUTPUT_KINDS.const_values,
+            output_dict_to_update = whole_module_map,
+            target_name = target_name,
         )
-        const_values_files.append(const_values_file)
-        whole_module_map["const-values"] = const_values_file.path
 
     for src in srcs:
         file_outputs = {}
-
-        ast = _declare_per_source_output_file(
+        _add_per_source_output(
             actions = actions,
-            extension = "ast",
-            target_name = target_name,
+            file_list_to_update = ast_files,
+            kind = _OUTPUT_KINDS.ast_dump,
+            output_dict_to_update = file_outputs,
             src = src,
+            target_name = target_name,
         )
-        ast_files.append(ast)
-        file_outputs["ast-dump"] = ast.path
-
-        if emits_bc:
-            # Declare the llvm bc file (there is one per source file).
-            obj = _declare_per_source_output_file(
-                actions = actions,
-                extension = "bc",
-                target_name = target_name,
-                src = src,
-            )
-            output_objs.append(obj)
-            file_outputs["llvm-bc"] = obj.path
-        else:
-            # Declare the object file (there is one per source file).
-            obj = _declare_per_source_output_file(
-                actions = actions,
-                extension = "o",
-                target_name = target_name,
-                src = src,
-            )
-            output_objs.append(obj)
-            file_outputs["object"] = obj.path
+        obj = _add_per_source_output(
+            actions = actions,
+            file_list_to_update = output_objs,
+            kind = _OUTPUT_KINDS.llvm_bc if emits_bc else _OUTPUT_KINDS.object,
+            output_dict_to_update = file_outputs,
+            src = src,
+            target_name = target_name,
+        )
 
         if include_index_unit_paths:
-            file_outputs["index-unit-output-path"] = obj.path
+            file_outputs[_OUTPUT_KINDS.index_unit_output_path] = obj.path
 
         if extract_const_values and not is_wmo:
-            const_values_file = _declare_per_source_output_file(
+            _add_per_source_output(
                 actions = actions,
-                extension = "swiftconstvalues",
-                target_name = target_name,
+                file_list_to_update = const_values_files,
+                kind = _OUTPUT_KINDS.const_values,
+                output_dict_to_update = file_outputs,
                 src = src,
+                target_name = target_name,
             )
-            const_values_files.append(const_values_file)
-            file_outputs["const-values"] = const_values_file.path
 
-        map_entries.append(struct(src = src.path, outputs = file_outputs))
+        map_entries.append(struct(src = src, outputs = file_outputs))
 
         if split_derived_file_generation and not is_wmo:
             derived_map_entries.append(struct(
-                src = src.path,
+                src = src,
                 outputs = {
-                    "swift-dependencies": paths.replace_extension(obj.path, ".swiftdeps"),
+                    _OUTPUT_KINDS.swift_dependencies: obj.path if src.is_directory else paths.replace_extension(obj.path, ".swiftdeps"),
                 },
             ))
 
     if whole_module_map:
         map_entries.append(struct(src = "", outputs = whole_module_map))
 
-    _write_output_file_map(actions, map_entries, output_map_file)
+    _write_output_file_map(actions, map_entries, output_map_file, srcs)
 
     if split_derived_file_generation:
-        _write_output_file_map(actions, derived_map_entries, derived_files_output_map_file)
+        _write_output_file_map(actions, derived_map_entries, derived_files_output_map_file, srcs)
 
     return struct(
         ast_files = ast_files,
