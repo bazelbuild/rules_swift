@@ -62,7 +62,16 @@ also ensure that the Swift compiler is available on your system path.
 
 ### 2. Configure your workspace
 
-Copy the `MODULE.bazel` snippet from [the releases page](https://github.com/bazelbuild/rules_swift/releases).
+`rules_swift` does not register its autoconfigured Swift toolchains in
+dependent modules. Copy the `MODULE.bazel` snippet from
+[the releases page](https://github.com/bazelbuild/rules_swift/releases), which
+registers the Swift toolchains for the Swift installation on your host. If you
+maintain your `MODULE.bazel` manually, register the toolchains after the
+`bazel_dep`:
+
+```bzl
+register_toolchains("@rules_swift//swift/toolchains:all")
+```
 
 ### 3. Additional configuration (Linux only)
 
