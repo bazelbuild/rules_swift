@@ -1884,6 +1884,10 @@ def _declare_per_source_output_file(actions, extension, target_name, src):
         paths.join(dirname, "{}.{}".format(basename, extension)),
     )
 
+def _format_output_file_map_entry(entry):
+    """Formats a single entry in the output file map as a JSON string."""
+    return '  "{}": {}'.format(entry.src, json.encode(entry.outputs))
+
 def _declare_multiple_outputs_and_write_output_file_map(
         actions,
         extract_const_values,
@@ -1927,10 +1931,8 @@ def _declare_multiple_outputs_and_write_output_file_map(
     # per source file.
     codegen_outputs = []
 
-    # The output map data, which is keyed by source path and will be written to
-    # `output_map_file`.
-    output_map = {}
-    whole_module_map = {}
+    # Map entries for the output file map.
+    map_entries = []
 
     # Output files that will be emitted by the compiler.
     output_objs = []
@@ -1968,9 +1970,10 @@ def _declare_multiple_outputs_and_write_output_file_map(
                 other_outputs = compact([const_values_file]),
             ))
 
-        output_map[src.path] = file_outputs
+        map_entries.append(struct(src = src.path, outputs = file_outputs))
 
     if is_wmo:
+        whole_module_map = {}
         if extract_const_values:
             const_value_file = actions.declare_file(
                 "{}.swiftconstvalues".format(target_name),
@@ -1983,11 +1986,24 @@ def _declare_multiple_outputs_and_write_output_file_map(
             other_outputs = const_values_files,
         ))
 
-    if whole_module_map:
-        output_map[""] = whole_module_map
+        if whole_module_map:
+            map_entries.append(struct(src = "", outputs = whole_module_map))
+
+    # Gather the output map entries into an `Args` object to be written to the
+    # output file. This defers the generation of the actual JSON until execution
+    # time.
+    output_map_args = actions.args()
+    output_map_args.set_param_file_format("multiline")
+    output_map_args.add("{")
+    output_map_args.add_joined(
+        map_entries,
+        join_with = ",",
+        map_each = _format_output_file_map_entry,
+    )
+    output_map_args.add("}")
 
     actions.write(
-        content = json.encode(output_map),
+        content = output_map_args,
         output = output_map_file,
     )
 
