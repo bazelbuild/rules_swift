@@ -53,114 +53,9 @@ namespace bazel_rules_swift {
 
 namespace {
 
-// Extracts frontend command lines from the driver output and groups them into
-// buckets that can be run based on the incoming `-compile-step` flag.
-class CompilationPlan {
- public:
-  // Creates a new compilation plan by parsing the given driver output.
-  CompilationPlan(absl::string_view print_jobs_output);
 
-  // Returns the list of module jobs extracted from the plan. Each job is a
-  // command line that should be invoked to emit some module-wide output.
-  const std::vector<std::string>& ModuleJobs() const { return module_jobs_; }
 
-  // Returns the codegen job that is associated with the given output file, or
-  // `nullopt` if none was found. The job is a command line that should be
-  // invoked to emit some codegen-related output.
-  std::vector<std::string> CodegenJobsForOutputs(
-      std::vector<absl::string_view> outputs) const;
 
- private:
-  // The command lines of any frontend jobs that emit a module or other
-  // module-wide outputs, executed when the compilation step is
-  // `SwiftCompileModule`. These are executed in sequence.
-  std::vector<std::string> module_jobs_;
-
-  // The command lines of any frontend jobs that emit codegen output, like
-  // object files. These are mapped to the output path by
-  // `codegen_job_indices_by_output_`.
-  std::vector<std::string> codegen_jobs_;
-
-  // The indices into `codegen_jobs_` of the command lines of any frontend jobs
-  // that emit codegen output for some given output path.
-  absl::flat_hash_map<std::string, int> codegen_job_indices_by_output_;
-};
-
-CompilationPlan::CompilationPlan(absl::string_view print_jobs_output) {
-  // Looks for the `-o` flags in the command line and captures the path to that
-  // file. This captures both regular paths (group 2) and single-quoted paths
-  // (group 1).
-  RE2 output_pattern("\\s-o\\s+(?:'((?:\\'|[^'])*)'|(\\S+))");
-  for (absl::string_view command_line :
-       absl::StrSplit(print_jobs_output, '\n')) {
-    if (command_line.empty()) {
-      continue;
-    }
-
-    // If the driver created a response file for the frontend invocation, then
-    // it prints the actual arguments with a shell comment-like notation. This
-    // is good for job scanning because we don't have to read the response files
-    // to find the invocations for various output files, but when we invoke it
-    // we need to strip that off because we aren't spawning like a shell; it
-    // would interpret the `#` and everything that follows as regular arguments.
-    // If the comment marker isn't there, then this logic also works because
-    // `first` will be the same as the original string.
-    std::pair<absl::string_view, absl::string_view> possible_response_file =
-        absl::StrSplit(command_line, absl::MaxSplits(" # ", 1));
-    absl::string_view command_line_without_expansions =
-        possible_response_file.first;
-
-    if (absl::StrContains(command_line, " -c ") ||
-        absl::StrContains(command_line, " -dump-ast ")) {
-      int index = codegen_jobs_.size();
-      codegen_jobs_.push_back(std::string(command_line_without_expansions));
-
-      // When threaded WMO is enabled, a single invocation might emit multiple
-      // object files. Associate them with the same command line so that they
-      // are deduplicated.
-      std::string quoted_path, normal_path;
-      absl::string_view anchor = command_line;
-      while (RE2::FindAndConsume(&anchor, output_pattern, &quoted_path,
-                                 &normal_path)) {
-        codegen_job_indices_by_output_[!quoted_path.empty() ? quoted_path
-                                                            : normal_path] =
-            index;
-      }
-    } else {
-      module_jobs_.push_back(std::string(command_line_without_expansions));
-    }
-  }
-}
-
-std::vector<std::string> CompilationPlan::CodegenJobsForOutputs(
-    std::vector<absl::string_view> outputs) const {
-  // Fast-path: If there is only one batch, there's no reason to iterate over
-  // all of these. The build rules use an empty string to represent this case.
-  if (outputs.empty()) {
-    return codegen_jobs_;
-  }
-
-  absl::btree_set<int> indices;
-  for (absl::string_view desired_output : outputs) {
-    for (const auto& [output, index] : codegen_job_indices_by_output_) {
-      // We need to do a suffix search here because the driver may have
-      // realpath-ed the output argument, giving us something like
-      // `<path to work area>/bazel-out/...` when we're just expecting
-      // `bazel-out/...`.
-      if (absl::EndsWith(output, desired_output)) {
-        indices.insert(index);
-        break;
-      }
-    }
-  }
-
-  std::vector<std::string> jobs;
-  jobs.reserve(indices.size());
-  for (int index : indices) {
-    jobs.push_back(codegen_jobs_[index]);
-  }
-  return jobs;
-}
 
 // Creates a temporary file and writes the given arguments to it, one per line.
 static std::unique_ptr<TempFile> WriteResponseFile(
@@ -509,7 +404,7 @@ static const absl::flat_hash_set<absl::string_view>
     kModulesIgnorableForLayeringCheck = {
         "Builtin",      "Swift",        "SwiftOnoneSupport",
         "_Backtracing", "_Concurrency", "_StringProcessing",
-};
+    };
 
 // Returns true if the module can be ignored for the purposes of layering check
 // (that is, it does not need to be in `deps` even if imported).
@@ -606,6 +501,111 @@ void ExtractFlagsFromInterfaceFile(
 }
 
 }  // namespace
+
+CompilationPlan::CompilationPlan(absl::string_view print_jobs_output) {
+  // Looks for the `-o` flags in the command line and captures the path to that
+  // file. This captures both regular paths (group 2) and single-quoted paths
+  // (group 1).
+  RE2 output_pattern("\\s-o\\s+(?:'((?:\\'|[^'])*)'|(\\S+))");
+  for (absl::string_view command_line :
+       absl::StrSplit(print_jobs_output, '\n')) {
+    if (command_line.empty()) {
+      continue;
+    }
+
+    // If the driver created a response file for the frontend invocation, then
+    // it prints the actual arguments with a shell comment-like notation. This
+    // is good for job scanning because we don't have to read the response files
+    // to find the invocations for various output files, but when we invoke it
+    // we need to strip that off because we aren't spawning like a shell; it
+    // would interpret the `#` and everything that follows as regular arguments.
+    // If the comment marker isn't there, then this logic also works because
+    // `first` will be the same as the original string.
+    std::pair<absl::string_view, absl::string_view> possible_response_file =
+        absl::StrSplit(command_line, absl::MaxSplits(" # ", 1));
+    absl::string_view command_line_without_expansions =
+        possible_response_file.first;
+
+    if (absl::StrContains(command_line, " -c ") ||
+        absl::StrContains(command_line, " -dump-ast ")) {
+      int index = codegen_jobs_.size();
+      codegen_jobs_.push_back(std::string(command_line_without_expansions));
+
+      // When threaded WMO is enabled, a single invocation might emit multiple
+      // object files. Associate them with the same command line so that they
+      // are deduplicated.
+      std::string quoted_path, normal_path;
+      absl::string_view anchor = command_line;
+      while (RE2::FindAndConsume(&anchor, output_pattern, &quoted_path,
+                                 &normal_path)) {
+        codegen_job_indices_by_output_[!quoted_path.empty() ? quoted_path
+                                                            : normal_path] =
+            index;
+      }
+    } else {
+      module_jobs_.push_back(std::string(command_line_without_expansions));
+    }
+  }
+}
+
+std::vector<std::string> CompilationPlan::CodegenJobsForOutputs(
+    std::vector<absl::string_view> outputs) const {
+  // Fast-path: If there is only one batch, there's no reason to iterate over
+  // all of these. The build rules use an empty string to represent this case.
+  if (outputs.empty()) {
+    return codegen_jobs_;
+  }
+
+  absl::btree_set<int> indices;
+  for (absl::string_view desired_output : outputs) {
+    // Strip trailing slash if present to normalize directory paths.
+    if (absl::EndsWith(desired_output, "/")) {
+      desired_output.remove_suffix(1);
+    }
+
+    bool found_exact = false;
+    for (const auto& [output, index] : codegen_job_indices_by_output_) {
+      // We need to do a suffix search here because the driver may have
+      // realpath-ed the output argument, giving us something like
+      // `<path to work area>/bazel-out/...` when we're just expecting
+      // `bazel-out/...`.
+      if (absl::EndsWith(output, desired_output)) {
+        indices.insert(index);
+        found_exact = true;
+        break;
+      }
+    }
+
+    if (!found_exact) {
+      // If we didn't find an exact match, then `desired_output` must be the
+      // path to a directory. The codegen jobs will refer to the files in that
+      // directory, so we need to match any output that is contained in that
+      // directory.
+      for (const auto& [output, index] : codegen_job_indices_by_output_) {
+        if (size_t pos = output.find(desired_output);
+            pos != std::string::npos) {
+          size_t end_pos = pos + desired_output.length();
+
+          // end_pos should never be output.length() here because if it was, we
+          // would have had an exact match above and not reached here. Likewise,
+          // pos should never be 0 in any realistic situation. Keep the checks
+          // for safety since we index based on those boundaries.
+          if ((pos == 0 || output[pos - 1] == '/') &&
+              (end_pos == output.length() || output[end_pos] == '/')) {
+            indices.insert(index);
+          }
+        }
+      }
+    }
+  }
+
+  std::vector<std::string> jobs;
+  jobs.reserve(indices.size());
+  for (int index : indices) {
+    jobs.push_back(codegen_jobs_[index]);
+  }
+  return jobs;
+}
 
 SwiftRunner::SwiftRunner(
     const std::vector<std::string>& args, bool force_response_file,

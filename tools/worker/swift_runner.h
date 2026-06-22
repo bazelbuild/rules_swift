@@ -51,6 +51,39 @@ struct JsonAstOptions {
   std::string output;
 };
 
+// Extracts frontend command lines from the driver output and groups them into
+// buckets that can be run based on the incoming `-compile-step` flag.
+class CompilationPlan {
+ public:
+  // Creates a new compilation plan by parsing the given driver output.
+  explicit CompilationPlan(absl::string_view print_jobs_output);
+
+  // Returns the list of module jobs extracted from the plan. Each job is a
+  // command line that should be invoked to emit some module-wide output.
+  const std::vector<std::string>& ModuleJobs() const { return module_jobs_; }
+
+  // Returns the codegen job that is associated with the given output file, or
+  // `nullopt` if none was found. The job is a command line that should be
+  // invoked to emit some codegen-related output.
+  std::vector<std::string> CodegenJobsForOutputs(
+      std::vector<absl::string_view> outputs) const;
+
+ private:
+  // The command lines of any frontend jobs that emit a module or other
+  // module-wide outputs, executed when the compilation step is
+  // `SwiftCompileModule`. These are executed in sequence.
+  std::vector<std::string> module_jobs_;
+
+  // The command lines of any frontend jobs that emit codegen output, like
+  // object files. These are mapped to the output path by
+  // `codegen_job_indices_by_output_`.
+  std::vector<std::string> codegen_jobs_;
+
+  // The indices into `codegen_jobs_` of the command lines of any frontend jobs
+  // that emit codegen output for some given output path.
+  absl::flat_hash_map<std::string, int> codegen_job_indices_by_output_;
+};
+
 // Handles spawning the Swift compiler driver, making any required substitutions
 // of the command line arguments (for example, Bazel's magic Xcode placeholder
 // strings).

@@ -114,5 +114,64 @@ TEST(SwiftRunnerTest, ArgsProcessingMacroExpansionDir) {
               Contains(Pair("TMPDIR", "/execroot/some/relative/path")));
 }
 
+TEST(CompilationPlanTest, ModuleJobs) {
+  std::string driver_output =
+      "swift-frontend -emit-module -o MyModule.swiftmodule MyModule.swift\n"
+      "swift-frontend -c -o MyModule.o MyModule.swift\n";
+  CompilationPlan plan(driver_output);
+  EXPECT_THAT(plan.ModuleJobs(),
+              ElementsAre("swift-frontend -emit-module -o MyModule.swiftmodule "
+                          "MyModule.swift"));
+}
+
+TEST(CompilationPlanTest, CodegenJobsEmptyReturnsAll) {
+  std::string driver_output =
+      "swift-frontend -emit-module -o MyModule.swiftmodule MyModule.swift\n"
+      "swift-frontend -c -o MyModule.o MyModule.swift\n";
+  CompilationPlan plan(driver_output);
+  EXPECT_THAT(plan.CodegenJobsForOutputs({}),
+              ElementsAre("swift-frontend -c -o MyModule.o MyModule.swift"));
+}
+
+TEST(CompilationPlanTest, CodegenJobsForOutputs_ExactMatch) {
+  std::string driver_output =
+      "swift-frontend -c -o path/to/a.o a.swift\n"
+      "swift-frontend -c -o path/to/b.o b.swift\n";
+  CompilationPlan plan(driver_output);
+  EXPECT_THAT(plan.CodegenJobsForOutputs({"path/to/a.o"}),
+              ElementsAre("swift-frontend -c -o path/to/a.o a.swift"));
+}
+
+TEST(CompilationPlanTest, CodegenJobsForOutputs_DirectoryMatch) {
+  std::string driver_output =
+      "swift-frontend -c -o path/to/dir.o/a.o a.swift\n"
+      "swift-frontend -c -o path/to/dir.o/b.o b.swift\n"
+      "swift-frontend -c -o path/to/other.o other.swift\n";
+  CompilationPlan plan(driver_output);
+  EXPECT_THAT(
+      plan.CodegenJobsForOutputs({"path/to/dir.o"}),
+      UnorderedElementsAre("swift-frontend -c -o path/to/dir.o/a.o a.swift",
+                           "swift-frontend -c -o path/to/dir.o/b.o b.swift"));
+}
+
+TEST(CompilationPlanTest, CodegenJobsForOutputs_DirectoryMatchTrailingSlash) {
+  std::string driver_output =
+      "swift-frontend -c -o path/to/dir.o/a.o a.swift\n";
+  CompilationPlan plan(driver_output);
+  EXPECT_THAT(plan.CodegenJobsForOutputs({"path/to/dir.o/"}),
+              ElementsAre("swift-frontend -c -o path/to/dir.o/a.o a.swift"));
+}
+
+TEST(CompilationPlanTest, CodegenJobsForOutputs_DirectorySubstringProtection) {
+  std::string driver_output =
+      "swift-frontend -c -o path/to/dir.o/a.o a.swift\n"
+      "swift-frontend -c -o path/to/dir.o_other/b.o b.swift\n"
+      "swift-frontend -c -o path/to_dir.o/c.o c.swift\n";
+  CompilationPlan plan(driver_output);
+
+  EXPECT_THAT(plan.CodegenJobsForOutputs({"dir.o"}),
+              ElementsAre("swift-frontend -c -o path/to/dir.o/a.o a.swift"));
+}
+
 }  // namespace
 }  // namespace bazel_rules_swift
