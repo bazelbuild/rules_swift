@@ -188,16 +188,6 @@ bzl_library(
 )
 
 bzl_library(
-    name = "swift_autoconfiguration",
-    srcs = ["swift_autoconfiguration.bzl"],
-    visibility = ["//swift:__subpackages__"],
-    deps = [
-        ":toolchain_utils",
-        "//swift/internal:feature_names",
-    ],
-)
-
-bzl_library(
     name = "swift_symbol_graph_aspect",
     srcs = ["swift_symbol_graph_aspect.bzl"],
     visibility = ["//swift:__subpackages__"],
@@ -277,10 +267,7 @@ bzl_library(
     name = "repositories",
     srcs = ["repositories.bzl"],
     visibility = ["//swift:__subpackages__"],
-    deps = [
-        ":swift_autoconfiguration",
-        "@bazel_tools//tools/build_defs/repo:http.bzl",
-    ],
+    deps = ["@bazel_tools//tools/build_defs/repo:http.bzl"],
 )
 
 # keep

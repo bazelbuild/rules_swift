@@ -50,8 +50,8 @@ def _standalone_toolchain_impl(module_ctx):
     if not root_module:
         fail("Could not find a root module. This should never happen.")
 
-    toolchains_build_file_content = ""
     for toolchain in root_module.tags.toolchain:
+        toolchains_build_file_content = ""
         if toolchain.swift_version and toolchain.swift_version_file:
             fail("Cannot use both swift_version and swift_version_file together. Please choose one.")
 
@@ -68,8 +68,22 @@ def _standalone_toolchain_impl(module_ctx):
                 SWIFT_RELEASES.keys(),
             ))
 
-        swift_releases = toolchain.platform_sha256.items() or SWIFT_RELEASES[swift_version].items()
-        for platform, sha256 in swift_releases:
+        swift_releases = toolchain.platform_sha256 or SWIFT_RELEASES[swift_version]
+        platforms = toolchain.platforms or swift_releases.keys()
+        unsupported_platforms = [
+            platform
+            for platform in platforms
+            if platform not in swift_releases
+        ]
+        if unsupported_platforms:
+            fail("Unsupported platforms for Swift {}: {}. Choose from: {}".format(
+                swift_version,
+                unsupported_platforms,
+                swift_releases.keys(),
+            ))
+
+        for platform in platforms:
+            sha256 = swift_releases[platform]
             repository_name = toolchain.name + "_{}".format(platform)
             _standalone_toolchain(
                 name = repository_name,
@@ -84,6 +98,7 @@ def _standalone_toolchain_impl(module_ctx):
         _toolchains_repository(
             name = toolchain.name,
             build_file_content = toolchains_build_file_content,
+            include_apple_toolchains = "xcode" in platforms,
         )
 
     metadata_kwargs = {}
@@ -106,6 +121,9 @@ Use the `swift-releases` utility to download swift archives for a given version 
 their hashes. For instance:
 `bazel run @rules_swift//tools/swift-releases -- list 6.2.4`
 """,
+    ),
+    "platforms": attr.string_list(
+        doc = "Platforms for which repositories and toolchains should be generated. Defaults to every platform available for the selected Swift version.",
     ),
     "swift_version": attr.string(doc = "Version of the swift toolchain to be installed. Cannot be used concurrently with `swift_version_file`"),
     "swift_version_file": attr.label(doc = "A label to the .swift_version file to use. Cannot be used concurrently with `swift_version`"),

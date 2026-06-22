@@ -31,7 +31,10 @@ toolchain(
     visibility = ["//visibility:public"],
 )
 
-## Exec toolchains
+"""
+
+_EXEC_TOOLCHAIN = """
+## Exec toolchain
 toolchain(
     name = "swift_toolchain_exec_{platform}",
     exec_compatible_with = {exec_compatible_with},
@@ -40,6 +43,38 @@ toolchain(
     toolchain_type = "@rules_swift//toolchains:toolchain_type",
     visibility = ["//visibility:public"],
 )
+
+"""
+
+_XCODE_TOOLCHAINS = """
+## Apple SDK toolchains
+[
+    toolchain(
+        name = "xcode-sdk-toolchain-" + arch,
+        exec_compatible_with = [
+            "@platforms//os:macos",
+        ],
+        target_compatible_with = constraints,
+        toolchain = "@{toolchain_repository}//:xcode-sdk-toolchain",
+        toolchain_type = "@rules_swift//toolchains:sdk_toolchain_type",
+        visibility = ["//visibility:public"],
+    )
+    for arch, constraints in APPLE_PLATFORMS_CONSTRAINTS.items()
+]
+
+[
+    toolchain(
+        name = "xcode-toolchain-" + arch,
+        exec_compatible_with = [
+            "@platforms//os:macos",
+        ],
+        target_compatible_with = constraints,
+        toolchain = "@{toolchain_repository}//:xcode-toolchain",
+        toolchain_type = "@rules_swift//toolchains:toolchain_type",
+        visibility = ["//visibility:public"],
+    )
+    for arch, constraints in APPLE_PLATFORMS_CONSTRAINTS.items()
+]
 
 """
 
@@ -55,14 +90,37 @@ def toolchains_for_platform(platform, toolchain_repository):
             "@platforms//cpu:{}".format("aarch64" if "aarch64" in platform else "x86_64"),
         ]
 
-    return _TOOLCHAIN_PLATFORM.format(
+    toolchains = _TOOLCHAIN_PLATFORM.format(
         exec_compatible_with = exec_compatible_with,
         platform = platform,
         toolchain_repository = toolchain_repository,
     )
+    if platform == "xcode":
+        toolchains += _XCODE_TOOLCHAINS.format(
+            toolchain_repository = toolchain_repository,
+        )
+    else:
+        toolchains += _EXEC_TOOLCHAIN.format(
+            exec_compatible_with = exec_compatible_with,
+            platform = platform,
+            toolchain_repository = toolchain_repository,
+        )
+    return toolchains
 
 def _toolchains_impl(repository_ctx):
-    repository_ctx.file("BUILD.bazel", repository_ctx.attr.build_file_content)
+    prelude = ""
+    if repository_ctx.attr.include_apple_toolchains:
+        prelude = """\
+load(
+    "@apple_support//configs:platforms.bzl",
+    "APPLE_PLATFORMS_CONSTRAINTS",
+)
+
+"""
+    repository_ctx.file(
+        "BUILD.bazel",
+        prelude + repository_ctx.attr.build_file_content,
+    )
 
 toolchains_repository = repository_rule(
     implementation = _toolchains_impl,
@@ -70,5 +128,6 @@ toolchains_repository = repository_rule(
         "build_file_content": attr.string(
             mandatory = True,
         ),
+        "include_apple_toolchains": attr.bool(),
     },
 )

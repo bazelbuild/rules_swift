@@ -15,13 +15,9 @@
 #include "tools/common/bazel_substitutions.h"
 
 #include <cstdlib>
-#include <filesystem>
 #include <iostream>
 #include <map>
-#include <sstream>
 #include <string>
-
-#include "tools/common/process.h"
 
 namespace bazel_rules_swift {
 namespace {
@@ -59,46 +55,14 @@ std::string GetAppleEnvironmentVariable(const char* name) {
 }
 
 std::string GetToolchainPath() {
-  // If TOOLCHAIN_PATH is set, we will use that as a toolchain path.
-  // Otherwise, we will try to derive it from DEVELOPER_DIR and TOOLCHAINS
-  // using xcrun by calling GetToolchainPath().
   char* toolchain_path = getenv("TOOLCHAIN_PATH");
-  if (toolchain_path != nullptr) {
-    return std::string(toolchain_path);
-  }
-
-  char* toolchain_id = getenv("TOOLCHAINS");
-  std::ostringstream output_stream;
-  int exit_code =
-      RunSubProcess({"/usr/bin/xcrun", "--find", "clang"},
-                    /*env=*/nullptr, &output_stream, /*stdout_to_stderr=*/true);
-  if (exit_code != 0) {
-    std::cerr << output_stream.str() << "Error: `TOOLCHAINS=" << toolchain_id
-              << "xcrun --find clang` failed with error code " << exit_code
-              << std::endl;
+  if (toolchain_path == nullptr) {
+    std::cerr << "error: required Swift toolchain environment variable "
+                 "'TOOLCHAIN_PATH' was not set. Please file an issue on "
+                 "bazelbuild/rules_swift.\n";
     exit(EXIT_FAILURE);
   }
-
-  if (output_stream.str().empty()) {
-    std::cerr << "Error: TOOLCHAINS was set to '" << toolchain_id
-              << "' but no toolchain with that ID was found" << std::endl;
-    exit(EXIT_FAILURE);
-  } else if ((toolchain_id != nullptr) &&
-             output_stream.str().find("XcodeDefault.xctoolchain") !=
-                 std::string::npos) {
-    // NOTE: Ideally xcrun would fail if the toolchain we asked for didn't exist
-    // but it falls back to the DEVELOPER_DIR instead, so we have to check the
-    // output ourselves.
-    std::cerr << "Error: TOOLCHAINS was set to '" << toolchain_id
-              << "' but the default toolchain was found, that likely means a "
-                 "matching "
-              << "toolchain isn't installed" << std::endl;
-    exit(EXIT_FAILURE);
-  }
-
-  std::filesystem::path clang_path(output_stream.str());
-  // Remove usr/bin/clang components to get the root of the custom toolchain
-  return clang_path.parent_path().parent_path().parent_path().string();
+  return std::string(toolchain_path);
 }
 
 }  // namespace

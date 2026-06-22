@@ -36,7 +36,7 @@ def synthesize_interface_test_suite(name, tags = []):
     provider_test(
         name = "{}_expected_files".format(name),
         expected_files = [
-            "test/fixtures/synthesize_interface/c_module.synthesized.swift",
+            "test/fixtures/synthesize_interface/c_module.synthesized_interfaces/test_fixtures_synthesize_interface_c_module.synthesized.swift",
         ],
         field = "files",
         provider = "DefaultInfo",

@@ -8,6 +8,43 @@ platform detection and appropriate extraction methods.
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 
+_XCODE_TOOLCHAINS = """\
+swift_tools(
+    name = "xcode_tools",
+    additional_inputs = glob([
+        "usr/lib/swift/**",
+    ] + [
+        "usr/bin/swift",
+        "usr/bin/swift-frontend",
+    ]),
+    swift_autolink_extract = "usr/bin/swift-autolink-extract",
+    swift_driver = "usr/bin/swiftc",
+    swift_symbolgraph_extract = "usr/bin/swift-symbolgraph-extract",
+    swift_synthesize_interface = "usr/bin/swift-synthesize-interface",
+)
+
+xcode_swift_toolchain(
+    name = "xcode-sdk-toolchain",
+    features = ["swift.module_map_no_private_headers"],
+    parsed_version = "{swift_version}",
+    runtime = glob(["usr/lib/swift/**/*.dylib"]),
+    swift_tools = "xcode_tools",
+    version_file = ".swift-version",
+)
+
+xcode_swift_toolchain(
+    name = "xcode-toolchain",
+    cross_import_overlays = ["@system_sdk//:all_cross_import_overlays"],
+    features = ["swift.module_map_no_private_headers"],
+    implicit_system_modules = "@system_sdk//:implicit_modules",
+    parsed_version = "{swift_version}",
+    runtime = glob(["usr/lib/swift/**/*.dylib"]),
+    swift_tools = "xcode_tools",
+    system_modules = "@system_sdk//:all_modules",
+    version_file = ".swift-version",
+)
+"""
+
 # Download URLs are documented in the OpenAPI spec here:
 # https://github.com/swiftlang/swiftly/blob/20ceb4748fd55a7e0574cf426b70f978a2636418/Sources/SwiftlyDownloadAPI/openapi.yaml
 # They're of the form: https://download.swift.org/{category}/{platform}/{version}/{file}
@@ -103,6 +140,9 @@ def _standalone_toolchain_impl(repository_ctx):
             "{exec_os}": repository_ctx.os.name,
             "{exec_arch}": repository_ctx.os.arch,
             "{swift_version}": repository_ctx.attr.swift_version,
+            "{xcode_toolchains}": (
+                _XCODE_TOOLCHAINS.format(swift_version = repository_ctx.attr.swift_version) if repository_ctx.attr.platform == "xcode" else ""
+            ),
         },
     )
 

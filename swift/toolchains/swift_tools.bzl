@@ -23,6 +23,7 @@ def _swift_tools_impl(ctx):
             swift_driver = ctx.file.swift_driver,
             swift_autolink_extract = ctx.file.swift_autolink_extract,
             swift_symbolgraph_extract = ctx.file.swift_symbolgraph_extract,
+            swift_synthesize_interface = ctx.file.swift_synthesize_interface,
             additional_inputs = ctx.files.additional_inputs,
         ),
     ]
@@ -41,6 +42,7 @@ Example:
         swift_driver = "//path/to:swift-driver",
         swift_autolink_extract = "//path/to:swift-autolink-extract",
         swift_symbolgraph_extract = "//path/to:swift-symbolgraph-extract",
+        swift_synthesize_interface = "//path/to:swift-synthesize-interface",
         additional_inputs = glob("path/to/runtime/**"),
     )
 """,
@@ -60,6 +62,10 @@ Example:
             allow_single_file = True,
             doc = "Label of the swift-symbolgraph-extract executable.",
             mandatory = True,
+        ),
+        "swift_synthesize_interface": attr.label(
+            allow_single_file = True,
+            doc = "Label of the swift-synthesize-interface executable.",
         ),
         "additional_inputs": attr.label_list(
             allow_files = True,

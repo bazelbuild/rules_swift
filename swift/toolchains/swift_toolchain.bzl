@@ -173,6 +173,7 @@ def _all_tool_configs(
         ),
         SWIFT_ACTION_COMPILE_MODULE_INTERFACE: (
             ToolConfigInfo(
+                additional_tools = additional_tools,
                 driver_config = _driver_config(mode = "swiftc") if not swift_tools else None,
                 args = ["-frontend"],
                 executable = swift_tools.swift_driver if swift_tools else None,
@@ -200,6 +201,15 @@ def _all_tool_configs(
             driver_config = _driver_config(mode = "swiftc") if not swift_tools else None,
             executable = swift_tools.swift_driver if swift_tools else None,
             worker_mode = "wrap",
+        )
+
+    if swift_tools and swift_tools.swift_synthesize_interface:
+        tool_configs[SWIFT_ACTION_SYNTHESIZE_INTERFACE] = ToolConfigInfo(
+            additional_tools = additional_tools,
+            executable = swift_tools.swift_synthesize_interface,
+            use_param_file = True,
+            worker_mode = "wrap",
+            env = env,
         )
 
     return tool_configs
@@ -526,7 +536,7 @@ def _swift_toolchain_impl(ctx):
     else:
         swiftcopts.extend(ctx.attr._copts[BuildSettingInfo].value)
 
-    # Combine build mode features, autoconfigured features, and required
+    # Combine build mode features, compiler-option features, and required
     # features.
     requested_features = (
         features_for_build_modes(ctx) +
