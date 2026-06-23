@@ -78,6 +78,12 @@ def _maybe_parse_as_library_copts(srcs):
                            srcs[0].basename != "main.swift"
     return ["-parse-as-library"] if use_parse_as_library else []
 
+def _is_wasm(ctx):
+    """Returns True if the target platform is WebAssembly."""
+    return ctx.target_platform_has_constraint(
+        ctx.attr._wasi_os_constraint[platform_common.ConstraintValueInfo],
+    )
+
 def _swift_binary_impl(ctx):
     toolchains = find_all_toolchains(ctx)
     feature_configuration = configure_features_for_binary(
@@ -87,10 +93,12 @@ def _swift_binary_impl(ctx):
         unsupported_features = ctx.disabled_features,
     )
 
-    # A binary linked as a shared object (`linkshared`) has no `main`, so the
-    # entry-point rename (and the matching `--defsym main=...` at link time)
-    # must be skipped, just as it is when the toolchain requests it via
-    # `swift.no_entry_point_rename`.
+    is_wasm = _is_wasm(ctx)
+
+    # A binary linked as a shared object (`linkshared`) or a WebAssembly
+    # reactor has no `main`, so the entry-point rename (and the matching
+    # `--defsym main=...` at link time) must be skipped, just as it is when the
+    # toolchain requests it via `swift.no_entry_point_rename`.
     skip_entry_point = ctx.attr.linkshared or is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_NO_ENTRY_POINT_RENAME,
@@ -195,12 +203,23 @@ def _swift_binary_impl(ctx):
     else:
         name = ctx.label.name
 
-    # `linkshared` produces a real dynamic library (`lib<name>.so` / `.dylib`),
-    # matching `cc_binary`'s `linkshared`; otherwise an executable.
-    if ctx.attr.linkshared:
+    # When targeting WebAssembly a `linkshared` binary is a "reactor" module: it
+    # is still produced as an `executable`-shaped wasm file (not a `-shared`
+    # dynamic library), but linked with the reactor execution model so it has no
+    # `_start`/`main` and instead exports functions for a host to call.
+    # Everywhere else, `linkshared` produces a real dynamic library
+    # (`lib<name>.so` / `.dylib`), matching `cc_binary`'s `linkshared`.
+    shared_link_flags = []
+    if ctx.attr.linkshared and not is_wasm:
         output_type = "dynamic_library"
     else:
         output_type = "executable"
+        if ctx.attr.linkshared and is_wasm:
+            shared_link_flags = ["-mexec-model=reactor"]
+
+        # Give WebAssembly outputs the conventional `.wasm` extension.
+        if is_wasm:
+            name = name + ".wasm"
 
     linking_outputs = register_link_binary_action(
         actions = ctx.actions,
@@ -216,7 +235,9 @@ def _swift_binary_impl(ctx):
         output_type = output_type,
         stamp = ctx.attr.stamp,
         toolchains = toolchains,
-        user_link_flags = binary_link_flags + entry_point_linkopts,
+        user_link_flags = (
+            binary_link_flags + entry_point_linkopts + shared_link_flags
+        ),
         variables_extension = variables_extension,
     )
 
@@ -324,10 +345,21 @@ If `True`, link the target as a shared library / loadable module instead of an
 executable, similar to `cc_binary`'s `linkshared`. The binary has no `main`
 entry point and the renamed-entry-point machinery is disabled.
 
-This produces a dynamic library named `lib<name>.so` (`.dylib` on Apple
-platforms) suitable for loading with `dlopen` / `System.loadLibrary` (e.g. an
-Android JNI library; export functions with `@_cdecl`).
+On most platforms this produces a dynamic library named `lib<name>.so`
+(`.dylib` on Apple platforms) suitable for loading with `dlopen` /
+`System.loadLibrary` (e.g. an Android JNI library; export functions with
+`@_cdecl`).
+
+When targeting WebAssembly it instead produces a "reactor" module
+(`<name>.wasm`, linked with `-mexec-model=reactor`): the module has no
+`_start`, runs its initializers via the exported `_initialize`, and exposes
+the functions a host instantiates and calls. Force-export those functions by
+passing `-Xlinker --export=<symbol>` (or `-Wl,--export=<symbol>`) flags in
+`linkopts`.
 """,
+            ),
+            "_wasi_os_constraint": attr.label(
+                default = Label("@platforms//os:wasi"),
             ),
         },
     ),
@@ -346,8 +378,8 @@ please use one of the platform-specific application rules in
 [rules_apple](https://github.com/bazelbuild/rules_apple) instead of
 `swift_binary`.
 
-Setting `linkshared = True` links a shared library instead of an executable;
-see the `linkshared` attribute.
+Setting `linkshared = True` links a shared library or (on WebAssembly) a
+reactor module instead of an executable; see the `linkshared` attribute.
 """,
     exec_groups = {
         # The `plugins` attribute associates its `exec` transition with this

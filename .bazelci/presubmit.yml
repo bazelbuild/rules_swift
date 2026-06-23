@@ -66,6 +66,21 @@ tasks:
     bazel: last_green
     <<: *mac_common
 
+  macos_cross_compilation:
+    name: "Cross-compilation (wasm)"
+    platform: macos_arm64
+    xcode_version: "26.2"
+    bazel: latest
+    # The //examples/cross_compilation targets are tagged `manual` (they fetch
+    # the Swift SDK bundle), so they are excluded from the `//examples/...`
+    # wildcard the other tasks build. List them explicitly here so the Swift-SDK
+    # cross-compilation toolchain is exercised in CI. Build-only: the trivial
+    # reactor exercises the link path, while runtime behavior is covered
+    # downstream by real consumers.
+    build_targets:
+      - "//examples/cross_compilation/wasm:Reactor.wasm"
+      - "//examples/cross_compilation/wasm:web_app"
+
   macos_latest_shell_scripts:
     name: "macOS shell tests"
     platform: macos_arm64

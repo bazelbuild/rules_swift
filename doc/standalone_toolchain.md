@@ -203,6 +203,41 @@ public func greetingFromSwift(_ env: UnsafeMutablePointer<JNIEnv?>, _ clazz: jcl
 
 See `examples/cross_compilation/android_app` for an end to end example.
 
+## Building for WebAssembly
+
+The `swift` module extension can also download the Swift WebAssembly SDK,
+which defines matching Swift and C/C++ toolchains targeting
+`wasm32-unknown-wasip1`.
+
+Add the `wasm_sdk` tag, referencing the `toolchain` tag by name (the Swift
+module format is not stable across compiler versions, so the SDK is always
+downloaded for exactly the toolchain's version):
+
+```bzl
+swift.wasm_sdk(toolchain_name = "swift_toolchain")
+
+register_toolchains(
+    "@swift_toolchain//:swift_toolchain_wasm32_xcode",
+    "@swift_toolchain//:cc_toolchain_wasm32_xcode",
+)
+```
+
+and build with a platform that has the `@platforms//os:wasi` and
+`@platforms//cpu:wasm32` constraints.
+
+### WebAssembly reactors
+
+A plain `swift_binary` links a WASI *command* module (with a `main`). To produce
+a **reactor** instead, set `linkshared = True`: this links with
+`-mexec-model=reactor`, so the `<name>.wasm` module has no `main`, runs its
+initializers via the exported `_initialize`, and exposes the functions a JS host
+calls. Keep each exported function with
+`linkopts = ["-Xlinker", "--export=<symbol>"]`. The Swift standard library is
+linked statically from the SDK, so the reactor is a self-contained
+`wasm32-wasip1` module (runnable with `wasmtime` et al.).
+
+See `examples/cross_compilation/wasm` for an end to end example.
+
 ## Using the extension from a non-root module
 
 The extension is intended for the root module — it fails if a non-root
