@@ -38,8 +38,6 @@ use_repo(
 apple_cc_configure = use_extension("@apple_support//crosstool:setup.bzl", "apple_cc_configure_extension")
 use_repo(apple_cc_configure, "local_config_apple_cc")
 
-register_toolchains("//swift/toolchains:all")
-
 system_sdk = use_extension("//swift:extensions.bzl", "system_sdk")
 system_sdk.configure_sdks(
     # NOTE: This doesn't apply to downstream repos
@@ -82,7 +80,16 @@ use_repo(system_sdk, "system_sdk")
 swift = use_extension("//swift:extensions.bzl", "swift", dev_dependency = True)
 swift.toolchain(
     name = "swift_toolchain",
-    swift_version = "6.3",
+    swift_version = "6.3.2",
+)
+swift.wasm_sdk(
+    toolchain_name = "swift_toolchain",
+)
+swift.android_sdk(
+    toolchain_name = "swift_toolchain",
+)
+swift.static_linux_sdk(
+    toolchain_name = "swift_toolchain",
 )
 use_repo(
     swift,
@@ -109,6 +116,52 @@ register_toolchains(
     "@swift_toolchain//:swift_toolchain_embedded_xcode",
     dev_dependency = True,
 )
+
+register_toolchains(
+    # Swift SDK toolchains for cross-compiling to WebAssembly, Android, and
+    # Static Linux; used by //examples/cross_compilation. As with the embedded
+    # toolchains above, we register only the host platforms used by CI rather
+    # than `@swift_toolchain//:all`, because rules_swift cannot yet auto-select
+    # a Linux distribution and `:all` would make the host/exec toolchain
+    # ambiguous across distros. A consumer that builds on a single host platform
+    # can simply register `@swift_toolchain//:all`.
+    "@swift_toolchain//:cc_toolchain_android_aarch64_ubuntu22.04",
+    "@swift_toolchain//:cc_toolchain_android_aarch64_ubuntu22.04-aarch64",
+    "@swift_toolchain//:cc_toolchain_android_aarch64_xcode",
+    "@swift_toolchain//:cc_toolchain_android_x86_64_ubuntu22.04",
+    "@swift_toolchain//:cc_toolchain_android_x86_64_ubuntu22.04-aarch64",
+    "@swift_toolchain//:cc_toolchain_android_x86_64_xcode",
+    "@swift_toolchain//:cc_toolchain_static_linux_aarch64_ubuntu22.04",
+    "@swift_toolchain//:cc_toolchain_static_linux_aarch64_ubuntu22.04-aarch64",
+    "@swift_toolchain//:cc_toolchain_static_linux_aarch64_xcode",
+    "@swift_toolchain//:cc_toolchain_static_linux_x86_64_ubuntu22.04",
+    "@swift_toolchain//:cc_toolchain_static_linux_x86_64_ubuntu22.04-aarch64",
+    "@swift_toolchain//:cc_toolchain_static_linux_x86_64_xcode",
+    "@swift_toolchain//:cc_toolchain_wasm32_ubuntu22.04",
+    "@swift_toolchain//:cc_toolchain_wasm32_ubuntu22.04-aarch64",
+    "@swift_toolchain//:cc_toolchain_wasm32_xcode",
+    "@swift_toolchain//:swift_toolchain_android_aarch64_ubuntu22.04",
+    "@swift_toolchain//:swift_toolchain_android_aarch64_ubuntu22.04-aarch64",
+    "@swift_toolchain//:swift_toolchain_android_aarch64_xcode",
+    "@swift_toolchain//:swift_toolchain_android_x86_64_ubuntu22.04",
+    "@swift_toolchain//:swift_toolchain_android_x86_64_ubuntu22.04-aarch64",
+    "@swift_toolchain//:swift_toolchain_android_x86_64_xcode",
+    "@swift_toolchain//:swift_toolchain_static_linux_aarch64_ubuntu22.04",
+    "@swift_toolchain//:swift_toolchain_static_linux_aarch64_ubuntu22.04-aarch64",
+    "@swift_toolchain//:swift_toolchain_static_linux_aarch64_xcode",
+    "@swift_toolchain//:swift_toolchain_static_linux_x86_64_ubuntu22.04",
+    "@swift_toolchain//:swift_toolchain_static_linux_x86_64_ubuntu22.04-aarch64",
+    "@swift_toolchain//:swift_toolchain_static_linux_x86_64_xcode",
+    "@swift_toolchain//:swift_toolchain_wasm32_ubuntu22.04",
+    "@swift_toolchain//:swift_toolchain_wasm32_ubuntu22.04-aarch64",
+    "@swift_toolchain//:swift_toolchain_wasm32_xcode",
+    dev_dependency = True,
+)
+
+# Keep broad built-in Linux toolchains after Static Linux SDK toolchains:
+# Static Linux platforms are also `@platforms//os:linux`, and Bazel chooses the
+# first compatible toolchain.
+register_toolchains("//swift/toolchains:all")
 
 # Dev dependencies
 bazel_dep(name = "bazel_skylib_gazelle_plugin", version = "1.5.0", dev_dependency = True)

@@ -6,6 +6,17 @@ load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 
 licenses(["notice"])
 
+constraint_setting(
+    name = "swift_sdk",
+    visibility = ["//visibility:public"],
+)
+
+constraint_value(
+    name = "static_linux",
+    constraint_setting = ":swift_sdk",
+    visibility = ["//visibility:public"],
+)
+
 bzl_library(
     name = "swift_toolchain",
     srcs = ["swift_toolchain.bzl"],
@@ -132,6 +143,21 @@ toolchain(
     target_compatible_with = [
         "@platforms//os:windows",
         "@platforms//cpu:x86_64",
+    ],
+    toolchain = "@rules_swift_local_config//:windows-toolchain",
+    toolchain_type = "//toolchains:toolchain_type",
+    visibility = ["//visibility:public"],
+)
+
+toolchain(
+    name = "windows-swift-toolchain-aarch64",
+    exec_compatible_with = [
+        "@platforms//os:windows",
+        "@platforms//cpu:aarch64",
+    ],
+    target_compatible_with = [
+        "@platforms//os:windows",
+        "@platforms//cpu:aarch64",
     ],
     toolchain = "@rules_swift_local_config//:windows-toolchain",
     toolchain_type = "//toolchains:toolchain_type",

@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Swift → WebAssembly (rules_swift)</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+           margin: 0; min-height: 100vh; display: grid; place-items: center;
+           background: #0b1021; color: #e7ecff; }
+    main { text-align: center; padding: 2rem; max-width: 42rem; }
+    h1 { font-weight: 600; margin-bottom: .25rem; }
+    .bubble { font-size: 2rem; padding: 1.25rem 1.75rem; margin: 1.75rem 0;
+              background: #1b2547; border-radius: 1rem; min-height: 1.5em; }
+    code { background: #1b2547; padding: .15em .4em; border-radius: .35em; }
+    .muted { color: #9fb0e0; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Swift, compiled to WebAssembly</h1>
+    <p class="muted">A <code>swift_binary(linkshared = True)</code> reactor module
+       built with <code>rules_swift</code> — instantiated and driven from JavaScript:</p>
+    <div class="bubble" id="out">loading…</div>
+    <p class="muted">The text above was produced by the Swift <code>Greeter</code>
+       library running in WebAssembly, read out of the module's linear memory.</p>
+  </main>
+  <script type="module">
+    const out = document.getElementById("out");
+
+    // The reactor imports `wasi_snapshot_preview1` for its runtime startup.
+    // This greeting does no real I/O, so most calls are success stubs;
+    // `random_get` is wired to Web Crypto and `fd_write` to the console.
+    let instance;
+    const dv = () => new DataView(instance.exports.memory.buffer);
+    const u8 = () => new Uint8Array(instance.exports.memory.buffer);
+    const SUCCESS = 0, BADF = 8;
+    const wasi = {
+      args_sizes_get: (argc, bufSize) => { dv().setUint32(argc, 0, true); dv().setUint32(bufSize, 0, true); return SUCCESS; },
+      args_get: () => SUCCESS,
+      environ_sizes_get: (count, size) => { dv().setUint32(count, 0, true); dv().setUint32(size, 0, true); return SUCCESS; },
+      environ_get: () => SUCCESS,
+      fd_fdstat_get: (fd, ptr) => { for (let i = 0; i < 24; i++) dv().setUint8(ptr + i, 0); return SUCCESS; },
+      fd_prestat_get: () => BADF,
+      fd_prestat_dir_name: () => BADF,
+      fd_close: () => SUCCESS,
+      fd_read: (fd, iovs, n, nread) => { dv().setUint32(nread, 0, true); return SUCCESS; },
+      fd_seek: (fd, off, whence, newOff) => { dv().setUint32(newOff, 0, true); return SUCCESS; },
+      fd_write: (fd, iovs, n, nwritten) => {
+        let written = 0, text = "";
+        for (let i = 0; i < n; i++) {
+          const ptr = dv().getUint32(iovs + i * 8, true);
+          const len = dv().getUint32(iovs + i * 8 + 4, true);
+          text += new TextDecoder().decode(u8().subarray(ptr, ptr + len));
+          written += len;
+        }
+        if (text) console.log(text);
+        dv().setUint32(nwritten, written, true);
+        return SUCCESS;
+      },
+      path_open: () => BADF,
+      proc_exit: (code) => { throw new Error("proc_exit(" + code + ")"); },
+      random_get: (ptr, len) => { crypto.getRandomValues(u8().subarray(ptr, ptr + len)); return SUCCESS; },
+    };
+
+    try {
+      const bytes = await (await fetch("Reactor.wasm")).arrayBuffer();
+      instance = (await WebAssembly.instantiate(bytes, { wasi_snapshot_preview1: wasi })).instance;
+
+      // WASI reactor: run global/runtime initializers once before any export.
+      instance.exports._initialize();
+
+      const length = instance.exports.greeting_length();
+      // Put the output buffer in a freshly grown page (guaranteed unused).
+      const memory = instance.exports.memory;
+      const ptr = memory.buffer.byteLength;
+      memory.grow(Math.ceil((length + 1) / 65536));
+      const written = instance.exports.greeting_into(ptr, length + 1);
+      const greeting = new TextDecoder().decode(new Uint8Array(memory.buffer, ptr, written));
+
+      out.textContent = "“" + greeting + "”";
+    } catch (err) {
+      out.textContent = "error: " + err;
+      console.error(err);
+    }
+  </script>
+</body>
+</html>
