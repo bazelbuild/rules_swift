@@ -443,6 +443,37 @@ def _swift_unix_linkopts_cc_info(
         ),
     )
 
+def _swift_sdk_linkopts_cc_info(
+        toolchain_label,
+        linkopts,
+        linker_inputs):
+    """Returns a `CcInfo` with linker flags supplied by the toolchain target.
+
+    Used for toolchains whose Swift runtime libraries come from a Swift SDK
+    rather than from the host toolchain or system; the repository that defines
+    the toolchain provides the exact search paths and runtime objects to link.
+
+    Args:
+        toolchain_label: The label that owns the propagated linker input.
+        linkopts: Linker flags from the toolchain's `linkopts` attribute.
+        linker_inputs: `File`s that link actions using these flags need.
+
+    Returns:
+        A `CcInfo` that propagates the flags to binaries depending on Swift
+        targets.
+    """
+    return CcInfo(
+        linking_context = cc_common.create_linking_context(
+            linker_inputs = depset([
+                cc_common.create_linker_input(
+                    owner = toolchain_label,
+                    user_link_flags = depset(linkopts),
+                    additional_inputs = depset(linker_inputs),
+                ),
+            ]),
+        ),
+    )
+
 def _entry_point_linkopts_provider(*, entry_point_name):
     """Returns linkopts to customize the entry point of a binary."""
     return struct(
@@ -509,6 +540,20 @@ def _swift_toolchain_impl(ctx):
         )
     elif ctx.attr.os == "none":
         swift_linkopts_cc_info = CcInfo()
+    elif ctx.attr.linkopts or ctx.attr.linker_inputs:
+        # A toolchain whose Swift runtime comes from a Swift SDK (e.g.
+        # WebAssembly or Android) provides the *complete* set of runtime link
+        # flags via `linkopts`/`linker_inputs`, replacing — not adding to — the
+        # defaults computed below. Those defaults are specific to a Linux *host*
+        # toolchain (`-pie`, `-static-libgcc`, `-lrt`, and the host toolchain's
+        # own `-L`/rpath and `swiftrt.o`); for a cross-compiled SDK target they
+        # are at best wrong and at worst invalid (wasm-ld rejects `-pie`, and a
+        # second `swiftrt.o` would conflict with the SDK's own).
+        swift_linkopts_cc_info = _swift_sdk_linkopts_cc_info(
+            ctx.label,
+            ctx.attr.linkopts,
+            ctx.files.linker_inputs,
+        )
     else:
         swift_linkopts_cc_info = _swift_unix_linkopts_cc_info(
             ctx.attr.arch,
@@ -762,6 +807,26 @@ The preserved environment variables required for the toolchain to operate
 normally.
 """,
                 mandatory = False,
+            ),
+            "linker_inputs": attr.label_list(
+                allow_files = True,
+                doc = """\
+Files that must be available to link actions when `linkopts` is set, such as
+the Swift runtime libraries of a Swift SDK.
+""",
+            ),
+            "linkopts": attr.string_list(
+                doc = """\
+The *complete* set of linker flags for the Swift runtime when that runtime is
+provided by a Swift SDK (for example WebAssembly or Android) rather than by the
+host toolchain — typically search paths for, and inputs from, `linker_inputs`,
+plus the SDK's runtime objects.
+
+This is not additive: when set, it *replaces* the runtime link flags the
+toolchain would otherwise compute, because those are specific to a Linux host
+toolchain and do not apply to a cross-compiled SDK target. Leave it unset for an
+ordinary host toolchain, which computes its own flags.
+""",
             ),
             "sdkroot": attr.string(
                 doc = """\

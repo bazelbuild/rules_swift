@@ -19,6 +19,18 @@ bzl_library(
 )
 
 bzl_library(
+    name = "swift_sdk_releases",
+    srcs = ["swift_sdk_releases.bzl"],
+    visibility = ["//swift:__subpackages__"],
+)
+
+bzl_library(
+    name = "swift_sdks",
+    srcs = ["swift_sdks.bzl"],
+    visibility = ["//swift:__subpackages__"],
+)
+
+bzl_library(
     name = "toolchains",
     srcs = ["toolchains.bzl"],
     visibility = ["//swift:__subpackages__"],
