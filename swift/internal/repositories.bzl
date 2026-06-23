@@ -15,10 +15,6 @@
 """Definitions for handling Bazel repositories used by the Swift rules."""
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-load(
-    "//swift/internal:swift_autoconfiguration.bzl",
-    "swift_autoconfiguration",
-)
 
 # buildifier: disable=unnamed-macro
 def swift_rules_dependencies():
@@ -168,5 +164,3 @@ def swift_rules_dependencies():
         urls = ["https://github.com/MobileNativeFoundation/index-import/releases/download/6.1.0.1/index-import.tar.gz"],
         sha256 = "9a54fc1674af6031125a9884480a1e31e1bcf48b8f558b3e8bcc6b6fcd6e8b61",
     )
-
-    swift_autoconfiguration(name = "rules_swift_local_config")

@@ -310,7 +310,8 @@ that use the toolchain.
 ## SwiftToolsInfo
 
 <pre>
-SwiftToolsInfo(<a href="#SwiftToolsInfo-swift_driver">swift_driver</a>, <a href="#SwiftToolsInfo-swift_autolink_extract">swift_autolink_extract</a>, <a href="#SwiftToolsInfo-swift_symbolgraph_extract">swift_symbolgraph_extract</a>, <a href="#SwiftToolsInfo-additional_inputs">additional_inputs</a>)
+SwiftToolsInfo(<a href="#SwiftToolsInfo-swift_driver">swift_driver</a>, <a href="#SwiftToolsInfo-swift_autolink_extract">swift_autolink_extract</a>, <a href="#SwiftToolsInfo-swift_symbolgraph_extract">swift_symbolgraph_extract</a>,
+               <a href="#SwiftToolsInfo-swift_synthesize_interface">swift_synthesize_interface</a>, <a href="#SwiftToolsInfo-additional_inputs">additional_inputs</a>)
 </pre>
 
 Propagates information about Swift toolchain tools that can be specified as
@@ -326,6 +327,7 @@ dependencies, ensuring they are available in the execution environment.
 | <a id="SwiftToolsInfo-swift_driver"></a>swift_driver |  `File`. The Swift driver executable that orchestrates compilation and linking operations. This is the main entry point for invoking the Swift compiler toolchain.    |
 | <a id="SwiftToolsInfo-swift_autolink_extract"></a>swift_autolink_extract |  `File`. The executable that extracts autolink information from object files. This tool is used to determine which libraries need to be linked based on import statements in Swift code.    |
 | <a id="SwiftToolsInfo-swift_symbolgraph_extract"></a>swift_symbolgraph_extract |  `File`. The executable that extracts symbol graph information from Swift modules. This tool generates structured data about APIs, which can be used for documentation generation and other tooling purposes.    |
+| <a id="SwiftToolsInfo-swift_synthesize_interface"></a>swift_synthesize_interface |  `File` or `None`. The executable that synthesizes Swift interfaces.    |
 | <a id="SwiftToolsInfo-additional_inputs"></a>additional_inputs |  `List` of `File`s. Additional files to add to the action input root when calling these tools.    |
 
 

@@ -14,7 +14,7 @@ If you run into any problems with these rules, please
 
 ## Basic Examples
 
-Create a simple CLI that can run on macOS, Linux, or Windows:
+Create a simple CLI that can run on macOS or Linux:
 
 ```bzl
 load("@rules_swift//swift:swift_binary.bzl", "swift_binary")
@@ -46,63 +46,39 @@ repository.
 
 ## Quick Setup
 
-### 1. Install Swift
+### 1. Configure your workspace
 
-Before getting started, make sure that you have a Swift toolchain installed.
+Copy the `MODULE.bazel` snippet from
+[the releases page](https://github.com/bazelbuild/rules_swift/releases), then
+select the platform that matches your build host. `rules_swift` downloads the
+selected Swift release and registers it as a hermetic Bazel toolchain; it does
+not discover or use a Swift installation from the host.
+
+See [Hermetic Swift toolchain](doc/standalone_toolchain.md) for the complete
+setup and the supported platform names.
+
+### 2. Install platform dependencies
 
 **Apple users:** Install [Xcode](https://developer.apple.com/xcode/downloads/).
-If this is your first time installing it, make sure to open it once after
-installing so that the command line tools are correctly configured.
+`rules_swift` uses the Xcode SDKs and Apple linker, but Swift compiler actions
+use the hermetic toolchain declared in `MODULE.bazel`. If this is your first
+time installing Xcode, open it once so that the command line tools are
+configured.
 
-**Linux users:** Follow the instructions on the
-[Swift download page](https://swift.org/download/) to download and install the
-appropriate Swift toolchain for your platform. Take care to ensure that you have
-all of Swift's dependencies installed (such as ICU, Clang, and so forth), and
-also ensure that the Swift compiler is available on your system path.
+**Linux users:** Install the system dependencies required by the selected
+swift.org toolchain, including Clang and ICU.
 
-### 2. Configure your workspace
-
-Copy the `MODULE.bazel` snippet from [the releases page](https://github.com/bazelbuild/rules_swift/releases).
-
-### 3. Additional configuration (Linux only)
+### 3. Configure Clang (Linux only)
 
 The `swift_binary` and `swift_test` rules expect to use `clang` as the driver
 for linking, and they query the Bazel C++ API and CROSSTOOL to determine which
 arguments should be passed to the linker. By default, the C++ toolchain used by
 Bazel is `gcc`, so Swift users on Linux need to override this by setting the
-environment variable `CC=clang` when invoking Bazel.
+environment variable `CC=clang` when invoking Bazel. The downloaded Swift
+toolchain does not replace Bazel's C++ toolchain.
 
 This step is not necessary for macOS users because the Xcode toolchain always
 uses `clang`.
-
-## Building with a Standalone Swift Toolchain
-
-As an alternative to the host's Swift install, `rules_swift` can download
-and register a hermetic Swift toolchain from swift.org. See
-[doc/standalone_toolchain.md](doc/standalone_toolchain.md) for setup
-instructions.
-
-## Building with Custom Toolchains
-
-**macOS hosts:** You can build with a custom Swift toolchain (downloaded
-from https://swift.org/download) instead of Xcode's default. To do so,
-pass the following flag to Bazel:
-
-```lang-none
---action_env=TOOLCHAINS=toolchain.id
-```
-
-Where `toolchain.id` is the value of the `CFBundleIdentifier` key in the
-toolchain's Info.plist file.
-
-To list the available toolchains and their bundle identifiers, you can run:
-
-```command
-bazel run @rules_swift//tools/dump_toolchains
-```
-
-**Linux hosts:** At this time, Bazel uses whichever `swift` executable is
-encountered first on your `PATH`.
 
 ## Supporting debugging
 

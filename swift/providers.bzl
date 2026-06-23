@@ -531,6 +531,9 @@ import statements in Swift code.
 modules. This tool generates structured data about APIs, which can be used
 for documentation generation and other tooling purposes.
 """,
+        "swift_synthesize_interface": """\
+`File` or `None`. The executable that synthesizes Swift interfaces.
+""",
         "additional_inputs": """\
 `List` of `File`s. Additional files to add to the action input root when calling these tools.
 """,

@@ -21,9 +21,6 @@ cc_library(
             "-std=c++17",
         ],
     }),
-    deps = [
-        ":process",
-    ],
 )
 
 cc_library(

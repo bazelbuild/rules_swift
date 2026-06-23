@@ -1,10 +1,11 @@
-load("@rules_swift//swift/toolchains:swift_toolchain.bzl", "swift_toolchain")
-load("@rules_swift//swift/toolchains:swift_tools.bzl", "swift_tools")
 load("@rules_cc//cc/toolchains:args.bzl", "cc_args")
 load("@rules_cc//cc/toolchains:make_variable.bzl", "cc_make_variable")
 load("@rules_cc//cc/toolchains:tool.bzl", "cc_tool")
 load("@rules_cc//cc/toolchains:tool_map.bzl", "cc_tool_map")
 load("@rules_cc//cc/toolchains:toolchain.bzl", "cc_toolchain")
+load("@rules_swift//swift/toolchains:swift_toolchain.bzl", "swift_toolchain")
+load("@rules_swift//swift/toolchains:swift_tools.bzl", "swift_tools")
+load("@rules_swift//swift/toolchains:xcode_swift_toolchain.bzl", "xcode_swift_toolchain")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -125,26 +126,15 @@ cc_toolchain(
 
 swift_tools(
     name = "tools",
-    swift_driver = "usr/bin/swiftc",
-    swift_autolink_extract = "usr/bin/swift-autolink-extract",
-    swift_symbolgraph_extract = "usr/bin/swift-symbolgraph-extract",
     additional_inputs = glob([
-        "usr/lib/swift/**"
+        "usr/lib/swift/**",
     ] + [
         "usr/bin/swift",
         "usr/bin/swift-frontend",
-    ], exclude = [
-        # for now we only tested embedded, linux and macos so we can exclude files needed for
-        # other platforms.
-        "usr/lib/swift/xrsimulator/**",
-        "usr/lib/swift/appletvos/**",
-        "usr/lib/swift/watchos/**",
-        "usr/lib/swift/appletvsimulator/**",
-        "usr/lib/swift/iphoneos/**",
-        "usr/lib/swift/iphonesimulator/**",
-        "usr/lib/swift/watchsimulator/**",
-        "usr/lib/swift/xros/**",
     ]),
+    swift_autolink_extract = "usr/bin/swift-autolink-extract",
+    swift_driver = "usr/bin/swiftc",
+    swift_symbolgraph_extract = "usr/bin/swift-symbolgraph-extract",
 )
 
 swift_toolchain(
@@ -173,6 +163,8 @@ swift_toolchain(
     version_file = ".swift-version",
 )
 
+{xcode_toolchains}
+
 swift_toolchain(
     name = "swift_toolchain_exec",
     arch = select({
@@ -190,10 +182,13 @@ swift_toolchain(
         "@platforms//os:macos": "macos",
     }),
     parsed_version = "{swift_version}",
-    runtime = glob([
-        "usr/lib/swift/**/*.dylib", # On MacOS
-        "usr/lib/swift/**/*.so", # On Linux
-    ], allow_empty = True),
+    runtime = glob(
+        [
+            "usr/lib/swift/**/*.dylib",  # On MacOS
+            "usr/lib/swift/**/*.so",  # On Linux
+        ],
+        allow_empty = True,
+    ),
     swift_tools = "tools",
     version_file = ".swift-version",
 )

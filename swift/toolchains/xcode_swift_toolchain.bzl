@@ -32,6 +32,7 @@ load(
     "SwiftInfo",
     "SwiftPackageConfigurationInfo",
     "SwiftToolchainInfo",
+    "SwiftToolsInfo",
 )
 load(
     "//swift/internal:action_names.bzl",
@@ -195,6 +196,7 @@ def _sdk_developer_framework_dir(apple_toolchain, target_triple):
     return paths.join(apple_toolchain.sdk_dir(), "Developer/Library/Frameworks")
 
 def _swift_linkopts_cc_info(
+        additional_inputs,
         apple_toolchain,
         target_triple,
         toolchain_label,
@@ -207,6 +209,8 @@ def _swift_linkopts_cc_info(
     code will link to the standard libraries correctly.
 
     Args:
+        additional_inputs: Files from the hermetic Swift toolchain required by
+            the linker.
         apple_toolchain: The `apple_common.apple_toolchain()` object.
         target_triple: The target triple `struct`.
         toolchain_label: The label of the Swift toolchain that will act as the
@@ -302,6 +306,7 @@ def _swift_linkopts_cc_info(
         linking_context = cc_common.create_linking_context(
             linker_inputs = depset([
                 cc_common.create_linker_input(
+                    additional_inputs = depset(additional_inputs),
                     owner = toolchain_label,
                     user_link_flags = depset(linkopts),
                 ),
@@ -386,6 +391,7 @@ def _all_action_configs(
         apple_toolchain,
         generated_header_rewriter,
         needs_resource_directory,
+        resource_directory,
         target_triple,
         xcode_config):
     """Returns the action configurations for the Swift toolchain.
@@ -402,6 +408,7 @@ def _all_action_configs(
             desired.
         needs_resource_directory: If True, the toolchain needs the resource
             directory passed explicitly to the compiler.
+        resource_directory: The Swift resource directory.
         target_triple: The triple of the platform being targeted.
         xcode_config: The Xcode configuration.
 
@@ -543,7 +550,7 @@ def _all_action_configs(
                 configurators = [
                     add_arg(
                         "-resource-dir",
-                        _resource_dir_path(apple_toolchain),
+                        resource_directory,
                     ),
                 ],
             ),
@@ -560,7 +567,7 @@ def _all_action_configs(
             configurators = [
                 add_arg(
                     "-resource-dir",
-                    _resource_dir_path(apple_toolchain),
+                    resource_directory,
                 ),
                 add_arg(
                     "-target-sdk-version",
@@ -586,7 +593,7 @@ def _all_action_configs(
                 add_arg(
                     "-plugin-path",
                     "{resource_dir}/host/plugins/testing".format(
-                        resource_dir = _resource_dir_path(apple_toolchain),
+                        resource_dir = resource_directory,
                     ),
                 ),
             ],
@@ -611,21 +618,25 @@ def _swift_compile_resource_set(_os, inputs_size):
     return {"cpu": 1, "memory": 200. + inputs_size * 0.015}
 
 def _all_tool_configs(
+        additional_tools,
         custom_toolchain,
         env,
         execution_requirements,
         swift_executable,
+        swift_tools,
         toolchain_root,
         xcode_config):
     """Returns the tool configurations for the Swift toolchain.
 
     Args:
+        additional_tools: Files required by every Swift tool action.
         custom_toolchain: The bundle identifier of a custom Swift toolchain, if
             one was requested.
         env: The environment variables to set when launching tools.
         execution_requirements: The execution requirements for tools.
         swift_executable: A custom Swift driver executable to be used during the
             build, if provided.
+        swift_tools: The hermetic Swift tools, if provided.
         toolchain_root: The root directory of the toolchain, if provided.
         xcode_config: The Xcode configuration.
 
@@ -641,6 +652,8 @@ def _all_tool_configs(
         env["TOOLCHAINS"] = custom_toolchain
 
     def _driver_config(*, mode):
+        if swift_tools:
+            return None
         return {
             "mode": mode,
             "swift_executable": swift_executable,
@@ -648,7 +661,9 @@ def _all_tool_configs(
         }
 
     tool_config = ToolConfigInfo(
+        additional_tools = additional_tools,
         driver_config = _driver_config(mode = "swiftc"),
+        executable = swift_tools.swift_driver if swift_tools else None,
         env = env,
         execution_requirements = execution_requirements,
         resource_set = _swift_compile_resource_set,
@@ -662,7 +677,9 @@ def _all_tool_configs(
         SWIFT_ACTION_DUMP_AST: tool_config,
         SWIFT_ACTION_PRECOMPILE_C_MODULE: (
             ToolConfigInfo(
+                additional_tools = additional_tools,
                 driver_config = _driver_config(mode = "swiftc"),
+                executable = swift_tools.swift_driver if swift_tools else None,
                 env = env,
                 execution_requirements = execution_requirements,
                 use_param_file = True,
@@ -671,7 +688,9 @@ def _all_tool_configs(
         ),
         SWIFT_ACTION_COMPILE_MODULE_INTERFACE: (
             ToolConfigInfo(
+                additional_tools = additional_tools,
                 driver_config = _driver_config(mode = "swiftc"),
+                executable = swift_tools.swift_driver if swift_tools else None,
                 args = ["-frontend"],
                 env = env,
                 execution_requirements = execution_requirements,
@@ -682,9 +701,11 @@ def _all_tool_configs(
         ),
         SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT: (
             ToolConfigInfo(
+                additional_tools = additional_tools,
                 driver_config = _driver_config(
                     mode = "swift-symbolgraph-extract",
                 ),
+                executable = swift_tools.swift_symbolgraph_extract if swift_tools else None,
                 env = env,
                 execution_requirements = execution_requirements,
                 use_param_file = True,
@@ -693,10 +714,16 @@ def _all_tool_configs(
         ),
     }
 
-    # swift-synthesize-interface is only available in Xcode 16.3 and later.
-    if _is_xcode_at_least_version(xcode_config, "16.3"):
+    # Xcode supplies swift-synthesize-interface starting with Xcode 16.3. A
+    # hermetic toolchain declares the executable directly.
+    if (
+        (swift_tools and swift_tools.swift_synthesize_interface) or
+        (not swift_tools and _is_xcode_at_least_version(xcode_config, "16.3"))
+    ):
         tool_configs[SWIFT_ACTION_SYNTHESIZE_INTERFACE] = ToolConfigInfo(
+            additional_tools = additional_tools,
             driver_config = _driver_config(mode = "swift-synthesize-interface"),
+            executable = swift_tools.swift_synthesize_interface if swift_tools else None,
             env = env,
             execution_requirements = execution_requirements,
             use_param_file = True,
@@ -810,10 +837,19 @@ def _xcode_swift_toolchain_impl(ctx):
     #
     # To use a "standard" custom toolchain built using the full Swift build
     # script, set the `TOOLCHAINS` envirinment variable as shown below.
+    swift_tools = ctx.attr.swift_tools[SwiftToolsInfo] if ctx.attr.swift_tools else None
+    if swift_tools and ctx.attr.swift_executable:
+        fail("`swift_executable` and `swift_tools` cannot be used concurrently. " +
+             "Use `swift_tools` for a hermetic toolchain.")
+
     swift_executable = get_swift_executable_for_toolchain(ctx)
     toolchain_root = ctx.var.get("SWIFT_USE_TOOLCHAIN_ROOT")
 
     custom_toolchain = ctx.configuration.default_shell_env.get("TOOLCHAINS")
+    if swift_tools and (toolchain_root or custom_toolchain):
+        fail("SWIFT_USE_TOOLCHAIN_ROOT and TOOLCHAINS cannot override a hermetic " +
+             "Swift toolchain.")
+
     custom_xcode_toolchain_root = None
     if toolchain_root and custom_toolchain:
         fail("Do not use SWIFT_USE_TOOLCHAIN_ROOT and TOOLCHAINS" +
@@ -821,11 +857,23 @@ def _xcode_swift_toolchain_impl(ctx):
     elif custom_toolchain:
         custom_xcode_toolchain_root = "__BAZEL_SWIFT_TOOLCHAIN_PATH__"
 
+    hermetic_toolchain_root = None
+    if swift_tools:
+        hermetic_toolchain_root = paths.dirname(paths.dirname(swift_tools.swift_driver.dirname))
+
+    link_toolchain_root = hermetic_toolchain_root or toolchain_root or custom_xcode_toolchain_root
+    additional_tools = []
+    if ctx.file.version_file:
+        additional_tools.append(ctx.file.version_file)
+    if swift_tools:
+        additional_tools.extend(swift_tools.additional_inputs)
+
     swift_linkopts_cc_info = _swift_linkopts_cc_info(
+        additional_inputs = swift_tools.additional_inputs if swift_tools else [],
         apple_toolchain = apple_toolchain,
         target_triple = target_triple,
         toolchain_label = ctx.label,
-        toolchain_root = toolchain_root or custom_xcode_toolchain_root,
+        toolchain_root = link_toolchain_root,
         xcode_config = xcode_config,
     )
 
@@ -848,7 +896,11 @@ def _xcode_swift_toolchain_impl(ctx):
         SWIFT_FEATURE_MODULE_HOME_IS_CWD,
     ])
 
-    if _is_xcode_at_least_version(xcode_config, "26.4"):
+    supports_hermetic_swiftmodule = (
+        ctx.attr.parsed_version and
+        apple_common.dotted_version(ctx.attr.parsed_version) >= apple_common.dotted_version("6.3")
+    ) if swift_tools else _is_xcode_at_least_version(xcode_config, "26.4")
+    if supports_hermetic_swiftmodule:
         requested_features.append(SWIFT_FEATURE__SUPPORTS_HERMETIC_SWIFTMODULE)
 
     # Xcode toolchains always support DEVELOPER_DIR
@@ -863,22 +915,28 @@ def _xcode_swift_toolchain_impl(ctx):
     unsupported_features.extend(ctx.attr.default_unsupported_features)
 
     env = _xcode_env(target_triple = target_triple, xcode_config = xcode_config)
+    if hermetic_toolchain_root:
+        env["TOOLCHAIN_PATH"] = hermetic_toolchain_root
 
-    # TODO: Remove once we drop support for Xcode 16.x.
-    # We set a private environment variable when using a version older than Xcode 16.3
-    # which comes with Swift 6.1 which changes the hash algorithm for the index-import tool.
-    # When using an older version we switch to the older version of index-import.
-    if not _is_xcode_at_least_version(xcode_config, "16.3"):
+    # Swift 6.1 changed the hash algorithm used by index-import. Select the
+    # index-import version from the hermetic compiler version when available.
+    uses_legacy_index_import = (
+        not ctx.attr.parsed_version or
+        apple_common.dotted_version(ctx.attr.parsed_version) < apple_common.dotted_version("6.1")
+    ) if swift_tools else not _is_xcode_at_least_version(xcode_config, "16.3")
+    if uses_legacy_index_import:
         env["__RULES_SWIFT_USE_LEGACY_INDEX_IMPORT"] = "1"
 
     execution_requirements = xcode_config.execution_info()
     generated_header_rewriter = ctx.executable.generated_header_rewriter
 
     all_tool_configs = _all_tool_configs(
+        additional_tools = additional_tools,
         custom_toolchain = custom_toolchain,
         env = env,
         execution_requirements = execution_requirements,
         swift_executable = swift_executable,
+        swift_tools = swift_tools,
         toolchain_root = toolchain_root,
         xcode_config = xcode_config,
     )
@@ -891,7 +949,10 @@ def _xcode_swift_toolchain_impl(ctx):
         additional_swiftc_copts = ctx.attr.copts + swiftcopts,
         apple_toolchain = apple_toolchain,
         generated_header_rewriter = generated_header_rewriter,
-        needs_resource_directory = swift_executable or toolchain_root,
+        needs_resource_directory = (swift_executable or toolchain_root) and not swift_tools,
+        resource_directory = (
+            paths.join(hermetic_toolchain_root, "usr/lib/swift") if hermetic_toolchain_root else _resource_dir_path(apple_toolchain)
+        ),
         target_triple = target_triple,
         xcode_config = xcode_config,
     )
@@ -955,7 +1016,7 @@ def _xcode_swift_toolchain_impl(ctx):
             for target in ctx.attr.package_configurations
         ],
         requested_features = requested_features,
-        runtime = depset(),
+        runtime = depset(ctx.files.runtime),
         system_modules = collect_implicit_deps_providers(
             [ctx.attr.system_modules] if ctx.attr.system_modules else [],
         ),
@@ -1075,6 +1136,17 @@ A list of `swift_package_configuration` targets that specify additional compiler
 configuration options that are applied to targets on a per-package basis.
 """,
                 providers = [[SwiftPackageConfigurationInfo]],
+            ),
+            "parsed_version": attr.string(
+                doc = "The Swift compiler version used by a hermetic toolchain.",
+            ),
+            "runtime": attr.label_list(
+                allow_files = True,
+                doc = "Files required when running binaries built with the Swift toolchain.",
+            ),
+            "version_file": attr.label(
+                allow_single_file = True,
+                doc = "A file containing the Swift compiler version.",
             ),
             "const_protocols_to_gather": attr.label(
                 default = Label(
