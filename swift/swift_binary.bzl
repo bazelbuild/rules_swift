@@ -14,6 +14,7 @@
 
 """Implementation of the `swift_binary` rule."""
 
+load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
@@ -22,6 +23,7 @@ load("//swift/internal:compiling.bzl", "compile")
 load(
     "//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT",
+    "SWIFT_FEATURE_NO_ENTRY_POINT_RENAME",
 )
 load("//swift/internal:features.bzl", "is_feature_enabled")
 load(
@@ -85,6 +87,15 @@ def _swift_binary_impl(ctx):
         unsupported_features = ctx.disabled_features,
     )
 
+    # A binary linked as a shared object (`linkshared`) has no `main`, so the
+    # entry-point rename (and the matching `--defsym main=...` at link time)
+    # must be skipped, just as it is when the toolchain requests it via
+    # `swift.no_entry_point_rename`.
+    skip_entry_point = ctx.attr.linkshared or is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_NO_ENTRY_POINT_RENAME,
+    )
+
     srcs = ctx.files.srcs
     output_groups = {}
     module_contexts = []
@@ -99,7 +110,21 @@ def _swift_binary_impl(ctx):
                 ctx.label,
                 feature_configuration = feature_configuration,
             )
-        entry_point_name = entry_point_function_name(module_name)
+
+        if skip_entry_point:
+            entry_point_name = None
+            entry_point_copts = []
+        else:
+            # Use a custom entry point name so that the binary's code can
+            # also be linked into another process (like a test executable)
+            # without having its main function collide.
+            entry_point_name = entry_point_function_name(module_name)
+            entry_point_copts = [
+                "-Xfrontend",
+                "-entry-point-function-name",
+                "-Xfrontend",
+                entry_point_name,
+            ]
 
         include_dev_srch_paths = include_developer_search_paths(ctx.attr)
 
@@ -111,15 +136,7 @@ def _swift_binary_impl(ctx):
                 ctx,
                 ctx.attr.copts,
                 ctx.attr.swiftc_inputs,
-            ) + _maybe_parse_as_library_copts(srcs) + [
-                # Use a custom entry point name so that the binary's code can
-                # also be linked into another process (like a test executable)
-                # without having its main function collide.
-                "-Xfrontend",
-                "-entry-point-function-name",
-                "-Xfrontend",
-                entry_point_name,
-            ],
+            ) + _maybe_parse_as_library_copts(srcs) + entry_point_copts,
             defines = ctx.attr.defines,
             feature_configuration = feature_configuration,
             include_dev_srch_paths = include_dev_srch_paths,
@@ -178,6 +195,13 @@ def _swift_binary_impl(ctx):
     else:
         name = ctx.label.name
 
+    # `linkshared` produces a real dynamic library (`lib<name>.so` / `.dylib`),
+    # matching `cc_binary`'s `linkshared`; otherwise an executable.
+    if ctx.attr.linkshared:
+        output_type = "dynamic_library"
+    else:
+        output_type = "executable"
+
     linking_outputs = register_link_binary_action(
         actions = ctx.actions,
         additional_inputs = ctx.files.additional_linker_inputs,
@@ -189,18 +213,27 @@ def _swift_binary_impl(ctx):
         label = ctx.label,
         module_contexts = module_contexts,
         name = name,
-        output_type = "executable",
+        output_type = output_type,
         stamp = ctx.attr.stamp,
         toolchains = toolchains,
         user_link_flags = binary_link_flags + entry_point_linkopts,
         variables_extension = variables_extension,
     )
 
+    if output_type == "dynamic_library":
+        library_to_link = linking_outputs.library_to_link
+        output_file = (
+            library_to_link.resolved_symlink_dynamic_library or
+            library_to_link.dynamic_library
+        )
+    else:
+        output_file = linking_outputs.executable
+
     providers = [
         DefaultInfo(
-            executable = linking_outputs.executable,
+            executable = output_file,
             files = depset(
-                [linking_outputs.executable] + additional_debug_outputs,
+                [output_file] + additional_debug_outputs,
             ),
             runfiles = ctx.runfiles(
                 collect_data = True,
@@ -278,9 +311,25 @@ def _swift_binary_impl(ctx):
     return providers
 
 swift_binary = rule(
-    attrs = binary_rule_attrs(
-        additional_deps_providers = [[SwiftCompilerPluginInfo]],
-        stamp_default = -1,
+    attrs = dicts.add(
+        binary_rule_attrs(
+            additional_deps_providers = [[SwiftCompilerPluginInfo]],
+            stamp_default = -1,
+        ),
+        {
+            "linkshared": attr.bool(
+                default = False,
+                doc = """\
+If `True`, link the target as a shared library / loadable module instead of an
+executable, similar to `cc_binary`'s `linkshared`. The binary has no `main`
+entry point and the renamed-entry-point machinery is disabled.
+
+This produces a dynamic library named `lib<name>.so` (`.dylib` on Apple
+platforms) suitable for loading with `dlopen` / `System.loadLibrary` (e.g. an
+Android JNI library; export functions with `@_cdecl`).
+""",
+            ),
+        },
     ),
     doc = """\
 Compiles and links Swift code into an executable binary.
@@ -296,6 +345,9 @@ If you want to create a multi-architecture binary or a bundled application,
 please use one of the platform-specific application rules in
 [rules_apple](https://github.com/bazelbuild/rules_apple) instead of
 `swift_binary`.
+
+Setting `linkshared = True` links a shared library instead of an executable;
+see the `linkshared` attribute.
 """,
     exec_groups = {
         # The `plugins` attribute associates its `exec` transition with this
