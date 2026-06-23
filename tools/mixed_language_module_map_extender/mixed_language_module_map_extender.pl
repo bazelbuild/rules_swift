@@ -22,15 +22,7 @@ if ( @ARGV != 4 ||
   {
     my $msg = "USAGE: $0 <output> <modulemap> <module_name> " .
               "<swift_generated_header>\n";
-    if ( @ARGV == 1 )
-      {
-        print STDERR $msg;
-        exit 0;
-      }
-    else
-      {
-        die $msg;
-      }
+    die $msg;
   }
 
 my ( $output, $modulemap, $module_name, $swift_generated_header ) = @ARGV;
