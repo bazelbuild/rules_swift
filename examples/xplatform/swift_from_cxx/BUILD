@@ -1,3 +1,4 @@
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("//swift:swift_library.bzl", "swift_library")
 
 swift_library(
