@@ -11,9 +11,11 @@ of `SWIFT_SDK_RELEASES` therefore mirror the keys of `SWIFT_RELEASES` in
 https://www.swift.org/api/v1/install/releases.json.
 """
 
-# Populated by the per-platform extensions (e.g. `wasm_sdk`, `android_sdk`),
-# which add their SDK checksums under each supported Swift release.
-SWIFT_SDK_RELEASES = {}
+SWIFT_SDK_RELEASES = {
+    "6.3.2": {
+        "wasm": "a61f0584c93283589f8b2f42db05c1f9a182b506c2957271402992655591dd7c",
+    },
+}
 
 def swift_sdk_download_url(swift_version, sdk):
     """Returns the download URL for a Swift SDK artifact bundle.

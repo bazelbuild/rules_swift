@@ -43,7 +43,6 @@ toolchain(
 
 """
 
-# buildifier: disable=unused-variable
 _SDK_TOOLCHAIN_PLATFORM = """
 # Swift SDK toolchains from repository: `{sdk_repository}`
 toolchain(
@@ -81,6 +80,30 @@ def toolchains_for_platform(platform, toolchain_repository):
         exec_compatible_with = _exec_compatible_with_for_platform(platform),
         platform = platform,
         toolchain_repository = toolchain_repository,
+    )
+
+def wasm_sdk_toolchains_for_platform(platform, sdk_repository):
+    """Returns `toolchain` declarations for a WebAssembly Swift SDK.
+
+    Args:
+        platform: The host platform name (e.g. "xcode" or "ubuntu22.04") whose
+            standalone toolchain the SDK is paired with.
+        sdk_repository: The name of the repository created by
+            `swift_wasm_sdk_repository`.
+
+    Returns:
+        BUILD file content declaring the Swift and C++ toolchains.
+    """
+    return _SDK_TOOLCHAIN_PLATFORM.format(
+        exec_compatible_with = _exec_compatible_with_for_platform(platform),
+        platform = platform,
+        sdk_repository = sdk_repository,
+        target = "wasm32",
+        target_compatible_with = [
+            "@platforms//os:wasi",
+            "@platforms//cpu:wasm32",
+        ],
+        target_suffix = "wasm32",
     )
 
 def _toolchains_impl(repository_ctx):

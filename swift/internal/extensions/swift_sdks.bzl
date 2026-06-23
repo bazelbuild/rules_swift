@@ -1,11 +1,13 @@
-"""Shared building blocks for Swift SDK repository rules.
+"""Shared building blocks for Swift SDK repository rules, plus the WebAssembly
+SDK repository rule.
 
 A "Swift SDK" is an artifact bundle published by swift.org for cross-compiling
 Swift to a platform the host toolchain cannot target by itself (the bundles that
 `swift sdk install` consumes). The per-platform extensions (e.g. `wasm_sdk`,
 `android_sdk`) define repository rules that download such a bundle and generate
 a `swift_toolchain` + rules_cc `cc_toolchain` for the target; this module holds
-the helpers and BUILD-file templates they share.
+the helpers and BUILD-file templates they share, and the WebAssembly repository
+rule that targets `wasm32-unknown-wasip1` using the host toolchain's clang.
 
 Because the Swift module format is not stable across compiler versions, a Swift
 SDK must come from exactly the same release as the host toolchain it is paired
@@ -16,14 +18,11 @@ with; the `swift` module extension enforces this by deriving both from the same
 # Files in the host toolchain that compile actions need: the driver/frontend
 # binaries, their libraries, and clang's builtin headers (used by the clang
 # importer when the Swift SDK's resource directory does not bundle them).
-# buildifier: disable=unused-variable
 _HOST_COMPILER_INPUTS = "swift_sdk_compiler_inputs"
 
 # Files in the host toolchain that link actions driven by its clang need.
-# buildifier: disable=unused-variable
 _HOST_LINKER_INPUTS = "swift_sdk_linker_inputs"
 
-# buildifier: disable=unused-variable
 _CC_TOOLCHAIN_TEMPLATE = """
 cc_tool(
     name = "clang",
@@ -51,7 +50,6 @@ cc_tool_map(
 )
 """
 
-# buildifier: disable=unused-variable
 _CC_TOOLCHAIN_FOR_TARGET_TEMPLATE = """
 cc_args(
     name = "cc_args_{suffix}",
@@ -98,7 +96,6 @@ cc_toolchain(
 )
 """
 
-# buildifier: disable=unused-variable
 _SWIFT_TOOLCHAIN_TEMPLATE = """
 swift_toolchain(
     name = "swift_toolchain_{suffix}",
@@ -115,7 +112,6 @@ swift_toolchain(
 )
 """
 
-# buildifier: disable=unused-variable
 _BUILD_HEADER_TEMPLATE = """\
 load("@rules_cc//cc/toolchains:args.bzl", "cc_args")
 load("@rules_cc//cc/toolchains:make_variable.bzl", "cc_make_variable")
@@ -141,7 +137,6 @@ swift_tools(
 )
 """
 
-# buildifier: disable=unused-variable
 def _build_list(items, indent = "    "):
     """Formats a list of strings as a multi-line BUILD file list literal."""
     if not items:
@@ -152,7 +147,6 @@ def _build_list(items, indent = "    "):
     lines.append(indent + "]")
     return "\n".join(lines)
 
-# buildifier: disable=unused-variable
 def _download_sdk_bundle(repository_ctx):
     """Downloads and extracts the Swift SDK artifact bundle for a repository.
 
@@ -178,7 +172,6 @@ def _download_sdk_bundle(repository_ctx):
         ))
     return bundles[0]
 
-# buildifier: disable=unused-variable
 def _common_attrs():
     return {
         "sha256": attr.string(
@@ -201,3 +194,115 @@ this SDK is paired with.
             mandatory = True,
         ),
     }
+
+def _swift_wasm_sdk_impl(repository_ctx):
+    bundle_dir = _download_sdk_bundle(repository_ctx)
+    toolchain_repo = repository_ctx.attr.toolchain_repo
+
+    repo_root = "external/" + repository_ctx.name
+    sdk_dir = "{}/{}/{}".format(
+        repo_root,
+        bundle_dir,
+        "{0}/wasm32-unknown-wasip1".format(bundle_dir.removesuffix(".artifactbundle")),
+    )
+    if not repository_ctx.path(sdk_dir.removeprefix(repo_root + "/")).exists:
+        fail("The WebAssembly Swift SDK bundle has an unexpected layout; " +
+             "missing " + sdk_dir)
+    wasi_sdk = sdk_dir + "/WASI.sdk"
+    resource_dir = sdk_dir + "/swift.xctoolchain/usr/lib/swift_static"
+
+    build_content = _BUILD_HEADER_TEMPLATE.format(
+        bundle_dir = bundle_dir,
+        compiler_inputs = _build_list([
+            ":sdk_files",
+            "@{}//:{}".format(toolchain_repo, _HOST_COMPILER_INPUTS),
+        ]),
+        toolchain_repo = toolchain_repo,
+    )
+
+    build_content += _SWIFT_TOOLCHAIN_TEMPLATE.format(
+        arch = "wasm32",
+        copts = _build_list([
+            "-resource-dir",
+            resource_dir,
+        ]),
+        features = _build_list([
+            "swift.module_map_no_private_headers",
+            "swift.no_embed_debug_module",
+            # wasm-ld cannot alias a renamed entry point back to the symbol
+            # that wasi-libc's startup code expects.
+            "swift.no_entry_point_rename",
+            "swift.use_autolink_extract",
+            # The file prefix map would make the worker resolve the Xcode
+            # developer directory on macOS hosts, which this toolchain does
+            # not depend on.
+            "-swift.file_prefix_map",
+        ]),
+        linker_inputs = _build_list([":sdk_files"]),
+        # The runtime objects and libraries that `swiftc` would add when
+        # linking a static executable for WASI; see
+        # `swift_static/wasi/static-executable-args.lnk` in the SDK.
+        linkopts = _build_list([
+            "{}/wasi/wasm32/swiftrt.o".format(resource_dir),
+            "-L{}/wasi".format(resource_dir),
+            "-lc++",
+            "-lc++abi",
+            "-lswiftSwiftOnoneSupport",
+            "-ldl",
+            "-lm",
+            "-lwasi-emulated-mman",
+            "-lwasi-emulated-signal",
+            "-lwasi-emulated-process-clocks",
+            # Place the linear-memory data and the indirect function table at the
+            # same bases `swiftc` uses for its own wasm links. The Swift driver
+            # always passes these to wasm-ld; in particular `--table-base=4096`
+            # is required — optimized (`-O`) Swift relies on the indirect
+            # function table starting where the runtime/codegen expects it, and
+            # without it generic-metadata instantiation reads out of bounds at
+            # runtime (`__swift_instantiateGenericMetadata` faults). `-Onone`
+            # happens to tolerate the default base, which masks the bug.
+            "-Wl,--global-base=4096",
+            "-Wl,--table-base=4096",
+        ]),
+        os = "wasi",
+        sdkroot = wasi_sdk,
+        suffix = "wasm32",
+        swift_version = repository_ctx.attr.swift_version,
+    )
+
+    build_content += _CC_TOOLCHAIN_TEMPLATE.format(
+        ar = "@{}//:usr/bin/llvm-ar".format(toolchain_repo),
+        clang = "@{}//:usr/bin/clang".format(toolchain_repo),
+        clang_data = _build_list([
+            ":sdk_files",
+            "@{}//:{}".format(toolchain_repo, _HOST_LINKER_INPUTS),
+        ]),
+    )
+
+    build_content += _CC_TOOLCHAIN_FOR_TARGET_TEMPLATE.format(
+        args = _build_list([
+            "--target=wasm32-unknown-wasip1",
+            "--sysroot=" + wasi_sdk,
+        ]),
+        # The Swift SDK's clang resource directory provides the compiler
+        # builtins (libclang_rt) for wasm32, which the host toolchain's own
+        # resource directory does not include.
+        link_args = _build_list([
+            "-resource-dir",
+            resource_dir + "/clang",
+        ]),
+        suffix = "wasm32",
+        triple = "wasm32-unknown-wasip1",
+    )
+
+    repository_ctx.file("BUILD.bazel", build_content)
+
+swift_wasm_sdk_repository = repository_rule(
+    attrs = _common_attrs(),
+    doc = """\
+Downloads the WebAssembly Swift SDK artifact bundle and defines Swift and C++
+toolchains that target `wasm32-unknown-wasip1` using a standalone host
+toolchain's compiler.
+""",
+    implementation = _swift_wasm_sdk_impl,
+)

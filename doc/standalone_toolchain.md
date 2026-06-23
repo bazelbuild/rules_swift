@@ -146,6 +146,94 @@ bazel run @rules_swift//tools/swift-releases -- list \
     main-snapshot-2024-08-01 --platform xcode --platform ubuntu22.04
 ```
 
+## Cross-compiling to WebAssembly with a Swift SDK
+
+swift.org publishes "Swift SDK" artifact bundles (the bundles consumed by
+`swift sdk install`) that let the host compiler cross-compile for platforms it
+cannot target by itself. The `swift` extension can download the WebAssembly SDK
+and define matching Swift and C/C++ toolchains, so plain `swift_library` and
+`swift_binary` targets build for `wasm32-unknown-wasip1` under `--platforms`.
+
+Add the `wasm_sdk` tag, referencing the `toolchain` tag by name (the Swift
+module format is not stable across compiler versions, so the SDK is always
+downloaded for exactly the toolchain's version):
+
+```bzl
+swift.toolchain(
+    name = "swift_toolchain",
+    swift_version = "6.3.2",
+)
+
+swift.wasm_sdk(
+    toolchain_name = "swift_toolchain",
+)
+
+register_toolchains(
+    "@swift_toolchain//:swift_toolchain_wasm32_xcode",
+    "@swift_toolchain//:cc_toolchain_wasm32_xcode",
+)
+```
+
+If you build on a single host platform you can register everything the
+extension generates in one line instead of listing the matrix:
+
+```bzl
+register_toolchains("@swift_toolchain//:all")
+```
+
+Avoid `:all` when you configure multiple Linux distributions, for the same
+reason the standalone host toolchains are registered explicitly: rules_swift
+cannot yet auto-select a distribution, so `:all` would make the host/exec
+toolchain ambiguous across them.
+
+Then build with a platform carrying the matching constraints:
+
+```bzl
+platform(
+    name = "wasm32-wasip1",
+    constraint_values = [
+        "@platforms//cpu:wasm32",
+        "@platforms//os:wasi",
+    ],
+)
+```
+
+```sh
+bazel build //my:binary --platforms=//:wasm32-wasip1
+```
+
+See `examples/cross_compilation` for a complete example, including building
+through a platform transition.
+
+### WebAssembly reactors
+
+A plain `swift_binary` links a WASI *command* module (with a `main`). To produce
+a **reactor** instead, set `linkshared = True`: this links with
+`-mexec-model=reactor`, so the `<name>.wasm` module has no `main`, runs its
+initializers via the exported `_initialize`, and exposes the functions a JS host
+calls. Keep each exported function with
+`linkopts = ["-Xlinker", "--export=<symbol>"]`.
+
+A `swift_binary(linkshared = True)` may depend on ordinary `swift_library`
+targets (linked statically), so the reactor entry point and the shared business
+logic stay in separate libraries. `examples/cross_compilation` builds a reactor
+depending on a `Greeter` `swift_library`. The Swift standard library is linked
+statically from the SDK, so the reactor is a self-contained `wasm32-wasip1`
+module (runnable with `wasmtime` et al.).
+
+Checksums for the SDK bundles are bundled for a curated list of releases (see
+`swift/internal/extensions/swift_sdk_releases.bzl`); for other releases, pass
+`sha256` explicitly.
+
+### Coexistence with `rules_apple`
+
+A common setup cross-compiles to WebAssembly *and* builds the same app's Apple
+targets with `rules_apple`. The two resolve together cleanly: this line of
+`rules_swift` is `compatibility_level = 3` (the same as released `rules_swift`
+3.x), so a current `rules_apple` release works alongside it. Bazel keeps the
+higher of each shared transitive dependency (`apple_support`, `rules_cc`), which
+are backward compatible, so no extra pinning is required.
+
 ## Using the extension from a non-root module
 
 The extension is intended for the root module — it fails if a non-root

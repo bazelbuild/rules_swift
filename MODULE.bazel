@@ -82,7 +82,10 @@ use_repo(system_sdk, "system_sdk")
 swift = use_extension("//swift:extensions.bzl", "swift", dev_dependency = True)
 swift.toolchain(
     name = "swift_toolchain",
-    swift_version = "6.3",
+    swift_version = "6.3.2",
+)
+swift.wasm_sdk(
+    toolchain_name = "swift_toolchain",
 )
 use_repo(
     swift,
@@ -107,6 +110,22 @@ register_toolchains(
     "@swift_toolchain//:swift_toolchain_embedded_ubuntu22.04",
     "@swift_toolchain//:swift_toolchain_embedded_ubuntu22.04-aarch64",
     "@swift_toolchain//:swift_toolchain_embedded_xcode",
+    dev_dependency = True,
+)
+
+register_toolchains(
+    # WebAssembly Swift SDK toolchains used by //examples/cross_compilation. As
+    # with the embedded toolchains above, we register only the host platforms
+    # used by CI rather than `@swift_toolchain//:all`, because rules_swift cannot
+    # yet auto-select a Linux distribution and `:all` would make the host/exec
+    # toolchain ambiguous across distros. A consumer that builds on a single host
+    # platform can simply register `@swift_toolchain//:all`.
+    "@swift_toolchain//:cc_toolchain_wasm32_ubuntu22.04",
+    "@swift_toolchain//:cc_toolchain_wasm32_ubuntu22.04-aarch64",
+    "@swift_toolchain//:cc_toolchain_wasm32_xcode",
+    "@swift_toolchain//:swift_toolchain_wasm32_ubuntu22.04",
+    "@swift_toolchain//:swift_toolchain_wasm32_ubuntu22.04-aarch64",
+    "@swift_toolchain//:swift_toolchain_wasm32_xcode",
     dev_dependency = True,
 )
 
