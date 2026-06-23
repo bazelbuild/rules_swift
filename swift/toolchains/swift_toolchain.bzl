@@ -267,6 +267,7 @@ def _all_action_configs(os, arch, target_triple, sdkroot, xctest_version, additi
                     actions = all_compile_action_names() + [
                         SWIFT_ACTION_DUMP_AST,
                         SWIFT_ACTION_PRECOMPILE_C_MODULE,
+                        SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
                     ],
                     configurators = [
                         add_arg(
@@ -294,6 +295,7 @@ def _all_action_configs(os, arch, target_triple, sdkroot, xctest_version, additi
                         actions = all_compile_action_names() + [
                             SWIFT_ACTION_DUMP_AST,
                             SWIFT_ACTION_PRECOMPILE_C_MODULE,
+                            SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
                         ],
                         configurators = [
                             add_arg(
@@ -364,6 +366,13 @@ def _swift_windows_linkopts_cc_info(
         "-LIBPATH:{}".format(platform_lib_dir),
         "-LIBPATH:{}".format(paths.join(sdkroot, "..", "..", "Library", "XCTest-{}".format(xctest_version), "usr", "lib", "swift", "windows", arch)),
         runtime_object_path,
+        # Swift marks references to symbols in other modules (for example the
+        # type metadata accessors a generated test runner references via
+        # `@testable import`) as `dllimport`. Bazel links everything statically,
+        # so those symbols resolve locally and `link.exe` emits LNK4217. The
+        # warning is benign for static linking; suppress it so it is not fatal
+        # under `/WX` (treat-warnings-as-errors).
+        "-IGNORE:4217",
     ]
 
     return CcInfo(
@@ -480,6 +489,17 @@ def _entry_point_linkopts_provider(*, entry_point_name):
         linkopts = ["-Wl,--defsym,main={}".format(entry_point_name)],
     )
 
+def _windows_entry_point_linkopts_provider(*, entry_point_name):
+    """Returns linkopts to customize the entry point of a binary on Windows.
+
+    MSVC `link.exe` does not understand the GNU `ld` `--defsym` alias used on
+    other platforms; `/ALTERNATENAME` is the equivalent, resolving the
+    CRT-referenced `main` symbol to the renamed Swift entry point.
+    """
+    return struct(
+        linkopts = ["/ALTERNATENAME:main={}".format(entry_point_name)],
+    )
+
 def _parse_target_system_name(*, arch, os, target_system_name):
     """Returns the target system name set by the CC toolchain or attempts to create one based on the OS and arch."""
 
@@ -488,6 +508,13 @@ def _parse_target_system_name(*, arch, os, target_system_name):
 
     if os == "linux":
         return "%s-unknown-linux-gnu" % arch
+    elif os == "windows":
+        # The MSVC cc toolchain reports a `target_gnu_system_name` of "local",
+        # so synthesize the triple. The `-msvc` environment is required: while
+        # `swiftc` defaults to it, `swift-symbolgraph-extract` (used for XCTest
+        # test discovery) matches the module layout's triple exactly and fails
+        # to load modules built for `*-windows-msvc` if it is omitted.
+        return "%s-unknown-windows-msvc" % arch
     else:
         return "%s-unknown-%s" % (arch, os)
 
@@ -520,7 +547,12 @@ def _swift_toolchain_impl(ctx):
         target_triples.parse(ctx.var.get("CC_TARGET_TRIPLE") or target_system_name),
     )
 
-    if "clang" not in cc_toolchain.compiler and "llvm" not in cc_toolchain.compiler:
+    # On Windows the Swift toolchain composes with Bazel's MSVC C++ toolchain
+    # (`msvc-cl`): `swiftc` uses its bundled clang for the clang importer and
+    # links via MSVC `link.exe`, so a clang CC toolchain is neither present nor
+    # required. Elsewhere (Linux), Swift drives the configured cc toolchain for
+    # C/C++ interop and linking, which must be clang.
+    if ctx.attr.os != "windows" and "clang" not in cc_toolchain.compiler and "llvm" not in cc_toolchain.compiler:
         fail("Swift requires the configured CC toolchain use clang. " +
              "Either use the locally installed LLVM by setting `CC=clang` in your environment " +
              "before invoking Bazel, or configure a Bazel LLVM CC toolchain. " +
@@ -646,7 +678,7 @@ def _swift_toolchain_impl(ctx):
             bindir = "bin64"
         elif ctx.attr.arch == "i686":
             bindir = "bin32"
-        elif ctx.attr.arch == "arm64":
+        elif ctx.attr.arch in ("aarch64", "arm64"):
             bindir = "bin64a"
         else:
             fail("unsupported arch `{}`".format(ctx.attr.arch))
@@ -672,7 +704,9 @@ def _swift_toolchain_impl(ctx):
         cross_import_overlays = collect_cross_import_overlays(ctx.attr.cross_import_overlays),
         debug_outputs_provider = None,
         developer_dirs = [],
-        entry_point_linkopts_provider = _entry_point_linkopts_provider,
+        entry_point_linkopts_provider = (
+            _windows_entry_point_linkopts_provider if ctx.attr.os == "windows" else _entry_point_linkopts_provider
+        ),
         feature_allowlists = [
             target[SwiftFeatureAllowlistInfo]
             for target in ctx.attr.feature_allowlists
