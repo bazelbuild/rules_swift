@@ -1,0 +1,102 @@
+load("//examples/embedded:transition.bzl", "transition_binary")
+load("//swift:swift.bzl", "swift_binary", "swift_library")
+
+package(default_visibility = ["//visibility:public"])
+
+# Platforms covered by the Swift SDK toolchains registered by this repository's
+# dev `MODULE.bazel` (via the `swift` extension's `wasm_sdk`/`android_sdk`
+# tags). Build the targets below with `--platforms` set to one of these.
+platform(
+    name = "wasm32-wasip1",
+    constraint_values = [
+        "@platforms//cpu:wasm32",
+        "@platforms//os:wasi",
+    ],
+)
+
+platform(
+    name = "android-aarch64",
+    constraint_values = [
+        "@platforms//cpu:aarch64",
+        "@platforms//os:android",
+    ],
+)
+
+# A plain library dependency, compiled for whichever platform depends on it.
+# Both platform-specific entry points below call into it, demonstrating that a
+# normal `swift_library` is reused unchanged across targets.
+swift_library(
+    name = "Greeter",
+    srcs = ["Sources/Greeter/Greeter.swift"],
+    module_name = "Greeter",
+    tags = ["manual"],
+)
+
+# ---------------------------------------------------------------------------
+# WebAssembly: a reactor module (no `main`; exports functions for a JS host).
+# ---------------------------------------------------------------------------
+
+swift_binary(
+    name = "Reactor",
+    srcs = ["Sources/Reactor/Reactor.swift"],
+    # Keep the exported functions in the linked module. `@_cdecl` names them;
+    # wasm-ld still needs an explicit `--export=` to retain each one.
+    linkopts = [
+        "-Xlinker",
+        "--export=greeting_into",
+        "-Xlinker",
+        "--export=greeting_length",
+    ],
+    linkshared = True,
+    tags = ["manual"],
+    deps = [":Greeter"],
+)
+
+# Build `:Reactor` for the wasm platform. Consumers can instead set
+# `--platforms=//examples/cross_compilation:wasm32-wasip1` on the command line.
+transition_binary(
+    name = "Reactor.wasm",
+    binary = ":Reactor",
+    platform = ":wasm32-wasip1",
+)
+
+# A static web app embedding the reactor: `index.html` + `Reactor.wasm` in one
+# directory. Serve it (e.g. `python3 -m http.server -d
+# bazel-bin/examples/cross_compilation/web_app`) and open it — the page calls
+# the reactor's exports from JavaScript and shows the greeting Swift produced.
+# `web/verify.mjs` does the same headlessly under Node. See `web/README.md`.
+genrule(
+    name = "web_app",
+    srcs = [
+        "web/index.html",
+        ":Reactor.wasm",
+    ],
+    outs = [
+        "web_app/index.html",
+        "web_app/Reactor.wasm",
+    ],
+    cmd = "cp $(location web/index.html) $(RULEDIR)/web_app/index.html && " +
+          "cp $(location :Reactor.wasm) $(RULEDIR)/web_app/Reactor.wasm",
+    tags = ["manual"],
+)
+
+# ---------------------------------------------------------------------------
+# Android: a JNI shared library, loaded by Kotlin via `System.loadLibrary`.
+# ---------------------------------------------------------------------------
+
+# `linkshared` produces `libSwiftJNI.so`. The JNI entry point is written in
+# Swift (it `import`s the SDK's `Android` module for the JNI types) and calls
+# into the `Greeter` library. See `android_app/` for the APK that loads it.
+swift_binary(
+    name = "SwiftJNI",
+    srcs = ["Sources/SwiftJNI/SwiftJNI.swift"],
+    linkshared = True,
+    tags = ["manual"],
+    deps = [":Greeter"],
+)
+
+transition_binary(
+    name = "libSwiftJNI.so",
+    binary = ":SwiftJNI",
+    platform = ":android-aarch64",
+)

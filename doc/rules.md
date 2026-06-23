@@ -41,7 +41,7 @@ On this page:
 
 <pre>
 swift_binary(<a href="#swift_binary-name">name</a>, <a href="#swift_binary-deps">deps</a>, <a href="#swift_binary-srcs">srcs</a>, <a href="#swift_binary-data">data</a>, <a href="#swift_binary-additional_linker_inputs">additional_linker_inputs</a>, <a href="#swift_binary-copts">copts</a>, <a href="#swift_binary-defines">defines</a>, <a href="#swift_binary-env">env</a>, <a href="#swift_binary-linkopts">linkopts</a>,
-             <a href="#swift_binary-malloc">malloc</a>, <a href="#swift_binary-module_name">module_name</a>, <a href="#swift_binary-package_name">package_name</a>, <a href="#swift_binary-plugins">plugins</a>, <a href="#swift_binary-stamp">stamp</a>, <a href="#swift_binary-swiftc_inputs">swiftc_inputs</a>)
+             <a href="#swift_binary-linkshared">linkshared</a>, <a href="#swift_binary-malloc">malloc</a>, <a href="#swift_binary-module_name">module_name</a>, <a href="#swift_binary-package_name">package_name</a>, <a href="#swift_binary-plugins">plugins</a>, <a href="#swift_binary-stamp">stamp</a>, <a href="#swift_binary-swiftc_inputs">swiftc_inputs</a>)
 </pre>
 
 Compiles and links Swift code into an executable binary.
@@ -58,6 +58,9 @@ please use one of the platform-specific application rules in
 [rules_apple](https://github.com/bazelbuild/rules_apple) instead of
 `swift_binary`.
 
+Setting `linkshared = True` links a shared library or (on WebAssembly) a
+reactor module instead of an executable; see the `linkshared` attribute.
+
 **ATTRIBUTES**
 
 
@@ -72,6 +75,7 @@ please use one of the platform-specific application rules in
 | <a id="swift_binary-defines"></a>defines |  A list of defines to add to the compilation command line.<br><br>Note that unlike C-family languages, Swift defines do not have values; they are simply identifiers that are either defined or undefined. So strings in this list should be simple identifiers, **not** `name=value` pairs.<br><br>Each string is prepended with `-D` and added to the command line. Unlike `copts`, these flags are added for the target and every target that depends on it, so use this attribute with caution. It is preferred that you add defines directly to `copts`, only using this feature in the rare case that a library needs to propagate a symbol up to those that depend on it.   | List of strings | optional |  `[]`  |
 | <a id="swift_binary-env"></a>env |  Specifies additional environment variables to set when the test is executed by `bazel run` or `bazel test`.<br><br>The values of these environment variables are subject to `$(location)` and "Make variable" substitution.<br><br>NOTE: The environment variables are not set when you run the target outside of Bazel (for example, by manually executing the binary in `bazel-bin/`).   | <a href="https://bazel.build/rules/lib/dict">Dictionary: String -> String</a> | optional |  `{}`  |
 | <a id="swift_binary-linkopts"></a>linkopts |  Additional linker options that should be passed to `clang`. These strings are subject to `$(location ...)` expansion.   | List of strings | optional |  `[]`  |
+| <a id="swift_binary-linkshared"></a>linkshared |  If `True`, link the target as a shared library / loadable module instead of an executable, similar to `cc_binary`'s `linkshared`. The binary has no `main` entry point and the renamed-entry-point machinery is disabled.<br><br>On most platforms this produces a dynamic library named `lib<name>.so` (`.dylib` on Apple platforms) suitable for loading with `dlopen` / `System.loadLibrary` (e.g. an Android JNI library; export functions with `@_cdecl`).<br><br>When targeting WebAssembly it instead produces a "reactor" module (`<name>.wasm`, linked with `-mexec-model=reactor`): the module has no `_start`, runs its initializers via the exported `_initialize`, and exposes the functions a host instantiates and calls. Force-export those functions by passing `-Xlinker --export=<symbol>` (or `-Wl,--export=<symbol>`) flags in `linkopts`.   | Boolean | optional |  `False`  |
 | <a id="swift_binary-malloc"></a>malloc |  Override the default dependency on `malloc`.<br><br>By default, Swift binaries are linked against `@bazel_tools//tools/cpp:malloc"`, which is an empty library and the resulting binary will use libc's `malloc`. This label must refer to a `cc_library` rule.   | <a href="https://bazel.build/concepts/labels">Label</a> | optional |  `"@bazel_tools//tools/cpp:malloc"`  |
 | <a id="swift_binary-module_name"></a>module_name |  The name of the Swift module being built.<br><br>If left unspecified, the module name will be computed based on the target's build label, by stripping the leading `//` and replacing `/`, `:`, and other non-identifier characters with underscores.   | String | optional |  `""`  |
 | <a id="swift_binary-package_name"></a>package_name |  The semantic package of the Swift target being built. Targets with the same package_name can access APIs using the 'package' access control modifier in Swift 5.9+.   | String | optional |  `""`  |

@@ -138,6 +138,21 @@ toolchain(
     visibility = ["//visibility:public"],
 )
 
+toolchain(
+    name = "windows-swift-toolchain-aarch64",
+    exec_compatible_with = [
+        "@platforms//os:windows",
+        "@platforms//cpu:aarch64",
+    ],
+    target_compatible_with = [
+        "@platforms//os:windows",
+        "@platforms//cpu:aarch64",
+    ],
+    toolchain = "@rules_swift_local_config//:windows-toolchain",
+    toolchain_type = "//toolchains:toolchain_type",
+    visibility = ["//visibility:public"],
+)
+
 # Consumed by Bazel integration tests.
 filegroup(
     name = "for_bazel_tests",
