@@ -1667,7 +1667,14 @@ def _declare_per_source_output_file(actions, extension, target_name, src):
         The declared `File`.
     """
     objs_dir = "{}_objs".format(target_name)
-    owner_rel_path = owner_relative_path(src)
+
+    # Spaces in object file paths break response-file parsing for the Windows
+    # archiver and linker (`lib.exe`/`link.exe`), which treat an unquoted space
+    # as an argument separator. Sanitize them in the derived output path so that
+    # targets whose sources live in directories containing spaces (for example
+    # swift-argument-parser's "Parsable Properties") can be archived and linked
+    # on Windows. Paths without spaces are unaffected.
+    owner_rel_path = owner_relative_path(src).replace(" ", "_")
     basename = paths.basename(owner_rel_path)
     dirname = paths.join(objs_dir, paths.dirname(owner_rel_path))
 
