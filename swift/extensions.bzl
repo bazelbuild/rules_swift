@@ -19,9 +19,19 @@ load("//swift/internal:repositories.bzl", "swift_rules_dependencies")
 load("//swift/internal/extensions:standalone_toolchain.bzl", _standalone_toolchain = "standalone_toolchain")
 load("//swift/internal/extensions:swift_releases.bzl", "SWIFT_RELEASES")
 load(
+    "//swift/internal/extensions:swift_sdk_releases.bzl",
+    "SWIFT_SDK_RELEASES",
+    "swift_sdk_download_url",
+)
+load(
+    "//swift/internal/extensions:swift_sdks.bzl",
+    "swift_wasm_sdk_repository",
+)
+load(
     "//swift/internal/extensions:toolchains.bzl",
     _toolchains_for_platform = "toolchains_for_platform",
     _toolchains_repository = "toolchains_repository",
+    _wasm_sdk_toolchains_for_platform = "wasm_sdk_toolchains_for_platform",
 )
 load("//tools/explicit_modules:extensions.bzl", _system_sdk = "system_sdk")
 
@@ -40,6 +50,56 @@ def _non_module_deps_impl(module_ctx):
 
 non_module_deps = module_extension(implementation = _non_module_deps_impl)
 
+def _setup_wasm_sdk(*, tag, toolchain_name, swift_version, platforms):
+    """Creates the repositories for a `swift.wasm_sdk` tag.
+
+    Args:
+        tag: The `wasm_sdk` tag.
+        toolchain_name: The name of the `swift.toolchain` tag the SDK extends.
+        swift_version: The Swift release version of that toolchain.
+        platforms: The host platforms the toolchain was created for.
+
+    Returns:
+        BUILD file content with the `toolchain` declarations to add to the
+        toolchains hub repository.
+    """
+    sha256 = tag.sha256
+    if not sha256:
+        if swift_version not in SWIFT_SDK_RELEASES:
+            fail("No known WebAssembly Swift SDK for version `{}`. Please choose one of {}, or provide the SDK's sha256.".format(
+                swift_version,
+                SWIFT_SDK_RELEASES.keys(),
+            ))
+        sha256 = SWIFT_SDK_RELEASES[swift_version]["wasm"]
+
+    build_file_content = ""
+    for platform in platforms:
+        repository_name = "{}_wasm_sdk_{}".format(toolchain_name, platform)
+        swift_wasm_sdk_repository(
+            name = repository_name,
+            sha256 = sha256,
+            swift_version = swift_version,
+            toolchain_repo = "{}_{}".format(toolchain_name, platform),
+            url = swift_sdk_download_url(swift_version, "wasm"),
+        )
+        build_file_content += _wasm_sdk_toolchains_for_platform(
+            platform = platform,
+            sdk_repository = repository_name,
+        )
+    return build_file_content
+
+def _sdk_tags_by_toolchain_name(tags, kind):
+    """Groups SDK tags by the toolchain they extend, rejecting duplicates."""
+    tags_by_name = {}
+    for tag in tags:
+        if tag.toolchain_name in tags_by_name:
+            fail("Only one `{}` tag may be used per toolchain, got multiple for `{}`.".format(
+                kind,
+                tag.toolchain_name,
+            ))
+        tags_by_name[tag.toolchain_name] = tag
+    return tags_by_name
+
 def _standalone_toolchain_impl(module_ctx):
     root_module = None
     for mod in module_ctx.modules:
@@ -49,6 +109,22 @@ def _standalone_toolchain_impl(module_ctx):
 
     if not root_module:
         fail("Could not find a root module. This should never happen.")
+
+    wasm_sdk_tags = _sdk_tags_by_toolchain_name(
+        root_module.tags.wasm_sdk,
+        "wasm_sdk",
+    )
+
+    toolchain_names = [
+        toolchain.name
+        for toolchain in root_module.tags.toolchain
+    ]
+    for toolchain_name in wasm_sdk_tags:
+        if toolchain_name not in toolchain_names:
+            fail("The `wasm_sdk` tag references unknown toolchain `{}`. Please use the name of a `toolchain` tag: {}".format(
+                toolchain_name,
+                toolchain_names,
+            ))
 
     toolchains_build_file_content = ""
     for toolchain in root_module.tags.toolchain:
@@ -81,6 +157,16 @@ def _standalone_toolchain_impl(module_ctx):
                 platform = platform,
                 toolchain_repository = repository_name,
             )
+
+        platforms = [platform for platform, _ in swift_releases]
+        if toolchain.name in wasm_sdk_tags:
+            toolchains_build_file_content += _setup_wasm_sdk(
+                tag = wasm_sdk_tags[toolchain.name],
+                toolchain_name = toolchain.name,
+                swift_version = swift_version,
+                platforms = platforms,
+            )
+
         _toolchains_repository(
             name = toolchain.name,
             build_file_content = toolchains_build_file_content,
@@ -93,6 +179,37 @@ def _standalone_toolchain_impl(module_ctx):
     return module_ctx.extension_metadata(
         **metadata_kwargs
     )
+
+_wasm_sdk = tag_class(
+    attrs = {
+        "sha256": attr.string(
+            doc = """\
+The expected SHA-256 of the SDK artifact bundle. May be omitted for Swift
+versions known to this version of rules_swift.
+""",
+        ),
+        "toolchain_name": attr.string(
+            doc = "The name of the `toolchain` tag to add this Swift SDK to.",
+            mandatory = True,
+        ),
+    },
+    doc = """\
+Downloads the WebAssembly Swift SDK matching a `toolchain` tag's Swift version
+and defines Swift and C++ toolchains targeting `wasm32-unknown-wasip1`.
+
+Register the generated toolchains for the host platforms you build on, e.g.:
+
+```starlark
+register_toolchains(
+    "@swift_toolchain//:swift_toolchain_wasm32_xcode",
+    "@swift_toolchain//:cc_toolchain_wasm32_xcode",
+)
+```
+
+and build with a platform that has the `@platforms//os:wasi` and
+`@platforms//cpu:wasm32` constraints.
+""",
+)
 
 _toolchain = tag_class(attrs = {
     "name": attr.string(
@@ -115,5 +232,6 @@ swift = module_extension(
     implementation = _standalone_toolchain_impl,
     tag_classes = {
         "toolchain": _toolchain,
+        "wasm_sdk": _wasm_sdk,
     },
 )

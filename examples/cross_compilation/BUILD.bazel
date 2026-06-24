@@ -1,0 +1,72 @@
+load("//examples/embedded:transition.bzl", "transition_binary")
+load("//swift:swift.bzl", "swift_binary", "swift_library")
+
+package(default_visibility = ["//visibility:public"])
+
+# The platform covered by the WebAssembly Swift SDK toolchain registered by this
+# repository's dev `MODULE.bazel` (via the `swift` extension's `wasm_sdk` tag).
+# Build the targets below with `--platforms` set to this.
+platform(
+    name = "wasm32-wasip1",
+    constraint_values = [
+        "@platforms//cpu:wasm32",
+        "@platforms//os:wasi",
+    ],
+)
+
+# A plain library dependency, compiled for whichever platform depends on it,
+# demonstrating that a normal `swift_library` is reused unchanged across targets.
+swift_library(
+    name = "Greeter",
+    srcs = ["Sources/Greeter/Greeter.swift"],
+    module_name = "Greeter",
+    tags = ["manual"],
+)
+
+# ---------------------------------------------------------------------------
+# WebAssembly: a reactor module (no `main`; exports functions for a JS host).
+# ---------------------------------------------------------------------------
+
+swift_binary(
+    name = "Reactor",
+    srcs = ["Sources/Reactor/Reactor.swift"],
+    # Keep the exported functions in the linked module. `@_cdecl` names them;
+    # wasm-ld still needs an explicit `--export=` to retain each one.
+    linkopts = [
+        "-Xlinker",
+        "--export=greeting_into",
+        "-Xlinker",
+        "--export=greeting_length",
+    ],
+    linkshared = True,
+    tags = ["manual"],
+    deps = [":Greeter"],
+)
+
+# Build `:Reactor` for the wasm platform. Consumers can instead set
+# `--platforms=//examples/cross_compilation:wasm32-wasip1` on the command line.
+transition_binary(
+    name = "Reactor.wasm",
+    binary = ":Reactor",
+    platform = ":wasm32-wasip1",
+)
+
+# A static web app embedding the reactor: `index.html` + `Reactor.wasm` in one
+# directory. Serve it (e.g. `python3 -m http.server -d
+# bazel-bin/examples/cross_compilation/web_app`) and open it — the page calls
+# the reactor's exports from JavaScript and shows the greeting Swift produced.
+# `web/verify.mjs` does the same headlessly under Node. See `web/README.md`.
+genrule(
+    name = "web_app",
+    srcs = [
+        "web/index.html",
+        ":Reactor.wasm",
+    ],
+    outs = [
+        "web_app/index.html",
+        "web_app/Reactor.wasm",
+    ],
+    cmd = "cp $(location web/index.html) $(RULEDIR)/web_app/index.html && " +
+          "cp $(location :Reactor.wasm) $(RULEDIR)/web_app/Reactor.wasm",
+    tags = ["manual"],
+)
